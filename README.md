@@ -18,7 +18,7 @@ RPCs + edge functions); there is no separate app server.
 celestual/
 ├── app/              the Vite + React SPA (served at celestual.us/)
 │   ├── src/
-│   │   ├── api/      celestual.js (the RPC calls), supabase.js, auth.js, pay.js
+│   │   ├── api/      celestual.js (RPCs), supabase.js, auth.js, pay.js, profile.js, vault.js
 │   │   ├── components/ screens.jsx, ui.jsx
 │   │   ├── i18n/     translations + language switching
 │   │   ├── App.jsx · galaxy.js · theme.js · styles.css
@@ -26,7 +26,7 @@ celestual/
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
 │   ├── config.toml   Supabase CLI config
-│   ├── migrations/   0001_celestual.sql — the complete, hardened schema
+│   ├── migrations/   0001_celestual.sql (matching core) · 0002_user_accounts.sql (accounts + encrypted sky)
 │   └── functions/    celestual-notify · celestual-checkout · celestual-search
 ├── docs/             all the guides (see below)
 ├── package.json      repo-root build (app → dist/)

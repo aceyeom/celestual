@@ -112,6 +112,43 @@ no code change needed (see `app/src/api/auth.js → sessionFromUser`).
 
 ---
 
+## 1.8 Accounts & your saved sky (encrypted)
+
+Once a person signs in with Instagram, their **account and their sky** (the stars
+they've sealed) are saved to the database and follow them across devices — so a
+refresh no longer wipes anything. This needs one quick step:
+
+### 1.8.1 Apply the accounts migration
+In Supabase → **SQL Editor**, run **`supabase/migrations/0002_user_accounts.sql`**
+(or `supabase db push` with the CLI). It adds, all owner-scoped by RLS on
+`auth.uid()`:
+
+- `celestual_profiles` — account fields + the **encrypted sky** blob,
+- `celestual_user_keys` — the per-user encryption key, readable only by its owner,
+- `celestual_entitlements` — paid-star count (written by the payment webhook),
+- `celestual_delete_me()` — powers the account area's "delete account".
+
+### 1.8.2 How the sky stays private
+The list of @handles a user has entered is **AES-GCM encrypted in the browser**
+before it's stored (see `app/src/api/vault.js`). The key lives in
+`celestual_user_keys`, readable only by that signed-in user, so the ciphertext in
+`celestual_profiles` can't be read by another user or by a dump of that table
+alone. (It is *not* zero-knowledge: an operator with the service role could join
+both tables — this is at-rest, least-privilege protection. Documented so nobody
+over-trusts it.)
+
+### 1.8.3 The account area
+A small **profile chip** (top-left) shows who's signed in. Tapping it opens the
+account sheet: edit handle / email / display name, see your sky, manage payments,
+**sign out**, or **delete account**. No flag needed — it's always on; before
+sign-in it saves to the device, and after sign-in to the encrypted account.
+
+> **Before the backend is wired** (no Supabase env vars, or `VITE_META_ENABLED=0`):
+> the sky is kept in `localStorage` so a refresh still doesn't wipe it. Signing in
+> later adopts and merges that local sky into the account.
+
+---
+
 ## 2. Payments (Stripe)
 
 Product rule: **first star free, forever**; every star after that is one payment of
