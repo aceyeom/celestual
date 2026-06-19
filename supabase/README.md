@@ -1,53 +1,51 @@
 # Supabase backend
 
-The backend for **CELESTUAL**. Apply to a dedicated Supabase project (Seoul
-region recommended) per [../DEPLOYMENT.md](../DEPLOYMENT.md).
+The backend for **CELESTUAL**. Apply to a dedicated Supabase project per
+[../docs/GO-LIVE.md](../docs/GO-LIVE.md).
 
-Everything lives under a `still_*` prefix (the project's internal codename) —
-tables, RPCs, and RLS. The raw "who entered whom" data is never readable by the
-client: `anon`/`authenticated` get no table privileges and no RLS policy, so the
-only way in is the `SECURITY DEFINER` RPCs, which return just a yes/no.
+Everything is named `celestual_*`. The raw "who entered whom" data is never
+readable by the client: `anon` / `authenticated` get no table privileges and no
+RLS policy, so the only way in is the `SECURITY DEFINER` RPCs, which return just a
+status object. See [../docs/SECURITY.md](../docs/SECURITY.md).
 
-## Files (run in this order)
+## Apply the schema
 
-| # | File | What it does |
-| --- | --- | --- |
-| 1 | `migrations/0001_still.sql` | tables, `still_submit` RPC, RLS |
-| 2 | `migrations/0002_still_safety.sql` | rate limiting + anti-exfiltration on the match email |
-| 3 | `migrations/0003_still_deferred_reveal.sql` | deferred reveal, per-`to` rate cap, withdraw/suppress erasure, email dead-letter |
+One idempotent migration holds the complete, hardened schema:
+`migrations/0001_celestual.sql`.
 
-All are idempotent (`if not exists` / `create or replace`), so re-running is safe.
-
-## Apply
-
-**SQL Editor (simplest):** paste each file's contents and Run, in order.
+**SQL Editor:** paste its contents and Run.
 
 **CLI:**
 ```bash
 supabase link --project-ref <ref>
-supabase db push                              # applies migrations/
+supabase db push
 ```
+
+Re-running is safe (`if not exists` / `create or replace`).
 
 ## Edge functions
 
-| Function | What it does |
-| --- | --- |
-| `functions/still-notify` | drains the `still_notifications` queue and emails the mutual-match reveal via Resend |
-| `functions/still-checkout` | the paywall — first star free, pay to add more |
-| `functions/still-search` | server-side Instagram @ typeahead proxy |
+| Function | What it does | Required secrets |
+| --- | --- | --- |
+| `functions/celestual-notify` | drains `celestual_notifications` and emails the mutual-match reveal via Resend | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-checkout` | the paywall — first star free, pay to add more | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` (and/or Kakao/Toss keys) |
+| `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 
-See [../DEPLOYMENT.md](../DEPLOYMENT.md) and
-[../SETUP-AUTH-AND-PAYMENTS.md](../SETUP-AUTH-AND-PAYMENTS.md) for deploying these
-and their environment variables.
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. Deploy
+with `supabase functions deploy <name>`. JWT verification is disabled for these in
+`config.toml` because anonymous visitors call them; each enforces its own checks.
+See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
+[../docs/SETUP-AUTH-AND-PAYMENTS.md](../docs/SETUP-AUTH-AND-PAYMENTS.md).
 
-## Model
+## Data model
 
-- **`still_entries`** — one directed entry (from_handle "still thinks about"
-  to_handle). Locked down; only the `still_submit` RPC writes/reads it.
-- **`still_matches`** — one row per mutual pair (canonical ordering).
-- **`still_notifications`** — outbound email queue, drained by `still-notify`.
-- **`still_attempts`** — minimal log for rate limiting (auto-pruned).
-- **`still_suppressions`** — handles that opted out of ever being entered.
-- **RPCs:** `still_submit` (record an entry, deferred reveal), `still_withdraw`
-  (un-send an entry), `still_suppress` (self-service erasure / block),
-  `still_norm` (handle normalisation).
+- **`celestual_entries`** — one directed entry (from_handle "still thinks about"
+  to_handle). Locked down; only the RPCs read/write it.
+- **`celestual_matches`** — one row per mutual pair (canonical ordering).
+- **`celestual_notifications`** — outbound email queue (with retry / dead-letter),
+  drained by `celestual-notify`.
+- **`celestual_attempts`** — minimal log for rate limiting (auto-pruned).
+- **`celestual_suppressions`** — handles that opted out of ever being entered.
+- **RPCs:** `celestual_submit` (record an entry, deferred reveal),
+  `celestual_withdraw` (un-send an entry), `celestual_suppress` (self-service
+  erasure / block), `celestual_norm` (handle normalisation).
