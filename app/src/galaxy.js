@@ -429,13 +429,21 @@ export class GalaxyField {
   // Place a fresh slot from a monotonic seed (never reused), so a star's spot in
   // the disk is fixed for its whole life and a later add can't land on a slot a
   // removed star used to hold.
+  //
+  // Placement is a sunflower (phyllotaxis) spiral: the angle steps by the golden
+  // angle and the radius grows with √index, so each new star fans further OUT
+  // along the disk instead of stacking onto a handful of fixed rings. On a narrow
+  // phone the old 3-ring scheme ran out of room and collapsed a busy sky into one
+  // overlapping clump (and a wall of piled @tags); the spiral fills evenly and
+  // keeps expanding, so the field never "runs out of space".
   _placeSlot(seed) {
     const ring = seed % 3
     return {
       seed,
       theta0: seed * 2.39996323, // golden angle — even, non-repeating placement
-      r: 0.34 + ring * 0.15, // staggered radii so they sit at different depths
-      y: (seed % 2 ? 1 : -1) * (0.045 + ring * 0.02), // above / below the plane
+      // √-growth radius, capped so the farthest stars still sit inside the disk.
+      r: clamp(0.3 + 0.085 * Math.sqrt(seed), 0.3, 1.55),
+      y: (seed % 2 ? 1 : -1) * (0.035 + ring * 0.014), // gently above / below the plane
       phase: seed * 1.7, // desynced twinkle
     }
   }

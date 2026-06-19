@@ -18,7 +18,7 @@ export const LANGS = {
 }
 
 const en = {
-  'brand': 'CELESTUAL',
+  'brand': 'Celestual',
   // landing
   'landing.head1': 'Does your ex still',
   'landing.head2': 'think about you?',
@@ -36,6 +36,8 @@ const en = {
   'you.emailLabel': 'Email',
   'you.emailOptional': 'optional',
   'you.email': 'you@email.com',
+  'you.emailAdd': 'Add an email',
+  'you.emailAddNote': 'So we can tell you privately if it ever becomes mutual — optional.',
   'you.note': 'Only used to tell you privately if it ever becomes mutual. Leave it blank and you can just check back here.',
   'you.continue': 'Continue',
   // them

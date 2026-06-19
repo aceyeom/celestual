@@ -8,8 +8,6 @@ import { searchHandles, normHandle } from '../api/celestual.js'
 
 export { makeColors, rgba }
 
-const clampN = (v, a, b) => (v < a ? a : v > b ? b : v)
-
 // Calm gradient backdrop for the entry screens (no canvas). It shares the deep
 // cosmic-violet base with the galaxy and only lets the two star accents glow
 // faintly through, so moving between the galaxy and these screens never swings
@@ -91,17 +89,21 @@ export function StarTags({ fieldRef, handles, color, show }) {
   React.useEffect(() => {
     widths.current = [] // handles changed → indices shifted, re-measure
     let raf
+    const TH = 20 // tag height (for overlap tests)
     const tick = () => {
       const f = fieldRef.current
       const arr = (f && f.sealedScreen) || []
       const vw = window.innerWidth, vh = window.innerHeight
+      // Tags placed so far THIS frame, so later ones can yield instead of piling.
+      const placed = []
       for (let i = 0; i < refs.current.length; i++) {
         const el = refs.current[i]
         if (!el) continue
         const ps = arr[i]
-        const on = show && !!handles[i] && ps && ps.vis
-        el.style.opacity = on ? '1' : '0'
-        if (!on) continue
+        if (!(show && !!handles[i] && ps && ps.vis)) {
+          el.style.opacity = '0'
+          continue
+        }
         // Tag width is fixed for a given handle, so measure once and cache rather
         // than forcing a layout read every animation frame.
         let w = widths.current[i]
@@ -110,15 +112,30 @@ export function StarTags({ fieldRef, handles, color, show }) {
           if (w) widths.current[i] = w
         }
         w = w || 84
-        // Anchor up-and-right of the star, but FLIP to the other side near an edge
-        // so the tag always hugs its own star instead of piling onto the viewport
-        // wall (where neighbouring tags would overlap and look mismatched).
+        // Anchor up-and-right of the star, flipping sides / below when it'd spill.
         let x = ps.x + 12
         if (x + w > vw - 8) x = ps.x - 12 - w
-        x = clampN(x, 8, Math.max(8, vw - w - 8))
         let y = ps.y - 24
         if (y < 8) y = ps.y + 16
-        y = clampN(y, 8, vh - 28)
+        // The old code CLAMPED every tag into the viewport, which jammed a busy
+        // sky's tags into a solid wall along the edges (the "goes very wrong" on
+        // mobile). Instead: if the star sits off-screen, or the tag can't fit in
+        // bounds, or it would collide with a tag already shown this frame, just
+        // hide this one (it fades out gently). The star's @ is still reachable by
+        // tapping it. Stable index order means the same tag always wins a contest,
+        // so there's no frame-to-frame flicker.
+        const starOff = ps.x < 6 || ps.x > vw - 6 || ps.y < 6 || ps.y > vh - 6
+        const outOfBounds = x < 6 || x + w > vw - 6 || y < 6 || y + TH > vh - 6
+        const rect = { x, y, w, h: TH }
+        const hit = placed.some(
+          (p) => !(rect.x + rect.w + 8 < p.x || rect.x > p.x + p.w + 8 || rect.y + rect.h + 6 < p.y || rect.y > p.y + p.h + 6),
+        )
+        if (starOff || outOfBounds || hit) {
+          el.style.opacity = '0'
+          continue
+        }
+        placed.push(rect)
+        el.style.opacity = '1'
         el.style.transform = `translate(${x}px, ${y}px)`
       }
       raf = requestAnimationFrame(tick)
@@ -190,11 +207,17 @@ export function Liftoff({ C, handle }) {
   )
 }
 
+// The wordmark — "Celestual" set in the same serif as the headlines, title-case
+// (not the old shouty all-caps), with a small amber glisten so the brand reads as
+// one of its own stars. `size` keeps its old call sites; the serif reads a touch
+// larger, so it's mapped up from the previous cap-height.
 export function Brandmark({ C, size = 14 }) {
+  const fs = size + 6
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: size, letterSpacing: '5px', color: C.cream }}>CELESTUAL</span>
-    </div>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: C.cream, userSelect: 'none' }}>
+      <span aria-hidden style={{ color: C.you, fontSize: fs * 0.56, lineHeight: 1, transform: 'translateY(-1px)' }}>✦</span>
+      <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: fs, letterSpacing: '.5px', lineHeight: 1 }}>Celestual</span>
+    </span>
   )
 }
 

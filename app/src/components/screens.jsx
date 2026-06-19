@@ -50,6 +50,23 @@ function Hint({ C, icon, color, children }) {
   )
 }
 
+// Smoothly reveals/hides its children by animating grid-rows 0fr→1fr (no fixed
+// max-height guesswork, no layout pop). Used for the optional email "drop-down".
+function Collapse({ open, children }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateRows: open ? '1fr' : '0fr',
+        opacity: open ? 1 : 0,
+        transition: 'grid-template-rows .42s cubic-bezier(.2,.7,.2,1), opacity .36s ease',
+      }}
+    >
+      <div style={{ overflow: 'hidden', minHeight: 0 }}>{children}</div>
+    </div>
+  )
+}
+
 // A small mono section label, with an optional "optional" pill so required vs.
 // optional reads at a glance (handle = no pill; email = pill).
 function FieldLabel({ C, children, optional }) {
@@ -227,6 +244,11 @@ export function YouScreen({ C, ctx }) {
   const handleOk = ctx.me.trim().length >= 2
   const valid = handleOk && emailOk
   const submit = () => valid && ctx.go('them')
+  // The email field is an OPTIONAL drop-down that only appears once a handle is
+  // entered. It stays hidden until then; once a handle exists, a quiet "add email"
+  // option drops down, and tapping it reveals the input. If they already gave an
+  // email (returning to this step), open straight to the field.
+  const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
   return (
     <WarmShell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -235,7 +257,7 @@ export function YouScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
         <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(32px, 8vw, 37px)', lineHeight: 1.12, color: C.cream }}>
           {t('you.title1')}<br />
           <em style={{ color: C.you }}>{t('you.title2')}</em>
@@ -247,12 +269,37 @@ export function YouScreen({ C, ctx }) {
           <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
         </div>
 
-        {/* email — optional, clearly marked */}
-        <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', gap: 9 }}>
-          <FieldLabel C={C} optional={t('you.emailOptional')}>{t('you.emailLabel')}</FieldLabel>
-          <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} accent={C.you} onEnter={submit} />
-          <Hint C={C} icon="mail">{t('you.note')}</Hint>
-        </div>
+        {/* email — an optional drop-down, revealed only after a handle is set */}
+        <Collapse open={handleOk}>
+          <div style={{ paddingTop: 4 }}>
+            {!emailOpen ? (
+              <button
+                onClick={() => setEmailOpen(true)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px',
+                  borderRadius: 13, cursor: 'pointer', textAlign: 'left',
+                  background: rgba(C.you, 0.05), border: `1px dashed ${rgba(C.you, 0.34)}`,
+                  color: C.cream, fontFamily: "'Space Grotesk', sans-serif",
+                }}
+              >
+                <span style={{ display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: '50%', background: rgba(C.you, 0.12), flexShrink: 0 }}>
+                  <Icon name="mail" size={16} color={C.you} stroke={1.7} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
+                  <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 2 }}>{t('you.emailAddNote')}</span>
+                </span>
+                <span style={{ color: rgba(C.you, 0.9), flexShrink: 0 }}><Icon name="plus" size={16} color="currentColor" stroke={2} /></span>
+              </button>
+            ) : (
+              <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <FieldLabel C={C} optional={t('you.emailOptional')}>{t('you.emailLabel')}</FieldLabel>
+                <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} accent={C.you} autoFocus onEnter={submit} />
+                <Hint C={C} icon="mail">{t('you.note')}</Hint>
+              </div>
+            )}
+          </div>
+        </Collapse>
       </div>
 
       <PrimaryButton C={C} disabled={!valid} onClick={submit}>
