@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- 해치 — 정의의 수호수. 단청-inspired folk-art medallion. -->
+  <defs>
+    <radialGradient id="hBg" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#FFF3E2"/>
+      <stop offset="62%" stop-color="#FBE3C4"/>
+      <stop offset="100%" stop-color="#F3CE9E"/>
+    </radialGradient>
+    <linearGradient id="hBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E2593A"/>
+      <stop offset="55%" stop-color="#C8401F"/>
+      <stop offset="100%" stop-color="#9E2E13"/>
+    </linearGradient>
+    <linearGradient id="hMane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8C2710"/>
+      <stop offset="100%" stop-color="#5F1A0A"/>
+    </linearGradient>
+    <linearGradient id="hGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F2C56B"/>
+      <stop offset="100%" stop-color="#D9A441"/>
+    </linearGradient>
+  </defs>
+
+  <!-- medallion -->
+  <circle cx="120" cy="120" r="112" fill="url(#hBg)"/>
+  <circle cx="120" cy="120" r="112" fill="none" stroke="#D9A441" stroke-width="3"/>
+  <circle cx="120" cy="120" r="105" fill="none" stroke="#C8401F" stroke-width="1.4" stroke-dasharray="1 7" stroke-linecap="round" opacity=".55"/>
+
+  <!-- 구름문 cloud swirls -->
+  <g fill="none" stroke="#E0AE63" stroke-width="3" stroke-linecap="round" opacity=".7">
+    <path d="M28 96c8-10 22-10 28-2-9-1-15 3-17 9"/>
+    <path d="M190 70c7-9 19-9 24-2-8-1-13 3-15 8"/>
+    <path d="M176 178c8-9 21-9 26-1-9-1-14 3-16 8"/>
+    <path d="M36 168c6-8 17-8 22-2-7-1-12 2-14 7"/>
+  </g>
+
+  <!-- tail — flame swirl -->
+  <path d="M62 168c-16-4-24-20-16-34 4 10 10 14 18 14-7-9-6-21 3-27-1 10 3 17 11 21l4 22z"
+    fill="url(#hMane)" stroke="#4A1407" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- hind leg -->
+  <path d="M78 188c-8-2-13-10-11-19 3-12 14-18 26-16l18 6-6 30z"
+    fill="url(#hBody)" stroke="#4A1407" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- body -->
+  <path d="M76 158c-2-26 14-46 40-50l38 4c16 6 24 20 22 38-2 20-18 34-40 36l-38-4c-12-4-20-12-22-24z"
+    fill="url(#hBody)" stroke="#4A1407" stroke-width="3.4" stroke-linejoin="round"/>
+
+  <!-- belly scales -->
+  <g fill="none" stroke="#F0A87E" stroke-width="2.4" stroke-linecap="round" opacity=".85">
+    <path d="M96 178c6 4 14 6 22 6"/>
+    <path d="M92 166c8 5 18 7 28 7"/>
+    <path d="M92 154c8 5 18 7 28 7"/>
+  </g>
+
+  <!-- front legs -->
+  <path d="M118 186l-2 16c0 4 3 7 8 7h12c4 0 6-3 4-7l-6-16z" fill="#B23618" stroke="#4A1407" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M148 182l2 16c1 4 4 7 9 7h11c4 0 6-3 4-7l-8-18z" fill="url(#hBody)" stroke="#4A1407" stroke-width="3" stroke-linejoin="round"/>
+  <!-- gold claws -->
+  <path d="M124 207h16M158 207h16" stroke="#D9A441" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- mane — layered swirls behind head -->
+  <g fill="url(#hMane)" stroke="#4A1407" stroke-width="3" stroke-linejoin="round">
+    <path d="M118 60c-12-8-28-5-34 6-5 9-2 19 6 24-3-12 4-20 14-21-5 6-5 14 1 19 1-9 6-14 13-15z"/>
+    <path d="M100 86c-14-2-24 7-25 19-1 9 5 17 14 19-7-9-5-19 3-24-2 8 1 15 8 18-1-9 2-15 9-18z"/>
+    <path d="M97 122c-12 2-19 12-17 23 2 9 9 14 18 14-9-6-10-16-4-23 0 8 5 13 12 14-4-8-3-15 3-20z"/>
+  </g>
+
+  <!-- head -->
+  <path d="M112 64c20-10 44-4 54 12 8 13 6 29-4 39l-26 10c-16 2-30-6-36-20-6-15 0-32 12-41z"
+    fill="url(#hBody)" stroke="#4A1407" stroke-width="3.4" stroke-linejoin="round"/>
+
+  <!-- horn — the justice horn -->
+  <path d="M134 58c0-14 8-24 20-28-4 10-3 18 2 24z" fill="url(#hGold)" stroke="#8A5E14" stroke-width="2.6" stroke-linejoin="round"/>
+
+  <!-- ears -->
+  <path d="M112 66c-3-9 1-17 9-21-1 8 1 13 6 16z" fill="#B23618" stroke="#4A1407" stroke-width="2.6" stroke-linejoin="round"/>
+
+  <!-- brow + eye -->
+  <path d="M138 92c6-6 16-7 23-2" fill="none" stroke="#4A1407" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="150" cy="100" r="6.5" fill="#2B1206"/>
+  <circle cx="152.5" cy="97.5" r="2.2" fill="#FFE9C9"/>
+
+  <!-- snout + grin -->
+  <path d="M168 104c8 2 13 8 12 15-1 6-7 10-14 9" fill="none" stroke="#4A1407" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M150 118c6 6 14 8 22 6" fill="none" stroke="#4A1407" stroke-width="3" stroke-linecap="round"/>
+  <!-- fang -->
+  <path d="M158 122l3 7 5-5z" fill="#FFF3E2" stroke="#4A1407" stroke-width="2" stroke-linejoin="round"/>
+  <!-- nose -->
+  <circle cx="176" cy="108" r="3.4" fill="#4A1407"/>
+
+  <!-- gold spine scales -->
+  <g fill="url(#hGold)" stroke="#8A5E14" stroke-width="2">
+    <path d="M120 56l6-12 6 12z"/>
+    <path d="M104 66l4-12 8 10z"/>
+    <path d="M168 64l2-13 9 9z"/>
+  </g>
+
+  <!-- chest medal dot -->
+  <circle cx="138" cy="152" r="9" fill="url(#hGold)" stroke="#8A5E14" stroke-width="2"/>
+  <circle cx="138" cy="152" r="3.4" fill="#9E2E13"/>
+</svg>

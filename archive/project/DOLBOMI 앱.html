@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DOLBOMI — 멈추지 않는 시간</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: radial-gradient(80% 60% at 50% 0%, #1a1c20, #0a0b0d 72%);
+    font-family: Pretendard, -apple-system, system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; box-sizing: border-box; padding: 38px 20px 56px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .cap { color: rgba(255,255,255,0.38); font-size: 12px; letter-spacing: 0.3px; margin-top: 22px; text-align: center; }
+  .cap b { color: rgba(255,255,255,0.66); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="cap"><b>DOLBOMI</b> — 군대가 멈춘 시간을, 네 시간으로 · 홈 · 기회 · 휴가 · 혜택 · 프로필 (탭 이동)</div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#0e1013"/>
+    <text x="50" y="46" font-family="monospace" font-size="15" font-weight="700" fill="#e3a753" text-anchor="middle">D-291</text>
+    <rect x="28" y="58" width="44" height="4" rx="2" fill="#c7ced6"/>
+    <rect x="28" y="58" width="26" height="4" rx="2" fill="#e3a753"/>
+  </svg>
+</template>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="module" src="creature.js"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="dolbomi-icons.jsx"></script>
+<script type="text/babel" src="dolbomi-data.jsx"></script>
+<script type="text/babel" src="app-data.jsx"></script>
+<script type="text/babel" src="data-catalog.jsx"></script>
+<script type="text/babel" src="dolbomi-ui.jsx"></script>
+<script type="text/babel" src="badges.jsx"></script>
+<script type="text/babel" src="skill-detail.jsx"></script>
+<script type="text/babel" src="creature-hero.jsx"></script>
+<script type="text/babel" src="avatar-viewer.jsx"></script>
+<script type="text/babel" src="guardian-card.jsx"></script>
+<script type="text/babel" src="screen-home.jsx"></script>
+<script type="text/babel" src="screen-radar.jsx"></script>
+<script type="text/babel" src="screen-opportunity.jsx"></script>
+<script type="text/babel" src="opp-plan.jsx"></script>
+<script type="text/babel" src="screen-vacation.jsx"></script>
+<script type="text/babel" src="screen-benefits.jsx"></script>
+<script type="text/babel" src="screen-profile.jsx"></script>
+<script type="text/babel" src="activity-log.jsx"></script>
+<script type="text/babel" src="overlays.jsx"></script>
+<script type="text/babel" src="app-shell.jsx"></script>
+
+<script type="text/babel">
+function Root() {
+  const [theme, setTheme] = React.useState(() => localStorage.getItem('dolbomi-theme') || 'dark');
+  React.useEffect(() => { try { localStorage.setItem('dolbomi-theme', theme); } catch (e) {} }, [theme]);
+  return <IOSDevice dark={theme === 'dark'}><window.DolbomiApp theme={theme} setTheme={setTheme} /></IOSDevice>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+</script>
+</body>
+</html>

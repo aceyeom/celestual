@@ -1,0 +1,90 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.dolbomi{
+  --ink:#F2F4F6; --sub:rgba(242,244,246,.56); --faint:rgba(242,244,246,.34);
+  --line:rgba(255,255,255,.08); --hair:rgba(255,255,255,.055); --track:rgba(255,255,255,.08);
+  --shadow:0 12px 24px -20px rgba(0,0,0,.7); --inset:rgba(255,255,255,.02); --bar:#C9D0D8;
+  --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --r-lg:20px; --r-md:15px; --r-sm:11px;
+  --game:.2; --istroke:1.75;
+  color:var(--ink);
+  font-family:Pretendard, -apple-system, system-ui, sans-serif;
+  font-feature-settings:"tnum" 0;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  word-break:keep-all; line-break:strict;
+}
+
+/* palettes — two-color system (design revamp v2 V1): the palette accent is
+   the INTERFACE color; --gold is reserved for what was EARNED (XP numbers,
+   titles, gilding, evolution glow) and stays gold in every palette. */
+.dolbomi[data-pal="green"]{
+  --bg:#0A0D0B; --surface:#131815; --surface2:#1A211C; --raise:#202A23;
+  --accent:#4DC97E; --accent-rgb:77,201,126; --on-accent:#06170D;
+  --positive:#4DC97E; --positive-rgb:77,201,126;
+  --gold:#E7A33C; --gold-rgb:231,163,60;
+  --warn:#E6B450; --warn-rgb:230,180,80; --danger:#E8694A; --danger-rgb:232,105,74;
+}
+.dolbomi[data-pal="gold"]{
+  --bg:#0A0C0E; --surface:#14171B; --surface2:#1C2127; --raise:#222831;
+  --accent:#E7A33C; --accent-rgb:231,163,60; --on-accent:#1A1206;
+  --positive:#6FCF8E; --positive-rgb:111,207,142;
+  --gold:#E7A33C; --gold-rgb:231,163,60;
+  --warn:#E6B450; --warn-rgb:230,180,80; --danger:#E8694A; --danger-rgb:232,105,74;
+}
+.dolbomi[data-pal="steel"]{
+  --bg:#090C11; --surface:#131922; --surface2:#1A2230; --raise:#212B3C;
+  --accent:#5BA0F2; --accent-rgb:91,160,242; --on-accent:#06101F;
+  --positive:#5FD2A6; --positive-rgb:95,210,166;
+  --gold:#E7A33C; --gold-rgb:231,163,60;
+  --warn:#E6B450; --warn-rgb:230,180,80; --danger:#F0795C; --danger-rgb:240,121,92;
+}
+
+/* light theme (the default: light + green) */
+.dolbomi[data-theme="light"]{
+  --ink:#16201A; --sub:rgba(22,32,26,.66); --faint:rgba(22,32,26,.46);
+  --line:rgba(22,32,26,.10); --hair:rgba(22,32,26,.07); --track:rgba(22,32,26,.08);
+  --shadow:0 14px 30px -22px rgba(24,40,30,.4); --inset:rgba(255,255,255,.6); --bar:#5B6573;
+}
+.dolbomi[data-theme="light"][data-pal="green"]{
+  --bg:#F1F5F0; --surface:#FFFFFF; --surface2:#F0F5F0; --raise:#E6EEE6;
+  --accent:#179A4F; --accent-rgb:23,154,79; --on-accent:#FFFFFF;
+  --positive:#179A4F; --positive-rgb:23,154,79;
+  --gold:#B9791A; --gold-rgb:185,121,26;
+  --warn:#C28A1E; --warn-rgb:194,138,30; --danger:#CB5234; --danger-rgb:203,82,52;
+}
+.dolbomi[data-theme="light"][data-pal="gold"]{
+  --bg:#F1EBDF; --surface:#FBF8F1; --surface2:#F3EDE1; --raise:#EBE3D3;
+  --accent:#B9791A; --accent-rgb:185,121,26; --on-accent:#FFFFFF;
+  --positive:#3E9B5F; --positive-rgb:62,155,95;
+  --gold:#B9791A; --gold-rgb:185,121,26;
+  --warn:#C28A1E; --warn-rgb:194,138,30; --danger:#CB5234; --danger-rgb:203,82,52;
+}
+.dolbomi[data-theme="light"][data-pal="steel"]{
+  --bg:#E7ECF2; --surface:#F8FAFD; --surface2:#EDF1F7; --raise:#E1E8F1;
+  --accent:#2D6FCB; --accent-rgb:45,111,203; --on-accent:#FFFFFF;
+  --positive:#2E9A6E; --positive-rgb:46,154,110;
+  --gold:#B9791A; --gold-rgb:185,121,26;
+  --warn:#C28A1E; --warn-rgb:194,138,30; --danger:#D05A3C; --danger-rgb:208,90,60;
+}
+
+.dolbomi{ background:var(--bg); }
+.dolbomi *{ scrollbar-width:none; box-sizing:border-box; }
+.dolbomi *::-webkit-scrollbar{ display:none; }
+.dolbomi .mono{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.dolbomi .num{ font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+
+/* animations */
+@keyframes tmRise{from{transform:translateY(9px)}to{transform:none}}
+@keyframes tmFade{from{opacity:0}to{opacity:1}}
+@keyframes tmSlideIn{from{transform:translateX(40px)}to{transform:none}}
+@keyframes tmSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes tmPop{0%{transform:scale(.6);opacity:0}55%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes tmRing{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.3);opacity:0}}
+@keyframes tmGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes tmDeal{from{transform:translateY(26px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.tm-rise{animation:tmRise .5s cubic-bezier(.2,.7,.3,1);}
+@media (prefers-reduced-motion:reduce){ .tm-rise{animation:none} }
+.tm-tap{transition:transform .12s ease, box-shadow .16s, border-color .16s;}
+.tm-tap:active{transform:scale(.975);}
+.dolbomi h1,.dolbomi h2,.dolbomi h3,.dolbomi p{margin:0;}

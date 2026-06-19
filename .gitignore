@@ -1,0 +1,11 @@
+# build output (root combined build → dolbomi.app/ and dolbomi.app/dolbomi)
+dist
+node_modules
+
+# env
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log

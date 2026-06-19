@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# env (Supabase keys live here for local dev; never commit)
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
