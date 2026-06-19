@@ -1,0 +1,20 @@
+# Supabase CLI config for CELESTUAL.
+# `project_id` is a local label; link to your cloud project with:
+#   supabase link --project-ref <your-project-ref>
+project_id = "celestual"
+
+[db]
+# Local dev database port (only used by `supabase start`).
+port = 54322
+major_version = 15
+
+# Edge functions are invoked by anonymous visitors (with the project's anon key),
+# so JWT verification is disabled; each function enforces its own checks.
+[functions.celestual-notify]
+verify_jwt = false
+
+[functions.celestual-checkout]
+verify_jwt = false
+
+[functions.celestual-search]
+verify_jwt = false

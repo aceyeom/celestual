@@ -1,4 +1,4 @@
-# build output (still-app → dist/, served at celestual.us/)
+# build output (app → dist/, served at celestual.us/)
 dist
 node_modules
 
