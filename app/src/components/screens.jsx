@@ -360,7 +360,11 @@ export function ThemScreen({ C, ctx }) {
           <em style={{ color: C.them }}>{t('them.title2')}</em>
         </h2>
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 11 }}>
-          <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('them.handle')} accent={C.them} autoFocus onEnter={onSeal} />
+          {/* data-sendoff-field: App measures this exact box at seal time so the @ →
+              star morph collapses from precisely where the field sits. */}
+          <div data-sendoff-field>
+            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('them.handle')} accent={C.them} autoFocus onEnter={onSeal} />
+          </div>
           {/* The note and the confirm prompt share this slot, crossfading in
               place — no bordered box popping over the layout. */}
           {confirming && valid ? (

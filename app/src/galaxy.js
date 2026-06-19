@@ -523,8 +523,10 @@ export class GalaxyField {
     this.lastTs = ts
     this.modeT += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
-    // ease the camera focus; release the index once we've drifted fully back out
-    this.focus += (this.focusTarget - this.focus) * Math.min(1, dt * 3.4)
+    // ease the camera focus; release the index once we've drifted fully back out.
+    // A slower coefficient makes the drift IN/OUT a longer, cinematic glide so the
+    // close-up resolves smoothly out of the star instead of snapping to it.
+    this.focus += (this.focusTarget - this.focus) * Math.min(1, dt * 2.5)
     if (this.focus < 0.002 && this.focusTarget === 0) {
       this.focus = 0
       this.focusIndex = -1
@@ -588,9 +590,9 @@ export class GalaxyField {
       const fp = this._sealedAt(this.sealed[this.focusIndex], rot)
       if (fp) {
         const f = this.focus
-        // Gentler than before (was 1.9): a calmer drift-in that doesn't blow the
-        // sparse field up so far it reads as empty magnified pixels.
-        const scale = 1 + f * 1.45
+        // A calm drift-in that magnifies the field toward the focused star without
+        // blowing the sparse field up into empty pixels.
+        const scale = 1 + f * 1.6
         const ctX = lerp(fp.sx, this.cx, f)
         const ctY = lerp(fp.sy, this.cy, f)
         this.focusScreen = { x: ctX, y: ctY, vis: true }
@@ -839,13 +841,16 @@ export class GalaxyField {
       const sh = clamp(pr.shade, 0.45, 1.2)
       const isFocus = focusing && i === this.focusIndex
       // The focused star is the one we're flying toward — but the close-up's hero
-      // is the crisp DOM star in the readout, so this canvas point HANDS OFF: it
-      // dims out as we arrive (no two competing stars, no cheap pulsing ring).
-      // Every other star simply recedes into the depth-blurred field.
-      const handoff = 1 - smooth(clamp(this.focus * 1.7, 0, 1))
+      // is the crisp DOM star in the readout, so this canvas point HANDS OFF. To
+      // make that a connected motion (not a cut): it stays lit and BLOOMS larger
+      // through the drift-in, then dissolves only once the camera has nearly
+      // arrived — so it visibly grows into the close-up star. Every other star
+      // simply recedes into the depth-blurred field.
+      const handoff = 1 - smooth(clamp((this.focus - 0.45) / 0.5, 0, 1))
       const fade = focusing ? (isFocus ? handoff : 1 - 0.82 * this.focus) : 1
+      const bloom = isFocus ? 1 + this.focus * 2.2 : 1
       const core = Math.max(1.1, 1.9 * pr.persp)
-      this._star(pr.sx, pr.sy, 'you', core * (focusing && isFocus ? handoff : 1), 12 * pr.persp * pulse, 0.5 * pulse * sh * fade)
+      this._star(pr.sx, pr.sy, 'you', core * (isFocus ? handoff * bloom : 1), 12 * pr.persp * pulse * bloom, 0.5 * pulse * sh * fade)
       // each resting star carries its own tag — record where it is on screen
       this.sealedScreen[i] = { x: pr.sx, y: pr.sy, vis: true }
     }
@@ -864,7 +869,11 @@ export class GalaxyField {
     const ox = this.origin ? this.origin.x * this.w : this.cx
     const oy = this.origin ? this.origin.y * this.h : this.h * 0.43
 
-    const COAL = 0.6,
+    // COAL holds the forming star at the origin long enough to align with the DOM
+    // morph overlay's collapse+ignite+glisten (~1.25s), so the galaxy star is
+    // already sitting under the overlay when it dissolves — a seamless handoff —
+    // and only THEN does it drift out with its trail.
+    const COAL = 1.0,
       DRIFT = 2.7
     const tt = this.modeT
 

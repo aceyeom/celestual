@@ -179,29 +179,42 @@ export function StarTags({ fieldRef, handles, color, show }) {
   ))
 }
 
-// The @ → star morph. The typed handle dissolves and a glowing star ignites in
-// its place, lifting toward the field — the galaxy's send-off drift then carries
-// it on from the same point. A full-screen, one-shot overlay owned by App so it
-// survives the screen change underneath it.
-export function Liftoff({ C, handle }) {
-  // All three layers share one grid cell (gridArea 1/1) so they stack centered
-  // on the handle regardless of its width; each layer's own transform animates
-  // on top of that centering.
+// The @ → star morph. The actual @ textbox (a ghost positioned exactly over the
+// real field, via `geom`) collapses horizontally into a point, where a star
+// ignites and glistens; it then dissolves as the galaxy's send-off drift — which
+// starts from this same point — carries it away with a trail. A full-screen,
+// one-shot overlay owned by App so it survives the screen change underneath it.
+export function Liftoff({ C, handle, geom }) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 402
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 700
+  const cx = geom?.cx ?? vw / 2
+  const cy = geom?.cy ?? vh * 0.43
+  const w = geom?.w ?? Math.min(360, vw - 48)
+  const h = geom?.h ?? 60
+  const spikeBg = (deg) => `linear-gradient(${deg}deg, transparent, ${rgba(C.you, 0.7)} 34%, #fff 50%, ${rgba(C.you, 0.7)} 66%, transparent)`
+  // each star layer is a 0×0 anchor at (cx,cy); children center on it with margins
+  const at0 = { position: 'absolute', left: 0, top: 0 }
   return (
-    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 8, pointerEvents: 'none', display: 'grid', placeItems: 'center' }}>
-      <div style={{ display: 'grid', placeItems: 'center', transform: 'translateY(-7vh)' }}>
-        <span
-          className="morph-halo"
-          style={{ gridArea: '1 / 1', width: 150, height: 150, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, transparent 62%)` }}
-        />
-        <span
-          className="morph-star"
-          style={{ gridArea: '1 / 1', placeSelf: 'center', width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(C.you, 0.85)}, 0 0 58px 20px ${rgba(C.you, 0.4)}` }}
-        />
-        <span className="morph-text" style={{ gridArea: '1 / 1', fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(20px, 6vw, 26px)', color: C.cream, whiteSpace: 'nowrap' }}>
-          <span style={{ color: C.you }}>@</span>
-          {handle}
+    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 8, pointerEvents: 'none' }}>
+      {/* the textbox ghost that collapses horizontally into a point */}
+      <div
+        className="lo-box"
+        style={{
+          position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: 16,
+          background: C.ink2, border: `1.5px solid ${rgba(C.you, 0.55)}`, boxShadow: `0 0 26px ${rgba(C.you, 0.18)}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        }}
+      >
+        <span className="lo-text" style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: Math.min(22, h * 0.36), color: C.cream, whiteSpace: 'nowrap' }}>
+          <span style={{ color: C.you }}>@</span>{handle}
         </span>
+      </div>
+      {/* the star igniting where the slit pinched shut */}
+      <div style={{ position: 'absolute', left: cx, top: cy, width: 0, height: 0 }}>
+        <span className="lo-halo" style={{ ...at0, width: 156, height: 156, marginLeft: -78, marginTop: -78, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, ${rgba(C.them, 0.12)} 45%, transparent 68%)` }} />
+        <span className="lo-spike" style={{ ...at0, width: 140, height: 2, marginLeft: -70, marginTop: -1, background: spikeBg(90) }} />
+        <span className="lo-spike" style={{ ...at0, width: 2, height: 140, marginLeft: -1, marginTop: -70, background: spikeBg(180) }} />
+        <span className="lo-core" style={{ ...at0, width: 16, height: 16, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(C.you, 0.85)}, 0 0 58px 20px ${rgba(C.you, 0.4)}` }} />
       </div>
     </div>
   )

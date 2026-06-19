@@ -50,30 +50,49 @@ button { font-family: inherit; }
 .intro-line { animation: introLine 1.1s cubic-bezier(.2,.7,.2,1) both; }
 
 /* ── @ → star morph (Liftoff) ────────────────────────────────────────────
-   The typed handle dissolves as a star ignites in its place and lifts toward
-   the field; the galaxy's send-off drift continues from the same point. */
-@keyframes morphText {
-  0%   { opacity: 1; filter: blur(0);   letter-spacing: .2px; transform: scale(1); }
-  40%  { opacity: 1; }
-  72%  { opacity: 0; filter: blur(7px); letter-spacing: 10px; transform: scale(.86); }
+   The actual @ textbox collapses HORIZONTALLY into a vertical slit, the slit
+   pinches to a point, and a star ignites there with a glisten (a flash of
+   crossed diffraction spikes + a blooming halo). The star then dissolves exactly
+   as the galaxy's send-off drift — which starts from this same point — carries it
+   away with a trail. All five layers share one ~1.25s timeline so they stay in
+   lockstep and the motion reads as one connected gesture. */
+@keyframes loBox {
+  0%        { transform: scaleX(1)    scaleY(1);    opacity: 1; }
+  34%       { transform: scaleX(0.05) scaleY(1);    opacity: 1; }    /* squeeze to a slit */
+  50%       { transform: scaleX(0.05) scaleY(0.18); opacity: .5; }   /* slit → point */
+  64%, 100% { transform: scaleX(0.02) scaleY(0.02); opacity: 0; }
+}
+@keyframes loText {
+  0%   { opacity: 1; filter: blur(0);   transform: scaleX(1);    letter-spacing: 0; }
+  26%  { opacity: .85; }
+  40%  { opacity: 0; filter: blur(4px); transform: scaleX(0.12); letter-spacing: -2px; }
   100% { opacity: 0; }
 }
-/* The star ignites where the @ sat — the canvas send-off drift continues from
-   that exact point, so the morph stays roughly in place and just hands off. */
-@keyframes morphStar {
-  0%   { opacity: 0; transform: translateY(0) scale(0.2); }
-  42%  { opacity: 1; transform: translateY(0) scale(1); }
-  62%  { opacity: 1; transform: translateY(-3px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-18px) scale(0.55); }
+@keyframes loCore {
+  0%, 30% { opacity: 0;  transform: scale(0.1); }
+  44%     { opacity: 1;  transform: scale(1.3); }   /* ignite */
+  54%     { opacity: 1;  transform: scale(0.9); }
+  72%     { opacity: 1;  transform: scale(1.05); }
+  86%     { opacity: .9; transform: scale(1); }
+  100%    { opacity: 0;  transform: scale(0.85); }  /* hand off to the galaxy drift */
 }
-@keyframes morphHalo {
-  0%   { opacity: 0;   transform: scale(0.4); }
-  45%  { opacity: .55; transform: scale(1); }
-  100% { opacity: 0;   transform: translateY(-16px) scale(1.7); }
+@keyframes loHalo {
+  0%, 30% { opacity: 0;  transform: scale(0.2); }
+  46%     { opacity: .7; transform: scale(1); }
+  100%    { opacity: 0;  transform: scale(2.3); }
 }
-.morph-text { animation: morphText 1.15s cubic-bezier(.4, 0, .2, 1) both; }
-.morph-star { animation: morphStar 1.2s  cubic-bezier(.3, .2, .2, 1) both; }
-.morph-halo { animation: morphHalo 1.2s  ease-out both; }
+@keyframes loSpike {
+  0%, 36% { opacity: 0;   transform: scale(0.2); }
+  48%     { opacity: 1;   transform: scale(1.15); }  /* the glisten */
+  60%     { opacity: .4;  transform: scale(0.92); }
+  78%     { opacity: .68; transform: scale(1.04); }  /* a softer second twinkle */
+  100%    { opacity: 0;   transform: scale(1.2); }
+}
+.lo-box   { transform-origin: center; animation: loBox 1.15s cubic-bezier(.7, 0, .2, 1) both; will-change: transform, opacity; }
+.lo-text  { animation: loText .7s cubic-bezier(.6, 0, .3, 1) both; }
+.lo-core  { transform-origin: center; animation: loCore 1.25s cubic-bezier(.3, .2, .2, 1) both; will-change: transform, opacity; }
+.lo-halo  { transform-origin: center; animation: loHalo 1.25s ease-out both; }
+.lo-spike { transform-origin: center; animation: loSpike 1.25s ease-in-out both; }
 
 /* ── star-chart readout (the focused-star close-up) ───────────────────────────
    A frameless reading that settles into place: the scrim deepens, the lines
@@ -98,10 +117,13 @@ button { font-family: inherit; }
   to   { opacity: 0; transform: translateY(6px) scale(.99); }
 }
 @keyframes scrimOut { from { opacity: 1; } to { opacity: 0; } }
-.scrim-in   { animation: scrimIn .55s ease both; }
-.scrim-out  { animation: scrimOut .22s ease both; }
-.readout-in { animation: readoutIn .62s cubic-bezier(.2,.7,.2,1) both; }
-.readout-out { animation: readoutOut .22s ease both; }
+/* The scrim deepens immediately (the field dims as the camera drifts in); the
+   readout itself waits a beat, so the close-up resolves AS the zoom arrives at
+   the star rather than popping in over a still-moving camera. */
+.scrim-in   { animation: scrimIn .7s ease both; }
+.scrim-out  { animation: scrimOut .26s ease both; }
+.readout-in { animation: readoutIn .66s cubic-bezier(.2,.7,.2,1) .3s both; }
+.readout-out { animation: readoutOut .26s ease both; }
 
 /* soft, slow drift for the "your sky is clear" empty-state mark */
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }

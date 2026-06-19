@@ -87,6 +87,10 @@ export default function App() {
   const [sealTimes, setSealTimes] = useState(init.sealTimes || [])
   const [error, setError] = useState('')
   const [morph, setMorph] = useState(null)
+  // Where the send-off starts: the actual @ textbox's center (measured at seal),
+  // so the morph overlay and the galaxy drift share one origin. Falls back to a
+  // sensible screen point if the field can't be measured.
+  const [sendoffOrigin, setSendoffOrigin] = useState(SENDOFF_ORIGIN)
   const [introMode, setIntroMode] = useState('idle') // galaxy mode while intro plays
   // Where the slideshow hands off when it ends: 'you' when launched from
   // "Find out" (straight into the flow), 'landing' when replayed from "how it works".
@@ -232,8 +236,25 @@ export default function App() {
     setSealCount((n) => n + 1)
     setHandles((h) => [...h, normHandle(them)])
     setSealTimes((s) => [...s, now])
-    setMorph({ handle: normHandle(them) })
-    setTimeout(() => setMorph(null), 1250)
+    // Measure the live @ field NOW (it's still mounted) so the morph collapses from
+    // exactly where the textbox is and the galaxy drift continues from that point.
+    let origin = SENDOFF_ORIGIN
+    let geom = null
+    try {
+      const el = document.querySelector('[data-sendoff-field]')
+      if (el) {
+        const r = el.getBoundingClientRect()
+        const cx = r.left + r.width / 2
+        const cy = r.top + r.height / 2
+        origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
+        geom = { cx, cy, w: r.width, h: r.height }
+      }
+    } catch {
+      /* ignore — fall back to the default origin */
+    }
+    setSendoffOrigin(origin)
+    setMorph({ handle: normHandle(them), geom })
+    setTimeout(() => setMorph(null), 1320)
     go('sendoff')
     const minSuspense = new Promise((r) => setTimeout(r, 3200))
     try {
@@ -381,7 +402,7 @@ export default function App() {
       <GalaxyCanvas
         mode={mode}
         dim={bg.dim}
-        origin={bg.origin}
+        origin={screen === 'sendoff' ? sendoffOrigin : bg.origin}
         seals={sealCount}
         you={C.you}
         them={C.them}
@@ -412,7 +433,7 @@ export default function App() {
         <StarDetail C={C} lang={lang} info={starInfo(focused)} onRemove={() => removeStar(focused)} onClose={closeStar} />
       )}
 
-      {morph && <Liftoff C={C} handle={morph.handle} />}
+      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}
     </div>
   )
 }
