@@ -80,6 +80,26 @@ function FieldLabel({ C, children, optional }) {
   )
 }
 
+// Account-sheet building blocks. Defined at MODULE level (not inside AccountSheet)
+// so they keep a stable component identity across re-renders — otherwise every
+// keystroke in the editable fields would remount the subtree and drop focus.
+function SheetSection({ C, title, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.muted }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+function SheetRow({ C, label, value, accent }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14 }}>
+      <span style={{ fontSize: 14, color: C.cream }}>{label}</span>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, color: accent || C.muted }}>{value}</span>
+    </div>
+  )
+}
+
 // The focal star for the close-up readout — THE single hero star of the zoomed
 // view (the canvas point hands off to this, so they never double up). A real
 // star, not a notification ping: a soft amber→rose aura, slim crossed diffraction
@@ -587,6 +607,143 @@ export function StarDetail({ C, info, lang, onRemove, onClose }) {
             {t('star.keep')}
           </GhostButton>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ACCOUNT (the personal area — opened from the profile chip) ─────────────────
+// A frameless overlay sheet, not a route, so it can sit over any screen. Edit your
+// details, see your sky, manage payments, sign out, or delete everything. All data
+// flows through App → api/profile.js (encrypted DB when signed in; local otherwise).
+export function AccountSheet({ C, ctx }) {
+  const { t } = useI18n()
+  const [confirmDel, setConfirmDel] = React.useState(false)
+  const [deleting, setDeleting] = React.useState(false)
+  const signedIn = !!ctx.verified
+  const close = () => ctx.closeAccount()
+  const onDelete = async () => {
+    if (!confirmDel) {
+      setConfirmDel(true)
+      return
+    }
+    setDeleting(true)
+    try {
+      await ctx.deleteAccount()
+    } finally {
+      setDeleting(false)
+    }
+  }
+  const skyLine = ctx.starCount === 0 ? t('account.skyEmpty') : ctx.starCount === 1 ? t('account.skyOne') : t('account.skyCount', { n: ctx.starCount })
+  return (
+    <div
+      onClick={close}
+      style={{ position: 'fixed', inset: 0, zIndex: 30, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
+    >
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.72), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="readout-in"
+        style={{ position: 'relative', width: '100%', maxWidth: 440, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: 22, boxShadow: '0 30px 80px rgba(0,0,0,.6)', padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}
+      >
+        {/* header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+          <span style={{ display: 'grid', placeItems: 'center', width: 46, height: 46, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, ${rgba(C.you, 0.95)}, ${rgba(C.them, 0.78)})`, flexShrink: 0 }}>
+            <Icon name="star" size={20} color="#1a0f0a" stroke={2} />
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: C.cream, lineHeight: 1.05 }}>{t('account.title')}</div>
+            <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: signedIn ? rgba(C.you, 0.95) : C.muted }}>
+              {signedIn && <Icon name="instagram" size={13} color={rgba(C.you, 0.95)} />}
+              {signedIn ? t('account.signedInIg') : t('account.localOnly')}
+            </div>
+          </div>
+          <button onClick={close} aria-label={t('account.close')} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
+            <Icon name="x" size={15} color="currentColor" />
+          </button>
+        </div>
+
+        {!signedIn && (
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted, background: rgba(C.you, 0.06), border: `1px solid ${rgba(C.you, 0.18)}`, borderRadius: 12, padding: '11px 13px' }}>
+            {t('account.notSignedIn')}
+          </div>
+        )}
+
+        {/* identity — editable user details */}
+        <SheetSection C={C} title={t('account.identity')}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <FieldLabel C={C}>{t('account.handleLabel')}</FieldLabel>
+            <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder="your.handle" accent={C.you} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.emailLabel')}</FieldLabel>
+            <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder="you@email.com" accent={C.you} />
+            <Hint C={C} icon="mail">{t('account.emailNote')}</Hint>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.nameLabel')}</FieldLabel>
+            <input
+              value={ctx.displayName}
+              onChange={(e) => ctx.setDisplayName(e.target.value)}
+              maxLength={40}
+              style={{ width: '100%', padding: '14px 16px', borderRadius: 13, background: C.ink2, border: `1.5px solid ${C.line}`, outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16 }}
+            />
+          </div>
+        </SheetSection>
+
+        {/* sky */}
+        <SheetSection C={C} title={t('account.skyTitle')}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: ctx.starCount ? C.cream : C.muted, fontFamily: "'Space Mono', monospace", fontSize: 13 }}>
+              {ctx.starCount > 0 && <Sonar C={C} color={C.you} size={12} />} {skyLine}
+            </span>
+            {ctx.starCount > 0 && (
+              <GhostButton C={C} onClick={() => { close(); ctx.go('resting') }} style={{ padding: 0, fontSize: 12.5, color: C.you }}>
+                {t('account.skyOpen')} →
+              </GhostButton>
+            )}
+          </div>
+          <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{signedIn ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
+        </SheetSection>
+
+        {/* payments */}
+        <SheetSection C={C} title={t('account.payTitle')}>
+          <SheetRow C={C} label={t('account.payFree')} value={t('account.payFreeValue')} accent={C.you} />
+          <SheetRow C={C} label={t('account.payPaid')} value={String(ctx.paidStars || 0)} />
+          <OutlineButton C={C} onClick={() => { close(); ctx.checkAnother() }} style={{ alignSelf: 'flex-start' }}>
+            <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('account.payAdd')} · {PRICE_LABEL}
+          </OutlineButton>
+        </SheetSection>
+
+        {/* danger zone */}
+        <SheetSection C={C} title={t('account.danger')}>
+          {signedIn && (
+            <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13.5, color: C.cream, alignSelf: 'flex-start' }}>
+              {t('account.signOut')}
+            </GhostButton>
+          )}
+          {!confirmDel ? (
+            <GhostButton C={C} onClick={onDelete} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: 0, fontSize: 13.5, color: C.them, alignSelf: 'flex-start' }}>
+              <Icon name="trash" size={15} color="currentColor" /> {t('account.delete')}
+            </GhostButton>
+          ) : (
+            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12, background: rgba(C.them, 0.07), border: `1px solid ${rgba(C.them, 0.28)}`, borderRadius: 13, padding: '14px 15px' }}>
+              <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{t('account.deleteConfirm')}</span>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  onClick={onDelete}
+                  disabled={deleting}
+                  style={{ flex: 1, minWidth: 150, padding: '12px 16px', borderRadius: 12, border: 'none', cursor: deleting ? 'default' : 'pointer', background: C.them, color: '#1a0f0a', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14 }}
+                >
+                  {deleting ? t('account.deleting') : t('account.deleteYes')}
+                </button>
+                <GhostButton C={C} onClick={() => setConfirmDel(false)} style={{ fontSize: 13.5 }}>
+                  {t('account.cancel')}
+                </GhostButton>
+              </div>
+            </div>
+          )}
+        </SheetSection>
       </div>
     </div>
   )

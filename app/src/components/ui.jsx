@@ -519,6 +519,36 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
   )
 }
 
+// The signed-in chip: a small amber→rose star avatar + the user's @handle, tucked
+// in a screen corner. Tap to open the account area. Shows who you're signed in as
+// (or just "account" before a handle is set).
+export function ProfileButton({ C, handle, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Account"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 13px 0 7px',
+        borderRadius: 999, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
+        color: C.cream, cursor: 'pointer', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.2px', maxWidth: 220,
+      }}
+    >
+      <span style={{ display: 'grid', placeItems: 'center', width: 23, height: 23, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, ${rgba(C.you, 0.95)}, ${rgba(C.them, 0.78)})`, flexShrink: 0 }}>
+        <Icon name="star" size={12} color="#1a0f0a" stroke={2} />
+      </span>
+      {handle ? (
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ color: C.you }}>@</span>
+          {handle}
+        </span>
+      ) : (
+        <span style={{ color: C.muted }}>account</span>
+      )}
+    </button>
+  )
+}
+
 // Instagram-style @ search. It's a normal validated handle field (manual entry
 // always works) with a live typeahead dropdown layered on top. Results come from
 // the pluggable searchHandles() adapter — empty until a server-side provider is
