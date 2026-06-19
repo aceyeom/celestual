@@ -64,17 +64,23 @@ async function getOrCreateKey(uid) {
   // First time on this account: mint a key, store it (owner-only row) + cache it.
   const key = await generateKey()
   const raw = await exportKey(key)
+  let stored = raw
   try {
-    await supabase.from('celestual_user_keys').upsert({ user_id: uid, wrapped_key: raw }, { onConflict: 'user_id' })
+    // Don't clobber an existing key — a concurrent first-login on another tab/device
+    // could have written one, and overwriting it would make the already-stored sky
+    // undecryptable. Insert-if-absent, then adopt whatever actually persisted.
+    await supabase.from('celestual_user_keys').upsert({ user_id: uid, wrapped_key: raw }, { onConflict: 'user_id', ignoreDuplicates: true })
+    const { data } = await supabase.from('celestual_user_keys').select('wrapped_key').eq('user_id', uid).maybeSingle()
+    if (data?.wrapped_key) stored = data.wrapped_key
   } catch {
-    /* ignore — we still hold the key locally this session */
+    /* ignore — we still hold the freshly-minted key locally this session */
   }
   try {
-    localStorage.setItem(keyCacheName(uid), raw)
+    localStorage.setItem(keyCacheName(uid), stored)
   } catch {
     /* ignore */
   }
-  return key
+  return stored === raw ? key : await importKey(stored)
 }
 
 function readLocalSky() {

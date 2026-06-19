@@ -164,6 +164,9 @@ export default function App() {
   useEffect(() => {
     if (!persistReady.current) return
     const id = setTimeout(() => {
+      // Re-check at fire time: a sign-out/delete between scheduling and firing flips
+      // this off, and we must not write over an account that's being torn down.
+      if (!persistReady.current) return
       saveProfile({ me, email, displayName, handles, times: sealTimes, sealCount }).catch(() => {})
     }, 600)
     return () => clearTimeout(id)
