@@ -82,6 +82,10 @@ export default function App() {
   const [displayName, setDisplayName] = useState(init.displayName || session?.name || '')
   const [accountOpen, setAccountOpen] = useState(false)
   const [paidStars, setPaidStars] = useState(0)
+  // True only when the sky is actually backed by the encrypted database (a real
+  // signed-in Supabase session), so the account UI never claims "saved to your
+  // account" when it's really just on this device (e.g. the dev sign-in stub).
+  const [synced, setSynced] = useState(false)
   // Becomes true once the initial profile/sky load has run, so the debounced saver
   // never writes the empty initial state over a stored sky before it's restored.
   const persistReady = useRef(false)
@@ -142,6 +146,7 @@ export default function App() {
           if (p.email) setEmail((e) => e || p.email)
           if (p.displayName) setDisplayName((n) => n || p.displayName)
           setPaidStars(Math.max(Number(p.paidStars) || 0, getUnlocked()))
+          setSynced(p.source === 'db')
         }
       })
       .catch(() => {})
@@ -198,6 +203,7 @@ export default function App() {
     if (p.email) setEmail((e) => e || p.email)
     if (p.displayName) setDisplayName((n) => n || p.displayName)
     if (typeof p.paidStars === 'number') setPaidStars((ps) => Math.max(ps, p.paidStars))
+    if (p.source === 'db') setSynced(true)
   }, [])
 
   // When a real sign-in completes (e.g. the seal-time Instagram popup), pull the
@@ -477,6 +483,7 @@ export default function App() {
     setOver18(false)
     setError('')
     setPaidStars(0)
+    setSynced(false)
   }, [])
 
   // "Forget on this device": sign out (so the synced sky stops following this
@@ -527,7 +534,7 @@ export default function App() {
   }, [them])
 
   const ctx = {
-    email, me, them, displayName, sealedAt, over18, error, demo, verified, sealCount, paidStars,
+    email, me, them, displayName, sealedAt, over18, error, demo, verified, synced, sealCount, paidStars,
     setEmail, setMe, setThem, setDisplayName, go, seal, checkAnother, startCheckout,
     forget, affirmAge, suppressHandle, openConversation,
     enterDemo, findOut, watchIntro, finishIntro, onIntroStep,

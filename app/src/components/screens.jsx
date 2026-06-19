@@ -620,6 +620,10 @@ export function AccountSheet({ C, ctx }) {
   const { t } = useI18n()
   const [confirmDel, setConfirmDel] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
+  // `synced` = really backed by the encrypted DB; `verified` = identity confirmed
+  // (may be the dev stub). Messaging keys off synced so it's never misleading; the
+  // sign-out control keys off verified so a stub session can still be cleared.
+  const synced = !!ctx.synced
   const signedIn = !!ctx.verified
   const close = () => ctx.closeAccount()
   const onDelete = async () => {
@@ -653,9 +657,9 @@ export function AccountSheet({ C, ctx }) {
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: C.cream, lineHeight: 1.05 }}>{t('account.title')}</div>
-            <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: signedIn ? rgba(C.you, 0.95) : C.muted }}>
-              {signedIn && <Icon name="instagram" size={13} color={rgba(C.you, 0.95)} />}
-              {signedIn ? t('account.signedInIg') : t('account.localOnly')}
+            <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: synced ? rgba(C.you, 0.95) : C.muted }}>
+              {synced && <Icon name="instagram" size={13} color={rgba(C.you, 0.95)} />}
+              {synced ? t('account.signedInIg') : t('account.localOnly')}
             </div>
           </div>
           <button onClick={close} aria-label={t('account.close')} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
@@ -663,7 +667,7 @@ export function AccountSheet({ C, ctx }) {
           </button>
         </div>
 
-        {!signedIn && (
+        {!synced && (
           <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted, background: rgba(C.you, 0.06), border: `1px solid ${rgba(C.you, 0.18)}`, borderRadius: 12, padding: '11px 13px' }}>
             {t('account.notSignedIn')}
           </div>
@@ -703,7 +707,7 @@ export function AccountSheet({ C, ctx }) {
               </GhostButton>
             )}
           </div>
-          <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{signedIn ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
+          <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{synced ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
         </SheetSection>
 
         {/* payments */}
