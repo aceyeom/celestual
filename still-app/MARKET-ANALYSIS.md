@@ -115,7 +115,7 @@ A mutual match needs a **specific pair**: A on the app names B, *and* B independ
 
 ## 5. Korea-first — **the right instinct, with a specific playbook**
 
-Given the `dolbomi.app` lineage, a Korea-first launch is well-supported:
+Given the Korea-rooted lineage, a Korea-first launch is well-supported:
 
 - **Kakao is the distribution rail.** KakaoTalk ≈ **48.9M MAU, ~94–97% population reach**; the Kakao Share SDK is *the* viral/install primitive in Korea. Any consumer app launching here essentially **must** integrate Kakao share. [SeDaily](https://en.sedaily.com/technology/2025/12/30/kakaotalk-tops-as-most-used-app-by-koreans-in-2024) — **high**.
 - **The viral genre is the personality/relationship test.** The "에겐·테토 (Egen/Teto)" hormone-personality test hit **714,250 participants** by May 2025 as the "post-MBTI" trend, explicitly framed around romantic tendencies — the closest analog to CELESTE's loop. Korean shareables win on **a share-worthy phrase + image** (the result-card aesthetics matter as much as the mechanic). [Daum](https://v.daum.net/v/20250523163004140) — **high/medium**.

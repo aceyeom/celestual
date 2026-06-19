@@ -721,7 +721,7 @@ export function PrivacyScreen({ C, ctx }) {
         <H>{t('privacy.h4')}</H>
         <P>
           {t('privacy.p4a')}{' '}
-          <a href="mailto:privacy@dolbomi.app" style={{ color: C.you }}>privacy@dolbomi.app</a>.
+          <a href="mailto:privacy@celestual.us" style={{ color: C.you }}>privacy@celestual.us</a>.
         </P>
 
         <H>{t('privacy.h5')}</H>
@@ -747,7 +747,7 @@ export function PrivacyScreen({ C, ctx }) {
         </div>
 
         <p style={{ margin: '22px 0 0', fontSize: 11, lineHeight: 1.55, color: C.muted }}>
-          {t('privacy.foot')} <a href="mailto:privacy@dolbomi.app" style={{ color: C.muted }}>privacy@dolbomi.app</a>.
+          {t('privacy.foot')} <a href="mailto:privacy@celestual.us" style={{ color: C.muted }}>privacy@celestual.us</a>.
         </p>
       </div>
     </WarmShell>

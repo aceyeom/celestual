@@ -1,41 +1,32 @@
-# STILL. — Go-Live Guide
+# CELESTUAL — Go-Live Guide
 
-Putting **STILL.** live at **https://dolbomi.app/** while keeping the archived
-DOLBOMI app reachable at **https://dolbomi.app/dolbomi** — on the existing stack
-(same Vercel project, same Supabase project). Nothing in the live DOLBOMI
-database is dropped or modified; STILL. only **adds** the `still_*` objects.
+Putting **CELESTUAL** live at **https://celestual.us/** on Supabase + Vercel.
 
 | Layer | Service | Notes |
 | --- | --- | --- |
-| Frontend | **Vercel** | one build → STILL. at `/`, dolbomi at `/dolbomi` |
-| Database | **Supabase** (same project) | run migration `0006_still.sql` |
+| Frontend | **Vercel** | one build → CELESTUAL at `/` |
+| Database | **Supabase** | run the `migrations/` (the `still_*` objects) |
 | Match email | **Supabase Edge Function** → **Resend** | `still-notify` |
-| Domain | **Spaceship → Vercel** | unchanged — already points at dolbomi.app |
+| Domain | **Vercel** | points at celestual.us |
 
 ---
 
-## 1. Supabase — add the STILL. schema (additive)
+## 1. Supabase — apply the schema
 
-SQL Editor → New query → paste and **Run**:
-
-```
-supabase/migrations/0006_still.sql
-```
-
-This creates `still_entries`, `still_matches`, `still_notifications`, the
-`still_submit` RPC, and `still_norm`. It is idempotent and touches no existing
-table. (No seed needed.)
-
-Then run the safety hardening (rate limiting + anti-exfiltration), and the
-deferred-reveal + erasure + email dead-letter migration — both idempotent and
-`CREATE OR REPLACE` `still_submit`:
+SQL Editor → New query → paste and **Run**, in order:
 
 ```
-supabase/migrations/0007_still_safety.sql
-supabase/migrations/0008_still_deferred_reveal.sql
+supabase/migrations/0001_still.sql
+supabase/migrations/0002_still_safety.sql
+supabase/migrations/0003_still_deferred_reveal.sql
 ```
 
-Sanity check it works (note: after 0008 the RPC NEVER reveals a match — it
+`0001` creates `still_entries`, `still_matches`, `still_notifications`, the
+`still_submit` RPC, and `still_norm`. `0002` adds rate limiting +
+anti-exfiltration. `0003` adds deferred reveal, erasure, and email dead-letter.
+All are idempotent (`if not exists` / `create or replace`).
+
+Sanity check it works (note: after `0003` the RPC NEVER reveals a match — it
 returns only `{"recorded": true}`; the mutual "yes" is delivered solely by the
 email queued to the earlier entrant):
 
@@ -57,13 +48,13 @@ delete from still_suppressions where handle in ('me','you');
 
 ## 2. Supabase — match-notification emails (Resend)
 
-1. Create a [Resend](https://resend.com) account; verify a sender on `dolbomi.app`
+1. Create a [Resend](https://resend.com) account; verify a sender on `celestual.us`
    (or use `onboarding@resend.dev` for testing). Copy your **API key**.
 2. Set the function secrets — Supabase → **Edge Functions → Secrets**:
    - `RESEND_API_KEY` = your key
-   - `STILL_FROM_EMAIL` = `CELESTE <hello@dolbomi.app>` (a verified sender — the
-     brand users see is **CELESTE**; the `STILL_*` var name is internal only)
-   - `STILL_SITE_URL` = `https://dolbomi.app`
+   - `STILL_FROM_EMAIL` = `CELESTUAL <hello@celestual.us>` (a verified sender — the
+     `STILL_*` var name is the internal codename only)
+   - `STILL_SITE_URL` = `https://celestual.us`
    (`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.)
 3. Deploy the function:
    ```bash
@@ -80,31 +71,22 @@ delete from still_suppressions where handle in ('me','you');
 > `still_notifications` until the function runs. You can invoke it manually any
 > time to flush the queue.
 
-## 3. Vercel — point the project at the repo root
+For the Instagram sign-in and paywall (the `still-checkout` / `still-search`
+functions), see [SETUP-AUTH-AND-PAYMENTS.md](./SETUP-AUTH-AND-PAYMENTS.md).
 
-The build now lives at the **repo root** (it builds both apps), not in
-`dolbomi-app/`. In the existing Vercel project → **Settings → General**:
+## 3. Vercel
 
-- **Root Directory:** clear it / set to repo root (was `dolbomi-app`).
+Import the repo into Vercel → **Settings → General**:
+
+- **Root Directory:** repo root.
 - **Build Command / Output:** taken from `vercel.json` automatically
   (`npm run build` → `dist`). Leave the framework preset on **Other**.
-- **Environment Variables:** ensure `VITE_SUPABASE_URL` and
-  `VITE_SUPABASE_ANON_KEY` are still set (STILL. uses the same two).
+- **Environment Variables:** set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+  (see [`still-app/.env.example`](./still-app/.env.example)).
 
-Redeploy. Verify:
-- `https://dolbomi.app/` → STILL.
-- `https://dolbomi.app/dolbomi` → the archived DOLBOMI app (still fully working
-  against its existing tables).
+Redeploy. Verify `https://celestual.us/` serves CELESTUAL.
 
 ## 4. Done
 
-DNS is unchanged — Spaceship already points `dolbomi.app` at Vercel. The first
-redeploy after the Root Directory change flips the homepage to STILL.
-
----
-
-### Rollback
-
-To bring DOLBOMI back to the homepage: set Vercel **Root Directory** back to
-`archive/dolbomi-app` and redeploy. The `still_*` tables can stay — they're
-inert without the STILL. frontend.
+Point `celestual.us` at Vercel (Vercel → **Settings → Domains**, then add the
+DNS records your registrar requires). The deploy serves CELESTUAL at the root.

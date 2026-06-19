@@ -1,4 +1,4 @@
-// CELESTE — still-notify edge function.
+// CELESTUAL — still-notify edge function.
 //
 // Drains the `still_notifications` queue and sends each pending row as an email
 // via Resend, then stamps `sent_at`. It is *idempotent by queue*: it only ever
@@ -11,13 +11,13 @@
 // so a permanently-bad address isn't retried forever. Dead-letters are surfaced
 // in the response payload for alerting.
 //
-// NOTE on naming: the user-facing brand is CELESTE. The Supabase objects and
+// NOTE on naming: the user-facing brand is CELESTUAL. The Supabase objects and
 // this function keep their original `still_*` names for continuity with the live
-// database — only the brand/UI/email is CELESTE (see still-app/README.md).
+// database — only the brand/UI/email is CELESTUAL (see still-app/README.md).
 //
 // Required secrets (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY    — your Resend API key
-//   STILL_FROM_EMAIL  — verified sender, e.g. "CELESTE <hello@dolbomi.app>"
+//   STILL_FROM_EMAIL  — verified sender, e.g. "CELESTUAL <hello@celestual.us>"
 // Provided automatically by the platform:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -25,8 +25,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = Deno.env.get('STILL_FROM_EMAIL') ?? 'CELESTE <onboarding@resend.dev>';
-const SITE = Deno.env.get('STILL_SITE_URL') ?? 'https://dolbomi.app';
+const FROM = Deno.env.get('STILL_FROM_EMAIL') ?? 'CELESTUAL <onboarding@resend.dev>';
+const SITE = Deno.env.get('STILL_SITE_URL') ?? 'https://celestual.us';
 
 const MAX_ATTEMPTS = 5;
 // Backoff per attempt index (minutes): ~1m, 5m, 30m, 2h before dead-letter.
@@ -40,7 +40,7 @@ const supabase = createClient(
 function emailHtml(self: string, other: string) {
   return `
   <div style="background:#0b0708;padding:40px 24px;font-family:Georgia,serif;color:#f5e9ec;text-align:center">
-    <div style="font-size:16px;letter-spacing:6px;color:#f2a7b6;font-family:'Space Grotesk',Arial,sans-serif">CELESTE</div>
+    <div style="font-size:16px;letter-spacing:6px;color:#f2a7b6;font-family:'Space Grotesk',Arial,sans-serif">CELESTUAL</div>
     <p style="font-style:italic;color:#b79aa3;margin:28px 0 6px;font-size:15px">it&rsquo;s mutual.</p>
     <h1 style="font-weight:400;font-size:30px;line-height:1.2;margin:0">
       @${other}<br/>still thinks <em style="color:#f2a7b6">about you.</em>
@@ -49,9 +49,9 @@ function emailHtml(self: string, other: string) {
       You entered them. They entered you back. You both know now — no pressure to do anything with it.
     </p>
     <a href="${SITE}" style="display:inline-block;background:#e8546f;color:#fff;text-decoration:none;
-       padding:13px 26px;border-radius:12px;font-family:Inter,Arial,sans-serif;font-size:15px">open CELESTE</a>
+       padding:13px 26px;border-radius:12px;font-family:Inter,Arial,sans-serif;font-size:15px">open CELESTUAL</a>
     <p style="color:#6f5860;font-size:11px;margin-top:32px;font-family:Inter,Arial,sans-serif">
-      You got this because you entered an @ on CELESTE and it was mutual. We never reveal one-sided entries.
+      You got this because you entered an @ on CELESTUAL and it was mutual. We never reveal one-sided entries.
       To remove or block a handle, visit ${SITE} → privacy &amp; terms.
     </p>
   </div>`;

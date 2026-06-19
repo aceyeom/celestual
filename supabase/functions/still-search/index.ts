@@ -1,4 +1,4 @@
-// CELESTE — still-search edge function (Instagram @ typeahead).
+// CELESTUAL — still-search edge function (Instagram @ typeahead).
 //
 // The client cannot hold a scraper key and must never call a scraping API
 // directly (key exposure + CORS + IP bans). This function is the server-side

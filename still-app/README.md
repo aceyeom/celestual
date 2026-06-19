@@ -1,17 +1,16 @@
-# CELESTE — does your ex still think about you?
+# CELESTUAL — does your ex still think about you?
 
 A viral web app ("galaxy edition"). You enter your Instagram @ and your ex's @.
 You only ever find out it's mutual if **they** independently enter **you** back —
 so it's anonymous, zero-rejection, and a little addictive. One-sided entries are
 never revealed to anyone.
 
-Live at **https://dolbomi.app/** (the previous DOLBOMI app is archived at
-[`/dolbomi`](https://dolbomi.app/dolbomi)). The UI is fully responsive: full-bleed
+Live at **https://celestual.us/**. The UI is fully responsive: full-bleed
 on a phone, and the same intimate column centered over the 3D starfield on the web.
 
-> **Name:** the product is **CELESTE**. The Supabase objects, this `still-app/`
-> folder, and the `still-notify` function keep their original `still_*` names for
-> continuity with the live database — only the brand/UI is renamed.
+> **Name:** the product is **CELESTUAL**. The Supabase objects, this `still-app/`
+> folder, and the `still-notify` function keep their `still_*` codenames for
+> continuity with the database — only the brand/UI is CELESTUAL.
 
 ## What's new (galaxy edition v2)
 
@@ -29,7 +28,7 @@ on a phone, and the same intimate column centered over the 3D starfield on the w
 - **Interactive resting field.** Tap any star → the camera drifts in and zooms;
   a detail card shows its state (still waiting), the registry date, and a remove
   action; close to zoom back out (`galaxy.js` `focusStar`/`hitTest`).
-- **`/demo`.** `dolbomi.app/demo` (and `…/demo`) runs with **zero verification
+- **`/demo`.** `celestual.us/demo` (and `…/demo`) runs with **zero verification
   and zero paywall** — everything unlocked and free.
 - **Meta auth up front** (scaffold, [`src/api/auth.js`](./src/api/auth.js)),
   **paywall** — first star free, pay to add more via Stripe / KakaoPay / TossPay
@@ -65,10 +64,10 @@ handles you entered or whether anything matched (memo §4.3). Those live in memo
 
 ## Stack
 
-Same toolchain and **same Supabase project** as DOLBOMI — CELESTE only adds the
-`still_*` tables/RPC (`supabase/migrations/0006_still.sql`, hardened in
-`0007_still_safety.sql`) and one edge function (`supabase/functions/still-notify`).
-No existing table is touched.
+Vite + React on Supabase. The `still_*` tables/RPC live in
+`supabase/migrations/0001_still.sql` (hardened in `0002_still_safety.sql` and
+`0003_still_deferred_reveal.sql`) plus edge functions under
+`supabase/functions/` (`still-notify`, `still-checkout`, `still-search`).
 
 | Layer | Service |
 | --- | --- |
@@ -92,7 +91,7 @@ No existing table is touched.
 
 ## Safety
 
-`0007_still_safety.sql` and `0008_still_deferred_reveal.sql` implement the
+`0002_still_safety.sql` and `0003_still_deferred_reveal.sql` implement the
 launch-blocking mitigations from the memo that don't need handle-ownership
 verification:
 
@@ -134,11 +133,11 @@ the mutual reveal; anything else shows the resting/pending state.
 
 ## Build
 
-The repo-root build (`../package.json`) produces both apps into `../dist`:
+The repo-root build (`../package.json`) produces the app into `../dist`:
 
 ```bash
 cd ..
-npm run build        # CELESTE → dist/ , dolbomi → dist/dolbomi/
+npm run build        # CELESTUAL → dist/
 ```
 
-See [../DEPLOYMENT-STILL.md](../DEPLOYMENT-STILL.md) for the go-live steps.
+See [../DEPLOYMENT.md](../DEPLOYMENT.md) for the go-live steps.
