@@ -1,77 +1,50 @@
-# dolbomi.app
+# CELESTUAL
 
-This repo now hosts **two** sites on the one domain:
-
-| Path | Site | Folder | Status |
-| --- | --- | --- | --- |
-| **`/`** | **STILL.** — "does your ex still think about you?" | [`still-app/`](./still-app) | **live** |
-| **`/dolbomi`** | **DOLBOMI** — 군인 자기개발 앱 (archived, still works) | [`archive/dolbomi-app/`](./archive/dolbomi-app) | paused |
-
-Both are Vite + React SPAs talking directly to **the same Supabase project**
-(no app server). A single repo-root build outputs both:
-
-```bash
-npm run build        # STILL → dist/ , dolbomi → dist/dolbomi/
-```
-
-`vercel.json` serves `dist/` at the root and rewrites `/dolbomi/*` to the
-archived app. STILL. only **adds** the `still_*` tables — none of DOLBOMI's
-database is dropped or modified.
-
----
-
-## STILL. (the live site)
+**CELESTUAL** — "does your ex still think about you?" — is an anonymous,
+reciprocal matching site. Live at **https://celestual.us/**.
 
 You enter your Instagram @ and your ex's @. You only find out it's mutual if
 **they** independently enter **you** — anonymous, zero-rejection. One-sided
 entries are never revealed.
 
-- **Code & local dev:** [`still-app/README.md`](./still-app/README.md)
-- **Go live:** [`DEPLOYMENT-STILL.md`](./DEPLOYMENT-STILL.md)
-- **Backend:** `supabase/migrations/0006_still.sql` (RPC + RLS) and
-  `supabase/functions/still-notify/` (match emails via Resend)
+It's a Vite + React SPA talking directly to **Supabase** (no app server).
 
 ```bash
 cd still-app && npm install && npm run dev   # demo mode: enter @demo to see a match
 ```
 
+```bash
+npm run build        # CELESTUAL → dist/
+```
+
+`vercel.json` serves `dist/` at the root.
+
 ---
 
-## DOLBOMI (archived)
+## Get started
 
-A gamified self-development app for Korean military service members — six stats,
-a real opportunity catalog, a vacation ladder, a benefits hub, and a 3D guardian
-creature that evolves with XP. Fully functional; just no longer the homepage.
-
-- **Code:** [`archive/dolbomi-app/`](./archive/dolbomi-app)
-- **Original go-live guide:** [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-  (note: the Vercel **Root Directory** is now the repo root, not `dolbomi-app/` —
-  see [`DEPLOYMENT-STILL.md`](./DEPLOYMENT-STILL.md))
-- **Docs:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md),
-  [`docs/LOGIC-GAPS.md`](./docs/LOGIC-GAPS.md),
-  [`docs/WORKFLOW-LOGIC.md`](./docs/WORKFLOW-LOGIC.md)
-
-```bash
-cd archive/dolbomi-app && npm install && npm run dev
-```
+- **Code & local dev:** [`still-app/README.md`](./still-app/README.md)
+- **Go live:** [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+- **Auth & payments setup:** [`SETUP-AUTH-AND-PAYMENTS.md`](./SETUP-AUTH-AND-PAYMENTS.md)
+- **Backend:** `supabase/migrations/` (RPC + RLS) and
+  `supabase/functions/still-notify/` (match emails via Resend)
 
 ---
 
 ## Repository layout
 
 ```
-still-app/            STILL. — the live Vite + React SPA (served at /)
-archive/
-  dolbomi-app/        DOLBOMI SPA — archived (served at /dolbomi)
-  project/            DOLBOMI design-tool mockups (reference only)
-  scripts/            DOLBOMI seed generator
+still-app/            CELESTUAL — the Vite + React SPA (served at /)
 supabase/
-  migrations/         0001–0005 = DOLBOMI · 0006_still = STILL. (additive)
-  functions/          still-notify edge function (match emails)
-  seed.sql            DOLBOMI reference content (generated)
-docs/                 DOLBOMI engineering docs
-package.json          repo-root build (both apps → dist/)
-vercel.json           routing: / → STILL., /dolbomi → DOLBOMI
-DEPLOYMENT-STILL.md   STILL. go-live
-DEPLOYMENT.md         DOLBOMI go-live (original)
+  migrations/         schema, RPCs, RLS (still_* objects)
+  functions/          still-checkout (paywall), still-notify (match emails),
+                      still-search (Instagram @ typeahead)
+package.json          repo-root build (still-app → dist/)
+vercel.json           SPA routing
+DEPLOYMENT.md         go-live guide
+SETUP-AUTH-AND-PAYMENTS.md   Instagram sign-in + payments setup
 ```
+
+> Note: the database objects use a `still_*` prefix and the edge functions are
+> named `still-*` — that's the project's internal codename, retained so the
+> live schema and deployed functions stay stable. The product/brand is CELESTUAL.

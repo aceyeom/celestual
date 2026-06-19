@@ -492,7 +492,7 @@ promise.
 ### 6.6 Internationalization / share channel
 - **Hypothesis.** Korea-first ⇒ Kakao share + Korean copy outperform native share + English
   (MARKET-ANALYSIS § Korea).
-- **Verdict.** Cheap to test, plausibly high ROI given the `dolbomi.app` lineage. Validate the
+- **Verdict.** Cheap to test, plausibly high ROI given the Korea-rooted lineage. Validate the
   launch market first; it also changes the payment rail (§2.2) and the legal regime (§2.5).
 
 ---

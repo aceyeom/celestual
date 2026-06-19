@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║ STILL/CELESTE · 0008 — deferred reveal + erasure + harder limits.   ║
+-- ║ CELESTUAL · 0003 — deferred reveal + erasure + harder limits.       ║
 -- ║ ADDITIVE & idempotent. Touches only still_* objects.                ║
 -- ╚══════════════════════════════════════════════════════════════════╝
 -- Implements the launch-blocking safety/privacy fixes from PRODUCT-ANALYSIS.md

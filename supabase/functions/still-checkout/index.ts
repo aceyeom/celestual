@@ -1,4 +1,4 @@
-// CELESTE — still-checkout edge function (the paywall).
+// CELESTUAL — still-checkout edge function (the paywall).
 //
 // The product rule: the FIRST star is free for everyone, forever. Every star
 // after that is a one-off payment. The /demo route never reaches this function
@@ -73,7 +73,7 @@ async function kakaoCheckout(returnUrl: string) {
       cid,
       partner_order_id: crypto.randomUUID(),
       partner_user_id: 'celeste',
-      item_name: 'CELESTE — one more star',
+      item_name: 'CELESTUAL — one more star',
       quantity: 1,
       total_amount: PRICE_KRW,
       tax_free_amount: 0,
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
   let provider = 'stripe'
-  let returnUrl = 'https://dolbomi.app'
+  let returnUrl = 'https://celestual.us'
   try {
     const body = await req.json()
     provider = body.provider ?? provider

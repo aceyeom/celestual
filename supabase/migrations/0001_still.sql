@@ -1,9 +1,7 @@
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║ STILL · 0006 — anonymous reciprocal "does your ex still think       ║
--- ║ about you?" matching. ADDITIVE: creates only new `still_*` objects. ║
+-- ║ CELESTUAL · 0001 — anonymous reciprocal "does your ex still think    ║
+-- ║ about you?" matching. Creates the `still_*` objects.                ║
 -- ╚══════════════════════════════════════════════════════════════════╝
--- Lives in the SAME Supabase project as DOLBOMI and touches NONE of the
--- existing tables. Safe to run on the live database.
 --
 -- The whole product: a person records a one-way "I still think about @them".
 -- They learn whether it's mutual — and ONLY whether THEIR pair is mutual. The

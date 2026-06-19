@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║ STILL · 0007 — safety: rate limiting + anti-exfiltration on the      ║
+-- ║ CELESTUAL · 0002 — safety: rate limiting + anti-exfiltration on the  ║
 -- ║ mutual-match email. ADDITIVE & idempotent. Touches only still_*.     ║
 -- ╚══════════════════════════════════════════════════════════════════╝
 -- Closes the two cheapest attack surfaces from PRODUCT-ANALYSIS.md §2.1/§3

@@ -3,8 +3,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/dolbomi", "destination": "/dolbomi/index.html" },
-    { "source": "/dolbomi/(.*)", "destination": "/dolbomi/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

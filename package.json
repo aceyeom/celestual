@@ -1,13 +1,10 @@
 {
-  "name": "dolbomi-app-monorepo",
+  "name": "celestual",
   "private": true,
   "version": "1.0.0",
-  "description": "STILL. (live at dolbomi.app/) + archived DOLBOMI (at dolbomi.app/dolbomi), one Vercel build.",
+  "description": "CELESTUAL — anonymous reciprocal \"does your ex still think about you?\" matching. A Vite + React SPA on Supabase.",
   "scripts": {
     "dev": "npm --prefix still-app run dev",
-    "dev:dolbomi": "npm --prefix archive/dolbomi-app run dev",
-    "build:still": "npm --prefix still-app install && npm --prefix still-app run build",
-    "build:dolbomi": "npm --prefix archive/dolbomi-app install && npm --prefix archive/dolbomi-app run build -- --base=/dolbomi/ --outDir ../../dist/dolbomi --emptyOutDir",
-    "build": "npm run build:still && npm run build:dolbomi"
+    "build": "npm --prefix still-app install && npm --prefix still-app run build"
   }
 }

@@ -67,11 +67,11 @@ in-progress entry is never lost. Budget ~20 minutes.
 
 ### 1.4 Add the app's own redirect URLs (incl. the popup callback)
 In Supabase → **Authentication → URL Configuration**:
-- **Site URL:** `https://dolbomi.app`
+- **Site URL:** `https://celestual.us`
 - **Redirect URLs:** add **all** of these (the popup hands the session back to the
   app at `…?auth=cb`, which must be allow-listed):
   ```
-  https://dolbomi.app/**
+  https://celestual.us/**
   https://*.vercel.app/**        ← preview builds
   http://localhost:5173/**       ← local dev (vite default)
   ```
@@ -207,7 +207,7 @@ entry + validation carries the flow. To enable later:
 | `VITE_PAY_ENABLED` | extra stars granted **locally** | real Stripe/Kakao/Toss checkout |
 | `VITE_HANDLE_SEARCH` | manual @ entry only | live search suggestions |
 
-The `/demo` route (e.g. `https://dolbomi.app/demo`) always bypasses **both**
+The `/demo` route (e.g. `https://celestual.us/demo`) always bypasses **both**
 sign-in and the paywall — handy for showing the full flow to anyone.
 
 ---
