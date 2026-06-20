@@ -1,12 +1,14 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle } from './api/celestual.js'
 import { getSession, signInWithMeta, resumeSession } from './api/auth.js'
-import { canSealIndex, grantUnlocked, startCheckout as payStart } from './api/pay.js'
+import { canSealIndex, grantUnlocked, getUnlocked, startCheckout as payStart } from './api/pay.js'
+import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi } from './api/profile.js'
+import { supabase } from './api/supabase.js'
 import { makeColors, PALETTE } from './theme.js'
-import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher } from './components/ui.jsx'
+import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
 import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
-  RestingScreen, MatchScreen, PricingScreen, CheckoutScreen, PrivacyScreen, StarDetail,
+  RestingScreen, MatchScreen, PricingScreen, CheckoutScreen, PrivacyScreen, StarDetail, AccountSheet,
 } from './components/screens.jsx'
 import { useI18n } from './i18n/index.js'
 
@@ -74,8 +76,19 @@ export default function App() {
   const firstScreen = () => (init.screen === 'sendoff' ? 'resting' : init.screen || 'landing')
 
   const [screen, setScreen] = useState(firstScreen)
+  const screenRef = useRef(screen)
   const [email, setEmail] = useState(init.email || session?.email || '')
   const [me, setMe] = useState(init.me || session?.handle || '')
+  const [displayName, setDisplayName] = useState(init.displayName || session?.name || '')
+  const [accountOpen, setAccountOpen] = useState(false)
+  const [paidStars, setPaidStars] = useState(0)
+  // True only when the sky is actually backed by the encrypted database (a real
+  // signed-in Supabase session), so the account UI never claims "saved to your
+  // account" when it's really just on this device (e.g. the dev sign-in stub).
+  const [synced, setSynced] = useState(false)
+  // Becomes true once the initial profile/sky load has run, so the debounced saver
+  // never writes the empty initial state over a stored sky before it's restored.
+  const persistReady = useRef(false)
   // SECRETS (who you pined for) — never persisted (§4.3); memory only.
   const [them, setThem] = useState('')
   const [sealedAt, setSealedAt] = useState(init.sealedAt || null)
@@ -87,6 +100,10 @@ export default function App() {
   const [sealTimes, setSealTimes] = useState(init.sealTimes || [])
   const [error, setError] = useState('')
   const [morph, setMorph] = useState(null)
+  // Where the send-off starts: the actual @ textbox's center (measured at seal),
+  // so the morph overlay and the galaxy drift share one origin. Falls back to a
+  // sensible screen point if the field can't be measured.
+  const [sendoffOrigin, setSendoffOrigin] = useState(SENDOFF_ORIGIN)
   const [introMode, setIntroMode] = useState('idle') // galaxy mode while intro plays
   // Where the slideshow hands off when it ends: 'you' when launched from
   // "Find out" (straight into the flow), 'landing' when replayed from "how it works".
@@ -95,13 +112,113 @@ export default function App() {
   const galaxyRef = useRef(null)
 
   useEffect(() => {
-    // Persist only non-secret resume state — never the crush graph (§4.3).
+    screenRef.current = screen
+  }, [screen])
+
+  useEffect(() => {
+    // Fast local resume state for first paint. The sky (the @handles, which used to
+    // be memory-only) now persists separately and encrypted via api/profile.js.
     try {
-      localStorage.setItem(STORE, JSON.stringify({ screen, email, me, sealedAt, over18, sealCount, sealTimes }))
+      localStorage.setItem(STORE, JSON.stringify({ screen, email, me, displayName, sealedAt, over18, sealCount, sealTimes }))
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [screen, email, me, sealedAt, over18, sealCount, sealTimes])
+  }, [screen, email, me, displayName, sealedAt, over18, sealCount, sealTimes])
+
+  // Load the saved account + sky once on mount. When signed in this decrypts the
+  // sky from the database; otherwise it restores from this device. A returning
+  // visitor who has a sky lands on it.
+  useEffect(() => {
+    let live = true
+    loadProfile()
+      .then((p) => {
+        if (!live) return
+        // Reconcile the sky as one unit so the count, the dates and the @handles can
+        // never drift apart (a legacy resume could leave a count with no handles).
+        const sky = p && p.sky
+        const h = sky && Array.isArray(sky.handles) ? sky.handles.map(normHandle).filter(Boolean) : []
+        setHandles(h)
+        setSealTimes(h.length ? (sky.times && sky.times.length === h.length ? sky.times : h.map(() => Date.now())) : [])
+        setSealCount(h.length)
+        if (h.length && screenRef.current === 'landing') go('resting')
+        if (p) {
+          if (p.handle) setMe((m) => m || p.handle)
+          if (p.email) setEmail((e) => e || p.email)
+          if (p.displayName) setDisplayName((n) => n || p.displayName)
+          setPaidStars(Math.max(Number(p.paidStars) || 0, getUnlocked()))
+          setSynced(p.source === 'db')
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (live) persistReady.current = true
+      })
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist the account + sky whenever they change (debounced). Gated on the
+  // initial load so it can't clobber a stored sky with the empty boot state.
+  useEffect(() => {
+    if (!persistReady.current) return
+    const id = setTimeout(() => {
+      // Re-check at fire time: a sign-out/delete between scheduling and firing flips
+      // this off, and we must not write over an account that's being torn down.
+      if (!persistReady.current) return
+      saveProfile({ me, email, displayName, handles, times: sealTimes, sealCount }).catch(() => {})
+    }, 600)
+    return () => clearTimeout(id)
+  }, [me, email, displayName, handles, sealTimes, sealCount])
+
+  // Latest sky in refs, so the merge below can read it without stale closures.
+  const handlesRef = useRef(handles)
+  const timesRef = useRef(sealTimes)
+  useEffect(() => {
+    handlesRef.current = handles
+  }, [handles])
+  useEffect(() => {
+    timesRef.current = sealTimes
+  }, [sealTimes])
+
+  // Union an incoming (server) sky with what's on screen — keyed by normalised
+  // handle, server entries first. This is what makes signing in mid-flow ADOPT an
+  // existing cross-device sky instead of overwriting it with the local one.
+  const mergeSky = useCallback((p) => {
+    if (!p) return
+    const map = new Map()
+    const dbH = (p.sky && p.sky.handles) || []
+    const dbT = (p.sky && p.sky.times) || []
+    dbH.forEach((h, i) => {
+      const k = normHandle(h)
+      if (k) map.set(k, { h: k, t: dbT[i] || Date.now() })
+    })
+    handlesRef.current.forEach((h, i) => {
+      const k = normHandle(h)
+      if (k && !map.has(k)) map.set(k, { h: k, t: timesRef.current[i] || Date.now() })
+    })
+    const arr = [...map.values()]
+    setHandles(arr.map((x) => x.h))
+    setSealTimes(arr.map((x) => x.t))
+    setSealCount(arr.length)
+    if (p.handle) setMe((m) => m || p.handle)
+    if (p.email) setEmail((e) => e || p.email)
+    if (p.displayName) setDisplayName((n) => n || p.displayName)
+    if (typeof p.paidStars === 'number') setPaidStars((ps) => Math.max(ps, p.paidStars))
+    if (p.source === 'db') setSynced(true)
+  }, [])
+
+  // When a real sign-in completes (e.g. the seal-time Instagram popup), pull the
+  // server profile and merge it in — so an account's sky follows it across devices.
+  useEffect(() => {
+    if (!supabase) return
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== 'SIGNED_IN') return
+      loadProfile().then(mergeSky).catch(() => {})
+    })
+    return () => sub?.subscription?.unsubscribe?.()
+  }, [mergeSky])
 
   // Capture a returning OAuth session on load (the popup-blocked redirect
   // fallback path) — adopt it so the app resumes signed in. No navigation: people
@@ -232,8 +349,25 @@ export default function App() {
     setSealCount((n) => n + 1)
     setHandles((h) => [...h, normHandle(them)])
     setSealTimes((s) => [...s, now])
-    setMorph({ handle: normHandle(them) })
-    setTimeout(() => setMorph(null), 1250)
+    // Measure the live @ field NOW (it's still mounted) so the morph collapses from
+    // exactly where the textbox is and the galaxy drift continues from that point.
+    let origin = SENDOFF_ORIGIN
+    let geom = null
+    try {
+      const el = document.querySelector('[data-sendoff-field]')
+      if (el) {
+        const r = el.getBoundingClientRect()
+        const cx = r.left + r.width / 2
+        const cy = r.top + r.height / 2
+        origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
+        geom = { cx, cy, w: r.width, h: r.height }
+      }
+    } catch {
+      /* ignore — fall back to the default origin */
+    }
+    setSendoffOrigin(origin)
+    setMorph({ handle: normHandle(them), geom })
+    setTimeout(() => setMorph(null), 1320)
     go('sendoff')
     const minSuspense = new Promise((r) => setTimeout(r, 3200))
     try {
@@ -332,14 +466,18 @@ export default function App() {
     [handles, sealTimes],
   )
 
-  const forget = useCallback(() => {
+  // Reset local state to a clean slate (shared by "forget on this device" and
+  // account deletion). Does NOT touch the database — callers decide that.
+  const wipeLocalState = useCallback(() => {
     try {
       localStorage.removeItem(STORE)
+      localStorage.removeItem('celestual:sky')
     } catch {
       /* ignore */
     }
     setEmail('')
     setMe('')
+    setDisplayName('')
     setThem('')
     setSealedAt(null)
     setSealCount(0)
@@ -347,8 +485,50 @@ export default function App() {
     setSealTimes([])
     setOver18(false)
     setError('')
+    setPaidStars(0)
+    setSynced(false)
+  }, [])
+
+  // "Forget on this device": sign out (so the synced sky stops following this
+  // device) and clear local state. The account + encrypted sky stay safe in the
+  // database and return on next sign-in.
+  const forget = useCallback(async () => {
+    persistReady.current = false // suppress the saver while we tear down
+    await signOutUser()
+    setSession(null)
+    wipeLocalState()
+    setAccountOpen(false)
     go('landing')
-  }, [go])
+    setTimeout(() => (persistReady.current = true), 800)
+  }, [go, wipeLocalState])
+
+  const openAccount = useCallback(() => setAccountOpen(true), [])
+  const closeAccount = useCallback(() => setAccountOpen(false), [])
+
+  const signOut = useCallback(async () => {
+    persistReady.current = false
+    await signOutUser()
+    setSession(null)
+    wipeLocalState()
+    setAccountOpen(false)
+    go('landing')
+    setTimeout(() => (persistReady.current = true), 800)
+  }, [go, wipeLocalState])
+
+  // Delete the whole account: erase the database rows + auth user, then wipe local.
+  const deleteAccount = useCallback(async () => {
+    persistReady.current = false
+    try {
+      await deleteAccountApi()
+    } catch {
+      /* ignore — clear locally regardless */
+    }
+    setSession(null)
+    wipeLocalState()
+    setAccountOpen(false)
+    go('landing')
+    setTimeout(() => (persistReady.current = true), 1000)
+  }, [go, wipeLocalState])
 
   const affirmAge = useCallback(() => setOver18(true), [])
   const openConversation = useCallback(() => {
@@ -357,11 +537,12 @@ export default function App() {
   }, [them])
 
   const ctx = {
-    email, me, them, sealedAt, over18, error, demo, verified, sealCount,
-    setEmail, setMe, setThem, go, seal, checkAnother, startCheckout,
+    email, me, them, displayName, sealedAt, over18, error, demo, verified, synced, sealCount, paidStars,
+    setEmail, setMe, setThem, setDisplayName, go, seal, checkAnother, startCheckout,
     forget, affirmAge, suppressHandle, openConversation,
     enterDemo, findOut, watchIntro, finishIntro, onIntroStep,
     onStarTap, closeStar, removeStar,
+    openAccount, closeAccount, signOut, deleteAccount,
     starCount: handles.length,
     zoomed: focused != null,
   }
@@ -375,13 +556,16 @@ export default function App() {
   // Chrome: language switcher on the calm/entry screens; hidden during the
   // cinematic beats so nothing competes with the moment.
   const showSwitcher = !['intro', 'sendoff', 'match', 'checkout'].includes(screen)
+  // The profile chip sits top-left, only where there's no back button to collide
+  // with: the resting sky (always) and the landing once a handle is known.
+  const showProfile = screen === 'resting' || (screen === 'landing' && !!me)
 
   return (
     <div className="celestual-app">
       <GalaxyCanvas
         mode={mode}
         dim={bg.dim}
-        origin={bg.origin}
+        origin={screen === 'sendoff' ? sendoffOrigin : bg.origin}
         seals={sealCount}
         you={C.you}
         them={C.them}
@@ -403,6 +587,12 @@ export default function App() {
         </div>
       )}
 
+      {showProfile && (
+        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
+          <ProfileButton C={C} handle={me} onClick={openAccount} />
+        </div>
+      )}
+
       <div key={screen} className="fade" data-screen={screen} style={{ position: 'relative', zIndex: 4 }}>
         <Screen C={C} ctx={ctx} lang={lang} />
       </div>
@@ -412,7 +602,9 @@ export default function App() {
         <StarDetail C={C} lang={lang} info={starInfo(focused)} onRemove={() => removeStar(focused)} onClose={closeStar} />
       )}
 
-      {morph && <Liftoff C={C} handle={morph.handle} />}
+      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}
+
+      {accountOpen && <AccountSheet C={C} ctx={ctx} lang={lang} />}
     </div>
   )
 }

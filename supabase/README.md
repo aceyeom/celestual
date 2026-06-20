@@ -10,18 +10,23 @@ status object. See [../docs/SECURITY.md](../docs/SECURITY.md).
 
 ## Apply the schema
 
-One idempotent migration holds the complete, hardened schema:
-`migrations/0001_celestual.sql`.
+Two idempotent migrations, applied in order:
 
-**SQL Editor:** paste its contents and Run.
+- `migrations/0001_celestual.sql` — the anonymous matching core (entries, matches,
+  notifications, rate limiting, suppressions, and the `SECURITY DEFINER` RPCs).
+- `migrations/0002_user_accounts.sql` — the signed-in-user layer: per-user
+  profiles, the **encrypted sky**, the owner-only encryption keys, entitlements,
+  and self-serve account deletion. Owner-scoped by RLS on `auth.uid()`.
+
+**SQL Editor:** paste each file's contents and Run (0001 first, then 0002).
 
 **CLI:**
 ```bash
 supabase link --project-ref <ref>
-supabase db push
+supabase db push   # applies every migration in order
 ```
 
-Re-running is safe (`if not exists` / `create or replace`).
+Re-running is safe (`if not exists` / `create or replace` / `drop policy if exists`).
 
 ## Edge functions
 
@@ -49,3 +54,20 @@ See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
 - **RPCs:** `celestual_submit` (record an entry, deferred reveal),
   `celestual_withdraw` (un-send an entry), `celestual_suppress` (self-service
   erasure / block), `celestual_norm` (handle normalisation).
+
+### Accounts layer (0002 — owner-scoped via RLS)
+
+- **`celestual_profiles`** — one row per `auth.users` id: account fields (handle,
+  email, display name) plus the **encrypted sky** (`sky_cipher` / `sky_nonce`), an
+  opaque AES-GCM blob the client encrypts before it ever leaves the browser.
+- **`celestual_user_keys`** — the per-user AES key, readable ONLY by its owner, so
+  the sky blob in `celestual_profiles` is useless without that user's live session.
+- **`celestual_entitlements`** — paid-star count; the client reads it, only the
+  service role (the payment webhook) writes it.
+- **RPC:** `celestual_delete_me` — wipes the caller's own rows + auth user.
+
+> The sky is stored encrypted so a leak of `celestual_profiles` alone — or any
+> other user — can't read who you entered. The decryption key lives in a separate
+> owner-only table. This is at-rest / least-privilege protection, not
+> zero-knowledge (an operator with both tables + service role could still join
+> them). See `app/src/api/vault.js` and `app/src/api/profile.js`.

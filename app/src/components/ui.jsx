@@ -8,8 +8,6 @@ import { searchHandles, normHandle } from '../api/celestual.js'
 
 export { makeColors, rgba }
 
-const clampN = (v, a, b) => (v < a ? a : v > b ? b : v)
-
 // Calm gradient backdrop for the entry screens (no canvas). It shares the deep
 // cosmic-violet base with the galaxy and only lets the two star accents glow
 // faintly through, so moving between the galaxy and these screens never swings
@@ -91,17 +89,21 @@ export function StarTags({ fieldRef, handles, color, show }) {
   React.useEffect(() => {
     widths.current = [] // handles changed → indices shifted, re-measure
     let raf
+    const TH = 20 // tag height (for overlap tests)
     const tick = () => {
       const f = fieldRef.current
       const arr = (f && f.sealedScreen) || []
       const vw = window.innerWidth, vh = window.innerHeight
+      // Tags placed so far THIS frame, so later ones can yield instead of piling.
+      const placed = []
       for (let i = 0; i < refs.current.length; i++) {
         const el = refs.current[i]
         if (!el) continue
         const ps = arr[i]
-        const on = show && !!handles[i] && ps && ps.vis
-        el.style.opacity = on ? '1' : '0'
-        if (!on) continue
+        if (!(show && !!handles[i] && ps && ps.vis)) {
+          el.style.opacity = '0'
+          continue
+        }
         // Tag width is fixed for a given handle, so measure once and cache rather
         // than forcing a layout read every animation frame.
         let w = widths.current[i]
@@ -110,15 +112,30 @@ export function StarTags({ fieldRef, handles, color, show }) {
           if (w) widths.current[i] = w
         }
         w = w || 84
-        // Anchor up-and-right of the star, but FLIP to the other side near an edge
-        // so the tag always hugs its own star instead of piling onto the viewport
-        // wall (where neighbouring tags would overlap and look mismatched).
+        // Anchor up-and-right of the star, flipping sides / below when it'd spill.
         let x = ps.x + 12
         if (x + w > vw - 8) x = ps.x - 12 - w
-        x = clampN(x, 8, Math.max(8, vw - w - 8))
         let y = ps.y - 24
         if (y < 8) y = ps.y + 16
-        y = clampN(y, 8, vh - 28)
+        // The old code CLAMPED every tag into the viewport, which jammed a busy
+        // sky's tags into a solid wall along the edges (the "goes very wrong" on
+        // mobile). Instead: if the star sits off-screen, or the tag can't fit in
+        // bounds, or it would collide with a tag already shown this frame, just
+        // hide this one (it fades out gently). The star's @ is still reachable by
+        // tapping it. Stable index order means the same tag always wins a contest,
+        // so there's no frame-to-frame flicker.
+        const starOff = ps.x < 6 || ps.x > vw - 6 || ps.y < 6 || ps.y > vh - 6
+        const outOfBounds = x < 6 || x + w > vw - 6 || y < 6 || y + TH > vh - 6
+        const rect = { x, y, w, h: TH }
+        const hit = placed.some(
+          (p) => !(rect.x + rect.w + 8 < p.x || rect.x > p.x + p.w + 8 || rect.y + rect.h + 6 < p.y || rect.y > p.y + p.h + 6),
+        )
+        if (starOff || outOfBounds || hit) {
+          el.style.opacity = '0'
+          continue
+        }
+        placed.push(rect)
+        el.style.opacity = '1'
         el.style.transform = `translate(${x}px, ${y}px)`
       }
       raf = requestAnimationFrame(tick)
@@ -162,39 +179,58 @@ export function StarTags({ fieldRef, handles, color, show }) {
   ))
 }
 
-// The @ → star morph. The typed handle dissolves and a glowing star ignites in
-// its place, lifting toward the field — the galaxy's send-off drift then carries
-// it on from the same point. A full-screen, one-shot overlay owned by App so it
-// survives the screen change underneath it.
-export function Liftoff({ C, handle }) {
-  // All three layers share one grid cell (gridArea 1/1) so they stack centered
-  // on the handle regardless of its width; each layer's own transform animates
-  // on top of that centering.
+// The @ → star morph. The actual @ textbox (a ghost positioned exactly over the
+// real field, via `geom`) collapses horizontally into a point, where a star
+// ignites and glistens; it then dissolves as the galaxy's send-off drift — which
+// starts from this same point — carries it away with a trail. A full-screen,
+// one-shot overlay owned by App so it survives the screen change underneath it.
+export function Liftoff({ C, handle, geom }) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 402
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 700
+  const cx = geom?.cx ?? vw / 2
+  const cy = geom?.cy ?? vh * 0.43
+  const w = geom?.w ?? Math.min(360, vw - 48)
+  const h = geom?.h ?? 60
+  const spikeBg = (deg) => `linear-gradient(${deg}deg, transparent, ${rgba(C.you, 0.7)} 34%, #fff 50%, ${rgba(C.you, 0.7)} 66%, transparent)`
+  // each star layer is a 0×0 anchor at (cx,cy); children center on it with margins
+  const at0 = { position: 'absolute', left: 0, top: 0 }
   return (
-    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 8, pointerEvents: 'none', display: 'grid', placeItems: 'center' }}>
-      <div style={{ display: 'grid', placeItems: 'center', transform: 'translateY(-7vh)' }}>
-        <span
-          className="morph-halo"
-          style={{ gridArea: '1 / 1', width: 150, height: 150, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, transparent 62%)` }}
-        />
-        <span
-          className="morph-star"
-          style={{ gridArea: '1 / 1', placeSelf: 'center', width: 16, height: 16, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(C.you, 0.85)}, 0 0 58px 20px ${rgba(C.you, 0.4)}` }}
-        />
-        <span className="morph-text" style={{ gridArea: '1 / 1', fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(20px, 6vw, 26px)', color: C.cream, whiteSpace: 'nowrap' }}>
-          <span style={{ color: C.you }}>@</span>
-          {handle}
+    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 8, pointerEvents: 'none' }}>
+      {/* the textbox ghost that collapses horizontally into a point */}
+      <div
+        className="lo-box"
+        style={{
+          position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: 16,
+          background: C.ink2, border: `1.5px solid ${rgba(C.you, 0.55)}`, boxShadow: `0 0 26px ${rgba(C.you, 0.18)}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        }}
+      >
+        <span className="lo-text" style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: Math.min(22, h * 0.36), color: C.cream, whiteSpace: 'nowrap' }}>
+          <span style={{ color: C.you }}>@</span>{handle}
         </span>
+      </div>
+      {/* the star igniting where the slit pinched shut */}
+      <div style={{ position: 'absolute', left: cx, top: cy, width: 0, height: 0 }}>
+        <span className="lo-halo" style={{ ...at0, width: 156, height: 156, marginLeft: -78, marginTop: -78, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, ${rgba(C.them, 0.12)} 45%, transparent 68%)` }} />
+        <span className="lo-spike" style={{ ...at0, width: 140, height: 2, marginLeft: -70, marginTop: -1, background: spikeBg(90) }} />
+        <span className="lo-spike" style={{ ...at0, width: 2, height: 140, marginLeft: -1, marginTop: -70, background: spikeBg(180) }} />
+        <span className="lo-core" style={{ ...at0, width: 16, height: 16, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(C.you, 0.85)}, 0 0 58px 20px ${rgba(C.you, 0.4)}` }} />
       </div>
     </div>
   )
 }
 
+// The wordmark — "Celestual" set in the same serif as the headlines, title-case
+// (not the old shouty all-caps), with a small amber glisten so the brand reads as
+// one of its own stars. `size` keeps its old call sites; the serif reads a touch
+// larger, so it's mapped up from the previous cap-height.
 export function Brandmark({ C, size = 14 }) {
+  const fs = size + 6
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: size, letterSpacing: '5px', color: C.cream }}>CELESTUAL</span>
-    </div>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: C.cream, userSelect: 'none' }}>
+      <span aria-hidden style={{ color: C.you, fontSize: fs * 0.56, lineHeight: 1, transform: 'translateY(-1px)' }}>✦</span>
+      <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: fs, letterSpacing: '.5px', lineHeight: 1 }}>Celestual</span>
+    </span>
   )
 }
 
@@ -480,6 +516,36 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
         </div>
       )}
     </div>
+  )
+}
+
+// The signed-in chip: a small amber→rose star avatar + the user's @handle, tucked
+// in a screen corner. Tap to open the account area. Shows who you're signed in as
+// (or just "account" before a handle is set).
+export function ProfileButton({ C, handle, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Account"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 13px 0 7px',
+        borderRadius: 999, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
+        color: C.cream, cursor: 'pointer', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.2px', maxWidth: 220,
+      }}
+    >
+      <span style={{ display: 'grid', placeItems: 'center', width: 23, height: 23, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, ${rgba(C.you, 0.95)}, ${rgba(C.them, 0.78)})`, flexShrink: 0 }}>
+        <Icon name="star" size={12} color="#1a0f0a" stroke={2} />
+      </span>
+      {handle ? (
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ color: C.you }}>@</span>
+          {handle}
+        </span>
+      ) : (
+        <span style={{ color: C.muted }}>account</span>
+      )}
+    </button>
   )
 }
 
