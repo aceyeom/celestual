@@ -158,15 +158,12 @@ export function IntroScreen({ C, ctx }) {
   // Advance one beat — past the final beat the slideshow hands off into the flow.
   // Used by both the gentle auto-play timer and a tap anywhere on the field, so
   // tapping skips ahead through the slides (there is no separate "skip" control).
+  // finishIntro() must be called OUTSIDE a setState updater (it sets App state);
+  // calling it inside one triggers React's "update while rendering" warning.
   const advance = React.useCallback(() => {
-    setI((n) => {
-      if (n >= last) {
-        ctx.finishIntro()
-        return n
-      }
-      return n + 1
-    })
-  }, [ctx, last])
+    if (i >= last) ctx.finishIntro()
+    else setI(i + 1)
+  }, [i, last, ctx])
   React.useEffect(() => {
     const id = setTimeout(advance, i === 0 ? 3200 : 3800)
     return () => clearTimeout(id)

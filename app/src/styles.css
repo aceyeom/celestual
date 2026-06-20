@@ -25,6 +25,22 @@ body {
    gradient) and centers a max-width content column inside it. */
 .celestual-app { position: relative; width: 100%; }
 
+/* ── custom cursor — a four-point glisten, on-brand on every screen ──────────
+   A white sparkle with a soft amber edge (the same star as the favicon/brand),
+   centred on its hotspot. `cursor` inherits, so setting it on the root carries it
+   across the whole app; text fields keep their caret, and touch devices (no hover)
+   simply never show it. */
+:root {
+  --star-cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij48cGF0aCBkPSJNMTQgMSBRMTUuMyAxMi43IDI3IDE0IFExNS4zIDE1LjMgMTQgMjcgUTEyLjcgMTUuMyAxIDE0IFExMi43IDEyLjcgMTQgMSBaIiBmaWxsPSIjRkY5RTZCIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTE0IDMuNCBRMTUgMTMgMjQuNiAxNCBRMTUgMTUgMTQgMjQuNiBRMTMgMTUgMy40IDE0IFExMyAxMyAxNCAzLjQgWiIgZmlsbD0iI0ZGRkZGRiIvPjwvc3ZnPg==") 14 14;
+}
+html, body, .celestual-app { cursor: var(--star-cursor), auto; }
+a, button, [role="button"], label, summary { cursor: var(--star-cursor), pointer; }
+input, textarea, select { cursor: text; }
+
+@media (hover: none) {
+  html, body, .celestual-app, a, button, [role="button"], label, summary { cursor: auto; }
+}
+
 input { font-family: inherit; }
 button { font-family: inherit; }
 
