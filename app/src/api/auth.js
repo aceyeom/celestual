@@ -3,8 +3,8 @@
 // Product decision (revised): the flow no longer opens on a sign-in wall. People
 // watch the intro, set up THEIR side (handle + optional email), choose who they
 // can't stop thinking about, and only confirm it's really them — with Instagram —
-// at the moment of sealing. The /demo route bypasses sign-in (and the paywall)
-// entirely.
+// at the moment of sealing. The /demo route is fully sandboxed — it bypasses
+// sign-in and never writes to the real backend.
 //
 // Why sign-in happens at SEAL time, via a POPUP, not a full-page redirect: the ex
 // handle is held in memory only and is never persisted (privacy model §4.3). A
@@ -13,7 +13,7 @@
 // and the entry, survive. If the popup is blocked we fall back to a redirect.
 //
 // Real wiring uses Supabase's Facebook OAuth provider (same Supabase project the
-// app already talks to). To go live see SETUP-AUTH-AND-PAYMENTS.md. Until then
+// app already talks to). To go live see SETUP-AUTH.md. Until then
 // `metaConfigured()` is false and we resolve a local verified stub so the flow is
 // fully testable in dev/preview without a configured provider.
 import { supabase, hasSupabase } from './supabase.js'

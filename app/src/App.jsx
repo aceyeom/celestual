@@ -1,14 +1,17 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle } from './api/celestual.js'
+import {
+  submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle,
+  checkMutuals, linkHandles, fetchSlots, requestReminder, FULL_SLOTS,
+} from './api/celestual.js'
 import { getSession, signInWithMeta, resumeSession } from './api/auth.js'
-import { canSealIndex, grantUnlocked, getUnlocked, startCheckout as payStart } from './api/pay.js'
 import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi } from './api/profile.js'
+import { slotsRemaining } from './api/slots.js'
 import { supabase } from './api/supabase.js'
 import { makeColors, PALETTE } from './theme.js'
 import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
 import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
-  RestingScreen, MatchScreen, PricingScreen, CheckoutScreen, PrivacyScreen, StarDetail, AccountSheet,
+  RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet,
 } from './components/screens.jsx'
 import { useI18n } from './i18n/index.js'
 
@@ -21,11 +24,10 @@ const SCREENS = {
   them: ThemScreen,
   sendoff: SendoffScreen,
   resting: RestingScreen,
-  // `match` is not reached from the live flow (deferred reveal, §2.3) — kept for
-  // a future verified reveal link, and used as the intro's collision backdrop.
+  // `match` is now reached live: with instant reveal, completing a mutual pair at
+  // seal routes here. It's also the intro's collision backdrop.
   match: MatchScreen,
-  pricing: PricingScreen,
-  checkout: CheckoutScreen,
+  outofslots: OutOfSlotsScreen,
   privacy: PrivacyScreen,
 }
 
@@ -42,15 +44,14 @@ const BG = {
   sendoff: { warm: false, mode: 'sendoff', origin: SENDOFF_ORIGIN },
   resting: { warm: false, mode: 'resting' },
   match: { warm: false, mode: 'match' },
-  pricing: { warm: true, variant: 'quiet', mode: 'idle' },
-  checkout: { warm: true, variant: 'quiet', mode: 'idle' },
+  outofslots: { warm: true, variant: 'quiet', mode: 'idle' },
   privacy: { warm: true, variant: 'quiet', mode: 'idle' },
 }
 
 const STORE = 'celestual:v1'
 const INTRO_SEEN = 'celestual:introSeen'
 
-// /demo (at any base path) = zero verification, zero paywall.
+// /demo (at any base path) = zero verification, sandboxed (never writes real data).
 const isDemoPath = () => /(^|\/)demo\/?$/.test(window.location.pathname)
 
 export default function App() {
@@ -80,8 +81,13 @@ export default function App() {
   const [email, setEmail] = useState(init.email || session?.email || '')
   const [me, setMe] = useState(init.me || session?.handle || '')
   const [displayName, setDisplayName] = useState(init.displayName || session?.name || '')
+  // The user's OTHER Instagram @s (multi-account). The full identity set is
+  // [me, ...altHandles]; being entered on ANY of them counts as them (§ identity).
+  const [altHandles, setAltHandles] = useState(init.altHandles || [])
   const [accountOpen, setAccountOpen] = useState(false)
-  const [paidStars, setPaidStars] = useState(0)
+  // The entry-slot budget snapshot (server-authoritative; this drives the meter +
+  // gates the entry button). Demo runs on a roomy local budget.
+  const [slots, setSlots] = useState(FULL_SLOTS)
   // True only when the sky is actually backed by the encrypted database (a real
   // signed-in Supabase session), so the account UI never claims "saved to your
   // account" when it's really just on this device (e.g. the dev sign-in stub).
@@ -93,11 +99,13 @@ export default function App() {
   const [them, setThem] = useState('')
   const [sealedAt, setSealedAt] = useState(init.sealedAt || null)
   const [over18, setOver18] = useState(!!init.over18)
-  const [sealCount, setSealCount] = useState(init.sealCount || 0)
   const [handles, setHandles] = useState([]) // memory-only, aligned by index
   // Registry dates are NOT identifying, so they persist — the interactive field
   // can show "sealed · <date>" even after a reload (handles stay memory-only).
   const [sealTimes, setSealTimes] = useState(init.sealTimes || [])
+  // Normalized @s among `handles` that are now mutual (instant reveal at seal +
+  // a group-aware re-check on load). Drives the in-app constellations view.
+  const [matches, setMatches] = useState([])
   const [error, setError] = useState('')
   const [morph, setMorph] = useState(null)
   // Where the send-off starts: the actual @ textbox's center (measured at seal),
@@ -119,11 +127,11 @@ export default function App() {
     // Fast local resume state for first paint. The sky (the @handles, which used to
     // be memory-only) now persists separately and encrypted via api/profile.js.
     try {
-      localStorage.setItem(STORE, JSON.stringify({ screen, email, me, displayName, sealedAt, over18, sealCount, sealTimes }))
+      localStorage.setItem(STORE, JSON.stringify({ screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes }))
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [screen, email, me, displayName, sealedAt, over18, sealCount, sealTimes])
+  }, [screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes])
 
   // Load the saved account + sky once on mount. When signed in this decrypts the
   // sky from the database; otherwise it restores from this device. A returning
@@ -139,13 +147,16 @@ export default function App() {
         const h = sky && Array.isArray(sky.handles) ? sky.handles.map(normHandle).filter(Boolean) : []
         setHandles(h)
         setSealTimes(h.length ? (sky.times && sky.times.length === h.length ? sky.times : h.map(() => Date.now())) : [])
-        setSealCount(h.length)
         if (h.length && screenRef.current === 'landing') go('resting')
         if (p) {
-          if (p.handle) setMe((m) => m || p.handle)
+          const primary = p.handle ? normHandle(p.handle) : ''
+          if (primary) setMe((m) => m || primary)
+          if (Array.isArray(p.myHandles) && p.myHandles.length) {
+            const own = p.myHandles.map(normHandle).filter(Boolean)
+            setAltHandles((prev) => (prev.length ? prev : own.filter((x) => x && x !== primary).slice(0, 2)))
+          }
           if (p.email) setEmail((e) => e || p.email)
           if (p.displayName) setDisplayName((n) => n || p.displayName)
-          setPaidStars(Math.max(Number(p.paidStars) || 0, getUnlocked()))
           setSynced(p.source === 'db')
         }
       })
@@ -167,10 +178,64 @@ export default function App() {
       // Re-check at fire time: a sign-out/delete between scheduling and firing flips
       // this off, and we must not write over an account that's being torn down.
       if (!persistReady.current) return
-      saveProfile({ me, email, displayName, handles, times: sealTimes, sealCount }).catch(() => {})
+      const myHandles = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
+      saveProfile({ me, myHandles, email, displayName, handles, times: sealTimes, sealCount: handles.length }).catch(() => {})
     }, 600)
     return () => clearTimeout(id)
-  }, [me, email, displayName, handles, sealTimes, sealCount])
+  }, [me, altHandles, email, displayName, handles, sealTimes])
+
+  // Keep the slot meter fresh for the current handle (server is the authority at
+  // seal time; this feeds the meter + the out-of-slots countdown).
+  useEffect(() => {
+    if (demo) {
+      setSlots(FULL_SLOTS)
+      return
+    }
+    let live = true
+    fetchSlots(me, { demo })
+      .then((s) => {
+        if (live && s) setSlots(s)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [me, demo])
+
+  // Light up the constellations: which entered @s are mutual (group-aware on the
+  // server). Re-checked when the sky or handle changes; instant reveals at seal
+  // also add to this set directly.
+  useEffect(() => {
+    if (!handles.length || !normHandle(me)) {
+      setMatches([])
+      return
+    }
+    let live = true
+    const id = setTimeout(() => {
+      checkMutuals({ me, handles, demo })
+        .then((m) => {
+          if (live) setMatches(m.map(normHandle).filter(Boolean))
+        })
+        .catch(() => {})
+    }, 400)
+    return () => {
+      live = false
+      clearTimeout(id)
+    }
+  }, [me, handles, demo])
+
+  // Register the user's own @s as one identity group, so being entered on any of
+  // their accounts counts (multi-account, §ident). Debounced; only meaningful with
+  // 2+ handles. Best-effort — failures just leave matching single-handle.
+  useEffect(() => {
+    if (!persistReady.current) return
+    const uniq = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
+    if (uniq.length < 2) return
+    const id = setTimeout(() => {
+      linkHandles(uniq, { demo }).catch(() => {})
+    }, 700)
+    return () => clearTimeout(id)
+  }, [me, altHandles, demo])
 
   // Latest sky in refs, so the merge below can read it without stale closures.
   const handlesRef = useRef(handles)
@@ -201,11 +266,17 @@ export default function App() {
     const arr = [...map.values()]
     setHandles(arr.map((x) => x.h))
     setSealTimes(arr.map((x) => x.t))
-    setSealCount(arr.length)
-    if (p.handle) setMe((m) => m || p.handle)
+    if (p.handle) setMe((m) => m || normHandle(p.handle))
+    if (Array.isArray(p.myHandles) && p.myHandles.length) {
+      setAltHandles((prev) => {
+        const set = new Set(prev.map(normHandle).filter(Boolean))
+        p.myHandles.map(normHandle).filter(Boolean).forEach((x) => set.add(x))
+        set.delete(normHandle(p.handle || ''))
+        return [...set].slice(0, 2)
+      })
+    }
     if (p.email) setEmail((e) => e || p.email)
     if (p.displayName) setDisplayName((n) => n || p.displayName)
-    if (typeof p.paidStars === 'number') setPaidStars((ps) => Math.max(ps, p.paidStars))
     if (p.source === 'db') setSynced(true)
   }, [])
 
@@ -238,26 +309,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Returning from hosted checkout: Stripe/Kakao/Toss send the browser back to
-  // `…?paid=1` on success. Grant the credit, clean the URL, and drop them onto
-  // the entry to seal the star they were adding. (For production hardening, a
-  // provider webhook should be the source of truth — see SETUP-AUTH-AND-PAYMENTS.md.)
-  useEffect(() => {
-    try {
-      const u = new URL(window.location.href)
-      if (u.searchParams.get('paid') === '1') {
-        grantUnlocked(1)
-        u.searchParams.delete('paid')
-        window.history.replaceState({}, '', u.pathname + u.search + u.hash)
-        setThem('')
-        setScreen('them')
-      }
-    } catch {
-      /* ignore */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   // Drive the camera from the focused-star state.
   useEffect(() => {
     const f = galaxyRef.current
@@ -280,7 +331,7 @@ export default function App() {
     } catch {
       /* ignore */
     }
-    setDemo(true) // take effect this session (no reload) — bypasses sign-in + paywall
+    setDemo(true) // take effect this session (no reload) — sandboxed, never writes
     go('landing')
   }, [go])
 
@@ -309,7 +360,8 @@ export default function App() {
     setIntroMode(i >= 3 ? 'match' : 'idle')
   }, [])
 
-  // Seal: record the one-way entry (server never reveals mutuality, §2.3).
+  // Seal: record the one-way entry. With instant reveal, a completed mutual routes
+  // to the match screen; otherwise it rests in the sky.
   const seal = useCallback(async () => {
     setError('')
     if (!isValidHandle(me) || !isValidHandle(them)) {
@@ -320,9 +372,9 @@ export default function App() {
       setError(t('them.errSelf'))
       return
     }
-    // Paywall: first star free, the rest gated (never on /demo).
-    if (!canSealIndex(sealCount, { demo })) {
-      go('checkout')
+    // Out of slots? The server is authoritative, but short-circuit a doomed seal.
+    if (!demo && slotsRemaining(slots) <= 0) {
+      go('outofslots')
       return
     }
     // Confirm it's really you — at the moment of sealing, with Instagram. The
@@ -346,7 +398,6 @@ export default function App() {
     }
     const now = Date.now()
     setSealedAt(now)
-    setSealCount((n) => n + 1)
     setHandles((h) => [...h, normHandle(them)])
     setSealTimes((s) => [...s, now])
     // Measure the live @ field NOW (it's still mounted) so the morph collapses from
@@ -371,11 +422,16 @@ export default function App() {
     go('sendoff')
     const minSuspense = new Promise((r) => setTimeout(r, 3200))
     try {
-      const [res] = await Promise.all([submitEntry({ me, ex: them, email }), minSuspense])
+      const [res] = await Promise.all([submitEntry({ me, ex: them, email, demo }), minSuspense])
       const rollback = () => {
-        setSealCount((n) => Math.max(0, n - 1))
         setHandles((h) => h.slice(0, -1))
         setSealTimes((s) => s.slice(0, -1))
+      }
+      if (res?.slots) setSlots(res.slots)
+      if (res?.error === 'no_slots') {
+        rollback()
+        go('outofslots')
+        return
       }
       if (res?.error === 'rate_limited') {
         setError(t('them.errRate'))
@@ -389,35 +445,32 @@ export default function App() {
         go('them')
         return
       }
+      if (res?.mutual) {
+        const mh = normHandle(res.match || them)
+        setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
+        go('match')
+        return
+      }
       go('resting')
     } catch (e) {
       console.error(e)
-      setSealCount((n) => Math.max(0, n - 1))
       setHandles((h) => h.slice(0, -1))
       setSealTimes((s) => s.slice(0, -1))
       setError(t('them.errGeneric'))
       go('them')
     }
-  }, [me, them, email, sealCount, demo, verified, go, t])
+  }, [me, them, email, slots, demo, verified, go, t])
 
-  // Multi-entry: gate the paywall here too (entering "more users"). First is free.
+  // Multi-entry: gate on the slot budget here too (entering "more users").
   const checkAnother = useCallback(() => {
     setThem('')
     setError('')
-    if (!canSealIndex(sealCount, { demo })) {
-      go('checkout')
+    if (!demo && slotsRemaining(slots) <= 0) {
+      go('outofslots')
       return
     }
     go('them')
-  }, [sealCount, demo, go])
-
-  const startCheckout = useCallback(async (provider) => {
-    const r = await payStart(provider) // real provider redirects away; dev path grants locally
-    if (r?.ok && (r.dev || !import.meta.env.VITE_PAY_ENABLED)) {
-      setThem('')
-      go('them')
-    }
-  }, [go])
+  }, [slots, demo, go])
 
   // Interactive field: tap → focus, remove → withdraw that star, close → zoom out.
   const onStarTap = useCallback((x, y) => {
@@ -436,7 +489,7 @@ export default function App() {
       const f = galaxyRef.current
       if (f && f.vanishStar) f.vanishStar(i)
       setFocused(null)
-      // let the vanish animation finish, then remove the star and free its slot
+      // let the vanish animation finish, then remove the star
       await new Promise((r) => setTimeout(r, 520))
       // Drop the SAME slot on the canvas that we drop from the handle/time arrays,
       // so every surviving star stays matched to its own @tag (the galaxy used to
@@ -444,30 +497,34 @@ export default function App() {
       if (f && f.removeSealAt) f.removeSealAt(i)
       setHandles((h) => h.filter((_, k) => k !== i))
       setSealTimes((s) => s.filter((_, k) => k !== i))
-      // Releasing a star frees its registration slot — index 0 is always free, so
-      // the person can always keep one star in the sky without paying (§ free star).
-      setSealCount((n) => Math.max(0, n - 1))
+      // Releasing a star does NOT refund the slot it cost (anti-fishing): the budget
+      // is spent server-side at seal and never returned, so enter→peek→release can't
+      // be cycled to sweep everyone you know.
+      if (handle) setMatches((m) => m.filter((x) => x !== normHandle(handle)))
       // Clear the last-entered handle so nothing stale (a ghost "@…") survives the
       // release; if this was the last star, the resting sky shows its empty state.
       setThem('')
       setError('')
       if (handle) {
         try {
-          await withdrawEntry({ me, ex: handle })
+          await withdrawEntry({ me, ex: handle, demo })
         } catch (e) {
           console.error(e)
         }
       }
     },
-    [handles, me],
+    [handles, me, demo],
   )
   const starInfo = useCallback(
-    (i) => (i == null ? null : { handle: handles[i] || null, time: sealTimes[i] || null }),
-    [handles, sealTimes],
+    (i) =>
+      i == null
+        ? null
+        : { handle: handles[i] || null, time: sealTimes[i] || null, mutual: matches.includes(normHandle(handles[i] || '')) },
+    [handles, sealTimes, matches],
   )
 
-  // Reset local state to a clean slate (shared by "forget on this device" and
-  // account deletion). Does NOT touch the database — callers decide that.
+  // Reset local state to a clean slate (shared by sign-out and account deletion).
+  // Does NOT touch the database — callers decide that.
   const wipeLocalState = useCallback(() => {
     try {
       localStorage.removeItem(STORE)
@@ -478,29 +535,17 @@ export default function App() {
     setEmail('')
     setMe('')
     setDisplayName('')
+    setAltHandles([])
     setThem('')
     setSealedAt(null)
-    setSealCount(0)
     setHandles([])
     setSealTimes([])
+    setMatches([])
     setOver18(false)
     setError('')
-    setPaidStars(0)
+    setSlots(FULL_SLOTS)
     setSynced(false)
   }, [])
-
-  // "Forget on this device": sign out (so the synced sky stops following this
-  // device) and clear local state. The account + encrypted sky stay safe in the
-  // database and return on next sign-in.
-  const forget = useCallback(async () => {
-    persistReady.current = false // suppress the saver while we tear down
-    await signOutUser()
-    setSession(null)
-    wipeLocalState()
-    setAccountOpen(false)
-    go('landing')
-    setTimeout(() => (persistReady.current = true), 800)
-  }, [go, wipeLocalState])
 
   const openAccount = useCallback(() => setAccountOpen(true), [])
   const closeAccount = useCallback(() => setAccountOpen(false), [])
@@ -531,15 +576,41 @@ export default function App() {
   }, [go, wipeLocalState])
 
   const affirmAge = useCallback(() => setOver18(true), [])
-  const openConversation = useCallback(() => {
-    const handle = normHandle(them)
-    if (handle) window.open(`https://instagram.com/${handle}`, '_blank', 'noopener,noreferrer')
-  }, [them])
+  const openConversation = useCallback(
+    (handle) => {
+      const h = normHandle(handle || them)
+      if (h) window.open(`https://instagram.com/${h}`, '_blank', 'noopener,noreferrer')
+    },
+    [them],
+  )
+
+  // Add / remove one of the user's own alternate @s (multi-account; capped so the
+  // identity set [me, ...alts] never exceeds 3).
+  const addAltHandle = useCallback(
+    (h) => {
+      const n = normHandle(h)
+      if (!n) return
+      setAltHandles((prev) => {
+        const set = [me, ...prev].map(normHandle).filter(Boolean)
+        if (set.includes(n) || set.length >= 3) return prev
+        return [...prev, n]
+      })
+    },
+    [me],
+  )
+  const removeAltHandle = useCallback((h) => {
+    const n = normHandle(h)
+    setAltHandles((prev) => prev.filter((x) => normHandle(x) !== n))
+  }, [])
 
   const ctx = {
-    email, me, them, displayName, sealedAt, over18, error, demo, verified, synced, sealCount, paidStars,
-    setEmail, setMe, setThem, setDisplayName, go, seal, checkAnother, startCheckout,
-    forget, affirmAge, suppressHandle, openConversation,
+    email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches,
+    slotsLeft: demo ? Infinity : slotsRemaining(slots),
+    isMutual: (h) => matches.includes(normHandle(h)),
+    matchCount: handles.filter((h) => matches.includes(normHandle(h))).length,
+    setEmail, setMe, setThem, setDisplayName, addAltHandle, removeAltHandle,
+    requestReminder: (em) => requestReminder({ me, email: em || email, demo }),
+    go, seal, checkAnother, affirmAge, suppressHandle, openConversation,
     enterDemo, findOut, watchIntro, finishIntro, onIntroStep,
     onStarTap, closeStar, removeStar,
     openAccount, closeAccount, signOut, deleteAccount,
@@ -555,7 +626,7 @@ export default function App() {
 
   // Chrome: language switcher on the calm/entry screens; hidden during the
   // cinematic beats so nothing competes with the moment.
-  const showSwitcher = !['intro', 'sendoff', 'match', 'checkout'].includes(screen)
+  const showSwitcher = !['intro', 'sendoff', 'match'].includes(screen)
   // The profile chip sits top-left, only where there's no back button to collide
   // with: the resting sky (always) and the landing once a handle is known.
   const showProfile = screen === 'resting' || (screen === 'landing' && !!me)
@@ -566,14 +637,14 @@ export default function App() {
         mode={mode}
         dim={bg.dim}
         origin={screen === 'sendoff' ? sendoffOrigin : bg.origin}
-        seals={sealCount}
+        seals={handles.length}
         you={C.you}
         them={C.them}
         motion={MOTION}
         onReady={(f) => (galaxyRef.current = f)}
         style={{ position: 'fixed', zIndex: 0 }}
       />
-      <StarTags fieldRef={galaxyRef} handles={handles} color={C.them} show={(screen === 'sendoff' || screen === 'resting') && focused == null} />
+      <StarTags fieldRef={galaxyRef} handles={handles} mutual={matches} color={C.them} matchColor={C.you} show={(screen === 'sendoff' || screen === 'resting') && focused == null} />
       <div
         aria-hidden
         style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: bg.warm ? 1 : 0, transition: 'opacity .6s ease' }}
@@ -599,7 +670,14 @@ export default function App() {
 
       {/* interactive field: the focused-star detail card */}
       {focused != null && screen === 'resting' && (
-        <StarDetail C={C} lang={lang} info={starInfo(focused)} onRemove={() => removeStar(focused)} onClose={closeStar} />
+        <StarDetail
+          C={C}
+          lang={lang}
+          info={starInfo(focused)}
+          onRemove={() => removeStar(focused)}
+          onOpen={() => openConversation(handles[focused])}
+          onClose={closeStar}
+        />
       )}
 
       {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}

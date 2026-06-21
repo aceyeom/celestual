@@ -9,7 +9,7 @@
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
 import { useI18n } from '../i18n/index.js'
-import { PRICE_LABEL } from '../api/pay.js'
+import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
   Brandmark, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   StepDots, BackBtn, Icon, Sonar, rgba,
@@ -76,6 +76,99 @@ function FieldLabel({ C, children, optional }) {
       {optional && (
         <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: 999, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
       )}
+    </div>
+  )
+}
+
+// A compact "stars left" meter: one pip per slot (filled = available), plus a
+// "+1 in N days" line when the budget isn't full. Reads the server slot snapshot.
+// Returns null on the demo's unlimited budget so it never shows a silly meter.
+function SlotMeter({ C, slots, t, align = 'center' }) {
+  const cap = slotsCap(slots)
+  const left = slotsRemaining(slots)
+  if (!Number.isFinite(cap) || cap > 12) return null
+  const next = nextSlotIn(slots)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: align === 'center' ? 'center' : 'flex-start', gap: 5 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {Array.from({ length: cap }).map((_, i) => (
+          <span
+            key={i}
+            aria-hidden
+            style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: i < left ? C.you : 'transparent',
+              border: `1px solid ${i < left ? C.you : C.line}`,
+              boxShadow: i < left ? `0 0 8px ${rgba(C.you, 0.6)}` : 'none',
+            }}
+          />
+        ))}
+        <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: left > 0 ? C.cream : C.them }}>
+          {t('slots.left', { n: left })}
+        </span>
+      </div>
+      {next && (
+        <span style={{ fontSize: 11, color: C.muted, fontFamily: "'Space Mono', monospace" }}>
+          {t(`slots.next_${next.unit}`, { n: next.value })}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// Multi-account editor — the user's own @s beyond their primary. A quiet,
+// revealable feature: hidden behind "I have another account" so the common
+// single-account case stays clean. Capped at 3 total (me + 2 alts). Used by both
+// the YOU step and the account sheet.
+function AccountsEditor({ C, ctx }) {
+  const { t } = useI18n()
+  const [open, setOpen] = React.useState(ctx.altHandles.length > 0)
+  const [draft, setDraft] = React.useState('')
+  const total = 1 + ctx.altHandles.length
+  const canAdd = total < 3
+  const add = () => {
+    const n = normHandle(draft)
+    if (!n || n === normHandle(ctx.me)) {
+      setDraft('')
+      return
+    }
+    ctx.addAltHandle(n)
+    setDraft('')
+  }
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', color: rgba(C.you, 0.9), fontFamily: "'Space Grotesk', sans-serif", fontSize: 13 }}
+      >
+        <Icon name="plus" size={14} color="currentColor" stroke={2} /> {t('accounts.add')}
+      </button>
+    )
+  }
+  return (
+    <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <FieldLabel C={C} optional={t('accounts.optional')}>{t('accounts.label')}</FieldLabel>
+      {ctx.altHandles.map((h) => (
+        <div key={h} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <HandleChip C={C} handle={h} color={C.you} />
+          <button
+            onClick={() => ctx.removeAltHandle(h)}
+            aria-label={t('accounts.remove')}
+            style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}
+          >
+            <Icon name="x" size={13} color="currentColor" />
+          </button>
+        </div>
+      ))}
+      {canAdd && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Field C={C} kind="handle" value={draft} onChange={setDraft} placeholder={t('accounts.placeholder')} accent={C.you} onEnter={add} />
+          </div>
+          <OutlineButton C={C} onClick={add} style={{ flexShrink: 0 }}>{t('accounts.addBtn')}</OutlineButton>
+        </div>
+      )}
+      <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('accounts.note')}</Hint>
     </div>
   )
 }
@@ -286,6 +379,13 @@ export function YouScreen({ C, ctx }) {
           <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
         </div>
 
+        {/* other accounts — a quiet revealable for people with multiple @s */}
+        <Collapse open={handleOk}>
+          <div style={{ paddingTop: 4 }}>
+            <AccountsEditor C={C} ctx={ctx} />
+          </div>
+        </Collapse>
+
         {/* email — an optional drop-down, revealed only after a handle is set */}
         <Collapse open={handleOk}>
           <div style={{ paddingTop: 4 }}>
@@ -397,6 +497,11 @@ export function ThemScreen({ C, ctx }) {
           {/* sign-in expectation, set before they commit (not on /demo or once verified) */}
           {needsAuth && !confirming && <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('them.authNote')}</Hint>}
           {ctx.error && <div style={{ color: C.them, fontSize: 13, padding: '0 2px' }}>{ctx.error}</div>}
+          {!ctx.demo && (
+            <div style={{ paddingTop: 2 }}>
+              <SlotMeter C={C} slots={ctx.slots} t={t} align="left" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -454,17 +559,17 @@ export function RestingScreen({ C, ctx }) {
             {t('resting.emptyBody')}
           </p>
         </div>
-        <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <PrimaryButton C={C} onClick={() => ctx.checkAnother()}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
               <Icon name="plus" size={16} color="#1a0f0a" stroke={2.1} /> {t('resting.emptyCta')}
             </span>
           </PrimaryButton>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GhostButton C={C} onClick={() => ctx.forget()} style={{ padding: 0, fontSize: 11, color: C.muted }}>
-              {t('resting.forget')}
-            </GhostButton>
-          </div>
+          {!ctx.demo && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <SlotMeter C={C} slots={ctx.slots} t={t} />
+            </div>
+          )}
         </div>
       </GalaxyShell>
     )
@@ -490,6 +595,11 @@ export function RestingScreen({ C, ctx }) {
         <span style={{ fontSize: 11.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.4px' }}>
           {t('resting.count', { n: ctx.starCount })}
         </span>
+        {ctx.matchCount > 0 && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11.5, color: C.you, fontFamily: "'Space Mono', monospace", letterSpacing: '.3px' }}>
+            <Sonar C={C} color={C.you} size={11} /> {t('resting.mutual', { n: ctx.matchCount })}
+          </span>
+        )}
       </div>
 
       <div style={{ flex: 1, minHeight: 150 }} />
@@ -510,9 +620,7 @@ export function RestingScreen({ C, ctx }) {
         <OutlineButton C={C} onClick={() => ctx.checkAnother()}>
           <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('resting.another')}
         </OutlineButton>
-        <GhostButton C={C} onClick={() => ctx.forget()} style={{ padding: 0, fontSize: 11, color: C.muted }}>
-          {t('resting.forget')}
-        </GhostButton>
+        {!ctx.demo && <SlotMeter C={C} slots={ctx.slots} t={t} />}
       </div>
     </GalaxyShell>
   )
@@ -525,11 +633,12 @@ export function RestingScreen({ C, ctx }) {
 // "still waiting · sealed <date>" line read like a star-chart entry. It fades and
 // settles into place (no slide-up, no grabber) and dismisses on a backdrop tap or
 // "keep watching". Only ever shown while the camera is zoomed in.
-export function StarDetail({ C, info, lang, onRemove, onClose }) {
+export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
   const { t } = useI18n()
   const [removing, setRemoving] = React.useState(false)
   const [closing, setClosing] = React.useState(false)
   if (!info) return null
+  const mutual = !!info.mutual
   const when = info.time ? new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(new Date(info.time)) : null
   // Both dismiss paths fade the readout out first (~200ms), then hand control back
   // to App — so the card eases away while the camera drifts back out, instead of
@@ -563,8 +672,8 @@ export function StarDetail({ C, info, lang, onRemove, onClose }) {
       >
         <StarMark C={C} />
 
-        <div style={{ marginTop: 20, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '3px', textTransform: 'uppercase', color: C.muted }}>
-          {t('star.kicker')}
+        <div style={{ marginTop: 20, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '3px', textTransform: 'uppercase', color: mutual ? C.you : C.muted }}>
+          {mutual ? t('star.mutualKicker') : t('star.kicker')}
         </div>
         <div style={{ marginTop: 12, marginBottom: 18 }}>
           {info.handle ? (
@@ -577,8 +686,8 @@ export function StarDetail({ C, info, lang, onRemove, onClose }) {
         <Rule C={C} delay={0.12} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px 12px', padding: '16px 0', fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.3px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: C.you }}>
-            <Sonar C={C} color={C.you} size={13} /> {t('star.waiting')}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: mutual ? C.them : C.you }}>
+            <Sonar C={C} color={mutual ? C.them : C.you} size={13} /> {mutual ? t('star.mutual') : t('star.waiting')}
           </span>
           {when && (
             <>
@@ -592,7 +701,14 @@ export function StarDetail({ C, info, lang, onRemove, onClose }) {
 
         <Rule C={C} delay={0.16} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginTop: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: mutual ? 12 : 2, marginTop: 20, width: '100%' }}>
+          {mutual && (
+            <PrimaryButton C={C} onClick={onOpen}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+                {t('star.open')} <Icon name="arrow" size={16} color="#1a0f0a" stroke={2.1} />
+              </span>
+            </PrimaryButton>
+          )}
           <GhostButton
             C={C}
             onClick={remove}
@@ -704,15 +820,33 @@ export function AccountSheet({ C, ctx }) {
               </GhostButton>
             )}
           </div>
+          {ctx.matchCount > 0 && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: C.you, fontFamily: "'Space Mono', monospace" }}>
+              <Sonar C={C} color={C.you} size={11} /> {t('account.skyMutual', { n: ctx.matchCount })}
+            </span>
+          )}
           <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{synced ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
         </SheetSection>
 
-        {/* payments */}
-        <SheetSection C={C} title={t('account.payTitle')}>
-          <SheetRow C={C} label={t('account.payFree')} value={t('account.payFreeValue')} accent={C.you} />
-          <SheetRow C={C} label={t('account.payPaid')} value={String(ctx.paidStars || 0)} />
+        {/* your accounts — primary @ + any linked alternates (multi-account) */}
+        <SheetSection C={C} title={t('account.accountsTitle')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+            <HandleChip C={C} handle={ctx.me || 'you'} color={C.you} />
+            <span style={{ fontSize: 11, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.3px' }}>{t('account.primary')}</span>
+          </div>
+          <AccountsEditor C={C} ctx={ctx} />
+        </SheetSection>
+
+        {/* stars — the entry budget */}
+        <SheetSection C={C} title={t('account.starsTitle')}>
+          {ctx.demo ? (
+            <SheetRow C={C} label={t('account.starsBudget')} value={t('account.starsUnlimited')} accent={C.you} />
+          ) : (
+            <SlotMeter C={C} slots={ctx.slots} t={t} align="left" />
+          )}
+          <Hint C={C} icon="star" color={rgba(C.you, 0.8)}>{t('account.starsNote')}</Hint>
           <OutlineButton C={C} onClick={() => { close(); ctx.checkAnother() }} style={{ alignSelf: 'flex-start' }}>
-            <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('account.payAdd')} · {PRICE_LABEL}
+            <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('account.starsAdd')}
           </OutlineButton>
         </SheetSection>
 
@@ -785,102 +919,66 @@ export function MatchScreen({ C, ctx }) {
   )
 }
 
-// ── 7 · PRICING (first free, pay to add more — never on /demo) ─────────────
-export function PricingScreen({ C, ctx }) {
+// ── 7 · OUT OF SLOTS (every star is free; the weekly entry budget is spent) ────
+// Replaces the old paywall. There's nothing to buy — the gentle limit is the slot
+// budget itself. Shows when the next star unlocks and offers an optional email
+// nudge when it does. (The reminder send is the celestual-remind function.)
+export function OutOfSlotsScreen({ C, ctx }) {
   const { t } = useI18n()
-  const Line = ({ label, note, value, accent, last }) => (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, padding: '20px 0', borderBottom: last ? 'none' : `1px solid ${C.line}` }}>
-      <div>
-        <div style={{ fontSize: 15, color: C.cream, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontSize: 12.5, color: C.muted, marginTop: 3 }}>{note}</div>
-      </div>
-      <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: accent || C.cream, whiteSpace: 'nowrap', lineHeight: 1 }}>{value}</div>
-    </div>
-  )
-  return (
-    <WarmShell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(ctx.sealedAt ? 'resting' : 'landing')} />
-        <Brandmark C={C} size={12} />
-        <div style={{ width: 38 }} />
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22 }}>
-        <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(28px, 7vw, 36px)', lineHeight: 1.16, color: C.cream }}>
-          {t('pricing.title1')} <em style={{ color: C.you }}>{t('pricing.titleEm')}</em>.
-        </h2>
-
-        <div className="enter" style={{ animationDelay: '.08s' }}>
-          <Line label={t('pricing.firstLabel')} note={t('pricing.firstNote')} value={t('pricing.firstValue')} accent={C.you} />
-          <Line label={t('pricing.moreLabel')} note={t('pricing.moreNote')} value={ctx.demo ? t('pricing.firstValue') : PRICE_LABEL} accent={ctx.demo ? C.you : C.them} />
-          <Line label={t('pricing.revealLabel')} note={t('pricing.revealNote')} value={t('pricing.revealValue')} accent={C.you} last />
-        </div>
-
-        <p className="enter" style={{ animationDelay: '.12s', margin: 0, fontSize: 12.5, lineHeight: 1.55, color: C.muted }}>
-          {ctx.demo ? t('pricing.demoNote') : t('pricing.foot')}
-        </p>
-      </div>
-
-      <div className="enter" style={{ animationDelay: '.16s' }}>
-        <PrimaryButton C={C} onClick={() => (ctx.sealedAt ? ctx.checkAnother() : ctx.go('you'))}>
-          {ctx.sealedAt ? t('pricing.payCta') : t('pricing.startCta')}
-        </PrimaryButton>
-      </div>
-    </WarmShell>
-  )
-}
-
-// ── 7.5 · CHECKOUT (paywall — Stripe + Kakao/Toss) ────────────────────────
-export function CheckoutScreen({ C, ctx }) {
-  const { t } = useI18n()
-  const [busy, setBusy] = React.useState('')
-  const pay = async (provider) => {
-    if (busy) return
-    setBusy(provider)
+  const next = nextSlotIn(ctx.slots)
+  const nextLine = next ? t(`slots.next_${next.unit}`, { n: next.value }) : t('outofslots.soon')
+  const [draft, setDraft] = React.useState(ctx.email || '')
+  const [done, setDone] = React.useState(false)
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.trim())
+  const remind = async () => {
+    if (!emailOk || done) return
+    ctx.setEmail(draft.trim())
     try {
-      await ctx.startCheckout(provider)
-    } catch (e) {
-      console.error(e)
-      setBusy('')
+      await ctx.requestReminder(draft.trim())
+    } catch {
+      /* best-effort — the countdown is still accurate */
     }
+    setDone(true)
   }
-  const Method = ({ provider, label, brand }) => (
-    <button
-      onClick={() => pay(provider)}
-      disabled={!!busy}
-      style={{
-        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, padding: '15px 18px',
-        borderRadius: 13, cursor: busy ? 'default' : 'pointer', border: 'none',
-        background: brand, color: '#1a0f0a', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15,
-        opacity: busy && busy !== provider ? 0.5 : 1,
-      }}
-    >
-      {busy === provider ? '…' : label}
-    </button>
-  )
+  const leave = () => ctx.go(ctx.starCount ? 'resting' : 'landing')
   return (
     <WarmShell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('resting')} />
+        <BackBtn C={C} onClick={leave} />
         <Brandmark C={C} size={12} />
         <div style={{ width: 38 }} />
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22 }}>
-        <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(28px, 7vw, 36px)', lineHeight: 1.16, color: C.cream }}>
-          {t('pay.title')}
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
+        <div className="floaty" style={{ alignSelf: 'center' }}><StarMark C={C} size={76} /></div>
+        <h2 className="enter" style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(27px, 7vw, 35px)', lineHeight: 1.16, color: C.cream }}>
+          {t('outofslots.title')}
         </h2>
-        <p className="enter" style={{ animationDelay: '.06s', margin: 0, fontSize: 14, lineHeight: 1.55, color: C.muted }}>
-          {t('pay.sub')} <span style={{ color: C.you, fontWeight: 600 }}>{PRICE_LABEL}</span>.
+        <p className="enter" style={{ animationDelay: '.06s', margin: 0, textAlign: 'center', fontSize: 14, lineHeight: 1.6, color: C.muted }}>
+          {t('outofslots.body')}
         </p>
-        <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Method provider="stripe" label={t('pay.stripe')} brand={`linear-gradient(180deg, ${C.you}, ${rgba(C.you, 0.86)})`} />
-          <Method provider="kakao" label={t('pay.kakao')} brand="#FEE500" />
-          <Method provider="toss" label={t('pay.toss')} brand="#9BC1FF" />
+
+        <div className="enter" style={{ animationDelay: '.1s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.muted }}>{t('outofslots.nextLabel')}</span>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 25, color: C.you }}>{nextLine}</span>
         </div>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.muted }}>{t('pay.secure')}</p>
+
+        {/* optional email nudge for when the next star is ready */}
+        {done ? (
+          <p className="fade" style={{ margin: 0, textAlign: 'center', fontSize: 13, lineHeight: 1.5, color: C.you }}>
+            {t('outofslots.reminded')}
+          </p>
+        ) : (
+          <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <FieldLabel C={C} optional={t('you.emailOptional')}>{t('outofslots.remindLabel')}</FieldLabel>
+            <Field C={C} kind="email" value={draft} onChange={setDraft} placeholder="you@email.com" accent={C.you} onEnter={remind} />
+            <PrimaryButton C={C} disabled={!emailOk} onClick={remind}>{t('outofslots.remindCta')}</PrimaryButton>
+          </div>
+        )}
       </div>
+
       <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <GhostButton C={C} onClick={() => ctx.go('resting')}>{t('pay.cancel')}</GhostButton>
+        <GhostButton C={C} onClick={leave}>{t('outofslots.back')}</GhostButton>
       </div>
     </WarmShell>
   )
@@ -946,13 +1044,6 @@ export function PrivacyScreen({ C, ctx }) {
             </P>
           )}
           {status === 'error' && <div style={{ fontSize: 13, color: C.them }}>{t('privacy.removeErr')}</div>}
-        </div>
-
-        <H>{t('privacy.h6')}</H>
-        <div style={{ marginTop: 6 }}>
-          <GhostButton C={C} onClick={() => ctx.forget()} style={{ padding: 0, fontSize: 13, color: C.you }}>
-            {t('privacy.forget')}
-          </GhostButton>
         </div>
 
         <p style={{ margin: '22px 0 0', fontSize: 11, lineHeight: 1.55, color: C.muted }}>

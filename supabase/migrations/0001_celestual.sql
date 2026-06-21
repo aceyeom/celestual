@@ -119,6 +119,11 @@ revoke all on celestual_attempts      from anon, authenticated;
 revoke all on celestual_suppressions  from anon, authenticated;
 
 -- ──────────────────────────────────────────────────────────────────────
+-- NOTE: this 0001 definition is SUPERSEDED by migration 0003, which replaces
+-- celestual_submit to (a) enforce the weekly slot budget, (b) match across
+-- multi-account identity groups, and (c) return the mutual result instantly
+-- (instant reveal). Apply 0003 for current behaviour; see docs/SECURITY.md §2.3.
+--
 -- celestual_submit — record my one-way entry. DEFERRED REVEAL: it returns ONLY
 -- whether the entry was recorded, never whether the pair is mutual. On a mutual
 -- match it queues an exfil-safe email to the EARLIER entrant.

@@ -18,7 +18,7 @@ RPCs + edge functions); there is no separate app server.
 celestual/
 ├── app/              the Vite + React SPA (served at celestual.us/)
 │   ├── src/
-│   │   ├── api/      celestual.js (RPCs), supabase.js, auth.js, pay.js, profile.js, vault.js
+│   │   ├── api/      celestual.js (RPCs), supabase.js, auth.js, slots.js, profile.js, vault.js
 │   │   ├── components/ screens.jsx, ui.jsx
 │   │   ├── i18n/     translations + language switching
 │   │   ├── App.jsx · galaxy.js · theme.js · styles.css
@@ -26,8 +26,8 @@ celestual/
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
 │   ├── config.toml   Supabase CLI config
-│   ├── migrations/   0001_celestual.sql (matching core) · 0002_user_accounts.sql (accounts + encrypted sky)
-│   └── functions/    celestual-notify · celestual-checkout · celestual-search
+│   ├── migrations/   0001 matching core · 0002 accounts + encrypted sky · 0003 slot budget, multi-account, instant reveal
+│   └── functions/    celestual-notify · celestual-remind · celestual-search
 ├── docs/             all the guides (see below)
 ├── package.json      repo-root build (app → dist/)
 └── vercel.json       SPA routing
@@ -58,8 +58,9 @@ npm run build        # from repo root → CELESTUAL into dist/
 
 ## Going live
 
-The whole manual setup — domain, Supabase, Vercel, email, sign-in, payments — is
-in **[docs/GO-LIVE.md](./docs/GO-LIVE.md)**. Start there.
+The whole manual setup — domain, Supabase, Vercel, email, optional sign-in — is
+in **[docs/GO-LIVE.md](./docs/GO-LIVE.md)**. Start there. There is no paywall;
+every star is free, gated only by a server-side weekly slot budget.
 
 ## Documentation
 
@@ -67,7 +68,7 @@ in **[docs/GO-LIVE.md](./docs/GO-LIVE.md)**. Start there.
 | --- | --- |
 | **[docs/GO-LIVE.md](./docs/GO-LIVE.md)** | **The manual checklist to connect everything and ship.** Start here. |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Detailed Supabase + Vercel + email deploy reference |
-| [docs/SETUP-AUTH-AND-PAYMENTS.md](./docs/SETUP-AUTH-AND-PAYMENTS.md) | Instagram sign-in (Meta) + payments (Stripe/Kakao/Toss) |
-| [docs/SECURITY.md](./docs/SECURITY.md) | The anonymity / safety model and an operator checklist |
+| [docs/SETUP-AUTH.md](./docs/SETUP-AUTH.md) | Instagram sign-in (Meta) — optional, postponed for now |
+| [docs/SECURITY.md](./docs/SECURITY.md) | The anonymity / safety model, the integrity controls, and an operator checklist |
 | [app/README.md](./app/README.md) | Front-end architecture & flow |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, and edge functions |

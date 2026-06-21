@@ -83,7 +83,7 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, seals
 // every star floating in the field stays identifiable. Reads the galaxy's live
 // per-star `sealedScreen` positions each frame and moves each tag imperatively
 // (no React re-render churn). `handles` is aligned with the stars by index.
-export function StarTags({ fieldRef, handles, color, show }) {
+export function StarTags({ fieldRef, handles, mutual, color, matchColor, show }) {
   const refs = React.useRef([])
   const widths = React.useRef([]) // cached tag widths (stable per handle) — avoid per-frame layout
   React.useEffect(() => {
@@ -144,39 +144,48 @@ export function StarTags({ fieldRef, handles, color, show }) {
     return () => cancelAnimationFrame(raf)
   }, [show, fieldRef, handles])
   const col = color || '#FF8C66'
-  return handles.map((h, i) => (
-    <div
-      key={i}
-      ref={(el) => (refs.current[i] = el)}
-      aria-hidden
-      style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        zIndex: 3,
-        pointerEvents: 'none',
-        opacity: 0,
-        transition: 'opacity .6s ease',
-        willChange: 'transform',
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '3px 10px',
-        borderRadius: 999,
-        background: 'rgba(10,8,16,0.42)',
-        border: `1px solid ${rgba(col, 0.3)}`,
-        backdropFilter: 'blur(2px)',
-        WebkitBackdropFilter: 'blur(2px)',
-        fontFamily: "'Space Mono', monospace",
-        fontSize: 10.5,
-        letterSpacing: '.3px',
-        color: 'rgba(244,236,227,0.82)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span style={{ color: rgba(col, 0.95) }}>@</span>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{h}</span>
-    </div>
-  ))
+  // Mutual stars read in the warm "match" accent (and carry a ✦) so a busy sky
+  // shows which stars found their way back, without opening each one.
+  const mset = new Set((mutual || []).map(normHandle).filter(Boolean))
+  return handles.map((h, i) => {
+    const isM = mset.has(normHandle(h))
+    const tagCol = isM ? matchColor || col : col
+    return (
+      <div
+        key={i}
+        ref={(el) => (refs.current[i] = el)}
+        aria-hidden
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          zIndex: 3,
+          pointerEvents: 'none',
+          opacity: 0,
+          transition: 'opacity .6s ease',
+          willChange: 'transform',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 2,
+          padding: '3px 10px',
+          borderRadius: 999,
+          background: isM ? rgba(tagCol, 0.14) : 'rgba(10,8,16,0.42)',
+          border: `1px solid ${rgba(tagCol, isM ? 0.55 : 0.3)}`,
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)',
+          fontFamily: "'Space Mono', monospace",
+          fontSize: 10.5,
+          letterSpacing: '.3px',
+          color: 'rgba(244,236,227,0.82)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {isM && <span style={{ color: rgba(tagCol, 0.95) }}>✦</span>}
+        <span style={{ color: rgba(tagCol, 0.95) }}>@</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{h}</span>
+      </div>
+    )
+  })
 }
 
 // The @ → star morph. The actual @ textbox (a ghost positioned exactly over the
