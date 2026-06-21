@@ -26,14 +26,18 @@ references in the code point there.
 - **Interactive resting field.** Tap any star → the camera drifts in and zooms; a
   detail card shows its state, the registry date, and a remove action; close to
   zoom back out (`galaxy.js` `focusStar` / `hitTest`).
-- **`/demo`.** `celestual.us/demo` runs with **zero verification and zero
-  paywall** — everything unlocked and free.
+- **Free, with a gentle limit.** No paywall — every star is free. A server-side
+  weekly **slot budget** (3, +1/week, never refunded on withdrawal) keeps people
+  intentional and blocks "fish for who likes me" sweeps
+  ([`src/api/slots.js`](./src/api/slots.js); enforced in `celestual_submit`).
+- **Multi-account.** People can link up to 3 of their own @s; being entered on any
+  of them counts (group-aware matching, `celestual_handle_links`).
+- **`/demo`.** `celestual.us/demo` is **fully sandboxed** — zero verification and
+  never writes to the real backend (enter `@demo` as the ex to see a match).
 - **Optional integrations** behind `VITE_*` flags (off by default, safe local
-  fallbacks): Meta sign-in ([`src/api/auth.js`](./src/api/auth.js)), a paywall —
-  first star free, pay for more ([`src/api/pay.js`](./src/api/pay.js) +
-  `supabase/functions/celestual-checkout`), and @ search typeahead
-  (`searchHandles()` + `supabase/functions/celestual-search`). See
-  [`.env.example`](./.env.example).
+  fallbacks): Meta sign-in ([`src/api/auth.js`](./src/api/auth.js), postponed) and
+  @ search typeahead (`searchHandles()` + `supabase/functions/celestual-search`).
+  See [`.env.example`](./.env.example).
 
 ## Flow
 
@@ -42,43 +46,48 @@ A short guided flow over an animated starfield (`src/galaxy.js`):
 | Screen | What it does |
 | --- | --- |
 | **Landing** | The hook + "Find out". |
-| **You** | Captures your email **first and emphasized**, then your handle — so a match that lands after you leave can always reach you (§2.3 / §4.3). |
-| **Them** | The one person you can't stop thinking about. "Seal it" records the entry. |
+| **You** | Your handle (your star's label); optionally add an email and any other accounts you own (a quiet, revealable field). |
+| **Them** | The one person you can't stop thinking about. "Seal it" records the entry and spends a slot. |
 | **Send-off** | The galaxy payoff while the lookup runs (min ~3.2s suspense). |
-| **Resting** | Where everyone lands. **There is no on-screen result** — a mutual match is revealed only by a private email (deferred reveal, §2.3). Also offers withdraw + "forget on this device". |
-| **Pricing** | The reveal is always free (§2.2). |
-| **Privacy** | Privacy & terms + self-service erasure: remove/block any handle, forget this device (§2.5 / §4.3 / §4.6). |
+| **Resting** | Your sky. Each entry rests as a star; mutual ones glow amber (the constellations view), and a slot meter shows how many you have left. |
+| **Match** | Shown **instantly** when you complete a mutual pair — open the conversation, or not. |
+| **Out of slots** | When the weekly budget is spent: a countdown to the next star + an optional email nudge. No paywall. |
+| **Privacy** | Privacy & terms + self-service erasure: remove/block any handle (§2.5 / §4.6). |
 
-> **Deferred reveal (§2.3):** the app never tells you on screen whether it's
-> mutual — that would let an attacker probe whether someone secretly entered them.
-> The "yes" arrives only as an email to the earlier entrant. The `Match` screen
-> component is kept for a future verified reveal link but isn't reached from the
-> live flow.
+> **Reveal model (§2.3):** completing a mutual pair reveals it **instantly**
+> in-app (a deliberate product choice). The tight slot budget — not deferral — is
+> what keeps that from becoming a "who likes me" fishing oracle. The earlier
+> entrant is still emailed, and the constellations view also surfaces mutuals on
+> return visits.
 
-State persists in `localStorage`, but **only the minimum to resume** — never the
-handles you entered or whether anything matched (§4.3). Those live in memory.
+The in-progress entry (`them`) lives in **memory only** (§4.3). Your sky — the
+stars you've sealed — persists, AES-GCM **encrypted** when signed in (and locally
+otherwise); see [`src/api/profile.js`](./src/api/profile.js) and
+[`src/api/vault.js`](./src/api/vault.js).
 
 ## Stack
 
 | Layer | Service |
 | --- | --- |
 | Frontend SPA | Vite + React, this folder |
-| Match logic | Supabase `celestual_submit` RPC (`SECURITY DEFINER`, deferred reveal) |
+| Match logic | Supabase `celestual_submit` RPC (`SECURITY DEFINER`, instant reveal + slot budget) |
 | Match emails | Supabase Edge Function (`celestual-notify`) → Resend |
 
-The backend lives in [`../supabase/`](../supabase): one schema migration
-(`migrations/0001_celestual.sql`) plus the edge functions
-(`celestual-notify`, `celestual-checkout`, `celestual-search`).
+The backend lives in [`../supabase/`](../supabase): three migrations
+(`0001` core · `0002` accounts · `0003` slot budget + multi-account) plus the edge
+functions (`celestual-notify`, `celestual-remind`, `celestual-search`).
 
 ## How matching works
 
 1. The browser calls one RPC: `celestual_submit(p_from, p_to, p_email)`.
-2. It records the one-way entry and checks for the reciprocal entry.
-3. It returns **only** `{ recorded: true }` — never whether it's mutual (deferred
-   reveal, §2.3). The client can never read who entered whom (RLS on, zero
-   policies; the only way in is the `SECURITY DEFINER` RPC).
-4. On a mutual match it queues an email to the **earlier** entrant. It never emails
-   the address supplied on the triggering request (anti-exfiltration).
+2. It enforces the weekly slot budget (new people only; re-submits are free), then
+   records the one-way entry and checks for the reciprocal **across identity
+   groups** (multi-account).
+3. The client can never read who entered whom (RLS on, zero policies; the only way
+   in is the `SECURITY DEFINER` RPC).
+4. It returns whether the pair is mutual (**instant reveal**) plus the live slot
+   snapshot. On a mutual match it also queues an email to the **earlier** entrant —
+   never the address supplied on the triggering request (anti-exfiltration).
 5. The `celestual-notify` edge function sends queued emails via Resend, with
    exponential-backoff retries and a dead-letter mark after repeated failures
    (§5.1).

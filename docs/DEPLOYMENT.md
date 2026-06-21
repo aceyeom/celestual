@@ -7,31 +7,36 @@ doc is the per-layer detail.
 | Layer | Service | Notes |
 | --- | --- | --- |
 | Frontend | **Vercel** | one build → CELESTUAL at `/` |
-| Database | **Supabase** | one migration: `supabase/migrations/0001_celestual.sql` |
+| Database | **Supabase** | three migrations: `0001` core · `0002` accounts · `0003` slot budget + multi-account |
 | Match email | **Supabase Edge Function** → **Resend** | `celestual-notify` |
-| Sign-in / pay | **Supabase Auth / Edge Functions** | optional, see [SETUP-AUTH-AND-PAYMENTS.md](./SETUP-AUTH-AND-PAYMENTS.md) |
+| Sign-in | **Supabase Auth** | optional/postponed, see [SETUP-AUTH.md](./SETUP-AUTH.md) |
 | Domain | **Vercel** | `celestual.us` |
 
 ---
 
 ## 1. Supabase — apply the schema
 
-The entire backend is one idempotent migration. Apply it either way:
+The backend is three idempotent migrations, applied **in order**. Apply either way:
 
-**SQL Editor:** paste the contents of
-[`supabase/migrations/0001_celestual.sql`](../supabase/migrations/0001_celestual.sql)
-and **Run**.
+**SQL Editor:** paste the contents of each and **Run** in order —
+[`0001_celestual.sql`](../supabase/migrations/0001_celestual.sql) (matching core),
+[`0002_user_accounts.sql`](../supabase/migrations/0002_user_accounts.sql) (accounts +
+encrypted sky), then
+[`0003_production_hardening.sql`](../supabase/migrations/0003_production_hardening.sql)
+(slot budget, multi-account, instant reveal).
 
 **CLI:**
 ```bash
 supabase link --project-ref <ref>
-supabase db push
+supabase db push   # applies all three in order
 ```
 
-It creates `celestual_entries`, `celestual_matches`, `celestual_notifications`,
+`0001` creates `celestual_entries`, `celestual_matches`, `celestual_notifications`,
 `celestual_attempts`, `celestual_suppressions`, the `celestual_submit` /
-`celestual_withdraw` / `celestual_suppress` RPCs, and `celestual_norm` — with RLS
-on and no policies, so the RPCs are the only way in. It's re-runnable
+`celestual_withdraw` / `celestual_suppress` RPCs, and `celestual_norm`. `0003` adds
+`celestual_slots` (the weekly entry budget), `celestual_handle_links` (multi-account
+identity), `celestual_reminders`, and their RPCs. Every table has RLS on and no
+policies, so the RPCs are the only way in. It's re-runnable
 (`if not exists` / `create or replace`).
 
 Sanity check (note: `celestual_submit` NEVER reveals a match — it returns only
@@ -39,8 +44,8 @@ Sanity check (note: `celestual_submit` NEVER reveals a match — it returns only
 the **earlier** entrant):
 
 ```sql
-select celestual_submit('@me','@you','early@example.com');  -- {"recorded": true}  (earlier entrant)
-select celestual_submit('@you','@me','live@example.com');   -- {"recorded": true}  (live submitter, no on-screen reveal)
+select celestual_submit('@me','@you','early@example.com');  -- {"recorded":true,"mutual":false,...} (earlier entrant)
+select celestual_submit('@you','@me','live@example.com');   -- {"recorded":true,"mutual":true,"match":"me",...} (instant reveal)
 select * from celestual_matches;                             -- one row (recorded server-side)
 -- ONE notification, to the EARLIER entrant (me / early@example.com).
 -- the address typed on the triggering call (live@example.com) is never queued.
@@ -76,9 +81,10 @@ select celestual_suppress('@me');
 > `celestual_notifications` until the function runs. You can invoke it manually any
 > time to flush the queue.
 
-For the Instagram sign-in and paywall (the `celestual-checkout` /
-`celestual-search` functions), see
-[SETUP-AUTH-AND-PAYMENTS.md](./SETUP-AUTH-AND-PAYMENTS.md).
+For optional Instagram sign-in and the `celestual-search` typeahead, see
+[SETUP-AUTH.md](./SETUP-AUTH.md). The optional `celestual-remind` function (the
+out-of-slots email nudge) uses the same Resend secrets as `celestual-notify` and
+should be scheduled hourly with pg_cron.
 
 ## 3. Vercel
 

@@ -272,6 +272,21 @@ begin
     end if;
   end if;
 
+  -- For a re-submit (no slot was spent) v_remaining is still unset — read the live
+  -- snapshot (regen read-only) so the returned meter is accurate, not "full".
+  if coalesce(v_existing, false) then
+    select remaining, updated_at into v_remaining, v_updated from celestual_slots where handle = nf;
+    if not found then
+      v_remaining := c_slot_cap; v_updated := now();
+    else
+      v_weeks := floor(extract(epoch from (now() - v_updated)) / extract(epoch from c_regen))::int;
+      if v_weeks > 0 then
+        if v_remaining + v_weeks >= c_slot_cap then v_remaining := c_slot_cap; v_updated := now();
+        else v_remaining := v_remaining + v_weeks; v_updated := v_updated + (v_weeks * c_regen); end if;
+      end if;
+    end if;
+  end if;
+
   return jsonb_build_object(
     'recorded', true,
     'mutual', v_mutual,

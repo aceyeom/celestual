@@ -5,8 +5,9 @@ repo to a live, secure site at **https://celestual.us**. Everything in the code 
 ready; these steps connect it to your accounts (Supabase, Vercel, the domain, and
 email).
 
-Work top to bottom. The **core product is live after Part 4** — sign-in and
-payments (Parts 6–7) are optional add-ons you can switch on later.
+Work top to bottom. The **core product is live after Part 4** — Instagram sign-in
+(Part 6) is an optional add-on you can switch on later. There is no paywall: every
+star is free, gated only by a server-side weekly slot budget (3 slots, +1/week).
 
 You'll need accounts at: **Supabase**, **Vercel**, your **domain registrar** (for
 `celestual.us`), and **Resend** (for the match emails). The
@@ -29,13 +30,17 @@ This creates every table, RPC, and row-level-security lock. It is the whole
 backend.
 
 **Option A — dashboard (simplest):** SQL Editor → New query → paste the full
-contents of [`supabase/migrations/0001_celestual.sql`](../supabase/migrations/0001_celestual.sql)
-→ **Run**.
+contents of each migration **in order** and **Run** each:
+[`0001_celestual.sql`](../supabase/migrations/0001_celestual.sql) (matching core),
+[`0002_user_accounts.sql`](../supabase/migrations/0002_user_accounts.sql) (accounts +
+encrypted sky), then
+[`0003_production_hardening.sql`](../supabase/migrations/0003_production_hardening.sql)
+(slot budget, multi-account, instant reveal).
 
 **Option B — CLI:**
 ```bash
 supabase link --project-ref <your-project-ref>
-supabase db push
+supabase db push   # applies all three migrations in order
 ```
 
 **Verify it's secure** (paste in the SQL Editor):
@@ -45,10 +50,10 @@ select relname, relrowsecurity from pg_class
  where relname like 'celestual_%' and relkind = 'r';
 select count(*) as policies from pg_policies where tablename like 'celestual_%';  -- expect 0
 
--- smoke-test matching (deferred reveal: nothing is revealed on screen):
-select celestual_submit('@me','@you','early@example.com');  -- {"recorded": true}
-select celestual_submit('@you','@me','live@example.com');   -- {"recorded": true}
-select self_handle, to_email from celestual_notifications;  -- ONE row → me | early@example.com
+-- smoke-test matching (instant reveal on the SECOND, completing entry):
+select celestual_submit('@me','@you','early@example.com');  -- {"recorded":true,"mutual":false,...}
+select celestual_submit('@you','@me','live@example.com');   -- {"recorded":true,"mutual":true,"match":"me",...}
+select self_handle, to_email from celestual_notifications;  -- ONE row → me | early@example.com (the EARLIER entrant)
 -- clean up the test rows:
 select celestual_suppress('@me'); select celestual_suppress('@you');
 ```
@@ -109,22 +114,16 @@ product to do its one job.
 
 ## Part 6 — (Optional) Instagram sign-in
 
-Off by default (`VITE_META_ENABLED=0` → a verified stub keeps the flow testable).
-To turn on real Instagram/Meta sign-in, follow
-[SETUP-AUTH-AND-PAYMENTS.md § 1](./SETUP-AUTH-AND-PAYMENTS.md#1-instagram-sign-in-meta),
+Off by default (`VITE_META_ENABLED=0` → a verified stub keeps the flow testable),
+and **postponed for the current launch**. To turn on real Instagram/Meta sign-in
+later, follow
+[SETUP-AUTH.md § 1](./SETUP-AUTH.md#1-instagram-sign-in-meta),
 then set `VITE_META_ENABLED=1` in Vercel and redeploy.
 
-## Part 7 — (Optional) Payments for extra stars
-
-Off by default (`VITE_PAY_ENABLED=0` → extra stars granted locally). The first
-star is always free. To charge for additional stars, follow
-[SETUP-AUTH-AND-PAYMENTS.md § 2](./SETUP-AUTH-AND-PAYMENTS.md#2-payments-stripe),
-deploy `celestual-checkout`, set the provider secrets, and set
-`VITE_PAY_ENABLED=1`.
-
-> 💳 **Before taking real money,** make a provider webhook the source of truth for
-> entitlements instead of the interim client-side `?paid=1` grant — see
-> [SETUP-AUTH-AND-PAYMENTS.md § 2.6](./SETUP-AUTH-AND-PAYMENTS.md#26-hardening-for-real-money-recommended).
+> 🔁 **(Optional) reminder emails.** The out-of-slots screen lets people opt in to
+> an email when their next star regenerates. To actually send them, deploy
+> `celestual-remind` (same secrets as `celestual-notify`) and schedule it hourly
+> with pg_cron. Without it, the in-app countdown still works.
 
 ---
 
@@ -133,10 +132,9 @@ deploy `celestual-checkout`, set the provider secrets, and set
 | Secret / value | Where it goes | Exposed to browser? |
 | --- | --- | --- |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Vercel env vars | ✅ yes (safe) |
-| `VITE_META_ENABLED`, `VITE_PAY_ENABLED`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags only) |
+| `VITE_META_ENABLED`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags only) |
 | Supabase **service_role** key | injected into edge functions only | ❌ never |
 | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` | Supabase function secrets | ❌ never |
-| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, Kakao/Toss keys | Supabase function secrets | ❌ never |
 | Meta App ID / Secret | Supabase Auth → Facebook provider | ❌ never |
 
 **Rule of thumb:** only `VITE_*` values are ever safe in the front-end. Anything
@@ -145,9 +143,9 @@ labelled *secret* lives in Supabase. After changing any `VITE_*` value in Vercel
 
 ## Done
 
-- [ ] Schema applied + RLS verified (Part 2)
+- [ ] All three migrations applied + RLS verified (Part 2)
 - [ ] `celestual-notify` deployed + secrets set + webhook wired (Part 3)
 - [ ] Front-end deployed with Supabase env vars (Part 4)
 - [ ] `celestual.us` resolves over HTTPS (Part 5)
 - [ ] (optional) Instagram sign-in on (Part 6)
-- [ ] (optional) Payments on + webhook-hardened (Part 7)
+- [ ] (optional) `celestual-remind` deployed + scheduled for reminder emails (Part 6)

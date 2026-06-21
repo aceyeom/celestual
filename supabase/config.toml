@@ -13,7 +13,7 @@ major_version = 15
 [functions.celestual-notify]
 verify_jwt = false
 
-[functions.celestual-checkout]
+[functions.celestual-remind]
 verify_jwt = false
 
 [functions.celestual-search]
