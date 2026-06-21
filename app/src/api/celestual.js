@@ -24,13 +24,21 @@ export function isValidHandle(h) {
   return n.length >= 1 && n.length <= 30;
 }
 
-// Record a one-way entry. Returns { recorded } and, when throttled/blocked, an
-// `error` of 'rate_limited' | 'suppressed'. Never returns a match result.
-export async function submitEntry({ me, ex, email }) {
-  if (!hasSupabase) {
-    // Offline demo: just acknowledge — there is no live reveal anymore.
+// A "full budget" snapshot, used as the safe fallback when there's no backend.
+export const FULL_SLOTS = { remaining: 3, cap: 3, next_at: null };
+// Demo is sandboxed — it never touches the real backend — so it runs on a roomy
+// local budget and treats @demo as the one guaranteed mutual.
+const DEMO_SLOTS = { remaining: 3, cap: 3, next_at: null };
+
+// Record a one-way entry. Returns:
+//   { recorded:true, mutual:boolean, match:handle|null, slots:{remaining,cap,next_at} }
+//   { recorded:false, error:'rate_limited'|'suppressed'|'no_slots', slots? }
+// `demo` short-circuits to a local simulation so /demo never writes real entries.
+export async function submitEntry({ me, ex, email, demo }) {
+  if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 600));
-    return { recorded: true };
+    const mutual = normHandle(ex) === 'demo';
+    return { recorded: true, mutual, match: mutual ? normHandle(ex) : null, slots: DEMO_SLOTS, demo: true };
   }
 
   const { data, error } = await supabase.rpc('celestual_submit', {
@@ -39,12 +47,70 @@ export async function submitEntry({ me, ex, email }) {
     p_email: email ? email.trim() : null,
   });
   if (error) throw error;
-  return data; // { recorded: boolean, error?: 'rate_limited' | 'suppressed' }
+  return data;
 }
 
-// Un-send a one-way entry you made (§4.6).
-export async function withdrawEntry({ me, ex }) {
-  if (!hasSupabase) {
+// Which of `handles` (the @s I've entered) are now mutual — powers the in-app
+// constellations view (group-aware on the server). Read-only; never reveals more
+// than the instant reveal already does.
+export async function checkMutuals({ me, handles, demo }) {
+  const list = (handles || []).map(normHandle).filter(Boolean);
+  if (demo || !hasSupabase) return list.filter((h) => h === 'demo');
+  if (!list.length || !normHandle(me)) return [];
+  try {
+    const { data, error } = await supabase.rpc('celestual_check_many', { p_from: me, p_to: list });
+    if (error) return [];
+    return Array.isArray(data?.mutual) ? data.mutual : [];
+  } catch {
+    return [];
+  }
+}
+
+// Link up to 3 of your own @s into one identity group, so being entered on ANY of
+// them counts as you. No-op for a single handle (nothing to group). Best-effort:
+// failures degrade to "just my handles" without throwing into the UI.
+export async function linkHandles(handles, { demo } = {}) {
+  const list = [...new Set((handles || []).map(normHandle).filter(Boolean))].slice(0, 3);
+  if (demo || !hasSupabase || list.length < 2) return { group: list };
+  try {
+    const { data, error } = await supabase.rpc('celestual_link', { p_handles: list });
+    if (error || !data) return { group: list };
+    return data; // { group: [handle, ...] }
+  } catch {
+    return { group: list };
+  }
+}
+
+// Opt in to an email nudge when this handle's next slot regenerates. Timing is
+// computed server-side; the client only supplies where to send it.
+export async function requestReminder({ me, email, demo }) {
+  if (demo || !hasSupabase || !normHandle(me) || !email) return { ok: false };
+  try {
+    const { data, error } = await supabase.rpc('celestual_request_reminder', { p_handle: me, p_email: email.trim() });
+    if (error) return { ok: false };
+    return data || { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
+// The live slot snapshot for a handle (for display). The server is the authority
+// at seal time; this just feeds the meter + the out-of-slots countdown.
+export async function fetchSlots(me, { demo } = {}) {
+  if (demo || !hasSupabase || !normHandle(me)) return FULL_SLOTS;
+  try {
+    const { data, error } = await supabase.rpc('celestual_slots_for', { p_handle: me });
+    if (error || !data) return FULL_SLOTS;
+    return data; // { remaining, cap, next_at }
+  } catch {
+    return FULL_SLOTS;
+  }
+}
+
+// Un-send a one-way entry you made (§4.6). Withdrawing removes the star and tears
+// down any pending match, but NEVER refunds the slot it cost (anti-fishing).
+export async function withdrawEntry({ me, ex, demo }) {
+  if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { withdrawn: true };
   }

@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════════════╗
--- ║ CELESTUAL · 0002 — user accounts, encrypted sky, entitlements       ║
+-- ║ CELESTUAL · 0002 — user accounts, encrypted sky                     ║
 -- ╚══════════════════════════════════════════════════════════════════╝
 --
 -- Adds the signed-in-user layer that 0001 deliberately left out, so a person's
@@ -31,6 +31,7 @@
 create table if not exists celestual_profiles (
   user_id      uuid primary key references auth.users(id) on delete cascade,
   handle       text,                          -- their own IG @ (their star's label), normalised
+  handles      text[] not null default '{}',  -- all of their own @s (multi-account, 0003 identity group)
   email        text,                          -- contact email for the mutual-match note
   display_name text,
   sky_cipher   text,                          -- AES-GCM ciphertext (base64) of the sky JSON — opaque to the server
@@ -52,31 +53,17 @@ create table if not exists celestual_user_keys (
 );
 
 -- ──────────────────────────────────────────────────────────────────────
--- ENTITLEMENTS — how many paid (beyond-the-free) stars a user owns. The client
--- READS this; only the service role (the Stripe/Kakao/Toss webhook) WRITES it, so
--- a user can't self-grant. Mirrors app/src/api/pay.js.
--- ──────────────────────────────────────────────────────────────────────
-create table if not exists celestual_entitlements (
-  user_id    uuid primary key references auth.users(id) on delete cascade,
-  paid_stars int not null default 0,
-  updated_at timestamptz not null default now()
-);
-
--- ──────────────────────────────────────────────────────────────────────
 -- RLS — owner-only. Enable RLS, lock anon out, grant the authenticated role the
 -- privileges RLS then narrows to its own rows.
 -- ──────────────────────────────────────────────────────────────────────
 alter table celestual_profiles     enable row level security;
 alter table celestual_user_keys    enable row level security;
-alter table celestual_entitlements enable row level security;
 
 revoke all on celestual_profiles     from anon, authenticated;
 revoke all on celestual_user_keys    from anon, authenticated;
-revoke all on celestual_entitlements from anon, authenticated;
 
 grant select, insert, update, delete on celestual_profiles  to authenticated;
 grant select, insert, update, delete on celestual_user_keys to authenticated;
-grant select                         on celestual_entitlements to authenticated;
 
 drop policy if exists "own profile" on celestual_profiles;
 create policy "own profile" on celestual_profiles
@@ -87,11 +74,6 @@ drop policy if exists "own key" on celestual_user_keys;
 create policy "own key" on celestual_user_keys
   for all to authenticated
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-drop policy if exists "own entitlement" on celestual_entitlements;
-create policy "own entitlement" on celestual_entitlements
-  for select to authenticated
-  using (auth.uid() = user_id);
 
 -- Keep updated_at honest on every write.
 create or replace function celestual_touch_updated_at() returns trigger
@@ -121,7 +103,6 @@ begin
   if uid is null then
     raise exception 'not signed in';
   end if;
-  delete from celestual_entitlements where user_id = uid;
   delete from celestual_user_keys    where user_id = uid;
   delete from celestual_profiles     where user_id = uid;
   -- Remove the auth user too (cascades are already handled above). Best-effort:

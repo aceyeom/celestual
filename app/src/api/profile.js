@@ -87,7 +87,14 @@ function readLocalSky() {
   try {
     const s = JSON.parse(localStorage.getItem(SKY_LOCAL))
     if (s && Array.isArray(s.handles)) {
-      return { handle: s.me || s.handle || '', email: s.email || '', displayName: s.displayName || '', sky: { handles: s.handles, times: s.times || [], sealCount: s.sealCount ?? s.handles.length }, source: 'local' }
+      return {
+        handle: s.me || s.handle || '',
+        myHandles: Array.isArray(s.myHandles) ? s.myHandles : [],
+        email: s.email || '',
+        displayName: s.displayName || '',
+        sky: { handles: s.handles, times: s.times || [], sealCount: s.sealCount ?? s.handles.length },
+        source: 'local',
+      }
     }
   } catch {
     /* ignore */
@@ -95,9 +102,9 @@ function readLocalSky() {
   return null
 }
 
-function writeLocalSky({ me, email, displayName, handles, times, sealCount }) {
+function writeLocalSky({ me, myHandles, email, displayName, handles, times, sealCount }) {
   try {
-    localStorage.setItem(SKY_LOCAL, JSON.stringify({ me, email, displayName, handles, times, sealCount }))
+    localStorage.setItem(SKY_LOCAL, JSON.stringify({ me, myHandles: myHandles || [], email, displayName, handles, times, sealCount }))
   } catch {
     /* ignore */
   }
@@ -112,7 +119,7 @@ export async function loadProfile() {
       const key = await getOrCreateKey(user.id)
       const { data } = await supabase
         .from('celestual_profiles')
-        .select('handle, email, display_name, sky_cipher, sky_nonce, star_count')
+        .select('handle, handles, email, display_name, sky_cipher, sky_nonce, star_count')
         .eq('user_id', user.id)
         .maybeSingle()
       let sky = EMPTY_SKY
@@ -120,8 +127,15 @@ export async function loadProfile() {
         const dec = await decryptJSON(key, data.sky_cipher, data.sky_nonce)
         if (dec && Array.isArray(dec.handles)) sky = { handles: dec.handles, times: dec.times || [], sealCount: dec.sealCount ?? dec.handles.length }
       }
-      const paidStars = await loadEntitlements(user.id)
-      return { source: 'db', userId: user.id, handle: data?.handle || '', email: data?.email || user.email || '', displayName: data?.display_name || '', sky, paidStars }
+      return {
+        source: 'db',
+        userId: user.id,
+        handle: data?.handle || '',
+        myHandles: Array.isArray(data?.handles) ? data.handles : [],
+        email: data?.email || user.email || '',
+        displayName: data?.display_name || '',
+        sky,
+      }
     } catch {
       // Fall back to local so a transient backend error doesn't blank the sky.
       return readLocalSky()
@@ -131,8 +145,10 @@ export async function loadProfile() {
 }
 
 // Persist the account + sky. Debounce at the call site — this writes immediately.
-export async function saveProfile({ me, email, displayName, handles, times, sealCount }) {
+// `myHandles` is the user's own @s (multi-account); stored as a plain column.
+export async function saveProfile({ me, myHandles, email, displayName, handles, times, sealCount }) {
   const sky = { handles: handles || [], times: times || [], sealCount: sealCount ?? (handles ? handles.length : 0) }
+  const own = Array.isArray(myHandles) ? myHandles : []
   const user = await dbReady()
   if (user) {
     try {
@@ -142,6 +158,7 @@ export async function saveProfile({ me, email, displayName, handles, times, seal
         {
           user_id: user.id,
           handle: me || null,
+          handles: own,
           email: email || null,
           display_name: displayName || null,
           sky_cipher: cipher,
@@ -153,23 +170,12 @@ export async function saveProfile({ me, email, displayName, handles, times, seal
       return { source: 'db' }
     } catch {
       // Don't lose the data — mirror it locally if the write failed.
-      writeLocalSky({ me, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
+      writeLocalSky({ me, myHandles: own, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
       return { source: 'local' }
     }
   }
-  writeLocalSky({ me, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
+  writeLocalSky({ me, myHandles: own, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
   return { source: 'local' }
-}
-
-export async function loadEntitlements(uid) {
-  try {
-    const id = uid || (await currentUser())?.id
-    if (!id) return 0
-    const { data } = await supabase.from('celestual_entitlements').select('paid_stars').eq('user_id', id).maybeSingle()
-    return Number(data?.paid_stars || 0)
-  } catch {
-    return 0
-  }
 }
 
 // Sign out of Supabase and drop the local session caches (but NOT the sky — that's
@@ -182,8 +188,8 @@ export async function signOutUser() {
   }
 }
 
-// Wipe everything: the encrypted profile, the key, entitlements, the auth user, and
-// every local cache. Used by the account area's "delete account".
+// Wipe everything: the encrypted profile, the key, the auth user, and every local
+// cache. Used by the account area's "delete account".
 export async function deleteAccount() {
   const user = await currentUser()
   try {
