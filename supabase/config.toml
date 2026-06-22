@@ -18,3 +18,8 @@ verify_jwt = false
 
 [functions.celestual-search]
 verify_jwt = false
+
+# Called by Meta's webhook (not our clients), so JWT verification is off; the
+# function enforces its own X-Hub-Signature-256 check instead.
+[functions.celestual-ig-webhook]
+verify_jwt = false

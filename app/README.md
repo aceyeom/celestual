@@ -34,10 +34,15 @@ references in the code point there.
   of them counts (group-aware matching, `celestual_handle_links`).
 - **`/demo`.** `celestual.us/demo` is **fully sandboxed** — zero verification and
   never writes to the real backend (enter `@demo` as the ex to see a match).
-- **Optional integrations** behind `VITE_*` flags (off by default, safe local
-  fallbacks): Meta sign-in ([`src/api/auth.js`](./src/api/auth.js), postponed) and
-  @ search typeahead (`searchHandles()` + `supabase/functions/celestual-search`).
-  See [`.env.example`](./.env.example).
+- **Instagram DM verification** (no OAuth) behind `VITE_IG_VERIFY_ENABLED` (off by
+  default → a local verified stub keeps the flow testable). People prove the `@`
+  they type is theirs by DMing a one-time code to your Instagram account, confirmed
+  by Meta's official Messaging webhook ([`src/api/igverify.js`](./src/api/igverify.js)
+  + `supabase/functions/celestual-ig-webhook`). See
+  [`../docs/SETUP-IG-VERIFY.md`](../docs/SETUP-IG-VERIFY.md).
+- **Optional @ search typeahead** behind `VITE_HANDLE_SEARCH` (off by default):
+  `searchHandles()` + `supabase/functions/celestual-search`. See
+  [`.env.example`](./.env.example).
 
 ## Flow
 

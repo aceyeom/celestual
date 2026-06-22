@@ -3,15 +3,15 @@ import {
   submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle,
   checkMutuals, linkHandles, fetchSlots, requestReminder, FULL_SLOTS,
 } from './api/celestual.js'
-import { getSession, signInWithMeta, resumeSession } from './api/auth.js'
+import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
+import { igVerifyEnabled } from './api/igverify.js'
 import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi } from './api/profile.js'
 import { slotsRemaining } from './api/slots.js'
-import { supabase } from './api/supabase.js'
 import { makeColors, PALETTE } from './theme.js'
 import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
 import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
-  RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet,
+  RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
 import { useI18n } from './i18n/index.js'
 
@@ -68,7 +68,10 @@ export default function App() {
 
   const [demo, setDemo] = useState(isDemoPath)
   const [session, setSession] = useState(getSession)
-  const verified = !!session?.verified
+  // The Instagram-DM verification overlay request: { handle, onDone } while open,
+  // null otherwise. `onDone(proof)` resumes whatever the user was doing (continue
+  // to "them", or finish the seal) once ownership is proven.
+  const [verify, setVerify] = useState(null)
 
   // First screen: the landing hook — there's no sign-in wall anymore (identity is
   // confirmed at seal time). If they were mid-flow, resume there; a half-finished
@@ -80,6 +83,15 @@ export default function App() {
   const screenRef = useRef(screen)
   const [email, setEmail] = useState(init.email || session?.email || '')
   const [me, setMe] = useState(init.me || session?.handle || '')
+  // Identity is proven for the CURRENT handle only. An Instagram-DM session is bound
+  // to the exact @ it verified, so editing `me` correctly drops back to unverified
+  // (the seal/continue gate then re-verifies). The local stub — used only when real
+  // verification isn't configured — isn't handle-specific, so it stays valid.
+  const verified =
+    !!session?.verified &&
+    (session.provider === 'instagram_dm'
+      ? !!me.trim() && normHandle(session.handle) === normHandle(me)
+      : true)
   const [displayName, setDisplayName] = useState(init.displayName || session?.name || '')
   // The user's OTHER Instagram @s (multi-account). The full identity set is
   // [me, ...altHandles]; being entered on ANY of them counts as them (§ identity).
@@ -237,59 +249,12 @@ export default function App() {
     return () => clearTimeout(id)
   }, [me, altHandles, demo])
 
-  // Latest sky in refs, so the merge below can read it without stale closures.
-  const handlesRef = useRef(handles)
-  const timesRef = useRef(sealTimes)
-  useEffect(() => {
-    handlesRef.current = handles
-  }, [handles])
-  useEffect(() => {
-    timesRef.current = sealTimes
-  }, [sealTimes])
-
-  // Union an incoming (server) sky with what's on screen — keyed by normalised
-  // handle, server entries first. This is what makes signing in mid-flow ADOPT an
-  // existing cross-device sky instead of overwriting it with the local one.
-  const mergeSky = useCallback((p) => {
-    if (!p) return
-    const map = new Map()
-    const dbH = (p.sky && p.sky.handles) || []
-    const dbT = (p.sky && p.sky.times) || []
-    dbH.forEach((h, i) => {
-      const k = normHandle(h)
-      if (k) map.set(k, { h: k, t: dbT[i] || Date.now() })
-    })
-    handlesRef.current.forEach((h, i) => {
-      const k = normHandle(h)
-      if (k && !map.has(k)) map.set(k, { h: k, t: timesRef.current[i] || Date.now() })
-    })
-    const arr = [...map.values()]
-    setHandles(arr.map((x) => x.h))
-    setSealTimes(arr.map((x) => x.t))
-    if (p.handle) setMe((m) => m || normHandle(p.handle))
-    if (Array.isArray(p.myHandles) && p.myHandles.length) {
-      setAltHandles((prev) => {
-        const set = new Set(prev.map(normHandle).filter(Boolean))
-        p.myHandles.map(normHandle).filter(Boolean).forEach((x) => set.add(x))
-        set.delete(normHandle(p.handle || ''))
-        return [...set].slice(0, 2)
-      })
-    }
-    if (p.email) setEmail((e) => e || p.email)
-    if (p.displayName) setDisplayName((n) => n || p.displayName)
-    if (p.source === 'db') setSynced(true)
-  }, [])
-
-  // When a real sign-in completes (e.g. the seal-time Instagram popup), pull the
-  // server profile and merge it in — so an account's sky follows it across devices.
-  useEffect(() => {
-    if (!supabase) return
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== 'SIGNED_IN') return
-      loadProfile().then(mergeSky).catch(() => {})
-    })
-    return () => sub?.subscription?.unsubscribe?.()
-  }, [mergeSky])
+  // NOTE: identity is now proven by an Instagram DM (api/igverify.js), which does
+  // not create a Supabase Auth session — so there is no cross-device server sky to
+  // merge here. The sky persists locally (api/profile.js falls back to localStorage
+  // when there's no auth user), exactly as it did under the previous verified stub.
+  // Bridging a verified handle to a Supabase Auth session (for the encrypted DB sky)
+  // is an optional future step — see docs/SETUP-IG-VERIFY.md.
 
   // Capture a returning OAuth session on load (the popup-blocked redirect
   // fallback path) — adopt it so the app resumes signed in. No navigation: people
@@ -360,8 +325,115 @@ export default function App() {
     setIntroMode(i >= 3 ? 'match' : 'idle')
   }, [])
 
-  // Seal: record the one-way entry. With instant reveal, a completed mutual routes
-  // to the match screen; otherwise it rests in the sky.
+  // ── identity (Instagram DM verification) ──
+  // Open the in-tab verify overlay for `handle`; `onDone(proof)` resumes the flow
+  // once ownership is proven. No popup or redirect, so the in-memory entry survives.
+  const openVerify = useCallback((handle, onDone) => {
+    setVerify({ handle: normHandle(handle), onDone })
+  }, [])
+  const closeVerify = useCallback(() => setVerify(null), [])
+  // The overlay calls this on a confirmed DM: persist the verified session (bound to
+  // the handle, carrying the proof secret) and resume whatever was waiting on it.
+  const onVerified = useCallback(
+    (proof) => {
+      if (!verify) return
+      const s = markVerified(verify.handle, proof)
+      setSession(s)
+      const done = verify.onDone
+      setVerify(null)
+      if (done) done(proof)
+    },
+    [verify],
+  )
+
+  // Perform the seal once identity is settled. `proofOverride` comes straight from a
+  // just-completed verification (avoids reading a stale session); otherwise we use
+  // the current session's proof (undefined on the stub/demo paths). With instant
+  // reveal, a completed mutual routes to the match screen; otherwise it rests.
+  const doSeal = useCallback(
+    async (proofOverride) => {
+      const now = Date.now()
+      setSealedAt(now)
+      setHandles((h) => [...h, normHandle(them)])
+      setSealTimes((s) => [...s, now])
+      // Measure the live @ field NOW (it's still mounted) so the morph collapses from
+      // exactly where the textbox is and the galaxy drift continues from that point.
+      let origin = SENDOFF_ORIGIN
+      let geom = null
+      try {
+        const el = document.querySelector('[data-sendoff-field]')
+        if (el) {
+          const r = el.getBoundingClientRect()
+          const cx = r.left + r.width / 2
+          const cy = r.top + r.height / 2
+          origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
+          geom = { cx, cy, w: r.width, h: r.height }
+        }
+      } catch {
+        /* ignore — fall back to the default origin */
+      }
+      setSendoffOrigin(origin)
+      setMorph({ handle: normHandle(them), geom })
+      setTimeout(() => setMorph(null), 1320)
+      go('sendoff')
+      const minSuspense = new Promise((r) => setTimeout(r, 3200))
+      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      try {
+        const [res] = await Promise.all([submitEntry({ me, ex: them, email, proof, demo }), minSuspense])
+        const rollback = () => {
+          setHandles((h) => h.slice(0, -1))
+          setSealTimes((s) => s.slice(0, -1))
+        }
+        if (res?.slots) setSlots(res.slots)
+        if (res?.error === 'no_slots') {
+          rollback()
+          go('outofslots')
+          return
+        }
+        if (res?.error === 'rate_limited') {
+          setError(t('them.errRate'))
+          rollback()
+          go('them')
+          return
+        }
+        if (res?.error === 'suppressed') {
+          setError(t('them.errSuppressed'))
+          rollback()
+          go('them')
+          return
+        }
+        if (res?.error === 'unverified') {
+          // The server rejected the ownership proof (expired or cleared). Drop the
+          // session so the next attempt re-verifies, and send them back to re-seal.
+          rollback()
+          clearAuthSession()
+          setSession(null)
+          setError(t('them.errUnverified'))
+          go('them')
+          return
+        }
+        if (res?.mutual) {
+          const mh = normHandle(res.match || them)
+          setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
+          go('match')
+          return
+        }
+        go('resting')
+      } catch (e) {
+        console.error(e)
+        setHandles((h) => h.slice(0, -1))
+        setSealTimes((s) => s.slice(0, -1))
+        setError(t('them.errGeneric'))
+        go('them')
+      }
+    },
+    [me, them, email, demo, session, go, t],
+  )
+
+  // Seal: validate, gate on the slot budget, then confirm it's really you before
+  // recording the one-way entry. An unverified handle opens the verify overlay (it
+  // resumes the seal on success); the local stub resolves instantly when real
+  // verification isn't configured. /demo and an already-verified handle skip it.
   const seal = useCallback(async () => {
     setError('')
     if (!isValidHandle(me) || !isValidHandle(them)) {
@@ -377,89 +449,26 @@ export default function App() {
       go('outofslots')
       return
     }
-    // Confirm it's really you — at the moment of sealing, with Instagram. The
-    // real provider opens a popup (this keeps the in-memory entry alive); the dev
-    // stub resolves instantly. /demo and already-verified users skip it. This must
-    // stay the first await after the click so the popup isn't blocked.
     if (!verified && !demo) {
-      let s = null
-      try {
-        s = await signInWithMeta()
-      } catch {
-        s = null
-      }
-      if (!s) {
-        setError(t('them.authCancelled'))
+      if (igVerifyEnabled()) {
+        openVerify(me, (proof) => doSeal(proof)) // overlay resumes the seal
         return
       }
-      setSession(s)
-      if (s.email && !email) setEmail(s.email)
-      if (s.handle) setMe(s.handle)
+      setSession(signInStub())
     }
-    const now = Date.now()
-    setSealedAt(now)
-    setHandles((h) => [...h, normHandle(them)])
-    setSealTimes((s) => [...s, now])
-    // Measure the live @ field NOW (it's still mounted) so the morph collapses from
-    // exactly where the textbox is and the galaxy drift continues from that point.
-    let origin = SENDOFF_ORIGIN
-    let geom = null
-    try {
-      const el = document.querySelector('[data-sendoff-field]')
-      if (el) {
-        const r = el.getBoundingClientRect()
-        const cx = r.left + r.width / 2
-        const cy = r.top + r.height / 2
-        origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
-        geom = { cx, cy, w: r.width, h: r.height }
-      }
-    } catch {
-      /* ignore — fall back to the default origin */
+    await doSeal()
+  }, [me, them, slots, demo, verified, go, t, doSeal, openVerify])
+
+  // From the "you" step: prove the handle first (when verification is on) and only
+  // then advance to "them", so people confirm who they are before naming anyone.
+  const continueFromYou = useCallback(() => {
+    if (!isValidHandle(me)) return
+    if (igVerifyEnabled() && !demo && !verified) {
+      openVerify(me, () => go('them'))
+      return
     }
-    setSendoffOrigin(origin)
-    setMorph({ handle: normHandle(them), geom })
-    setTimeout(() => setMorph(null), 1320)
-    go('sendoff')
-    const minSuspense = new Promise((r) => setTimeout(r, 3200))
-    try {
-      const [res] = await Promise.all([submitEntry({ me, ex: them, email, demo }), minSuspense])
-      const rollback = () => {
-        setHandles((h) => h.slice(0, -1))
-        setSealTimes((s) => s.slice(0, -1))
-      }
-      if (res?.slots) setSlots(res.slots)
-      if (res?.error === 'no_slots') {
-        rollback()
-        go('outofslots')
-        return
-      }
-      if (res?.error === 'rate_limited') {
-        setError(t('them.errRate'))
-        rollback()
-        go('them')
-        return
-      }
-      if (res?.error === 'suppressed') {
-        setError(t('them.errSuppressed'))
-        rollback()
-        go('them')
-        return
-      }
-      if (res?.mutual) {
-        const mh = normHandle(res.match || them)
-        setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
-        go('match')
-        return
-      }
-      go('resting')
-    } catch (e) {
-      console.error(e)
-      setHandles((h) => h.slice(0, -1))
-      setSealTimes((s) => s.slice(0, -1))
-      setError(t('them.errGeneric'))
-      go('them')
-    }
-  }, [me, them, email, slots, demo, verified, go, t])
+    go('them')
+  }, [me, demo, verified, go, openVerify])
 
   // Multi-entry: gate on the slot budget here too (entering "more users").
   const checkAnother = useCallback(() => {
@@ -605,12 +614,15 @@ export default function App() {
 
   const ctx = {
     email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches,
+    // True when real Instagram verification is wired (vs. the testable local stub),
+    // so the "you" step knows to confirm the handle before advancing.
+    verifyEnabled: igVerifyEnabled(),
     slotsLeft: demo ? Infinity : slotsRemaining(slots),
     isMutual: (h) => matches.includes(normHandle(h)),
     matchCount: handles.filter((h) => matches.includes(normHandle(h))).length,
     setEmail, setMe, setThem, setDisplayName, addAltHandle, removeAltHandle,
     requestReminder: (em) => requestReminder({ me, email: em || email, demo }),
-    go, seal, checkAnother, affirmAge, suppressHandle, openConversation,
+    go, seal, continueFromYou, checkAnother, affirmAge, suppressHandle, openConversation,
     enterDemo, findOut, watchIntro, finishIntro, onIntroStep,
     onStarTap, closeStar, removeStar,
     openAccount, closeAccount, signOut, deleteAccount,
@@ -683,6 +695,10 @@ export default function App() {
       {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}
 
       {accountOpen && <AccountSheet C={C} ctx={ctx} lang={lang} />}
+
+      {/* Instagram DM verification — confirms the typed @ is really theirs, in-tab,
+          without any OAuth. Resumes the flow (continue / seal) on success. */}
+      {verify && <IgVerifySheet C={C} handle={verify.handle} onVerified={onVerified} onClose={closeVerify} />}
     </div>
   )
 }

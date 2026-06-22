@@ -33,14 +33,16 @@ backend.
 contents of each migration **in order** and **Run** each:
 [`0001_celestual.sql`](../supabase/migrations/0001_celestual.sql) (matching core),
 [`0002_user_accounts.sql`](../supabase/migrations/0002_user_accounts.sql) (accounts +
-encrypted sky), then
+encrypted sky),
 [`0003_production_hardening.sql`](../supabase/migrations/0003_production_hardening.sql)
-(slot budget, multi-account, instant reveal).
+(slot budget, multi-account, instant reveal), then
+[`0004_ig_verification.sql`](../supabase/migrations/0004_ig_verification.sql)
+(Instagram DM handle verification — enforcement off by default).
 
 **Option B — CLI:**
 ```bash
 supabase link --project-ref <your-project-ref>
-supabase db push   # applies all three migrations in order
+supabase db push   # applies all four migrations in order
 ```
 
 **Verify it's secure** (paste in the SQL Editor):
@@ -112,13 +114,19 @@ product to do its one job.
 
 ---
 
-## Part 6 — (Optional) Instagram sign-in
+## Part 6 — (Optional) Instagram DM handle verification
 
-Off by default (`VITE_META_ENABLED=0` → a verified stub keeps the flow testable),
-and **postponed for the current launch**. To turn on real Instagram/Meta sign-in
-later, follow
-[SETUP-AUTH.md § 1](./SETUP-AUTH.md#1-instagram-sign-in-meta),
-then set `VITE_META_ENABLED=1` in Vercel and redeploy.
+Off by default (`VITE_IG_VERIFY_ENABLED=0` → a verified stub keeps the flow
+testable). This proves the `@` a person types is really theirs — **no Facebook
+OAuth, no login** — by having them DM a one-time code to your Instagram account,
+confirmed by Meta's official Messaging webhook. It closes the impersonation gap
+tracked in [SECURITY.md](./SECURITY.md).
+
+Full walkthrough (Instagram pro account, Meta app, the `celestual-ig-webhook`
+function, migration `0004`, and the final enforcement flip):
+**[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md)**. In short: deploy the webhook + set
+`VITE_IG_VERIFY_ENABLED=1` / `VITE_IG_USERNAME=<your_handle>` in Vercel, then flip
+`celestual_settings.require_ig_verification` to `'true'`.
 
 > 🔁 **(Optional) reminder emails.** The out-of-slots screen lets people opt in to
 > an email when their next star regenerates. To actually send them, deploy
@@ -132,10 +140,10 @@ then set `VITE_META_ENABLED=1` in Vercel and redeploy.
 | Secret / value | Where it goes | Exposed to browser? |
 | --- | --- | --- |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Vercel env vars | ✅ yes (safe) |
-| `VITE_META_ENABLED`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags only) |
+| `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags + a public handle) |
 | Supabase **service_role** key | injected into edge functions only | ❌ never |
 | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` | Supabase function secrets | ❌ never |
-| Meta App ID / Secret | Supabase Auth → Facebook provider | ❌ never |
+| `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` | Supabase function secrets (verification webhook) | ❌ never |
 
 **Rule of thumb:** only `VITE_*` values are ever safe in the front-end. Anything
 labelled *secret* lives in Supabase. After changing any `VITE_*` value in Vercel,
@@ -143,9 +151,9 @@ labelled *secret* lives in Supabase. After changing any `VITE_*` value in Vercel
 
 ## Done
 
-- [ ] All three migrations applied + RLS verified (Part 2)
+- [ ] All four migrations applied + RLS verified (Part 2)
 - [ ] `celestual-notify` deployed + secrets set + webhook wired (Part 3)
 - [ ] Front-end deployed with Supabase env vars (Part 4)
 - [ ] `celestual.us` resolves over HTTPS (Part 5)
-- [ ] (optional) Instagram sign-in on (Part 6)
+- [ ] (optional) Instagram DM verification on + enforcement flipped (Part 6 / SETUP-IG-VERIFY.md)
 - [ ] (optional) `celestual-remind` deployed + scheduled for reminder emails (Part 6)
