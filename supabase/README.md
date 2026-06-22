@@ -46,7 +46,7 @@ Re-running is safe (`if not exists` / `create or replace` / `drop policy if exis
 | `functions/celestual-notify` | drains `celestual_notifications` and emails the mutual-match reveal via Resend | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | drains `celestual_reminders` and emails "a new star is ready" when a slot regenerates (schedule hourly with pg_cron) | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
-| `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, and calls `celestual_complete_ig_verification` — no Meta developer portal | `MANYCHAT_SHARED_SECRET` |
+| `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's keyword-triggered External Request (sender username + the `seal <code>` text), authenticated by a shared secret, parses the code, and calls `celestual_complete_ig_verification` — no Meta developer portal | `MANYCHAT_SHARED_SECRET`, *(opt.)* `IG_KEYWORD` |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. Deploy

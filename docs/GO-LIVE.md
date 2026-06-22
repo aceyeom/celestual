@@ -116,18 +116,21 @@ product to do its one job.
 
 ## Part 6 — (Optional) Instagram DM handle verification
 
-Off by default (`VITE_IG_VERIFY_ENABLED=0` → a verified stub keeps the flow
-testable). This proves the `@` a person types is really theirs — **no OAuth, no
-login, and no Meta developer portal** — by having them DM a one-time code to your
-Instagram account (`@celestual.us`), relayed by **ManyChat** (an official Meta
-partner). It closes the impersonation gap tracked in [SECURITY.md](./SECURITY.md).
+Off by default (`VITE_IG_VERIFY_ENABLED=0`). On a **local/demo** build with no
+Supabase backend, a verified stub keeps the flow testable; on a **deployed** build
+that *has* a backend, sealing now **fails closed** until you turn this on — so it can
+never silently let people through in production. This proves the `@` a person types is
+really theirs — **no OAuth, no login, and no Meta developer portal** — by having them
+DM a one-time **`seal <code>`** message to your Instagram account (`@celestual.us`),
+relayed by **ManyChat** (an official Meta partner). It closes the impersonation gap
+tracked in [SECURITY.md](./SECURITY.md).
 
 Full walkthrough (Instagram pro account → ManyChat → the `celestual-manychat`
 function, migration `0004`, and the final enforcement flip):
 **[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md)**. In short: connect Instagram to
-ManyChat, deploy the function + set `MANYCHAT_SHARED_SECRET`, add a ManyChat Default
-Reply → External Request, set `VITE_IG_VERIFY_ENABLED=1` /
-`VITE_IG_USERNAME=celestual.us` in Vercel, then flip
+ManyChat, deploy the function + set `MANYCHAT_SHARED_SECRET`, add a ManyChat **Keyword
+trigger on `seal`** → External Request, set `VITE_IG_VERIFY_ENABLED=1` /
+`VITE_IG_USERNAME=celestual.us` / `VITE_IG_KEYWORD=seal` in Vercel, then flip
 `celestual_settings.require_ig_verification` to `'true'`. (Prefer Meta's portal
 directly? Appendix A in that doc.)
 
@@ -143,7 +146,7 @@ directly? Appendix A in that doc.)
 | Secret / value | Where it goes | Exposed to browser? |
 | --- | --- | --- |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Vercel env vars | ✅ yes (safe) |
-| `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags + a public handle) |
+| `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME`, `VITE_IG_KEYWORD`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags + a public handle/keyword) |
 | Supabase **service_role** key | injected into edge functions only | ❌ never |
 | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` | Supabase function secrets | ❌ never |
 | `MANYCHAT_SHARED_SECRET` (or `IG_APP_SECRET` / `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN`) | Supabase function secrets (verification relay) | ❌ never |

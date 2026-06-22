@@ -28,12 +28,19 @@ see `celestual.us`, that's the IG username people DM the code to.
 
 - [ ] **@celestual.us** is an Instagram **professional** (Business/Creator) account.
 - [ ] A **ManyChat** account with that Instagram connected (ManyChat **Pro** — needed for External Request).
-- [ ] Apply migration **`0004_ig_verification.sql`** in Supabase.
+- [ ] Apply migration **`0004_ig_verification.sql`** in Supabase (the DB side).
 - [ ] Deploy the **`celestual-manychat`** edge function; set the secret `MANYCHAT_SHARED_SECRET`.
-- [ ] In ManyChat: a **Default Reply → External Request** that POSTs the username + code to the function.
-- [ ] Vercel env: `VITE_IG_VERIFY_ENABLED=1`, `VITE_IG_USERNAME=celestual.us` → redeploy.
+- [ ] In ManyChat: a **Keyword trigger on `seal`** → **External Request** that POSTs the username + message to the function.
+- [ ] Vercel env: `VITE_IG_VERIFY_ENABLED=1`, `VITE_IG_USERNAME=celestual.us`, `VITE_IG_KEYWORD=seal` → redeploy.
 - [ ] Flip enforcement on: `update celestual_settings set value='true' where key='require_ig_verification';`
 - [ ] Test end-to-end (section 7).
+
+> **The activation keyword.** ManyChat needs a word to wake an automation. CELESTUAL
+> shows the code as **`seal 4071`** and copies that whole string to the clipboard, so
+> the DM your visitor sends is `seal 4071`. ManyChat's **Keyword** trigger on `seal`
+> fires, and the function pulls the `4071` back out. The keyword is `seal` everywhere:
+> the ManyChat trigger, the front-end `VITE_IG_KEYWORD`, and (optionally) the
+> function's `IG_KEYWORD` — keep all three identical if you ever change it.
 
 ---
 
@@ -44,11 +51,12 @@ see `celestual.us`, that's the IG username people DM the code to.
   ───────                         ────────                         ────────────────────
   pick @alice ──start──▶ celestual_start_ig_verification
                           └─ issues 4-digit code, stores sha256(proof)
-     ◀── code "4071" ─────┘
-  Copy & open Instagram ───────────────────────────────────────▶ user DMs "4071" to @celestual.us
-                                                                          │
-                          celestual-manychat  ◀── External Request ───────┘  (ManyChat fills in the
-                            ├─ check X-Celestual-Token (shared secret)         sender's REAL @ + the text)
+     ◀── "seal 4071" ─────┘
+  Copy & open Instagram ───────────────────────────────────────▶ user DMs "seal 4071" to @celestual.us
+                                                                          │   (keyword "seal" wakes
+                          celestual-manychat  ◀── External Request ───────┘    the ManyChat automation)
+                            ├─ check X-Celestual-Token (shared secret)    (ManyChat fills in the
+                            ├─ parse "4071" out of "seal 4071"             sender's REAL @ + the text)
                             └─ celestual_complete_ig_verification(code, igsid, "alice")
                                  └─ username == claimed handle?  ✔  → row = 'verified'
   poll(code, proofHash) ─▶ celestual_poll_ig_verification ─▶ "verified"
@@ -103,72 +111,119 @@ Instagram — **@celestual.us**.
 
 ---
 
-## 3. Supabase — migration + the relay function
+## 3. Supabase — the database + the relay function (the "DB and keys" wiring)
 
-### 3.1 Apply the migration
-Adds the verification tables/RPCs and the (optional) ownership gate in
-`celestual_submit`. Idempotent and safe to re-run. **SQL Editor:** run
-[`supabase/migrations/0004_ig_verification.sql`](../supabase/migrations/0004_ig_verification.sql),
-or `supabase db push`.
+This is the part to get exactly right. There are **two** Supabase pieces: the
+**database** (migration `0004`, which adds the tables/RPCs) and the **edge function**
+(`celestual-manychat`, which ManyChat calls). They share one secret.
 
-### 3.2 Set the shared secret + deploy
-1. Make a long random secret and set it — Supabase → **Edge Functions → Secrets**:
+### 3.1 Apply the migration (the DB side)
+Adds the verification tables (`celestual_ig_verifications`, `celestual_settings`),
+the start/poll/complete RPCs, and the ownership gate inside `celestual_submit`.
+Idempotent and safe to re-run.
+
+- **Supabase Dashboard → SQL Editor → New query** → paste the entire contents of
+  [`supabase/migrations/0004_ig_verification.sql`](../supabase/migrations/0004_ig_verification.sql)
+  → **Run**. (Or, with the CLI linked to your project: `supabase db push`.)
+- Confirm it took: run
+  ```sql
+  select key, value from celestual_settings;          -- expect require_ig_verification | false
+  select count(*) from celestual_ig_verifications;     -- expect 0 (table exists)
+  ```
+  `require_ig_verification` is seeded **`false`** on purpose — enforcement stays off
+  until §5, so nothing breaks while you wire the rest.
+
+### 3.2 Create the shared secret (the one key both sides hold)
+This single random string is what proves a request really came from **your** ManyChat
+(nobody else can POST fake verifications without it). You'll paste the **same value**
+in two places: a Supabase function secret here, and a ManyChat request header in §4.
+
+1. Generate it (copy the output — you'll need it twice):
    ```bash
-   # generate one:
    openssl rand -hex 32
    ```
-   | Secret | Value |
-   | --- | --- |
-   | `MANYCHAT_SHARED_SECRET` | the random string above (you'll paste the same value into ManyChat) |
+2. Store it as a function secret — **Supabase Dashboard → Edge Functions → Secrets →
+   Add new secret**:
 
-   (`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.)
-2. Deploy:
-   ```bash
-   supabase functions deploy celestual-manychat
-   ```
-   Its URL is
-   `https://<your-project-ref>.functions.supabase.co/celestual-manychat` — copy it
-   for the next step. (Open it in a browser: it should return
-   `{"ok":true,"service":"celestual-manychat"}`.)
+   | Name (exactly) | Value |
+   | --- | --- |
+   | `MANYCHAT_SHARED_SECRET` | the `openssl` string from step 1 |
+
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are **injected automatically** —
+     do **not** add them yourself, and never put the service-role key in ManyChat or
+     the browser.
+   - *(Optional)* if you ever change the keyword from `seal`, also add a secret
+     `IG_KEYWORD` = your new word, so the function parses the new prefix.
+
+### 3.3 Deploy the function & grab its URL (the endpoint ManyChat calls)
+```bash
+supabase functions deploy celestual-manychat
+```
+Its public URL is:
+```
+https://<YOUR-PROJECT-REF>.functions.supabase.co/celestual-manychat
+```
+Replace `<YOUR-PROJECT-REF>` with your project ref (Supabase → **Project Settings →
+General → Reference ID**, also the subdomain of your `VITE_SUPABASE_URL`). **Open that
+URL in a browser** — it should return `{"ok":true,"service":"celestual-manychat"}`.
+**Copy this URL; you paste it into ManyChat in §4.**
+
+> You now have the three things ManyChat needs: the **function URL** (§3.3), the
+> **secret value** (§3.2), and the JSON **body** (below). Keep them handy.
 
 ---
 
-## 4. ManyChat — the verification automation
+## 4. ManyChat — the verification automation (Keyword trigger)
 
-Build one automation: when anyone DMs your account, send the username + their
-message to the function.
+Build one automation: when someone DMs **`seal <code>`**, send their username + the
+message text to your function. ManyChat fires on the **keyword `seal`**.
 
-1. **Automation → New Automation** (or **Flows → New Flow**). Add a trigger:
-   **Default Reply** (fires on any message that doesn't match another keyword — this
-   is what catches the dynamic code). Enable it.
-2. In the flow, add an **Action → External Request** (Dev Tools). Configure:
-   - **Method:** `POST`
-   - **Request URL:** your `celestual-manychat` URL from §3.2.
-   - **Headers:** add one —
-     `X-Celestual-Token` : `<the MANYCHAT_SHARED_SECRET value>`
-   - **Body** → **JSON**. Use the **`+` / personalization picker** to insert the
-     fields so the exact merge tags are correct:
-     ```json
-     {
-       "username": "{{instagram.username}}",
-       "text": "{{last_text_input}}",
-       "subscriber_id": "{{user.id}}"
-     }
-     ```
-     `{{instagram.username}}` is the sender's real handle (from Meta, via ManyChat);
-     `{{last_text_input}}` is the code they just typed.
-3. *(Optional but nice)* **Response mapping + reply.** Map the response field
-   `status` (and `reply`) to a custom user field, then add a **Send Message** showing
-   it — so the DM gets a "Verified ✦ / try again" acknowledgement. You can skip this:
-   the app confirms on its own by polling. If you skip it, add a simple Send Message
-   like *"Got it ✦ — head back to CELESTUAL, you're verified in seconds."*
-4. *(Optional)* Add a **Condition** before the request — only call it when
-   `Last Text Input` looks like a code — to avoid pinging your backend on every
-   unrelated DM. Not required; the function safely ignores non-codes.
-5. **Publish** the automation.
+### 4.1 Create the trigger
+1. **Automation → New Automation** (or **Flows → New Flow**), channel **Instagram**.
+2. Add a trigger → **Keyword**. Configure it:
+   - **Keyword:** `seal`
+   - **Match type:** **Contains** (a.k.a. broad match). This is essential — the DM is
+     `seal 4071`, and "Contains" matches `seal` inside it. *(Exact-match would only
+     fire on the bare word "seal" and miss the code.)*
+   - Enable the trigger.
 
-> ManyChat External Requests **time out at 10 seconds**; this function responds in
-> well under that.
+### 4.2 Add the External Request action (this is where the URL + key go)
+In the flow, add **Action → External Request** (under **Dev Tools** — a ManyChat
+**Pro** feature). Fill it in exactly:
+
+- **Method:** `POST`
+- **Request URL:** paste your function URL from **§3.3**
+  (`https://<YOUR-PROJECT-REF>.functions.supabase.co/celestual-manychat`).
+- **Headers:** click **Add header** and add **one**:
+
+  | Header name (exactly) | Value |
+  | --- | --- |
+  | `X-Celestual-Token` | paste the **same** `MANYCHAT_SHARED_SECRET` value from §3.2 |
+
+- **Body → JSON.** Type the keys, but insert the **values** with ManyChat's **`{ }` /
+  personalization picker** so the merge tags resolve to real fields (don't hand-type
+  the `{{…}}` — pick them):
+  ```json
+  {
+    "username": "{{instagram.username}}",
+    "text": "{{last_text_input}}",
+    "subscriber_id": "{{user.id}}"
+  }
+  ```
+  - `{{instagram.username}}` → the sender's **real** handle, from Meta via ManyChat
+    (this is the value the whole security model rests on).
+  - `{{last_text_input}}` → the full message they sent, e.g. `seal 4071`. The function
+    parses the `4071` out itself, so it's fine that the keyword rides along.
+
+### 4.3 (Recommended) Acknowledge in the DM
+The app auto-confirms by polling, so this is optional — but a reply feels better. Add
+a **Send Message** after the request like *"Got it ✦ — head back to CELESTUAL, you're
+verified in seconds."* (Or map the response field `reply` to a custom field and send
+that, to show "verified ✦ / try again".)
+
+### 4.4 Publish
+**Publish / Set Live** the automation. ManyChat External Requests **time out at 10
+seconds**; this function answers in well under that.
 
 ---
 
@@ -179,11 +234,21 @@ In **Vercel → Settings → Environment Variables** (and `app/.env.local` local
 ```
 VITE_IG_VERIFY_ENABLED=1
 VITE_IG_USERNAME=celestual.us      # no @ — the account from section 1
+VITE_IG_KEYWORD=seal               # must match the ManyChat keyword (§4.1)
 ```
 
 **Redeploy.** The "this is you" step now shows **Verify & continue**, opening the
 in-tab code overlay — no popup, no redirect, the in-progress entry is never lost.
-"Copy & open Instagram" copies the code and deep-links to `ig.me/m/celestual.us`.
+"Copy & open Instagram" copies the full **`seal 4071`** message and deep-links to
+`ig.me/m/celestual.us`, so the visitor just pastes and sends.
+
+> **Fail-closed safety (why it was "just letting you through").** Until you set
+> `VITE_IG_VERIFY_ENABLED=1`, the app couldn't see a verification layer and — on a
+> deployed build with a real Supabase backend — now **blocks sealing** with an
+> operator notice instead of silently waving people through. (The old local *stub*
+> that let anyone seal only survives when there's **no** Supabase backend at all,
+> i.e. pure local/demo dev.) So the fix for "it just lets me through" is literally
+> this step: set the flag and redeploy. `/demo` always bypasses verification.
 
 ### Flip enforcement on (the loophole-closing step)
 
@@ -224,13 +289,15 @@ just can't complete it until you reconnect.
 
 1. Open the site → **Find out** → type **@celestual.us** (or any account you've added
    as a ManyChat tester) → **Verify & continue**.
-2. The overlay shows a 4-digit code. Tap **Copy & open Instagram** — Instagram opens
-   a DM thread with @celestual.us, the code on your clipboard.
-3. Paste, send. ManyChat fires the External Request; within a second or two the
-   overlay flips to **Verified ✓** and the flow continues. 🎉
+2. The overlay shows the message **`seal 4071`** (your code will differ). Tap **Copy &
+   open Instagram** — Instagram opens a DM thread with @celestual.us, `seal 4071` on
+   your clipboard.
+3. Paste, send. The keyword `seal` fires the ManyChat automation → External Request;
+   within a second or two the overlay flips to **Verified ✓** and the flow continues. 🎉
 4. Seal a star — it records normally.
 5. **Negative test:** start a verification claiming an `@` you *don't* control, then
-   DM the code from a *different* account. It must **not** verify (username mismatch).
+   DM `seal <that code>` from a *different* account. It must **not** verify (username
+   mismatch).
 
 Inspect server state (SQL Editor):
 ```sql
@@ -321,8 +388,13 @@ acknowledgement DM only because they messaged you first), and the person you lat
 | --- | --- | --- |
 | `MANYCHAT_SHARED_SECRET` | Supabase **function secret** + ManyChat request **header** | ❌ never |
 | `require_ig_verification` (`celestual_settings`) | Supabase **database** | ❌ never (no client read) |
-| `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME` | Vercel env vars | ✅ yes (a flag + your public handle — safe) |
+| `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME`, `VITE_IG_KEYWORD` | Vercel env vars | ✅ yes (flags + your public handle/keyword — safe) |
+| `IG_KEYWORD` *(optional)* | Supabase **function secret** (only if you change it from `seal`) | ❌ never |
 | Supabase **service_role** key | injected into the function only | ❌ never |
+
+The keyword (`seal`) lives in **three** spots and they must agree: the ManyChat
+**Keyword trigger** (§4.1), the front-end **`VITE_IG_KEYWORD`** (§5), and — only if you
+override the default — the function's **`IG_KEYWORD`** secret.
 
 **Rule of thumb:** only `VITE_*` values are ever safe in the front-end.
 
@@ -334,10 +406,11 @@ acknowledgement DM only because they messaged you first), and the person you lat
 | --- | --- |
 | Can't connect Instagram in ManyChat | Account must be **professional**, linked to a **Facebook Page** you **admin**, with "Allow access to messages" on (§1–2). |
 | External Request option is missing | It's a **ManyChat Pro** feature — upgrade (§2.4). |
-| Function returns `401 unauthorized` | The `X-Celestual-Token` header in ManyChat doesn't match `MANYCHAT_SHARED_SECRET`. Re-paste both. |
-| DMs don't verify (`no_username`/`no_code`) | The JSON body fields are wrong — re-insert `{{instagram.username}}` and `{{last_text_input}}` with ManyChat's field picker (§4.2). |
+| Function returns `401 unauthorized` | The `X-Celestual-Token` header in ManyChat doesn't match `MANYCHAT_SHARED_SECRET`. Re-paste the **same** value in both (§3.2 / §4.2). |
+| DMs don't verify (`no_username`/`no_code`) | The JSON body fields are wrong — re-insert `{{instagram.username}}` and `{{last_text_input}}` with ManyChat's field picker (§4.2). `no_code` also means the keyword swallowed the digits — confirm the visitor sent `seal 4071`, not just `seal`. |
 | `handle_mismatch` | Expected — the **sender's** username must equal the claimed `@`. Message from the exact account you're verifying. |
-| Nothing happens on a DM | The **Default Reply** automation isn't published/enabled, or a keyword is intercepting the message first (§4.1). |
+| The automation never fires on a DM | The **Keyword** trigger isn't published, or its match type is **Exact** instead of **Contains** — `seal 4071` only matches `seal` under *Contains* (§4.1). |
+| App shows "verification isn't switched on" | The deployed front-end has a Supabase backend but `VITE_IG_VERIFY_ENABLED` isn't `1`. Set it (+ `VITE_IG_USERNAME`, `VITE_IG_KEYWORD`) and redeploy (§5). This is the fail-closed guard, not a bug. |
 | Live users get `unverified` | You flipped enforcement on before ManyChat/front-end were live. Verify a real account first, then enforce (§5). |
 
 ---

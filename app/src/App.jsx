@@ -5,6 +5,7 @@ import {
 } from './api/celestual.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled } from './api/igverify.js'
+import { hasSupabase } from './api/supabase.js'
 import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi } from './api/profile.js'
 import { slotsRemaining } from './api/slots.js'
 import { makeColors, PALETTE } from './theme.js'
@@ -452,6 +453,19 @@ export default function App() {
     if (!verified && !demo) {
       if (igVerifyEnabled()) {
         openVerify(me, (proof) => doSeal(proof)) // overlay resumes the seal
+        return
+      }
+      // Fail closed: a real backend is connected but Instagram verification isn't
+      // turned on (VITE_IG_VERIFY_ENABLED≠1). Never silently stub people through in
+      // production — block the seal and tell the operator. The local stub is only
+      // for true demo/dev with no backend at all.
+      if (hasSupabase) {
+        console.warn(
+          '[CELESTUAL] Sealing is blocked: a Supabase backend is connected but Instagram ' +
+            'verification is off. Set VITE_IG_VERIFY_ENABLED=1 (and VITE_IG_USERNAME) and ' +
+            'redeploy — see docs/SETUP-IG-VERIFY.md §5.',
+        )
+        setError(t('them.errNotConfigured'))
         return
       }
       setSession(signInStub())
