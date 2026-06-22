@@ -21,7 +21,7 @@ export const igVerifyEnabled = () => import.meta.env.VITE_IG_VERIFY_ENABLED === 
 
 // The Instagram account people DM the code to. Set VITE_IG_USERNAME to your handle
 // (without the @). ig.me/m/<username> opens straight into a DM thread with it.
-export const igUsername = () => (import.meta.env.VITE_IG_USERNAME || 'celestual').replace(/^@+/, '')
+export const igUsername = () => (import.meta.env.VITE_IG_USERNAME || 'celestual.us').replace(/^@+/, '')
 export const igDeepLink = () => `https://ig.me/m/${igUsername()}`
 
 const subtle = () => (typeof crypto !== 'undefined' && crypto.subtle) || null

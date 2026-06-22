@@ -9,7 +9,7 @@ doc is the per-layer detail.
 | Frontend | **Vercel** | one build → CELESTUAL at `/` |
 | Database | **Supabase** | four migrations: `0001` core · `0002` accounts · `0003` slot budget + multi-account · `0004` IG verification |
 | Match email | **Supabase Edge Function** → **Resend** | `celestual-notify` |
-| Verification | **Supabase Edge Function** ← **Meta webhook** | `celestual-ig-webhook` — optional, [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) |
+| Verification | **Supabase Edge Function** ← **ManyChat** (or Meta webhook) | `celestual-manychat` / `celestual-ig-webhook` — optional, [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) |
 | Domain | **Vercel** | `celestual.us` |
 
 ---
@@ -83,10 +83,10 @@ select celestual_suppress('@me');
 > `celestual_notifications` until the function runs. You can invoke it manually any
 > time to flush the queue.
 
-For optional Instagram DM handle verification (the `celestual-ig-webhook` function +
-migration `0004`), see [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md); for the
-`celestual-search` typeahead, see [SETUP-AUTH.md](./SETUP-AUTH.md). The optional
-`celestual-remind` function (the
+For optional Instagram DM handle verification (the `celestual-manychat` function via
+ManyChat, or `celestual-ig-webhook` via Meta directly, + migration `0004`), see
+[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md); for the `celestual-search` typeahead, see
+[SETUP-AUTH.md](./SETUP-AUTH.md). The optional `celestual-remind` function (the
 out-of-slots email nudge) uses the same Resend secrets as `celestual-notify` and
 should be scheduled hourly with pg_cron.
 

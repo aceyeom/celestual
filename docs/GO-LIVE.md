@@ -117,16 +117,19 @@ product to do its one job.
 ## Part 6 — (Optional) Instagram DM handle verification
 
 Off by default (`VITE_IG_VERIFY_ENABLED=0` → a verified stub keeps the flow
-testable). This proves the `@` a person types is really theirs — **no Facebook
-OAuth, no login** — by having them DM a one-time code to your Instagram account,
-confirmed by Meta's official Messaging webhook. It closes the impersonation gap
-tracked in [SECURITY.md](./SECURITY.md).
+testable). This proves the `@` a person types is really theirs — **no OAuth, no
+login, and no Meta developer portal** — by having them DM a one-time code to your
+Instagram account (`@celestual.us`), relayed by **ManyChat** (an official Meta
+partner). It closes the impersonation gap tracked in [SECURITY.md](./SECURITY.md).
 
-Full walkthrough (Instagram pro account, Meta app, the `celestual-ig-webhook`
+Full walkthrough (Instagram pro account → ManyChat → the `celestual-manychat`
 function, migration `0004`, and the final enforcement flip):
-**[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md)**. In short: deploy the webhook + set
-`VITE_IG_VERIFY_ENABLED=1` / `VITE_IG_USERNAME=<your_handle>` in Vercel, then flip
-`celestual_settings.require_ig_verification` to `'true'`.
+**[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md)**. In short: connect Instagram to
+ManyChat, deploy the function + set `MANYCHAT_SHARED_SECRET`, add a ManyChat Default
+Reply → External Request, set `VITE_IG_VERIFY_ENABLED=1` /
+`VITE_IG_USERNAME=celestual.us` in Vercel, then flip
+`celestual_settings.require_ig_verification` to `'true'`. (Prefer Meta's portal
+directly? Appendix A in that doc.)
 
 > 🔁 **(Optional) reminder emails.** The out-of-slots screen lets people opt in to
 > an email when their next star regenerates. To actually send them, deploy
@@ -143,7 +146,7 @@ function, migration `0004`, and the final enforcement flip):
 | `VITE_IG_VERIFY_ENABLED`, `VITE_IG_USERNAME`, `VITE_HANDLE_SEARCH` | Vercel env vars | ✅ yes (flags + a public handle) |
 | Supabase **service_role** key | injected into edge functions only | ❌ never |
 | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` | Supabase function secrets | ❌ never |
-| `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` | Supabase function secrets (verification webhook) | ❌ never |
+| `MANYCHAT_SHARED_SECRET` (or `IG_APP_SECRET` / `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN`) | Supabase function secrets (verification relay) | ❌ never |
 
 **Rule of thumb:** only `VITE_*` values are ever safe in the front-end. Anything
 labelled *secret* lives in Supabase. After changing any `VITE_*` value in Vercel,

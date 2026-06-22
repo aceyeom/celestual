@@ -23,3 +23,8 @@ verify_jwt = false
 # function enforces its own X-Hub-Signature-256 check instead.
 [functions.celestual-ig-webhook]
 verify_jwt = false
+
+# Called by ManyChat's External Request (the no-Meta-portal path), authenticated by
+# a shared secret instead of a JWT.
+[functions.celestual-manychat]
+verify_jwt = false

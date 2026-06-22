@@ -75,23 +75,34 @@ Documented so nobody over-trusts it.
 
 ### §verify — Handle-ownership verification (Instagram DM)
 The complete fix for impersonation: proving the `from` handle is really the
-submitter's, with **no Facebook/Instagram OAuth**. A person sends a one-time
-**4-digit code** to our Instagram account as a DM; Meta's official Messaging webhook
-delivers it (signed) to the `celestual-ig-webhook` edge function, which **re-fetches
-the sender's real username from the Graph API** and verifies it equals the claimed
-handle. Security rests on that Meta-authenticated identity, **not** on the code,
-which is only a correlation id — so a guess is worthless (full analysis:
-[SETUP-IG-VERIFY.md §9](./SETUP-IG-VERIFY.md#9-security-model--why-this-has-no-loopholes)).
+submitter's, with **no Facebook/Instagram OAuth and no Meta developer portal**. A
+person sends a one-time **4-digit code** to our Instagram account (`@celestual.us`)
+as a DM. By default the relay is **ManyChat** (an official Meta messaging partner):
+its automation fires an authenticated **External Request** to the
+`celestual-manychat` edge function carrying the sender's Meta-authenticated username,
+which must equal the claimed handle. (An alternative, higher-assurance path uses
+Meta's signed webhook directly — `celestual-ig-webhook` — which independently
+re-fetches the username from the Graph API; see
+[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) Appendix A.) Security rests on that
+Meta-authenticated identity, **not** on the code, which is only a correlation id —
+so a guess is worthless (full analysis:
+[SETUP-IG-VERIFY.md §8](./SETUP-IG-VERIFY.md#8-security-model--what-holds-and-the-one-trade-off)).
 
 The browser mints a random 256-bit **proof**, stores only its SHA-256 hash
 server-side, and presents the raw proof at seal time; `celestual_submit` calls
 `celestual_consume_ig_proof`, so the **server** — not the client — is the authority
-on whether a handle is verified. The webhook signature (`X-Hub-Signature-256`) is
-checked, completion is **service-role only**, and the codes are single-use, short-
-lived, and unique among pending sessions. It is gated by
-`celestual_settings.require_ig_verification` (default **off**); flip it on to make
-`celestual_submit` reject any unproven `from` with `error:'unverified'`. Setup +
+on whether a handle is verified. The relay request is authenticated (a ManyChat
+shared secret, or Meta's `X-Hub-Signature-256`), completion is **service-role only**,
+and the codes are single-use, short-lived, and unique among pending sessions. It is
+gated by `celestual_settings.require_ig_verification` (default **off**); flip it on to
+make `celestual_submit` reject any unproven `from` with `error:'unverified'`. Setup +
 operator steps: [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md).
+
+> **ManyChat trade-off:** when the relay is ManyChat, the username arrives in the
+> request body authenticated by the shared secret (a trusted-webhook model), so that
+> secret is load-bearing — keep it only in Supabase + ManyChat, and rotate it. The
+> direct-Meta path re-fetches the username independently and doesn't carry this
+> caveat. Documented so nobody over-trusts the convenience.
 
 ### §3 — Age affirmation
 The flow requires an 18+ affirmation before a star can be sealed.
@@ -168,7 +179,8 @@ flipping it on tightens these controls without a rewrite.
       `celestual_complete_ig_verification`, `celestual_consume_ig_proof`, or
       `celestual_ig_required`.
 - [ ] Edge-function secrets are set in Supabase, never in the front-end bundle —
-      including `IG_APP_SECRET` / `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN` for the webhook.
+      `MANYCHAT_SHARED_SECRET` for the ManyChat relay (or `IG_APP_SECRET` /
+      `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN` for the direct-Meta webhook).
 - [ ] Only `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (and the optional
       feature flags, incl. `VITE_IG_VERIFY_ENABLED` / `VITE_IG_USERNAME`) are
       exposed to the browser — the anon key is safe to ship; the **service-role key

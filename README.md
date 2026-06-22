@@ -27,7 +27,7 @@ celestual/
 ├── supabase/         the backend
 │   ├── config.toml   Supabase CLI config
 │   ├── migrations/   0001 matching core · 0002 accounts + encrypted sky · 0003 slot budget, multi-account, instant reveal · 0004 Instagram DM verification
-│   └── functions/    celestual-notify · celestual-remind · celestual-search · celestual-ig-webhook
+│   └── functions/    celestual-notify · celestual-remind · celestual-search · celestual-manychat · celestual-ig-webhook
 ├── docs/             all the guides (see below)
 ├── package.json      repo-root build (app → dist/)
 └── vercel.json       SPA routing
