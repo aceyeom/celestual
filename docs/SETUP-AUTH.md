@@ -1,4 +1,13 @@
-# CELESTUAL — Setup: Instagram Sign-in
+# CELESTUAL — Setup: Instagram Sign-in (legacy)
+
+> ## ⚠️ Superseded — read [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) instead
+>
+> CELESTUAL **no longer uses Facebook/Meta OAuth.** Handle ownership is now proven
+> with an **Instagram DM code** (no OAuth, no popup, no password) — see
+> **[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md)**. The Facebook-provider flow below is
+> kept only for historical reference; `VITE_META_ENABLED` and `api/auth.js`'s OAuth
+> popup have been removed. Section **1.8** (accounts + the encrypted sky) is still
+> accurate background.
 
 An **easy, step-by-step** guide to turning on Instagram sign-in, which confirms a
 person is real at the moment they seal a star.

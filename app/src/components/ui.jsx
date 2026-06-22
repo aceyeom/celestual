@@ -717,6 +717,12 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
       </>
     ),
     plus: <path d="M10 4.6v10.8M4.6 10h10.8" {...p} />,
+    copy: (
+      <>
+        <rect x="7" y="7" width="9.5" height="9.5" rx="2" {...p} />
+        <path d="M13 7V5.5a2 2 0 00-2-2H5.5a2 2 0 00-2 2V11a2 2 0 002 2H7" {...p} />
+      </>
+    ),
   }
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0 }}>

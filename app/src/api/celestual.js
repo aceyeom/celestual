@@ -32,9 +32,11 @@ const DEMO_SLOTS = { remaining: 3, cap: 3, next_at: null };
 
 // Record a one-way entry. Returns:
 //   { recorded:true, mutual:boolean, match:handle|null, slots:{remaining,cap,next_at} }
-//   { recorded:false, error:'rate_limited'|'suppressed'|'no_slots', slots? }
-// `demo` short-circuits to a local simulation so /demo never writes real entries.
-export async function submitEntry({ me, ex, email, demo }) {
+//   { recorded:false, error:'rate_limited'|'suppressed'|'no_slots'|'unverified', slots? }
+// `proof` is the Instagram-DM ownership secret (api/igverify.js); the server only
+// requires it once verification enforcement is turned on. `demo` short-circuits to
+// a local simulation so /demo never writes real entries.
+export async function submitEntry({ me, ex, email, proof, demo }) {
   if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 600));
     const mutual = normHandle(ex) === 'demo';
@@ -45,6 +47,7 @@ export async function submitEntry({ me, ex, email, demo }) {
     p_from: me,
     p_to: ex,
     p_email: email ? email.trim() : null,
+    p_proof: proof || null,
   });
   if (error) throw error;
   return data;

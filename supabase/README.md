@@ -10,7 +10,7 @@ status object. See [../docs/SECURITY.md](../docs/SECURITY.md).
 
 ## Apply the schema
 
-Three idempotent migrations, applied in order:
+Four idempotent migrations, applied in order:
 
 - `migrations/0001_celestual.sql` — the anonymous matching core (entries, matches,
   notifications, rate limiting, suppressions, and the `SECURITY DEFINER` RPCs).
@@ -22,8 +22,14 @@ Three idempotent migrations, applied in order:
   (`celestual_handle_links` + group-aware matching), instant reveal from
   `celestual_submit`, the constellations check, opt-in reminders, and a
   rate-limited `celestual_suppress`. Drops the old paywall entitlements.
+- `migrations/0004_ig_verification.sql` — **Instagram DM handle-ownership
+  verification** (no OAuth): `celestual_ig_verifications` (codes + proof hashes),
+  `celestual_settings` (the `require_ig_verification` flag, default off), the
+  start/poll RPCs, the service-role-only completion path, and the proof gate that
+  `celestual_submit` enforces when turned on. See
+  [../docs/SETUP-IG-VERIFY.md](../docs/SETUP-IG-VERIFY.md).
 
-**SQL Editor:** paste each file's contents and Run (0001, then 0002, then 0003).
+**SQL Editor:** paste each file's contents and Run (0001, then 0002, 0003, 0004).
 
 **CLI:**
 ```bash
@@ -40,12 +46,14 @@ Re-running is safe (`if not exists` / `create or replace` / `drop policy if exis
 | `functions/celestual-notify` | drains `celestual_notifications` and emails the mutual-match reveal via Resend | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | drains `celestual_reminders` and emails "a new star is ready" when a slot regenerates (schedule hourly with pg_cron) | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
+| `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, and calls `celestual_complete_ig_verification` — no Meta developer portal | `MANYCHAT_SHARED_SECRET` |
+| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. Deploy
 with `supabase functions deploy <name>`. JWT verification is disabled for these in
-`config.toml` because anonymous visitors call them; each enforces its own checks.
-See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
-[../docs/SETUP-AUTH.md](../docs/SETUP-AUTH.md).
+`config.toml` because anonymous visitors (or Meta's webhook) call them; each
+enforces its own checks. See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
+[../docs/SETUP-IG-VERIFY.md](../docs/SETUP-IG-VERIFY.md).
 
 ## Data model
 
@@ -61,13 +69,20 @@ See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
 - **`celestual_handle_links`** (0003) — multi-account identity groups; matching is
   group-aware so being entered on any of a person's linked @s counts.
 - **`celestual_reminders`** (0003) — opt-in "tell me when my next star is ready".
+- **`celestual_ig_verifications`** (0004) — Instagram-DM ownership proofs: the
+  one-time code, the browser's proof **hash**, status, and TTLs. Locked down.
+- **`celestual_settings`** (0004) — operator flags; holds `require_ig_verification`
+  (default `false`).
 - **RPCs:** `celestual_submit` (record an entry; enforces the budget, matches
-  across groups, returns the **instant** mutual result + slot snapshot),
-  `celestual_withdraw` (un-send; never refunds a slot), `celestual_suppress`
-  (rate-limited self-service erasure / block), `celestual_link` (group your own
-  @s), `celestual_check_many` (which entered @s are mutual — the constellations
-  view), `celestual_slots_for` (slot snapshot for display),
-  `celestual_request_reminder`, and `celestual_norm` (handle normalisation).
+  across groups, returns the **instant** mutual result + slot snapshot, and — when
+  enforced — the ownership proof), `celestual_withdraw` (un-send; never refunds a
+  slot), `celestual_suppress` (rate-limited self-service erasure / block),
+  `celestual_link` (group your own @s), `celestual_check_many` (which entered @s are
+  mutual — the constellations view), `celestual_slots_for` (slot snapshot for
+  display), `celestual_request_reminder`, `celestual_start_ig_verification` /
+  `celestual_poll_ig_verification` (issue + watch a DM code), and `celestual_norm`
+  (handle normalisation). The completion path
+  `celestual_complete_ig_verification` is **service-role only** (the webhook).
 
 ### Accounts layer (0002 — owner-scoped via RLS)
 

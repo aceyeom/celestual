@@ -8,6 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
+import { startVerification, pollVerification, igDeepLink, igUsername } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -353,7 +354,10 @@ export function YouScreen({ C, ctx }) {
   const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
   const valid = handleOk && emailOk
-  const submit = () => valid && ctx.go('them')
+  // Advancing now goes through ctx.continueFromYou(): when Instagram verification is
+  // on, it proves this @ is yours (the in-tab DM overlay) before moving to "them".
+  const submit = () => valid && ctx.continueFromYou()
+  const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
   // The email field is an OPTIONAL drop-down that only appears once a handle is
   // entered. It stays hidden until then; once a handle exists, a quiet "add email"
   // option drops down, and tapping it reveals the input. If they already gave an
@@ -377,6 +381,13 @@ export function YouScreen({ C, ctx }) {
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9 }}>
           <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder={t('you.handle')} accent={C.you} autoFocus emphasis onEnter={submit} />
           <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
+          {ctx.verifyEnabled && handleOk && (
+            ctx.verified ? (
+              <Hint C={C} icon="check" color={rgba(C.you, 0.9)}>{t('verify.youDone')}</Hint>
+            ) : (
+              <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('verify.youHint')}</Hint>
+            )
+          )}
         </div>
 
         {/* other accounts — a quiet revealable for people with multiple @s */}
@@ -420,7 +431,10 @@ export function YouScreen({ C, ctx }) {
       </div>
 
       <PrimaryButton C={C} disabled={!valid} onClick={submit}>
-        {t('you.continue')}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          {needsVerify && <Icon name="instagram" size={16} color="#1a0f0a" stroke={2} />}
+          {needsVerify ? t('verify.continue') : t('you.continue')}
+        </span>
       </PrimaryButton>
     </WarmShell>
   )
@@ -1051,5 +1065,209 @@ export function PrivacyScreen({ C, ctx }) {
         </p>
       </div>
     </WarmShell>
+  )
+}
+
+// ── INSTAGRAM DM VERIFICATION (prove the @ is yours — no OAuth) ────────────────
+// Copy a code to the native clipboard and DM it to our Instagram; Meta's webhook
+// tells the backend who really sent it, and this overlay watches for the flip.
+// It never navigates, so the in-progress entry survives underneath it.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    /* fall through to the legacy path */
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+export function IgVerifySheet({ C, handle, onVerified, onClose }) {
+  const { t } = useI18n()
+  const ig = igUsername()
+  const [phase, setPhase] = React.useState('starting') // starting | waiting | verified | expired | error
+  const [token, setToken] = React.useState('')
+  const [errCode, setErrCode] = React.useState('')
+  const [copied, setCopied] = React.useState(false)
+  const proofRef = React.useRef(null)
+  const hashRef = React.useRef(null)
+  const expiryRef = React.useRef(0)
+  const pollRef = React.useRef(null)
+  const doneRef = React.useRef(null)
+
+  const stopPoll = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+  // If the user closes the sheet during the post-success beat, don't resume behind
+  // them — cancel the pending hand-off on unmount.
+  React.useEffect(() => () => { if (doneRef.current) clearTimeout(doneRef.current) }, [])
+
+  // (Re)issue a code and start watching. Also the "get a new code" action.
+  const begin = React.useCallback(async () => {
+    stopPoll()
+    setPhase('starting')
+    setErrCode('')
+    setCopied(false)
+    setToken('')
+    try {
+      const r = await startVerification(handle)
+      proofRef.current = r.proof
+      hashRef.current = r.proofHash
+      expiryRef.current = Date.parse(r.expiresAt) || Date.now() + 10 * 60 * 1000
+      setToken(r.token)
+      setPhase('waiting')
+    } catch (e) {
+      setErrCode(e?.code || 'error')
+      setPhase('error')
+    }
+  }, [handle])
+
+  React.useEffect(() => {
+    begin()
+    return stopPoll
+  }, [begin])
+
+  // Poll for the DM while waiting; stop on success, expiry, or unmount.
+  React.useEffect(() => {
+    if (phase !== 'waiting') return
+    const tick = async () => {
+      if (Date.now() > expiryRef.current) {
+        stopPoll()
+        setPhase('expired')
+        return
+      }
+      const status = await pollVerification(token, hashRef.current)
+      if (status === 'verified') {
+        stopPoll()
+        setPhase('verified')
+        const proof = proofRef.current
+        doneRef.current = setTimeout(() => onVerified(proof), 950) // let the ✓ land before resuming
+      } else if (status === 'expired') {
+        stopPoll()
+        setPhase('expired')
+      }
+    }
+    pollRef.current = setInterval(tick, 2500)
+    return stopPoll
+  }, [phase, token, onVerified])
+
+  // Copy the code AND open the DM thread inside the same gesture, so mobile is
+  // allowed to launch the Instagram app and write the clipboard.
+  const copyAndOpen = () => {
+    copyText(token).then(setCopied)
+    try {
+      window.open(igDeepLink(), '_blank', 'noopener,noreferrer')
+    } catch {
+      /* ignore — they can still open Instagram manually */
+    }
+  }
+
+  const errMsg =
+    errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
+    >
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="readout-in"
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: 22, boxShadow: '0 30px 80px rgba(0,0,0,.6)', padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}
+      >
+        {/* header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: '50%', background: rgba(C.you, 0.12), flexShrink: 0 }}>
+            <Icon name="instagram" size={20} color={C.you} stroke={1.8} />
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, color: C.cream, lineHeight: 1.1 }}>{t('verify.title')}</div>
+            <div style={{ marginTop: 6 }}>
+              <HandleChip C={C} handle={handle} color={C.you} />
+            </div>
+          </div>
+          <button onClick={onClose} aria-label={t('verify.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
+            <Icon name="x" size={14} color="currentColor" />
+          </button>
+        </div>
+
+        {phase === 'verified' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 0' }}>
+            <span style={{ display: 'grid', placeItems: 'center', width: 54, height: 54, borderRadius: '50%', background: rgba(C.you, 0.14), border: `1px solid ${rgba(C.you, 0.4)}` }}>
+              <Icon name="check" size={26} color={C.you} stroke={2.2} />
+            </span>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, color: C.cream }}>{t('verify.verified')}</div>
+          </div>
+        ) : phase === 'expired' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream }}>{t('verify.expiredTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.muted }}>{t('verify.expiredBody')}</p>
+            <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+          </div>
+        ) : phase === 'error' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: C.them }}>{errMsg}</p>
+            <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+          </div>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('verify.sub')}</p>
+
+            {/* the code */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.muted }}>{t('verify.code')}</span>
+              {phase === 'starting' || !token ? (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
+              ) : (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 40, fontWeight: 700, letterSpacing: '12px', color: C.you, paddingLeft: 12, textShadow: `0 0 26px ${rgba(C.you, 0.4)}` }}>{token}</span>
+              )}
+            </div>
+
+            <PrimaryButton C={C} disabled={phase === 'starting' || !token} onClick={copyAndOpen}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+                <Icon name={copied ? 'check' : 'copy'} size={16} color="#1a0f0a" stroke={2} />
+                {copied ? t('verify.copied') : t('verify.copyOpen')}
+              </span>
+            </PrimaryButton>
+
+            {/* the three steps */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {[t('verify.step1'), t('verify.step2', { ig: '@' + ig }), t('verify.step3')].map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: C.muted, fontSize: 12.5, lineHeight: 1.5 }}>
+                  <span style={{ display: 'grid', placeItems: 'center', width: 19, height: 19, borderRadius: '50%', flexShrink: 0, background: rgba(C.you, 0.12), color: C.you, fontFamily: "'Space Mono', monospace", fontSize: 11 }}>{i + 1}</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* live status — auto-confirms the moment the DM lands */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
+              <Sonar C={C} color={C.you} size={12} /> {t('verify.waiting')}
+            </div>
+
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
+          </>
+        )}
+      </div>
+    </div>
   )
 }

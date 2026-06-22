@@ -7,28 +7,30 @@ doc is the per-layer detail.
 | Layer | Service | Notes |
 | --- | --- | --- |
 | Frontend | **Vercel** | one build → CELESTUAL at `/` |
-| Database | **Supabase** | three migrations: `0001` core · `0002` accounts · `0003` slot budget + multi-account |
+| Database | **Supabase** | four migrations: `0001` core · `0002` accounts · `0003` slot budget + multi-account · `0004` IG verification |
 | Match email | **Supabase Edge Function** → **Resend** | `celestual-notify` |
-| Sign-in | **Supabase Auth** | optional/postponed, see [SETUP-AUTH.md](./SETUP-AUTH.md) |
+| Verification | **Supabase Edge Function** ← **ManyChat** (or Meta webhook) | `celestual-manychat` / `celestual-ig-webhook` — optional, [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) |
 | Domain | **Vercel** | `celestual.us` |
 
 ---
 
 ## 1. Supabase — apply the schema
 
-The backend is three idempotent migrations, applied **in order**. Apply either way:
+The backend is four idempotent migrations, applied **in order**. Apply either way:
 
 **SQL Editor:** paste the contents of each and **Run** in order —
 [`0001_celestual.sql`](../supabase/migrations/0001_celestual.sql) (matching core),
 [`0002_user_accounts.sql`](../supabase/migrations/0002_user_accounts.sql) (accounts +
-encrypted sky), then
+encrypted sky),
 [`0003_production_hardening.sql`](../supabase/migrations/0003_production_hardening.sql)
-(slot budget, multi-account, instant reveal).
+(slot budget, multi-account, instant reveal), then
+[`0004_ig_verification.sql`](../supabase/migrations/0004_ig_verification.sql)
+(Instagram DM verification — enforcement off by default).
 
 **CLI:**
 ```bash
 supabase link --project-ref <ref>
-supabase db push   # applies all three in order
+supabase db push   # applies all four in order
 ```
 
 `0001` creates `celestual_entries`, `celestual_matches`, `celestual_notifications`,
@@ -81,7 +83,9 @@ select celestual_suppress('@me');
 > `celestual_notifications` until the function runs. You can invoke it manually any
 > time to flush the queue.
 
-For optional Instagram sign-in and the `celestual-search` typeahead, see
+For optional Instagram DM handle verification (the `celestual-manychat` function via
+ManyChat, or `celestual-ig-webhook` via Meta directly, + migration `0004`), see
+[SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md); for the `celestual-search` typeahead, see
 [SETUP-AUTH.md](./SETUP-AUTH.md). The optional `celestual-remind` function (the
 out-of-slots email nudge) uses the same Resend secrets as `celestual-notify` and
 should be scheduled hourly with pg_cron.
