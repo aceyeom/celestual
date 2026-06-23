@@ -13,7 +13,7 @@ import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
   Brandmark, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  StepDots, BackBtn, Icon, Sonar, rgba,
+  StepDots, BackBtn, Icon, Sonar, rgba, RADIUS, SPACE, makeShadow,
 } from './ui.jsx'
 
 // Shared centered column: at least one dynamic-viewport tall (so the flex spacers
@@ -75,7 +75,7 @@ function FieldLabel({ C, children, optional }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 2px' }}>
       <span style={{ fontSize: 11, letterSpacing: '1.5px', fontFamily: "'Space Mono', monospace", color: C.muted, textTransform: 'uppercase' }}>{children}</span>
       {optional && (
-        <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: 999, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
+        <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
       )}
     </div>
   )
@@ -277,7 +277,7 @@ export function IntroScreen({ C, ctx }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13 }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
           {INTRO_STEPS.map((_, k) => (
-            <span key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: 99, background: k === i ? C.you : C.line, transition: 'all .3s' }} />
+            <span key={k} style={{ width: k === i ? 18 : 6, height: 6, borderRadius: RADIUS.chip, background: k === i ? C.you : C.line, transition: 'all .3s' }} />
           ))}
         </div>
         <span style={{ fontSize: 11, color: C.muted, letterSpacing: '.4px', fontFamily: "'Space Mono', monospace" }}>
@@ -371,22 +371,26 @@ export function YouScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(32px, 8vw, 37px)', lineHeight: 1.12, color: C.cream }}>
           {t('you.title1')}<br />
           <em style={{ color: C.you }}>{t('you.title2')}</em>
         </h2>
 
         {/* handle — the primary field (this is your star) */}
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder={t('you.handle')} accent={C.you} autoFocus emphasis onEnter={submit} />
-          <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
-          {ctx.verifyEnabled && handleOk && (
+          {/* One hint at a time so the field never stacks two lines of mono text:
+              once a handle is in and verification matters, the verify hint IS the
+              relevant note and replaces the generic "we check Instagram" line. */}
+          {ctx.verifyEnabled && handleOk ? (
             ctx.verified ? (
               <Hint C={C} icon="check" color={rgba(C.you, 0.9)}>{t('verify.youDone')}</Hint>
             ) : (
               <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('verify.youHint')}</Hint>
             )
+          ) : (
+            <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
           )}
         </div>
 
@@ -401,23 +405,22 @@ export function YouScreen({ C, ctx }) {
         <Collapse open={handleOk}>
           <div style={{ paddingTop: 4 }}>
             {!emailOpen ? (
+              // A quiet "ghost field": same ink panel, hairline border, soft corner
+              // and mail-icon layout as the real email Field it becomes on tap — so
+              // it reads as one calm, optional affordance, not a busy bordered card.
               <button
                 onClick={() => setEmailOpen(true)}
                 style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px',
-                  borderRadius: 13, cursor: 'pointer', textAlign: 'left',
-                  background: rgba(C.you, 0.05), border: `1px dashed ${rgba(C.you, 0.34)}`,
+                  width: '100%', display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '15px 17px',
+                  borderRadius: RADIUS.field, cursor: 'pointer', textAlign: 'left',
+                  background: C.ink2, border: `1px solid ${C.line}`,
                   color: C.cream, fontFamily: "'Space Grotesk', sans-serif",
                 }}
               >
-                <span style={{ display: 'grid', placeItems: 'center', width: 30, height: 30, borderRadius: '50%', background: rgba(C.you, 0.12), flexShrink: 0 }}>
-                  <Icon name="mail" size={16} color={C.you} stroke={1.7} />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
-                  <span style={{ display: 'block', fontSize: 12, color: C.muted, marginTop: 2 }}>{t('you.emailAddNote')}</span>
-                </span>
-                <span style={{ color: rgba(C.you, 0.9), flexShrink: 0 }}><Icon name="plus" size={16} color="currentColor" stroke={2} /></span>
+                <Icon name="mail" size={18} color={rgba(C.you, 0.9)} stroke={1.7} />
+                <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
+                <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{t('you.emailOptional')}</span>
+                <Icon name="plus" size={16} color={rgba(C.you, 0.9)} stroke={2} />
               </button>
             ) : (
               <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -485,12 +488,12 @@ export function ThemScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(32px, 8vw, 37px)', lineHeight: 1.12, color: C.cream }}>
           {t('them.title1')}<br />
           <em style={{ color: C.them }}>{t('them.title2')}</em>
         </h2>
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 11 }}>
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           {/* data-sendoff-field: App measures this exact box at seal time so the @ →
               star morph collapses from precisely where the field sits. */}
           <div data-sendoff-field>
@@ -539,7 +542,7 @@ export function SendoffScreen({ C }) {
   return (
     <GalaxyShell>
       <div style={{ flex: 1 }} />
-      <div style={{ textAlign: 'center', minHeight: 92, transition: 'opacity .8s ease', opacity: show ? 1 : 0 }}>
+      <div data-tag-keepout style={{ textAlign: 'center', minHeight: 92, transition: 'opacity .8s ease', opacity: show ? 1 : 0 }}>
         <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 30, color: C.cream }}>{t('sendoff.sealed')}</div>
         <div style={{ marginTop: 10, fontSize: 12.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>{t('sendoff.sub')}</div>
       </div>
@@ -604,7 +607,7 @@ export function RestingScreen({ C, ctx }) {
   }
   return (
     <GalaxyShell onBackdropTap={zoomed ? undefined : onBackdropTap}>
-      <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, ...veil }}>
+      <div data-tag-keepout className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, ...veil }}>
         <Brandmark C={C} size={13} />
         <span style={{ fontSize: 11.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.4px' }}>
           {t('resting.count', { n: ctx.starCount })}
@@ -618,7 +621,7 @@ export function RestingScreen({ C, ctx }) {
 
       <div style={{ flex: 1, minHeight: 150 }} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 13, ...veil }}>
+      <div data-tag-keepout style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 13, ...veil }}>
         <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 7vw, 38px)', lineHeight: 1.14, color: C.cream }}>
           {t('resting.title')}
         </h2>
@@ -630,7 +633,7 @@ export function RestingScreen({ C, ctx }) {
         </span>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 28, ...veil }}>
+      <div data-tag-keepout className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 28, ...veil }}>
         <OutlineButton C={C} onClick={() => ctx.checkAnother()}>
           <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('resting.another')}
         </OutlineButton>
@@ -745,6 +748,7 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
 // flows through App → api/profile.js (encrypted DB when signed in; local otherwise).
 export function AccountSheet({ C, ctx }) {
   const { t } = useI18n()
+  const SHADOW = makeShadow(C)
   const [confirmDel, setConfirmDel] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
   // `synced` = really backed by the encrypted DB; `verified` = identity confirmed
@@ -775,7 +779,7 @@ export function AccountSheet({ C, ctx }) {
       <div
         onClick={(e) => e.stopPropagation()}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 440, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: 22, boxShadow: '0 30px 80px rgba(0,0,0,.6)', padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}
+        style={{ position: 'relative', width: '100%', maxWidth: 440, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}
       >
         {/* header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
@@ -795,7 +799,7 @@ export function AccountSheet({ C, ctx }) {
         </div>
 
         {!synced && (
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted, background: rgba(C.you, 0.06), border: `1px solid ${rgba(C.you, 0.18)}`, borderRadius: 12, padding: '11px 13px' }}>
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted, background: rgba(C.you, 0.06), border: `1px solid ${rgba(C.you, 0.18)}`, borderRadius: RADIUS.inner, padding: '11px 13px' }}>
             {t('account.notSignedIn')}
           </div>
         )}
@@ -817,7 +821,7 @@ export function AccountSheet({ C, ctx }) {
               value={ctx.displayName}
               onChange={(e) => ctx.setDisplayName(e.target.value)}
               maxLength={40}
-              style={{ width: '100%', padding: '14px 16px', borderRadius: 13, background: C.ink2, border: `1.5px solid ${C.line}`, outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16 }}
+              style={{ width: '100%', padding: '14px 16px', borderRadius: RADIUS.field, background: C.ink2, border: `1.5px solid ${C.line}`, outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16 }}
             />
           </div>
         </SheetSection>
@@ -876,13 +880,13 @@ export function AccountSheet({ C, ctx }) {
               <Icon name="trash" size={15} color="currentColor" /> {t('account.delete')}
             </GhostButton>
           ) : (
-            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12, background: rgba(C.them, 0.07), border: `1px solid ${rgba(C.them, 0.28)}`, borderRadius: 13, padding: '14px 15px' }}>
+            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12, background: rgba(C.them, 0.07), border: `1px solid ${rgba(C.them, 0.28)}`, borderRadius: RADIUS.inner, padding: '14px 15px' }}>
               <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{t('account.deleteConfirm')}</span>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button
                   onClick={onDelete}
                   disabled={deleting}
-                  style={{ flex: 1, minWidth: 150, padding: '12px 16px', borderRadius: 12, border: 'none', cursor: deleting ? 'default' : 'pointer', background: C.them, color: '#1a0f0a', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14 }}
+                  style={{ flex: 1, minWidth: 150, padding: '12px 16px', borderRadius: RADIUS.field, border: 'none', cursor: deleting ? 'default' : 'pointer', background: C.them, color: '#1a0f0a', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14 }}
                 >
                   {deleting ? t('account.deleting') : t('account.deleteYes')}
                 </button>
@@ -1099,6 +1103,7 @@ async function copyText(text) {
 
 export function IgVerifySheet({ C, handle, onVerified, onClose }) {
   const { t } = useI18n()
+  const SHADOW = makeShadow(C)
   const ig = igUsername()
   const [phase, setPhase] = React.useState('starting') // starting | waiting | verified | expired | error
   const [token, setToken] = React.useState('')
@@ -1192,7 +1197,7 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
       <div
         onClick={(e) => e.stopPropagation()}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: 22, boxShadow: '0 30px 80px rgba(0,0,0,.6)', padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}
       >
         {/* header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>

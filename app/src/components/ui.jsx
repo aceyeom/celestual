@@ -3,10 +3,10 @@
 // the whole product reads as one cosmos on every screen.
 import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
-import { makeColors, rgba } from '../theme.js'
+import { makeColors, rgba, RADIUS, SPACE, makeShadow } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
 
-export { makeColors, rgba }
+export { makeColors, rgba, RADIUS, SPACE, makeShadow }
 
 // Calm gradient backdrop for the entry screens (no canvas). It shares the deep
 // cosmic-violet base with the galaxy and only lets the two star accents glow
@@ -96,6 +96,16 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
       const vw = window.innerWidth, vh = window.innerHeight
       // Tags placed so far THIS frame, so later ones can yield instead of piling.
       const placed = []
+      // Foreground text blocks (headline / handle / buttons) mark themselves with
+      // [data-tag-keepout]; seed the collision set with their on-screen rects so a
+      // tag never lands on top of the text. Paired with the z-index raise below,
+      // this is the "stars and usernames slip under the text on mobile" fix: tags
+      // now float ABOVE content (never hidden) AND step aside from it (never ugly).
+      const keepouts = document.querySelectorAll('[data-tag-keepout]')
+      for (let k = 0; k < keepouts.length; k++) {
+        const r = keepouts[k].getBoundingClientRect()
+        if (r.width && r.height) placed.push({ x: r.left, y: r.top, w: r.width, h: r.height })
+      }
       for (let i = 0; i < refs.current.length; i++) {
         const el = refs.current[i]
         if (!el) continue
@@ -159,7 +169,9 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
           position: 'fixed',
           left: 0,
           top: 0,
-          zIndex: 3,
+          // Above the screen content (zIndex:4) so a tag is never hidden behind
+          // the foreground, but below Liftoff (8) and every modal/overlay.
+          zIndex: 6,
           pointerEvents: 'none',
           opacity: 0,
           transition: 'opacity .6s ease',
@@ -168,7 +180,7 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
           alignItems: 'center',
           gap: 2,
           padding: '3px 10px',
-          borderRadius: 999,
+          borderRadius: RADIUS.chip,
           background: isM ? rgba(tagCol, 0.14) : 'rgba(10,8,16,0.42)',
           border: `1px solid ${rgba(tagCol, isM ? 0.55 : 0.3)}`,
           backdropFilter: 'blur(2px)',
@@ -209,7 +221,7 @@ export function Liftoff({ C, handle, geom }) {
       <div
         className="lo-box"
         style={{
-          position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: 16,
+          position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: RADIUS.field,
           background: C.ink2, border: `1.5px solid ${rgba(C.you, 0.55)}`, boxShadow: `0 0 26px ${rgba(C.you, 0.18)}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         }}
@@ -245,6 +257,7 @@ export function Brandmark({ C, size = 14 }) {
 
 export function PrimaryButton({ C, children, onClick, disabled, style }) {
   const [h, setH] = React.useState(false)
+  const SHADOW = makeShadow(C)
   return (
     <button
       onClick={disabled ? undefined : onClick}
@@ -255,14 +268,16 @@ export function PrimaryButton({ C, children, onClick, disabled, style }) {
         border: 'none',
         cursor: disabled ? 'default' : 'pointer',
         padding: '17px 22px',
-        borderRadius: 15,
+        // Shares RADIUS.field with the inputs above it — the Continue button and
+        // the handle field now read as one family instead of fighting.
+        borderRadius: RADIUS.field,
         fontFamily: "'Space Grotesk', sans-serif",
         fontWeight: 600,
         fontSize: 16,
         letterSpacing: '.2px',
         color: disabled ? C.muted : '#1a0f0a',
         background: disabled ? C.ink3 : `linear-gradient(180deg, ${C.you}, ${rgba(C.you, 0.86)})`,
-        boxShadow: disabled ? 'none' : `0 10px 30px ${rgba(C.you, h ? 0.42 : 0.28)}, inset 0 1px 0 rgba(255,255,255,.38)`,
+        boxShadow: disabled ? 'none' : SHADOW.cta(C.you, h),
         transform: h && !disabled ? 'translateY(-1.5px)' : 'none',
         transition: 'transform .18s, box-shadow .25s, background .2s',
         ...style,
@@ -289,7 +304,7 @@ export function OutlineButton({ C, children, onClick, style }) {
         justifyContent: 'center',
         gap: 8,
         padding: '12px 22px',
-        borderRadius: 999,
+        borderRadius: RADIUS.chip,
         cursor: 'pointer',
         background: h ? rgba(C.cream, 0.06) : 'transparent',
         border: `1px solid ${h ? rgba(C.cream, 0.3) : C.line}`,
@@ -339,6 +354,7 @@ export function GhostButton({ C, children, onClick, style }) {
 export function Field({ C, kind = 'handle', value, onChange, placeholder, accent, autoFocus, onEnter, emphasis }) {
   const [focus, setFocus] = React.useState(false)
   const col = accent || C.you
+  const SHADOW = makeShadow(C)
   const ref = React.useRef(null)
   React.useEffect(() => {
     if (autoFocus && ref.current) ref.current.focus()
@@ -349,18 +365,24 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, accent
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: kind === 'email' ? 10 : 4,
+        // The bold, organic @ used to sit a hair (gap:4) from the typed text and
+        // visually bleed into the first letter. Both variants now breathe at the
+        // same SPACE.md so the prefix reads as a quiet prefix, not a glyph fused
+        // to the username.
+        gap: SPACE.md,
         width: '100%',
+        // Emphasis is expressed through padding / glow / border, NOT a different
+        // corner: every input shares RADIUS.field with the buttons below them.
         padding: emphasis ? '19px 20px' : '15px 17px',
-        borderRadius: emphasis ? 17 : 13,
+        borderRadius: RADIUS.field,
         background: C.ink2,
         border: `1.5px solid ${focus ? rgba(col, 0.8) : emphasis ? rgba(col, 0.28) : C.line}`,
-        boxShadow: focus ? `0 0 0 4px ${rgba(col, 0.13)}, 0 0 32px ${rgba(col, 0.16)}` : emphasis ? `0 0 26px ${rgba(col, 0.1)}` : 'none',
+        boxShadow: focus ? SHADOW.focus(col) : emphasis ? SHADOW.rest(col) : 'none',
         transition: 'border-color .2s, box-shadow .25s',
       }}
     >
       {kind === 'handle' ? (
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: emphasis ? 22 : 19, color: col, fontWeight: 700 }}>@</span>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: emphasis ? 22 : 19, color: rgba(col, 0.9), fontWeight: 700 }}>@</span>
       ) : (
         <Icon name="mail" size={emphasis ? 21 : 18} color={col} stroke={1.7} />
       )}
@@ -405,7 +427,7 @@ export function HandleChip({ C, handle, color, big }) {
         alignItems: 'center',
         gap: 2,
         padding: big ? '8px 15px' : '5px 11px',
-        borderRadius: 999,
+        borderRadius: RADIUS.chip,
         background: rgba(col, 0.12),
         border: `1px solid ${rgba(col, 0.42)}`,
         fontFamily: "'Space Mono', monospace",
@@ -448,7 +470,7 @@ export function StepDots({ C, step, n = 2 }) {
   return (
     <div style={{ display: 'flex', gap: 6 }}>
       {Array.from({ length: n }).map((_, i) => (
-        <span key={i} style={{ width: i === step ? 20 : 7, height: 7, borderRadius: 99, background: i === step ? C.you : C.line, transition: 'all .3s' }} />
+        <span key={i} style={{ width: i === step ? 20 : 7, height: 7, borderRadius: RADIUS.chip, background: i === step ? C.you : C.line, transition: 'all .3s' }} />
       ))}
     </div>
   )
@@ -471,6 +493,7 @@ export function BackBtn({ C, onClick }) {
 // in a screen corner and works the same on phone and desktop.
 export function LanguageSwitcher({ C, lang, langs, onChange }) {
   const [open, setOpen] = React.useState(false)
+  const SHADOW = makeShadow(C)
   const ref = React.useRef(null)
   React.useEffect(() => {
     if (!open) return
@@ -487,7 +510,7 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
         aria-label="Language"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 11px',
-          borderRadius: 999, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
+          borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
           color: C.muted, cursor: 'pointer', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
           fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, letterSpacing: '.3px',
         }}
@@ -499,8 +522,8 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
         <div
           style={{
             position: 'absolute', top: 40, right: 0, zIndex: 30, minWidth: 150, padding: 6,
-            borderRadius: 14, background: rgba(C.ink2, 0.96), border: `1px solid ${C.line}`,
-            boxShadow: '0 18px 50px rgba(0,0,0,.5)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            borderRadius: RADIUS.card, background: rgba(C.ink2, 0.96), border: `1px solid ${C.line}`,
+            boxShadow: SHADOW.menu, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             maxHeight: '60vh', overflowY: 'auto',
           }}
         >
@@ -513,7 +536,7 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
               }}
               style={{
                 display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                padding: '10px 12px', borderRadius: 9, border: 'none', cursor: 'pointer', textAlign: 'left',
+                padding: '10px 12px', borderRadius: RADIUS.inner, border: 'none', cursor: 'pointer', textAlign: 'left',
                 background: code === lang ? rgba(C.you, 0.12) : 'transparent',
                 color: code === lang ? C.cream : C.muted, fontFamily: "'Space Grotesk', sans-serif", fontSize: 14,
               }}
@@ -538,7 +561,7 @@ export function ProfileButton({ C, handle, onClick }) {
       aria-label="Account"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 13px 0 7px',
-        borderRadius: 999, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
+        borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
         color: C.cream, cursor: 'pointer', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
         fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.2px', maxWidth: 220,
       }}
@@ -566,6 +589,7 @@ export function HandleSearchField({ C, value, onChange, placeholder, accent, aut
   const [results, setResults] = React.useState([])
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(-1)
+  const SHADOW = makeShadow(C)
   const seq = React.useRef(0)
   React.useEffect(() => {
     const q = normHandle(value)
@@ -612,8 +636,8 @@ export function HandleSearchField({ C, value, onChange, placeholder, accent, aut
         <div
           style={{
             position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 25, padding: 6,
-            borderRadius: 14, background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`,
-            boxShadow: '0 18px 50px rgba(0,0,0,.5)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            borderRadius: RADIUS.card, background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`,
+            boxShadow: SHADOW.menu, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             maxHeight: 280, overflowY: 'auto',
           }}
         >
@@ -623,7 +647,7 @@ export function HandleSearchField({ C, value, onChange, placeholder, accent, aut
               onMouseEnter={() => setActive(i)}
               onClick={() => pick(r.handle)}
               style={{
-                display: 'flex', width: '100%', alignItems: 'center', gap: 11, padding: '9px 10px', borderRadius: 10,
+                display: 'flex', width: '100%', alignItems: 'center', gap: 11, padding: '9px 10px', borderRadius: RADIUS.inner,
                 border: 'none', cursor: 'pointer', textAlign: 'left',
                 background: i === active ? rgba(C.you, 0.1) : 'transparent',
               }}
