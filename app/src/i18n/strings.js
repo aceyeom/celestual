@@ -20,13 +20,13 @@ export const LANGS = {
 const en = {
   'brand': 'Celestual',
   // landing
-  'landing.head1': 'Does your ex still',
-  'landing.head2': 'think about you?',
+  'landing.head1': 'Is that special somebody',
+  'landing.head2': 'still thinking about you?',
   'landing.cta': 'Find out',
   'landing.anon': 'anonymous unless mutual',
   'landing.age': 'For adults only. By continuing you confirm you’re 18 or older and agree to our',
   'landing.terms': 'privacy & terms',
-  'landing.watch': 'how it works',
+  'landing.login': 'Log in',
   'landing.demo': 'or explore the demo',
   // you (your side — handle first, email optional)
   'you.title1': 'First,',
@@ -40,6 +40,11 @@ const en = {
   'you.emailAddNote': 'So we can tell you privately if it ever becomes mutual — optional.',
   'you.note': 'Only used to tell you privately if it ever becomes mutual. Leave it blank and you can just check back here.',
   'you.continue': 'Continue',
+  // you — signing back in (the "you" step in login mode)
+  'you.loginTitle1': 'Welcome',
+  'you.loginTitle2': 'back.',
+  'you.loginNote': 'Confirm this @ is yours and your whole sky comes back — every star you’ve sent.',
+  'you.loginCta': 'Log in',
   // them
   'them.title1': 'Who can’t you',
   'them.title2': 'stop thinking about?',
@@ -213,13 +218,16 @@ const en = {
 }
 
 const ko = {
-  'landing.head1': '그 사람은 아직도',
-  'landing.head2': '당신을 생각할까요?',
+  'landing.head1': '그 특별한 사람은',
+  'landing.head2': '아직도 당신을 생각하고 있을까요?',
   'landing.cta': '확인하기',
   'landing.anon': '서로일 때만 공개돼요',
   'landing.age': '성인 전용입니다. 계속하면 만 18세 이상이며 다음에 동의하는 것으로 간주됩니다',
   'landing.terms': '개인정보 및 약관',
-  'landing.watch': '작동 방식',
+  'landing.login': '로그인',
+  'you.loginCta': '로그인',
+  'you.loginTitle1': '다시 오신 걸',
+  'you.loginTitle2': '환영해요.',
   'landing.demo': '또는 데모 둘러보기',
   'you.title1': '먼저,',
   'you.title2': '당신이에요.',
@@ -312,13 +320,16 @@ const ko = {
 }
 
 const es = {
-  'landing.head1': '¿Tu ex todavía',
-  'landing.head2': 'piensa en ti?',
+  'landing.head1': '¿Esa persona especial',
+  'landing.head2': 'todavía piensa en ti?',
   'landing.cta': 'Descúbrelo',
   'landing.anon': 'anónimo salvo que sea mutuo',
   'landing.age': 'Solo para adultos. Al continuar confirmas que tienes 18 años o más y aceptas nuestra',
   'landing.terms': 'privacidad y términos',
-  'landing.watch': 'cómo funciona',
+  'landing.login': 'Iniciar sesión',
+  'you.loginCta': 'Iniciar sesión',
+  'you.loginTitle1': 'Bienvenido',
+  'you.loginTitle2': 'de nuevo.',
   'you.title1': '¿Dónde te',
   'you.title2': 'contactamos?',
   'you.and': 'Y TU USUARIO',
@@ -364,13 +375,16 @@ const es = {
 }
 
 const ja = {
-  'landing.head1': 'あの人はまだ',
-  'landing.head2': 'あなたを想ってる？',
+  'landing.head1': 'あの特別な人は',
+  'landing.head2': 'まだあなたを想ってる？',
   'landing.cta': '確かめる',
   'landing.anon': '両想いのときだけ分かる',
   'landing.age': '成人向けです。続行すると18歳以上であり、次に同意したものとみなされます',
   'landing.terms': 'プライバシーと規約',
-  'landing.watch': '仕組み',
+  'landing.login': 'ログイン',
+  'you.loginCta': 'ログイン',
+  'you.loginTitle1': 'おかえり',
+  'you.loginTitle2': 'なさい。',
   'you.title1': 'どこに',
   'you.title2': 'お知らせする？',
   'you.and': 'そしてあなたのID',
@@ -414,12 +428,15 @@ const ja = {
 }
 
 const pt = {
-  'landing.head1': 'Será que seu ex ainda',
-  'landing.head2': 'pensa em você?',
+  'landing.head1': 'Será que aquela pessoa especial',
+  'landing.head2': 'ainda pensa em você?',
   'landing.cta': 'Descobrir',
   'landing.anon': 'anônimo a menos que seja mútuo',
   'landing.terms': 'privacidade e termos',
-  'landing.watch': 'como funciona',
+  'landing.login': 'Entrar',
+  'you.loginCta': 'Entrar',
+  'you.loginTitle1': 'Bem-vindo',
+  'you.loginTitle2': 'de volta.',
   'you.continue': 'Continuar',
   'them.seal': 'Selar',
   'them.sealYes': 'Sim — selar',
@@ -437,12 +454,15 @@ const pt = {
 }
 
 const fr = {
-  'landing.head1': 'Ton ex pense-t-il',
-  'landing.head2': 'encore à toi ?',
+  'landing.head1': 'Cette personne spéciale',
+  'landing.head2': 'pense-t-elle encore à toi ?',
   'landing.cta': 'Découvrir',
   'landing.anon': 'anonyme sauf si c’est réciproque',
   'landing.terms': 'confidentialité et conditions',
-  'landing.watch': 'comment ça marche',
+  'landing.login': 'Se connecter',
+  'you.loginCta': 'Se connecter',
+  'you.loginTitle1': 'Content de',
+  'you.loginTitle2': 'te revoir.',
   'you.continue': 'Continuer',
   'them.seal': 'Sceller',
   'them.sealYes': 'Oui — sceller',
@@ -460,12 +480,15 @@ const fr = {
 }
 
 const de = {
-  'landing.head1': 'Denkt dein Ex noch',
-  'landing.head2': 'an dich?',
+  'landing.head1': 'Denkt dieser besondere Mensch',
+  'landing.head2': 'noch an dich?',
   'landing.cta': 'Herausfinden',
   'landing.anon': 'anonym, außer es ist beidseitig',
   'landing.terms': 'Datenschutz & AGB',
-  'landing.watch': 'so funktioniert’s',
+  'landing.login': 'Anmelden',
+  'you.loginCta': 'Anmelden',
+  'you.loginTitle1': 'Willkommen',
+  'you.loginTitle2': 'zurück.',
   'you.continue': 'Weiter',
   'them.seal': 'Versiegeln',
   'them.sealYes': 'Ja — versiegeln',

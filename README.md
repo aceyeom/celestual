@@ -1,11 +1,14 @@
 # CELESTUAL
 
-**CELESTUAL** — *"does your ex still think about you?"* — is an anonymous,
-reciprocal matching site. Live at **https://celestual.us/**.
+**CELESTUAL** — *"is that special somebody still thinking about you?"* — is an
+anonymous, reciprocal matching site. Live at **https://celestual.us/**.
 
-You enter your Instagram @ and your ex's @. You only find out it's mutual if
-**they** independently enter **you** — anonymous, zero-rejection. One-sided
-entries are never revealed to anyone.
+You enter your Instagram @ and the @ of someone you can't stop thinking about.
+You only find out it's mutual if **they** independently enter **you** —
+anonymous, zero-rejection. One-sided entries are never revealed to anyone.
+
+Signing back in is just your @ again: prove it's yours with the same one-time
+Instagram DM and your sky — every star you've sent — comes back on any device.
 
 It's a Vite + React single-page app talking directly to **Supabase** (Postgres
 RPCs + edge functions); there is no separate app server.
