@@ -9,6 +9,9 @@
 // secret. The 4-digit code is only a correlation id (see
 // supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
 //
+// People DM the keyword + code (e.g. "seal 4071"). A ManyChat Keyword trigger on
+// the word "seal" fires the flow that calls this endpoint with the message text.
+//
 // ManyChat External Request setup (see docs/SETUP-IG-VERIFY.md):
 //   • Method: POST   URL: this function's URL
 //   • Header:  X-Celestual-Token: <MANYCHAT_SHARED_SECRET>
@@ -19,6 +22,9 @@
 //   MANYCHAT_SHARED_SECRET — a long random string you also set in the ManyChat
 //                            request header. This is what stops anyone else from
 //                            POSTing fake verifications, so keep it secret + rotate it.
+// Optional:
+//   IG_KEYWORD — the activation word in front of the code (default "seal"). Keep it
+//                in sync with the ManyChat keyword + the front-end VITE_IG_KEYWORD.
 // Injected automatically:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -26,6 +32,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SHARED_SECRET = Deno.env.get('MANYCHAT_SHARED_SECRET') ?? '';
+const KEYWORD = (Deno.env.get('IG_KEYWORD') ?? 'seal').trim().toLowerCase();
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -40,11 +47,22 @@ function safeEqual(a: string, b: string) {
   return out === 0;
 }
 
-// Every standalone 4-digit run in the text, most-specific first. (A wrong code just
-// finds no pending session — parsing is never the security boundary.)
+// Escape a string for safe inclusion in a RegExp.
+function reEscape(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Pull candidate 4-digit codes out of the DM, most-likely first: a code right after
+// the keyword ("seal 4071") is tried before any other standalone 4-digit run. A
+// wrong code just finds no pending session — parsing is never the security boundary.
 function codeCandidates(text: string): string[] {
+  const s = String(text ?? '');
   const out: string[] = [];
-  for (const m of String(text ?? '').matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
+  if (KEYWORD) {
+    const kw = new RegExp(`${reEscape(KEYWORD)}\\s*(\\d{4})(?!\\d)`, 'gi');
+    for (const m of s.matchAll(kw)) out.push(m[1]);
+  }
+  for (const m of s.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }
 

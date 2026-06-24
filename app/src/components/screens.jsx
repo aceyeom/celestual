@@ -8,7 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { startVerification, pollVerification, igDeepLink, igUsername } from '../api/igverify.js'
+import { startVerification, pollVerification, igDeepLink, igUsername, igMessage } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -1181,10 +1181,11 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     return stopPoll
   }, [phase, token, onVerified])
 
-  // Copy the code AND open the DM thread inside the same gesture, so mobile is
-  // allowed to launch the Instagram app and write the clipboard.
+  // Copy the full DM text ("seal 4071") AND open the DM thread inside the same
+  // gesture, so mobile is allowed to launch the Instagram app and write the
+  // clipboard. The keyword is what makes ManyChat's trigger fire.
   const copyAndOpen = () => {
-    copyText(token).then(setCopied)
+    copyText(igMessage(token)).then(setCopied)
     try {
       window.open(igDeepLink(), '_blank', 'noopener,noreferrer')
     } catch {
@@ -1248,9 +1249,9 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.muted }}>{t('verify.code')}</span>
               {phase === 'starting' || !token ? (
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 30, letterSpacing: '8px', color: C.muted, paddingLeft: 8 }}>· ····</span>
               ) : (
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 40, fontWeight: 700, letterSpacing: '12px', color: C.you, paddingLeft: 12, textShadow: `0 0 26px ${rgba(C.you, 0.4)}` }}>{token}</span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 30, fontWeight: 700, letterSpacing: '6px', color: C.you, paddingLeft: 6, textShadow: `0 0 26px ${rgba(C.you, 0.4)}`, whiteSpace: 'nowrap' }}>{igMessage(token)}</span>
               )}
             </div>
 

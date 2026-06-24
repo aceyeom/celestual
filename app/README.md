@@ -35,12 +35,14 @@ references in the code point there.
 - **`/demo`.** `celestual.us/demo` is **fully sandboxed** — zero verification and
   never writes to the real backend (enter `@demo` as the ex to see a match).
 - **Instagram DM verification** (no OAuth, no Meta dev portal) behind
-  `VITE_IG_VERIFY_ENABLED` (off by default → a local verified stub keeps the flow
-  testable). People prove the `@` they type is theirs by DMing a one-time code to
-  your Instagram account, relayed by **ManyChat** to `supabase/functions/celestual-manychat`
-  (or Meta's webhook directly via `celestual-ig-webhook`). Front-end:
-  [`src/api/igverify.js`](./src/api/igverify.js). See
-  [`../docs/SETUP-IG-VERIFY.md`](../docs/SETUP-IG-VERIFY.md).
+  `VITE_IG_VERIFY_ENABLED` (off by default). With no Supabase backend a local verified
+  stub keeps the flow testable; with a real backend connected the seal **fails closed**
+  until the flag is on, so production never silently lets people through. People prove
+  the `@` they type is theirs by DMing **`seal <code>`** (keyword `VITE_IG_KEYWORD`,
+  default `seal`) to your Instagram account, relayed by **ManyChat**'s keyword trigger
+  to `supabase/functions/celestual-manychat` (or Meta's webhook directly via
+  `celestual-ig-webhook`). Front-end: [`src/api/igverify.js`](./src/api/igverify.js).
+  See [`../docs/SETUP-IG-VERIFY.md`](../docs/SETUP-IG-VERIFY.md).
 - **Optional @ search typeahead** behind `VITE_HANDLE_SEARCH` (off by default):
   `searchHandles()` + `supabase/functions/celestual-search`. See
   [`.env.example`](./.env.example).

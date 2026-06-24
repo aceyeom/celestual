@@ -37,6 +37,9 @@ const ACCESS_TOKEN = Deno.env.get('IG_ACCESS_TOKEN') ?? '';
 const GRAPH_VERSION = Deno.env.get('IG_GRAPH_VERSION') ?? 'v21.0';
 const CONFIRM_DM = Deno.env.get('IG_CONFIRM_DM') === '1';
 const GRAPH = 'https://graph.instagram.com';
+// Activation word people put in front of the code ("seal 4071"). Default "seal";
+// keep in sync with the front-end VITE_IG_KEYWORD.
+const KEYWORD = (Deno.env.get('IG_KEYWORD') ?? 'seal').trim().toLowerCase();
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -64,10 +67,18 @@ async function validSignature(raw: string, header: string | null): Promise<boole
   return safeEqual(hex(mac), sig.toLowerCase());
 }
 
-// Pull every standalone 4-digit run out of the message text, most-specific first.
+// Pull candidate 4-digit codes out of the message, most-likely first: a code right
+// after the keyword ("seal 4071") is tried before any other standalone 4-digit run.
 // (Security doesn't rest on parsing — a wrong code simply finds no pending session.)
+function reEscape(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 function codeCandidates(text: string): string[] {
   const out: string[] = [];
+  if (KEYWORD) {
+    const kw = new RegExp(`${reEscape(KEYWORD)}\\s*(\\d{4})(?!\\d)`, 'gi');
+    for (const m of text.matchAll(kw)) out.push(m[1]);
+  }
   for (const m of text.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }

@@ -24,6 +24,17 @@ export const igVerifyEnabled = () => import.meta.env.VITE_IG_VERIFY_ENABLED === 
 export const igUsername = () => (import.meta.env.VITE_IG_USERNAME || 'celestual.us').replace(/^@+/, '')
 export const igDeepLink = () => `https://ig.me/m/${igUsername()}`
 
+// The keyword that wakes the ManyChat automation. People DM "<keyword> <code>"
+// (e.g. "seal 4071"); a ManyChat Keyword trigger on this exact word fires the flow
+// that relays the message to celestual-manychat. Keep it in sync with the keyword
+// you set in ManyChat (§4 of docs/SETUP-IG-VERIFY.md). Configurable via
+// VITE_IG_KEYWORD; defaults to "seal".
+export const igKeyword = () => (import.meta.env.VITE_IG_KEYWORD || 'seal').trim().toLowerCase()
+
+// The exact text a person should send as a DM: the keyword, a space, then the
+// one-time code — e.g. "seal 4071". This is what we copy to their clipboard.
+export const igMessage = (code) => `${igKeyword()} ${code}`
+
 const subtle = () => (typeof crypto !== 'undefined' && crypto.subtle) || null
 
 function toHex(bytes) {
