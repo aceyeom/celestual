@@ -303,10 +303,11 @@ export function LandingScreen({ C, t: screenT, ctx }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
         <h1
           className="enter"
-          style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontSize: 'clamp(27px, 8vw, 44px)', lineHeight: 1.16, color: C.cream, textShadow: '0 4px 34px rgba(0,0,0,.7)' }}
+          style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontSize: 'clamp(27px, 8vw, 44px)', lineHeight: 1.16, color: C.cream, textShadow: '0 4px 34px rgba(0,0,0,.7)', textWrap: 'balance' }}
         >
-          <div style={{ whiteSpace: 'nowrap' }}>{head[0]}</div>
-          <div style={{ whiteSpace: 'nowrap' }}><em style={{ fontStyle: 'italic', color: C.you }}>{head[1]}</em></div>
+          {/* the tagline wraps gracefully now it's a longer, gentler line */}
+          <div>{head[0]}</div>
+          <div><em style={{ fontStyle: 'italic', color: C.you }}>{head[1]}</em></div>
         </h1>
       </div>
 
@@ -321,9 +322,9 @@ export function LandingScreen({ C, t: screenT, ctx }) {
             <Icon name="lock" size={13} color={C.muted} /> {t('landing.anon')}
           </span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.line }} />
-          {/* replaces the old "why it's free →" — a replayable intro instead */}
-          <GhostButton C={C} onClick={() => ctx.watchIntro()} style={{ padding: 0, fontSize: 12 }}>
-            {t('landing.watch')} →
+          {/* sign back in — prove your @ and drop straight onto your saved sky */}
+          <GhostButton C={C} onClick={() => ctx.startLogin()} style={{ padding: 0, fontSize: 12, color: C.you }}>
+            {t('landing.login')} →
           </GhostButton>
         </div>
         <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>
@@ -349,14 +350,16 @@ export function LandingScreen({ C, t: screenT, ctx }) {
 // ── 2 · YOU (your side — handle is who you are; email is optional) ─────────────
 export function YouScreen({ C, ctx }) {
   const { t } = useI18n()
+  const login = ctx.loginMode
   const emailVal = ctx.email.trim()
   // Email is optional now — valid if empty, or if it's a real-looking address.
   const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
   const valid = handleOk && emailOk
-  // Advancing now goes through ctx.continueFromYou(): when Instagram verification is
-  // on, it proves this @ is yours (the in-tab DM overlay) before moving to "them".
-  const submit = () => valid && ctx.continueFromYou()
+  // Signup advances through continueFromYou() (prove the @, then name someone);
+  // login mode runs ctx.login() (prove the @, then restore the saved sky). Both
+  // open the in-tab DM overlay when Instagram verification is on.
+  const submit = () => valid && (login ? ctx.login() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
   // The email field is an OPTIONAL drop-down that only appears once a handle is
   // entered. It stays hidden until then; once a handle exists, a quiet "add email"
@@ -367,23 +370,33 @@ export function YouScreen({ C, ctx }) {
     <WarmShell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <BackBtn C={C} onClick={() => ctx.go('landing')} />
-        <StepDots C={C} step={0} />
+        {login ? <Brandmark C={C} size={12} /> : <StepDots C={C} step={0} />}
         <div style={{ width: 38 }} />
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(32px, 8vw, 37px)', lineHeight: 1.12, color: C.cream }}>
-          {t('you.title1')}<br />
-          <em style={{ color: C.you }}>{t('you.title2')}</em>
+          {login ? (
+            <>{t('you.loginTitle1')}<br /><em style={{ color: C.you }}>{t('you.loginTitle2')}</em></>
+          ) : (
+            <>{t('you.title1')}<br /><em style={{ color: C.you }}>{t('you.title2')}</em></>
+          )}
         </h2>
 
         {/* handle — the primary field (this is your star) */}
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder={t('you.handle')} accent={C.you} autoFocus emphasis onEnter={submit} />
           {/* One hint at a time so the field never stacks two lines of mono text:
-              once a handle is in and verification matters, the verify hint IS the
-              relevant note and replaces the generic "we check Instagram" line. */}
-          {ctx.verifyEnabled && handleOk ? (
+              login mode says "prove it and your sky comes back"; otherwise once a
+              handle is in and verification matters, the verify hint replaces the
+              generic "we check Instagram" line. */}
+          {login && handleOk ? (
+            ctx.verified ? (
+              <Hint C={C} icon="check" color={rgba(C.you, 0.9)}>{t('verify.youDone')}</Hint>
+            ) : (
+              <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('you.loginNote')}</Hint>
+            )
+          ) : ctx.verifyEnabled && handleOk ? (
             ctx.verified ? (
               <Hint C={C} icon="check" color={rgba(C.you, 0.9)}>{t('verify.youDone')}</Hint>
             ) : (
@@ -394,15 +407,9 @@ export function YouScreen({ C, ctx }) {
           )}
         </div>
 
-        {/* other accounts — a quiet revealable for people with multiple @s */}
-        <Collapse open={handleOk}>
-          <div style={{ paddingTop: 4 }}>
-            <AccountsEditor C={C} ctx={ctx} />
-          </div>
-        </Collapse>
-
-        {/* email — an optional drop-down, revealed only after a handle is set */}
-        <Collapse open={handleOk}>
+        {/* email — an optional drop-down, revealed after a handle is set (signup
+            only; signing back in needs nothing but the proven @) */}
+        <Collapse open={handleOk && !login}>
           <div style={{ paddingTop: 4 }}>
             {!emailOpen ? (
               // A quiet "ghost field": same ink panel, hairline border, soft corner
@@ -436,7 +443,7 @@ export function YouScreen({ C, ctx }) {
       <PrimaryButton C={C} disabled={!valid} onClick={submit}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
           {needsVerify && <Icon name="instagram" size={16} color="#1a0f0a" stroke={2} />}
-          {needsVerify ? t('verify.continue') : t('you.continue')}
+          {login ? t('you.loginCta') : needsVerify ? t('verify.continue') : t('you.continue')}
         </span>
       </PrimaryButton>
     </WarmShell>

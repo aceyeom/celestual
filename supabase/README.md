@@ -78,7 +78,9 @@ enforces its own checks. See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
   enforced — the ownership proof), `celestual_withdraw` (un-send; never refunds a
   slot), `celestual_suppress` (rate-limited self-service erasure / block),
   `celestual_link` (group your own @s), `celestual_check_many` (which entered @s are
-  mutual — the constellations view), `celestual_slots_for` (slot snapshot for
+  mutual — the constellations view), `celestual_my_sky` (sign back in: the proven
+  owner's own sky — the @s they've sent — for cross-device restore, gated by the
+  same ownership proof as the seal), `celestual_slots_for` (slot snapshot for
   display), `celestual_request_reminder`, `celestual_start_ig_verification` /
   `celestual_poll_ig_verification` (issue + watch a DM code), and `celestual_norm`
   (handle normalisation). The completion path

@@ -69,6 +69,24 @@ export async function checkMutuals({ me, handles, demo }) {
   }
 }
 
+// Load THIS handle's own sky for a cross-device sign-in: the @s you've sent, each
+// with when it was sealed and whether it's now mutual. Server-gated by the same
+// Instagram-DM ownership proof used to seal (api/igverify.js) — without a valid
+// proof it returns []. Read-only; reveals nothing beyond what the owner recorded.
+// Returns: [{ handle, time, mutual }] (possibly empty), never throws into the UI.
+export async function fetchMySky({ handle, proof, demo } = {}) {
+  if (demo || !hasSupabase || !normHandle(handle) || !proof) return [];
+  try {
+    const { data, error } = await supabase.rpc('celestual_my_sky', { p_handle: handle, p_proof: proof });
+    if (error || !data?.ok || !Array.isArray(data.stars)) return [];
+    return data.stars
+      .map((s) => ({ handle: normHandle(s.handle), time: Number(s.time) || Date.now(), mutual: !!s.mutual }))
+      .filter((s) => s.handle);
+  } catch {
+    return [];
+  }
+}
+
 // Link up to 3 of your own @s into one identity group, so being entered on ANY of
 // them counts as you. No-op for a single handle (nothing to group). Best-effort:
 // failures degrade to "just my handles" without throwing into the UI.

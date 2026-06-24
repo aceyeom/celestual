@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle,
-  checkMutuals, linkHandles, fetchSlots, requestReminder, FULL_SLOTS,
+  checkMutuals, linkHandles, fetchSlots, requestReminder, fetchMySky, FULL_SLOTS,
 } from './api/celestual.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled } from './api/igverify.js'
@@ -125,9 +125,9 @@ export default function App() {
   // sensible screen point if the field can't be measured.
   const [sendoffOrigin, setSendoffOrigin] = useState(SENDOFF_ORIGIN)
   const [introMode, setIntroMode] = useState('idle') // galaxy mode while intro plays
-  // Where the slideshow hands off when it ends: 'you' when launched from
-  // "Find out" (straight into the flow), 'landing' when replayed from "how it works".
-  const [introNext, setIntroNext] = useState('you')
+  // The "you" step doubles as the sign-back-in entry: in login mode it asks only
+  // for the @, proves it, and restores the saved sky — no naming, no second step.
+  const [loginMode, setLoginMode] = useState(false)
   const [focused, setFocused] = useState(null) // index of the star the camera holds
   const galaxyRef = useRef(null)
 
@@ -249,12 +249,13 @@ export default function App() {
     return () => clearTimeout(id)
   }, [me, altHandles, demo])
 
-  // NOTE: identity is now proven by an Instagram DM (api/igverify.js), which does
-  // not create a Supabase Auth session — so there is no cross-device server sky to
-  // merge here. The sky persists locally (api/profile.js falls back to localStorage
-  // when there's no auth user), exactly as it did under the previous verified stub.
-  // Bridging a verified handle to a Supabase Auth session (for the encrypted DB sky)
-  // is an optional future step — see docs/SETUP-IG-VERIFY.md.
+  // NOTE: identity is proven by an Instagram DM (api/igverify.js), which does not
+  // create a Supabase Auth session — so the encrypted-profile sky still persists
+  // locally on this device (api/profile.js falls back to localStorage). Cross-device
+  // restore does NOT use that store: signing back in (startLogin → login →
+  // restoreSky) rebuilds the sky from the server's own entries via celestual_my_sky,
+  // gated by the same DM ownership proof used to seal. So "your stars on any device"
+  // comes from the matching data itself, no Supabase Auth bridge required.
 
   // Capture a returning OAuth session on load (the popup-blocked redirect
   // fallback path) — adopt it so the app resumes signed in. No navigation: people
@@ -301,25 +302,20 @@ export default function App() {
   }, [go])
 
   // ── intro ──
-  // "Find out" — the slideshow plays, then hands straight into the flow.
+  // "Find out" — the slideshow plays, then hands straight into the flow (signup).
   const findOut = useCallback(() => {
     if (!over18) setOver18(true)
-    setIntroNext('you')
+    setLoginMode(false)
     go('intro')
   }, [over18, go])
-  // "how it works" — replay the slideshow, then return to the landing.
-  const watchIntro = useCallback(() => {
-    setIntroNext('landing')
-    go('intro')
-  }, [go])
   const finishIntro = useCallback(() => {
     try {
       localStorage.setItem(INTRO_SEEN, '1')
     } catch {
       /* ignore */
     }
-    go(introNext)
-  }, [go, introNext])
+    go('you')
+  }, [go])
   const onIntroStep = useCallback((i) => {
     // the last two beats are the two stars colliding into one
     setIntroMode(i >= 3 ? 'match' : 'idle')
@@ -470,6 +466,51 @@ export default function App() {
     go('them')
   }, [me, demo, verified, go, openVerify])
 
+  // ── sign back in ──
+  // Restore this @'s saved sky from the server (cross-device) and drop straight
+  // onto it. `proofOverride` comes from a just-completed verification; otherwise
+  // we use the live session's proof. An empty/failed load just lands on the (empty)
+  // resting sky — never an error wall — so a fresh @ still gets in cleanly.
+  const restoreSky = useCallback(
+    async (proofOverride) => {
+      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      try {
+        const stars = await fetchMySky({ handle: me, proof, demo })
+        if (stars.length) {
+          setHandles(stars.map((s) => s.handle))
+          setSealTimes(stars.map((s) => s.time))
+          setMatches(stars.filter((s) => s.mutual).map((s) => s.handle))
+        }
+      } catch {
+        /* best-effort — land on whatever sky we have */
+      }
+      setLoginMode(false)
+      go('resting')
+    },
+    [me, demo, session, go],
+  )
+
+  // Begin a sign-back-in from the landing: reuse the "you" step in login mode (just
+  // the @, then prove it). No intro, no naming — the shortest path to your stars.
+  const startLogin = useCallback(() => {
+    setError('')
+    setLoginMode(true)
+    go('you')
+  }, [go])
+
+  // Finish a sign-back-in: prove the @ (when verification is on) then restore the
+  // sky. The verify overlay resumes into restoreSky on success; the stub/demo
+  // paths (no real backend) go straight to the locally-restored sky.
+  const login = useCallback(() => {
+    if (!isValidHandle(me)) return
+    if (igVerifyEnabled() && !demo && !verified) {
+      openVerify(me, (proof) => restoreSky(proof))
+      return
+    }
+    if (!verified && !demo) setSession(signInStub())
+    restoreSky()
+  }, [me, demo, verified, openVerify, restoreSky])
+
   // Multi-entry: gate on the slot budget here too (entering "more users").
   const checkAnother = useCallback(() => {
     setThem('')
@@ -613,7 +654,7 @@ export default function App() {
   }, [])
 
   const ctx = {
-    email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches,
+    email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
     // True when real Instagram verification is wired (vs. the testable local stub),
     // so the "you" step knows to confirm the handle before advancing.
     verifyEnabled: igVerifyEnabled(),
@@ -623,7 +664,8 @@ export default function App() {
     setEmail, setMe, setThem, setDisplayName, addAltHandle, removeAltHandle,
     requestReminder: (em) => requestReminder({ me, email: em || email, demo }),
     go, seal, continueFromYou, checkAnother, affirmAge, suppressHandle, openConversation,
-    enterDemo, findOut, watchIntro, finishIntro, onIntroStep,
+    startLogin, login,
+    enterDemo, findOut, finishIntro, onIntroStep,
     onStarTap, closeStar, removeStar,
     openAccount, closeAccount, signOut, deleteAccount,
     starCount: handles.length,
