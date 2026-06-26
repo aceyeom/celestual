@@ -24,6 +24,14 @@ export const igVerifyEnabled = () => import.meta.env.VITE_IG_VERIFY_ENABLED === 
 export const igUsername = () => (import.meta.env.VITE_IG_USERNAME || 'celestual.us').replace(/^@+/, '')
 export const igDeepLink = () => `https://ig.me/m/${igUsername()}`
 
+// The user doesn't DM the bare digits — they DM the code with a fixed prefix, e.g.
+// "star-1283". That prefix is the routing marker your ManyChat automation keys on:
+// its Condition only calls the backend ("the db ping") when the incoming DM contains
+// "star-", so ordinary DMs never reach your function. Only the bare 4 digits are ever
+// stored or polled server-side; the prefix is plumbing, not part of the secret.
+export const CODE_PREFIX = 'star-'
+export const dmCode = (token) => `${CODE_PREFIX}${token}`
+
 const subtle = () => (typeof crypto !== 'undefined' && crypto.subtle) || null
 
 function toHex(bytes) {

@@ -10,6 +10,9 @@
 // supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
 //
 // ManyChat External Request setup (see docs/SETUP-IG-VERIFY.md):
+//   • Trigger:   Default Reply, gated by a Condition — only call this when the DM
+//                text contains "star-" (people send "star-1283"), so ordinary DMs
+//                never ping the backend.
 //   • Method: POST   URL: this function's URL
 //   • Header:  X-Celestual-Token: <MANYCHAT_SHARED_SECRET>
 //   • Body (JSON), inserting ManyChat fields with the "+" picker:
@@ -40,11 +43,18 @@ function safeEqual(a: string, b: string) {
   return out === 0;
 }
 
-// Every standalone 4-digit run in the text, most-specific first. (A wrong code just
-// finds no pending session — parsing is never the security boundary.)
+// Pull the 4-digit correlation code out of the DM text. The app tells people to send
+// the prefixed form — "star-1283" — and your ManyChat automation's Condition only
+// forwards messages containing "star-", so in practice the text is "star-1283". We
+// read the prefixed form first (case-insensitive, separator optional), then fall back
+// to any bare 4-digit run so a stray format still resolves. Parsing is never the
+// security boundary — a wrong code just finds no pending session; the sender's
+// username is the gate.
 function codeCandidates(text: string): string[] {
+  const s = String(text ?? '');
   const out: string[] = [];
-  for (const m of String(text ?? '').matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
+  for (const m of s.matchAll(/star[-\s]?(\d{4})/gi)) out.push(m[1]);
+  for (const m of s.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }
 

@@ -8,7 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { startVerification, pollVerification, igDeepLink, igUsername } from '../api/igverify.js'
+import { startVerification, pollVerification, igDeepLink, igUsername, dmCode } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -1229,7 +1229,7 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
   // Copy the code AND open the DM thread inside the same gesture, so mobile is
   // allowed to launch the Instagram app and write the clipboard.
   const copyAndOpen = () => {
-    copyText(token).then(setCopied)
+    copyText(dmCode(token)).then(setCopied)
     // window.open is often blocked inside an in-app webview; openExternal falls
     // back to a same-tab deep link so the DM thread still opens.
     openExternal(igDeepLink())
@@ -1294,7 +1294,7 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
               {phase === 'starting' || !token ? (
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
               ) : (
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 40, fontWeight: 700, letterSpacing: '12px', color: C.you, paddingLeft: 12, textShadow: `0 0 26px ${rgba(C.you, 0.4)}` }}>{token}</span>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.you, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.you, 0.4)}` }}>{dmCode(token)}</span>
               )}
             </div>
 
