@@ -95,6 +95,11 @@ const PAL = {
 
 // camera / projection
 const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
+// The cinematic fly-into-a-star focus is time-driven (not an exponential chase),
+// so it has a fixed, deliberate length: a longer, graceful push IN and a slightly
+// quicker — but equally smooth — pull back OUT.
+const FOCUS_IN = 1.25 // seconds — camera glide into the tapped star
+const FOCUS_OUT = 0.82 // seconds — camera drift back out to the resting sky
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
 const TILT = 1.04 // base disk tilt toward the camera (rad)
@@ -148,7 +153,8 @@ export class GalaxyField {
     this._slotSeed = 0
     // Camera focus on a single star (the interactive resting field): the camera
     // drifts toward sealed[focusIndex] and zooms in; everything else recedes.
-    this.focus = 0 // eased 0..1
+    this.focus = 0 // eased 0..1 (the value the camera transform reads)
+    this.focusP = 0 // linear focus progress 0..1; `focus` is its ease-in-out
     this.focusTarget = 0
     this.focusIndex = -1
     this.focusScreen = { x: 0, y: 0, vis: false } // where the focused star sits now
@@ -552,11 +558,16 @@ export class GalaxyField {
     this.lastTs = ts
     this.modeT += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
-    // ease the camera focus; release the index once we've drifted fully back out.
-    // A slower coefficient makes the drift IN/OUT a longer, cinematic glide so the
-    // close-up resolves smoothly out of the star instead of snapping to it.
-    this.focus += (this.focusTarget - this.focus) * Math.min(1, dt * 2.5)
-    if (this.focus < 0.002 && this.focusTarget === 0) {
+    // Camera focus is time-driven and eased, NOT an exponential chase: focusP is
+    // linear progress (ramping 0→1 toward the tapped star, 1→0 on release over a
+    // fixed duration), and `focus` is its ease-in-out. So the camera departs
+    // gently, accelerates through the field, and SETTLES softly onto the star —
+    // a deliberate cinematic glide instead of a fast lurch that then creeps the
+    // final few percent. A re-tap mid-pull-out simply reverses the same ramp.
+    const fdur = this.focusTarget === 1 ? FOCUS_IN : FOCUS_OUT
+    this.focusP = clamp(this.focusP + (this.focusTarget === 1 ? 1 : -1) * (dt / fdur), 0, 1)
+    this.focus = easeInOut(this.focusP)
+    if (this.focusP <= 0.0001 && this.focusTarget === 0) {
       this.focus = 0
       this.focusIndex = -1
       this.focusScreen.vis = false
@@ -602,7 +613,12 @@ export class GalaxyField {
 
   _draw(dt) {
     const ctx = this.ctx,
-      d = this.dim,
+      // As the camera flies into a star, melt the surrounding field down so the
+      // close-up arrives over a calm, near-dark sky with the hero star alone —
+      // the busy galaxy recedes into the void instead of streaking past at full
+      // brightness. The focused star itself isn't scaled by `d`, so it stays lit
+      // while everything around it dissolves.
+      d = this.dim * (1 - this.focus * 0.45),
       rot = this._rot()
     // When zoomed, the whole field is magnified, so even tiny points must be drawn
     // as round sprites or they'd smear into squares. Un-zoomed, the faint sub-pixel
@@ -640,9 +656,11 @@ export class GalaxyField {
       const fp = this._sealedAt(this.sealed[this.focusIndex], rot)
       if (fp) {
         const f = this.focus
-        // A calm drift-in that magnifies the field toward the focused star without
-        // blowing the sparse field up into empty pixels.
-        const scale = 1 + f * 1.6
+        // A deep, deliberate push-in: the field magnifies toward the star so it
+        // grows to fill the frame and its neighbours sweep out past the edges,
+        // reading as genuine forward travel INTO the star rather than a modest
+        // nudge. Held in check so the sparse field never blows up into bare pixels.
+        const scale = 1 + f * 2.3
         const ctX = lerp(fp.sx, this.cx, f)
         const ctY = lerp(fp.sy, this.cy, f)
         this.focusScreen = { x: ctX, y: ctY, vis: true }

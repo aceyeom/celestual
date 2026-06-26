@@ -195,32 +195,24 @@ function SheetRow({ C, label, value, accent }) {
 }
 
 // The focal star for the close-up readout — THE single hero star of the zoomed
-// view (the canvas point hands off to this, so they never double up). A real
-// star, not a notification ping: a soft amber→rose aura, slim crossed diffraction
-// spikes, and a white core that only breathes in brightness (never scale-jumps,
-// which read as cheap). Built from the cosmos' own tokens — no new colors.
+// view (the canvas point hands off to this, so they never double up). A close-up
+// of one of the galaxy's own stars, NOT a UI lens-flare: no hard vector spikes,
+// just a delicate white core breathing in light, wrapped in soft, scattered,
+// blurred dust — amber folding into rose. Built from the cosmos' own tokens.
 function StarMark({ C, size = 92 }) {
-  const spike = (vertical) => ({
-    position: 'absolute',
-    [vertical ? 'height' : 'width']: '100%',
-    [vertical ? 'width' : 'height']: '1.5px',
-    background: `linear-gradient(${vertical ? 180 : 90}deg, transparent 8%, ${rgba(C.you, 0.55)} 40%, #fff 50%, ${rgba(C.you, 0.55)} 60%, transparent 92%)`,
-  })
   return (
     <span className="starmark" style={{ position: 'relative', width: size, height: size, display: 'inline-grid', placeItems: 'center' }}>
-      {/* outer aura — static, soft, amber folding into rose */}
-      <span aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.32)} 0%, ${rgba(C.them, 0.12)} 40%, transparent 68%)` }} />
-      {/* inner halo — a tighter warm bloom right around the core */}
-      <span aria-hidden style={{ position: 'absolute', width: size * 0.42, height: size * 0.42, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, transparent 70%)` }} />
-      {/* diffraction spikes — slim crossed light, breathing very slowly */}
-      <span aria-hidden className="starmark-spikes" style={{ position: 'absolute', width: '100%', height: '100%', placeItems: 'center', display: 'grid' }}>
-        <span style={{ ...spike(false), gridArea: '1 / 1' }} />
-        <span style={{ ...spike(true), gridArea: '1 / 1' }} />
-      </span>
-      {/* the core — a crisp white point with layered bloom, breathing in light */}
+      {/* broad nebula veil — a soft, off-center dust cloud so the glow reads
+          scattered and organic, never a clean synthetic ring */}
+      <span aria-hidden className="starmark-veil" style={{ position: 'absolute', inset: '-20%', borderRadius: '50%', background: `radial-gradient(circle at 42% 38%, ${rgba(C.you, 0.22)} 0%, ${rgba(C.them, 0.1)} 40%, transparent 66%)`, filter: 'blur(7px)' }} />
+      {/* a second, offset dust cluster — gives the bloom a hand-scattered, stardust feel */}
+      <span aria-hidden style={{ position: 'absolute', inset: '-6%', borderRadius: '50%', background: `radial-gradient(circle at 64% 66%, ${rgba(C.them, 0.16)} 0%, transparent 56%)`, filter: 'blur(9px)' }} />
+      {/* inner warm bloom — a tighter, softly-blurred halo right around the core */}
+      <span aria-hidden style={{ position: 'absolute', width: size * 0.5, height: size * 0.5, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.42)}, transparent 70%)`, filter: 'blur(2px)' }} />
+      {/* the core — a delicate white point with layered bloom, breathing in light */}
       <span
         className="starmark-core"
-        style={{ width: 11, height: 11, borderRadius: '50%', background: '#fff', boxShadow: `0 0 9px 2px #fff, 0 0 22px 6px ${rgba(C.you, 0.72)}, 0 0 52px 18px ${rgba(C.you, 0.26)}` }}
+        style={{ width: 9, height: 9, borderRadius: '50%', background: '#fff', boxShadow: `0 0 8px 2px #fff, 0 0 20px 6px ${rgba(C.you, 0.62)}, 0 0 46px 16px ${rgba(C.you, 0.22)}` }}
       />
     </span>
   )
@@ -710,36 +702,47 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
       >
         <StarMark C={C} />
 
-        <div style={{ marginTop: 20, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '3px', textTransform: 'uppercase', color: mutual ? C.you : C.muted }}>
+        <div style={{ marginTop: 22, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '3px', textTransform: 'uppercase', color: mutual ? C.you : C.muted }}>
           {mutual ? t('star.mutualKicker') : t('star.kicker')}
         </div>
-        <div style={{ marginTop: 12, marginBottom: 18 }}>
+        {/* The @ is the hero, so it's set in the same dramatic serif as the
+            headlines (no pill, no border) — it simply breathes. The @ sign keeps
+            the rose accent so the identity still reads as "them". */}
+        <div style={{ marginTop: 10, marginBottom: 18, maxWidth: '100%' }}>
           {info.handle ? (
-            <HandleChip C={C} handle={info.handle} color={C.them} big />
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 9vw, 38px)', lineHeight: 1.08, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ color: C.them }}>@</span>{info.handle}
+            </div>
           ) : (
-            <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, color: C.cream }}>✦</span>
+            <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 30, color: C.cream }}>✦</span>
           )}
         </div>
 
         <Rule C={C} delay={0.12} />
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px 12px', padding: '16px 0', fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.3px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: mutual ? C.them : C.you }}>
-            <Sonar C={C} color={mutual ? C.them : C.you} size={13} /> {mutual ? t('star.mutual') : t('star.waiting')}
+        {/* status — kept quiet and low-contrast: only the tiny sonar carries
+            colour, the words themselves read in muted ink so the row sits as
+            calm star-chart metadata, not a status badge. */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px 11px', padding: '15px 0', fontFamily: "'Space Mono', monospace", fontSize: 12, letterSpacing: '.3px', color: C.muted }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Sonar C={C} color={mutual ? C.them : C.you} size={12} /> {mutual ? t('star.mutual') : t('star.waiting')}
           </span>
           {when && (
             <>
-              <span aria-hidden style={{ width: 3, height: 3, borderRadius: '50%', background: rgba(C.cream, 0.25) }} />
-              <span style={{ color: C.muted }}>
-                {t('star.registered')} · {when}
-              </span>
+              <span aria-hidden style={{ width: 3, height: 3, borderRadius: '50%', background: rgba(C.cream, 0.22) }} />
+              <span>{t('star.registered')} · {when}</span>
             </>
           )}
         </div>
 
         <Rule C={C} delay={0.16} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: mutual ? 12 : 2, marginTop: 20, width: '100%' }}>
+        {/* actions, as a calm vertical stack. The one bright affordance is the
+            mutual "open" CTA; everything else is a quiet text link. "keep
+            watching" is the gentle way out, and the destructive "release" sits
+            faintest of all at the very bottom — icon-less, low-contrast, so a
+            deletion never screams in an otherwise ambient, poetic moment. */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: mutual ? 14 : 8, marginTop: 22, width: '100%' }}>
           {mutual && (
             <PrimaryButton C={C} onClick={onOpen}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
@@ -747,15 +750,15 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
               </span>
             </PrimaryButton>
           )}
+          <GhostButton C={C} onClick={close} style={{ fontSize: 13.5 }}>
+            {t('star.keep')}
+          </GhostButton>
           <GhostButton
             C={C}
             onClick={remove}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: removing ? C.muted : C.them, fontSize: 13.5 }}
+            style={{ padding: '4px 8px', fontSize: 12, letterSpacing: '.3px', color: rgba(C.muted, removing ? 0.5 : 0.78) }}
           >
-            <Icon name="trash" size={15} color="currentColor" /> {removing ? t('star.removing') : t('star.remove')}
-          </GhostButton>
-          <GhostButton C={C} onClick={close} style={{ padding: '8px', fontSize: 12, color: C.muted }}>
-            {t('star.keep')}
+            {removing ? t('star.removing') : t('star.remove')}
           </GhostButton>
         </div>
       </div>
