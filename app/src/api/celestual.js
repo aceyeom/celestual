@@ -1,12 +1,12 @@
 // CELESTUAL — the calls the whole product makes.
 //
-// submitEntry records a one-way "I still think about @them". Per the deferred-
-// reveal safety model (docs/SECURITY.md §2.3) the server NEVER tells the
-// caller whether it's mutual — it returns only { recorded: true }. The "yes" is
-// delivered solely through the owner-controlled channel (the match email to the
-// earlier entrant). This closes the live prober oracle. All matching/anonymity
-// logic lives in the `celestual_submit` SECURITY DEFINER RPC (see
-// supabase/migrations/0001_celestual.sql).
+// submitEntry records a one-way "I still think about @them". Completing a mutual
+// pair reveals it INSTANTLY (docs/SECURITY.md §2.3) — a deliberate product choice;
+// the tight weekly slot budget, not deferral, is what stops it becoming a "who
+// likes me" fishing oracle. The server still emails the EARLIER entrant (never the
+// address on the triggering request — anti-exfiltration). All matching/anonymity
+// logic lives in the `celestual_submit` SECURITY DEFINER RPC (RLS on, zero client
+// read policies; see supabase/migrations/0001_celestual.sql).
 import { supabase, hasSupabase } from './supabase';
 
 // Mirror of the server-side celestual_norm(): lowercase, drop a leading @, keep only

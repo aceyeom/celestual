@@ -12,7 +12,7 @@ import { startVerification, pollVerification, igDeepLink, igUsername, dmCode } f
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
-  Brandmark, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
+  Brandmark, Glisten, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   StepDots, BackBtn, Icon, Sonar, rgba, RADIUS, SPACE, makeShadow,
 } from './ui.jsx'
 
@@ -170,26 +170,6 @@ function AccountsEditor({ C, ctx }) {
         </div>
       )}
       <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('accounts.note')}</Hint>
-    </div>
-  )
-}
-
-// Account-sheet building blocks. Defined at MODULE level (not inside AccountSheet)
-// so they keep a stable component identity across re-renders — otherwise every
-// keystroke in the editable fields would remount the subtree and drop focus.
-function SheetSection({ C, title, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.muted }}>{title}</div>
-      {children}
-    </div>
-  )
-}
-function SheetRow({ C, label, value, accent }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14 }}>
-      <span style={{ fontSize: 14, color: C.cream }}>{label}</span>
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, color: accent || C.muted }}>{value}</span>
     </div>
   )
 }
@@ -767,9 +747,11 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
 }
 
 // ── ACCOUNT (the personal area — opened from the profile chip) ─────────────────
-// A frameless overlay sheet, not a route, so it can sit over any screen. Edit your
-// details, see your sky, manage payments, sign out, or delete everything. All data
-// flows through App → api/profile.js (encrypted DB when signed in; local otherwise).
+// A quiet, frameless-feeling panel that reads like a page in a star journal:
+// editorial type, hairline rules and negative space instead of boxed settings
+// rows. Your @ is the hero; below it you can edit your email, link other accounts,
+// glance at your sky, sign out, or delete everything. Data flows through App →
+// api/profile.js (encrypted DB when signed in; local otherwise).
 export function AccountSheet({ C, ctx }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
@@ -803,60 +785,52 @@ export function AccountSheet({ C, ctx }) {
       <div
         onClick={(e) => e.stopPropagation()}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 440, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 22 }}
+        style={{ position: 'relative', width: '100%', maxWidth: 410, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '30px 26px 26px', display: 'flex', flexDirection: 'column', gap: 24 }}
       >
-        {/* header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-          <span style={{ display: 'grid', placeItems: 'center', width: 46, height: 46, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, ${rgba(C.you, 0.95)}, ${rgba(C.them, 0.78)})`, flexShrink: 0 }}>
-            <Icon name="star" size={20} color="#1a0f0a" stroke={2} />
-          </span>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 24, color: C.cream, lineHeight: 1.05 }}>{t('account.title')}</div>
-            <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: synced ? rgba(C.you, 0.95) : C.muted }}>
-              {synced && <Icon name="instagram" size={13} color={rgba(C.you, 0.95)} />}
+        {/* header — the @ is the hero, set in the headline serif */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Glisten C={C} size={14} />
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.muted }}>{t('account.kicker')}</span>
+            </div>
+            <div style={{ marginTop: 12, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 9vw, 37px)', lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ color: C.you }}>@</span>{ctx.me || 'you'}
+            </div>
+            <div style={{ marginTop: 9, display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: synced ? rgba(C.you, 0.95) : C.muted }}>
+              {synced && <Icon name="instagram" size={12} color={rgba(C.you, 0.95)} />}
               {synced ? t('account.signedInIg') : t('account.localOnly')}
             </div>
           </div>
-          <button onClick={close} aria-label={t('account.close')} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
+          <button onClick={close} aria-label={t('account.close')} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
             <Icon name="x" size={15} color="currentColor" />
           </button>
         </div>
 
-        {!synced && (
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted, background: rgba(C.you, 0.06), border: `1px solid ${rgba(C.you, 0.18)}`, borderRadius: RADIUS.inner, padding: '11px 13px' }}>
-            {t('account.notSignedIn')}
-          </div>
-        )}
+        <Rule C={C} />
 
-        {/* identity — editable user details */}
-        <SheetSection C={C} title={t('account.identity')}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {/* identity — @ + optional email, quietly editable; other accounts tuck
+            behind one understated link */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <FieldLabel C={C}>{t('account.handleLabel')}</FieldLabel>
             <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder="your.handle" accent={C.you} />
-            {/* Editing the @ drops verification (it's bound to the exact handle) —
-                say so, so the "local only" flip doesn't feel like a glitch. */}
             {ctx.verifyEnabled && !ctx.verified && (
               <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('account.reverifyNote')}</Hint>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.emailLabel')}</FieldLabel>
             <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder="you@email.com" accent={C.you} />
             <Hint C={C} icon="mail">{t('account.emailNote')}</Hint>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.nameLabel')}</FieldLabel>
-            <input
-              value={ctx.displayName}
-              onChange={(e) => ctx.setDisplayName(e.target.value)}
-              maxLength={40}
-              style={{ width: '100%', padding: '14px 16px', borderRadius: RADIUS.field, background: C.ink2, border: `1.5px solid ${C.line}`, outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16 }}
-            />
-          </div>
-        </SheetSection>
+          <AccountsEditor C={C} ctx={ctx} />
+        </div>
 
-        {/* sky */}
-        <SheetSection C={C} title={t('account.skyTitle')}>
+        <Rule C={C} />
+
+        {/* sky — a single calm line + the entry budget + one way in */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: ctx.starCount ? C.cream : C.muted, fontFamily: "'Space Mono', monospace", fontSize: 13 }}>
               {ctx.starCount > 0 && <Sonar C={C} color={C.you} size={12} />} {skyLine}
@@ -872,60 +846,44 @@ export function AccountSheet({ C, ctx }) {
               <Sonar C={C} color={C.you} size={11} /> {t('account.skyMutual', { n: ctx.matchCount })}
             </span>
           )}
-          <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{synced ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
-        </SheetSection>
-
-        {/* your accounts — primary @ + any linked alternates (multi-account) */}
-        <SheetSection C={C} title={t('account.accountsTitle')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-            <HandleChip C={C} handle={ctx.me || 'you'} color={C.you} />
-            <span style={{ fontSize: 11, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.3px' }}>{t('account.primary')}</span>
-          </div>
-          <AccountsEditor C={C} ctx={ctx} />
-        </SheetSection>
-
-        {/* stars — the entry budget */}
-        <SheetSection C={C} title={t('account.starsTitle')}>
           {ctx.demo ? (
-            <SheetRow C={C} label={t('account.starsBudget')} value={t('account.starsUnlimited')} accent={C.you} />
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 12, color: rgba(C.you, 0.9) }}>{t('account.starsUnlimited')}</span>
           ) : (
             <SlotMeter C={C} slots={ctx.slots} t={t} align="left" />
           )}
-          <Hint C={C} icon="star" color={rgba(C.you, 0.8)}>{t('account.starsNote')}</Hint>
-          <OutlineButton C={C} onClick={() => { close(); ctx.checkAnother() }} style={{ alignSelf: 'flex-start' }}>
+          <OutlineButton C={C} onClick={() => { close(); ctx.checkAnother() }} style={{ alignSelf: 'flex-start', marginTop: 2 }}>
             <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('account.starsAdd')}
           </OutlineButton>
-        </SheetSection>
+          <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{synced ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
+        </div>
 
-        {/* danger zone */}
-        <SheetSection C={C} title={t('account.danger')}>
-          {signedIn && (
-            <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13.5, color: C.cream, alignSelf: 'flex-start' }}>
-              {t('account.signOut')}
+        <Rule C={C} />
+
+        {/* sign out · delete — quiet text links, no boxed "danger zone" */}
+        {!confirmDel ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            {signedIn && (
+              <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13, color: C.cream }}>
+                {t('account.signOut')}
+              </GhostButton>
+            )}
+            <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: rgba(C.them, 0.85) }}>
+              {t('account.delete')}
             </GhostButton>
-          )}
-          {!confirmDel ? (
-            <GhostButton C={C} onClick={onDelete} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: 0, fontSize: 13.5, color: C.them, alignSelf: 'flex-start' }}>
-              <Icon name="trash" size={15} color="currentColor" /> {t('account.delete')}
-            </GhostButton>
-          ) : (
-            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12, background: rgba(C.them, 0.07), border: `1px solid ${rgba(C.them, 0.28)}`, borderRadius: RADIUS.inner, padding: '14px 15px' }}>
-              <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{t('account.deleteConfirm')}</span>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button
-                  onClick={onDelete}
-                  disabled={deleting}
-                  style={{ flex: 1, minWidth: 150, padding: '12px 16px', borderRadius: RADIUS.field, border: 'none', cursor: deleting ? 'default' : 'pointer', background: C.them, color: '#1a0f0a', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14 }}
-                >
-                  {deleting ? t('account.deleting') : t('account.deleteYes')}
-                </button>
-                <GhostButton C={C} onClick={() => setConfirmDel(false)} style={{ fontSize: 13.5 }}>
-                  {t('account.cancel')}
-                </GhostButton>
-              </div>
+          </div>
+        ) : (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{t('account.deleteConfirm')}</span>
+            <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: C.them }}>
+                {deleting ? t('account.deleting') : t('account.deleteYes')}
+              </GhostButton>
+              <GhostButton C={C} onClick={() => setConfirmDel(false)} style={{ padding: 0, fontSize: 13, color: C.muted }}>
+                {t('account.cancel')}
+              </GhostButton>
             </div>
-          )}
-        </SheetSection>
+          </div>
+        )}
       </div>
     </div>
   )

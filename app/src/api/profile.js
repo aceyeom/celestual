@@ -91,7 +91,6 @@ function readLocalSky() {
         handle: s.me || s.handle || '',
         myHandles: Array.isArray(s.myHandles) ? s.myHandles : [],
         email: s.email || '',
-        displayName: s.displayName || '',
         sky: { handles: s.handles, times: s.times || [], sealCount: s.sealCount ?? s.handles.length },
         source: 'local',
       }
@@ -113,9 +112,9 @@ export function localSkyOwner() {
   }
 }
 
-function writeLocalSky({ me, myHandles, email, displayName, handles, times, sealCount }) {
+function writeLocalSky({ me, myHandles, email, handles, times, sealCount }) {
   try {
-    localStorage.setItem(SKY_LOCAL, JSON.stringify({ me, myHandles: myHandles || [], email, displayName, handles, times, sealCount }))
+    localStorage.setItem(SKY_LOCAL, JSON.stringify({ me, myHandles: myHandles || [], email, handles, times, sealCount }))
   } catch {
     /* ignore */
   }
@@ -130,7 +129,7 @@ export async function loadProfile() {
       const key = await getOrCreateKey(user.id)
       const { data } = await supabase
         .from('celestual_profiles')
-        .select('handle, handles, email, display_name, sky_cipher, sky_nonce, star_count')
+        .select('handle, handles, email, sky_cipher, sky_nonce, star_count')
         .eq('user_id', user.id)
         .maybeSingle()
       let sky = EMPTY_SKY
@@ -144,7 +143,6 @@ export async function loadProfile() {
         handle: data?.handle || '',
         myHandles: Array.isArray(data?.handles) ? data.handles : [],
         email: data?.email || user.email || '',
-        displayName: data?.display_name || '',
         sky,
       }
     } catch {
@@ -157,7 +155,7 @@ export async function loadProfile() {
 
 // Persist the account + sky. Debounce at the call site — this writes immediately.
 // `myHandles` is the user's own @s (multi-account); stored as a plain column.
-export async function saveProfile({ me, myHandles, email, displayName, handles, times, sealCount }) {
+export async function saveProfile({ me, myHandles, email, handles, times, sealCount }) {
   const sky = { handles: handles || [], times: times || [], sealCount: sealCount ?? (handles ? handles.length : 0) }
   const own = Array.isArray(myHandles) ? myHandles : []
   const user = await dbReady()
@@ -171,7 +169,6 @@ export async function saveProfile({ me, myHandles, email, displayName, handles, 
           handle: me || null,
           handles: own,
           email: email || null,
-          display_name: displayName || null,
           sky_cipher: cipher,
           sky_nonce: nonce,
           star_count: sky.handles.length,
@@ -181,11 +178,11 @@ export async function saveProfile({ me, myHandles, email, displayName, handles, 
       return { source: 'db' }
     } catch {
       // Don't lose the data — mirror it locally if the write failed.
-      writeLocalSky({ me, myHandles: own, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
+      writeLocalSky({ me, myHandles: own, email, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
       return { source: 'local' }
     }
   }
-  writeLocalSky({ me, myHandles: own, email, displayName, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
+  writeLocalSky({ me, myHandles: own, email, handles: sky.handles, times: sky.times, sealCount: sky.sealCount })
   return { source: 'local' }
 }
 

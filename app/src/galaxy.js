@@ -98,11 +98,15 @@ const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
 // The cinematic fly-into-a-star focus is time-driven (not an exponential chase),
 // so it has a fixed, deliberate length: a longer, graceful push IN and a slightly
 // quicker — but equally smooth — pull back OUT.
-const FOCUS_IN = 1.25 // seconds — camera glide into the tapped star
-const FOCUS_OUT = 0.82 // seconds — camera drift back out to the resting sky
+const FOCUS_IN = 1.45 // seconds — camera glide into the tapped star
+const FOCUS_OUT = 0.9 // seconds — camera drift back out to the resting sky
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
 const TILT = 1.04 // base disk tilt toward the camera (rad)
+// How close the camera comes to rest in FRONT of the focused star (camera-space z
+// at full focus). Small = a deep, dramatic arrival that fills the frame; bounded
+// well above the near plane so the hero never blows past into bare pixels.
+const STANDOFF = 0.26
 const TWO = Math.PI * 2
 
 export class GalaxyField {
@@ -152,12 +156,18 @@ export class GalaxyField {
     this.sealed = []
     this._slotSeed = 0
     // Camera focus on a single star (the interactive resting field): the camera
-    // drifts toward sealed[focusIndex] and zooms in; everything else recedes.
+    // physically flies THROUGH the field toward sealed[focusIndex] — neighbours
+    // stream past with real depth parallax and the hero swells as we close on it.
     this.focus = 0 // eased 0..1 (the value the camera transform reads)
     this.focusP = 0 // linear focus progress 0..1; `focus` is its ease-in-out
     this.focusTarget = 0
     this.focusIndex = -1
-    this.focusScreen = { x: 0, y: 0, vis: false } // where the focused star sits now
+    // Live camera offset in view-aligned world space, folded into the perspective
+    // projection so the WHOLE field (stars, dust, nebula, core) flies past as one.
+    // (0,0,0) is the resting camera; during focus it travels laterally to frame the
+    // star and forward (camZ) to dive in. Smoothed toward its target every frame so
+    // a tap/re-tap eases rather than snaps.
+    this.cam = { x: 0, y: 0, z: 0 }
     // A star being withdrawn plays a brief implosion-then-fade in place before
     // the React layer drops it from the set: { i, t }.
     this.vanish = null
@@ -512,9 +522,10 @@ export class GalaxyField {
     this.start()
   }
 
-  // Rotate a local point into view space (spin → parallax yaw → tilt), then
-  // perspective-project. Returns null when behind the camera.
-  _project(px, py, pz, rot) {
+  // Rotate a local point into view-aligned world space (spin → parallax yaw →
+  // tilt). The shared first half of _project; also used to find the focused star's
+  // world position so the camera can aim for it.
+  _view(px, py, pz, rot) {
     let x = px * rot.cosS + pz * rot.sinS
     let z = -px * rot.sinS + pz * rot.cosS
     let y = py
@@ -524,9 +535,18 @@ export class GalaxyField {
     z = z2
     const y3 = y * rot.cosT - z * rot.sinT
     const z3 = y * rot.sinT + z * rot.cosT
-    y = y3
-    z = z3
-    const zc = CAM + z
+    return { x, y: y3, z: z3 }
+  }
+
+  // Rotate a local point into view space, subtract the live camera offset, then
+  // perspective-project. Returns null when behind (or essentially at) the camera —
+  // which is how stars the camera dives past simply drop out of frame.
+  _project(px, py, pz, rot) {
+    const v = this._view(px, py, pz, rot)
+    const cs = this.cam
+    const x = v.x - cs.x
+    const y = v.y - cs.y
+    const zc = CAM + v.z - cs.z // camera-space depth
     if (zc <= 0.05) return null
     const persp = FOCAL / zc
     return {
@@ -539,9 +559,13 @@ export class GalaxyField {
   }
 
   _rot() {
-    const driftY = Math.sin(this.t * 0.12) * 0.07
-    const yaw = this.p.x * 0.32 + driftY
-    const tilt = TILT + this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025
+    // As the camera commits to a dive, freeze its orientation: pointer parallax and
+    // the idle drift wind down toward 0 so the target star holds rock-steady in the
+    // crosshairs instead of swimming while we fly in.
+    const hold = 1 - this.focus
+    const driftY = Math.sin(this.t * 0.12) * 0.07 * hold
+    const yaw = this.p.x * 0.32 * hold + driftY
+    const tilt = TILT + (this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025) * hold
     return {
       cosS: Math.cos(this.spin),
       sinS: Math.sin(this.spin),
@@ -570,7 +594,6 @@ export class GalaxyField {
     if (this.focusP <= 0.0001 && this.focusTarget === 0) {
       this.focus = 0
       this.focusIndex = -1
-      this.focusScreen.vis = false
     }
     // advance (and retire) a star's wink-out
     if (this.vanish) {
@@ -642,35 +665,32 @@ export class GalaxyField {
     // full-frame background starfield (screen-space parallax + twinkle)
     this._drawBackground(dt, d)
 
-    // projected galactic core → anchor for the core glow + hero events
+    // Camera focus: fly the camera THROUGH the field toward the focused star.
+    // Instead of a flat 2D magnification, we offset the perspective camera in
+    // view-aligned world space — laterally to bring the star into the crosshairs,
+    // and forward (cam.z) to dive in — so neighbours stream past with true depth
+    // parallax and the hero swells as we close. Computed here (rot is known) BEFORE
+    // anything projects, then folded into every _project call this frame. At
+    // focus≈0 the offset is (0,0,0): the identity camera, no seam.
+    // Reduced motion opts out of the physical travel: keep the camera at rest and
+    // let the scrim + readout simply cross-fade in over a calm, dimmed field.
+    if (!this.reduced && this.focus > 0.0005 && this.focusIndex >= 0 && this.focusIndex < this.sealed.length) {
+      const s = this.sealed[this.focusIndex]
+      const T = this._view(Math.cos(s.theta0) * s.r, s.y, Math.sin(s.theta0) * s.r, rot)
+      const f = this.focus
+      // forward travel so the target's camera-space depth eases CAM+T.z → STANDOFF
+      this.cam.x = f * T.x
+      this.cam.y = f * T.y
+      this.cam.z = f * (CAM + T.z - STANDOFF)
+    } else {
+      this.cam.x = this.cam.y = this.cam.z = 0
+    }
+
+    // projected galactic core → anchor for the core glow + hero events (after the
+    // camera offset is set, so the core sweeps aside correctly during a dive).
     const o = this._project(0, 0, 0, rot) || { sx: this.cx, sy: this.cy, persp: 1 }
     this.ox = o.sx
     this.oy = o.sy
-
-    // Camera focus: zoom the galaxy toward the focused star so it eases to the
-    // center of frame. The deep backdrop stays put (space is far); only the disk
-    // and stars move — reading as the camera drifting in. Mapped so that at
-    // focus=0 it's the identity transform (no seam when there's no focus).
-    let _focusSaved = false
-    if (this.focus > 0.001 && this.focusIndex >= 0 && this.focusIndex < this.sealed.length) {
-      const fp = this._sealedAt(this.sealed[this.focusIndex], rot)
-      if (fp) {
-        const f = this.focus
-        // A deep, deliberate push-in: the field magnifies toward the star so it
-        // grows to fill the frame and its neighbours sweep out past the edges,
-        // reading as genuine forward travel INTO the star rather than a modest
-        // nudge. Held in check so the sparse field never blows up into bare pixels.
-        const scale = 1 + f * 2.3
-        const ctX = lerp(fp.sx, this.cx, f)
-        const ctY = lerp(fp.sy, this.cy, f)
-        this.focusScreen = { x: ctX, y: ctY, vis: true }
-        ctx.save()
-        ctx.translate(ctX, ctY)
-        ctx.scale(scale, scale)
-        ctx.translate(-fp.sx, -fp.sy)
-        _focusSaved = true
-      }
-    }
 
     // nebula gas (additive, behind the stars)
     this._drawNebula(dt, d, rot)
@@ -681,7 +701,10 @@ export class GalaxyField {
     // transform (its position/size follow the projected core each frame, its `d`
     // dim via globalAlpha). Avoids re-allocating a gradient every frame.
     ctx.globalCompositeOperation = 'lighter'
-    const coreR = this.unit * 0.6 * o.persp
+    // Cap the radius so diving past the core can't scale a single gradient up to an
+    // enormous off-screen fill (cost without payoff — beyond ~2× the frame it's a
+    // flat wash either way).
+    const coreR = Math.min(this.unit * 0.6 * o.persp, Math.max(this.w, this.h) * 2)
     if (!this._coreGrad) {
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
       g.addColorStop(0, 'rgba(255,236,206,0.34)')
@@ -716,7 +739,7 @@ export class GalaxyField {
       const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2)
       if (a <= 0.004) continue
       ctx.globalAlpha = Math.min(0.55, a)
-      const D = Math.max(1.6, p.rad * pr.persp * 2.6)
+      const D = clamp(p.rad * pr.persp * 2.6, 1.6, this.h * 0.4)
       if (zoomed) {
         ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
       } else {
@@ -741,8 +764,10 @@ export class GalaxyField {
       // lift the alpha to keep the field reading bright and crisp, not washed thin.
       ctx.globalAlpha = Math.min(0.96, a * 1.5)
       // diameter: the bright core ≈ the old quad, plus a soft feathered halo so
-      // it reads as a point of light. A floor keeps the faintest stars visible.
-      const D = Math.max(1.9, st.rad * pr.persp * 3)
+      // it reads as a point of light. A floor keeps the faintest stars visible; a
+      // ceiling stops a star the camera dives past from ballooning into a costly
+      // full-frame wash on the way by.
+      const D = clamp(st.rad * pr.persp * 3, 1.9, this.h * 0.5)
       // The round sprite is what kills the pixelation, but it's only worth its cost
       // on stars big or bright enough to actually read as a disc; the faint sub-2px
       // crowd takes a cheap point fill (indistinguishable at that size, far cheaper).
@@ -770,7 +795,6 @@ export class GalaxyField {
     }
 
     this._drawHero(dt, rot)
-    if (_focusSaved) ctx.restore()
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -859,7 +883,9 @@ export class GalaxyField {
       if (!pr) continue
       nb.tw += dt * nb.tws
       const rr = nb.rad * this.unit * pr.persp
-      if (rr < 5 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
+      // skip clouds too small to see, fully off-frame, or so close they'd be a flat
+      // full-screen wash (cheap guard for the fly-in's near field)
+      if (rr < 5 || rr > Math.max(this.w, this.h) * 1.6 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
       const a = nb.a * (0.7 + 0.3 * Math.sin(nb.tw)) * d * clamp(pr.shade, 0.4, 1.2)
       if (a <= 0.002) continue
       ctx.save()
@@ -941,17 +967,19 @@ export class GalaxyField {
       const pulse = 0.84 + 0.16 * Math.sin(this.t * 0.9 + this.sealed[i].phase)
       const sh = clamp(pr.shade, 0.45, 1.2)
       const isFocus = focusing && i === this.focusIndex
-      // The focused star is the one we're flying toward — but the close-up's hero
-      // is the crisp DOM star in the readout, so this canvas point HANDS OFF. To
-      // make that a connected motion (not a cut): it stays lit and BLOOMS larger
-      // through the drift-in, then dissolves only once the camera has nearly
-      // arrived — so it visibly grows into the close-up star. Every other star
-      // simply recedes into the depth-blurred field.
-      const handoff = 1 - smooth(clamp((this.focus - 0.45) / 0.5, 0, 1))
+      // The focused star is the one we're diving toward — the camera's perspective
+      // now genuinely SWELLS it as we close (no fake bloom needed). The close-up's
+      // hero is the crisp DOM star in the readout, so this canvas point HANDS OFF:
+      // it grows with the approach, then dissolves once the camera has nearly
+      // arrived, so it visibly becomes the close-up star. Other stars stream past
+      // and fade into the depth-blurred field.
+      const handoff = 1 - smooth(clamp((this.focus - 0.5) / 0.45, 0, 1))
       const fade = focusing ? (isFocus ? handoff : 1 - 0.82 * this.focus) : 1
-      const bloom = isFocus ? 1 + this.focus * 2.2 : 1
-      const core = Math.max(1.1, 1.9 * pr.persp)
-      this._star(pr.sx, pr.sy, 'you', core * (isFocus ? handoff * bloom : 1), 12 * pr.persp * pulse * bloom, 0.5 * pulse * sh * fade)
+      // sizes ride the real perspective, clamped so the hero never balloons into a
+      // bare full-frame disc at the end of the dive
+      const core = clamp(1.9 * pr.persp, 1.1, this.h * 0.16)
+      const glowR = clamp(12 * pr.persp * pulse, 6, this.h * 0.34)
+      this._star(pr.sx, pr.sy, 'you', isFocus ? core * handoff : core, glowR, 0.5 * pulse * sh * fade)
       // each resting star carries its own tag — record where it is on screen
       this.sealedScreen[i] = { x: pr.sx, y: pr.sy, vis: true }
     }

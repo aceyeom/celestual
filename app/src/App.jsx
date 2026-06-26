@@ -93,7 +93,6 @@ export default function App() {
     (session.provider === 'instagram_dm'
       ? !!me.trim() && normHandle(session.handle) === normHandle(me)
       : true)
-  const [displayName, setDisplayName] = useState(init.displayName || session?.name || '')
   // The user's OTHER Instagram @s (multi-account). The full identity set is
   // [me, ...altHandles]; being entered on ANY of them counts as them (§ identity).
   const [altHandles, setAltHandles] = useState(init.altHandles || [])
@@ -153,15 +152,15 @@ export default function App() {
     // Fast local resume state for first paint. The sky (the @handles, which used to
     // be memory-only) now persists separately and encrypted via api/profile.js.
     try {
-      // Only persist identity (handle / email / name / alts) once it's established
-      // — never for a handle that was just typed and abandoned. Navigation + sky
+      // Only persist identity (handle / email / alts) once it's established —
+      // never for a handle that was just typed and abandoned. Navigation + sky
       // dates still persist so a refresh resumes cleanly.
-      const identity = established ? { email, me, displayName, altHandles } : {}
+      const identity = established ? { email, me, altHandles } : {}
       localStorage.setItem(STORE, JSON.stringify({ screen, ...identity, sealedAt, over18, sealTimes }))
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes, established])
+  }, [screen, email, me, altHandles, sealedAt, over18, sealTimes, established])
 
   // Load the saved account + sky once on mount. When signed in this decrypts the
   // sky from the database; otherwise it restores from this device. A returning
@@ -186,7 +185,6 @@ export default function App() {
             setAltHandles((prev) => (prev.length ? prev : own.filter((x) => x && x !== primary).slice(0, 2)))
           }
           if (p.email) setEmail((e) => e || p.email)
-          if (p.displayName) setDisplayName((n) => n || p.displayName)
           setSynced(p.source === 'db')
         }
       })
@@ -215,10 +213,10 @@ export default function App() {
       // this off, and we must not write over an account that's being torn down.
       if (!persistReady.current) return
       const myHandles = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
-      saveProfile({ me, myHandles, email, displayName, handles, times: sealTimes, sealCount: handles.length }).catch(() => {})
+      saveProfile({ me, myHandles, email, handles, times: sealTimes, sealCount: handles.length }).catch(() => {})
     }, 600)
     return () => clearTimeout(id)
-  }, [me, altHandles, email, displayName, handles, sealTimes, established])
+  }, [me, altHandles, email, handles, sealTimes, established])
 
   // Keep the slot meter fresh for the current handle (server is the authority at
   // seal time; this feeds the meter + the out-of-slots countdown).
@@ -647,7 +645,6 @@ export default function App() {
     }
     setEmail('')
     setMe('')
-    setDisplayName('')
     setAltHandles([])
     setThem('')
     setSealedAt(null)
@@ -731,7 +728,7 @@ export default function App() {
   }, [])
 
   const ctx = {
-    email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
+    email, me, them, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
     // A real, established account (proven / demo / has a sky) vs. a bare typed
     // handle — gates the account UI so an unverified @ is never shown as "you".
     established,
@@ -743,7 +740,7 @@ export default function App() {
     slotsLeft: demo ? Infinity : slotsRemaining(slots),
     isMutual: (h) => matches.includes(normHandle(h)),
     matchCount: handles.filter((h) => matches.includes(normHandle(h))).length,
-    setEmail, setMe, setThem, setDisplayName, addAltHandle, removeAltHandle,
+    setEmail, setMe, setThem, addAltHandle, removeAltHandle,
     requestReminder: (em) => requestReminder({ me, email: em || email, demo }),
     go, seal, continueFromYou, checkAnother, affirmAge, suppressHandle, openConversation,
     startLogin, login,

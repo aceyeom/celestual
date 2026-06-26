@@ -1,9 +1,9 @@
-# CELESTUAL — does your ex still think about you?
+# CELESTUAL — is that special somebody still thinking about you?
 
-The CELESTUAL front-end ("galaxy edition"). You enter your Instagram @ and your
-ex's @. You only ever find out it's mutual if **they** independently enter **you**
-back — so it's anonymous, zero-rejection, and a little addictive. One-sided
-entries are never revealed to anyone.
+The CELESTUAL front-end ("galaxy edition"). You enter your Instagram @ and the @
+of someone you can't stop thinking about. You only ever find out it's mutual if
+**they** independently enter **you** back — so it's anonymous, zero-rejection, and
+a little addictive. One-sided entries are never revealed to anyone.
 
 Live at **https://celestual.us/**. The UI is fully responsive: full-bleed on a
 phone, and the same intimate column centered over the 3D starfield on the web.

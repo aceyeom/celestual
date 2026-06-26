@@ -136,9 +136,11 @@ button { font-family: inherit; }
 /* The scrim deepens immediately (the field dims as the camera drifts in); the
    readout itself waits a beat, so the close-up resolves AS the zoom arrives at
    the star rather than popping in over a still-moving camera. */
-.scrim-in   { animation: scrimIn .7s ease both; }
+.scrim-in   { animation: scrimIn .9s ease both; }
 .scrim-out  { animation: scrimOut .26s ease both; }
-.readout-in { animation: readoutIn .66s cubic-bezier(.2,.7,.2,1) .3s both; }
+/* the readout resolves AS the camera settles onto the star at the end of the
+   ~1.45s dive — hence the longer hold before it eases in */
+.readout-in { animation: readoutIn .66s cubic-bezier(.2,.7,.2,1) .55s both; }
 .readout-out { animation: readoutOut .26s ease both; }
 
 /* soft, slow drift for the "your sky is clear" empty-state mark */

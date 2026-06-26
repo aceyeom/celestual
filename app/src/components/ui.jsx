@@ -271,18 +271,45 @@ export function Liftoff({ C, handle, geom }) {
   )
 }
 
-// The wordmark — "Celestual" set in the same serif as the headlines, title-case
-// (not the old shouty all-caps), with a small amber glisten so the brand reads as
-// one of its own stars. `size` keeps its old call sites; the serif reads a touch
-// larger, so it's mapped up from the previous cap-height.
-export function Brandmark({ C, size = 14 }) {
-  const fs = size + 6
+// The brand mark — just the four-point glisten, no wordmark. A single amber→rose
+// star (the same concave sparkle as the favicon) so the brand reads as one of its
+// own stars: simple, clean, and at home in the cosmos. `size` keeps the old call
+// sites working; it maps to the glyph's rendered diameter.
+export function Glisten({ C, size = 24, title }) {
+  const you = (C && C.you) || '#FF9E6B'
+  const them = (C && C.them) || '#E6749E'
+  const gid = React.useId()
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: C.cream, userSelect: 'none' }}>
-      <span aria-hidden style={{ color: C.you, fontSize: fs * 0.56, lineHeight: 1, transform: 'translateY(-1px)' }}>✦</span>
-      <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: fs, letterSpacing: '.5px', lineHeight: 1 }}>Celestual</span>
-    </span>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      role={title ? 'img' : undefined}
+      aria-label={title || undefined}
+      aria-hidden={title ? undefined : true}
+      style={{ display: 'block', overflow: 'visible', filter: `drop-shadow(0 0 6px ${rgba(you, 0.45)})` }}
+    >
+      <defs>
+        <radialGradient id={gid} cx="50%" cy="46%" r="55%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="38%" stopColor="#FFE2C4" />
+          <stop offset="80%" stopColor={you} />
+          <stop offset="100%" stopColor={them} />
+        </radialGradient>
+      </defs>
+      {/* concave four-point sparkle — pinched arms, the photographic glisten */}
+      <path
+        d="M16 1 Q17.6 14.4 31 16 Q17.6 17.6 16 31 Q14.4 17.6 1 16 Q14.4 14.4 16 1 Z"
+        fill={`url(#${gid})`}
+      />
+    </svg>
   )
+}
+
+// Kept as `Brandmark` for the existing call sites — now icon-only. The historical
+// `size` (a cap-height ~12–14) maps up to a comfortable glyph diameter.
+export function Brandmark({ C, size = 14 }) {
+  return <Glisten C={C} size={Math.round(size * 1.7)} title="Celestual" />
 }
 
 export function PrimaryButton({ C, children, onClick, disabled, style }) {
