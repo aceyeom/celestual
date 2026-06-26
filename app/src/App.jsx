@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import {
   submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle,
   checkMutuals, linkHandles, fetchSlots, requestReminder, fetchMySky, FULL_SLOTS,
 } from './api/celestual.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled } from './api/igverify.js'
-import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi } from './api/profile.js'
+import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi, localSkyOwner } from './api/profile.js'
 import { slotsRemaining } from './api/slots.js'
 import { makeColors, PALETTE } from './theme.js'
 import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
@@ -130,6 +131,19 @@ export default function App() {
   const [loginMode, setLoginMode] = useState(false)
   const [focused, setFocused] = useState(null) // index of the star the camera holds
   const galaxyRef = useRef(null)
+  // True once the saved sky has finished loading, so a resume onto the resting
+  // screen can hold a calm placeholder instead of flashing the empty state.
+  const [skyLoaded, setSkyLoaded] = useState(false)
+  // The Liftoff morph's teardown timer — tracked so a fast re-seal can cancel a
+  // pending teardown instead of letting two overlap.
+  const morphTimer = useRef(null)
+
+  // An ESTABLISHED identity: a proven session, the sandboxed demo, or an existing
+  // sky on this device. Crucially this is FALSE for a handle that was merely typed
+  // on the "you" step and abandoned — so such a handle is never surfaced as an
+  // account (the profile chip / account sheet) nor persisted as one. This is the
+  // fix for "type my @, don't verify, go back, and the top-left shows my details".
+  const established = verified || demo || handles.length > 0
 
   useEffect(() => {
     screenRef.current = screen
@@ -139,11 +153,15 @@ export default function App() {
     // Fast local resume state for first paint. The sky (the @handles, which used to
     // be memory-only) now persists separately and encrypted via api/profile.js.
     try {
-      localStorage.setItem(STORE, JSON.stringify({ screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes }))
+      // Only persist identity (handle / email / name / alts) once it's established
+      // — never for a handle that was just typed and abandoned. Navigation + sky
+      // dates still persist so a refresh resumes cleanly.
+      const identity = established ? { email, me, displayName, altHandles } : {}
+      localStorage.setItem(STORE, JSON.stringify({ screen, ...identity, sealedAt, over18, sealTimes }))
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes])
+  }, [screen, email, me, displayName, altHandles, sealedAt, over18, sealTimes, established])
 
   // Load the saved account + sky once on mount. When signed in this decrypts the
   // sky from the database; otherwise it restores from this device. A returning
@@ -174,7 +192,10 @@ export default function App() {
       })
       .catch(() => {})
       .finally(() => {
-        if (live) persistReady.current = true
+        if (live) {
+          persistReady.current = true
+          setSkyLoaded(true)
+        }
       })
     return () => {
       live = false
@@ -185,7 +206,10 @@ export default function App() {
   // Persist the account + sky whenever they change (debounced). Gated on the
   // initial load so it can't clobber a stored sky with the empty boot state.
   useEffect(() => {
-    if (!persistReady.current) return
+    // Don't write anything until the load has run AND there's a real account to
+    // save (proven, demo, or an existing sky). A bare typed handle never gets
+    // committed to storage — it's not an account yet.
+    if (!persistReady.current || !established) return
     const id = setTimeout(() => {
       // Re-check at fire time: a sign-out/delete between scheduling and firing flips
       // this off, and we must not write over an account that's being torn down.
@@ -194,7 +218,7 @@ export default function App() {
       saveProfile({ me, myHandles, email, displayName, handles, times: sealTimes, sealCount: handles.length }).catch(() => {})
     }, 600)
     return () => clearTimeout(id)
-  }, [me, altHandles, email, displayName, handles, sealTimes])
+  }, [me, altHandles, email, displayName, handles, sealTimes, established])
 
   // Keep the slot meter fresh for the current handle (server is the authority at
   // seal time; this feeds the meter + the out-of-slots countdown).
@@ -283,10 +307,33 @@ export default function App() {
     else f.clearFocus()
   }, [focused])
 
+  // Clear any pending morph teardown on unmount so it can't fire after the tree
+  // is gone.
+  useEffect(() => () => { if (morphTimer.current) clearTimeout(morphTimer.current) }, [])
+
   const go = useCallback((s) => {
-    setFocused(null)
-    setScreen(s)
-    requestAnimationFrame(() => window.scrollTo(0, 0))
+    const apply = () => {
+      setFocused(null)
+      setScreen(s)
+    }
+    const afterScroll = () => requestAnimationFrame(() => window.scrollTo(0, 0))
+    // Cross-fade screens with the View Transitions API where supported and motion
+    // is allowed — a smooth dissolve over the persistent galaxy instead of a hard
+    // cut. flushSync makes the screen swap happen inside the captured frame; any
+    // failure (or no support / reduced motion) falls back to an instant swap.
+    const reduce =
+      typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!reduce && typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
+      try {
+        document.startViewTransition(() => flushSync(apply))
+        afterScroll()
+        return
+      } catch {
+        /* fall through to an instant swap */
+      }
+    }
+    apply()
+    afterScroll()
   }, [])
 
   // ── demo ──
@@ -370,7 +417,13 @@ export default function App() {
       }
       setSendoffOrigin(origin)
       setMorph({ handle: normHandle(them), geom })
-      setTimeout(() => setMorph(null), 1320)
+      // Cancel any in-flight teardown so a fast re-seal can't leave two morph
+      // overlays fighting over a field that's already been unmounted.
+      if (morphTimer.current) clearTimeout(morphTimer.current)
+      morphTimer.current = setTimeout(() => {
+        setMorph(null)
+        morphTimer.current = null
+      }, 1320)
       go('sendoff')
       const minSuspense = new Promise((r) => setTimeout(r, 3200))
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
@@ -480,6 +533,16 @@ export default function App() {
           setHandles(stars.map((s) => s.handle))
           setSealTimes(stars.map((s) => s.time))
           setMatches(stars.filter((s) => s.mutual).map((s) => s.handle))
+        } else if (!demo) {
+          // No server sky (e.g. the local/stub path with no backend). Never show a
+          // DIFFERENT handle's device-local sky as this one's — if the stored sky
+          // belongs to another @, start clean rather than mislabel someone's stars.
+          const owner = localSkyOwner()
+          if (owner && normHandle(owner) !== normHandle(me)) {
+            setHandles([])
+            setSealTimes([])
+            setMatches([])
+          }
         }
       } catch {
         /* best-effort — land on whatever sky we have */
@@ -629,7 +692,21 @@ export default function App() {
   const openConversation = useCallback(
     (handle) => {
       const h = normHandle(handle || them)
-      if (h) window.open(`https://instagram.com/${h}`, '_blank', 'noopener,noreferrer')
+      if (!h) return
+      const url = `https://instagram.com/${h}`
+      // Inside an in-app webview (e.g. Instagram's own browser) window.open to a
+      // new tab is often blocked and returns null — fall back to a same-tab
+      // navigation so the profile still opens.
+      try {
+        const w = window.open(url, '_blank', 'noopener,noreferrer')
+        if (!w) window.location.href = url
+      } catch {
+        try {
+          window.location.href = url
+        } catch {
+          /* ignore */
+        }
+      }
     },
     [them],
   )
@@ -655,6 +732,11 @@ export default function App() {
 
   const ctx = {
     email, me, them, displayName, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
+    // A real, established account (proven / demo / has a sky) vs. a bare typed
+    // handle — gates the account UI so an unverified @ is never shown as "you".
+    established,
+    // The saved sky is still loading, so the resting screen holds a placeholder.
+    loadingSky: !skyLoaded,
     // True when real Instagram verification is wired (vs. the testable local stub),
     // so the "you" step knows to confirm the handle before advancing.
     verifyEnabled: igVerifyEnabled(),
@@ -682,8 +764,10 @@ export default function App() {
   // cinematic beats so nothing competes with the moment.
   const showSwitcher = !['intro', 'sendoff', 'match'].includes(screen)
   // The profile chip sits top-left, only where there's no back button to collide
-  // with: the resting sky (always) and the landing once a handle is known.
-  const showProfile = screen === 'resting' || (screen === 'landing' && !!me)
+  // with: the resting sky and the landing once a handle is known. Gated on an
+  // ESTABLISHED account so a merely-typed, unverified @ never surfaces an account
+  // chip (and the sheet it opens) — the reported identity leak.
+  const showProfile = established && (screen === 'resting' || (screen === 'landing' && !!me))
 
   return (
     <div className="celestual-app">

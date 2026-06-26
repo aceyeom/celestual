@@ -52,13 +52,22 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, seals
     // seal slots). Tree-shaken out of production builds via import.meta.env.DEV.
     if (import.meta.env.DEV) window.__galaxyField = f
     let ro
+    let roRaf = 0
     if (window.ResizeObserver && ref.current && ref.current.parentElement) {
-      ro = new ResizeObserver(() => f.resize())
+      // Coalesce a burst of resize callbacks (the mobile toolbar fires many as it
+      // animates) into a single resize per frame; galaxy.resize() then itself
+      // ignores the tiny height-only changes. Together this stops the canvas from
+      // re-allocating every toolbar frame.
+      ro = new ResizeObserver(() => {
+        if (roRaf) cancelAnimationFrame(roRaf)
+        roRaf = requestAnimationFrame(() => f.resize())
+      })
       ro.observe(ref.current.parentElement)
     }
     const r1 = requestAnimationFrame(() => f.resize())
     return () => {
       if (ro) ro.disconnect()
+      if (roRaf) cancelAnimationFrame(roRaf)
       cancelAnimationFrame(r1)
       f.destroy()
     }
@@ -90,22 +99,39 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
     widths.current = [] // handles changed → indices shifted, re-measure
     let raf
     const TH = 20 // tag height (for overlap tests)
-    const tick = () => {
+    // Foreground text blocks (headline / handle / buttons) mark themselves with
+    // [data-tag-keepout]; tags step around their on-screen rects so they never
+    // land on top of the text. Those rects DON'T move within a screen, so we cache
+    // them and re-measure only a few times a second (and on resize/scroll) instead
+    // of calling getBoundingClientRect on every element every frame — reading
+    // layout 60×/s was a major source of the mobile jank. Tag positions still
+    // update every frame; only the keep-out measurement is throttled.
+    let keepouts = []
+    let lastMeasure = 0
+    const measureKeepouts = () => {
+      const els = document.querySelectorAll('[data-tag-keepout]')
+      const out = []
+      for (let k = 0; k < els.length; k++) {
+        const r = els[k].getBoundingClientRect()
+        if (r.width && r.height) out.push({ x: r.left, y: r.top, w: r.width, h: r.height })
+      }
+      keepouts = out
+    }
+    const invalidate = () => { lastMeasure = 0 } // force a re-measure next frame
+    window.addEventListener('resize', invalidate)
+    window.addEventListener('scroll', invalidate, { passive: true })
+    const tick = (now) => {
       const f = fieldRef.current
       const arr = (f && f.sealedScreen) || []
       const vw = window.innerWidth, vh = window.innerHeight
-      // Tags placed so far THIS frame, so later ones can yield instead of piling.
-      const placed = []
-      // Foreground text blocks (headline / handle / buttons) mark themselves with
-      // [data-tag-keepout]; seed the collision set with their on-screen rects so a
-      // tag never lands on top of the text. Paired with the z-index raise below,
-      // this is the "stars and usernames slip under the text on mobile" fix: tags
-      // now float ABOVE content (never hidden) AND step aside from it (never ugly).
-      const keepouts = document.querySelectorAll('[data-tag-keepout]')
-      for (let k = 0; k < keepouts.length; k++) {
-        const r = keepouts[k].getBoundingClientRect()
-        if (r.width && r.height) placed.push({ x: r.left, y: r.top, w: r.width, h: r.height })
+      if (now - lastMeasure > 240) {
+        measureKeepouts()
+        lastMeasure = now
       }
+      // Tags placed so far THIS frame, so later ones can yield instead of piling —
+      // seeded with the cached keep-out rects (z-index raise below keeps tags above
+      // content; this keeps them from sitting ON the text).
+      const placed = keepouts.slice()
       for (let i = 0; i < refs.current.length; i++) {
         const el = refs.current[i]
         if (!el) continue
@@ -151,7 +177,11 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', invalidate)
+      window.removeEventListener('scroll', invalidate)
+    }
   }, [show, fieldRef, handles])
   const col = color || '#FF8C66'
   // Mutual stars read in the warm "match" accent (and carry a ✦) so a busy sky

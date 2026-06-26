@@ -155,6 +155,9 @@ export class GalaxyField {
     // A star being withdrawn plays a brief implosion-then-fade in place before
     // the React layer drops it from the set: { i, t }.
     this.vanish = null
+    // Bind the frame callback ONCE (the loop used to allocate a fresh bound
+    // function every frame — needless GC churn at 60fps).
+    this._boundTick = (ts) => this._tick(ts)
     this._bind()
     this.resize()
   }
@@ -306,8 +309,15 @@ export class GalaxyField {
     }
     this._onTilt = (e) => {
       if (e.gamma == null && e.beta == null) return
-      this.pTarget.x = clamp((e.gamma || 0) / 35, -1, 1)
-      this.pTarget.y = clamp(((e.beta || 0) - 45) / 35, -1, 1)
+      const nx = clamp((e.gamma || 0) / 35, -1, 1)
+      const ny = clamp(((e.beta || 0) - 45) / 35, -1, 1)
+      // Raw device-orientation is noisy — fed straight in, hand-held sensor jitter
+      // made the whole field tremble (the other half of the IG-webview "vibration").
+      // Apply a small dead-zone, then low-pass toward the new reading so only real
+      // tilts move the camera.
+      const dz = (v) => (Math.abs(v) < 0.06 ? 0 : v)
+      this.pTarget.x = this.pTarget.x * 0.85 + dz(nx) * 0.15
+      this.pTarget.y = this.pTarget.y * 0.85 + dz(ny) * 0.15
     }
     // Pause the canvas when the tab is hidden (§5.3) — no battery/GPU spend on a
     // backgrounded tab. Resumes cleanly on return (start() reseeds lastTs).
@@ -326,8 +336,16 @@ export class GalaxyField {
 
   resize() {
     const rect = this.canvas.getBoundingClientRect()
-    this.w = rect.width || (this.canvas.parentElement && this.canvas.parentElement.clientWidth) || window.innerWidth || 402
-    this.h = rect.height || window.innerHeight || 700
+    const w = rect.width || (this.canvas.parentElement && this.canvas.parentElement.clientWidth) || window.innerWidth || 402
+    const h = rect.height || window.innerHeight || 700
+    // Ignore the small height-only changes the mobile URL bar / toolbar makes as it
+    // collapses on scroll. Re-allocating the canvas backing store (which clears it)
+    // and re-centering the field on every toolbar frame is what made the galaxy
+    // "vibrate" inside the Instagram in-app browser. A width change or a real height
+    // change (orientation, keyboard) still does a full resize.
+    if (this.w && w === this.w && Math.abs(h - this.h) < 130) return
+    this.w = w
+    this.h = h
     this.canvas.width = this.w * this.dpr
     this.canvas.height = this.h * this.dpr
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0)
@@ -338,6 +356,8 @@ export class GalaxyField {
     this.unit = Math.min(this.w, this.h) * 0.82 + Math.max(this.w, this.h) * 0.06
     this.cx = this.w / 2
     this.cy = this.h * 0.44
+    this._bgGrad = null // height changed → rebuild the cached backdrop gradient
+    if (this.reduced) this.start() // a settled reduced-motion field must repaint
   }
 
   setMode(mode, data = {}) {
@@ -355,13 +375,14 @@ export class GalaxyField {
       this.dimTarget = 0.22
       if (changed) this.motes = null
     }
+    this.start() // resume the loop if a settled reduced-motion field went idle
   }
 
   start() {
     if (this.running) return
     this.running = true
     this.lastTs = performance.now()
-    requestAnimationFrame(this._tick.bind(this))
+    requestAnimationFrame(this._boundTick)
   }
   stop() {
     this.running = false
@@ -375,6 +396,7 @@ export class GalaxyField {
   }
   setMotion(m) {
     this.motion = m
+    this.start()
   }
 
   // Drift the camera toward sealed star `i` and zoom in. Pass -1 (or clearFocus)
@@ -383,9 +405,11 @@ export class GalaxyField {
     if (i == null || i < 0 || i >= this.sealed.length) return this.clearFocus()
     this.focusIndex = i
     this.focusTarget = 1
+    this.start()
   }
   clearFocus() {
     this.focusTarget = 0
+    this.start()
   }
 
   // Play a quick vanish (implode + fade) on sealed star `i`. The React layer
@@ -394,6 +418,7 @@ export class GalaxyField {
   vanishStar(i) {
     if (i == null || i < 0) return
     this.vanish = { i, t: 0 }
+    this.start()
   }
 
   // Which sealed star (if any) is under a screen-space point — used to turn a
@@ -424,6 +449,8 @@ export class GalaxyField {
     this.them = them
     this.glows.you = makeGlow(you, 64)
     this.glows.them = makeGlow(them, 64)
+    this._matchBloom = null // palette-tinted cache must be rebuilt
+    this.start()
   }
 
   // Place a fresh slot from a monotonic seed (never reused), so a star's spot in
@@ -456,6 +483,7 @@ export class GalaxyField {
   setSeals(n) {
     while (this.sealed.length < n) this.sealed.push(this._placeSlot(this._slotSeed++))
     if (this.sealed.length > n) this.sealed.length = Math.max(0, n)
+    this.start()
   }
 
   // Remove the slot at index `i` (identity-stable): the survivors keep their own
@@ -475,6 +503,7 @@ export class GalaxyField {
     } else if (this.focusIndex > i) {
       this.focusIndex--
     }
+    this.start()
   }
 
   // Rotate a local point into view space (spin → parallax yaw → tilt), then
@@ -539,19 +568,36 @@ export class GalaxyField {
     }
     if (this.reduced) {
       // Reduced-motion: no spin, no parallax, no twinkle advance (_draw(0)). The
-      // dim cross-fade and one-shot send-off settle still resolve, then it holds
-      // still — a calm window into space rather than a constant animation.
+      // dim cross-fade and one-shot send-off settle still resolve, then — unlike
+      // before — the loop actually STOPS instead of re-rendering identical frames
+      // forever. It resumes on any state change (every mutator calls start()), so
+      // this is a genuine rest with no idle GPU/CPU spend.
       this._draw(0)
-    } else {
-      this.t += dt
-      // nearly freeze the slow orbit while a star is held in focus, so it sits
-      // still under the camera instead of drifting out of frame
-      this.spin += dt * (this.motion / 100) * 0.16 * (1 - this.focus * 0.96)
-      this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.6))
-      this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.6))
-      this._draw(dt)
+      if (this._settled()) {
+        this.running = false
+        return
+      }
+      requestAnimationFrame(this._boundTick)
+      return
     }
-    requestAnimationFrame(this._tick.bind(this))
+    this.t += dt
+    // nearly freeze the slow orbit while a star is held in focus, so it sits
+    // still under the camera instead of drifting out of frame
+    this.spin += dt * (this.motion / 100) * 0.16 * (1 - this.focus * 0.96)
+    this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.6))
+    this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.6))
+    this._draw(dt)
+    requestAnimationFrame(this._boundTick)
+  }
+
+  // Reduced-motion only: has everything that animates come to rest? True once the
+  // dim/focus cross-fades have resolved, no star is winking out, and the one-shot
+  // send-off / match transitions have played out.
+  _settled() {
+    const dimDone = Math.abs(this.dim - this.dimTarget) < 0.004
+    const focusDone = Math.abs(this.focus - this.focusTarget) < 0.004
+    const transient = (this.mode === 'sendoff' && this.modeT < 4.2) || (this.mode === 'match' && this.modeT < 5.5)
+    return dimDone && focusDone && !this.vanish && !transient
   }
 
   _draw(dt) {
@@ -564,13 +610,17 @@ export class GalaxyField {
     // keeps the soft-sprite field affordable on low-end hardware.
     const zoomed = this.focus > 0.01
 
-    // deep-space backdrop with a faint cool zenith glow
+    // deep-space backdrop with a faint cool zenith glow. The vertical gradient only
+    // depends on height, so build it once per resize instead of every frame.
     ctx.globalCompositeOperation = 'source-over'
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, this.h)
-    bgGrad.addColorStop(0, '#06050E')
-    bgGrad.addColorStop(0.55, '#040309')
-    bgGrad.addColorStop(1, '#030206')
-    ctx.fillStyle = bgGrad
+    if (!this._bgGrad) {
+      const g = ctx.createLinearGradient(0, 0, 0, this.h)
+      g.addColorStop(0, '#06050E')
+      g.addColorStop(0.55, '#040309')
+      g.addColorStop(1, '#030206')
+      this._bgGrad = g
+    }
+    ctx.fillStyle = this._bgGrad
     ctx.fillRect(0, 0, this.w, this.h)
 
     // full-frame background starfield (screen-space parallax + twinkle)
@@ -609,15 +659,28 @@ export class GalaxyField {
 
     // soft core glow (additive) — a luminous, layered galactic bulge: a tight
     // bright heart inside a broad warm halo, so the centre reads as a real core.
+    // soft core glow — a fixed-color radial built ONCE in unit space and drawn via a
+    // transform (its position/size follow the projected core each frame, its `d`
+    // dim via globalAlpha). Avoids re-allocating a gradient every frame.
     ctx.globalCompositeOperation = 'lighter'
     const coreR = this.unit * 0.6 * o.persp
-    const cg = ctx.createRadialGradient(o.sx, o.sy, 0, o.sx, o.sy, coreR)
-    cg.addColorStop(0, `rgba(255,236,206,${0.34 * d})`)
-    cg.addColorStop(0.16, `rgba(255,214,176,${0.2 * d})`)
-    cg.addColorStop(0.46, `rgba(214,150,120,${0.07 * d})`)
-    cg.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = cg
-    ctx.fillRect(0, 0, this.w, this.h)
+    if (!this._coreGrad) {
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
+      g.addColorStop(0, 'rgba(255,236,206,0.34)')
+      g.addColorStop(0.16, 'rgba(255,214,176,0.2)')
+      g.addColorStop(0.46, 'rgba(214,150,120,0.07)')
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      this._coreGrad = g
+    }
+    ctx.save()
+    ctx.globalAlpha = d
+    ctx.translate(o.sx, o.sy)
+    ctx.scale(coreR, coreR)
+    ctx.fillStyle = this._coreGrad
+    ctx.beginPath()
+    ctx.arc(0, 0, 1, 0, TWO)
+    ctx.fill()
+    ctx.restore()
 
     // diffuse disk haze — the milky glow of unresolved starlight smeared along the
     // tilted plane. It's what makes the field read as one galaxy rather than a
@@ -754,6 +817,22 @@ export class GalaxyField {
     }
   }
 
+  // One normalized (unit-radius, full-alpha) radial gradient per nebula colour,
+  // built once and reused — the per-frame `a` rides on globalAlpha. Rebuilding 13
+  // radial gradients every frame was a top mobile cost (felt on the match screen).
+  _nebGradFor(hex) {
+    if (!this._nebGrad) this._nebGrad = {}
+    if (!this._nebGrad[hex]) {
+      const [r, g, b] = hexToRgb(hex)
+      const grd = this.ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
+      grd.addColorStop(0, `rgba(${r},${g},${b},1)`)
+      grd.addColorStop(0.5, `rgba(${r},${g},${b},0.4)`)
+      grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
+      this._nebGrad[hex] = grd
+    }
+    return this._nebGrad[hex]
+  }
+
   _drawNebula(dt, d, rot) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'lighter'
@@ -764,12 +843,16 @@ export class GalaxyField {
       const rr = nb.rad * this.unit * pr.persp
       if (rr < 5 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
       const a = nb.a * (0.7 + 0.3 * Math.sin(nb.tw)) * d * clamp(pr.shade, 0.4, 1.2)
-      const g = ctx.createRadialGradient(pr.sx, pr.sy, 0, pr.sx, pr.sy, rr)
-      g.addColorStop(0, this._rgba(nb.col, a))
-      g.addColorStop(0.5, this._rgba(nb.col, a * 0.4))
-      g.addColorStop(1, this._rgba(nb.col, 0))
-      ctx.fillStyle = g
-      ctx.fillRect(pr.sx - rr, pr.sy - rr, rr * 2, rr * 2)
+      if (a <= 0.002) continue
+      ctx.save()
+      ctx.globalAlpha = clamp(a, 0, 1)
+      ctx.translate(pr.sx, pr.sy)
+      ctx.scale(rr, rr)
+      ctx.fillStyle = this._nebGradFor(nb.col)
+      ctx.beginPath()
+      ctx.arc(0, 0, 1, 0, TWO)
+      ctx.fill()
+      ctx.restore()
     }
   }
 
@@ -968,17 +1051,30 @@ export class GalaxyField {
 
     const bt = t - APPROACH
 
-    // a single soft bloom of light that swells then fades — the moment of meeting
+    // a single soft bloom of light that swells then fades — the moment of meeting.
+    // Cached unit gradient (rebuilt only when the palette changes), drawn via a
+    // transform with the swell on globalAlpha, and bounded to the bloom's own circle
+    // instead of a full-frame fill every frame.
     const bloom = Math.exp(-bt * 1.3) * (1 - Math.exp(-bt * 5))
     if (bloom > 0.006) {
       const fr = this.unit * (0.18 + bt * 0.1)
-      const fg = ctx.createRadialGradient(cx, cy, 0, cx, cy, fr)
-      fg.addColorStop(0, `rgba(255,246,236,${0.6 * bloom})`)
-      fg.addColorStop(0.4, this._rgba(this.you, 0.26 * bloom))
-      fg.addColorStop(0.7, this._rgba(this.them, 0.14 * bloom))
-      fg.addColorStop(1, 'rgba(0,0,0,0)')
-      ctx.fillStyle = fg
-      ctx.fillRect(0, 0, this.w, this.h)
+      if (!this._matchBloom) {
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
+        g.addColorStop(0, 'rgba(255,246,236,0.6)')
+        g.addColorStop(0.4, this._rgba(this.you, 0.26))
+        g.addColorStop(0.7, this._rgba(this.them, 0.14))
+        g.addColorStop(1, 'rgba(0,0,0,0)')
+        this._matchBloom = g
+      }
+      ctx.save()
+      ctx.globalAlpha = clamp(bloom, 0, 1)
+      ctx.translate(cx, cy)
+      ctx.scale(fr, fr)
+      ctx.fillStyle = this._matchBloom
+      ctx.beginPath()
+      ctx.arc(0, 0, 1, 0, TWO)
+      ctx.fill()
+      ctx.restore()
     }
 
     // a few faint motes drawn STRAIGHT inward, then gone — matter gathering, no
