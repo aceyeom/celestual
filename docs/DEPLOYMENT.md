@@ -86,7 +86,7 @@ select celestual_suppress('@me');
 For optional Instagram DM handle verification (the `celestual-manychat` function via
 ManyChat, or `celestual-ig-webhook` via Meta directly, + migration `0004`), see
 [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md); for the `celestual-search` typeahead, see
-[SETUP-AUTH.md](./SETUP-AUTH.md). The optional `celestual-remind` function (the
+the flags in [`app/.env.example`](../app/.env.example). The optional `celestual-remind` function (the
 out-of-slots email nudge) uses the same Resend secrets as `celestual-notify` and
 should be scheduled hourly with pg_cron.
 
