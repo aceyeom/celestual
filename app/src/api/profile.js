@@ -102,6 +102,17 @@ function readLocalSky() {
   return null
 }
 
+// The handle that owns the device-local sky, if any. Used to avoid presenting one
+// handle's locally-stored sky as a different handle's on the stub/no-backend path.
+export function localSkyOwner() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKY_LOCAL))
+    return s && (s.me || s.handle) ? String(s.me || s.handle) : ''
+  } catch {
+    return ''
+  }
+}
+
 function writeLocalSky({ me, myHandles, email, displayName, handles, times, sealCount }) {
   try {
     localStorage.setItem(SKY_LOCAL, JSON.stringify({ me, myHandles: myHandles || [], email, displayName, handles, times, sealCount }))

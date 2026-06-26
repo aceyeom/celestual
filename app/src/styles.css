@@ -153,7 +153,16 @@ button { font-family: inherit; }
 .starmark-core   { animation: starGlow 4.5s ease-in-out infinite; }
 .starmark-spikes { animation: spikeGlow 6s ease-in-out infinite; transform-origin: center; }
 
+/* ── screen cross-fade (View Transitions API, driven by App.go) ───────────────
+   Replaces the old hard cut between screens with a short dissolve over the
+   persistent galaxy. Kept brief so navigation still feels immediate. */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.32s; animation-timing-function: ease; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
   .enter, .fade { animation: none !important; opacity: 1 !important; }
+  /* never cross-fade screens when reduced motion is requested */
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
 }

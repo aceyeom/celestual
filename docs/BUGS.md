@@ -6,7 +6,9 @@ mobile, and rough animations/transitions. Each item lists **where** it lives,
 the **root cause**, and a **proposed fix**. Severity: 🔴 critical · 🟠 high ·
 🟡 medium · ⚪ polish.
 
-> Status: findings only — no code changed yet. Tackle in priority order below.
+> **Status: all items below have been implemented.** ✅ markers note where the
+> fix landed. The "Suggested order of work" section at the bottom records the
+> sequence taken.
 
 ---
 
@@ -232,5 +234,47 @@ the first reconcile.
    filter tilt input).
 4. **2.3, 4.1–4.3** — verification hand-off in-app, transitions, flashes.
 5. Remaining polish (1.3, 1.4, 3.4–3.6, 4.4–4.6).
+
+---
+
+## Implementation summary (what shipped)
+
+**Auth / identity**
+- New `established` predicate in `App.jsx` (`verified || demo || has-a-sky`) gates
+  the profile chip (`showProfile`) and is the only thing that lets identity be
+  persisted — a bare typed handle is never shown or stored as an account (1.1/1.2).
+- Encrypted-profile save and the `localStorage` resume blob both short-circuit
+  until `established` (1.2).
+- `restoreSky` no longer shows a different handle's device-local sky on the
+  stub/no-backend path (`localSkyOwner` in `api/profile.js`) (1.3).
+- Account sheet shows a "changing your @ re-verifies" hint and reflects the live
+  de-verified state (1.4).
+
+**Instagram in-app browser**
+- `galaxy.resize()` ignores sub-130px height-only changes (toolbar collapse) and
+  the `ResizeObserver` is rAF-coalesced, so the canvas no longer reallocates every
+  toolbar frame (2.1).
+- `deviceorientation` now has a dead-zone + low-pass filter, killing the sensor
+  jitter (2.2).
+- `openExternal` (and `App.openConversation`) fall back to a same-tab deep link
+  when `window.open` is blocked; the verify sheet shows an in-app guidance note
+  (2.3).
+
+**Performance**
+- All per-frame canvas gradients (backdrop, core glow, 13× nebula, match bloom)
+  are built once and reused via transforms; the full-frame match bloom is bounded
+  to its circle (3.1/3.6).
+- `StarTags` caches keep-out rects and re-measures a few times a second instead of
+  forcing layout every frame (3.2).
+- Reduced-motion now genuinely halts the render loop once settled and resumes on
+  any state change (3.3); the frame callback is bound once (3.5).
+
+**Animation / workflow**
+- Screen changes cross-fade via the View Transitions API (`App.go` + CSS), with an
+  instant fallback and reduced-motion opt-out (4.1).
+- The resting screen holds a placeholder while the sky loads (no empty-state
+  flash) (4.2); the morph teardown timer is cancelled on re-seal/unmount (4.3).
+- Stale comment corrected (4.4); match-screen min-height made viewport-relative
+  (4.5).
 </content>
 </invoke>

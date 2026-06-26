@@ -467,7 +467,7 @@ export function ThemScreen({ C, ctx }) {
     }
     setBusy(true)
     try {
-      await ctx.seal() // opens the Instagram popup synchronously inside this gesture
+      await ctx.seal() // gated on identity; opens the in-tab DM verify overlay if needed
     } finally {
       setBusy(false)
     }
@@ -563,6 +563,20 @@ export function RestingScreen({ C, ctx }) {
   const { t } = useI18n()
   const zoomed = ctx.zoomed
   const hasStars = ctx.starCount > 0
+
+  // LOADING — a resume can land here before the saved sky has decrypted/loaded.
+  // Hold a calm placeholder (just the wordmark over the galaxy) so we never flash
+  // the empty-state CTA for a frame and then pop to a populated sky.
+  if (!hasStars && ctx.loadingSky) {
+    return (
+      <GalaxyShell>
+        <div className="enter" style={{ display: 'flex', justifyContent: 'center' }}>
+          <Brandmark C={C} size={13} />
+        </div>
+        <div style={{ flex: 1 }} />
+      </GalaxyShell>
+    )
+  }
 
   // EMPTY — nothing in the sky right now (first visit, or every star released).
   // A single, calm invitation; no stale handle, no orphan controls.
@@ -816,6 +830,11 @@ export function AccountSheet({ C, ctx }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             <FieldLabel C={C}>{t('account.handleLabel')}</FieldLabel>
             <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder="your.handle" accent={C.you} />
+            {/* Editing the @ drops verification (it's bound to the exact handle) —
+                say so, so the "local only" flip doesn't feel like a glitch. */}
+            {ctx.verifyEnabled && !ctx.verified && (
+              <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('account.reverifyNote')}</Hint>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.emailLabel')}</FieldLabel>
@@ -914,7 +933,7 @@ export function MatchScreen({ C, ctx }) {
   const { t } = useI18n()
   return (
     <GalaxyShell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 420 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 'min(420px, 56vh)' }}>
         <div className="enter" style={{ marginBottom: 20 }}>
           <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '4px', textTransform: 'uppercase', color: C.you, marginBottom: 12 }}>{t('match.kicker')}</div>
           <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 8vw, 42px)', lineHeight: 1.1, color: C.cream }}>
@@ -1083,6 +1102,29 @@ export function PrivacyScreen({ C, ctx }) {
 // Copy a code to the native clipboard and DM it to our Instagram; Meta's webhook
 // tells the backend who really sent it, and this overlay watches for the flip.
 // It never navigates, so the in-progress entry survives underneath it.
+
+// True inside an in-app webview (Instagram / Facebook), where window.open to a new
+// tab is unreliable — used to fall back to a same-tab deep link and to warn gently.
+function isInAppBrowser() {
+  if (typeof navigator === 'undefined') return false
+  return /Instagram|FBAN|FBAV|FB_IAB|Line\//i.test(navigator.userAgent || '')
+}
+
+// Open an external URL, falling back to a same-tab navigation when window.open is
+// blocked (the common case inside an in-app browser, where it returns null).
+function openExternal(url) {
+  try {
+    const w = window.open(url, '_blank', 'noopener,noreferrer')
+    if (!w) window.location.href = url
+  } catch {
+    try {
+      window.location.href = url
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 async function copyText(text) {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1185,12 +1227,11 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
   // allowed to launch the Instagram app and write the clipboard.
   const copyAndOpen = () => {
     copyText(token).then(setCopied)
-    try {
-      window.open(igDeepLink(), '_blank', 'noopener,noreferrer')
-    } catch {
-      /* ignore — they can still open Instagram manually */
-    }
+    // window.open is often blocked inside an in-app webview; openExternal falls
+    // back to a same-tab deep link so the DM thread still opens.
+    openExternal(igDeepLink())
   }
+  const inApp = isInAppBrowser()
 
   const errMsg =
     errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
@@ -1275,6 +1316,12 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
               <Sonar C={C} color={C.you} size={12} /> {t('verify.waiting')}
             </div>
+
+            {/* Inside Instagram's own in-app browser, the hand-off can be flaky —
+                tell people they can come straight back, and offer the cleaner path. */}
+            {inApp && (
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.you, 0.9) }}>{t('verify.inApp')}</p>
+            )}
 
             <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
           </>
