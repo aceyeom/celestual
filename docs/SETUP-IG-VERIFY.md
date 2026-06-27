@@ -297,12 +297,16 @@ and the **Copy & open Instagram** button copies that exact text and deep-links t
 
 Do this **before** flipping enforcement (section 8).
 
-1. Open **https://celestual.us** → **Find out** → type **`@celestual.us`** (or any
-   account you've added as a ManyChat tester) → **Verify & continue**.
+1. Open **https://celestual.us** → **Find out** → type the **@ of a *second* account
+   you control** (add it as a ManyChat tester first). **Don't type `@celestual.us`
+   here** — the brand account can't DM the code to *itself*, so a self-DM never
+   verifies. The handle you type must be the account you'll send the DM **from**.
 2. The overlay shows a code like **`star-1283`**. Tap **Copy & open Instagram** —
    Instagram opens a DM thread with `@celestual.us`, and the code is on your clipboard.
-3. **Paste and send** the DM. Within a second or two the overlay should flip to
-   **Verified ✓** and continue. 🎉
+   (The overlay stays open underneath; if your phone reloads the tab when it switches
+   to Instagram, just reopen **celestual.us** — it resumes watching the same code.)
+3. From that **second account**, **paste and send** the DM to `@celestual.us`. Within a
+   second or two the overlay should flip to **Verified ✓** and continue. 🎉
 4. Seal a star — it records normally.
 5. **Negative test (important):** start a verification claiming an `@` you do *not*
    control, then send the code from a **different** account. It must **not** verify
@@ -373,6 +377,7 @@ verified; people just can't complete it until you reconnect.
 | DMs don't verify, function says `no_username`/`no_code` | The JSON body fields are wrong — re-insert `{{instagram.username}}` and `{{last_text_input}}` using ManyChat's **`+` field picker** (step 5.3). |
 | `handle_mismatch` | Expected — the **sender's** username must equal the claimed `@`. DM from the exact account you're verifying. |
 | Nothing happens when you DM a code | The automation isn't **published/enabled**, the **Condition** isn't matching (make sure it's *contains* `star-`, not *equals*), or another keyword automation is catching the DM first. |
+| **I sent the DM but the app never says "Verified ✓"** | First confirm it isn't a setup miss: check the row's `status` in the SQL above and the ManyChat **delivery logs** (section 7). If the row flipped to `verified` but the app didn't, you opened Instagram in the **same browser tab** and it got torn down — return to **celestual.us** and the overlay resumes watching the **same** code automatically. Make sure you DM from the **exact account whose @ you typed** (not the brand account itself — a self-DM never verifies; see `handle_mismatch`). |
 | The code shows without `star-` | You're on an old build — redeploy the front-end (section 6); the app prefixes the code automatically. |
 | Live users get `unverified` | You flipped enforcement (section 8) before everything was live. Set it back to `'false'`, confirm a real verification, then flip it again. |
 
