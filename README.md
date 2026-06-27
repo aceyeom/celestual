@@ -71,7 +71,8 @@ every star is free, gated only by a server-side weekly slot budget.
 | --- | --- |
 | **[docs/GO-LIVE.md](./docs/GO-LIVE.md)** | **The manual checklist to connect everything and ship.** Start here. |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Detailed Supabase + Vercel + email deploy reference |
-| **[docs/SETUP-IG-VERIFY.md](./docs/SETUP-IG-VERIFY.md)** | **Instagram DM handle verification (no OAuth) — prove the typed @ is really theirs.** |
+| **[docs/SETUP-IG-VERIFY.md](./docs/SETUP-IG-VERIFY.md)** | **Instagram DM handle verification (no OAuth) — prove the typed @ is really theirs.** Via ManyChat (no Meta app, no token to refresh). |
+| **[docs/SETUP-IG-VERIFY-META.md](./docs/SETUP-IG-VERIFY-META.md)** | **Same verification, the native Meta way** — create your own Meta app + webhook, no ManyChat. Strongest assurance; you refresh a token ~every 60 days. |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The anonymity / safety model, the integrity controls, and an operator checklist |
 | [app/README.md](./app/README.md) | Front-end architecture & flow |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, and edge functions |
