@@ -86,3 +86,48 @@ export async function pollVerification(token, proofHash) {
     return 'pending'
   }
 }
+
+// ── In-flight verification persistence ────────────────────────────────────
+// Opening Instagram deep-links away from this tab — and on mobile that often
+// RELOADS or replaces the celestual page (the in-app browser, or the OS evicting
+// a backgrounded tab). The proof/code live in React memory, so without this they'd
+// be lost on return: the overlay would mint a brand-new code, which the DM the user
+// already sent can never match — verification silently never completes.
+//
+// So we stash the live record (handle + code + proof + hash + expiry) here. On
+// return the overlay resumes THIS code and keeps polling; it's cleared the moment
+// verification succeeds, expires, or the user cancels. The proof is the same class
+// of secret already kept in localStorage for the verified session (see auth.js),
+// and it self-expires with the ~10-minute code TTL, so this widens nothing.
+const PENDING = 'celestual:igpending'
+
+export function savePending(rec) {
+  try {
+    if (rec && rec.token && rec.proof) localStorage.setItem(PENDING, JSON.stringify(rec))
+  } catch {
+    /* ignore — private mode / quota */
+  }
+}
+
+// Return the saved record only while it's still usable; prune it otherwise.
+export function loadPending() {
+  try {
+    const r = JSON.parse(localStorage.getItem(PENDING))
+    if (!r || !r.token || !r.proof || !r.proofHash) return null
+    if (!r.expiresAt || Date.parse(r.expiresAt) <= Date.now()) {
+      clearPending()
+      return null
+    }
+    return r
+  } catch {
+    return null
+  }
+}
+
+export function clearPending() {
+  try {
+    localStorage.removeItem(PENDING)
+  } catch {
+    /* ignore */
+  }
+}

@@ -8,7 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { startVerification, pollVerification, igDeepLink, igUsername, dmCode } from '../api/igverify.js'
+import { startVerification, pollVerification, igDeepLink, igUsername, dmCode, savePending, loadPending, clearPending } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -1147,6 +1147,10 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
       proofRef.current = r.proof
       hashRef.current = r.proofHash
       expiryRef.current = Date.parse(r.expiresAt) || Date.now() + 10 * 60 * 1000
+      // Stash the live proof + code so the trip to Instagram (which can reload or
+      // replace this tab on mobile) doesn't strand the verification: on return we
+      // resume THIS code instead of minting a fresh one the sent DM can't match.
+      savePending({ handle, token: r.token, proofHash: r.proofHash, proof: r.proof, expiresAt: r.expiresAt })
       setToken(r.token)
       setPhase('waiting')
     } catch (e) {
@@ -1155,10 +1159,22 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     }
   }, [handle])
 
+  // On open: resume a still-live verification for this handle if one was saved (the
+  // user is back from Instagram, possibly after the tab reloaded), so we keep
+  // watching the exact code they already DM'd. Otherwise start a fresh one.
   React.useEffect(() => {
+    const saved = loadPending()
+    if (saved && normHandle(saved.handle) === normHandle(handle)) {
+      proofRef.current = saved.proof
+      hashRef.current = saved.proofHash
+      expiryRef.current = Date.parse(saved.expiresAt) || 0
+      setToken(saved.token)
+      setPhase('waiting')
+      return stopPoll
+    }
     begin()
     return stopPoll
-  }, [begin])
+  }, [begin, handle])
 
   // Poll for the DM while waiting; stop on success, expiry, or unmount.
   React.useEffect(() => {
@@ -1166,17 +1182,20 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     const tick = async () => {
       if (Date.now() > expiryRef.current) {
         stopPoll()
+        clearPending()
         setPhase('expired')
         return
       }
       const status = await pollVerification(token, hashRef.current)
       if (status === 'verified') {
         stopPoll()
+        clearPending() // consumed — don't let a later reload re-open this overlay
         setPhase('verified')
         const proof = proofRef.current
         doneRef.current = setTimeout(() => onVerified(proof), 950) // let the ✓ land before resuming
       } else if (status === 'expired') {
         stopPoll()
+        clearPending()
         setPhase('expired')
       }
     }
@@ -1189,17 +1208,26 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
   const copyAndOpen = () => {
     copyText(dmCode(token)).then(setCopied)
     // window.open is often blocked inside an in-app webview; openExternal falls
-    // back to a same-tab deep link so the DM thread still opens.
+    // back to a same-tab deep link so the DM thread still opens. Either way the
+    // saved record (savePending, above) lets us resume polling when they return.
     openExternal(igDeepLink())
   }
   const inApp = isInAppBrowser()
+
+  // Cancelling for real (the X or the backdrop) abandons this attempt, so drop the
+  // saved record — a later reload shouldn't reopen a verification the user dismissed.
+  // (A reload from the Instagram hand-off never runs this; it just remounts and resumes.)
+  const dismiss = () => {
+    clearPending()
+    onClose()
+  }
 
   const errMsg =
     errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
 
   return (
     <div
-      onClick={onClose}
+      onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
     >
       <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
@@ -1219,7 +1247,7 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
               <HandleChip C={C} handle={handle} color={C.you} />
             </div>
           </div>
-          <button onClick={onClose} aria-label={t('verify.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
+          <button onClick={dismiss} aria-label={t('verify.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
             <Icon name="x" size={14} color="currentColor" />
           </button>
         </div>

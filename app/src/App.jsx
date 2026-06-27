@@ -5,7 +5,7 @@ import {
   checkMutuals, linkHandles, fetchSlots, requestReminder, fetchMySky, FULL_SLOTS,
 } from './api/celestual.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
-import { igVerifyEnabled } from './api/igverify.js'
+import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi, localSkyOwner } from './api/profile.js'
 import { slotsRemaining } from './api/slots.js'
 import { makeColors, PALETTE } from './theme.js'
@@ -386,6 +386,20 @@ export default function App() {
     },
     [verify],
   )
+
+  // Resume a verification interrupted by the Instagram hand-off. Tapping "open
+  // Instagram" deep-links away and on mobile that can reload or replace this tab, so
+  // the in-memory overlay is gone when they return. If a still-live code+proof was
+  // saved (igverify savePending), reopen the overlay here so it keeps polling and the
+  // DM they already sent lands — instead of stranding them on a dead end. Runs once.
+  useEffect(() => {
+    if (demo || session?.verified || !igVerifyEnabled()) return
+    const saved = loadPending()
+    if (!saved || !saved.handle) return
+    setMe((m) => m || saved.handle) // the typed @ isn't persisted pre-verify; restore it
+    setVerify({ handle: normHandle(saved.handle), onDone: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Perform the seal once identity is settled. `proofOverride` comes straight from a
   // just-completed verification (avoids reading a stale session); otherwise we use
