@@ -185,6 +185,7 @@ const en = {
   'privacy.removeErr': 'Something went wrong — please email us instead.',
   'privacy.foot': 'We’ll keep this page current as the product grows. Questions:',
   'privacy.fullPolicy': 'Full privacy policy',
+  'privacy.tos': 'Terms of service',
   'privacy.deleteData': 'How to delete your data',
   // intro motion graphic
   'intro.tapNext': 'tap to continue',

@@ -470,11 +470,12 @@ via `cleanUrls` in `vercel.json`:
 | Meta App Dashboard field | Paste this URL |
 | --- | --- |
 | **Privacy Policy URL** | `https://celestual.us/privacy` |
+| **Terms of Service URL** | `https://celestual.us/terms` |
 | **User Data Deletion → Data Deletion Instructions URL** | `https://celestual.us/data-deletion` |
 
-In the Meta app dashboard this is under **App Settings → Basic** (Privacy Policy URL)
-and **Settings → Basic → User Data Deletion** — choose **“Data Deletion Instructions
-URL”** (not the callback) and paste the second URL. The instructions page documents the
+All three fields live under **App Settings → Basic** in the Meta app dashboard. For
+**User Data Deletion**, choose **“Data Deletion Instructions URL”** (not the callback)
+and paste the third URL. The instructions page documents the
 self-service in-app removal tool, account deletion, and the `privacy@celestual.us`
 email fallback, which is exactly the deletion path Meta requires.
 
