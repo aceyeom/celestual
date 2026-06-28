@@ -184,6 +184,8 @@ const en = {
   'privacy.removed2': 'has been removed and blocked.',
   'privacy.removeErr': 'Something went wrong — please email us instead.',
   'privacy.foot': 'We’ll keep this page current as the product grows. Questions:',
+  'privacy.fullPolicy': 'Full privacy policy',
+  'privacy.deleteData': 'How to delete your data',
   // intro motion graphic
   'intro.tapNext': 'tap to continue',
   'intro.tapBegin': 'tap to begin',

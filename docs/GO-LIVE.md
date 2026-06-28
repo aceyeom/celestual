@@ -160,3 +160,6 @@ labelled *secret* lives in Supabase. After changing any `VITE_*` value in Vercel
 - [ ] `celestual.us` resolves over HTTPS (Part 5)
 - [ ] (optional) Instagram DM verification on + enforcement flipped (Part 6 / SETUP-IG-VERIFY.md)
 - [ ] (optional) `celestual-remind` deployed + scheduled for reminder emails (Part 6)
+- [ ] For Meta App Review: paste `https://celestual.us/privacy` (Privacy Policy URL) and
+      `https://celestual.us/data-deletion` (User Data Deletion → Data Deletion Instructions
+      URL) into the Meta app dashboard — see SETUP-IG-VERIFY.md § 14
