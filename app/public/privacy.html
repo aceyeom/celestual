@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0814" />
+    <title>Privacy Policy — Celestual</title>
+    <meta
+      name="description"
+      content="How Celestual collects, uses, stores and deletes your data — including the Instagram handles you enter and your optional email."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://celestual.us/privacy" />
+    <link rel="icon" type="image/svg+xml" href="/star.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0b0814;
+        --ink2: #16111f;
+        --cream: #f3ecf6;
+        --muted: #9e92b6;
+        --line: rgba(243, 236, 246, 0.1);
+        --you: #ff9e6b;
+        --them: #e6749e;
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(1200px 700px at 50% -10%, #211934 0%, transparent 60%),
+          var(--ink);
+        color: var(--cream);
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-weight: 300;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 22px 96px;
+        padding-top: max(48px, env(safe-area-inset-top));
+      }
+      a { color: var(--you); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .brand .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #fff, var(--you));
+        box-shadow: 0 0 14px var(--you);
+      }
+      h1 {
+        font-family: 'Instrument Serif', serif;
+        font-weight: 400;
+        font-size: clamp(34px, 9vw, 52px);
+        line-height: 1.08;
+        margin: 18px 0 6px;
+      }
+      .updated { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+      h2 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 17px;
+        margin: 38px 0 8px;
+        color: var(--cream);
+      }
+      p, li { color: #cdc3da; font-size: 15px; }
+      ul { padding-left: 20px; margin: 8px 0; }
+      li { margin: 6px 0; }
+      .lead { font-size: 16px; color: var(--cream); }
+      hr { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+      .callout {
+        margin-top: 14px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 158, 107, 0.05);
+      }
+      .callout p { margin: 0; color: var(--cream); }
+      footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+      .back { display: inline-block; margin-top: 28px; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="brand" href="/"><span class="dot"></span> Celestual</a>
+
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated 28 June 2026</p>
+
+      <p class="lead">
+        Celestual (<a href="https://celestual.us">celestual.us</a>) is an anonymous,
+        reciprocal matching site: you enter your Instagram @ and the @ of someone
+        you’re thinking about, and you only ever find out if it’s <em>mutual</em>.
+        One-sided entries are never revealed to anyone. This policy explains exactly
+        what we collect, how we use it, who processes it, and how you can delete it.
+      </p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li>
+          <strong>Instagram handles.</strong> When you make an entry we store two
+          handles — yours and the one you enter — so we can detect whether the same
+          pairing is later entered in reverse. These are stored as part of an
+          encrypted entry record.
+        </li>
+        <li>
+          <strong>Your email (optional).</strong> Only if you provide one, and only
+          so we can notify you if an entry turns out to be mutual, or remind you. You
+          can use Celestual without giving an email.
+        </li>
+        <li>
+          <strong>Identity-verification signal.</strong> To confirm an @ is really
+          yours, you send a one-time code by Instagram DM to our account
+          (<a href="https://instagram.com/celestual.us">@celestual.us</a>). Meta’s
+          messaging webhook tells our backend that the code arrived from that handle.
+          We do not receive your Instagram password and never gain access to your
+          Instagram account.
+        </li>
+        <li>
+          <strong>Basic technical data.</strong> Standard request/log data needed to
+          serve the site securely (e.g. handled by our hosting and database
+          providers). We do not run advertising or third-party tracking cookies.
+        </li>
+      </ul>
+
+      <h2>How we use it</h2>
+      <ul>
+        <li>To compute whether an entry is mutual, and only then notify the earlier entrant.</li>
+        <li>To restore <em>your own</em> stars (“your sky”) when you sign back in with the same @.</li>
+        <li>To enforce a fair, server-side weekly entry budget and prevent abuse.</li>
+        <li>To verify, when required, that an @ belongs to the person using it.</li>
+      </ul>
+
+      <h2>What we never do</h2>
+      <ul>
+        <li>We never reveal a one-sided entry. There is no on-screen result for the person you entered.</li>
+        <li>We never post, message, follow, or alert the person you enter.</li>
+        <li>We never sell your data or share it for advertising.</li>
+      </ul>
+
+      <h2>Who processes your data</h2>
+      <p>We use a small set of trusted service providers, each only for the function below:</p>
+      <ul>
+        <li><strong>Supabase</strong> — encrypted database and backend functions that store entries and the optional email.</li>
+        <li><strong>Vercel</strong> — hosting and delivery of the website.</li>
+        <li><strong>ManyChat &amp; Meta Platforms (Instagram)</strong> — relay the one-time DM verification message and tell us the code was received from your handle.</li>
+        <li><strong>Resend</strong> — sends the match / reminder email, when you’ve given one.</li>
+      </ul>
+
+      <h2>How long we keep it</h2>
+      <p>
+        We keep an entry only while it’s needed for the matching service. You can
+        remove your data at any time (see below), and we delete data without undue
+        delay when you ask, when you delete your account, or when it’s no longer
+        needed to provide the service.
+      </p>
+
+      <h2 id="delete">Deleting your data</h2>
+      <p>
+        You can delete your data yourself at any time, and you can ask us to erase and
+        block any handle — including your own, if someone entered you. Full,
+        step-by-step instructions are here:
+      </p>
+      <div class="callout">
+        <p>
+          → <a href="/data-deletion"><strong>How to delete your Celestual data</strong></a>,
+          or email <a href="mailto:privacy@celestual.us">privacy@celestual.us</a> and
+          we’ll handle it for you.
+        </p>
+      </div>
+
+      <h2>For adults</h2>
+      <p>Celestual is intended for people 18 and older. It is not directed at children.</p>
+
+      <h2>Changes &amp; contact</h2>
+      <p>
+        We’ll keep this page current as the product grows; material changes will be
+        reflected by the “last updated” date above. Your use of Celestual is also
+        governed by our <a href="/terms">Terms of Service</a>. Questions or requests:
+        <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>.
+      </p>
+
+      <hr />
+      <a class="back" href="/">← Back to Celestual</a>
+      <footer>© 2026 Celestual · celestual.us</footer>
+    </main>
+  </body>
+</html>

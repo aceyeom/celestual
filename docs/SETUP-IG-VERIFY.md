@@ -460,6 +460,25 @@ post, follow, or read anyone's content, and the person you later *enter* is neve
 - Keep a privacy policy describing this (you have `privacy@celestual.us` + the in-app
   privacy screen).
 
+### Meta App Review — the two URLs they require
+
+Meta won't approve an app without a public **Privacy Policy URL** and a **User Data
+Deletion** path. Both ship in this repo as standalone, no-JavaScript pages under
+`app/public/` (so Meta's reviewer and crawler always see them), served at clean URLs
+via `cleanUrls` in `vercel.json`:
+
+| Meta App Dashboard field | Paste this URL |
+| --- | --- |
+| **Privacy Policy URL** | `https://celestual.us/privacy` |
+| **Terms of Service URL** | `https://celestual.us/terms` |
+| **User Data Deletion → Data Deletion Instructions URL** | `https://celestual.us/data-deletion` |
+
+All three fields live under **App Settings → Basic** in the Meta app dashboard. For
+**User Data Deletion**, choose **“Data Deletion Instructions URL”** (not the callback)
+and paste the third URL. The instructions page documents the
+self-service in-app removal tool, account deletion, and the `privacy@celestual.us`
+email fallback, which is exactly the deletion path Meta requires.
+
 ---
 
 ## Appendix A — Alternative: direct Meta webhook (no ManyChat)
