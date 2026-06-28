@@ -480,6 +480,10 @@ the `star-` code format, the front-end flags in section 6, the enforcement flip 
 section 8) is identical. The code is already in
 `supabase/functions/celestual-ig-webhook/index.ts`.
 
+> **On this path and the DM never verifies?** There's a dedicated beginner
+> troubleshooting walkthrough for the Meta webhook (handshake test, function logs, the
+> `messages`-field subscription, JWT, token fixes): **[DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md)**.
+
 ---
 
 ## Appendix B — Bridge to the encrypted cross-device sky (optional)
