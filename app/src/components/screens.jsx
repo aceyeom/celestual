@@ -1078,13 +1078,27 @@ function isInAppBrowser() {
   return /Instagram|FBAN|FBAV|FB_IAB|Line\//i.test(navigator.userAgent || '')
 }
 
-// Open an external URL in a new tab, keeping THIS tab alive so the verify overlay
-// keeps polling underneath. Same-tab navigation is a fallback only inside in-app
-// webviews, where a real new tab can't open.
+// True on a phone/tablet, where window features (size/position) are ignored and the
+// only sane way "back" is the OS app switcher — so we deep-link into the Instagram
+// app rather than trying to float a window that can't exist.
+function isMobile() {
+  if (typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+}
+
+// Open Instagram WITHOUT abandoning this tab, so the verify overlay keeps polling
+// underneath and the user can simply ✕ out of it when they return. How we open
+// depends on where we are — one helper, no separate desktop/mobile builds:
+//
+//   • Desktop  → a small floating POPUP WINDOW centered over celestual. Send the DM,
+//                close that little window, and the overlay is right there. Far easier
+//                to get back to than a full new tab buried behind the browser.
+//   • Mobile   → the ig.me universal link, which the OS routes to the Instagram app
+//                (window size is ignored on phones, so a "popup" can't float). The
+//                persistent overlay below is what they return to and close.
+//   • In-app   → Instagram/Facebook/Line webviews can't open a real new window, so we
+//                navigate this one; savePending lets the overlay resume on return.
 function openExternal(url) {
-  // In-app webviews (Instagram/Facebook/Line) can't open a real new tab, so navigate
-  // this one — the saved pending record (savePending) lets the overlay resume polling
-  // when the user comes back to celestual.
   if (isInAppBrowser()) {
     try {
       window.location.href = url
@@ -1093,8 +1107,6 @@ function openExternal(url) {
     }
     return
   }
-  // Normal browser: open Instagram in a new tab and leave this tab where it is.
-  //
   // IMPORTANT: we pass 'noopener', which makes window.open() return null *even on
   // success* (it deliberately hands back no window reference). So we must NOT treat a
   // null return as "blocked" and fall back to window.location — doing that redirected
@@ -1102,6 +1114,21 @@ function openExternal(url) {
   // blocked popup is recoverable (the code is already copied; the user can retry);
   // nuking this tab is not. We only fall back if the call actually throws.
   try {
+    if (!isMobile() && typeof window !== 'undefined') {
+      // A compact window floating over celestual. Centered on the current window so it
+      // lands where the user is looking, even on a multi-monitor setup.
+      const w = 480
+      const h = Math.min(760, (window.screen?.availHeight || 800) - 60)
+      const baseX = window.screenLeft ?? window.screenX ?? 0
+      const baseY = window.screenTop ?? window.screenY ?? 0
+      const vw = window.innerWidth || document.documentElement.clientWidth || w
+      const vh = window.innerHeight || document.documentElement.clientHeight || h
+      const left = Math.max(0, baseX + (vw - w) / 2)
+      const top = Math.max(0, baseY + (vh - h) / 2)
+      window.open(url, '_blank', `popup,noopener,noreferrer,width=${w},height=${h},left=${left},top=${top}`)
+      return
+    }
+    // Mobile: a plain new context; the universal link hands off to the IG app.
     window.open(url, '_blank', 'noopener,noreferrer')
   } catch {
     try {
@@ -1261,13 +1288,15 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // allowed to launch the Instagram app and write the clipboard.
   const copyAndOpen = () => {
     copyText(dmCode(token)).then(setCopied)
-    // Demo stays put — there's no real DM to send, and the overlay auto-confirms
-    // on its own, so leaving for Instagram would just strand the demonstration.
-    if (demo) return
-    // openExternal opens Instagram in a NEW tab and keeps this one open so the overlay
-    // keeps polling. Inside an in-app webview (where new tabs don't work) it navigates
-    // same-tab instead; the saved record (savePending, above) lets us resume polling
-    // when they return to celestual.
+    // openExternal opens Instagram (a floating window on desktop, the app on mobile)
+    // and keeps THIS context alive so the overlay stays put underneath — the user
+    // sends the DM, comes back, and ✕'s out of the overlay. Inside an in-app webview
+    // (where new windows don't work) it navigates same-tab; the saved record
+    // (savePending, above) lets us resume polling when they return to celestual.
+    //
+    // The demo opens Instagram too — same as the real flow, so it looks and feels
+    // identical — but there's no DM to actually watch for: the polling effect below
+    // auto-confirms on its 6-second timer regardless of what the user sends.
     openExternal(igDeepLink())
   }
   const inApp = isInAppBrowser()
