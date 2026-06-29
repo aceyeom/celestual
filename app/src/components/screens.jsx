@@ -1071,6 +1071,11 @@ export function PrivacyScreen({ C, ctx }) {
 // tells the backend who really sent it, and this overlay watches for the flip.
 // It never navigates, so the in-progress entry survives underneath it.
 
+// How long the success ✓ stays on screen before we close the overlay and resume the
+// seal. Long enough to clearly read "Verified — it's really you" and see the animation
+// land (the old 950ms flashed by); short enough not to feel like a stall.
+const VERIFIED_HOLD_MS = 2000
+
 // True inside an in-app webview (Instagram / Facebook), where window.open to a new
 // tab is unreliable — used to fall back to a same-tab deep link and to warn gently.
 function isInAppBrowser() {
@@ -1086,20 +1091,25 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
 }
 
-// Open Instagram WITHOUT abandoning this tab, so the verify overlay keeps polling
-// underneath and the user can simply ✕ out of it when they return. How we open
-// depends on where we are — one helper, no separate desktop/mobile builds:
+// Open Instagram WITHOUT stranding the user, so the verify overlay keeps polling and
+// the user can simply ✕ out of it when they return. How we open depends on where we
+// are — one helper, no separate desktop/mobile builds:
 //
-//   • Desktop  → a small floating POPUP WINDOW centered over celestual. Send the DM,
-//                close that little window, and the overlay is right there. Far easier
-//                to get back to than a full new tab buried behind the browser.
-//   • Mobile   → the ig.me universal link, which the OS routes to the Instagram app
-//                (window size is ignored on phones, so a "popup" can't float). The
-//                persistent overlay below is what they return to and close.
+//   • Desktop  → a roomy floating POPUP WINDOW centered over celestual. It must be
+//                WIDE: Instagram collapses to a narrow layout that HIDES the DM
+//                composer below ~640px (the old 480px popup showed "only the chat"),
+//                so we size it generously and let login + the message box render.
+//   • Mobile   → navigate THIS tab to the ig.me universal link, which the OS routes
+//                to the Instagram app. We deliberately do NOT window.open a second
+//                tab: on a phone the handoff leaves that tab behind as an orphaned
+//                blank page, so returning to the browser lands on a dead tab instead
+//                of celestual. savePending + the resume effect restore the overlay.
 //   • In-app   → Instagram/Facebook/Line webviews can't open a real new window, so we
-//                navigate this one; savePending lets the overlay resume on return.
+//                navigate this one too; savePending lets the overlay resume on return.
 function openExternal(url) {
-  if (isInAppBrowser()) {
+  // Phones and in-app webviews: navigate the current tab. A second tab on mobile
+  // becomes a broken empty tab once the universal link hands off to the IG app.
+  if (isInAppBrowser() || isMobile()) {
     try {
       window.location.href = url
     } catch {
@@ -1107,29 +1117,26 @@ function openExternal(url) {
     }
     return
   }
-  // IMPORTANT: we pass 'noopener', which makes window.open() return null *even on
-  // success* (it deliberately hands back no window reference). So we must NOT treat a
-  // null return as "blocked" and fall back to window.location — doing that redirected
-  // this tab to Instagram on every click, stranding the verification overlay. A truly
-  // blocked popup is recoverable (the code is already copied; the user can retry);
-  // nuking this tab is not. We only fall back if the call actually throws.
+  // Desktop popup. We keep `noopener` (the opened page can't reach window.opener — no
+  // reverse-tabnabbing) but DROP `noreferrer`, so Instagram receives a Referer:
+  // refererless cold hits are part of what trips its 429 throttle on the logged-out
+  // ig.me redirect. Note: with `noopener` window.open() returns null *even on success*,
+  // so we must NOT treat null as "blocked" and fall back — doing that would nuke this
+  // tab. A blocked popup is recoverable (the code is copied; just click again); we only
+  // fall back to same-tab navigation if the call actually throws.
   try {
-    if (!isMobile() && typeof window !== 'undefined') {
-      // A compact window floating over celestual. Centered on the current window so it
-      // lands where the user is looking, even on a multi-monitor setup.
-      const w = 480
-      const h = Math.min(760, (window.screen?.availHeight || 800) - 60)
-      const baseX = window.screenLeft ?? window.screenX ?? 0
-      const baseY = window.screenTop ?? window.screenY ?? 0
-      const vw = window.innerWidth || document.documentElement.clientWidth || w
-      const vh = window.innerHeight || document.documentElement.clientHeight || h
-      const left = Math.max(0, baseX + (vw - w) / 2)
-      const top = Math.max(0, baseY + (vh - h) / 2)
-      window.open(url, '_blank', `popup,noopener,noreferrer,width=${w},height=${h},left=${left},top=${top}`)
-      return
-    }
-    // Mobile: a plain new context; the universal link hands off to the IG app.
-    window.open(url, '_blank', 'noopener,noreferrer')
+    const aw = window.screen?.availWidth || 1280
+    const ah = window.screen?.availHeight || 800
+    // Wide enough for Instagram's full DM layout (composer + thread), capped to screen.
+    const w = Math.min(720, Math.max(560, aw - 80))
+    const h = Math.min(840, ah - 60)
+    const baseX = window.screenLeft ?? window.screenX ?? 0
+    const baseY = window.screenTop ?? window.screenY ?? 0
+    const vw = window.innerWidth || document.documentElement.clientWidth || w
+    const vh = window.innerHeight || document.documentElement.clientHeight || h
+    const left = Math.max(0, baseX + (vw - w) / 2)
+    const top = Math.max(0, baseY + (vh - h) / 2)
+    window.open(url, '_blank', `popup,noopener,width=${w},height=${h},left=${left},top=${top}`)
   } catch {
     try {
       window.location.href = url
@@ -1256,8 +1263,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       const id = setTimeout(() => {
         setPhase('verified')
         const proof = proofRef.current
-        doneRef.current = setTimeout(() => onVerified(proof), 950)
-      }, 6000)
+        doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS)
+      }, 8000)
       return () => clearTimeout(id)
     }
     const tick = async () => {
@@ -1273,7 +1280,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         clearPending() // consumed — don't let a later reload re-open this overlay
         setPhase('verified')
         const proof = proofRef.current
-        doneRef.current = setTimeout(() => onVerified(proof), 950) // let the ✓ land before resuming
+        doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS) // let the ✓ land before resuming
       } else if (status === 'expired') {
         stopPoll()
         clearPending()
@@ -1300,6 +1307,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     openExternal(igDeepLink())
   }
   const inApp = isInAppBrowser()
+  const mobile = isMobile()
 
   // Cancelling for real (the X or the backdrop) abandons this attempt, so drop the
   // saved record — a later reload shouldn't reopen a verification the user dismissed.
@@ -1340,11 +1348,20 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         </div>
 
         {phase === 'verified' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 0' }}>
-            <span style={{ display: 'grid', placeItems: 'center', width: 54, height: 54, borderRadius: '50%', background: rgba(C.you, 0.14), border: `1px solid ${rgba(C.you, 0.4)}` }}>
-              <Icon name="check" size={26} color={C.you} stroke={2.2} />
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
+            {/* the badge sits inside a fixed box so the expanding rings don't shift layout */}
+            <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
+              {/* two staggered rings ripple outward, then the badge pops + glows */}
+              <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.you, 0.6)}` }} />
+              <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.you, 0.6)}`, animationDelay: '0.3s' }} />
+              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.you, 0.16), border: `1px solid ${rgba(C.you, 0.5)}`, boxShadow: `0 0 30px ${rgba(C.you, 0.45)}` }}>
+                <Icon name="check" size={30} color={C.you} stroke={2.4} />
+              </span>
             </span>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, color: C.cream }}>{t('verify.verified')}</div>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: 23, color: C.cream }}>{t('verify.verified')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '0.5px', color: rgba(C.you, 0.9) }}>
+              <Sonar C={C} color={C.you} size={11} /> {t('verify.verifiedSub')}
+            </div>
           </div>
         ) : phase === 'expired' ? (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1397,6 +1414,13 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
                 tell people they can come straight back, and offer the cleaner path. */}
             {inApp && (
               <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.you, 0.9) }}>{t('verify.inApp')}</p>
+            )}
+
+            {/* On desktop the little window opens Instagram's web DM. If you're not
+                already signed in, Instagram throttles the cold link (HTTP 429) — so
+                tell people to sign in within that window, then click again. */}
+            {!mobile && !inApp && (
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: C.muted }}>{t('verify.desktop')}</p>
             )}
 
             <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
