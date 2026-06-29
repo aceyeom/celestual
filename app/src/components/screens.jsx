@@ -8,7 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { startVerification, pollVerification, igDeepLink, igUsername, dmCode, savePending, loadPending, clearPending } from '../api/igverify.js'
+import { startVerification, pollVerification, igDeepLink, igUsername, dmCode, savePending, loadPending, clearPending, genProof } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -1137,7 +1137,7 @@ async function copyText(text) {
   }
 }
 
-export function IgVerifySheet({ C, handle, onVerified, onClose }) {
+export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
   const ig = igUsername()
@@ -1168,6 +1168,17 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     setErrCode('')
     setCopied(false)
     setToken('')
+    // Demo: never touch the backend (Meta isn't wired to it). Mint a local code +
+    // proof and let the polling effect auto-confirm after a beat, so the whole DM
+    // verification flow is shown end-to-end without a server or the database.
+    if (demo) {
+      proofRef.current = genProof()
+      hashRef.current = null
+      expiryRef.current = Date.now() + 10 * 60 * 1000
+      setToken(String(Math.floor(1000 + Math.random() * 9000)))
+      setPhase('waiting')
+      return
+    }
     try {
       const r = await startVerification(handle)
       proofRef.current = r.proof
@@ -1183,12 +1194,17 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
       setErrCode(e?.code || 'error')
       setPhase('error')
     }
-  }, [handle])
+  }, [handle, demo])
 
   // On open: resume a still-live verification for this handle if one was saved (the
   // user is back from Instagram, possibly after the tab reloaded), so we keep
   // watching the exact code they already DM'd. Otherwise start a fresh one.
   React.useEffect(() => {
+    // Demo never persists a pending record — always start a fresh local code.
+    if (demo) {
+      begin()
+      return stopPoll
+    }
     const saved = loadPending()
     if (saved && normHandle(saved.handle) === normHandle(handle)) {
       proofRef.current = saved.proof
@@ -1200,11 +1216,21 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     }
     begin()
     return stopPoll
-  }, [begin, handle])
+  }, [begin, handle, demo])
 
   // Poll for the DM while waiting; stop on success, expiry, or unmount.
   React.useEffect(() => {
     if (phase !== 'waiting') return
+    // Demo: there's no DM to poll for — auto-confirm after a short, visible beat so
+    // the "waiting for your DM…" state is actually seen before the ✓ lands.
+    if (demo) {
+      const id = setTimeout(() => {
+        setPhase('verified')
+        const proof = proofRef.current
+        doneRef.current = setTimeout(() => onVerified(proof), 950)
+      }, 7000)
+      return () => clearTimeout(id)
+    }
     const tick = async () => {
       if (Date.now() > expiryRef.current) {
         stopPoll()
@@ -1227,12 +1253,15 @@ export function IgVerifySheet({ C, handle, onVerified, onClose }) {
     }
     pollRef.current = setInterval(tick, 2500)
     return stopPoll
-  }, [phase, token, onVerified])
+  }, [phase, token, onVerified, demo])
 
   // Copy the code AND open the DM thread inside the same gesture, so mobile is
   // allowed to launch the Instagram app and write the clipboard.
   const copyAndOpen = () => {
     copyText(dmCode(token)).then(setCopied)
+    // Demo stays put — there's no real DM to send, and the overlay auto-confirms
+    // on its own, so leaving for Instagram would just strand the demonstration.
+    if (demo) return
     // openExternal opens Instagram in a NEW tab and keeps this one open so the overlay
     // keeps polling. Inside an in-app webview (where new tabs don't work) it navigates
     // same-tab instead; the saved record (savePending, above) lets us resume polling
