@@ -378,13 +378,17 @@ export default function App() {
   const onVerified = useCallback(
     (proof) => {
       if (!verify) return
-      const s = markVerified(verify.handle, proof)
+      // Demo: keep the proven session in memory only — never persist it (the demo is
+      // sandboxed and never writes real data). Otherwise record it like normal.
+      const s = demo
+        ? { verified: true, provider: 'instagram_dm', handle: verify.handle, proof, email: '', name: '' }
+        : markVerified(verify.handle, proof)
       setSession(s)
       const done = verify.onDone
       setVerify(null)
       if (done) done(proof)
     },
-    [verify],
+    [verify, demo],
   )
 
   // Resume a verification interrupted by the Instagram hand-off. Tapping "open
@@ -510,8 +514,11 @@ export default function App() {
       go('outofslots')
       return
     }
-    if (!verified && !demo) {
-      if (igVerifyEnabled()) {
+    // Confirm it's really you before sealing. Demo runs the same DM overlay (it
+    // auto-verifies locally, no backend); a real backend uses the live DM flow; the
+    // stub stands in only when neither is configured.
+    if (!verified) {
+      if (demo || igVerifyEnabled()) {
         openVerify(me, (proof) => doSeal(proof)) // overlay resumes the seal
         return
       }
@@ -524,7 +531,9 @@ export default function App() {
   // then advance to "them", so people confirm who they are before naming anyone.
   const continueFromYou = useCallback(() => {
     if (!isValidHandle(me)) return
-    if (igVerifyEnabled() && !demo && !verified) {
+    // Prove the @ first when verification is on — or in the demo, which runs the
+    // same overlay (auto-verifying locally) so the flow is shown end-to-end.
+    if (!verified && (demo || igVerifyEnabled())) {
       openVerify(me, () => go('them'))
       return
     }
@@ -578,7 +587,7 @@ export default function App() {
   // paths (no real backend) go straight to the locally-restored sky.
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
-    if (igVerifyEnabled() && !demo && !verified) {
+    if (!verified && (demo || igVerifyEnabled())) {
       openVerify(me, (proof) => restoreSky(proof))
       return
     }
@@ -748,9 +757,10 @@ export default function App() {
     established,
     // The saved sky is still loading, so the resting screen holds a placeholder.
     loadingSky: !skyLoaded,
-    // True when real Instagram verification is wired (vs. the testable local stub),
-    // so the "you" step knows to confirm the handle before advancing.
-    verifyEnabled: igVerifyEnabled(),
+    // True when the DM verification overlay will run before advancing — real
+    // Instagram verification when wired, OR the demo (which runs the same overlay,
+    // auto-verifying locally). Drives the "you" step's confirm hint + CTA.
+    verifyEnabled: igVerifyEnabled() || demo,
     slotsLeft: demo ? Infinity : slotsRemaining(slots),
     isMutual: (h) => matches.includes(normHandle(h)),
     matchCount: handles.filter((h) => matches.includes(normHandle(h))).length,
@@ -835,7 +845,7 @@ export default function App() {
 
       {/* Instagram DM verification — confirms the typed @ is really theirs, in-tab,
           without any OAuth. Resumes the flow (continue / seal) on success. */}
-      {verify && <IgVerifySheet C={C} handle={verify.handle} onVerified={onVerified} onClose={closeVerify} />}
+      {verify && <IgVerifySheet C={C} handle={verify.handle} demo={demo} onVerified={onVerified} onClose={closeVerify} />}
     </div>
   )
 }
