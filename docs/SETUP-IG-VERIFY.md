@@ -465,7 +465,9 @@ post, follow, or read anyone's content, and the person you later *enter* is neve
 Meta won't approve an app without a public **Privacy Policy URL** and a **User Data
 Deletion** path. Both ship in this repo as standalone, no-JavaScript pages under
 `app/public/` (so Meta's reviewer and crawler always see them), served at clean URLs
-via `cleanUrls` in `vercel.json`:
+via explicit rewrites in `vercel.json` (e.g. `/privacy` → `/privacy.html`). Those
+rewrites are listed **before** the SPA catch-all so the static pages win, while every
+other path — including `/demo` — still falls through to the app:
 
 | Meta App Dashboard field | Paste this URL |
 | --- | --- |

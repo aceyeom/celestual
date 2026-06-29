@@ -1221,14 +1221,16 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // Poll for the DM while waiting; stop on success, expiry, or unmount.
   React.useEffect(() => {
     if (phase !== 'waiting') return
-    // Demo: there's no DM to poll for — auto-confirm after a short, visible beat so
-    // the "waiting for your DM…" state is actually seen before the ✓ lands.
+    // Demo: there's no real DM to poll for. Auto-confirm 6 seconds after the code is
+    // shown — REGARDLESS of whether the user copies it, opens Instagram, or sends
+    // anything — so the "waiting for your DM…" state is actually seen before the ✓
+    // lands and the demo always completes on its own.
     if (demo) {
       const id = setTimeout(() => {
         setPhase('verified')
         const proof = proofRef.current
         doneRef.current = setTimeout(() => onVerified(proof), 950)
-      }, 7000)
+      }, 6000)
       return () => clearTimeout(id)
     }
     const tick = async () => {
