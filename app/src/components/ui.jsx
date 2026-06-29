@@ -408,7 +408,7 @@ export function GhostButton({ C, children, onClick, style }) {
 }
 
 // unified input. kind: 'email' | 'handle'. emphasis = larger hero styling.
-export function Field({ C, kind = 'handle', value, onChange, placeholder, accent, autoFocus, onEnter, emphasis }) {
+export function Field({ C, kind = 'handle', value, onChange, placeholder, accent, autoFocus, onEnter, emphasis, ariaLabel }) {
   const [focus, setFocus] = React.useState(false)
   const col = accent || C.you
   const SHADOW = makeShadow(C)
@@ -454,6 +454,10 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, accent
         onKeyDown={(e) => {
           if (e.key === 'Enter' && onEnter) onEnter()
         }}
+        // A placeholder is not an accessible name (it disappears on input and is
+        // skipped by many screen readers), so every field carries an aria-label —
+        // an explicit one when given, otherwise the placeholder text as a fallback.
+        aria-label={ariaLabel || placeholder}
         placeholder={placeholder}
         spellCheck={false}
         autoCapitalize="none"
@@ -642,7 +646,7 @@ export function ProfileButton({ C, handle, onClick }) {
 // always works) with a live typeahead dropdown layered on top. Results come from
 // the pluggable searchHandles() adapter — empty until a server-side provider is
 // wired, at which point suggestions appear automatically with no UI change.
-export function HandleSearchField({ C, value, onChange, placeholder, accent, autoFocus, onEnter }) {
+export function HandleSearchField({ C, value, onChange, placeholder, accent, autoFocus, onEnter, ariaLabel }) {
   const [results, setResults] = React.useState([])
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(-1)
@@ -681,6 +685,7 @@ export function HandleSearchField({ C, value, onChange, placeholder, accent, aut
           setOpen(true)
         }}
         placeholder={placeholder}
+        ariaLabel={ariaLabel}
         accent={accent}
         autoFocus={autoFocus}
         emphasis
