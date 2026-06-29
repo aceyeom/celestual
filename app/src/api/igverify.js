@@ -24,6 +24,14 @@ export const igVerifyEnabled = () => import.meta.env.VITE_IG_VERIFY_ENABLED === 
 export const igUsername = () => (import.meta.env.VITE_IG_USERNAME || 'celestual.us').replace(/^@+/, '')
 export const igDeepLink = () => `https://ig.me/m/${igUsername()}`
 
+// Desktop web equivalent. ig.me is a MOBILE universal-link domain: on a logged-out
+// desktop browser its redirect chain lands on a browser error page (chrome-error://
+// chromewebdata/), and Instagram's recovery redirect to /accounts/login is then
+// blocked by Chrome ("Unsafe attempt to load URL … from frame with URL chrome-error://
+// …"). The canonical www.instagram.com/m/<user> URL avoids that: when logged out it
+// redirects SAME-ORIGIN to the login page and, once signed in, opens the DM thread.
+export const igWebLink = () => `https://www.instagram.com/m/${igUsername()}`
+
 // The user doesn't DM the bare digits — they DM the code with a fixed prefix, e.g.
 // "star-1283". That prefix is the routing marker your ManyChat automation keys on:
 // its Condition only calls the backend ("the db ping") when the incoming DM contains

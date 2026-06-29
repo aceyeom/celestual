@@ -8,7 +8,7 @@
 // (the single theme). Nothing here defines its own hex or hard-codes English.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { startVerification, pollVerification, igDeepLink, igUsername, dmCode, savePending, loadPending, clearPending, genProof } from '../api/igverify.js'
+import { startVerification, pollVerification, igDeepLink, igWebLink, igUsername, dmCode, savePending, loadPending, clearPending, genProof } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
@@ -1106,21 +1106,27 @@ function isMobile() {
 //                of celestual. savePending + the resume effect restore the overlay.
 //   • In-app   → Instagram/Facebook/Line webviews can't open a real new window, so we
 //                navigate this one too; savePending lets the overlay resume on return.
-function openExternal(url) {
+//
+// `appUrl` is the ig.me universal link (mobile/in-app, hands off to the native app);
+// `webUrl` is the www.instagram.com equivalent used for the desktop popup. They differ
+// because ig.me only works as a real deep link on mobile — on a logged-out desktop it
+// dead-ends on a browser error page whose redirect to the IG login is then blocked.
+function openExternal(appUrl, webUrl = appUrl) {
   // Phones and in-app webviews: navigate the current tab. A second tab on mobile
   // becomes a broken empty tab once the universal link hands off to the IG app.
   if (isInAppBrowser() || isMobile()) {
     try {
-      window.location.href = url
+      window.location.href = appUrl
     } catch {
       /* ignore */
     }
     return
   }
+  const url = webUrl
   // Desktop popup. We keep `noopener` (the opened page can't reach window.opener — no
   // reverse-tabnabbing) but DROP `noreferrer`, so Instagram receives a Referer:
   // refererless cold hits are part of what trips its 429 throttle on the logged-out
-  // ig.me redirect. Note: with `noopener` window.open() returns null *even on success*,
+  // landing. Note: with `noopener` window.open() returns null *even on success*,
   // so we must NOT treat null as "blocked" and fall back — doing that would nuke this
   // tab. A blocked popup is recoverable (the code is copied; just click again); we only
   // fall back to same-tab navigation if the call actually throws.
@@ -1304,7 +1310,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     // The demo opens Instagram too — same as the real flow, so it looks and feels
     // identical — but there's no DM to actually watch for: the polling effect below
     // auto-confirms on its 6-second timer regardless of what the user sends.
-    openExternal(igDeepLink())
+    openExternal(igDeepLink(), igWebLink())
   }
   const inApp = isInAppBrowser()
   const mobile = isMobile()
