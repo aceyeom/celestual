@@ -79,6 +79,9 @@ every star is free, gated only by a server-side weekly slot budget.
 | Doc | What it covers |
 | --- | --- |
 | **[docs/GO-LIVE.md](./docs/GO-LIVE.md)** | **The manual checklist to connect everything and ship.** Start here. |
+| **[docs/PRODUCT-FRAMEWORK.md](./docs/PRODUCT-FRAMEWORK.md)** | **The product assessment framework** — invariants, metrics, persona matrix, stress tests, growth loops |
+| [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven personas (incl. the non-customer ones) the design is scored against |
+| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | Pricing strategy (what can never be sold, what can), revenue model + scenarios, cost/breakeven |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Detailed Supabase + Vercel + email deploy reference |
 | **[docs/SETUP-IG-VERIFY.md](./docs/SETUP-IG-VERIFY.md)** | **Instagram DM handle verification (no OAuth) — prove the typed @ is really theirs.** |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The anonymity / safety model, the integrity controls, and an operator checklist |

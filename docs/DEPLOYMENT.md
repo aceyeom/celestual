@@ -41,9 +41,9 @@ identity), `celestual_reminders`, and their RPCs. Every table has RLS on and no
 policies, so the RPCs are the only way in. It's re-runnable
 (`if not exists` / `create or replace`).
 
-Sanity check (note: `celestual_submit` NEVER reveals a match — it returns only
-`{"recorded": true}`; the mutual "yes" is delivered solely by the email queued to
-the **earlier** entrant):
+Sanity check (since `0003`, `celestual_submit` **instantly reveals** a mutual
+match to the **second, completing** entrant — see SECURITY.md §2.3; the email
+notification still goes solely to the **earlier** entrant):
 
 ```sql
 select celestual_submit('@me','@you','early@example.com');  -- {"recorded":true,"mutual":false,...} (earlier entrant)
