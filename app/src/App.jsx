@@ -14,6 +14,7 @@ import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
   RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
+import { ConstellationsScreen } from './components/beta.jsx'
 import { useI18n } from './i18n/index.js'
 
 const MOTION = 20
@@ -30,6 +31,7 @@ const SCREENS = {
   match: MatchScreen,
   outofslots: OutOfSlotsScreen,
   privacy: PrivacyScreen,
+  constellations: ConstellationsScreen,
 }
 
 // Where the @ becomes a star (normalized screen coords) — module-constant so it
@@ -47,6 +49,7 @@ const BG = {
   match: { warm: false, mode: 'match' },
   outofslots: { warm: true, variant: 'quiet', mode: 'idle' },
   privacy: { warm: true, variant: 'quiet', mode: 'idle' },
+  constellations: { warm: true, variant: 'quiet', mode: 'idle' },
 }
 
 const STORE = 'celestual:v1'
@@ -54,6 +57,10 @@ const INTRO_SEEN = 'celestual:introSeen'
 
 // /demo (at any base path) = zero verification, sandboxed (never writes real data).
 const isDemoPath = () => /(^|\/)demo\/?$/.test(window.location.pathname)
+// /beta = the same sandbox as /demo PLUS the beta features (the intent signal and
+// constellations). Everything beta stays local; nothing ever reaches the server.
+const isBetaPath = () => /(^|\/)beta\/?$/.test(window.location.pathname)
+const BETA_STORE = 'celestual:beta:v1'
 
 export default function App() {
   const { lang, setLang, langs, t } = useI18n()
@@ -67,8 +74,35 @@ export default function App() {
     }
   }, [])
 
-  const [demo, setDemo] = useState(isDemoPath)
+  const [beta] = useState(isBetaPath)
+  const [demo, setDemo] = useState(() => isDemoPath() || isBetaPath())
   const [session, setSession] = useState(getSession)
+  // ── beta state (all sandboxed; persisted only under the beta store) ──
+  const betaInit = useMemo(() => {
+    if (!isBetaPath()) return {}
+    try {
+      return JSON.parse(localStorage.getItem(BETA_STORE)) || {}
+    } catch {
+      return {}
+    }
+  }, [])
+  // The in-flight intent pick (the optional line on the "them" step), the sealed
+  // intents keyed by normalized handle (a map, so an async sky restore can never
+  // misalign them), and both revealed lines at a mutual match.
+  const [intent, setIntent] = useState('')
+  const [intents, setIntents] = useState(betaInit.intents || {})
+  const [matchIntent, setMatchIntent] = useState(null)
+  // Constellations this person is part of: { id, name, count, role }.
+  const [constellations, setConstellations] = useState(betaInit.constellations || [])
+  // A join link (?c=<community>) lands on the constellations screen as an invite.
+  const [pendingJoin, setPendingJoin] = useState(() => {
+    if (!isBetaPath()) return ''
+    try {
+      return (new URLSearchParams(window.location.search).get('c') || '').trim().slice(0, 48)
+    } catch {
+      return ''
+    }
+  })
   // The Instagram-DM verification overlay request: { handle, onDone } while open,
   // null otherwise. `onDone(proof)` resumes whatever the user was doing (continue
   // to "them", or finish the seal) once ownership is proven.
@@ -78,7 +112,11 @@ export default function App() {
   // confirmed at seal time). If they were mid-flow, resume there; a half-finished
   // send-off resolves to the resting sky. The explainer slideshow only plays on
   // "Find out" (or a replay via "how it works"), so it never appears unbidden.
-  const firstScreen = () => (init.screen === 'sendoff' ? 'resting' : init.screen || 'landing')
+  // A beta join link overrides the resume: the invite is why they came.
+  const firstScreen = () => {
+    if (isBetaPath() && pendingJoin) return 'constellations'
+    return init.screen === 'sendoff' ? 'resting' : init.screen || 'landing'
+  }
 
   const [screen, setScreen] = useState(firstScreen)
   const screenRef = useRef(screen)
@@ -217,6 +255,17 @@ export default function App() {
     }, 600)
     return () => clearTimeout(id)
   }, [me, altHandles, email, handles, sealTimes, established])
+
+  // Persist the beta world (sealed intents + constellations) on change. Lives in
+  // its own store so the sandbox never bleeds into the real app's state.
+  useEffect(() => {
+    if (!beta) return
+    try {
+      localStorage.setItem(BETA_STORE, JSON.stringify({ intents, constellations }))
+    } catch {
+      /* private mode / quota — fine to skip */
+    }
+  }, [beta, intents, constellations])
 
   // Keep the slot meter fresh for the current handle (server is the authority at
   // seal time; this feeds the meter + the out-of-slots countdown).
@@ -412,9 +461,13 @@ export default function App() {
   const doSeal = useCallback(
     async (proofOverride) => {
       const now = Date.now()
+      // Capture the optional intent NOW (state could change under the await) and
+      // seal it with this star. It stays invisible unless the pair turns mutual.
+      const chosen = beta ? intent : ''
       setSealedAt(now)
       setHandles((h) => [...h, normHandle(them)])
       setSealTimes((s) => [...s, now])
+      if (chosen) setIntents((m) => ({ ...m, [normHandle(them)]: chosen }))
       // Measure the live @ field NOW (it's still mounted) so the morph collapses from
       // exactly where the textbox is and the galaxy drift continues from that point.
       let origin = SENDOFF_ORIGIN
@@ -448,6 +501,13 @@ export default function App() {
         const rollback = () => {
           setHandles((h) => h.slice(0, -1))
           setSealTimes((s) => s.slice(0, -1))
+          if (chosen) {
+            setIntents((m) => {
+              const c = { ...m }
+              delete c[normHandle(them)]
+              return c
+            })
+          }
         }
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
@@ -480,6 +540,10 @@ export default function App() {
         if (res?.mutual) {
           const mh = normHandle(res.match || them)
           setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
+          // The mutual moment unseals both intents. The sandbox has no real other
+          // side, so beta seeds theirs (a line different from yours, so the reveal
+          // always shows two voices) — a live backend would return the real one.
+          if (beta) setMatchIntent({ you: chosen || '', them: res.matchIntent || (chosen === 'always' ? 'miss' : 'always') })
           go('match')
           return
         }
@@ -488,11 +552,18 @@ export default function App() {
         console.error(e)
         setHandles((h) => h.slice(0, -1))
         setSealTimes((s) => s.slice(0, -1))
+        if (chosen) {
+          setIntents((m) => {
+            const c = { ...m }
+            delete c[normHandle(them)]
+            return c
+          })
+        }
         setError(t('them.errGeneric'))
         go('them')
       }
     },
-    [me, them, email, demo, session, go, t],
+    [me, them, email, demo, beta, intent, session, go, t],
   )
 
   // Seal: validate, gate on the slot budget, then confirm it's really you before
@@ -598,6 +669,7 @@ export default function App() {
   // Multi-entry: gate on the slot budget here too (entering "more users").
   const checkAnother = useCallback(() => {
     setThem('')
+    setIntent('')
     setError('')
     if (!demo && slotsRemaining(slots) <= 0) {
       go('outofslots')
@@ -635,9 +707,19 @@ export default function App() {
       // is spent server-side at seal and never returned, so enter→peek→release can't
       // be cycled to sweep everyone you know.
       if (handle) setMatches((m) => m.filter((x) => x !== normHandle(handle)))
+      // Releasing the star releases its sealed intent with it.
+      if (handle) {
+        setIntents((m) => {
+          if (!(normHandle(handle) in m)) return m
+          const c = { ...m }
+          delete c[normHandle(handle)]
+          return c
+        })
+      }
       // Clear the last-entered handle so nothing stale (a ghost "@…") survives the
       // release; if this was the last star, the resting sky shows its empty state.
       setThem('')
+      setIntent('')
       setError('')
       if (handle) {
         try {
@@ -653,8 +735,13 @@ export default function App() {
     (i) =>
       i == null
         ? null
-        : { handle: handles[i] || null, time: sealTimes[i] || null, mutual: matches.includes(normHandle(handles[i] || '')) },
-    [handles, sealTimes, matches],
+        : {
+            handle: handles[i] || null,
+            time: sealTimes[i] || null,
+            mutual: matches.includes(normHandle(handles[i] || '')),
+            intent: intents[normHandle(handles[i] || '')] || null,
+          },
+    [handles, sealTimes, matches, intents],
   )
 
   // Reset local state to a clean slate (shared by sign-out and account deletion).
@@ -678,6 +765,16 @@ export default function App() {
     setError('')
     setSlots(FULL_SLOTS)
     setSynced(false)
+    // The beta world resets with the account.
+    setIntent('')
+    setIntents({})
+    setMatchIntent(null)
+    setConstellations([])
+    try {
+      localStorage.removeItem(BETA_STORE)
+    } catch {
+      /* ignore */
+    }
   }, [])
 
   const openAccount = useCallback(() => setAccountOpen(true), [])
@@ -750,8 +847,34 @@ export default function App() {
     setAltHandles((prev) => prev.filter((x) => normHandle(x) !== n))
   }, [])
 
+  // ── constellations (beta) ──
+  // Anyone can start one; there is no limit and no waitlist — a constellation is
+  // live the moment it's named. Joining the same community twice is a no-op.
+  const createConstellation = useCallback((name) => {
+    const n = (name || '').trim().replace(/\s+/g, ' ').slice(0, 48)
+    if (n.length < 2) return
+    setConstellations((prev) =>
+      prev.some((c) => c.name.toLowerCase() === n.toLowerCase())
+        ? prev
+        : [{ id: Date.now().toString(36), name: n, count: 1, role: 'created' }, ...prev],
+    )
+  }, [])
+  const joinConstellation = useCallback((name, count) => {
+    const n = (name || '').trim().replace(/\s+/g, ' ').slice(0, 48)
+    if (n.length < 2) return
+    setConstellations((prev) =>
+      prev.some((c) => c.name.toLowerCase() === n.toLowerCase())
+        ? prev
+        : [{ id: Date.now().toString(36), name: n, count: count || 1, role: 'joined' }, ...prev],
+    )
+  }, [])
+  const dismissInvite = useCallback(() => setPendingJoin(''), [])
+
   const ctx = {
     email, me, them, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
+    // The beta world: the intent signal + constellations (sandboxed like /demo).
+    beta, intent, setIntent, intents, matchIntent,
+    constellations, createConstellation, joinConstellation, pendingJoin, dismissInvite,
     // A real, established account (proven / demo / has a sky) vs. a bare typed
     // handle — gates the account UI so an unverified @ is never shown as "you".
     established,

@@ -51,6 +51,15 @@ Without Supabase env vars the app runs fully in **demo mode**. To talk to a real
 backend, copy `app/.env.example` to `app/.env.local` and paste your Supabase URL +
 anon key.
 
+**`/beta`** is the same sandbox as `/demo` plus the beta features: the **intent
+signal** (an optional "why them?" line sealed with a star, both sides revealed
+only on a mutual match) and **constellations** (communities sharing one sky —
+create one, join one, share one link that carries it; counts follow the 100
+rule: hidden under 100, shown at 100+; no waitlists). A join link looks like
+`/beta?c=<community name>`. Everything beta lives in `app/src/components/beta.jsx`
+and persists only to `localStorage` (`celestual:beta:v1`) — nothing reaches the
+server.
+
 ## Build
 
 ```bash

@@ -15,6 +15,7 @@ import {
   Brandmark, Glisten, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   StepDots, BackBtn, Icon, Sonar, rgba, RADIUS, SPACE, makeShadow,
 } from './ui.jsx'
+import { IntentPicker, IntentReveal, BetaChip } from './beta.jsx'
 
 // Shared centered column: at least one dynamic-viewport tall (so the flex spacers
 // fill phone and desktop alike), free to grow taller and scroll when content or
@@ -268,8 +269,9 @@ export function LandingScreen({ C, t: screenT, ctx }) {
   const start = () => ctx.findOut()
   return (
     <GalaxyShell>
-      <div className="enter" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <Brandmark C={C} />
+        {ctx.beta && <BetaChip C={C} />}
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -310,9 +312,16 @@ export function LandingScreen({ C, t: screenT, ctx }) {
           .
         </p>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.enterDemo()} style={{ padding: '2px 6px', fontSize: 11, color: C.muted }}>
-            {t('landing.demo')}
-          </GhostButton>
+          {/* the beta IS the sandbox — offer its constellations instead of the demo */}
+          {ctx.beta ? (
+            <GhostButton C={C} onClick={() => ctx.go('constellations')} style={{ padding: '2px 6px', fontSize: 11, color: C.muted }}>
+              ✦ {t('resting.constel')}
+            </GhostButton>
+          ) : (
+            <GhostButton C={C} onClick={() => ctx.enterDemo()} style={{ padding: '2px 6px', fontSize: 11, color: C.muted }}>
+              {t('landing.demo')}
+            </GhostButton>
+          )}
         </div>
       </div>
     </GalaxyShell>
@@ -499,6 +508,17 @@ export function ThemScreen({ C, ctx }) {
             </div>
           )}
         </div>
+
+        {/* beta: the optional intent — a line sealed with the star, revealed only
+            if it's ever mutual. Drops in once a real @ is named, with the same
+            reveal motion as the optional email on the YOU step. */}
+        {ctx.beta && (
+          <Collapse open={valid}>
+            <div style={{ paddingTop: 2 }}>
+              <IntentPicker C={C} value={ctx.intent} onChange={ctx.setIntent} />
+            </div>
+          </Collapse>
+        )}
       </div>
 
       <PrimaryButton C={C} disabled={!valid || busy} onClick={onSeal}>
@@ -580,6 +600,13 @@ export function RestingScreen({ C, ctx }) {
               <SlotMeter C={C} slots={ctx.slots} t={t} />
             </div>
           )}
+          {ctx.beta && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GhostButton C={C} onClick={() => ctx.go('constellations')} style={{ padding: '2px 6px', fontSize: 12, color: C.muted }}>
+                ✦ {t('resting.constel')}
+              </GhostButton>
+            </div>
+          )}
         </div>
       </GalaxyShell>
     )
@@ -631,6 +658,11 @@ export function RestingScreen({ C, ctx }) {
           <Icon name="plus" size={15} color={C.cream} stroke={2} /> {t('resting.another')}
         </OutlineButton>
         {!ctx.demo && <SlotMeter C={C} slots={ctx.slots} t={t} />}
+        {ctx.beta && (
+          <GhostButton C={C} onClick={() => ctx.go('constellations')} style={{ padding: '2px 6px', fontSize: 12, color: C.muted }}>
+            ✦ {t('resting.constel')}
+          </GhostButton>
+        )}
       </div>
     </GalaxyShell>
   )
@@ -714,6 +746,14 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
             </>
           )}
         </div>
+
+        {/* beta: the line sealed with this star — quietly, in the person's own
+            words. It reads like an inscription, never a status field. */}
+        {info.intent && (
+          <div style={{ padding: '0 0 15px', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, lineHeight: 1.4, color: rgba(C.cream, 0.8) }}>
+            “{t('intent.' + info.intent)}”
+          </div>
+        )}
 
         <Rule C={C} delay={0.16} />
 
@@ -907,6 +947,8 @@ export function MatchScreen({ C, ctx }) {
           <span style={{ color: C.muted, fontSize: 15 }}>✦</span>
           <HandleChip C={C} handle={ctx.them || 'them'} color={C.them} big />
         </div>
+        {/* beta: both sealed intents unseal here — the payoff of the whole signal */}
+        {ctx.beta && ctx.matchIntent && <IntentReveal C={C} you={ctx.matchIntent.you} them={ctx.matchIntent.them} />}
       </div>
 
       <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: 10 }}>
