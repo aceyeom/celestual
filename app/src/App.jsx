@@ -14,7 +14,7 @@ import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
   RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
-import { ConstellationsScreen } from './components/beta.jsx'
+import { ConstellationsScreen, INTENTS } from './components/beta.jsx'
 import { useI18n } from './i18n/index.js'
 
 const MOTION = 20
@@ -49,7 +49,9 @@ const BG = {
   match: { warm: false, mode: 'match' },
   outofslots: { warm: true, variant: 'quiet', mode: 'idle' },
   privacy: { warm: true, variant: 'quiet', mode: 'idle' },
-  constellations: { warm: true, variant: 'quiet', mode: 'idle' },
+  // Constellations live over the real galaxy (dimmed for reading) — a star
+  // chart belongs in the sky, not on a flat panel.
+  constellations: { warm: false, mode: 'idle', dim: 0.62 },
 }
 
 const STORE = 'celestual:v1'
@@ -90,7 +92,18 @@ export default function App() {
   // intents keyed by normalized handle (a map, so an async sky restore can never
   // misalign them), and both revealed lines at a mutual match.
   const [intent, setIntent] = useState('')
-  const [intents, setIntents] = useState(betaInit.intents || {})
+  const [intents, setIntents] = useState(() => {
+    // Migrate any earlier beta store onto the current line set; drop unknowns so
+    // a stale id can never render as a raw key.
+    const legacy = { mend: 'sorry', always: 'miss' }
+    const raw = betaInit.intents || {}
+    const out = {}
+    for (const k in raw) {
+      const v = legacy[raw[k]] || raw[k]
+      if (INTENTS.includes(v)) out[k] = v
+    }
+    return out
+  })
   const [matchIntent, setMatchIntent] = useState(null)
   // Constellations this person is part of: { id, name, count, role }.
   const [constellations, setConstellations] = useState(betaInit.constellations || [])
@@ -543,7 +556,7 @@ export default function App() {
           // The mutual moment unseals both intents. The sandbox has no real other
           // side, so beta seeds theirs (a line different from yours, so the reveal
           // always shows two voices) — a live backend would return the real one.
-          if (beta) setMatchIntent({ you: chosen || '', them: res.matchIntent || (chosen === 'always' ? 'miss' : 'always') })
+          if (beta) setMatchIntent({ you: chosen || '', them: res.matchIntent || (chosen === 'miss' ? 'unsaid' : 'miss') })
           go('match')
           return
         }

@@ -192,14 +192,24 @@ const en = {
   // ── beta (/beta) ──
   'beta.chip': 'beta',
   // the intent signal — an optional line sealed with a star, revealed only if
-  // it's ever mutual (never gates matching)
+  // it's ever mutual (never gates matching). Every line must survive a
+  // screenshot: it gives something — an apology, an unsaid truth — it never
+  // begs. `intent.<id>` is the pick form (in your words, about them);
+  // `intent.<id>.r` is the reveal form the OTHER person reads at the mutual
+  // moment — pronouns flip to face them where the line allows it.
   'intent.label': 'Why them?',
   'intent.optional': 'optional',
-  'intent.note': 'Sealed with your star. They see it only if it’s ever mutual.',
+  'intent.note': 'Sealed with your star. Revealed only if it’s ever mutual.',
   'intent.miss': 'i miss them',
-  'intent.unsaid': 'i never got to say something',
-  'intent.mend': 'i want to make things right',
-  'intent.always': 'i can’t stop thinking about them',
+  'intent.miss.r': 'i miss you',
+  'intent.sorry': 'i owe them an apology',
+  'intent.sorry.r': 'i owe you an apology',
+  'intent.unsaid': 'i never said what i should have',
+  'intent.unsaid.r': 'i never said what i should have',
+  'intent.drift': 'we shouldn’t have lost touch',
+  'intent.drift.r': 'we shouldn’t have lost touch',
+  'intent.know': 'i just need to know',
+  'intent.know.r': 'i just needed to know',
   // match — the unsealing
   'match.revealKicker': 'sealed until now',
   'match.you': 'you',
@@ -207,22 +217,23 @@ const en = {
   // constellations — communities sharing one sky (no waitlist, ever)
   'resting.constel': 'your constellations',
   'constel.title': 'Constellations',
-  'constel.body': 'A constellation is a community sharing one sky — a campus, a team, a scene. Anyone can start one, and it’s live the moment it’s named.',
-  'constel.yours': 'Yours',
-  'constel.none': 'You’re not in one yet. Start one, or join one below.',
+  'constel.body': 'Communities sharing one sky. Anyone can start one — it’s alive the moment it’s named.',
+  'constel.none': 'Your sky has no constellations yet.',
   'constel.created': 'started by you',
   'constel.joined': 'joined',
   'constel.count': '{n} stars',
+  'constel.pulse': '{n} sealed this week',
   'constel.gathering': 'still gathering',
-  'constel.share': 'Share it forward',
-  'constel.shared': 'Copied — send it on Instagram',
+  'constel.share': 'share it forward',
+  'constel.shared': 'copied — send it on Instagram',
   'constel.shareMsg': 'This is spreading in your world. Join it.',
-  'constel.startTitle': 'Start a constellation',
+  'constel.startTitle': 'start a constellation',
   'constel.startNote': 'Name a real community people would recognize — a school, a team, a scene. Everyone in it can carry it further.',
   'constel.namePlaceholder': 'name your community',
-  'constel.startCta': 'Create it',
+  'constel.startCta': 'Set it in the sky',
+  'constel.glyphNote': 'the figure it will draw in the sky',
   'constel.suggested': 'Near your world',
-  'constel.join': 'Join',
+  'constel.join': 'join',
   'constel.inviteKicker': 'you were invited',
   'constel.inviteBody': 'It’s spreading on Celestual. Join it and it grows.',
   'constel.inviteCta': 'Join this constellation',
