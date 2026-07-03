@@ -3,10 +3,56 @@
 // the whole product reads as one cosmos on every screen.
 import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
-import { makeColors, rgba, RADIUS, SPACE, makeShadow } from '../theme.js'
+import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
 
-export { makeColors, rgba, RADIUS, SPACE, makeShadow }
+export { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS }
+
+// ── dialog accessibility ──────────────────────────────────────────────────────
+// One shared hook for every overlay (account sheet, verify, star readout, nova):
+// moves focus in, traps Tab inside, closes on Escape, and restores focus to
+// wherever the person was. Attach the returned ref to the dialog element and
+// give it role="dialog" aria-modal="true" tabIndex={-1}.
+export function useDialog(onClose) {
+  const ref = React.useRef(null)
+  const closeRef = React.useRef(onClose)
+  closeRef.current = onClose
+  React.useEffect(() => {
+    const prev = document.activeElement
+    const el = ref.current
+    const focusables = () =>
+      el
+        ? Array.from(el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(
+            (x) => !x.disabled && x.offsetParent !== null,
+          )
+        : []
+    const first = focusables()[0]
+    ;(first || el)?.focus?.({ preventScroll: true })
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        closeRef.current && closeRef.current()
+      } else if (e.key === 'Tab') {
+        const list = focusables()
+        if (!list.length) return
+        const i = list.indexOf(document.activeElement)
+        if (e.shiftKey && i <= 0) {
+          e.preventDefault()
+          list[list.length - 1].focus()
+        } else if (!e.shiftKey && i === list.length - 1) {
+          e.preventDefault()
+          list[0].focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('keydown', onKey, true)
+      if (prev && prev.focus) prev.focus({ preventScroll: true })
+    }
+  }, [])
+  return ref
+}
 
 // Calm gradient backdrop for the entry screens (no canvas). It shares the deep
 // cosmic-violet base with the galaxy and only lets the two star accents glow
@@ -38,7 +84,7 @@ export function WarmBg({ C, variant = 'center', children }) {
 // instance up so overlays (e.g. the star tag) can read the star's screen
 // position each frame; `origin` is the normalized point the send-off drift
 // starts from — where the @ morphed into a star.
-export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, seals = 0, origin, onReady, style }) {
+export function GalaxyCanvas({ mode = 'idle', dim, you, them, sealColor, motion = 20, seals = 0, origin, onReady, style }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   React.useEffect(() => {
@@ -85,6 +131,10 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, seals
   React.useEffect(() => {
     if (field.current) field.current.setPalette(you, them)
   }, [you, them])
+  // Nova seal style: the light the person's own sealed stars burn with.
+  React.useEffect(() => {
+    if (field.current && field.current.setSealColor) field.current.setSealColor(sealColor || null)
+  }, [sealColor])
   return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', ...style }} />
 }
 
@@ -92,7 +142,7 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, seals
 // every star floating in the field stays identifiable. Reads the galaxy's live
 // per-star `sealedScreen` positions each frame and moves each tag imperatively
 // (no React re-render churn). `handles` is aligned with the stars by index.
-export function StarTags({ fieldRef, handles, mutual, color, matchColor, show }) {
+export function StarTags({ fieldRef, handles, mutual, color, matchColor, show, onTap }) {
   const refs = React.useRef([])
   const widths = React.useRef([]) // cached tag widths (stable per handle) — avoid per-frame layout
   React.useEffect(() => {
@@ -138,6 +188,7 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
         const ps = arr[i]
         if (!(show && !!handles[i] && ps && ps.vis)) {
           el.style.opacity = '0'
+          el.style.pointerEvents = 'none'
           continue
         }
         // Tag width is fixed for a given handle, so measure once and cache rather
@@ -168,10 +219,12 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
         )
         if (starOff || outOfBounds || hit) {
           el.style.opacity = '0'
+          el.style.pointerEvents = 'none'
           continue
         }
         placed.push(rect)
         el.style.opacity = '1'
+        el.style.pointerEvents = 'auto'
         el.style.transform = `translate(${x}px, ${y}px)`
       }
       raf = requestAnimationFrame(tick)
@@ -183,18 +236,24 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
       window.removeEventListener('scroll', invalidate)
     }
   }, [show, fieldRef, handles])
-  const col = color || '#FF8C66'
+  // Tag chips read in the single rose token by default — the stale old-palette
+  // fallback ('#FF8C66') used to contradict theme.js here.
+  const col = color || TOKENS.them
   // Mutual stars read in the warm "match" accent (and carry a ✦) so a busy sky
   // shows which stars found their way back, without opening each one.
   const mset = new Set((mutual || []).map(normHandle).filter(Boolean))
   return handles.map((h, i) => {
     const isM = mset.has(normHandle(h))
     const tagCol = isM ? matchColor || col : col
+    // A real button, so the sky's stars are reachable by keyboard and screen
+    // reader — not only by canvas hit-testing. Visibility (opacity + pointer
+    // events) is driven imperatively per frame above.
     return (
-      <div
+      <button
         key={i}
         ref={(el) => (refs.current[i] = el)}
-        aria-hidden
+        onClick={onTap ? () => onTap(i) : undefined}
+        aria-label={'@' + h}
         style={{
           position: 'fixed',
           left: 0,
@@ -211,6 +270,7 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
           gap: 2,
           padding: '3px 10px',
           borderRadius: RADIUS.chip,
+          cursor: 'pointer',
           background: isM ? rgba(tagCol, 0.14) : 'rgba(10,8,16,0.42)',
           border: `1px solid ${rgba(tagCol, isM ? 0.55 : 0.3)}`,
           backdropFilter: 'blur(2px)',
@@ -225,7 +285,7 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
         {isM && <span style={{ color: rgba(tagCol, 0.95) }}>✦</span>}
         <span style={{ color: rgba(tagCol, 0.95) }}>@</span>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{h}</span>
-      </div>
+      </button>
     )
   })
 }
@@ -235,14 +295,16 @@ export function StarTags({ fieldRef, handles, mutual, color, matchColor, show })
 // ignites and glistens; it then dissolves as the galaxy's send-off drift — which
 // starts from this same point — carries it away with a trail. A full-screen,
 // one-shot overlay owned by App so it survives the screen change underneath it.
-export function Liftoff({ C, handle, geom }) {
+export function Liftoff({ C, handle, geom, col }) {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 402
   const vh = typeof window !== 'undefined' ? window.innerHeight : 700
   const cx = geom?.cx ?? vw / 2
   const cy = geom?.cy ?? vh * 0.43
   const w = geom?.w ?? Math.min(360, vw - 48)
   const h = geom?.h ?? 60
-  const spikeBg = (deg) => `linear-gradient(${deg}deg, transparent, ${rgba(C.you, 0.7)} 34%, #fff 50%, ${rgba(C.you, 0.7)} 66%, transparent)`
+  // `col` is the Nova seal style's light; defaults to the amber "you" token.
+  const hue = col || C.you
+  const spikeBg = (deg) => `linear-gradient(${deg}deg, transparent, ${rgba(hue, 0.7)} 34%, #fff 50%, ${rgba(hue, 0.7)} 66%, transparent)`
   // each star layer is a 0×0 anchor at (cx,cy); children center on it with margins
   const at0 = { position: 'absolute', left: 0, top: 0 }
   return (
@@ -252,7 +314,7 @@ export function Liftoff({ C, handle, geom }) {
         className="lo-box"
         style={{
           position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: RADIUS.field,
-          background: C.ink2, border: `1.5px solid ${rgba(C.you, 0.55)}`, boxShadow: `0 0 26px ${rgba(C.you, 0.18)}`,
+          background: C.ink2, border: `1.5px solid ${rgba(hue, 0.55)}`, boxShadow: `0 0 26px ${rgba(hue, 0.18)}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         }}
       >
@@ -262,10 +324,10 @@ export function Liftoff({ C, handle, geom }) {
       </div>
       {/* the star igniting where the slit pinched shut */}
       <div style={{ position: 'absolute', left: cx, top: cy, width: 0, height: 0 }}>
-        <span className="lo-halo" style={{ ...at0, width: 156, height: 156, marginLeft: -78, marginTop: -78, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.you, 0.5)}, ${rgba(C.them, 0.12)} 45%, transparent 68%)` }} />
+        <span className="lo-halo" style={{ ...at0, width: 156, height: 156, marginLeft: -78, marginTop: -78, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(hue, 0.5)}, ${rgba(C.them, 0.12)} 45%, transparent 68%)` }} />
         <span className="lo-spike" style={{ ...at0, width: 140, height: 2, marginLeft: -70, marginTop: -1, background: spikeBg(90) }} />
         <span className="lo-spike" style={{ ...at0, width: 2, height: 140, marginLeft: -1, marginTop: -70, background: spikeBg(180) }} />
-        <span className="lo-core" style={{ ...at0, width: 16, height: 16, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(C.you, 0.85)}, 0 0 58px 20px ${rgba(C.you, 0.4)}` }} />
+        <span className="lo-core" style={{ ...at0, width: 16, height: 16, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(hue, 0.85)}, 0 0 58px 20px ${rgba(hue, 0.4)}` }} />
       </div>
     </div>
   )
@@ -332,7 +394,7 @@ export function PrimaryButton({ C, children, onClick, disabled, style }) {
         fontWeight: 600,
         fontSize: 16,
         letterSpacing: '.2px',
-        color: disabled ? C.muted : '#1a0f0a',
+        color: disabled ? C.muted : C.onYou,
         background: disabled ? C.ink3 : `linear-gradient(180deg, ${C.you}, ${rgba(C.you, 0.86)})`,
         boxShadow: disabled ? 'none' : SHADOW.cta(C.you, h),
         transform: h && !disabled ? 'translateY(-1.5px)' : 'none',
@@ -552,19 +614,38 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
   const [open, setOpen] = React.useState(false)
   const SHADOW = makeShadow(C)
   const ref = React.useRef(null)
+  const menuRef = React.useRef(null)
   React.useEffect(() => {
     if (!open) return
     const onDoc = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
+    // Keyboard path: Escape dismisses, arrows walk the locales.
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const items = menuRef.current ? Array.from(menuRef.current.querySelectorAll('button')) : []
+        if (!items.length) return
+        const i = items.indexOf(document.activeElement)
+        const next = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length
+        items[next].focus()
+      }
+    }
     document.addEventListener('pointerdown', onDoc)
-    return () => document.removeEventListener('pointerdown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Language"
+        aria-haspopup="menu"
+        aria-expanded={open}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 11px',
           borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
@@ -577,6 +658,8 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
       </button>
       {open && (
         <div
+          ref={menuRef}
+          role="menu"
           style={{
             position: 'absolute', top: 40, right: 0, zIndex: 30, minWidth: 150, padding: 6,
             borderRadius: RADIUS.card, background: rgba(C.ink2, 0.96), border: `1px solid ${C.line}`,
@@ -587,6 +670,7 @@ export function LanguageSwitcher({ C, lang, langs, onChange }) {
           {Object.entries(langs).map(([code, name]) => (
             <button
               key={code}
+              role="menuitem"
               onClick={() => {
                 onChange(code)
                 setOpen(false)
@@ -624,7 +708,7 @@ export function ProfileButton({ C, handle, onClick }) {
       }}
     >
       <span style={{ display: 'grid', placeItems: 'center', width: 23, height: 23, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, ${rgba(C.you, 0.95)}, ${rgba(C.them, 0.78)})`, flexShrink: 0 }}>
-        <Icon name="star" size={12} color="#1a0f0a" stroke={2} />
+        <Icon name="star" size={12} color={C.onYou} stroke={2} />
       </span>
       {handle ? (
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

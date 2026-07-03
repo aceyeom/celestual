@@ -32,7 +32,22 @@ import { Glisten, Brandmark, PrimaryButton, GhostButton, BackBtn, Icon } from '.
 // one who never said it, the drifted friend, the closure-seeker). Ids resolve
 // via `intent.<id>` (the pick form, third person) and `intent.<id>.r` (the
 // reveal form shown to the other person, second person where it differs).
+// Three of the five aren't romantic — the product carries EVERYTHING unsaid
+// (apologies, lost friendships), not only crushes. These five are free forever.
 export const INTENTS = ['miss', 'sorry', 'unsaid', 'drift', 'know']
+
+// Nova's write-your-own line rides the same intent pipeline as 'custom:<text>' —
+// sealed, hidden while one-sided, revealed only at a mutual match, exactly like
+// the five. (The five stay free; only AUTHORING a new line is Nova's.)
+export const isCustomIntent = (v) => typeof v === 'string' && v.startsWith('custom:')
+export const customIntentText = (v) => (isCustomIntent(v) ? v.slice(7) : '')
+// Resolve any intent value to its display line. `reveal` = the form the OTHER
+// person reads at the mutual moment (pronouns flip where the canned line allows).
+export const intentLine = (t, v, reveal) => {
+  if (!v) return ''
+  if (isCustomIntent(v)) return customIntentText(v)
+  return t('intent.' + v + (reveal ? '.r' : ''))
+}
 
 // The 100 rule: a small number feels empty and can expose who's in it; a large
 // number feels real and hides everyone inside it.
@@ -69,6 +84,36 @@ export function inviteCount(name) {
 function weeklyPulse(name) {
   const rnd = hashStream(name + '·pulse')
   return 6 + Math.floor(rnd() * 34)
+}
+
+// THE WEEKLY FEELING — the community's most-sealed line this week ("this week
+// here — 'i miss them'"). An AGGREGATE of intent categories, counts only, and
+// gated by the 100 rule: under 100 members an aggregate could start pointing at
+// people (I-1), so it simply never shows. At 100+ it's the constellation's
+// heartbeat — and its most screenshottable line. Seeded per name in the sandbox;
+// a live backend would return the real weekly aggregate.
+function weeklyFeeling(name) {
+  const rnd = hashStream(name + '·feel')
+  return INTENTS[Math.floor(rnd() * INTENTS.length)]
+}
+
+// SEAL NIGHT — one night the whole constellation seals together. A community
+// ritual (the strongest antidote to "doing this alone feels weak"), NEVER an
+// expiring offer: no deadlines on feelings, nothing is lost if you miss it
+// (I-5). Seeded 2–6 days out per name; stable within a visit.
+function sealNight(name) {
+  const rnd = hashStream(name + '·night')
+  const days = 2 + Math.floor(rnd() * 5)
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d
+}
+function nightDay(name, lang) {
+  try {
+    return new Intl.DateTimeFormat(lang, { weekday: 'long' }).format(sealNight(name)).toLowerCase()
+  } catch {
+    return ''
+  }
 }
 
 // Seeded joinable constellations so the screen demos the whole loop cold.
@@ -148,7 +193,7 @@ function MonoLabel({ C, children, optional, accent }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 2px' }}>
       <span style={{ fontSize: 11, letterSpacing: '1.5px', fontFamily: "'Space Mono', monospace", color: C.muted, textTransform: 'uppercase' }}>{children}</span>
       {optional && (
-        <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(accent || C.you, 0.92), background: rgba(accent || C.you, 0.1), border: `1px solid ${rgba(accent || C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
+        <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(accent || C.you, 0.92), background: rgba(accent || C.you, 0.1), border: `1px solid ${rgba(accent || C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
       )}
     </div>
   )
@@ -178,7 +223,7 @@ function HairRule({ C }) {
 export function BetaChip({ C }) {
   const { t } = useI18n()
   return (
-    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: rgba(C.you, 0.92), background: rgba(C.you, 0.08), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '3px 10px' }}>
+    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: rgba(C.you, 0.92), background: rgba(C.you, 0.08), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '3px 10px' }}>
       {t('beta.chip')}
     </span>
   )
@@ -188,8 +233,27 @@ export function BetaChip({ C }) {
 // No boxes, no form chrome: the lines sit bare on the page in the headline serif
 // italic — feelings, not fields. Tapping one ignites it (a rose ✦ and a soft
 // glow); tapping again releases it. Reads like choosing an inscription.
-export function IntentPicker({ C, value, onChange }) {
+//
+// The sixth row is Nova's "write your own": the five canned lines are free
+// forever; only AUTHORING is behind the tier. Locked, it's one quiet line with a
+// small nova mark — never a box, never urgency; tapping it opens the Nova sheet.
+export function IntentPicker({ C, value, onChange, nova, onNovaOpen }) {
   const { t } = useI18n()
+  const customOn = isCustomIntent(value)
+  const customRef = React.useRef(null)
+  React.useEffect(() => {
+    if (customOn && customRef.current) customRef.current.focus()
+  }, [customOn])
+  const line = (on) => ({
+    fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17.5, lineHeight: 1.35,
+    color: on ? C.cream : rgba(C.muted, 0.9),
+    textShadow: on ? `0 0 24px ${rgba(C.them, 0.4)}` : 'none',
+    transition: 'color .25s, text-shadow .25s',
+  })
+  const bullet = (on) => ({
+    width: 13, flexShrink: 0, color: C.them, fontSize: 12, opacity: on ? 1 : 0.18,
+    transition: 'opacity .25s, text-shadow .25s', textShadow: on ? `0 0 10px ${rgba(C.them, 0.85)}` : 'none',
+  })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.xs }}>
       <MonoLabel C={C} optional={t('intent.optional')} accent={C.them}>{t('intent.label')}</MonoLabel>
@@ -202,25 +266,55 @@ export function IntentPicker({ C, value, onChange }) {
               onClick={() => onChange(on ? '' : id)}
               style={{ display: 'flex', alignItems: 'baseline', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '7px 2px' }}
             >
-              <span
-                aria-hidden
-                style={{ width: 13, flexShrink: 0, color: C.them, fontSize: 12, opacity: on ? 1 : 0.18, transition: 'opacity .25s, text-shadow .25s', textShadow: on ? `0 0 10px ${rgba(C.them, 0.85)}` : 'none' }}
-              >
-                {on ? '✦' : '·'}
-              </span>
-              <span
-                style={{
-                  fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17.5, lineHeight: 1.35,
-                  color: on ? C.cream : rgba(C.muted, 0.9),
-                  textShadow: on ? `0 0 24px ${rgba(C.them, 0.4)}` : 'none',
-                  transition: 'color .25s, text-shadow .25s',
-                }}
-              >
-                {t('intent.' + id)}
-              </span>
+              <span aria-hidden style={bullet(on)}>{on ? '✦' : '·'}</span>
+              <span style={line(on)}>{t('intent.' + id)}</span>
             </button>
           )
         })}
+        {/* nova: write your own — additive only; nothing above is ever locked */}
+        {nova && !nova.active ? (
+          <button
+            onClick={onNovaOpen}
+            style={{ display: 'flex', alignItems: 'baseline', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '7px 2px' }}
+          >
+            <span aria-hidden style={bullet(false)}>·</span>
+            <span style={line(false)}>{t('intent.custom')}</span>
+            <span aria-hidden style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: rgba(C.you, 0.75), alignSelf: 'center' }}>
+              ✧ nova
+            </span>
+          </button>
+        ) : nova && nova.active && !customOn ? (
+          <button
+            onClick={() => onChange('custom:')}
+            style={{ display: 'flex', alignItems: 'baseline', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '7px 2px' }}
+          >
+            <span aria-hidden style={bullet(false)}>·</span>
+            <span style={line(false)}>{t('intent.custom')}</span>
+          </button>
+        ) : nova && nova.active && customOn ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 2px' }}>
+            <span aria-hidden style={bullet(true)}>✦</span>
+            <input
+              ref={customRef}
+              type="text"
+              value={customIntentText(value)}
+              onChange={(e) => onChange('custom:' + e.target.value.slice(0, 90))}
+              onKeyDown={(e) => {
+                // an emptied line releases back to "nothing chosen"
+                if (e.key === 'Escape' || (e.key === 'Backspace' && customIntentText(value) === '')) onChange('')
+              }}
+              placeholder={t('intent.customPlaceholder')}
+              aria-label={t('intent.custom')}
+              maxLength={90}
+              style={{
+                flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none',
+                borderBottom: `1px solid ${rgba(C.them, 0.35)}`, paddingBottom: 2,
+                fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17.5, lineHeight: 1.35,
+                color: C.cream, caretColor: C.them,
+              }}
+            />
+          </div>
+        ) : null}
       </div>
       <QuietHint C={C} icon="lock" color={rgba(C.them, 0.85)}>{t('intent.note')}</QuietHint>
     </div>
@@ -230,12 +324,13 @@ export function IntentPicker({ C, value, onChange }) {
 // ── INTENT REVEAL (match screen) ───────────────────────────────────────────────
 // The unsealing. Your line stays in your words ("i owe them an apology"); theirs
 // arrives flipped to face you ("i owe you an apology") — the line they sealed
-// about you, finally addressed to you.
-export function IntentReveal({ C, you, them }) {
+// about you, finally addressed to you. `youCol`/`themCol` carry each side's seal
+// light — pure colour, no badge, no branding (I-4).
+export function IntentReveal({ C, you, them, youCol, themCol }) {
   const { t } = useI18n()
   const rows = [
-    you && { key: 'you', label: t('match.you'), col: C.you, line: t('intent.' + you) },
-    them && { key: 'them', label: t('match.them'), col: C.them, line: t('intent.' + them + '.r') },
+    you && { key: 'you', label: t('match.you'), col: youCol || C.you, line: intentLine(t, you) },
+    them && { key: 'them', label: t('match.them'), col: themCol || C.them, line: intentLine(t, them, true) },
   ].filter(Boolean)
   if (!rows.length) return null
   return (
@@ -285,6 +380,35 @@ function CountLine({ C, name, count, pulse }) {
     <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.you }}>
       ✦ {t('constel.count', { n: count })}
       {pulse && <span style={{ color: C.muted }}> · {t('constel.pulse', { n: weeklyPulse(name) })}</span>}
+    </span>
+  )
+}
+
+// The weekly feeling, as its own quiet serif line — only ever for a 100+
+// constellation (see weeklyFeeling above for why the gate is absolute).
+function FeelingLine({ C, name, count, lang }) {
+  const { t } = useI18n()
+  if (!showCount(count)) return null
+  const [pre, post] = t('constel.feeling', { line: '\u2028' }).split('\u2028')
+  return (
+    <span style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
+      {pre}
+      <em style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', color: rgba(C.cream, 0.85) }}>
+        {intentLine(t, weeklyFeeling(name))}
+      </em>
+      {post}
+    </span>
+  )
+}
+
+// The seal-night chip — the ritual on the calendar, not a countdown clock.
+function NightChip({ C, name }) {
+  const { t, lang } = useI18n()
+  const day = nightDay(name, lang)
+  if (!day) return null
+  return (
+    <span style={{ alignSelf: 'flex-start', fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.you, 0.9), background: rgba(C.you, 0.07), border: `1px solid ${rgba(C.you, 0.25)}`, borderRadius: RADIUS.chip, padding: '2px 9px' }}>
+      {t('constel.night', { day })}
     </span>
   )
 }
@@ -342,11 +466,13 @@ function ConstelRow({ C, c, copied, onShare }) {
       <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 21, lineHeight: 1.1, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: rgba(C.muted, 0.7), flexShrink: 0 }}>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: rgba(C.muted, 0.85), flexShrink: 0 }}>
             {c.role === 'created' ? t('constel.created') : t('constel.joined')}
           </span>
         </div>
         <CountLine C={C} name={c.name} count={c.count} pulse />
+        <FeelingLine C={C} name={c.name} count={c.count} />
+        <NightChip C={C} name={c.name} />
         <GhostButton C={C} onClick={onShare} style={{ alignSelf: 'flex-start', padding: '3px 0', fontSize: 12.5, color: copied ? C.you : rgba(C.you, 0.9) }}>
           {copied ? t('constel.shared') : <>{t('constel.share')} →</>}
         </GhostButton>
@@ -421,13 +547,14 @@ export function ConstellationsScreen({ C, ctx }) {
           </h1>
           <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <CountLine C={C} name={invite} count={n} pulse />
+            <FeelingLine C={C} name={invite} count={n} />
             <span style={{ fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('constel.inviteBody')}</span>
           </div>
         </div>
         <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: 12 }}>
           <PrimaryButton C={C} onClick={() => { ctx.joinConstellation(invite, n); ctx.dismissInvite() }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-              {t('constel.inviteCta')} <Icon name="arrow" size={16} color="#1a0f0a" stroke={2.1} />
+              {t('constel.inviteCta')} <Icon name="arrow" size={16} color={C.onYou} stroke={2.1} />
             </span>
           </PrimaryButton>
           <div style={{ display: 'flex', justifyContent: 'center' }}>

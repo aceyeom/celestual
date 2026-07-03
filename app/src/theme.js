@@ -22,7 +22,32 @@ export const TOKENS = {
   // the two stars — the only accents in the whole product
   you: '#FF9E6B', // starlight amber (primary / "you")
   them: '#E6749E', // rose (secondary / "them")
+  // ink for text ON the bright amber CTA (was hardcoded ~10× as '#1a0f0a')
+  onYou: '#1A0F0A',
 }
+
+// ── Celestual Nova (the tier) — everything here only DRESSES the sky. ─────────
+// Seal styles: the light a person's own sealed stars burn with. Read like star
+// temperatures, all within the cosmos' palette family; `ember` is the free
+// default look. If a star turns mutual, the OTHER side sees it in this light at
+// the reveal — with no badge and no branding there, ever (invariant I-4).
+export const SEAL_STYLES = [
+  { id: 'ember', color: TOKENS.you },
+  { id: 'gold', color: '#F2D398' },
+  { id: 'iris', color: '#BCA5F2' },
+  { id: 'ion', color: '#9EC7F0' },
+]
+
+// Sky themes: the colour of the night itself — a gentle shift of the ink family,
+// never a different product. Applied through makeColors' extra-tokens hook.
+export const SKY_THEMES = [
+  { id: 'violet', tokens: null }, // the default cosmos
+  { id: 'dawn', tokens: { ink: '#120A11', ink2: '#1D1220', ink3: '#2C1B30' } },
+  { id: 'deepfield', tokens: { ink: '#070A15', ink2: '#0E1322', ink3: '#19203C' } },
+]
+
+export const sealStyleById = (id) => SEAL_STYLES.find((s) => s.id === id) || SEAL_STYLES[0]
+export const skyThemeById = (id) => SKY_THEMES.find((s) => s.id === id) || SKY_THEMES[0]
 
 // Palette passed to the galaxy + makeColors. Kept as a 2-tuple [you, them] for
 // backwards-compat with the existing call sites.
@@ -65,9 +90,11 @@ export function rgba(hex, a) {
 }
 
 // Full color object used across the React tree. Accepts an optional palette
-// override (still honored) but defaults to the singular TOKENS above.
-export function makeColors(palette) {
+// override (still honored) but defaults to the singular TOKENS above. `extra`
+// is the sky-theme hook: a partial token override (Nova's themes) merged in so
+// the whole world — backdrops, panels, canvas void — shifts together.
+export function makeColors(palette, extra) {
   const you = (palette && palette[0]) || TOKENS.you
   const them = (palette && palette[1]) || TOKENS.them
-  return { ...TOKENS, you, them }
+  return { ...TOKENS, ...(extra || null), you, them }
 }

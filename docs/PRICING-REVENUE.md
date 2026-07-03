@@ -41,41 +41,75 @@ Corollaries:
 
 Monetizing before the cold-start problem is solved (FRAMEWORK T-3) taxes the
 exact growth the product needs, for revenue that rounds to zero. Costs are
-~$60–90/month (§5) — this phase is cheap to hold. **Triggers to move to
-Phase 1:** MAU > ~20k, or ≥1 constellation organically past 100 members, or
-infra > $250/month.
+~$20–90/month depending on ManyChat tier (§5) — this phase is cheap to hold.
+**Triggers to move to Phase 1:** MAU > ~20k, or ≥1 constellation organically
+past 100 members, or infra > $250/month.
 
-### Phase 1: two clean revenue lines
+The whole Phase-1 monetization surface is **already built and simulated in the
+`/demo` + `/beta` sandbox** (localStorage entitlements, instant unlock,
+counts-only instrumentation) — the lab measures attach/interest *now*, and
+Stripe + a server entitlements table drop in at the trigger (§2.1).
 
-**Line A — Keepsakes (one-off, P1 Yearner / P3 Reconnector).**
-Sell the *artifact of the feeling*, priced like a small gift, not an app fee:
+### Phase 1: three lines — peaks, organizers, identity
 
-- **Matched-pair keepsake** (~$9–14 one-off): a beautiful shareable/printable
-  record of a mutual match — offered *after* the reveal, never during (I-4).
-  The buying moment is the emotional peak of the entire product, and the
-  match story is also its best advertising (FRAMEWORK §5.3).
+**Line A — Keepsakes (one-off at the emotional peaks, P1 Yearner / P3
+Reconnector).** Sell the *artifact of the feeling*, priced like a small gift,
+not an app fee:
+
+- **Matched-pair keepsake** (~$9–14 one-off; $11 in the model and the demo): a
+  beautiful shareable/printable record of a mutual match — offered *after* the
+  reveal, never during (I-4). The buying moment is the emotional peak of the
+  entire product, and the match story is also its best advertising
+  (FRAMEWORK §5.3).
 - **Sky keepsake** (~$9 one-off): a rendered print/export of your sky —
   monetizes the 95% who never match by honoring the feeling itself (the T-1
   empty-sky population becomes a market instead of pure churn).
 - Basic share cards stay **free forever** — they're the growth engine
   (FRAMEWORK §5.1); charging for them would be taxing your own marketing.
 
-**Line B — Constellation Pro (subscription, P4 Ringleader).**
-~$4.99/month per constellation for community expression: custom glyph and
-colors, reserved name, larger capacity, event mode ("seal night" countdown for
-a campus/fandom). Charges the organizer for *status and tooling*, adds zero
-probing capacity, and the payer is the persona whose success also solves your
-density problem — the incentives point the same direction.
+**Line B — Constellation Pro (subscription, P4 Ringleader; paper-only until
+density).** ~$4.99/month per constellation for community expression: custom
+glyph and colors, reserved name, larger capacity, event tooling around seal
+nights. Charges the organizer for *status and tooling*, adds zero probing
+capacity, and the payer is the persona whose success also solves your density
+problem — the incentives point the same direction.
 
-**Optional Line C — Supporter tier (~$2.99/month, P1/P3/P5).**
-Cosmetic sky themes, star trails, a patron mark. Pure margin, zero invariant
-risk, but expect niche uptake (§3) — ship only after A and B prove out.
+**Line C — Celestual Nova (personal subscription, $3.99/mo or $19.99/yr,
+P1/P3).** The identity/expression layer — a nova is a star that suddenly
+brightens. Strictly *additive*; the free product loses nothing:
+
+- **Write-your-own sealed line** — the five canned intent lines stay free
+  forever; Nova adds authoring a line in your own words, sealed and revealed
+  exactly like the five.
+- **Seal styles** — the light your own stars burn with; at a mutual reveal the
+  *other person* sees your star in that light, with **no badge and no branding
+  there, ever** (I-4) — beauty travels, commerce doesn't. The dressed reveal is
+  also Nova's only "ad": the happiest moment in the product quietly shows the
+  receiving side that expression exists.
+- **Sky themes** — the colour of your night (violet / dawn / deep field).
+- **Hard placement rules:** no Nova surface on the out-of-slots screen (nothing
+  for sale may sit next to the slot budget — I-2 adjacency), nothing commercial
+  at or before the reveal, no urgency copy anywhere (I-5).
+
+Expect honest cosmetic-subscription conversion (0.5–2%, §3): Nova is the
+recurring-identity layer of the model, not its engine. Revenue concentration
+stays where the attach rates are — the peaks (A) and the organizers (B) — and
+above all in density.
+
+### Referrals: months, never slots
+
+The viral ask ("share your link") gets rewarded in **Nova months** — give a
+month, get a month. Never in slots, pings, or entries: a share-for-slots loop
+would let anyone *mint probing capacity* by spamming links, which is worse than
+selling the attack (I-2) — it's giving it away for distribution. Cosmetic-only
+rewards also seed the paid tier socially.
 
 ### What stays free, explicitly, forever
 
 Sealing, matching, the reveal, withdrawal, suppression/erasure, reminders,
-verification, basic share cards, basic constellations. (This list *is* the
-trust page bullet.)
+verification, **the five intent lines**, basic share cards, basic
+constellations. (This list *is* the trust page bullet — it now ships verbatim
+on the in-app privacy screen.)
 
 ### Deliberately rejected
 
@@ -83,9 +117,17 @@ trust page bullet.)
 | --- | --- |
 | Paid slots / refills / faster regen | Sells the attack (I-2) |
 | "See if they're active" / any info about the other side | Leaks one-sided state (I-1) |
+| Referral rewards in slots/pings | Mints the attack for virality — I-2, worse than selling it |
 | Ads | Torches intimacy for pennies at this scale; Meta-adjacent data optics (T-2) |
 | Pay-to-unseal-early, urgency mechanics | I-5; poisons sincerity |
 | Charging the Bystander for anything | I-3 |
+
+**The precedent worth naming:** this category's proven money-printer is exactly
+the rejected row two — Gas monetized "who liked you" hints ("God Mode") to
+~$7M/yr, and NGL monetized the same promise so deceptively it paid a **$5M FTC
+settlement** and took the category's trust down with it. Celestual deliberately
+forgoes that revenue. The honest consequence: money here comes from the peaks,
+the organizers, and identity — and the real engine is density, not price.
 
 ## §3 — Priors: what conversion realistically looks like
 
@@ -95,7 +137,7 @@ freemium converts 0.5–2%; one-off emotional purchases at peak moments attach
 
 | Parameter | Low | Base | High |
 | --- | --- | --- | --- |
-| Supporter/cosmetic conversion (% of MAU paying/mo) | 0.3% | 0.8% | 1.5% |
+| Nova/cosmetic conversion (% of MAU paying/mo) | 0.3% | 0.8% | 1.5% |
 | Constellation Pro uptake (% of active constellations) | 2% | 5% | 10% |
 | Matched-pair keepsake attach (% of matches) | 5% | 12% | 20% |
 | Sky keepsake attach (% of MAU, one-off, /mo) | 0.1% | 0.3% | 0.6% |
@@ -122,10 +164,10 @@ MAU(t+1) = MAU(t) × (1 − churn) + MAU(t) × K + organic(t)
 
 ```
 matches(t)    = MAU(t) × entries_per_MAU × match_rate
-revenue(t)    = MAU(t) × supporter_conv × $2.99            (Line C)
-              + constellations(t) × pro_uptake × $4.99      (Line B)
-              + matches(t) × keepsake_attach × $11          (Line A, matched)
-              + MAU(t) × sky_keepsake_rate × $9             (Line A, sky)
+revenue(t)    = MAU(t) × nova_conv × $3.99                  (Line C — Nova; blended
+              + constellations(t) × pro_uptake × $4.99       toward ~$3.30 effective
+              + matches(t) × keepsake_attach × $11           with annual + referral
+              + MAU(t) × sky_keepsake_rate × $9              months)   (Lines B, A)
 profit(t)     = revenue(t) − costs(t)                       (costs: §5)
 ```
 
@@ -139,9 +181,9 @@ density, not pricing.
 
 **Base** — the cluster strategy works: 2–3 campuses/fandoms reach real density
 (K=0.35, churn 35%, match rate 4%, one modest spike mid-year). MAU ≈ 20–30k
-by month 12. At 25k MAU: supporters ≈ $600, Constellation Pro (≈250 active
-constellations × 5%) ≈ $60, matched keepsakes (25k × 0.7 × 4% = 700 matches ×
-12% × $11) ≈ $920, sky keepsakes ≈ $675 → **≈ $2.0–2.5k/month run-rate**,
+by month 12. At 25k MAU: Nova (0.8% × $3.99) ≈ $800, Constellation Pro (≈250
+active constellations × 5%) ≈ $60, matched keepsakes (25k × 0.7 × 4% = 700
+matches × 12% × $11) ≈ $920, sky keepsakes ≈ $675 → **≈ $2.0–2.5k/month run-rate**,
 ≈ $10–14k cumulative first-year revenue, costs still < $200/month → first-year
 profit ≈ **$8–12k**, with the real prize being a proven density playbook.
 
@@ -189,13 +231,22 @@ of cost control.
 
 ## §6 — Decision summary
 
-1. **Now:** stay free; instrument the eight parameters; spend all effort on
-   density (Ringleaders/constellations) and retention (empty-sky value).
-2. **At a Phase-1 trigger:** ship keepsakes (Line A) first — one-offs, zero
-   invariant risk, monetizes both the matched 5% and the unmatched 95% — then
-   Constellation Pro (Line B). Hold the supporter tier (C) until A/B data
-   exists.
-3. **Never:** slots, probes, other-side info, ads, urgency, or anything the
-   Checker would thank you for.
+1. **Now:** stay free; the whole Phase-1 surface (Nova + the matched-pair
+   keepsake) runs *simulated* in `/demo` + `/beta` with counts-only metrics
+   (`nova_viewed/unlocked`, `keepsake_viewed/simulated_purchase`,
+   `referral_link_copied`, plus the FRAMEWORK §6 set) — measure interest while
+   spending all real effort on density (Ringleaders/constellations, seal
+   nights, the weekly feeling) and retention (empty-sky value).
+2. **At a Phase-1 trigger:** wire payments in the proven order — keepsakes
+   (Line A) first (one-offs, peak attach), Constellation Pro (Line B) second,
+   Nova (Line C) as the recurring identity layer. Server side: an entitlements
+   table keyed on handle/`group_id` (via `celestual_handle_links`), RLS enabled
+   with zero policies, read through a proof-gated `SECURITY DEFINER` RPC,
+   written only by a `celestual-billing` edge function (Stripe webhook, service
+   role — the `celestual_complete_ig_verification` pattern); an `intent` column
+   on `celestual_entries` threaded through `celestual_submit` so custom
+   inscriptions + seal styles travel to the reveal.
+3. **Never:** slots, probes, other-side info, ads, urgency, referral-slots, or
+   anything the Checker would thank you for.
 4. **Monthly:** recompute §4 with measured inputs; let the forecast tighten
    itself.

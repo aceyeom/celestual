@@ -86,8 +86,8 @@
   <text x="100" y="150" font-size="30" letter-spacing="8" fill="#F3ECF6" opacity="0.92">Celestual</text>
 
   <!-- hero headline (mirrors the landing) -->
-  <text x="98" y="318" font-size="74" fill="#F3ECF6">Is that special somebody</text>
-  <text x="98" y="408" font-size="74" font-style="italic" fill="#FF9E6B">still thinking about you?</text>
+  <text x="98" y="318" font-size="70" fill="#F3ECF6">You still think about them.</text>
+  <text x="98" y="408" font-size="70" font-style="italic" fill="#FF9E6B">What if they think about you?</text>
 
   <!-- tagline -->
   <g transform="translate(100,492)">

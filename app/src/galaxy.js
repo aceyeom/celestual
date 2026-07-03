@@ -114,8 +114,10 @@ export class GalaxyField {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.opts = opts
-    this.you = opts.you || '#FF8C66'
-    this.them = opts.them || '#FF5E8A'
+    // Fallbacks mirror theme.js TOKENS (App always passes the live palette; these
+    // only exist so a bare `new GalaxyField(canvas)` still draws on-palette).
+    this.you = opts.you || '#FF9E6B'
+    this.them = opts.them || '#E6749E'
     this.motion = opts.motion != null ? opts.motion : 20
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     // Honor prefers-reduced-motion (§5.3): keep the starfield as a calm, near-
@@ -132,7 +134,10 @@ export class GalaxyField {
     // pointer / tilt parallax — target vs. smoothed current
     this.pTarget = { x: 0, y: 0 }
     this.p = { x: 0, y: 0 }
-    this.glows = { you: makeGlow(this.you, 64), them: makeGlow(this.them, 64), warm: makeGlow('#FFE0C2', 64), white: makeGlow('#FFFFFF', 64) }
+    this.glows = { you: makeGlow(this.you, 64), them: makeGlow(this.them, 64), warm: makeGlow('#FFE0C2', 64), white: makeGlow('#FFFFFF', 64), seal: makeGlow(this.you, 64) }
+    // Nova seal style: the light the person's OWN sealed stars burn with. Null
+    // means "follow the `you` palette"; set via setSealColor().
+    this.sealHue = null
     this._glowCache = {}
     this._dotCache = {} // hue -> round star sprite
     this._spike = makeSpikeSprite('#FFFFFF', 64) // shared diffraction cross (white, tinted via alpha)
@@ -465,7 +470,16 @@ export class GalaxyField {
     this.them = them
     this.glows.you = makeGlow(you, 64)
     this.glows.them = makeGlow(them, 64)
+    this.glows.seal = makeGlow(this.sealHue || you, 64)
     this._matchBloom = null // palette-tinted cache must be rebuilt
+    this.start()
+  }
+
+  // Nova seal style — tint the person's own sealed stars (and the send-off
+  // drift). Pass null to fall back to the `you` palette accent.
+  setSealColor(hex) {
+    this.sealHue = hex || null
+    this.glows.seal = makeGlow(this.sealHue || this.you, 64)
     this.start()
   }
 
@@ -952,7 +966,7 @@ export class GalaxyField {
         ctx.globalCompositeOperation = 'lighter'
         const hr = (8 + vp * 30) * pr.persp
         ctx.globalAlpha = 0.5 * fade
-        ctx.drawImage(this.glows.you, pr.sx - hr, pr.sy - hr, hr * 2, hr * 2)
+        ctx.drawImage(this.glows.seal, pr.sx - hr, pr.sy - hr, hr * 2, hr * 2)
         ctx.globalAlpha = fade
         ctx.fillStyle = '#fff'
         ctx.beginPath()
@@ -979,7 +993,7 @@ export class GalaxyField {
       // bare full-frame disc at the end of the dive
       const core = clamp(1.9 * pr.persp, 1.1, this.h * 0.16)
       const glowR = clamp(12 * pr.persp * pulse, 6, this.h * 0.34)
-      this._star(pr.sx, pr.sy, 'you', isFocus ? core * handoff : core, glowR, 0.5 * pulse * sh * fade)
+      this._star(pr.sx, pr.sy, 'seal', isFocus ? core * handoff : core, glowR, 0.5 * pulse * sh * fade)
       // each resting star carries its own tag — record where it is on screen
       this.sealedScreen[i] = { x: pr.sx, y: pr.sy, vis: true }
     }
@@ -1013,9 +1027,9 @@ export class GalaxyField {
       ctx.globalCompositeOperation = 'lighter'
       const hr = 26 * (1 - f) + 9
       ctx.globalAlpha = 0.4 * f
-      ctx.drawImage(this.glows.you, ox - hr, oy - hr, hr * 2, hr * 2)
+      ctx.drawImage(this.glows.seal, ox - hr, oy - hr, hr * 2, hr * 2)
       ctx.globalAlpha = 1
-      this._star(ox, oy, 'you', 1.2 + 0.9 * f, 8 + 7 * f, 0.18 + 0.34 * f)
+      this._star(ox, oy, 'seal', 1.2 + 0.9 * f, 8 + 7 * f, 0.18 + 0.34 * f)
       this.sealedScreen[this.sealed.length - 1] = { x: ox, y: oy, vis: true }
       this.trail = []
       return
@@ -1039,14 +1053,14 @@ export class GalaxyField {
         f = i / this.trail.length
       ctx.globalAlpha = f * f * 0.26 * (1 - e * 0.5)
       const sz = 2 + f * 7
-      ctx.drawImage(this.glows.you, tp[0] - sz, tp[1] - sz, sz * 2, sz * 2)
+      ctx.drawImage(this.glows.seal, tp[0] - sz, tp[1] - sz, sz * 2, sz * 2)
     }
     ctx.globalAlpha = 1
 
     this.sealedScreen[this.sealed.length - 1] = { x, y, vis: true }
     // size eases down to the resting size; a slow breath instead of a shine
     const breathe = 0.48 + 0.06 * Math.sin(this.t * 2)
-    this._star(x, y, 'you', 1.9 + (1 - e) * 0.5, 14 - e * 2, breathe)
+    this._star(x, y, 'seal', 1.9 + (1 - e) * 0.5, 14 - e * 2, breathe)
   }
 
   // MATCH — calm, on-theme coalescence. The two stars drift together along
