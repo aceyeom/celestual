@@ -5,6 +5,7 @@
   "description": "CELESTUAL — anonymous reciprocal \"does your ex still think about you?\" matching. A Vite + React SPA on Supabase.",
   "scripts": {
     "dev": "npm --prefix app run dev",
-    "build": "npm --prefix app install && npm --prefix app run build"
+    "build": "npm --prefix app install && npm --prefix app run build",
+    "lint:voice": "node scripts/voice-lint.mjs"
   }
 }

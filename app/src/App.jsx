@@ -8,13 +8,14 @@ import { getSession, signInStub, markVerified, signOut as clearAuthSession, resu
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi, localSkyOwner } from './api/profile.js'
 import { slotsRemaining } from './api/slots.js'
-import { makeColors, PALETTE } from './theme.js'
+import { makeColors, PALETTE, sealStyleById, skyThemeById } from './theme.js'
 import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
 import {
   IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
   RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
-import { ConstellationsScreen, INTENTS } from './components/beta.jsx'
+import { ConstellationsScreen, INTENTS, isCustomIntent } from './components/beta.jsx'
+import { NovaSheet, loadNova, NOVA_STORE, bumpMetric } from './components/nova.jsx'
 import { useI18n } from './i18n/index.js'
 
 const MOTION = 20
@@ -66,7 +67,6 @@ const BETA_STORE = 'celestual:beta:v1'
 
 export default function App() {
   const { lang, setLang, langs, t } = useI18n()
-  const C = useMemo(() => makeColors(PALETTE), [])
 
   const init = useMemo(() => {
     try {
@@ -79,6 +79,39 @@ export default function App() {
   const [beta] = useState(isBetaPath)
   const [demo, setDemo] = useState(() => isDemoPath() || isBetaPath())
   const [session, setSession] = useState(getSession)
+  // ── Celestual Nova (sandbox-only this round) ──
+  // The tier's entitlement + choices live in their own store (like BETA_STORE) so
+  // nothing about it can bleed into real state. Subscribing here is an instant
+  // local unlock — nothing is charged; Stripe + a server entitlements table come
+  // later (docs/PRICING-REVENUE.md).
+  const [nova, setNova] = useState(() =>
+    isDemoPath() || isBetaPath() ? loadNova() : { active: false, plan: '', sealStyle: 'ember', skyTheme: 'violet', since: null, referrals: 0 },
+  )
+  const [novaOpen, setNovaOpen] = useState(false)
+  const novaSeal = sealStyleById(nova.sealStyle)
+  const novaTheme = skyThemeById(nova.skyTheme)
+  // Nova's sky theme rides the existing makeColors override hook, so the whole
+  // world (screens, panels, canvas void, body) shifts together.
+  const C = useMemo(
+    () => makeColors(PALETTE, nova.active ? novaTheme.tokens : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nova.active, nova.skyTheme],
+  )
+  useEffect(() => {
+    try {
+      document.body.style.background = C.ink
+    } catch {
+      /* ignore */
+    }
+  }, [C.ink])
+  useEffect(() => {
+    if (!demo) return
+    try {
+      localStorage.setItem(NOVA_STORE, JSON.stringify(nova))
+    } catch {
+      /* private mode / quota — fine to skip */
+    }
+  }, [demo, nova])
   // ── beta state (all sandboxed; persisted only under the beta store) ──
   const betaInit = useMemo(() => {
     if (!isBetaPath()) return {}
@@ -94,17 +127,22 @@ export default function App() {
   const [intent, setIntent] = useState('')
   const [intents, setIntents] = useState(() => {
     // Migrate any earlier beta store onto the current line set; drop unknowns so
-    // a stale id can never render as a raw key.
+    // a stale id can never render as a raw key. Nova's write-your-own lines are
+    // stored as 'custom:<text>' and pass through as-is.
     const legacy = { mend: 'sorry', always: 'miss' }
     const raw = betaInit.intents || {}
     const out = {}
     for (const k in raw) {
       const v = legacy[raw[k]] || raw[k]
-      if (INTENTS.includes(v)) out[k] = v
+      if (INTENTS.includes(v) || isCustomIntent(v)) out[k] = v
     }
     return out
   })
   const [matchIntent, setMatchIntent] = useState(null)
+  // The seal styles both sides of a mutual match burn with — {you, them} style
+  // ids. The receiving side sees the sender's style at the reveal, UNBRANDED
+  // (I-4). The sandbox seeds the other side's so the receiving view demos too.
+  const [matchSeal, setMatchSeal] = useState(null)
   // Constellations this person is part of: { id, name, count, role }.
   const [constellations, setConstellations] = useState(betaInit.constellations || [])
   // A join link (?c=<community>) lands on the constellations screen as an invite.
@@ -371,16 +409,17 @@ export default function App() {
   // is gone.
   useEffect(() => () => { if (morphTimer.current) clearTimeout(morphTimer.current) }, [])
 
-  const go = useCallback((s) => {
+  // Swap the visible screen (shared by go() and the browser's Back/Forward).
+  // Cross-fades with the View Transitions API where supported and motion is
+  // allowed — a smooth dissolve over the persistent galaxy instead of a hard
+  // cut. flushSync makes the screen swap happen inside the captured frame; any
+  // failure (or no support / reduced motion) falls back to an instant swap.
+  const applyScreen = useCallback((s) => {
     const apply = () => {
       setFocused(null)
       setScreen(s)
     }
     const afterScroll = () => requestAnimationFrame(() => window.scrollTo(0, 0))
-    // Cross-fade screens with the View Transitions API where supported and motion
-    // is allowed — a smooth dissolve over the persistent galaxy instead of a hard
-    // cut. flushSync makes the screen swap happen inside the captured frame; any
-    // failure (or no support / reduced motion) falls back to an instant swap.
     const reduce =
       typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reduce && typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
@@ -396,11 +435,48 @@ export default function App() {
     afterScroll()
   }, [])
 
+  // Navigate + record a history entry, so the hardware/OS Back button walks the
+  // in-app screens instead of exiting the whole site (the pathname never changes;
+  // only history state does). Transitions OUT of the transient send-off replace
+  // its entry — Back from the resting sky should land on "them", never replay a
+  // half-finished send-off.
+  const go = useCallback(
+    (s) => {
+      try {
+        if (screenRef.current === 'sendoff' || s === screenRef.current) {
+          window.history.replaceState({ celestualScreen: s }, '')
+        } else {
+          window.history.pushState({ celestualScreen: s }, '')
+        }
+      } catch {
+        /* history unavailable — navigation still works, Back just exits */
+      }
+      applyScreen(s)
+    },
+    [applyScreen],
+  )
+
+  // Anchor the first entry + drive Back/Forward. A popstate applies the recorded
+  // screen directly (never pushes, or Back would loop forever).
+  useEffect(() => {
+    try {
+      window.history.replaceState({ celestualScreen: screenRef.current }, '')
+    } catch {
+      /* ignore */
+    }
+    const onPop = (e) => {
+      const s = e.state && e.state.celestualScreen
+      if (s && SCREENS[s]) applyScreen(s)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [applyScreen])
+
   // ── demo ──
   const enterDemo = useCallback(() => {
     try {
       const base = window.location.pathname.replace(/\/+$/, '')
-      window.history.replaceState({}, '', (base.endsWith('/demo') ? base : base + '/demo') || '/demo')
+      window.history.replaceState({ celestualScreen: screenRef.current }, '', (base.endsWith('/demo') ? base : base + '/demo') || '/demo')
     } catch {
       /* ignore */
     }
@@ -476,11 +552,14 @@ export default function App() {
       const now = Date.now()
       // Capture the optional intent NOW (state could change under the await) and
       // seal it with this star. It stays invisible unless the pair turns mutual.
-      const chosen = beta ? intent : ''
+      // An opened-but-empty write-your-own line seals as "no line at all".
+      const raw = beta ? intent : ''
+      const chosen = isCustomIntent(raw) && !raw.slice(7).trim() ? '' : raw
       setSealedAt(now)
       setHandles((h) => [...h, normHandle(them)])
       setSealTimes((s) => [...s, now])
       if (chosen) setIntents((m) => ({ ...m, [normHandle(them)]: chosen }))
+      if (isCustomIntent(chosen)) bumpMetric('nova_custom_intent_sealed')
       // Measure the live @ field NOW (it's still mounted) so the morph collapses from
       // exactly where the textbox is and the galaxy drift continues from that point.
       let origin = SENDOFF_ORIGIN
@@ -557,6 +636,9 @@ export default function App() {
           // side, so beta seeds theirs (a line different from yours, so the reveal
           // always shows two voices) — a live backend would return the real one.
           if (beta) setMatchIntent({ you: chosen || '', them: res.matchIntent || (chosen === 'miss' ? 'unsaid' : 'miss') })
+          // Seal styles at the reveal: yours as chosen; the sandbox seeds the
+          // other side's as 'iris' so the receiving view of a dressed seal demos.
+          setMatchSeal({ you: nova.active ? nova.sealStyle : 'ember', them: res.matchSealStyle || (demo ? 'iris' : 'ember') })
           go('match')
           return
         }
@@ -576,7 +658,7 @@ export default function App() {
         go('them')
       }
     },
-    [me, them, email, demo, beta, intent, session, go, t],
+    [me, them, email, demo, beta, intent, session, nova, go, t],
   )
 
   // Seal: validate, gate on the slot budget, then confirm it's really you before
@@ -691,6 +773,35 @@ export default function App() {
     go('them')
   }, [slots, demo, go])
 
+  // ── sandbox: simulate the other side sealing you back ──
+  // Demo/beta only. Flips one sealed star to mutual and drives the FULL match
+  // workflow — the match screen, the intent unsealing, the (seeded) other-side
+  // seal style — so the payoff is testable on any star, not just @demo.
+  const simulateMutual = useCallback(
+    (handle) => {
+      if (!demo) return
+      const mh = normHandle(handle)
+      if (!mh) return
+      setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
+      setThem(mh)
+      const chosen = intents[mh] || ''
+      if (beta) setMatchIntent({ you: chosen, them: chosen === 'miss' ? 'unsaid' : 'miss' })
+      setMatchSeal({ you: nova.active ? nova.sealStyle : 'ember', them: 'iris' })
+      setFocused(null)
+      go('match')
+    },
+    [demo, beta, intents, nova, go],
+  )
+
+  // ── Celestual Nova actions (sandbox-only this round) ──
+  const openNova = useCallback(() => setNovaOpen(true), [])
+  const closeNova = useCallback(() => setNovaOpen(false), [])
+  const subscribeNova = useCallback((plan) => {
+    setNova((n) => ({ ...n, active: true, plan: plan || 'month', since: n.since || Date.now() }))
+  }, [])
+  const setNovaSeal = useCallback((id) => setNova((n) => ({ ...n, sealStyle: id })), [])
+  const setNovaTheme = useCallback((id) => setNova((n) => ({ ...n, skyTheme: id })), [])
+
   // Interactive field: tap → focus, remove → withdraw that star, close → zoom out.
   const onStarTap = useCallback((x, y) => {
     const f = galaxyRef.current
@@ -782,9 +893,18 @@ export default function App() {
     setIntent('')
     setIntents({})
     setMatchIntent(null)
+    setMatchSeal(null)
     setConstellations([])
     try {
       localStorage.removeItem(BETA_STORE)
+    } catch {
+      /* ignore */
+    }
+    // Nova (a sandbox entitlement) resets with everything else.
+    setNova({ active: false, plan: '', sealStyle: 'ember', skyTheme: 'violet', since: null, referrals: 0 })
+    setNovaOpen(false)
+    try {
+      localStorage.removeItem(NOVA_STORE)
     } catch {
       /* ignore */
     }
@@ -888,6 +1008,8 @@ export default function App() {
     // The beta world: the intent signal + constellations (sandboxed like /demo).
     beta, intent, setIntent, intents, matchIntent,
     constellations, createConstellation, joinConstellation, pendingJoin, dismissInvite,
+    // Celestual Nova (sandbox-only this round) + the sandbox match simulator.
+    nova, openNova, closeNova, matchSeal, simulateMutual,
     // A real, established account (proven / demo / has a sky) vs. a bare typed
     // handle — gates the account UI so an unverified @ is never shown as "you".
     established,
@@ -935,11 +1057,20 @@ export default function App() {
         seals={handles.length}
         you={C.you}
         them={C.them}
+        sealColor={nova.active ? novaSeal.color : null}
         motion={MOTION}
         onReady={(f) => (galaxyRef.current = f)}
         style={{ position: 'fixed', zIndex: 0 }}
       />
-      <StarTags fieldRef={galaxyRef} handles={handles} mutual={matches} color={C.them} matchColor={C.you} show={(screen === 'sendoff' || screen === 'resting') && focused == null} />
+      <StarTags
+        fieldRef={galaxyRef}
+        handles={handles}
+        mutual={matches}
+        color={C.them}
+        matchColor={C.you}
+        show={(screen === 'sendoff' || screen === 'resting') && focused == null}
+        onTap={screen === 'resting' ? (i) => setFocused(i) : undefined}
+      />
       <div
         aria-hidden
         style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: bg.warm ? 1 : 0, transition: 'opacity .6s ease' }}
@@ -969,15 +1100,23 @@ export default function App() {
           C={C}
           lang={lang}
           info={starInfo(focused)}
+          demo={demo}
           onRemove={() => removeStar(focused)}
           onOpen={() => openConversation(handles[focused])}
+          onSimulateMutual={() => simulateMutual(handles[focused])}
           onClose={closeStar}
         />
       )}
 
-      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}
+      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} col={nova.active ? novaSeal.color : null} />}
 
       {accountOpen && <AccountSheet C={C} ctx={ctx} lang={lang} />}
+
+      {/* Celestual Nova — entered only from quiet places (the account sheet, the
+          locked write-your-own row). Sandbox-only this round. */}
+      {novaOpen && demo && (
+        <NovaSheet C={C} nova={nova} onSubscribe={subscribeNova} onSeal={setNovaSeal} onTheme={setNovaTheme} onClose={closeNova} />
+      )}
 
       {/* Instagram DM verification — confirms the typed @ is really theirs, in-tab,
           without any OAuth. Resumes the flow (continue / seal) on success. */}

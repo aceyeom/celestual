@@ -20,15 +20,19 @@ export const LANGS = {
 }
 
 const en = {
-  // landing
-  'landing.head1': 'Is that special somebody',
-  'landing.head2': 'still thinking about you?',
+  // landing — the hook centers YOUR feeling first (T-5: never "find out who likes
+  // you"), and the second line is the curiosity loop in your own words.
+  'landing.head1': 'You still think about them.',
+  'landing.head2': 'What if they think about you?',
   'landing.cta': 'Find out',
   'landing.anon': 'anonymous unless mutual',
   'landing.age': 'For adults. By continuing you confirm you’re 18+ and agree to our',
   'landing.terms': 'privacy & terms',
   'landing.login': 'Log in',
   'landing.demo': 'or explore the demo',
+  'footer.privacy': 'privacy',
+  'footer.terms': 'terms',
+  'footer.contact': 'contact',
   // you (your side — handle first, email optional)
   'you.title1': 'First,',
   'you.title2': 'this is you.',
@@ -60,8 +64,10 @@ const en = {
   'them.errSelf': 'That’s your own @. Enter theirs.',
   'them.errRate': 'Too many checks too fast. Try again shortly.',
   'them.errSuppressed': 'That person asked not to be entered on Celestual.',
-  'them.errGeneric': 'Something went wrong. Try again.',
+  'them.errGeneric': 'The sky didn’t answer. Give it a moment, then seal again.',
   'them.errUnverified': 'We couldn’t confirm this @ is yours. Verify it again to seal.',
+  // sandbox — the demo's one honest hint, so the payoff is actually reachable
+  'them.demoHint': 'Sandbox: enter @demo and the match will find you.',
   // sendoff
   'sendoff.sealed': 'Sealed.',
   'sendoff.sub': 'your star · out there now',
@@ -91,6 +97,7 @@ const en = {
   'star.remove': 'Release this star',
   'star.removing': 'Releasing…',
   'star.keep': 'keep watching',
+  'star.simMutual': 'sandbox: they seal you back',
   // match
   'match.kicker': '✦ it’s mutual',
   'match.title1': 'They still think',
@@ -104,8 +111,8 @@ const en = {
   'outofslots.nextLabel': 'next star',
   'outofslots.soon': 'very soon',
   'outofslots.remindLabel': 'Email me when it’s ready',
-  'outofslots.remindCta': 'Remind me',
-  'outofslots.reminded': 'Done. We’ll email you when it’s ready.',
+  'outofslots.remindCta': 'Send word',
+  'outofslots.reminded': 'Done — when the next star is ready, a quiet email will find you.',
   'outofslots.back': 'back to my sky',
   // your accounts (multi-account)
   'accounts.add': 'Add another account',
@@ -134,8 +141,9 @@ const en = {
   'verify.regen': 'Get a new code',
   'verify.errRate': 'Too many tries. Give it a minute, then start again.',
   'verify.errBusy': 'We’re a little busy — try again in a moment.',
-  'verify.errGeneric': 'Couldn’t start verification. Check your connection and try again.',
+  'verify.errGeneric': 'The verification couldn’t start. Check your connection, then try once more.',
   'verify.cancel': 'Cancel',
+  'verify.demoNote': 'Sandbox — no DM needed. This confirms on its own in a moment.',
   'verify.tosNote': 'We only read who sends the code. We never post, follow, message, or see your password.',
   'verify.inApp': 'In Instagram’s browser? Send the DM, then return to this tab — or open celestual.us in Safari or Chrome.',
   'verify.desktop': 'Not signed in to Instagram? Log in inside that window first, then click the button again to send your code.',
@@ -156,7 +164,8 @@ const en = {
   'account.skyEmpty': 'No stars yet.',
   'account.skyOpen': 'View',
   'account.starsAdd': 'Enter someone',
-  'account.starsUnlimited': 'Unlimited (demo)',
+  'account.starsUnlimited': 'sandbox · unlimited stars',
+  'account.sandboxNote': 'Sandbox — nothing here is real, and nothing reaches a server.',
   'account.skyMutual': '✦ {n} mutual',
   'account.encryptedDb': 'Encrypted — only you can read it.',
   'account.encryptedLocal': 'Kept privately on this device.',
@@ -184,7 +193,9 @@ const en = {
   'privacy.removing': 'Removing…',
   'privacy.removed1': 'Done.',
   'privacy.removed2': 'has been removed and blocked.',
-  'privacy.removeErr': 'Something went wrong — please email us instead.',
+  'privacy.removeErr': 'That didn’t go through — email us and we’ll do it by hand.',
+  'privacy.h6': 'Always free',
+  'privacy.p6': 'Sealing, matching, the reveal, withdrawing a star, removing & blocking a handle, reminders, verification, the five sealed lines, share links, constellations. If Celestual ever sells anything, it will only ever dress your sky — it will never change any of this.',
   'privacy.foot': 'We’ll keep this page current as the product grows. Questions:',
   'privacy.fullPolicy': 'Full privacy policy',
   'privacy.tos': 'Terms of service',
@@ -210,10 +221,57 @@ const en = {
   'intent.drift.r': 'we shouldn’t have lost touch',
   'intent.know': 'i just need to know',
   'intent.know.r': 'i just needed to know',
+  // nova: the sixth row — your own words, sealed like the five
+  'intent.custom': 'write your own',
+  'intent.customPlaceholder': 'in your own words…',
   // match — the unsealing
   'match.revealKicker': 'sealed until now',
   'match.you': 'you',
   'match.them': 'them',
+  // keepsake — offered only AFTER the reveal (I-4), never during
+  'keepsake.link': 'keep this night →',
+  'keepsake.title': 'The night it was mutual',
+  'keepsake.body': 'A record of the two stars finding each other — yours to keep, print, or post.',
+  'keepsake.cta': 'Keep it · $11',
+  'keepsake.kept': 'Yours. It will be waiting in your sky.',
+  'keepsake.sandboxNote': 'sandbox — nothing is charged here',
+  // ── celestual nova — the tier. A nova is a star that suddenly brightens.
+  // It only ever DRESSES the sky: words, light, colour. Never mechanics.
+  'nova.kicker': 'celestual nova',
+  'nova.title': 'Dress your sky.',
+  'nova.sub': 'A nova is a star that suddenly brightens. This is that, for yours — your own words, your own light, your own night. Everything Celestual does stays free.',
+  'nova.f1': 'Your own line',
+  'nova.f1b': 'Seal a line written by you, not chosen from a list. Revealed only if it’s ever mutual.',
+  'nova.f2': 'Seal styles',
+  'nova.f2b': 'The light your stars burn with. If one turns mutual, that’s the light they see it in.',
+  'nova.f3': 'Sky themes',
+  'nova.f3b': 'The colour of your night — violet, before dawn, deep field.',
+  'nova.month': 'monthly',
+  'nova.year': 'yearly',
+  'nova.priceMonth': '$3.99 / month',
+  'nova.priceYear': '$19.99 / year',
+  'nova.cta': 'Begin Nova',
+  'nova.active': 'nova · yours',
+  'nova.activeMark': 'yours',
+  'nova.sandboxNote': 'sandbox — nothing is charged here',
+  'nova.trust': 'Nova dresses your sky. It never changes what’s free — sealing, matching, the reveal, erasure, the five lines. Never will.',
+  'nova.sealLabel': 'your seal',
+  'nova.themeLabel': 'your night',
+  'nova.referTitle': 'Give a month, get a month',
+  'nova.referBody': 'Each friend who arrives through your link lights a free month of Nova for you both. Never extra stars — those stay sacred.',
+  'nova.referCta': 'Copy your link',
+  'nova.referCopied': 'copied — send it on',
+  'nova.referCount': '{n} free months earned',
+  'nova.referSim': 'sandbox: a friend arrives',
+  'nova.accountHint': 'dress your sky',
+  'nova.close': 'Close',
+  'seal.ember': 'ember',
+  'seal.gold': 'pale gold',
+  'seal.iris': 'iris',
+  'seal.ion': 'ion blue',
+  'sky.violet': 'violet night',
+  'sky.dawn': 'before dawn',
+  'sky.deepfield': 'deep field',
   // constellations — communities sharing one sky (no waitlist, ever)
   'resting.constel': 'your constellations',
   'constel.title': 'Constellations',
@@ -224,6 +282,13 @@ const en = {
   'constel.count': '{n} stars',
   'constel.pulse': '{n} sealed this week',
   'constel.gathering': 'still gathering',
+  // the weekly feeling — an AGGREGATE of a 100+ community's most-sealed line
+  // (counts only, never a person; under 100 it never shows — the 100 rule)
+  'constel.feeling': 'this week here — “{line}”',
+  // seal night — a community ritual, never an expiring offer (I-5)
+  'constel.night': 'seal night · {day}',
+  'constel.setNight': 'set a seal night',
+  'constel.nightNote': 'One night the whole constellation seals together.',
   'constel.share': 'share it forward',
   'constel.shared': 'copied — send it on Instagram',
   'constel.shareMsg': 'This is spreading in your world. Join it.',
@@ -241,6 +306,7 @@ const en = {
   // intro motion graphic
   'intro.tapNext': 'tap to continue',
   'intro.tapBegin': 'tap to begin',
+  'intro.skip': 'skip',
   'intro.s1': 'You enter someone you can’t forget.',
   'intro.s2': 'Your star drifts into the sky — invisible, anonymous.',
   'intro.s3': 'If they never enter you, they never know. Nothing happens.',
@@ -249,8 +315,8 @@ const en = {
 }
 
 const ko = {
-  'landing.head1': '그 특별한 사람은',
-  'landing.head2': '아직도 당신을 생각하고 있을까요?',
+  'landing.head1': '아직 그 사람을 생각하고 있죠.',
+  'landing.head2': '그 사람도 당신을 생각하고 있다면요?',
   'landing.cta': '확인하기',
   'landing.anon': '서로일 때만 공개돼요',
   'landing.age': '18세 이상 전용. 계속하면 다음에 동의해요',
@@ -343,8 +409,8 @@ const ko = {
 }
 
 const es = {
-  'landing.head1': '¿Esa persona especial',
-  'landing.head2': 'todavía piensa en ti?',
+  'landing.head1': 'Todavía piensas en esa persona.',
+  'landing.head2': '¿Y si también piensa en ti?',
   'landing.cta': 'Descúbrelo',
   'landing.anon': 'anónimo salvo que sea mutuo',
   'landing.age': 'Solo para adultos. Al continuar confirmas que tienes 18+ y aceptas nuestra',
@@ -389,8 +455,8 @@ const es = {
 }
 
 const ja = {
-  'landing.head1': 'あの特別な人は',
-  'landing.head2': 'まだあなたを想ってる？',
+  'landing.head1': 'まだあの人を想っている。',
+  'landing.head2': 'あの人も、あなたを想っていたら？',
   'landing.cta': '確かめる',
   'landing.anon': '両想いのときだけ分かる',
   'landing.age': '成人向けです。続行すると18歳以上であることを確認し、次に同意します',
@@ -433,8 +499,8 @@ const ja = {
 }
 
 const pt = {
-  'landing.head1': 'Será que aquela pessoa especial',
-  'landing.head2': 'ainda pensa em você?',
+  'landing.head1': 'Você ainda pensa naquela pessoa.',
+  'landing.head2': 'E se ela também pensa em você?',
   'landing.cta': 'Descobrir',
   'landing.anon': 'anônimo a menos que seja mútuo',
   'landing.terms': 'privacidade e termos',
@@ -454,8 +520,8 @@ const pt = {
 }
 
 const fr = {
-  'landing.head1': 'Cette personne spéciale',
-  'landing.head2': 'pense-t-elle encore à toi ?',
+  'landing.head1': 'Tu penses encore à cette personne.',
+  'landing.head2': 'Et si elle pensait encore à toi ?',
   'landing.cta': 'Découvrir',
   'landing.anon': 'anonyme sauf si c’est réciproque',
   'landing.terms': 'confidentialité et conditions',
@@ -475,8 +541,8 @@ const fr = {
 }
 
 const de = {
-  'landing.head1': 'Denkt dieser besondere Mensch',
-  'landing.head2': 'noch an dich?',
+  'landing.head1': 'Du denkst noch an diesen Menschen.',
+  'landing.head2': 'Und wenn er auch an dich denkt?',
   'landing.cta': 'Herausfinden',
   'landing.anon': 'anonym, außer es ist beidseitig',
   'landing.terms': 'Datenschutz & AGB',

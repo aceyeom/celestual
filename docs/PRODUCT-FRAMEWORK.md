@@ -179,6 +179,23 @@ the product. **Indicator:** members-per-constellation distribution.
 the principle: no activity feeds or timestamps that can look stale; ambient
 visuals instead of counters.
 
+### T-10 · Stigma — "using this is a loser move" (S4 × L4 = 16)
+The coward frame attaches whenever the product reads as a *substitute for
+courage* ("too scared to say it? use this") — and it kills the viral chain,
+because nobody shares a product that lowers their status. Stigma is a property
+of **solo** use; it dies in **collective** use (Gas/NGL swept schools as waves,
+not as individual confessions). **Indicator:** share-rate per surface;
+sentiment on shared posts. **Mitigations (all shipped as copy/design rules in
+VOICE.md §4):** the self-respect frame ("I don't chase — if it's mutual, I'll
+know"), the consideration frame (the mutual gate protects *them* from an
+awkward conversation), mystery-not-longing on every public surface (the
+"would a confident person screenshot this?" test), and ritual surfaces (seal
+nights, the weekly feeling) that make participation the group default. The
+positioning corollary: crush is the marketing spearhead, but the product is
+**unsaid-wide** — three of the five intent lines are already non-romantic
+(apology, lost touch, unsaid), which gives every user cover for why they're
+here.
+
 ## §5 — Growth: what attracts users and what makes it viral
 
 **The structural insight: CELESTUAL's core loop is anonymity-blocked.** In a
@@ -194,7 +211,10 @@ around the loop:
    marketing that money can't buy. Keep it free forever (see PRICING-REVENUE.md).
 2. **Constellation links** (`/beta?c=name`) — the group-invite loop. One
    Ringleader importing a friend group or campus is worth hundreds of solo
-   visitors *and* solves T-3 density. This is the loop to invest in most.
+   visitors *and* solves T-3 density. This is the loop to invest in most —
+   also because it is the **only stigma-free share** (T-10): the Ringleader
+   shares as an organizer ("our floor has a sky now"), which admits no yearning
+   at all, while a personal share card always admits "I sealed a star."
 3. **The match story** — a mutual match is the most tellable story in the
    product ("we'd both entered each other for months"). Matched pairs are rare
    but their word-of-mouth conversion is near-total. Give them a beautiful,

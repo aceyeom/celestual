@@ -13,9 +13,11 @@ import { useI18n } from '../i18n/index.js'
 import { nextSlotIn, slotsRemaining, slotsCap } from '../api/slots.js'
 import {
   Brandmark, Glisten, PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  StepDots, BackBtn, Icon, Sonar, rgba, RADIUS, SPACE, makeShadow,
+  StepDots, BackBtn, Icon, Sonar, rgba, RADIUS, SPACE, makeShadow, useDialog,
 } from './ui.jsx'
-import { IntentPicker, IntentReveal, BetaChip } from './beta.jsx'
+import { sealStyleById } from '../theme.js'
+import { IntentPicker, IntentReveal, BetaChip, intentLine } from './beta.jsx'
+import { KeepsakeOffer } from './nova.jsx'
 
 // Shared centered column: at least one dynamic-viewport tall (so the flex spacers
 // fill phone and desktop alike), free to grow taller and scroll when content or
@@ -76,7 +78,7 @@ function FieldLabel({ C, children, optional }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 2px' }}>
       <span style={{ fontSize: 11, letterSpacing: '1.5px', fontFamily: "'Space Mono', monospace", color: C.muted, textTransform: 'uppercase' }}>{children}</span>
       {optional && (
-        <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
+        <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
       )}
     </div>
   )
@@ -224,7 +226,8 @@ export function IntroScreen({ C, ctx }) {
   const last = INTRO_STEPS.length - 1
   // Advance one beat — past the final beat the slideshow hands off into the flow.
   // Used by both the gentle auto-play timer and a tap anywhere on the field, so
-  // tapping skips ahead through the slides (there is no separate "skip" control).
+  // tapping skips ahead through the slides; the quiet "skip" below jumps straight
+  // into the flow for anyone who has seen the story before.
   // finishIntro() must be called OUTSIDE a setState updater (it sets App state);
   // calling it inside one triggers React's "update while rendering" warning.
   const advance = React.useCallback(() => {
@@ -241,7 +244,14 @@ export function IntroScreen({ C, ctx }) {
   }, [i, ctx])
   return (
     <GalaxyShell onBackdropTap={advance}>
-      <div style={{ minHeight: 34 }} />
+      {/* stopPropagation: the shell's backdrop tap advances the slideshow — the
+          escape hatches must not double as "next" */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 38 }}>
+        <BackBtn C={C} onClick={(e) => { e.stopPropagation(); ctx.go('landing') }} />
+        <GhostButton C={C} onClick={(e) => { e.stopPropagation(); ctx.finishIntro() }} style={{ fontSize: 12, letterSpacing: '.4px', fontFamily: "'Space Mono', monospace", color: C.muted }}>
+          {t('intro.skip')} →
+        </GhostButton>
+      </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
         <p key={i} className="intro-line" style={{ margin: 0, maxWidth: 360, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1.3, color: C.cream, textShadow: '0 4px 30px rgba(0,0,0,.6)' }}>
           {t(INTRO_STEPS[i])}
@@ -288,7 +298,7 @@ export function LandingScreen({ C, t: screenT, ctx }) {
       <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <PrimaryButton C={C} onClick={start}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center', whiteSpace: 'nowrap' }}>
-            {t('landing.cta')} <Icon name="arrow" size={17} color="#1a0f0a" stroke={2.1} />
+            {t('landing.cta')} <Icon name="arrow" size={17} color={C.onYou} stroke={2.1} />
           </span>
         </PrimaryButton>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -322,6 +332,27 @@ export function LandingScreen({ C, t: screenT, ctx }) {
               {t('landing.demo')}
             </GhostButton>
           )}
+        </div>
+        {/* the trust footer — the real legal pages, one tap from the front door
+            (the ToS used to be buried two screens deep) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 2 }}>
+          {[
+            ['/privacy', t('footer.privacy')],
+            ['/terms', t('footer.terms')],
+            ['mailto:privacy@celestual.us', t('footer.contact')],
+          ].map(([href, label], k) => (
+            <React.Fragment key={href}>
+              {k > 0 && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
+              <a
+                href={href}
+                target={href.startsWith('/') ? '_blank' : undefined}
+                rel={href.startsWith('/') ? 'noopener' : undefined}
+                style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.5px', color: rgba(C.muted, 0.85), textDecoration: 'none' }}
+              >
+                {label}
+              </a>
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </GalaxyShell>
@@ -407,7 +438,7 @@ export function YouScreen({ C, ctx }) {
               >
                 <Icon name="mail" size={18} color={rgba(C.you, 0.9)} stroke={1.7} />
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
-                <span style={{ fontSize: 9.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{t('you.emailOptional')}</span>
+                <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.92), background: rgba(C.you, 0.1), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{t('you.emailOptional')}</span>
                 <Icon name="plus" size={16} color={rgba(C.you, 0.9)} stroke={2} />
               </button>
             ) : (
@@ -423,7 +454,7 @@ export function YouScreen({ C, ctx }) {
 
       <PrimaryButton C={C} disabled={!valid} onClick={submit}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-          {needsVerify && <Icon name="instagram" size={16} color="#1a0f0a" stroke={2} />}
+          {needsVerify && <Icon name="instagram" size={16} color={C.onYou} stroke={2} />}
           {login ? t('you.loginCta') : needsVerify ? t('verify.continue') : t('you.continue')}
         </span>
       </PrimaryButton>
@@ -502,7 +533,11 @@ export function ThemScreen({ C, ctx }) {
           {/* sign-in expectation, set before they commit (not on /demo or once verified) */}
           {needsAuth && !confirming && <Hint C={C} icon="instagram" color={rgba(C.you, 0.85)}>{t('them.authNote')}</Hint>}
           {ctx.error && <div style={{ color: C.them, fontSize: 13, padding: '0 2px' }}>{ctx.error}</div>}
-          {!ctx.demo && (
+          {ctx.demo ? (
+            // The sandbox's one honest hint — without it the demo's entire payoff
+            // (the match, the reveal) is unreachable except by accident.
+            <Hint C={C} icon="star" color={rgba(C.you, 0.85)}>{t('them.demoHint')}</Hint>
+          ) : (
             <div style={{ paddingTop: 2 }}>
               <SlotMeter C={C} slots={ctx.slots} t={t} align="left" />
             </div>
@@ -515,7 +550,7 @@ export function ThemScreen({ C, ctx }) {
         {ctx.beta && (
           <Collapse open={valid}>
             <div style={{ paddingTop: 2 }}>
-              <IntentPicker C={C} value={ctx.intent} onChange={ctx.setIntent} />
+              <IntentPicker C={C} value={ctx.intent} onChange={ctx.setIntent} nova={ctx.nova} onNovaOpen={ctx.openNova} />
             </div>
           </Collapse>
         )}
@@ -523,7 +558,7 @@ export function ThemScreen({ C, ctx }) {
 
       <PrimaryButton C={C} disabled={!valid || busy} onClick={onSeal}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-          {!busy && <Icon name={sealIcon} size={16} color="#1a0f0a" stroke={2} />} {sealLabel}
+          {!busy && <Icon name={sealIcon} size={16} color={C.onYou} stroke={2} />} {sealLabel}
         </span>
       </PrimaryButton>
     </WarmShell>
@@ -592,7 +627,7 @@ export function RestingScreen({ C, ctx }) {
         <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <PrimaryButton C={C} onClick={() => ctx.checkAnother()}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-              <Icon name="plus" size={16} color="#1a0f0a" stroke={2.1} /> {t('resting.emptyCta')}
+              <Icon name="plus" size={16} color={C.onYou} stroke={2.1} /> {t('resting.emptyCta')}
             </span>
           </PrimaryButton>
           {!ctx.demo && (
@@ -675,13 +710,10 @@ export function RestingScreen({ C, ctx }) {
 // "still waiting · sealed <date>" line read like a star-chart entry. It fades and
 // settles into place (no slide-up, no grabber) and dismisses on a backdrop tap or
 // "keep watching". Only ever shown while the camera is zoomed in.
-export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
+export function StarDetail({ C, info, lang, demo, onRemove, onOpen, onSimulateMutual, onClose }) {
   const { t } = useI18n()
   const [removing, setRemoving] = React.useState(false)
   const [closing, setClosing] = React.useState(false)
-  if (!info) return null
-  const mutual = !!info.mutual
-  const when = info.time ? new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(new Date(info.time)) : null
   // Both dismiss paths fade the readout out first (~200ms), then hand control back
   // to App — so the card eases away while the camera drifts back out, instead of
   // popping. Release additionally winks the star out on the canvas.
@@ -690,6 +722,10 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
     setClosing(true)
     setTimeout(onClose, 200)
   }
+  const dialogRef = useDialog(close)
+  if (!info) return null
+  const mutual = !!info.mutual
+  const when = info.time ? new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(new Date(info.time)) : null
   const remove = () => {
     if (closing || removing) return
     setRemoving(true)
@@ -709,8 +745,13 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
       />
       <div
         onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={info.handle ? '@' + info.handle : t('star.kicker')}
+        tabIndex={-1}
         className={closing ? 'readout-out' : 'readout-in'}
-        style={{ position: 'relative', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}
+        style={{ position: 'relative', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', outline: 'none' }}
       >
         <StarMark C={C} />
 
@@ -748,10 +789,11 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
         </div>
 
         {/* beta: the line sealed with this star — quietly, in the person's own
-            words. It reads like an inscription, never a status field. */}
+            words (canned or Nova's write-your-own). An inscription, never a
+            status field. */}
         {info.intent && (
           <div style={{ padding: '0 0 15px', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, lineHeight: 1.4, color: rgba(C.cream, 0.8) }}>
-            “{t('intent.' + info.intent)}”
+            “{intentLine(t, info.intent)}”
           </div>
         )}
 
@@ -766,7 +808,7 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
           {mutual && (
             <PrimaryButton C={C} onClick={onOpen}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-                {t('star.open')} <Icon name="arrow" size={16} color="#1a0f0a" stroke={2.1} />
+                {t('star.open')} <Icon name="arrow" size={16} color={C.onYou} stroke={2.1} />
               </span>
             </PrimaryButton>
           )}
@@ -776,10 +818,22 @@ export function StarDetail({ C, info, lang, onRemove, onOpen, onClose }) {
           <GhostButton
             C={C}
             onClick={remove}
-            style={{ padding: '4px 8px', fontSize: 12, letterSpacing: '.3px', color: rgba(C.muted, removing ? 0.5 : 0.78) }}
+            style={{ padding: '4px 8px', fontSize: 12, letterSpacing: '.3px', color: rgba(C.muted, removing ? 0.5 : 0.85) }}
           >
             {removing ? t('star.removing') : t('star.remove')}
           </GhostButton>
+          {/* sandbox only: flip this star to mutual and play the FULL match
+              workflow — the demo's payoff, testable on any star. Never rendered
+              outside /demo and /beta. */}
+          {demo && !mutual && onSimulateMutual && (
+            <GhostButton
+              C={C}
+              onClick={onSimulateMutual}
+              style={{ padding: '4px 8px', fontSize: 11, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.you, 0.8) }}
+            >
+              ✦ {t('star.simMutual')}
+            </GhostButton>
+          )}
         </div>
       </div>
     </div>
@@ -803,6 +857,7 @@ export function AccountSheet({ C, ctx }) {
   const synced = !!ctx.synced
   const signedIn = !!ctx.verified
   const close = () => ctx.closeAccount()
+  const dialogRef = useDialog(close)
   const onDelete = async () => {
     if (!confirmDel) {
       setConfirmDel(true)
@@ -824,8 +879,13 @@ export function AccountSheet({ C, ctx }) {
       <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.72), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
       <div
         onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('account.kicker')}
+        tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 410, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '30px 26px 26px', display: 'flex', flexDirection: 'column', gap: 24 }}
+        style={{ position: 'relative', width: '100%', maxWidth: 410, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '30px 26px 26px', display: 'flex', flexDirection: 'column', gap: 24, outline: 'none' }}
       >
         {/* header — the @ is the hero, set in the headline serif */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
@@ -833,6 +893,11 @@ export function AccountSheet({ C, ctx }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Glisten C={C} size={14} />
               <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: C.muted }}>{t('account.kicker')}</span>
+              {ctx.demo && (
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: rgba(C.you, 0.92), background: rgba(C.you, 0.08), border: `1px solid ${rgba(C.you, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 9px' }}>
+                  sandbox
+                </span>
+              )}
             </div>
             <div style={{ marginTop: 12, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 9vw, 37px)', lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <span style={{ color: C.you }}>@</span>{ctx.me || 'you'}
@@ -897,10 +962,31 @@ export function AccountSheet({ C, ctx }) {
           <Hint C={C} icon="lock" color={rgba(C.you, 0.8)}>{synced ? t('account.encryptedDb') : t('account.encryptedLocal')}</Hint>
         </div>
 
+        {/* celestual nova — the tier's one quiet doorway (sandbox-only round).
+            Deliberately NOT on the out-of-slots screen: nothing for sale may sit
+            next to the slot budget (I-2 adjacency). */}
+        {ctx.demo && ctx.nova && (
+          <>
+            <Rule C={C} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.muted }}>
+                <Glisten C={C} size={12} /> {t('nova.kicker')}
+              </span>
+              <GhostButton C={C} onClick={() => { close(); ctx.openNova() }} style={{ padding: 0, fontSize: 12.5, color: rgba(C.you, 0.92) }}>
+                {ctx.nova.active ? t('nova.active') : t('nova.accountHint')} →
+              </GhostButton>
+            </div>
+          </>
+        )}
+
         <Rule C={C} />
 
-        {/* sign out · delete — quiet text links, no boxed "danger zone" */}
-        {!confirmDel ? (
+        {/* sign out · delete — quiet text links, no boxed "danger zone". The
+            sandbox holds no real account, so it offers honesty instead of a
+            delete button that pretends to do something. */}
+        {ctx.demo ? (
+          <span style={{ fontSize: 12, lineHeight: 1.55, color: C.muted }}>{t('account.sandboxNote')}</span>
+        ) : !confirmDel ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
             {signedIn && (
               <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13, color: C.cream }}>
@@ -930,8 +1016,17 @@ export function AccountSheet({ C, ctx }) {
 }
 
 // ── 6 · MATCH ─────────────────────────────────────────────────
-export function MatchScreen({ C, ctx }) {
+export function MatchScreen({ C, ctx, lang }) {
   const { t } = useI18n()
+  // Each side's seal light at the reveal. 'ember' (the free default) keeps the
+  // classic identity colors; a Nova style replaces only the LIGHT — there is no
+  // badge, no tier name, nothing commercial in this moment (I-4).
+  const sealCol = (side, fallback) => {
+    const id = ctx.matchSeal && ctx.matchSeal[side]
+    return id && id !== 'ember' ? sealStyleById(id).color : fallback
+  }
+  const youCol = sealCol('you', C.you)
+  const themCol = sealCol('them', C.them)
   return (
     <GalaxyShell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 'min(420px, 56vh)' }}>
@@ -943,24 +1038,39 @@ export function MatchScreen({ C, ctx }) {
           </h1>
         </div>
         <div className="enter" style={{ animationDelay: '.12s', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <HandleChip C={C} handle={ctx.me || 'you'} color={C.you} big />
-          <span style={{ color: C.muted, fontSize: 15 }}>✦</span>
-          <HandleChip C={C} handle={ctx.them || 'them'} color={C.them} big />
+          <HandleChip C={C} handle={ctx.me || 'you'} color={youCol} big />
+          <span aria-hidden style={{ fontSize: 15, color: themCol, textShadow: `0 0 12px ${rgba(themCol, 0.75)}` }}>✦</span>
+          <HandleChip C={C} handle={ctx.them || 'them'} color={themCol} big />
         </div>
         {/* beta: both sealed intents unseal here — the payoff of the whole signal */}
-        {ctx.beta && ctx.matchIntent && <IntentReveal C={C} you={ctx.matchIntent.you} them={ctx.matchIntent.them} />}
+        {ctx.beta && ctx.matchIntent && (
+          <IntentReveal C={C} you={ctx.matchIntent.you} them={ctx.matchIntent.them} youCol={youCol} themCol={themCol} />
+        )}
       </div>
 
       <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <PrimaryButton C={C} onClick={() => ctx.openConversation()}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            {t('match.open')} <Icon name="arrow" size={17} color="#1a0f0a" stroke={2.1} />
+            {t('match.open')} <Icon name="arrow" size={17} color={C.onYou} stroke={2.1} />
           </span>
         </PrimaryButton>
         <p style={{ margin: '2px 0 0', textAlign: 'center', fontSize: 12, lineHeight: 1.5, color: C.muted }}>{t('match.note')}</p>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={() => ctx.go('resting')}>{t('match.notyet')}</GhostButton>
         </div>
+        {/* the matched-pair keepsake — offered AFTER the reveal has landed, as a
+            quiet unfolding line below the moment, never over it (I-4). Sandbox-
+            only this round: the "purchase" is simulated and says so. */}
+        {ctx.demo && (
+          <KeepsakeOffer
+            C={C}
+            me={ctx.me}
+            them={ctx.them}
+            youSeal={(ctx.matchSeal && ctx.matchSeal.you) || 'ember'}
+            themSeal={(ctx.matchSeal && ctx.matchSeal.them) || 'ember'}
+            lang={lang}
+          />
+        )}
       </div>
     </GalaxyShell>
   )
@@ -1077,6 +1187,10 @@ export function PrivacyScreen({ C, ctx }) {
           {t('privacy.p4a')}{' '}
           <a href="mailto:privacy@celestual.us" style={{ color: C.you }}>privacy@celestual.us</a>.
         </P>
+        {/* the free-forever list — the trust page bullet the Skeptic checks
+            before anyone else is allowed to type a name (PRICING-REVENUE §2) */}
+        <H>{t('privacy.h6')}</H>
+        <P>{t('privacy.p6')}</P>
 
         <H>{t('privacy.h5')}</H>
         <P>{t('privacy.p5')}</P>
@@ -1303,16 +1417,16 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // Poll for the DM while waiting; stop on success, expiry, or unmount.
   React.useEffect(() => {
     if (phase !== 'waiting') return
-    // Demo: there's no real DM to poll for. Auto-confirm 10 seconds after the code is
-    // shown — REGARDLESS of whether the user copies it, opens Instagram, or sends
-    // anything — so the "waiting for your DM…" state is actually seen before the ✓
-    // lands and the demo always completes on its own.
+    // Demo: there's no real DM to poll for. Auto-confirm ~1.8s after the code is
+    // shown — long enough for the "waiting" beat to register as part of the story,
+    // short enough that the sandbox never feels like a stall. The sheet says
+    // plainly that it confirms on its own (verify.demoNote).
     if (demo) {
       const id = setTimeout(() => {
         setPhase('verified')
         const proof = proofRef.current
         doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS)
-      }, 10000)
+      }, 1800)
       return () => clearTimeout(id)
     }
     const tick = async () => {
@@ -1343,15 +1457,16 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // allowed to launch the Instagram app and write the clipboard.
   const copyAndOpen = () => {
     copyText(dmCode(token)).then(setCopied)
+    // The SANDBOX must never leave the page: demo users were being deep-linked
+    // into the real @celestual.us DM thread and dutifully sending real star-codes
+    // to a real inbox. In demo the tap just copies (the flow still reads
+    // end-to-end); nothing external ever launches.
+    if (demo) return
     // openExternal opens Instagram (a floating window on desktop, the app on mobile)
     // and keeps THIS context alive so the overlay stays put underneath — the user
     // sends the DM, comes back, and ✕'s out of the overlay. Inside an in-app webview
     // (where new windows don't work) it navigates same-tab; the saved record
     // (savePending, above) lets us resume polling when they return to celestual.
-    //
-    // The demo opens Instagram too — same as the real flow, so it looks and feels
-    // identical — but there's no DM to actually watch for: the polling effect below
-    // auto-confirms on its 6-second timer regardless of what the user sends.
     openExternal(igDeepLink(), igWebLink())
   }
   const inApp = isInAppBrowser()
@@ -1364,6 +1479,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     clearPending()
     onClose()
   }
+  const dialogRef = useDialog(dismiss)
 
   const errMsg =
     errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
@@ -1376,8 +1492,13 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
       <div
         onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('verify.title')}
+        tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
       >
         {/* header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -1438,7 +1559,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
 
             <PrimaryButton C={C} disabled={phase === 'starting' || !token} onClick={copyAndOpen}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-                <Icon name={copied ? 'check' : 'copy'} size={16} color="#1a0f0a" stroke={2} />
+                <Icon name={copied ? 'check' : 'copy'} size={16} color={C.onYou} stroke={2} />
                 {copied ? t('verify.copied') : t('verify.copyOpen')}
               </span>
             </PrimaryButton>
@@ -1458,16 +1579,22 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
               <Sonar C={C} color={C.you} size={12} /> {t('verify.waiting')}
             </div>
 
+            {/* The sandbox says what it is: no DM will be watched for, nothing
+                external launches, the ✓ arrives on its own. */}
+            {demo && (
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.you, 0.9) }}>{t('verify.demoNote')}</p>
+            )}
+
             {/* Inside Instagram's own in-app browser, the hand-off can be flaky —
                 tell people they can come straight back, and offer the cleaner path. */}
-            {inApp && (
+            {!demo && inApp && (
               <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.you, 0.9) }}>{t('verify.inApp')}</p>
             )}
 
             {/* On desktop the little window opens Instagram's web DM. If you're not
                 already signed in, Instagram throttles the cold link (HTTP 429) — so
                 tell people to sign in within that window, then click again. */}
-            {!mobile && !inApp && (
+            {!demo && !mobile && !inApp && (
               <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: C.muted }}>{t('verify.desktop')}</p>
             )}
 

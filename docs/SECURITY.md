@@ -23,8 +23,10 @@ The browser literally cannot `select` from them. The only entry points are the
 `SECURITY DEFINER` RPCs (`celestual_submit`, `celestual_withdraw`,
 `celestual_suppress`, `celestual_link`, `celestual_check_many`,
 `celestual_slots_for`, `celestual_request_reminder`, `celestual_start_ig_verification`,
-`celestual_poll_ig_verification`), which run as the table owner and return only
-small status objects — never rows. The group-membership helper `celestual_group`,
+`celestual_poll_ig_verification`, and `celestual_my_sky` — the cross-device
+sign-back-in, which returns only the caller's OWN sealed @s and is gated by the
+same DM ownership proof as sealing), which run as the table owner and return only
+small status objects — never other people's rows. The group-membership helper `celestual_group`,
 the verification-completion path `celestual_complete_ig_verification`
 (service-role only), and the gates `celestual_consume_ig_proof` /
 `celestual_ig_required` are **not** granted to clients, so linked accounts aren't
@@ -170,11 +172,12 @@ flipping it on tightens these controls without a rewrite.
 
 ## Operator checklist
 
-- [ ] All migrations applied (`0001`–`0004`) — confirm RLS is **on** and there are
+- [ ] All migrations applied (`0001`–`0005`) — confirm RLS is **on** and there are
       **no** policies on the `celestual_*` tables (Supabase → Database → Tables → RLS).
 - [ ] Confirm `anon` has **execute** on the public RPCs (`celestual_submit`,
       `_withdraw`, `_suppress`, `_link`, `_check_many`, `_slots_for`,
-      `_request_reminder`, `_norm`, `_start_ig_verification`, `_poll_ig_verification`)
+      `_request_reminder`, `_norm`, `_start_ig_verification`, `_poll_ig_verification`,
+      `_my_sky`)
       and **nothing** else — and **not** on `celestual_group`,
       `celestual_complete_ig_verification`, `celestual_consume_ig_proof`, or
       `celestual_ig_required`.

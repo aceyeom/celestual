@@ -1,11 +1,12 @@
 # CELESTUAL
 
-**CELESTUAL** — *"is that special somebody still thinking about you?"* — is an
-anonymous, reciprocal matching site. Live at **https://celestual.us/**.
+**CELESTUAL** — *"you still think about them. What if they think about you?"* —
+is an anonymous, reciprocal matching site. Live at **https://celestual.us/**.
 
-You enter your Instagram @ and the @ of someone you can't stop thinking about.
-You only find out it's mutual if **they** independently enter **you** —
-anonymous, zero-rejection. One-sided entries are never revealed to anyone.
+You enter your Instagram @ and the @ of someone you can't stop thinking about —
+a crush, an old friend, someone you lost touch with. You only find out it's
+mutual if **they** independently enter **you** — anonymous, zero-rejection.
+One-sided entries are never revealed to anyone.
 
 Signing back in is just your @ again: prove it's yours with the same one-time
 Instagram DM and your sky — every star you've sent — comes back on any device.
@@ -29,7 +30,7 @@ celestual/
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
 │   ├── config.toml   Supabase CLI config
-│   ├── migrations/   0001 matching core · 0002 accounts + encrypted sky · 0003 slot budget, multi-account, instant reveal · 0004 Instagram DM verification
+│   ├── migrations/   0001 matching core · 0002 accounts + encrypted sky · 0003 slot budget, multi-account, instant reveal · 0004 Instagram DM verification · 0005 cross-device sky
 │   └── functions/    celestual-notify · celestual-remind · celestual-search · celestual-manychat · celestual-ig-webhook
 ├── docs/             all the guides (see below)
 ├── package.json      repo-root build (app → dist/)
@@ -55,10 +56,20 @@ anon key.
 signal** (an optional "why them?" line sealed with a star, both sides revealed
 only on a mutual match) and **constellations** (communities sharing one sky —
 create one, join one, share one link that carries it; counts follow the 100
-rule: hidden under 100, shown at 100+; no waitlists). A join link looks like
-`/beta?c=<community name>`. Everything beta lives in `app/src/components/beta.jsx`
-and persists only to `localStorage` (`celestual:beta:v1`) — nothing reaches the
-server.
+rule: hidden under 100, shown at 100+; no waitlists — plus each community's
+**seal night** and, at 100+ members, its aggregate **weekly feeling**). A join
+link looks like `/beta?c=<community name>`. Everything beta lives in
+`app/src/components/beta.jsx` and persists only to `localStorage`
+(`celestual:beta:v1`) — nothing reaches the server.
+
+The sandbox also carries the **simulated monetization lab**: **Celestual Nova**
+(the cosmetic tier — write-your-own sealed line, seal styles, sky themes;
+$3.99/mo or $19.99/yr, instant local unlock, nothing charged) and the
+matched-pair **keepsake** offered after a reveal. In demo, any sealed star's
+readout has a *"sandbox: they seal you back"* control that plays the full match
+workflow. See [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md); nothing
+Nova touches is ever mechanical — the five intent lines, slots, matching,
+reveal, and erasure are free forever.
 
 ## Build
 

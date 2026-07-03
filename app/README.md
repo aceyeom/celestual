@@ -1,4 +1,4 @@
-# CELESTUAL — is that special somebody still thinking about you?
+# CELESTUAL — you still think about them. What if they think about you?
 
 The CELESTUAL front-end ("galaxy edition"). You enter your Instagram @ and the @
 of someone you can't stop thinking about. You only ever find out it's mutual if
@@ -32,8 +32,11 @@ references in the code point there.
   ([`src/api/slots.js`](./src/api/slots.js); enforced in `celestual_submit`).
 - **Multi-account.** People can link up to 3 of their own @s; being entered on any
   of them counts (group-aware matching, `celestual_handle_links`).
-- **`/demo`.** `celestual.us/demo` is **fully sandboxed** — zero verification and
-  never writes to the real backend (enter `@demo` as the ex to see a match).
+- **`/demo`.** `celestual.us/demo` is **fully sandboxed** — the verification
+  overlay auto-confirms locally (never launching real Instagram) and nothing is
+  ever written to the real backend. Enter `@demo` as the ex to see a match (the
+  "them" step says so), or use the *"sandbox: they seal you back"* control on
+  any sealed star's readout to play the full match workflow.
 - **Instagram DM verification** (no OAuth, no Meta dev portal) behind
   `VITE_IG_VERIFY_ENABLED` (off by default → a local verified stub keeps the flow
   testable). People prove the `@` they type is theirs by DMing a one-time code to
@@ -79,9 +82,11 @@ otherwise); see [`src/api/profile.js`](./src/api/profile.js) and
 | Match logic | Supabase `celestual_submit` RPC (`SECURITY DEFINER`, instant reveal + slot budget) |
 | Match emails | Supabase Edge Function (`celestual-notify`) → Resend |
 
-The backend lives in [`../supabase/`](../supabase): three migrations
-(`0001` core · `0002` accounts · `0003` slot budget + multi-account) plus the edge
-functions (`celestual-notify`, `celestual-remind`, `celestual-search`).
+The backend lives in [`../supabase/`](../supabase): five migrations
+(`0001` core · `0002` accounts + encrypted sky · `0003` slot budget +
+multi-account · `0004` Instagram DM verification · `0005` cross-device sky)
+plus the edge functions (`celestual-notify`, `celestual-remind`,
+`celestual-search`, `celestual-manychat`, `celestual-ig-webhook`).
 
 ## How matching works
 
