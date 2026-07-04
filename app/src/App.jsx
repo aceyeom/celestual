@@ -9,7 +9,7 @@ import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { makeColors } from './theme.js'
-import { NightField, ProfileButton } from './components/ui.jsx'
+import { GalaxyCanvas, ProfileButton } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   DoorScreen, CampusScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
@@ -750,7 +750,7 @@ export default function App() {
 
   return (
     <div className="celestual-app">
-      <NightField style={{ zIndex: 0 }} />
+      <GalaxyCanvas mode="idle" you={C.you} them={C.them} style={{ zIndex: 0 }} />
 
       {showProfile && (
         <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
