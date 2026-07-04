@@ -686,6 +686,21 @@ export default function App() {
     setTimeout(() => (persistReady.current = true), 1000)
   }, [demo, me, go, wipeLocalState])
 
+  // The public opt-out, made demo-safe: the sandbox must never reach a server
+  // (§4.4 — "in the demo nothing gets saved to the db"). suppressHandle() itself
+  // only guards on `hasSupabase`, so the /demo opt-out page would otherwise write
+  // for real; here it resolves locally instead.
+  const suppress = useCallback(
+    async (handle) => {
+      if (demo) {
+        await new Promise((r) => setTimeout(r, 300))
+        return { suppressed: normHandle(handle), erased: 0 }
+      }
+      return suppressHandle(handle)
+    },
+    [demo],
+  )
+
   // ── outward ──
   // "go say it" — straight into the Instagram DM thread.
   const openConversation = useCallback((handle) => {
@@ -738,7 +753,7 @@ export default function App() {
     addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,
     startLogin, login,
-    renew, letGo, simulateMutual, openConversation, suppressHandle,
+    renew, letGo, simulateMutual, openConversation, suppressHandle: suppress,
     openAccount, closeAccount, signOut, deleteEverything,
   }
 
