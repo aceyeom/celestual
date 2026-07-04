@@ -28,7 +28,7 @@
 //
 // Deploy:  supabase functions deploy celestual-ig-webhook
 // Then subscribe it to the `messages` field in your Meta app. See
-// docs/SETUP-IG-VERIFY.md.
+// docs/DEBUG-IG-WEBHOOK.md.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const APP_SECRET = Deno.env.get('IG_APP_SECRET') ?? '';

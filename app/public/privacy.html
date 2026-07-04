@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0B0814" />
-    <title>Privacy Policy — Celestual</title>
+    <meta name="theme-color" content="#070B14" />
+    <title>Privacy Policy — celestual</title>
     <meta
       name="description"
-      content="How Celestual collects, uses, stores and deletes your data — including the Instagram handles you enter and your optional email."
+      content="How celestual collects, uses, stores and deletes your data — including why it stores who you ping only as a salted hash, and how any handle owner can opt out."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://celestual.us/privacy" />
@@ -20,20 +20,19 @@
     />
     <style>
       :root {
-        --ink: #0b0814;
-        --ink2: #16111f;
-        --cream: #f3ecf6;
-        --muted: #9e92b6;
-        --line: rgba(243, 236, 246, 0.1);
-        --you: #ff9e6b;
-        --them: #e6749e;
+        --ink: #070b14;
+        --ink2: #0c1322;
+        --cream: #f2eee5;
+        --muted: #8b94a8;
+        --line: rgba(242, 238, 229, 0.1);
+        --star: #ffa25c;
       }
       * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; }
       body {
         margin: 0;
         background:
-          radial-gradient(1200px 700px at 50% -10%, #211934 0%, transparent 60%),
+          radial-gradient(1200px 700px at 50% -10%, #141d31 0%, transparent 60%),
           var(--ink);
         color: var(--cream);
         font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -47,7 +46,7 @@
         padding: 48px 22px 96px;
         padding-top: max(48px, env(safe-area-inset-top));
       }
-      a { color: var(--you); text-decoration: none; }
+      a { color: var(--star); text-decoration: none; }
       a:hover { text-decoration: underline; }
       .brand {
         display: inline-flex;
@@ -61,8 +60,8 @@
       }
       .brand .dot {
         width: 7px; height: 7px; border-radius: 50%;
-        background: radial-gradient(circle at 35% 30%, #fff, var(--you));
-        box-shadow: 0 0 14px var(--you);
+        background: radial-gradient(circle at 35% 30%, #fff, var(--star));
+        box-shadow: 0 0 14px var(--star);
       }
       h1 {
         font-family: 'Instrument Serif', serif;
@@ -79,7 +78,7 @@
         margin: 38px 0 8px;
         color: var(--cream);
       }
-      p, li { color: #cdc3da; font-size: 15px; }
+      p, li { color: #c9cdd6; font-size: 15px; }
       ul { padding-left: 20px; margin: 8px 0; }
       li { margin: 6px 0; }
       .lead { font-size: 16px; color: var(--cream); }
@@ -89,7 +88,7 @@
         padding: 16px 18px;
         border: 1px solid var(--line);
         border-radius: 16px;
-        background: rgba(255, 158, 107, 0.05);
+        background: rgba(255, 162, 92, 0.05);
       }
       .callout p { margin: 0; color: var(--cream); }
       footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
@@ -98,105 +97,127 @@
   </head>
   <body>
     <main class="wrap">
-      <a class="brand" href="/"><span class="dot"></span> Celestual</a>
+      <a class="brand" href="/"><span class="dot"></span> celestual</a>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated 28 June 2026</p>
+      <p class="updated">Last updated 3 July 2026</p>
 
       <p class="lead">
-        Celestual (<a href="https://celestual.us">celestual.us</a>) is an anonymous,
-        reciprocal matching site: you enter your Instagram @ and the @ of someone
-        you’re thinking about, and you only ever find out if it’s <em>mutual</em>.
-        One-sided entries are never revealed to anyone. This policy explains exactly
-        what we collect, how we use it, who processes it, and how you can delete it.
-        The service is operated by <strong>Celestual LLC</strong>, a Delaware (USA)
-        limited liability company, which is the data controller for the personal data
-        described here. Reach us any time at
-        <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>.
+        Celestual (<a href="https://celestual.us">celestual.us</a>) is a double-blind,
+        mutual-reveal service: you enter the Instagram handle of someone on your
+        mind (“placing a ping”), and both of you find out only if they independently
+        enter you back — at the same moment. One-sided pings are never revealed to
+        anyone. This policy explains exactly what we collect, how we use it, who
+        processes it, and how anyone — user or not — can delete it. The service is
+        operated by <strong>Celestual LLC</strong>, a Delaware (USA) limited
+        liability company, the data controller for the personal data described here.
+        Reach us any time at <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>.
       </p>
 
-      <h2>What we collect</h2>
+      <h2>What we collect — and what we deliberately can't read</h2>
       <ul>
         <li>
-          <strong>Instagram handles.</strong> When you make an entry we store two
-          handles — yours and the one you enter — so we can detect whether the same
-          pairing is later entered in reverse. These are stored as part of an
-          encrypted entry record.
+          <strong>Your handle.</strong> When you place a ping we store your own
+          Instagram handle (verified as yours via the DM check below).
+        </li>
+        <li>
+          <strong>Who you ping — as a hash only.</strong> The handle you enter is
+          stored exclusively as a salted one-way hash. Matching runs hash-to-hash.
+          Neither we, nor anyone who ever breached our database, can read who your
+          pings point at. The readable name exists only on your own device — and,
+          once a pair turns mutual, in the match record both of you already know.
+        </li>
+        <li>
+          <strong>An optional intent line.</strong> If you attach one of the five
+          fixed lines to a ping, we store its identifier. It is shown only to the
+          other person, only at a mutual match.
         </li>
         <li>
           <strong>Your email (optional).</strong> Only if you provide one, and only
-          so we can notify you if an entry turns out to be mutual, or remind you. You
-          can use Celestual without giving an email.
+          for two notes: a mutual match, and a heads-up before one of your own pings
+          lapses. You can use celestual without giving an email.
         </li>
         <li>
           <strong>Identity-verification signal.</strong> To confirm an @ is really
           yours, you send a one-time code by Instagram DM to our account
-          (<a href="https://instagram.com/celestual.us">@celestual.us</a>). Meta’s
-          messaging webhook tells our backend that the code arrived from that handle.
-          We do not receive your Instagram password and never gain access to your
+          (<a href="https://instagram.com/celestual.us">@celestual.us</a>). Meta's
+          messaging webhook tells our backend the code arrived from that handle. We
+          never receive your Instagram password and never gain access to your
           Instagram account.
         </li>
         <li>
+          <strong>Worlds and campus preregistrations (optional).</strong> If you tag
+          a community you belong to, or preregister for a campus opening, we store
+          your handle with that community or campus, plus your optional email for the
+          opening note. Community counters are shown only in aggregate, and only
+          once a community passes one hundred members.
+        </li>
+        <li>
           <strong>Basic technical data.</strong> Standard request/log data needed to
-          serve the site securely (e.g. handled by our hosting and database
-          providers). We do not run advertising or third-party tracking cookies.
+          serve the site securely (handled by our hosting and database providers).
+          We do not run advertising or third-party tracking cookies.
+        </li>
+      </ul>
+
+      <h2>How long a ping lives</h2>
+      <ul>
+        <li>
+          <strong>Sixty days.</strong> Every ping stands for sixty days. Renewing it
+          is free and unlimited; if you let it lapse, the record — hash and all — is
+          purged automatically. Unresolved feelings do not accumulate here.
+        </li>
+        <li>
+          <strong>Retiring is immediate.</strong> "Let it go" deletes the ping at
+          once and frees your slot. Nothing was ever revealed either way.
+        </li>
+        <li>
+          <strong>Mutual records</strong> persist so both people can return to them,
+          until either person withdraws or opts out.
+        </li>
+        <li>
+          <strong>Verification codes</strong> expire within minutes and expired
+          records are pruned automatically. <strong>Rate-limiting logs</strong> are
+          short-lived and pruned on a rolling basis.
         </li>
       </ul>
 
       <h2>How we use it</h2>
       <ul>
-        <li>To compute whether an entry is mutual, and only then notify the earlier entrant.</li>
-        <li>To restore <em>your own</em> stars (“your sky”) when you sign back in with the same @.</li>
-        <li>To enforce a fair, server-side weekly entry budget and prevent abuse.</li>
-        <li>To verify, when required, that an @ belongs to the person using it.</li>
+        <li>To compute — by hash — whether a ping is mutual, and only then to tell exactly the two people involved.</li>
+        <li>To show you, and only you, the state of your own pings.</li>
+        <li>To enforce the three-slot rule, the sixty-day lapse, and the anti-abuse rate limits, server-side.</li>
+        <li>To verify that a handle belongs to the person using it before anything can match to it.</li>
+        <li>To run campus openings: counting verified preregistrations toward a public threshold and mailing everyone at once when it trips.</li>
       </ul>
 
       <h2>What we never do</h2>
       <ul>
-        <li>We never reveal a one-sided entry. There is no on-screen result for the person you entered.</li>
+        <li>We never reveal a one-sided ping — not on screen, not by email, not by implication. There is no result of any kind for the person you entered.</li>
         <li>We never post, message, follow, or alert the person you enter.</li>
+        <li>We never send anyone a message implying someone entered them. Every number we publish (counters, meters, campus aggregates) is exactly true or not shown.</li>
         <li>We never sell your data or share it for advertising.</li>
       </ul>
 
       <h2>Who processes your data</h2>
-      <p>We use a small set of trusted service providers, each only for the function below:</p>
+      <p>A small set of service providers, each only for the function below:</p>
       <ul>
-        <li><strong>Supabase</strong> — encrypted database and backend functions that store entries and the optional email.</li>
+        <li><strong>Supabase</strong> — database and backend functions that store the records described above.</li>
         <li><strong>Vercel</strong> — hosting and delivery of the website.</li>
         <li><strong>ManyChat &amp; Meta Platforms (Instagram)</strong> — relay the one-time DM verification message and tell us the code was received from your handle.</li>
-        <li><strong>Resend</strong> — sends the match / reminder email, when you’ve given one.</li>
+        <li><strong>Resend</strong> — sends the match, lapse and campus-opening emails, when you've given an address.</li>
       </ul>
 
-      <h2>How long we keep it</h2>
-      <ul>
-        <li>
-          <strong>Entries</strong> are kept only while they’re needed for matching:
-          until you withdraw them, until the handle involved is removed and blocked,
-          or until you delete your account — whichever comes first.
-        </li>
-        <li>
-          <strong>Verification records</strong> (the one-time DM codes) expire within
-          minutes and expired records are pruned automatically.
-        </li>
-        <li>
-          <strong>Rate-limiting logs</strong> (short-lived operational records used to
-          stop abuse) are pruned automatically on a rolling basis.
-        </li>
-        <li>
-          When you ask us to erase something, we delete it without undue delay.
-        </li>
-      </ul>
-
-      <h2>If someone entered you</h2>
+      <h2>If your handle was entered</h2>
       <p>
-        People can enter a handle that belongs to you without your involvement. Here
-        is what that means for you: <strong>you will never be notified, contacted, or
-        marketed to</strong> because of it, and no one — including the person who
-        entered you — ever learns anything unless you independently enter them back.
-        If you’d rather not exist on Celestual at all, you can
-        <a href="/data-deletion">remove and block your handle</a> in one step, free,
-        without creating an account. That erases every entry referencing your handle
-        and prevents it from ever being entered again. This will always be free — it
+        Someone can place a ping at your handle without your involvement. Here is
+        what that means for you: <strong>you will never be notified, contacted, or
+        marketed to</strong> because of it; your handle is stored only as a salted
+        hash; and the record self-destructs within sixty days unless renewed. No
+        one — including the person who placed it — ever learns anything unless you
+        independently enter them back. If you'd rather not exist on celestual at
+        all, you can <a href="/data-deletion">opt your handle out</a> in one step,
+        free, without creating an account. That erases everything referencing your
+        handle and makes it permanently un-pingable. This will always be free — it
         is the one promise this product cannot function without.
       </p>
 
@@ -210,44 +231,51 @@
         <li>
           <strong>EU/EEA &amp; UK (GDPR):</strong> you have the rights of access,
           rectification, erasure, restriction, portability, and objection. We process
-          entry data to provide the service you ask for (performance of a contract)
+          ping data to provide the service you ask for (performance of a contract)
           and abuse-prevention data under our legitimate interest in keeping the
-          service safe. You may lodge a complaint with your local supervisory
-          authority.
+          service safe. Hashing and the sixty-day purge are our data-minimisation
+          measures for third-party handles. You may lodge a complaint with your
+          local supervisory authority.
         </li>
         <li>
           <strong>California (CCPA/CPRA):</strong> you have the rights to know,
           delete, and correct. We do <strong>not</strong> sell personal information
           and do not share it for cross-context behavioral advertising, so there is
-          nothing to opt out of. We never discriminate against you for exercising
-          your rights.
+          nothing to opt out of there. We never discriminate against you for
+          exercising your rights.
         </li>
         <li>
-          <strong>Data location:</strong> we’re a US company and data is processed in
-          the United States by the providers below. Where EU/UK data is transferred,
+          <strong>Korea (PIPA):</strong> the same access, correction and deletion
+          rights apply; the opt-out page is the fastest route, and email requests are
+          honored regardless of where you live.
+        </li>
+        <li>
+          <strong>Data location:</strong> we're a US company and data is processed in
+          the United States by the providers above. Where EU/UK data is transferred,
           our providers rely on standard contractual clauses.
         </li>
       </ul>
 
-      <h2>If we ever add paid features</h2>
+      <h2>Paid features</h2>
       <p>
-        Optional paid extras (see the <a href="/terms">Terms</a>) would be processed
-        by a dedicated payment processor — we would never see or store full card
-        numbers, and this page will name the processor before anything is ever
-        charged. Paid features never change what we collect about anyone.
+        Celestual currently sells nothing — there are no subscriptions, tiers, or
+        purchases anywhere in the product. If a paid extra ever ships (the only one
+        contemplated is a one-time fourth ping slot), a dedicated payment processor
+        would be named on this page before anything is charged, we would never see
+        or store full card numbers, and nothing paid will ever change what we
+        collect about anyone or what stays free (see the <a href="/terms">Terms</a>).
       </p>
 
       <h2 id="delete">Deleting your data</h2>
       <p>
-        You can delete your data yourself at any time, and you can ask us to erase and
-        block any handle — including your own, if someone entered you. Full,
-        step-by-step instructions are here:
+        You can delete your data yourself at any time, and any handle owner — user
+        or not — can opt out permanently. Full, step-by-step instructions:
       </p>
       <div class="callout">
         <p>
-          → <a href="/data-deletion"><strong>How to delete your Celestual data</strong></a>,
+          → <a href="/data-deletion"><strong>How to delete your celestual data</strong></a>,
           or email <a href="mailto:privacy@celestual.us">privacy@celestual.us</a> and
-          we’ll handle it for you.
+          we'll handle it for you.
         </p>
       </div>
 
@@ -256,14 +284,14 @@
 
       <h2>Changes &amp; contact</h2>
       <p>
-        We’ll keep this page current as the product grows; material changes will be
-        reflected by the “last updated” date above. Your use of Celestual is also
+        We'll keep this page current as the product grows; material changes will be
+        reflected by the "last updated" date above. Your use of celestual is also
         governed by our <a href="/terms">Terms of Service</a>. Questions or requests:
         <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>.
       </p>
 
       <hr />
-      <a class="back" href="/">← Back to Celestual</a>
+      <a class="back" href="/">← back to celestual</a>
       <footer>© 2026 Celestual LLC · celestual.us</footer>
     </main>
   </body>

@@ -1,19 +1,24 @@
 // CELESTUAL — celestual-notify edge function.
 //
-// Drains the `celestual_notifications` queue and sends each pending row as an email
-// via Resend, then stamps `sent_at`. It is *idempotent by queue*: it only ever
-// touches rows that are unsent, not yet dead-lettered, and due for an attempt,
-// so it can be safely invoked by either a Supabase Database Webhook (on insert
-// to celestual_notifications) or pg_cron.
+// Drains the `celestual_notifications` queue and sends each pending mutual-match
+// email via Resend, then stamps `sent_at`. It is *idempotent by queue*: it only
+// ever touches rows that are unsent, not yet dead-lettered, and due for an
+// attempt, so it can be safely invoked by either a Supabase Database Webhook
+// (on insert to celestual_notifications) or pg_cron.
 //
-// Retry / dead-letter (§5.1): a failing send is retried with exponential backoff
-// up to MAX_ATTEMPTS, after which the row is marked `failed_at` (dead-lettered)
-// so a permanently-bad address isn't retried forever. Dead-letters are surfaced
-// in the response payload for alerting.
+// The email is the reveal channel for the earlier entrant (framework Screen 8):
+// subject quiet and unmistakable, body in the product's own registers (serif
+// italic for the feeling, small sans for the mechanics), single warm accent on
+// deep navy. Every sentence is literally true; nothing here ever implies
+// activity that didn't happen (the NGL line — see ULTIMATE-PRODUCT-FRAMEWORK §6.2).
+//
+// Retry / dead-letter: a failing send is retried with exponential backoff up to
+// MAX_ATTEMPTS, after which the row is marked `failed_at` (dead-lettered) so a
+// permanently-bad address isn't retried forever.
 //
 // Required secrets (Supabase → Edge Functions → Secrets):
-//   RESEND_API_KEY    — your Resend API key
-//   CELESTUAL_FROM_EMAIL  — verified sender, e.g. "CELESTUAL <hello@celestual.us>"
+//   RESEND_API_KEY        — your Resend API key
+//   CELESTUAL_FROM_EMAIL  — verified sender, e.g. "celestual <hello@celestual.us>"
 // Provided automatically by the platform:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -21,7 +26,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'CELESTUAL <onboarding@resend.dev>';
+const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
 
 const MAX_ATTEMPTS = 5;
@@ -33,27 +38,32 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-function emailHtml(self: string, other: string) {
+// The palette is docs/DESIGN.md's: deep navy field, cream text, slate for the
+// mechanical voice, one warm star. Georgia stands in for Instrument Serif in
+// mail clients; Arial for Space Grotesk.
+function emailHtml(other: string) {
   return `
-  <div style="background:#0b0708;padding:40px 24px;font-family:Georgia,serif;color:#f5e9ec;text-align:center">
-    <div style="font-size:16px;letter-spacing:6px;color:#f2a7b6;font-family:'Space Grotesk',Arial,sans-serif">CELESTUAL</div>
-    <p style="font-style:italic;color:#b79aa3;margin:28px 0 6px;font-size:15px">it&rsquo;s mutual.</p>
-    <h1 style="font-weight:400;font-size:30px;line-height:1.2;margin:0">
-      @${other}<br/>still thinks <em style="color:#f2a7b6">about you.</em>
+  <div style="background:#070b14;padding:48px 24px;font-family:Georgia,serif;color:#f2eee5;text-align:center">
+    <div style="font-size:13px;letter-spacing:6px;color:#8b94a8;font-family:Arial,sans-serif">CELESTUAL</div>
+    <div style="font-size:26px;color:#ffa25c;margin:26px 0 4px">&#10022;</div>
+    <h1 style="font-weight:400;font-style:italic;font-size:34px;line-height:1.15;margin:10px 0 0;color:#f2eee5">
+      it&rsquo;s mutual.
     </h1>
-    <p style="color:#b79aa3;font-size:15px;margin:22px 0 28px">
-      You entered them. They entered you back. You both know now — no pressure to do anything with it.
+    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:24px auto 0;max-width:380px;font-family:Arial,sans-serif">
+      you entered @${other}. @${other} entered you.<br/>
+      this only ever happens when it&rsquo;s real on both sides.
     </p>
-    <a href="${SITE}" style="display:inline-block;background:#e8546f;color:#fff;text-decoration:none;
-       padding:13px 26px;border-radius:12px;font-family:Inter,Arial,sans-serif;font-size:15px">open CELESTUAL</a>
-    <p style="color:#6f5860;font-size:11px;margin-top:32px;font-family:Inter,Arial,sans-serif">
-      You got this because you entered an @ on CELESTUAL and it was mutual. We never reveal one-sided entries.
-      To remove or block a handle, visit ${SITE} → privacy &amp; terms.
+    <a href="${SITE}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
+       padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:30px">go see it</a>
+    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:36px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
+      you're reading this because you placed a ping on celestual and it resolved mutual.
+      one-sided pings are never revealed to anyone. to opt out of celestual entirely,
+      visit ${SITE}/optout.
     </p>
   </div>`;
 }
 
-async function sendEmail(to: string, self: string, other: string) {
+async function sendEmail(to: string, other: string) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -63,8 +73,8 @@ async function sendEmail(to: string, self: string, other: string) {
     body: JSON.stringify({
       from: FROM,
       to,
-      subject: `it's mutual — @${other} still thinks about you`,
-      html: emailHtml(self, other),
+      subject: `celestual: it's mutual.`,
+      html: emailHtml(other),
     }),
   });
   if (!res.ok) throw new Error(`resend ${res.status}: ${await res.text()}`);
@@ -89,7 +99,7 @@ Deno.serve(async () => {
   const deadLettered: string[] = [];
   for (const n of pending ?? []) {
     try {
-      await sendEmail(n.to_email, n.self_handle, n.other_handle);
+      await sendEmail(n.to_email, n.other_handle);
       await supabase.from('celestual_notifications').update({ sent_at: new Date().toISOString() }).eq('id', n.id);
       sent++;
     } catch (e) {

@@ -23,21 +23,30 @@ const files = [
 
 // VOICE.md §5 — the banned list. Case-insensitive substrings.
 const BANNED = [
+  // generic-error voice
   'something went wrong',
   'oops',
   'uh oh',
   'whoops',
+  // paywall voice (nothing is for sale; the fourth slot, if ever, is bought "once")
   'unlock',
   'premium',
   'pro tier',
-  'upgrade now',
+  'upgrade',
   'go pro',
+  'subscribe now',
+  // urgency (a ping "lapses", calmly)
   'hurry',
   'expires soon',
   'last chance',
   "don't miss",
+  'act now',
+  // the fishing frame + the forbidden lever (implied activity — FTC v. NGL)
   'find out who likes you',
   'see who entered you',
+  'someone entered you',
+  'someone pinged you',
+  'people are talking about you',
 ]
 
 // Emoji (the product's only glyphs are ✦ ✧ · — ritual marks, not emoji).

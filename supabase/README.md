@@ -1,35 +1,37 @@
 # Supabase backend
 
-The backend for **CELESTUAL**. Apply to a dedicated Supabase project per
-[../docs/GO-LIVE.md](../docs/GO-LIVE.md).
+The backend for **CELESTUAL** — the ping model
+([../docs/ULTIMATE-PRODUCT-FRAMEWORK.md](../docs/ULTIMATE-PRODUCT-FRAMEWORK.md)).
 
-Everything is named `celestual_*`. The raw "who entered whom" data is never
-readable by the client: `anon` / `authenticated` get no table privileges and no
-RLS policy, so the only way in is the `SECURITY DEFINER` RPCs, which return just a
-status object. See [../docs/SECURITY.md](../docs/SECURITY.md).
+Everything is named `celestual_*`. The raw data is never readable by the
+client: `anon` / `authenticated` get no table privileges and no RLS policy, so
+the only way in is the `SECURITY DEFINER` RPCs, which return small status
+objects. Since 0006, **who a ping points at is stored only as a salted hash** —
+even a full dump can't read the map. See [../docs/SECURITY.md](../docs/SECURITY.md).
 
 ## Apply the schema
 
-Four idempotent migrations, applied in order:
+Idempotent migrations, applied in order:
 
-- `migrations/0001_celestual.sql` — the anonymous matching core (entries, matches,
-  notifications, rate limiting, suppressions, and the `SECURITY DEFINER` RPCs).
-- `migrations/0002_user_accounts.sql` — the signed-in-user layer: per-user
-  profiles, the **encrypted sky**, the owner-only encryption keys, and self-serve
-  account deletion. Owner-scoped by RLS on `auth.uid()`.
-- `migrations/0003_production_hardening.sql` — the integrity layer: the weekly
-  **slot budget** (`celestual_slots`), **multi-account** identity groups
-  (`celestual_handle_links` + group-aware matching), instant reveal from
-  `celestual_submit`, the constellations check, opt-in reminders, and a
-  rate-limited `celestual_suppress`. Drops the old paywall entitlements.
+- `migrations/0001_celestual.sql` — the original matching core (entries,
+  matches, notifications, rate limiting, suppressions).
+- `migrations/0002_user_accounts.sql` — the old Supabase-Auth profile layer
+  (superseded; 0006 drops it).
+- `migrations/0003_production_hardening.sql` — the old weekly slot budget +
+  multi-account identity groups + instant reveal (slot model superseded by 0006;
+  `celestual_handle_links` and group-aware matching live on).
 - `migrations/0004_ig_verification.sql` — **Instagram DM handle-ownership
-  verification** (no OAuth): `celestual_ig_verifications` (codes + proof hashes),
-  `celestual_settings` (the `require_ig_verification` flag, default off), the
-  start/poll RPCs, the service-role-only completion path, and the proof gate that
-  `celestual_submit` enforces when turned on. See
-  [../docs/SETUP-IG-VERIFY.md](../docs/SETUP-IG-VERIFY.md).
+  verification** (no OAuth): codes + proof hashes, the `require_ig_verification`
+  flag, start/poll RPCs, the service-role completion path, and the proof gate
+  in `celestual_submit`.
+- `migrations/0005_cross_device_sky.sql` — the old owner-gated read-back
+  (superseded by `celestual_my_pings` in 0006).
+- `migrations/0006_ping_model.sql` — **the current model.** Three standing
+  pings, sixty-day lapse + purge, salted-hash targets, hashed opt-out,
+  members/reachability, the intent line, community counters (100-floor),
+  assurance-contract campus windows, and every current RPC.
 
-**SQL Editor:** paste each file's contents and Run (0001, then 0002, 0003, 0004).
+**SQL Editor:** paste each file's contents and Run, in order.
 
 **CLI:**
 ```bash
@@ -37,66 +39,80 @@ supabase link --project-ref <ref>
 supabase db push   # applies every migration in order
 ```
 
-Re-running is safe (`if not exists` / `create or replace` / `drop policy if exists`).
+Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 
 ## Edge functions
 
 | Function | What it does | Required secrets |
 | --- | --- | --- |
-| `functions/celestual-notify` | drains `celestual_notifications` and emails the mutual-match reveal via Resend | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-remind` | drains `celestual_reminders` and emails "a new star is ready" when a slot regenerates (schedule hourly with pg_cron) | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to the earlier entrant (retry + dead-letter) | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, and calls `celestual_complete_ig_verification` — no Meta developer portal | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. Deploy
-with `supabase functions deploy <name>`. JWT verification is disabled for these in
-`config.toml` because anonymous visitors (or Meta's webhook) call them; each
-enforces its own checks. See [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) and
-[../docs/SETUP-IG-VERIFY.md](../docs/SETUP-IG-VERIFY.md).
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
+Deploy with `supabase functions deploy <name>`. JWT verification is disabled
+for these in `config.toml` because anonymous visitors (or Meta's webhook) call
+them; each enforces its own checks. See
+[../docs/DEBUG-IG-WEBHOOK.md](../docs/DEBUG-IG-WEBHOOK.md).
 
-## Data model
+## Data model (post-0006)
 
-- **`celestual_entries`** — one directed entry (from_handle "still thinks about"
-  to_handle). Locked down; only the RPCs read/write it.
+- **`celestual_entries`** — one ping: `from_handle` (the verified sender),
+  `to_hash` (**salted hash** of the target — plaintext is never stored),
+  optional `from_email` + `intent`, the sixty-day `expires_at` clock,
+  `matched_at` / `matched_handle` (plaintext only once mutual — both sides
+  know by then), `renew_notified_at`.
 - **`celestual_matches`** — one row per mutual pair (canonical ordering).
-- **`celestual_notifications`** — outbound email queue (with retry / dead-letter),
-  drained by `celestual-notify`.
-- **`celestual_attempts`** — minimal log for rate limiting (auto-pruned).
-- **`celestual_suppressions`** — handles that opted out of ever being entered.
-- **`celestual_slots`** (0003) — the per-handle weekly entry budget (3, +1/week,
-  no refund on withdrawal). Enforced inside `celestual_submit`.
-- **`celestual_handle_links`** (0003) — multi-account identity groups; matching is
-  group-aware so being entered on any of a person's linked @s counts.
-- **`celestual_reminders`** (0003) — opt-in "tell me when my next star is ready".
-- **`celestual_ig_verifications`** (0004) — Instagram-DM ownership proofs: the
-  one-time code, the browser's proof **hash**, status, and TTLs. Locked down.
-- **`celestual_settings`** (0004) — operator flags; holds `require_ig_verification`
-  (default `false`).
-- **RPCs:** `celestual_submit` (record an entry; enforces the budget, matches
-  across groups, returns the **instant** mutual result + slot snapshot, and — when
-  enforced — the ownership proof), `celestual_withdraw` (un-send; never refunds a
-  slot), `celestual_suppress` (rate-limited self-service erasure / block),
-  `celestual_link` (group your own @s), `celestual_check_many` (which entered @s are
-  mutual — the constellations view), `celestual_my_sky` (sign back in: the proven
-  owner's own sky — the @s they've sent — for cross-device restore, gated by the
-  same ownership proof as the seal), `celestual_slots_for` (slot snapshot for
-  display), `celestual_request_reminder`, `celestual_start_ig_verification` /
-  `celestual_poll_ig_verification` (issue + watch a DM code), and `celestual_norm`
-  (handle normalisation). The completion path
-  `celestual_complete_ig_verification` is **service-role only** (the webhook).
+- **`celestual_notifications`** — outbound mutual-mail queue (retry /
+  dead-letter), drained by `celestual-notify`.
+- **`celestual_attempts`** — short-lived rate-limit log (targets hashed;
+  auto-pruned).
+- **`celestual_placements`** — rolling placement log: the 6-per-30-days
+  cadence cap + the week-one campus aggregates (pruned past ~40 days).
+- **`celestual_suppressions`** — the opt-out registry, **hashed**.
+- **`celestual_members`** — who is reachable (has ever verified, by DM or by
+  campus preregistration); powers Loop A's one honest bit.
+- **`celestual_handle_links`** — multi-account identity groups; matching and
+  the slot count are group-aware.
+- **`celestual_ig_verifications`** / **`celestual_settings`** — DM ownership
+  proofs; operator flags (`require_ig_verification`, `handle_salt`).
+- **`celestual_communities`** / **`celestual_community_members`** — "your
+  worlds"; counters are floored at 100 server-side.
+- **`celestual_campuses`** / **`celestual_campus_prereg`** /
+  **`celestual_campus_mail`** — assurance-contract windows: threshold, true
+  count, auto-open at threshold, snapshotted week-one numbers, and the
+  everyone-at-once mail queue.
 
-### Accounts layer (0002 — owner-scoped via RLS)
+### RPCs (the only public surface)
 
-- **`celestual_profiles`** — one row per `auth.users` id: account fields (handle,
-  email, display name) plus the **encrypted sky** (`sky_cipher` / `sky_nonce`), an
-  opaque AES-GCM blob the client encrypts before it ever leaves the browser.
-- **`celestual_user_keys`** — the per-user AES key, readable ONLY by its owner, so
-  the sky blob in `celestual_profiles` is useless without that user's live session.
-- **RPC:** `celestual_delete_me` — wipes the caller's own rows + auth user.
+`celestual_submit` (place a ping: proof gate, hashed suppression check, the
+three-slot rule, the cadence cap, hashed group-aware matching, instant mutual
+result + reachability + slot snapshot) · `celestual_withdraw` ("let it go";
+frees the slot) · `celestual_renew` (another sixty days, free) ·
+`celestual_ping_status` (the status page: device sends its plaintext list up,
+owner-gated) · `celestual_my_pings` (cross-device restore; unmatched rows come
+back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
+`celestual_suppress` (the public opt-out) · `celestual_link` ·
+`celestual_set_worlds` / `celestual_world_counts` (counters, 100-floor) ·
+`celestual_campus` / `celestual_campus_preregister` ·
+`celestual_start_ig_verification` / `celestual_poll_ig_verification` ·
+`celestual_norm`.
 
-> The sky is stored encrypted so a leak of `celestual_profiles` alone — or any
-> other user — can't read who you entered. The decryption key lives in a separate
-> owner-only table. This is at-rest / least-privilege protection, not
-> zero-knowledge (an operator with both tables + service role could still join
-> them). See `app/src/api/vault.js` and `app/src/api/profile.js`.
+**Operator-only (service role):** `celestual_complete_ig_verification` (the
+webhook's completion path), `celestual_campus_reveal` (snapshot + publish week
+one), `celestual_purge_expired` (the sixty-day broom).
+
+### Operator playbook
+
+```sql
+-- open a campus window
+insert into celestual_campuses (slug, name, threshold) values ('reed', 'Reed', 300);
+
+-- seven days after it opens, after eyeballing the numbers:
+select celestual_campus_reveal('reed');
+
+-- the release gate before any real launch:
+update celestual_settings set value = 'true' where key = 'require_ig_verification';
+```

@@ -9,7 +9,7 @@
 // secret. The 4-digit code is only a correlation id (see
 // supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
 //
-// ManyChat External Request setup (see docs/SETUP-IG-VERIFY.md):
+// ManyChat External Request setup (see supabase/README.md):
 //   • Trigger:   Default Reply, gated by a Condition — only call this when the DM
 //                text contains "star-" (people send "star-1283"), so ordinary DMs
 //                never ping the backend.

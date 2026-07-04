@@ -1,6 +1,7 @@
-/* CELESTUAL — galaxy edition. Screens are inline-styled React components; this
-   file owns the reset, fonts, keyframes and the responsive page frame so the
-   same flow reads full-bleed on a phone and as a centered column on the web. */
+/* CELESTUAL — the night edition. Screens are inline-styled React components;
+   this file owns the reset, fonts, keyframes, the film grain, and the page
+   frame. The visual system is docs/DESIGN.md: deep navy, generous emptiness,
+   one warm star. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -9,10 +10,10 @@ html, body, #root { width: 100%; }
 
 body {
   font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #F3ECF6;
-  /* single cosmic base — matches theme.js TOKENS.ink so there's no flash of a
-     different background color before the canvas paints */
-  background: #0B0814;
+  color: #F2EEE5;
+  /* matches theme.js TOKENS.ink so there's no flash of a different field
+     before the night paints */
+  background: #070B14;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -20,18 +21,24 @@ body {
 
 #root { min-height: 100dvh; }
 
-/* The page frame: full viewport on mobile, the same column centered on desktop.
-   Each screen renders its own full-bleed background (galaxy canvas / warm
-   gradient) and centers a max-width content column inside it. */
 .celestual-app { position: relative; width: 100%; }
 
-/* ── custom cursor — a four-point glisten, on-brand on every screen ──────────
-   A white sparkle with a soft amber edge (the same star as the favicon/brand),
-   centred on its hotspot. `cursor` inherits, so setting it on the root carries it
-   across the whole app; text fields keep their caret, and touch devices (no hover)
-   simply never show it. */
+/* ── film grain ─────────────────────────────────────────────────────────
+   A whisper of texture over the whole night so flat navy never reads as a
+   dead #hex rectangle. Pure SVG noise, fixed, non-interactive. */
+.celestual-app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* ── custom cursor — the four-point star, warm, centred on its hotspot ──── */
 :root {
-  --star-cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij48cGF0aCBkPSJNMTQgMSBRMTUuMyAxMi43IDI3IDE0IFExNS4zIDE1LjMgMTQgMjcgUTEyLjcgMTUuMyAxIDE0IFExMi43IDEyLjcgMTQgMSBaIiBmaWxsPSIjRkY5RTZCIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTE0IDMuNCBRMTUgMTMgMjQuNiAxNCBRMTUgMTUgMTQgMjQuNiBRMTMgMTUgMy40IDE0IFExMyAxMyAxNCAzLjQgWiIgZmlsbD0iI0ZGRkZGRiIvPjwvc3ZnPg==") 14 14;
+  --star-cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij48cGF0aCBkPSJNMTQgMSBRMTUuMyAxMi43IDI3IDE0IFExNS4zIDE1LjMgMTQgMjcgUTEyLjcgMTUuMyAxIDE0IFExMi43IDEyLjcgMTQgMSBaIiBmaWxsPSIjRkZBMjVDIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTE0IDMuNCBRMTUgMTMgMjQuNiAxNCBRMTUgMTUgMTQgMjQuNiBRMTMgMTUgMy40IDE0IFExMyAxMyAxNCAzLjQgWiIgZmlsbD0iI0ZGRkZGRiIvPjwvc3ZnPg==") 14 14;
 }
 html, body, .celestual-app { cursor: var(--star-cursor), auto; }
 a, button, [role="button"], label, summary { cursor: var(--star-cursor), pointer; }
@@ -44,135 +51,69 @@ input, textarea, select { cursor: text; }
 input { font-family: inherit; }
 button { font-family: inherit; }
 
-::selection { background: rgba(255, 158, 107, 0.32); color: #fff; }
+::selection { background: rgba(255, 162, 92, 0.3); color: #fff; }
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-/* ── entrance animations ─────────────────────────────────────────────── */
-@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-@keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-@keyframes ping    { 0% { transform: scale(0.35); opacity: 0.55; } 70% { opacity: 0; } 100% { transform: scale(1.7); opacity: 0; } }
+/* ── entrance ───────────────────────────────────────────────────────── */
 @keyframes fadeUp  { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn  { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 
 .enter { animation: fadeUp 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .fade  { animation: fadeIn 0.5s ease both; }
 
-/* verification success: the badge springs in with a soft overshoot while two rings
-   ripple outward behind it — celebratory but calm, and slow enough to actually read */
+/* ── the star breathes in light, never in scale ─────────────────────────
+   A scale pulse reads as a notification ping; a slow shift in luminosity
+   reads as a live star. Used by StarMark's core and halo. */
+@keyframes starGlow    { 0%, 100% { opacity: 1; } 50% { opacity: 0.78; } }
+@keyframes haloDrift   { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+.star-core { animation: starGlow 4.5s ease-in-out infinite; }
+.star-halo { animation: haloDrift 7s ease-in-out infinite; }
+
+/* the calm sonar (waiting states) + the standing dot's breath */
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes ping    { 0% { transform: scale(0.35); opacity: 0.55; } 70% { opacity: 0; } 100% { transform: scale(1.7); opacity: 0; } }
+
+/* verification success: the badge springs in while two rings ripple outward */
 @keyframes vPop  { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes vRing { 0% { transform: scale(0.6); opacity: 0.6; } 100% { transform: scale(2.1); opacity: 0; } }
 .v-pop  { animation: vPop 0.55s cubic-bezier(0.2, 0.8, 0.25, 1) both; }
 .v-ring { animation: vRing 1.2s ease-out both; }
 
-/* intro motion-graphic: each narration beat cross-fades up, then holds */
-@keyframes introLine {
-  0%   { opacity: 0; transform: translateY(14px); filter: blur(4px); }
-  18%  { opacity: 1; transform: translateY(0);    filter: blur(0); }
-  100% { opacity: 1; }
-}
-.intro-line { animation: introLine 1.1s cubic-bezier(.2,.7,.2,1) both; }
-
-/* ── @ → star morph (Liftoff) ────────────────────────────────────────────
-   The actual @ textbox collapses HORIZONTALLY into a vertical slit, the slit
-   pinches to a point, and a star ignites there with a glisten (a flash of
-   crossed diffraction spikes + a blooming halo). The star then dissolves exactly
-   as the galaxy's send-off drift — which starts from this same point — carries it
-   away with a trail. All five layers share one ~1.25s timeline so they stay in
-   lockstep and the motion reads as one connected gesture. */
-@keyframes loBox {
-  0%        { transform: scaleX(1)    scaleY(1);    opacity: 1; }
-  34%       { transform: scaleX(0.05) scaleY(1);    opacity: 1; }    /* squeeze to a slit */
-  50%       { transform: scaleX(0.05) scaleY(0.18); opacity: .5; }   /* slit → point */
-  64%, 100% { transform: scaleX(0.02) scaleY(0.02); opacity: 0; }
-}
-@keyframes loText {
-  0%   { opacity: 1; filter: blur(0);   transform: scaleX(1);    letter-spacing: 0; }
-  26%  { opacity: .85; }
-  40%  { opacity: 0; filter: blur(4px); transform: scaleX(0.12); letter-spacing: -2px; }
-  100% { opacity: 0; }
-}
-@keyframes loCore {
-  0%, 30% { opacity: 0;  transform: scale(0.1); }
-  44%     { opacity: 1;  transform: scale(1.3); }   /* ignite */
-  54%     { opacity: 1;  transform: scale(0.9); }
-  72%     { opacity: 1;  transform: scale(1.05); }
-  86%     { opacity: .9; transform: scale(1); }
-  100%    { opacity: 0;  transform: scale(0.85); }  /* hand off to the galaxy drift */
-}
-@keyframes loHalo {
-  0%, 30% { opacity: 0;  transform: scale(0.2); }
-  46%     { opacity: .7; transform: scale(1); }
-  100%    { opacity: 0;  transform: scale(2.3); }
-}
-@keyframes loSpike {
-  0%, 36% { opacity: 0;   transform: scale(0.2); }
-  48%     { opacity: 1;   transform: scale(1.15); }  /* the glisten */
-  60%     { opacity: .4;  transform: scale(0.92); }
-  78%     { opacity: .68; transform: scale(1.04); }  /* a softer second twinkle */
-  100%    { opacity: 0;   transform: scale(1.2); }
-}
-.lo-box   { transform-origin: center; animation: loBox 1.15s cubic-bezier(.7, 0, .2, 1) both; will-change: transform, opacity; }
-.lo-text  { animation: loText .7s cubic-bezier(.6, 0, .3, 1) both; }
-.lo-core  { transform-origin: center; animation: loCore 1.25s cubic-bezier(.3, .2, .2, 1) both; will-change: transform, opacity; }
-.lo-halo  { transform-origin: center; animation: loHalo 1.25s ease-out both; }
-.lo-spike { transform-origin: center; animation: loSpike 1.25s ease-in-out both; }
-
-/* ── star-chart readout (the focused-star close-up) ───────────────────────────
-   A frameless reading that settles into place: the scrim deepens, the lines
-   ease up and unblur. No bottom-sheet slide, no card chrome. */
+/* sheets & overlays */
 @keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scrimOut { from { opacity: 1; } to { opacity: 0; } }
 @keyframes readoutIn {
   0%   { opacity: 0; transform: translateY(10px) scale(.985); filter: blur(3px); }
   60%  { opacity: 1; filter: blur(0); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes readoutLine {
-  from { opacity: 0; transform: translateY(7px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes ruleGrow { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
-@keyframes starRise {
-  from { opacity: 0; transform: translateY(12px) scale(.6); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
 @keyframes readoutOut {
   from { opacity: 1; transform: translateY(0) scale(1); }
   to   { opacity: 0; transform: translateY(6px) scale(.99); }
 }
-@keyframes scrimOut { from { opacity: 1; } to { opacity: 0; } }
-/* The scrim deepens immediately (the field dims as the camera drifts in); the
-   readout itself waits a beat, so the close-up resolves AS the zoom arrives at
-   the star rather than popping in over a still-moving camera. */
-.scrim-in   { animation: scrimIn .9s ease both; }
-.scrim-out  { animation: scrimOut .26s ease both; }
-/* the readout resolves AS the camera settles onto the star at the end of the
-   ~1.45s dive — hence the longer hold before it eases in */
-.readout-in { animation: readoutIn .66s cubic-bezier(.2,.7,.2,1) .55s both; }
+.scrim-in    { animation: scrimIn .5s ease both; }
+.scrim-out   { animation: scrimOut .26s ease both; }
+.readout-in  { animation: readoutIn .5s cubic-bezier(.2,.7,.2,1) both; }
 .readout-out { animation: readoutOut .26s ease both; }
 
-/* soft, slow drift for the "your sky is clear" empty-state mark */
+/* hairline rules grow from their center */
+@keyframes ruleGrow { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+
+/* the campus meter fills with warm light from the left */
+@keyframes meterFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.meter-fill { transform-origin: left center; animation: meterFill 1.1s cubic-bezier(.2,.7,.2,1) .2s both; }
+
+/* soft, slow drift for the hero star */
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 .floaty { animation: floaty 6s ease-in-out infinite; }
 
-/* the close-up hero star — breathes in LIGHT, never in scale (a scale pulse on a
-   star reads as a cheap "ping"). The core dims a touch, and the surrounding dust
-   veil drifts in brightness, slowly and out of phase, the way a real star sits in
-   scintillating nebula rather than firing hard diffraction spikes. */
-@keyframes starGlow    { 0%, 100% { opacity: 1; } 50% { opacity: 0.82; } }
-@keyframes nebulaDrift { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
-.starmark-core { animation: starGlow 4.5s ease-in-out infinite; }
-.starmark-veil { animation: nebulaDrift 7s ease-in-out infinite; }
-
-/* ── screen cross-fade (View Transitions API, driven by App.go) ───────────────
-   Replaces the old hard cut between screens with a short dissolve over the
-   persistent galaxy. Kept brief so navigation still feels immediate. */
+/* ── screen cross-fade (View Transitions API, driven by App.go) ─────────── */
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 0.32s; animation-timing-function: ease; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
   .enter, .fade { animation: none !important; opacity: 1 !important; }
-  /* never cross-fade screens when reduced motion is requested */
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
 }

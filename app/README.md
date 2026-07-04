@@ -1,127 +1,73 @@
-# CELESTUAL — you still think about them. What if they think about you?
+# CELESTUAL — front-end
 
-The CELESTUAL front-end ("galaxy edition"). You enter your Instagram @ and the @
-of someone you can't stop thinking about. You only ever find out it's mutual if
-**they** independently enter **you** back — so it's anonymous, zero-rejection, and
-a little addictive. One-sided entries are never revealed to anyone.
+The Vite + React SPA. No app server: every call goes straight to Supabase's
+`SECURITY DEFINER` RPCs (see [../supabase/README.md](../supabase/README.md)).
+The screens implement
+[../docs/ULTIMATE-PRODUCT-FRAMEWORK.md](../docs/ULTIMATE-PRODUCT-FRAMEWORK.md)
+Part 4 to the letter; the visual rules live in
+[../docs/DESIGN.md](../docs/DESIGN.md) and the copy rules in
+[../docs/VOICE.md](../docs/VOICE.md).
 
-Live at **https://celestual.us/**. The UI is fully responsive: full-bleed on a
-phone, and the same intimate column centered over the 3D starfield on the web.
+## Architecture
 
-It's a Vite + React SPA that talks directly to Supabase. The safety/anonymity
-model is documented in [`../docs/SECURITY.md`](../docs/SECURITY.md); the `§`
-references in the code point there.
-
-## Highlights
-
-- **One color kit.** All color derives from a single source of truth,
-  [`src/theme.js`](./src/theme.js) — the React UI, the canvas galaxy, and
-  `styles.css` all read it, so the whole product is one cosmic-violet world.
-- **All languages.** Browser-language auto-detection + a manual switcher
-  (top-right), with curated, fallback-safe translations in
-  [`src/i18n/`](./src/i18n). English is canonical; partial locales fall back
-  key-by-key. Add a language by dropping a partial dict into `strings.js`.
-- **Motion-graphic intro.** A short staged explainer for new users (replayable
-  via "how it works") ending in two stars colliding into one.
-- **Interactive resting field.** Tap any star → the camera drifts in and zooms; a
-  detail card shows its state, the registry date, and a remove action; close to
-  zoom back out (`galaxy.js` `focusStar` / `hitTest`).
-- **Free, with a gentle limit.** No paywall — every star is free. A server-side
-  weekly **slot budget** (3, +1/week, never refunded on withdrawal) keeps people
-  intentional and blocks "fish for who likes me" sweeps
-  ([`src/api/slots.js`](./src/api/slots.js); enforced in `celestual_submit`).
-- **Multi-account.** People can link up to 3 of their own @s; being entered on any
-  of them counts (group-aware matching, `celestual_handle_links`).
-- **`/demo`.** `celestual.us/demo` is **fully sandboxed** — the verification
-  overlay auto-confirms locally (never launching real Instagram) and nothing is
-  ever written to the real backend. Enter `@demo` as the ex to see a match (the
-  "them" step says so), or use the *"sandbox: they seal you back"* control on
-  any sealed star's readout to play the full match workflow.
-- **Instagram DM verification** (no OAuth, no Meta dev portal) behind
-  `VITE_IG_VERIFY_ENABLED` (off by default → a local verified stub keeps the flow
-  testable). People prove the `@` they type is theirs by DMing a one-time code to
-  your Instagram account, relayed by **ManyChat** to `supabase/functions/celestual-manychat`
-  (or Meta's webhook directly via `celestual-ig-webhook`). Front-end:
-  [`src/api/igverify.js`](./src/api/igverify.js). See
-  [`../docs/SETUP-IG-VERIFY.md`](../docs/SETUP-IG-VERIFY.md).
-- **Optional @ search typeahead** behind `VITE_HANDLE_SEARCH` (off by default):
-  `searchHandles()` + `supabase/functions/celestual-search`. See
-  [`.env.example`](./.env.example).
-
-## Flow
-
-A short guided flow over an animated starfield (`src/galaxy.js`):
-
-| Screen | What it does |
-| --- | --- |
-| **Landing** | The hook + "Find out". |
-| **You** | Your handle (your star's label); optionally add an email and any other accounts you own (a quiet, revealable field). |
-| **Them** | The one person you can't stop thinking about. "Seal it" records the entry and spends a slot. |
-| **Send-off** | The galaxy payoff while the lookup runs (min ~3.2s suspense). |
-| **Resting** | Your sky. Each entry rests as a star; mutual ones glow amber (the constellations view), and a slot meter shows how many you have left. |
-| **Match** | Shown **instantly** when you complete a mutual pair — open the conversation, or not. |
-| **Out of slots** | When the weekly budget is spent: a countdown to the next star + an optional email nudge. No paywall. |
-| **Privacy** | Privacy & terms + self-service erasure: remove/block any handle (§2.5 / §4.6). |
-
-> **Reveal model (§2.3):** completing a mutual pair reveals it **instantly**
-> in-app (a deliberate product choice). The tight slot budget — not deferral — is
-> what keeps that from becoming a "who likes me" fishing oracle. The earlier
-> entrant is still emailed, and the constellations view also surfaces mutuals on
-> return visits.
-
-The in-progress entry (`them`) lives in **memory only** (§4.3). Your sky — the
-stars you've sealed — persists, AES-GCM **encrypted** when signed in (and locally
-otherwise); see [`src/api/profile.js`](./src/api/profile.js) and
-[`src/api/vault.js`](./src/api/vault.js).
-
-## Stack
-
-| Layer | Service |
-| --- | --- |
-| Frontend SPA | Vite + React, this folder |
-| Match logic | Supabase `celestual_submit` RPC (`SECURITY DEFINER`, instant reveal + slot budget) |
-| Match emails | Supabase Edge Function (`celestual-notify`) → Resend |
-
-The backend lives in [`../supabase/`](../supabase): five migrations
-(`0001` core · `0002` accounts + encrypted sky · `0003` slot budget +
-multi-account · `0004` Instagram DM verification · `0005` cross-device sky)
-plus the edge functions (`celestual-notify`, `celestual-remind`,
-`celestual-search`, `celestual-manychat`, `celestual-ig-webhook`).
-
-## How matching works
-
-1. The browser calls one RPC: `celestual_submit(p_from, p_to, p_email)`.
-2. It enforces the weekly slot budget (new people only; re-submits are free), then
-   records the one-way entry and checks for the reciprocal **across identity
-   groups** (multi-account).
-3. The client can never read who entered whom (RLS on, zero policies; the only way
-   in is the `SECURITY DEFINER` RPC).
-4. It returns whether the pair is mutual (**instant reveal**) plus the live slot
-   snapshot. On a mutual match it also queues an email to the **earlier** entrant —
-   never the address supplied on the triggering request (anti-exfiltration).
-5. The `celestual-notify` edge function sends queued emails via Resend, with
-   exponential-backoff retries and a dead-letter mark after repeated failures
-   (§5.1).
-
-Full safety rationale: [`../docs/SECURITY.md`](../docs/SECURITY.md).
-
-## Run it locally
-
-```bash
-npm install
-cp .env.example .env.local   # paste Supabase URL + anon key (optional)
-npm run dev                  # demo mode if no env (enter @demo to see a match)
+```
+src/
+├── App.jsx            state machine + routing (/@handle, /c/*, /optout, /demo),
+│                      placement/renew/retire flows, verification gating,
+│                      localStorage persistence (the ONLY place plaintext
+│                      targets live — the server stores hashes)
+├── card.js            the open-door Story card renderer (1080×1920 PNG)
+├── demoData.js        the sandbox's hardcoded world (sample pings, the Reed
+│                      campus window, world counters)
+├── theme.js           the single source of color/geometry (one warm star)
+├── styles.css         reset, fonts, grain, keyframes
+├── components/
+│   ├── screens.jsx    the nine screens + verify sheet + account sheet
+│   └── ui.jsx         primitives: NightField, StarMark, Meter, StateDot,
+│                      buttons, fields, dialog a11y
+├── api/
+│   ├── celestual.js   the RPC calls (placePing, pingStatus, renewPing,
+│   │                  retirePing, fetchMyPings, campuses, worlds, opt-out)
+│   ├── pings.js       day-clock helpers for the sixty-day lapse
+│   ├── igverify.js    Instagram-DM ownership proof (code + 256-bit proof)
+│   ├── auth.js        the local verified-session record
+│   └── supabase.js    the client (safe no-backend fallback)
+└── i18n/              the canonical copy (English; key-by-key fallback kept
+                       so future locales can land as partial objects)
 ```
 
-Without env vars the app runs in **demo mode**: enter `demo` as the ex's @ to see
-the mutual reveal; anything else shows the resting/pending state.
+## The flow
 
-## Build
+`landing → who (the send: handle + optional intent + slot pips) → you
+(identity + optional email; the DM verify overlay gates placement) → placed
+(standing/waiting — the recruiter screen) → pings (the quiet status page)`.
 
-The repo-root build (`../package.json`) produces the app into `../dist`:
+Side doors: `/@poster` prefills the send field (Loop B); `/c/slug` runs the
+campus window (Loop C: count me in → verified preregistration; "it's open.";
+the week-one numbers); the fourth-slot screen appears only when a fourth
+placement is attempted; `/optout` is the public escape hatch.
 
-```bash
-cd .. && npm run build       # CELESTUAL → dist/
-```
+## Privacy invariants the front-end holds
 
-See [`../docs/GO-LIVE.md`](../docs/GO-LIVE.md) for the go-live steps.
+- The plaintext of who you entered lives in this device's localStorage and
+  React state only. Status reads send the list up per call
+  (`celestual_ping_status`); cross-device restore brings back mutual pings by
+  name and unmatched ones as anonymous rows — by design.
+- The in-flight target (`them`) is memory-only until placed.
+- Nothing in the app can display information about any other person's
+  activity, and no copy implies it (the linter helps: `npm run lint:voice`).
+
+## The sandbox (`/demo`)
+
+Sandboxed end to end — nothing reaches a server. Hardcoded sample data shows
+the school-launch story: sample pings in every state, the Reed campus meter at
+214/300 with a state-cycling control (window → open → reveal), sample world
+counters, and per-row "sandbox: they enter you back" to visualize the full
+match reveal. The verify overlay runs in auto-verify mode (its stand-in until
+real DM verification is wired for the demo) and never leaves the page.
+
+## Environment
+
+See [.env.example](./.env.example). With no env vars the app runs on safe
+local fallbacks; `VITE_IG_VERIFY_ENABLED=1` + a Supabase backend turns on real
+DM verification.
