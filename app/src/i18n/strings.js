@@ -18,13 +18,18 @@ export const LANGS = {
 
 const en = {
   // ── screen 1 · the cold landing ────────────────────────────────────────
-  // the hero names the feeling; the three lines state the mechanics flat; the
-  // safety line reads like a locked door.
+  // the hero names the feeling; the one sentence is set as a three-beat
+  // constellation (§4.1) — put their @ in / they never find out / unless mutual,
+  // same second — the reveal beat lit; the safety line reads like a locked door.
   'landing.head1': 'you still think about them.',
   'landing.head2': 'what if they think about you?',
-  'landing.mech1': 'enter their instagram handle.',
-  'landing.mech2': 'they never find out.',
-  'landing.mech3': 'unless they enter you too — then you both do, at the same moment.',
+  'landing.beat1': 'put their @ in.',
+  'landing.beat1k': 'the ping',
+  'landing.beat2': 'they never find out.',
+  'landing.beat2k': 'the silence',
+  'landing.beat3': 'unless they put you in too —',
+  'landing.beat3pay': 'then you both find out, in the same second.',
+  'landing.beat3k': 'the reveal',
   'landing.cta': 'find out',
   'landing.safety': 'no profiles. no browsing. nothing happens unless it’s mutual.',
   'landing.login': 'been here before',
@@ -51,20 +56,22 @@ const en = {
   'who.demoHint': 'sandbox: enter @demo and the match will find you.',
 
   // the intent row — an optional line that travels with the ping, read only at
-  // a mutual reveal. five lines; never a free-text field; never required.
+  // a mutual reveal. the guide's exact five (§4.5); never a free-text field;
+  // never required. addressed to "you" (the target), so each reads naturally at
+  // the reveal under either "they said" or "you said".
   'intent.label': 'why them?',
   'intent.optional': 'optional',
   'intent.note': 'travels with the ping. read only if it’s ever mutual.',
-  'intent.miss': 'i miss them',
-  'intent.miss.r': 'i miss you',
-  'intent.sorry': 'i owe them an apology',
-  'intent.sorry.r': 'i owe you an apology',
   'intent.unsaid': 'i never got to say something',
   'intent.unsaid.r': 'i never got to say something',
-  'intent.drift': 'we shouldn’t have lost touch',
-  'intent.drift.r': 'we shouldn’t have lost touch',
-  'intent.know': 'i just need to know',
-  'intent.know.r': 'i just needed to know',
+  'intent.think': 'i think about you',
+  'intent.think.r': 'i think about you',
+  'intent.again': 'i want to try again',
+  'intent.again.r': 'i want to try again',
+  'intent.clear': 'i want to clear the air',
+  'intent.clear.r': 'i want to clear the air',
+  'intent.miss': 'i miss you',
+  'intent.miss.r': 'i miss you',
 
   // the slot line under the field — scarcity is the sincerity mechanism
   'slots.holding': 'holding {n} of {cap}',
@@ -75,6 +82,11 @@ const en = {
   'you.title2': 'this is you.',
   'you.handle': 'your.handle',
   'you.handleNote': 'your instagram @ — the ping can only ever resolve to you.',
+  // the 18+ hard gate (§4.4) — a stated hard line (§10, FTC v. NGL). the date is
+  // only checked, never stored: celestual holds less, not more.
+  'you.dobLabel': 'your birthday',
+  'you.dobNote': 'celestual is for adults. you must be 18.',
+  'you.dobUnder': 'not yet. celestual is 18 and up.',
   'you.emailAdd': 'add an email',
   'you.emailLabel': 'email',
   'you.emailOptional': 'optional',
@@ -156,6 +168,10 @@ const en = {
   'campus.weekPings': '{n} pings placed.',
   'campus.weekMatches': '{n} mutual matches.',
   'campus.weekSub': 'every one of them found out something true.',
+  // the match-count floor (§2.7) — the reveal publishes the match number only at
+  // ten and up; below it, this pre-stated line stands in its place.
+  'campus.weekFloor': 'match counts publish at ten and above — so no match can ever be guessed at.',
+  'campus.floors': 'week one, the true numbers publish. match counts show only at ten and up.',
   'campus.none': 'no window here yet.',
   'campus.noneSub': 'campuses open one at a time, on purpose — density is the mechanic.',
   'campus.emailLabel': 'where to reach you when it opens',

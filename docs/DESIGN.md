@@ -190,6 +190,20 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-07-04** — **Cold-landing mechanism as a three-beat constellation.** Per
+  the Master Guide §4.1 ([MASTER-GUIDE.md](./MASTER-GUIDE.md)), the landing's
+  three mechanic lines — previously a flat stack of muted sans lines ("enter their
+  instagram handle." / …) — were rebuilt as a small vertical constellation
+  (`LandingBeats` in `screens.jsx`): three nodes down a rail that warms from
+  `muted` to `you`/amber, escalating from a sent-signal amber dot (*the ping*)
+  through a hollow ring (*the silence*) to the ✦ where the two stars meet (*the
+  reveal*). Mechanics stay in the interface register (Space Grotesk); the reveal's
+  payoff crosses into serif italic — the one lit line, echoing the match screen.
+  The `@` in "put their @ in." lights up in the handle's amber mono glyph. No new
+  hue (amber + rose only), one primary action, emptiness preserved, all copy
+  literally true — passes §9. The change is reflected here per the living-document
+  rule. Nothing else visual changed; the galaxy backdrop, palette, and type
+  registers are untouched.
 - **2026-07-04** — **Restored the galaxy edition** as the canonical visual
   identity, by explicit human request. Brought back `app/src/galaxy.js` (the
   living 3D particle galaxy) and re-mounted it via `GalaxyCanvas` as the

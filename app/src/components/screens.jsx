@@ -89,8 +89,8 @@ export function SandboxChip({ C }) {
   )
 }
 
-// ── the intent row (kept exactly as designed — five lines, optional) ─────────
-export const INTENTS = ['miss', 'sorry', 'unsaid', 'drift', 'know']
+// ── the intent row (the guide's exact five, §4.5 — optional, never free-text) ─
+export const INTENTS = ['unsaid', 'think', 'again', 'clear', 'miss']
 export const intentLine = (t, id, reveal) => (id && INTENTS.includes(id) ? t(reveal ? `intent.${id}.r` : `intent.${id}`) : '')
 
 export function IntentPicker({ C, value, onChange }) {
@@ -150,6 +150,59 @@ export function SlotPips({ C, standing, cap }) {
   )
 }
 
+// The three-beat constellation (§4.1): the one sentence — put their @ in / they
+// never find out / unless mutual, same second — set as a small vertical
+// alignment. Three nodes down a warming rail, escalating from the sent ping
+// (amber dot) through the silence (a hollow ring) to the reveal (the two stars
+// meeting, ✦). The mechanics stay in the interface register; the reveal's payoff
+// crosses into serif italic — the one lit line, echoing the match screen.
+function LandingBeats({ C }) {
+  const { t } = useI18n()
+
+  // the @ in "put their @ in." lights up in the handle's own amber mono glyph
+  const beat1 = t('landing.beat1').split('@')
+  const Node = ({ kind }) => {
+    if (kind === 'mutual') {
+      return (
+        <span aria-hidden style={{ fontSize: 17, lineHeight: 1, color: C.star, textShadow: `0 0 12px ${rgba(C.star, 0.7)}, 0 0 22px ${rgba(C.them, 0.4)}` }}>✦</span>
+      )
+    }
+    if (kind === 'silence') {
+      return <span aria-hidden style={{ width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${rgba(C.muted, 0.6)}`, background: 'transparent' }} />
+    }
+    return <span aria-hidden style={{ width: 9, height: 9, borderRadius: '50%', background: rgba(C.star, 0.85), boxShadow: `0 0 10px ${rgba(C.star, 0.55)}` }} />
+  }
+  const rows = [
+    { kind: 'ping', k: t('landing.beat1k'), body: (<>{beat1[0]}<span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>{beat1[1]}</>) },
+    { kind: 'silence', k: t('landing.beat2k'), body: t('landing.beat2') },
+    { kind: 'mutual', k: t('landing.beat3k'), body: null },
+  ]
+  return (
+    <div className="enter" style={{ animationDelay: '.16s', position: 'relative', width: '100%', maxWidth: 340, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'left' }}>
+      {/* the rail — a hairline warming as it descends toward the reveal */}
+      <span aria-hidden style={{ position: 'absolute', left: 11, top: 12, bottom: 14, width: 1.5, transform: 'translateX(-50%)', background: `linear-gradient(180deg, ${rgba(C.muted, 0.12)}, ${rgba(C.star, 0.32)})` }} />
+      {rows.map((r) => (
+        <div key={r.kind} style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 15 }}>
+          <span style={{ position: 'relative', zIndex: 1, width: 22, minHeight: 22, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Node kind={r.kind} /></span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 1 }}>
+            <Kicker C={C} style={{ fontSize: 9.5, letterSpacing: '2px' }}>{r.k}</Kicker>
+            {r.kind === 'mutual' ? (
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ fontSize: 16, lineHeight: 1.4, color: C.cream }}>{t('landing.beat3')}</span>
+                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 20, lineHeight: 1.3, color: C.cream }}>
+                  {t('landing.beat3pay')}
+                </span>
+              </span>
+            ) : (
+              <span style={{ fontSize: 16, lineHeight: 1.45, color: C.cream }}>{r.body}</span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── 1 · THE COLD LANDING ──────────────────────────────────────────────────────
 export function LandingScreen({ C, ctx }) {
   const { t } = useI18n()
@@ -159,19 +212,15 @@ export function LandingScreen({ C, ctx }) {
         <div className="floaty"><StarMark C={C} size={64} /></div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 26 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>
         <h1
           className="enter"
-          style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 46px)', lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
+          style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 46px)', lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
         >
           <div>{t('landing.head1')}</div>
           <div style={{ color: C.star }}>{t('landing.head2')}</div>
         </h1>
-        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 330 }}>
-          <span>{t('landing.mech1')}</span>
-          <span>{t('landing.mech2')}</span>
-          <span>{t('landing.mech3')}</span>
-        </div>
+        <LandingBeats C={C} />
       </div>
 
       <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -338,7 +387,20 @@ export function YouScreen({ C, ctx }) {
   const emailVal = ctx.email.trim()
   const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
-  const valid = handleOk && emailOk
+  // the 18+ hard gate (§4.4) — signup only. the birthdate is only checked here,
+  // never sent up or stored (data minimization): we keep whether, not when.
+  const [dob, setDob] = React.useState('')
+  const todayISO = React.useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const dobOk = React.useMemo(() => {
+    if (!dob) return false
+    const d = new Date(dob + 'T00:00:00')
+    if (isNaN(d.getTime())) return false
+    const now = new Date()
+    const eighteen = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate())
+    return d <= eighteen
+  }, [dob])
+  const under = !!dob && !dobOk
+  const valid = handleOk && emailOk && (login || dobOk)
   const submit = () => valid && (login ? ctx.login() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
   const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
@@ -377,6 +439,39 @@ export function YouScreen({ C, ctx }) {
             <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
           )}
         </div>
+
+        {/* birthday — the 18+ hard gate (§4.4), signup only. checked, never stored */}
+        <Collapse open={handleOk && !login}>
+          <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <FieldLabel C={C}>{t('you.dobLabel')}</FieldLabel>
+            <label
+              style={{
+                display: 'flex', alignItems: 'center', width: '100%', padding: '15px 17px',
+                borderRadius: RADIUS.field, background: C.ink2, cursor: 'text',
+                border: `1.5px solid ${under ? rgba(C.star, 0.55) : C.line}`,
+                transition: 'border-color .2s',
+              }}
+            >
+              <input
+                type="date"
+                value={dob}
+                max={todayISO}
+                min="1920-01-01"
+                onChange={(e) => setDob(e.target.value)}
+                style={{
+                  flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none',
+                  fontFamily: "'Space Mono', monospace", fontSize: 16, letterSpacing: '.3px',
+                  color: dob ? C.cream : C.muted, colorScheme: 'dark',
+                }}
+              />
+            </label>
+            {under ? (
+              <Hint C={C} icon="lock" color={rgba(C.star, 0.9)}>{t('you.dobUnder')}</Hint>
+            ) : (
+              <Hint C={C} icon="lock">{t('you.dobNote')}</Hint>
+            )}
+          </div>
+        </Collapse>
 
         {/* email — optional, revealed after a handle exists (signup only) */}
         <Collapse open={handleOk && !login}>
@@ -779,6 +874,8 @@ export function CampusScreen({ C, ctx }) {
             </PrimaryButton>
           )}
           <p style={{ margin: '12px 0 0', textAlign: 'center', fontSize: 11.5, color: rgba(C.muted, 0.85) }}>{t('campus.foot')}</p>
+          {/* the reveal floors, disclosed before opening (§2.7) */}
+          <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.muted, 0.7) }}>{t('campus.floors')}</p>
         </>
       )}
 
@@ -797,21 +894,33 @@ export function CampusScreen({ C, ctx }) {
         </>
       )}
 
-      {c.status === 'revealed' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
-          <Kicker C={C} className="enter">{t('campus.weekKicker', { name: c.name.toLowerCase() })}</Kicker>
-          <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 42px)', lineHeight: 1.3, color: C.cream }}>
-            {t('campus.weekPings', { n: Number(c.week_pings || 0).toLocaleString() })}<br />
-            <span style={{ color: C.star }}>{t('campus.weekMatches', { n: Number(c.week_matches || 0).toLocaleString() })}</span>
-          </h1>
-          <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>
-            {t('campus.weekSub')}
-          </p>
-          <div className="enter" style={{ animationDelay: '.2s', width: '100%', maxWidth: 340 }}>
-            <PrimaryButton C={C} onClick={() => ctx.go('who')}>{t('campus.openCta')}</PrimaryButton>
+      {c.status === 'revealed' && (() => {
+        // the match-count floor (§2.7): the match number publishes only at ten and
+        // up; below it, the pre-stated line stands in its place so no match can be
+        // guessed at. every number shown is exactly true, or not shown.
+        const weekMatches = Number(c.week_matches || 0)
+        const showMatches = weekMatches >= 10
+        return (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
+            <Kicker C={C} className="enter">{t('campus.weekKicker', { name: c.name.toLowerCase() })}</Kicker>
+            <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 42px)', lineHeight: 1.3, color: C.cream }}>
+              {t('campus.weekPings', { n: Number(c.week_pings || 0).toLocaleString() })}
+              {showMatches && (
+                <>
+                  <br />
+                  <span style={{ color: C.star }}>{t('campus.weekMatches', { n: weekMatches.toLocaleString() })}</span>
+                </>
+              )}
+            </h1>
+            <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>
+              {showMatches ? t('campus.weekSub') : t('campus.weekFloor')}
+            </p>
+            <div className="enter" style={{ animationDelay: '.2s', width: '100%', maxWidth: 340 }}>
+              <PrimaryButton C={C} onClick={() => ctx.go('who')}>{t('campus.openCta')}</PrimaryButton>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {ctx.demo && (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 14 }}>
