@@ -9,11 +9,11 @@ import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, ProfileButton } from './components/ui.jsx'
+import { GalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   DoorScreen, CampusScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
-  AccountSheet, IgVerifySheet,
+  SendoffScreen, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
 import { DEMO_PINGS, DEMO_CAMPUS, DEMO_WORLDS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -24,6 +24,7 @@ const SCREENS = {
   open: OpenDoorScreen, //    the personal open-door page (/@handle)
   who: WhoScreen, //        2 · the send
   you: YouScreen, //            identity (so the ping can resolve to you)
+  sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
   door: DoorScreen, //      5 · the open-door card
@@ -104,6 +105,24 @@ export default function App() {
   // { handle, onDone } while the DM-verification overlay is up.
   const [verify, setVerify] = useState(null)
 
+  // ── the send-off animation ──
+  // When a ping is finalized the @ field collapses into a star (the Liftoff
+  // overlay: { handle, geom }) and the galaxy plays its 'sendoff' drift from that
+  // same origin, carrying the new star into the disk. `galaxyMode` drives the
+  // canvas; `sendoffOrigin` is where the star ignites (normalized screen coords).
+  const [morph, setMorph] = useState(null)
+  const [galaxyMode, setGalaxyMode] = useState('idle')
+  const [sendoffOrigin, setSendoffOrigin] = useState(null)
+  const morphTimer = useRef(null)
+  const sendoffTimer = useRef(null)
+  useEffect(
+    () => () => {
+      if (morphTimer.current) clearTimeout(morphTimer.current)
+      if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
+    },
+    [],
+  )
+
   // What a completed verification should resume into: 'place' | 'prereg' | null.
   const pendingAction = useRef(null)
 
@@ -114,7 +133,7 @@ export default function App() {
     if (route.poster) return 'open'
     if (route.campus) return 'campus'
     if (route.optout) return 'privacy'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who'].includes(init.screen)) return init.screen
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -318,12 +337,63 @@ export default function App() {
     }
   }, [demo, route.campus])
 
+  // ── the send-off animation ──
+  // Collapse the @ field into a star (Liftoff) and hand off to the galaxy's drift
+  // from that same point, then reveal the result once the flight has played out
+  // (~5s). Measured from the live @ field so the morph and the galaxy star share
+  // one origin; falls back to a sensible center if the field can't be read.
+  const runSendoff = useCallback(
+    (handle, afterScreen) => {
+      let origin = { x: 0.5, y: 0.42 }
+      let geom = null
+      try {
+        const el = document.querySelector('[data-sendoff-field]')
+        if (el) {
+          const r = el.getBoundingClientRect()
+          const cx = r.left + r.width / 2
+          const cy = r.top + r.height / 2
+          origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
+          geom = { cx, cy, w: r.width, h: r.height }
+        }
+      } catch {
+        /* fall back to the default origin */
+      }
+      setSendoffOrigin(origin)
+      setGalaxyMode('sendoff')
+      setMorph({ handle, geom })
+      go('sendoff')
+      // the DOM morph is a one-shot ~1.25s gesture; drop it once it's played so
+      // the galaxy star (now drifting from the same point) is all that remains.
+      if (morphTimer.current) clearTimeout(morphTimer.current)
+      morphTimer.current = setTimeout(() => {
+        setMorph(null)
+        morphTimer.current = null
+      }, 1400)
+      // after the full flight, settle the galaxy to idle and reveal the result.
+      if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
+      sendoffTimer.current = setTimeout(() => {
+        setGalaxyMode('idle')
+        go(afterScreen)
+        sendoffTimer.current = null
+      }, 4700)
+    },
+    [go],
+  )
+
   // ── the flow ──
   const findOut = useCallback(() => {
     setLoginMode(false)
     setError('')
-    go('who')
-  }, [go])
+    // self @ first: a new, unidentified person names THEMSELVES before naming
+    // anyone else — which also means the slot count we show them is real, not a
+    // guess. once identified (or in the sandbox), go straight to the send.
+    if (normHandle(me) && (verified || demo)) {
+      go('who')
+    } else {
+      pendingAction.current = 'place'
+      go('you')
+    }
+  }, [me, verified, demo, go])
 
   // From an open-door page: land two taps from a placed ping (field prefilled).
   const startFromDoor = useCallback(
@@ -388,14 +458,15 @@ export default function App() {
           return
         }
         setLastPlaced({ handle: target, reachable: !!res.reachable })
-        go('placed')
+        // the @ collapses into a star and flies into the galaxy, then 'placed'.
+        runSendoff(target, 'placed')
       } catch (e) {
         console.error(e)
         setError(t('who.errGeneric'))
         go('who')
       }
     },
-    [me, them, email, intent, demo, session, go, t],
+    [me, them, email, intent, demo, session, go, t, runSendoff],
   )
 
   // Preregister for the campus window ("count me in" — a full verified signup).
@@ -458,13 +529,17 @@ export default function App() {
   const continueFromYou = useCallback(() => {
     if (!isValidHandle(me)) return
     const resume = (proof) => {
-      if (pendingAction.current === 'prereg') {
-        pendingAction.current = null
+      const action = pendingAction.current
+      pendingAction.current = null
+      if (action === 'prereg') {
         preregCommit(proof)
-      } else {
-        pendingAction.current = null
-        placeCommit(proof)
+        return
       }
+      // identity settled. if a target is already chosen (an open-door link
+      // pre-named them), finish placing; otherwise this was the self-@-first step
+      // in the main funnel, so now go name the other person.
+      if (normHandle(them)) placeCommit(proof)
+      else go('who')
     }
     if (!verified && (demo || igVerifyEnabled())) {
       openVerify(me, resume)
@@ -472,7 +547,7 @@ export default function App() {
     }
     if (!verified && !demo) setSession(signInStub())
     resume()
-  }, [me, demo, verified, openVerify, placeCommit, preregCommit])
+  }, [me, them, demo, verified, openVerify, placeCommit, preregCommit, go])
 
   // The campus page's "count me in".
   const preregister = useCallback(
@@ -750,7 +825,7 @@ export default function App() {
     posterHandle: route.poster || '',
     verifyEnabled: igVerifyEnabled() || demo,
     setMe, setEmail, setThem,
-    addAltHandle, removeAltHandle,
+    altHandles, addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,
     startLogin, login,
     renew, letGo, simulateMutual, openConversation, suppressHandle: suppress,
@@ -762,20 +837,46 @@ export default function App() {
   // The profile chip sits top-left on the quiet screens, once an account is
   // established (never for a merely-typed @).
   const showProfile = established && !!me && ['pings', 'landing', 'campus'].includes(screen)
+  // Its logged-out counterpart: a clear "log in" chip in the same corner, so a
+  // returning person always has an obvious way back to their pings.
+  const showLogin = !established && ['landing', 'open'].includes(screen)
+
+  // Calm the living galaxy on the content screens so the foreground reads easily;
+  // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
+  // soft glow keeps resting in the background behind the pings list. Landing keeps
+  // the field bright; the send-off / match modes set their own dimming.
+  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'campus', 'open']
+  const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   return (
     <div className="celestual-app">
-      <GalaxyCanvas mode="idle" you={C.you} them={C.them} style={{ zIndex: 0 }} />
+      <GalaxyCanvas
+        mode={galaxyMode}
+        dim={galaxyDim}
+        origin={sendoffOrigin}
+        seals={pings.length}
+        you={C.you}
+        them={C.them}
+        style={{ zIndex: 0 }}
+      />
 
-      {showProfile && (
+      {(showProfile || showLogin) && (
         <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
-          <ProfileButton C={C} handle={me} onClick={openAccount} />
+          {showProfile ? (
+            <ProfileButton C={C} handle={me} onClick={openAccount} />
+          ) : (
+            <LoginButton C={C} label={t('landing.login')} onClick={startLogin} />
+          )}
         </div>
       )}
 
       <div key={screen} className="fade" data-screen={screen} style={{ position: 'relative', zIndex: 4 }}>
         <Screen C={C} ctx={ctx} />
       </div>
+
+      {/* the send-off morph: the @ field collapsing into a star (torn down by the
+          morphTimer once its one-shot gesture has played). */}
+      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} />}
 
       {accountOpen && <AccountSheet C={C} ctx={ctx} />}
 

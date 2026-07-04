@@ -99,6 +99,61 @@ button { font-family: inherit; }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 .floaty { animation: floaty 6s ease-in-out infinite; }
 
+/* ── @ → star morph (Liftoff, the send-off) ──────────────────────────────
+   When a ping is finalized, the @ field collapses HORIZONTALLY into a vertical
+   slit, the slit pinches to a point, and a star ignites there with a glisten —
+   a flash of crossed diffraction spikes + a blooming halo (the starburst). The
+   star then dissolves exactly as the galaxy's send-off drift (which starts from
+   this same point) carries it away with a trail. All layers share one ~1.25s
+   timeline so the motion reads as one connected gesture. */
+@keyframes loBox {
+  0%        { transform: scaleX(1)    scaleY(1);    opacity: 1; }
+  34%       { transform: scaleX(0.05) scaleY(1);    opacity: 1; }    /* squeeze to a slit */
+  50%       { transform: scaleX(0.05) scaleY(0.18); opacity: .5; }   /* slit → point */
+  64%, 100% { transform: scaleX(0.02) scaleY(0.02); opacity: 0; }
+}
+@keyframes loText {
+  0%   { opacity: 1; filter: blur(0);   transform: scaleX(1);    letter-spacing: 0; }
+  26%  { opacity: .85; }
+  40%  { opacity: 0; filter: blur(4px); transform: scaleX(0.12); letter-spacing: -2px; }
+  100% { opacity: 0; }
+}
+@keyframes loCore {
+  0%, 30% { opacity: 0;  transform: scale(0.1); }
+  44%     { opacity: 1;  transform: scale(1.3); }   /* ignite */
+  54%     { opacity: 1;  transform: scale(0.9); }
+  72%     { opacity: 1;  transform: scale(1.05); }
+  86%     { opacity: .9; transform: scale(1); }
+  100%    { opacity: 0;  transform: scale(0.85); }  /* hand off to the galaxy drift */
+}
+@keyframes loHalo {
+  0%, 30% { opacity: 0;  transform: scale(0.2); }
+  46%     { opacity: .7; transform: scale(1); }
+  100%    { opacity: 0;  transform: scale(2.3); }   /* the starburst bloom */
+}
+@keyframes loSpike {
+  0%, 36% { opacity: 0;   transform: scale(0.2) rotate(0deg); }
+  48%     { opacity: 1;   transform: scale(1.15) rotate(0deg); }  /* the glisten */
+  60%     { opacity: .4;  transform: scale(0.92) rotate(0deg); }
+  78%     { opacity: .68; transform: scale(1.04) rotate(0deg); }  /* a softer second twinkle */
+  100%    { opacity: 0;   transform: scale(1.2) rotate(0deg); }
+}
+.lo-box   { transform-origin: center; animation: loBox 1.15s cubic-bezier(.7, 0, .2, 1) both; will-change: transform, opacity; }
+.lo-text  { animation: loText .7s cubic-bezier(.6, 0, .3, 1) both; }
+.lo-core  { transform-origin: center; animation: loCore 1.25s cubic-bezier(.3, .2, .2, 1) both; will-change: transform, opacity; }
+.lo-halo  { transform-origin: center; animation: loHalo 1.25s ease-out both; }
+.lo-spike { transform-origin: center; animation: loSpike 1.25s ease-in-out both; }
+
+/* the send-off screen's line breathes in slowly under the flight */
+@keyframes sendoffLine { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+.sendoff-line { animation: sendoffLine 1s ease .5s both; }
+
+/* ── the hero typewriter (the landing line) ──────────────────────────────
+   A slim caret blinks beside the typed line; the line itself is driven in JS. */
+@keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
+.tw-caret { display: inline-block; animation: caretBlink 1.05s step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .tw-caret { animation: none; opacity: 1; } }
+
 /* ── screen cross-fade (View Transitions API, driven by App.go) ─────────── */
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 0.32s; animation-timing-function: ease; }
