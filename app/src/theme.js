@@ -1,29 +1,38 @@
 // theme.js — CELESTUAL's single source of truth for color and geometry.
 //
-// The visual language is docs/DESIGN.md, derived from the masterguide
-// (docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4): deep navy fields, generous empty
-// space, and ONE warm orange star as the only accent in the entire product.
-// There is no second accent, no theme picker, no cosmetic tier — a screen that
-// needs a second color is a screen that's doing too much.
+// The visual language is docs/DESIGN.md (the galaxy edition): the whole product
+// lives inside one deep cosmic-violet field, lit by TWO warm stars — starlight-
+// amber (`you`) and rose (`them`), the two stars of the core metaphor. This is
+// the canonical look. Do NOT flatten it back to a single-accent navy scheme
+// unless the human explicitly asks for that; a re-skin is a design decision the
+// human makes, never a cleanup Claude performs on its own.
 //
-// Everything visual derives from THESE tokens — the React tree, the night-field
-// canvas, the story card renderer, and styles.css — so the product reads as one
-// unbroken night on every screen.
+// Everything visual derives from THESE tokens — the React tree, the galaxy
+// canvas, the story card renderer, and styles.css custom properties — so the
+// whole product reads as one coherent cosmos on every screen, mobile and web.
 
 export const TOKENS = {
-  // the navy field — every backdrop, panel and raised surface
-  ink: '#070B14',
-  ink2: '#0C1322',
-  ink3: '#141D31',
+  // deep-space base — shared by every screen's backdrop and the galaxy void
+  ink: '#0B0814',
+  ink2: '#16111F',
+  ink3: '#211934',
   // text
-  cream: '#F2EEE5', // the emotional + interface voice
-  muted: '#8B94A8', // the mechanical voice (slate — quiet, cooler than the field)
-  line: 'rgba(242,238,229,0.10)',
-  // the single warm star — the only accent, anywhere, ever
-  star: '#FFA25C',
-  // ink for text ON the warm star (buttons)
-  onStar: '#1A0F06',
+  cream: '#F3ECF6', // the emotional + interface voice
+  muted: '#9E92B6', // the mechanical voice (cool violet-grey)
+  line: 'rgba(243,236,246,0.10)',
+  // the two stars — the accents of the whole product
+  you: '#FF9E6B', // starlight amber (primary / "you")
+  them: '#E6749E', // rose (secondary / "them" / mutuality)
+  onYou: '#1A0F0A', // ink for text ON the bright amber CTA
+  // `star`/`onStar` are aliases of the primary star (`you`), kept so every
+  // component that reads C.star lights up in starlight-amber. The primary accent
+  // and the "you" star are the same light — never a third hue.
+  star: '#FF9E6B',
+  onStar: '#1A0F0A',
 }
+
+// Palette passed to the galaxy canvas + makeColors, as a 2-tuple [you, them].
+export const PALETTE = [TOKENS.you, TOKENS.them]
 
 // ── Geometry — one soft-radius scale, one spacing rhythm. ────────────────────
 // Inputs and buttons share ONE corner (`field`); cards step up one notch; true
@@ -56,8 +65,11 @@ export function rgba(hex, a) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
 }
 
-// The color object handed down the React tree. One product, one night — no
-// palette overrides, no themes (the old Nova hooks are gone on purpose).
-export function makeColors() {
-  return { ...TOKENS }
+// The color object handed down the React tree. Defaults to the singular TOKENS
+// above; accepts an optional [you, them] palette override so the galaxy canvas
+// and the UI always read the same two stars.
+export function makeColors(palette) {
+  const you = (palette && palette[0]) || TOKENS.you
+  const them = (palette && palette[1]) || TOKENS.them
+  return { ...TOKENS, you, them, star: you }
 }

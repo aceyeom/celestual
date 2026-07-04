@@ -1,7 +1,8 @@
-/* CELESTUAL — the night edition. Screens are inline-styled React components;
-   this file owns the reset, fonts, keyframes, the film grain, and the page
-   frame. The visual system is docs/DESIGN.md: deep navy, generous emptiness,
-   one warm star. */
+/* CELESTUAL — galaxy edition. Screens are inline-styled React components; this
+   file owns the reset, fonts, keyframes and the responsive page frame so the
+   same flow reads full-bleed on a phone and as a centered column on the web.
+   The visual system is docs/DESIGN.md: one deep cosmic-violet field, the living
+   galaxy backdrop, and the two stars (amber + rose). */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -10,10 +11,10 @@ html, body, #root { width: 100%; }
 
 body {
   font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #F2EEE5;
-  /* matches theme.js TOKENS.ink so there's no flash of a different field
-     before the night paints */
-  background: #070B14;
+  color: #F3ECF6;
+  /* single cosmic base — matches theme.js TOKENS.ink so there's no flash of a
+     different background color before the galaxy canvas paints */
+  background: #0B0814;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -23,22 +24,13 @@ body {
 
 .celestual-app { position: relative; width: 100%; }
 
-/* ── film grain ─────────────────────────────────────────────────────────
-   A whisper of texture over the whole night so flat navy never reads as a
-   dead #hex rectangle. Pure SVG noise, fixed, non-interactive. */
-.celestual-app::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-}
-
-/* ── custom cursor — the four-point star, warm, centred on its hotspot ──── */
+/* ── custom cursor — a four-point glisten, on-brand on every screen ──────────
+   A white sparkle with a soft amber edge (the same star as the favicon/brand),
+   centred on its hotspot. `cursor` inherits, so setting it on the root carries
+   it across the whole app; text fields keep their caret, and touch devices (no
+   hover) simply never show it. */
 :root {
-  --star-cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij48cGF0aCBkPSJNMTQgMSBRMTUuMyAxMi43IDI3IDE0IFExNS4zIDE1LjMgMTQgMjcgUTEyLjcgMTUuMyAxIDE0IFExMi43IDEyLjcgMTQgMSBaIiBmaWxsPSIjRkZBMjVDIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTE0IDMuNCBRMTUgMTMgMjQuNiAxNCBRMTUgMTUgMTQgMjQuNiBRMTMgMTUgMy40IDE0IFExMyAxMyAxNCAzLjQgWiIgZmlsbD0iI0ZGRkZGRiIvPjwvc3ZnPg==") 14 14;
+  --star-cursor: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgdmlld0JveD0iMCAwIDI4IDI4Ij48cGF0aCBkPSJNMTQgMSBRMTUuMyAxMi43IDI3IDE0IFExNS4zIDE1LjMgMTQgMjcgUTEyLjcgMTUuMyAxIDE0IFExMi43IDEyLjcgMTQgMSBaIiBmaWxsPSIjRkY5RTZCIiBvcGFjaXR5PSIwLjU1Ii8+PHBhdGggZD0iTTE0IDMuNCBRMTUgMTMgMjQuNiAxNCBRMTUgMTUgMTQgMjQuNiBRMTMgMTUgMy40IDE0IFExMyAxMyAxNCAzLjQgWiIgZmlsbD0iI0ZGRkZGRiIvPjwvc3ZnPg==") 14 14;
 }
 html, body, .celestual-app { cursor: var(--star-cursor), auto; }
 a, button, [role="button"], label, summary { cursor: var(--star-cursor), pointer; }
@@ -51,7 +43,7 @@ input, textarea, select { cursor: text; }
 input { font-family: inherit; }
 button { font-family: inherit; }
 
-::selection { background: rgba(255, 162, 92, 0.3); color: #fff; }
+::selection { background: rgba(255, 158, 107, 0.32); color: #fff; }
 ::-webkit-scrollbar { width: 0; height: 0; }
 
 /* ── entrance ───────────────────────────────────────────────────────── */

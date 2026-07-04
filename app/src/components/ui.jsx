@@ -1,8 +1,10 @@
-// ui.jsx — CELESTUAL's primitives (the night edition). All color comes from the
+// ui.jsx — CELESTUAL's primitives (the galaxy edition). All color comes from the
 // single source of truth in ../theme.js — nothing defines its own hexes — and
-// the whole product carries exactly one accent: the warm star. See
-// docs/DESIGN.md for the rules these components enforce.
+// the whole product lives inside one deep cosmic-violet field lit by the two
+// stars: starlight-amber (`you`) and rose (`them`). See docs/DESIGN.md for the
+// rules these components enforce.
 import * as React from 'react'
+import { GalaxyField } from '../galaxy.js'
 import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
 
@@ -53,12 +55,61 @@ export function useDialog(onClose) {
   return ref
 }
 
-// ── the night field ───────────────────────────────────────────────────────────
-// The one persistent backdrop: a deep navy field scattered with faint, still
-// stars. Deliberately quiet — no drift, no parallax, no nebula. The product's
-// integrity is that nothing happens here until everything does, and the
-// backdrop says so. Drawn once per resize with a seeded PRNG so the same sky
-// holds still between screens (a re-rolling sky reads as noise, not night).
+// ── the galaxy field (the persistent backdrop) ────────────────────────────────
+// The one backdrop for the whole product: a real 3D perspective-projected
+// particle galaxy (galaxy.js) that slowly orbits behind every screen, steerable
+// with a whisper of pointer/tilt parallax. This is the cosmos the product lives
+// inside — the two stars (amber `you`, rose `them`) are the field's own light.
+// Mount it once, in idle mode, as a fixed full-bleed layer under the content.
+export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, onReady, style }) {
+  const ref = React.useRef(null)
+  const field = React.useRef(null)
+  React.useEffect(() => {
+    const f = new GalaxyField(ref.current, { you, them, motion })
+    field.current = f
+    f.setMode(mode, { dim, origin })
+    f.start()
+    if (onReady) onReady(f)
+    if (import.meta.env.DEV) window.__galaxyField = f
+    let ro
+    let roRaf = 0
+    if (window.ResizeObserver && ref.current && ref.current.parentElement) {
+      // Coalesce a burst of resize callbacks (the mobile toolbar fires many as it
+      // animates) into a single resize per frame.
+      ro = new ResizeObserver(() => {
+        if (roRaf) cancelAnimationFrame(roRaf)
+        roRaf = requestAnimationFrame(() => f.resize())
+      })
+      ro.observe(ref.current.parentElement)
+    }
+    const r1 = requestAnimationFrame(() => f.resize())
+    return () => {
+      if (ro) ro.disconnect()
+      if (roRaf) cancelAnimationFrame(roRaf)
+      cancelAnimationFrame(r1)
+      f.destroy()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  React.useEffect(() => {
+    if (field.current) field.current.setMode(mode, { dim, origin })
+  }, [mode, dim, origin])
+  React.useEffect(() => {
+    if (field.current) field.current.setPalette(you, them)
+  }, [you, them])
+  return (
+    <canvas
+      ref={ref}
+      aria-hidden
+      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', background: TOKENS.ink, ...style }}
+    />
+  )
+}
+
+// ── the night field (retired backdrop, kept for reference) ─────────────────────
+// The still navy field used by the "night edition". Superseded by GalaxyCanvas —
+// the living galaxy is the product's backdrop again. Left exported so nothing
+// imports break; not mounted.
 function mulberry32(a) {
   return function () {
     a |= 0
