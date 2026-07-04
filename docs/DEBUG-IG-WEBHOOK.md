@@ -9,9 +9,9 @@ secrets `IG_APP_SECRET` / `IG_VERIFY_TOKEN` / `IG_ACCESS_TOKEN`, added testers),
   **never flips to "Verified ✓".**
 
 This is the symptom of a broken **webhook** — the one piece that carries the DM from
-Instagram into your backend. The other big setup guide
-([`SETUP-IG-VERIFY.md`](./SETUP-IG-VERIFY.md)) is written for the **ManyChat** path, so
-it doesn't troubleshoot this one. This file does. Written for a beginner — follow it top
+Instagram into your backend. The recommended production relay is the **ManyChat** path (see
+[../supabase/README.md](../supabase/README.md)); this file troubleshoots the
+direct-Meta alternative. Written for a beginner — follow it top
 to bottom.
 
 > **Your specific values** (used throughout):
@@ -349,5 +349,5 @@ secret/token mismatch — Fixes #7–#8.
 
 ---
 
-Back to: [SETUP-IG-VERIFY.md](./SETUP-IG-VERIFY.md) (ManyChat path) ·
+Back to: [supabase/README.md](../supabase/README.md) (functions + ManyChat path) ·
 [README](../README.md) · [SECURITY.md](./SECURITY.md)

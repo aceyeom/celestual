@@ -1,424 +1,133 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import {
-  submitEntry, withdrawEntry, suppressHandle, normHandle, isValidHandle,
-  checkMutuals, linkHandles, fetchSlots, requestReminder, fetchMySky, FULL_SLOTS,
+  placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
+  suppressHandle, normHandle, isValidHandle, linkHandles, setWorlds,
+  fetchCampus, preregisterCampus, SLOT_CAP, FULL_SLOTS,
 } from './api/celestual.js'
+import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
-import { loadProfile, saveProfile, signOutUser, deleteAccount as deleteAccountApi, localSkyOwner } from './api/profile.js'
-import { slotsRemaining } from './api/slots.js'
-import { makeColors, PALETTE, sealStyleById, skyThemeById } from './theme.js'
-import { GalaxyCanvas, WarmBg, StarTags, Liftoff, LanguageSwitcher, ProfileButton } from './components/ui.jsx'
+import { makeColors } from './theme.js'
+import { NightField, ProfileButton } from './components/ui.jsx'
 import {
-  IntroScreen, LandingScreen, YouScreen, ThemScreen, SendoffScreen,
-  RestingScreen, MatchScreen, OutOfSlotsScreen, PrivacyScreen, StarDetail, AccountSheet, IgVerifySheet,
+  LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
+  DoorScreen, CampusScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
+  AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
-import { ConstellationsScreen, INTENTS, isCustomIntent } from './components/beta.jsx'
-import { NovaSheet, loadNova, NOVA_STORE, bumpMetric } from './components/nova.jsx'
+import { DEMO_PINGS, DEMO_CAMPUS, DEMO_WORLDS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
-const MOTION = 20
-
+// The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
 const SCREENS = {
-  intro: IntroScreen,
-  landing: LandingScreen,
-  you: YouScreen,
-  them: ThemScreen,
-  sendoff: SendoffScreen,
-  resting: RestingScreen,
-  // `match` is now reached live: with instant reveal, completing a mutual pair at
-  // seal routes here. It's also the intro's collision backdrop.
-  match: MatchScreen,
-  outofslots: OutOfSlotsScreen,
-  privacy: PrivacyScreen,
-  constellations: ConstellationsScreen,
+  landing: LandingScreen, // 1 · the cold landing
+  open: OpenDoorScreen, //    the personal open-door page (/@handle)
+  who: WhoScreen, //        2 · the send
+  you: YouScreen, //            identity (so the ping can resolve to you)
+  placed: PlacedScreen, //  3 · placed — the recruiter screen
+  pings: PingsScreen, //    4 · your pings — the status page
+  door: DoorScreen, //      5 · the open-door card
+  campus: CampusScreen, //  6–7 · the campus window (/c/slug)
+  match: MatchScreen, //    8 · the match
+  fourth: FourthSlotScreen, // 9 · the fourth slot (dormant)
+  privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
 }
 
-// Where the @ becomes a star (normalized screen coords) — module-constant so it
-// doesn't re-fire the galaxy's setMode effect every render.
-const SENDOFF_ORIGIN = { x: 0.5, y: 0.43 }
+const STORE = 'celestual:v2'
 
-// One persistent background for the whole session. Each screen declares the
-// galaxy mode + whether the calm overlay fades in on top.
-const BG = {
-  landing: { warm: false, mode: 'idle', dim: 0.62 },
-  you: { warm: true, variant: 'quiet', mode: 'idle' },
-  them: { warm: true, variant: 'low', mode: 'idle' },
-  sendoff: { warm: false, mode: 'sendoff', origin: SENDOFF_ORIGIN },
-  resting: { warm: false, mode: 'resting' },
-  match: { warm: false, mode: 'match' },
-  outofslots: { warm: true, variant: 'quiet', mode: 'idle' },
-  privacy: { warm: true, variant: 'quiet', mode: 'idle' },
-  // Constellations live over the real galaxy (dimmed for reading) — a star
-  // chart belongs in the sky, not on a flat panel.
-  constellations: { warm: false, mode: 'idle', dim: 0.62 },
+// ── routes ────────────────────────────────────────────────────────────────────
+// /demo         → the sandbox (auto-verify, hardcoded sample data)
+// /@handle      → someone's open door, ping field prefilled (Loop B)
+// /c/<slug>     → a campus window (Loop C)
+// /optout       → the public opt-out page
+const parseRoute = () => {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
+  if (/(^|\/)demo$/.test(path)) return { demo: true }
+  const at = path.match(/^\/@([a-zA-Z0-9._]{1,30})$/)
+  if (at) return { poster: normHandle(at[1]) }
+  const campus = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
+  if (campus) return { campus: campus[1].toLowerCase() }
+  if (path === '/optout') return { optout: true }
+  return {}
 }
-
-const STORE = 'celestual:v1'
-const INTRO_SEEN = 'celestual:introSeen'
-
-// /demo (at any base path) = zero verification, sandboxed (never writes real data).
-const isDemoPath = () => /(^|\/)demo\/?$/.test(window.location.pathname)
-// /beta = the same sandbox as /demo PLUS the beta features (the intent signal and
-// constellations). Everything beta stays local; nothing ever reaches the server.
-const isBetaPath = () => /(^|\/)beta\/?$/.test(window.location.pathname)
-const BETA_STORE = 'celestual:beta:v1'
 
 export default function App() {
-  const { lang, setLang, langs, t } = useI18n()
+  const { t } = useI18n()
+  const C = useMemo(() => makeColors(), [])
+  const route = useMemo(parseRoute, [])
+  const [demo] = useState(!!route.demo)
 
   const init = useMemo(() => {
+    if (route.demo) return {}
     try {
       return JSON.parse(localStorage.getItem(STORE)) || {}
     } catch {
       return {}
     }
-  }, [])
+  }, [route.demo])
 
-  const [beta] = useState(isBetaPath)
-  const [demo, setDemo] = useState(() => isDemoPath() || isBetaPath())
+  // ── identity ──
   const [session, setSession] = useState(getSession)
-  // ── Celestual Nova (sandbox-only this round) ──
-  // The tier's entitlement + choices live in their own store (like BETA_STORE) so
-  // nothing about it can bleed into real state. Subscribing here is an instant
-  // local unlock — nothing is charged; Stripe + a server entitlements table come
-  // later (docs/PRICING-REVENUE.md).
-  const [nova, setNova] = useState(() =>
-    isDemoPath() || isBetaPath() ? loadNova() : { active: false, plan: '', sealStyle: 'ember', skyTheme: 'violet', since: null, referrals: 0 },
-  )
-  const [novaOpen, setNovaOpen] = useState(false)
-  const novaSeal = sealStyleById(nova.sealStyle)
-  const novaTheme = skyThemeById(nova.skyTheme)
-  // Nova's sky theme rides the existing makeColors override hook, so the whole
-  // world (screens, panels, canvas void, body) shifts together.
-  const C = useMemo(
-    () => makeColors(PALETTE, nova.active ? novaTheme.tokens : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nova.active, nova.skyTheme],
-  )
-  useEffect(() => {
-    try {
-      document.body.style.background = C.ink
-    } catch {
-      /* ignore */
-    }
-  }, [C.ink])
-  useEffect(() => {
-    if (!demo) return
-    try {
-      localStorage.setItem(NOVA_STORE, JSON.stringify(nova))
-    } catch {
-      /* private mode / quota — fine to skip */
-    }
-  }, [demo, nova])
-  // ── beta state (all sandboxed; persisted only under the beta store) ──
-  const betaInit = useMemo(() => {
-    if (!isBetaPath()) return {}
-    try {
-      return JSON.parse(localStorage.getItem(BETA_STORE)) || {}
-    } catch {
-      return {}
-    }
-  }, [])
-  // The in-flight intent pick (the optional line on the "them" step), the sealed
-  // intents keyed by normalized handle (a map, so an async sky restore can never
-  // misalign them), and both revealed lines at a mutual match.
-  const [intent, setIntent] = useState('')
-  const [intents, setIntents] = useState(() => {
-    // Migrate any earlier beta store onto the current line set; drop unknowns so
-    // a stale id can never render as a raw key. Nova's write-your-own lines are
-    // stored as 'custom:<text>' and pass through as-is.
-    const legacy = { mend: 'sorry', always: 'miss' }
-    const raw = betaInit.intents || {}
-    const out = {}
-    for (const k in raw) {
-      const v = legacy[raw[k]] || raw[k]
-      if (INTENTS.includes(v) || isCustomIntent(v)) out[k] = v
-    }
-    return out
-  })
-  const [matchIntent, setMatchIntent] = useState(null)
-  // The seal styles both sides of a mutual match burn with — {you, them} style
-  // ids. The receiving side sees the sender's style at the reveal, UNBRANDED
-  // (I-4). The sandbox seeds the other side's so the receiving view demos too.
-  const [matchSeal, setMatchSeal] = useState(null)
-  // Constellations this person is part of: { id, name, count, role }.
-  const [constellations, setConstellations] = useState(betaInit.constellations || [])
-  // A join link (?c=<community>) lands on the constellations screen as an invite.
-  const [pendingJoin, setPendingJoin] = useState(() => {
-    if (!isBetaPath()) return ''
-    try {
-      return (new URLSearchParams(window.location.search).get('c') || '').trim().slice(0, 48)
-    } catch {
-      return ''
-    }
-  })
-  // The Instagram-DM verification overlay request: { handle, onDone } while open,
-  // null otherwise. `onDone(proof)` resumes whatever the user was doing (continue
-  // to "them", or finish the seal) once ownership is proven.
-  const [verify, setVerify] = useState(null)
-
-  // First screen: the landing hook — there's no sign-in wall anymore (identity is
-  // confirmed at seal time). If they were mid-flow, resume there; a half-finished
-  // send-off resolves to the resting sky. The explainer slideshow only plays on
-  // "Find out" (or a replay via "how it works"), so it never appears unbidden.
-  // A beta join link overrides the resume: the invite is why they came.
-  const firstScreen = () => {
-    if (isBetaPath() && pendingJoin) return 'constellations'
-    return init.screen === 'sendoff' ? 'resting' : init.screen || 'landing'
-  }
-
-  const [screen, setScreen] = useState(firstScreen)
-  const screenRef = useRef(screen)
-  const [email, setEmail] = useState(init.email || session?.email || '')
-  const [me, setMe] = useState(init.me || session?.handle || '')
-  // Identity is proven for the CURRENT handle only. An Instagram-DM session is bound
-  // to the exact @ it verified, so editing `me` correctly drops back to unverified
-  // (the seal/continue gate then re-verifies). The local stub — used only when real
-  // verification isn't configured — isn't handle-specific, so it stays valid.
+  const [me, setMe] = useState(init.me || (demo ? DEMO_ME : '') || session?.handle || '')
+  const [email, setEmail] = useState(init.email || '')
+  const [altHandles, setAltHandles] = useState(init.altHandles || [])
+  // Identity is proven for the CURRENT handle only — a DM session is bound to
+  // the exact @ it verified, so editing `me` drops back to unverified.
   const verified =
     !!session?.verified &&
     (session.provider === 'instagram_dm'
       ? !!me.trim() && normHandle(session.handle) === normHandle(me)
       : true)
-  // The user's OTHER Instagram @s (multi-account). The full identity set is
-  // [me, ...altHandles]; being entered on ANY of them counts as them (§ identity).
-  const [altHandles, setAltHandles] = useState(init.altHandles || [])
-  const [accountOpen, setAccountOpen] = useState(false)
-  // The entry-slot budget snapshot (server-authoritative; this drives the meter +
-  // gates the entry button). Demo runs on a roomy local budget.
-  const [slots, setSlots] = useState(FULL_SLOTS)
-  // True only when the sky is actually backed by the encrypted database (a real
-  // signed-in Supabase session), so the account UI never claims "saved to your
-  // account" when it's really just on this device (e.g. the dev sign-in stub).
-  const [synced, setSynced] = useState(false)
-  // Becomes true once the initial profile/sky load has run, so the debounced saver
-  // never writes the empty initial state over a stored sky before it's restored.
-  const persistReady = useRef(false)
-  // SECRETS (who you pined for) — never persisted (§4.3); memory only.
-  const [them, setThem] = useState('')
-  const [sealedAt, setSealedAt] = useState(init.sealedAt || null)
-  const [over18, setOver18] = useState(!!init.over18)
-  const [handles, setHandles] = useState([]) // memory-only, aligned by index
-  // Registry dates are NOT identifying, so they persist — the interactive field
-  // can show "sealed · <date>" even after a reload (handles stay memory-only).
-  const [sealTimes, setSealTimes] = useState(init.sealTimes || [])
-  // Normalized @s among `handles` that are now mutual (instant reveal at seal +
-  // a group-aware re-check on load). Drives the in-app constellations view.
-  const [matches, setMatches] = useState([])
+
+  // ── the pings (the whole product state) ──
+  // [{ handle|null, time, expires_at, mutual, reachable, intent }]
+  // Plaintext handles live HERE (and in localStorage) only — the server stores
+  // hashes. `handle: null` rows are pings restored from another device.
+  const [pings, setPings] = useState(() => (demo ? DEMO_PINGS.map((p) => ({ ...p })) : init.pings || []))
+  const [them, setThem] = useState(route.poster || '')
+  const [intent, setIntent] = useState('')
   const [error, setError] = useState('')
-  const [morph, setMorph] = useState(null)
-  // Where the send-off starts: the actual @ textbox's center (measured at seal),
-  // so the morph overlay and the galaxy drift share one origin. Falls back to a
-  // sensible screen point if the field can't be measured.
-  const [sendoffOrigin, setSendoffOrigin] = useState(SENDOFF_ORIGIN)
-  const [introMode, setIntroMode] = useState('idle') // galaxy mode while intro plays
-  // The "you" step doubles as the sign-back-in entry: in login mode it asks only
-  // for the @, proves it, and restores the saved sky — no naming, no second step.
+  const [lastPlaced, setLastPlaced] = useState(null) // { handle, reachable }
+  const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
+  const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
-  const [focused, setFocused] = useState(null) // index of the star the camera holds
-  const galaxyRef = useRef(null)
-  // True once the saved sky has finished loading, so a resume onto the resting
-  // screen can hold a calm placeholder instead of flashing the empty state.
-  const [skyLoaded, setSkyLoaded] = useState(false)
-  // The Liftoff morph's teardown timer — tracked so a fast re-seal can cancel a
-  // pending teardown instead of letting two overlap.
-  const morphTimer = useRef(null)
 
-  // An ESTABLISHED identity: a proven session, the sandboxed demo, or an existing
-  // sky on this device. Crucially this is FALSE for a handle that was merely typed
-  // on the "you" step and abandoned — so such a handle is never surfaced as an
-  // account (the profile chip / account sheet) nor persisted as one. This is the
-  // fix for "type my @, don't verify, go back, and the top-left shows my details".
-  const established = verified || demo || handles.length > 0
+  // ── worlds (community counters) ──
+  const [worlds, setWorldsState] = useState(() => (demo ? DEMO_WORLDS.map((w) => ({ ...w })) : init.worlds || []))
 
+  // ── the campus window ──
+  const [campus, setCampus] = useState(() => (demo ? { ...DEMO_CAMPUS } : null))
+  const [campusJoined, setCampusJoined] = useState(false)
+
+  // ── overlays ──
+  const [accountOpen, setAccountOpen] = useState(false)
+  // { handle, onDone } while the DM-verification overlay is up.
+  const [verify, setVerify] = useState(null)
+
+  // What a completed verification should resume into: 'place' | 'prereg' | null.
+  const pendingAction = useRef(null)
+
+  const established = verified || demo || pings.length > 0
+
+  // ── navigation ──
+  const firstScreen = () => {
+    if (route.poster) return 'open'
+    if (route.campus) return 'campus'
+    if (route.optout) return 'privacy'
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who'].includes(init.screen)) return init.screen
+    if (pings.length) return 'pings'
+    return 'landing'
+  }
+  const [screen, setScreen] = useState(firstScreen)
+  const screenRef = useRef(screen)
   useEffect(() => {
     screenRef.current = screen
   }, [screen])
 
-  useEffect(() => {
-    // Fast local resume state for first paint. The sky (the @handles, which used to
-    // be memory-only) now persists separately and encrypted via api/profile.js.
-    try {
-      // Only persist identity (handle / email / alts) once it's established —
-      // never for a handle that was just typed and abandoned. Navigation + sky
-      // dates still persist so a refresh resumes cleanly.
-      const identity = established ? { email, me, altHandles } : {}
-      localStorage.setItem(STORE, JSON.stringify({ screen, ...identity, sealedAt, over18, sealTimes }))
-    } catch {
-      /* private mode / quota — fine to skip */
-    }
-  }, [screen, email, me, altHandles, sealedAt, over18, sealTimes, established])
-
-  // Load the saved account + sky once on mount. When signed in this decrypts the
-  // sky from the database; otherwise it restores from this device. A returning
-  // visitor who has a sky lands on it.
-  useEffect(() => {
-    let live = true
-    loadProfile()
-      .then((p) => {
-        if (!live) return
-        // Reconcile the sky as one unit so the count, the dates and the @handles can
-        // never drift apart (a legacy resume could leave a count with no handles).
-        const sky = p && p.sky
-        const h = sky && Array.isArray(sky.handles) ? sky.handles.map(normHandle).filter(Boolean) : []
-        setHandles(h)
-        setSealTimes(h.length ? (sky.times && sky.times.length === h.length ? sky.times : h.map(() => Date.now())) : [])
-        if (h.length && screenRef.current === 'landing') go('resting')
-        if (p) {
-          const primary = p.handle ? normHandle(p.handle) : ''
-          if (primary) setMe((m) => m || primary)
-          if (Array.isArray(p.myHandles) && p.myHandles.length) {
-            const own = p.myHandles.map(normHandle).filter(Boolean)
-            setAltHandles((prev) => (prev.length ? prev : own.filter((x) => x && x !== primary).slice(0, 2)))
-          }
-          if (p.email) setEmail((e) => e || p.email)
-          setSynced(p.source === 'db')
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (live) {
-          persistReady.current = true
-          setSkyLoaded(true)
-        }
-      })
-    return () => {
-      live = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Persist the account + sky whenever they change (debounced). Gated on the
-  // initial load so it can't clobber a stored sky with the empty boot state.
-  useEffect(() => {
-    // Don't write anything until the load has run AND there's a real account to
-    // save (proven, demo, or an existing sky). A bare typed handle never gets
-    // committed to storage — it's not an account yet.
-    if (!persistReady.current || !established) return
-    const id = setTimeout(() => {
-      // Re-check at fire time: a sign-out/delete between scheduling and firing flips
-      // this off, and we must not write over an account that's being torn down.
-      if (!persistReady.current) return
-      const myHandles = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
-      saveProfile({ me, myHandles, email, handles, times: sealTimes, sealCount: handles.length }).catch(() => {})
-    }, 600)
-    return () => clearTimeout(id)
-  }, [me, altHandles, email, handles, sealTimes, established])
-
-  // Persist the beta world (sealed intents + constellations) on change. Lives in
-  // its own store so the sandbox never bleeds into the real app's state.
-  useEffect(() => {
-    if (!beta) return
-    try {
-      localStorage.setItem(BETA_STORE, JSON.stringify({ intents, constellations }))
-    } catch {
-      /* private mode / quota — fine to skip */
-    }
-  }, [beta, intents, constellations])
-
-  // Keep the slot meter fresh for the current handle (server is the authority at
-  // seal time; this feeds the meter + the out-of-slots countdown).
-  useEffect(() => {
-    if (demo) {
-      setSlots(FULL_SLOTS)
-      return
-    }
-    let live = true
-    fetchSlots(me, { demo })
-      .then((s) => {
-        if (live && s) setSlots(s)
-      })
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [me, demo])
-
-  // Light up the constellations: which entered @s are mutual (group-aware on the
-  // server). Re-checked when the sky or handle changes; instant reveals at seal
-  // also add to this set directly.
-  useEffect(() => {
-    if (!handles.length || !normHandle(me)) {
-      setMatches([])
-      return
-    }
-    let live = true
-    const id = setTimeout(() => {
-      checkMutuals({ me, handles, demo })
-        .then((m) => {
-          if (live) setMatches(m.map(normHandle).filter(Boolean))
-        })
-        .catch(() => {})
-    }, 400)
-    return () => {
-      live = false
-      clearTimeout(id)
-    }
-  }, [me, handles, demo])
-
-  // Register the user's own @s as one identity group, so being entered on any of
-  // their accounts counts (multi-account, §ident). Debounced; only meaningful with
-  // 2+ handles. Best-effort — failures just leave matching single-handle.
-  useEffect(() => {
-    if (!persistReady.current) return
-    const uniq = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
-    if (uniq.length < 2) return
-    const id = setTimeout(() => {
-      linkHandles(uniq, { demo }).catch(() => {})
-    }, 700)
-    return () => clearTimeout(id)
-  }, [me, altHandles, demo])
-
-  // NOTE: identity is proven by an Instagram DM (api/igverify.js), which does not
-  // create a Supabase Auth session — so the encrypted-profile sky still persists
-  // locally on this device (api/profile.js falls back to localStorage). Cross-device
-  // restore does NOT use that store: signing back in (startLogin → login →
-  // restoreSky) rebuilds the sky from the server's own entries via celestual_my_sky,
-  // gated by the same DM ownership proof used to seal. So "your stars on any device"
-  // comes from the matching data itself, no Supabase Auth bridge required.
-
-  // Capture a returning OAuth session on load (the popup-blocked redirect
-  // fallback path) — adopt it so the app resumes signed in. No navigation: people
-  // pick up wherever they were; the seal-time gate sees them as verified.
-  useEffect(() => {
-    let live = true
-    resumeSession().then((s) => {
-      if (live && s) {
-        setSession(s)
-        if (s.email && !email) setEmail(s.email)
-        if (s.handle && !me) setMe(s.handle)
-      }
-    })
-    return () => {
-      live = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Drive the camera from the focused-star state.
-  useEffect(() => {
-    const f = galaxyRef.current
-    if (!f) return
-    if (focused != null) f.focusStar(focused)
-    else f.clearFocus()
-  }, [focused])
-
-  // Clear any pending morph teardown on unmount so it can't fire after the tree
-  // is gone.
-  useEffect(() => () => { if (morphTimer.current) clearTimeout(morphTimer.current) }, [])
-
-  // Swap the visible screen (shared by go() and the browser's Back/Forward).
-  // Cross-fades with the View Transitions API where supported and motion is
-  // allowed — a smooth dissolve over the persistent galaxy instead of a hard
-  // cut. flushSync makes the screen swap happen inside the captured frame; any
-  // failure (or no support / reduced motion) falls back to an instant swap.
+  // Swap the visible screen — cross-fades with the View Transitions API where
+  // supported; instant swap otherwise.
   const applyScreen = useCallback((s) => {
-    const apply = () => {
-      setFocused(null)
-      setScreen(s)
-    }
+    const apply = () => setScreen(s)
     const afterScroll = () => requestAnimationFrame(() => window.scrollTo(0, 0))
     const reduce =
       typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -435,29 +144,24 @@ export default function App() {
     afterScroll()
   }, [])
 
-  // Navigate + record a history entry, so the hardware/OS Back button walks the
-  // in-app screens instead of exiting the whole site (the pathname never changes;
-  // only history state does). Transitions OUT of the transient send-off replace
-  // its entry — Back from the resting sky should land on "them", never replay a
-  // half-finished send-off.
+  // Navigate + record a history entry so the OS Back button walks the in-app
+  // screens instead of exiting the site.
   const go = useCallback(
     (s) => {
       try {
-        if (screenRef.current === 'sendoff' || s === screenRef.current) {
+        if (s === screenRef.current) {
           window.history.replaceState({ celestualScreen: s }, '')
         } else {
           window.history.pushState({ celestualScreen: s }, '')
         }
       } catch {
-        /* history unavailable — navigation still works, Back just exits */
+        /* history unavailable — navigation still works */
       }
       applyScreen(s)
     },
     [applyScreen],
   )
 
-  // Anchor the first entry + drive Back/Forward. A popstate applies the recorded
-  // screen directly (never pushes, or Back would loop forever).
   useEffect(() => {
     try {
       window.history.replaceState({ celestualScreen: screenRef.current }, '')
@@ -472,52 +176,32 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [applyScreen])
 
-  // ── demo ──
-  const enterDemo = useCallback(() => {
-    try {
-      const base = window.location.pathname.replace(/\/+$/, '')
-      window.history.replaceState({ celestualScreen: screenRef.current }, '', (base.endsWith('/demo') ? base : base + '/demo') || '/demo')
-    } catch {
-      /* ignore */
-    }
-    setDemo(true) // take effect this session (no reload) — sandboxed, never writes
-    go('landing')
-  }, [go])
-
-  // ── intro ──
-  // "Find out" — the slideshow plays, then hands straight into the flow (signup).
-  const findOut = useCallback(() => {
-    if (!over18) setOver18(true)
-    setLoginMode(false)
-    go('intro')
-  }, [over18, go])
-  const finishIntro = useCallback(() => {
-    try {
-      localStorage.setItem(INTRO_SEEN, '1')
-    } catch {
-      /* ignore */
-    }
-    go('you')
-  }, [go])
-  const onIntroStep = useCallback((i) => {
-    // the last two beats are the two stars colliding into one
-    setIntroMode(i >= 3 ? 'match' : 'idle')
+  // ── persistence (never in the sandbox) ──
+  const persistReady = useRef(false)
+  useEffect(() => {
+    persistReady.current = true
   }, [])
+  useEffect(() => {
+    if (demo || !persistReady.current) return
+    try {
+      const identity = established ? { me, email, altHandles } : {}
+      localStorage.setItem(
+        STORE,
+        JSON.stringify({ screen, ...identity, pings: established ? pings : [], worlds: established ? worlds : [] }),
+      )
+    } catch {
+      /* private mode / quota — fine to skip */
+    }
+  }, [demo, screen, me, email, altHandles, pings, worlds, established])
 
-  // ── identity (Instagram DM verification) ──
-  // Open the in-tab verify overlay for `handle`; `onDone(proof)` resumes the flow
-  // once ownership is proven. No popup or redirect, so the in-memory entry survives.
+  // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
     setVerify({ handle: normHandle(handle), onDone })
   }, [])
   const closeVerify = useCallback(() => setVerify(null), [])
-  // The overlay calls this on a confirmed DM: persist the verified session (bound to
-  // the handle, carrying the proof secret) and resume whatever was waiting on it.
   const onVerified = useCallback(
     (proof) => {
       if (!verify) return
-      // Demo: keep the proven session in memory only — never persist it (the demo is
-      // sandboxed and never writes real data). Otherwise record it like normal.
       const s = demo
         ? { verified: true, provider: 'instagram_dm', handle: verify.handle, proof, email: '', name: '' }
         : markVerified(verify.handle, proof)
@@ -529,393 +213,455 @@ export default function App() {
     [verify, demo],
   )
 
-  // Resume a verification interrupted by the Instagram hand-off. Tapping "open
-  // Instagram" deep-links away and on mobile that can reload or replace this tab, so
-  // the in-memory overlay is gone when they return. If a still-live code+proof was
-  // saved (igverify savePending), reopen the overlay here so it keeps polling and the
-  // DM they already sent lands — instead of stranding them on a dead end. Runs once.
+  // Resume a verification interrupted by the Instagram hand-off (mobile can
+  // reload this tab; the saved code keeps polling instead of stranding them).
   useEffect(() => {
     if (demo || session?.verified || !igVerifyEnabled()) return
     const saved = loadPending()
     if (!saved || !saved.handle) return
-    setMe((m) => m || saved.handle) // the typed @ isn't persisted pre-verify; restore it
+    setMe((m) => m || saved.handle)
     setVerify({ handle: normHandle(saved.handle), onDone: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Perform the seal once identity is settled. `proofOverride` comes straight from a
-  // just-completed verification (avoids reading a stale session); otherwise we use
-  // the current session's proof (undefined on the stub/demo paths). With instant
-  // reveal, a completed mutual routes to the match screen; otherwise it rests.
-  const doSeal = useCallback(
-    async (proofOverride) => {
-      const now = Date.now()
-      // Capture the optional intent NOW (state could change under the await) and
-      // seal it with this star. It stays invisible unless the pair turns mutual.
-      // An opened-but-empty write-your-own line seals as "no line at all".
-      const raw = beta ? intent : ''
-      const chosen = isCustomIntent(raw) && !raw.slice(7).trim() ? '' : raw
-      setSealedAt(now)
-      setHandles((h) => [...h, normHandle(them)])
-      setSealTimes((s) => [...s, now])
-      if (chosen) setIntents((m) => ({ ...m, [normHandle(them)]: chosen }))
-      if (isCustomIntent(chosen)) bumpMetric('nova_custom_intent_sealed')
-      // Measure the live @ field NOW (it's still mounted) so the morph collapses from
-      // exactly where the textbox is and the galaxy drift continues from that point.
-      let origin = SENDOFF_ORIGIN
-      let geom = null
-      try {
-        const el = document.querySelector('[data-sendoff-field]')
-        if (el) {
-          const r = el.getBoundingClientRect()
-          const cx = r.left + r.width / 2
-          const cy = r.top + r.height / 2
-          origin = { x: cx / window.innerWidth, y: cy / window.innerHeight }
-          geom = { cx, cy, w: r.width, h: r.height }
-        }
-      } catch {
-        /* ignore — fall back to the default origin */
+  useEffect(() => {
+    let live = true
+    resumeSession().then((s) => {
+      if (live && s) {
+        setSession(s)
+        if (s.handle && !me) setMe(s.handle)
       }
-      setSendoffOrigin(origin)
-      setMorph({ handle: normHandle(them), geom })
-      // Cancel any in-flight teardown so a fast re-seal can't leave two morph
-      // overlays fighting over a field that's already been unmounted.
-      if (morphTimer.current) clearTimeout(morphTimer.current)
-      morphTimer.current = setTimeout(() => {
-        setMorph(null)
-        morphTimer.current = null
-      }, 1320)
-      go('sendoff')
-      const minSuspense = new Promise((r) => setTimeout(r, 3200))
+    })
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── slots ──
+  // The local count is always live; the server snapshot (proof-gated) can only
+  // ever raise it (e.g. pings placed on another device).
+  const slotsStanding = demo
+    ? standingCount(pings)
+    : Math.max(standingCount(pings), Number.isFinite(slots?.standing) ? slots.standing : 0)
+  useEffect(() => {
+    if (demo) return
+    let live = true
+    const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+    fetchSlots(me, { proof, demo })
+      .then((s) => {
+        if (live && s) setSlots(s)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [me, demo, session])
+
+  // ── status refresh (Screen 4 stays true) ──
+  // Sends the device-held plaintext list up; gets live state back. The server
+  // can't produce the list itself — it stores hashes.
+  useEffect(() => {
+    if (demo) return
+    const named = pings.filter((p) => p.handle).map((p) => p.handle)
+    if (!named.length || !normHandle(me)) return
+    let live = true
+    const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+    const id = setTimeout(() => {
+      pingStatus({ me, handles: named, proof, demo })
+        .then((rows) => {
+          if (!live || !rows.length) return
+          setPings((prev) =>
+            prev.map((p) => {
+              const r = rows.find((x) => x.handle === normHandle(p.handle || ''))
+              if (!r || !r.placed) return p
+              return {
+                ...p,
+                expires_at: r.expires_at || p.expires_at,
+                mutual: !!r.mutual || p.mutual,
+                reachable: r.reachable != null ? !!r.reachable : p.reachable,
+                intent: r.intent || p.intent,
+              }
+            }),
+          )
+        })
+        .catch(() => {})
+    }, 500)
+    return () => {
+      live = false
+      clearTimeout(id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me, demo, pings.length, session])
+
+  // Register the user's own @s as one identity group (multi-account).
+  useEffect(() => {
+    const uniq = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
+    if (uniq.length < 2) return
+    const id = setTimeout(() => {
+      linkHandles(uniq, { demo }).catch(() => {})
+    }, 700)
+    return () => clearTimeout(id)
+  }, [me, altHandles, demo])
+
+  // ── the campus window ──
+  useEffect(() => {
+    if (demo || !route.campus) return
+    let live = true
+    fetchCampus(route.campus)
+      .then((c) => {
+        if (live) setCampus(c)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [demo, route.campus])
+
+  // ── the flow ──
+  const findOut = useCallback(() => {
+    setLoginMode(false)
+    setError('')
+    go('who')
+  }, [go])
+
+  // From an open-door page: land two taps from a placed ping (field prefilled).
+  const startFromDoor = useCallback(
+    (poster) => {
+      setThem(poster || '')
+      setError('')
+      go('who')
+    },
+    [go],
+  )
+
+  // Commit the placement once identity is settled. `proofOverride` comes from a
+  // just-completed verification.
+  const placeCommit = useCallback(
+    async (proofOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      const target = normHandle(them)
+      const chosen = intent || ''
       try {
-        const [res] = await Promise.all([submitEntry({ me, ex: them, email, proof, demo }), minSuspense])
-        const rollback = () => {
-          setHandles((h) => h.slice(0, -1))
-          setSealTimes((s) => s.slice(0, -1))
-          if (chosen) {
-            setIntents((m) => {
-              const c = { ...m }
-              delete c[normHandle(them)]
-              return c
-            })
-          }
-        }
+        const res = await placePing({ me, them: target, email, proof, intent: chosen, demo })
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
-          rollback()
-          go('outofslots')
+          go('fourth')
           return
         }
         if (res?.error === 'rate_limited') {
-          setError(t('them.errRate'))
-          rollback()
-          go('them')
+          setError(t('who.errRate'))
+          go('who')
           return
         }
         if (res?.error === 'suppressed') {
-          setError(t('them.errSuppressed'))
-          rollback()
-          go('them')
+          setError(t('who.errSuppressed'))
+          go('who')
           return
         }
         if (res?.error === 'unverified') {
-          // The server rejected the ownership proof (expired or cleared). Drop the
-          // session so the next attempt re-verifies, and send them back to re-seal.
-          rollback()
           clearAuthSession()
           setSession(null)
-          setError(t('them.errUnverified'))
-          go('them')
+          setError(t('who.errUnverified'))
+          go('who')
           return
         }
+        // Recorded. Add/refresh the local row (the only plaintext there is).
+        setPings((prev) => {
+          const rest = prev.filter((p) => normHandle(p.handle || '') !== target)
+          return [
+            ...rest,
+            {
+              handle: target,
+              time: Date.now(),
+              expires_at: res.expires_at || new Date(Date.now() + 60 * 864e5).toISOString(),
+              mutual: !!res.mutual,
+              reachable: !!res.reachable,
+              intent: chosen || null,
+            },
+          ]
+        })
+        setIntent('')
         if (res?.mutual) {
-          const mh = normHandle(res.match || them)
-          setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
-          // The mutual moment unseals both intents. The sandbox has no real other
-          // side, so beta seeds theirs (a line different from yours, so the reveal
-          // always shows two voices) — a live backend would return the real one.
-          if (beta) setMatchIntent({ you: chosen || '', them: res.matchIntent || (chosen === 'miss' ? 'unsaid' : 'miss') })
-          // Seal styles at the reveal: yours as chosen; the sandbox seeds the
-          // other side's as 'iris' so the receiving view of a dressed seal demos.
-          setMatchSeal({ you: nova.active ? nova.sealStyle : 'ember', them: res.matchSealStyle || (demo ? 'iris' : 'ember') })
+          setMatch({ them: target, yourIntent: chosen || null, theirIntent: res.match_intent || null })
           go('match')
           return
         }
-        go('resting')
+        setLastPlaced({ handle: target, reachable: !!res.reachable })
+        go('placed')
       } catch (e) {
         console.error(e)
-        setHandles((h) => h.slice(0, -1))
-        setSealTimes((s) => s.slice(0, -1))
-        if (chosen) {
-          setIntents((m) => {
-            const c = { ...m }
-            delete c[normHandle(them)]
-            return c
-          })
-        }
-        setError(t('them.errGeneric'))
-        go('them')
+        setError(t('who.errGeneric'))
+        go('who')
       }
     },
-    [me, them, email, demo, beta, intent, session, nova, go, t],
+    [me, them, email, intent, demo, session, go, t],
   )
 
-  // Seal: validate, gate on the slot budget, then confirm it's really you before
-  // recording the one-way entry. An unverified handle opens the verify overlay (it
-  // resumes the seal on success); the local stub resolves instantly when real
-  // verification isn't configured. /demo and an already-verified handle skip it.
-  const seal = useCallback(async () => {
-    setError('')
-    if (!isValidHandle(me) || !isValidHandle(them)) {
-      setError(t('them.errInvalid'))
-      return
-    }
-    if (normHandle(me) === normHandle(them)) {
-      setError(t('them.errSelf'))
-      return
-    }
-    // Out of slots? The server is authoritative, but short-circuit a doomed seal.
-    if (!demo && slotsRemaining(slots) <= 0) {
-      go('outofslots')
-      return
-    }
-    // Confirm it's really you before sealing. Demo runs the same DM overlay (it
-    // auto-verifies locally, no backend); a real backend uses the live DM flow; the
-    // stub stands in only when neither is configured.
-    if (!verified) {
-      if (demo || igVerifyEnabled()) {
-        openVerify(me, (proof) => doSeal(proof)) // overlay resumes the seal
+  // Preregister for the campus window ("count me in" — a full verified signup).
+  const preregCommit = useCallback(
+    async (proofOverride, emailOverride) => {
+      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      const em = emailOverride ?? email
+      if (demo) {
+        setCampus((c) => (c ? { ...c, count: Math.min(c.count + 1, c.threshold) } : c))
+        setCampusJoined(true)
+        go('campus')
         return
       }
-      setSession(signInStub())
-    }
-    await doSeal()
-  }, [me, them, slots, demo, verified, go, t, doSeal, openVerify])
-
-  // From the "you" step: prove the handle first (when verification is on) and only
-  // then advance to "them", so people confirm who they are before naming anyone.
-  const continueFromYou = useCallback(() => {
-    if (!isValidHandle(me)) return
-    // Prove the @ first when verification is on — or in the demo, which runs the
-    // same overlay (auto-verifying locally) so the flow is shown end-to-end.
-    if (!verified && (demo || igVerifyEnabled())) {
-      openVerify(me, () => go('them'))
-      return
-    }
-    go('them')
-  }, [me, demo, verified, go, openVerify])
-
-  // ── sign back in ──
-  // Restore this @'s saved sky from the server (cross-device) and drop straight
-  // onto it. `proofOverride` comes from a just-completed verification; otherwise
-  // we use the live session's proof. An empty/failed load just lands on the (empty)
-  // resting sky — never an error wall — so a fresh @ still gets in cleanly.
-  const restoreSky = useCallback(
-    async (proofOverride) => {
-      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
       try {
-        const stars = await fetchMySky({ handle: me, proof, demo })
-        if (stars.length) {
-          setHandles(stars.map((s) => s.handle))
-          setSealTimes(stars.map((s) => s.time))
-          setMatches(stars.filter((s) => s.mutual).map((s) => s.handle))
-        } else if (!demo) {
-          // No server sky (e.g. the local/stub path with no backend). Never show a
-          // DIFFERENT handle's device-local sky as this one's — if the stored sky
-          // belongs to another @, start clean rather than mislabel someone's stars.
-          const owner = localSkyOwner()
-          if (owner && normHandle(owner) !== normHandle(me)) {
-            setHandles([])
-            setSealTimes([])
-            setMatches([])
-          }
+        const res = await preregisterCampus({ slug: campus?.slug, me, email: em, proof, demo })
+        if (res?.ok) {
+          setCampusJoined(true)
+          setCampus((c) => (c ? { ...c, count: res.count ?? c.count, status: res.status || c.status } : c))
         }
-      } catch {
-        /* best-effort — land on whatever sky we have */
+        go('campus')
+      } catch (e) {
+        console.error(e)
+        go('campus')
       }
-      setLoginMode(false)
-      go('resting')
     },
-    [me, demo, session, go],
+    [campus, me, email, demo, session, go],
   )
 
-  // Begin a sign-back-in from the landing: reuse the "you" step in login mode (just
-  // the @, then prove it). No intro, no naming — the shortest path to your stars.
+  // Place — from the send screen. Runs the identity gate first when needed.
+  const place = useCallback(async () => {
+    setError('')
+    if (!isValidHandle(them)) {
+      setError(t('who.errInvalid'))
+      return
+    }
+    if (normHandle(me) && normHandle(me) === normHandle(them)) {
+      setError(t('who.errSelf'))
+      return
+    }
+    // The three-slot rule, honored client-side too (the server is authority).
+    if (standingCount(pings) >= SLOT_CAP) {
+      go('fourth')
+      return
+    }
+    if (!normHandle(me)) {
+      pendingAction.current = 'place'
+      setLoginMode(false)
+      go('you')
+      return
+    }
+    if (!verified && (demo || igVerifyEnabled())) {
+      openVerify(me, (proof) => placeCommit(proof))
+      return
+    }
+    if (!verified && !demo) setSession(signInStub())
+    await placeCommit()
+  }, [me, them, pings, demo, verified, go, t, placeCommit, openVerify])
+
+  // From the identity step: prove the @, then resume whatever was waiting.
+  const continueFromYou = useCallback(() => {
+    if (!isValidHandle(me)) return
+    const resume = (proof) => {
+      if (pendingAction.current === 'prereg') {
+        pendingAction.current = null
+        preregCommit(proof)
+      } else {
+        pendingAction.current = null
+        placeCommit(proof)
+      }
+    }
+    if (!verified && (demo || igVerifyEnabled())) {
+      openVerify(me, resume)
+      return
+    }
+    if (!verified && !demo) setSession(signInStub())
+    resume()
+  }, [me, demo, verified, openVerify, placeCommit, preregCommit])
+
+  // The campus page's "count me in".
+  const preregister = useCallback(
+    async (em) => {
+      if (em != null) setEmail(em)
+      if (!normHandle(me)) {
+        pendingAction.current = 'prereg'
+        setLoginMode(false)
+        go('you')
+        return
+      }
+      if (!verified && (demo || igVerifyEnabled())) {
+        openVerify(me, (proof) => preregCommit(proof, em))
+        return
+      }
+      if (!verified && !demo) setSession(signInStub())
+      await preregCommit(undefined, em)
+    },
+    [me, demo, verified, go, openVerify, preregCommit],
+  )
+
+  // ── sign back in (cross-device) ──
   const startLogin = useCallback(() => {
     setError('')
     setLoginMode(true)
     go('you')
   }, [go])
 
-  // Finish a sign-back-in: prove the @ (when verification is on) then restore the
-  // sky. The verify overlay resumes into restoreSky on success; the stub/demo
-  // paths (no real backend) go straight to the locally-restored sky.
+  const restorePings = useCallback(
+    async (proofOverride) => {
+      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      try {
+        const server = await fetchMyPings({ handle: me, proof, demo })
+        if (server.length) {
+          setPings((local) => {
+            // Local plaintext wins. The server adds (a) mutual rows this device
+            // hasn't seen and (b) anonymous standing rows — unmatched pings it
+            // stores only as hashes, placed on some other device. Any local
+            // unmatched named row already accounts for one server anonymous
+            // row, so only the surplus becomes an anonymous row here.
+            const localNamed = local.filter((p) => p.handle)
+            const names = new Set(localNamed.map((p) => normHandle(p.handle)))
+            const merged = [...localNamed]
+            for (const s of server) {
+              if (s.handle && !names.has(normHandle(s.handle))) merged.push({ ...s, reachable: true })
+            }
+            const serverAnon = server.filter((s) => !s.handle)
+            const localUnmatched = localNamed.filter((p) => !p.mutual).length
+            for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
+              merged.push({ ...serverAnon[i], reachable: false })
+            }
+            return merged
+          })
+        }
+      } catch {
+        /* best-effort — land on whatever this device holds */
+      }
+      setLoginMode(false)
+      go('pings')
+    },
+    [me, demo, session, go],
+  )
+
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
     if (!verified && (demo || igVerifyEnabled())) {
-      openVerify(me, (proof) => restoreSky(proof))
+      openVerify(me, (proof) => restorePings(proof))
       return
     }
     if (!verified && !demo) setSession(signInStub())
-    restoreSky()
-  }, [me, demo, verified, openVerify, restoreSky])
+    restorePings()
+  }, [me, demo, verified, openVerify, restorePings])
 
-  // Multi-entry: gate on the slot budget here too (entering "more users").
-  const checkAnother = useCallback(() => {
+  // ── the status page's actions ──
+  const renew = useCallback(
+    async (handle) => {
+      const h = normHandle(handle)
+      const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+      try {
+        const res = await renewPing({ me, them: h, proof, demo })
+        if (res?.ok) {
+          setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, expires_at: res.expires_at } : p)))
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    [me, demo, session],
+  )
+
+  const letGo = useCallback(
+    async (handle) => {
+      const h = normHandle(handle)
+      setPings((prev) => prev.filter((p) => normHandle(p.handle || '') !== h))
+      try {
+        await retirePing({ me, them: h, demo })
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    [me, demo],
+  )
+
+  const placeAnother = useCallback(() => {
     setThem('')
     setIntent('')
     setError('')
-    if (!demo && slotsRemaining(slots) <= 0) {
-      go('outofslots')
+    if (standingCount(pings) >= SLOT_CAP) {
+      go('fourth')
       return
     }
-    go('them')
-  }, [slots, demo, go])
+    go('who')
+  }, [pings, go])
 
-  // ── sandbox: simulate the other side sealing you back ──
-  // Demo/beta only. Flips one sealed star to mutual and drives the FULL match
-  // workflow — the match screen, the intent unsealing, the (seeded) other-side
-  // seal style — so the payoff is testable on any star, not just @demo.
+  // ── sandbox: visualize a match ──
+  // Flips a sample ping to mutual and plays the full match workflow.
   const simulateMutual = useCallback(
     (handle) => {
       if (!demo) return
-      const mh = normHandle(handle)
-      if (!mh) return
-      setMatches((m) => (m.includes(mh) ? m : [...m, mh]))
-      setThem(mh)
-      const chosen = intents[mh] || ''
-      if (beta) setMatchIntent({ you: chosen, them: chosen === 'miss' ? 'unsaid' : 'miss' })
-      setMatchSeal({ you: nova.active ? nova.sealStyle : 'ember', them: 'iris' })
-      setFocused(null)
+      const h = normHandle(handle)
+      const row = pings.find((p) => normHandle(p.handle || '') === h)
+      setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, mutual: true } : p)))
+      setMatch({
+        them: h,
+        yourIntent: row?.intent || null,
+        theirIntent: row?.intent === 'miss' ? 'unsaid' : 'miss',
+      })
       go('match')
     },
-    [demo, beta, intents, nova, go],
+    [demo, pings, go],
   )
 
-  // ── Celestual Nova actions (sandbox-only this round) ──
-  const openNova = useCallback(() => setNovaOpen(true), [])
-  const closeNova = useCallback(() => setNovaOpen(false), [])
-  const subscribeNova = useCallback((plan) => {
-    setNova((n) => ({ ...n, active: true, plan: plan || 'month', since: n.since || Date.now() }))
-  }, [])
-  const setNovaSeal = useCallback((id) => setNova((n) => ({ ...n, sealStyle: id })), [])
-  const setNovaTheme = useCallback((id) => setNova((n) => ({ ...n, skyTheme: id })), [])
+  // ── sandbox: cycle the campus window through its three states ──
+  const cycleCampus = useCallback(() => {
+    if (!demo) return
+    setCampus((c) => {
+      if (!c) return c
+      if (c.status === 'window') return { ...c, status: 'open', count: c.threshold, opened_at: new Date().toISOString() }
+      if (c.status === 'open') return { ...c, status: 'revealed' }
+      return { ...DEMO_CAMPUS }
+    })
+    setCampusJoined(false)
+  }, [demo])
 
-  // Interactive field: tap → focus, remove → withdraw that star, close → zoom out.
-  const onStarTap = useCallback((x, y) => {
-    const f = galaxyRef.current
-    if (!f) return
-    const i = f.hitTest(x, y)
-    if (i >= 0) setFocused(i)
-  }, [])
-  const closeStar = useCallback(() => setFocused(null), [])
-  const removeStar = useCallback(
-    async (i) => {
-      const handle = handles[i]
-      // Play the wink-out where the star sits, and start drifting the camera back
-      // out, before the star is dropped from the set — so it's seen to vanish and
-      // the field returns to the resting overview.
-      const f = galaxyRef.current
-      if (f && f.vanishStar) f.vanishStar(i)
-      setFocused(null)
-      // let the vanish animation finish, then remove the star
-      await new Promise((r) => setTimeout(r, 520))
-      // Drop the SAME slot on the canvas that we drop from the handle/time arrays,
-      // so every surviving star stays matched to its own @tag (the galaxy used to
-      // trim its tail here, which slid every later star onto the wrong tag).
-      if (f && f.removeSealAt) f.removeSealAt(i)
-      setHandles((h) => h.filter((_, k) => k !== i))
-      setSealTimes((s) => s.filter((_, k) => k !== i))
-      // Releasing a star does NOT refund the slot it cost (anti-fishing): the budget
-      // is spent server-side at seal and never returned, so enter→peek→release can't
-      // be cycled to sweep everyone you know.
-      if (handle) setMatches((m) => m.filter((x) => x !== normHandle(handle)))
-      // Releasing the star releases its sealed intent with it.
-      if (handle) {
-        setIntents((m) => {
-          if (!(normHandle(handle) in m)) return m
-          const c = { ...m }
-          delete c[normHandle(handle)]
-          return c
+  // ── worlds ──
+  const setWorldNames = useCallback(
+    (names) => {
+      const list = (names || []).map((n) => String(n || '').trim()).filter(Boolean).slice(0, 3)
+      if (demo) {
+        // keep the sample counters where names match; new names gather quietly
+        setWorldsState(
+          list.map((n) => DEMO_WORLDS.find((w) => w.name === n) || { slug: n, name: n, count: null }),
+        )
+        return
+      }
+      setWorldsState(list.map((n) => ({ slug: n, name: n, count: null })))
+      const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+      setWorlds({ me, names: list, proof, demo })
+        .then((res) => {
+          if (res?.ok && Array.isArray(res.worlds)) setWorldsState(res.worlds)
         })
-      }
-      // Clear the last-entered handle so nothing stale (a ghost "@…") survives the
-      // release; if this was the last star, the resting sky shows its empty state.
-      setThem('')
-      setIntent('')
-      setError('')
-      if (handle) {
-        try {
-          await withdrawEntry({ me, ex: handle, demo })
-        } catch (e) {
-          console.error(e)
-        }
-      }
+        .catch(() => {})
     },
-    [handles, me, demo],
-  )
-  const starInfo = useCallback(
-    (i) =>
-      i == null
-        ? null
-        : {
-            handle: handles[i] || null,
-            time: sealTimes[i] || null,
-            mutual: matches.includes(normHandle(handles[i] || '')),
-            intent: intents[normHandle(handles[i] || '')] || null,
-          },
-    [handles, sealTimes, matches, intents],
+    [demo, me, session],
   )
 
-  // Reset local state to a clean slate (shared by sign-out and account deletion).
-  // Does NOT touch the database — callers decide that.
+  // ── the exits ──
   const wipeLocalState = useCallback(() => {
     try {
       localStorage.removeItem(STORE)
-      localStorage.removeItem('celestual:sky')
     } catch {
       /* ignore */
     }
-    setEmail('')
     setMe('')
+    setEmail('')
     setAltHandles([])
     setThem('')
-    setSealedAt(null)
-    setHandles([])
-    setSealTimes([])
-    setMatches([])
-    setOver18(false)
-    setError('')
-    setSlots(FULL_SLOTS)
-    setSynced(false)
-    // The beta world resets with the account.
     setIntent('')
-    setIntents({})
-    setMatchIntent(null)
-    setMatchSeal(null)
-    setConstellations([])
-    try {
-      localStorage.removeItem(BETA_STORE)
-    } catch {
-      /* ignore */
-    }
-    // Nova (a sandbox entitlement) resets with everything else.
-    setNova({ active: false, plan: '', sealStyle: 'ember', skyTheme: 'violet', since: null, referrals: 0 })
-    setNovaOpen(false)
-    try {
-      localStorage.removeItem(NOVA_STORE)
-    } catch {
-      /* ignore */
-    }
+    setError('')
+    setPings([])
+    setWorldsState([])
+    setMatch(null)
+    setLastPlaced(null)
+    setSlots(FULL_SLOTS)
   }, [])
-
-  const openAccount = useCallback(() => setAccountOpen(true), [])
-  const closeAccount = useCallback(() => setAccountOpen(false), [])
 
   const signOut = useCallback(async () => {
     persistReady.current = false
-    await signOutUser()
+    clearAuthSession()
     setSession(null)
     wipeLocalState()
     setAccountOpen(false)
@@ -923,46 +669,42 @@ export default function App() {
     setTimeout(() => (persistReady.current = true), 800)
   }, [go, wipeLocalState])
 
-  // Delete the whole account: erase the database rows + auth user, then wipe local.
-  const deleteAccount = useCallback(async () => {
+  // Delete everything: the opt-out on your own handle (erases every ping you
+  // placed, closes your door, blocks your handle) + a local wipe.
+  const deleteEverything = useCallback(async () => {
     persistReady.current = false
     try {
-      await deleteAccountApi()
+      if (!demo && normHandle(me)) await suppressHandle(me)
     } catch {
-      /* ignore — clear locally regardless */
+      /* clear locally regardless */
     }
+    clearAuthSession()
     setSession(null)
     wipeLocalState()
     setAccountOpen(false)
     go('landing')
     setTimeout(() => (persistReady.current = true), 1000)
-  }, [go, wipeLocalState])
+  }, [demo, me, go, wipeLocalState])
 
-  const affirmAge = useCallback(() => setOver18(true), [])
-  const openConversation = useCallback(
-    (handle) => {
-      const h = normHandle(handle || them)
-      if (!h) return
-      const url = `https://instagram.com/${h}`
-      // Inside an in-app webview (e.g. Instagram's own browser) window.open to a
-      // new tab is often blocked and returns null — fall back to a same-tab
-      // navigation so the profile still opens.
+  // ── outward ──
+  // "go say it" — straight into the Instagram DM thread.
+  const openConversation = useCallback((handle) => {
+    const h = normHandle(handle)
+    if (!h) return
+    const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+    const url = mobile ? `https://ig.me/m/${h}` : `https://www.instagram.com/m/${h}`
+    try {
+      const w = window.open(url, '_blank', 'noopener,noreferrer')
+      if (!w) window.location.href = url
+    } catch {
       try {
-        const w = window.open(url, '_blank', 'noopener,noreferrer')
-        if (!w) window.location.href = url
+        window.location.href = url
       } catch {
-        try {
-          window.location.href = url
-        } catch {
-          /* ignore */
-        }
+        /* ignore */
       }
-    },
-    [them],
-  )
+    }
+  }, [])
 
-  // Add / remove one of the user's own alternate @s (multi-account; capped so the
-  // identity set [me, ...alts] never exceeds 3).
   const addAltHandle = useCallback(
     (h) => {
       const n = normHandle(h)
@@ -980,109 +722,35 @@ export default function App() {
     setAltHandles((prev) => prev.filter((x) => normHandle(x) !== n))
   }, [])
 
-  // ── constellations (beta) ──
-  // Anyone can start one; there is no limit and no waitlist — a constellation is
-  // live the moment it's named. Joining the same community twice is a no-op.
-  const createConstellation = useCallback((name) => {
-    const n = (name || '').trim().replace(/\s+/g, ' ').slice(0, 48)
-    if (n.length < 2) return
-    setConstellations((prev) =>
-      prev.some((c) => c.name.toLowerCase() === n.toLowerCase())
-        ? prev
-        : [{ id: Date.now().toString(36), name: n, count: 1, role: 'created' }, ...prev],
-    )
-  }, [])
-  const joinConstellation = useCallback((name, count) => {
-    const n = (name || '').trim().replace(/\s+/g, ' ').slice(0, 48)
-    if (n.length < 2) return
-    setConstellations((prev) =>
-      prev.some((c) => c.name.toLowerCase() === n.toLowerCase())
-        ? prev
-        : [{ id: Date.now().toString(36), name: n, count: count || 1, role: 'joined' }, ...prev],
-    )
-  }, [])
-  const dismissInvite = useCallback(() => setPendingJoin(''), [])
+  const openAccount = useCallback(() => setAccountOpen(true), [])
+  const closeAccount = useCallback(() => setAccountOpen(false), [])
 
   const ctx = {
-    email, me, them, altHandles, sealedAt, over18, error, demo, verified, synced, slots, matches, loginMode,
-    // The beta world: the intent signal + constellations (sandboxed like /demo).
-    beta, intent, setIntent, intents, matchIntent,
-    constellations, createConstellation, joinConstellation, pendingJoin, dismissInvite,
-    // Celestual Nova (sandbox-only this round) + the sandbox match simulator.
-    nova, openNova, closeNova, matchSeal, simulateMutual,
-    // A real, established account (proven / demo / has a sky) vs. a bare typed
-    // handle — gates the account UI so an unverified @ is never shown as "you".
-    established,
-    // The saved sky is still loading, so the resting screen holds a placeholder.
-    loadingSky: !skyLoaded,
-    // True when the DM verification overlay will run before advancing — real
-    // Instagram verification when wired, OR the demo (which runs the same overlay,
-    // auto-verifying locally). Drives the "you" step's confirm hint + CTA.
+    demo, me, them, email, error, verified, established, loginMode,
+    pings, slotsStanding, slotsCap: SLOT_CAP,
+    intent, setIntent,
+    worlds, setWorldNames,
+    lastPlaced, match,
+    campus, campusJoined, preregister, cycleCampus,
+    posterHandle: route.poster || '',
     verifyEnabled: igVerifyEnabled() || demo,
-    slotsLeft: demo ? Infinity : slotsRemaining(slots),
-    isMutual: (h) => matches.includes(normHandle(h)),
-    matchCount: handles.filter((h) => matches.includes(normHandle(h))).length,
-    setEmail, setMe, setThem, addAltHandle, removeAltHandle,
-    requestReminder: (em) => requestReminder({ me, email: em || email, demo }),
-    go, seal, continueFromYou, checkAnother, affirmAge, suppressHandle, openConversation,
+    setMe, setEmail, setThem,
+    addAltHandle, removeAltHandle,
+    go, findOut, startFromDoor, place, continueFromYou, placeAnother,
     startLogin, login,
-    enterDemo, findOut, finishIntro, onIntroStep,
-    onStarTap, closeStar, removeStar,
-    openAccount, closeAccount, signOut, deleteAccount,
-    starCount: handles.length,
-    zoomed: focused != null,
+    renew, letGo, simulateMutual, openConversation, suppressHandle,
+    openAccount, closeAccount, signOut, deleteEverything,
   }
+
   const Screen = SCREENS[screen] || SCREENS.landing
 
-  const bg = BG[screen] || BG.landing
-  const mode = screen === 'intro' ? introMode : bg.mode
-  const warmVariant = useRef('quiet')
-  if (bg.warm) warmVariant.current = bg.variant
-
-  // Chrome: language switcher on the calm/entry screens; hidden during the
-  // cinematic beats so nothing competes with the moment.
-  const showSwitcher = !['intro', 'sendoff', 'match'].includes(screen)
-  // The profile chip sits top-left, only where there's no back button to collide
-  // with: the resting sky and the landing once a handle is known. Gated on an
-  // ESTABLISHED account so a merely-typed, unverified @ never surfaces an account
-  // chip (and the sheet it opens) — the reported identity leak.
-  const showProfile = established && (screen === 'resting' || (screen === 'landing' && !!me))
+  // The profile chip sits top-left on the quiet screens, once an account is
+  // established (never for a merely-typed @).
+  const showProfile = established && !!me && ['pings', 'landing', 'campus'].includes(screen)
 
   return (
     <div className="celestual-app">
-      <GalaxyCanvas
-        mode={mode}
-        dim={bg.dim}
-        origin={screen === 'sendoff' ? sendoffOrigin : bg.origin}
-        seals={handles.length}
-        you={C.you}
-        them={C.them}
-        sealColor={nova.active ? novaSeal.color : null}
-        motion={MOTION}
-        onReady={(f) => (galaxyRef.current = f)}
-        style={{ position: 'fixed', zIndex: 0 }}
-      />
-      <StarTags
-        fieldRef={galaxyRef}
-        handles={handles}
-        mutual={matches}
-        color={C.them}
-        matchColor={C.you}
-        show={(screen === 'sendoff' || screen === 'resting') && focused == null}
-        onTap={screen === 'resting' ? (i) => setFocused(i) : undefined}
-      />
-      <div
-        aria-hidden
-        style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: bg.warm ? 1 : 0, transition: 'opacity .6s ease' }}
-      >
-        <WarmBg C={C} variant={warmVariant.current} />
-      </div>
-
-      {showSwitcher && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
-          <LanguageSwitcher C={C} lang={lang} langs={langs} onChange={setLang} />
-        </div>
-      )}
+      <NightField style={{ zIndex: 0 }} />
 
       {showProfile && (
         <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
@@ -1091,35 +759,14 @@ export default function App() {
       )}
 
       <div key={screen} className="fade" data-screen={screen} style={{ position: 'relative', zIndex: 4 }}>
-        <Screen C={C} ctx={ctx} lang={lang} />
+        <Screen C={C} ctx={ctx} />
       </div>
 
-      {/* interactive field: the focused-star detail card */}
-      {focused != null && screen === 'resting' && (
-        <StarDetail
-          C={C}
-          lang={lang}
-          info={starInfo(focused)}
-          demo={demo}
-          onRemove={() => removeStar(focused)}
-          onOpen={() => openConversation(handles[focused])}
-          onSimulateMutual={() => simulateMutual(handles[focused])}
-          onClose={closeStar}
-        />
-      )}
+      {accountOpen && <AccountSheet C={C} ctx={ctx} />}
 
-      {morph && <Liftoff C={C} handle={morph.handle} geom={morph.geom} col={nova.active ? novaSeal.color : null} />}
-
-      {accountOpen && <AccountSheet C={C} ctx={ctx} lang={lang} />}
-
-      {/* Celestual Nova — entered only from quiet places (the account sheet, the
-          locked write-your-own row). Sandbox-only this round. */}
-      {novaOpen && demo && (
-        <NovaSheet C={C} nova={nova} onSubscribe={subscribeNova} onSeal={setNovaSeal} onTheme={setNovaTheme} onClose={closeNova} />
-      )}
-
-      {/* Instagram DM verification — confirms the typed @ is really theirs, in-tab,
-          without any OAuth. Resumes the flow (continue / seal) on success. */}
+      {/* Instagram DM verification — confirms the typed @ is really theirs,
+          in-tab, no OAuth. The sandbox runs the same overlay, auto-verifying
+          locally (real verification isn't wired there yet — it says so). */}
       {verify && <IgVerifySheet C={C} handle={verify.handle} demo={demo} onVerified={onVerified} onClose={closeVerify} />}
     </div>
   )

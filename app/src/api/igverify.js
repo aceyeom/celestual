@@ -1,6 +1,6 @@
 // igverify.js — Instagram DM handle-ownership verification (no Facebook OAuth).
 //
-// The flow this drives (see docs/SETUP-IG-VERIFY.md and migration 0004):
+// The flow this drives (see docs/DEBUG-IG-WEBHOOK.md and migration 0004):
 //   1. start(handle) → the browser mints a random 256-bit `proof`, sends only its
 //      SHA-256 hash to the server, and gets back a one-time 4-digit code.
 //   2. The user copies the code and DMs it to our Instagram account (deep-linked
