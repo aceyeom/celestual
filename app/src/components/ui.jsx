@@ -61,13 +61,14 @@ export function useDialog(onClose) {
 // with a whisper of pointer/tilt parallax. This is the cosmos the product lives
 // inside — the two stars (amber `you`, rose `them`) are the field's own light.
 // Mount it once, in idle mode, as a fixed full-bleed layer under the content.
-export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, onReady, style }) {
+export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, seals = 0, onReady, style }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   React.useEffect(() => {
     const f = new GalaxyField(ref.current, { you, them, motion })
     field.current = f
     f.setMode(mode, { dim, origin })
+    if (seals) f.setSeals(seals)
     f.start()
     if (onReady) onReady(f)
     if (import.meta.env.DEV) window.__galaxyField = f
@@ -94,6 +95,11 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
   React.useEffect(() => {
     if (field.current) field.current.setMode(mode, { dim, origin })
   }, [mode, dim, origin])
+  // The number of "sealed" stars resting in the disk — one per ping. Kept in sync
+  // so a placed ping leaves a soft glow in the galaxy behind the pings list.
+  React.useEffect(() => {
+    if (field.current) field.current.setSeals(seals)
+  }, [seals])
   React.useEffect(() => {
     if (field.current) field.current.setPalette(you, them)
   }, [you, them])
@@ -233,6 +239,121 @@ export function Brandmark({ C, size = 22, title = 'celestual' }) {
       </defs>
       <path d="M16 1 Q17.6 14.4 31 16 Q17.6 17.6 16 31 Q14.4 17.6 1 16 Q14.4 14.4 16 1 Z" fill={`url(#${gid})`} />
     </svg>
+  )
+}
+
+// ── the send-off morph (the @ field becomes a star and lifts off) ────────────
+// A fixed, pointer-transparent overlay pinned exactly over the @ field: the box
+// collapses horizontally into a slit, pinches to a point, and a star ignites
+// with a glisten (crossed diffraction spikes + a blooming halo — the starburst).
+// It hands off, at the same origin point, to the galaxy's send-off drift, so the
+// star appears to fly on into the disk. Torn down by App after ~1.3s.
+export function Liftoff({ C, handle, geom }) {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 402
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 700
+  const cx = geom?.cx ?? vw / 2
+  const cy = geom?.cy ?? vh * 0.42
+  const w = geom?.w ?? Math.min(360, vw - 48)
+  const h = geom?.h ?? 60
+  const hue = C.star
+  const spikeBg = (deg) => `linear-gradient(${deg}deg, transparent, ${rgba(hue, 0.7)} 34%, #fff 50%, ${rgba(hue, 0.7)} 66%, transparent)`
+  const at0 = { position: 'absolute', left: 0, top: 0 }
+  return (
+    <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 8, pointerEvents: 'none' }}>
+      {/* the @ box ghost that collapses horizontally into a point */}
+      <div
+        className="lo-box"
+        style={{
+          position: 'absolute', left: cx - w / 2, top: cy - h / 2, width: w, height: h, borderRadius: RADIUS.field,
+          background: C.ink2, border: `1.5px solid ${rgba(hue, 0.55)}`, boxShadow: `0 0 26px ${rgba(hue, 0.18)}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+        }}
+      >
+        <span className="lo-text" style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: Math.min(22, h * 0.36), color: C.cream, whiteSpace: 'nowrap' }}>
+          <span style={{ color: hue }}>@</span>{handle}
+        </span>
+      </div>
+      {/* the star igniting where the slit pinched shut */}
+      <div style={{ position: 'absolute', left: cx, top: cy, width: 0, height: 0 }}>
+        <span className="lo-halo" style={{ ...at0, width: 156, height: 156, marginLeft: -78, marginTop: -78, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(hue, 0.5)}, ${rgba(C.them, 0.12)} 45%, transparent 68%)` }} />
+        <span className="lo-spike" style={{ ...at0, width: 150, height: 2, marginLeft: -75, marginTop: -1, background: spikeBg(90) }} />
+        <span className="lo-spike" style={{ ...at0, width: 2, height: 150, marginLeft: -1, marginTop: -75, background: spikeBg(180) }} />
+        <span className="lo-core" style={{ ...at0, width: 16, height: 16, marginLeft: -8, marginTop: -8, borderRadius: '50%', background: '#fff', boxShadow: `0 0 22px 7px ${rgba(hue, 0.85)}, 0 0 58px 20px ${rgba(hue, 0.4)}` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── a frosted glass panel ─────────────────────────────────────────────────────
+// A translucent, blurred surface that lifts foreground content off the living
+// galaxy so the field can stay lit behind it without fighting the text. Used to
+// hold the pings list (and each ping row) above the backdrop.
+export function GlassPanel({ C, children, style, inset = false }) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        background: inset ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.62),
+        border: `1px solid ${rgba(C.cream, inset ? 0.06 : 0.1)}`,
+        borderRadius: RADIUS.card,
+        backdropFilter: 'blur(14px) saturate(1.05)',
+        WebkitBackdropFilter: 'blur(14px) saturate(1.05)',
+        boxShadow: inset ? 'none' : '0 20px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05)',
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ── the hero typewriter ───────────────────────────────────────────────────────
+// Types a sequence of short phrases one after another — type, hold, erase, next —
+// with a blinking caret. Timing is deliberately uneven (each phrase can set its
+// own hold) so it feels spoken, not mechanical; the last phrase (the payoff)
+// holds longest before the loop resets. `phrases`: [{ text, hold }]. `render`
+// lets a caller style a phrase (e.g. amber the @, serif the payoff).
+export function Typewriter({ phrases, className, style, caretColor, render }) {
+  const reduce =
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [i, setI] = React.useState(0)
+  const [n, setN] = React.useState(reduce ? (phrases[0]?.text.length || 0) : 0)
+  const [erasing, setErasing] = React.useState(false)
+  React.useEffect(() => {
+    if (reduce) return // reduced motion: show the first phrase, fully, no motion
+    const phrase = phrases[i]
+    if (!phrase) return
+    const full = phrase.text.length
+    let delay
+    if (!erasing && n < full) {
+      delay = 46 + Math.random() * 34 // type — a touch irregular, like a hand
+    } else if (!erasing && n >= full) {
+      delay = phrase.hold ?? 1400 // hold on the finished phrase
+    } else if (erasing && n > 0) {
+      delay = 26 // erase — quicker than typing
+    } else {
+      delay = 220 // a breath before the next phrase begins
+    }
+    const id = setTimeout(() => {
+      if (!erasing && n < full) setN(n + 1)
+      else if (!erasing && n >= full) setErasing(true)
+      else if (erasing && n > 0) setN(n - 1)
+      else {
+        setErasing(false)
+        setI((i + 1) % phrases.length)
+      }
+    }, delay)
+    return () => clearTimeout(id)
+  }, [i, n, erasing, phrases, reduce])
+  const phrase = phrases[i] || phrases[0]
+  const shown = phrase.text.slice(0, n)
+  return (
+    <span className={className} style={style}>
+      {render ? render(shown, phrase) : shown}
+      <span className="tw-caret" aria-hidden style={{ color: caretColor || 'currentColor', fontWeight: 300, marginLeft: 1 }}>
+        |
+      </span>
+    </span>
   )
 }
 
@@ -650,6 +771,30 @@ export function BackBtn({ C, onClick, label = 'back' }) {
   )
 }
 
+// The logged-out counterpart to ProfileButton: a clear "log in" chip for the
+// top corner, so returning people have an obvious, always-visible way back to
+// their pings without hunting through the footer.
+export function LoginButton({ C, label, onClick }) {
+  const [h, setH] = React.useState(false)
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 15px',
+        borderRadius: RADIUS.chip, background: rgba(C.ink2, h ? 0.86 : 0.7),
+        border: `1px solid ${h ? rgba(C.star, 0.42) : C.line}`, color: C.cream, cursor: 'pointer',
+        backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 600, letterSpacing: '.2px', transition: 'all .2s',
+      }}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+    >
+      <Icon name="enter" size={15} color={rgba(C.star, 0.95)} stroke={2} />
+      {label}
+    </button>
+  )
+}
+
 // The signed-in chip: the star avatar + your @, tucked in a corner.
 export function ProfileButton({ C, handle, onClick }) {
   return (
@@ -731,6 +876,23 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
       <>
         <path d="M10 3.5v9M6.5 9.5L10 13l3.5-3.5" {...p} />
         <path d="M4 16.5h12" {...p} />
+      </>
+    ),
+    refresh: (
+      <>
+        <path d="M15.5 4.6v4h-4" {...p} />
+        <path d="M13.8 14.6A6 6 0 1 1 15.5 8.6" {...p} />
+      </>
+    ),
+    message: (
+      <>
+        <path d="M4 5h12a1.5 1.5 0 011.5 1.5v6A1.5 1.5 0 0116 14H8l-3.5 3v-3H4a1.5 1.5 0 01-1.5-1.5v-6A1.5 1.5 0 014 5z" {...p} />
+      </>
+    ),
+    enter: (
+      <>
+        <path d="M9.5 4H14a2 2 0 012 2v8a2 2 0 01-2 2H9.5" {...p} />
+        <path d="M3.5 10h8M8.5 6.5L12 10l-3.5 3.5" {...p} />
       </>
     ),
   }

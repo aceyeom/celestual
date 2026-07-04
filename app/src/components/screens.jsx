@@ -19,7 +19,7 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderDoorCard, downloadDoorCard } from '../card.js'
 import {
-  Brandmark, StarMark, Kicker, Rule, Meter, StateDot, Sonar,
+  Brandmark, StarMark, Kicker, Rule, Meter, StateDot, Sonar, Typewriter, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog,
 } from './ui.jsx'
@@ -126,7 +126,7 @@ export function IntentPicker({ C, value, onChange }) {
 
 // The slot pips — one per slot, lit while free. Sits under the send field
 // (framework Screen 2: "the visuals for the amount of pings left").
-export function SlotPips({ C, standing, cap }) {
+export function SlotPips({ C, standing, cap, compact }) {
   const { t } = useI18n()
   const free = Math.max(0, cap - standing)
   return (
@@ -143,62 +143,57 @@ export function SlotPips({ C, standing, cap }) {
           }}
         />
       ))}
-      <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.muted }}>
-        {standing > 0 ? t('slots.holding', { n: standing, cap }) : t('slots.free', { n: free, cap })}
-      </span>
+      {!compact && (
+        <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.muted }}>
+          {standing > 0 ? t('slots.holding', { n: standing, cap }) : t('slots.free', { n: free, cap })}
+        </span>
+      )}
     </div>
   )
 }
 
-// The three-beat constellation (§4.1): the one sentence — put their @ in / they
-// never find out / unless mutual, same second — set as a small vertical
-// alignment. Three nodes down a warming rail, escalating from the sent ping
-// (amber dot) through the silence (a hollow ring) to the reveal (the two stars
-// meeting, ✦). The mechanics stay in the interface register; the reveal's payoff
-// crosses into serif italic — the one lit line, echoing the match screen.
-function LandingBeats({ C }) {
+// The hero line, typed one beat at a time (§4.1): put their @ in → they'll never
+// know → unless they put you in too. A single balanced line under the headline
+// that types, holds, and moves on — quick, uneven, spoken-feeling. The @ lights
+// amber as it lands; the payoff (the third beat) reads warm. It's the eye-catch,
+// not the anchor: calm holds keep it ambient, never frantic.
+function HeroLine({ C }) {
   const { t } = useI18n()
-
-  // the @ in "put their @ in." lights up in the handle's own amber mono glyph
-  const beat1 = t('landing.beat1').split('@')
-  const Node = ({ kind }) => {
-    if (kind === 'mutual') {
+  const phrases = React.useMemo(
+    () => [
+      { text: t('landing.type1'), hold: 1500, kind: 'ping' },
+      { text: t('landing.type2'), hold: 1500, kind: 'silence' },
+      { text: t('landing.type3'), hold: 2800, kind: 'reveal' },
+    ],
+    [t],
+  )
+  // color the payoff warm amber; light the @ glyph in phrase one
+  const render = (shown, phrase) => {
+    const color = phrase.kind === 'reveal' ? C.star : C.cream
+    if (phrase.kind === 'ping' && shown.includes('@')) {
+      const [a, ...rest] = shown.split('@')
       return (
-        <span aria-hidden style={{ fontSize: 17, lineHeight: 1, color: C.star, textShadow: `0 0 12px ${rgba(C.star, 0.7)}, 0 0 22px ${rgba(C.them, 0.4)}` }}>✦</span>
+        <span style={{ color }}>
+          {a}
+          <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>
+          {rest.join('@')}
+        </span>
       )
     }
-    if (kind === 'silence') {
-      return <span aria-hidden style={{ width: 9, height: 9, borderRadius: '50%', border: `1.5px solid ${rgba(C.muted, 0.6)}`, background: 'transparent' }} />
-    }
-    return <span aria-hidden style={{ width: 9, height: 9, borderRadius: '50%', background: rgba(C.star, 0.85), boxShadow: `0 0 10px ${rgba(C.star, 0.55)}` }} />
+    return <span style={{ color }}>{shown}</span>
   }
-  const rows = [
-    { kind: 'ping', k: t('landing.beat1k'), body: (<>{beat1[0]}<span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>{beat1[1]}</>) },
-    { kind: 'silence', k: t('landing.beat2k'), body: t('landing.beat2') },
-    { kind: 'mutual', k: t('landing.beat3k'), body: null },
-  ]
   return (
-    <div className="enter" style={{ animationDelay: '.16s', position: 'relative', width: '100%', maxWidth: 340, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, textAlign: 'left' }}>
-      {/* the rail — a hairline warming as it descends toward the reveal */}
-      <span aria-hidden style={{ position: 'absolute', left: 11, top: 12, bottom: 14, width: 1.5, transform: 'translateX(-50%)', background: `linear-gradient(180deg, ${rgba(C.muted, 0.12)}, ${rgba(C.star, 0.32)})` }} />
-      {rows.map((r) => (
-        <div key={r.kind} style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 15 }}>
-          <span style={{ position: 'relative', zIndex: 1, width: 22, minHeight: 22, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Node kind={r.kind} /></span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, paddingTop: 1 }}>
-            <Kicker C={C} style={{ fontSize: 9.5, letterSpacing: '2px' }}>{r.k}</Kicker>
-            {r.kind === 'mutual' ? (
-              <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 16, lineHeight: 1.4, color: C.cream }}>{t('landing.beat3')}</span>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 20, lineHeight: 1.3, color: C.cream }}>
-                  {t('landing.beat3pay')}
-                </span>
-              </span>
-            ) : (
-              <span style={{ fontSize: 16, lineHeight: 1.45, color: C.cream }}>{r.body}</span>
-            )}
-          </div>
-        </div>
-      ))}
+    <div
+      className="enter"
+      aria-label={`${t('landing.type1')} ${t('landing.type2')} ${t('landing.type3')}`}
+      style={{ animationDelay: '.16s', minHeight: 74, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 10px' }}
+    >
+      <Typewriter
+        phrases={phrases}
+        render={render}
+        caretColor={rgba(C.star, 0.85)}
+        style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(21px, 6.2vw, 28px)', lineHeight: 1.35, color: C.cream }}
+      />
     </div>
   )
 }
@@ -208,11 +203,11 @@ export function LandingScreen({ C, ctx }) {
   const { t } = useI18n()
   return (
     <Shell>
-      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 18 }}>
-        <div className="floaty"><StarMark C={C} size={64} /></div>
+      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+        <div className="floaty"><Brandmark C={C} size={34} /></div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
         <h1
           className="enter"
           style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 46px)', lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
@@ -220,7 +215,7 @@ export function LandingScreen({ C, ctx }) {
           <div>{t('landing.head1')}</div>
           <div style={{ color: C.star }}>{t('landing.head2')}</div>
         </h1>
-        <LandingBeats C={C} />
+        <HeroLine C={C} />
       </div>
 
       <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -235,15 +230,12 @@ export function LandingScreen({ C, ctx }) {
           <a href="/terms" target="_blank" rel="noopener" style={{ color: rgba(C.muted, 0.9), textDecoration: 'underline' }}>{t('landing.terms')}</a>.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 2, flexWrap: 'wrap' }}>
-          <GhostButton C={C} onClick={ctx.startLogin} style={{ padding: 0, fontSize: 11.5, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
-            {t('landing.login')}
-          </GhostButton>
           {[
             ['/privacy', t('footer.privacy')],
             ['/terms', t('footer.terms')],
-          ].map(([href, label]) => (
+          ].map(([href, label], idx) => (
             <React.Fragment key={href}>
-              <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
+              {idx > 0 && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
               <a href={href} target="_blank" rel="noopener" style={{ fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.5px', color: C.muted, textDecoration: 'none' }}>
                 {label}
               </a>
@@ -273,8 +265,8 @@ export function OpenDoorScreen({ C, ctx }) {
   const poster = ctx.posterHandle
   return (
     <Shell>
-      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 18 }}>
-        <div className="floaty"><StarMark C={C} size={58} /></div>
+      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+        <div className="floaty"><Brandmark C={C} size={30} /></div>
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
@@ -339,11 +331,20 @@ export function WhoScreen({ C, ctx }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
-        <div className="enter" style={{ textAlign: 'center' }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          {/* self @ first: the ping is FROM you — shown before you name them */}
+          {normHandle(ctx.me) && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Kicker C={C} style={{ fontSize: 10 }}>{t('who.from')}</Kicker>
+              <HandleChip C={C} handle={normHandle(ctx.me)} />
+            </span>
+          )}
           <Kicker C={C} style={{ fontSize: 12 }}>{t('who.kicker')}</Kicker>
         </div>
         <div className="enter" style={{ animationDelay: '.06s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onPlace} />
+          <div data-sendoff-field>
+            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onPlace} />
+          </div>
           {confirming && valid ? (
             <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontSize: 13, lineHeight: 1.5, padding: '0 2px' }}>
               <Icon name="lock" size={13} color={rgba(C.star, 0.85)} />
@@ -365,10 +366,13 @@ export function WhoScreen({ C, ctx }) {
           </div>
         </Collapse>
 
-        {/* the slots — the weight under the act */}
-        <div className="enter" style={{ animationDelay: '.12s', display: 'flex', justifyContent: 'center' }}>
-          <SlotPips C={C} standing={ctx.slotsStanding} cap={ctx.slotsCap} />
-        </div>
+        {/* the slots — the weight under the act. only shown once we know who you
+            are: before you've identified, your slot count is genuinely unknown. */}
+        {ctx.established && (
+          <div className="enter" style={{ animationDelay: '.12s', display: 'flex', justifyContent: 'center' }}>
+            <SlotPips C={C} standing={ctx.slotsStanding} cap={ctx.slotsCap} />
+          </div>
+        )}
       </div>
 
       <PrimaryButton C={C} disabled={!valid || busy} onClick={onPlace}>
@@ -387,20 +391,10 @@ export function YouScreen({ C, ctx }) {
   const emailVal = ctx.email.trim()
   const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
-  // the 18+ hard gate (§4.4) — signup only. the birthdate is only checked here,
-  // never sent up or stored (data minimization): we keep whether, not when.
-  const [dob, setDob] = React.useState('')
-  const todayISO = React.useMemo(() => new Date().toISOString().slice(0, 10), [])
-  const dobOk = React.useMemo(() => {
-    if (!dob) return false
-    const d = new Date(dob + 'T00:00:00')
-    if (isNaN(d.getTime())) return false
-    const now = new Date()
-    const eighteen = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate())
-    return d <= eighteen
-  }, [dob])
-  const under = !!dob && !dobOk
-  const valid = handleOk && emailOk && (login || dobOk)
+  // the 18+ hard gate (§4.4) — signup only. one tap to confirm; nothing about
+  // age is ever sent up or stored (data minimization): we keep whether, not when.
+  const [over18, setOver18] = React.useState(false)
+  const valid = handleOk && emailOk && (login || over18)
   const submit = () => valid && (login ? ctx.login() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
   const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
@@ -440,36 +434,38 @@ export function YouScreen({ C, ctx }) {
           )}
         </div>
 
-        {/* birthday — the 18+ hard gate (§4.4), signup only. checked, never stored */}
+        {/* the 18+ hard gate (§4.4), signup only — now one tap, not a birthdate.
+            checked here, never stored: we keep whether, not when. */}
         <Collapse open={handleOk && !login}>
           <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
-            <FieldLabel C={C}>{t('you.dobLabel')}</FieldLabel>
-            <label
+            <FieldLabel C={C}>{t('you.ageLabel')}</FieldLabel>
+            <button
+              onClick={() => setOver18((v) => !v)}
+              aria-pressed={over18}
               style={{
-                display: 'flex', alignItems: 'center', width: '100%', padding: '15px 17px',
-                borderRadius: RADIUS.field, background: C.ink2, cursor: 'text',
-                border: `1.5px solid ${under ? rgba(C.star, 0.55) : C.line}`,
-                transition: 'border-color .2s',
+                display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', padding: '15px 17px',
+                borderRadius: RADIUS.field, cursor: 'pointer', textAlign: 'left',
+                background: over18 ? rgba(C.star, 0.1) : C.ink2,
+                border: `1.5px solid ${over18 ? rgba(C.star, 0.55) : C.line}`,
+                color: C.cream, fontFamily: "'Space Grotesk', sans-serif", transition: 'all .2s',
               }}
             >
-              <input
-                type="date"
-                value={dob}
-                max={todayISO}
-                min="1920-01-01"
-                onChange={(e) => setDob(e.target.value)}
+              <span
+                aria-hidden
                 style={{
-                  flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none',
-                  fontFamily: "'Space Mono', monospace", fontSize: 16, letterSpacing: '.3px',
-                  color: dob ? C.cream : C.muted, colorScheme: 'dark',
+                  display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+                  background: over18 ? C.star : 'transparent',
+                  border: `1.5px solid ${over18 ? C.star : rgba(C.cream, 0.3)}`,
+                  transition: 'all .2s',
                 }}
-              />
-            </label>
-            {under ? (
-              <Hint C={C} icon="lock" color={rgba(C.star, 0.9)}>{t('you.dobUnder')}</Hint>
-            ) : (
-              <Hint C={C} icon="lock">{t('you.dobNote')}</Hint>
-            )}
+              >
+                {over18 && <Icon name="check" size={15} color={C.onStar} stroke={2.6} />}
+              </span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 500 }}>
+                {over18 ? t('you.ageConfirmed') : t('you.ageConfirm')}
+              </span>
+            </button>
+            <Hint C={C} icon="lock">{t('you.ageNote')}</Hint>
           </div>
         </Collapse>
 
@@ -572,95 +568,162 @@ export function PlacedScreen({ C, ctx }) {
   )
 }
 
-// ── 4 · YOUR PINGS — the status page (deliberately boring by design) ──────────
-function PingRow({ C, ping, ctx }) {
+// ── 4 · YOUR PINGS — the status page ──────────────────────────────────────────
+// A compact, clearly-labelled action button for a ping row. Real affordance —
+// a bordered pill that hovers — instead of the old bare underlined text.
+function RowBtn({ C, onClick, icon, children, tone = 'default' }) {
+  const [h, setH] = React.useState(false)
+  const accent = tone === 'accent'
+  const col = accent ? C.star : tone === 'danger' ? rgba(C.cream, 0.72) : C.cream
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: RADIUS.chip,
+        cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: 13, color: col,
+        background: h ? rgba(accent ? C.star : C.cream, 0.1) : accent ? rgba(C.star, 0.08) : 'transparent',
+        border: `1px solid ${accent ? rgba(C.star, h ? 0.6 : 0.4) : rgba(C.cream, h ? 0.28 : 0.14)}`,
+        transition: 'all .18s',
+      }}
+    >
+      {icon && <Icon name={icon} size={14} color="currentColor" stroke={1.9} />}
+      {children}
+    </button>
+  )
+}
+
+// One ping, as a frosted glass card lifted off the galaxy. The state reads in
+// plain words (active / not here yet / mutual) with a one-line explanation, and
+// the actions are real buttons.
+function PingCard({ C, ping, ctx }) {
   const { t } = useI18n()
   const [confirmGo, setConfirmGo] = React.useState(false)
   const [renewed, setRenewed] = React.useState(false)
   const days = daysLeft(ping.expires_at)
-  const lapsing = !ping.mutual && nearLapse(ping.expires_at)
+  const soon = !ping.mutual && nearLapse(ping.expires_at)
   const state = ping.mutual ? 'mutual' : ping.reachable ? 'standing' : 'waiting'
+  const chipColor = ping.mutual ? C.star : ping.reachable ? rgba(C.star, 0.92) : C.muted
   const renew = async () => {
     await ctx.renew(ping.handle)
     setRenewed(true)
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '18px 2px', borderBottom: `1px solid ${C.line}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <GlassPanel C={C} style={{ padding: '15px 16px 13px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
         <StateDot C={C} state={state} />
-        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 20, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ping.handle ? (
             <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
           ) : (
-            <span style={{ fontStyle: 'italic', fontSize: 16 }}>{t('pings.elsewhere')}</span>
+            <span style={{ fontStyle: 'italic', fontSize: 15 }}>{t('pings.elsewhere')}</span>
           )}
         </span>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: ping.mutual ? C.star : C.muted, textTransform: 'lowercase', flexShrink: 0 }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
           {t(`pings.${state}`)}
         </span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingLeft: 20, flexWrap: 'wrap' }}>
-        {!ping.mutual && days != null && (
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: rgba(C.muted, 0.8) }}>
-            {days === 0 ? t('pings.today') : t('pings.days', { n: days })}
-          </span>
-        )}
-        {ping.intent && (
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 13.5, color: rgba(C.cream, 0.6) }}>
-            “{intentLine(t, ping.intent)}”
-          </span>
-        )}
-        <span style={{ flex: 1 }} />
-        {ping.mutual && ping.handle ? (
-          <GhostButton C={C} onClick={() => ctx.openConversation(ping.handle)} style={{ padding: 0, fontSize: 12.5, color: C.star }}>
-            {t('pings.open')} →
-          </GhostButton>
-        ) : confirmGo ? (
-          <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, fontSize: 12, color: C.muted }}>
-            {t('pings.letgoConfirm')}
-            <GhostButton C={C} onClick={() => ctx.letGo(ping.handle)} style={{ padding: 0, fontSize: 12, color: C.cream }}>
-              {t('pings.letgoYes')}
-            </GhostButton>
-            <GhostButton C={C} onClick={() => setConfirmGo(false)} style={{ padding: 0, fontSize: 12 }}>
-              {t('pings.keep')}
-            </GhostButton>
-          </span>
-        ) : (
-          ping.handle && (
-            <GhostButton C={C} onClick={() => setConfirmGo(true)} style={{ padding: 0, fontSize: 12, color: rgba(C.muted, 0.85) }}>
-              {t('pings.letgo')}
-            </GhostButton>
-          )
-        )}
-      </div>
-      {lapsing && ping.handle && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 20 }}>
-          {renewed ? (
-            <span className="fade" style={{ fontSize: 12.5, color: rgba(C.star, 0.9) }}>{t('pings.renewed')}</span>
+
+      {ping.handle && (
+        <p style={{ margin: '8px 0 0', paddingLeft: 19, fontSize: 12.5, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
+          {t(`pings.${state}Sub`)}
+        </p>
+      )}
+      {ping.intent && (
+        <p style={{ margin: '7px 0 0', paddingLeft: 19, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.cream, 0.7) }}>
+          “{intentLine(t, ping.intent)}”
+        </p>
+      )}
+
+      {(ping.handle || (!ping.mutual && days != null)) && (
+        <div style={{ marginTop: 12, paddingTop: 11, borderTop: `1px solid ${rgba(C.cream, 0.07)}` }}>
+          {confirmGo ? (
+            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              <span style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>{t('pings.letgoConfirm')}</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <RowBtn C={C} tone="danger" icon="x" onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowBtn>
+                <RowBtn C={C} onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowBtn>
+              </div>
+            </div>
           ) : (
-            <>
-              <span style={{ fontSize: 12.5, color: rgba(C.star, 0.9) }}>{t('pings.lapsing', { n: days })}</span>
-              <GhostButton C={C} onClick={renew} style={{ padding: 0, fontSize: 12.5, color: C.cream, textDecoration: 'underline' }}>
-                {t('pings.renew')}
-              </GhostButton>
-            </>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {!ping.mutual && days != null && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 11, color: soon ? rgba(C.star, 0.92) : rgba(C.muted, 0.8) }}>
+                  {soon && <span aria-hidden style={{ width: 5, height: 5, borderRadius: '50%', background: rgba(C.star, 0.9), boxShadow: `0 0 8px ${rgba(C.star, 0.6)}` }} />}
+                  {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
+                </span>
+              )}
+              <span style={{ flex: 1 }} />
+              {ping.mutual && ping.handle ? (
+                <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+              ) : ping.handle ? (
+                <>
+                  {renewed ? (
+                    <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: rgba(C.star, 0.9) }}>
+                      <Icon name="check" size={13} color={rgba(C.star, 0.9)} /> {t('pings.renewed')}
+                    </span>
+                  ) : (
+                    <RowBtn C={C} tone={soon ? 'accent' : 'default'} icon="refresh" onClick={renew}>{t('pings.renew')}</RowBtn>
+                  )}
+                  <RowBtn C={C} tone="danger" icon="x" onClick={() => setConfirmGo(true)}>{t('pings.letgo')}</RowBtn>
+                </>
+              ) : null}
+            </div>
           )}
         </div>
       )}
+
       {ctx.demo && !ping.mutual && ping.handle && (
-        <div style={{ paddingLeft: 20 }}>
+        <div style={{ marginTop: 10, paddingLeft: 19 }}>
           <GhostButton C={C} onClick={() => ctx.simulateMutual(ping.handle)} style={{ padding: 0, fontSize: 11, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
             ✦ {t('pings.sim')}
           </GhostButton>
         </div>
       )}
-    </div>
+    </GlassPanel>
+  )
+}
+
+// An empty slot — a dashed glass placeholder holding a faint star, so the number
+// of slots you have (and how many are open) is always visible at a glance.
+function EmptySlotCard({ C, onClick }) {
+  const { t } = useI18n()
+  const [h, setH] = React.useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px', textAlign: 'left', cursor: 'pointer',
+        borderRadius: RADIUS.card,
+        background: h ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.3),
+        border: `1.5px dashed ${rgba(C.cream, h ? 0.26 : 0.15)}`,
+        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', transition: 'all .2s',
+      }}
+    >
+      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', flexShrink: 0, border: `1px solid ${rgba(C.cream, 0.14)}`, opacity: h ? 1 : 0.7, transition: 'opacity .2s' }}>
+        <Brandmark C={C} size={15} />
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{t('pings.slotEmpty')}</span>
+        <span style={{ fontSize: 12, color: C.muted }}>{t('pings.slotEmptySub')}</span>
+      </span>
+      <span style={{ flex: 1 }} />
+      <Icon name="plus" size={16} color={rgba(C.star, 0.8)} stroke={2} />
+    </button>
   )
 }
 
 export function PingsScreen({ C, ctx }) {
   const { t } = useI18n()
   const pings = ctx.pings || []
+  const cap = ctx.slotsCap
+  const mutual = pings.filter((p) => p.mutual)
+  const active = pings.filter((p) => !p.mutual)
+  const used = Math.min(active.length, cap)
+  const emptyCount = Math.max(0, cap - active.length)
   const empty = pings.length === 0
   return (
     <Shell>
@@ -672,30 +735,37 @@ export function PingsScreen({ C, ctx }) {
         </div>
       </div>
 
-      {empty ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
-          <div className="floaty"><StarMark C={C} size={70} /></div>
-          <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(27px, 7vw, 34px)', color: C.cream }}>
-            {t('pings.emptyTitle')}
-          </h2>
-          <p className="enter" style={{ animationDelay: '.06s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 290 }}>
-            {t('pings.emptyBody')}
-          </p>
-        </div>
-      ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: 20 }}>
-          <div className="enter" style={{ borderTop: `1px solid ${C.line}` }}>
-            {pings.map((p, i) => (
-              <PingRow key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
-            ))}
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 20 }}>
+        {empty ? (
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 33px)', color: C.cream }}>
+              {t('pings.emptyTitle')}
+            </h2>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
           </div>
-          {pings.some((p) => !p.handle) && (
-            <p style={{ margin: '14px 2px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
-          )}
-        </div>
-      )}
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
+            <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
+            <SlotPips C={C} standing={used} cap={cap} compact />
+          </div>
+        )}
 
-      <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 24 }}>
+        {mutual.map((p, i) => (
+          <PingCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
+        ))}
+        {active.map((p, i) => (
+          <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
+        ))}
+        {Array.from({ length: emptyCount }).map((_, i) => (
+          <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
+        ))}
+
+        {pings.some((p) => !p.handle) && (
+          <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
+        )}
+      </div>
+
+      <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 20 }}>
         <PrimaryButton C={C} onClick={ctx.placeAnother}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
             <Icon name="plus" size={16} color={C.onStar} stroke={2.1} /> {empty ? t('pings.emptyCta') : t('pings.add')}
@@ -991,6 +1061,27 @@ export function MatchScreen({ C, ctx }) {
   )
 }
 
+// ── THE SEND-OFF — the @ becomes a star and flies into the galaxy ─────────────
+// The flight itself is drawn by the galaxy canvas (owned by App): the @ field
+// collapses into a star (the Liftoff overlay), which coalesces at that point and
+// drifts on into the disk. This shell only holds a calm line, low on the screen
+// so it never sits under the flight path, while that ~5s plays out.
+export function SendoffScreen({ C, ctx }) {
+  const { t } = useI18n()
+  return (
+    <Shell>
+      <div style={{ flex: 1 }} />
+      <div className="sendoff-line" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 11, paddingBottom: 'clamp(24px, 12vh, 90px)' }}>
+        <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(24px, 7vw, 30px)', color: C.cream }}>{t('sendoff.title')}</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 12.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
+          <Sonar C={C} size={11} /> {t('sendoff.sub')}
+        </div>
+      </div>
+      <div style={{ flex: 1 }} />
+    </Shell>
+  )
+}
+
 // ── 9 · THE FOURTH SLOT (dormant — only the first door exists) ────────────────
 export function FourthSlotScreen({ C, ctx }) {
   const { t } = useI18n()
@@ -1002,9 +1093,10 @@ export function FourthSlotScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
-        <div style={{ display: 'flex', gap: 10 }}>
+        {/* the three slots, all held — shown as the product's own star icon */}
+        <div style={{ display: 'flex', gap: 12 }}>
           {[0, 1, 2].map((i) => (
-            <span key={i} aria-hidden style={{ width: 9, height: 9, borderRadius: '50%', background: C.star, boxShadow: `0 0 10px ${rgba(C.star, 0.6)}` }} />
+            <Brandmark key={i} C={C} size={18} />
           ))}
         </div>
         <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8vw, 38px)', color: C.cream }}>
