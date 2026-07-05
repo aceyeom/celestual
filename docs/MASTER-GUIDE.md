@@ -297,9 +297,32 @@ displays, everywhere, with one disclosed exception in 2.7. Counter velocity is
 internal telemetry: a community heating up organically is the signal to point the
 ambassador machine at it.
 
+**Community stats — the fixed-100 unlock (updated 2026-07-05).** A community's
+size gates one thing, and it is not access: at a fixed **100 members** the
+community's **weekly stats open** — mutual matches in the community this week,
+the most common reason people entered someone (the intent lines), pings placed,
+who joined. Below 100 the community is "gathering": its count stays hidden (the
+floor) and the stats sit behind a locked preview naming exactly what opens.
+**Placing a ping never depends on any of this** — Celestual is globally open, so
+a friend group of five is on it and pinging each other the moment they arrive.
+The fixed number replaces the earlier idea of a per-community threshold, which
+fails globally for two reasons: it locks small groups out, and with worldwide
+marketing there is no gauge of a community's true size, so no "appropriate"
+per-community number can be computed. 100 is small enough that any real scene can
+reach it and large enough to keep every published number above the
+de-anonymization floor. The reward is the pull: a member watching their world sit
+just under 100, beside another world's live weekly matches, has a concrete,
+self-interested reason to bring more people in — the recruiter motive (Fact 1)
+applied to the community, with no gate. Stats compose both floors: a community's
+aggregates publish at 100+, and inside them a match count publishes at 10+ (2.7),
+so a thin week reads "matches open at ten," never a guessable number.
+
 The community line shown to senders (on the placed screen, 4.6) appears only when
 the counter is above the floor and reads: "your worlds: korean intl students.
-2,341 in."
+2,341 in." The full communities view (reached from the status page and account)
+renders each tagged world as a card — open worlds carry the live weekly readout,
+gathering worlds carry the locked preview — and is free forever like every other
+core surface.
 
 **Why this, and what was rejected.** Canonicalization is the founder's own
 revision and it stands: free-text tags fragment ("Korean intl students" and
@@ -316,10 +339,19 @@ sender most needs the link (a just-created community with twelve members is not
 growing), and generic FOMO copy is off-register for a brand whose margin is
 literal truth. The link survives; the copy does not.
 
-### 2.7 Campus windows: the assurance contract
+### 2.7 Campus windows: the assurance contract (now optional)
 
-A campus does not dribble onto Celestual; it opens. The mechanism is an assurance
-contract: nothing starts until a threshold number of people commit, so no early
+**Repositioned (2026-07-05): a campus window is an optional launch accelerant, not
+the way people get in.** Celestual is globally open — anyone can place a ping the
+day they arrive (2.6). The variable per-campus threshold below is retained only as
+a tool an ambassador may run to open a whole school on one day; its old role as the
+density gate is now carried by the fixed-100 community stats (2.6), which never lock
+anyone out. Read the rest of this section as a coordinated-push playbook, not a
+precondition for access.
+
+A campus does not have to dribble onto Celestual; it can open all at once. The
+mechanism is an assurance contract: nothing starts until a threshold number of
+people commit, so no early
 joiner ever experiences an empty room (Bagnoli & Lipman, 1989, the mechanism
 behind Kickstarter). The playbook per campus:
 

@@ -24,12 +24,20 @@ The product direction is fixed by one document —
   (`celestual.us/@handle`) and a Story card in the receiver's voice ("if
   there's something you never said to me, it's safe here now"). A viewer taps
   through and lands two taps from their own first ping.
-- **Loop C — campus windows.** A campus never opens half-empty: it
-  preregisters toward a visible threshold (`/c/<campus>`), opens for everyone
-  at once, and publishes exact week-one aggregates.
+- **Communities — the fixed-100 stats.** Celestual is globally open: anyone
+  can place a ping the day they arrive. A person tags the real scenes they're
+  in, and at a fixed **100 members** that community's **weekly stats** open
+  (mutual matches this week, the most common reason, pings placed). Below 100
+  the count stays hidden and the stats sit behind a locked preview — a reward
+  that pulls more members in, never a gate that locks anyone out.
+- **Loop C — campus windows (optional).** A launch accelerant, not the access
+  gate: an ambassador *can* open a whole school at once by preregistering
+  toward a visible threshold (`/c/<campus>`) with an exact week-one reveal, but
+  no one waits behind it to use the product.
 - **No monetization.** Nothing is for sale anywhere; the only thing that will
   ever be considered is a one-time fourth slot, dormant until density is
-  proven (docs/PRICING-REVENUE.md).
+  proven (docs/PRICING-REVENUE.md). `/demo` previews what that checkout could
+  look like; production shows only the free "let one go" door.
 - **Everything shown to anyone is literally true, always.** That truth is the
   legal and ethical margin the entire design lives inside.
 
@@ -83,14 +91,20 @@ Without Supabase env vars the app runs with safe local fallbacks. To talk to a
 real backend, copy `app/.env.example` to `app/.env.local` and paste your
 Supabase URL + anon key.
 
-**`/demo`** is the sandbox: nothing reaches a server. It ships with hardcoded
-sample data to show what a school launch looks like — two sample pings (one
-*standing*, one *waiting* and near its lapse), sample community counters, and
-a campus window for "Reed" at 214 of 300 with a control that cycles it through
-*window → open → week-one reveal*. Every non-mutual row carries **"sandbox:
-they enter you back"**, which plays the full match reveal. Identity
-verification in the demo runs the real overlay but **auto-verifies locally**
-(the stand-in until DM verification is wired there).
+**`/demo`** is the sandbox: it runs the full production workflow, but nothing
+reaches a server — every value is temporary and sample. It ships seeded to show
+what a live launch looks like: sample pings in every state (a *standing*, a
+*waiting* near its lapse, and a resolved *mutual* in its own section), and the
+**communities** view — **NYU Class of 2028** past 100 with live weekly stats (a
+"sandbox: new activity" control ticks the matches up in real time), plus scenes
+still *gathering* toward 100 with the locked-stats preview. Every non-mutual row
+carries **"sandbox: they enter you back"**, which plays the full match reveal.
+Run out of your three slots and the sandbox shows a **realistic Stripe-style
+checkout** for a one-time fourth slot (production shows only the free "let one
+go" door). Identity verification runs the real overlay but **auto-verifies
+locally**. The campus window (the optional launch tool) lives on in production
+at `/c/<campus>`; the sandbox headlines communities instead, since global,
+always-open access is now the default and no one waits behind a campus.
 
 ## Build
 

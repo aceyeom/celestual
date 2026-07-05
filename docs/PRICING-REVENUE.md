@@ -30,17 +30,22 @@ The "paid signals legitimacy" argument is real but weak: trust on a
 2,000-person campus comes from a warm named brand, a real ambassador, visible
 safety architecture, and truthful numbers — not from a Stripe checkout.
 
-**Posture: keep Stripe plumbed and dormant. Nothing in the product mentions
-money. The fourth-slot screen shows one door ("let one go") and no other.**
+**Posture: keep Stripe plumbed and dormant. Nothing in the production product
+mentions money. The fourth-slot screen shows one door ("let one go") and no
+other.** The `/demo` sandbox is the one exception, deliberately: when a user
+runs out of slots there, it previews a realistic one-time fourth-slot checkout
+so the eventual shape is visible without waking anything real (no card is read,
+nothing is charged, the sandbox says so on its face). Production stays dormant.
 
 ## §2 — What is free, explicitly, forever
 
 Placing, matching, the reveal, renewing, letting go, the opt-out and all
 erasure, identity verification, the five intent lines, the open-door card and
-personal page, campus preregistration, community counters. This list ships
-verbatim on the in-app privacy screen and in /terms §5 — it is a trust asset
-the Skeptic verifies and the Sender relies on, and it survives monetization
-whenever that wakes.
+personal page, campus preregistration, communities and their weekly stats (the
+fixed-100 unlock is a reward gate on a *feature*, never a charge). This list
+ships verbatim on the in-app privacy screen and in /terms §5 — it is a trust
+asset the Skeptic verifies and the Sender relies on, and it survives
+monetization whenever that wakes.
 
 ## §3 — When money enters (post-density, post-proof)
 
