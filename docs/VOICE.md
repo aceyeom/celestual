@@ -40,6 +40,7 @@ verbs — use them, never their app-generic equivalents.
 | your door / post your door | share, invite, refer a friend |
 | reachable | registered, signed up, on the app |
 | your worlds | groups, communities (in-product), tags |
+| stats open (at 100) / gathering | unlock, premium, level up, go pro |
 | count me in | sign up, join the waitlist, register |
 | the opt-out | unsubscribe, blacklist, suppression (user-facing) |
 | slot | credit, token, quota |
@@ -128,6 +129,17 @@ deliberately dumb — a tripwire, not a critic. The interesting judgments
 
 ## §8 — Changelog
 
+- **2026-07-05** — **Terseness pass + the fixed-100 community model.** Swept the
+  whole dictionary (`strings.js`) tighter — the guiding cut: if a pill or a state
+  dot already says it, the sentence doesn't repeat it (e.g. the "not here yet"
+  row dropped "they haven't joined — your ping waits, unseen" down to "waits,
+  unseen, until they join."). Register unchanged; only length. New copy for the
+  **communities** feature: a community's weekly stats **open** at 100 — never
+  "unlock" (paywall voice, banned §5); below 100 it is **gathering**, with the
+  count withheld (the floor) and pings explicitly never gated ("everyone can ping
+  from day one"). The sandbox-only fourth-slot checkout uses one-time-purchase
+  language ("hold a fourth", "once", "pay $3.99") and no banned paywall words;
+  the empty-slot line no longer claims "room for one more" when several are open.
 - **2026-07-03** — Rewritten for the ping model: vocabulary table replaced
   (star/sky/seal/constellation retired), lowercase register made explicit,
   frames updated (receiver-face, truth-exactly, resolution-never-pursuit),

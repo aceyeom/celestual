@@ -19,7 +19,7 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderDoorCard, downloadDoorCard } from '../card.js'
 import {
-  Brandmark, StarMark, Kicker, Rule, Meter, StateDot, Sonar, Typewriter, GlassPanel,
+  Brandmark, StarMark, Kicker, Rule, Meter, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog,
 } from './ui.jsx'
@@ -152,48 +152,89 @@ export function SlotPips({ C, standing, cap, compact }) {
   )
 }
 
-// The hero line, typed one beat at a time (§4.1): put their @ in → they'll never
-// know → unless they put you in too. A single balanced line under the headline
-// that types, holds, and moves on — quick, uneven, spoken-feeling. The @ lights
-// amber as it lands; the payoff (the third beat) reads warm. It's the eye-catch,
-// not the anchor: calm holds keep it ambient, never frantic.
-function HeroLine({ C }) {
+// The hero line, typed a beat at a time (§4.1): put their @ in → they'll never
+// know → unless they put you in too. Reworked so the mechanic is easy to follow:
+// the first two beats type on stacked lines and STAY — you read them together —
+// then they fade and the payoff (the warm third beat) enters on its own and
+// holds longest. The @ lights amber as it lands; the payoff reads amber. Loops,
+// calm; collapses to a static stack under reduced-motion.
+const HERO_TYPE = () => 46 + Math.random() * 34
+function HeroSequence({ C }) {
   const { t } = useI18n()
-  const phrases = React.useMemo(
-    () => [
-      { text: t('landing.type1'), hold: 1500, kind: 'ping' },
-      { text: t('landing.type2'), hold: 1500, kind: 'silence' },
-      { text: t('landing.type3'), hold: 2800, kind: 'reveal' },
-    ],
-    [t],
-  )
-  // color the payoff warm amber; light the @ glyph in phrase one
-  const render = (shown, phrase) => {
-    const color = phrase.kind === 'reveal' ? C.star : C.cream
-    if (phrase.kind === 'ping' && shown.includes('@')) {
-      const [a, ...rest] = shown.split('@')
-      return (
-        <span style={{ color }}>
-          {a}
-          <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>
-          {rest.join('@')}
-        </span>
-      )
+  const L1 = t('landing.type1')
+  const L2 = t('landing.type2')
+  const L3 = t('landing.type3')
+  const reduce =
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // stages: 0 type L1 · 1 type L2 (L1 held) · 2 fade the pair · 3 type L3 · 4 fade L3 → loop
+  const [stage, setStage] = React.useState(reduce ? 3 : 0)
+  const [n, setN] = React.useState(reduce ? L3.length : 0)
+
+  React.useEffect(() => {
+    if (reduce) return
+    let id
+    if (stage === 0) {
+      id = n < L1.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => { setN(0); setStage(1) }, 300)
+    } else if (stage === 1) {
+      id = n < L2.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => setStage(2), 1700)
+    } else if (stage === 2) {
+      id = setTimeout(() => { setN(0); setStage(3) }, 620)
+    } else if (stage === 3) {
+      id = n < L3.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => setStage(4), 3000)
+    } else if (stage === 4) {
+      id = setTimeout(() => { setN(0); setStage(0) }, 620)
     }
-    return <span style={{ color }}>{shown}</span>
+    return () => clearTimeout(id)
+  }, [stage, n, reduce, L1, L2, L3])
+
+  const serif = { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(21px, 6.2vw, 28px)', lineHeight: 1.32 }
+  const caret = (on) => on && <span className="tw-caret" aria-hidden style={{ color: rgba(C.star, 0.85), fontWeight: 300, marginLeft: 1 }}>|</span>
+  // light the @ glyph amber in "put their @ in."
+  const withAt = (s) => {
+    if (!s.includes('@')) return s
+    const [a, ...rest] = s.split('@')
+    return (<>{a}<span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>{rest.join('@')}</>)
   }
+
+  const pairShown = stage < 2
+  const pairText1 = stage === 0 ? L1.slice(0, n) : L1
+  const pairText2 = stage === 0 ? '' : stage === 1 ? L2.slice(0, n) : L2
+  const payoffText = stage === 3 ? L3.slice(0, n) : L3
+
   return (
     <div
       className="enter"
-      aria-label={`${t('landing.type1')} ${t('landing.type2')} ${t('landing.type3')}`}
-      style={{ animationDelay: '.16s', minHeight: 74, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 10px' }}
+      aria-label={`${L1} ${L2} ${L3}`}
+      style={{ animationDelay: '.16s', position: 'relative', minHeight: 92, width: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', padding: '0 10px' }}
     >
-      <Typewriter
-        phrases={phrases}
-        render={render}
-        caretColor={rgba(C.star, 0.85)}
-        style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(21px, 6.2vw, 28px)', lineHeight: 1.35, color: C.cream }}
-      />
+      {reduce ? (
+        // static stack — the whole mechanic, no motion
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ ...serif, color: C.cream }}>{withAt(L1)}</span>
+          <span style={{ ...serif, color: C.cream }}>{L2}</span>
+          <span style={{ ...serif, color: C.star }}>{L3}</span>
+        </div>
+      ) : (
+        <>
+          {/* the held pair — both lines stay up together, then fade as one */}
+          <div
+            style={{
+              gridArea: '1 / 1', display: 'flex', flexDirection: 'column', gap: 2,
+              opacity: stage === 2 ? 0 : pairShown ? 1 : 0, transition: 'opacity .55s ease',
+            }}
+          >
+            <span style={{ ...serif, color: C.cream }}>{withAt(pairText1)}{caret(stage === 0)}</span>
+            <span style={{ ...serif, color: C.cream, minHeight: pairText2 || stage >= 1 ? undefined : 0 }}>
+              {pairText2}{caret(stage === 1)}
+            </span>
+          </div>
+          {/* the payoff — enters alone, amber, holds longest */}
+          <div style={{ gridArea: '1 / 1', opacity: stage === 3 || stage === 4 ? (stage === 4 ? 0 : 1) : 0, transition: 'opacity .55s ease' }}>
+            <span style={{ ...serif, color: C.star }}>{payoffText}{caret(stage === 3)}</span>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -215,7 +256,7 @@ export function LandingScreen({ C, ctx }) {
           <div>{t('landing.head1')}</div>
           <div style={{ color: C.star }}>{t('landing.head2')}</div>
         </h1>
-        <HeroLine C={C} />
+        <HeroSequence C={C} />
       </div>
 
       <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -249,8 +290,8 @@ export function LandingScreen({ C, ctx }) {
         {ctx.demo && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center' }}>
             <SandboxChip C={C} />
-            <GhostButton C={C} onClick={() => ctx.go('campus')} style={{ padding: 0, fontSize: 11.5, color: rgba(C.star, 0.85) }}>
-              {t('demo.campus')} →
+            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ padding: 0, fontSize: 11.5, color: rgba(C.star, 0.85) }}>
+              {t('demo.worlds')} →
             </GhostButton>
           </div>
         )}
@@ -513,7 +554,8 @@ export function PlacedScreen({ C, ctx }) {
   const { t } = useI18n()
   const placed = ctx.lastPlaced || { handle: ctx.them, reachable: false }
   const standing = !!placed.reachable
-  const worlds = (ctx.worlds || []).filter((w) => w.count)
+  // the 100-floor: only worlds past 100 ever surface a count
+  const worlds = (ctx.worlds || []).filter((w) => Number(w.count) >= 100)
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
@@ -716,6 +758,31 @@ function EmptySlotCard({ C, onClick }) {
   )
 }
 
+// A mutual match on the status page — a resolved outcome, not a standing slot,
+// so it lives in its own section and reads compact: the star, the handle, one
+// action. It never counts against the three slots.
+function MutualCard({ C, ping, ctx }) {
+  const { t } = useI18n()
+  return (
+    <GlassPanel C={C} style={{ padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+        <StateDot C={C} state="mutual" />
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 19, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
+          </span>
+          {ping.intent && (
+            <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 13, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              “{intentLine(t, ping.intent)}”
+            </span>
+          )}
+        </span>
+        <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+      </div>
+    </GlassPanel>
+  )
+}
+
 export function PingsScreen({ C, ctx }) {
   const { t } = useI18n()
   const pings = ctx.pings || []
@@ -744,21 +811,34 @@ export function PingsScreen({ C, ctx }) {
             <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
-            <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
-            <SlotPips C={C} standing={used} cap={cap} compact />
-          </div>
+          // the slot space — always exactly `cap` rows: standing pings, then open
+          // slots. mutual matches are resolved and never sit here.
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
+              <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
+              <SlotPips C={C} standing={used} cap={cap} compact />
+            </div>
+            {active.map((p, i) => (
+              <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
+            ))}
+            {Array.from({ length: emptyCount }).map((_, i) => (
+              <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
+            ))}
+          </>
         )}
 
-        {mutual.map((p, i) => (
-          <PingCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
-        ))}
-        {active.map((p, i) => (
-          <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
-        ))}
-        {Array.from({ length: emptyCount }).map((_, i) => (
-          <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
-        ))}
+        {/* mutual — its own section, so a match never crowds the slots */}
+        {mutual.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: empty ? 0 : 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
+              <Kicker C={C} color={rgba(C.star, 0.9)}>✦ {t('pings.mutualKicker')} · {mutual.length}</Kicker>
+              <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
+            </div>
+            {mutual.map((p, i) => (
+              <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
+            ))}
+          </div>
+        )}
 
         {pings.some((p) => !p.handle) && (
           <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
@@ -775,11 +855,9 @@ export function PingsScreen({ C, ctx }) {
           <GhostButton C={C} onClick={() => ctx.go('door')} style={{ fontSize: 12.5 }}>
             {t('pings.door')}
           </GhostButton>
-          {ctx.demo && (
-            <GhostButton C={C} onClick={() => ctx.go('campus')} style={{ fontSize: 12.5, color: rgba(C.star, 0.85) }}>
-              {t('demo.campus')}
-            </GhostButton>
-          )}
+          <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ fontSize: 12.5, color: rgba(C.star, 0.85) }}>
+            {t('pings.worlds')}
+          </GhostButton>
         </div>
       </div>
     </Shell>
@@ -1003,6 +1081,186 @@ export function CampusScreen({ C, ctx }) {
   )
 }
 
+// ── YOUR WORLDS (communities · the fixed-100 stats model) ─────────────────────
+// Placing pings NEVER depends on a world's size — everyone can ping from day
+// one, anywhere. At 100 members a world's WEEKLY STATS open (matches, the most
+// common reason, pings placed, who joined this week). Below 100 it's gathering
+// and the count stays hidden (the 100-floor, framework §2.5); a locked preview
+// shows exactly what opens — the reward, never a gate, is what pulls people in.
+
+// copy the world's shareable /c/ link; brief "copied" confirm.
+function useCopyLink(slug) {
+  const [copied, setCopied] = React.useState(false)
+  const copy = React.useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(`https://celestual.us/c/${slug}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* ignore — link is still shown */
+    }
+  }, [slug])
+  return [copied, copy]
+}
+
+// a small breathing amber dot — "this is live"
+function LiveDot({ C }) {
+  return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
+}
+
+// A world past 100 — stats live. The weekly readout is written as language, not
+// a KPI grid: one hero number, one serif reason, one quiet metadata line.
+function OpenWorldCard({ C, world, ctx, flagship }) {
+  const { t } = useI18n()
+  const w = world.week || null
+  const matches = Number(w?.matches || 0)
+  const showMatches = matches >= 10 // the ten-match floor (framework §2.7)
+  const [copied, copy] = useCopyLink(world.slug)
+  return (
+    <GlassPanel C={C} style={{ padding: '16px 17px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 21, lineHeight: 1.1, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis' }}>{world.name}</span>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: C.muted }}>{t('worlds.in', { n: Number(world.count).toLocaleString() })}</span>
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.95), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.3)}`, borderRadius: RADIUS.chip, padding: '4px 10px', flexShrink: 0 }}>
+          <Icon name="check" size={12} color={rgba(C.star, 0.95)} /> {t('worlds.open')}
+        </span>
+      </div>
+
+      {w && (
+        <>
+          <div style={{ margin: '13px 0 11px', height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.18)}, ${rgba(C.cream, 0.05)}, transparent)` }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+            <LiveDot C={C} />
+            <Kicker C={C} style={{ fontSize: 10 }}>{t('worlds.fresh')}</Kicker>
+          </div>
+          {/* the hero: matches this week, or the honest floor line under ten */}
+          {showMatches ? (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+              {/* keyed so the number gently re-animates when the sandbox bumps it */}
+              <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(34px, 11vw, 46px)', lineHeight: 1, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.28)}` }}>
+                {matches.toLocaleString()}
+              </span>
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, color: rgba(C.cream, 0.9) }}>
+                {t('worlds.matchedLabel')}
+              </span>
+            </div>
+          ) : (
+            <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, lineHeight: 1.35, color: rgba(C.cream, 0.82) }}>{t('worlds.matchFloor')}</p>
+          )}
+          {/* the most common reason — a real quote, the product's own physics */}
+          {w.topReason && (
+            <p style={{ margin: '11px 0 0', fontSize: 13, lineHeight: 1.5, color: C.muted }}>
+              {t('worlds.reasonLabel')}{' '}
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, color: rgba(C.cream, 0.9) }}>“{intentLine(t, w.topReason)}”</span>
+            </p>
+          )}
+          {/* the quiet metadata line */}
+          <div style={{ marginTop: 11, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
+            {w.pings != null && <span>{t('worlds.pings', { n: Number(w.pings).toLocaleString() })}</span>}
+            {w.pings != null && w.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
+            {w.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('worlds.joined', { n: Number(w.joined).toLocaleString() })}</span>}
+          </div>
+        </>
+      )}
+
+      <div style={{ marginTop: 14, display: 'flex', justifyContent: flagship && ctx.demo ? 'space-between' : 'flex-end', alignItems: 'center', gap: 10 }}>
+        {flagship && ctx.demo && (
+          <GhostButton C={C} onClick={() => ctx.simulateWorldActivity(world.slug)} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
+            ✦ {t('worlds.demoActivity')}
+          </GhostButton>
+        )}
+        <RowBtn C={C} icon={copied ? 'check' : 'copy'} onClick={copy}>{copied ? t('worlds.copied') : t('worlds.share')}</RowBtn>
+      </div>
+    </GlassPanel>
+  )
+}
+
+// A world under 100 — gathering. The count is never shown (the 100-floor). A
+// locked preview names exactly what opens at 100, so the pull is the reward.
+function GatheringWorldCard({ C, world, ctx }) {
+  const { t } = useI18n()
+  const [copied, copy] = useCopyLink(world.slug)
+  const locks = [t('worlds.lock1'), t('worlds.lock2'), t('worlds.lock3')]
+  return (
+    <GlassPanel C={C} inset style={{ padding: '16px 17px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, lineHeight: 1.1, color: rgba(C.cream, 0.9), overflow: 'hidden', textOverflow: 'ellipsis' }}>{world.name}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: C.muted, background: rgba(C.cream, 0.05), border: `1px solid ${C.line}`, borderRadius: RADIUS.chip, padding: '4px 10px', flexShrink: 0 }}>
+          <Sonar C={C} size={11} /> {t('worlds.gathering')}
+        </span>
+      </div>
+      <p style={{ margin: '10px 0 0', fontSize: 13, lineHeight: 1.5, color: C.muted }}>{t('worlds.gatheringBody')}</p>
+      {/* the locked preview — what opens at 100 */}
+      <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {locks.map((l, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, color: rgba(C.muted, 0.75), fontSize: 12.5 }}>
+            <Icon name="lock" size={13} color={rgba(C.muted, 0.6)} />
+            <span>{l}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${rgba(C.cream, 0.07)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.5px', textTransform: 'uppercase', color: rgba(C.star, 0.85) }}>{t('worlds.gatheringToward')}</span>
+        <RowBtn C={C} tone="accent" icon={copied ? 'check' : 'plus'} onClick={copy}>{copied ? t('worlds.copied') : t('worlds.grow')}</RowBtn>
+      </div>
+    </GlassPanel>
+  )
+}
+
+export function WorldsScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const worlds = ctx.worlds || []
+  const empty = worlds.length === 0
+  // the flagship is the first world already past the floor — it carries the
+  // sandbox "new activity" control so the live-updating stats are visible.
+  const flagshipSlug = worlds.find((w) => Number(w.count) >= 100)?.slug
+  return (
+    <Shell>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <Kicker C={C}>{t('worlds.kicker')}</Kicker>
+          {ctx.demo && <SandboxChip C={C} />}
+        </div>
+        <div style={{ width: 38 }} />
+      </div>
+
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 18 }}>
+        <p style={{ margin: '0 2px 4px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('worlds.intro')}</p>
+
+        {empty ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 12, padding: '30px 0' }}>
+            <div className="floaty"><Brandmark C={C} size={26} /></div>
+            <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(24px, 6.5vw, 30px)', color: C.cream }}>{t('worlds.emptyTitle')}</h2>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('worlds.emptyBody')}</p>
+            <OutlineButton C={C} onClick={ctx.openAccount}>{t('worlds.emptyCta')}</OutlineButton>
+          </div>
+        ) : (
+          worlds.map((w) =>
+            Number(w.count) >= 100 ? (
+              <OpenWorldCard key={w.slug} C={C} world={w} ctx={ctx} flagship={w.slug === flagshipSlug} />
+            ) : (
+              <GatheringWorldCard key={w.slug} C={C} world={w} ctx={ctx} />
+            ),
+          )
+        )}
+      </div>
+
+      {!empty && (
+        <div className="enter" style={{ animationDelay: '.1s', display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
+          <GhostButton C={C} onClick={ctx.openAccount} style={{ fontSize: 12.5 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <Icon name="plus" size={14} color="currentColor" stroke={2} /> {t('worlds.manage')}
+            </span>
+          </GhostButton>
+        </div>
+      )}
+    </Shell>
+  )
+}
+
 // ── 8 · THE MATCH ─────────────────────────────────────────────────────────────
 export function MatchScreen({ C, ctx }) {
   const { t } = useI18n()
@@ -1082,9 +1340,167 @@ export function SendoffScreen({ C, ctx }) {
   )
 }
 
-// ── 9 · THE FOURTH SLOT (dormant — only the first door exists) ────────────────
+// ── 9 · THE FOURTH SLOT ───────────────────────────────────────────────────────
+// Production keeps ONE door — "let one go" — with no money anywhere, per
+// docs/PRICING-REVENUE.md (Stripe stays plumbed and dormant until density is
+// proven). The /demo build previews the one-time fourth slot behind a realistic
+// checkout, so the eventual shape is visible without waking anything real. The
+// checkout only ever appears here, at the moment a user runs out of slots.
+
+// The card-brand marks that sit at the end of a Stripe card field — the two
+// product stars double as the mastercard glyph, so no third hue enters.
+function CardBrands({ C }) {
+  const shell = { width: 26, height: 16, borderRadius: 3, border: `1px solid ${C.line}`, background: rgba(C.cream, 0.06), display: 'grid', placeItems: 'center', flexShrink: 0 }
+  return (
+    <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }} aria-hidden>
+      <span style={{ ...shell, fontFamily: "'Space Mono', monospace", fontSize: 7, fontWeight: 700, letterSpacing: '.5px', color: rgba(C.cream, 0.55) }}>VISA</span>
+      <span style={shell}>
+        <span style={{ display: 'inline-flex' }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: rgba(C.them, 0.85) }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: rgba(C.star, 0.85), marginLeft: -4 }} />
+        </span>
+      </span>
+    </span>
+  )
+}
+
+// One inert Stripe-style field. Typeable, but the value is never read or stored
+// (the sandbox note says so); it exists to make the checkout read as real.
+function PayField({ C, value, onChange, placeholder, mono, trailing, inputMode }) {
+  const [focus, setFocus] = React.useState(false)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 13px', borderRadius: RADIUS.inner, background: C.ink, border: `1px solid ${focus ? rgba(C.star, 0.55) : C.line}`, transition: 'border-color .18s' }}>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocus(true)}
+        onBlur={() => setFocus(false)}
+        placeholder={placeholder}
+        inputMode={inputMode || 'numeric'}
+        spellCheck={false}
+        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: mono ? "'Space Mono', monospace" : "'Space Grotesk', sans-serif", fontSize: 14.5, letterSpacing: mono ? '.5px' : '.2px' }}
+      />
+      {trailing}
+    </div>
+  )
+}
+
+// The sandbox checkout for the one-time fourth slot.
+function FourthSlotPaywall({ C, ctx }) {
+  const { t } = useI18n()
+  const [phase, setPhase] = React.useState('form') // form | paying | done
+  const [card, setCard] = React.useState('')
+  const [exp, setExp] = React.useState('')
+  const [cvc, setCvc] = React.useState('')
+  const [zip, setZip] = React.useState('')
+  const timer = React.useRef(null)
+  React.useEffect(() => () => timer.current && clearTimeout(timer.current), [])
+  const pay = () => {
+    if (phase !== 'form') return
+    setPhase('paying')
+    // hold the flag until the user leaves the "done" state — flipping it now
+    // would swap this screen out from under its own success view.
+    timer.current = setTimeout(() => setPhase('done'), 1500)
+  }
+  const price = t('paywall.price')
+
+  if (phase === 'done') {
+    return (
+      <Shell>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ width: 38 }} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <Kicker C={C}>{t('paywall.kicker')}</Kicker>
+            <SandboxChip C={C} />
+          </div>
+          <div style={{ width: 38 }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+          <div className="enter floaty"><StarMark C={C} size={78} /></div>
+          <div style={{ display: 'flex', gap: 11 }}>
+            {[0, 1, 2, 3].map((i) => <Brandmark key={i} C={C} size={17} />)}
+          </div>
+          <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{t('paywall.doneTitle')}</h1>
+          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('paywall.doneSub')}</p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <PrimaryButton C={C} onClick={ctx.placeFourth}>{t('paywall.donePlace')}</PrimaryButton>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GhostButton C={C} onClick={() => { ctx.buyFourthSlot(); ctx.go('pings') }} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
+  return (
+    <Shell>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <BackBtn C={C} onClick={() => ctx.go('pings')} />
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <Kicker C={C}>{t('paywall.kicker')}</Kicker>
+          <SandboxChip C={C} />
+        </div>
+        <div style={{ width: 38 }} />
+      </div>
+
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, paddingTop: 12 }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{t('paywall.title')}</h1>
+          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('paywall.sub')}</p>
+        </div>
+
+        {/* the checkout card */}
+        <GlassPanel C={C} style={{ padding: '16px 16px 15px', display: 'flex', flexDirection: 'column', gap: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingBottom: 3 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+              <Brandmark C={C} size={16} />
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: C.cream }}>{t('paywall.kicker')}</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 17, fontWeight: 700, color: C.cream }}>{price}</span>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.5px', textTransform: 'uppercase', color: C.muted }}>{t('paywall.priceUnit')}</span>
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <PayField C={C} value={card} onChange={setCard} placeholder={t('paywall.cardNumber')} mono trailing={<CardBrands C={C} />} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1.15, minWidth: 0 }}><PayField C={C} value={exp} onChange={setExp} placeholder={t('paywall.expiry')} mono /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><PayField C={C} value={cvc} onChange={setCvc} placeholder={t('paywall.cvc')} mono /></div>
+              <div style={{ flex: 1, minWidth: 0 }}><PayField C={C} value={zip} onChange={setZip} placeholder={t('paywall.zip')} /></div>
+            </div>
+          </div>
+
+          <PrimaryButton C={C} disabled={phase === 'paying'} onClick={pay}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+              {phase === 'paying' ? t('paywall.paying') : <><Icon name="lock" size={15} color={C.onStar} stroke={2} /> {t('paywall.pay', { price })}</>}
+            </span>
+          </PrimaryButton>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', color: rgba(C.muted, 0.85) }}>
+            <Icon name="lock" size={11} color={rgba(C.muted, 0.75)} stroke={1.8} /> {t('paywall.secure')}
+            <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
+            {t('paywall.stripe')}
+          </div>
+        </GlassPanel>
+
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.star, 0.85) }}>{t('paywall.demoNote')}</p>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
+        <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('paywall.letgo')}</GhostButton>
+      </div>
+    </Shell>
+  )
+}
+
 export function FourthSlotScreen({ C, ctx }) {
   const { t } = useI18n()
+  // sandbox only, and only until the fourth is actually held: the checkout
+  // preview. everywhere else — production, or the demo once four are held — the
+  // single dormant door.
+  if (ctx.demo && !ctx.demoFourthSlot) return <FourthSlotPaywall C={C} ctx={ctx} />
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1093,9 +1509,9 @@ export function FourthSlotScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
-        {/* the three slots, all held — shown as the product's own star icon */}
+        {/* the slots, all held — shown as the product's own star icon */}
         <div style={{ display: 'flex', gap: 12 }}>
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: ctx.slotsCap }).map((_, i) => (
             <Brandmark key={i} C={C} size={18} />
           ))}
         </div>
@@ -1107,9 +1523,6 @@ export function FourthSlotScreen({ C, ctx }) {
         </p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* when monetization ever wakes, the second door ("hold a fourth — $X,
-            once") appears here. never a subscription, never before density is
-            proven (framework Part 3). until then: one door. */}
         <PrimaryButton C={C} onClick={() => ctx.go('pings')}>{t('fourth.cta')}</PrimaryButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>
@@ -1264,24 +1677,35 @@ function WorldsEditor({ C, ctx }) {
   const remove = (name) => ctx.setWorldNames(worlds.map((w) => w.name).filter((x) => x !== name))
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-      <FieldLabel C={C} optional={t('accounts.optional')}>{t('worlds.label')}</FieldLabel>
-      {worlds.map((w) => (
-        <div key={w.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-            <span style={{ fontSize: 14, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', color: w.count ? rgba(C.star, 0.9) : C.muted, flexShrink: 0 }}>
-              {w.count ? t('worlds.count', { n: Number(w.count).toLocaleString() }) : t('worlds.gathering')}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <FieldLabel C={C} optional={t('accounts.optional')}>{t('worlds.label')}</FieldLabel>
+        {worlds.length > 0 && (
+          <GhostButton C={C} onClick={() => { ctx.closeAccount(); ctx.go('worlds') }} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.85) }}>
+            {t('worlds.manage')} →
+          </GhostButton>
+        )}
+      </div>
+      {worlds.map((w) => {
+        // the 100-floor: a count only ever renders at or above 100.
+        const open = Number(w.count) >= 100
+        return (
+          <div key={w.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+              <span style={{ fontSize: 14, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.name}</span>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', color: open ? rgba(C.star, 0.9) : C.muted, flexShrink: 0 }}>
+                {open ? t('worlds.count', { n: Number(w.count).toLocaleString() }) : t('worlds.gathering')}
+              </span>
             </span>
-          </span>
-          <button
-            onClick={() => remove(w.name)}
-            aria-label={t('worlds.remove')}
-            style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}
-          >
-            <Icon name="x" size={13} color="currentColor" />
-          </button>
-        </div>
-      ))}
+            <button
+              onClick={() => remove(w.name)}
+              aria-label={t('worlds.remove')}
+              style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}
+            >
+              <Icon name="x" size={13} color="currentColor" />
+            </button>
+          </div>
+        )
+      })}
       {worlds.length < 3 && (
         <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
           <div style={{ flex: 1, minWidth: 0 }}>

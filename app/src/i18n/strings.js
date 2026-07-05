@@ -1,14 +1,13 @@
 // strings.js — CELESTUAL's canonical copy.
 //
 // The register is docs/VOICE.md: lowercase, quiet, adult, certain — the 2am
-// message, never the carnival. Every sentence shown to any user must be
-// literally true, always (docs/ULTIMATE-PRODUCT-FRAMEWORK.md §6.2: truth is the
-// entire legal and ethical margin).
+// message, never the carnival. Say less; trust the reader; let a pill or a state
+// dot carry what a sentence would only repeat. Every sentence shown to any user
+// must be literally true, always (docs/ULTIMATE-PRODUCT-FRAMEWORK.md §6.2: truth
+// is the entire legal and ethical margin).
 //
 // English is the canonical, complete dictionary. The i18n plumbing still falls
-// back key-by-key, so a future locale can land as a partial object — but the
-// old machine-stale locales were removed with the repositioning; this copy gets
-// human-translated or not translated at all.
+// back key-by-key, so a future locale can land as a partial object.
 //
 // `{x}` tokens are interpolated at render time; keep them intact everywhere.
 
@@ -18,13 +17,11 @@ export const LANGS = {
 
 const en = {
   // ── screen 1 · the cold landing ────────────────────────────────────────
-  // the hero names the feeling; the one sentence is set as a three-beat
-  // constellation (§4.1) — put their @ in / they never find out / unless mutual,
-  // same second — the reveal beat lit; the safety line reads like a locked door.
+  // the hero names the feeling; the mechanic types out one beat at a time, the
+  // first two lines held together before the payoff enters (§4.1).
   'landing.head1': 'you still think about them.',
   'landing.head2': 'what if they think about you?',
-  // the hero line, typed out one beat at a time (see the Typewriter):
-  // put their @ in → they’ll never know → unless they put you in too.
+  // the hero beats: put their @ in → they’ll never know → unless they put you in
   'landing.type1': 'put their @ in.',
   'landing.type2': 'they’ll never know.',
   'landing.type3': 'unless they put you in too.',
@@ -34,33 +31,33 @@ const en = {
   'footer.privacy': 'privacy',
   'footer.terms': 'terms',
   'footer.optout': 'opt out',
-  'landing.age': 'for adults. continuing means you’re 18 or older and accept the',
+  'landing.age': 'for adults. continuing means you’re 18+ and accept the',
   'landing.terms': 'terms',
 
   // ── screen 2 · the send ────────────────────────────────────────────────
   'who.kicker': 'who is it?',
   'who.from': 'you',
   'who.placeholder': 'their.handle',
-  'who.note': 'no alert. no trace. invisible unless they enter you back.',
-  'who.confirm1': 'you’re placing a ping on',
-  'who.confirm2': '— spelled right? tap once more to place it.',
+  'who.note': 'no alert. no trace. invisible until they enter you back.',
+  'who.confirm1': 'placing a ping on',
+  'who.confirm2': '— spelled right? tap again to place.',
   'who.cta': 'place it',
   'who.ctaConfirm': 'yes — place it',
-  'who.errInvalid': 'that isn’t a real instagram handle yet. check the spelling.',
-  'who.errSelf': 'that’s your own handle. name the other person.',
-  'who.errRate': 'too many placements too fast. the pace is part of the design — give it time.',
-  'who.errSuppressed': 'that person asked never to be entered on celestual. the door is closed.',
+  'who.errInvalid': 'not a real instagram handle yet. check the spelling.',
+  'who.errSelf': 'that’s you. name the other person.',
+  'who.errRate': 'too fast. the pace is part of the design — give it a moment.',
+  'who.errSuppressed': 'that person asked never to be entered. the door is closed.',
   'who.errGeneric': 'the night didn’t answer. give it a moment, then place it again.',
-  'who.errUnverified': 'we couldn’t confirm your handle is yours. verify it again and the ping will place.',
+  'who.errUnverified': 'we couldn’t confirm the @ is yours. verify again and it’ll place.',
   'who.demoHint': 'sandbox: enter @demo and the match will find you.',
 
   // the intent row — an optional line that travels with the ping, read only at
-  // a mutual reveal. the guide's exact five (§4.5); never a free-text field;
-  // never required. addressed to "you" (the target), so each reads naturally at
-  // the reveal under either "they said" or "you said".
+  // a mutual reveal. the guide's exact five (§4.5); never free-text, never
+  // required. addressed to "you" (the target), so each reads under either "they
+  // said" or "you said".
   'intent.label': 'why them?',
   'intent.optional': 'optional',
-  'intent.note': 'travels with the ping. read only if it’s ever mutual.',
+  'intent.note': 'travels with the ping. read only if it’s mutual.',
   'intent.unsaid': 'i never got to say something',
   'intent.unsaid.r': 'i never got to say something',
   'intent.think': 'i think about you',
@@ -74,64 +71,65 @@ const en = {
 
   // the slot line under the field — scarcity is the sincerity mechanism
   'slots.holding': 'holding {n} of {cap}',
-  'slots.free': '{n} of {cap} slots open',
+  'slots.free': '{n} of {cap} open',
 
   // ── the identity step (so the ping can resolve to you) ─────────────────
   'you.title1': 'now,',
   'you.title2': 'this is you.',
   'you.handle': 'your.handle',
-  'you.handleNote': 'your instagram @ — the ping can only ever resolve to you.',
-  // the 18+ hard gate (§4.4) — a stated hard line (§10, FTC v. NGL). one tap to
-  // confirm; nothing about your age is ever stored — we keep whether, not when.
+  'you.handleNote': 'your instagram @ — so the ping can resolve to you.',
+  // the 18+ hard gate (§4.4). one tap; nothing about age is ever stored — we
+  // keep whether, not when.
   'you.ageLabel': 'one thing first',
   'you.ageConfirm': 'i’m 18 or older',
   'you.ageConfirmed': 'confirmed — 18 or older',
-  'you.ageNote': 'celestual is for adults. tap to confirm — nothing is stored.',
+  'you.ageNote': 'for adults. tap to confirm — nothing is stored.',
   'you.emailAdd': 'add an email',
   'you.emailLabel': 'email',
   'you.emailOptional': 'optional',
   'you.email': 'you@email.com',
-  'you.note': 'one quiet note if it’s ever mutual, one before a ping expires. nothing else, ever.',
+  'you.note': 'one note if it’s mutual, one before a ping lapses. nothing else.',
   'you.continue': 'continue',
   'you.loginTitle1': 'welcome',
   'you.loginTitle2': 'back.',
   'you.loginNote': 'prove it’s yours and your pings come back.',
   'you.loginCta': 'sign back in',
 
-  // ── screen 3 · placed (the recruiter screen — the most important screen) ──
+  // ── screen 3 · placed (the recruiter screen) ───────────────────────────
   'placed.standingTitle': 'your ping is live.',
-  'placed.standingSub': '@{handle} is on celestual. the moment they add you back, you’ll both know — at the same second. until then, nothing shows. that’s the whole point.',
+  'placed.standingSub': '@{handle} is on celestual. the second they add you back, you both know — same instant. until then, nothing shows. that’s the point.',
   'placed.waitingTitle': 'saved for when they join.',
-  'placed.waitingSub': '@{handle} isn’t on celestual yet. your ping waits, unseen, until they arrive — and they’ll never know you had anything to do with it.',
+  'placed.waitingSub': '@{handle} isn’t here yet. your ping waits until they arrive — and they’ll never know it was you.',
   'placed.howTitle': 'how people do it',
-  'placed.how1': 'post your door to your story — it says nothing except that you’re reachable',
+  'placed.how1': 'post your door — it says nothing but that you’re reachable',
   'placed.howWorld': 'your worlds: {name} · {n} in',
   'placed.how3': 'or wait. this is spreading on its own.',
   'placed.door': 'post your door',
   'placed.pings': 'your pings',
 
-  // ── screen 4 · your pings (the status page — deliberately boring) ──────
+  // ── screen 4 · your pings (the status page) ────────────────────────────
   'pings.kicker': 'your pings',
   'pings.emptyTitle': 'no pings yet.',
-  'pings.emptyBody': 'you get three. each one lasts sixty days. save them for the people who actually stayed on your mind.',
+  'pings.emptyBody': 'three slots. sixty days each. save them for the people who actually stayed on your mind.',
   'pings.emptyCta': 'place your first',
-  // the three ping states, in plain words a first-timer reads at a glance
+  // the three ping states, in plain words read at a glance
   'pings.standing': 'active',
-  'pings.standingSub': 'they’re on celestual — if they add you back, you both find out',
+  'pings.standingSub': 'if they add you back, you both find out.',
   'pings.waiting': 'not here yet',
-  'pings.waitingSub': 'they haven’t joined — your ping waits, unseen',
+  'pings.waitingSub': 'waits, unseen, until they join.',
   'pings.mutual': 'mutual',
-  'pings.mutualSub': 'you both added each other',
+  'pings.mutualSub': 'you both entered each other.',
+  'pings.mutualKicker': 'mutual',
   'pings.days': '{n} days left',
-  'pings.today': 'expires today',
+  'pings.today': 'lapses today',
   'pings.elsewhere': 'placed on another device',
   'pings.elsewhereNote': 'we can’t see who these point at — the names live only on the device that placed them.',
   // the slot picture: used vs. open, and the empty-slot placeholder card
-  'pings.slotsUsed': '{used} of {cap} slots used',
+  'pings.slotsUsed': '{used} of {cap} slots',
   'pings.slotEmpty': 'open slot',
-  'pings.slotEmptySub': 'room for one more',
-  // renew / let go — real buttons now, plain words, no “standing / lapse” jargon
-  'pings.expiringSoon': 'expires in {n} days',
+  'pings.slotEmptySub': 'tap to place a ping',
+  // renew / let go — plain words, no jargon
+  'pings.expiringSoon': 'lapses in {n} days',
   'pings.renew': 'renew',
   'pings.renewed': 'renewed — sixty more days.',
   'pings.letgo': 'let go',
@@ -141,12 +139,13 @@ const en = {
   'pings.add': 'place another',
   'pings.door': 'post your door',
   'pings.open': 'message them',
+  'pings.worlds': 'your worlds',
   'pings.sim': 'sandbox: they add you back',
 
   // ── screen 5 · the open-door card ───────────────────────────────────────
   'door.kicker': 'your door',
   'door.line': 'if there’s something you never said to me, it’s safe here now.',
-  'door.sub': 'the card says nothing except that you’re reachable. whoever taps through lands two taps from telling you.',
+  'door.sub': 'it says nothing but that you’re reachable. whoever taps through lands two taps from telling you.',
   'door.save': 'save the card',
   'door.saved': 'saved — now post it',
   'door.copy': 'copy your link',
@@ -154,16 +153,16 @@ const en = {
   'door.step1': 'save the card to your camera roll.',
   'door.step2': 'add it to your story.',
   'door.step3': 'paste your link as the link sticker.',
-  'door.foot': 'nothing on the card, or behind it, ever says who you’ve entered — or that you’ve entered anyone.',
+  'door.foot': 'nothing on the card, or behind it, ever says who you’ve entered — or that you have.',
 
   // the personal landing — celestual.us/@handle
   'open.reach': 'reachable on celestual',
   'open.line': 'if there’s something you never said to them, there’s a safe place to say it.',
-  'open.mech': 'they only ever find out if they enter you too — then you both do, at once.',
+  'open.mech': 'they only find out if they enter you too — then you both do, at once.',
   'open.cta': 'find out',
   'open.else': 'someone else on your mind? enter anyone.',
 
-  // ── screens 6–7 · the campus window ─────────────────────────────────────
+  // ── screens 6–7 · the campus window (optional launch tool) ──────────────
   'campus.opensWhen': 'celestual opens at {name} when {threshold} are in.',
   'campus.note': 'preregistering reveals nothing about you. it just opens the door for everyone at once.',
   'campus.cta': 'count me in',
@@ -177,31 +176,54 @@ const en = {
   'campus.weekPings': '{n} pings placed.',
   'campus.weekMatches': '{n} mutual matches.',
   'campus.weekSub': 'every one of them found out something true.',
-  // the match-count floor (§2.7) — the reveal publishes the match number only at
-  // ten and up; below it, this pre-stated line stands in its place.
-  'campus.weekFloor': 'match counts publish at ten and above — so no match can ever be guessed at.',
+  'campus.weekFloor': 'match counts publish at ten and up — so no match can be guessed at.',
   'campus.floors': 'week one, the true numbers publish. match counts show only at ten and up.',
   'campus.none': 'no window here yet.',
-  'campus.noneSub': 'campuses open one at a time, on purpose — density is the mechanic.',
+  'campus.noneSub': 'a campus window is optional — a way to open a whole school at once.',
   'campus.emailLabel': 'where to reach you when it opens',
 
   // ── screen 8 · the match ────────────────────────────────────────────────
   'match.title': 'it’s mutual.',
-  'match.sub': 'you entered @{them}. @{them} entered you. this only ever happens when it’s real on both sides.',
+  'match.sub': 'you entered @{them}. @{them} entered you. this only happens when it’s real on both sides.',
   'match.theySaid': 'they said',
   'match.youSaid': 'you said',
   'match.cta': 'go say it',
   'match.exit': 'the rest is yours. celestual’s part is done.',
 
-  // ── screen 9 · the fourth slot (dormant) ────────────────────────────────
-  'fourth.title': 'you’re holding three.',
-  'fourth.body': 'three is the point — each one costs something real. let one go and the slot is yours again.',
+  // ── screen 9 · the fourth slot ──────────────────────────────────────────
+  'fourth.title': 'your slots are full.',
+  'fourth.body': 'three is the point — each one costs something. let one go and the slot’s yours again.',
   'fourth.cta': 'let one go',
   'fourth.back': 'not now',
 
+  // the fourth-slot checkout — SANDBOX ONLY. production keeps one door ("let one
+  // go") until monetization wakes (docs/PRICING-REVENUE.md); the sandbox previews
+  // the one-time fourth slot behind a real-looking checkout so the shape is
+  // visible. one-time, never a subscription. no banned paywall words.
+  'paywall.kicker': 'a fourth slot',
+  'paywall.title': 'hold a fourth.',
+  'paywall.sub': 'when a fourth person is really on your mind, hold them too. one time — never a subscription.',
+  'paywall.price': '$3.99',
+  'paywall.priceUnit': 'once',
+  'paywall.cardLabel': 'card',
+  'paywall.cardNumber': '1234 1234 1234 1234',
+  'paywall.expiry': 'MM / YY',
+  'paywall.cvc': 'CVC',
+  'paywall.zip': 'ZIP',
+  'paywall.pay': 'pay {price}',
+  'paywall.paying': 'confirming…',
+  'paywall.secure': 'secure checkout',
+  'paywall.stripe': 'powered by stripe',
+  'paywall.demoNote': 'sandbox — a mock checkout. no card is read, nothing is charged, nothing is saved.',
+  'paywall.doneTitle': 'you’re holding four.',
+  'paywall.doneSub': 'the fourth slot is yours. place it whenever the feeling’s ready.',
+  'paywall.donePlace': 'place the fourth',
+  'paywall.letgo': 'or let one go — free, always',
+  'paywall.back': 'not now',
+
   // ── verify (instagram dm handle-ownership) ──────────────────────────────
   'verify.title': 'prove it’s your @',
-  'verify.sub': 'dm a one-time code to our instagram and we confirm the handle is really yours. no password, no oauth — and nobody is told anything.',
+  'verify.sub': 'dm a one-time code to our instagram; we confirm the @ is yours. no password, no oauth, nobody told.',
   'verify.code': 'your code',
   'verify.copyOpen': 'copy & open instagram',
   'verify.copied': 'copied — now send it',
@@ -222,7 +244,7 @@ const en = {
   'verify.tosNote': 'we only read who sends the code. we never post, follow, message, or see your password.',
   'verify.inApp': 'inside instagram’s browser? send the dm, then return to this tab — or open celestual.us in safari or chrome.',
   'verify.desktop': 'not signed in to instagram there? log in inside that window first, then tap the button again.',
-  'verify.youHint': 'next, confirm it’s yours with a quick dm. nobody is told.',
+  'verify.youHint': 'next, a quick dm confirms it’s yours. nobody is told.',
   'verify.youDone': 'verified — this @ is yours.',
   'verify.continue': 'verify & continue',
 
@@ -233,8 +255,8 @@ const en = {
   'account.handleLabel': 'your handle',
   'account.emailLabel': 'email',
   'account.emailOptional': 'optional',
-  'account.emailNote': 'the mutual note and the expiry note go here. nothing else.',
-  'account.reverifyNote': 'change it and you’ll re-confirm by dm the next time you place.',
+  'account.emailNote': 'the mutual note and the lapse note go here. nothing else.',
+  'account.reverifyNote': 'change it and you’ll re-confirm by dm next time you place.',
   'account.pingsLine': '{n} active',
   'account.pingsNone': 'no pings yet.',
   'account.pingsOpen': 'view',
@@ -256,14 +278,44 @@ const en = {
   'accounts.remove': 'remove account',
   'accounts.note': 'entered on any of these counts as you.',
 
-  // your worlds (community counters — hidden under 100)
+  // ── your worlds (communities · the fixed-100 stats model) ───────────────
+  // pings NEVER depend on a world's size — everyone can ping from day one,
+  // anywhere. at 100 members a world's weekly stats open; below that it's
+  // gathering and the count stays hidden (the 100-floor). the reward is what
+  // pulls more people in — it never blocks anyone.
   'worlds.label': 'your worlds',
-  'worlds.note': 'the real communities you’re part of — a school, a scene. up to three. a world’s count stays hidden until it passes one hundred.',
+  'worlds.note': 'the real scenes you’re in — a school, a class, a city. at 100 members, the weekly stats open.',
   'worlds.placeholder': 'name a world',
   'worlds.add': 'add',
   'worlds.remove': 'remove',
-  'worlds.gathering': 'still gathering',
+  'worlds.gathering': 'gathering',
   'worlds.count': '{n} in',
+  'worlds.manage': 'your worlds',
+  // the full communities view
+  'worlds.kicker': 'your worlds',
+  'worlds.intro': 'everyone can ping from day one. at 100, a world’s weekly stats open.',
+  'worlds.open': 'stats open',
+  'worlds.in': '{n} in',
+  'worlds.fresh': 'this week',
+  'worlds.matchedLabel': 'matched this week',
+  'worlds.matchFloor': 'this week’s matches show at ten and up — so no match can be guessed at.',
+  'worlds.reasonLabel': 'most said',
+  'worlds.pings': '{n} pings placed',
+  'worlds.joined': '+{n} joined',
+  'worlds.gatheringTitle': 'gathering toward 100',
+  'worlds.gatheringBody': 'at 100 members, the weekly stats open — matches, the most common reason, and more.',
+  'worlds.gatheringToward': 'stats open at 100',
+  'worlds.lock1': 'mutual matches',
+  'worlds.lock2': 'the most common reason',
+  'worlds.lock3': 'pings this week',
+  'worlds.grow': 'bring your people',
+  'worlds.growNote': 'more members, sooner. the count stays hidden until 100 either way.',
+  'worlds.share': 'share this world',
+  'worlds.copied': 'link copied',
+  'worlds.emptyTitle': 'no worlds yet.',
+  'worlds.emptyBody': 'tag the scenes you’re part of — a school, a class, a city. up to three.',
+  'worlds.emptyCta': 'add a world',
+  'worlds.demoActivity': 'sandbox: new activity',
 
   // ── privacy & the opt-out (the public escape hatch) ─────────────────────
   'privacy.title': 'privacy, plainly',
@@ -284,7 +336,7 @@ const en = {
   'privacy.removed2': 'is now un-pingable, and everything referencing it is gone.',
   'privacy.removeErr': 'that didn’t go through — email us and we’ll do it by hand.',
   'privacy.h6': 'always free',
-  'privacy.p6': 'placing, matching, the reveal, renewing, letting go, the opt-out, verification, the five lines, your door, campus preregistration. all of it, forever. celestual holds nothing back for money.',
+  'privacy.p6': 'placing, matching, the reveal, renewing, letting go, the opt-out, verification, the five lines, your door, your worlds, campus preregistration. all of it, forever. celestual holds nothing back for money.',
   'privacy.foot': 'this page stays current as the product grows. questions:',
   'privacy.fullPolicy': 'full privacy policy',
   'privacy.tos': 'terms of service',
@@ -297,6 +349,7 @@ const en = {
   // ── demo (the sandbox) ────────────────────────────────────────────────────
   'demo.badge': 'sandbox',
   'demo.note': 'nothing here is real, and nothing reaches a server.',
+  'demo.worlds': 'your communities',
   'demo.campus': 'preview a campus opening',
   'demo.cycle': 'sandbox: next campus state',
 }

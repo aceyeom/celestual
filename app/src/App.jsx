@@ -12,7 +12,7 @@ import { makeColors } from './theme.js'
 import { GalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  DoorScreen, CampusScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
+  DoorScreen, CampusScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
 import { DEMO_PINGS, DEMO_CAMPUS, DEMO_WORLDS, DEMO_ME } from './demoData.js'
@@ -28,7 +28,8 @@ const SCREENS = {
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
   door: DoorScreen, //      5 · the open-door card
-  campus: CampusScreen, //  6–7 · the campus window (/c/slug)
+  campus: CampusScreen, //  6–7 · the campus window (/c/slug, optional launch tool)
+  worlds: WorldsScreen, //  your worlds — communities + the fixed-100 stats
   match: MatchScreen, //    8 · the match
   fourth: FourthSlotScreen, // 9 · the fourth slot (dormant)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
@@ -92,6 +93,10 @@ export default function App() {
   const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
   const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
+  // sandbox only: whether the one-time fourth slot has been "bought" in the demo
+  // checkout — raises the local cap to four so the preview is playable.
+  const [demoFourthSlot, setDemoFourthSlot] = useState(false)
+  const slotCap = demo && demoFourthSlot ? SLOT_CAP + 1 : SLOT_CAP
 
   // ── worlds (community counters) ──
   const [worlds, setWorldsState] = useState(() => (demo ? DEMO_WORLDS.map((w) => ({ ...w })) : init.worlds || []))
@@ -507,7 +512,8 @@ export default function App() {
       return
     }
     // The three-slot rule, honored client-side too (the server is authority).
-    if (standingCount(pings) >= SLOT_CAP) {
+    // `slotCap` is three everywhere except the sandbox once the fourth is bought.
+    if (standingCount(pings) >= slotCap) {
       go('fourth')
       return
     }
@@ -655,12 +661,12 @@ export default function App() {
     setThem('')
     setIntent('')
     setError('')
-    if (standingCount(pings) >= SLOT_CAP) {
+    if (standingCount(pings) >= slotCap) {
       go('fourth')
       return
     }
     go('who')
-  }, [pings, go])
+  }, [pings, slotCap, go])
 
   // ── sandbox: visualize a match ──
   // Flips a sample ping to mutual and plays the full match workflow.
@@ -678,6 +684,51 @@ export default function App() {
       go('match')
     },
     [demo, pings, go],
+  )
+
+  // ── sandbox: "buy" the one-time fourth slot ──
+  // Flips the local cap to four so the checkout preview is playable end-to-end.
+  // Never touches a server; production never reaches this (the fourth-slot screen
+  // shows only the free door there).
+  const buyFourthSlot = useCallback(() => {
+    if (!demo) return
+    setDemoFourthSlot(true)
+  }, [demo])
+
+  // After the sandbox checkout, go place the newly-held fourth. Raising the cap
+  // and navigating in one step avoids the fourth-slot gate re-blocking on a stale
+  // cap (the cap check reads the freshly-mounted send screen instead).
+  const placeFourth = useCallback(() => {
+    if (!demo) return
+    setDemoFourthSlot(true)
+    setThem('')
+    setIntent('')
+    setError('')
+    go('who')
+  }, [demo, go])
+
+  // ── sandbox: a fresh match/stat lands in a community ──
+  // Bumps a world's live weekly readout so the "active updates" read as live.
+  const simulateWorldActivity = useCallback(
+    (slug) => {
+      if (!demo) return
+      setWorldsState((prev) =>
+        prev.map((w) => {
+          if (w.slug !== slug || !w.week) return w
+          return {
+            ...w,
+            count: Number(w.count) + 1,
+            week: {
+              ...w.week,
+              matches: Number(w.week.matches || 0) + 1,
+              pings: Number(w.week.pings || 0) + 3,
+              joined: Number(w.week.joined || 0) + 1,
+            },
+          }
+        }),
+      )
+    },
+    [demo],
   )
 
   // ── sandbox: cycle the campus window through its three states ──
@@ -817,11 +868,12 @@ export default function App() {
 
   const ctx = {
     demo, me, them, email, error, verified, established, loginMode,
-    pings, slotsStanding, slotsCap: SLOT_CAP,
+    pings, slotsStanding, slotsCap: slotCap,
     intent, setIntent,
-    worlds, setWorldNames,
+    worlds, setWorldNames, simulateWorldActivity,
     lastPlaced, match,
     campus, campusJoined, preregister, cycleCampus,
+    demoFourthSlot, buyFourthSlot, placeFourth,
     posterHandle: route.poster || '',
     verifyEnabled: igVerifyEnabled() || demo,
     setMe, setEmail, setThem,
@@ -836,7 +888,7 @@ export default function App() {
 
   // The profile chip sits top-left on the quiet screens, once an account is
   // established (never for a merely-typed @).
-  const showProfile = established && !!me && ['pings', 'landing', 'campus'].includes(screen)
+  const showProfile = established && !!me && ['pings', 'landing', 'campus', 'worlds'].includes(screen)
   // Its logged-out counterpart: a clear "log in" chip in the same corner, so a
   // returning person always has an obvious way back to their pings.
   const showLogin = !established && ['landing', 'open'].includes(screen)
@@ -845,7 +897,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'campus', 'open']
+  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'campus', 'worlds', 'open']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   return (

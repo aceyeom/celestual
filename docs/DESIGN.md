@@ -190,6 +190,32 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-07-05** — **Communities redesign, mutual/slot separation, hero rework,
+  demo checkout.** Four visual changes, all within the locked galaxy identity (no
+  new hue — the two stars only; one primary action per screen; registers cast per
+  §3):
+  - **Your worlds** (`WorldsScreen`) — the communities feature, rebuilt from a
+    plain account-sheet list into a dedicated view. Open worlds (100+) show a live
+    weekly readout written as *language*, not a KPI grid — one hero number
+    (serif), the top reason as a real quote, a quiet mono line of pings/joined,
+    and a breathing "this week" dot. Gathering worlds (<100) show *no count* (the
+    floor) and a lock-icon preview of what opens at 100. Deliberately avoids the
+    generic dashboard tells in §9 (no metric grid, no icon grid, no cards-in-cards
+    beyond the one glass panel).
+  - **Status page** — a mutual match is now its own compact section under a
+    "✦ mutual" rule, so it never crowds the three standing-slot rows (which stay
+    exactly three: live pings + open slots). The empty-slot card copy no longer
+    claims "room for one more" regardless of count.
+  - **Hero typewriter** (`HeroSequence`) — the two mechanic lines now type on
+    stacked lines and *hold together* before fading; the amber payoff then enters
+    alone and holds longest. Easier to follow than the single erase-and-retype
+    line. Collapses to a static three-line stack under reduced-motion.
+  - **Sandbox fourth-slot checkout** (`FourthSlotPaywall`, `/demo` only) — a
+    realistic one-time-payment card (card field with brand marks, MM/YY · CVC ·
+    ZIP, "pay $3.99", "powered by stripe") shown only when a user runs out of
+    slots. The two product stars double as the mastercard glyph, so no third hue
+    enters. Production is untouched: the fourth-slot screen still shows only the
+    free "let one go" door.
 - **2026-07-04** — **Cold-landing mechanism as a three-beat constellation.** Per
   the Master Guide §4.1 ([MASTER-GUIDE.md](./MASTER-GUIDE.md)), the landing's
   three mechanic lines — previously a flat stack of muted sans lines ("enter their
