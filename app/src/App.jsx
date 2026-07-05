@@ -15,7 +15,7 @@ import {
   DoorScreen, CampusScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
-import { DEMO_PINGS, DEMO_CAMPUS, DEMO_WORLDS, DEMO_ME } from './demoData.js'
+import { DEMO_CAMPUS, DEMO_WORLDS } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
@@ -69,8 +69,8 @@ export default function App() {
   }, [route.demo])
 
   // ── identity ──
-  const [session, setSession] = useState(getSession)
-  const [me, setMe] = useState(init.me || (demo ? DEMO_ME : '') || session?.handle || '')
+  const [session, setSession] = useState(() => (route.demo ? null : getSession()))
+  const [me, setMe] = useState(init.me || session?.handle || '')
   const [email, setEmail] = useState(init.email || '')
   const [altHandles, setAltHandles] = useState(init.altHandles || [])
   // Identity is proven for the CURRENT handle only — a DM session is bound to
@@ -85,7 +85,7 @@ export default function App() {
   // [{ handle|null, time, expires_at, mutual, reachable, intent }]
   // Plaintext handles live HERE (and in localStorage) only — the server stores
   // hashes. `handle: null` rows are pings restored from another device.
-  const [pings, setPings] = useState(() => (demo ? DEMO_PINGS.map((p) => ({ ...p })) : init.pings || []))
+  const [pings, setPings] = useState(() => (demo ? [] : init.pings || []))
   const [them, setThem] = useState(route.poster || '')
   const [intent, setIntent] = useState('')
   const [error, setError] = useState('')
@@ -99,7 +99,7 @@ export default function App() {
   const slotCap = demo && demoFourthSlot ? SLOT_CAP + 1 : SLOT_CAP
 
   // ── worlds (community counters) ──
-  const [worlds, setWorldsState] = useState(() => (demo ? DEMO_WORLDS.map((w) => ({ ...w })) : init.worlds || []))
+  const [worlds, setWorldsState] = useState(() => init.worlds || [])
 
   // ── the campus window ──
   const [campus, setCampus] = useState(() => (demo ? { ...DEMO_CAMPUS } : null))
@@ -131,7 +131,7 @@ export default function App() {
   // What a completed verification should resume into: 'place' | 'prereg' | null.
   const pendingAction = useRef(null)
 
-  const established = verified || demo || pings.length > 0
+  const established = verified || pings.length > 0
 
   // ── navigation ──
   const firstScreen = () => {
@@ -249,6 +249,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (demo) return
     let live = true
     resumeSession().then((s) => {
       if (live && s) {
