@@ -129,6 +129,20 @@ deliberately dumb — a tripwire, not a critic. The interesting judgments
 
 ## §8 — Changelog
 
+- **2026-07-06** — **Communities rework copy + a second terseness pass + one
+  deliberate voice exception.** The user-typed "worlds" dictionary is replaced by
+  **communities** copy (`communities.*`, `schools.*`) for the curated launch
+  spaces; the campus-window strings (`campus.*`) are retired with that feature.
+  Another terseness sweep on the guiding cut (don't repeat what a pill/state
+  already says): **removed** `pings.standingSub` ("if they add you back, you both
+  find out." — the "active" chip carries it), and trimmed `placed.standingSub`,
+  `match.sub`, `pings.emptyBody`, and `door.sub`. **The one deliberate exception:**
+  the progress ring's center label ("unlocked") and the sandbox's live-activity
+  beats ("somebody at berkeley just placed a ping — …") are intentionally literal
+  and gamified — a human decision for a demo-forward growth surface, not the
+  product's quiet register. They are kept **out of `strings.js`** (they live in
+  `communities.js` and `demoData.js`), so the linter's scope and the §5 rules for
+  canonical copy are unchanged — this copy is simply not canonical product copy.
 - **2026-07-05** — **Terseness pass + the fixed-100 community model.** Swept the
   whole dictionary (`strings.js`) tighter — the guiding cut: if a pill or a state
   dot already says it, the sentence doesn't repeat it (e.g. the "not here yet"

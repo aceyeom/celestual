@@ -190,6 +190,40 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-07-06** — **Communities complete rework (curated launch spaces), the
+  progress ring, live activity, crush-first onboarding, and a calmer galaxy core.**
+  A human-directed feature change, kept inside the locked galaxy identity (no new
+  hue — the two stars only; one primary action per screen; registers per §3):
+  - **Communities** (`WorldsScreen` → the communities list, plus a new
+    `CommunityScreen`) — no longer user-typed "worlds" but an **official, curated**
+    set the team owns (`app/src/communities.js`: UC Berkeley, Wesleyan, CMU). Each
+    school wears a small monochrome **seal** (`SchoolMark`) — a cosmos ring + serif
+    monogram + the one amber crest star — designed to be swapped for a real logo by
+    dropping a black-on-transparent asset in `app/public/schools/`.
+  - **The progress ring** (`ProgressRing`) — a community's climb toward its
+    team-set threshold, shown as a ring instead of a raw count: faint cream track,
+    amber→rose arc that fills once and eases when the value changes, a white star
+    riding the leading edge (the `Meter` edge-star, curved), and the percentage as
+    the serif hero. This is the one deliberate voice exception in the system: its
+    center label is intentionally literal ("unlocked"), sourced from
+    `communities.js` — a human decision for this growth surface, documented in
+    VOICE.md, and kept out of the linted copy.
+  - **Live activity** (`useLiveFeed` / `LiveActivity`, /demo only) — one anonymized
+    beat at a time, popping up and fading over the communities surfaces so the
+    sandbox reads as actively used; beats nudge the ring so it visibly climbs. All
+    in-memory, gone on tab close. Literal beat copy lives in `demoData.js`.
+  - **Crush-first onboarding** — a new user now names their crush (`who`) before
+    themselves (`you`), then is offered the curated schools (`SchoolsScreen`,
+    opt-in cards) once, before the first ping places.
+  - **The campus window is folded in** — the old `/c/<slug>` linear `Meter` flow is
+    retired into the community page; `Meter` stays exported but unmounted.
+  - **Galaxy core calmed** (`galaxy.js`, `_coreGrad` + core radius) — by explicit
+    human request (satisfies the design lock): the central bulge wash is dialed
+    back so it never blooms over mid-screen text. Identity untouched — still the
+    living galaxy, cosmic violet, two stars; only the central brightness changed.
+  Each new surface was checked against §9: one primary action, amber+rose only,
+  serif feeling / mono metadata, generous emptiness, real motion (the ring's fill,
+  not a spinner), one continuous cosmos behind it.
 - **2026-07-05** — **Communities redesign, mutual/slot separation, hero rework,
   demo checkout.** Four visual changes, all within the locked galaxy identity (no
   new hue — the two stars only; one primary action per screen; registers cast per
