@@ -13,9 +13,9 @@
 // path; `SchoolMark` will render (and palette-tint) it in place of the seal.
 
 export const CURATED = [
-  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', threshold: 2500, asset: null },
-  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', threshold: 900, asset: null },
-  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', threshold: 1800, asset: null },
+  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', threshold: 2500, asset: '/schools/uc-berkeley.png' },
+  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', threshold: 900, asset: '/schools/wesleyan.png' },
+  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', threshold: 1800, asset: '/schools/cmu.png' },
 ]
 
 export const CURATED_SLUGS = CURATED.map((c) => c.slug)

@@ -373,15 +373,20 @@ export function WhoScreen({ C, ctx }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          {/* self @ first: the ping is FROM you — shown before you name them */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
+          {/* the header, as a full serif headline — the accent line in rose (the
+              "them" star), since this is the person you're reaching toward */}
+          <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 38px)', lineHeight: 1.08, color: C.cream }}>
+            {t('who.title1')}<br />
+            <span style={{ color: C.them }}>{t('who.title2')}</span>
+          </h2>
+          {/* self @ first: the ping is FROM you — shown under the headline */}
           {normHandle(ctx.me) && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Kicker C={C} style={{ fontSize: 10 }}>{t('who.from')}</Kicker>
+              <Kicker C={C} style={{ fontSize: 10 }}>{t('who.fromLabel')}</Kicker>
               <HandleChip C={C} handle={normHandle(ctx.me)} />
             </span>
           )}
-          <Kicker C={C} style={{ fontSize: 12 }}>{t('who.kicker')}</Kicker>
         </div>
         <div className="enter" style={{ animationDelay: '.06s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <div data-sendoff-field>
@@ -560,13 +565,32 @@ export function PlacedScreen({ C, ctx }) {
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
-        <div className="enter floaty"><StarMark C={C} size={82} /></div>
-        <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(32px, 9vw, 42px)', lineHeight: 1.1, color: C.cream }}>
-          {standing ? t('placed.standingTitle') : t('placed.waitingTitle')}
-        </h1>
-        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>
-          {t(standing ? 'placed.standingSub' : 'placed.waitingSub', { handle: placed.handle })}
-        </p>
+        {standing ? (
+          <>
+            <div className="enter floaty"><StarMark C={C} size={82} /></div>
+            <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(32px, 9vw, 42px)', lineHeight: 1.1, color: C.cream }}>
+              {t('placed.standingTitle')}
+            </h1>
+            <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>
+              {t('placed.standingSub', { handle: placed.handle })}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* the quiet "held" mark — a calm sonar, not the bright match star */}
+            <div className="enter" style={{ paddingBottom: 2 }}><Sonar C={C} size={30} /></div>
+            {/* the handle itself, large, then the plain truth beneath it */}
+            <h1 className="enter" style={{ animationDelay: '.06s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(38px, 11vw, 52px)', lineHeight: 1.02, color: C.cream, maxWidth: '92%' }}>
+              <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{placed.handle}
+              </span>
+              <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
+            </h1>
+            <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>
+              {t('placed.waitingSub')}
+            </p>
+          </>
+        )}
 
         {/* State B: the deniable playbook — every line literally true, forever */}
         {!standing && (
@@ -784,6 +808,47 @@ function MutualCard({ C, ping, ctx }) {
   )
 }
 
+// The communities gateway on the pings page: your ONE joined community (not a
+// list) — tappable straight to its ring — plus a way to search for others. If
+// you're not in a community yet, it's the same search field, so joining is one
+// tap away. Never a wall of colleges.
+function CommunityGateway({ C, ctx }) {
+  const { t } = useI18n()
+  const communities = ctx.communities || []
+  const joined = communities.filter((c) => c.joined)
+  const [searching, setSearching] = React.useState(false)
+  const view = (slug) => ctx.viewCommunity(slug)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 8, paddingTop: 18, borderTop: `1px solid ${C.line}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0 2px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="search" size={13} color={rgba(C.star, 0.85)} stroke={2} />
+          <Kicker C={C}>{joined.length ? t('communities.yourCommunity') : t('communities.findYours')}</Kicker>
+        </div>
+        {joined.length > 0 && (
+          <GhostButton C={C} onClick={() => setSearching((s) => !s)} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.85) }}>
+            {t('communities.searchMore')}
+          </GhostButton>
+        )}
+      </div>
+      {joined.length > 0 ? (
+        <>
+          {joined.map((c) => (
+            <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
+          ))}
+          {searching && (
+            <div className="fade" style={{ paddingTop: 2 }}>
+              <CommunityFinder C={C} ctx={ctx} onPick={view} />
+            </div>
+          )}
+        </>
+      ) : (
+        <CommunityFinder C={C} ctx={ctx} onPick={view} />
+      )}
+    </div>
+  )
+}
+
 export function PingsScreen({ C, ctx }) {
   const { t } = useI18n()
   const pings = ctx.pings || []
@@ -844,6 +909,9 @@ export function PingsScreen({ C, ctx }) {
         {pings.some((p) => !p.handle) && (
           <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
         )}
+
+        {/* the communities gateway — your one community + a search for others */}
+        <CommunityGateway C={C} ctx={ctx} />
       </div>
 
       <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 20 }}>
@@ -852,12 +920,9 @@ export function PingsScreen({ C, ctx }) {
             <Icon name="plus" size={16} color={C.onStar} stroke={2.1} /> {empty ? t('pings.emptyCta') : t('pings.add')}
           </span>
         </PrimaryButton>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={() => ctx.go('door')} style={{ fontSize: 12.5 }}>
             {t('pings.door')}
-          </GhostButton>
-          <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ fontSize: 12.5, color: rgba(C.star, 0.85) }}>
-            {t('pings.worlds')}
           </GhostButton>
         </div>
       </div>
@@ -907,25 +972,37 @@ export function DoorScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, paddingTop: 16 }}>
-        {/* the rendered card — the object itself, not a mockup of it */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, paddingTop: 14 }}>
+        <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.1, color: C.cream }}>
+            {t('door.title1')} <span style={{ color: C.star }}>{t('door.title2')}</span>
+          </h2>
+          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 330 }}>{t('door.sub')}</p>
+        </div>
+
+        {/* the rendered card — the object itself, the hero of the screen */}
         <div
           className="enter"
           style={{
-            width: 'min(228px, 52vw)', aspectRatio: '9 / 16', borderRadius: 18, overflow: 'hidden',
-            border: `1px solid ${C.line}`, boxShadow: '0 30px 80px rgba(0,0,0,.6)', background: C.ink2,
+            position: 'relative', width: 'min(252px, 60vw)', aspectRatio: '9 / 16', borderRadius: 22, overflow: 'hidden',
+            border: `1px solid ${rgba(C.star, 0.22)}`, boxShadow: `0 30px 90px rgba(0,0,0,.62), 0 0 46px ${rgba(C.star, 0.14)}`,
+            background: C.ink2, animationDelay: '.06s',
           }}
         >
-          {preview && <img src={preview} alt={t('door.line')} style={{ width: '100%', height: '100%', display: 'block' }} />}
+          {preview ? (
+            <img src={preview} alt={t('door.line')} style={{ width: '100%', height: '100%', display: 'block' }} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}><Sonar C={C} size={20} /></div>
+          )}
         </div>
-        <p className="enter" style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>
-          {t('door.sub')}
-        </p>
-        <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 7, width: '100%', maxWidth: 320 }}>
+
+        {/* the three steps — a clean numbered rail */}
+        <div className="enter" style={{ animationDelay: '.12s', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Kicker C={C} style={{ fontSize: 10, paddingLeft: 2, marginBottom: 6 }}>{t('door.stepsKicker')}</Kicker>
           {[t('door.step1'), t('door.step2'), t('door.step3')].map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: C.muted, fontSize: 12.5, lineHeight: 1.5 }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 19, height: 19, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), color: C.star, fontFamily: "'Space Mono', monospace", fontSize: 11 }}>{i + 1}</span>
-              <span>{s}</span>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 2px' }}>
+              <span style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), border: `1px solid ${rgba(C.star, 0.3)}`, color: C.star, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>{i + 1}</span>
+              <span style={{ fontSize: 13.5, lineHeight: 1.45, color: rgba(C.cream, 0.86) }}>{s}</span>
             </div>
           ))}
         </div>
@@ -962,51 +1039,66 @@ function LiveDot({ C }) {
   return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
 }
 
-// The live activity feed: one anonymized beat at a time, fading up and away over
-// its own window so the demo reads as actively used. Each beat also nudges the
-// community it names (ctx.bumpCommunityActivity), so a watched ring climbs live.
-const FEED_MS = 4200
-function useLiveFeed(active, pool, onBeat) {
-  const [state, setState] = React.useState({ beat: null, seq: 0 })
+// The live activity stack: a few anonymized beats at once, the newest at the
+// bottom, older ones ageing (dimmer) above it before they drop off — so the
+// campus reads as actively used, and a couple are always legible instead of one
+// chip flickering. Each new beat also nudges the community it names
+// (ctx.bumpCommunityActivity), so a watched ring climbs as you read. Filter the
+// pool by slug at the call site to keep a community page's signal exclusive to it.
+const BEAT_MS = 2800 // cadence between beats
+const BEAT_LIFE = 8400 // how long one beat lingers before it drops off
+function useLiveStack(active, pool, onBeat) {
+  const [items, setItems] = React.useState([])
   const onBeatRef = React.useRef(onBeat)
   onBeatRef.current = onBeat
+  const idRef = React.useRef(0)
   React.useEffect(() => {
-    if (!active || !pool || !pool.length) return undefined
+    if (!active || !pool || !pool.length) {
+      setItems([])
+      return undefined
+    }
+    const timers = []
     const fire = () => {
       const b = pool[Math.floor(Math.random() * pool.length)]
-      setState((s) => ({ beat: b, seq: s.seq + 1 }))
+      const id = ++idRef.current
+      setItems((prev) => [...prev, { id, text: b.text }].slice(-3))
       if (onBeatRef.current) onBeatRef.current(b)
+      timers.push(setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== id)), BEAT_LIFE))
     }
-    const first = setTimeout(fire, 1100)
-    const id = setInterval(fire, FEED_MS)
+    const first = setTimeout(fire, 700)
+    const iv = setInterval(fire, BEAT_MS)
     return () => {
       clearTimeout(first)
-      clearInterval(id)
+      clearInterval(iv)
+      timers.forEach(clearTimeout)
     }
   }, [active, pool])
-  return state
+  return items
 }
 
-function LiveActivity({ C, feed }) {
-  // a fixed-height slot, so a beat popping in never shifts the layout under it
+// The stack itself — plain lines, no chip, no icon. The newest is brightest; the
+// older lines dim by age. A fixed min-height reserves the space so nothing under
+// it jumps as beats come and go.
+function LiveStack({ C, items }) {
+  const AGE = [0.94, 0.5, 0.26] // newest → oldest
   return (
-    <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {feed.beat && (
-        <span
-          key={feed.seq}
-          className="live-pop"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 9, maxWidth: '100%',
-            padding: '7px 14px 7px 12px', borderRadius: RADIUS.chip,
-            background: rgba(C.ink2, 0.72), border: `1px solid ${rgba(C.star, 0.22)}`,
-            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-            '--live-dur': `${FEED_MS}ms`,
-          }}
-        >
-          <LiveDot C={C} />
-          <span style={{ fontSize: 12.5, lineHeight: 1.4, color: rgba(C.cream, 0.9), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{feed.beat.text}</span>
-        </span>
-      )}
+    <div style={{ minHeight: 62, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 6 }}>
+      {items.map((it, i) => {
+        const age = items.length - 1 - i // 0 = newest (bottom)
+        return (
+          <span
+            key={it.id}
+            className="live-line"
+            style={{
+              display: 'block', textAlign: 'center', fontSize: 12.5, lineHeight: 1.4,
+              fontFamily: "'Space Grotesk', sans-serif", color: rgba(C.cream, 0.9), opacity: AGE[age] ?? 0.2,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          >
+            {it.text}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -1061,7 +1153,7 @@ function CommunityCard({ C, community, ctx }) {
 export function WorldsScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
-  const feed = useLiveFeed(ctx.demo, ctx.feedPool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
+  const feed = useLiveStack(ctx.demo, ctx.feedPool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
   // joined first, then by how close each is to opening
   const ordered = [...communities].sort(
     (a, b) => (b.joined ? 1 : 0) - (a.joined ? 1 : 0) || communityProgress(b).frac - communityProgress(a).frac,
@@ -1079,7 +1171,7 @@ export function WorldsScreen({ C, ctx }) {
 
       <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 16 }}>
         <p style={{ margin: '0 2px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
-        {ctx.demo && <LiveActivity C={C} feed={feed} />}
+        {ctx.demo && feed.length > 0 && <LiveStack C={C} items={feed} />}
         {ordered.map((c) => (
           <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
         ))}
@@ -1090,6 +1182,78 @@ export function WorldsScreen({ C, ctx }) {
   )
 }
 
+// One shared launch moment for every curated campus: the upcoming midnight ~a
+// day and a half out (24–48h), so each gathering community counts down to the
+// SAME instant — "it all goes live together." Computed once per load so the
+// countdown is stable across renders and screens.
+const LAUNCH_AT = (() => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 2)
+  return d.getTime()
+})()
+
+function useCountdown(target) {
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const left = Math.max(0, target - now)
+  return {
+    h: Math.floor(left / 3600000),
+    m: Math.floor((left % 3600000) / 60000),
+    s: Math.floor((left % 60000) / 1000),
+    done: left <= 0,
+  }
+}
+
+// The launch countdown that sits atop a gathering community's ring: every campus
+// opens at one shared midnight, so this is a live count to that instant.
+function LaunchCountdown({ C, target }) {
+  const { t } = useI18n()
+  const { h, m, s } = useCountdown(target)
+  const pad = (n) => String(n).padStart(2, '0')
+  const day = React.useMemo(() => {
+    try {
+      return new Date(target).toLocaleDateString(undefined, { weekday: 'long' }).toLowerCase()
+    } catch {
+      return ''
+    }
+  }, [target])
+  const Unit = ({ v, label }) => (
+    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 40 }}>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 27, lineHeight: 1, color: C.cream, fontVariantNumeric: 'tabular-nums' }}>{pad(v)}</span>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '1.4px', textTransform: 'uppercase', color: C.muted }}>{label}</span>
+    </span>
+  )
+  const Colon = () => <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 22, color: rgba(C.star, 0.55), transform: 'translateY(-6px)' }}>:</span>
+  return (
+    <div
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%', maxWidth: 320,
+        padding: '15px 18px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55),
+        border: `1px solid ${rgba(C.star, 0.2)}`, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      }}
+    >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <LiveDot C={C} />
+        <Kicker C={C} color={rgba(C.star, 0.92)} style={{ fontSize: 10 }}>{t('communities.liveLabel')}</Kicker>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <Unit v={h} label={t('communities.liveH')} />
+        <Colon />
+        <Unit v={m} label={t('communities.liveM')} />
+        <Colon />
+        <Unit v={s} label={t('communities.liveS')} />
+      </div>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: rgba(C.cream, 0.72) }}>
+        {t('communities.liveAt', { day })}
+      </span>
+    </div>
+  )
+}
+
 // The community page (also the /c/<slug> destination). The big ring is the hero;
 // a gathering community shows what opens at the threshold, an open one shows its
 // live weekly readout. One primary action: join, or — once joined — place a ping.
@@ -1097,7 +1261,11 @@ export function CommunityScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
   const community = communities.find((c) => c.slug === ctx.openCommunity) || communities[0]
-  const feed = useLiveFeed(ctx.demo, ctx.feedPool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
+  // signal exclusive to THIS campus — filter the demo feed to this slug (memoized
+  // so the stack's interval isn't torn down every render).
+  const slug = community && community.slug
+  const pool = React.useMemo(() => (ctx.feedPool || []).filter((b) => b.slug === slug), [ctx.feedPool, slug])
+  const feed = useLiveStack(ctx.demo, pool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
   if (!community) {
     return (
       <Shell>
@@ -1136,9 +1304,11 @@ export function CommunityScreen({ C, ctx }) {
           <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 38px)', lineHeight: 1.1, color: C.cream }}>{community.name}</h1>
         </div>
 
-        <ProgressRing C={C} frac={open ? 1 : frac} size={188} label={open ? RING_LABELS.open : RING_LABELS.climbing} />
+        {/* the shared launch countdown — atop a still-gathering ring, all campuses
+            open at the same midnight */}
+        {!open && <LaunchCountdown C={C} target={LAUNCH_AT} />}
 
-        {ctx.demo && <LiveActivity C={C} feed={feed} />}
+        <ProgressRing C={C} frac={open ? 1 : frac} size={188} label={open ? RING_LABELS.open : RING_LABELS.climbing} />
 
         {open && week ? (
           <div className="fade" style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
@@ -1178,6 +1348,13 @@ export function CommunityScreen({ C, ctx }) {
             </div>
           </div>
         )}
+
+        {/* the campus's own live signal — a quiet stack, exclusive to this school */}
+        {ctx.demo && feed.length > 0 && (
+          <div style={{ width: '100%', maxWidth: 340, marginTop: 2 }}>
+            <LiveStack C={C} items={feed} />
+          </div>
+        )}
       </div>
 
       <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16 }}>
@@ -1203,14 +1380,133 @@ export function CommunityScreen({ C, ctx }) {
   )
 }
 
+// One result row inside the community finder's popup — its own component so the
+// hover lift stays local.
+function FinderRow({ C, community, onPick }) {
+  const { t } = useI18n()
+  const [h, setH] = React.useState(false)
+  const { open } = communityProgress(community)
+  return (
+    <button
+      onClick={() => onPick(community.slug)}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: 'flex', width: '100%', alignItems: 'center', gap: 12, padding: '10px 10px', borderRadius: RADIUS.inner,
+        border: 'none', cursor: 'pointer', textAlign: 'left', background: h ? rgba(C.star, 0.09) : 'transparent', transition: 'background .16s',
+      }}
+    >
+      <SchoolMark C={C} slug={community.slug} size={34} />
+      <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 17, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', textTransform: 'uppercase', color: open ? rgba(C.star, 0.9) : C.muted }}>
+          {open ? t('communities.open') : t('communities.gathering')}{community.joined ? ` · ${t('communities.joinedTag')}` : ''}
+        </span>
+      </span>
+      {community.joined ? (
+        <Icon name="check" size={16} color={rgba(C.star, 0.9)} stroke={2.2} />
+      ) : (
+        <Icon name="plus" size={15} color={rgba(C.star, 0.85)} stroke={2} />
+      )}
+    </button>
+  )
+}
+
+// The shared "find your community" control: a real search field that, on focus,
+// pops open the curated schools. Picking one calls onPick(slug) — join it, or
+// open its page, depending on the caller. Placing a ping never depends on any of
+// this, so every use is skippable.
+function CommunityFinder({ C, ctx, onPick, autoFocus }) {
+  const { t } = useI18n()
+  const communities = ctx.communities || []
+  const [q, setQ] = React.useState('')
+  const [open, setOpen] = React.useState(false)
+  const [focus, setFocus] = React.useState(false)
+  const boxRef = React.useRef(null)
+  const SHADOW = makeShadow(C)
+  const ql = q.trim().toLowerCase()
+  const results = communities.filter(
+    (c) => !ql || c.name.toLowerCase().includes(ql) || (c.short || '').toLowerCase().includes(ql) || c.slug.replace(/-/g, ' ').includes(ql),
+  )
+  React.useEffect(() => {
+    if (!open) return undefined
+    const onDoc = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+  const lit = focus || open
+  return (
+    <div ref={boxRef} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(true)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '15px 16px', borderRadius: RADIUS.field,
+          background: C.ink2, border: `1.5px solid ${lit ? rgba(C.star, 0.7) : C.line}`,
+          boxShadow: lit ? SHADOW.focus(C.star) : 'none', transition: 'border-color .2s, box-shadow .25s', cursor: 'text',
+        }}
+      >
+        <Icon name="search" size={19} color={rgba(C.star, 0.9)} stroke={1.9} />
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true) }}
+          onFocus={() => { setFocus(true); setOpen(true) }}
+          onBlur={() => setFocus(false)}
+          placeholder={t('communities.searchPlaceholder')}
+          autoFocus={autoFocus}
+          spellCheck={false}
+          autoCapitalize="none"
+          style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, letterSpacing: '.2px' }}
+        />
+        <span aria-hidden style={{ display: 'grid', placeItems: 'center', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s', opacity: 0.75 }}>
+          <Icon name="back" size={14} color={C.muted} stroke={1.9} />
+        </span>
+      </div>
+      {open && (
+        <div
+          className="fade"
+          style={{
+            position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 25, padding: 6,
+            borderRadius: RADIUS.card, background: rgba(C.ink2, 0.98), border: `1px solid ${rgba(C.star, 0.2)}`,
+            boxShadow: SHADOW.menu, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', maxHeight: 320, overflowY: 'auto',
+          }}
+        >
+          {results.length ? (
+            results.map((c) => <FinderRow key={c.slug} C={C} community={c} onPick={(slug) => { onPick(slug); setOpen(false) }} />)
+          ) : (
+            <div style={{ padding: '14px 12px', fontSize: 13, lineHeight: 1.5, color: C.muted }}>{t('communities.searchNone')}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// A joined community shown as a removable chip (the onboarding step's selections).
+function JoinedChip({ C, community, onRemove }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 8px', borderRadius: RADIUS.chip, background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.4)}` }}>
+      <SchoolMark C={C} slug={community.slug} size={20} />
+      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 500, color: C.cream }}>{community.short || community.name}</span>
+      <button
+        onClick={onRemove}
+        aria-label="remove"
+        style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.7) }}
+      >
+        <Icon name="x" size={12} color="currentColor" />
+      </button>
+    </span>
+  )
+}
+
 // ── AFFILIATED SCHOOLS (new-user onboarding, after identity) ──────────────────
-// Shown once, between proving your @ and placing your first ping: the curated
-// communities you can opt into. Joining is optional — the ping places either way
-// — but being in one makes the silence feel less lonely. One primary action
-// places the ping; the school cards above it are optional toggles.
+// Shown once, between proving your @ and placing your first ping: a search that
+// reveals the curated communities. Joining is optional — the ping places either
+// way — but being in one makes the silence feel less lonely. One primary action
+// places the ping; the search above it is a skippable extra.
 export function SchoolsScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
+  const joined = communities.filter((c) => c.joined)
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1225,42 +1521,28 @@ export function SchoolsScreen({ C, ctx }) {
           <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.12, color: C.cream }}>
             {t('schools.title1')}<br /><span style={{ color: C.star }}>{t('schools.title2')}</span>
           </h2>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>{t('schools.sub')}</p>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 330 }}>{t('schools.sub')}</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {communities.map((c) => {
-            const on = !!c.joined
-            return (
-              <button
-                key={c.slug}
-                onClick={() => ctx.toggleCommunity(c.slug)}
-                aria-pressed={on}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left', cursor: 'pointer',
-                  padding: '14px 15px', borderRadius: RADIUS.field,
-                  background: on ? rgba(C.star, 0.1) : C.ink2,
-                  border: `1.5px solid ${on ? rgba(C.star, 0.55) : C.line}`, transition: 'all .2s',
-                }}
-              >
-                <SchoolMark C={C} slug={c.slug} size={40} />
-                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 19, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', textTransform: 'uppercase', color: on ? rgba(C.star, 0.9) : C.muted }}>{on ? t('schools.joined') : t('schools.tapJoin')}</span>
-                </span>
-                <span aria-hidden style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: on ? C.star : 'transparent', border: `1.5px solid ${on ? C.star : rgba(C.cream, 0.3)}`, transition: 'all .2s' }}>
-                  {on && <Icon name="check" size={14} color={C.onStar} stroke={2.6} />}
-                </span>
-              </button>
-            )
-          })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
+          <CommunityFinder C={C} ctx={ctx} onPick={(slug) => ctx.joinCommunity(slug)} />
+          {joined.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 2 }}>
+              {joined.map((c) => (
+                <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
+              ))}
+            </div>
+          ) : (
+            <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
+          )}
         </div>
       </div>
 
       <div className="enter" style={{ animationDelay: '.1s', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <PrimaryButton C={C} onClick={ctx.finishOnboarding}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="lock" size={16} color={C.onStar} stroke={2} /> {t('schools.cta')}
+            <Icon name="lock" size={16} color={C.onStar} stroke={2} /> {joined.length > 0 ? t('schools.cta') : t('schools.ctaSkip')}
           </span>
         </PrimaryButton>
         <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.muted }}>{t('schools.foot')}</p>
@@ -1797,22 +2079,28 @@ export function AccountSheet({ C, ctx }) {
 
         <Rule C={C} />
 
-        {ctx.demo ? (
-          <span style={{ fontSize: 12, lineHeight: 1.55, color: C.muted }}>{t('account.sandboxNote')}</span>
-        ) : !confirmDel ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-            {ctx.verified && (
-              <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13, color: C.cream }}>
-                {t('account.signOut')}
-              </GhostButton>
+        {!confirmDel ? (
+          // sign out / delete are available everywhere, including the sandbox
+          // (there they reset the demo and land back on the cold landing — the
+          // handlers are already demo-safe, nothing reaches a server).
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {ctx.demo && (
+              <span style={{ fontSize: 12, lineHeight: 1.55, color: C.muted }}>{t('account.sandboxNote')}</span>
             )}
-            <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: rgba(C.muted, 0.9) }}>
-              {t('account.delete')}
-            </GhostButton>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+              {(ctx.verified || ctx.demo) && (
+                <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13, color: C.cream }}>
+                  {t('account.signOut')}
+                </GhostButton>
+              )}
+              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: rgba(C.muted, 0.9) }}>
+                {t('account.delete')}
+              </GhostButton>
+            </div>
           </div>
         ) : (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{t('account.deleteConfirm')}</span>
+            <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{ctx.demo ? t('account.deleteConfirmDemo') : t('account.deleteConfirm')}</span>
             <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
               <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: C.star }}>
                 {deleting ? t('account.deleting') : t('account.deleteYes')}

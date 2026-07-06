@@ -35,8 +35,12 @@ const en = {
   'landing.terms': 'terms',
 
   // ── screen 2 · the send ────────────────────────────────────────────────
-  'who.kicker': 'who is it?',
-  'who.from': 'you',
+  // the header now reads as a full serif headline (matching "now, this is you."),
+  // its second line in rose — the "them" star — since this is the person you're
+  // reaching toward.
+  'who.title1': 'who’s',
+  'who.title2': 'on your mind?',
+  'who.fromLabel': 'this ping is from',
   'who.placeholder': 'their.handle',
   'who.note': 'no alert. no trace. invisible until they enter you back.',
   'who.confirm1': 'placing a ping on',
@@ -98,8 +102,10 @@ const en = {
   // ── screen 3 · placed (the recruiter screen) ───────────────────────────
   'placed.standingTitle': 'your ping is live.',
   'placed.standingSub': '@{handle} is on celestual. the second they add you back, you both know. until then, nothing shows.',
-  'placed.waitingTitle': 'saved for when they join.',
-  'placed.waitingSub': '@{handle} isn’t here yet. your ping waits until they arrive — and they’ll never know it was you.',
+  // the waiting state leads with the handle itself, large — "@them isn’t on
+  // celestual yet." — then one quiet reassurance line, then the playbook.
+  'placed.waitingHead': 'isn’t on celestual yet.',
+  'placed.waitingSub': 'your ping is held, unseen, until they arrive — and they’ll never know it was you.',
   'placed.howTitle': 'how people do it',
   'placed.how1': 'post your door — it says nothing but that you’re reachable',
   'placed.howWorld': 'grow your community: {name}',
@@ -116,7 +122,7 @@ const en = {
   'pings.standing': 'active',
   'pings.standingSub': '',
   'pings.waiting': 'not here yet',
-  'pings.waitingSub': 'waits, unseen, until they join.',
+  'pings.waitingSub': '',
   'pings.mutual': 'mutual',
   'pings.mutualSub': 'you both entered each other.',
   'pings.mutualKicker': 'mutual',
@@ -144,15 +150,18 @@ const en = {
 
   // ── screen 5 · the open-door card ───────────────────────────────────────
   'door.kicker': 'your door',
+  'door.title1': 'post your',
+  'door.title2': 'open door.',
   'door.line': 'if there’s something you never said to me, it’s safe here now.',
-  'door.sub': 'it says only that you’re reachable — and puts whoever taps through two taps from telling you.',
+  'door.sub': 'one story card. it says only that you’re reachable — and lands whoever taps it two taps from telling you.',
   'door.save': 'save the card',
   'door.saved': 'saved — now post it',
   'door.copy': 'copy your link',
   'door.copied': 'copied',
+  'door.stepsKicker': 'three steps',
   'door.step1': 'save the card to your camera roll.',
   'door.step2': 'add it to your story.',
-  'door.step3': 'paste your link as the link sticker.',
+  'door.step3': 'drop your link on the door as a link sticker.',
   'door.foot': 'nothing on the card, or behind it, ever says who you’ve entered — or that you have.',
 
   // the personal landing — celestual.us/@handle
@@ -244,6 +253,7 @@ const en = {
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',
   'account.deleteConfirm': 'this erases every ping you’ve placed, closes your door, and blocks your own handle from being entered. it can’t be undone.',
+  'account.deleteConfirmDemo': 'sandbox — this just clears the demo and starts it fresh. nothing here was ever saved.',
   'account.deleteYes': 'erase it all',
   'account.deleting': 'erasing…',
   'account.cancel': 'cancel',
@@ -288,14 +298,41 @@ const en = {
   'communities.browse': 'browse',
   'communities.summaryNone': 'you haven’t joined one yet.',
 
+  // the community finder — a search field that reveals the curated schools. used
+  // on the onboarding step and on the pings page. always skippable: placing a
+  // ping never depends on any of this.
+  'communities.searchLabel': 'search for your community',
+  'communities.searchPlaceholder': 'your school',
+  'communities.searchOptional': 'optional',
+  'communities.searchOpen': 'tap to search — three schools are open now.',
+  'communities.searchNone': 'no match yet — more schools are on the way.',
+  'communities.searchMore': 'search other communities',
+  'communities.searchSkip': 'skip — you can join one anytime.',
+  'communities.joinShort': 'join',
+  'communities.joinedTag': 'joined',
+  // the pings-page gateway
+  'communities.yourCommunity': 'your community',
+  'communities.gatewayNone': 'not in a community yet.',
+  'communities.open2': 'open',
+
+  // the shared launch countdown — every gathering campus opens at the same
+  // midnight, so the ring page carries a live count to that moment.
+  'communities.liveLabel': 'they all go live together',
+  'communities.liveIn': 'opens in',
+  'communities.liveAt': 'midnight · {day}',
+  'communities.liveH': 'hrs',
+  'communities.liveM': 'min',
+  'communities.liveS': 'sec',
+
   // ── affiliated schools (new-user onboarding step) ───────────────────────
   'schools.kicker': 'one more thing',
-  'schools.title1': 'your',
-  'schools.title2': 'campus?',
-  'schools.sub': 'join the ones you’re in — it makes the silence less lonely. optional.',
+  'schools.title1': 'find your',
+  'schools.title2': 'community.',
+  'schools.sub': 'search your school and join — it makes the silence less lonely. this is optional; your ping places either way.',
   'schools.joined': 'joined',
   'schools.tapJoin': 'tap to join',
   'schools.cta': 'place your ping',
+  'schools.ctaSkip': 'place my ping',
   'schools.foot': 'you can join or leave anytime.',
 
   // ── privacy & the opt-out (the public escape hatch) ─────────────────────

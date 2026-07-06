@@ -60,17 +60,26 @@ export const DEMO_COMMUNITIES = {
 // inch that community's ring upward, so watching it feels live. `reason` beats
 // quote the product's own five lines. All in-memory; gone when the tab closes.
 export const DEMO_FEED = [
-  { slug: 'uc-berkeley', kind: 'reason', text: 'somebody at berkeley just placed a ping — “i miss you”' },
-  { slug: 'uc-berkeley', kind: 'join', text: '+1 just joined berkeley' },
-  { slug: 'uc-berkeley', kind: 'match', text: 'it just became mutual for two people at berkeley' },
-  { slug: 'uc-berkeley', kind: 'reason', text: 'somebody placed a ping — “i never got to say something”' },
+  // berkeley — the mid-climb hero; the most traffic
+  { slug: 'uc-berkeley', kind: 'reason', text: 'someone in the berkeley class of ’27 placed a ping — “i miss you”' },
+  { slug: 'uc-berkeley', kind: 'join', text: '+1 from unit 3 just joined berkeley' },
+  { slug: 'uc-berkeley', kind: 'match', text: 'it just became mutual for two bears' },
+  { slug: 'uc-berkeley', kind: 'reason', text: 'a ping near sproul — “i never got to say something”' },
   { slug: 'uc-berkeley', kind: 'ping', text: 'a ping was just placed at berkeley' },
-  { slug: 'wesleyan', kind: 'reason', text: 'somebody at wesleyan just placed a ping — “i think about you”' },
-  { slug: 'wesleyan', kind: 'match', text: 'two people at wesleyan just matched' },
-  { slug: 'wesleyan', kind: 'join', text: '+1 just joined wesleyan' },
-  { slug: 'cmu', kind: 'reason', text: 'somebody at carnegie mellon just placed a ping — “i want to try again”' },
-  { slug: 'cmu', kind: 'join', text: '+2 just joined carnegie mellon' },
+  { slug: 'uc-berkeley', kind: 'reason', text: 'someone in a moffitt all-nighter — “i think about you”' },
+  { slug: 'uc-berkeley', kind: 'join', text: '+3 joined berkeley in the last hour' },
+  // wesleyan — small and already open
+  { slug: 'wesleyan', kind: 'reason', text: 'a wesleyan ping just went out — “i think about you”' },
+  { slug: 'wesleyan', kind: 'match', text: 'two cardinals just matched' },
+  { slug: 'wesleyan', kind: 'join', text: '+1 from foss hill just joined wesleyan' },
+  { slug: 'wesleyan', kind: 'reason', text: 'someone at wes — “i want to clear the air”' },
+  { slug: 'wesleyan', kind: 'ping', text: 'a ping was just placed at wesleyan' },
+  // cmu — early, engineering-heavy
+  { slug: 'cmu', kind: 'reason', text: 'a tartan just placed a ping — “i want to try again”' },
+  { slug: 'cmu', kind: 'join', text: '+2 joined cmu from the cut' },
   { slug: 'cmu', kind: 'ping', text: 'a ping was just placed at carnegie mellon' },
+  { slug: 'cmu', kind: 'reason', text: 'someone in a gates all-nighter — “i miss you”' },
+  { slug: 'cmu', kind: 'match', text: 'it just became mutual for two tartans' },
 ]
 
 export const DEMO_ME = 'you.tonight'

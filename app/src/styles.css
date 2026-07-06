@@ -160,6 +160,14 @@ button { font-family: inherit; }
 }
 .live-pop { animation: livePop var(--live-dur, 4s) ease both; will-change: opacity, transform; }
 
+/* ── the live activity stack (community ring page) ─────────────────────────────
+   A few anonymized beats stacked and quietly ageing: the newest rises in from
+   below (transform only, so the per-item opacity set in JS still reads), the
+   older ones sit dimmer above it until they drop off. No chip, no icon — just
+   the lines, like overheard signal from that one campus. */
+@keyframes liveRise { from { transform: translateY(11px); } to { transform: translateY(0); } }
+.live-line { animation: liveRise .5s cubic-bezier(.2,.7,.2,1) both; will-change: transform; }
+
 /* ── the hero typewriter (the landing line) ──────────────────────────────
    A slim caret blinks beside the typed line; the line itself is driven in JS. */
 @keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
