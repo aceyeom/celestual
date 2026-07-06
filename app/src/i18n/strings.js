@@ -97,12 +97,12 @@ const en = {
 
   // ── screen 3 · placed (the recruiter screen) ───────────────────────────
   'placed.standingTitle': 'your ping is live.',
-  'placed.standingSub': '@{handle} is on celestual. the second they add you back, you both know — same instant. until then, nothing shows. that’s the point.',
+  'placed.standingSub': '@{handle} is on celestual. the second they add you back, you both know. until then, nothing shows.',
   'placed.waitingTitle': 'saved for when they join.',
   'placed.waitingSub': '@{handle} isn’t here yet. your ping waits until they arrive — and they’ll never know it was you.',
   'placed.howTitle': 'how people do it',
   'placed.how1': 'post your door — it says nothing but that you’re reachable',
-  'placed.howWorld': 'your worlds: {name} · {n} in',
+  'placed.howWorld': 'grow your community: {name}',
   'placed.how3': 'or wait. this is spreading on its own.',
   'placed.door': 'post your door',
   'placed.pings': 'your pings',
@@ -110,11 +110,11 @@ const en = {
   // ── screen 4 · your pings (the status page) ────────────────────────────
   'pings.kicker': 'your pings',
   'pings.emptyTitle': 'no pings yet.',
-  'pings.emptyBody': 'three slots. sixty days each. save them for the people who actually stayed on your mind.',
+  'pings.emptyBody': 'three slots, sixty days each. for the people who actually stayed on your mind.',
   'pings.emptyCta': 'place your first',
   // the three ping states, in plain words read at a glance
   'pings.standing': 'active',
-  'pings.standingSub': 'if they add you back, you both find out.',
+  'pings.standingSub': '',
   'pings.waiting': 'not here yet',
   'pings.waitingSub': 'waits, unseen, until they join.',
   'pings.mutual': 'mutual',
@@ -139,13 +139,13 @@ const en = {
   'pings.add': 'place another',
   'pings.door': 'post your door',
   'pings.open': 'message them',
-  'pings.worlds': 'your worlds',
+  'pings.worlds': 'communities',
   'pings.sim': 'sandbox: they add you back',
 
   // ── screen 5 · the open-door card ───────────────────────────────────────
   'door.kicker': 'your door',
   'door.line': 'if there’s something you never said to me, it’s safe here now.',
-  'door.sub': 'it says nothing but that you’re reachable. whoever taps through lands two taps from telling you.',
+  'door.sub': 'it says only that you’re reachable — and puts whoever taps through two taps from telling you.',
   'door.save': 'save the card',
   'door.saved': 'saved — now post it',
   'door.copy': 'copy your link',
@@ -162,29 +162,9 @@ const en = {
   'open.cta': 'find out',
   'open.else': 'someone else on your mind? enter anyone.',
 
-  // ── screens 6–7 · the campus window (optional launch tool) ──────────────
-  'campus.opensWhen': 'celestual opens at {name} when {threshold} are in.',
-  'campus.note': 'preregistering reveals nothing about you. it just opens the door for everyone at once.',
-  'campus.cta': 'count me in',
-  'campus.foot': 'when it opens, everyone finds out together.',
-  'campus.counted': 'you’re counted.',
-  'campus.countedSub': 'you’ll hear the moment it opens — everyone does, at once.',
-  'campus.openTitle': 'it’s open.',
-  'campus.openSub': '{n} of your campus is in — and counting.',
-  'campus.openCta': 'place your first ping',
-  'campus.weekKicker': '{name} · week one',
-  'campus.weekPings': '{n} pings placed.',
-  'campus.weekMatches': '{n} mutual matches.',
-  'campus.weekSub': 'every one of them found out something true.',
-  'campus.weekFloor': 'match counts publish at ten and up — so no match can be guessed at.',
-  'campus.floors': 'week one, the true numbers publish. match counts show only at ten and up.',
-  'campus.none': 'no window here yet.',
-  'campus.noneSub': 'a campus window is optional — a way to open a whole school at once.',
-  'campus.emailLabel': 'where to reach you when it opens',
-
   // ── screen 8 · the match ────────────────────────────────────────────────
   'match.title': 'it’s mutual.',
-  'match.sub': 'you entered @{them}. @{them} entered you. this only happens when it’s real on both sides.',
+  'match.sub': 'you entered @{them}. @{them} entered you.',
   'match.theySaid': 'they said',
   'match.youSaid': 'you said',
   'match.cta': 'go say it',
@@ -278,44 +258,45 @@ const en = {
   'accounts.remove': 'remove account',
   'accounts.note': 'entered on any of these counts as you.',
 
-  // ── your worlds (communities · the fixed-100 stats model) ───────────────
-  // pings NEVER depend on a world's size — everyone can ping from day one,
-  // anywhere. at 100 members a world's weekly stats open; below that it's
-  // gathering and the count stays hidden (the 100-floor). the reward is what
-  // pulls more people in — it never blocks anyone.
-  'worlds.label': 'your worlds',
-  'worlds.note': 'the real scenes you’re in — a school, a class, a city. at 100 members, the weekly stats open.',
-  'worlds.placeholder': 'name a world',
-  'worlds.add': 'add',
-  'worlds.remove': 'remove',
-  'worlds.gathering': 'gathering',
-  'worlds.count': '{n} in',
-  'worlds.manage': 'your worlds',
-  // the full communities view
-  'worlds.kicker': 'your worlds',
-  'worlds.intro': 'everyone can ping from day one. at 100, a world’s weekly stats open.',
-  'worlds.open': 'stats open',
-  'worlds.in': '{n} in',
-  'worlds.fresh': 'this week',
-  'worlds.matchedLabel': 'matched this week',
-  'worlds.matchFloor': 'this week’s matches show at ten and up — so no match can be guessed at.',
-  'worlds.reasonLabel': 'most said',
-  'worlds.pings': '{n} pings placed',
-  'worlds.joined': '+{n} joined',
-  'worlds.gatheringTitle': 'gathering toward 100',
-  'worlds.gatheringBody': 'at 100 members, the weekly stats open — matches, the most common reason, and more.',
-  'worlds.gatheringToward': 'stats open at 100',
-  'worlds.lock1': 'mutual matches',
-  'worlds.lock2': 'the most common reason',
-  'worlds.lock3': 'pings this week',
-  'worlds.grow': 'bring your people',
-  'worlds.growNote': 'more members, sooner. the count stays hidden until 100 either way.',
-  'worlds.share': 'share this world',
-  'worlds.copied': 'link copied',
-  'worlds.emptyTitle': 'no worlds yet.',
-  'worlds.emptyBody': 'tag the scenes you’re part of — a school, a class, a city. up to three.',
-  'worlds.emptyCta': 'add a world',
-  'worlds.demoActivity': 'sandbox: new activity',
+  // ── communities (official, curated launch spaces) ───────────────────────
+  // communities are not user-created — the team curates them. placing a ping
+  // never depends on one. each climbs toward a team-set threshold (shown as a
+  // ring); at the threshold it opens and its weekly readout goes live. NOTE: the
+  // ring's own center label and the sandbox live-feed copy are intentionally
+  // literal and live in communities.js / demoData.js, out of this linted file.
+  'communities.kicker': 'communities',
+  'communities.intro': 'official launch spaces, opening one campus at a time.',
+  'communities.foot': 'curated by celestual. more schools soon.',
+  'communities.open': 'open',
+  'communities.gathering': 'gathering',
+  'communities.none': 'no community here.',
+  'communities.thisWeek': 'this week',
+  'communities.matchedLabel': 'matched this week',
+  'communities.matchFloor': 'matches show at ten and up — so no match can be guessed at.',
+  'communities.reasonLabel': 'most said',
+  'communities.pings': '{n} pings placed',
+  'communities.joinedWeek': '+{n} joined',
+  'communities.gatheringBody': 'the more people in, the sooner it opens. what opens:',
+  'communities.lock1': 'mutual matches this week',
+  'communities.lock2': 'the most common reason',
+  'communities.lock3': 'pings placed',
+  'communities.join': 'join {name}',
+  'communities.leave': 'leave this community',
+  'communities.place': 'place a ping',
+  'communities.demoActivity': 'sandbox: new activity',
+  'communities.label': 'your communities',
+  'communities.browse': 'browse',
+  'communities.summaryNone': 'you haven’t joined one yet.',
+
+  // ── affiliated schools (new-user onboarding step) ───────────────────────
+  'schools.kicker': 'one more thing',
+  'schools.title1': 'your',
+  'schools.title2': 'campus?',
+  'schools.sub': 'join the ones you’re in — it makes the silence less lonely. optional.',
+  'schools.joined': 'joined',
+  'schools.tapJoin': 'tap to join',
+  'schools.cta': 'place your ping',
+  'schools.foot': 'you can join or leave anytime.',
 
   // ── privacy & the opt-out (the public escape hatch) ─────────────────────
   'privacy.title': 'privacy, plainly',
@@ -350,8 +331,6 @@ const en = {
   'demo.badge': 'sandbox',
   'demo.note': 'nothing here is real, and nothing reaches a server.',
   'demo.worlds': 'your communities',
-  'demo.campus': 'preview a campus opening',
-  'demo.cycle': 'sandbox: next campus state',
 }
 
 export const DICTS = { en }

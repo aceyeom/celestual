@@ -148,6 +148,18 @@ button { font-family: inherit; }
 @keyframes sendoffLine { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
 .sendoff-line { animation: sendoffLine 1s ease .5s both; }
 
+/* ── the live activity popup (demo communities) ───────────────────────────────
+   One beat at a time: it fades up, holds, and fades away over its own display
+   window (the duration is set per-beat via --live-dur), so a keyed re-render
+   plays the whole enter-hold-exit as one motion matched to the feed interval. */
+@keyframes livePop {
+  0%   { opacity: 0; transform: translateY(10px) scale(.985); }
+  9%   { opacity: 1; transform: translateY(0) scale(1); }
+  86%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(.99); }
+}
+.live-pop { animation: livePop var(--live-dur, 4s) ease both; will-change: opacity, transform; }
+
 /* ── the hero typewriter (the landing line) ──────────────────────────────
    A slim caret blinks beside the typed line; the line itself is driven in JS. */
 @keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
@@ -160,7 +172,7 @@ button { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
-  .enter, .fade { animation: none !important; opacity: 1 !important; }
+  .enter, .fade, .live-pop { animation: none !important; opacity: 1 !important; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
 }

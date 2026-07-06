@@ -718,12 +718,15 @@ export class GalaxyField {
     // Cap the radius so diving past the core can't scale a single gradient up to an
     // enormous off-screen fill (cost without payoff — beyond ~2× the frame it's a
     // flat wash either way).
-    const coreR = Math.min(this.unit * 0.6 * o.persp, Math.max(this.w, this.h) * 2)
+    const coreR = Math.min(this.unit * 0.5 * o.persp, Math.max(this.w, this.h) * 2)
     if (!this._coreGrad) {
+      // Calmer than it once was: the bulge still reads as a luminous core, but its
+      // central wash is dialed back (and its radius trimmed) so it never blooms
+      // brightly enough to swallow the foreground text sitting over the mid-screen.
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
-      g.addColorStop(0, 'rgba(255,236,206,0.34)')
-      g.addColorStop(0.16, 'rgba(255,214,176,0.2)')
-      g.addColorStop(0.46, 'rgba(214,150,120,0.07)')
+      g.addColorStop(0, 'rgba(255,236,206,0.2)')
+      g.addColorStop(0.16, 'rgba(255,214,176,0.12)')
+      g.addColorStop(0.46, 'rgba(214,150,120,0.045)')
       g.addColorStop(1, 'rgba(0,0,0,0)')
       this._coreGrad = g
     }

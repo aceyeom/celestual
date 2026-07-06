@@ -7,6 +7,7 @@ import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
 import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
+import { bySlug } from '../communities.js'
 
 export { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS }
 
@@ -238,6 +239,48 @@ export function Brandmark({ C, size = 22, title = 'celestual' }) {
         </radialGradient>
       </defs>
       <path d="M16 1 Q17.6 14.4 31 16 Q17.6 17.6 16 31 Q14.4 17.6 1 16 Q14.4 14.4 16 1 Z" fill={`url(#${gid})`} />
+    </svg>
+  )
+}
+
+// ── the curated community seal ────────────────────────────────────────────────
+// A small monochrome emblem for an official community — a cosmos ring set with
+// the brand's crest star, around the school's serif monogram. Tinted to the two
+// stars only (cream ring/letters, one amber crest), so no third hue enters. If a
+// community carries an `asset` (a black-on-transparent logo dropped in
+// app/public/schools/), it's rendered instead and palette-tinted to a clean
+// monochrome silhouette, so a hand-swapped logo still reads as this cosmos.
+export function SchoolMark({ C, slug, size = 46 }) {
+  const c = bySlug(slug)
+  const tint = C.cream
+  if (c && c.asset) {
+    return (
+      <span
+        role="img"
+        aria-label={c.name}
+        style={{
+          display: 'inline-block', width: size, height: size, flexShrink: 0, background: tint,
+          WebkitMaskImage: `url(${c.asset})`, maskImage: `url(${c.asset})`,
+          WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center', maskPosition: 'center',
+          WebkitMaskSize: 'contain', maskSize: 'contain',
+        }}
+      />
+    )
+  }
+  const mono = (c && c.mono) || (c && c.short ? c.short.slice(0, 3) : '·')
+  const fs = mono.length >= 3 ? 12.5 : mono.length === 2 ? 15.5 : 18
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" role="img" aria-label={(c && c.name) || slug} style={{ display: 'block', flexShrink: 0, overflow: 'visible' }}>
+      <circle cx="20" cy="20" r="18.2" fill="none" stroke={rgba(tint, 0.42)} strokeWidth="1.3" />
+      {/* the crest star — every community wears the brand's one amber light */}
+      <path d="M20 0.6 Q20.7 3.5 23.5 4.2 Q20.7 4.9 20 7.8 Q19.3 4.9 16.5 4.2 Q19.3 3.5 20 0.6 Z" fill={C.star} />
+      <text
+        x="20" y="21" dominantBaseline="central" textAnchor="middle"
+        fontFamily="'Instrument Serif', Georgia, serif" fontStyle="italic" fontSize={fs} fill={tint}
+      >
+        {mono}
+      </text>
     </svg>
   )
 }
@@ -754,6 +797,69 @@ export function Meter({ C, count, threshold }) {
             boxShadow: `0 0 8px 2px ${rgba(C.star, 0.8)}`,
           }}
         />
+      </div>
+    </div>
+  )
+}
+
+// ── the progress ring ─────────────────────────────────────────────────────────
+// A community's climb toward its team-set threshold, shown as a ring instead of
+// a raw count: a faint cream track, an amber→rose arc that fills once on mount
+// and eases smoothly whenever the value changes (so live activity visibly climbs
+// it), and a white star riding the leading edge — the Meter's edge-star, curved.
+// The percentage is the serif hero (the product's hero-number register); the
+// label sits in mono beneath. Collapses to a static ring under reduced-motion.
+export function ProgressRing({ C, frac = 0, size = 150, label, sublabel }) {
+  const reduce =
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const r = 52
+  const circ = 2 * Math.PI * r
+  const target = Math.max(0, Math.min(1, frac || 0))
+  const pct = Math.round(target * 100)
+  const [mounted, setMounted] = React.useState(reduce)
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+  const shown = mounted ? target : 0
+  const offset = circ * (1 - shown)
+  const deg = 360 * shown
+  const gid = React.useId()
+  const ease = 'cubic-bezier(.2,.7,.2,1)'
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} viewBox="0 0 120 120" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={C.star} />
+            <stop offset="62%" stopColor={C.star} />
+            <stop offset="100%" stopColor={C.them} />
+          </linearGradient>
+        </defs>
+        <g transform="rotate(-90 60 60)">
+          <circle cx="60" cy="60" r={r} fill="none" stroke={rgba(C.cream, 0.08)} strokeWidth="8" />
+          <circle
+            cx="60" cy="60" r={r} fill="none" stroke={`url(#${gid})`} strokeWidth="8" strokeLinecap="round"
+            strokeDasharray={circ} strokeDashoffset={offset}
+            style={{ transition: reduce ? 'none' : `stroke-dashoffset 1.15s ${ease}`, filter: `drop-shadow(0 0 5px ${rgba(C.star, 0.5)})` }}
+          />
+        </g>
+        {/* the star travelling the leading edge */}
+        <g style={{ transformBox: 'view-box', transformOrigin: '60px 60px', transform: `rotate(${deg}deg)`, transition: reduce ? 'none' : `transform 1.15s ${ease}` }}>
+          <circle cx="60" cy="8" r="6" fill={rgba(C.star, 0.45)} />
+          <circle cx="60" cy="8" r="2.7" fill="#fff" style={{ filter: `drop-shadow(0 0 4px ${rgba(C.star, 0.9)})` }} />
+        </g>
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+        <span key={pct} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: size * 0.3, lineHeight: 1, color: C.cream }}>
+          {pct}<span style={{ fontSize: size * 0.135, color: rgba(C.cream, 0.66) }}>%</span>
+        </span>
+        {label && (
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: Math.max(9, size * 0.058), letterSpacing: '1.6px', textTransform: 'uppercase', color: rgba(C.star, 0.92) }}>{label}</span>
+        )}
+        {sublabel && (
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: Math.max(8.5, size * 0.05), letterSpacing: '.4px', color: C.muted }}>{sublabel}</span>
+        )}
       </div>
     </div>
   )

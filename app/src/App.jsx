@@ -2,8 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
-  suppressHandle, normHandle, isValidHandle, linkHandles, setWorlds,
-  fetchCampus, preregisterCampus, SLOT_CAP, FULL_SLOTS,
+  suppressHandle, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
@@ -12,24 +11,26 @@ import { makeColors } from './theme.js'
 import { GalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  DoorScreen, CampusScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
+  DoorScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
-import { DEMO_CAMPUS, DEMO_WORLDS } from './demoData.js'
+import { CURATED, CURATED_SLUGS, isCurated } from './communities.js'
+import { DEMO_COMMUNITIES, DEMO_FEED } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
 const SCREENS = {
   landing: LandingScreen, // 1 · the cold landing
   open: OpenDoorScreen, //    the personal open-door page (/@handle)
-  who: WhoScreen, //        2 · the send
+  who: WhoScreen, //        2 · the send (crush @ first)
   you: YouScreen, //            identity (so the ping can resolve to you)
+  schools: SchoolsScreen, //    new-user opt-in to affiliated communities
   sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
   door: DoorScreen, //      5 · the open-door card
-  campus: CampusScreen, //  6–7 · the campus window (/c/slug, optional launch tool)
-  worlds: WorldsScreen, //  your worlds — communities + the fixed-100 stats
+  worlds: WorldsScreen, //  communities — the curated list
+  community: CommunityScreen, // a community page (/c/slug) — the ring + weekly readout
   match: MatchScreen, //    8 · the match
   fourth: FourthSlotScreen, // 9 · the fourth slot (dormant)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
@@ -37,18 +38,30 @@ const SCREENS = {
 
 const STORE = 'celestual:v2'
 
+// Seed the sandbox's live community numbers (progress + weekly readout) from the
+// hardcoded demo overlay, keyed by curated slug. Ephemeral — never persisted, so
+// it resets the moment the tab closes.
+const seedDemoCommLive = () => {
+  const o = {}
+  for (const slug of CURATED_SLUGS) {
+    const d = DEMO_COMMUNITIES[slug] || {}
+    o[slug] = { current: Number(d.current || 0), week: d.week || null }
+  }
+  return o
+}
+
 // ── routes ────────────────────────────────────────────────────────────────────
 // /demo         → the sandbox (auto-verify, hardcoded sample data)
 // /@handle      → someone's open door, ping field prefilled (Loop B)
-// /c/<slug>     → a campus window (Loop C)
+// /c/<slug>     → a curated community page (the ring + weekly readout)
 // /optout       → the public opt-out page
 const parseRoute = () => {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
   if (/(^|\/)demo$/.test(path)) return { demo: true }
   const at = path.match(/^\/@([a-zA-Z0-9._]{1,30})$/)
   if (at) return { poster: normHandle(at[1]) }
-  const campus = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
-  if (campus) return { campus: campus[1].toLowerCase() }
+  const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
+  if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
   if (path === '/optout') return { optout: true }
   return {}
 }
@@ -98,12 +111,29 @@ export default function App() {
   const [demoFourthSlot, setDemoFourthSlot] = useState(false)
   const slotCap = demo && demoFourthSlot ? SLOT_CAP + 1 : SLOT_CAP
 
-  // ── worlds (community counters) ──
-  const [worlds, setWorldsState] = useState(() => init.worlds || [])
+  // ── communities (the curated launch spaces) ──
+  // Membership (which curated slugs you've joined) persists like a light
+  // preference; the live numbers (progress, weekly readout) are ephemeral —
+  // seeded in the sandbox, best-effort fetched in production. The onboarding
+  // schools step is offered once (schoolsSeen). `openCommunity` is which one the
+  // community page is showing.
+  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? [] : init.memberships || []))
+  const [commLive, setCommLive] = useState(() => (demo ? seedDemoCommLive() : {}))
+  const [schoolsSeen, setSchoolsSeen] = useState(() => (demo ? false : !!init.schoolsSeen))
+  const [openCommunity, setOpenCommunity] = useState(route.community || CURATED_SLUGS[0])
 
-  // ── the campus window ──
-  const [campus, setCampus] = useState(() => (demo ? { ...DEMO_CAMPUS } : null))
-  const [campusJoined, setCampusJoined] = useState(false)
+  // The list handed to the UI: the curated registry, overlaid with live numbers
+  // and your membership.
+  const communities = useMemo(
+    () =>
+      CURATED.map((c) => ({
+        ...c,
+        current: Number((commLive[c.slug] && commLive[c.slug].current) || 0),
+        week: (commLive[c.slug] && commLive[c.slug].week) || null,
+        joined: joinedSlugs.includes(c.slug),
+      })),
+    [commLive, joinedSlugs],
+  )
 
   // ── overlays ──
   const [accountOpen, setAccountOpen] = useState(false)
@@ -136,9 +166,9 @@ export default function App() {
   // ── navigation ──
   const firstScreen = () => {
     if (route.poster) return 'open'
-    if (route.campus) return 'campus'
+    if (route.community) return 'community'
     if (route.optout) return 'privacy'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff'].includes(init.screen)) return init.screen
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'schools'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -211,12 +241,12 @@ export default function App() {
       const identity = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...identity, pings: established ? pings : [], worlds: established ? worlds : [] }),
+        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolsSeen }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, worlds, established])
+  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolsSeen, established])
 
   // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
@@ -329,19 +359,29 @@ export default function App() {
     return () => clearTimeout(id)
   }, [me, altHandles, demo])
 
-  // ── the campus window ──
+  // ── community counts (production only; the sandbox seeds its own) ──
+  // Best-effort: fill each curated community's progress from the server. The demo
+  // owns its numbers locally, and everything degrades to "gathering" if the fetch
+  // is empty, so nothing here blocks the communities UI.
   useEffect(() => {
-    if (demo || !route.campus) return
+    if (demo) return
     let live = true
-    fetchCampus(route.campus)
-      .then((c) => {
-        if (live) setCampus(c)
+    worldCounts(CURATED_SLUGS)
+      .then((rows) => {
+        if (!live || !rows || !rows.length) return
+        setCommLive((prev) => {
+          const next = { ...prev }
+          for (const r of rows) {
+            if (r && r.slug) next[r.slug] = { ...(next[r.slug] || {}), current: Number(r.count || 0) }
+          }
+          return next
+        })
       })
       .catch(() => {})
     return () => {
       live = false
     }
-  }, [demo, route.campus])
+  }, [demo])
 
   // ── the send-off animation ──
   // Collapse the @ field into a star (Liftoff) and hand off to the galaxy's drift
@@ -390,16 +430,11 @@ export default function App() {
   const findOut = useCallback(() => {
     setLoginMode(false)
     setError('')
-    // self @ first: a new, unidentified person names THEMSELVES before naming
-    // anyone else — which also means the slot count we show them is real, not a
-    // guess. once identified (or in the sandbox), go straight to the send.
-    if (normHandle(me) && (verified || demo)) {
-      go('who')
-    } else {
-      pendingAction.current = 'place'
-      go('you')
-    }
-  }, [me, verified, demo, go])
+    // crush @ first: a new person names who they're thinking about before naming
+    // themselves. identity — and, for a new user, the affiliated-schools step —
+    // comes after, on the way to placing.
+    go('who')
+  }, [go])
 
   // From an open-door page: land two taps from a placed ping (field prefilled).
   const startFromDoor = useCallback(
@@ -475,31 +510,78 @@ export default function App() {
     [me, them, email, intent, demo, session, go, t, runSendoff],
   )
 
-  // Preregister for the campus window ("count me in" — a full verified signup).
-  const preregCommit = useCallback(
-    async (proofOverride, emailOverride) => {
-      const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
-      const em = emailOverride ?? email
+  // ── communities (curated: join / leave, view, and the sandbox live feed) ──
+  // A live membership mirror, so toggleCommunity can read the current set without
+  // depending on it (and re-creating the callback every join).
+  const joinedRef = useRef(joinedSlugs)
+  useEffect(() => {
+    joinedRef.current = joinedSlugs
+  }, [joinedSlugs])
+  // Which fresh verification proof to carry through the onboarding schools step
+  // into the final placement (the session state hasn't re-rendered yet).
+  const onboardProof = useRef(undefined)
+
+  const joinCommunity = useCallback(
+    (slug) => {
+      if (!isCurated(slug)) return
+      setJoinedSlugs((prev) => (prev.includes(slug) ? prev : [...prev, slug]))
+      // in the sandbox, joining nudges the ring (you're now one of the count)
       if (demo) {
-        setCampus((c) => (c ? { ...c, count: Math.min(c.count + 1, c.threshold) } : c))
-        setCampusJoined(true)
-        go('campus')
-        return
-      }
-      try {
-        const res = await preregisterCampus({ slug: campus?.slug, me, email: em, proof, demo })
-        if (res?.ok) {
-          setCampusJoined(true)
-          setCampus((c) => (c ? { ...c, count: res.count ?? c.count, status: res.status || c.status } : c))
-        }
-        go('campus')
-      } catch (e) {
-        console.error(e)
-        go('campus')
+        setCommLive((prev) => ({
+          ...prev,
+          [slug]: { ...(prev[slug] || {}), current: Number((prev[slug] && prev[slug].current) || 0) + 1 },
+        }))
       }
     },
-    [campus, me, email, demo, session, go],
+    [demo],
   )
+  const leaveCommunity = useCallback((slug) => {
+    setJoinedSlugs((prev) => prev.filter((s) => s !== slug))
+  }, [])
+  const toggleCommunity = useCallback(
+    (slug) => {
+      if (joinedRef.current.includes(slug)) leaveCommunity(slug)
+      else joinCommunity(slug)
+    },
+    [joinCommunity, leaveCommunity],
+  )
+  const viewCommunity = useCallback(
+    (slug) => {
+      setOpenCommunity(isCurated(slug) ? slug : CURATED_SLUGS[0])
+      go('community')
+    },
+    [go],
+  )
+
+  // Sandbox only: a live-feed beat nudges the community it names, so the ring
+  // visibly climbs and (for an open one) the weekly readout ticks as you watch.
+  const bumpCommunityActivity = useCallback(
+    (slug, kind) => {
+      if (!demo || !isCurated(slug)) return
+      setCommLive((prev) => {
+        const cur = prev[slug] || { current: 0, week: null }
+        const week = cur.week
+          ? {
+              ...cur.week,
+              matches: Number(cur.week.matches || 0) + (kind === 'match' ? 1 : 0),
+              joined: Number(cur.week.joined || 0) + (kind === 'join' ? 1 : 0),
+              pings: Number(cur.week.pings || 0) + (kind === 'ping' || kind === 'reason' ? 1 : 0),
+            }
+          : cur.week
+        return { ...prev, [slug]: { ...cur, current: Number(cur.current || 0) + (kind === 'join' ? 2 : 1), week } }
+      })
+    },
+    [demo],
+  )
+
+  // The new-user schools step is done → mark it seen and place the held ping,
+  // carrying the verification proof through from the identity step.
+  const finishOnboarding = useCallback(() => {
+    setSchoolsSeen(true)
+    const proof = onboardProof.current
+    onboardProof.current = undefined
+    placeCommit(proof)
+  }, [placeCommit])
 
   // Place — from the send screen. Runs the identity gate first when needed.
   const place = useCallback(async () => {
@@ -536,17 +618,20 @@ export default function App() {
   const continueFromYou = useCallback(() => {
     if (!isValidHandle(me)) return
     const resume = (proof) => {
-      const action = pendingAction.current
       pendingAction.current = null
-      if (action === 'prereg') {
-        preregCommit(proof)
+      // no target yet (login-free signup with no crush named) — go name one.
+      if (!normHandle(them)) {
+        go('who')
         return
       }
-      // identity settled. if a target is already chosen (an open-door link
-      // pre-named them), finish placing; otherwise this was the self-@-first step
-      // in the main funnel, so now go name the other person.
-      if (normHandle(them)) placeCommit(proof)
-      else go('who')
+      // a target is chosen. for a first-time user, offer the affiliated schools
+      // once (carrying the fresh proof through) before placing; otherwise place.
+      if (!schoolsSeen) {
+        onboardProof.current = proof
+        go('schools')
+        return
+      }
+      placeCommit(proof)
     }
     if (!verified && (demo || igVerifyEnabled())) {
       openVerify(me, resume)
@@ -554,27 +639,7 @@ export default function App() {
     }
     if (!verified && !demo) setSession(signInStub())
     resume()
-  }, [me, them, demo, verified, openVerify, placeCommit, preregCommit, go])
-
-  // The campus page's "count me in".
-  const preregister = useCallback(
-    async (em) => {
-      if (em != null) setEmail(em)
-      if (!normHandle(me)) {
-        pendingAction.current = 'prereg'
-        setLoginMode(false)
-        go('you')
-        return
-      }
-      if (!verified && (demo || igVerifyEnabled())) {
-        openVerify(me, (proof) => preregCommit(proof, em))
-        return
-      }
-      if (!verified && !demo) setSession(signInStub())
-      await preregCommit(undefined, em)
-    },
-    [me, demo, verified, go, openVerify, preregCommit],
-  )
+  }, [me, them, demo, verified, schoolsSeen, openVerify, placeCommit, go])
 
   // ── sign back in (cross-device) ──
   const startLogin = useCallback(() => {
@@ -708,64 +773,6 @@ export default function App() {
     go('who')
   }, [demo, go])
 
-  // ── sandbox: a fresh match/stat lands in a community ──
-  // Bumps a world's live weekly readout so the "active updates" read as live.
-  const simulateWorldActivity = useCallback(
-    (slug) => {
-      if (!demo) return
-      setWorldsState((prev) =>
-        prev.map((w) => {
-          if (w.slug !== slug || !w.week) return w
-          return {
-            ...w,
-            count: Number(w.count) + 1,
-            week: {
-              ...w.week,
-              matches: Number(w.week.matches || 0) + 1,
-              pings: Number(w.week.pings || 0) + 3,
-              joined: Number(w.week.joined || 0) + 1,
-            },
-          }
-        }),
-      )
-    },
-    [demo],
-  )
-
-  // ── sandbox: cycle the campus window through its three states ──
-  const cycleCampus = useCallback(() => {
-    if (!demo) return
-    setCampus((c) => {
-      if (!c) return c
-      if (c.status === 'window') return { ...c, status: 'open', count: c.threshold, opened_at: new Date().toISOString() }
-      if (c.status === 'open') return { ...c, status: 'revealed' }
-      return { ...DEMO_CAMPUS }
-    })
-    setCampusJoined(false)
-  }, [demo])
-
-  // ── worlds ──
-  const setWorldNames = useCallback(
-    (names) => {
-      const list = (names || []).map((n) => String(n || '').trim()).filter(Boolean).slice(0, 3)
-      if (demo) {
-        // keep the sample counters where names match; new names gather quietly
-        setWorldsState(
-          list.map((n) => DEMO_WORLDS.find((w) => w.name === n) || { slug: n, name: n, count: null }),
-        )
-        return
-      }
-      setWorldsState(list.map((n) => ({ slug: n, name: n, count: null })))
-      const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
-      setWorlds({ me, names: list, proof, demo })
-        .then((res) => {
-          if (res?.ok && Array.isArray(res.worlds)) setWorldsState(res.worlds)
-        })
-        .catch(() => {})
-    },
-    [demo, me, session],
-  )
-
   // ── the exits ──
   const wipeLocalState = useCallback(() => {
     try {
@@ -780,7 +787,8 @@ export default function App() {
     setIntent('')
     setError('')
     setPings([])
-    setWorldsState([])
+    setJoinedSlugs([])
+    setSchoolsSeen(false)
     setMatch(null)
     setLastPlaced(null)
     setSlots(FULL_SLOTS)
@@ -871,9 +879,9 @@ export default function App() {
     demo, me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap,
     intent, setIntent,
-    worlds, setWorldNames, simulateWorldActivity,
+    communities, openCommunity, feedPool: demo ? DEMO_FEED : [],
+    viewCommunity, joinCommunity, leaveCommunity, toggleCommunity, bumpCommunityActivity, finishOnboarding,
     lastPlaced, match,
-    campus, campusJoined, preregister, cycleCampus,
     demoFourthSlot, buyFourthSlot, placeFourth,
     posterHandle: route.poster || '',
     verifyEnabled: igVerifyEnabled() || demo,
@@ -889,7 +897,9 @@ export default function App() {
 
   // The profile chip sits top-left on the quiet screens, once an account is
   // established (never for a merely-typed @).
-  const showProfile = established && !!me && ['pings', 'landing', 'campus', 'worlds'].includes(screen)
+  // Only on the screens with no back button of their own, so the chip never
+  // stacks under a back arrow (the community screens carry their own back nav).
+  const showProfile = established && !!me && ['pings', 'landing'].includes(screen)
   // Its logged-out counterpart: a clear "log in" chip in the same corner, so a
   // returning person always has an obvious way back to their pings.
   const showLogin = !established && ['landing', 'open'].includes(screen)
@@ -898,7 +908,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'campus', 'worlds', 'open']
+  const CALM_SCREENS = ['pings', 'who', 'you', 'schools', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   return (
