@@ -1001,6 +1001,12 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
         <path d="M3.5 10h8M8.5 6.5L12 10l-3.5 3.5" {...p} />
       </>
     ),
+    search: (
+      <>
+        <circle cx="8.8" cy="8.8" r="5.2" {...p} />
+        <path d="M12.7 12.7L16.5 16.5" {...p} />
+      </>
+    ),
   }
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0 }}>
