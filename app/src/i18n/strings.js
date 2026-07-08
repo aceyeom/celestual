@@ -296,7 +296,7 @@ const en = {
   // ring's own center label and the sandbox live-feed copy are intentionally
   // literal and live in communities.js / demoData.js, out of this linted file.
   'communities.kicker': 'communities',
-  'communities.intro': 'official launch spaces, opening one campus at a time.',
+  'communities.intro': 'everyone can ping from day one. at 100 people, a community opens its sky.',
   'communities.foot': 'curated by celestual. more schools soon.',
   'communities.open': 'open',
   'communities.gathering': 'gathering',
@@ -314,7 +314,12 @@ const en = {
   'communities.join': 'join {name}',
   'communities.leave': 'leave this community',
   'communities.place': 'place a ping',
-  'communities.demoActivity': 'sandbox: new activity',
+  'communities.matchedShort': 'matched',
+  // the galaxy community page — a gathering community's sky is still forming
+  'communities.gatheringHero': 'a sky still forming.',
+  'communities.gatheringBody2': 'everyone here can already ping. at 100 people, its stars come out — and its matches begin to show.',
+  'communities.demoWave': 'sandbox: send a wave of pings',
+  'communities.demoGather': 'sandbox: bring people in',
   'communities.label': 'your communities',
   'communities.browse': 'browse',
   'communities.summaryNone': 'you haven’t joined one yet.',
@@ -342,14 +347,16 @@ const en = {
   'communities.gatewayNone': 'not in a community yet.',
   'communities.open2': 'open',
 
-  // the shared launch countdown — every gathering campus opens at the same
-  // midnight, so the ring page carries a live count to that moment.
-  'communities.liveLabel': 'they all go live together',
-  'communities.liveIn': 'opens in',
-  'communities.liveAt': 'midnight · {day}',
-  'communities.liveH': 'hrs',
-  'communities.liveM': 'min',
-  'communities.liveS': 'sec',
+  // the live shoutout wall — a community's one public voice. anonymous by
+  // construction: the composer strips handles, names, and contacts, and rate-
+  // limits, so it can be alive without ever outing a person or a match.
+  'shout.title': 'shoutouts',
+  'shout.anon': 'anonymous',
+  'shout.empty': 'be the first to say something.',
+  'shout.you': 'you',
+  'shout.placeholder': 'say it to no one and everyone…',
+  'shout.send': 'send',
+  'shout.wait': 'again in {n}s',
 
   // ── affiliated schools (new-user onboarding step) ───────────────────────
   'schools.kicker': 'one more thing',

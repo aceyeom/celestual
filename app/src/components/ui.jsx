@@ -5,6 +5,7 @@
 // rules these components enforce.
 import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
+import { CommunityGalaxy } from '../communityGalaxy.js'
 import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
 import { bySlug } from '../communities.js'
@@ -109,6 +110,61 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
       ref={ref}
       aria-hidden
       style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', background: TOKENS.ink, ...style }}
+    />
+  )
+}
+
+// ── the community galaxy (a countable galaxy: one star per real ping) ─────────
+// The community page's own galaxy — distinct from the ambient backdrop above.
+// Every star is one ping; the field fills as pings arrive and lights anonymous
+// match-constellations. Full-bleed at z-index 0 so it sits UNDER the screen's
+// content (which the screen wraps at z-index 1) but OVER the ambient backdrop.
+// `onReady(field)` hands the live engine to the screen so it can launch() a ping
+// and addConstellation() a match as the demo (or real data) ticks. Remount on a
+// community change by giving it key={slug}.
+export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, onReady }) {
+  const ref = React.useRef(null)
+  const field = React.useRef(null)
+  const readyRef = React.useRef(onReady)
+  readyRef.current = onReady
+  React.useEffect(() => {
+    const f = new CommunityGalaxy(ref.current, { you, them })
+    field.current = f
+    if (forming) {
+      f.setForming(true)
+    } else {
+      f.seed(pings)
+      f.setConstellations(matches)
+    }
+    f.start()
+    if (readyRef.current) readyRef.current(f)
+    if (import.meta.env.DEV) window.__communityGalaxy = f
+    let ro
+    let roRaf = 0
+    if (window.ResizeObserver && ref.current && ref.current.parentElement) {
+      ro = new ResizeObserver(() => {
+        if (roRaf) cancelAnimationFrame(roRaf)
+        roRaf = requestAnimationFrame(() => f.resize())
+      })
+      ro.observe(ref.current.parentElement)
+    }
+    const r1 = requestAnimationFrame(() => f.resize())
+    return () => {
+      if (ro) ro.disconnect()
+      if (roRaf) cancelAnimationFrame(roRaf)
+      cancelAnimationFrame(r1)
+      f.destroy()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  React.useEffect(() => {
+    if (field.current) field.current.setPalette(you, them)
+  }, [you, them])
+  return (
+    <canvas
+      ref={ref}
+      aria-hidden
+      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0, background: '#04030A', pointerEvents: 'none' }}
     />
   )
 }

@@ -190,6 +190,38 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-07-08** — **Communities become a living galaxy: pings as stars, matches
+  as anonymous constellations, a moderated shoutout wall — and the broken
+  countdown/percentage removed.** A human-directed rework of the community page,
+  inside the locked galaxy identity (two stars only, one primary action, §3
+  registers). *Why:* the page ran three fighting progress systems — a launch
+  countdown (time), a percentage ring (members÷threshold), and a live feed — that
+  could disagree (the clock hitting 0:00 at 0%). The masterguide already resolves
+  this: celestual is globally open, so a community is **never a gate**; at a fixed
+  **100 members** its stats simply open. So the countdown and the percentage are
+  gone, and density is now *felt*, not read.
+  - **A second galaxy** (`app/src/communityGalaxy.js`, `CommunityGalaxy` +
+    `CommunityGalaxyCanvas` in `ui.jsx`) — distinct from the ambient backdrop
+    (`galaxy.js`). Here **every star is one real ping**: the field starts empty and
+    fills (0 → ~1000+) with a phyllotaxis spiral, each new ping igniting via a
+    launch streak that rises and settles ("someone placed a ping"). A small
+    community is a tight bright core; a large one sprawls to the rim — size is felt.
+  - **Anonymous match-constellations** — every mutual match this week lights ONE
+    unattributed asterism seated within the community's light. A constellation is
+    never tied to an identifiable ping, so the sky can never reveal who matched
+    whom: the double-blind, kept structurally. Capped so it never tangles.
+  - **The privacy floor as a visual** — a gathering community (<100 members) hides
+    its exact counts (small counts de-anonymize), so its galaxy is an *uncountable
+    forming nebula*; crossing 100 resolves it into discrete stars + its first
+    constellations. The unlock is a real visual reward, not a bar hitting 100%.
+  - **A live shoutout wall** (`ShoutoutPanel`, `app/src/moderation.js`) — the one
+    public voice on the platform, anonymous by construction: the composer strips
+    @handles / names / contacts, blocks abuse, and rate-limits (45s), so it can be
+    alive without outing a person or a match. Ping toasts (`GalaxyToasts`) rise
+    over the field as the demo pulse (`useCommunityPulse`) fires pings, matches,
+    and shoutouts. The `Meter`/`ProgressRing`/countdown are retired from the page
+    (`ProgressRing`/`Meter` stay exported for the optional `/c/` campus window).
+
 - **2026-07-06** — **Communities complete rework (curated launch spaces), the
   progress ring, live activity, crush-first onboarding, and a calmer galaxy core.**
   A human-directed feature change, kept inside the locked galaxy identity (no new
