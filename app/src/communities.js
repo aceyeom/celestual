@@ -12,10 +12,14 @@
 // black-on-transparent asset in app/public/schools/ and set `asset` below to its
 // path; `SchoolMark` will render (and palette-tint) it in place of the seal.
 
+// `domain` is the school's email domain — membership is proven by a code sent to
+// an address there (see api/eduverify.js). A subdomain (andrew.cmu.edu) counts as
+// the school too, so the matcher accepts the domain itself or anything ending in
+// `.<domain>`.
 export const CURATED = [
-  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', threshold: 2500, asset: '/schools/uc-berkeley.png' },
-  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', threshold: 900, asset: '/schools/wesleyan.png' },
-  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', threshold: 1800, asset: '/schools/cmu.png' },
+  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', threshold: 2500, domain: 'berkeley.edu', asset: '/schools/uc-berkeley.png' },
+  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', threshold: 900, domain: 'wesleyan.edu', asset: '/schools/wesleyan.png' },
+  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', threshold: 1800, domain: 'cmu.edu', asset: '/schools/cmu.png' },
 ]
 
 export const CURATED_SLUGS = CURATED.map((c) => c.slug)
@@ -59,4 +63,38 @@ export function bySlug(slug) {
 
 export function isCurated(slug) {
   return !!bySlug(slug)
+}
+
+// Does `email` belong to the school that owns `slug`? True when its domain is the
+// school's domain, or a subdomain of it (andrew.cmu.edu ⊂ cmu.edu). Used to gate
+// membership: your ping only reaches people from your own community, so we confirm
+// you're really there before you can ping into it.
+export function emailMatchesSchool(email, slug) {
+  const c = bySlug(slug)
+  if (!c || !c.domain) return false
+  const at = String(email || '').trim().toLowerCase()
+  const m = at.match(/^[^\s@]+@([^\s@]+)$/)
+  if (!m) return false
+  const host = m[1]
+  return host === c.domain || host.endsWith('.' + c.domain)
+}
+
+// A plausible .edu address at all (used before we know the school). Kept loose —
+// the school-specific check above is the real gate.
+export function isEduEmail(email) {
+  const at = String(email || '').trim().toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.edu$/.test(at)
+}
+
+// The next weekly reveal — Sunday 20:00 in the viewer's own timezone. Deterministic
+// and always in the future, so the community countdown actually ticks down and
+// resets each week. The reveal is the shared moment the sky lights its matches.
+export function nextRevealAt(now = new Date()) {
+  const d = new Date(now)
+  d.setHours(20, 0, 0, 0) // 8pm local
+  // days until Sunday (0)
+  let add = (7 - d.getDay()) % 7
+  if (add === 0 && d.getTime() <= now.getTime()) add = 7
+  d.setDate(d.getDate() + add)
+  return d
 }

@@ -83,8 +83,10 @@ export class CommunityGalaxy {
     this.pTarget = { x: 0, y: 0 }
     this.p = { x: 0, y: 0 }
     this.ripples = [] // tap shockwaves
+    this.mineIndex = -1 // the viewer's own star (their last placed ping), highlighted
+    this.locate = null // a running "find your star" homing animation
 
-    this.stars = [] // one per ping: { i, hue, tw, tws, born, launching, ox, oy, trail }
+    this.stars = [] // one per ping: { i, hue, tw, tws, born, launching, ox, oy, trail, mine }
     this.consts = [] // one per mutual match: anonymous asterism
     // "forming" = a gathering community below the privacy floor. Its exact ping
     // count is withheld (small counts de-anonymize), so instead of countable
@@ -203,6 +205,7 @@ export class CommunityGalaxy {
     this.cx = w / 2
     this.cy = h * 0.4 // core sits in the upper-middle "hero" zone
     this._bgGrad = null
+    this._vig = null
     if (this.reduced) this.start()
   }
 
@@ -220,14 +223,17 @@ export class CommunityGalaxy {
   seed(n) {
     n = Math.max(0, Math.floor(n))
     this.stars = []
+    this.mineIndex = -1
+    this.locate = null
     for (let i = 0; i < n; i++) this.stars.push(this._makeStar(i, /*settleOnly*/ true))
     this.start()
   }
 
-  _makeStar(i, settleOnly) {
+  _makeStar(i, settleOnly, mine) {
     return {
       i,
-      hue: this._hue((() => { let s = (i * 2654435761) % 233280; return () => (s = (s * 9301 + 49297) % 233280) / 233280 })()),
+      mine: !!mine,
+      hue: mine ? this.you : this._hue((() => { let s = (i * 2654435761) % 233280; return () => (s = (s * 9301 + 49297) % 233280) / 233280 })()),
       tw: (i * 1.7) % TWO,
       tws: 0.4 + ((i * 13) % 100) / 140,
       born: settleOnly ? -10 : this.t, // launched now, or already settled
@@ -260,20 +266,36 @@ export class CommunityGalaxy {
   }
 
   // Fire `k` new pings: each rises from below and ignites in its slot. This is the
-  // live "someone placed a ping" beat.
-  launch(k = 1) {
+  // live "someone placed a ping" beat. `opts.mine` marks the star as the viewer's
+  // own — it lands brighter, keeps a soft ring, and can be found again via locate().
+  launch(k = 1, opts = {}) {
     for (let j = 0; j < k; j++) {
       const i = this.stars.length
-      const st = this._makeStar(i, false)
+      const st = this._makeStar(i, false, !!opts.mine)
       // launch origin: from below the frame, roughly under its final position
       const slot = this._slot(i)
       const pr = this._project(slot.dx, slot.dz, slot.y)
       st.ox = pr.x + (Math.random() - 0.5) * this.w * 0.3
       st.oy = this.h + 30 + Math.random() * 60
       this.stars.push(st)
+      if (opts.mine) this.mineIndex = i
     }
+    if (opts.mine) this.locateMine()
     this.start()
     return this.stars.length
+  }
+
+  // Draw the eye to the viewer's own star: a homing ring converges onto it and it
+  // flares. No-op if they don't have one yet.
+  locateMine() {
+    if (this.mineIndex < 0 || !this.stars[this.mineIndex]) return false
+    this.locate = { t: 0, i: this.mineIndex }
+    this.start()
+    return true
+  }
+
+  hasMine() {
+    return this.mineIndex >= 0 && !!this.stars[this.mineIndex]
   }
 
   // Trim to `n` (for a demo reset). Growing is done via launch()/seed().
@@ -350,7 +372,7 @@ export class CommunityGalaxy {
       this.t += dt
       this._draw(0)
       // settle quickly then rest (no perpetual repaint)
-      const busy = this.stars.some((s) => s.launching) || this.ripples.length || this.consts.some((c) => this.t - c.born < 1.6)
+      const busy = this.stars.some((s) => s.launching) || this.ripples.length || this.locate || this.consts.some((c) => this.t - c.born < 1.6)
       if (!busy && this.t > 1) { this.running = false; return }
       requestAnimationFrame(this._boundTick)
       return
@@ -386,11 +408,68 @@ export class CommunityGalaxy {
     } else {
       this._drawStars(dt)
       this._drawConstellations(dt)
+      this._drawLocate(dt)
     }
     this._drawRipples(dt)
+    this._drawVignette()
 
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // A soft radial vignette that deepens the frame edges, so the field reads as a
+  // lit disk in real depth rather than a flat wash.
+  _drawVignette() {
+    const ctx = this.ctx
+    if (!this._vig) {
+      const g = ctx.createRadialGradient(this.cx, this.cy, this.scale * 0.55, this.cx, this.cy, Math.max(this.w, this.h) * 0.95)
+      g.addColorStop(0, 'rgba(0,0,0,0)')
+      g.addColorStop(0.7, 'rgba(3,2,8,0.28)')
+      g.addColorStop(1, 'rgba(2,1,6,0.62)')
+      this._vig = g
+    }
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+    ctx.fillStyle = this._vig
+    ctx.fillRect(0, 0, this.w, this.h)
+  }
+
+  // The "find your star" homing gesture: a ring closes in on the viewer's own star
+  // and it flares. Runs once per locateMine() call, then clears itself.
+  _drawLocate(dt) {
+    if (!this.locate) return
+    const st = this.stars[this.locate.i]
+    if (!st || st.launching) { if (!st) this.locate = null; return }
+    const slot = this._slot(st.i)
+    const pr = this._project(slot.dx, slot.dz, slot.y)
+    this.locate.t += dt
+    const dur = 1.7
+    const p = this.locate.t / dur
+    if (p >= 1) { this.locate = null; return }
+    const ctx = this.ctx
+    ctx.globalCompositeOperation = 'lighter'
+    // ring converges inward over the first ~65% of the beat
+    const conv = easeOut(clamp(p / 0.65, 0, 1))
+    const R = (1 - conv) * this.scale * 0.55 + 7
+    ctx.globalAlpha = (1 - p) * 0.6
+    const grd = ctx.createLinearGradient(pr.x - R, pr.y, pr.x + R, pr.y)
+    grd.addColorStop(0, this._rgba(this.them, 0.9))
+    grd.addColorStop(0.5, this._rgba(this.you, 1))
+    grd.addColorStop(1, this._rgba(this.them, 0.9))
+    ctx.strokeStyle = grd
+    ctx.lineWidth = 1.8
+    ctx.beginPath()
+    ctx.arc(pr.x, pr.y, R, 0, TWO)
+    ctx.stroke()
+    // the star flares as the ring lands
+    const flare = clamp((p - 0.55) / 0.45, 0, 1)
+    if (flare > 0) {
+      const sz = 12 + (1 - Math.abs(flare - 0.5) * 2) * 22
+      ctx.globalAlpha = (1 - flare) * 0.9
+      ctx.drawImage(this._glow.you, pr.x - sz, pr.y - sz, sz * 2, sz * 2)
+      ctx.globalAlpha = 1
+      ctx.drawImage(this._starFor('#FFFFFF'), pr.x - 6, pr.y - 6, 12, 12)
+    }
   }
 
   _drawBackground(dt) {
@@ -542,10 +621,28 @@ export class CommunityGalaxy {
       if (a <= 0.02) continue
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = Math.min(1, a)
-      const D = clamp(2.4 * (0.8 + pr.depth * 0.4), 1.6, 4.2) * (1 + ignite * 1.4)
+      const D = clamp(2.4 * (0.8 + pr.depth * 0.4), 1.6, 4.2) * (1 + ignite * 1.4) * (st.mine ? 1.35 : 1)
       ctx.drawImage(this._starFor(st.hue), pr.x - D, pr.y - D, D * 2, D * 2)
       // the brighter half also get a faint bloom (queued for the additive pass)
       if (tw > 0.85 && pr.depth > 0) glowQ.push([pr.x, pr.y, a * 0.5, st.hue])
+
+      // the viewer's own star keeps a soft, breathing ring so it's always findable
+      // in the crowd — the one star in this sky that is theirs.
+      if (st.mine) {
+        const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.7)
+        ctx.globalCompositeOperation = 'lighter'
+        const gs = 9 + pulse * 3
+        ctx.globalAlpha = 0.45 + 0.4 * pulse
+        ctx.drawImage(this._glow.you, pr.x - gs, pr.y - gs, gs * 2, gs * 2)
+        ctx.globalAlpha = 0.35 + 0.35 * pulse
+        ctx.strokeStyle = this._rgba('#FFFFFF', 1)
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(pr.x, pr.y, 6.5 + pulse * 1.6, 0, TWO)
+        ctx.stroke()
+        ctx.globalAlpha = 1
+        ctx.drawImage(this._starFor('#FFFFFF'), pr.x - 2.8, pr.y - 2.8, 5.6, 5.6)
+      }
     }
     // additive bloom pass
     ctx.globalCompositeOperation = 'lighter'
@@ -599,21 +696,42 @@ export class CommunityGalaxy {
     }
   }
 
+  // A touch answers with a warm shockwave on the disk plane: a quick core bloom at
+  // the point, then two concentric rings — amber leading into rose — easing outward
+  // and fading. Richer and warmer than a single flat stroke, so the sky feels alive
+  // to the hand rather than merely clickable.
   _drawRipples(dt) {
     if (!this.ripples.length) return
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'lighter'
     this.ripples = this.ripples.filter((r) => {
       r.t += dt
-      const p = r.t / 1.1
+      const dur = 1.3
+      const p = r.t / dur
       if (p >= 1) return false
-      const rad = easeOut(p) * this.scale * 0.7
-      ctx.globalAlpha = (1 - p) * 0.22
-      ctx.strokeStyle = this._rgba(this.you, 1)
-      ctx.lineWidth = 1.4
-      ctx.beginPath()
-      ctx.ellipse(r.x, r.y, rad, rad * TILT, 0, 0, TWO)
-      ctx.stroke()
+      // the initial bloom — a soft warm flash right at the touch
+      const flash = clamp(1 - p / 0.28, 0, 1)
+      if (flash > 0) {
+        const fs = 16 + (1 - flash) * 30
+        ctx.globalAlpha = flash * 0.5
+        ctx.drawImage(this._glow.you, r.x - fs, r.y - fs, fs * 2, fs * 2)
+      }
+      // two rings, staggered, colored amber↔rose across their width
+      for (let k = 0; k < 2; k++) {
+        const pk = clamp(p - k * 0.14, 0, 1)
+        if (pk <= 0) continue
+        const rad = easeOut(pk) * this.scale * (0.66 + k * 0.2)
+        ctx.globalAlpha = (1 - pk) * (0.3 - k * 0.12)
+        const grd = ctx.createLinearGradient(r.x - rad, r.y, r.x + rad, r.y)
+        grd.addColorStop(0, this._rgba(this.them, 0.85))
+        grd.addColorStop(0.5, this._rgba(this.you, 0.95))
+        grd.addColorStop(1, this._rgba(this.them, 0.85))
+        ctx.strokeStyle = grd
+        ctx.lineWidth = 1.9 - k * 0.7
+        ctx.beginPath()
+        ctx.ellipse(r.x, r.y, rad, rad * TILT, 0, 0, TWO)
+        ctx.stroke()
+      }
       return true
     })
   }

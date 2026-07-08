@@ -8,14 +8,14 @@ import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
+import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  DoorScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
-  SendoffScreen, AccountSheet, IgVerifySheet,
+  SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
+  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet,
 } from './components/screens.jsx'
-import { CURATED, CURATED_SLUGS, isCurated } from './communities.js'
-import { DEMO_COMMUNITIES, DEMO_SHOUTOUTS } from './demoData.js'
+import { CURATED, CURATED_SLUGS, isCurated, communityOpen, MATCH_FLOOR } from './communities.js'
+import { DEMO_COMMUNITIES } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
@@ -28,7 +28,7 @@ const SCREENS = {
   sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
-  door: DoorScreen, //      5 · the open-door card
+  door: SkyCardScreen, //   5 · the open-sky community share card
   worlds: WorldsScreen, //  communities — the curated list
   community: CommunityScreen, // a community page (/c/slug) — the ring + weekly readout
   match: MatchScreen, //    8 · the match
@@ -126,10 +126,22 @@ export default function App() {
   // seeded in the sandbox, best-effort fetched in production. The onboarding
   // schools step is offered once (schoolsSeen). `openCommunity` is which one the
   // community page is showing.
-  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? [] : init.memberships || []))
+  // Membership is SINGLE — you can be in exactly one community (your ping only
+  // reaches people from it), and it's proven by a .edu code (schoolCred). Older
+  // saves may hold several slugs; collapse to the first so the one-community rule
+  // holds retroactively.
+  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? [] : (init.memberships || []).slice(0, 1)))
+  // The verified school credential for the joined community: { slug, email }. Kept
+  // like a light preference (never the code — that lived only server-side).
+  const [schoolCred, setSchoolCred] = useState(() => (demo ? null : init.schoolCred || null))
   const [commLive, setCommLive] = useState(() => (demo ? seedDemoCommLive() : {}))
   const [schoolsSeen, setSchoolsSeen] = useState(() => (demo ? false : !!init.schoolsSeen))
   const [openCommunity, setOpenCommunity] = useState(route.community || CURATED_SLUGS[0])
+  // The .edu gate overlay: { slug } while it's up. Verified → membership commits.
+  const [eduVerify, setEduVerify] = useState(null)
+  // The live engine of the app-wide backdrop when it's showing your community's
+  // galaxy — so a placed ping can launch your own star into it.
+  const homeGalaxyRef = useRef(null)
 
   // The list handed to the UI: the curated registry, overlaid with live numbers
   // and your membership.
@@ -148,6 +160,10 @@ export default function App() {
       }),
     [commLive, joinedSlugs],
   )
+
+  // Your one community (the joined one), or null. Drives the app-wide backdrop
+  // galaxy, the "your community" surfaces, and the sky-share card.
+  const homeCommunity = useMemo(() => communities.find((c) => c.joined) || null, [communities])
 
   // ── overlays ──
   const [accountOpen, setAccountOpen] = useState(false)
@@ -255,12 +271,12 @@ export default function App() {
       const identity = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolsSeen }),
+        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, schoolsSeen }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolsSeen, established])
+  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, schoolsSeen, established])
 
   // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
@@ -513,6 +529,17 @@ export default function App() {
           go('match')
           return
         }
+        // If you're in a community, this ping also lands in its sky: your own star
+        // launches into the app-wide backdrop galaxy (marked as yours, findable in
+        // the crowd), and — in the sandbox — the community's live ping count ticks.
+        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true })
+        if (demo && homeCommunity && communityOpen(homeCommunity)) {
+          setCommLive((prev) => {
+            const cur = prev[homeCommunity.slug] || {}
+            if (cur.pings == null) return prev
+            return { ...prev, [homeCommunity.slug]: { ...cur, pings: Number(cur.pings) + 1 } }
+          })
+        }
         setLastPlaced({ handle: target, reachable: !!res.reachable })
         // the @ collapses into a star and flies into the galaxy, then 'placed'.
         runSendoff(target, 'placed')
@@ -522,11 +549,11 @@ export default function App() {
         go('who')
       }
     },
-    [me, them, email, intent, demo, session, go, t, runSendoff],
+    [me, them, email, intent, demo, session, go, t, runSendoff, homeCommunity],
   )
 
   // ── communities (curated: join / leave, view, and the sandbox live feed) ──
-  // A live membership mirror, so toggleCommunity can read the current set without
+  // A live membership mirror, so join/leave can read the current set without
   // depending on it (and re-creating the callback every join).
   const joinedRef = useRef(joinedSlugs)
   useEffect(() => {
@@ -536,12 +563,16 @@ export default function App() {
   // into the final placement (the session state hasn't re-rendered yet).
   const onboardProof = useRef(undefined)
 
-  const joinCommunity = useCallback(
-    (slug) => {
+  // Commit membership once the .edu code is verified. SINGLE by construction: this
+  // replaces any prior membership, and stamps the verified credential. In the
+  // sandbox it also nudges the member count (you're now one of them).
+  const commitMembership = useCallback(
+    (slug, cred) => {
       if (!isCurated(slug)) return
-      setJoinedSlugs((prev) => (prev.includes(slug) ? prev : [...prev, slug]))
-      // in the sandbox, joining nudges the member count (you're now one of them)
-      if (demo) {
+      const already = joinedRef.current.includes(slug)
+      setJoinedSlugs([slug])
+      setSchoolCred(cred || { slug })
+      if (demo && !already) {
         setCommLive((prev) => ({
           ...prev,
           [slug]: { ...(prev[slug] || {}), members: Number((prev[slug] && prev[slug].members) || 0) + 1 },
@@ -550,16 +581,28 @@ export default function App() {
     },
     [demo],
   )
+
+  // Joining a community means proving you're at that school: open the .edu gate.
+  // Already in it → no-op. The gate's success (onEduVerified) commits membership.
+  const joinCommunity = useCallback(
+    (slug) => {
+      if (!isCurated(slug)) return
+      if (joinedRef.current.includes(slug)) return
+      setEduVerify({ slug })
+    },
+    [],
+  )
+  const onEduVerified = useCallback(
+    ({ slug, email: eduEmail }) => {
+      commitMembership(slug, { slug, email: eduEmail || '' })
+      setEduVerify(null)
+    },
+    [commitMembership],
+  )
   const leaveCommunity = useCallback((slug) => {
     setJoinedSlugs((prev) => prev.filter((s) => s !== slug))
+    setSchoolCred((prev) => (prev && prev.slug === slug ? null : prev))
   }, [])
-  const toggleCommunity = useCallback(
-    (slug) => {
-      if (joinedRef.current.includes(slug)) leaveCommunity(slug)
-      else joinCommunity(slug)
-    },
-    [joinCommunity, leaveCommunity],
-  )
   const viewCommunity = useCallback(
     (slug) => {
       setOpenCommunity(isCurated(slug) ? slug : CURATED_SLUGS[0])
@@ -805,6 +848,7 @@ export default function App() {
     setError('')
     setPings([])
     setJoinedSlugs([])
+    setSchoolCred(null)
     setSchoolsSeen(false)
     setMatch(null)
     setLastPlaced(null)
@@ -896,8 +940,8 @@ export default function App() {
     demo, me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap,
     intent, setIntent, category, setCategory,
-    communities, openCommunity, shoutoutPool: demo ? DEMO_SHOUTOUTS : [],
-    viewCommunity, joinCommunity, leaveCommunity, toggleCommunity, bumpCommunityActivity, finishOnboarding,
+    communities, openCommunity, homeCommunity, homeGalaxyRef,
+    viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity, finishOnboarding,
     lastPlaced, match,
     demoFourthSlot, buyFourthSlot, placeFourth,
     posterHandle: route.poster || '',
@@ -928,17 +972,40 @@ export default function App() {
   const CALM_SCREENS = ['pings', 'who', 'you', 'schools', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
+  // The backdrop: once you've joined a community, the app-wide field IS your
+  // community's living galaxy (the merge) — your pings land in it and your own
+  // star stays findable in it. Otherwise it's the ambient procedural sky, which
+  // still owns the send-off drift. On the community page your sky is the hero
+  // (full bright); elsewhere it's calmed so the foreground reads.
+  const homeOpen = homeCommunity ? communityOpen(homeCommunity) : false
+  const homeMatches = homeCommunity && homeCommunity.matches != null ? Number(homeCommunity.matches) : 0
+  const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
+  const communityDim = screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
+
   return (
     <div className="celestual-app">
-      <GalaxyCanvas
-        mode={galaxyMode}
-        dim={galaxyDim}
-        origin={sendoffOrigin}
-        seals={pings.length}
-        you={C.you}
-        them={C.them}
-        style={{ zIndex: 0 }}
-      />
+      {homeCommunity ? (
+        <CommunityGalaxyCanvas
+          key={homeCommunity.slug}
+          you={C.you}
+          them={C.them}
+          pings={homePings}
+          matches={homeOpen && homeMatches >= MATCH_FLOOR ? homeMatches : 0}
+          forming={!homeOpen}
+          dim={communityDim}
+          onReady={(f) => (homeGalaxyRef.current = f)}
+        />
+      ) : (
+        <GalaxyCanvas
+          mode={galaxyMode}
+          dim={galaxyDim}
+          origin={sendoffOrigin}
+          seals={pings.length}
+          you={C.you}
+          them={C.them}
+          style={{ zIndex: 0 }}
+        />
+      )}
 
       {(showProfile || showLogin) && (
         <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
@@ -964,6 +1031,18 @@ export default function App() {
           in-tab, no OAuth. The sandbox runs the same overlay, auto-verifying
           locally (real verification isn't wired there yet — it says so). */}
       {verify && <IgVerifySheet C={C} handle={verify.handle} demo={demo} onVerified={onVerified} onClose={closeVerify} />}
+
+      {/* the .edu gate — join a community by proving you're at that school. The
+          sandbox auto-confirms once a code is entered. */}
+      {eduVerify && (
+        <EduVerifySheet
+          C={C}
+          slug={eduVerify.slug}
+          demo={demo}
+          onVerified={onEduVerified}
+          onClose={() => setEduVerify(null)}
+        />
+      )}
     </div>
   )
 }

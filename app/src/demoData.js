@@ -56,33 +56,4 @@ export const DEMO_COMMUNITIES = {
   cmu: { members: 74 }, // gathering — under 100, all counts withheld
 }
 
-// The live shoutout pool — anonymous, moderated shoutouts that scroll through a
-// community's live chat so the demo reads as a place with people in it. Every
-// line is a real shoutout a member might post: a feeling, a place, a moment —
-// and NAMES NO ONE. No @handles, no first names, nothing that could out a person
-// or a match. That's the same wall the composer's moderation enforces on real
-// input (see moderation.js). Punchy and literal by design, so it lives here, out
-// of the linted strings file. All in-memory; gone when the tab closes.
-export const DEMO_SHOUTOUTS = [
-  // berkeley
-  { slug: 'uc-berkeley', text: 'to whoever i shared a table with at moffitt at 2am — i think about it' },
-  { slug: 'uc-berkeley', text: 'the person from my 8am at dwinelle. you know the one.' },
-  { slug: 'uc-berkeley', text: 'i should have said something on the walk down from the campanile' },
-  { slug: 'uc-berkeley', text: 'someone from unit 3, spring of freshman year. still.' },
-  { slug: 'uc-berkeley', text: 'we made eye contact at the free speech steps like six times' },
-  { slug: 'uc-berkeley', text: 'to the one who quoted my favorite film first. i folded instantly.' },
-  { slug: 'uc-berkeley', text: 'i hope you placed one too' },
-  // wesleyan
-  { slug: 'wesleyan', text: 'foss hill, that one warm october afternoon. you were there.' },
-  { slug: 'wesleyan', text: 'we closed down usdan talking and i never followed up' },
-  { slug: 'wesleyan', text: 'to the person i always found in the same corner of olin' },
-  { slug: 'wesleyan', text: 'i still have the setlist you wrote out for me' },
-  { slug: 'wesleyan', text: 'if it was mutual i think we both already know' },
-  // cmu
-  { slug: 'cmu', text: 'the cluster at 3am hits different when you were there too' },
-  { slug: 'cmu', text: 'to the person who fixed my build and my whole night' },
-  { slug: 'cmu', text: 'we walked the cut in the snow and i said nothing. classic.' },
-  { slug: 'cmu', text: 'i think about the study room more than the exam' },
-]
-
 export const DEMO_ME = 'you.tonight'
