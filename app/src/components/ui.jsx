@@ -122,7 +122,7 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
 // `onReady(field)` hands the live engine to the screen so it can launch() a ping
 // and addConstellation() a match as the demo (or real data) ticks. Remount on a
 // community change by giving it key={slug}.
-export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, onReady }) {
+export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, onReady }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   const readyRef = React.useRef(onReady)
@@ -164,7 +164,11 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
     <canvas
       ref={ref}
       aria-hidden
-      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0, background: '#04030A', pointerEvents: 'none' }}
+      style={{
+        position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0,
+        background: '#04030A', pointerEvents: 'none',
+        opacity: dim, transition: 'opacity .6s ease',
+      }}
     />
   )
 }
@@ -425,7 +429,9 @@ export function Typewriter({ phrases, className, style, caretColor, render }) {
     const full = phrase.text.length
     let delay
     if (!erasing && n < full) {
-      delay = 46 + Math.random() * 34 // type — a touch irregular, like a hand
+      // type — a touch irregular, like a hand. A phrase can set its own pace
+      // (typeSpeed = base ms/char, typeVar = jitter) so a hero line can hurry.
+      delay = (phrase.typeSpeed ?? 46) + Math.random() * (phrase.typeVar ?? 34)
     } else if (!erasing && n >= full) {
       delay = phrase.hold ?? 1400 // hold on the finished phrase
     } else if (erasing && n > 0) {
@@ -1015,6 +1021,19 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
       </>
     ),
     star: <path d="M10 2.5l1.6 5 5 .2-4 3.1 1.5 4.9-4.1-3-4.1 3 1.5-4.9-4-3.1 5-.2z" {...p} />,
+    info: (
+      <>
+        <circle cx="10" cy="10" r="7.4" {...p} />
+        <path d="M10 9v4.2" {...p} />
+        <circle cx="10" cy="6.4" r="0.5" fill={color} stroke="none" />
+      </>
+    ),
+    clock: (
+      <>
+        <circle cx="10" cy="10" r="7.2" {...p} />
+        <path d="M10 5.8V10l3 1.8" {...p} />
+      </>
+    ),
     x: (
       <>
         <path d="M5 5l10 10M15 5L5 15" {...p} />

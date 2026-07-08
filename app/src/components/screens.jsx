@@ -17,15 +17,15 @@ import {
   dmCode, savePending, loadPending, clearPending, genProof,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
-import { renderDoorCard, downloadDoorCard } from '../card.js'
+import { renderSkyCard, downloadSkyCard } from '../card.js'
 import {
   Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel, Meter,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, Typewriter, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
 } from './ui.jsx'
-import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR } from '../communities.js'
+import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR, nextRevealAt, bySlug } from '../communities.js'
 import { placedReachable, placedWaiting } from '../growth.js'
-import { sanitizeShoutout, MAX_LEN } from '../moderation.js'
+import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
 // intimate measure on wide monitors.
@@ -210,7 +210,7 @@ function HeroSequence({ C }) {
       aria-label={line}
       style={{ animationDelay: '.16s', width: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', padding: '0 6px', maxWidth: 380 }}
     >
-      <Typewriter phrases={[{ text: line, hold: 6000 }]} style={serif} caretColor={rgba(C.star, 0.85)} />
+      <Typewriter phrases={[{ text: line, hold: 6000, typeSpeed: 22, typeVar: 14 }]} style={serif} caretColor={rgba(C.star, 0.85)} />
     </div>
   )
 }
@@ -1063,54 +1063,95 @@ export function PingsScreen({ C, ctx }) {
   )
 }
 
-// ── 5 · THE OPEN-DOOR CARD ────────────────────────────────────────────────────
-export function DoorScreen({ C, ctx }) {
+// ── 5 · THE OPEN-SKY SHARE CARD ───────────────────────────────────────────────
+// The shareable is about the PLACE, not the person: a designed card that says your
+// community's sky is open (or gathering), built to recruit the rest of your world —
+// the one thing that actually moves the meter and brings the next match closer. It
+// names no one. When you haven't joined a community yet, it nudges you to find one
+// first (there's nothing to share until you have a sky).
+export function SkyCardScreen({ C, ctx }) {
   const { t } = useI18n()
   const [preview, setPreview] = React.useState(null)
   const [saved, setSaved] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
-  const me = normHandle(ctx.me) || 'your.handle'
-  const line = t('door.line')
+  const community = ctx.homeCommunity
+  const open = community ? communityOpen(community) : false
+  const stats = community
+    ? {
+        members: Number(community.members || 0),
+        matches: community.matches != null ? Number(community.matches) : null,
+        pings: community.pings != null ? Number(community.pings) : null,
+      }
+    : null
+
   React.useEffect(() => {
+    if (!community) return undefined
     let live = true
-    renderDoorCard({ handle: me, line })
+    renderSkyCard({ community, open, stats })
       .then((url) => live && setPreview(url))
       .catch(() => {})
     return () => {
       live = false
     }
-  }, [me, line])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [community && community.slug, open, stats && stats.members, stats && stats.matches, stats && stats.pings])
+
   const save = async () => {
+    if (!community) return
     try {
-      await downloadDoorCard({ handle: me, line })
+      await downloadSkyCard({ community, open, stats })
       setSaved(true)
     } catch {
       /* the preview is still right there to screenshot */
     }
   }
   const copyLink = async () => {
+    if (!community) return
     try {
-      await navigator.clipboard.writeText(`https://celestual.us/@${me}`)
+      await navigator.clipboard.writeText(inviteUrl(community.slug))
       setCopied(true)
       setTimeout(() => setCopied(false), 2200)
     } catch {
       /* ignore */
     }
   }
+
+  // No community joined yet → there's no sky to share. Send them to find one.
+  if (!community) {
+    return (
+      <Shell>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
+          <Kicker C={C}>{t('sky.kicker')}</Kicker>
+          <div style={{ width: 38 }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
+          <div className="floaty"><StarMark C={C} size={64} /></div>
+          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 20, lineHeight: 1.35, color: rgba(C.cream, 0.9), maxWidth: 320 }}>{t('sky.none')}</p>
+        </div>
+        <div className="enter" style={{ paddingTop: 12 }}>
+          <PrimaryButton C={C} onClick={() => ctx.go('worlds')}>{t('sky.find')}</PrimaryButton>
+        </div>
+      </Shell>
+    )
+  }
+
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-        <Kicker C={C}>{t('door.kicker')}</Kicker>
+        <Kicker C={C}>{t('sky.kicker')}</Kicker>
         <div style={{ width: 38 }} />
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, paddingTop: 14 }}>
         <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 9 }}>
           <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.1, color: C.cream }}>
-            {t('door.title1')} <span style={{ color: C.star }}>{t('door.title2')}</span>
+            {t('sky.title1')} <span style={{ color: C.star }}>{t('sky.title2')}</span>
           </h2>
-          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 330 }}>{t('door.sub')}</p>
+          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>
+            {t(open ? 'sky.subOpen' : 'sky.subGathering', { name: community.short })}
+          </p>
         </div>
 
         {/* the rendered card — the object itself, the hero of the screen */}
@@ -1123,7 +1164,7 @@ export function DoorScreen({ C, ctx }) {
           }}
         >
           {preview ? (
-            <img src={preview} alt={t('door.line')} style={{ width: '100%', height: '100%', display: 'block' }} />
+            <img src={preview} alt={community.name} style={{ width: '100%', height: '100%', display: 'block' }} />
           ) : (
             <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}><Sonar C={C} size={20} /></div>
           )}
@@ -1131,8 +1172,8 @@ export function DoorScreen({ C, ctx }) {
 
         {/* the three steps — a clean numbered rail */}
         <div className="enter" style={{ animationDelay: '.12s', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Kicker C={C} style={{ fontSize: 10, paddingLeft: 2, marginBottom: 6 }}>{t('door.stepsKicker')}</Kicker>
-          {[t('door.step1'), t('door.step2'), t('door.step3')].map((s, i) => (
+          <Kicker C={C} style={{ fontSize: 10, paddingLeft: 2, marginBottom: 6 }}>{t('sky.stepsKicker')}</Kicker>
+          {[t('sky.step1'), t('sky.step2'), t('sky.step3')].map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 2px' }}>
               <span style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), border: `1px solid ${rgba(C.star, 0.3)}`, color: C.star, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>{i + 1}</span>
               <span style={{ fontSize: 13.5, lineHeight: 1.45, color: rgba(C.cream, 0.86) }}>{s}</span>
@@ -1144,17 +1185,17 @@ export function DoorScreen({ C, ctx }) {
       <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 18 }}>
         <PrimaryButton C={C} onClick={save}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="download" size={16} color={C.onStar} stroke={2} /> {saved ? t('door.saved') : t('door.save')}
+            <Icon name="download" size={16} color={C.onStar} stroke={2} /> {saved ? t('sky.saved') : t('sky.save')}
           </span>
         </PrimaryButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={copyLink} style={{ fontSize: 12.5 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <Icon name={copied ? 'check' : 'copy'} size={13} color="currentColor" /> {copied ? t('door.copied') : t('door.copy')}
+              <Icon name={copied ? 'check' : 'copy'} size={13} color="currentColor" /> {copied ? t('sky.copied') : t('sky.copy')}
             </span>
           </GhostButton>
         </div>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.55, color: rgba(C.muted, 0.8) }}>{t('door.foot')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.55, color: rgba(C.muted, 0.8) }}>{t('sky.foot')}</p>
       </div>
     </Shell>
   )
@@ -1172,24 +1213,19 @@ function LiveDot({ C }) {
   return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
 }
 
-// ── community life: the ping toasts, the shoutout wall, the demo pulse ─────────
+// ── community life: the ping toasts + the demo pulse ──────────────────────────
 
 // The demo's living pulse. On an OPEN community it fires the real beats: a ping
 // launches a star into the galaxy (+ a toast), a match lights an anonymous
-// constellation (+ a toast), a join grows the membership, and fresh shoutouts
-// scroll the wall. A GATHERING community shows no countable beats (its exact
-// numbers are withheld) — only the quiet growth of new members and the odd
-// shoutout. Everything is imperative on the live galaxy field (galaxyRef) so the
-// canvas and the printed numbers move together. In-memory; demo only.
-const seedWall = (pool) => (pool || []).slice(0, 3).map((b, i) => ({ id: `seed${i}`, text: b.text, mine: false }))
-function useCommunityPulse({ demo, open, slug, galaxyRef, pool, bump }) {
+// constellation (+ a toast). A GATHERING community shows no countable beats (its
+// exact numbers are withheld) — only the quiet growth of new members. Everything
+// is imperative on the live galaxy field (galaxyRef) so the canvas and the printed
+// numbers move together. In-memory; demo only.
+function useCommunityPulse({ demo, open, slug, galaxyRef, bump }) {
   const [toasts, setToasts] = React.useState([])
-  const [shoutouts, setShoutouts] = React.useState(() => seedWall(pool))
   const idRef = React.useRef(0)
   const bumpRef = React.useRef(bump)
   bumpRef.current = bump
-  const poolRef = React.useRef(pool)
-  poolRef.current = pool
 
   const pushToast = React.useCallback((text, kind) => {
     const id = ++idRef.current
@@ -1197,16 +1233,8 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, pool, bump }) {
     setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 3400)
   }, [])
 
-  const pushShoutout = React.useCallback((text, mine) => {
-    const id = ++idRef.current
-    setShoutouts((prev) => [{ id, text, mine: !!mine }, ...prev].slice(0, 6))
-  }, [])
-
-  // reset the wall when the community changes
   React.useEffect(() => {
-    setShoutouts(seedWall(poolRef.current))
     setToasts([])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   // a placed ping: a star launches + the count ticks (open communities only)
@@ -1227,19 +1255,12 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, pool, bump }) {
         if (bumpRef.current) bumpRef.current(slug, 'match')
         pushToast('it just became mutual for two people here', 'match')
       }, 16000 + Math.random() * 6000))
-      // fresh shoutouts scrolling the wall
-      timers.push(setInterval(() => {
-        if (pool && pool.length) pushShoutout(pool[Math.floor(Math.random() * pool.length)].text, false)
-      }, 5200 + Math.random() * 1600))
     } else {
-      // gathering: only quiet growth + the occasional shoutout, no counted beats
+      // gathering: only quiet growth, no counted beats
       timers.push(setInterval(() => {
         if (bumpRef.current) bumpRef.current(slug, 'join')
         pushToast('someone new just joined', 'join')
       }, 6000 + Math.random() * 3000))
-      timers.push(setInterval(() => {
-        if (pool && pool.length) pushShoutout(pool[Math.floor(Math.random() * pool.length)].text, false)
-      }, 7000 + Math.random() * 2000))
     }
     return () => timers.forEach(clearInterval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1255,7 +1276,7 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, pool, bump }) {
     }
   }, [open, slug, firePing, pushToast])
 
-  return { toasts, shoutouts, pushShoutout, fireWave }
+  return { toasts, fireWave }
 }
 
 // The ping toasts — transient notes that rise over the galaxy and lift away as
@@ -1288,90 +1309,94 @@ function GalaxyToasts({ C, toasts }) {
   )
 }
 
-// The live shoutout wall — the community's one public voice, anonymous and
-// moderated. The composer runs sanitizeShoutout on every post (strips handles /
-// names / contacts, blocks abuse) and rate-limits you to one every 45s, so it can
-// be alive without ever outing a person or a match. The recent lines scroll above.
-const SHOUT_COOLDOWN = 45 // seconds between your shoutouts
-function ShoutoutPanel({ C, items, onPost }) {
+// ── the reveal countdown + what it means ──────────────────────────────────────
+// A community's sky lights its week all at once, on a weekly cadence (Sunday
+// night). The countdown is a live clock to that shared moment — it makes the place
+// feel alive and adds a gentle deadline without ever nagging. The ⓘ opens a quiet
+// note explaining the countdown, the requirement, and exactly what lights up, so
+// none of the mechanic is hidden. Ticks in the viewer's own timezone.
+function fmtCountdown(ms) {
+  if (ms <= 0) return null
+  const s = Math.floor(ms / 1000)
+  const d = Math.floor(s / 86400)
+  const h = Math.floor((s % 86400) / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  const pad = (n) => String(n).padStart(2, '0')
+  if (d > 0) return { big: `${d}d ${pad(h)}h`, small: `${pad(m)}m` }
+  if (h > 0) return { big: `${h}h ${pad(m)}m`, small: `${pad(sec)}s` }
+  return { big: `${pad(m)}m ${pad(sec)}s`, small: null }
+}
+
+function RevealCountdown({ C, open }) {
   const { t } = useI18n()
-  const [text, setText] = React.useState('')
-  const [note, setNote] = React.useState('')
-  const [cooldown, setCooldown] = React.useState(0)
+  const [now, setNow] = React.useState(() => Date.now())
+  const [info, setInfo] = React.useState(false)
   React.useEffect(() => {
-    if (cooldown <= 0) return undefined
-    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000)
+    const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [cooldown])
-
-  const submit = () => {
-    if (cooldown > 0) return
-    const res = sanitizeShoutout(text)
-    if (!res.ok) { setNote(res.reason); return }
-    onPost(res.text)
-    setText('')
-    setNote(res.reason || '') // e.g. "kept it anonymous for you."
-    setCooldown(SHOUT_COOLDOWN)
-  }
-
+  }, [])
+  const target = React.useMemo(() => nextRevealAt(new Date(now)).getTime(), [Math.floor(now / 30000)])
+  const c = fmtCountdown(target - now)
+  const label = open ? t('reveal.week') : t('reveal.opens')
   return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-          <LiveDot C={C} />
-          <Kicker C={C} style={{ fontSize: 10 }}>{t('shout.title')}</Kicker>
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '.3px', color: rgba(C.muted, 0.85) }}>
-          <Icon name="lock" size={10} color={rgba(C.muted, 0.7)} /> {t('shout.anon')}
-        </span>
-      </div>
-
-      {/* recent shoutouts — newest on top, the previous one dimming beneath */}
-      <div style={{ minHeight: 58, display: 'flex', flexDirection: 'column', gap: 7 }}>
-        {items.length === 0 ? (
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.muted, 0.7) }}>{t('shout.empty')}</span>
-        ) : (
-          items.slice(0, 2).map((it, i) => (
-            <span key={it.id} className="shout-in" style={{ display: 'flex', alignItems: 'baseline', gap: 8, opacity: [1, 0.5][i] ?? 0.2 }}>
-              <span aria-hidden style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: it.mine ? rgba(C.star, 0.9) : rgba(C.them, 0.7), flexShrink: 0 }}>{it.mine ? t('shout.you') : '✦'}</span>
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 15, lineHeight: 1.32, color: rgba(C.cream, 0.94) }}>{it.text}</span>
-            </span>
-          ))
-        )}
-      </div>
-
-      {/* the composer */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          value={text}
-          maxLength={MAX_LEN * 2}
-          onChange={(e) => { setText(e.target.value); if (note) setNote('') }}
-          onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
-          placeholder={cooldown > 0 ? t('shout.wait', { n: cooldown }) : t('shout.placeholder')}
-          disabled={cooldown > 0}
-          aria-label={t('shout.title')}
-          style={{
-            flex: 1, minWidth: 0, height: 42, padding: '0 14px', borderRadius: RADIUS.field,
-            background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`, color: C.cream,
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, outline: 'none',
-            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', opacity: cooldown > 0 ? 0.6 : 1,
-          }}
-        />
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+        <Icon name="clock" size={12} color={rgba(C.star, 0.85)} stroke={1.8} />
+        <Kicker C={C} style={{ fontSize: 9.5, color: rgba(C.muted, 0.95) }}>{label}</Kicker>
         <button
-          onClick={submit}
-          disabled={cooldown > 0 || !text.trim()}
-          aria-label={t('shout.send')}
-          style={{
-            width: 42, height: 42, flexShrink: 0, borderRadius: RADIUS.field, display: 'grid', placeItems: 'center',
-            background: cooldown > 0 || !text.trim() ? rgba(C.ink2, 0.6) : C.star,
-            border: `1px solid ${cooldown > 0 || !text.trim() ? C.line : 'transparent'}`,
-            cursor: cooldown > 0 || !text.trim() ? 'default' : 'pointer', transition: 'background .18s',
-          }}
+          onClick={() => setInfo((v) => !v)}
+          aria-label={t('reveal.infoTitle')}
+          data-noripple
+          style={{ display: 'grid', placeItems: 'center', width: 18, height: 18, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
-          <Icon name="arrow" size={17} color={cooldown > 0 || !text.trim() ? rgba(C.muted, 0.8) : C.onStar} stroke={2.2} />
+          <Icon name="info" size={14} color={rgba(C.muted, info ? 1 : 0.7)} stroke={1.7} />
         </button>
-      </div>
-      {note && <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.2px', color: rgba(C.star, 0.85) }}>{note}</span>}
+      </span>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'baseline', gap: 5,
+          fontFamily: "'Space Mono', monospace", fontVariantNumeric: 'tabular-nums',
+          color: rgba(C.cream, 0.96),
+        }}
+      >
+        <span style={{ fontSize: 20, letterSpacing: '.5px', color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
+        {c && c.small && <span style={{ fontSize: 12, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
+      </span>
+
+      {info && (
+        <>
+          <button
+            aria-hidden
+            onClick={() => setInfo(false)}
+            data-noripple
+            style={{ position: 'fixed', inset: 0, zIndex: 29, background: 'transparent', border: 'none', cursor: 'default' }}
+          />
+          <div
+            className="fade"
+            data-noripple
+            style={{
+              position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)', zIndex: 30,
+              width: 'min(320px, 86vw)', padding: '16px 17px', borderRadius: RADIUS.card,
+              background: rgba(C.ink2, 0.97), border: `1px solid ${rgba(C.star, 0.24)}`,
+              boxShadow: '0 24px 70px rgba(0,0,0,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left',
+            }}
+          >
+            <span aria-hidden style={{ position: 'absolute', top: -6, left: '50%', width: 12, height: 12, transform: 'translateX(-50%) rotate(45deg)', background: rgba(C.ink2, 0.97), borderLeft: `1px solid ${rgba(C.star, 0.24)}`, borderTop: `1px solid ${rgba(C.star, 0.24)}` }} />
+            <Kicker C={C} style={{ fontSize: 10 }}>{t('reveal.infoTitle')}</Kicker>
+            {[['clock', t('reveal.infoWhat')], ['lock', t('reveal.infoReq')], ['star', t('reveal.infoReveals')]].map(([ic, tx]) => (
+              <div key={ic} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <span style={{ marginTop: 1, flexShrink: 0 }}><Icon name={ic} size={13} color={rgba(C.star, 0.8)} stroke={1.8} /></span>
+                <span style={{ fontSize: 12.5, lineHeight: 1.55, color: rgba(C.cream, 0.86) }}>{tx}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <GhostButton C={C} onClick={() => setInfo(false)} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.9) }}>{t('reveal.close')}</GhostButton>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -1458,30 +1483,74 @@ export function WorldsScreen({ C, ctx }) {
       </div>
 
       <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 16 }}>
-        <p style={{ margin: '0 2px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
+        {/* your one community, made unmistakable and one tap away */}
+        {ctx.homeCommunity ? (
+          <HomeCommunityBanner C={C} community={ctx.homeCommunity} onOpen={() => ctx.viewCommunity(ctx.homeCommunity.slug)} />
+        ) : (
+          <p style={{ margin: '0 2px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
+        )}
         {ordered.map((c) => (
           <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
         ))}
       </div>
 
-      <p style={{ margin: '16px 2px 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('communities.foot')}</p>
+      <p style={{ margin: '16px 2px 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+        {ctx.homeCommunity ? t('home.oneOnly') : t('communities.foot')}
+      </p>
     </Shell>
+  )
+}
+
+// The "you're in X" banner atop the communities list — amber-lit, tappable, so a
+// member's own sky is obvious and immediately reachable. A ✦ mark, the seal, the
+// name, and a clear go-in arrow.
+function HomeCommunityBanner({ C, community, onOpen }) {
+  const { t } = useI18n()
+  const [h, setH] = React.useState(false)
+  return (
+    <button
+      onClick={onOpen}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left', cursor: 'pointer',
+        padding: '15px 16px', borderRadius: RADIUS.card,
+        background: `linear-gradient(120deg, ${rgba(C.star, h ? 0.16 : 0.12)}, ${rgba(C.them, 0.06)})`,
+        border: `1px solid ${rgba(C.star, h ? 0.5 : 0.36)}`,
+        boxShadow: `0 0 26px ${rgba(C.star, h ? 0.16 : 0.1)}`, transition: 'background .2s, border-color .2s, box-shadow .2s',
+      }}
+    >
+      <SchoolMark C={C} slug={community.slug} size={44} />
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2px', textTransform: 'uppercase', color: rgba(C.star, 0.95) }}>
+          <Icon name="check" size={11} color={rgba(C.star, 0.95)} stroke={2.6} /> {t('home.badge')}
+        </span>
+        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 21, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+      </span>
+      <Icon name="arrow" size={18} color={rgba(C.star, 0.9)} stroke={2} />
+    </button>
   )
 }
 
 // The community page (also the /c/<slug> destination). Its living galaxy is the
 // hero — one star per real ping — with an anonymous constellation for every
-// mutual match. No countdown, no percentage: a community is globally open, so
-// what you watch is density, not a gate. A gathering community (under the 100
-// floor) shows a forming nebula and hides its counts; an open one resolves into
-// stars, prints its weekly readout, and carries a live shoutout wall.
+// mutual match. A live reveal-countdown ties the sky to a shared weekly moment.
+// When this is YOUR community, the page reuses the app-wide backdrop (which IS
+// your community's galaxy), so your own star — placed anywhere in the app — is
+// findable right here. A gathering community shows a forming nebula and hides its
+// counts; an open one resolves into stars and prints its weekly readout. Everyone
+// can watch; only a member (proven at their school by a .edu code) can ping in.
 export function CommunityScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
   const community = communities.find((c) => c.slug === ctx.openCommunity) || communities[0]
   const slug = community && community.slug
-  const galaxyRef = React.useRef(null)
-  const pool = React.useMemo(() => (ctx.shoutoutPool || []).filter((b) => b.slug === slug), [ctx.shoutoutPool, slug])
+  const localGalaxyRef = React.useRef(null)
+  // Your own community reuses the app's backdrop galaxy (ctx.homeGalaxyRef); any
+  // other community you're browsing mounts its own field on top.
+  const isHome = !!(ctx.homeCommunity && slug && ctx.homeCommunity.slug === slug)
+  const useShared = isHome && !!ctx.homeGalaxyRef
+  const galaxyRef = useShared ? ctx.homeGalaxyRef : localGalaxyRef
 
   const open = community ? communityOpen(community) : false
   const week = community && open ? community.week : null
@@ -1489,8 +1558,13 @@ export function CommunityScreen({ C, ctx }) {
   const showMatches = open && matches >= MATCH_FLOOR
 
   const pulse = useCommunityPulse({
-    demo: ctx.demo, open, slug, galaxyRef, pool, bump: ctx.bumpCommunityActivity,
+    demo: ctx.demo, open, slug, galaxyRef, bump: ctx.bumpCommunityActivity,
   })
+  const [located, setLocated] = React.useState(false)
+  const findStar = () => {
+    const ok = galaxyRef.current && galaxyRef.current.locateMine()
+    if (ok) { setLocated(true); setTimeout(() => setLocated(false), 1800) }
+  }
 
   if (!community) {
     return (
@@ -1512,16 +1586,19 @@ export function CommunityScreen({ C, ctx }) {
 
   return (
     <Shell>
-      {/* the community's own galaxy — full-bleed, behind everything (z0) */}
-      <CommunityGalaxyCanvas
-        key={slug}
-        you={C.you}
-        them={C.them}
-        pings={pings}
-        matches={showMatches ? matches : 0}
-        forming={!open}
-        onReady={(f) => (galaxyRef.current = f)}
-      />
+      {/* Your own community's field is the app backdrop (rendered by App); any other
+          community you're browsing mounts its own field, full-bleed behind all (z0). */}
+      {!useShared && (
+        <CommunityGalaxyCanvas
+          key={slug}
+          you={C.you}
+          them={C.them}
+          pings={pings}
+          matches={showMatches ? matches : 0}
+          forming={!open}
+          onReady={(f) => (localGalaxyRef.current = f)}
+        />
+      )}
       {/* a soft scrim so the lower content stays legible over the field (z0, over canvas) */}
       <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '56%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.68)} 42%, ${rgba(C.ink, 0.94)})`, pointerEvents: 'none', zIndex: 0 }} />
 
@@ -1536,19 +1613,28 @@ export function CommunityScreen({ C, ctx }) {
           <div style={{ width: 38 }} />
         </div>
 
-        {/* identity — compact, centered, high over the galaxy core */}
-        <div className="enter" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, paddingTop: 10 }}>
+        {/* identity — compact, centered, high over the galaxy core. A member sees a
+            clear "you're in" badge so their own community is unmistakable. */}
+        <div className="enter" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, paddingTop: 8 }}>
           <SchoolMark C={C} slug={community.slug} size={48} />
           <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7.5vw, 36px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
-          <CommunityStatus C={C} open={open} />
-          {/* the ping toasts rise just under the identity, over the galaxy */}
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 12 }}>
-            <GalaxyToasts C={C} toasts={pulse.toasts} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {isHome && <MemberBadge C={C} />}
+            <CommunityStatus C={C} open={open} />
           </div>
         </div>
 
-        {/* the galaxy breathes in this flexible gap (no DOM — just the field showing through) */}
-        <div style={{ flex: 1, minHeight: 44 }} />
+        {/* the reveal countdown — a live, shared clock giving the sky a heartbeat */}
+        <div className="fade" style={{ display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
+          <RevealCountdown C={C} open={open} />
+        </div>
+
+        {/* the galaxy breathes in this flexible gap; the ping toasts rise through it */}
+        <div style={{ position: 'relative', flex: 1, minHeight: 40 }}>
+          <div style={{ position: 'absolute', top: 34, left: 0, right: 0 }}>
+            <GalaxyToasts C={C} toasts={pulse.toasts} />
+          </div>
+        </div>
 
         {/* the readout — a tight caption tying the numbers to the picture above */}
         {open ? (
@@ -1580,22 +1666,28 @@ export function CommunityScreen({ C, ctx }) {
           </div>
         )}
 
-        {/* the live shoutout wall — the community's one public voice */}
-        <div style={{ width: '100%', maxWidth: 420, alignSelf: 'center', marginTop: 16 }}>
-          <ShoutoutPanel C={C} items={pulse.shoutouts} onPost={(text) => pulse.pushShoutout(text, true)} />
-        </div>
-
-        {/* one action, pinned to the bottom */}
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 14 }}>
+        {/* one action, pinned to the bottom — a member pings + finds their star; a
+            watcher joins (which sends a .edu code first). Everyone can watch. */}
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 18 }}>
           {joined ? (
             <>
               <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                {isHome && (
+                  <GhostButton C={C} onClick={findStar} style={{ fontSize: 12.5, color: rgba(C.star, 0.9) }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon name={located ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
+                    </span>
+                  </GhostButton>
+                )}
                 <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ fontSize: 12.5 }}>{t('communities.leave')}</GhostButton>
               </div>
             </>
           ) : (
-            <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)}>{t('communities.join', { name: community.short })}</PrimaryButton>
+            <>
+              <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)}>{t('communities.join', { name: community.short })}</PrimaryButton>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.9) }}>{t('home.watch', { name: community.short })}</p>
+            </>
           )}
           {ctx.demo && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1607,6 +1699,17 @@ export function CommunityScreen({ C, ctx }) {
         </div>
       </div>
     </Shell>
+  )
+}
+
+// The clear "this is your community" badge — amber, checked, unmistakable, so a
+// member always knows which sky is theirs at a glance.
+function MemberBadge({ C }) {
+  const { t } = useI18n()
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.98), background: rgba(C.star, 0.14), border: `1px solid ${rgba(C.star, 0.42)}`, borderRadius: RADIUS.chip, padding: '4px 11px', flexShrink: 0 }}>
+      <Icon name="check" size={12} color={rgba(C.star, 0.98)} stroke={2.4} /> {t('home.badge')}
+    </span>
   )
 }
 
@@ -1728,58 +1831,26 @@ function JoinedChip({ C, community, onRemove }) {
   )
 }
 
-// The "are you actually part of it?" stop. You only ever reach people from your
-// own community, so joining one you're not really in is pointless — this
-// confirms before it joins. Renders in place of the finder while it's up.
-function JoinConfirm({ C, community, onYes, onNo }) {
-  const { t } = useI18n()
-  return (
-    <GlassPanel C={C} style={{ padding: '18px 18px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <SchoolMark C={C} slug={community.slug} size={40} />
-        <h3 style={{ margin: 0, flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 22, lineHeight: 1.12, color: C.cream }}>
-          {t('communities.confirmTitle', { name: community.name })}
-        </h3>
-      </div>
-      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted }}>{t('communities.confirmBody')}</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <PrimaryButton C={C} onClick={onYes} style={{ padding: '14px 20px', fontSize: 15 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-            <Icon name="check" size={15} color={C.onStar} stroke={2.4} /> {t('communities.confirmYes', { name: community.short })}
-          </span>
-        </PrimaryButton>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={onNo} style={{ fontSize: 12.5 }}>{t('communities.confirmNo')}</GhostButton>
-        </div>
-      </div>
-    </GlassPanel>
-  )
-}
-
 // ── AFFILIATED SCHOOLS (new-user onboarding, after identity) ──────────────────
 // Shown once, between proving your @ and placing your first ping: a search that
-// reveals the curated communities. Your ping stays locked until your community
-// fills, so picking the right one matters — and you should only join the one
-// you're really in. Picking a school opens the "are you actually there?" stop
-// before it joins. One primary action places the ping.
+// reveals the curated communities. You can be in exactly one — the one you're
+// actually at — and your ping only reaches people from it, so picking one opens
+// the .edu gate (App owns the sheet) to confirm you're really there before it
+// joins. One primary action places the ping.
 export function SchoolsScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
   const joined = communities.filter((c) => c.joined)
-  // the community awaiting the "are you actually there?" confirmation.
-  const [pending, setPending] = React.useState(null)
+  // Picking a school hands off to ctx.joinCommunity, which opens the .edu code
+  // sheet; membership is single, so joining one leaves any other.
   const askJoin = (slug) => {
     const c = communities.find((x) => x.slug === slug)
-    if (c && !c.joined) setPending(c)
-  }
-  const confirmJoin = () => {
-    if (pending) ctx.joinCommunity(pending.slug)
-    setPending(null)
+    if (c && !c.joined) ctx.joinCommunity(slug)
   }
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => (pending ? setPending(null) : ctx.go('you'))} />
+        <BackBtn C={C} onClick={() => ctx.go('you')} />
         <Brandmark C={C} size={18} />
         <div style={{ width: 38 }} />
       </div>
@@ -1794,24 +1865,19 @@ export function SchoolsScreen({ C, ctx }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {pending ? (
-            <div className="fade">
-              <JoinConfirm C={C} community={pending} onYes={confirmJoin} onNo={() => setPending(null)} />
+          <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
+          <CommunityFinder C={C} ctx={ctx} onPick={askJoin} />
+          {joined.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 2 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {joined.map((c) => (
+                  <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
+                ))}
+              </div>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.3px', color: rgba(C.muted, 0.85) }}>{t('home.oneOnly')}</span>
             </div>
           ) : (
-            <>
-              <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
-              <CommunityFinder C={C} ctx={ctx} onPick={askJoin} />
-              {joined.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 2 }}>
-                  {joined.map((c) => (
-                    <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
-                  ))}
-                </div>
-              ) : (
-                <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
-              )}
-            </>
+            <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
           )}
         </div>
       </div>
@@ -2694,6 +2760,189 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             )}
 
             <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── the .edu gate — join a community by proving you're at that school ──────────
+// Your ping only ever reaches people from your own community, so joining one asks
+// for a code emailed to an address at that school's domain. Two steps: enter the
+// address, then the code. On success it reports { slug, email } up so App can flip
+// membership. The sandbox (and any build without the backend wired) auto-confirms
+// once six digits are entered, so the whole shape is playable with nothing sent.
+export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
+  const { t } = useI18n()
+  const SHADOW = makeShadow(C)
+  const community = bySlug(slug) || {}
+  const domain = community.domain || 'school.edu'
+  const name = community.name || 'your school'
+  const short = community.short || name
+  const real = !demo && eduVerifyEnabled()
+
+  const [phase, setPhase] = React.useState('email') // email | sending | code | verifying | verified
+  const [email, setEmail] = React.useState('')
+  const [code, setCode] = React.useState('')
+  const [errCode, setErrCode] = React.useState('')
+  const [resent, setResent] = React.useState(false)
+  const tokenRef = React.useRef(null)
+  const doneRef = React.useRef(null)
+  React.useEffect(() => () => { if (doneRef.current) clearTimeout(doneRef.current) }, [])
+
+  const dismiss = () => onClose()
+  const dialogRef = useDialog(dismiss)
+
+  const send = async () => {
+    setErrCode('')
+    const pre = localEmailCheck(email, slug)
+    if (!pre.ok) { setErrCode(pre.error); return }
+    setPhase('sending')
+    if (!real) {
+      tokenRef.current = 'demo'
+      setTimeout(() => setPhase('code'), 650)
+      return
+    }
+    try {
+      const r = await sendEduCode({ email, slug })
+      tokenRef.current = r.token
+      setPhase('code')
+    } catch (e) {
+      setErrCode(e?.code || 'send')
+      setPhase('email')
+    }
+  }
+
+  const resend = async () => {
+    setCode('')
+    setErrCode('')
+    setResent(true)
+    setTimeout(() => setResent(false), 2400)
+    await send()
+  }
+
+  const succeed = () => {
+    setPhase('verified')
+    doneRef.current = setTimeout(() => onVerified({ slug, email: email.trim().toLowerCase() }), VERIFIED_HOLD_MS)
+  }
+
+  const submit = async () => {
+    const c = code.replace(/\D/g, '')
+    if (c.length !== 6) { setErrCode('code'); return }
+    setErrCode('')
+    setPhase('verifying')
+    if (!real) { succeed(); return }
+    const res = await verifyEduCode({ token: tokenRef.current, code: c })
+    if (res.ok) succeed()
+    else { setErrCode(res.error || 'code'); setPhase('code') }
+  }
+
+  const errMsg =
+    errCode === 'domain' ? t('edu.errDomain', { domain, name })
+      : errCode === 'email' ? t('edu.errEmail')
+      : errCode === 'rate' ? t('edu.errRate')
+      : errCode === 'send' ? t('edu.errSend')
+      : errCode === 'expired' ? t('edu.errExpired')
+      : errCode === 'code' ? t('edu.errCode')
+      : ''
+
+  const busy = phase === 'sending' || phase === 'verifying'
+
+  return (
+    <div
+      onClick={dismiss}
+      style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
+    >
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('edu.title', { name })}
+        tabIndex={-1}
+        className="readout-in"
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <SchoolMark C={C} slug={slug} size={42} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 22, color: C.cream, lineHeight: 1.12 }}>{t('edu.title', { name })}</div>
+          </div>
+          <button onClick={dismiss} aria-label={t('edu.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
+            <Icon name="x" size={14} color="currentColor" />
+          </button>
+        </div>
+
+        {phase === 'verified' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
+            <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
+              <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
+              <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
+              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.star, 0.16), border: `1px solid ${rgba(C.star, 0.5)}`, boxShadow: `0 0 30px ${rgba(C.star, 0.45)}` }}>
+                <Icon name="check" size={30} color={C.star} stroke={2.4} />
+              </span>
+            </span>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 23, color: C.cream, textAlign: 'center' }}>{t('edu.verified', { name: short })}</div>
+          </div>
+        ) : phase === 'email' || phase === 'sending' ? (
+          <>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('edu.sub', { domain, name })}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <FieldLabel C={C}>{t('edu.emailLabel')}</FieldLabel>
+              <Field
+                C={C}
+                kind="email"
+                value={email}
+                onChange={(v) => { setEmail(v); if (errCode) setErrCode('') }}
+                placeholder={t('edu.emailPlaceholder', { domain })}
+                autoFocus
+                onEnter={send}
+              />
+              {errMsg && <span style={{ fontSize: 12, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
+            </div>
+            <PrimaryButton C={C} disabled={busy || !email.trim()} onClick={send}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+                <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
+              </span>
+            </PrimaryButton>
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+          </>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('edu.codeSent', { email })}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <FieldLabel C={C}>{t('edu.codeLabel')}</FieldLabel>
+              <input
+                value={code}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); if (errCode) setErrCode('') }}
+                onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="••••••"
+                aria-label={t('edu.codeLabel')}
+                autoFocus
+                style={{
+                  width: '100%', height: 56, textAlign: 'center', borderRadius: RADIUS.field,
+                  background: C.ink, border: `1.5px solid ${errMsg ? rgba(C.star, 0.6) : C.line}`, color: C.star,
+                  fontFamily: "'Space Mono', monospace", fontSize: 30, fontWeight: 700, letterSpacing: '12px', paddingLeft: 12,
+                  outline: 'none', textShadow: `0 0 22px ${rgba(C.star, 0.35)}`,
+                }}
+              />
+              {errMsg && <span style={{ fontSize: 12, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
+            </div>
+            <PrimaryButton C={C} disabled={busy || code.length !== 6} onClick={submit}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+                <Icon name="check" size={16} color={C.onStar} stroke={2.2} /> {phase === 'verifying' ? t('edu.verifying') : t('edu.verify')}
+              </span>
+            </PrimaryButton>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+              <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
+              <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
+            </div>
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>

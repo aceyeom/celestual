@@ -19,10 +19,10 @@ const en = {
   // ── screen 1 · the cold landing ────────────────────────────────────────
   // the hero names the feeling; one quiet line beneath it names the promise,
   // typed once and held (§4.1).
-  'landing.head1': 'you can’t stop thinking about them.',
-  'landing.head2': 'what if they can’t stop thinking about you too?',
+  'landing.head1': 'they’re still thinking about you.',
+  'landing.head2': 'stop guessing. find out who.',
   // the promise, in one line under the headline
-  'landing.hero': 'the only way to know for sure, without ever risking a thing.',
+  'landing.hero': 'the only way to find out, without ever risking a thing.',
   'landing.cta': 'find out',
   'landing.safety': 'no profiles. no browsing. nothing happens unless it’s mutual.',
   'landing.login': 'log in',
@@ -131,7 +131,7 @@ const en = {
   'placed.findComm': 'find your community',
   'placed.share': 'share your invite link',
   'placed.shared': 'link copied',
-  'placed.door': 'post your door',
+  'placed.door': 'share the open sky',
   'placed.pings': 'your pings',
 
   // ── screen 4 · your pings (the status page) ────────────────────────────
@@ -164,26 +164,32 @@ const en = {
   'pings.letgoYes': 'remove',
   'pings.keep': 'keep',
   'pings.add': 'place another',
-  'pings.door': 'post your door',
+  'pings.door': 'share the open sky',
   'pings.open': 'message them',
   'pings.worlds': 'communities',
   'pings.sim': 'sandbox: they add you back',
 
-  // ── screen 5 · the open-door card ───────────────────────────────────────
-  'door.kicker': 'your door',
-  'door.title1': 'post your',
-  'door.title2': 'open door.',
-  'door.line': 'if there’s something you never said to me, it’s safe here now.',
-  'door.sub': 'one story card. it says only that you’re reachable, and lands whoever taps it two taps from telling you.',
-  'door.save': 'save the card',
-  'door.saved': 'saved. now post it',
-  'door.copy': 'copy your link',
-  'door.copied': 'copied',
-  'door.stepsKicker': 'three steps',
-  'door.step1': 'save the card to your camera roll.',
-  'door.step2': 'add it to your story.',
-  'door.step3': 'drop your link on the door as a link sticker.',
-  'door.foot': 'nothing on the card, or behind it, ever says who you’ve entered, or that you have.',
+  // ── screen 5 · the open-sky share card ──────────────────────────────────
+  // the shareable is about the PLACE, never the person: a card that says a
+  // community's sky is open (or gathering), designed to recruit the rest of your
+  // world — the thing that actually moves the meter. it names no one and never
+  // reveals that you've entered anyone (§6.2 truth; §2.2 growth surface).
+  'sky.kicker': 'your community',
+  'sky.title1': 'share the',
+  'sky.title2': 'open sky.',
+  'sky.subOpen': 'one card, and it says {name}’s sky is live. everyone who joins from it brings the next match closer.',
+  'sky.subGathering': 'one card, and it shows {name} gathering. the sooner it fills, the sooner its sky opens.',
+  'sky.save': 'save the card',
+  'sky.saved': 'saved. now post it',
+  'sky.copy': 'copy the invite link',
+  'sky.copied': 'copied',
+  'sky.stepsKicker': 'three steps',
+  'sky.step1': 'save the card to your camera roll.',
+  'sky.step2': 'add it to your story.',
+  'sky.step3': 'drop the invite link on it as a link sticker.',
+  'sky.foot': 'the card names a place, never a person. nothing on it says who you’ve entered.',
+  'sky.none': 'join your community first, then you can share its sky.',
+  'sky.find': 'find your community',
 
   // the personal landing — celestual.us/@handle
   'open.reach': 'reachable on celestual',
@@ -347,16 +353,59 @@ const en = {
   'communities.gatewayNone': 'not in a community yet.',
   'communities.open2': 'open',
 
-  // the live shoutout wall — a community's one public voice. anonymous by
-  // construction: the composer strips handles, names, and contacts, and rate-
-  // limits, so it can be alive without ever outing a person or a match.
-  'shout.title': 'shoutouts',
-  'shout.anon': 'anonymous',
-  'shout.empty': 'be the first to say something.',
-  'shout.you': 'you',
-  'shout.placeholder': 'say it to no one and everyone…',
-  'shout.send': 'send',
-  'shout.wait': 'again in {n}s',
+  // the reveal countdown + what it means. a community's sky lights its week all at
+  // once, on a cadence — a live clock that makes the place feel alive and adds a
+  // gentle deadline. the info sign explains the countdown, the requirements, and
+  // exactly what lights up, so nothing about the mechanic is hidden.
+  'reveal.week': 'this week’s sky lights in',
+  'reveal.opens': 'the sky opens in',
+  'reveal.now': 'lighting up now',
+  'reveal.infoTitle': 'the countdown',
+  'reveal.infoWhat': 'every sunday night the week’s matches light up across the sky at once — so the reveal is a shared moment, not a lonely refresh.',
+  'reveal.infoReq': 'a community opens at 100 people. matches only ever show at ten and up, so no single match can be reverse-guessed.',
+  'reveal.infoReveals': 'what lights up: mutual matches this week, the most-said reason, and every ping placed.',
+  'reveal.close': 'got it',
+
+  // your one community — made obvious and easy to reach. you can be in exactly one
+  // (your ping only reaches people from it), and a .edu email is how you prove
+  // you’re really there. everyone can watch; only members ping.
+  'home.badge': 'your community',
+  'home.in': 'you’re in {name}',
+  'home.oneOnly': 'you can be in one community — the one you’re actually at.',
+  'home.watch': 'you’re watching {name}. join to ping into its sky.',
+  'home.locked': 'verify your school email to ping here.',
+  'home.switchTitle': 'switch to {name}?',
+  'home.switchBody': 'you’re in {current}. joining {name} leaves it — you can only be in the one you’re really at.',
+  'home.switchYes': 'switch to {name}',
+  'home.switchNo': 'stay in {current}',
+  'home.locate': 'find your star',
+
+  // ── the .edu gate (join a community by proving you’re at that school) ────────
+  // your ping only ever reaches people from your own community, so membership is
+  // real: a code to your school address confirms you’re there. one community, one
+  // address. the sandbox auto-confirms so the shape is playable.
+  'edu.title': 'prove you’re at {name}.',
+  'edu.sub': 'your {domain} address confirms you’re really here. it’s the only way to ping into this sky, so a ping only ever reaches people who are.',
+  'edu.emailLabel': 'your school email',
+  'edu.emailPlaceholder': 'you@{domain}',
+  'edu.send': 'send my code',
+  'edu.sending': 'sending…',
+  'edu.codeLabel': 'the six-digit code',
+  'edu.codeSent': 'sent to {email}. it lasts ten minutes.',
+  'edu.verify': 'verify & join',
+  'edu.verifying': 'verifying…',
+  'edu.resend': 'send a new code',
+  'edu.resent': 'a fresh code is on its way.',
+  'edu.verified': 'verified. you’re in {name}.',
+  'edu.change': 'use a different email',
+  'edu.cancel': 'cancel',
+  'edu.errDomain': 'use your {domain} address, so we can confirm you’re at {name}.',
+  'edu.errEmail': 'that doesn’t look like a school email yet. check it.',
+  'edu.errCode': 'that code didn’t match. check it, or send a new one.',
+  'edu.errExpired': 'that code lapsed. send a fresh one.',
+  'edu.errRate': 'too many tries. give it a minute, then start again.',
+  'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
+  'edu.demoNote': 'sandbox. no real email is sent — enter any six digits and it confirms.',
 
   // ── affiliated schools (new-user onboarding step) ───────────────────────
   'schools.kicker': 'one more thing',
