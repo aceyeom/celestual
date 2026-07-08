@@ -19,11 +19,12 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderDoorCard, downloadDoorCard } from '../card.js'
 import {
-  Brandmark, StarMark, SchoolMark, Kicker, Rule, ProgressRing, StateDot, Sonar, GlassPanel,
+  Brandmark, StarMark, SchoolMark, Kicker, Rule, ProgressRing, StateDot, Sonar, GlassPanel, Meter,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog,
+  BackBtn, Icon, Typewriter, rgba, RADIUS, SPACE, makeShadow, useDialog,
 } from './ui.jsx'
 import { RING_LABELS, communityProgress } from '../communities.js'
+import { placedReachable, placedWaiting } from '../growth.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
 // intimate measure on wide monitors.
@@ -90,37 +91,78 @@ export function SandboxChip({ C }) {
   )
 }
 
-// ── the intent row (the guide's exact five, §4.5 — optional, never free-text) ─
-export const INTENTS = ['unsaid', 'think', 'again', 'clear', 'miss']
-export const intentLine = (t, id, reveal) => (id && INTENTS.includes(id) ? t(reveal ? `intent.${id}.r` : `intent.${id}`) : '')
+// ── the category + intent row (categorize them, then say why — §4.5) ──────────
+// You first say who they are to you (crush / ex / friend / complicated); the
+// "why them" lines that follow are drawn from that category, so they fit the
+// real relationship instead of one flat list. Both are optional and never
+// free-text; the chosen line travels with the ping, read only at a mutual
+// reveal. Ids are namespaced by category, and each line's display text lives in
+// i18n/strings.js under `intent.<id>`.
+export const CATEGORIES = [
+  { id: 'crush', intents: ['crushHi', 'crushThink', 'crushCute', 'crushSee'] },
+  { id: 'ex', intents: ['exMiss', 'exAgain', 'exUnsaid', 'exUs'] },
+  { id: 'friend', intents: ['friendTalk', 'friendAround', 'friendLeft', 'friendFix'] },
+  { id: 'complicated', intents: ['compRight', 'compMind', 'compAir', 'compWhat'] },
+]
+export const INTENTS = CATEGORIES.flatMap((c) => c.intents)
+// the category an intent id belongs to (so a saved ping can re-open its group).
+export const categoryOf = (id) => (CATEGORIES.find((c) => c.intents.includes(id)) || {}).id || ''
+// the line every intent id renders as (first person; same under "they"/"you").
+export const intentLine = (t, id) => (id && INTENTS.includes(id) ? t(`intent.${id}`) : '')
 
-export function IntentPicker({ C, value, onChange }) {
-  const { t } = useI18n()
+// A small selectable chip — sans for a category (a label), serif italic for an
+// intent line (a feeling). Shared so both rows read as one control.
+function PickChip({ C, on, serif, onClick, children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-      <FieldLabel C={C} optional={t('intent.optional')}>{t('intent.label')}</FieldLabel>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-        {INTENTS.map((id) => {
-          const on = value === id
-          return (
-            <button
-              key={id}
-              onClick={() => onChange(on ? '' : id)}
-              style={{
-                padding: '8px 13px', borderRadius: RADIUS.chip, cursor: 'pointer',
-                background: on ? rgba(C.star, 0.12) : 'transparent',
-                border: `1px solid ${on ? rgba(C.star, 0.5) : C.line}`,
-                color: on ? C.cream : C.muted,
-                fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5,
-                transition: 'all .2s',
-              }}
-            >
-              {t(`intent.${id}`)}
-            </button>
-          )
-        })}
+    <button
+      onClick={onClick}
+      style={{
+        padding: serif ? '8px 13px' : '7px 14px', borderRadius: RADIUS.chip, cursor: 'pointer',
+        background: on ? rgba(C.star, 0.12) : 'transparent',
+        border: `1px solid ${on ? rgba(C.star, 0.5) : C.line}`,
+        color: on ? C.cream : C.muted, transition: 'all .2s',
+        fontFamily: serif ? "'Instrument Serif', serif" : "'Space Grotesk', sans-serif",
+        fontStyle: serif ? 'italic' : 'normal',
+        fontSize: serif ? 15.5 : 13.5, fontWeight: serif ? 400 : 600,
+        letterSpacing: serif ? 0 : '.2px',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function IntentPicker({ C, category, onCategory, value, onChange }) {
+  const { t } = useI18n()
+  const cat = CATEGORIES.find((c) => c.id === category)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* who are they to you? */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <FieldLabel C={C} optional={t('intent.optional')}>{t('category.label')}</FieldLabel>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          {CATEGORIES.map((c) => (
+            <PickChip key={c.id} C={C} on={category === c.id} onClick={() => onCategory(category === c.id ? '' : c.id)}>
+              {t(`category.${c.id}`)}
+            </PickChip>
+          ))}
+        </div>
       </div>
-      <Hint C={C} icon="lock">{t('intent.note')}</Hint>
+
+      {/* why them? — the lines shift with the category above */}
+      <Collapse open={!!cat}>
+        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 2 }}>
+          <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+            {(cat?.intents || []).map((id) => (
+              <PickChip key={id} C={C} serif on={value === id} onClick={() => onChange(value === id ? '' : id)}>
+                {t(`intent.${id}`)}
+              </PickChip>
+            ))}
+          </div>
+          <Hint C={C} icon="lock">{t('intent.note')}</Hint>
+        </div>
+      </Collapse>
     </div>
   )
 }
@@ -153,89 +195,21 @@ export function SlotPips({ C, standing, cap, compact }) {
   )
 }
 
-// The hero line, typed a beat at a time (§4.1): put their @ in → they'll never
-// know → unless they put you in too. Reworked so the mechanic is easy to follow:
-// the first two beats type on stacked lines and STAY — you read them together —
-// then they fade and the payoff (the warm third beat) enters on its own and
-// holds longest. The @ lights amber as it lands; the payoff reads amber. Loops,
-// calm; collapses to a static stack under reduced-motion.
-const HERO_TYPE = () => 46 + Math.random() * 34
+// The one quiet line under the headline: the promise, in the reader's own
+// words. Typed once and held, then it re-types on a long loop so the field
+// breathes without ever hurrying; collapses to a static line under reduced
+// motion. Serif italic, cream — it reads as something meant, not a slogan.
 function HeroSequence({ C }) {
   const { t } = useI18n()
-  const L1 = t('landing.type1')
-  const L2 = t('landing.type2')
-  const L3 = t('landing.type3')
-  const reduce =
-    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-  // stages: 0 type L1 · 1 type L2 (L1 held) · 2 fade the pair · 3 type L3 · 4 fade L3 → loop
-  const [stage, setStage] = React.useState(reduce ? 3 : 0)
-  const [n, setN] = React.useState(reduce ? L3.length : 0)
-
-  React.useEffect(() => {
-    if (reduce) return
-    let id
-    if (stage === 0) {
-      id = n < L1.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => { setN(0); setStage(1) }, 300)
-    } else if (stage === 1) {
-      id = n < L2.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => setStage(2), 1700)
-    } else if (stage === 2) {
-      id = setTimeout(() => { setN(0); setStage(3) }, 620)
-    } else if (stage === 3) {
-      id = n < L3.length ? setTimeout(() => setN(n + 1), HERO_TYPE()) : setTimeout(() => setStage(4), 3000)
-    } else if (stage === 4) {
-      id = setTimeout(() => { setN(0); setStage(0) }, 620)
-    }
-    return () => clearTimeout(id)
-  }, [stage, n, reduce, L1, L2, L3])
-
-  const serif = { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(21px, 6.2vw, 28px)', lineHeight: 1.32 }
-  const caret = (on) => on && <span className="tw-caret" aria-hidden style={{ color: rgba(C.star, 0.85), fontWeight: 300, marginLeft: 1 }}>|</span>
-  // light the @ glyph amber in "put their @ in."
-  const withAt = (s) => {
-    if (!s.includes('@')) return s
-    const [a, ...rest] = s.split('@')
-    return (<>{a}<span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, color: C.star }}>@</span>{rest.join('@')}</>)
-  }
-
-  const pairShown = stage < 2
-  const pairText1 = stage === 0 ? L1.slice(0, n) : L1
-  const pairText2 = stage === 0 ? '' : stage === 1 ? L2.slice(0, n) : L2
-  const payoffText = stage === 3 ? L3.slice(0, n) : L3
-
+  const line = t('landing.hero')
+  const serif = { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(19px, 5.4vw, 25px)', lineHeight: 1.4, color: rgba(C.cream, 0.94), textWrap: 'balance' }
   return (
     <div
       className="enter"
-      aria-label={`${L1} ${L2} ${L3}`}
-      style={{ animationDelay: '.16s', position: 'relative', minHeight: 92, width: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', padding: '0 10px' }}
+      aria-label={line}
+      style={{ animationDelay: '.16s', width: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', padding: '0 6px', maxWidth: 380 }}
     >
-      {reduce ? (
-        // static stack — the whole mechanic, no motion
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ ...serif, color: C.cream }}>{withAt(L1)}</span>
-          <span style={{ ...serif, color: C.cream }}>{L2}</span>
-          <span style={{ ...serif, color: C.star }}>{L3}</span>
-        </div>
-      ) : (
-        <>
-          {/* the held pair — both lines stay up together, then fade as one */}
-          <div
-            style={{
-              gridArea: '1 / 1', display: 'flex', flexDirection: 'column', gap: 2,
-              opacity: stage === 2 ? 0 : pairShown ? 1 : 0, transition: 'opacity .55s ease',
-            }}
-          >
-            <span style={{ ...serif, color: C.cream }}>{withAt(pairText1)}{caret(stage === 0)}</span>
-            <span style={{ ...serif, color: C.cream, minHeight: pairText2 || stage >= 1 ? undefined : 0 }}>
-              {pairText2}{caret(stage === 1)}
-            </span>
-          </div>
-          {/* the payoff — enters alone, amber, holds longest */}
-          <div style={{ gridArea: '1 / 1', opacity: stage === 3 || stage === 4 ? (stage === 4 ? 0 : 1) : 0, transition: 'opacity .55s ease' }}>
-            <span style={{ ...serif, color: C.star }}>{payoffText}{caret(stage === 3)}</span>
-          </div>
-        </>
-      )}
+      <Typewriter phrases={[{ text: line, hold: 6000 }]} style={serif} caretColor={rgba(C.star, 0.85)} />
     </div>
   )
 }
@@ -373,14 +347,14 @@ export function WhoScreen({ C, ctx }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
-          {/* the header, as a full serif headline — the accent line in rose (the
-              "them" star), since this is the person you're reaching toward */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16, textAlign: 'left' }}>
+          {/* the header, as a full serif headline, left-aligned — the accent line
+              in amber (the "you" star), one warm light with the landing page */}
           <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 38px)', lineHeight: 1.08, color: C.cream }}>
             {t('who.title1')}<br />
-            <span style={{ color: C.them }}>{t('who.title2')}</span>
+            <span style={{ color: C.star }}>{t('who.title2')}</span>
           </h2>
-          {/* self @ first: the ping is FROM you — shown under the headline */}
+          {/* self @ first: the ping is FROM you, shown under the headline */}
           {normHandle(ctx.me) && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <Kicker C={C} style={{ fontSize: 10 }}>{t('who.fromLabel')}</Kicker>
@@ -406,17 +380,27 @@ export function WhoScreen({ C, ctx }) {
           {ctx.demo && <Hint C={C} icon="star" color={rgba(C.star, 0.85)}>{t('who.demoHint')}</Hint>}
         </div>
 
-        {/* the optional intent — revealed only at a mutual match */}
+        {/* categorize them, then say why — the chosen line is read only if it's
+            ever mutual */}
         <Collapse open={valid}>
           <div className="fade" style={{ paddingTop: 2 }}>
-            <IntentPicker C={C} value={ctx.intent} onChange={ctx.setIntent} />
+            <IntentPicker
+              C={C}
+              category={ctx.category}
+              onCategory={(c) => {
+                ctx.setCategory(c)
+                ctx.setIntent('')
+              }}
+              value={ctx.intent}
+              onChange={ctx.setIntent}
+            />
           </div>
         </Collapse>
 
         {/* the slots — the weight under the act. only shown once we know who you
             are: before you've identified, your slot count is genuinely unknown. */}
         {ctx.established && (
-          <div className="enter" style={{ animationDelay: '.12s', display: 'flex', justifyContent: 'center' }}>
+          <div className="enter" style={{ animationDelay: '.12s', display: 'flex', justifyContent: 'flex-start' }}>
             <SlotPips C={C} standing={ctx.slotsStanding} cap={ctx.slotsCap} />
           </div>
         )}
@@ -556,83 +540,231 @@ export function YouScreen({ C, ctx }) {
 }
 
 // ── 3 · PLACED — the recruiter screen (the most important in the product) ─────
-export function PlacedScreen({ C, ctx }) {
+// The placed ping now turns on your community. If you're in one that's still
+// filling, the answer to "did they ping me too?" is held until it opens, and the
+// one thing you control is bringing your world in — so both states lead with the
+// count and a share action. Quiet fallbacks cover no-community-joined and an
+// already-open community. The growth-narrative copy lives in growth.js.
+
+// The community invite link — points at the community's own page so a friend can
+// add themselves. It names no one.
+function inviteUrl(slug) {
+  const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://celestual.us'
+  return slug ? `${origin}/c/${slug}` : origin
+}
+
+// Share the invite: the native share sheet on mobile, a clipboard copy (with a
+// brief "link copied" confirmation) everywhere else.
+function ShareInviteButton({ C, slug }) {
   const { t } = useI18n()
-  const placed = ctx.lastPlaced || { handle: ctx.them, reachable: false }
-  const standing = !!placed.reachable
-  // the communities you're in — a way your ping can travel to them
-  const joinedComms = (ctx.communities || []).filter((c) => c.joined)
+  const [done, setDone] = React.useState(false)
+  const doneTimer = React.useRef(null)
+  React.useEffect(() => () => doneTimer.current && clearTimeout(doneTimer.current), [])
+  const share = async () => {
+    const url = inviteUrl(slug)
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ url })
+        return
+      }
+    } catch {
+      /* sheet dismissed or unavailable — fall through to copy */
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setDone(true)
+      if (doneTimer.current) clearTimeout(doneTimer.current)
+      doneTimer.current = setTimeout(() => setDone(false), 2200)
+    } catch {
+      /* the link is elsewhere on screen if all else fails */
+    }
+  }
+  return (
+    <PrimaryButton C={C} onClick={share}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+        <Icon name={done ? 'check' : 'share'} size={16} color={C.onStar} stroke={2} />
+        {done ? t('placed.shared') : t('placed.share')}
+      </span>
+    </PrimaryButton>
+  )
+}
+
+// The community's climb, as a labeled panel: the seal + name + status on top, the
+// count-of-threshold meter beneath. The shared anchor of both placed states — the
+// one thing on the screen the reader can actually move.
+function CommunityProgressCard({ C, community }) {
+  const { open } = communityProgress(community)
+  return (
+    <GlassPanel C={C} style={{ width: '100%', maxWidth: 360, padding: '17px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <SchoolMark C={C} slug={community.slug} size={38} />
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+        <CommunityStatus C={C} open={open} />
+      </div>
+      <Meter C={C} count={community.current} threshold={community.threshold} />
+    </GlassPanel>
+  )
+}
+
+// The reassurance footer shared by both growth states — quiet, bordered, the
+// "it's already spreading, and it names no one" note.
+function SpreadingNote({ C, lines }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '13px 15px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.4), border: `1px solid ${C.line}` }}>
+      {lines.map((l, i) => (
+        <p key={i} style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: rgba(C.muted, 0.92) }}>{l}</p>
+      ))}
+    </div>
+  )
+}
+
+// State A — they're already reachable, and in your (still-gathering) community.
+// The question you can't answer yet is the emotional peak; the meter is the
+// answer's gate, and it's the thing you control.
+function PlacedReachable({ C, ctx, handle, community }) {
+  const { t } = useI18n()
+  const g = placedReachable({ handle, short: community.short, threshold: community.threshold })
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
-        {standing ? (
-          <>
-            <div className="enter floaty"><StarMark C={C} size={82} /></div>
-            <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(32px, 9vw, 42px)', lineHeight: 1.1, color: C.cream }}>
-              {t('placed.standingTitle')}
-            </h1>
-            <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>
-              {t('placed.standingSub', { handle: placed.handle })}
-            </p>
-          </>
-        ) : (
-          <>
-            {/* the quiet "held" mark — a calm sonar, not the bright match star */}
-            <div className="enter" style={{ paddingBottom: 2 }}><Sonar C={C} size={30} /></div>
-            {/* the handle itself, large, then the plain truth beneath it */}
-            <h1 className="enter" style={{ animationDelay: '.06s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(38px, 11vw, 52px)', lineHeight: 1.02, color: C.cream, maxWidth: '92%' }}>
-              <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{placed.handle}
-              </span>
-              <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
-            </h1>
-            <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>
-              {t('placed.waitingSub')}
-            </p>
-          </>
-        )}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, padding: '16px 0 8px' }}>
+        {/* confirmation */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <div className="floaty"><StarMark C={C} size={60} /></div>
+          <Kicker C={C} color={rgba(C.star, 0.92)}>{g.live}</Kicker>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: rgba(C.cream, 0.92), maxWidth: 340 }}>{g.here}</p>
+        </div>
 
-        {/* State B: the deniable playbook — every line literally true, forever */}
-        {!standing && (
-          <div className="enter" style={{ animationDelay: '.2s', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 12, padding: '18px 0 2px', borderTop: `1px solid ${C.line}` }}>
-            <Kicker C={C}>{t('placed.howTitle')}</Kicker>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, textAlign: 'left' }}>
-              <span style={{ fontSize: 13, lineHeight: 1.6, color: C.muted }}>· {t('placed.how1')}</span>
-              {joinedComms.map((c) => (
-                <span key={c.slug} style={{ fontSize: 13, lineHeight: 1.6, color: C.muted }}>
-                  · {t('placed.howWorld', { name: c.name })}
-                </span>
-              ))}
-              <span style={{ fontSize: 13, lineHeight: 1.6, color: C.muted }}>· {t('placed.how3')}</span>
-            </div>
-          </div>
-        )}
+        {/* the question — the emotional peak */}
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(23px, 6.4vw, 31px)', lineHeight: 1.24, color: C.cream, maxWidth: 390, textWrap: 'balance' }}>
+            {g.question}
+          </h1>
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{g.until}</p>
+        </div>
+
+        {/* the anchor — the meter you can actually move */}
+        <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <CommunityProgressCard C={C} community={community} />
+          <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.fill}</p>
+        </div>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {standing ? (
-          // State A: the silence is pre-framed; one quiet secondary action.
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <GhostButton C={C} onClick={() => ctx.go('door')} style={{ fontSize: 14, color: C.cream }}>
-              {t('placed.door')} →
-            </GhostButton>
-            <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>
-              {t('placed.pings')}
-            </GhostButton>
-          </div>
-        ) : (
-          <>
-            <PrimaryButton C={C} onClick={() => ctx.go('door')}>{t('placed.door')}</PrimaryButton>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>
-                {t('placed.pings')}
-              </GhostButton>
-            </div>
-          </>
-        )}
+      {/* the actions */}
+      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <ShareInviteButton C={C} slug={community.slug} />
+        <OutlineButton C={C} onClick={() => ctx.go('door')} style={{ width: '100%', padding: '14px 22px', borderRadius: RADIUS.field }}>
+          <Icon name="download" size={15} color="currentColor" stroke={1.9} /> {t('placed.door')}
+        </OutlineButton>
+        <SpreadingNote C={C} lines={[g.foot, g.spreading]} />
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+        </div>
       </div>
     </Shell>
   )
+}
+
+// State B — they're not on celestual yet, and your community isn't full. The
+// handle leads, held; the move is the same: bring your world in.
+function PlacedWaiting({ C, ctx, handle, community }) {
+  const { t } = useI18n()
+  const g = placedWaiting({ handle, short: community.short })
+  return (
+    <Shell>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22, padding: '16px 0 8px' }}>
+        {/* the handle, large, held */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <Sonar C={C} size={28} />
+          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(34px, 10vw, 46px)', lineHeight: 1.04, color: C.cream, maxWidth: '94%' }}>
+            <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{handle}
+            </span>
+            <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
+          </h1>
+          <p className="enter" style={{ animationDelay: '.1s', margin: '4px 0 0', fontSize: 14, lineHeight: 1.65, color: C.muted, maxWidth: 350 }}>{g.only}</p>
+        </div>
+
+        {/* the anchor — the meter */}
+        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <CommunityProgressCard C={C} community={community} />
+          <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.bring}</p>
+        </div>
+      </div>
+
+      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <ShareInviteButton C={C} slug={community.slug} />
+        <SpreadingNote C={C} lines={[g.spreading]} />
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+        </div>
+      </div>
+    </Shell>
+  )
+}
+
+// The quiet fallbacks: you haven't joined a community (nudge to pick one, since
+// the flow only opens once your world is here), or your community is already
+// open (the plain standing/waiting truth).
+function PlacedQuiet({ C, ctx, handle, reachable, needsCommunity }) {
+  const { t } = useI18n()
+  const body = needsCommunity
+    ? reachable
+      ? t('placed.joinReachable', { handle })
+      : t('placed.joinWaiting')
+    : reachable
+      ? t('placed.standingSub', { handle })
+      : t('placed.waitingSub')
+  return (
+    <Shell>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
+        {reachable ? (
+          <>
+            <div className="enter floaty"><StarMark C={C} size={78} /></div>
+            <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 40px)', lineHeight: 1.1, color: C.cream }}>
+              {needsCommunity ? t('placed.joinTitle') : t('placed.standingTitle')}
+            </h1>
+          </>
+        ) : (
+          <>
+            <div className="enter" style={{ paddingBottom: 2 }}><Sonar C={C} size={30} /></div>
+            <h1 className="enter" style={{ animationDelay: '.06s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(36px, 10.5vw, 50px)', lineHeight: 1.02, color: C.cream, maxWidth: '92%' }}>
+              <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{handle}
+              </span>
+              <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
+            </h1>
+          </>
+        )}
+        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>{body}</p>
+      </div>
+
+      <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {needsCommunity ? (
+          <PrimaryButton C={C} onClick={() => ctx.go('worlds')}>{t('placed.findComm')}</PrimaryButton>
+        ) : (
+          <PrimaryButton C={C} onClick={() => ctx.go('door')}>{t('placed.door')}</PrimaryButton>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+        </div>
+      </div>
+    </Shell>
+  )
+}
+
+export function PlacedScreen({ C, ctx }) {
+  const placed = ctx.lastPlaced || { handle: ctx.them, reachable: false }
+  const reachable = !!placed.reachable
+  const handle = placed.handle
+  // your own community drives this screen — the thing you can actually move.
+  const community = (ctx.communities || []).find((c) => c.joined) || null
+  const gathering = community && !communityProgress(community).open
+  if (community && gathering) {
+    return reachable
+      ? <PlacedReachable C={C} ctx={ctx} handle={handle} community={community} />
+      : <PlacedWaiting C={C} ctx={ctx} handle={handle} community={community} />
+  }
+  return <PlacedQuiet C={C} ctx={ctx} handle={handle} reachable={reachable} needsCommunity={!community} />
 }
 
 // ── 4 · YOUR PINGS — the status page ──────────────────────────────────────────
@@ -1498,19 +1630,58 @@ function JoinedChip({ C, community, onRemove }) {
   )
 }
 
+// The "are you actually part of it?" stop. You only ever reach people from your
+// own community, so joining one you're not really in is pointless — this
+// confirms before it joins. Renders in place of the finder while it's up.
+function JoinConfirm({ C, community, onYes, onNo }) {
+  const { t } = useI18n()
+  return (
+    <GlassPanel C={C} style={{ padding: '18px 18px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <SchoolMark C={C} slug={community.slug} size={40} />
+        <h3 style={{ margin: 0, flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 22, lineHeight: 1.12, color: C.cream }}>
+          {t('communities.confirmTitle', { name: community.name })}
+        </h3>
+      </div>
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted }}>{t('communities.confirmBody')}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <PrimaryButton C={C} onClick={onYes} style={{ padding: '14px 20px', fontSize: 15 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+            <Icon name="check" size={15} color={C.onStar} stroke={2.4} /> {t('communities.confirmYes', { name: community.short })}
+          </span>
+        </PrimaryButton>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <GhostButton C={C} onClick={onNo} style={{ fontSize: 12.5 }}>{t('communities.confirmNo')}</GhostButton>
+        </div>
+      </div>
+    </GlassPanel>
+  )
+}
+
 // ── AFFILIATED SCHOOLS (new-user onboarding, after identity) ──────────────────
 // Shown once, between proving your @ and placing your first ping: a search that
-// reveals the curated communities. Joining is optional — the ping places either
-// way — but being in one makes the silence feel less lonely. One primary action
-// places the ping; the search above it is a skippable extra.
+// reveals the curated communities. Your ping stays locked until your community
+// fills, so picking the right one matters — and you should only join the one
+// you're really in. Picking a school opens the "are you actually there?" stop
+// before it joins. One primary action places the ping.
 export function SchoolsScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
   const joined = communities.filter((c) => c.joined)
+  // the community awaiting the "are you actually there?" confirmation.
+  const [pending, setPending] = React.useState(null)
+  const askJoin = (slug) => {
+    const c = communities.find((x) => x.slug === slug)
+    if (c && !c.joined) setPending(c)
+  }
+  const confirmJoin = () => {
+    if (pending) ctx.joinCommunity(pending.slug)
+    setPending(null)
+  }
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('you')} />
+        <BackBtn C={C} onClick={() => (pending ? setPending(null) : ctx.go('you'))} />
         <Brandmark C={C} size={18} />
         <div style={{ width: 38 }} />
       </div>
@@ -1521,20 +1692,28 @@ export function SchoolsScreen({ C, ctx }) {
           <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.12, color: C.cream }}>
             {t('schools.title1')}<br /><span style={{ color: C.star }}>{t('schools.title2')}</span>
           </h2>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 330 }}>{t('schools.sub')}</p>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>{t('schools.sub')}</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
-          <CommunityFinder C={C} ctx={ctx} onPick={(slug) => ctx.joinCommunity(slug)} />
-          {joined.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 2 }}>
-              {joined.map((c) => (
-                <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
-              ))}
+          {pending ? (
+            <div className="fade">
+              <JoinConfirm C={C} community={pending} onYes={confirmJoin} onNo={() => setPending(null)} />
             </div>
           ) : (
-            <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
+            <>
+              <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
+              <CommunityFinder C={C} ctx={ctx} onPick={askJoin} />
+              {joined.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 2 }}>
+                  {joined.map((c) => (
+                    <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
+                  ))}
+                </div>
+              ) : (
+                <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1573,7 +1752,7 @@ export function MatchScreen({ C, ctx }) {
               <div style={{ border: `1px solid ${rgba(C.star, 0.35)}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <Kicker C={C} style={{ fontSize: 10 }}>{t('match.theySaid')}</Kicker>
                 <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: C.cream }}>
-                  “{intentLine(t, m.theirIntent, true)}”
+                  “{intentLine(t, m.theirIntent)}”
                 </span>
               </div>
             )}
@@ -1581,7 +1760,7 @@ export function MatchScreen({ C, ctx }) {
               <div style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <Kicker C={C} style={{ fontSize: 10 }}>{t('match.youSaid')}</Kicker>
                 <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: rgba(C.cream, 0.85) }}>
-                  “{intentLine(t, m.yourIntent, true)}”
+                  “{intentLine(t, m.yourIntent)}”
                 </span>
               </div>
             )}
