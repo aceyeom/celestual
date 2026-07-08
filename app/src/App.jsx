@@ -15,7 +15,7 @@ import {
   SendoffScreen, AccountSheet, IgVerifySheet,
 } from './components/screens.jsx'
 import { CURATED, CURATED_SLUGS, isCurated } from './communities.js'
-import { DEMO_COMMUNITIES, DEMO_FEED } from './demoData.js'
+import { DEMO_COMMUNITIES, DEMO_SHOUTOUTS } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
@@ -45,7 +45,12 @@ const seedDemoCommLive = () => {
   const o = {}
   for (const slug of CURATED_SLUGS) {
     const d = DEMO_COMMUNITIES[slug] || {}
-    o[slug] = { current: Number(d.current || 0), week: d.week || null }
+    o[slug] = {
+      members: Number(d.members || 0), // gates the open reward at 100
+      pings: d.pings != null ? Number(d.pings) : null, // galaxy stars (null = withheld while gathering)
+      matches: d.matches != null ? Number(d.matches) : null, // constellations
+      week: d.week || null,
+    }
   }
   return o
 }
@@ -130,12 +135,17 @@ export default function App() {
   // and your membership.
   const communities = useMemo(
     () =>
-      CURATED.map((c) => ({
-        ...c,
-        current: Number((commLive[c.slug] && commLive[c.slug].current) || 0),
-        week: (commLive[c.slug] && commLive[c.slug].week) || null,
-        joined: joinedSlugs.includes(c.slug),
-      })),
+      CURATED.map((c) => {
+        const live = commLive[c.slug] || {}
+        return {
+          ...c,
+          members: Number(live.members || 0),
+          pings: live.pings != null ? Number(live.pings) : null,
+          matches: live.matches != null ? Number(live.matches) : null,
+          week: live.week || null,
+          joined: joinedSlugs.includes(c.slug),
+        }
+      }),
     [commLive, joinedSlugs],
   )
 
@@ -530,11 +540,11 @@ export default function App() {
     (slug) => {
       if (!isCurated(slug)) return
       setJoinedSlugs((prev) => (prev.includes(slug) ? prev : [...prev, slug]))
-      // in the sandbox, joining nudges the ring (you're now one of the count)
+      // in the sandbox, joining nudges the member count (you're now one of them)
       if (demo) {
         setCommLive((prev) => ({
           ...prev,
-          [slug]: { ...(prev[slug] || {}), current: Number((prev[slug] && prev[slug].current) || 0) + 1 },
+          [slug]: { ...(prev[slug] || {}), members: Number((prev[slug] && prev[slug].members) || 0) + 1 },
         }))
       }
     },
@@ -558,22 +568,21 @@ export default function App() {
     [go],
   )
 
-  // Sandbox only: a live-feed beat nudges the community it names, so the ring
-  // visibly climbs and (for an open one) the weekly readout ticks as you watch.
+  // Sandbox only: a live beat nudges the community it names, so the galaxy fills
+  // and the weekly readout ticks as you watch. A ping adds a star; a match lights
+  // a constellation; a join grows the membership. Counts only move on an OPEN
+  // community (matches/pings stay withheld — null — while it's still gathering).
   const bumpCommunityActivity = useCallback(
     (slug, kind) => {
       if (!demo || !isCurated(slug)) return
       setCommLive((prev) => {
-        const cur = prev[slug] || { current: 0, week: null }
-        const week = cur.week
-          ? {
-              ...cur.week,
-              matches: Number(cur.week.matches || 0) + (kind === 'match' ? 1 : 0),
-              joined: Number(cur.week.joined || 0) + (kind === 'join' ? 1 : 0),
-              pings: Number(cur.week.pings || 0) + (kind === 'ping' || kind === 'reason' ? 1 : 0),
-            }
-          : cur.week
-        return { ...prev, [slug]: { ...cur, current: Number(cur.current || 0) + (kind === 'join' ? 2 : 1), week } }
+        const cur = prev[slug] || { members: 0, pings: null, matches: null, week: null }
+        const next = { ...cur }
+        if (kind === 'join') next.members = Number(cur.members || 0) + 1
+        if (kind === 'ping' && cur.pings != null) next.pings = Number(cur.pings) + 1
+        if (kind === 'match' && cur.matches != null) next.matches = Number(cur.matches) + 1
+        if (cur.week && kind === 'join') next.week = { ...cur.week, joined: Number(cur.week.joined || 0) + 1 }
+        return { ...prev, [slug]: next }
       })
     },
     [demo],
@@ -887,7 +896,7 @@ export default function App() {
     demo, me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap,
     intent, setIntent, category, setCategory,
-    communities, openCommunity, feedPool: demo ? DEMO_FEED : [],
+    communities, openCommunity, shoutoutPool: demo ? DEMO_SHOUTOUTS : [],
     viewCommunity, joinCommunity, leaveCommunity, toggleCommunity, bumpCommunityActivity, finishOnboarding,
     lastPlaced, match,
     demoFourthSlot, buyFourthSlot, placeFourth,

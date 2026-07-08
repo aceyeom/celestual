@@ -168,6 +168,22 @@ button { font-family: inherit; }
 @keyframes liveRise { from { transform: translateY(11px); } to { transform: translateY(0); } }
 .live-line { animation: liveRise .5s cubic-bezier(.2,.7,.2,1) both; will-change: transform; }
 
+/* ── the community galaxy: ping toasts + shoutout wall ────────────────────────
+   A ping toast rises over the galaxy, holds, then lifts away as a new star
+   settles into the disk. The shoutout lines rise in as they arrive. */
+@keyframes toastPop {
+  0%   { opacity: 0; transform: translateY(12px) scale(.96); }
+  12%  { opacity: 1; transform: translateY(0) scale(1); }
+  82%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-10px) scale(.98); }
+}
+.toast-pop { animation: toastPop var(--toast-dur, 3.4s) cubic-bezier(.2,.7,.2,1) both; will-change: opacity, transform; }
+@keyframes shoutIn { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+.shout-in { animation: shoutIn .5s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .toast-pop, .shout-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+
 /* ── the hero typewriter (the landing line) ──────────────────────────────
    A slim caret blinks beside the typed line; the line itself is driven in JS. */
 @keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }

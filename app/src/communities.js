@@ -20,17 +20,35 @@ export const CURATED = [
 
 export const CURATED_SLUGS = CURATED.map((c) => c.slug)
 
+// The fixed-100 model (masterguide §2.5): a community is globally open — anyone
+// can ping from day one. What 100 MEMBERS gates is not access but a reward: at
+// 100 the community "opens" and its weekly stats + its match-constellations
+// light up. Below 100 it's "gathering" — its exact counts stay hidden (small
+// counts de-anonymize), so its galaxy shows uncountable forming gas, not stars.
+export const OPEN_FLOOR = 100
+// A match count only PUBLISHES at ten and up (§2.7), so a small week can't be
+// reverse-guessed. Below the floor we show "matches open at ten," not a number.
+export const MATCH_FLOOR = 10
+
+// Is this community open (past the member floor)? Reads `members`, falling back
+// to the legacy `current` field so older seeds still resolve.
+export function communityOpen(c) {
+  const m = Number((c && (c.members != null ? c.members : c.current)) || 0)
+  return m >= OPEN_FLOOR
+}
+
 // The ring's center label. Intentionally literal (gamified) rather than voice-
 // compliant, and kept OUT of i18n/strings.js so it never trips the voice linter
 // — the ring is a demo-forward growth surface, not part of the product's copy.
 export const RING_LABELS = { climbing: 'unlocked', open: 'open' }
 
-// Progress toward a community's threshold, as a fraction and a flag.
+// Progress toward the fixed-100 open floor, as a fraction and a flag. Reads
+// `members` (falling back to the legacy `current`). Used by the recruiter/placed
+// surfaces and the finder; the community page itself no longer shows a fraction.
 export function communityProgress(c) {
-  const cur = Number((c && c.current) || 0)
-  const thr = Number((c && c.threshold) || 0)
-  const frac = thr > 0 ? cur / thr : 0
-  return { frac: Math.max(0, Math.min(1, frac)), open: thr > 0 && cur >= thr }
+  const members = Number((c && (c.members != null ? c.members : c.current)) || 0)
+  const frac = members / OPEN_FLOOR
+  return { frac: Math.max(0, Math.min(1, frac)), open: members >= OPEN_FLOOR, members }
 }
 
 export function bySlug(slug) {

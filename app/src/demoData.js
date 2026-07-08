@@ -41,45 +41,48 @@ export const DEMO_PINGS = [
   },
 ]
 
-// The curated communities' live sample state (the official set + thresholds live
-// in communities.js; this is only the sandbox overlay). `current` is people in,
-// measured against that community's threshold — the ring shows current/threshold.
-// A community is OPEN once current ≥ threshold, and only then carries a `week`
-// readout (matches, the most common reason, pings placed, joined). Berkeley is
-// the hero: mid-climb at ~72%, with the live feed nudging it up. Wesleyan is
-// already open; CMU is early.
+// The curated communities' live sample state (the fixed-100 model — see
+// communities.js). `members` gates the OPEN reward at 100; `pings` is the count
+// of pings placed (the galaxy's stars); `matches` is mutual matches this week
+// (the anonymous constellations). A gathering community (<100 members) hides its
+// exact counts, so `pings`/`matches` are absent and its galaxy shows forming gas.
+//
+// The set spans all three galaxy states on purpose: Berkeley is the hero — a
+// dense, open galaxy with a sky full of constellations; Wesleyan is a smaller
+// open galaxy; CMU is still gathering (a forming nebula, counts withheld).
 export const DEMO_COMMUNITIES = {
-  'uc-berkeley': { current: 1806 }, // 1806 / 2500 ≈ 72%
-  wesleyan: { current: 941, week: { matches: 14, pings: 262, joined: 71, topReason: 'crushThink' } }, // open
-  cmu: { current: 742 }, // 742 / 1800 ≈ 41%
+  'uc-berkeley': { members: 214, pings: 386, matches: 18, week: { joined: 71, topReason: 'crushThink' } },
+  wesleyan: { members: 128, pings: 154, matches: 11, week: { joined: 33, topReason: 'exUnsaid' } },
+  cmu: { members: 74 }, // gathering — under 100, all counts withheld
 }
 
-// The live activity feed — a rolling pool of anonymized beats that pop up over
-// the communities surfaces so the demo reads as actively used. `kind` decides how
-// the beat nudges the world it names: a placed ping / a new member / a match all
-// inch that community's ring upward, so watching it feels live. `reason` beats
-// quote the product's own five lines. All in-memory; gone when the tab closes.
-export const DEMO_FEED = [
-  // berkeley — the mid-climb hero; the most traffic
-  { slug: 'uc-berkeley', kind: 'reason', text: 'someone in the berkeley class of ’27 placed a ping — “i miss you”' },
-  { slug: 'uc-berkeley', kind: 'join', text: '+1 from unit 3 just joined berkeley' },
-  { slug: 'uc-berkeley', kind: 'match', text: 'it just became mutual for two bears' },
-  { slug: 'uc-berkeley', kind: 'reason', text: 'a ping near sproul — “i never got to say something”' },
-  { slug: 'uc-berkeley', kind: 'ping', text: 'a ping was just placed at berkeley' },
-  { slug: 'uc-berkeley', kind: 'reason', text: 'someone in a moffitt all-nighter — “i think about you”' },
-  { slug: 'uc-berkeley', kind: 'join', text: '+3 joined berkeley in the last hour' },
-  // wesleyan — small and already open
-  { slug: 'wesleyan', kind: 'reason', text: 'a wesleyan ping just went out — “i think about you”' },
-  { slug: 'wesleyan', kind: 'match', text: 'two cardinals just matched' },
-  { slug: 'wesleyan', kind: 'join', text: '+1 from foss hill just joined wesleyan' },
-  { slug: 'wesleyan', kind: 'reason', text: 'someone at wes — “i want to clear the air”' },
-  { slug: 'wesleyan', kind: 'ping', text: 'a ping was just placed at wesleyan' },
-  // cmu — early, engineering-heavy
-  { slug: 'cmu', kind: 'reason', text: 'a tartan just placed a ping — “i want to try again”' },
-  { slug: 'cmu', kind: 'join', text: '+2 joined cmu from the cut' },
-  { slug: 'cmu', kind: 'ping', text: 'a ping was just placed at carnegie mellon' },
-  { slug: 'cmu', kind: 'reason', text: 'someone in a gates all-nighter — “i miss you”' },
-  { slug: 'cmu', kind: 'match', text: 'it just became mutual for two tartans' },
+// The live shoutout pool — anonymous, moderated shoutouts that scroll through a
+// community's live chat so the demo reads as a place with people in it. Every
+// line is a real shoutout a member might post: a feeling, a place, a moment —
+// and NAMES NO ONE. No @handles, no first names, nothing that could out a person
+// or a match. That's the same wall the composer's moderation enforces on real
+// input (see moderation.js). Punchy and literal by design, so it lives here, out
+// of the linted strings file. All in-memory; gone when the tab closes.
+export const DEMO_SHOUTOUTS = [
+  // berkeley
+  { slug: 'uc-berkeley', text: 'to whoever i shared a table with at moffitt at 2am — i think about it' },
+  { slug: 'uc-berkeley', text: 'the person from my 8am at dwinelle. you know the one.' },
+  { slug: 'uc-berkeley', text: 'i should have said something on the walk down from the campanile' },
+  { slug: 'uc-berkeley', text: 'someone from unit 3, spring of freshman year. still.' },
+  { slug: 'uc-berkeley', text: 'we made eye contact at the free speech steps like six times' },
+  { slug: 'uc-berkeley', text: 'to the one who quoted my favorite film first. i folded instantly.' },
+  { slug: 'uc-berkeley', text: 'i hope you placed one too' },
+  // wesleyan
+  { slug: 'wesleyan', text: 'foss hill, that one warm october afternoon. you were there.' },
+  { slug: 'wesleyan', text: 'we closed down usdan talking and i never followed up' },
+  { slug: 'wesleyan', text: 'to the person i always found in the same corner of olin' },
+  { slug: 'wesleyan', text: 'i still have the setlist you wrote out for me' },
+  { slug: 'wesleyan', text: 'if it was mutual i think we both already know' },
+  // cmu
+  { slug: 'cmu', text: 'the cluster at 3am hits different when you were there too' },
+  { slug: 'cmu', text: 'to the person who fixed my build and my whole night' },
+  { slug: 'cmu', text: 'we walked the cut in the snow and i said nothing. classic.' },
+  { slug: 'cmu', text: 'i think about the study room more than the exam' },
 ]
 
 export const DEMO_ME = 'you.tonight'

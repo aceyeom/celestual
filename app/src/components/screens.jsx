@@ -19,12 +19,13 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderDoorCard, downloadDoorCard } from '../card.js'
 import {
-  Brandmark, StarMark, SchoolMark, Kicker, Rule, ProgressRing, StateDot, Sonar, GlassPanel, Meter,
+  Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel, Meter,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  BackBtn, Icon, Typewriter, rgba, RADIUS, SPACE, makeShadow, useDialog,
+  BackBtn, Icon, Typewriter, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
 } from './ui.jsx'
-import { RING_LABELS, communityProgress } from '../communities.js'
+import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR } from '../communities.js'
 import { placedReachable, placedWaiting } from '../growth.js'
+import { sanitizeShoutout, MAX_LEN } from '../moderation.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
 // intimate measure on wide monitors.
@@ -601,7 +602,7 @@ function CommunityProgressCard({ C, community }) {
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
         <CommunityStatus C={C} open={open} />
       </div>
-      <Meter C={C} count={community.current} threshold={community.threshold} />
+      <Meter C={C} count={community.members || 0} threshold={OPEN_FLOOR} />
     </GlassPanel>
   )
 }
@@ -623,7 +624,7 @@ function SpreadingNote({ C, lines }) {
 // answer's gate, and it's the thing you control.
 function PlacedReachable({ C, ctx, handle, community }) {
   const { t } = useI18n()
-  const g = placedReachable({ handle, short: community.short, threshold: community.threshold })
+  const g = placedReachable({ handle, short: community.short, threshold: OPEN_FLOOR })
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, padding: '16px 0 8px' }}>
@@ -1171,66 +1172,206 @@ function LiveDot({ C }) {
   return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
 }
 
-// The live activity stack: a few anonymized beats at once, the newest at the
-// bottom, older ones ageing (dimmer) above it before they drop off — so the
-// campus reads as actively used, and a couple are always legible instead of one
-// chip flickering. Each new beat also nudges the community it names
-// (ctx.bumpCommunityActivity), so a watched ring climbs as you read. Filter the
-// pool by slug at the call site to keep a community page's signal exclusive to it.
-const BEAT_MS = 2800 // cadence between beats
-const BEAT_LIFE = 8400 // how long one beat lingers before it drops off
-function useLiveStack(active, pool, onBeat) {
-  const [items, setItems] = React.useState([])
-  const onBeatRef = React.useRef(onBeat)
-  onBeatRef.current = onBeat
+// ── community life: the ping toasts, the shoutout wall, the demo pulse ─────────
+
+// The demo's living pulse. On an OPEN community it fires the real beats: a ping
+// launches a star into the galaxy (+ a toast), a match lights an anonymous
+// constellation (+ a toast), a join grows the membership, and fresh shoutouts
+// scroll the wall. A GATHERING community shows no countable beats (its exact
+// numbers are withheld) — only the quiet growth of new members and the odd
+// shoutout. Everything is imperative on the live galaxy field (galaxyRef) so the
+// canvas and the printed numbers move together. In-memory; demo only.
+const seedWall = (pool) => (pool || []).slice(0, 3).map((b, i) => ({ id: `seed${i}`, text: b.text, mine: false }))
+function useCommunityPulse({ demo, open, slug, galaxyRef, pool, bump }) {
+  const [toasts, setToasts] = React.useState([])
+  const [shoutouts, setShoutouts] = React.useState(() => seedWall(pool))
   const idRef = React.useRef(0)
+  const bumpRef = React.useRef(bump)
+  bumpRef.current = bump
+  const poolRef = React.useRef(pool)
+  poolRef.current = pool
+
+  const pushToast = React.useCallback((text, kind) => {
+    const id = ++idRef.current
+    setToasts((prev) => [...prev, { id, text, kind }].slice(-3))
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 3400)
+  }, [])
+
+  const pushShoutout = React.useCallback((text, mine) => {
+    const id = ++idRef.current
+    setShoutouts((prev) => [{ id, text, mine: !!mine }, ...prev].slice(0, 6))
+  }, [])
+
+  // reset the wall when the community changes
   React.useEffect(() => {
-    if (!active || !pool || !pool.length) {
-      setItems([])
-      return undefined
-    }
+    setShoutouts(seedWall(poolRef.current))
+    setToasts([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug])
+
+  // a placed ping: a star launches + the count ticks (open communities only)
+  const firePing = React.useCallback(() => {
+    if (galaxyRef.current) galaxyRef.current.launch(1)
+    if (bumpRef.current) bumpRef.current(slug, 'ping')
+    pushToast('someone just placed a ping', 'ping')
+  }, [slug, galaxyRef, pushToast])
+
+  React.useEffect(() => {
+    if (!demo) return undefined
     const timers = []
-    const fire = () => {
-      const b = pool[Math.floor(Math.random() * pool.length)]
-      const id = ++idRef.current
-      setItems((prev) => [...prev, { id, text: b.text }].slice(-3))
-      if (onBeatRef.current) onBeatRef.current(b)
-      timers.push(setTimeout(() => setItems((prev) => prev.filter((x) => x.id !== id)), BEAT_LIFE))
+    if (open) {
+      timers.push(setInterval(firePing, 2600 + Math.random() * 900))
+      // a match, now and then: a new constellation lights
+      timers.push(setInterval(() => {
+        if (galaxyRef.current) galaxyRef.current.addConstellation()
+        if (bumpRef.current) bumpRef.current(slug, 'match')
+        pushToast('it just became mutual for two people here', 'match')
+      }, 16000 + Math.random() * 6000))
+      // fresh shoutouts scrolling the wall
+      timers.push(setInterval(() => {
+        if (pool && pool.length) pushShoutout(pool[Math.floor(Math.random() * pool.length)].text, false)
+      }, 5200 + Math.random() * 1600))
+    } else {
+      // gathering: only quiet growth + the occasional shoutout, no counted beats
+      timers.push(setInterval(() => {
+        if (bumpRef.current) bumpRef.current(slug, 'join')
+        pushToast('someone new just joined', 'join')
+      }, 6000 + Math.random() * 3000))
+      timers.push(setInterval(() => {
+        if (pool && pool.length) pushShoutout(pool[Math.floor(Math.random() * pool.length)].text, false)
+      }, 7000 + Math.random() * 2000))
     }
-    const first = setTimeout(fire, 700)
-    const iv = setInterval(fire, BEAT_MS)
-    return () => {
-      clearTimeout(first)
-      clearInterval(iv)
-      timers.forEach(clearTimeout)
+    return () => timers.forEach(clearInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo, open, slug])
+
+  // the sandbox control: send a quick wave of pings (open) or bring a few in
+  const fireWave = React.useCallback(() => {
+    if (open) {
+      for (let k = 0; k < 6; k++) setTimeout(firePing, k * 260)
+    } else {
+      for (let k = 0; k < 4; k++) setTimeout(() => { if (bumpRef.current) bumpRef.current(slug, 'join') }, k * 200)
+      pushToast('four more just joined', 'join')
     }
-  }, [active, pool])
-  return items
+  }, [open, slug, firePing, pushToast])
+
+  return { toasts, shoutouts, pushShoutout, fireWave }
 }
 
-// The stack itself — plain lines, no chip, no icon. The newest is brightest; the
-// older lines dim by age. A fixed min-height reserves the space so nothing under
-// it jumps as beats come and go.
-function LiveStack({ C, items }) {
-  const AGE = [0.94, 0.5, 0.26] // newest → oldest
+// The ping toasts — transient notes that rise over the galaxy and lift away as
+// their star settles. Positioned in the upper field, under the identity.
+function GalaxyToasts({ C, toasts }) {
+  const icon = { ping: 'star', match: 'check', join: 'plus' }
   return (
-    <div style={{ minHeight: 62, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 6 }}>
-      {items.map((it, i) => {
-        const age = items.length - 1 - i // 0 = newest (bottom)
+    <div aria-live="polite" style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, pointerEvents: 'none', zIndex: 3 }}>
+      {toasts.map((tt) => {
+        const amber = tt.kind !== 'join'
         return (
           <span
-            key={it.id}
-            className="live-line"
+            key={tt.id}
+            className="toast-pop"
             style={{
-              display: 'block', textAlign: 'center', fontSize: 12.5, lineHeight: 1.4,
-              fontFamily: "'Space Grotesk', sans-serif", color: rgba(C.cream, 0.9), opacity: AGE[age] ?? 0.2,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: '92%',
+              padding: '8px 14px', borderRadius: RADIUS.chip,
+              background: rgba(C.ink2, 0.82), backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+              border: `1px solid ${rgba(amber ? C.star : C.cream, 0.24)}`,
+              boxShadow: `0 6px 24px rgba(0,0,0,.4), 0 0 20px ${rgba(amber ? C.star : C.them, 0.12)}`,
+              fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: rgba(C.cream, 0.96), whiteSpace: 'nowrap',
             }}
           >
-            {it.text}
+            <Icon name={icon[tt.kind] || 'star'} size={12} color={rgba(amber ? C.star : C.them, 0.95)} stroke={2} />
+            {tt.text}
           </span>
         )
       })}
+    </div>
+  )
+}
+
+// The live shoutout wall — the community's one public voice, anonymous and
+// moderated. The composer runs sanitizeShoutout on every post (strips handles /
+// names / contacts, blocks abuse) and rate-limits you to one every 45s, so it can
+// be alive without ever outing a person or a match. The recent lines scroll above.
+const SHOUT_COOLDOWN = 45 // seconds between your shoutouts
+function ShoutoutPanel({ C, items, onPost }) {
+  const { t } = useI18n()
+  const [text, setText] = React.useState('')
+  const [note, setNote] = React.useState('')
+  const [cooldown, setCooldown] = React.useState(0)
+  React.useEffect(() => {
+    if (cooldown <= 0) return undefined
+    const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000)
+    return () => clearInterval(id)
+  }, [cooldown])
+
+  const submit = () => {
+    if (cooldown > 0) return
+    const res = sanitizeShoutout(text)
+    if (!res.ok) { setNote(res.reason); return }
+    onPost(res.text)
+    setText('')
+    setNote(res.reason || '') // e.g. "kept it anonymous for you."
+    setCooldown(SHOUT_COOLDOWN)
+  }
+
+  return (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <LiveDot C={C} />
+          <Kicker C={C} style={{ fontSize: 10 }}>{t('shout.title')}</Kicker>
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '.3px', color: rgba(C.muted, 0.85) }}>
+          <Icon name="lock" size={10} color={rgba(C.muted, 0.7)} /> {t('shout.anon')}
+        </span>
+      </div>
+
+      {/* recent shoutouts — newest on top, the previous one dimming beneath */}
+      <div style={{ minHeight: 58, display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {items.length === 0 ? (
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.muted, 0.7) }}>{t('shout.empty')}</span>
+        ) : (
+          items.slice(0, 2).map((it, i) => (
+            <span key={it.id} className="shout-in" style={{ display: 'flex', alignItems: 'baseline', gap: 8, opacity: [1, 0.5][i] ?? 0.2 }}>
+              <span aria-hidden style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: it.mine ? rgba(C.star, 0.9) : rgba(C.them, 0.7), flexShrink: 0 }}>{it.mine ? t('shout.you') : '✦'}</span>
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 15, lineHeight: 1.32, color: rgba(C.cream, 0.94) }}>{it.text}</span>
+            </span>
+          ))
+        )}
+      </div>
+
+      {/* the composer */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          value={text}
+          maxLength={MAX_LEN * 2}
+          onChange={(e) => { setText(e.target.value); if (note) setNote('') }}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
+          placeholder={cooldown > 0 ? t('shout.wait', { n: cooldown }) : t('shout.placeholder')}
+          disabled={cooldown > 0}
+          aria-label={t('shout.title')}
+          style={{
+            flex: 1, minWidth: 0, height: 42, padding: '0 14px', borderRadius: RADIUS.field,
+            background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`, color: C.cream,
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 13.5, outline: 'none',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', opacity: cooldown > 0 ? 0.6 : 1,
+          }}
+        />
+        <button
+          onClick={submit}
+          disabled={cooldown > 0 || !text.trim()}
+          aria-label={t('shout.send')}
+          style={{
+            width: 42, height: 42, flexShrink: 0, borderRadius: RADIUS.field, display: 'grid', placeItems: 'center',
+            background: cooldown > 0 || !text.trim() ? rgba(C.ink2, 0.6) : C.star,
+            border: `1px solid ${cooldown > 0 || !text.trim() ? C.line : 'transparent'}`,
+            cursor: cooldown > 0 || !text.trim() ? 'default' : 'pointer', transition: 'background .18s',
+          }}
+        >
+          <Icon name="arrow" size={17} color={cooldown > 0 || !text.trim() ? rgba(C.muted, 0.8) : C.onStar} stroke={2.2} />
+        </button>
+      </div>
+      {note && <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.2px', color: rgba(C.star, 0.85) }}>{note}</span>}
     </div>
   )
 }
@@ -1252,10 +1393,15 @@ function CommunityStatus({ C, open }) {
   )
 }
 
-// One community as a list row: the seal, its name + status, a compact ring. The
-// whole row opens the community; a joined one is marked.
+// One community as a list row: the seal, its name + status, and — for an open
+// one past the match floor — its hero stat (matches this week). The whole row
+// opens the community; a joined one is marked. No percentage: a community is not
+// a progress bar, it's a place that's either open or still gathering.
 function CommunityCard({ C, community, ctx }) {
-  const { frac, open } = communityProgress(community)
+  const { t } = useI18n()
+  const open = communityOpen(community)
+  const matches = Number(community.matches || 0)
+  const showStat = open && matches >= MATCH_FLOOR
   const [h, setH] = React.useState(false)
   return (
     <button
@@ -1270,14 +1416,21 @@ function CommunityCard({ C, community, ctx }) {
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={46} />
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, maxWidth: '100%' }}>
           <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 20, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
           {community.joined && <Icon name="check" size={13} color={rgba(C.star, 0.9)} />}
         </span>
         <CommunityStatus C={C} open={open} />
       </span>
-      <ProgressRing C={C} frac={open ? 1 : frac} size={62} />
+      {showStat ? (
+        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, lineHeight: 1, color: C.star }}>{matches}</span>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
+        </span>
+      ) : (
+        <Icon name="arrow" size={18} color={rgba(C.muted, 0.7)} stroke={1.9} />
+      )}
     </button>
   )
 }
@@ -1285,10 +1438,13 @@ function CommunityCard({ C, community, ctx }) {
 export function WorldsScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
-  const feed = useLiveStack(ctx.demo, ctx.feedPool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
-  // joined first, then by how close each is to opening
+  // joined first, then open ones (by matches), then the gathering ones by size
   const ordered = [...communities].sort(
-    (a, b) => (b.joined ? 1 : 0) - (a.joined ? 1 : 0) || communityProgress(b).frac - communityProgress(a).frac,
+    (a, b) =>
+      (b.joined ? 1 : 0) - (a.joined ? 1 : 0) ||
+      (communityOpen(b) ? 1 : 0) - (communityOpen(a) ? 1 : 0) ||
+      Number(b.matches || 0) - Number(a.matches || 0) ||
+      Number(b.members || 0) - Number(a.members || 0),
   )
   return (
     <Shell>
@@ -1303,7 +1459,6 @@ export function WorldsScreen({ C, ctx }) {
 
       <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 16 }}>
         <p style={{ margin: '0 2px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
-        {ctx.demo && feed.length > 0 && <LiveStack C={C} items={feed} />}
         {ordered.map((c) => (
           <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
         ))}
@@ -1314,90 +1469,29 @@ export function WorldsScreen({ C, ctx }) {
   )
 }
 
-// One shared launch moment for every curated campus: the upcoming midnight ~a
-// day and a half out (24–48h), so each gathering community counts down to the
-// SAME instant — "it all goes live together." Computed once per load so the
-// countdown is stable across renders and screens.
-const LAUNCH_AT = (() => {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 2)
-  return d.getTime()
-})()
-
-function useCountdown(target) {
-  const [now, setNow] = React.useState(() => Date.now())
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
-  const left = Math.max(0, target - now)
-  return {
-    h: Math.floor(left / 3600000),
-    m: Math.floor((left % 3600000) / 60000),
-    s: Math.floor((left % 60000) / 1000),
-    done: left <= 0,
-  }
-}
-
-// The launch countdown that sits atop a gathering community's ring: every campus
-// opens at one shared midnight, so this is a live count to that instant.
-function LaunchCountdown({ C, target }) {
-  const { t } = useI18n()
-  const { h, m, s } = useCountdown(target)
-  const pad = (n) => String(n).padStart(2, '0')
-  const day = React.useMemo(() => {
-    try {
-      return new Date(target).toLocaleDateString(undefined, { weekday: 'long' }).toLowerCase()
-    } catch {
-      return ''
-    }
-  }, [target])
-  const Unit = ({ v, label }) => (
-    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 40 }}>
-      <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 27, lineHeight: 1, color: C.cream, fontVariantNumeric: 'tabular-nums' }}>{pad(v)}</span>
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '1.4px', textTransform: 'uppercase', color: C.muted }}>{label}</span>
-    </span>
-  )
-  const Colon = () => <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 22, color: rgba(C.star, 0.55), transform: 'translateY(-6px)' }}>:</span>
-  return (
-    <div
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%', maxWidth: 320,
-        padding: '15px 18px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55),
-        border: `1px solid ${rgba(C.star, 0.2)}`, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-      }}
-    >
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        <LiveDot C={C} />
-        <Kicker C={C} color={rgba(C.star, 0.92)} style={{ fontSize: 10 }}>{t('communities.liveLabel')}</Kicker>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <Unit v={h} label={t('communities.liveH')} />
-        <Colon />
-        <Unit v={m} label={t('communities.liveM')} />
-        <Colon />
-        <Unit v={s} label={t('communities.liveS')} />
-      </div>
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: rgba(C.cream, 0.72) }}>
-        {t('communities.liveAt', { day })}
-      </span>
-    </div>
-  )
-}
-
-// The community page (also the /c/<slug> destination). The big ring is the hero;
-// a gathering community shows what opens at the threshold, an open one shows its
-// live weekly readout. One primary action: join, or — once joined — place a ping.
+// The community page (also the /c/<slug> destination). Its living galaxy is the
+// hero — one star per real ping — with an anonymous constellation for every
+// mutual match. No countdown, no percentage: a community is globally open, so
+// what you watch is density, not a gate. A gathering community (under the 100
+// floor) shows a forming nebula and hides its counts; an open one resolves into
+// stars, prints its weekly readout, and carries a live shoutout wall.
 export function CommunityScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
   const community = communities.find((c) => c.slug === ctx.openCommunity) || communities[0]
-  // signal exclusive to THIS campus — filter the demo feed to this slug (memoized
-  // so the stack's interval isn't torn down every render).
   const slug = community && community.slug
-  const pool = React.useMemo(() => (ctx.feedPool || []).filter((b) => b.slug === slug), [ctx.feedPool, slug])
-  const feed = useLiveStack(ctx.demo, pool, (b) => ctx.bumpCommunityActivity(b.slug, b.kind))
+  const galaxyRef = React.useRef(null)
+  const pool = React.useMemo(() => (ctx.shoutoutPool || []).filter((b) => b.slug === slug), [ctx.shoutoutPool, slug])
+
+  const open = community ? communityOpen(community) : false
+  const week = community && open ? community.week : null
+  const matches = Number((community && community.matches) || 0)
+  const showMatches = open && matches >= MATCH_FLOOR
+
+  const pulse = useCommunityPulse({
+    demo: ctx.demo, open, slug, galaxyRef, pool, bump: ctx.bumpCommunityActivity,
+  })
+
   if (!community) {
     return (
       <Shell>
@@ -1413,100 +1507,104 @@ export function CommunityScreen({ C, ctx }) {
       </Shell>
     )
   }
-  const { frac, open } = communityProgress(community)
-  const week = open ? community.week : null
-  const matches = Number((week && week.matches) || 0)
-  const showMatches = matches >= 10
   const joined = !!community.joined
-  const locks = [t('communities.lock1'), t('communities.lock2'), t('communities.lock3')]
+  const pings = community.pings != null ? Number(community.pings) : 0
+
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('worlds')} />
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <Kicker C={C}>{t('communities.kicker')}</Kicker>
-          {ctx.demo && <SandboxChip C={C} />}
+      {/* the community's own galaxy — full-bleed, behind everything (z0) */}
+      <CommunityGalaxyCanvas
+        key={slug}
+        you={C.you}
+        them={C.them}
+        pings={pings}
+        matches={showMatches ? matches : 0}
+        forming={!open}
+        onReady={(f) => (galaxyRef.current = f)}
+      />
+      {/* a soft scrim so the lower content stays legible over the field (z0, over canvas) */}
+      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '56%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.68)} 42%, ${rgba(C.ink, 0.94)})`, pointerEvents: 'none', zIndex: 0 }} />
+
+      {/* all content sits above the field (z1) */}
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <BackBtn C={C} onClick={() => ctx.go('worlds')} />
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <Kicker C={C}>{t('communities.kicker')}</Kicker>
+            {ctx.demo && <SandboxChip C={C} />}
+          </div>
+          <div style={{ width: 38 }} />
         </div>
-        <div style={{ width: 38 }} />
-      </div>
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, paddingTop: 10 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <SchoolMark C={C} slug={community.slug} size={58} />
-          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 38px)', lineHeight: 1.1, color: C.cream }}>{community.name}</h1>
+        {/* identity — compact, centered, high over the galaxy core */}
+        <div className="enter" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, paddingTop: 10 }}>
+          <SchoolMark C={C} slug={community.slug} size={48} />
+          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7.5vw, 36px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
+          <CommunityStatus C={C} open={open} />
+          {/* the ping toasts rise just under the identity, over the galaxy */}
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 12 }}>
+            <GalaxyToasts C={C} toasts={pulse.toasts} />
+          </div>
         </div>
 
-        {/* the shared launch countdown — atop a still-gathering ring, all campuses
-            open at the same midnight */}
-        {!open && <LaunchCountdown C={C} target={LAUNCH_AT} />}
+        {/* the galaxy breathes in this flexible gap (no DOM — just the field showing through) */}
+        <div style={{ flex: 1, minHeight: 44 }} />
 
-        <ProgressRing C={C} frac={open ? 1 : frac} size={188} label={open ? RING_LABELS.open : RING_LABELS.climbing} />
-
-        {open && week ? (
-          <div className="fade" style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <LiveDot C={C} />
-              <Kicker C={C} style={{ fontSize: 10 }}>{t('communities.thisWeek')}</Kicker>
-            </div>
+        {/* the readout — a tight caption tying the numbers to the picture above */}
+        {open ? (
+          <div className="fade" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' }}>
             {showMatches ? (
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(34px, 11vw, 46px)', lineHeight: 1, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.28)}` }}>{matches.toLocaleString()}</span>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
+                <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(38px, 12vw, 52px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
               </div>
             ) : (
               <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, lineHeight: 1.35, color: rgba(C.cream, 0.82) }}>{t('communities.matchFloor')}</p>
             )}
-            {week.topReason && (
+            {week && week.topReason && (
               <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.muted }}>
                 {t('communities.reasonLabel')}{' '}
                 <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, color: rgba(C.cream, 0.9) }}>“{intentLine(t, week.topReason)}”</span>
               </p>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap', fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
-              {week.pings != null && <span>{t('communities.pings', { n: Number(week.pings).toLocaleString() })}</span>}
-              {week.pings != null && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
-              {week.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('communities.joinedWeek', { n: Number(week.joined).toLocaleString() })}</span>}
+              <span>{t('communities.pings', { n: pings.toLocaleString() })}</span>
+              {week && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
+              {week && week.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('communities.joinedWeek', { n: Number(week.joined).toLocaleString() })}</span>}
             </div>
           </div>
         ) : (
-          <div className="fade" style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ margin: 0, textAlign: 'center', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.gatheringBody')}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {locks.map((l, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9, color: rgba(C.muted, 0.78), fontSize: 12.5 }}>
-                  <Icon name="lock" size={13} color={rgba(C.muted, 0.6)} /> <span>{l}</span>
-                </div>
-              ))}
-            </div>
+          <div className="fade" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+            <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.3, color: rgba(C.cream, 0.9) }}>{t('communities.gatheringHero')}</p>
+            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
           </div>
         )}
 
-        {/* the campus's own live signal — a quiet stack, exclusive to this school */}
-        {ctx.demo && feed.length > 0 && (
-          <div style={{ width: '100%', maxWidth: 340, marginTop: 2 }}>
-            <LiveStack C={C} items={feed} />
-          </div>
-        )}
-      </div>
+        {/* the live shoutout wall — the community's one public voice */}
+        <div style={{ width: '100%', maxWidth: 420, alignSelf: 'center', marginTop: 16 }}>
+          <ShoutoutPanel C={C} items={pulse.shoutouts} onPost={(text) => pulse.pushShoutout(text, true)} />
+        </div>
 
-      <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16 }}>
-        {joined ? (
-          <>
-            <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
+        {/* one action, pinned to the bottom */}
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 14 }}>
+          {joined ? (
+            <>
+              <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ fontSize: 12.5 }}>{t('communities.leave')}</GhostButton>
+              </div>
+            </>
+          ) : (
+            <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)}>{t('communities.join', { name: community.short })}</PrimaryButton>
+          )}
+          {ctx.demo && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ fontSize: 12.5 }}>{t('communities.leave')}</GhostButton>
+              <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
+                ✦ {t(open ? 'communities.demoWave' : 'communities.demoGather')}
+              </GhostButton>
             </div>
-          </>
-        ) : (
-          <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)}>{t('communities.join', { name: community.short })}</PrimaryButton>
-        )}
-        {ctx.demo && (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GhostButton C={C} onClick={() => ctx.bumpCommunityActivity(community.slug, 'ping')} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
-              ✦ {t('communities.demoActivity')}
-            </GhostButton>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Shell>
   )
