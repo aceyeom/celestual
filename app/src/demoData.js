@@ -22,7 +22,7 @@ export const DEMO_PINGS = [
     expires_at: new Date(Date.now() + 40 * day).toISOString(),
     mutual: true, // resolved — sits in the mutual section, off the slots
     reachable: true,
-    intent: 'again',
+    intent: 'exAgain',
   },
   {
     handle: 'aria.chen',
@@ -30,7 +30,7 @@ export const DEMO_PINGS = [
     expires_at: new Date(Date.now() + 48 * day).toISOString(),
     mutual: false,
     reachable: true, // "standing" — she's on celestual
-    intent: 'unsaid',
+    intent: 'exUnsaid',
   },
   {
     handle: 'jw.park',
@@ -50,7 +50,7 @@ export const DEMO_PINGS = [
 // already open; CMU is early.
 export const DEMO_COMMUNITIES = {
   'uc-berkeley': { current: 1806 }, // 1806 / 2500 ≈ 72%
-  wesleyan: { current: 941, week: { matches: 14, pings: 262, joined: 71, topReason: 'think' } }, // open
+  wesleyan: { current: 941, week: { matches: 14, pings: 262, joined: 71, topReason: 'crushThink' } }, // open
   cmu: { current: 742 }, // 742 / 1800 ≈ 41%
 }
 

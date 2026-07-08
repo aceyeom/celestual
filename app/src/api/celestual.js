@@ -51,7 +51,7 @@ export async function placePing({ me, them, email, proof, intent, demo }) {
       recorded: true,
       mutual,
       match: mutual ? normHandle(them) : null,
-      match_intent: mutual ? 'unsaid' : null,
+      match_intent: mutual ? 'exUnsaid' : null,
       // in the sandbox, roughly half the world is "already here"
       reachable: mutual || normHandle(them).length % 2 === 0,
       expires_at: iso(Date.now() + PING_DAYS * 864e5),

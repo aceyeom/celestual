@@ -1007,6 +1007,14 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
         <path d="M12.7 12.7L16.5 16.5" {...p} />
       </>
     ),
+    share: (
+      <>
+        <circle cx="5" cy="10" r="2.2" {...p} />
+        <circle cx="14.5" cy="5" r="2.2" {...p} />
+        <circle cx="14.5" cy="15" r="2.2" {...p} />
+        <path d="M7 8.9l5.5-2.8M7 11.1l5.5 2.8" {...p} />
+      </>
+    ),
   }
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0 }}>

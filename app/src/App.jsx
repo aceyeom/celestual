@@ -101,6 +101,10 @@ export default function App() {
   const [pings, setPings] = useState(() => (demo ? [] : init.pings || []))
   const [them, setThem] = useState(route.poster || '')
   const [intent, setIntent] = useState('')
+  // who they are to you (crush / ex / friend / complicated) — drives which intent
+  // lines the send screen offers. UI-only: the chosen intent id already carries
+  // the category, so nothing extra is stored or sent.
+  const [category, setCategory] = useState('')
   const [error, setError] = useState('')
   const [lastPlaced, setLastPlaced] = useState(null) // { handle, reachable }
   const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
@@ -493,6 +497,7 @@ export default function App() {
           ]
         })
         setIntent('')
+        setCategory('')
         if (res?.mutual) {
           setMatch({ them: target, yourIntent: chosen || null, theirIntent: res.match_intent || null })
           go('match')
@@ -726,6 +731,7 @@ export default function App() {
   const placeAnother = useCallback(() => {
     setThem('')
     setIntent('')
+    setCategory('')
     setError('')
     if (standingCount(pings) >= slotCap) {
       go('fourth')
@@ -745,7 +751,7 @@ export default function App() {
       setMatch({
         them: h,
         yourIntent: row?.intent || null,
-        theirIntent: row?.intent === 'miss' ? 'unsaid' : 'miss',
+        theirIntent: row?.intent === 'exMiss' ? 'crushThink' : 'exMiss',
       })
       go('match')
     },
@@ -769,6 +775,7 @@ export default function App() {
     setDemoFourthSlot(true)
     setThem('')
     setIntent('')
+    setCategory('')
     setError('')
     go('who')
   }, [demo, go])
@@ -785,6 +792,7 @@ export default function App() {
     setAltHandles([])
     setThem('')
     setIntent('')
+    setCategory('')
     setError('')
     setPings([])
     setJoinedSlugs([])
@@ -878,7 +886,7 @@ export default function App() {
   const ctx = {
     demo, me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap,
-    intent, setIntent,
+    intent, setIntent, category, setCategory,
     communities, openCommunity, feedPool: demo ? DEMO_FEED : [],
     viewCommunity, joinCommunity, leaveCommunity, toggleCommunity, bumpCommunityActivity, finishOnboarding,
     lastPlaced, match,

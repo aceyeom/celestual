@@ -129,6 +129,23 @@ deliberately dumb — a tripwire, not a critic. The interesting judgments
 
 ## §8 — Changelog
 
+- **2026-07-07** — **Terms trim, no-dash pass, category intents, and the
+  community-growth placed screen.** Removed the two pricing sections from
+  `/terms` (monetization stays out of the terms tab); renumbered the rest.
+  Swept every user-facing line in `strings.js` and `terms.html` free of the em
+  dash — a human-writing call: the dash kills the quiet mood, so its work is now
+  done by a period or a comma. Landing headline and its single under-line
+  rewritten. The five flat intent lines are replaced by **four relationship
+  categories** (crush / ex / friend / complicated), each with its own four "why
+  them" lines (`category.*`, `intent.<catId>` in `strings.js`; the grouping is
+  `CATEGORIES` in `screens.jsx`) — you say who they are to you first, then why.
+  **One deliberate exception, in the §8 spirit:** the placed screen is now a
+  community-growth surface — "did they ping you too? you won't know until
+  {campus} unlocks" — and that copy (both states, with the counts and the
+  banned-for-product word *unlock*) lives in **`growth.js`**, out of the linted
+  `strings.js`, exactly like the ring label and demo feed. It is a growth
+  surface, not the quiet register, and the linter's canonical scope is
+  unchanged.
 - **2026-07-06** — **Communities rework copy + a second terseness pass + one
   deliberate voice exception.** The user-typed "worlds" dictionary is replaced by
   **communities** copy (`communities.*`, `schools.*`) for the curated launch
