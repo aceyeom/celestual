@@ -141,6 +141,15 @@ const DIVE_HOLD = 1.9 // long enough to read the @ resting over the star
 const DIVE_OUT = 0.95
 const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 
+// Tap-to-zoom into the sky: each tap dollies the camera toward the spot the
+// finger met the disk plane, magnifying it (with true depth parallax — nearer
+// stars spread faster than far ones, so it reads 3D, not a flat scale). Repeated
+// taps compound the magnification up to a ceiling; ~3 s after the last tap the
+// camera eases all the way back to its resting frame.
+const ZOOM_STEP = 1.7 // magnification multiplier per tap
+const ZOOM_MAX = 4.2 // hard ceiling so a point never dives past the near plane
+const ZOOM_RESET_AFTER = 3.0 // seconds after the last tap before it drifts back
+
 export class CommunityGalaxy {
   constructor(canvas, opts = {}) {
     this.canvas = canvas
@@ -188,6 +197,18 @@ export class CommunityGalaxy {
     this.focus = 0 // eased dive progress the camera transform reads
     this.cam = { x: 0, y: 0, z: 0 }
 
+    // tap-to-zoom: `zoom` is the live magnification the camera reads, easing toward
+    // `zoomTarget`; `zoomFocus` is the disk-plane point last tapped; `zoomTapAt`
+    // stamps the last tap so the reset timer can run. Off (no-op) until the
+    // community screen enables it, so ambient backdrop taps elsewhere never zoom.
+    this.zoomEnabled = false
+    this.zoom = 1
+    this.zoomTarget = 1
+    this.zoomFocus = { px: 0, pz: 0 }
+    this.zoomTapAt = -999
+    this._zoomActive = false
+    this.onZoomState = null // (isZoomed:boolean) → screen fades the centered seal
+
     this._dotCache = {}
     this._glowCache = {}
     this.glows = { you: makeGlow(this.you, 64), them: makeGlow(this.them, 64), white: makeGlow('#FFFFFF', 64) }
@@ -200,7 +221,13 @@ export class CommunityGalaxy {
   }
 
   _dotFor(hex) {
-    if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 32)
+    // A generously-sized source sprite (was 32px). A tap-zoom magnifies the whole
+    // field, and a 32px point blown up 6–10× read as a blurred, stepped blob — the
+    // "pixelated surrounding stars". At 128px the same cached sprite stays crisp
+    // deep into a zoom, and since it's downscaled to a point when un-zoomed the
+    // per-frame draw cost is unchanged (drawImage cost tracks the DESTINATION size,
+    // not the source) — so the field is sharper with no added lag.
+    if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
   }
   _glowFor(hex) {
@@ -687,9 +714,23 @@ export class CommunityGalaxy {
     return this.mine.length > 0
   }
 
+  // Turn tap-to-zoom on/off. The community screen switches it on while it's the
+  // hero; everywhere else this same engine is only the ambient backdrop, so its
+  // taps stay a ripple with no zoom. Turning it off releases any live zoom.
+  setZoomEnabled(on) {
+    this.zoomEnabled = !!on
+    if (!on) {
+      this.zoomTarget = 1
+      this.zoomTapAt = -999
+    }
+    this.start()
+  }
+
   // A tap becomes a wave in the DISK PLANE: unproject the screen point onto the
   // plane (a few Newton passes over the perspective divide), then let an
-  // expanding ring sweep the disk — stars flare as the front crosses them.
+  // expanding ring sweep the disk — stars flare as the front crosses them. When
+  // zoom is enabled the same unprojected point also becomes the zoom target, so
+  // the sky both answers the hand AND leans in toward exactly where it was touched.
   ripple(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect()
     const tx = clientX - rect.left
@@ -718,6 +759,14 @@ export class CommunityGalaxy {
     }
     this.waves.push({ px: a, pz: b, t: 0 })
     if (this.waves.length > 3) this.waves.shift()
+
+    // lean the camera toward the touched spot and step the magnification up (a
+    // dive owns the camera outright, so don't fight it mid-flight)
+    if (this.zoomEnabled && !this.dive) {
+      this.zoomFocus = { px: a, pz: b }
+      this.zoomTarget = Math.min(this.zoomTarget * ZOOM_STEP, ZOOM_MAX)
+      this.zoomTapAt = this.t
+    }
     this.start()
   }
 
@@ -809,6 +858,22 @@ export class CommunityGalaxy {
     this.spin += dt * 0.024 * (1 - this.focus * 0.96) // a slow, calm orbit; still under the dive
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.5))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.5))
+
+    // tap-to-zoom: hold the magnification for ~3 s after the last tap, then ease
+    // all the way back. The push-in is a touch quicker than the release, so a tap
+    // feels responsive and the reset feels like a settle, not a snap.
+    if (this.zoom !== 1 || this.zoomTarget !== 1) {
+      if (this.zoomTarget > 1 && this.t - this.zoomTapAt > ZOOM_RESET_AFTER) this.zoomTarget = 1
+      const k = this.zoomTarget > this.zoom ? 4.5 : 2.6
+      this.zoom = lerp(this.zoom, this.zoomTarget, Math.min(1, dt * k))
+      if (this.zoomTarget === 1 && Math.abs(this.zoom - 1) < 0.002) this.zoom = 1
+      const active = this.zoom > 1.03
+      if (active !== this._zoomActive) {
+        this._zoomActive = active
+        if (this.onZoomState) this.onZoomState(active)
+      }
+    }
+
     this._draw(dt)
     requestAnimationFrame(this._boundTick)
   }
@@ -826,6 +891,18 @@ export class CommunityGalaxy {
       this.cam.x = f * T.x
       this.cam.y = f * T.y
       this.cam.z = f * (CAM + T.z - STANDOFF)
+    } else if (this.zoom > 1.001) {
+      // tap-zoom: dolly the camera toward the touched disk point. `cen` (0→1 as
+      // zoom climbs) both magnifies that point by ~`zoom`× (its camera-space depth
+      // shrinks to zc0/zoom) and slides it toward frame center — nearer stars swell
+      // faster than far ones, so the lean-in reads as real 3D depth. At zoom≈1 the
+      // offset is zero: the identity camera, no seam with the resting sky.
+      const T = this._view(this.zoomFocus.px, 0, this.zoomFocus.pz, rot)
+      const zc0 = CAM + T.z
+      const cen = 1 - 1 / this.zoom
+      this.cam.x = cen * T.x
+      this.cam.y = cen * T.y
+      this.cam.z = cen * zc0
     } else {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
@@ -998,6 +1075,8 @@ export class CommunityGalaxy {
   _drawDust(dt, d) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'source-over'
+    const magnified = this.focus > 0.001 || this.zoom > 1.03
+    const warmSprite = this._dotFor(PAL.warm), creamSprite = this._dotFor(PAL.cream)
     for (const p of this.dust) {
       const pr = this._project(p.px, p.py, p.pz)
       if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
@@ -1006,9 +1085,14 @@ export class CommunityGalaxy {
       if (a <= 0.004) continue
       ctx.globalAlpha = Math.min(0.5, a)
       const D = clamp(p.rad * pr.persp * 2.4, 1.4, this.h * 0.3)
-      ctx.fillStyle = p.warm ? PAL.warm : PAL.cream
-      const s = D * 0.4
-      ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
+      if (magnified) {
+        // magnified, a bare square mote reads as a box — draw the soft sprite
+        ctx.drawImage(p.warm ? warmSprite : creamSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
+      } else {
+        ctx.fillStyle = p.warm ? PAL.warm : PAL.cream
+        const s = D * 0.4
+        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
+      }
     }
   }
 
@@ -1018,6 +1102,10 @@ export class CommunityGalaxy {
     const glowQ = []
     const meteors = []
     const focusing = this.focus > 0.001
+    // when the field is magnified (a dive or a tap-zoom), even the faint sub-pixel
+    // crowd must be drawn as round sprites — the cheap square-fill shortcut that's
+    // invisible at rest becomes a grid of visible boxes once blown up.
+    const magnified = focusing || this.zoom > 1.03
     const waves = this.waves
 
     for (const st of this.stars) {
@@ -1068,7 +1156,7 @@ export class CommunityGalaxy {
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = Math.min(0.96, a * 1.5)
       const D = clamp(slot.rad * pr.persp * 3, 1.9, this.h * 0.5) * (1 + ignite * 1.1 + flare * 0.5)
-      if (D >= 2.4 || a >= 0.34 || focusing) {
+      if (D >= 2.4 || a >= 0.34 || magnified) {
         ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
       } else {
         ctx.fillStyle = slot.hue
