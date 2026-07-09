@@ -1213,53 +1213,60 @@ function LiveDot({ C }) {
   return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
 }
 
-// ── community life: the ping toasts + the demo pulse ──────────────────────────
+// ── community life: the live pulse ────────────────────────────────────────────
 
 // The demo's living pulse. On an OPEN community it fires the real beats: a ping
-// launches a star into the galaxy (+ a toast), a match lights an anonymous
-// constellation (+ a toast). A GATHERING community shows no countable beats (its
-// exact numbers are withheld) — only the quiet growth of new members. Everything
-// is imperative on the live galaxy field (galaxyRef) so the canvas and the printed
-// numbers move together. In-memory; demo only.
+// streaks into the galaxy as a meteor (+ a caption), a match traces an anonymous
+// constellation (+ a caption). A GATHERING community shows no countable beats
+// (its exact numbers are withheld) — only the quiet growth of new members.
+// Everything is imperative on the live galaxy field (galaxyRef) so the canvas
+// and the printed numbers move together. In-memory; demo only.
 function useCommunityPulse({ demo, open, slug, galaxyRef, bump }) {
-  const [toasts, setToasts] = React.useState([])
+  // ONE beat at a time — the sky is the show; the caption is an aside. A new
+  // beat replaces the last (the keyed remount replays the rise-hold-fade).
+  const [beat, setBeat] = React.useState(null)
   const idRef = React.useRef(0)
+  const clearRef = React.useRef(null)
   const bumpRef = React.useRef(bump)
   bumpRef.current = bump
 
-  const pushToast = React.useCallback((text, kind) => {
+  const pushBeat = React.useCallback((text, kind) => {
     const id = ++idRef.current
-    setToasts((prev) => [...prev, { id, text, kind }].slice(-3))
-    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 3400)
+    setBeat({ id, text, kind })
+    if (clearRef.current) clearTimeout(clearRef.current)
+    clearRef.current = setTimeout(() => setBeat((b) => (b && b.id === id ? null : b)), 3200)
   }, [])
 
   React.useEffect(() => {
-    setToasts([])
+    setBeat(null)
+    return () => {
+      if (clearRef.current) clearTimeout(clearRef.current)
+    }
   }, [slug])
 
-  // a placed ping: a star launches + the count ticks (open communities only)
+  // a placed ping: a meteor lands + the count ticks (open communities only)
   const firePing = React.useCallback(() => {
     if (galaxyRef.current) galaxyRef.current.launch(1)
     if (bumpRef.current) bumpRef.current(slug, 'ping')
-    pushToast('someone just placed a ping', 'ping')
-  }, [slug, galaxyRef, pushToast])
+    pushBeat('someone just placed a ping', 'ping')
+  }, [slug, galaxyRef, pushBeat])
 
   React.useEffect(() => {
     if (!demo) return undefined
     const timers = []
     if (open) {
-      timers.push(setInterval(firePing, 2600 + Math.random() * 900))
-      // a match, now and then: a new constellation lights
+      timers.push(setInterval(firePing, 3200 + Math.random() * 1400))
+      // a match, now and then: a new constellation traces itself in
       timers.push(setInterval(() => {
         if (galaxyRef.current) galaxyRef.current.addConstellation()
         if (bumpRef.current) bumpRef.current(slug, 'match')
-        pushToast('it just became mutual for two people here', 'match')
+        pushBeat('it just became mutual for two people here', 'match')
       }, 16000 + Math.random() * 6000))
     } else {
       // gathering: only quiet growth, no counted beats
       timers.push(setInterval(() => {
         if (bumpRef.current) bumpRef.current(slug, 'join')
-        pushToast('someone new just joined', 'join')
+        pushBeat('someone new just joined', 'join')
       }, 6000 + Math.random() * 3000))
     }
     return () => timers.forEach(clearInterval)
@@ -1269,42 +1276,37 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, bump }) {
   // the sandbox control: send a quick wave of pings (open) or bring a few in
   const fireWave = React.useCallback(() => {
     if (open) {
-      for (let k = 0; k < 6; k++) setTimeout(firePing, k * 260)
+      for (let k = 0; k < 6; k++) setTimeout(firePing, k * 300)
     } else {
       for (let k = 0; k < 4; k++) setTimeout(() => { if (bumpRef.current) bumpRef.current(slug, 'join') }, k * 200)
-      pushToast('four more just joined', 'join')
+      pushBeat('four more just joined', 'join')
     }
-  }, [open, slug, firePing, pushToast])
+  }, [open, slug, firePing, pushBeat])
 
-  return { toasts, fireWave }
+  return { beat, fireWave }
 }
 
-// The ping toasts — transient notes that rise over the galaxy and lift away as
-// their star settles. Positioned in the upper field, under the identity.
-function GalaxyToasts({ C, toasts }) {
-  const icon = { ping: 'star', match: 'check', join: 'plus' }
+// The live pulse — a single quiet caption docked beneath the sky: no chip, no
+// card, just a line of overheard signal that rises, holds, and lifts away. Its
+// slot keeps a fixed height so the page never breathes with it.
+function LivePulse({ C, beat }) {
+  const col = beat && beat.kind === 'match' ? C.them : beat && beat.kind === 'join' ? C.muted : C.star
   return (
-    <div aria-live="polite" style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, pointerEvents: 'none', zIndex: 3 }}>
-      {toasts.map((tt) => {
-        const amber = tt.kind !== 'join'
-        return (
-          <span
-            key={tt.id}
-            className="toast-pop"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: '92%',
-              padding: '8px 14px', borderRadius: RADIUS.chip,
-              background: rgba(C.ink2, 0.82), backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-              border: `1px solid ${rgba(amber ? C.star : C.cream, 0.24)}`,
-              boxShadow: `0 6px 24px rgba(0,0,0,.4), 0 0 20px ${rgba(amber ? C.star : C.them, 0.12)}`,
-              fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, color: rgba(C.cream, 0.96), whiteSpace: 'nowrap',
-            }}
-          >
-            <Icon name={icon[tt.kind] || 'star'} size={12} color={rgba(amber ? C.star : C.them, 0.95)} stroke={2} />
-            {tt.text}
-          </span>
-        )
-      })}
+    <div aria-live="polite" style={{ height: 30, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+      {beat && (
+        <span
+          key={beat.id}
+          className="pulse-line"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7, maxWidth: '94%', whiteSpace: 'nowrap',
+            fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, letterSpacing: '.2px',
+            color: rgba(C.cream, 0.82), textShadow: '0 1px 12px rgba(0,0,0,.8)',
+          }}
+        >
+          <Icon name={beat.kind === 'join' ? 'plus' : 'star'} size={11} color={rgba(col, 0.9)} stroke={2} />
+          {beat.text}
+        </span>
+      )}
     </div>
   )
 }
@@ -1339,11 +1341,26 @@ function RevealCountdown({ C, open }) {
   const target = React.useMemo(() => nextRevealAt(new Date(now)).getTime(), [Math.floor(now / 30000)])
   const c = fmtCountdown(target - now)
   const label = open ? t('reveal.week') : t('reveal.opens')
+  // One quiet line — the page's heartbeat, not its headline: label in mono
+  // metadata, the time itself in amber. Docked low, so the ⓘ note opens UPWARD.
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, flexWrap: 'wrap' }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
         <Icon name="clock" size={12} color={rgba(C.star, 0.85)} stroke={1.8} />
-        <Kicker C={C} style={{ fontSize: 9.5, color: rgba(C.muted, 0.95) }}>{label}</Kicker>
+        <Kicker C={C} style={{ fontSize: 9, letterSpacing: '1.8px', color: rgba(C.muted, 0.95) }}>{label}</Kicker>
+      </span>
+      {/* the time + its ⓘ stay one unit, so a narrow viewport breaks between the
+          label and the clock — never stranding the info button on its own line */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'baseline', gap: 5,
+            fontFamily: "'Space Mono', monospace", fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          <span style={{ fontSize: 14.5, letterSpacing: '.5px', color: C.star, textShadow: `0 0 14px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
+          {c && c.small && <span style={{ fontSize: 11, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
+        </span>
         <button
           onClick={() => setInfo((v) => !v)}
           aria-label={t('reveal.infoTitle')}
@@ -1352,16 +1369,6 @@ function RevealCountdown({ C, open }) {
         >
           <Icon name="info" size={14} color={rgba(C.muted, info ? 1 : 0.7)} stroke={1.7} />
         </button>
-      </span>
-      <span
-        style={{
-          display: 'inline-flex', alignItems: 'baseline', gap: 5,
-          fontFamily: "'Space Mono', monospace", fontVariantNumeric: 'tabular-nums',
-          color: rgba(C.cream, 0.96),
-        }}
-      >
-        <span style={{ fontSize: 20, letterSpacing: '.5px', color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
-        {c && c.small && <span style={{ fontSize: 12, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
       </span>
 
       {info && (
@@ -1376,14 +1383,14 @@ function RevealCountdown({ C, open }) {
             className="fade"
             data-noripple
             style={{
-              position: 'absolute', top: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)', zIndex: 30,
+              position: 'absolute', bottom: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)', zIndex: 30,
               width: 'min(320px, 86vw)', padding: '16px 17px', borderRadius: RADIUS.card,
               background: rgba(C.ink2, 0.97), border: `1px solid ${rgba(C.star, 0.24)}`,
               boxShadow: '0 24px 70px rgba(0,0,0,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
               display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left',
             }}
           >
-            <span aria-hidden style={{ position: 'absolute', top: -6, left: '50%', width: 12, height: 12, transform: 'translateX(-50%) rotate(45deg)', background: rgba(C.ink2, 0.97), borderLeft: `1px solid ${rgba(C.star, 0.24)}`, borderTop: `1px solid ${rgba(C.star, 0.24)}` }} />
+            <span aria-hidden style={{ position: 'absolute', bottom: -6, left: '50%', width: 12, height: 12, transform: 'translateX(-50%) rotate(45deg)', background: rgba(C.ink2, 0.97), borderRight: `1px solid ${rgba(C.star, 0.24)}`, borderBottom: `1px solid ${rgba(C.star, 0.24)}` }} />
             <Kicker C={C} style={{ fontSize: 10 }}>{t('reveal.infoTitle')}</Kicker>
             {[['clock', t('reveal.infoWhat')], ['lock', t('reveal.infoReq')], ['star', t('reveal.infoReveals')]].map(([ic, tx]) => (
               <div key={ic} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -1532,14 +1539,18 @@ function HomeCommunityBanner({ C, community, onOpen }) {
   )
 }
 
-// The community page (also the /c/<slug> destination). Its living galaxy is the
-// hero — one star per real ping — with an anonymous constellation for every
-// mutual match. A live reveal-countdown ties the sky to a shared weekly moment.
-// When this is YOUR community, the page reuses the app-wide backdrop (which IS
-// your community's galaxy), so your own star — placed anywhere in the app — is
-// findable right here. A gathering community shows a forming nebula and hides its
-// counts; an open one resolves into stars and prints its weekly readout. Everyone
-// can watch; only a member (proven at their school by a .edu code) can ping in.
+// The community page (also the /c/<slug> destination). Its living galaxy IS the
+// page — one star per real ping, a meteor for every new one, an anonymous
+// constellation for every mutual match — so the layout stays out of its way:
+// a compact identity lockup up top, an unobstructed hero zone for the sky, a
+// single quiet live-pulse caption at its foot, and one glass readout panel
+// holding the numbers and the shared reveal clock. When this is YOUR community,
+// the page reuses the app-wide backdrop (which IS your community's galaxy), so
+// your own star — placed anywhere in the app — is findable right here: the
+// find-your-star control flies the camera through the field to it. A gathering
+// community swirls as a forming proto-galaxy and withholds its counts; an open
+// one resolves into stars and prints its weekly readout. Everyone can watch;
+// only a member (proven at their school by a .edu code) can ping in.
 export function CommunityScreen({ C, ctx }) {
   const { t } = useI18n()
   const communities = ctx.communities || []
@@ -1560,10 +1571,14 @@ export function CommunityScreen({ C, ctx }) {
   const pulse = useCommunityPulse({
     demo: ctx.demo, open, slug, galaxyRef, bump: ctx.bumpCommunityActivity,
   })
-  const [located, setLocated] = React.useState(false)
+  // find-your-star: the camera dives through the field to the member's own star
+  // and glides back. `finding` keeps the control lit for the flight's length so
+  // it can't be double-fired mid-dive.
+  const [finding, setFinding] = React.useState(false)
   const findStar = () => {
+    if (finding) return
     const ok = galaxyRef.current && galaxyRef.current.locateMine()
-    if (ok) { setLocated(true); setTimeout(() => setLocated(false), 1800) }
+    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4000) }
   }
 
   if (!community) {
@@ -1599,8 +1614,9 @@ export function CommunityScreen({ C, ctx }) {
           onReady={(f) => (localGalaxyRef.current = f)}
         />
       )}
-      {/* a soft scrim so the lower content stays legible over the field (z0, over canvas) */}
-      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '56%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.68)} 42%, ${rgba(C.ink, 0.94)})`, pointerEvents: 'none', zIndex: 0 }} />
+      {/* a soft scrim seats the readout + actions on quiet space without walling
+          off the sky (z0, over canvas) */}
+      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0 }} />
 
       {/* all content sits above the field (z1) */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1613,70 +1629,70 @@ export function CommunityScreen({ C, ctx }) {
           <div style={{ width: 38 }} />
         </div>
 
-        {/* identity — compact, centered, high over the galaxy core. A member sees a
-            clear "you're in" badge so their own community is unmistakable. */}
-        <div className="enter" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, paddingTop: 8 }}>
-          <SchoolMark C={C} slug={community.slug} size={48} />
-          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7.5vw, 36px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
+        {/* identity — one compact lockup; the sky is the page's real hero. A member
+            sees a clear "you're in" badge so their own community is unmistakable. */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 10 }}>
+          <SchoolMark C={C} slug={community.slug} size={42} />
+          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
             <CommunityStatus C={C} open={open} />
           </div>
         </div>
 
-        {/* the reveal countdown — a live, shared clock giving the sky a heartbeat */}
-        <div className="fade" style={{ display: 'flex', justifyContent: 'center', paddingTop: 16 }}>
-          <RevealCountdown C={C} open={open} />
+        {/* the sky breathes in this open zone — nothing overlaps it; the live
+            pulse is a single caption docked at its foot */}
+        <div style={{ flex: 1, minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <LivePulse C={C} beat={pulse.beat} />
         </div>
 
-        {/* the galaxy breathes in this flexible gap; the ping toasts rise through it */}
-        <div style={{ position: 'relative', flex: 1, minHeight: 40 }}>
-          <div style={{ position: 'absolute', top: 34, left: 0, right: 0 }}>
-            <GalaxyToasts C={C} toasts={pulse.toasts} />
-          </div>
-        </div>
-
-        {/* the readout — a tight caption tying the numbers to the picture above */}
-        {open ? (
-          <div className="fade" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' }}>
-            {showMatches ? (
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(38px, 12vw, 52px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
-              </div>
+        {/* the readout — the numbers and the shared reveal clock, one quiet panel */}
+        <div className="fade">
+          <GlassPanel C={C} inset style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <RevealCountdown C={C} open={open} />
+            <span aria-hidden style={{ height: 1, background: rgba(C.cream, 0.07) }} />
+            {open ? (
+              <>
+                {showMatches ? (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(34px, 10vw, 46px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 16.5, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
+                )}
+                {week && week.topReason && (
+                  <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
+                    {t('communities.reasonLabel')}{' '}
+                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.cream, 0.92) }}>“{intentLine(t, week.topReason)}”</span>
+                  </p>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap', fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
+                  <span>{t('communities.pings', { n: pings.toLocaleString() })}</span>
+                  {week && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
+                  {week && week.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('communities.joinedWeek', { n: Number(week.joined).toLocaleString() })}</span>}
+                </div>
+              </>
             ) : (
-              <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, lineHeight: 1.35, color: rgba(C.cream, 0.82) }}>{t('communities.matchFloor')}</p>
+              <>
+                <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, lineHeight: 1.3, color: rgba(C.cream, 0.92) }}>{t('communities.gatheringHero')}</p>
+                <p style={{ margin: '0 auto', textAlign: 'center', fontSize: 12.5, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
+              </>
             )}
-            {week && week.topReason && (
-              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.muted }}>
-                {t('communities.reasonLabel')}{' '}
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, color: rgba(C.cream, 0.9) }}>“{intentLine(t, week.topReason)}”</span>
-              </p>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap', fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
-              <span>{t('communities.pings', { n: pings.toLocaleString() })}</span>
-              {week && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
-              {week && week.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('communities.joinedWeek', { n: Number(week.joined).toLocaleString() })}</span>}
-            </div>
-          </div>
-        ) : (
-          <div className="fade" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-            <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.3, color: rgba(C.cream, 0.9) }}>{t('communities.gatheringHero')}</p>
-            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
-          </div>
-        )}
+          </GlassPanel>
+        </div>
 
-        {/* one action, pinned to the bottom — a member pings + finds their star; a
-            watcher joins (which sends a .edu code first). Everyone can watch. */}
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 18 }}>
+        {/* one action — a member pings + finds their star; a watcher joins (which
+            sends a .edu code first). Everyone can watch. */}
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12 }}>
           {joined ? (
             <>
               <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
               <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                 {isHome && (
-                  <GhostButton C={C} onClick={findStar} style={{ fontSize: 12.5, color: rgba(C.star, 0.9) }}>
+                  <GhostButton C={C} onClick={findStar} style={{ fontSize: 12.5, color: rgba(C.star, finding ? 1 : 0.9) }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Icon name={located ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
+                      <Icon name={finding ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
                     </span>
                   </GhostButton>
                 )}

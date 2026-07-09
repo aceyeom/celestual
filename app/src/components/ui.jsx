@@ -160,13 +160,34 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
   React.useEffect(() => {
     if (field.current) field.current.setPalette(you, them)
   }, [you, them])
+  // Live reconciliation: the sky tracks its community's numbers after mount too.
+  // A gathering community that crosses the floor RESOLVES — the forming gas gives
+  // way to its real, countable stars. Counts only ever reconcile upward here
+  // (screen-driven launch()/addConstellation() already lead the props; a server
+  // refresh that jumps ahead settles the difference in without a meteor storm).
+  React.useEffect(() => {
+    const f = field.current
+    if (!f) return
+    if (forming) {
+      if (!f.forming) f.setForming(true)
+      return
+    }
+    if (f.forming) {
+      f.setForming(false)
+      f.seed(pings)
+      f.setConstellations(matches)
+      return
+    }
+    if (pings > f.count) f.setCount(pings)
+    if (matches > f.matchCount) f.setConstellations(matches)
+  }, [forming, pings, matches])
   return (
     <canvas
       ref={ref}
       aria-hidden
       style={{
         position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0,
-        background: '#04030A', pointerEvents: 'none',
+        background: TOKENS.ink, pointerEvents: 'none',
         opacity: dim, transition: 'opacity .6s ease',
       }}
     />
