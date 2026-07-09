@@ -190,6 +190,46 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-07-09** — **The community sky rebuilt as a real 3D galaxy — one
+  universe, two instruments.** A human-directed ground-up redesign of
+  `app/src/communityGalaxy.js` + `CommunityScreen`: the old flat squashed
+  point-field (which read as a scatter plot next to the landing galaxy) is gone.
+  - **Same universe.** The community engine now shares the backdrop galaxy's
+    entire visual language — the exact deep-space gradient, perspective camera
+    (`CAM`/`FOCAL`/`TILT`), soft round star sprites, diffraction spikes, nebula
+    gas, disk haze, full-frame background field, pointer/tilt parallax — so
+    swapping backdrops (joining, browsing) reads as facing a different part of
+    the SAME cosmos. The engines stay deliberately separate files: `galaxy.js`
+    is the ambient sky for everyone; `communityGalaxy.js` is live and countable.
+  - **The countable logic, upgraded.** Every disk star is still one real ping,
+    but slots now seat a bright spheroidal heart + two feathered logarithmic
+    arms + inter-arm scatter (deterministic per index, filling heart-outward),
+    so ANY count reads as a genuine spiral — a small community is a young tight
+    galaxy, a big one the full sprawl. Core glow, disk haze and nebula all
+    scale with fill: density stays *felt*.
+  - **Meteors, not rockets.** A new ping arrives as a slim shooting star that
+    decelerates out of deep space into its slot and ignites with the
+    diffraction-spike glisten (the send-off morph's own signature). Bursts are
+    guarded: past six at once, the rest settle in quietly (a data catch-up must
+    never read as a meteor storm).
+  - **Constellations live IN the disk** — seated inside the lit fill envelope,
+    riding the disk's rotation in 3D, traced node-to-node by a travelling
+    spark; retired figures dissolve. Still structurally anonymous (never tied
+    to an identifiable ping).
+  - **New interactions.** A tap sends a wave through the disk *plane* (a
+    projected ring that tilts with the galaxy) and stars flare as the front
+    crosses them; `locateMine()` is now a cinematic camera dive — the camera
+    flies through the field to the viewer's own star, holds while it flares in
+    its ring, and glides back (reduced motion: a calm converging ring instead).
+  - **The page got out of the sky's way** (`CommunityScreen`): compact identity
+    lockup, an unobstructed hero zone, ONE quiet live-pulse caption docked at
+    the sky's foot (`LivePulse`, replacing the center-screen toast stack), and
+    one glass readout panel holding the reveal clock (now a single heartbeat
+    line) + the weekly numbers. The forming state is a slowly swirling
+    proto-galaxy of gas and uncountable motes. `CommunityGalaxyCanvas` now
+    reconciles live counts after mount, so crossing the 100 floor *resolves*
+    the nebula into stars in place.
+
 - **2026-07-08** — **Communities become a living galaxy: pings as stars, matches
   as anonymous constellations, a moderated shoutout wall — and the broken
   countdown/percentage removed.** A human-directed rework of the community page,
