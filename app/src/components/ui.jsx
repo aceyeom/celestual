@@ -63,7 +63,7 @@ export function useDialog(onClose) {
 // with a whisper of pointer/tilt parallax. This is the cosmos the product lives
 // inside — the two stars (amber `you`, rose `them`) are the field's own light.
 // Mount it once, in idle mode, as a fixed full-bleed layer under the content.
-export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, seals = 0, onReady, style }) {
+export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, seals = 0, sealLabels, onReady, style }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   React.useEffect(() => {
@@ -71,6 +71,7 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
     field.current = f
     f.setMode(mode, { dim, origin })
     if (seals) f.setSeals(seals)
+    if (sealLabels) f.setSealLabels(sealLabels)
     f.start()
     if (onReady) onReady(f)
     if (import.meta.env.DEV) window.__galaxyField = f
@@ -102,6 +103,10 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
   React.useEffect(() => {
     if (field.current) field.current.setSeals(seals)
   }, [seals])
+  // The @ each star holds (device plaintext), so a focus dive can name it.
+  React.useEffect(() => {
+    if (field.current) field.current.setSealLabels(sealLabels || [])
+  }, [sealLabels])
   React.useEffect(() => {
     if (field.current) field.current.setPalette(you, them)
   }, [you, them])
@@ -122,11 +127,15 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
 // `onReady(field)` hands the live engine to the screen so it can launch() a ping
 // and addConstellation() a match as the demo (or real data) ticks. Remount on a
 // community change by giving it key={slug}.
-export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, onReady }) {
+export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   const readyRef = React.useRef(onReady)
   readyRef.current = onReady
+  // the viewer's own placed @s — kept in a ref so the forming→open resolve can
+  // re-seat them after a reseed without re-running the mount effect
+  const mineRef = React.useRef(mine)
+  mineRef.current = mine
   React.useEffect(() => {
     const f = new CommunityGalaxy(ref.current, { you, them })
     field.current = f
@@ -136,6 +145,8 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
       f.seed(pings)
       f.setConstellations(matches)
     }
+    f.syncMine(mineRef.current || [])
+    f.setPublicHandles(publicHandles || [], ownPublic || null)
     f.start()
     if (readyRef.current) readyRef.current(f)
     if (import.meta.env.DEV) window.__communityGalaxy = f
@@ -174,13 +185,23 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
     }
     if (f.forming) {
       f.setForming(false)
-      f.seed(pings)
+      f.seed(pings, [])
+      f.syncMine(mineRef.current || [])
       f.setConstellations(matches)
       return
     }
     if (pings > f.count) f.setCount(pings)
     if (matches > f.matchCount) f.setConstellations(matches)
   }, [forming, pings, matches])
+  // the viewer's own stars follow the device-held ping list (adds rest in
+  // quietly; a released ping's star leaves the sky)
+  React.useEffect(() => {
+    if (field.current) field.current.syncMine(mine || [])
+  }, [mine])
+  // the opted-in public @s (and the viewer's own, once they flip public)
+  React.useEffect(() => {
+    if (field.current) field.current.setPublicHandles(publicHandles || [], ownPublic || null)
+  }, [publicHandles, ownPublic])
   return (
     <canvas
       ref={ref}

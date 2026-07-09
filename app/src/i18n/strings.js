@@ -21,8 +21,10 @@ const en = {
   // typed once and held (§4.1).
   'landing.head1': 'they’re still thinking about you.',
   'landing.head2': 'stop guessing. find out who.',
-  // the promise, in one line under the headline
-  'landing.hero': 'the only way to find out, without ever risking a thing.',
+  // the promise under the headline — typed as two lines with a held breath
+  // between them (both line-boxes are reserved, so nothing ever shifts)
+  'landing.hero1': 'the only way to find out,',
+  'landing.hero2': 'without ever risking a thing.',
   'landing.cta': 'find out',
   'landing.safety': 'no profiles. no browsing. nothing happens unless it’s mutual.',
   'landing.login': 'log in',
@@ -167,6 +169,7 @@ const en = {
   'pings.door': 'share the open sky',
   'pings.open': 'message them',
   'pings.worlds': 'communities',
+  'pings.locate': 'see it in the sky',
   'pings.sim': 'sandbox: they add you back',
 
   // ── screen 5 · the open-sky share card ──────────────────────────────────
@@ -306,6 +309,10 @@ const en = {
   'communities.foot': 'curated by celestual. more schools soon.',
   'communities.open': 'open',
   'communities.gathering': 'gathering',
+  // how a community's state is spoken — a quiet line, never a badge or a dot
+  'communities.skyOpen': 'the sky is open.',
+  'communities.skyGathering': 'still gathering.',
+  'communities.view': 'view the community',
   'communities.none': 'no community here.',
   'communities.thisWeek': 'this week',
   'communities.matchedLabel': 'matched this week',
@@ -342,10 +349,11 @@ const en = {
   'communities.findYours': 'find your community',
   'communities.joinShort': 'join',
   'communities.joinedTag': 'joined',
-  // the "are you actually part of it?" stop — you should only ever join a
-  // community you're really in, since your ping only reaches people from it.
+  // the "are you actually part of it?" stop — you should only ever join the
+  // community you're really in. membership decides whose sky your pings light
+  // up, never who a ping can reach (pings are global — MASTER-GUIDE §2.6).
   'communities.confirmTitle': 'are you actually at {name}?',
-  'communities.confirmBody': 'your ping only ever reaches people from your own community. so join the one you’re really in, not one you hope someone’s in.',
+  'communities.confirmBody': 'your community is whose sky your pings light up. join the one you’re really in, not one you hope someone’s in — a ping reaches its person either way.',
   'communities.confirmYes': 'yes, i’m at {name}',
   'communities.confirmNo': 'not really',
   // the pings-page gateway
@@ -372,7 +380,7 @@ const en = {
   'home.badge': 'your community',
   'home.in': 'you’re in {name}',
   'home.oneOnly': 'you can be in one community — the one you’re actually at.',
-  'home.watch': 'you’re watching {name}. join to ping into its sky.',
+  'home.watch': 'you’re watching {name}. join, and your pings light up in this sky.',
   'home.locked': 'verify your school email to ping here.',
   'home.switchTitle': 'switch to {name}?',
   'home.switchBody': 'you’re in {current}. joining {name} leaves it — you can only be in the one you’re really at.',
@@ -380,12 +388,27 @@ const en = {
   'home.switchNo': 'stay in {current}',
   'home.locate': 'find your star',
 
+  // ── the public @ (announce yourself in your community's sky) ─────────────────
+  // off by default: your star is anonymous. flipping it public rests your own @
+  // above your own star — an announcement that you're here, never who you
+  // pinged. the warning sheet is the one honest stop before it shows.
+  'public.announce': 'announce your @',
+  'public.on': 'your @ is public here',
+  'public.title': 'show your @ in this sky?',
+  'public.body': 'your handle will rest above your star in {name}’s sky, visible to anyone watching it. it says you’re here — nothing more.',
+  'public.keeps': 'who you pinged stays sealed, exactly as before. going public never touches that.',
+  'public.confirm': 'show my @',
+  'public.cancel': 'keep it anonymous',
+  'public.note': 'you can turn this off anytime, one tap, no questions.',
+
   // ── the .edu gate (join a community by proving you’re at that school) ────────
-  // your ping only ever reaches people from your own community, so membership is
-  // real: a code to your school address confirms you’re there. one community, one
-  // address. the sandbox auto-confirms so the shape is playable.
+  // membership is real — a code to your school address confirms you’re there —
+  // because a community's sky should only be lit by people who are actually in
+  // it. it never limits a ping's reach: pings are global (MASTER-GUIDE §2.6).
+  // one community, one address. the sandbox auto-confirms so the shape is
+  // playable.
   'edu.title': 'prove you’re at {name}.',
-  'edu.sub': 'your {domain} address confirms you’re really here. it’s the only way to ping into this sky, so a ping only ever reaches people who are.',
+  'edu.sub': 'your {domain} address confirms you’re really here, so this sky only fills with people who are. your pings land in it as stars — and they still reach anyone, at {name} or not.',
   'edu.emailLabel': 'your school email',
   'edu.emailPlaceholder': 'you@{domain}',
   'edu.send': 'send my code',
@@ -411,7 +434,7 @@ const en = {
   'schools.kicker': 'one more thing',
   'schools.title1': 'find your',
   'schools.title2': 'community.',
-  'schools.sub': 'pick your community. your ping stays locked until enough people from it join. don’t see yours? dm us and we add new ones by hand.',
+  'schools.sub': 'pick the one you’re actually at. your pings light up as stars in its sky — and they reach their person either way. don’t see yours? dm us and we add new ones by hand.',
   'schools.joined': 'joined',
   'schools.tapJoin': 'tap to join',
   'schools.cta': 'place your ping',

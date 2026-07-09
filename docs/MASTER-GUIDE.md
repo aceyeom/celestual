@@ -317,6 +317,30 @@ applied to the community, with no gate. Stats compose both floors: a community's
 aggregates publish at 100+, and inside them a match count publishes at 10+ (2.7),
 so a thin week reads "matches open at ten," never a guessable number.
 
+**Ping isolation, resolved (2026-07-09).** A ping is global, full stop. It
+reaches its target whether they share the sender's community, sit in a different
+one, or belong to none — and a mutual pair resolves the instant it becomes
+mutual, never held for a community to open. What a community scopes is the
+**sky**, not the **reach**: membership (exactly one, the school you're really
+at, proven by a code to your school address) decides which galaxy your placed
+pings light up as stars and whose weekly aggregates they count toward. Concretely:
+a Berkeley member pinging someone outside Berkeley → the ping reaches them, and
+the star lands in Berkeley's sky. An outsider pinging a Berkeley member → it
+reaches them all the same; the sender's star lands in the sender's own sky (or
+the ambient field if they have none). Anything stricter silently kills real
+matches across campus lines — the one failure the mechanism cannot afford — and
+contradicts 2.6's own rule that placing a ping never depends on a community.
+Copy must never claim a community limits reach (an earlier .edu-gate line did;
+corrected the same day).
+
+**The public @ (2026-07-09).** A member may opt in to show their own handle
+above their own star in their community's sky — an identity announcement ("I'm
+here") that makes the population read as real people, never activity (who they
+pinged stays double-blind, structurally). Off by default; flipping it public
+passes one warning sheet that names exactly what becomes visible; reversible
+anytime with one tap. The sky renders a capped, faint set of these tags so it
+reads inhabited, never a roster.
+
 The community line shown to senders (on the placed screen, 4.6) appears only when
 the counter is above the floor and reads: "your worlds: korean intl students.
 2,341 in." The full communities view (reached from the status page and account)

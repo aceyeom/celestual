@@ -137,7 +137,7 @@ const IGNITE_DUR = 0.55 // the glisten when it lands
 // The find-your-star dive: a deliberate, time-driven camera glide (in → hold on
 // the flaring star → back out), the same cinematic grammar as galaxy.js's focus.
 const DIVE_IN = 1.5
-const DIVE_HOLD = 1.35
+const DIVE_HOLD = 1.9 // long enough to read the @ resting over the star
 const DIVE_OUT = 0.95
 const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 
@@ -158,11 +158,22 @@ export class CommunityGalaxy {
     this.p = { x: 0, y: 0 }
 
     // ── the live populations ──
-    this.stars = [] // one per ping: { i, born, state, settleAt, mine, ox, oy, cxp, cyp, trail }
+    this.stars = [] // one per ping: { i, born, state, settleAt, mine, label, ox, oy, trail }
     this.consts = [] // one per mutual match: { nodes, born, tw, dying }
     this._slots = [] // deterministic disk slot per ping index (built lazily)
     this._cSeed = 0
-    this.mineIndex = -1 // the viewer's own star (their last placed ping)
+    // The viewer's OWN stars — one per ping this device placed, each carrying its
+    // device-held plaintext @ as a label: [{ st, label }]. A list, not a single
+    // index, so "find your star" resolves with any number of standing pings and
+    // survives a remount (syncMine restores them from the ping list).
+    this.mine = []
+    this.mineCursor = 0 // which own star an unlabelled locate visits next
+    this.diveSt = null // the star the running dive is flying to
+    this.diveLabel = null // its @, drawn over the star at arrival
+    // Opted-in public @s — members who chose to announce themselves in this sky.
+    this.publicList = []
+    this.ownPublic = null // the viewer's own @ when they've flipped public
+    this.publicTags = [] // seated tags: [{ st, label, own, tw }]
 
     // "forming" = a gathering community below the privacy floor: uncountable
     // luminous gas + sub-resolution motes instead of discrete stars.
@@ -405,16 +416,68 @@ export class CommunityGalaxy {
 
   // Instantly populate `n` resting ping-stars (mount / true count known). They
   // twinkle in over a staggered beat — opening a busy sky never fires a meteor
-  // shower at the viewer.
-  seed(n) {
+  // shower at the viewer. `mine` is the device-held list of the viewer's own
+  // placed @s: each rests in as their own findable star.
+  seed(n, mine = []) {
     n = Math.max(0, Math.floor(n))
     this.stars = []
-    this.mineIndex = -1
+    this.mine = []
+    this.mineCursor = 0
     this.dive = null
+    this.diveSt = null
+    this.diveLabel = null
     this.locateFx = null
     for (let i = 0; i < n; i++) {
       this.stars.push({ i, born: -10, state: 'rest', settleAt: this.t + Math.random() * 1.1, mine: false })
     }
+    for (const label of mine) this._restMine(label)
+    this._seatPublicTags()
+    this.start()
+  }
+
+  // Your own stars are spread around the disk: consecutive indices would seat
+  // them as touching neighbours, which reads as an artifact once each wears its
+  // ring. One golden-angle turn per own-star keeps them apart, deterministically
+  // (the cache is rebuilt fresh so a reseed lands them identically).
+  _spreadMineSlot(i, k) {
+    delete this._slots[i]
+    const slot = this._slot(i)
+    const a = Math.atan2(slot.pz, slot.px) + k * 2.39996323
+    slot.px = Math.cos(a) * slot.r
+    slot.pz = Math.sin(a) * slot.r
+    return slot
+  }
+
+  // Quietly rest one of the viewer's own stars into the disk (no meteor) — the
+  // mount path, when the device already holds placed pings.
+  _restMine(label) {
+    const i = this.stars.length
+    this._spreadMineSlot(i, this.mine.length)
+    const st = { i, born: -10, state: 'rest', settleAt: this.t + Math.random() * 0.9, mine: true, label: label || null }
+    this.stars.push(st)
+    this.mine.push({ st, label: label || null })
+    return st
+  }
+
+  // Reconcile the viewer's own stars against the device-held ping list. Adds
+  // missing ones quietly and drops stars for pings that were let go. Idempotent
+  // by label, so a screen-driven launch() that already added its @ is a no-op.
+  syncMine(labels = []) {
+    const want = labels.filter(Boolean)
+    const have = new Set(this.mine.map((m) => m.label))
+    for (const l of want) if (!have.has(l)) this._restMine(l)
+    for (const m of [...this.mine]) {
+      if (m.label && !want.includes(m.label)) {
+        const at = this.stars.indexOf(m.st)
+        if (at >= 0) this.stars.splice(at, 1)
+        this.mine.splice(this.mine.indexOf(m), 1)
+        if (this.diveSt === m.st) {
+          this.diveSt = null
+          this.dive = null
+        }
+      }
+    }
+    this._seatPublicTags()
     this.start()
   }
 
@@ -425,7 +488,8 @@ export class CommunityGalaxy {
     const meteors = Math.min(k, 6)
     for (let j = 0; j < k; j++) {
       const i = this.stars.length
-      const st = { i, born: this.t + j * 0.12, state: 'meteor', settleAt: 0, mine: !!opts.mine, trail: [] }
+      if (opts.mine) this._spreadMineSlot(i, this.mine.length)
+      const st = { i, born: this.t + j * 0.12, state: 'meteor', settleAt: 0, mine: !!opts.mine, label: opts.label || null, trail: [] }
       if (j >= meteors) {
         st.state = 'rest'
         st.born = -10
@@ -441,8 +505,9 @@ export class CommunityGalaxy {
         st.trail = null
       }
       this.stars.push(st)
-      if (opts.mine) this.mineIndex = i
+      if (opts.mine) this.mine.push({ st, label: opts.label || null })
     }
+    this._seatPublicTags()
     this.start()
     return this.stars.length
   }
@@ -466,11 +531,59 @@ export class CommunityGalaxy {
     n = Math.max(0, Math.floor(n))
     if (n < this.stars.length) {
       this.stars.length = n
-      if (this.mineIndex >= n) this.mineIndex = -1
+      this.mine = this.mine.filter((m) => this.stars.includes(m.st))
+      if (this.diveSt && !this.stars.includes(this.diveSt)) {
+        this.diveSt = null
+        this.dive = null
+      }
+      this._seatPublicTags()
     } else if (n > this.stars.length) {
       this.launch(n - this.stars.length)
     }
     this.start()
+  }
+
+  // The opted-in public @s: small handle tags resting over real stars, so the
+  // sky's population reads as real people — an identity announcement ("i'm
+  // here"), never activity (who anyone pinged stays double-blind). `own` is the
+  // viewer's handle once they've flipped public; it rides their newest star.
+  setPublicHandles(list = [], own = null) {
+    this.publicList = (list || []).filter(Boolean).slice(0, 12)
+    this.ownPublic = own || null
+    this._seatPublicTags()
+    this.start()
+  }
+
+  // Seat each public @ on a deterministic resident star (hashed by handle, so a
+  // tag never wanders between frames or mounts), skipping the viewer's own.
+  // Tags prefer the disk's mid-body — never the luminous heart, where they'd
+  // pile over the community's central seal, and never the thin far rim.
+  _seatPublicTags() {
+    const tags = []
+    const n = this.stars.length
+    if (n > 0) {
+      const used = new Set()
+      const seatable = (idx) => {
+        if (used.has(idx) || this.stars[idx].mine) return false
+        const r = this._slot(this.stars[idx].i).r
+        return r > RMAX * 0.34 && r < RMAX * 0.92
+      }
+      for (const label of this.publicList) {
+        if (this.ownPublic && label === this.ownPublic) continue
+        let h = 0
+        for (let c = 0; c < label.length; c++) h = (h * 31 + label.charCodeAt(c)) >>> 0
+        let idx = h % n
+        let guard = 0
+        while (!seatable(idx) && guard++ < n) idx = (idx + 7) % n
+        if (!seatable(idx)) continue // a very young sky — better untagged than piled
+        used.add(idx)
+        tags.push({ st: this.stars[idx], label, own: false, tw: ((h % 100) / 100) * TWO })
+      }
+    }
+    if (this.ownPublic && this.mine.length) {
+      tags.push({ st: this.mine[this.mine.length - 1].st, label: this.ownPublic, own: true, tw: 0 })
+    }
+    this.publicTags = tags
   }
 
   // Enter/leave the forming (gathering, count-withheld) state. The proto-galaxy
@@ -548,18 +661,30 @@ export class CommunityGalaxy {
     this.start()
   }
 
-  // The find-your-star gesture: the camera dives through the field to the
-  // viewer's own star, holds while it flares, and glides back out. Reduced
-  // motion trades the travel for a calm converging ring. No-op without a star.
-  locateMine() {
-    if (this.mineIndex < 0 || !this.stars[this.mineIndex]) return false
+  // The find-your-star gesture: the camera dives through the field to one of the
+  // viewer's own stars, holds while it flares (its @ rising above it), and
+  // glides back out. Pass a label to fly to that exact ping; without one,
+  // repeated calls visit each of your stars in turn — so the gesture resolves
+  // however many pings are placed. Reduced motion trades the travel for a calm
+  // converging ring. No-op without a star.
+  locateMine(label) {
+    if (!this.mine.length) return false
+    let entry = null
+    if (label) entry = this.mine.find((m) => m.label === label) || null
+    if (!entry) {
+      entry = this.mine[this.mineCursor % this.mine.length]
+      this.mineCursor++
+    }
+    if (!entry || !this.stars.includes(entry.st)) return false
+    this.diveSt = entry.st
+    this.diveLabel = entry.label
     if (this.reduced) this.locateFx = { t0: this.t } // clock-based: survives dt=0 draws
     else this.dive = { t: 0 }
     this.start()
     return true
   }
   hasMine() {
-    return this.mineIndex >= 0 && !!this.stars[this.mineIndex]
+    return this.mine.length > 0
   }
 
   // A tap becomes a wave in the DISK PLANE: unproject the screen point onto the
@@ -694,8 +819,8 @@ export class CommunityGalaxy {
 
     // the dive's camera travel: offset toward the target star in view space so
     // the WHOLE field (gas, dust, every star) flies past as one
-    if (this.focus > 0.0005 && this.mineIndex >= 0 && this.stars[this.mineIndex]) {
-      const slot = this._slot(this.mineIndex)
+    if (this.focus > 0.0005 && this.diveSt) {
+      const slot = this._slot(this.diveSt.i)
       const T = this._view(slot.px, slot.y, slot.pz, rot)
       const f = this.focus
       this.cam.x = f * T.x
@@ -731,10 +856,16 @@ export class CommunityGalaxy {
     this._drawDust(dt, d)
 
     if (this.forming) {
+      // a gathering sky withholds everyone else's count — but the viewer's OWN
+      // stars still shine (they reveal nothing about anyone but themselves), so
+      // "find your star" works before the community opens too.
       this._drawForming(dt)
+      this._drawMine(dt)
     } else {
       this._drawStars(dt, d)
       this._drawConstellations(dt, d)
+      this._drawPublicTags(dt, d)
+      this._drawMine(dt)
     }
     this._drawWaves(dt)
     this._drawLocateFx()
@@ -898,6 +1029,9 @@ export class CommunityGalaxy {
         continue
       }
 
+      // the viewer's own stars get their dedicated pass (_drawMine)
+      if (st.mine) continue
+
       const pr = this._project(slot.px, slot.y, slot.pz)
       if (!pr || pr.sx < -40 || pr.sx > this.w + 40 || pr.sy < -40 || pr.sy > this.h + 40) continue
       slot.phase += dt * slot.tws
@@ -925,33 +1059,31 @@ export class CommunityGalaxy {
         else ignite = Math.sin(Math.PI * clamp(q, 0, 1))
       }
 
-      const isMine = st.mine
       // during a dive everything but the hero melts back into the depth
-      const fade = focusing ? (isMine ? 1 : 1 - 0.82 * this.focus) : 1
+      const fade = focusing ? 1 - 0.82 * this.focus : 1
       const tw = 0.7 + 0.3 * Math.sin(slot.phase)
       const a = (slot.base * tw * pr.shade * settle + flare * 0.5) * fade
-      if (a <= 0.004 && !isMine) continue
+      if (a <= 0.004) continue
 
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = Math.min(0.96, a * 1.5)
-      const D = clamp(slot.rad * pr.persp * 3, 1.9, this.h * 0.5) * (1 + ignite * 1.1 + flare * 0.5) * (isMine ? 1.3 : 1)
+      const D = clamp(slot.rad * pr.persp * 3, 1.9, this.h * 0.5) * (1 + ignite * 1.1 + flare * 0.5)
       if (D >= 2.4 || a >= 0.34 || focusing) {
-        ctx.drawImage(this._dotFor(isMine ? this.you : slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+        ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
       } else {
         ctx.fillStyle = slot.hue
         const s = D * 0.42
         ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
       }
-      if (slot.glow || ignite > 0 || flare > 0.25 || isMine) glowQ.push([pr, slot, a, ignite, flare, isMine])
+      if (slot.glow || ignite > 0 || flare > 0.25) glowQ.push([pr, slot, a, ignite, flare])
     }
 
     // additive pass: tinted blooms; diffraction spikes on ignition + the brightest
     ctx.globalCompositeOperation = 'lighter'
-    for (const [pr, slot, a, ignite, flare, isMine] of glowQ) {
-      const hue = isMine ? this.you : slot.hue
-      const sz = slot.rad * (7 + ignite * 10 + flare * 5) * pr.persp * (isMine ? 1.4 : 1)
+    for (const [pr, slot, a, ignite, flare] of glowQ) {
+      const sz = slot.rad * (7 + ignite * 10 + flare * 5) * pr.persp
       ctx.globalAlpha = Math.min(0.6, a * 0.7 + ignite * 0.4 + flare * 0.3)
-      ctx.drawImage(this._glowFor(hue), pr.sx - sz / 2, pr.sy - sz / 2, sz, sz)
+      ctx.drawImage(this._glowFor(slot.hue), pr.sx - sz / 2, pr.sy - sz / 2, sz, sz)
       if (ignite > 0) {
         const ss = 22 + ignite * 34
         ctx.globalAlpha = ignite * 0.85
@@ -963,39 +1095,125 @@ export class CommunityGalaxy {
       }
     }
 
-    // the viewer's own star: a soft breathing ring, always findable in the crowd —
-    // and the hero the dive is flying toward.
-    if (this.mineIndex >= 0 && this.stars[this.mineIndex] && this.stars[this.mineIndex].state !== 'meteor') {
-      const slot = this._slot(this.mineIndex)
-      const pr = this._project(slot.px, slot.y, slot.pz)
-      if (pr) {
-        const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.7)
-        const f = this.focus
-        ctx.globalCompositeOperation = 'lighter'
-        const gs = (9 + pulse * 3) * (1 + f * 3)
-        ctx.globalAlpha = 0.4 + 0.35 * pulse + f * 0.25
-        ctx.drawImage(this.glows.you, pr.sx - gs, pr.sy - gs, gs * 2, gs * 2)
-        ctx.globalAlpha = (0.3 + 0.3 * pulse) * (1 - f) + f * 0.85
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.arc(pr.sx, pr.sy, (6.5 + pulse * 1.6) * (1 + f * 2.4), 0, TWO)
-        ctx.stroke()
-        // at the dive's arrival the star burns with its full photographic flare
-        if (f > 0.65) {
-          const fl = smooth((f - 0.65) / 0.35)
-          const ss = 40 + fl * 46 + pulse * 6
-          ctx.globalAlpha = fl * (0.55 + 0.25 * pulse)
-          ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-          ctx.globalAlpha = 1
-          const cd = 7 + fl * 5
-          ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
-        }
-      }
-    }
-
     // meteors last, over everything — the newest light crossing the whole sky
     for (const st of meteors) this._drawMeteor(st, dt)
+  }
+
+  // ── the viewer's own stars ────────────────────────────────────────────────
+  // One per ping this device placed — a white-hot core inside layered amber and
+  // rose light, wearing the product's diffraction glisten and a fine breathing
+  // ring. Unmistakably yours without shouting over the field. During a locate
+  // dive the target flares to its full photographic signature and the @ it
+  // holds (device-held plaintext — no one else's sky ever shows it) rises above.
+  _drawMine(dt) {
+    if (!this.mine.length) return
+    const ctx = this.ctx
+    const focusing = this.focus > 0.001
+    for (const m of this.mine) {
+      const st = m.st
+      if (st.state === 'meteor') {
+        // non-forming skies draw mine meteors in the shared top pass
+        if (this.forming && this.t >= st.born) this._drawMeteor(st, dt)
+        continue
+      }
+      const slot = this._slot(st.i)
+      const pr = this._project(slot.px, slot.y, slot.pz)
+      if (!pr) continue
+      // the landing glisten right after this star's meteor touched down
+      let ignite = 0
+      if (st.state === 'ignite') {
+        const q = (this.t - st.igniteAt) / IGNITE_DUR
+        if (q >= 1) st.state = 'rest'
+        else ignite = Math.sin(Math.PI * clamp(q, 0, 1))
+      }
+      const isDive = focusing && st === this.diveSt
+      const f = isDive ? this.focus : 0
+      const fade = focusing && !isDive ? 1 - 0.82 * this.focus : 1
+      if (fade <= 0.03) continue
+      let settle = 1
+      if (st.settleAt > 0) settle = smooth(clamp((this.t - st.settleAt) / 0.9, 0, 1))
+      if (settle <= 0.01) continue
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.3 + slot.phase)
+      const base = settle * fade
+
+      ctx.globalCompositeOperation = 'lighter'
+      // a whisper of rose outside the amber — both of the product's lights
+      const ro = (15 + pulse * 3) * (1 + f * 2.2)
+      ctx.globalAlpha = (0.1 + 0.08 * pulse) * base
+      ctx.drawImage(this.glows.them, pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
+      const go = (9 + pulse * 2.5) * (1 + f * 3)
+      ctx.globalAlpha = (0.42 + 0.3 * pulse) * base
+      ctx.drawImage(this.glows.you, pr.sx - go, pr.sy - go, go * 2, go * 2)
+      // the diffraction glisten — resting small and shy, flaring on landing
+      const ss = (17 + pulse * 5 + ignite * 22) * (1 + f * 2.8)
+      ctx.globalAlpha = Math.min(1, (0.2 + 0.16 * pulse) * base + ignite * 0.6 + f * 0.55)
+      ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+      // the white-hot core
+      const cd = (2.7 + pulse * 0.7) * (1 + f * 2.4)
+      ctx.globalAlpha = Math.min(1, (0.8 + 0.2 * pulse) * base + f)
+      ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
+      // a fine ring, breathing — the seal that marks it as yours
+      ctx.globalAlpha = (0.22 + 0.2 * pulse) * base * (1 - f) + f * 0.85
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(pr.sx, pr.sy, (7 + pulse * 1.5) * (1 + f * 2.2), 0, TWO)
+      ctx.stroke()
+
+      // arrival: the @ this ping holds rises over the star on a slim tick
+      if (isDive && this.diveLabel && f > 0.55) {
+        const fl = smooth((f - 0.55) / 0.45)
+        const off = 30 + f * 22
+        ctx.globalAlpha = fl * 0.4
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(pr.sx, pr.sy - 14 - f * 8)
+        ctx.lineTo(pr.sx, pr.sy - off + 9)
+        ctx.stroke()
+        this._drawTag(pr.sx, pr.sy - off, '@' + this.diveLabel, fl * 0.96, 14.5, true)
+      }
+    }
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // ── the public @s ─────────────────────────────────────────────────────────
+  // Members who chose to announce themselves: small resting tags over real
+  // stars. Enough that the sky reads as inhabited by real people — never a
+  // roster (capped, faint, melting back during a dive), and never who anyone
+  // pinged. The viewer's own tag sits a touch brighter.
+  _drawPublicTags(dt, d) {
+    if (!this.publicTags.length) return
+    const fade = (1 - this.focus * 0.92) * d
+    if (fade <= 0.03) return
+    for (const tag of this.publicTags) {
+      const st = tag.st
+      if (!st || st.state === 'meteor') continue
+      const slot = this._slot(st.i)
+      const pr = this._project(slot.px, slot.y, slot.pz)
+      if (!pr || pr.sx < 24 || pr.sx > this.w - 24 || pr.sy < 30 || pr.sy > this.h + 10) continue
+      tag.tw += dt * 0.5
+      const a = (tag.own ? 0.78 : 0.38 + 0.12 * Math.sin(tag.tw)) * fade * clamp(pr.shade, 0.4, 1.1)
+      this._drawTag(pr.sx, pr.sy - clamp(9 * pr.persp, 7, 16) - 5, '@' + tag.label, a, tag.own ? 11 : 10)
+    }
+  }
+
+  // A small mono @ tag floating over a star — screen-space, quietly lit.
+  _drawTag(x, y, text, alpha, size = 11, bright = false) {
+    if (alpha <= 0.02) return
+    const ctx = this.ctx
+    ctx.save()
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = clamp(alpha, 0, 1)
+    ctx.font = `700 ${size}px 'Space Mono', monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'
+    ctx.shadowBlur = 8
+    ctx.fillStyle = bright ? 'rgba(255,250,244,0.98)' : 'rgba(243,236,246,0.85)'
+    ctx.fillText(text, x, y)
+    ctx.restore()
   }
 
   // A slim shooting star: a tapering gradient streak decelerating into its slot.
@@ -1251,12 +1469,12 @@ export class CommunityGalaxy {
   // reduced-motion "find your star": a calm converging ring, no camera travel
   _drawLocateFx() {
     if (!this.locateFx) return
-    const st = this.stars[this.mineIndex]
-    if (!st) {
+    const st = this.diveSt
+    if (!st || !this.stars.includes(st)) {
       this.locateFx = null
       return
     }
-    const slot = this._slot(this.mineIndex)
+    const slot = this._slot(st.i)
     const pr = this._project(slot.px, slot.y, slot.pz)
     const dur = 1.7
     const p = (this.t - this.locateFx.t0) / dur
