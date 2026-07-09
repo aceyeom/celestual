@@ -21,7 +21,7 @@ import { renderSkyCard, downloadSkyCard } from '../card.js'
 import {
   Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel, Meter,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  BackBtn, Icon, Typewriter, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
+  BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
 } from './ui.jsx'
 import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR, nextRevealAt, bySlug } from '../communities.js'
 import { placedReachable, placedWaiting } from '../growth.js'
@@ -196,21 +196,68 @@ export function SlotPips({ C, standing, cap, compact }) {
   )
 }
 
-// The one quiet line under the headline: the promise, in the reader's own
-// words. Typed once and held, then it re-types on a long loop so the field
-// breathes without ever hurrying; collapses to a static line under reduced
-// motion. Serif italic, cream — it reads as something meant, not a slogan.
+// The one quiet promise under the headline, typed as TWO deliberate lines with
+// a held breath between them — spoken, not printed. Both line-boxes exist at
+// full height from the first frame, so the second line arriving never shifts
+// the hero above it by a pixel. Re-types on a long loop; collapses to a static
+// two-line stack under reduced motion.
 function HeroSequence({ C }) {
   const { t } = useI18n()
-  const line = t('landing.hero')
-  const serif = { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(19px, 5.4vw, 25px)', lineHeight: 1.4, color: rgba(C.cream, 0.94), textWrap: 'balance' }
+  const l1 = t('landing.hero1')
+  const l2 = t('landing.hero2')
+  const reduce =
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // one cursor across both lines; a pause (the breath) sits between them
+  const total = l1.length + l2.length
+  const [n, setN] = React.useState(reduce ? total : 0)
+  const [erasing, setErasing] = React.useState(false)
+  React.useEffect(() => {
+    if (reduce) return undefined
+    let delay
+    if (!erasing && n < total) {
+      delay = n === l1.length ? 620 : 30 + Math.random() * 22 // the breath after line one
+    } else if (!erasing) {
+      delay = 7000 // hold the finished promise
+    } else if (n > 0) {
+      delay = 14 // erase — quick, unceremonious
+    } else {
+      delay = 900 // a beat of empty sky before it types again
+    }
+    const id = setTimeout(() => {
+      if (!erasing && n < total) setN(n + 1)
+      else if (!erasing) setErasing(true)
+      else if (n > 0) setN(n - 1)
+      else setErasing(false)
+    }, delay)
+    return () => clearTimeout(id)
+  }, [n, erasing, total, l1.length, reduce])
+  const s1 = l1.slice(0, Math.min(n, l1.length))
+  const s2 = n > l1.length ? l2.slice(0, n - l1.length) : ''
+  const caretOn2 = n >= l1.length && (erasing ? n > l1.length : true)
+  const caret = (
+    <span className="tw-caret" aria-hidden style={{ color: rgba(C.star, 0.85), fontWeight: 300, marginLeft: 1 }}>
+      |
+    </span>
+  )
+  const line = { minHeight: '1.42em', lineHeight: 1.42 }
   return (
     <div
       className="enter"
-      aria-label={line}
-      style={{ animationDelay: '.16s', width: '100%', display: 'grid', placeItems: 'center', textAlign: 'center', padding: '0 6px', maxWidth: 380 }}
+      aria-label={`${l1} ${l2}`}
+      style={{
+        animationDelay: '.16s', width: '100%', maxWidth: 420, padding: '0 6px', textAlign: 'center',
+        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic',
+        fontSize: 'clamp(19px, 5.4vw, 24px)', color: rgba(C.cream, 0.94),
+      }}
     >
-      <Typewriter phrases={[{ text: line, hold: 6000, typeSpeed: 22, typeVar: 14 }]} style={serif} caretColor={rgba(C.star, 0.85)} />
+      <div style={line}>
+        {s1}
+        {!reduce && !caretOn2 && caret}
+      </div>
+      <div style={line}>
+        {s2}
+        {!reduce && caretOn2 && caret}
+      </div>
     </div>
   )
 }
@@ -600,7 +647,7 @@ function CommunityProgressCard({ C, community }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <SchoolMark C={C} slug={community.slug} size={38} />
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
-        <CommunityStatus C={C} open={open} />
+        <SkyStatus C={C} open={open} />
       </div>
       <Meter C={C} count={community.members || 0} threshold={OPEN_FLOOR} />
     </GlassPanel>
@@ -811,7 +858,18 @@ function PingCard({ C, ping, ctx }) {
   }
   return (
     <GlassPanel C={C} style={{ padding: '15px 16px 13px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+      {/* the header row IS the way to the sky: tap it and the camera flies to
+          this ping's own star, its @ rising above it */}
+      <button
+        onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
+        aria-label={ping.handle ? t('pings.locate') : undefined}
+        title={ping.handle ? t('pings.locate') : undefined}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: 0, textAlign: 'left',
+          background: 'none', border: 'none', color: 'inherit', font: 'inherit',
+          cursor: ping.handle ? 'pointer' : 'default',
+        }}
+      >
         <StateDot C={C} state={state} />
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 20, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ping.handle ? (
@@ -820,10 +878,11 @@ function PingCard({ C, ping, ctx }) {
             <span style={{ fontStyle: 'italic', fontSize: 15 }}>{t('pings.elsewhere')}</span>
           )}
         </span>
+        {ping.handle && <Icon name="star" size={12} color={rgba(C.star, 0.6)} stroke={1.8} />}
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
           {t(`pings.${state}`)}
         </span>
-      </div>
+      </button>
 
       {ping.handle && t(`pings.${state}Sub`) && (
         <p style={{ margin: '8px 0 0', paddingLeft: 19, fontSize: 12.5, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
@@ -924,53 +983,88 @@ function MutualCard({ C, ping, ctx }) {
   return (
     <GlassPanel C={C} style={{ padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <StateDot C={C} state="mutual" />
-        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 19, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
-          </span>
-          {ping.intent && (
-            <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 13, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              “{intentLine(t, ping.intent)}”
+        <button
+          onClick={() => ctx.locatePing(ping.handle)}
+          aria-label={t('pings.locate')}
+          title={t('pings.locate')}
+          style={{
+            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 11, padding: 0, textAlign: 'left',
+            background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer',
+          }}
+        >
+          <StateDot C={C} state="mutual" />
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 19, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
             </span>
-          )}
-        </span>
+            {ping.intent && (
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 13, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                “{intentLine(t, ping.intent)}”
+              </span>
+            )}
+          </span>
+        </button>
         <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
       </div>
     </GlassPanel>
   )
 }
 
-// The communities gateway on the pings page: your ONE joined community (not a
-// list) — tappable straight to its ring — plus a way to search for others. If
-// you're not in a community yet, it's the same search field, so joining is one
-// tap away. Never a wall of colleges.
-function CommunityGateway({ C, ctx }) {
+// Your community, seated at the TOP of the pings page — clearly its own place,
+// never mixed into the slot rows. One glass banner: the seal, the name, how its
+// sky stands, its hero stat when it has one, and an unmistakable way IN. The
+// finder stays one tap away (search/add), and the sky's live beats — a meteor
+// for a ping, a constellation for a match — keep playing in the backdrop right
+// here, with the same quiet caption the community page uses.
+function CommunityHome({ C, ctx }) {
   const { t } = useI18n()
-  const communities = ctx.communities || []
-  const joined = communities.filter((c) => c.joined)
+  const community = ctx.homeCommunity
+  const open = community ? communityOpen(community) : false
+  const matches = community ? Number(community.matches || 0) : 0
+  const showStat = open && matches >= MATCH_FLOOR
   const [searching, setSearching] = React.useState(false)
   const view = (slug) => ctx.viewCommunity(slug)
+  // the demo's live pulse fires into the shared backdrop galaxy from this
+  // screen too, so the sky never goes still just because you left the page
+  const pulse = useCommunityPulse({
+    demo: ctx.demo, open, slug: community && community.slug, galaxyRef: ctx.homeGalaxyRef, bump: ctx.bumpCommunityActivity,
+  })
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 8, paddingTop: 18, borderTop: `1px solid ${C.line}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0 2px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <Icon name="search" size={13} color={rgba(C.star, 0.85)} stroke={2} />
-          <Kicker C={C}>{joined.length ? t('communities.yourCommunity') : t('communities.findYours')}</Kicker>
-        </div>
-        {joined.length > 0 && (
+        <Kicker C={C}>{community ? t('communities.yourCommunity') : t('communities.findYours')}</Kicker>
+        {community && (
           <GhostButton C={C} onClick={() => setSearching((s) => !s)} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.85) }}>
-            {t('communities.searchMore')}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="search" size={12} color="currentColor" stroke={2} /> {t('communities.searchMore')}
+            </span>
           </GhostButton>
         )}
       </div>
-      {joined.length > 0 ? (
+      {community ? (
         <>
-          {joined.map((c) => (
-            <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
-          ))}
+          <GlassPanel C={C} style={{ padding: '15px 16px 14px', display: 'flex', flexDirection: 'column', gap: 13 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+              <SchoolMark C={C} slug={community.slug} size={44} />
+              <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 20, lineHeight: 1.08, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+                <SkyStatus C={C} open={open} />
+              </span>
+              {showStat && (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
+                  <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 25, lineHeight: 1, color: C.star }}>{matches}</span>
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
+                </span>
+              )}
+            </div>
+            <OutlineButton C={C} onClick={() => view(community.slug)} style={{ width: '100%', padding: '12px 20px', borderRadius: RADIUS.field }}>
+              {t('communities.view')} <Icon name="arrow" size={15} color="currentColor" stroke={1.9} />
+            </OutlineButton>
+          </GlassPanel>
+          {/* the sky's live caption — someone placed a ping, it became mutual */}
+          <LivePulse C={C} beat={pulse.beat} />
           {searching && (
-            <div className="fade" style={{ paddingTop: 2 }}>
+            <div className="fade">
               <CommunityFinder C={C} ctx={ctx} onPick={view} />
             </div>
           )}
@@ -1001,50 +1095,53 @@ export function PingsScreen({ C, ctx }) {
         </div>
       </div>
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 20 }}>
-        {empty ? (
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 33px)', color: C.cream }}>
-              {t('pings.emptyTitle')}
-            </h2>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
-          </div>
-        ) : (
-          // the slot space — always exactly `cap` rows: standing pings, then open
-          // slots. mutual matches are resolved and never sit here.
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
-              <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
-              <SlotPips C={C} standing={used} cap={cap} compact />
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 18 }}>
+        {/* your community first — the place; the slots below are the pings */}
+        <CommunityHome C={C} ctx={ctx} />
+
+        {/* the slot space, clearly its own section under its own rule — always
+            exactly `cap` rows: standing pings, then open slots. mutual matches
+            are resolved and never sit here. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 4, paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
+          {empty ? (
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, margin: '6px 0 4px' }}>
+              <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 33px)', color: C.cream }}>
+                {t('pings.emptyTitle')}
+              </h2>
+              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
             </div>
-            {active.map((p, i) => (
-              <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
-            ))}
-            {Array.from({ length: emptyCount }).map((_, i) => (
-              <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
-            ))}
-          </>
-        )}
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
+                <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
+                <SlotPips C={C} standing={used} cap={cap} compact />
+              </div>
+              {active.map((p, i) => (
+                <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
+              ))}
+              {Array.from({ length: emptyCount }).map((_, i) => (
+                <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
+              ))}
+            </>
+          )}
 
-        {/* mutual — its own section, so a match never crowds the slots */}
-        {mutual.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: empty ? 0 : 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
-              <Kicker C={C} color={rgba(C.star, 0.9)}>✦ {t('pings.mutualKicker')} · {mutual.length}</Kicker>
-              <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
+          {/* mutual — its own section, so a match never crowds the slots */}
+          {mutual.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: empty ? 0 : 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
+                <Kicker C={C} color={rgba(C.star, 0.9)}>✦ {t('pings.mutualKicker')} · {mutual.length}</Kicker>
+                <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
+              </div>
+              {mutual.map((p, i) => (
+                <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
+              ))}
             </div>
-            {mutual.map((p, i) => (
-              <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
-            ))}
-          </div>
-        )}
+          )}
 
-        {pings.some((p) => !p.handle) && (
-          <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
-        )}
-
-        {/* the communities gateway — your one community + a search for others */}
-        <CommunityGateway C={C} ctx={ctx} />
+          {pings.some((p) => !p.handle) && (
+            <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
+          )}
+        </div>
       </div>
 
       <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 20 }}>
@@ -1208,9 +1305,24 @@ export function SkyCardScreen({ C, ctx }) {
 // it OPENS and its live weekly readout lights up. The demo seeds them live, with
 // a rolling activity feed, and lets you join — all in-memory, gone on tab close.
 
-// a small breathing amber dot — "this is live"
-function LiveDot({ C }) {
-  return <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: rgba(C.star, 0.95), boxShadow: `0 0 9px ${rgba(C.star, 0.7)}`, animation: 'breathe 3.6s ease-in-out infinite' }} />
+// How a community's state reads: not a badge, not a pill, no pulsing "live"
+// dot (a named tell in DESIGN.md §9) — a quiet spoken line in the emotional
+// register. An open sky speaks in cream with a breath of the star's warmth;
+// a gathering one stays in the mechanical hush.
+function SkyStatus({ C, open, size = 13.5 }) {
+  const { t } = useI18n()
+  return (
+    <span
+      style={{
+        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: size, lineHeight: 1.25,
+        color: open ? rgba(C.cream, 0.92) : rgba(C.muted, 0.92),
+        textShadow: open ? `0 0 14px ${rgba(C.star, 0.35)}` : 'none',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {open ? t('communities.skyOpen') : t('communities.skyGathering')}
+    </span>
+  )
 }
 
 // ── community life: the live pulse ────────────────────────────────────────────
@@ -1252,7 +1364,7 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, bump }) {
   }, [slug, galaxyRef, pushBeat])
 
   React.useEffect(() => {
-    if (!demo) return undefined
+    if (!demo || !slug) return undefined
     const timers = []
     if (open) {
       timers.push(setInterval(firePing, 3200 + Math.random() * 1400))
@@ -1408,22 +1520,6 @@ function RevealCountdown({ C, open }) {
   )
 }
 
-// The status a community wears: open (amber, live) or gathering (cool, waiting).
-function CommunityStatus({ C, open }) {
-  const { t } = useI18n()
-  if (open) {
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.95), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.3)}`, borderRadius: RADIUS.chip, padding: '4px 10px', flexShrink: 0 }}>
-        <LiveDot C={C} /> {t('communities.open')}
-      </span>
-    )
-  }
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: C.muted, background: rgba(C.cream, 0.05), border: `1px solid ${C.line}`, borderRadius: RADIUS.chip, padding: '4px 10px', flexShrink: 0 }}>
-      <Sonar C={C} size={11} /> {t('communities.gathering')}
-    </span>
-  )
-}
 
 // One community as a list row: the seal, its name + status, and — for an open
 // one past the match floor — its hero stat (matches this week). The whole row
@@ -1448,12 +1544,12 @@ function CommunityCard({ C, community, ctx }) {
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={46} />
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, maxWidth: '100%' }}>
           <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 20, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
           {community.joined && <Icon name="check" size={13} color={rgba(C.star, 0.9)} />}
         </span>
-        <CommunityStatus C={C} open={open} />
+        <SkyStatus C={C} open={open} />
       </span>
       {showStat ? (
         <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
@@ -1578,7 +1674,7 @@ export function CommunityScreen({ C, ctx }) {
   const findStar = () => {
     if (finding) return
     const ok = galaxyRef.current && galaxyRef.current.locateMine()
-    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4000) }
+    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4600) }
   }
 
   if (!community) {
@@ -1614,6 +1710,24 @@ export function CommunityScreen({ C, ctx }) {
           onReady={(f) => (localGalaxyRef.current = f)}
         />
       )}
+      {/* the seal at the galaxy's heart — the community's mark resting in its own
+          core light (the engine centers the disk at ~42% of the viewport). It
+          fades away whenever a camera dive takes the sky over. */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed', left: '50%', top: '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
+          pointerEvents: 'none', display: 'grid', placeItems: 'center',
+          opacity: finding || ctx.skyFlight ? 0 : 1, transition: 'opacity .8s ease',
+        }}
+      >
+        <span style={{ position: 'absolute', width: 210, height: 210, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.12)}, ${rgba(C.them, 0.04)} 55%, transparent 72%)`, filter: 'blur(3px)' }} />
+        <span style={{ position: 'absolute', width: 104, height: 104, borderRadius: '50%', border: `1px solid ${rgba(C.cream, 0.13)}` }} />
+        <span style={{ opacity: 0.9, filter: `drop-shadow(0 0 20px ${rgba(C.star, 0.4)})` }}>
+          <SchoolMark C={C} slug={community.slug} size={58} />
+        </span>
+      </div>
+
       {/* a soft scrim seats the readout + actions on quiet space without walling
           off the sky (z0, over canvas) */}
       <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0 }} />
@@ -1629,14 +1743,13 @@ export function CommunityScreen({ C, ctx }) {
           <div style={{ width: 38 }} />
         </div>
 
-        {/* identity — one compact lockup; the sky is the page's real hero. A member
-            sees a clear "you're in" badge so their own community is unmistakable. */}
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 10 }}>
-          <SchoolMark C={C} slug={community.slug} size={42} />
+        {/* identity — the seal now rests at the galaxy's heart; up here only the
+            name and where it stands, so the sky stays the page's real hero. */}
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, paddingTop: 8 }}>
           <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
-            <CommunityStatus C={C} open={open} />
+            <SkyStatus C={C} open={open} size={14.5} />
           </div>
         </div>
 
@@ -1693,6 +1806,20 @@ export function CommunityScreen({ C, ctx }) {
                   <GhostButton C={C} onClick={findStar} style={{ fontSize: 12.5, color: rgba(C.star, finding ? 1 : 0.9) }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                       <Icon name={finding ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
+                    </span>
+                  </GhostButton>
+                )}
+                {/* announce your @ — the one mutual, deliberate way a handle ever
+                    shows in a public sky. on goes through the warning sheet;
+                    off is one quiet tap. */}
+                {isHome && (
+                  <GhostButton
+                    C={C}
+                    onClick={ctx.publicStar ? ctx.retractPublicStar : ctx.askPublicStar}
+                    style={{ fontSize: 12.5, color: ctx.publicStar ? rgba(C.star, 0.95) : undefined }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon name="eye" size={13} color="currentColor" stroke={1.8} /> {ctx.publicStar ? t('public.on') : t('public.announce')}
                     </span>
                   </GhostButton>
                 )}
@@ -1830,20 +1957,38 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
   )
 }
 
-// A joined community shown as a removable chip (the onboarding step's selections).
-function JoinedChip({ C, community, onRemove }) {
+// The one community you've joined, worn as a real badge — a full-width, amber-
+// lit panel that says "you're in" at a glance. There is only ever ONE (the
+// one-community rule), so it takes the room a single membership deserves
+// instead of hiding in a small chip.
+function JoinedBadge({ C, community, onRemove }) {
+  const { t } = useI18n()
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 8px', borderRadius: RADIUS.chip, background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.4)}` }}>
-      <SchoolMark C={C} slug={community.slug} size={20} />
-      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 500, color: C.cream }}>{community.short || community.name}</span>
+    <div
+      className="fade"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px',
+        borderRadius: RADIUS.card,
+        background: `linear-gradient(120deg, ${rgba(C.star, 0.13)}, ${rgba(C.them, 0.06)})`,
+        border: `1px solid ${rgba(C.star, 0.42)}`,
+        boxShadow: `0 0 30px ${rgba(C.star, 0.13)}`,
+      }}
+    >
+      <SchoolMark C={C} slug={community.slug} size={46} />
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2px', textTransform: 'uppercase', color: rgba(C.star, 0.95) }}>
+          <Icon name="check" size={11} color={rgba(C.star, 0.95)} stroke={2.6} /> {t('schools.joined')}
+        </span>
+        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+      </span>
       <button
         onClick={onRemove}
-        aria-label="remove"
-        style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.7) }}
+        aria-label={t('communities.leave')}
+        style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${rgba(C.cream, 0.16)}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.72) }}
       >
-        <Icon name="x" size={12} color="currentColor" />
+        <Icon name="x" size={13} color="currentColor" />
       </button>
-    </span>
+    </div>
   )
 }
 
@@ -1884,13 +2029,11 @@ export function SchoolsScreen({ C, ctx }) {
           <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
           <CommunityFinder C={C} ctx={ctx} onPick={askJoin} />
           {joined.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 2 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {joined.map((c) => (
-                  <JoinedChip key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
-                ))}
-              </div>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.3px', color: rgba(C.muted, 0.85) }}>{t('home.oneOnly')}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 2 }}>
+              {joined.map((c) => (
+                <JoinedBadge key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
+              ))}
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.3px', color: rgba(C.muted, 0.85), padding: '0 2px' }}>{t('home.oneOnly')}</span>
             </div>
           ) : (
             <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
@@ -2778,6 +2921,56 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── the public-@ warning (announce yourself in your community's sky) ──────────
+// The one deliberate way a handle ever shows in a public sky: your own, by your
+// own choice, above your own star. This sheet is the honest stop before it
+// flips — it says exactly what becomes visible (that you're here) and what
+// never does (who you pinged). Reversible anytime; off is one tap, no ceremony.
+export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
+  const { t } = useI18n()
+  const SHADOW = makeShadow(C)
+  const dialogRef = useDialog(onClose)
+  const name = (community && (community.short || community.name)) || t('communities.yourCommunity')
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
+    >
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('public.title')}
+        tabIndex={-1}
+        className="readout-in"
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '26px 22px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: '50%', background: rgba(C.star, 0.12) }}>
+            <Icon name="eye" size={20} color={C.star} stroke={1.7} />
+          </span>
+          <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 23, lineHeight: 1.15, color: C.cream }}>{t('public.title')}</div>
+          {handle && <HandleChip C={C} handle={handle} />}
+        </div>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: C.muted, textAlign: 'center' }}>{t('public.body', { name })}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', borderRadius: RADIUS.inner, background: rgba(C.ink, 0.6), border: `1px solid ${C.line}` }}>
+          <span style={{ marginTop: 1, flexShrink: 0 }}><Icon name="lock" size={13} color={rgba(C.star, 0.85)} /></span>
+          <span style={{ fontSize: 12, lineHeight: 1.55, color: rgba(C.cream, 0.85) }}>{t('public.keeps')}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <PrimaryButton C={C} onClick={onConfirm}>{t('public.confirm')}</PrimaryButton>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GhostButton C={C} onClick={onClose} style={{ fontSize: 13 }}>{t('public.cancel')}</GhostButton>
+          </div>
+          <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('public.note')}</p>
+        </div>
       </div>
     </div>
   )

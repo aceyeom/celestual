@@ -56,4 +56,13 @@ export const DEMO_COMMUNITIES = {
   cmu: { members: 74 }, // gathering — under 100, all counts withheld
 }
 
+// Members who flipped their @ public in each community's sky (the opt-in
+// announcement — identity only, never activity). Sample handles so the demo
+// galaxy reads as inhabited by real people.
+export const DEMO_PUBLIC = {
+  'uc-berkeley': ['maya.lin', 'dev.patel', 'jules.kim', 'sam.ohara', 'nina.rios', 'leo.tran', 'ivy.chen'],
+  wesleyan: ['theo.marsh', 'ren.abe', 'cass.wells', 'juno.park'],
+  cmu: [], // gathering — its sky withholds everything but your own star anyway
+}
+
 export const DEMO_ME = 'you.tonight'

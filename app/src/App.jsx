@@ -12,10 +12,10 @@ import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftof
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
-  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet,
+  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet,
 } from './components/screens.jsx'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen, MATCH_FLOOR } from './communities.js'
-import { DEMO_COMMUNITIES } from './demoData.js'
+import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
@@ -57,12 +57,14 @@ const seedDemoCommLive = () => {
 
 // ── routes ────────────────────────────────────────────────────────────────────
 // /demo         → the sandbox (auto-verify, hardcoded sample data)
+// /demo?seed    → the sandbox pre-seeded mid-story (pings placed, a community
+//                 joined) — for design review and quick previews
 // /@handle      → someone's open door, ping field prefilled (Loop B)
 // /c/<slug>     → a curated community page (the ring + weekly readout)
 // /optout       → the public opt-out page
 const parseRoute = () => {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
-  if (/(^|\/)demo$/.test(path)) return { demo: true }
+  if (/(^|\/)demo$/.test(path)) return { demo: true, seed: /(^|[?&])seed(=|&|$)/.test(window.location.search || '') }
   const at = path.match(/^\/@([a-zA-Z0-9._]{1,30})$/)
   if (at) return { poster: normHandle(at[1]) }
   const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
@@ -88,7 +90,7 @@ export default function App() {
 
   // ── identity ──
   const [session, setSession] = useState(() => (route.demo ? null : getSession()))
-  const [me, setMe] = useState(init.me || session?.handle || '')
+  const [me, setMe] = useState(init.me || session?.handle || (route.seed ? DEMO_ME : ''))
   const [email, setEmail] = useState(init.email || '')
   const [altHandles, setAltHandles] = useState(init.altHandles || [])
   // Identity is proven for the CURRENT handle only — a DM session is bound to
@@ -103,7 +105,7 @@ export default function App() {
   // [{ handle|null, time, expires_at, mutual, reachable, intent }]
   // Plaintext handles live HERE (and in localStorage) only — the server stores
   // hashes. `handle: null` rows are pings restored from another device.
-  const [pings, setPings] = useState(() => (demo ? [] : init.pings || []))
+  const [pings, setPings] = useState(() => (demo ? (route.seed ? DEMO_PINGS : []) : init.pings || []))
   const [them, setThem] = useState(route.poster || '')
   const [intent, setIntent] = useState('')
   // who they are to you (crush / ex / friend / complicated) — drives which intent
@@ -126,22 +128,37 @@ export default function App() {
   // seeded in the sandbox, best-effort fetched in production. The onboarding
   // schools step is offered once (schoolsSeen). `openCommunity` is which one the
   // community page is showing.
-  // Membership is SINGLE — you can be in exactly one community (your ping only
-  // reaches people from it), and it's proven by a .edu code (schoolCred). Older
-  // saves may hold several slugs; collapse to the first so the one-community rule
-  // holds retroactively.
-  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? [] : (init.memberships || []).slice(0, 1)))
+  // Membership is SINGLE — you can be in exactly one community, the one you're
+  // really at, proven by a .edu code (schoolCred). What it scopes is the SKY,
+  // never the reach: your placed pings light up as stars in your community's
+  // galaxy and count toward its weekly numbers, while the ping itself reaches
+  // its person anywhere — same community, another one, or none (MASTER-GUIDE
+  // §2.6: placing a ping never depends on any of this). Older saves may hold
+  // several slugs; collapse to the first so the one-community rule holds
+  // retroactively.
+  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? (route.seed ? [CURATED_SLUGS[0]] : []) : (init.memberships || []).slice(0, 1)))
   // The verified school credential for the joined community: { slug, email }. Kept
   // like a light preference (never the code — that lived only server-side).
   const [schoolCred, setSchoolCred] = useState(() => (demo ? null : init.schoolCred || null))
   const [commLive, setCommLive] = useState(() => (demo ? seedDemoCommLive() : {}))
-  const [schoolsSeen, setSchoolsSeen] = useState(() => (demo ? false : !!init.schoolsSeen))
+  const [schoolsSeen, setSchoolsSeen] = useState(() => (demo ? !!route.seed : !!init.schoolsSeen))
   const [openCommunity, setOpenCommunity] = useState(route.community || CURATED_SLUGS[0])
   // The .edu gate overlay: { slug } while it's up. Verified → membership commits.
   const [eduVerify, setEduVerify] = useState(null)
   // The live engine of the app-wide backdrop when it's showing your community's
-  // galaxy — so a placed ping can launch your own star into it.
+  // galaxy — so a placed ping can launch your own star into it. The ambient
+  // field keeps its own handle for the same reason (the no-community sky).
   const homeGalaxyRef = useRef(null)
+  const ambientGalaxyRef = useRef(null)
+
+  // ── your @ in the sky (the public opt-in) ──
+  // Off by default: your star is anonymous. Flipping it public (one warning
+  // first — PublicStarSheet) rests your own @ above your star in your
+  // community's sky, visible to anyone watching it. It announces that you're
+  // HERE, never who you pinged — the double-blind is untouched. Reversible
+  // anytime, persisted like a light preference.
+  const [publicStar, setPublicStar] = useState(() => (demo ? false : !!init.publicStar))
+  const [publicAsk, setPublicAsk] = useState(false)
 
   // The list handed to the UI: the curated registry, overlaid with live numbers
   // and your membership.
@@ -164,6 +181,21 @@ export default function App() {
   // Your one community (the joined one), or null. Drives the app-wide backdrop
   // galaxy, the "your community" surfaces, and the sky-share card.
   const homeCommunity = useMemo(() => communities.find((c) => c.joined) || null, [communities])
+
+  // The @s this device's pings hold, in ping order — the labels of your own
+  // stars in whichever sky is behind the app. Plaintext lives here only.
+  const mineLabels = useMemo(() => pings.filter((p) => p.handle).map((p) => normHandle(p.handle)), [pings])
+  // aligned by index with the ambient field's sealed stars (null = restored
+  // from another device; that star stays unnamed)
+  const sealLabels = useMemo(() => pings.map((p) => (p.handle ? normHandle(p.handle) : null)), [pings])
+  // The opted-in public @s resting in your community's sky. The sandbox seeds a
+  // handful per community; production fills this from the server when the
+  // opt-in ships its backend.
+  const publicHandles = useMemo(() => {
+    if (!homeCommunity) return []
+    return demo ? DEMO_PUBLIC[homeCommunity.slug] || [] : []
+  }, [demo, homeCommunity])
+  const ownPublic = publicStar && normHandle(me) ? normHandle(me) : null
 
   // ── overlays ──
   const [accountOpen, setAccountOpen] = useState(false)
@@ -271,12 +303,12 @@ export default function App() {
       const identity = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, schoolsSeen }),
+        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, schoolsSeen, publicStar }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, schoolsSeen, established])
+  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, schoolsSeen, publicStar, established])
 
   // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
@@ -456,6 +488,67 @@ export default function App() {
     [go],
   )
 
+  // ── fly to a ping's star (the status page's "see it in the sky") ──
+  // Tapping one of your pings sends the backdrop camera diving to that ping's
+  // own star — the @ rising above it at arrival — while the foreground melts
+  // away for the flight. Works over both skies: the community galaxy's locate
+  // dive, or the ambient field's focus glide when no community is joined.
+  const [skyFlight, setSkyFlight] = useState(false)
+  const flightTimer = useRef(null)
+  const flightOutTimer = useRef(null)
+  const endFlight = useCallback(() => {
+    if (flightTimer.current) clearTimeout(flightTimer.current)
+    if (flightOutTimer.current) clearTimeout(flightOutTimer.current)
+    flightTimer.current = null
+    flightOutTimer.current = null
+    if (ambientGalaxyRef.current) ambientGalaxyRef.current.clearFocus()
+    setSkyFlight(false)
+  }, [])
+  useEffect(() => () => endFlight(), [endFlight])
+  const locatePing = useCallback(
+    (handle) => {
+      const h = normHandle(handle)
+      if (!h || skyFlight) return
+      let dur = 0
+      if (homeCommunity && homeGalaxyRef.current) {
+        // in → hold (the @ readable) → out; matches the engine's dive timeline
+        if (homeGalaxyRef.current.locateMine(h)) dur = 4600
+      } else if (ambientGalaxyRef.current) {
+        const i = pings.findIndex((p) => normHandle(p.handle || '') === h)
+        if (i >= 0) {
+          ambientGalaxyRef.current.focusStar(i)
+          flightOutTimer.current = setTimeout(() => {
+            if (ambientGalaxyRef.current) ambientGalaxyRef.current.clearFocus()
+          }, 2800)
+          dur = 3800
+        }
+      }
+      if (!dur) return
+      setSkyFlight(true)
+      if (flightTimer.current) clearTimeout(flightTimer.current)
+      flightTimer.current = setTimeout(() => {
+        flightTimer.current = null
+        setSkyFlight(false)
+      }, dur)
+    },
+    [homeCommunity, pings, skyFlight],
+  )
+  // a tap anywhere brings the screen back early — the flight never traps you
+  useEffect(() => {
+    if (!skyFlight) return undefined
+    window.addEventListener('pointerdown', endFlight)
+    return () => window.removeEventListener('pointerdown', endFlight)
+  }, [skyFlight, endFlight])
+
+  // ── the public @ (announce yourself in your community's sky) ──
+  // Turning it ON goes through the warning sheet; turning it OFF is one tap.
+  const askPublicStar = useCallback(() => setPublicAsk(true), [])
+  const confirmPublicStar = useCallback(() => {
+    setPublicStar(true)
+    setPublicAsk(false)
+  }, [])
+  const retractPublicStar = useCallback(() => setPublicStar(false), [])
+
   // ── the flow ──
   const findOut = useCallback(() => {
     setLoginMode(false)
@@ -530,9 +623,11 @@ export default function App() {
           return
         }
         // If you're in a community, this ping also lands in its sky: your own star
-        // launches into the app-wide backdrop galaxy (marked as yours, findable in
-        // the crowd), and — in the sandbox — the community's live ping count ticks.
-        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true })
+        // launches into the app-wide backdrop galaxy (marked as yours, carrying
+        // its @ so it stays findable in the crowd), and — in the sandbox — the
+        // community's live ping count ticks. The ping itself already reached its
+        // person above, community or not: the sky is a lens, never a boundary.
+        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true, label: target })
         if (demo && homeCommunity && communityOpen(homeCommunity)) {
           setCommLive((prev) => {
             const cur = prev[homeCommunity.slug] || {}
@@ -850,6 +945,7 @@ export default function App() {
     setJoinedSlugs([])
     setSchoolCred(null)
     setSchoolsSeen(false)
+    setPublicStar(false)
     setMatch(null)
     setLastPlaced(null)
     setSlots(FULL_SLOTS)
@@ -942,6 +1038,8 @@ export default function App() {
     intent, setIntent, category, setCategory,
     communities, openCommunity, homeCommunity, homeGalaxyRef,
     viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity, finishOnboarding,
+    locatePing, skyFlight,
+    publicStar, askPublicStar, retractPublicStar,
     lastPlaced, match,
     demoFourthSlot, buyFourthSlot, placeFourth,
     posterHandle: route.poster || '',
@@ -980,7 +1078,7 @@ export default function App() {
   const homeOpen = homeCommunity ? communityOpen(homeCommunity) : false
   const homeMatches = homeCommunity && homeCommunity.matches != null ? Number(homeCommunity.matches) : 0
   const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
-  const communityDim = screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
+  const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
 
   return (
     <div className="celestual-app">
@@ -993,22 +1091,27 @@ export default function App() {
           matches={homeOpen && homeMatches >= MATCH_FLOOR ? homeMatches : 0}
           forming={!homeOpen}
           dim={communityDim}
+          mine={mineLabels}
+          publicHandles={publicHandles}
+          ownPublic={ownPublic}
           onReady={(f) => (homeGalaxyRef.current = f)}
         />
       ) : (
         <GalaxyCanvas
           mode={galaxyMode}
-          dim={galaxyDim}
+          dim={skyFlight ? 1 : galaxyDim}
           origin={sendoffOrigin}
           seals={pings.length}
+          sealLabels={sealLabels}
           you={C.you}
           them={C.them}
+          onReady={(f) => (ambientGalaxyRef.current = f)}
           style={{ zIndex: 0 }}
         />
       )}
 
       {(showProfile || showLogin) && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20 }}>
+        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20, opacity: skyFlight ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyFlight ? 'none' : 'auto' }}>
           {showProfile ? (
             <ProfileButton C={C} handle={me} onClick={openAccount} />
           ) : (
@@ -1017,7 +1120,22 @@ export default function App() {
         </div>
       )}
 
-      <div key={screen} className="fade" data-screen={screen} style={{ position: 'relative', zIndex: 4 }}>
+      {/* during a fly-to-a-star the foreground melts away so the sky is the
+          whole screen; any tap brings it back. The entrance animation must be
+          suppressed for the melt — its fill-mode would otherwise pin opacity
+          at 1 and override the inline fade. */}
+      <div
+        key={screen}
+        className="fade"
+        data-screen={screen}
+        style={{
+          position: 'relative', zIndex: 4,
+          animation: skyFlight ? 'none' : undefined,
+          opacity: skyFlight ? 0.04 : 1,
+          transition: 'opacity .55s ease',
+          pointerEvents: skyFlight ? 'none' : 'auto',
+        }}
+      >
         <Screen C={C} ctx={ctx} />
       </div>
 
@@ -1031,6 +1149,18 @@ export default function App() {
           in-tab, no OAuth. The sandbox runs the same overlay, auto-verifying
           locally (real verification isn't wired there yet — it says so). */}
       {verify && <IgVerifySheet C={C} handle={verify.handle} demo={demo} onVerified={onVerified} onClose={closeVerify} />}
+
+      {/* the public-@ warning — one honest stop before your handle goes up in
+          your community's sky. confirming flips it; it's reversible anytime. */}
+      {publicAsk && (
+        <PublicStarSheet
+          C={C}
+          community={homeCommunity}
+          handle={normHandle(me)}
+          onConfirm={confirmPublicStar}
+          onClose={() => setPublicAsk(false)}
+        />
+      )}
 
       {/* the .edu gate — join a community by proving you're at that school. The
           sandbox auto-confirms once a code is entered. */}

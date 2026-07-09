@@ -166,6 +166,12 @@ template/AI output:
       needs less.)
 - [ ] No cards-in-cards, no icon grids, no gradient buttons, no glassmorphism
       panels, no emoji, no exclamation marks, no confetti.
+- [ ] **No status pills.** A bordered uppercase chip with a colored "live" dot
+      (the `● OPEN` badge) is a named tell of AI-template output and is banned
+      here permanently — it shipped once (the communities' amber "open" chip)
+      and was retired 2026-07-09. A state reads as quiet *words* in register:
+      serif italic when it's felt ("the sky is open."), mono when it's metadata.
+      Never a pill, never a pulsing dot beside a label.
 - [ ] Does the cosmos still read as one continuous field behind it? (No screen
       swaps to a different background hue family.)
 - [ ] Every number shown literally true, or not shown?
@@ -189,6 +195,45 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-07-09 (b)** — **Ping-logic + UI refinements pass** (human-directed;
+  identity untouched — same cosmos, two stars, one primary action per screen):
+  - **The status pill is dead.** The communities' amber `● open` chip (bordered
+    uppercase pill + breathing dot) was called out as generic-AI output and
+    retired everywhere, replaced by `SkyStatus` — the state spoken as a quiet
+    serif-italic line ("the sky is open." / "still gathering."). A permanent
+    §9 rule now bans the pattern product-wide.
+  - **The seal moved into the sky.** On the community page the school's mark no
+    longer sits in the top lockup; it rests at the galaxy's heart (the engine's
+    projected core, 42% of the viewport), inside a soft core halo and a fine
+    ring — the place's flag planted in its own cosmos.
+  - **Your pings page reorganized.** Your ONE community now leads the page as
+    its own glass banner (seal, name, spoken status, hero stat, an explicit
+    "view the community" action, and the finder one tap away), clearly separated
+    from the slot rows by a hairline. The community's live beats — meteors for
+    pings, constellations for matches, with the same quiet `LivePulse` caption —
+    now play on this screen too (the backdrop is the same shared sky).
+  - **Fly to your ping.** Tapping a ping row sends the backdrop camera diving
+    to that ping's own star while the foreground melts away; at arrival the @
+    it holds rises over the star on a slim tick (device-held plaintext only).
+    Works over both engines (community dive / ambient focus glide); any tap
+    brings the screen back.
+  - **"Your star" redesigned** in both engines: a white-hot core inside layered
+    amber + rose light, the product's diffraction glisten resting shyly on top,
+    and a fine breathing ring — replacing the old bare dot-with-glow (called
+    out as low-quality). `locateMine` now tracks a *list* of your stars (one
+    per ping, restored across remounts), so find-your-star resolves with any
+    number of pings and cycles through them.
+  - **The public @** — an opt-in: your own handle resting above your own star
+    in your community's sky (canvas-drawn mono tags, capped and faint, so the
+    sky reads inhabited, never a roster). One warning sheet before it flips
+    public; one tap back to anonymous.
+  - **The landing hero rebalanced.** The typed promise is now two deliberate
+    lines with a held breath between them, and both line-boxes are reserved
+    from the first frame — the second line arriving no longer shifts the hero.
+  - **The joined community is a badge, not a chip.** The onboarding step's
+    small removable chip became a full-width amber-lit "joined" panel (there is
+    only ever one membership, and it deserves the room).
 
 - **2026-07-09** — **The community sky rebuilt as a real 3D galaxy — one
   universe, two instruments.** A human-directed ground-up redesign of

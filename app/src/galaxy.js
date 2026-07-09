@@ -160,6 +160,9 @@ export class GalaxyField {
     // leaves the others exactly where they were and never collides a later add.
     this.sealed = []
     this._slotSeed = 0
+    // The @ each sealed star holds (device-held plaintext, aligned by index) —
+    // drawn over the star at a focus dive's arrival, never at rest.
+    this.sealLabels = []
     // Camera focus on a single star (the interactive resting field): the camera
     // physically flies THROUGH the field toward sealed[focusIndex] — neighbours
     // stream past with real depth parallax and the hero swells as we close on it.
@@ -513,6 +516,13 @@ export class GalaxyField {
   setSeals(n) {
     while (this.sealed.length < n) this.sealed.push(this._placeSlot(this._slotSeed++))
     if (this.sealed.length > n) this.sealed.length = Math.max(0, n)
+    this.start()
+  }
+
+  // The @ each sealed star belongs to, aligned with `sealed` by index (null for
+  // a ping restored from another device). Read only at a focus dive's arrival.
+  setSealLabels(labels) {
+    this.sealLabels = labels || []
     this.start()
   }
 
@@ -981,22 +991,59 @@ export class GalaxyField {
         continue
       }
       // a slow, shallow twinkle — a star settling, not a blinking indicator
-      const pulse = 0.84 + 0.16 * Math.sin(this.t * 0.9 + this.sealed[i].phase)
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + this.sealed[i].phase)
       const sh = clamp(pr.shade, 0.45, 1.2)
       const isFocus = focusing && i === this.focusIndex
-      // The focused star is the one we're diving toward — the camera's perspective
-      // now genuinely SWELLS it as we close (no fake bloom needed). The close-up's
-      // hero is the crisp DOM star in the readout, so this canvas point HANDS OFF:
-      // it grows with the approach, then dissolves once the camera has nearly
-      // arrived, so it visibly becomes the close-up star. Other stars stream past
-      // and fade into the depth-blurred field.
-      const handoff = 1 - smooth(clamp((this.focus - 0.5) / 0.45, 0, 1))
-      const fade = focusing ? (isFocus ? handoff : 1 - 0.82 * this.focus) : 1
-      // sizes ride the real perspective, clamped so the hero never balloons into a
-      // bare full-frame disc at the end of the dive
-      const core = clamp(1.9 * pr.persp, 1.1, this.h * 0.16)
-      const glowR = clamp(12 * pr.persp * pulse, 6, this.h * 0.34)
-      this._star(pr.sx, pr.sy, 'seal', isFocus ? core * handoff : core, glowR, 0.5 * pulse * sh * fade)
+      const f = isFocus ? this.focus : 0
+      // during a dive, everything but the hero melts back into the depth
+      const fade = focusing && !isFocus ? 1 - 0.82 * this.focus : 1
+      // Your own star, dressed like it matters: a white-hot core inside layered
+      // amber + rose light, the product's diffraction glisten resting shyly on
+      // top, and a fine breathing ring. It swells with the dive and, at arrival,
+      // flares to its full photographic signature with its @ risen above it.
+      const ctx = this.ctx
+      ctx.globalCompositeOperation = 'lighter'
+      const ro = clamp((14 + pulse * 3) * pr.persp, 8, this.h * 0.3) * (1 + f * 2)
+      ctx.globalAlpha = (0.09 + 0.07 * pulse) * sh * fade
+      ctx.drawImage(this.glows.them, pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
+      const go = clamp((9 + pulse * 2.5) * pr.persp, 6, this.h * 0.28) * (1 + f * 2.6)
+      ctx.globalAlpha = (0.36 + 0.26 * pulse) * sh * fade
+      ctx.drawImage(this.glows.seal, pr.sx - go, pr.sy - go, go * 2, go * 2)
+      const ss = clamp((16 + pulse * 5) * pr.persp, 10, this.h * 0.3) * (1 + f * 2.8)
+      ctx.globalAlpha = Math.min(1, (0.18 + 0.15 * pulse) * fade + f * 0.55)
+      ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+      const cd = clamp(2.5 * pr.persp, 1.6, this.h * 0.08) * (1 + f * 2.2) * (0.9 + pulse * 0.2)
+      ctx.globalAlpha = Math.min(1, (0.78 + 0.22 * pulse) * fade + f)
+      ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
+      ctx.globalAlpha = (0.2 + 0.18 * pulse) * fade * (1 - f) + f * 0.85
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(pr.sx, pr.sy, clamp((6.5 + pulse * 1.4) * pr.persp, 5, 40) * (1 + f * 1.9), 0, TWO)
+      ctx.stroke()
+      // arrival: the @ this ping holds rises over the star on a slim tick
+      const label = this.sealLabels[i]
+      if (isFocus && label && f > 0.55) {
+        const fl = smooth((f - 0.55) / 0.45)
+        const off = 32 + f * 22
+        ctx.globalAlpha = fl * 0.4
+        ctx.beginPath()
+        ctx.moveTo(pr.sx, pr.sy - 15 - f * 8)
+        ctx.lineTo(pr.sx, pr.sy - off + 9)
+        ctx.stroke()
+        ctx.save()
+        ctx.globalCompositeOperation = 'source-over'
+        ctx.globalAlpha = clamp(fl * 0.96, 0, 1)
+        ctx.font = "700 14.5px 'Space Mono', monospace"
+        ctx.textAlign = 'center'
+        ctx.shadowColor = 'rgba(0,0,0,0.85)'
+        ctx.shadowBlur = 8
+        ctx.fillStyle = 'rgba(255,250,244,0.98)'
+        ctx.fillText('@' + label, pr.sx, pr.sy - off)
+        ctx.restore()
+      }
+      ctx.globalAlpha = 1
+      ctx.globalCompositeOperation = 'source-over'
       // each resting star carries its own tag — record where it is on screen
       this.sealedScreen[i] = { x: pr.sx, y: pr.sy, vis: true }
     }
