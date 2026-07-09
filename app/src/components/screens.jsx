@@ -1212,6 +1212,41 @@ export function SkyCardScreen({ C, ctx }) {
       /* ignore */
     }
   }
+  // Send it in a DM: the native share sheet is the ONLY way to hand the invite
+  // to a friend inside Instagram/WhatsApp/Messages (a deep link would only open a
+  // thread with our own account). We attach the rendered card image when the
+  // platform supports file sharing — so the DM carries the sky, not just a link —
+  // and fall back to copying the link on desktop where there's no share sheet.
+  const [dmDone, setDmDone] = React.useState(false)
+  const dmShare = async () => {
+    if (!community) return
+    const url = inviteUrl(community.slug)
+    let files
+    try {
+      if (preview && navigator.canShare) {
+        const blob = await (await fetch(preview)).blob()
+        const file = new File([blob], `celestual-${community.slug}-sky.png`, { type: 'image/png' })
+        if (navigator.canShare({ files: [file] })) files = [file]
+      }
+    } catch {
+      /* no file share — a link-only share still DMs fine */
+    }
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share(files ? { url, files } : { url })
+        return
+      }
+    } catch {
+      /* sheet dismissed or unavailable — fall through to copy */
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setDmDone(true)
+      setTimeout(() => setDmDone(false), 2200)
+    } catch {
+      /* the link is elsewhere on screen if all else fails */
+    }
+  }
 
   // No community joined yet → there's no sky to share. Send them to find one.
   if (!community) {
@@ -1285,6 +1320,13 @@ export function SkyCardScreen({ C, ctx }) {
             <Icon name="download" size={16} color={C.onStar} stroke={2} /> {saved ? t('sky.saved') : t('sky.save')}
           </span>
         </PrimaryButton>
+        {/* send it in a dm — the native share sheet, so the invite lands straight
+            in a friend's Instagram/WhatsApp/Messages thread, carrying the card */}
+        <OutlineButton C={C} onClick={dmShare} style={{ width: '100%', padding: '13px 22px', borderRadius: RADIUS.field }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+            <Icon name={dmDone ? 'check' : 'message'} size={15} color="currentColor" stroke={1.9} /> {dmDone ? t('sky.copied') : t('sky.dm')}
+          </span>
+        </OutlineButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={copyLink} style={{ fontSize: 12.5 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
@@ -1677,6 +1719,28 @@ export function CommunityScreen({ C, ctx }) {
     if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4600) }
   }
 
+  // tap-to-zoom lives ONLY on this page: switch it on for whichever galaxy is the
+  // hero here (the shared home field, or a browsed community's own), and fade the
+  // centered seal while a zoom holds so it doesn't float away from the core it
+  // marks. Everywhere else this same engine is just the ambient backdrop, so its
+  // taps stay a ripple with no zoom.
+  const [zoomed, setZoomed] = React.useState(false)
+  const wireZoom = React.useCallback((f) => {
+    if (!f || !f.setZoomEnabled) return
+    f.setZoomEnabled(true)
+    f.onZoomState = setZoomed
+  }, [])
+  React.useEffect(() => {
+    if (useShared) wireZoom(galaxyRef.current)
+    return () => {
+      const g = galaxyRef.current
+      if (g && g.setZoomEnabled) g.setZoomEnabled(false)
+      if (g && g.onZoomState === setZoomed) g.onZoomState = null
+      setZoomed(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useShared, slug])
+
   if (!community) {
     return (
       <Shell>
@@ -1707,7 +1771,7 @@ export function CommunityScreen({ C, ctx }) {
           pings={pings}
           matches={showMatches ? matches : 0}
           forming={!open}
-          onReady={(f) => (localGalaxyRef.current = f)}
+          onReady={(f) => { localGalaxyRef.current = f; wireZoom(f) }}
         />
       )}
       {/* the seal at the galaxy's heart — the community's mark resting in its own
@@ -1718,7 +1782,7 @@ export function CommunityScreen({ C, ctx }) {
         style={{
           position: 'fixed', left: '50%', top: '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
           pointerEvents: 'none', display: 'grid', placeItems: 'center',
-          opacity: finding || ctx.skyFlight ? 0 : 1, transition: 'opacity .8s ease',
+          opacity: finding || ctx.skyFlight || zoomed ? 0 : 1, transition: 'opacity .8s ease',
         }}
       >
         <span style={{ position: 'absolute', width: 210, height: 210, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.12)}, ${rgba(C.them, 0.04)} 55%, transparent 72%)`, filter: 'blur(3px)' }} />
@@ -1754,22 +1818,26 @@ export function CommunityScreen({ C, ctx }) {
         </div>
 
         {/* the sky breathes in this open zone — nothing overlaps it; the live
-            pulse is a single caption docked at its foot */}
-        <div style={{ flex: 1, minHeight: 150, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            pulse is a single caption docked at its foot. Its floor is generous so
+            the readout below is pushed low and the galaxy owns the middle of the
+            frame (it used to crowd up over the disk, worst on a short phone). */}
+        <div style={{ flex: 1, minHeight: 'clamp(150px, 26vh, 240px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <LivePulse C={C} beat={pulse.beat} />
         </div>
 
-        {/* the readout — the numbers and the shared reveal clock, one quiet panel */}
-        <div className="fade">
-          <GlassPanel C={C} inset style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* the readout — the numbers and the shared reveal clock, one quiet panel.
+            data-noripple so a tap on the numbers doesn't fire the sky's tap-zoom;
+            padding is kept tight so its top edge sits low over the galaxy. */}
+        <div className="fade" data-noripple>
+          <GlassPanel C={C} inset style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <RevealCountdown C={C} open={open} />
             <span aria-hidden style={{ height: 1, background: rgba(C.cream, 0.07) }} />
             {open ? (
               <>
                 {showMatches ? (
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(34px, 10vw, 46px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
-                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
+                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 8.5vw, 42px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 16, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
                   </div>
                 ) : (
                   <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 16.5, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
@@ -1796,8 +1864,9 @@ export function CommunityScreen({ C, ctx }) {
         </div>
 
         {/* one action — a member pings + finds their star; a watcher joins (which
-            sends a .edu code first). Everyone can watch. */}
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12 }}>
+            sends a .edu code first). Everyone can watch. data-noripple keeps a tap
+            on the controls from firing the sky's tap-zoom. */}
+        <div className="enter" data-noripple style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12 }}>
           {joined ? (
             <>
               <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>

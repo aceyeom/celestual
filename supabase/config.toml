@@ -28,3 +28,9 @@ verify_jwt = false
 # a shared secret instead of a JWT.
 [functions.celestual-manychat]
 verify_jwt = false
+
+# School (.edu) email verification. Invoked by anonymous visitors (with the anon
+# key) from the join sheet, so JWT verification is off; the function enforces its
+# own domain check, per-address rate limit, and code-hash comparison instead.
+[functions.celestual-edu-verify]
+verify_jwt = false

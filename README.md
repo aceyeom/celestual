@@ -126,5 +126,6 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
+| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |
 | [app/README.md](./app/README.md) | Front-end architecture & flow |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, operator playbook |
