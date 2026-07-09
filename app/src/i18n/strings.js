@@ -184,6 +184,7 @@ const en = {
   'sky.subGathering': 'one card, and it shows {name} gathering. the sooner it fills, the sooner its sky opens.',
   'sky.save': 'save the card',
   'sky.saved': 'saved. now post it',
+  'sky.dm': 'send it in a dm',
   'sky.copy': 'copy the invite link',
   'sky.copied': 'copied',
   'sky.stepsKicker': 'three steps',

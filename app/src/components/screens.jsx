@@ -1212,6 +1212,41 @@ export function SkyCardScreen({ C, ctx }) {
       /* ignore */
     }
   }
+  // Send it in a DM: the native share sheet is the ONLY way to hand the invite
+  // to a friend inside Instagram/WhatsApp/Messages (a deep link would only open a
+  // thread with our own account). We attach the rendered card image when the
+  // platform supports file sharing — so the DM carries the sky, not just a link —
+  // and fall back to copying the link on desktop where there's no share sheet.
+  const [dmDone, setDmDone] = React.useState(false)
+  const dmShare = async () => {
+    if (!community) return
+    const url = inviteUrl(community.slug)
+    let files
+    try {
+      if (preview && navigator.canShare) {
+        const blob = await (await fetch(preview)).blob()
+        const file = new File([blob], `celestual-${community.slug}-sky.png`, { type: 'image/png' })
+        if (navigator.canShare({ files: [file] })) files = [file]
+      }
+    } catch {
+      /* no file share — a link-only share still DMs fine */
+    }
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share(files ? { url, files } : { url })
+        return
+      }
+    } catch {
+      /* sheet dismissed or unavailable — fall through to copy */
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setDmDone(true)
+      setTimeout(() => setDmDone(false), 2200)
+    } catch {
+      /* the link is elsewhere on screen if all else fails */
+    }
+  }
 
   // No community joined yet → there's no sky to share. Send them to find one.
   if (!community) {
@@ -1285,6 +1320,13 @@ export function SkyCardScreen({ C, ctx }) {
             <Icon name="download" size={16} color={C.onStar} stroke={2} /> {saved ? t('sky.saved') : t('sky.save')}
           </span>
         </PrimaryButton>
+        {/* send it in a dm — the native share sheet, so the invite lands straight
+            in a friend's Instagram/WhatsApp/Messages thread, carrying the card */}
+        <OutlineButton C={C} onClick={dmShare} style={{ width: '100%', padding: '13px 22px', borderRadius: RADIUS.field }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+            <Icon name={dmDone ? 'check' : 'message'} size={15} color="currentColor" stroke={1.9} /> {dmDone ? t('sky.copied') : t('sky.dm')}
+          </span>
+        </OutlineButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GhostButton C={C} onClick={copyLink} style={{ fontSize: 12.5 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
