@@ -17,7 +17,7 @@
 // sandbox never touches any of this — the sheet auto-confirms locally so the shape
 // is fully playable with nothing sent.
 import { supabase, hasSupabase } from './supabase.js'
-import { emailMatchesSchool, isEduEmail } from '../communities.js'
+import { emailMatchesSchool, isEduEmail, isPlausibleEmail } from '../communities.js'
 
 const FUNCTION = 'celestual-edu-verify'
 
@@ -28,7 +28,11 @@ export const eduVerifyEnabled = () =>
 
 // Client-side domain pre-check, so we never fire a send for an address that can't
 // belong to the school (the server re-checks — this is only to fail fast + kindly).
-export function localEmailCheck(email, slug) {
+// In the sandbox the whole flow is local anyway (see send() below), so the gate
+// only asks for a plausible address, any domain — real .edu-and-the-right-school
+// enforcement is production-only.
+export function localEmailCheck(email, slug, demo) {
+  if (demo) return isPlausibleEmail(email) ? { ok: true } : { ok: false, error: 'email' }
   if (!isEduEmail(email)) return { ok: false, error: 'email' }
   if (!emailMatchesSchool(email, slug)) return { ok: false, error: 'domain' }
   return { ok: true }

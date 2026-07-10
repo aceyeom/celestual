@@ -86,6 +86,14 @@ export function isEduEmail(email) {
   return /^[^\s@]+@[^\s@]+\.edu$/.test(at)
 }
 
+// Any plausibly-shaped email, no domain opinion — what the sandbox checks instead
+// of isEduEmail/emailMatchesSchool, so the .edu gate is fully playable with a
+// throwaway address while production keeps the real school-domain proof.
+export function isPlausibleEmail(email) {
+  const at = String(email || '').trim().toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(at)
+}
+
 // The next weekly reveal — Sunday 20:00 in the viewer's own timezone. Deterministic
 // and always in the future, so the community countdown actually ticks down and
 // resets each week. The reveal is the shared moment the sky lights its matches.

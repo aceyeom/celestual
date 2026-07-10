@@ -3137,7 +3137,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
 
   const send = async () => {
     setErrCode('')
-    const pre = localEmailCheck(email, slug)
+    const pre = localEmailCheck(email, slug, demo)
     if (!pre.ok) { setErrCode(pre.error); return }
     setPhase('sending')
     if (!real) {
