@@ -127,7 +127,9 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
 // `onReady(field)` hands the live engine to the screen so it can launch() a ping
 // and addConstellation() a match as the demo (or real data) ticks. Remount on a
 // community change by giving it key={slug}.
-export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady }) {
+// `inline` mounts the field inside its parent box (absolute, not fixed) — the
+// live share card uses this to carry a real, breathing galaxy inside a card.
+export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady, inline = false }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   const readyRef = React.useRef(onReady)
@@ -207,7 +209,7 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
       ref={ref}
       aria-hidden
       style={{
-        position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0,
+        position: inline ? 'absolute' : 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0,
         background: TOKENS.ink, pointerEvents: 'none',
         opacity: dim, transition: 'opacity .6s ease',
       }}
@@ -433,9 +435,10 @@ export function Liftoff({ C, handle, geom }) {
 // A translucent, blurred surface that lifts foreground content off the living
 // galaxy so the field can stay lit behind it without fighting the text. Used to
 // hold the pings list (and each ping row) above the backdrop.
-export function GlassPanel({ C, children, style, inset = false }) {
+export function GlassPanel({ C, children, style, inset = false, ...rest }) {
   return (
     <div
+      {...rest}
       style={{
         position: 'relative',
         background: inset ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.62),

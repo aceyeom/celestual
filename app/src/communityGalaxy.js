@@ -168,12 +168,14 @@ const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 
 // The hand-driven camera. Zoom is a real dolly toward a point on the disk plane
 // (nearer stars spread faster than far ones — depth, not scale). It RESTS where
-// the hand leaves it; nothing snaps back on a timer.
-const ZOOM_MAX = 7
+// the hand leaves it; nothing snaps back on a timer. Orbit is full-axis: the
+// hand can swing all the way around the disk and well over/under its plane —
+// the sky is a place to move through, not a picture to nudge.
+const ZOOM_MAX = 14
 const DBLTAP_STEP = 2.6 // magnification per double-tap
-const ORBIT_YAW_MAX = 0.62
-const ORBIT_PITCH_MIN = -0.3
-const ORBIT_PITCH_MAX = 0.36
+const ORBIT_YAW_MAX = Math.PI // a full swing either way around the disk
+const ORBIT_PITCH_MIN = -1.15
+const ORBIT_PITCH_MAX = 1.15
 
 export class CommunityGalaxy {
   constructor(canvas, opts = {}) {
@@ -204,11 +206,13 @@ export class CommunityGalaxy {
     this.mineCursor = 0 // which own star an unlabelled locate visits next
     this.diveSt = null // the star the running dive is flying to
     this.diveLabel = null // its @, drawn over the star at arrival
+    this.diveDist = 1 // pinch-adjustable standoff multiplier for a HELD dive
     // Opted-in public @s — members who chose to announce themselves in this sky.
     this.publicList = []
     this.ownPublic = null // the viewer's own @ when they've flipped public
     this.publicTags = [] // seated tags: [{ st, label, own, tw, vis }]
     this.tagsEnabled = false // only the community screen turns the @s on
+    this.onTagTap = null // (label, own) → the screen answers a tapped public @
 
     // "forming" = a gathering community below the privacy floor: uncountable
     // luminous gas + sub-resolution motes instead of discrete stars.
@@ -346,6 +350,29 @@ export class CommunityGalaxy {
         hue: r > 0.55 ? (rnd() < 0.5 ? PAL.blue : PAL.cream) : rnd() < 0.5 ? PAL.gold : PAL.warm,
         tw: rnd() * TWO,
         tws: 0.2 + rnd() * 0.5,
+      })
+    }
+
+    // the near-field passers — loose stars adrift between the camera and the
+    // disk. Each carries a slow drift of its own, so even a resting sky has a
+    // few quietly passing by; the moment the camera travels (a zoom, a dive,
+    // an orbit) they streak past with true depth — near ones fast and bright,
+    // far ones slow and faint.
+    this.passers = []
+    const pn = mobile ? 34 : 50
+    for (let i = 0; i < pn; i++) {
+      this.passers.push({
+        px: (rnd() - 0.5) * 4.8,
+        py: (rnd() - 0.5) * 3.0,
+        pz: (rnd() - 0.5) * 4.8,
+        vx: (rnd() - 0.5) * 0.05,
+        vy: (rnd() - 0.5) * 0.02,
+        vz: (rnd() - 0.5) * 0.05,
+        rad: 0.5 + rnd() * 1.1,
+        base: 0.1 + rnd() * 0.28,
+        hue: rnd() < 0.2 ? PAL.blue : rnd() < 0.28 ? PAL.warm : '#FFFFFF',
+        lx: null,
+        ly: null,
       })
     }
 
@@ -489,12 +516,11 @@ export class CommunityGalaxy {
     this.canvas.width = Math.round(w * this.dprEff)
     this.canvas.height = Math.round(h * this.dprEff)
     this.ctx.setTransform(this.dprEff, 0, 0, this.dprEff, 0, 0)
-    // Frame the disk to the viewport: on a portrait phone the WIDTH is the
-    // constraint (the old sizing spilled a third of the galaxy off both edges,
-    // which is what made the mobile sky feel crammed); on wide screens the
-    // height rules. A whisper of the long side keeps big screens generous, and
-    // a full-cap community's rim is allowed to breathe just past the frame.
-    this.unit = Math.min(w * 0.62, h * 0.46) + Math.max(w, h) * 0.03
+    // Frame the disk generously: the sky is a place, not a picture, so the
+    // rim is ALLOWED to spill past the frame — on a phone the outer stars
+    // bleed off both edges (space keeps going past the glass) and on a wide
+    // monitor the field reads expansive rather than contained.
+    this.unit = Math.min(w * 0.8, h * 0.52) + Math.max(w, h) * 0.04
     this.cx = w / 2
     this.cy = h * 0.42 // the heart rests in the page's hero zone
     this._bgGrad = null
@@ -819,7 +845,11 @@ export class CommunityGalaxy {
   // repeated calls visit each of your stars in turn — so the gesture resolves
   // however many pings are placed. Reduced motion trades the travel for a calm
   // converging ring. No-op without a star.
-  locateMine(label) {
+  // `opts.hold` turns the dive into a STAR VIEW: the camera flies in and then
+  // STAYS with the star — the viewer hand-orbits the whole sky around it and
+  // pinches closer/further — until releaseDive() glides back out. While held,
+  // the canvas skips its own @ tag; the screen's overlay owns the star's name.
+  locateMine(label, opts = {}) {
     if (!this.mine.length) return false
     let entry = null
     if (label) entry = this.mine.find((m) => m.label === label) || null
@@ -830,12 +860,22 @@ export class CommunityGalaxy {
     if (!entry || !this.stars.includes(entry.st)) return false
     this.diveSt = entry.st
     this.diveLabel = entry.label
+    this.diveDist = 1
     // the dive owns the camera — release any hand-held zoom first
     this.zoomTarget = 1
     if (this.reduced) this.locateFx = { t0: this.t } // clock-based: survives dt=0 draws
-    else this.dive = { t: 0 }
+    else this.dive = { t: 0, held: !!opts.hold }
     this.start()
     return true
+  }
+
+  // End a held star view: the camera glides back out to the resting sky.
+  releaseDive() {
+    if (this.dive && this.dive.held) {
+      // jump the timeline to the start of the pull-out phase
+      this.dive = { t: DIVE_IN + DIVE_HOLD, held: false }
+    }
+    this.start()
   }
   hasMine() {
     return this.mine.length > 0
@@ -869,7 +909,10 @@ export class CommunityGalaxy {
     if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
     const g = this.gest
     g.pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (!this.zoomEnabled || this.dive) {
+    // a HELD star view keeps the hand alive (orbit + pinch around the star);
+    // a timed dive, or a screen that hasn't enabled gestures, stays a backdrop
+    const held = this.dive && this.dive.held
+    if ((!this.zoomEnabled && !held) || (this.dive && !held)) {
       // backdrop mode: the old behavior — a tap is a ripple, nothing more
       if (g.pts.size === 1 && !this.reduced) this.ripple(e.clientX, e.clientY)
       return
@@ -880,10 +923,11 @@ export class CommunityGalaxy {
       g.mode = 'pinch'
       g.dist0 = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
       g.zoom0 = this.zoomTarget
+      g.dive0 = this.diveDist
       g.lx = (p1.x + p2.x) / 2
       g.ly = (p1.y + p2.y) / 2
       // anchor the dolly on the point between the fingers
-      if (this.zoomTarget <= 1.04) this.zoomFocus = this._planePoint(g.lx, g.ly)
+      if (!held && this.zoomTarget <= 1.04) this.zoomFocus = this._planePoint(g.lx, g.ly)
     } else if (g.pts.size === 1) {
       g.mode = 'press'
       g.sx = g.lx = e.clientX
@@ -904,6 +948,13 @@ export class CommunityGalaxy {
     if (g.mode === 'pinch' && g.pts.size >= 2) {
       const [p1, p2] = [...g.pts.values()]
       const d = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
+      if (this.dive && this.dive.held) {
+        // star view: the pinch pulls the camera closer to (or back from) the star
+        this.diveDist = clamp((g.dive0 || 1) * (g.dist0 / d), 0.4, 3.4)
+        this._interactAt = this.t
+        this.start()
+        return
+      }
       this.zoomTarget = clamp(g.zoom0 * (d / g.dist0), 1, ZOOM_MAX)
       // two-finger drift pans the field with the hand
       const mx = (p1.x + p2.x) / 2
@@ -918,7 +969,7 @@ export class CommunityGalaxy {
       if (g.mode !== 'drag') return
       const dx = e.clientX - g.lx
       const dy = e.clientY - g.ly
-      if (this.zoom > 1.06) {
+      if (this.zoom > 1.06 && !(this.dive && this.dive.held)) {
         // zoomed: the drag pans — the world follows the finger
         this._panBy(g.lx, g.ly, e.clientX, e.clientY)
       } else {
@@ -952,6 +1003,8 @@ export class CommunityGalaxy {
     if (g.mode !== 'press') return
     g.mode = null
     if (performance.now() - g.downT > 380) return
+    // taps inside a held star view stay quiet — the hand there is for orbiting
+    if (this.dive && this.dive.held) return
     const now = performance.now()
     // double-tap: dive toward the spot — or, from deep in, pull all the way home
     if (now - g.lastTap < 330 && Math.hypot(e.clientX - g.lastTapX, e.clientY - g.lastTapY) < 42) {
@@ -968,13 +1021,52 @@ export class CommunityGalaxy {
     g.lastTap = now
     g.lastTapX = e.clientX
     g.lastTapY = e.clientY
+    // a tap on a public @ answers as a meeting, not a ripple: the camera dollies
+    // to that person's star and the screen is told who it is
+    const tag = this._tagAt(e.clientX, e.clientY)
+    if (tag) {
+      const slot = this._slot(tag.st.i)
+      this.zoomFocus = { px: slot.px, pz: slot.pz }
+      this.zoomTarget = Math.max(this.zoomTarget, 3.4)
+      this._interactAt = this.t
+      if (this.onTagTap) this.onTagTap(tag.label, tag.own)
+      this.start()
+      return
+    }
     if (!this.reduced) this.ripple(e.clientX, e.clientY)
   }
 
+  // Which public @ (if any) sits under a screen point. Tags record their live
+  // screen position each frame; the target is generous — a handle is small and
+  // a thumb is not.
+  _tagAt(clientX, clientY) {
+    if (!this.tagsEnabled || !this.publicTags.length) return null
+    let best = null
+    let bestD = 44 * 44
+    for (const tag of this.publicTags) {
+      if (tag.vis < 0.25 || tag.sx == null) continue
+      const dx = tag.sx - clientX
+      const dy = tag.sy - clientY + 8 // the tag floats just over its star
+      const d = dx * dx + dy * dy
+      if (d < bestD) {
+        bestD = d
+        best = tag
+      }
+    }
+    return best
+  }
+
   _gestureWheel(e) {
-    if (!this.zoomEnabled || this.dive) return
     const el = e.target
     if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
+    if (this.dive && this.dive.held) {
+      // star view: the wheel pulls the camera closer to (or back from) the star
+      this.diveDist = clamp(this.diveDist * Math.exp(e.deltaY * 0.0014), 0.4, 3.4)
+      this._interactAt = this.t
+      this.start()
+      return
+    }
+    if (!this.zoomEnabled || this.dive) return
     const f = Math.exp(-e.deltaY * 0.0016)
     const nz = clamp(this.zoomTarget * f, 1, ZOOM_MAX)
     if (nz > this.zoomTarget && this.zoomTarget <= 1.04) this.zoomFocus = this._planePoint(e.clientX, e.clientY)
@@ -1075,9 +1167,13 @@ export class CommunityGalaxy {
     // in the crosshairs instead of swimming under the camera. The hand's orbit
     // rides the same envelope, so a dive overrides a half-turned disk cleanly.
     const hold = 1 - this.focus
+    // a HELD star view keeps the hand's orbit fully alive: the camera re-aims
+    // at the star every frame, so orbiting swings the whole sky around the
+    // hero with real parallax while it stays pinned in the crosshairs
+    const ow = this.dive && this.dive.held ? 1 : hold
     const driftY = Math.sin(this.t * 0.12) * 0.05 * hold
-    const yaw = (this.p.x * 0.22 + this.orbit.yaw) * hold + driftY
-    const tilt = TILT + (this.p.y * 0.14 + Math.sin(this.t * 0.09) * 0.02 + this.orbit.pitch) * hold
+    const yaw = this.p.x * 0.22 * hold + this.orbit.yaw * ow + driftY
+    const tilt = TILT + (this.p.y * 0.14 + Math.sin(this.t * 0.09) * 0.02) * hold + this.orbit.pitch * ow
     return {
       cosS: Math.cos(this.spin),
       sinS: Math.sin(this.spin),
@@ -1125,16 +1221,22 @@ export class CommunityGalaxy {
     this.lastTs = ts
     this._govern(raw, ts)
 
-    // the dive timeline: glide in, hold on the flaring star, glide out
+    // the dive timeline: glide in, hold on the flaring star, glide out. A HELD
+    // dive parks at full focus — the star view — until releaseDive().
     if (this.dive) {
-      this.dive.t += dt
-      const t = this.dive.t
-      if (t < DIVE_IN) this.focus = easeInOut(t / DIVE_IN)
-      else if (t < DIVE_IN + DIVE_HOLD) this.focus = 1
-      else if (t < DIVE_IN + DIVE_HOLD + DIVE_OUT) this.focus = easeInOut(1 - (t - DIVE_IN - DIVE_HOLD) / DIVE_OUT)
-      else {
-        this.dive = null
-        this.focus = 0
+      if (this.dive.held) {
+        this.dive.t = Math.min(this.dive.t + dt, DIVE_IN)
+        this.focus = easeInOut(this.dive.t / DIVE_IN)
+      } else {
+        this.dive.t += dt
+        const t = this.dive.t
+        if (t < DIVE_IN) this.focus = easeInOut(t / DIVE_IN)
+        else if (t < DIVE_IN + DIVE_HOLD) this.focus = 1
+        else if (t < DIVE_IN + DIVE_HOLD + DIVE_OUT) this.focus = easeInOut(1 - (t - DIVE_IN - DIVE_HOLD) / DIVE_OUT)
+        else {
+          this.dive = null
+          this.focus = 0
+        }
       }
     } else {
       this.focus = 0
@@ -1165,7 +1267,10 @@ export class CommunityGalaxy {
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.5))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.5))
 
-    // the hand's orbit: inertia coasts past release, then the disk drifts home
+    // the hand's orbit: inertia coasts past release, then the view RESTS where
+    // the hand left it — full axis freedom, nothing snaps back on a timer. It
+    // only glides home when the sky stops being the hero (gestures switched
+    // off) and no held star view is pinning the camera.
     const g = this.gest
     if (g.mode !== 'drag') {
       this.orbit.yaw = clamp(this.orbit.yaw + this.orbit.vyaw * dt, -ORBIT_YAW_MAX, ORBIT_YAW_MAX)
@@ -1173,8 +1278,8 @@ export class CommunityGalaxy {
       const dec = Math.exp(-dt * 2.4)
       this.orbit.vyaw *= dec
       this.orbit.vpitch *= dec
-      if (this.zoom < 1.04 && this.t - this._interactAt > 4) {
-        const home = Math.min(1, dt * 0.5)
+      if (!this.zoomEnabled && !(this.dive && this.dive.held)) {
+        const home = Math.min(1, dt * 1.6)
         this.orbit.yaw = lerp(this.orbit.yaw, 0, home)
         this.orbit.pitch = lerp(this.orbit.pitch, 0, home)
       }
@@ -1214,7 +1319,7 @@ export class CommunityGalaxy {
       const f = this.focus
       this.cam.x = f * T.x
       this.cam.y = f * T.y
-      this.cam.z = f * (CAM + T.z - STANDOFF)
+      this.cam.z = f * (CAM + T.z - STANDOFF * this.diveDist)
     } else if (this.zoom > 1.001) {
       // the hand's dolly: `cen` (0→1 as zoom climbs) both magnifies the focused
       // point by ~`zoom`× (its camera-space depth shrinks to zc0/zoom) and
@@ -1273,9 +1378,63 @@ export class CommunityGalaxy {
       this._drawPublicTags(dt, d)
       this._drawMine(dt)
     }
+    this._drawPassers(dt, d)
     this._drawWaves(dt)
     this._drawLocateFx()
 
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // The near-field passers: loose stars adrift between the camera and the disk.
+  // Each remembers its last screen position — when the camera travels (a zoom,
+  // a dive, a hand-orbit) they streak along their own apparent motion, so a
+  // deep zoom feels like flying through space, close stars sweeping past while
+  // the far field barely moves. At rest they are a whisper of drift.
+  _drawPassers(dt, d) {
+    if (!this.passers.length || this.qLevel >= 2) return
+    const ctx = this.ctx
+    const moving = this.focus > 0.02 || this.zoom > 1.2 || this.gest.mode === 'drag' || Math.abs(this.orbit.vyaw) > 0.02
+    const lift = moving ? 1 : 0.5
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.lineCap = 'round'
+    for (const p of this.passers) {
+      p.px += p.vx * dt
+      p.py += p.vy * dt
+      p.pz += p.vz * dt
+      // wrap the drift inside its shell so the pool never thins out
+      if (p.px > 2.5) p.px = -2.5
+      else if (p.px < -2.5) p.px = 2.5
+      if (p.py > 1.6) p.py = -1.6
+      else if (p.py < -1.6) p.py = 1.6
+      if (p.pz > 2.5) p.pz = -2.5
+      else if (p.pz < -2.5) p.pz = 2.5
+      const pr = this._project(p.px, p.py, p.pz)
+      if (!pr || pr.sx < -80 || pr.sx > this.w + 80 || pr.sy < -80 || pr.sy > this.h + 80) {
+        p.lx = null
+        continue
+      }
+      const a = p.base * d * lift * clamp(pr.persp / P0, 0.4, 2.4)
+      const D = clamp(p.rad * pr.persp * 2.4, 1.2, 8)
+      if (!this.reduced && p.lx != null) {
+        const sp = Math.hypot(pr.sx - p.lx, pr.sy - p.ly)
+        // a streak only when the star is genuinely sweeping past (never across
+        // a wrap teleport)
+        if (sp > 2.5 && sp < 320) {
+          ctx.globalAlpha = Math.min(0.6, a * (0.45 + sp * 0.02))
+          ctx.strokeStyle = p.hue
+          ctx.lineWidth = Math.min(2.2, D * 0.4)
+          ctx.beginPath()
+          ctx.moveTo(p.lx, p.ly)
+          ctx.lineTo(pr.sx, pr.sy)
+          ctx.stroke()
+        }
+      }
+      ctx.globalAlpha = Math.min(0.85, a)
+      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      p.lx = pr.sx
+      p.ly = pr.sy
+    }
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -1615,8 +1774,9 @@ export class CommunityGalaxy {
       ctx.globalAlpha = Math.min(1, (0.85 + 0.15 * pulse) * base + f)
       ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
 
-      // arrival: the @ this ping holds rises over the star on a slim tick
-      if (isDive && this.diveLabel && f > 0.55) {
+      // arrival: the @ this ping holds rises over the star on a slim tick.
+      // A HELD star view skips this — the screen's overlay owns the name there.
+      if (isDive && this.diveLabel && f > 0.55 && !(this.dive && this.dive.held)) {
         const fl = smooth((f - 0.55) / 0.45)
         const off = 34 + f * 22
         ctx.globalAlpha = fl * 0.4
@@ -1673,9 +1833,12 @@ export class CommunityGalaxy {
         }
       }
       tag.vis = clamp(tag.vis + (want ? 1 : -1) * dt * 3, 0, 1)
+      // remember where the tag sits on screen, so a tap can land on it
+      tag.sx = want ? x : null
+      tag.sy = want ? y : null
       if (tag.vis <= 0.02 || !want) continue
       tag.tw += dt * 0.5
-      const a = (tag.own ? 0.8 : 0.42 + 0.1 * Math.sin(tag.tw)) * fade * smooth(tag.vis)
+      const a = (tag.own ? 0.8 : 0.48 + 0.1 * Math.sin(tag.tw)) * fade * smooth(tag.vis)
       this._drawTag(x, y, '@' + tag.label, a, size)
     }
   }

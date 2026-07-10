@@ -17,7 +17,7 @@ import {
   dmCode, savePending, loadPending, clearPending, genProof,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
-import { renderSkyCard, downloadSkyCard } from '../card.js'
+import { renderSkyCard } from '../card.js'
 import {
   Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel, Meter,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
@@ -112,39 +112,58 @@ export const categoryOf = (id) => (CATEGORIES.find((c) => c.intents.includes(id)
 // the line every intent id renders as (first person; same under "they"/"you").
 export const intentLine = (t, id) => (id && INTENTS.includes(id) ? t(`intent.${id}`) : '')
 
-// A small selectable chip — sans for a category (a label), serif italic for an
-// intent line (a feeling). Shared so both rows read as one control. A category
-// chip carries its tint — the same light that star will burn with in your
-// community's sky — as a small star-point beside the word, brightening when
-// chosen; the option row is where the color code is learned.
-function PickChip({ C, on, serif, tint, onClick, children }) {
+// The "who are they to you" words — set like a line of handwriting, not a row
+// of system chips: lowercase serif words, each one carrying its category's own
+// light when chosen (the word itself warms and a hairline of that light rests
+// under it). The option row is where the color code is learned — the same tint
+// that person's star will burn with in your community's sky.
+function CategoryWord({ C, on, tint, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={on}
+      style={{
+        position: 'relative', background: 'none', border: 'none', cursor: 'pointer',
+        padding: '5px 2px 10px', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic',
+        fontSize: 19, lineHeight: 1, letterSpacing: '.2px',
+        color: on ? tint : rgba(C.cream, 0.6),
+        textShadow: on ? `0 0 18px ${rgba(tint, 0.55)}` : 'none',
+        transition: 'color .22s, text-shadow .22s',
+      }}
+    >
+      {children}
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute', left: 1, right: 1, bottom: 3, height: 1.5, borderRadius: 2,
+          background: on ? `linear-gradient(90deg, transparent, ${tint}, transparent)` : 'transparent',
+          boxShadow: on ? `0 0 12px ${rgba(tint, 0.7)}` : 'none',
+          transition: 'background .22s, box-shadow .22s',
+        }}
+      />
+    </button>
+  )
+}
+
+// One "why them" line — a spoken phrase in a soft-cornered tag, lit by the
+// PARENT category's tint when chosen, so a crush's reasons glow rose, an ex's
+// ember, a friend's ice-blue: one light per route, learned once, kept.
+function IntentLineChip({ C, on, tint, onClick, children }) {
   const accent = tint || C.star
   return (
     <button
       onClick={onClick}
+      aria-pressed={on}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7,
-        padding: serif ? '8px 13px' : '7px 14px', borderRadius: RADIUS.chip, cursor: 'pointer',
-        background: on ? rgba(accent, 0.12) : 'transparent',
-        border: `1px solid ${on ? rgba(accent, 0.55) : C.line}`,
-        color: on ? C.cream : C.muted, transition: 'all .2s',
-        fontFamily: serif ? "'Instrument Serif', serif" : "'Space Grotesk', sans-serif",
-        fontStyle: serif ? 'italic' : 'normal',
-        fontSize: serif ? 15.5 : 13.5, fontWeight: serif ? 400 : 600,
-        letterSpacing: serif ? 0 : '.2px',
+        padding: '9px 14px', borderRadius: RADIUS.inner, cursor: 'pointer', textAlign: 'left',
+        background: on ? rgba(accent, 0.13) : 'transparent',
+        border: `1px solid ${on ? rgba(accent, 0.6) : C.line}`,
+        color: on ? C.cream : rgba(C.cream, 0.62),
+        boxShadow: on ? `0 0 18px ${rgba(accent, 0.16)}` : 'none',
+        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, lineHeight: 1.3,
+        transition: 'all .2s',
       }}
     >
-      {tint && (
-        <span
-          aria-hidden
-          style={{
-            width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-            background: on ? tint : rgba(tint, 0.55),
-            boxShadow: on ? `0 0 8px ${rgba(tint, 0.9)}` : `0 0 5px ${rgba(tint, 0.4)}`,
-            transition: 'all .2s',
-          }}
-        />
-      )}
       {children}
     </button>
   )
@@ -153,29 +172,55 @@ function PickChip({ C, on, serif, tint, onClick, children }) {
 export function IntentPicker({ C, category, onCategory, value, onChange }) {
   const { t } = useI18n()
   const cat = CATEGORIES.find((c) => c.id === category)
+  const tint = cat ? CATEGORY_TINTS[cat.id] : C.star
+  // Skipping is a real, visible act — not a pill that says "optional". One tap
+  // folds the whole question away; a quiet line holds its place, undoable.
+  const [skipped, setSkipped] = React.useState(false)
+  const skip = () => {
+    onCategory('')
+    onChange('')
+    setSkipped(true)
+  }
+  if (skipped) {
+    return (
+      <div className="fade" style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', padding: '2px 2px' }}>
+        <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.muted, 0.95) }}>
+          {t('category.skipped')}
+        </span>
+        <GhostButton C={C} onClick={() => setSkipped(false)} style={{ padding: 0, fontSize: 12.5, color: rgba(C.star, 0.85) }}>
+          {t('category.unskip')}
+        </GhostButton>
+      </div>
+    )
+  }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* who are they to you? */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        <FieldLabel C={C} optional={t('intent.optional')}>{t('category.label')}</FieldLabel>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* who are they to you? — with the way out in plain sight */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '0 2px' }}>
+          <Kicker C={C} style={{ fontSize: 11, letterSpacing: '1.5px' }}>{t('category.label')}</Kicker>
+          <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: 12.5, color: rgba(C.muted, 0.95) }}>
+            {t('category.skip')}
+          </GhostButton>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 22px', padding: '0 2px' }}>
           {CATEGORIES.map((c) => (
-            <PickChip key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
+            <CategoryWord key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
               {t(`category.${c.id}`)}
-            </PickChip>
+            </CategoryWord>
           ))}
         </div>
       </div>
 
-      {/* why them? — the lines shift with the category above */}
+      {/* why them? — the lines shift with the category above, and wear its light */}
       <Collapse open={!!cat}>
         <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 2 }}>
           <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {(cat?.intents || []).map((id) => (
-              <PickChip key={id} C={C} serif on={value === id} onClick={() => onChange(value === id ? '' : id)}>
+              <IntentLineChip key={id} C={C} tint={tint} on={value === id} onClick={() => onChange(value === id ? '' : id)}>
                 {t(`intent.${id}`)}
-              </PickChip>
+              </IntentLineChip>
             ))}
           </div>
           <Hint C={C} icon="lock">{t('intent.note')}</Hint>
@@ -185,8 +230,9 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
   )
 }
 
-// The slot pips — one per slot, lit while free. Sits under the send field
-// (framework Screen 2: "the visuals for the amount of pings left").
+// The slot pips — one small star per slot: a held slot burns amber, an open
+// one waits as a faint outline star. The product's own ritual marks (✦ ✧),
+// never indicator dots.
 export function SlotPips({ C, standing, cap, compact }) {
   const { t } = useI18n()
   const free = Math.max(0, cap - standing)
@@ -197,12 +243,13 @@ export function SlotPips({ C, standing, cap, compact }) {
           key={i}
           aria-hidden
           style={{
-            width: 7, height: 7, borderRadius: '50%',
-            background: i < standing ? C.star : 'transparent',
-            border: `1px solid ${i < standing ? C.star : C.line}`,
-            boxShadow: i < standing ? `0 0 8px ${rgba(C.star, 0.6)}` : 'none',
+            fontSize: 12, lineHeight: 1,
+            color: i < standing ? C.star : rgba(C.cream, 0.3),
+            textShadow: i < standing ? `0 0 9px ${rgba(C.star, 0.65)}` : 'none',
           }}
-        />
+        >
+          {i < standing ? '✦' : '✧'}
+        </span>
       ))}
       {!compact && (
         <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.muted }}>
@@ -841,7 +888,12 @@ function RowBtn({ C, onClick, icon, children, tone = 'default' }) {
   const col = accent ? C.star : tone === 'danger' ? rgba(C.cream, 0.72) : C.cream
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => {
+        // the whole card behind these buttons flies to the star — a row action
+        // must never fall through into that
+        e.stopPropagation()
+        if (onClick) onClick(e)
+      }}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
@@ -874,20 +926,19 @@ function PingCard({ C, ping, ctx }) {
     setRenewed(true)
   }
   return (
-    <GlassPanel C={C} style={{ padding: '15px 16px 13px' }}>
-      {/* the header row IS the way to the sky: tap it and the camera flies to
-          this ping's own star, its @ rising above it */}
-      <button
-        onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
-        aria-label={ping.handle ? t('pings.locate') : undefined}
-        title={ping.handle ? t('pings.locate') : undefined}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: 0, textAlign: 'left',
-          background: 'none', border: 'none', color: 'inherit', font: 'inherit',
-          cursor: ping.handle ? 'pointer' : 'default',
-        }}
-      >
-        <StateDot C={C} state={state} />
+    // the WHOLE card is the way to the sky: tap anywhere on it and the camera
+    // flies to this ping's own star (row buttons stop their own taps)
+    <GlassPanel
+      C={C}
+      onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
+      role={ping.handle ? 'button' : undefined}
+      tabIndex={ping.handle ? 0 : undefined}
+      onKeyDown={ping.handle ? (e) => { if (e.key === 'Enter') ctx.locatePing(ping.handle) } : undefined}
+      aria-label={ping.handle ? t('pings.locate') : undefined}
+      title={ping.handle ? t('pings.locate') : undefined}
+      style={{ padding: '15px 16px 13px', cursor: ping.handle ? 'pointer' : 'default' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left' }}>
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 20, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ping.handle ? (
             <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
@@ -895,19 +946,23 @@ function PingCard({ C, ping, ctx }) {
             <span style={{ fontStyle: 'italic', fontSize: 15 }}>{t('pings.elsewhere')}</span>
           )}
         </span>
-        {ping.handle && <Icon name="star" size={12} color={rgba(C.star, 0.6)} stroke={1.8} />}
+        {ping.handle && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.75) }}>
+            <Icon name="star" size={11} color={rgba(C.star, 0.7)} stroke={1.8} /> {t('pings.locateShort')}
+          </span>
+        )}
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
           {t(`pings.${state}`)}
         </span>
-      </button>
+      </div>
 
       {ping.handle && t(`pings.${state}Sub`) && (
-        <p style={{ margin: '8px 0 0', paddingLeft: 19, fontSize: 12.5, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
+        <p style={{ margin: '8px 0 0', fontSize: 12.5, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
           {t(`pings.${state}Sub`)}
         </p>
       )}
       {ping.intent && (
-        <p style={{ margin: '7px 0 0', paddingLeft: 19, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.cream, 0.7) }}>
+        <p style={{ margin: '7px 0 0', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.cream, 0.7) }}>
           “{intentLine(t, ping.intent)}”
         </p>
       )}
@@ -926,7 +981,6 @@ function PingCard({ C, ping, ctx }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               {!ping.mutual && days != null && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 11, color: soon ? rgba(C.star, 0.92) : rgba(C.muted, 0.8) }}>
-                  {soon && <span aria-hidden style={{ width: 5, height: 5, borderRadius: '50%', background: rgba(C.star, 0.9), boxShadow: `0 0 8px ${rgba(C.star, 0.6)}` }} />}
                   {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
                 </span>
               )}
@@ -951,8 +1005,15 @@ function PingCard({ C, ping, ctx }) {
       )}
 
       {ctx.demo && !ping.mutual && ping.handle && (
-        <div style={{ marginTop: 10, paddingLeft: 19 }}>
-          <GhostButton C={C} onClick={() => ctx.simulateMutual(ping.handle)} style={{ padding: 0, fontSize: 11, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
+        <div style={{ marginTop: 10 }}>
+          <GhostButton
+            C={C}
+            onClick={(e) => {
+              e.stopPropagation()
+              ctx.simulateMutual(ping.handle)
+            }}
+            style={{ padding: 0, fontSize: 11, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}
+          >
             ✦ {t('pings.sim')}
           </GhostButton>
         </div>
@@ -1177,17 +1238,42 @@ export function PingsScreen({ C, ctx }) {
   )
 }
 
-// ── 5 · THE OPEN-SKY SHARE CARD ───────────────────────────────────────────────
-// The shareable is about the PLACE, not the person: a designed card that says your
-// community's sky is open (or gathering), built to recruit the rest of your world —
-// the one thing that actually moves the meter and brings the next match closer. It
-// names no one. When you haven't joined a community yet, it nudges you to find one
-// first (there's nothing to share until you have a sky).
+// ── 5 · SHARE YOUR COMMUNITY — the living sky card ────────────────────────────
+// The shareable is about the PLACE, not the person, and now the card itself is
+// ALIVE: a real, breathing copy of the community's galaxy runs inside it — the
+// same engine as the sky behind the app — with the seal, the serif lockup, and
+// playful, tappable numbers. Tap the sky and a wave rolls through it; tap a
+// number and the thing it counts happens in miniature (a meteor for a ping, a
+// constellation for a match). Two ways out, both one hop: post it to your story
+// (the share sheet carries the rendered card straight into instagram) or send
+// it in a dm. No download step, no numbered instructions. It names no one.
+
+// One tappable number on the living card: a big serif figure over a whispered
+// mono caption. Pressing it answers in the sky behind it.
+function SkyStat({ C, value, label, onTap }) {
+  const [press, setPress] = React.useState(false)
+  return (
+    <button
+      onClick={onTap}
+      onPointerDown={() => setPress(true)}
+      onPointerUp={() => setPress(false)}
+      onPointerLeave={() => setPress(false)}
+      style={{
+        pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+        padding: '9px 12px 8px', minWidth: 74, cursor: 'pointer',
+        background: rgba(C.ink, 0.36), border: `1px solid ${rgba(C.star, 0.24)}`, borderRadius: RADIUS.inner,
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        transform: press ? 'scale(0.94)' : 'scale(1)', transition: 'transform .15s ease',
+      }}
+    >
+      <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 23, lineHeight: 1, color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.4)}` }}>{value}</span>
+      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 7.5, letterSpacing: '.9px', textTransform: 'uppercase', color: rgba(C.cream, 0.75), whiteSpace: 'nowrap' }}>{label}</span>
+    </button>
+  )
+}
+
 export function SkyCardScreen({ C, ctx }) {
   const { t } = useI18n()
-  const [preview, setPreview] = React.useState(null)
-  const [saved, setSaved] = React.useState(false)
-  const [copied, setCopied] = React.useState(false)
   const community = ctx.homeCommunity
   const open = community ? communityOpen(community) : false
   const stats = community
@@ -1197,12 +1283,28 @@ export function SkyCardScreen({ C, ctx }) {
         pings: community.pings != null ? Number(community.pings) : null,
       }
     : null
+  const cardGalaxy = React.useRef(null)
+  const [copied, setCopied] = React.useState(false)
+  const copyTimer = React.useRef(null)
+  React.useEffect(() => () => copyTimer.current && clearTimeout(copyTimer.current), [])
+  const flashCopied = () => {
+    setCopied(true)
+    if (copyTimer.current) clearTimeout(copyTimer.current)
+    copyTimer.current = setTimeout(() => setCopied(false), 2200)
+  }
 
+  // Pre-render the shareable PNG so the share sheet opens inside the tap's own
+  // gesture (rendering fonts + canvas after the tap would lose it on iOS).
+  const fileRef = React.useRef(null)
   React.useEffect(() => {
     if (!community) return undefined
     let live = true
     renderSkyCard({ community, open, stats })
-      .then((url) => live && setPreview(url))
+      .then(async (url) => {
+        if (!live) return
+        const blob = await (await fetch(url)).blob()
+        if (live) fileRef.current = new File([blob], `celestual-${community.slug}-sky.png`, { type: 'image/png' })
+      })
       .catch(() => {})
     return () => {
       live = false
@@ -1210,59 +1312,74 @@ export function SkyCardScreen({ C, ctx }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [community && community.slug, open, stats && stats.members, stats && stats.matches, stats && stats.pings])
 
-  const save = async () => {
-    if (!community) return
-    try {
-      await downloadSkyCard({ community, open, stats })
-      setSaved(true)
-    } catch {
-      /* the preview is still right there to screenshot */
-    }
-  }
+  // In the sandbox, the card quietly lives on its own: a meteor lands every few
+  // seconds, so what you're about to post visibly breathes.
+  React.useEffect(() => {
+    if (!ctx.demo || !open) return undefined
+    const id = setInterval(() => {
+      if (cardGalaxy.current) cardGalaxy.current.launch(1)
+    }, 4200)
+    return () => clearInterval(id)
+  }, [ctx.demo, open])
+
+  const shareUrl = community ? inviteUrl(community.slug) : ''
   const copyLink = async () => {
-    if (!community) return
     try {
-      await navigator.clipboard.writeText(inviteUrl(community.slug))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2200)
+      await navigator.clipboard.writeText(shareUrl)
+      flashCopied()
     } catch {
-      /* ignore */
+      /* the link is printed on the card if all else fails */
     }
   }
-  // Send it in a DM: the native share sheet is the ONLY way to hand the invite
-  // to a friend inside Instagram/WhatsApp/Messages (a deep link would only open a
-  // thread with our own account). We attach the rendered card image when the
-  // platform supports file sharing — so the DM carries the sky, not just a link —
-  // and fall back to copying the link on desktop where there's no share sheet.
-  const [dmDone, setDmDone] = React.useState(false)
-  const dmShare = async () => {
-    if (!community) return
-    const url = inviteUrl(community.slug)
-    let files
+  // Post it to your story: ONE hop — the share sheet, carrying the rendered
+  // card, and instagram is right there in it. Falls back to a link share, then
+  // to a copy, so no platform dead-ends.
+  const storyShare = async () => {
+    const file = fileRef.current
     try {
-      if (preview && navigator.canShare) {
-        const blob = await (await fetch(preview)).blob()
-        const file = new File([blob], `celestual-${community.slug}-sky.png`, { type: 'image/png' })
-        if (navigator.canShare({ files: [file] })) files = [file]
-      }
-    } catch {
-      /* no file share — a link-only share still DMs fine */
-    }
-    try {
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share(files ? { url, files } : { url })
+      if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file] })
         return
       }
     } catch {
-      /* sheet dismissed or unavailable — fall through to copy */
+      /* sheet dismissed or file share unavailable — fall through */
     }
     try {
-      await navigator.clipboard.writeText(url)
-      setDmDone(true)
-      setTimeout(() => setDmDone(false), 2200)
+      if (navigator.share) {
+        await navigator.share({ url: shareUrl })
+        return
+      }
     } catch {
-      /* the link is elsewhere on screen if all else fails */
+      /* fall through to copy */
     }
+    copyLink()
+  }
+  // Send it in a dm: the link through the share sheet — it lands straight in a
+  // friend's instagram/whatsapp/messages thread. Desktop copies it instead.
+  const dmShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: shareUrl })
+        return
+      }
+    } catch {
+      /* fall through to copy */
+    }
+    copyLink()
+  }
+
+  // the card's own beats — tapping a number makes the thing it counts happen
+  const beatWave = () => {
+    const f = cardGalaxy.current
+    if (!f || !f.canvas) return
+    const r = f.canvas.getBoundingClientRect()
+    f.ripple(r.left + r.width / 2, r.top + r.height * 0.42)
+  }
+  const beatMeteor = () => {
+    if (cardGalaxy.current) cardGalaxy.current.launch(1)
+  }
+  const beatMatch = () => {
+    if (cardGalaxy.current) cardGalaxy.current.addConstellation()
   }
 
   // No community joined yet → there's no sky to share. Send them to find one.
@@ -1285,6 +1402,10 @@ export function SkyCardScreen({ C, ctx }) {
     )
   }
 
+  const pings = stats.pings
+  const matches = stats.matches
+  const showMatches = open && matches != null && matches >= MATCH_FLOOR
+
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1293,8 +1414,8 @@ export function SkyCardScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, paddingTop: 14 }}>
-        <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 12 }}>
+        <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.1, color: C.cream }}>
             {t('sky.title1')} <span style={{ color: C.star }}>{t('sky.title2')}</span>
           </h2>
@@ -1303,45 +1424,74 @@ export function SkyCardScreen({ C, ctx }) {
           </p>
         </div>
 
-        {/* the rendered card — the object itself, the hero of the screen */}
+        {/* THE LIVING CARD — a real galaxy breathing inside the shareable.
+            Tap the sky: a wave rolls through it. Tap a number: it answers. */}
         <div
           className="enter"
+          onClick={(e) => {
+            if (cardGalaxy.current) cardGalaxy.current.ripple(e.clientX, e.clientY)
+          }}
           style={{
-            position: 'relative', width: 'min(252px, 60vw)', aspectRatio: '9 / 16', borderRadius: 22, overflow: 'hidden',
-            border: `1px solid ${rgba(C.star, 0.22)}`, boxShadow: `0 30px 90px rgba(0,0,0,.62), 0 0 46px ${rgba(C.star, 0.14)}`,
-            background: C.ink2, animationDelay: '.06s',
+            position: 'relative', width: 'min(300px, 76vw)', aspectRatio: '9 / 15', borderRadius: 24, overflow: 'hidden',
+            border: `1px solid ${rgba(C.star, 0.26)}`, boxShadow: `0 30px 90px rgba(0,0,0,.62), 0 0 52px ${rgba(C.star, 0.15)}`,
+            background: C.ink2, animationDelay: '.06s', cursor: 'pointer',
           }}
         >
-          {preview ? (
-            <img src={preview} alt={community.name} style={{ width: '100%', height: '100%', display: 'block' }} />
-          ) : (
-            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}><Sonar C={C} size={20} /></div>
-          )}
-        </div>
-
-        {/* the three steps — a clean numbered rail */}
-        <div className="enter" style={{ animationDelay: '.12s', width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Kicker C={C} style={{ fontSize: 10, paddingLeft: 2, marginBottom: 6 }}>{t('sky.stepsKicker')}</Kicker>
-          {[t('sky.step1'), t('sky.step2'), t('sky.step3')].map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 2px' }}>
-              <span style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), border: `1px solid ${rgba(C.star, 0.3)}`, color: C.star, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>{i + 1}</span>
-              <span style={{ fontSize: 13.5, lineHeight: 1.45, color: rgba(C.cream, 0.86) }}>{s}</span>
+          <CommunityGalaxyCanvas
+            inline
+            key={community.slug + (open ? ':open' : ':forming')}
+            you={C.you}
+            them={C.them}
+            pings={open && pings != null ? pings : 0}
+            matches={showMatches ? Math.min(matches, 24) : 0}
+            forming={!open}
+            onReady={(f) => (cardGalaxy.current = f)}
+          />
+          {/* the card's face — laid over the live sky, taps falling through
+              except on the numbers */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 12px 13px', pointerEvents: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SchoolMark C={C} slug={community.slug} size={26} />
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: rgba(C.cream, 0.85) }}>{community.short}</span>
             </div>
-          ))}
+            <div style={{ flex: 1 }} />
+            <div style={{ textAlign: 'center', textShadow: '0 2px 18px rgba(0,0,0,.85)' }}>
+              <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 25, lineHeight: 1.12, color: C.cream }}>
+                {t('sky.cardLine', { name: community.short })}
+              </div>
+              <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 25, lineHeight: 1.12, color: open ? C.star : rgba(C.cream, 0.9) }}>
+                {open ? t('sky.cardOpen') : t('sky.cardGathering')}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 13 }}>
+              <SkyStat C={C} value={stats.members.toLocaleString()} label={t('sky.statInside')} onTap={beatWave} />
+              {open && pings != null ? (
+                <SkyStat C={C} value={pings.toLocaleString()} label={t('sky.statPings')} onTap={beatMeteor} />
+              ) : (
+                <SkyStat C={C} value={Math.max(0, OPEN_FLOOR - stats.members).toLocaleString()} label={t('sky.statToOpen')} onTap={beatWave} />
+              )}
+              {showMatches && <SkyStat C={C} value={matches.toLocaleString()} label={t('sky.statMatches')} onTap={beatMatch} />}
+            </div>
+            <div style={{ marginTop: 12, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '.4px', color: rgba(C.cream, 0.65), textShadow: '0 1px 10px rgba(0,0,0,.8)' }}>
+              celestual.us/c/{community.slug}
+            </div>
+          </div>
         </div>
+        <p aria-hidden style={{ margin: 0, textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.muted, 0.6) }}>
+          {t('sky.cardHint')}
+        </p>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 18 }}>
-        <PrimaryButton C={C} onClick={save}>
+      {/* two ways out, both one hop — no saving, no steps */}
+      <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16 }}>
+        <PrimaryButton C={C} onClick={storyShare}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="download" size={16} color={C.onStar} stroke={2} /> {saved ? t('sky.saved') : t('sky.save')}
+            <Icon name="instagram" size={16} color={C.onStar} stroke={2} /> {t('sky.story')}
           </span>
         </PrimaryButton>
-        {/* send it in a dm — the native share sheet, so the invite lands straight
-            in a friend's Instagram/WhatsApp/Messages thread, carrying the card */}
         <OutlineButton C={C} onClick={dmShare} style={{ width: '100%', padding: '13px 22px', borderRadius: RADIUS.field }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name={dmDone ? 'check' : 'message'} size={15} color="currentColor" stroke={1.9} /> {dmDone ? t('sky.copied') : t('sky.dm')}
+            <Icon name={copied ? 'check' : 'message'} size={15} color="currentColor" stroke={1.9} /> {copied ? t('sky.copied') : t('sky.dm')}
           </span>
         </OutlineButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -1744,11 +1894,15 @@ export function CommunityScreen({ C, ctx }) {
   // pill to pull back. Everywhere else this same engine is just the ambient
   // backdrop: no gestures, no handles floating behind foreground cards.
   const [zoomed, setZoomed] = React.useState(false)
+  // a tapped public @ — the camera has dollied to their star; this is the small
+  // meeting card that names them and offers the one outward step
+  const [meet, setMeet] = React.useState(null)
   const wireZoom = React.useCallback((f) => {
     if (!f || !f.setZoomEnabled) return
     f.setZoomEnabled(true)
     if (f.setTagsEnabled) f.setTagsEnabled(true)
     f.onZoomState = setZoomed
+    f.onTagTap = (label) => setMeet({ label })
   }, [])
   React.useEffect(() => {
     if (useShared) wireZoom(galaxyRef.current)
@@ -1757,12 +1911,15 @@ export function CommunityScreen({ C, ctx }) {
       if (g && g.setZoomEnabled) g.setZoomEnabled(false)
       if (g && g.setTagsEnabled) g.setTagsEnabled(false)
       if (g && g.onZoomState === setZoomed) g.onZoomState = null
+      if (g && g.onTagTap) g.onTagTap = null
       setZoomed(false)
+      setMeet(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useShared, slug])
   const pullBack = () => {
     if (galaxyRef.current && galaxyRef.current.resetView) galaxyRef.current.resetView()
+    setMeet(null)
   }
   // chrome melts away while the sky is held zoomed — and for the length of a
   // find-your-star dive, so the flight owns the whole frame. One shared
@@ -1829,6 +1986,53 @@ export function CommunityScreen({ C, ctx }) {
           off the sky (z0, over canvas). It lifts with the rest of the chrome
           while the sky is held zoomed. */}
       <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }} />
+
+      {/* a tapped public @ — the meeting card: who they are, one outward step,
+          one quiet dismiss. Floats above the pull-back pill. */}
+      {meet && !finding && (
+        <div
+          data-noripple
+          style={{
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex: 6,
+            bottom: zoomed ? 'calc(max(30px, env(safe-area-inset-bottom)) + 58px)' : 'max(30px, env(safe-area-inset-bottom))',
+            transition: 'bottom .3s ease',
+          }}
+        >
+          <div
+            key={meet.label}
+            className="fade"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 12, padding: '10px 12px 10px 16px',
+              borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.86), border: `1px solid ${rgba(C.star, 0.32)}`,
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 14px 44px rgba(0,0,0,.55)',
+              maxWidth: '92vw',
+            }}
+          >
+            <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 14.5, color: C.cream, flexShrink: 0, maxWidth: '38vw', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ color: C.star }}>@</span>{meet.label}
+            </span>
+            <a
+              href={`https://www.instagram.com/${meet.label}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '7px 13px',
+                borderRadius: RADIUS.chip, background: rgba(C.star, 0.12), border: `1px solid ${rgba(C.star, 0.4)}`,
+                color: C.cream, textDecoration: 'none', fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, fontWeight: 600,
+              }}
+            >
+              <Icon name="instagram" size={13} color={rgba(C.star, 0.95)} stroke={1.9} /> {t('public.meet')}
+            </a>
+            <button
+              onClick={() => setMeet(null)}
+              aria-label={t('reveal.close')}
+              style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${rgba(C.cream, 0.16)}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.75) }}
+            >
+              <Icon name="x" size={12} color="currentColor" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* the way home from a held zoom — one quiet pill, floating clear of the
           melted chrome. data-noripple so the tap lands on it, not the sky. */}
@@ -2255,8 +2459,8 @@ export function SendoffScreen({ C, ctx }) {
       <div style={{ flex: 1 }} />
       <div className="sendoff-line" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 11, paddingBottom: 'clamp(24px, 12vh, 90px)' }}>
         <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(24px, 7vw, 30px)', color: C.cream }}>{t('sendoff.title')}</div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, fontSize: 12.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
-          <Sonar C={C} size={11} /> {t('sendoff.sub')}
+        <div style={{ fontSize: 12.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
+          {t('sendoff.sub')}
         </div>
       </div>
       <div style={{ flex: 1 }} />
@@ -2704,7 +2908,10 @@ export function AccountSheet({ C, ctx }) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: standing ? C.cream : C.muted, fontFamily: "'Space Mono', monospace", fontSize: 13 }}>
-            {standing > 0 && <StateDot C={C} state="standing" />} {standing > 0 ? t('account.pingsLine', { n: standing }) : t('account.pingsNone')}
+            {standing > 0 && (
+              <span aria-hidden style={{ color: C.star, fontSize: 12, textShadow: `0 0 8px ${rgba(C.star, 0.6)}` }}>✦</span>
+            )}{' '}
+            {standing > 0 ? t('account.pingsLine', { n: standing }) : t('account.pingsNone')}
           </span>
           <GhostButton C={C} onClick={() => { close(); ctx.go('pings') }} style={{ padding: 0, fontSize: 12.5, color: C.star }}>
             {t('account.pingsOpen')} →
@@ -3108,6 +3315,131 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
   )
 }
 
+// ── the held star view (App overlays this while a ping's star is held) ────────
+// The engines pin a held star just above mid-frame; this overlay seats its name
+// beneath it: the @ in the product's amber — larger than it appears anywhere
+// else — with the ping's intent line resting under it in the emotional register
+// and the category's own light naming what they are to you. Everything ignores
+// the pointer (the hand is orbiting the sky) except the one clear way home.
+export function StarViewOverlay({ C, view, onClose }) {
+  const { t } = useI18n()
+  const tint = CATEGORY_TINTS[view.kind] || C.star
+  return (
+    <>
+      {/* the close — glides the camera home to the pings page */}
+      <div data-noripple style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 'max(14px, env(safe-area-inset-right))', zIndex: 30 }}>
+        <button
+          onClick={onClose}
+          aria-label={t('starview.close')}
+          className="fade"
+          style={{
+            width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
+            background: rgba(C.ink2, 0.8), border: `1px solid ${rgba(C.cream, 0.22)}`,
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.92),
+            boxShadow: '0 10px 34px rgba(0,0,0,.5)',
+          }}
+        >
+          <Icon name="x" size={16} color="currentColor" stroke={2} />
+        </button>
+      </div>
+
+      {/* the name, risen beneath the held star (arrives with the camera) */}
+      {/* full-width so it stays truly centered (the fade animation owns the
+          transform, so no translateX can live on this element) */}
+      <div
+        className="fade"
+        style={{
+          position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
+          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          paddingTop: 30, textAlign: 'center', animationDelay: '1.05s',
+        }}
+      >
+        <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
+        <span
+          style={{
+            fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(23px, 6.5vw, 30px)',
+            letterSpacing: '.5px', color: C.star,
+            textShadow: `0 0 28px ${rgba(C.star, 0.55)}, 0 2px 18px rgba(0,0,0,.85)`,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '88vw',
+          }}
+        >
+          @{view.handle}
+        </span>
+        {view.intent ? (
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17.5, lineHeight: 1.4, color: rgba(C.cream, 0.94), textShadow: '0 2px 16px rgba(0,0,0,.85)', maxWidth: 330 }}>
+            “{intentLine(t, view.intent)}”
+          </span>
+        ) : (
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.muted, 0.95), textShadow: '0 2px 14px rgba(0,0,0,.85)' }}>
+            {t('starview.noIntent')}
+          </span>
+        )}
+        {view.kind && (
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '2.2px', textTransform: 'uppercase', color: rgba(tint, 0.98), textShadow: `0 0 12px ${rgba(tint, 0.5)}, 0 2px 12px rgba(0,0,0,.8)` }}>
+            {t(`category.${view.kind}`)}
+          </span>
+        )}
+      </div>
+
+      {/* how to move — one whispered line, low and out of the way */}
+      <div aria-hidden className="fade" style={{ position: 'fixed', left: 0, right: 0, bottom: 'max(18px, env(safe-area-inset-bottom))', zIndex: 24, pointerEvents: 'none', textAlign: 'center', animationDelay: '1.6s' }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '1.2px', textTransform: 'uppercase', color: rgba(C.muted, 0.75) }}>
+          {t('starview.hint')}
+        </span>
+      </div>
+    </>
+  )
+}
+
+// ── /copy — where the verification email's copy button lands ─────────────────
+// An email can't reach the clipboard, so its copy button opens this one-tap
+// page instead: the code held large, one button that copies it, nothing else.
+// The code rides the URL fragment, so it never touches a server log.
+export function CopyCodeScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const code = String(ctx.copyCode || '').replace(/\D/g, '').slice(0, 8)
+  const [copied, setCopied] = React.useState(false)
+  const copy = async () => {
+    if (await copyText(code)) setCopied(true)
+  }
+  return (
+    <Shell>
+      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+        <Brandmark C={C} size={26} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+        {code ? (
+          <>
+            <Kicker C={C}>{t('copy.kicker')}</Kicker>
+            <div
+              className="enter"
+              style={{
+                fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(44px, 15vw, 60px)',
+                letterSpacing: '14px', paddingLeft: 14, color: C.star, textShadow: `0 0 34px ${rgba(C.star, 0.4)}`,
+              }}
+            >
+              {code}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('copy.note')}</p>
+          </>
+        ) : (
+          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>
+            {t('copy.missing')}
+          </p>
+        )}
+      </div>
+      {code && (
+        <PrimaryButton C={C} onClick={copy}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+            <Icon name={copied ? 'check' : 'copy'} size={16} color={C.onStar} stroke={2} /> {copied ? t('copy.copied') : t('copy.cta')}
+          </span>
+        </PrimaryButton>
+      )}
+    </Shell>
+  )
+}
+
 // ── the .edu gate — join a community by proving you're at that school ──────────
 // Your ping only ever reaches people from your own community, so joining one asks
 // for a code emailed to an address at that school's domain. Two steps: enter the
@@ -3172,7 +3504,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
 
   const submit = async () => {
     const c = code.replace(/\D/g, '')
-    if (c.length !== 6) { setErrCode('code'); return }
+    if (c.length !== 4) { setErrCode('code'); return }
     setErrCode('')
     setPhase('verifying')
     if (!real) { succeed(); return }
@@ -3260,24 +3592,24 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
               <FieldLabel C={C}>{t('edu.codeLabel')}</FieldLabel>
               <input
                 value={code}
-                onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); if (errCode) setErrCode('') }}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 4)); if (errCode) setErrCode('') }}
                 onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                maxLength={6}
-                placeholder="••••••"
+                maxLength={4}
+                placeholder="••••"
                 aria-label={t('edu.codeLabel')}
                 autoFocus
                 style={{
-                  width: '100%', height: 56, textAlign: 'center', borderRadius: RADIUS.field,
+                  width: '100%', height: 58, textAlign: 'center', borderRadius: RADIUS.field,
                   background: C.ink, border: `1.5px solid ${errMsg ? rgba(C.star, 0.6) : C.line}`, color: C.star,
-                  fontFamily: "'Space Mono', monospace", fontSize: 30, fontWeight: 700, letterSpacing: '12px', paddingLeft: 12,
+                  fontFamily: "'Space Mono', monospace", fontSize: 32, fontWeight: 700, letterSpacing: '16px', paddingLeft: 16,
                   outline: 'none', textShadow: `0 0 22px ${rgba(C.star, 0.35)}`,
                 }}
               />
               {errMsg && <span style={{ fontSize: 12, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
             </div>
-            <PrimaryButton C={C} disabled={busy || code.length !== 6} onClick={submit}>
+            <PrimaryButton C={C} disabled={busy || code.length !== 4} onClick={submit}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
                 <Icon name="check" size={16} color={C.onStar} stroke={2.2} /> {phase === 'verifying' ? t('edu.verifying') : t('edu.verify')}
               </span>

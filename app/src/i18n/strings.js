@@ -62,6 +62,10 @@ const en = {
   'category.ex': 'ex',
   'category.friend': 'friend',
   'category.complicated': 'complicated',
+  // skipping is a visible act, not a pill that says "optional"
+  'category.skip': 'skip this',
+  'category.skipped': 'left unsaid. the ping seals just the same.',
+  'category.unskip': 'say it after all',
 
   // the intent row — an optional line that travels with the ping, read only at a
   // mutual reveal. the options shown depend on the category above (screens.jsx
@@ -170,6 +174,11 @@ const en = {
   'pings.open': 'message them',
   'pings.worlds': 'communities',
   'pings.locate': 'see it in the sky',
+  'pings.locateShort': 'its star',
+  // the held star view — the @ resting over its star, the hand free to orbit
+  'starview.close': 'back to your pings',
+  'starview.hint': 'drag to look around · pinch to pull closer',
+  'starview.noIntent': 'placed without a word.',
   'pings.sim': 'sandbox: they add you back',
 
   // ── screen 5 · the open-sky share card ──────────────────────────────────
@@ -180,17 +189,21 @@ const en = {
   'sky.kicker': 'your community',
   'sky.title1': 'share the',
   'sky.title2': 'open sky.',
-  'sky.subOpen': 'one card, and it says {name}’s sky is live. everyone who joins from it brings the next match closer.',
-  'sky.subGathering': 'one card, and it shows {name} gathering. the sooner it fills, the sooner its sky opens.',
-  'sky.save': 'save the card',
-  'sky.saved': 'saved. now post it',
+  'sky.subOpen': 'this card is your community’s real sky, alive. post it — everyone who joins from it brings the next match closer.',
+  'sky.subGathering': 'this card shows {name} gathering. the sooner it fills, the sooner its sky opens.',
+  'sky.story': 'post it to your story',
   'sky.dm': 'send it in a dm',
   'sky.copy': 'copy the invite link',
   'sky.copied': 'copied',
-  'sky.stepsKicker': 'three steps',
-  'sky.step1': 'save the card to your camera roll.',
-  'sky.step2': 'add it to your story.',
-  'sky.step3': 'drop the invite link on it as a link sticker.',
+  // the living card's face + its tappable numbers
+  'sky.cardLine': '{name}’s sky',
+  'sky.cardOpen': 'is open.',
+  'sky.cardGathering': 'is gathering.',
+  'sky.cardHint': 'the card is alive — tap the sky, tap a number',
+  'sky.statInside': 'souls inside',
+  'sky.statPings': 'secrets in orbit',
+  'sky.statMatches': 'found each other',
+  'sky.statToOpen': 'more to open it',
   'sky.foot': 'the card names a place, never a person. nothing on it says who you’ve entered.',
   'sky.none': 'join your community first, then you can share its sky.',
   'sky.find': 'find your community',
@@ -392,7 +405,7 @@ const en = {
   // ── holding the sky (the community page's camera) ────────────────────────────
   // the sky is handled, not watched: one whispered line of how, and the way home
   // from a held zoom. calm, mechanical — mono metadata voice.
-  'sky.hint': 'drag to orbit · pinch to zoom · double-tap to dive',
+  'sky.hint': 'drag to orbit · pinch to zoom · tap an @ to meet them',
   'sky.reset': 'pull back',
 
   // ── the public @ (announce yourself in your community's sky) ─────────────────
@@ -407,6 +420,7 @@ const en = {
   'public.confirm': 'show my @',
   'public.cancel': 'keep it anonymous',
   'public.note': 'you can turn this off anytime, one tap, no questions.',
+  'public.meet': 'find them on instagram',
 
   // ── the .edu gate (join a community by proving you’re at that school) ────────
   // membership is real — a code to your school address confirms you’re there —
@@ -420,7 +434,7 @@ const en = {
   'edu.emailPlaceholder': 'you@{domain}',
   'edu.send': 'send my code',
   'edu.sending': 'sending…',
-  'edu.codeLabel': 'the six-digit code',
+  'edu.codeLabel': 'the four-digit code',
   'edu.codeSent': 'sent to {email}. it lasts ten minutes.',
   'edu.verify': 'verify & join',
   'edu.verifying': 'verifying…',
@@ -435,7 +449,7 @@ const en = {
   'edu.errExpired': 'that code lapsed. send a fresh one.',
   'edu.errRate': 'too many tries. give it a minute, then start again.',
   'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'edu.demoNote': 'sandbox. no real email is sent — enter any six digits and it confirms.',
+  'edu.demoNote': 'sandbox. no real email is sent — enter any four digits and it confirms.',
   'edu.demoGmailNote': 'sandbox: a @gmail.com address is accepted here too, alongside the real school domain.',
 
   // ── affiliated schools (new-user onboarding step) ───────────────────────
@@ -477,6 +491,13 @@ const en = {
   // ── the send-off (the @ becomes a star and flies into the galaxy) ──────────
   'sendoff.title': 'sending it into the dark.',
   'sendoff.sub': 'your ping is finding its place.',
+
+  // ── /copy — where the verification email's copy button lands ────────────
+  'copy.kicker': 'your code',
+  'copy.note': 'copy it, then go back to celestual and paste it in.',
+  'copy.cta': 'copy the code',
+  'copy.copied': 'copied. now paste it in.',
+  'copy.missing': 'this link is missing its code. open the email again and tap copy there.',
 
   // ── demo (the sandbox) ────────────────────────────────────────────────────
   'demo.badge': 'sandbox',

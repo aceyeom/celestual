@@ -2,11 +2,13 @@
 //
 // School (.edu) email verification for community membership. Your ping only ever
 // reaches people from your own community, so joining one requires proving you're
-// there: a 6-digit code sent to an address at the school's domain.
+// there: a 4-digit code sent to an address at the school's domain. The code rides
+// the email's SUBJECT line too, so the phone's notification alone is enough to
+// read it and type it straight in.
 //
 // Two actions on one endpoint:
 //   { action:'send',   email, slug, demo? }  → validate the address is at the
-//        school's domain, rate-limit, mint a 6-digit code, store ONLY its SHA-256
+//        school's domain, rate-limit, mint a 4-digit code, store ONLY its SHA-256
 //        hash, email the code via Resend, and return a random correlation `token`.
 //        `demo: true` is the app's sandbox flag: it runs this exact real
 //        pipeline too, with one carve-out — a @gmail.com address is silently
@@ -82,33 +84,61 @@ async function sha256Hex(str: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function sixDigit(): string {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
-  return String(n).padStart(6, '0');
+function fourDigit(): string {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 10_000;
+  return String(n).padStart(4, '0');
 }
 
-// The code email — the product's registers: deep navy field, serif feeling line,
-// small sans mechanics, one warm star. The code itself is the hero, spaced wide.
+// The code email — a window into the product's own galaxy. Email can't run a
+// canvas, so the sky is painted with layered CSS radial-gradients (amber and
+// rose nebulae resting in the CORNERS — the center column stays deep and dark
+// so nothing ever sits behind the headline or the code) plus rows of the
+// product's ritual star marks drifting above and below the content. No
+// wordmark: the one warm star IS the logo. The code is the hero, and a clear
+// copy button opens the app's one-tap /copy page (an email can't reach the
+// clipboard itself; the code travels in the URL fragment, never a query).
 function codeEmailHtml(code: string, schoolName: string) {
-  const spaced = code.split('').join(' ');
+  const stars = (op: number, size: number) =>
+    `color:rgba(243,236,246,${op});font-size:${size}px;letter-spacing:26px;line-height:1;font-family:Georgia,serif;`;
   return `
-  <div style="background:#070b14;padding:48px 24px;font-family:Georgia,serif;color:#f2eee5;text-align:center">
-    <div style="font-size:13px;letter-spacing:6px;color:#8b94a8;font-family:Arial,sans-serif">CELESTUAL</div>
-    <div style="font-size:26px;color:#ffa25c;margin:26px 0 4px">&#10022;</div>
-    <h1 style="font-weight:400;font-style:italic;font-size:30px;line-height:1.2;margin:8px 0 0;color:#f2eee5">
-      you&rsquo;re at ${schoolName}.
-    </h1>
-    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:18px auto 0;max-width:360px;font-family:Arial,sans-serif">
-      enter this code back in celestual to join your community&rsquo;s sky.
-    </p>
-    <div style="font-family:'Courier New',monospace;font-size:40px;letter-spacing:12px;color:#ffa25c;margin:28px 0 6px;font-weight:700">
-      ${spaced}
+  <div style="background-color:#05040c;padding:26px 12px;margin:0">
+    <div style="max-width:480px;margin:0 auto;padding:42px 22px 36px;text-align:center;border-radius:20px;
+      border:1px solid rgba(243,236,246,0.08);
+      background-color:#070b14;
+      background-image:
+        radial-gradient(circle at 10% 6%, rgba(255,158,107,0.17), transparent 34%),
+        radial-gradient(circle at 92% 12%, rgba(230,116,158,0.13), transparent 36%),
+        radial-gradient(circle at 88% 92%, rgba(126,107,168,0.18), transparent 40%),
+        radial-gradient(circle at 6% 88%, rgba(167,194,255,0.11), transparent 38%);
+      font-family:Georgia,serif;color:#f2eee5;">
+      <div style="${stars(0.32, 12)}">&#10023; &#183; &#10022; &#183; &#10023;</div>
+      <div style="font-size:34px;color:#ffa25c;margin:22px 0 0;text-shadow:0 0 22px rgba(255,158,107,0.85)">&#10022;</div>
+      <h1 style="font-weight:400;font-style:italic;font-size:29px;line-height:1.25;margin:16px 0 0;color:#f2eee5">
+        you&rsquo;re at ${schoolName}.
+      </h1>
+      <p style="color:#aeb6c6;font-size:14.5px;line-height:1.7;margin:14px auto 0;max-width:340px;font-family:Arial,sans-serif">
+        enter this code back in celestual to join your community&rsquo;s sky.
+      </p>
+      <div style="margin:26px auto 0;max-width:250px;padding:18px 10px 15px;border-radius:16px;
+        background:rgba(5,4,12,0.55);border:1px solid rgba(255,162,92,0.35);">
+        <div style="font-family:'Courier New',monospace;font-size:44px;letter-spacing:12px;padding-left:12px;color:#ffa25c;font-weight:700;line-height:1;white-space:nowrap">
+          ${code}
+        </div>
+      </div>
+      <div style="margin:18px 0 0">
+        <a href="${SITE}/copy#c=${code}"
+          style="display:inline-block;background:#ffa25c;color:#1a0f0a;text-decoration:none;font-family:Arial,sans-serif;
+          font-weight:700;font-size:14.5px;letter-spacing:0.3px;padding:13px 34px;border-radius:14px">
+          copy the code
+        </a>
+      </div>
+      <p style="color:#8b94a8;font-size:12px;font-family:Arial,sans-serif;margin:14px 0 0">it lasts ${CODE_TTL_MIN} minutes.</p>
+      <div style="${stars(0.22, 11)};margin-top:30px">&#183; &#10023; &#183; &#183; &#10023;</div>
+      <p style="color:#5b6377;font-size:11px;line-height:1.7;margin:26px auto 0;font-family:Arial,sans-serif;max-width:380px">
+        you&rsquo;re reading this because someone entered this address to join a community on celestual.
+        if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}
+      </p>
     </div>
-    <p style="color:#8b94a8;font-size:12px;font-family:Arial,sans-serif;margin:0">it lasts ${CODE_TTL_MIN} minutes.</p>
-    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:34px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
-      you&rsquo;re reading this because someone entered this address to join a community on celestual.
-      if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}
-    </p>
   </div>`;
 }
 
@@ -120,7 +150,9 @@ async function sendCodeEmail(to: string, code: string, schoolName: string) {
     body: JSON.stringify({
       from: FROM,
       to,
-      subject: 'celestual: your school code',
+      // the code IS the title — the notification alone is enough to read it
+      // and type it straight in
+      subject: `${code} is your celestual code`,
       html: codeEmailHtml(code, schoolName),
     }),
   });
@@ -161,7 +193,7 @@ Deno.serve(async (req) => {
       await supabase.from('celestual_edu_verifications').delete().lt('expires_at', new Date(Date.now() - 60_000).toISOString());
     }
 
-    const code = sixDigit();
+    const code = fourDigit();
     const codeHash = await sha256Hex(code);
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + CODE_TTL_MIN * 60_000).toISOString();
@@ -193,7 +225,7 @@ Deno.serve(async (req) => {
   if (action === 'verify') {
     const token = String(body.token || '');
     const code = String(body.code || '').replace(/\D/g, '');
-    if (!token || code.length !== 6) return json({ ok: false, error: 'code' });
+    if (!token || code.length !== 4) return json({ ok: false, error: 'code' });
 
     const { data: row, error } = await supabase
       .from('celestual_edu_verifications')
