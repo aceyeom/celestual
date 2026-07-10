@@ -12,12 +12,15 @@
 //   2. verify(token, code) → the same function checks the code against the stored
 //      hash (never returning it) and, on a match, reports the email + slug back.
 //
-// The code is a SECRET here (unlike the IG DM code, which the user re-sends): it
-// is emailed, never returned to the browser, and only its hash is stored. The
-// sandbox never touches any of this — the sheet auto-confirms locally so the shape
-// is fully playable with nothing sent.
+// The code is a SECRET: it is emailed, never returned to the browser, and only
+// its hash is stored. The sandbox runs this exact same pipeline (real send, real
+// verify) whenever the backend is configured — it is not faked. The one carve-out
+// is the domain check: alongside the real school domain, the sandbox also
+// silently accepts a @gmail.com address, so the whole flow is testable with an
+// inbox anyone actually holds. Only when no backend is configured at all (a
+// preview build with nothing wired) does the sheet fall back to a local accept.
 import { supabase, hasSupabase } from './supabase.js'
-import { emailMatchesSchool, isEduEmail, isPlausibleEmail } from '../communities.js'
+import { emailMatchesSchool, isEduEmail, isGmailAddress } from '../communities.js'
 
 const FUNCTION = 'celestual-edu-verify'
 
@@ -27,12 +30,11 @@ export const eduVerifyEnabled = () =>
   import.meta.env.VITE_EDU_VERIFY_ENABLED === '1' && hasSupabase
 
 // Client-side domain pre-check, so we never fire a send for an address that can't
-// belong to the school (the server re-checks — this is only to fail fast + kindly).
-// In the sandbox the whole flow is local anyway (see send() below), so the gate
-// only asks for a plausible address, any domain — real .edu-and-the-right-school
-// enforcement is production-only.
+// belong to the school (the server re-checks — this is only to fail fast +
+// kindly). In the sandbox a @gmail.com address is silently accepted too, on top
+// of the real school domain — every other domain still has to genuinely match.
 export function localEmailCheck(email, slug, demo) {
-  if (demo) return isPlausibleEmail(email) ? { ok: true } : { ok: false, error: 'email' }
+  if (demo && isGmailAddress(email)) return { ok: true }
   if (!isEduEmail(email)) return { ok: false, error: 'email' }
   if (!emailMatchesSchool(email, slug)) return { ok: false, error: 'domain' }
   return { ok: true }
@@ -40,9 +42,10 @@ export function localEmailCheck(email, slug, demo) {
 
 // Send a code to `email` for `slug`. Returns { token, expiresAt }. Throws an Error
 // whose .code is one of 'domain' | 'email' | 'rate' | 'send' so the UI can localize.
-export async function sendEduCode({ email, slug }) {
+// `demo` rides along so the server can apply the same @gmail.com carve-out.
+export async function sendEduCode({ email, slug, demo }) {
   const { data, error } = await supabase.functions.invoke(FUNCTION, {
-    body: { action: 'send', email: String(email).trim().toLowerCase(), slug },
+    body: { action: 'send', email: String(email).trim().toLowerCase(), slug, demo: !!demo },
   })
   if (error) {
     const e = new Error('send_failed')

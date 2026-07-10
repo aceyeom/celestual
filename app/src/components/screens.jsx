@@ -3112,8 +3112,10 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
 // Your ping only ever reaches people from your own community, so joining one asks
 // for a code emailed to an address at that school's domain. Two steps: enter the
 // address, then the code. On success it reports { slug, email } up so App can flip
-// membership. The sandbox (and any build without the backend wired) auto-confirms
-// once six digits are entered, so the whole shape is playable with nothing sent.
+// membership. The sandbox runs this exact real pipeline too (a real code, really
+// emailed, really verified) — its one carve-out is the domain check, which also
+// accepts @gmail.com. Only a build with no backend configured at all falls back
+// to a local auto-confirm, so the shape stays playable with nothing wired.
 export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
@@ -3121,7 +3123,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const domain = community.domain || 'school.edu'
   const name = community.name || 'your school'
   const short = community.short || name
-  const real = !demo && eduVerifyEnabled()
+  const real = eduVerifyEnabled()
 
   const [phase, setPhase] = React.useState('email') // email | sending | code | verifying | verified
   const [email, setEmail] = React.useState('')
@@ -3146,7 +3148,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
       return
     }
     try {
-      const r = await sendEduCode({ email, slug })
+      const r = await sendEduCode({ email, slug, demo })
       tokenRef.current = r.token
       setPhase('code')
     } catch (e) {
@@ -3248,7 +3250,8 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
               </span>
             </PrimaryButton>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoGmailNote')}</p>}
           </>
         ) : (
           <>
@@ -3283,7 +3286,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
               <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
               <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
             </div>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>

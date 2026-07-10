@@ -435,7 +435,8 @@ const en = {
   'edu.errExpired': 'that code lapsed. send a fresh one.',
   'edu.errRate': 'too many tries. give it a minute, then start again.',
   'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'edu.demoNote': 'sandbox. any email works here, and no real one is sent — enter any six digits and it confirms.',
+  'edu.demoNote': 'sandbox. no real email is sent — enter any six digits and it confirms.',
+  'edu.demoGmailNote': 'sandbox: a @gmail.com address is accepted here too, alongside the real school domain.',
 
   // ── affiliated schools (new-user onboarding step) ───────────────────────
   'schools.kicker': 'one more thing',
