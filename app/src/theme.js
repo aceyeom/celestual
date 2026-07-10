@@ -34,6 +34,18 @@ export const TOKENS = {
 // Palette passed to the galaxy canvas + makeColors, as a 2-tuple [you, them].
 export const PALETTE = [TOKENS.you, TOKENS.them]
 
+// The category lights — one tint per "who are they to you" answer, introduced
+// on the options tab and worn by the person's own stars in their community's
+// sky. Soft pastels of the same starlight family (never neon): rose for a
+// crush, ember for an ex, ice-blue for a friend, violet for complicated.
+// Subtle by design — the sky stays celestial, never a scatter of markers.
+export const CATEGORY_TINTS = {
+  crush: '#F79BC3',
+  ex: '#F08578',
+  friend: '#96BCF8',
+  complicated: '#B9A3E8',
+}
+
 // ── Geometry — one soft-radius scale, one spacing rhythm. ────────────────────
 // Inputs and buttons share ONE corner (`field`); cards step up one notch; true
 // pills are reserved for tiny chips. Shapes never compete.

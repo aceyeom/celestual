@@ -8,33 +8,53 @@
 // so watching the sky can never reveal who matched whom. That anonymity is
 // structural, not incidental — it's the double-blind, kept.
 //
-// It shares the backdrop galaxy's entire visual language on purpose — the same
-// deep-space gradient, the same perspective camera and tilt, the same soft round
-// star sprites, nebula gas, disk haze and full-frame background field — so the
-// moment the app swaps backdrops (joining a community, browsing one) reads as
-// turning to face a different part of the SAME universe, never a cheaper one.
+// It shares the backdrop galaxy's visual language on purpose — the same deep-
+// space gradient, perspective camera and tilt, soft round star sprites and
+// nebula gas — so the moment the app swaps backdrops reads as turning to face a
+// different part of the SAME universe, never a cheaper one.
 //
 // The live mechanics:
-//   · ping stars sit on two feathered logarithmic arms + inter-arm scatter with
-//     a compact luminous heart — a deterministic slot per index, filling from
-//     the core outward, so a small community is a tight young galaxy and a big
-//     one sprawls into the full spiral. Size is FELT, never merely read.
+//   · ping stars seat on two feathered logarithmic arms winding out of a dense
+//     golden bulge, with a thin inter-arm field — a deterministic slot per
+//     index, filling from the core outward, so a small community is a tight
+//     young galaxy and a big one sprawls into a true spiral (never a blob).
+//     Unresolved arm-dust and arm-seated gas grow with the population, so the
+//     spiral's silhouette reads at every size. Size is FELT, never merely read.
+//   · the whole scene is volumetric: a deep 3D shell of field stars surrounds
+//     the disk, so any camera travel (a zoom, a dive) streams real depth past
+//     the viewer instead of scaling a flat picture.
+//   · stars render as points of LIGHT, not textures: approach makes a star
+//     brighter and gives it diffraction spikes — it never swells into a soft
+//     pixel blob, however deep the zoom goes.
 //   · a new ping arrives as a METEOR: a slim streak that decelerates out of deep
-//     space into its slot and ignites with a diffraction-spike glisten (the same
-//     photographic signature the send-off morph uses), then settles to a twinkle.
-//   · matches trace themselves in as in-disk asterisms — a travelling spark draws
-//     the light-threads node to node; the figures ride the disk's own rotation.
+//     space into its slot and ignites with a diffraction-spike glisten, then
+//     settles to a twinkle.
+//   · matches trace themselves in as in-disk asterisms — a travelling spark
+//     draws the light-threads node to node; the figures ride the disk rotation.
 //   · below the privacy floor the community is FORMING: a slowly swirling proto-
-//     galaxy of luminous gas and uncountable motes (activity you can feel but
-//     never count), which resolves into real stars when the community opens.
-//   · a tap sends a wave through the disk PLANE (not a flat screen ring); stars
-//     the wavefront crosses flare briefly — the sky answers the hand.
+//     galaxy of luminous gas and uncountable motes.
+//   · the sky is HANDLED, not watched: drag orbits the disk, pinch (or wheel,
+//     or a double-tap) dives the camera toward the exact point touched — with
+//     real depth parallax — and a drag while zoomed pans across the field.
+//     The view rests where the hand leaves it; resetView() glides home.
+//     Gestures live only where the screen enables them (setZoomEnabled).
+//   · a plain tap still sends a wave through the disk PLANE; stars the
+//     wavefront crosses flare briefly — the sky answers the hand.
 //   · locateMine() flies the camera THROUGH the field to the viewer's own star
-//     (real depth parallax, neighbours streaming past), holds on it while it
-//     flares inside its ring, then eases back out. One gesture, no DOM.
+//     (neighbours streaming past), holds on it while it flares, then eases back.
+//   · the viewer's own stars are radiant four-spike beacons, each tinted by who
+//     the ping is to them (crush / ex / friend / complicated — theme.js's
+//     CATEGORY_TINTS, the same hues the options tab introduces).
+//   · opted-in public @s render ONLY where the screen turns them on
+//     (setTagsEnabled) and self-declutter — overlapping tags yield, fading,
+//     so the sky never piles handles into a glitchy heap.
 //
-// Dependency-free canvas, one rAF loop, honors prefers-reduced-motion, pauses on
-// a hidden tab — the same house rules as galaxy.js.
+// Dependency-free canvas, one rAF loop, honors prefers-reduced-motion, pauses
+// on a hidden tab, and degrades gracefully under load: a frame-time governor
+// steps the backing resolution and decorative density down (and back up) so a
+// thousand-star sky stays fluid on a weak phone.
+
+import { CATEGORY_TINTS } from './theme.js'
 
 function hexToRgb(hex) {
   const h = (hex || '#ffffff').replace('#', '')
@@ -42,9 +62,8 @@ function hexToRgb(hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-// The three sprites below deliberately mirror galaxy.js stroke for stroke — the
-// two skies must be lit by the same physics of light. (Kept local rather than
-// imported: the engines are separate on purpose and may tune independently.)
+// ── sprites ───────────────────────────────────────────────────────────────────
+// All the light in the sky comes from three pre-baked sprites per hue, cached.
 function makeGlow(color, size) {
   const s = document.createElement('canvas')
   s.width = s.height = size
@@ -58,20 +77,23 @@ function makeGlow(color, size) {
   c.fillRect(0, 0, size, size)
   return s
 }
-// A round, anti-aliased point of light: white-hot core falling off through the
-// star's own hue to a soft transparent edge. One per hue, cached.
+// A point of light: a hard white-hot core dropping fast through the star's own
+// hue to a tight halo. The energy is concentrated in the middle third, so the
+// sprite stays a crisp STAR when drawn small and never becomes a soft disc
+// when drawn large — the falloff carries the "point source" read at any scale.
 function makeStarSprite(color, size) {
   const s = document.createElement('canvas')
   s.width = s.height = size
   const c = s.getContext('2d')
   const [r, g, b] = hexToRgb(color)
   const m = size / 2
-  const wr = (r + 255 * 1.6) / 2.6, wg = (g + 255 * 1.6) / 2.6, wb = (b + 255 * 1.6) / 2.6
+  const wr = (r + 255 * 2) / 3, wg = (g + 255 * 2) / 3, wb = (b + 255 * 2) / 3
   const grd = c.createRadialGradient(m, m, 0, m, m, m)
   grd.addColorStop(0.0, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.28, `rgba(${wr | 0},${wg | 0},${wb | 0},0.98)`)
-  grd.addColorStop(0.5, `rgba(${r},${g},${b},0.62)`)
-  grd.addColorStop(0.78, `rgba(${r},${g},${b},0.16)`)
+  grd.addColorStop(0.16, `rgba(${wr | 0},${wg | 0},${wb | 0},0.98)`)
+  grd.addColorStop(0.34, `rgba(${r},${g},${b},0.55)`)
+  grd.addColorStop(0.55, `rgba(${r},${g},${b},0.18)`)
+  grd.addColorStop(0.8, `rgba(${r},${g},${b},0.04)`)
   grd.addColorStop(1.0, `rgba(${r},${g},${b},0)`)
   c.fillStyle = grd
   c.beginPath()
@@ -80,7 +102,7 @@ function makeStarSprite(color, size) {
   return s
 }
 // Four soft diffraction spikes — the photographic signature of a bright star
-// through a lens. Meteor ignitions and the brightest residents wear it.
+// through a lens. White-hot at the crossing, feathering into the given hue.
 function makeSpikeSprite(color, size) {
   const s = document.createElement('canvas')
   s.width = s.height = size
@@ -90,10 +112,12 @@ function makeSpikeSprite(color, size) {
   for (const horiz of [true, false]) {
     const g1 = horiz ? c.createLinearGradient(0, m, size, m) : c.createLinearGradient(m, 0, m, size)
     g1.addColorStop(0, `rgba(${r},${g},${b},0)`)
-    g1.addColorStop(0.5, `rgba(255,255,255,0.9)`)
+    g1.addColorStop(0.28, `rgba(${r},${g},${b},0.28)`)
+    g1.addColorStop(0.5, `rgba(255,255,255,0.92)`)
+    g1.addColorStop(0.72, `rgba(${r},${g},${b},0.28)`)
     g1.addColorStop(1, `rgba(${r},${g},${b},0)`)
     c.fillStyle = g1
-    const th = Math.max(1, size * 0.014)
+    const th = Math.max(1, size * 0.012)
     if (horiz) c.fillRect(0, m - th, size, th * 2)
     else c.fillRect(m - th, 0, th * 2, size)
   }
@@ -108,9 +132,8 @@ const smooth = (p) => p * p * (3 - 2 * p)
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
 
-// Stellar palette — identical to galaxy.js: warm gold heart, cream body, cool
-// young arms, rare red giant. The community's own two lights (`you`, `them`)
-// join it at runtime.
+// Stellar palette — warm gold bulge, cream body, cool young arms, rare red
+// giant. The community's own two lights (`you`, `them`) join it at runtime.
 const PAL = {
   gold: '#F6DCA9',
   cream: '#EFEAF2',
@@ -125,12 +148,14 @@ const PAL = {
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length
 const TILT = 1.04 // base disk tilt toward the camera (rad)
+const P0 = FOCAL / CAM // resting perspective at the galactic center
 
 // how many pings map the disk to (nearly) full frame; the disk fills from the
 // heart outward with √-area growth, so the size of a community is felt.
 const CAP = 1200
-const RMAX = 1.05 // disk radius (world units) at full cap — spills just past frame
-const PITCH = 3.1 // how far the two arms wind over the disk (rad at r = RMAX)
+const RMAX = 1.05 // disk radius (world units) at full cap
+const PITCH = 3.3 // how far each arm winds over the disk (rad at r = RMAX)
+const armAngle = (arm, r) => arm * Math.PI + (r / RMAX) * PITCH
 
 const METEOR_DUR = 1.15 // seconds a new ping streaks in
 const IGNITE_DUR = 0.55 // the glisten when it lands
@@ -141,14 +166,14 @@ const DIVE_HOLD = 1.9 // long enough to read the @ resting over the star
 const DIVE_OUT = 0.95
 const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 
-// Tap-to-zoom into the sky: each tap dollies the camera toward the spot the
-// finger met the disk plane, magnifying it (with true depth parallax — nearer
-// stars spread faster than far ones, so it reads 3D, not a flat scale). Repeated
-// taps compound the magnification up to a ceiling; ~3 s after the last tap the
-// camera eases all the way back to its resting frame.
-const ZOOM_STEP = 1.7 // magnification multiplier per tap
-const ZOOM_MAX = 4.2 // hard ceiling so a point never dives past the near plane
-const ZOOM_RESET_AFTER = 3.0 // seconds after the last tap before it drifts back
+// The hand-driven camera. Zoom is a real dolly toward a point on the disk plane
+// (nearer stars spread faster than far ones — depth, not scale). It RESTS where
+// the hand leaves it; nothing snaps back on a timer.
+const ZOOM_MAX = 7
+const DBLTAP_STEP = 2.6 // magnification per double-tap
+const ORBIT_YAW_MAX = 0.62
+const ORBIT_PITCH_MIN = -0.3
+const ORBIT_PITCH_MAX = 0.36
 
 export class CommunityGalaxy {
   constructor(canvas, opts = {}) {
@@ -167,14 +192,14 @@ export class CommunityGalaxy {
     this.p = { x: 0, y: 0 }
 
     // ── the live populations ──
-    this.stars = [] // one per ping: { i, born, state, settleAt, mine, label, ox, oy, trail }
+    this.stars = [] // one per ping: { i, born, state, settleAt, mine, label, kind, ox, oy, trail }
     this.consts = [] // one per mutual match: { nodes, born, tw, dying }
     this._slots = [] // deterministic disk slot per ping index (built lazily)
     this._cSeed = 0
     // The viewer's OWN stars — one per ping this device placed, each carrying its
-    // device-held plaintext @ as a label: [{ st, label }]. A list, not a single
-    // index, so "find your star" resolves with any number of standing pings and
-    // survives a remount (syncMine restores them from the ping list).
+    // device-held plaintext @ and who that ping is to them (the category tint):
+    // [{ st, label, kind }]. A list, not a single index, so "find your star"
+    // resolves with any number of standing pings and survives a remount.
     this.mine = []
     this.mineCursor = 0 // which own star an unlabelled locate visits next
     this.diveSt = null // the star the running dive is flying to
@@ -182,7 +207,8 @@ export class CommunityGalaxy {
     // Opted-in public @s — members who chose to announce themselves in this sky.
     this.publicList = []
     this.ownPublic = null // the viewer's own @ when they've flipped public
-    this.publicTags = [] // seated tags: [{ st, label, own, tw }]
+    this.publicTags = [] // seated tags: [{ st, label, own, tw, vis }]
+    this.tagsEnabled = false // only the community screen turns the @s on
 
     // "forming" = a gathering community below the privacy floor: uncountable
     // luminous gas + sub-resolution motes instead of discrete stars.
@@ -197,22 +223,32 @@ export class CommunityGalaxy {
     this.focus = 0 // eased dive progress the camera transform reads
     this.cam = { x: 0, y: 0, z: 0 }
 
-    // tap-to-zoom: `zoom` is the live magnification the camera reads, easing toward
-    // `zoomTarget`; `zoomFocus` is the disk-plane point last tapped; `zoomTapAt`
-    // stamps the last tap so the reset timer can run. Off (no-op) until the
-    // community screen enables it, so ambient backdrop taps elsewhere never zoom.
+    // The hand-driven camera: `zoom` eases toward `zoomTarget` (a dolly toward
+    // `zoomFocus`, a point on the disk plane); `orbit` is the drag-steered
+    // yaw/pitch with release inertia. All of it live only where the screen
+    // enables it (setZoomEnabled), so ambient backdrop taps never zoom.
     this.zoomEnabled = false
     this.zoom = 1
     this.zoomTarget = 1
     this.zoomFocus = { px: 0, pz: 0 }
-    this.zoomTapAt = -999
     this._zoomActive = false
-    this.onZoomState = null // (isZoomed:boolean) → screen fades the centered seal
+    this.onZoomState = null // (isZoomed:boolean) → screen fades chrome while zoomed
+    this.orbit = { yaw: 0, pitch: 0, vyaw: 0, vpitch: 0 }
+    this.gest = { pts: new Map(), mode: null, sx: 0, sy: 0, lx: 0, ly: 0, downT: 0, dist0: 1, zoom0: 1, lastTap: 0, lastTapX: 0, lastTapY: 0, vyaw: 0, vpitch: 0 }
+    this._interactAt = -10
+
+    // the frame-time governor: quality steps 0 (full) → 2 (lean). It only ever
+    // trades resolution and decoration — the countable pings always render.
+    this.qLevel = 0
+    this._ftEma = 16
+    this._qAt = 0
+    this.dprEff = this.dpr
 
     this._dotCache = {}
     this._glowCache = {}
+    this._spikeCache = {}
     this.glows = { you: makeGlow(this.you, 64), them: makeGlow(this.them, 64), white: makeGlow('#FFFFFF', 64) }
-    this._spike = makeSpikeSprite('#FFFFFF', 64)
+    this._spike = makeSpikeSprite('#FFFFFF', 128)
 
     this._genDecor()
     this._boundTick = (ts) => this._tick(ts)
@@ -220,13 +256,10 @@ export class CommunityGalaxy {
     this.resize()
   }
 
+  // Source sprites are generously sized (a zoom magnifies the whole field, and a
+  // small sprite blown up reads as a stepped blob); drawImage cost tracks the
+  // DESTINATION size, so the crispness is free.
   _dotFor(hex) {
-    // A generously-sized source sprite (was 32px). A tap-zoom magnifies the whole
-    // field, and a 32px point blown up 6–10× read as a blurred, stepped blob — the
-    // "pixelated surrounding stars". At 128px the same cached sprite stays crisp
-    // deep into a zoom, and since it's downscaled to a point when un-zoomed the
-    // per-frame draw cost is unchanged (drawImage cost tracks the DESTINATION size,
-    // not the source) — so the field is sharper with no added lag.
     if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
   }
@@ -234,58 +267,104 @@ export class CommunityGalaxy {
     if (!this._glowCache[hex]) this._glowCache[hex] = makeGlow(hex, 64)
     return this._glowCache[hex]
   }
+  _spikeFor(hex) {
+    if (!this._spikeCache[hex]) this._spikeCache[hex] = makeSpikeSprite(hex, 128)
+    return this._spikeCache[hex]
+  }
 
   // ── the scene dressing (mood, never counted) ────────────────────────────────
-  // A full-frame deep starfield, foreground dust and in-plane nebula gas — the
-  // same layered depth galaxy.js builds, so an EMPTY community still opens onto
-  // a real universe (the pings are what's missing, not the cosmos).
+  // A volumetric shell of deep-field stars all around the disk, foreground dust
+  // and arm-seated nebula gas. Every layer is a real 3D point through the same
+  // lens, so camera travel streams depth past the viewer — an EMPTY community
+  // still opens onto a real universe (the pings are what's missing, not the
+  // cosmos).
   _genDecor() {
     let s = 90217
     const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280
     const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5
+    const mobile = window.innerWidth < 540
 
-    this.bg = []
-    const bn = window.innerWidth < 540 ? 200 : 340
-    for (let i = 0; i < bn; i++) {
-      this.bg.push({
-        x: rnd(),
-        y: rnd(),
-        z: 0.3 + rnd() * 0.7,
-        rad: rnd() < 0.92 ? 0.5 + rnd() * 0.7 : 1.0 + rnd() * 0.9,
-        base: 0.12 + rnd() * 0.5,
-        hue: rnd() < 0.15 ? PAL.blue : rnd() < 0.2 ? PAL.warm : '#FFFFFF',
+    // the deep field — a shell of far suns (2.4 → 8 world units out), denser
+    // near, thinning with distance. They barely move at rest; they STREAM when
+    // the camera dives.
+    this.shell = []
+    const sn = mobile ? 300 : 460
+    for (let i = 0; i < sn; i++) {
+      const rr = 2.4 + Math.pow(rnd(), 1.5) * 5.6
+      const v = rnd() * 2 - 1
+      const u = rnd() * TWO
+      const ring = Math.sqrt(1 - v * v)
+      this.shell.push({
+        px: rr * ring * Math.cos(u),
+        py: rr * v * 0.85,
+        pz: rr * ring * Math.sin(u),
+        rad: rnd() < 0.9 ? 0.5 + rnd() * 0.75 : 1.1 + rnd() * 0.9,
+        base: 0.14 + rnd() * 0.5,
+        hue: rnd() < 0.16 ? PAL.blue : rnd() < 0.22 ? PAL.warm : '#FFFFFF',
         tw: rnd() * TWO,
         tws: 0.15 + rnd() * 0.7,
       })
     }
 
+    // near dust — sparse motes floating between the camera and the disk, the
+    // strongest parallax layer of all.
     this.dust = []
-    const dn = window.innerWidth < 540 ? 90 : 150
+    const dn = mobile ? 80 : 130
     for (let i = 0; i < dn; i++) {
       this.dust.push({
         px: (rnd() - 0.5) * 4.2,
-        py: (rnd() - 0.5) * 2.6,
+        py: (rnd() - 0.5) * 2.2,
         pz: (rnd() - 0.5) * 4.2,
-        rad: 0.4 + rnd() * 0.9,
-        base: 0.05 + rnd() * 0.18,
+        rad: 0.3 + rnd() * 0.7,
+        base: 0.05 + rnd() * 0.16,
         tw: rnd() * TWO,
         tws: 0.1 + rnd() * 0.4,
         warm: rnd() < 0.12,
       })
     }
 
+    // arm dust — unresolved starlight seeded along the same spiral equation the
+    // pings seat on, so the arms read as continuous luminous lanes. Its light is
+    // gated by the population envelope at draw time: a young community keeps a
+    // tight silhouette, a grown one wears the full spiral.
+    this.armDust = []
+    const an = mobile ? 360 : 520
+    for (let i = 0; i < an; i++) {
+      // two in three ride the arm lanes; the rest pool into the bulge, so the
+      // heart stays milky and golden however the camera holds it
+      const core = rnd() < 0.34
+      const r = core ? 0.03 + Math.pow(rnd(), 1.4) * 0.24 : 0.1 + Math.pow(rnd(), 0.7) * (RMAX - 0.08)
+      const arm = i % 2
+      const ang = core ? rnd() * TWO : armAngle(arm, r) + gauss() * (0.12 + 0.12 * (r / RMAX))
+      this.armDust.push({
+        px: Math.cos(ang) * r,
+        pz: Math.sin(ang) * r,
+        y: gauss() * (core ? 0.05 : 0.012 + 0.04 * Math.exp(-r * 2.6)),
+        r,
+        rad: 0.5 + rnd() * 0.9,
+        base: 0.08 + rnd() * 0.2,
+        hue: r > 0.55 ? (rnd() < 0.5 ? PAL.blue : PAL.cream) : rnd() < 0.5 ? PAL.gold : PAL.warm,
+        tw: rnd() * TWO,
+        tws: 0.2 + rnd() * 0.5,
+      })
+    }
+
+    // nebula gas — knots of luminous cloud riding the arms (cool, star-forming
+    // blues and violets) with a warm pair resting in the bulge.
     this.nebula = []
-    const NCOL = [PAL.blue, '#7E6BA8', '#C77E8A', PAL.warm, '#5E7BB0']
+    const NCOL = [PAL.blue, '#7E6BA8', '#C77E8A', '#5E7BB0']
     for (let i = 0; i < 10; i++) {
-      const r = 0.18 + rnd() * 0.85
-      const a = rnd() * TWO
+      const inCore = i < 2
+      const r = inCore ? 0.08 + rnd() * 0.14 : 0.28 + rnd() * 0.62
+      const ang = inCore ? rnd() * TWO : armAngle(i % 2, r) + gauss() * 0.16
       this.nebula.push({
-        px: Math.cos(a) * r,
-        py: gauss() * 0.1,
-        pz: Math.sin(a) * r,
-        rad: 0.3 + rnd() * 0.5,
-        col: NCOL[Math.floor(rnd() * NCOL.length)],
-        a: 0.04 + rnd() * 0.055,
+        px: Math.cos(ang) * r,
+        py: gauss() * 0.06,
+        pz: Math.sin(ang) * r,
+        rad: 0.22 + rnd() * 0.4,
+        col: inCore ? PAL.warm : NCOL[Math.floor(rnd() * NCOL.length)],
+        a: 0.045 + rnd() * 0.05,
+        r,
         tw: rnd() * TWO,
         tws: 0.05 + rnd() * 0.12,
       })
@@ -294,10 +373,11 @@ export class CommunityGalaxy {
 
   // ── the deterministic disk slot for the i-th ping ───────────────────────────
   // Radius grows with √index (even area fill, heart outward — the community's
-  // size is its silhouette); angle seats most stars on two feathered logarithmic
-  // arms with an inter-arm scatter and a compact spheroidal heart, so ANY count
-  // reads as a genuine spiral galaxy, not a sunflower plot. Deterministic in i:
-  // a star never moves once placed, and a re-seed lands everyone identically.
+  // size is its silhouette). A real share of stars feeds a dense golden BULGE;
+  // most of the rest seat on two logarithmic arms that wind ~three-quarters of
+  // a turn each, feathered tight enough to stay legible as arms; a thin
+  // inter-arm field keeps the disk from reading as two painted stripes.
+  // Deterministic in i: a star never moves once placed.
   _slot(i) {
     if (this._slots[i]) return this._slots[i]
     let s = (i * 2654435761 + 0x9e3779b9) >>> 0
@@ -307,32 +387,36 @@ export class CommunityGalaxy {
     let r = Math.sqrt((i + 0.5) / CAP) * RMAX
     const kind = rnd()
     let ang, y
-    if (r < 0.13 || kind < 0.17) {
-      // the heart — a bright spheroid fed by a real share of the pings, so the
-      // center burns dense and golden instead of reading as a hollow ring
+    let arm = false
+    if (r < 0.15 || kind < 0.16) {
+      // the bulge — a bright oblate spheroid, dense and golden at any count
       ang = rnd() * TWO
-      r *= 0.55 + rnd() * 0.5
-      y = gauss() * 0.05
-    } else if (kind < 0.74) {
-      // an arm star — two arms, winding with radius, feathered by a gaussian
-      ang = (i % 2) * Math.PI + (r / RMAX) * PITCH + gauss() * (0.2 + r * 0.18)
-      y = gauss() * (0.016 + 0.05 * Math.exp(-r * 2.4))
+      r *= 0.5 + rnd() * 0.55
+      y = gauss() * (0.045 + 0.035 * Math.exp(-r * 4))
+    } else if (kind < 0.84) {
+      // an arm star — two arms winding with radius, feathered by a tight
+      // gaussian that widens gently toward the rim, plus radial scatter so the
+      // lanes read organic, never drafted
+      arm = true
+      r = clamp(r + gauss() * 0.04, 0.1, RMAX)
+      ang = armAngle(i % 2, r) + gauss() * (0.11 + 0.13 * (r / RMAX))
+      y = gauss() * (0.014 + 0.045 * Math.exp(-r * 2.6))
     } else {
-      // inter-arm field star — keeps the disk from reading as two painted stripes
+      // inter-arm field star — present, but visibly quieter than the lanes
       ang = rnd() * TWO
-      y = gauss() * (0.02 + 0.045 * Math.exp(-r * 2.2))
+      y = gauss() * (0.018 + 0.04 * Math.exp(-r * 2.2))
     }
 
-    // hue by radius (gold heart → cream body → young blue rim), seasoned with the
-    // community's own two lights and the rare red giant
+    // hue by radius (gold heart → cream body → young blue arms), seasoned with
+    // the community's own two lights and the rare red giant
     const cr = rnd()
     let hue
-    if (r < 0.3) hue = cr < 0.5 ? PAL.gold : cr < 0.8 ? PAL.warm : PAL.cream
-    else if (r < 0.72) hue = cr < 0.14 ? PAL.warm : cr < 0.78 ? PAL.cream : PAL.blue
-    else hue = cr < 0.45 ? PAL.blue : cr < 0.58 ? PAL.ice : PAL.cream
+    if (r < 0.28) hue = cr < 0.55 ? PAL.gold : cr < 0.85 ? PAL.warm : PAL.cream
+    else if (r < 0.66) hue = cr < 0.14 ? PAL.warm : cr < 0.72 ? PAL.cream : PAL.blue
+    else hue = cr < 0.5 ? PAL.blue : cr < 0.64 ? PAL.ice : PAL.cream
     if (cr > 0.985) hue = PAL.red
-    else if (cr > 0.955) hue = this.you
-    else if (cr > 0.94) hue = this.them
+    else if (cr > 0.958) hue = this.you
+    else if (cr > 0.944) hue = this.them
 
     const slot = {
       px: Math.cos(ang) * r,
@@ -341,9 +425,11 @@ export class CommunityGalaxy {
       r,
       hue,
       // each ping is a resolved star, not dust — big and bright enough that the
-      // countable population owns the sky over every decorative layer
+      // countable population owns the sky over every decorative layer. Arm
+      // stars burn a touch brighter than the inter-arm field: the contrast is
+      // what makes the spiral legible.
       rad: 0.75 + rnd() * 1.05,
-      base: (0.52 + rnd() * 0.44) * (1 - r * 0.16),
+      base: (0.54 + rnd() * 0.44) * (1 - r * 0.14) * (arm || r < 0.3 ? 1 : 0.8),
       glow: rnd() < 0.09,
       phase: rnd() * TWO,
       tws: 0.2 + rnd() * 0.6,
@@ -356,6 +442,8 @@ export class CommunityGalaxy {
   _bind() {
     this._onResize = () => this.resize()
     this._onPointer = (e) => {
+      // ambient parallax only — a live drag/pinch owns the pointer
+      if (this.gest.mode === 'drag' || this.gest.mode === 'pinch') return
       const x = (e.clientX / window.innerWidth) * 2 - 1
       const y = (e.clientY / window.innerHeight) * 2 - 1
       this.pTarget.x = clamp(x, -1, 1)
@@ -372,35 +460,41 @@ export class CommunityGalaxy {
       this.pTarget.y = this.pTarget.y * 0.85 + dz(ny) * 0.15
     }
     this._onVis = () => (document.hidden ? this.stop() : this.start())
-    // A tap anywhere non-interactive sends a wave through the disk plane.
-    // Guarded so taps on buttons/inputs never trigger it.
-    this._onDown = (e) => {
-      const el = e.target
-      if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
-      this.ripple(e.clientX, e.clientY)
-    }
+    this._gDown = (e) => this._gestureDown(e)
+    this._gMove = (e) => this._gestureMove(e)
+    this._gUp = (e) => this._gestureUp(e)
+    this._gWheel = (e) => this._gestureWheel(e)
     window.addEventListener('resize', this._onResize)
     document.addEventListener('visibilitychange', this._onVis)
+    window.addEventListener('pointerdown', this._gDown, { passive: true })
+    window.addEventListener('pointermove', this._gMove, { passive: true })
+    window.addEventListener('pointerup', this._gUp, { passive: true })
+    window.addEventListener('pointercancel', this._gUp, { passive: true })
+    window.addEventListener('wheel', this._gWheel, { passive: true })
     if (!this.reduced) {
       window.addEventListener('pointermove', this._onPointer, { passive: true })
       window.addEventListener('deviceorientation', this._onTilt, { passive: true })
-      window.addEventListener('pointerdown', this._onDown, { passive: true })
     }
   }
 
-  resize() {
+  resize(force) {
     const rect = this.canvas.getBoundingClientRect()
     const w = rect.width || window.innerWidth || 402
     const h = rect.height || window.innerHeight || 760
     // Ignore the small height-only changes of the collapsing mobile URL bar
     // (reallocating the backing store every toolbar frame reads as vibration).
-    if (this.w && w === this.w && Math.abs(h - this.h) < 130) return
+    if (!force && this.w && w === this.w && Math.abs(h - this.h) < 130) return
     this.w = w
     this.h = h
-    this.canvas.width = Math.round(w * this.dpr)
-    this.canvas.height = Math.round(h * this.dpr)
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0)
-    this.unit = Math.min(w, h) * 0.62 + Math.max(w, h) * 0.05
+    this.canvas.width = Math.round(w * this.dprEff)
+    this.canvas.height = Math.round(h * this.dprEff)
+    this.ctx.setTransform(this.dprEff, 0, 0, this.dprEff, 0, 0)
+    // Frame the disk to the viewport: on a portrait phone the WIDTH is the
+    // constraint (the old sizing spilled a third of the galaxy off both edges,
+    // which is what made the mobile sky feel crammed); on wide screens the
+    // height rules. A whisper of the long side keeps big screens generous, and
+    // a full-cap community's rim is allowed to breathe just past the frame.
+    this.unit = Math.min(w * 0.62, h * 0.46) + Math.max(w, h) * 0.03
     this.cx = w / 2
     this.cy = h * 0.42 // the heart rests in the page's hero zone
     this._bgGrad = null
@@ -430,7 +524,11 @@ export class CommunityGalaxy {
     document.removeEventListener('visibilitychange', this._onVis)
     window.removeEventListener('pointermove', this._onPointer)
     window.removeEventListener('deviceorientation', this._onTilt)
-    window.removeEventListener('pointerdown', this._onDown)
+    window.removeEventListener('pointerdown', this._gDown)
+    window.removeEventListener('pointermove', this._gMove)
+    window.removeEventListener('pointerup', this._gUp)
+    window.removeEventListener('pointercancel', this._gUp)
+    window.removeEventListener('wheel', this._gWheel)
   }
 
   // ── the live API (what the app drives) ──────────────────────────────────────
@@ -441,10 +539,18 @@ export class CommunityGalaxy {
     return this.consts.length
   }
 
+  // A viewer's-own entry arrives as a plain label or { label, kind } — kind is
+  // who the ping is to them (crush / ex / friend / complicated), the tint the
+  // star wears. Normalized here so every caller stays simple.
+  _mineEntry(m) {
+    if (m && typeof m === 'object') return { label: m.label || null, kind: m.kind || '' }
+    return { label: m || null, kind: '' }
+  }
+
   // Instantly populate `n` resting ping-stars (mount / true count known). They
   // twinkle in over a staggered beat — opening a busy sky never fires a meteor
   // shower at the viewer. `mine` is the device-held list of the viewer's own
-  // placed @s: each rests in as their own findable star.
+  // placed pings: each rests in as their own findable star.
   seed(n, mine = []) {
     n = Math.max(0, Math.floor(n))
     this.stars = []
@@ -457,15 +563,16 @@ export class CommunityGalaxy {
     for (let i = 0; i < n; i++) {
       this.stars.push({ i, born: -10, state: 'rest', settleAt: this.t + Math.random() * 1.1, mine: false })
     }
-    for (const label of mine) this._restMine(label)
+    for (const m of mine) this._restMine(this._mineEntry(m))
     this._seatPublicTags()
     this.start()
   }
 
   // Your own stars are spread around the disk: consecutive indices would seat
-  // them as touching neighbours, which reads as an artifact once each wears its
-  // ring. One golden-angle turn per own-star keeps them apart, deterministically
-  // (the cache is rebuilt fresh so a reseed lands them identically).
+  // them as touching neighbours, which reads as an artifact once each burns
+  // bright. One golden-angle turn per own-star keeps them apart,
+  // deterministically (the cache is rebuilt fresh so a reseed lands them
+  // identically).
   _spreadMineSlot(i, k) {
     delete this._slots[i]
     const slot = this._slot(i)
@@ -477,24 +584,33 @@ export class CommunityGalaxy {
 
   // Quietly rest one of the viewer's own stars into the disk (no meteor) — the
   // mount path, when the device already holds placed pings.
-  _restMine(label) {
+  _restMine(entry) {
     const i = this.stars.length
     this._spreadMineSlot(i, this.mine.length)
-    const st = { i, born: -10, state: 'rest', settleAt: this.t + Math.random() * 0.9, mine: true, label: label || null }
+    const st = { i, born: -10, state: 'rest', settleAt: this.t + Math.random() * 0.9, mine: true, label: entry.label, kind: entry.kind }
     this.stars.push(st)
-    this.mine.push({ st, label: label || null })
+    this.mine.push({ st, label: entry.label, kind: entry.kind })
     return st
   }
 
   // Reconcile the viewer's own stars against the device-held ping list. Adds
-  // missing ones quietly and drops stars for pings that were let go. Idempotent
-  // by label, so a screen-driven launch() that already added its @ is a no-op.
-  syncMine(labels = []) {
-    const want = labels.filter(Boolean)
-    const have = new Set(this.mine.map((m) => m.label))
-    for (const l of want) if (!have.has(l)) this._restMine(l)
+  // missing ones quietly, updates a changed tint in place, and drops stars for
+  // pings that were let go. Idempotent by label, so a screen-driven launch()
+  // that already added its @ is a no-op.
+  syncMine(entries = []) {
+    const want = entries.map((m) => this._mineEntry(m)).filter((m) => m.label)
+    const have = new Map(this.mine.map((m) => [m.label, m]))
+    for (const e of want) {
+      const cur = have.get(e.label)
+      if (!cur) this._restMine(e)
+      else if (cur.kind !== e.kind) {
+        cur.kind = e.kind
+        cur.st.kind = e.kind
+      }
+    }
+    const labels = new Set(want.map((e) => e.label))
     for (const m of [...this.mine]) {
-      if (m.label && !want.includes(m.label)) {
+      if (m.label && !labels.has(m.label)) {
         const at = this.stars.indexOf(m.st)
         if (at >= 0) this.stars.splice(at, 1)
         this.mine.splice(this.mine.indexOf(m), 1)
@@ -516,7 +632,7 @@ export class CommunityGalaxy {
     for (let j = 0; j < k; j++) {
       const i = this.stars.length
       if (opts.mine) this._spreadMineSlot(i, this.mine.length)
-      const st = { i, born: this.t + j * 0.12, state: 'meteor', settleAt: 0, mine: !!opts.mine, label: opts.label || null, trail: [] }
+      const st = { i, born: this.t + j * 0.12, state: 'meteor', settleAt: 0, mine: !!opts.mine, label: opts.label || null, kind: opts.kind || '', trail: [] }
       if (j >= meteors) {
         st.state = 'rest'
         st.born = -10
@@ -532,7 +648,7 @@ export class CommunityGalaxy {
         st.trail = null
       }
       this.stars.push(st)
-      if (opts.mine) this.mine.push({ st, label: opts.label || null })
+      if (opts.mine) this.mine.push({ st, label: opts.label || null, kind: opts.kind || '' })
     }
     this._seatPublicTags()
     this.start()
@@ -581,11 +697,20 @@ export class CommunityGalaxy {
     this.start()
   }
 
+  // Whether the @ layer renders at all. Only the community page — where the sky
+  // is the hero — turns it on; everywhere else this same engine is an ambient
+  // backdrop, and handles floating behind foreground cards read as glitches.
+  setTagsEnabled(on) {
+    this.tagsEnabled = !!on
+    this.start()
+  }
+
   // Seat each public @ on a deterministic resident star (hashed by handle, so a
   // tag never wanders between frames or mounts), skipping the viewer's own.
   // Tags prefer the disk's mid-body — never the luminous heart, where they'd
   // pile over the community's central seal, and never the thin far rim.
   _seatPublicTags() {
+    const prior = new Map(this.publicTags.map((tg) => [tg.label, tg.vis]))
     const tags = []
     const n = this.stars.length
     if (n > 0) {
@@ -604,11 +729,11 @@ export class CommunityGalaxy {
         while (!seatable(idx) && guard++ < n) idx = (idx + 7) % n
         if (!seatable(idx)) continue // a very young sky — better untagged than piled
         used.add(idx)
-        tags.push({ st: this.stars[idx], label, own: false, tw: ((h % 100) / 100) * TWO })
+        tags.push({ st: this.stars[idx], label, own: false, tw: ((h % 100) / 100) * TWO, vis: prior.get(label) || 0 })
       }
     }
     if (this.ownPublic && this.mine.length) {
-      tags.push({ st: this.mine[this.mine.length - 1].st, label: this.ownPublic, own: true, tw: 0 })
+      tags.push({ st: this.mine[this.mine.length - 1].st, label: this.ownPublic, own: true, tw: 0, vis: prior.get(this.ownPublic) || 0 })
     }
     this.publicTags = tags
   }
@@ -705,6 +830,8 @@ export class CommunityGalaxy {
     if (!entry || !this.stars.includes(entry.st)) return false
     this.diveSt = entry.st
     this.diveLabel = entry.label
+    // the dive owns the camera — release any hand-held zoom first
+    this.zoomTarget = 1
     if (this.reduced) this.locateFx = { t0: this.t } // clock-based: survives dt=0 draws
     else this.dive = { t: 0 }
     this.start()
@@ -714,59 +841,202 @@ export class CommunityGalaxy {
     return this.mine.length > 0
   }
 
-  // Turn tap-to-zoom on/off. The community screen switches it on while it's the
-  // hero; everywhere else this same engine is only the ambient backdrop, so its
-  // taps stay a ripple with no zoom. Turning it off releases any live zoom.
+  // Turn the hand-driven camera on/off. The community screen switches it on
+  // while the sky is the hero; everywhere else this same engine is only the
+  // ambient backdrop, so taps stay a ripple with no zoom. Turning it off
+  // releases any live zoom and orbit.
   setZoomEnabled(on) {
     this.zoomEnabled = !!on
-    if (!on) {
-      this.zoomTarget = 1
-      this.zoomTapAt = -999
+    if (!on) this.resetView()
+    this.start()
+  }
+
+  // Glide the camera home: zoom out to the resting frame, orbit unwinding.
+  resetView() {
+    this.zoomTarget = 1
+    this.orbit.vyaw = 0
+    this.orbit.vpitch = 0
+    this.start()
+  }
+
+  // ── gestures ────────────────────────────────────────────────────────────────
+  // One pointer: a quick touch is a tap (a wave through the disk; two in a row
+  // dive the camera toward the spot), a drag orbits the disk — or pans across
+  // it once zoomed. Two pointers pinch-zoom around their midpoint. A wheel
+  // dollies toward the cursor. Everything rests where the hand leaves it.
+  _gestureDown(e) {
+    const el = e.target
+    if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
+    const g = this.gest
+    g.pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (!this.zoomEnabled || this.dive) {
+      // backdrop mode: the old behavior — a tap is a ripple, nothing more
+      if (g.pts.size === 1 && !this.reduced) this.ripple(e.clientX, e.clientY)
+      return
+    }
+    this._interactAt = this.t
+    if (g.pts.size === 2) {
+      const [p1, p2] = [...g.pts.values()]
+      g.mode = 'pinch'
+      g.dist0 = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
+      g.zoom0 = this.zoomTarget
+      g.lx = (p1.x + p2.x) / 2
+      g.ly = (p1.y + p2.y) / 2
+      // anchor the dolly on the point between the fingers
+      if (this.zoomTarget <= 1.04) this.zoomFocus = this._planePoint(g.lx, g.ly)
+    } else if (g.pts.size === 1) {
+      g.mode = 'press'
+      g.sx = g.lx = e.clientX
+      g.sy = g.ly = e.clientY
+      g.downT = performance.now()
+      g.vyaw = 0
+      g.vpitch = 0
     }
     this.start()
   }
 
-  // A tap becomes a wave in the DISK PLANE: unproject the screen point onto the
-  // plane (a few Newton passes over the perspective divide), then let an
-  // expanding ring sweep the disk — stars flare as the front crosses them. When
-  // zoom is enabled the same unprojected point also becomes the zoom target, so
-  // the sky both answers the hand AND leans in toward exactly where it was touched.
-  ripple(clientX, clientY) {
+  _gestureMove(e) {
+    const g = this.gest
+    const p = g.pts.get(e.pointerId)
+    if (!p) return
+    p.x = e.clientX
+    p.y = e.clientY
+    if (g.mode === 'pinch' && g.pts.size >= 2) {
+      const [p1, p2] = [...g.pts.values()]
+      const d = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
+      this.zoomTarget = clamp(g.zoom0 * (d / g.dist0), 1, ZOOM_MAX)
+      // two-finger drift pans the field with the hand
+      const mx = (p1.x + p2.x) / 2
+      const my = (p1.y + p2.y) / 2
+      if (this.zoom > 1.04) this._panBy(g.lx, g.ly, mx, my)
+      g.lx = mx
+      g.ly = my
+      this._interactAt = this.t
+      this.start()
+    } else if (g.mode === 'press' || g.mode === 'drag') {
+      if (g.mode === 'press' && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 7) g.mode = 'drag'
+      if (g.mode !== 'drag') return
+      const dx = e.clientX - g.lx
+      const dy = e.clientY - g.ly
+      if (this.zoom > 1.06) {
+        // zoomed: the drag pans — the world follows the finger
+        this._panBy(g.lx, g.ly, e.clientX, e.clientY)
+      } else {
+        // resting: the drag orbits — steering the whole disk in the hand
+        this.orbit.yaw = clamp(this.orbit.yaw + dx * 0.0036, -ORBIT_YAW_MAX, ORBIT_YAW_MAX)
+        this.orbit.pitch = clamp(this.orbit.pitch - dy * 0.0028, ORBIT_PITCH_MIN, ORBIT_PITCH_MAX)
+        g.vyaw = dx * 0.22
+        g.vpitch = -dy * 0.17
+      }
+      g.lx = e.clientX
+      g.ly = e.clientY
+      this._interactAt = this.t
+      this.start()
+    }
+  }
+
+  _gestureUp(e) {
+    const g = this.gest
+    if (!g.pts.delete(e.pointerId)) return
+    if (g.mode === 'pinch') {
+      if (g.pts.size < 2) g.mode = null
+      return
+    }
+    if (g.mode === 'drag') {
+      // let the orbit coast a breath past the release
+      this.orbit.vyaw = g.vyaw
+      this.orbit.vpitch = g.vpitch
+      g.mode = null
+      return
+    }
+    if (g.mode !== 'press') return
+    g.mode = null
+    if (performance.now() - g.downT > 380) return
+    const now = performance.now()
+    // double-tap: dive toward the spot — or, from deep in, pull all the way home
+    if (now - g.lastTap < 330 && Math.hypot(e.clientX - g.lastTapX, e.clientY - g.lastTapY) < 42) {
+      g.lastTap = 0
+      if (this.zoomTarget > 2.6) this.resetView()
+      else {
+        this.zoomFocus = this._planePoint(e.clientX, e.clientY)
+        this.zoomTarget = Math.min(Math.max(this.zoomTarget, 1) * DBLTAP_STEP, ZOOM_MAX)
+      }
+      this._interactAt = this.t
+      this.start()
+      return
+    }
+    g.lastTap = now
+    g.lastTapX = e.clientX
+    g.lastTapY = e.clientY
+    if (!this.reduced) this.ripple(e.clientX, e.clientY)
+  }
+
+  _gestureWheel(e) {
+    if (!this.zoomEnabled || this.dive) return
+    const el = e.target
+    if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
+    const f = Math.exp(-e.deltaY * 0.0016)
+    const nz = clamp(this.zoomTarget * f, 1, ZOOM_MAX)
+    if (nz > this.zoomTarget && this.zoomTarget <= 1.04) this.zoomFocus = this._planePoint(e.clientX, e.clientY)
+    this.zoomTarget = nz
+    this._interactAt = this.t
+    this.start()
+  }
+
+  // Slide the zoom focus so the disk-plane point under (x0,y0) lands under
+  // (x1,y1) — the world follows the finger. One step per event converges
+  // visually (the focus shift re-centers the camera the next frame).
+  _panBy(x0, y0, x1, y1) {
+    const w0 = this._planePoint(x0, y0)
+    const w1 = this._planePoint(x1, y1)
+    let px = this.zoomFocus.px + (w0.px - w1.px)
+    let pz = this.zoomFocus.pz + (w0.pz - w1.pz)
+    const rr = Math.hypot(px, pz)
+    if (rr > RMAX * 1.25) {
+      const f = (RMAX * 1.25) / rr
+      px *= f
+      pz *= f
+    }
+    this.zoomFocus = { px, pz }
+  }
+
+  // Unproject a screen point onto the disk plane (y = 0), honoring the live
+  // camera offsets — a few Newton passes over the perspective divide.
+  _planePoint(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect()
     const tx = clientX - rect.left
     const ty = clientY - rect.top
-    const rot = this._rot()
+    const rot = this._rotCache || this._rot()
     const A = this._view(1, 0, 0, rot)
     const B = this._view(0, 0, 1, rot)
     let zc = CAM
     let a = 0, b = 0
-    for (let it = 0; it < 3; it++) {
+    for (let it = 0; it < 4; it++) {
       const persp = FOCAL / zc
-      const x = (tx - this.cx) / (this.unit * persp)
-      const y = (ty - this.cy) / (this.unit * persp)
+      const x = (tx - this.cx) / (this.unit * persp) + this.cam.x
+      const y = (ty - this.cy) / (this.unit * persp) + this.cam.y
       const det = A.x * B.y - B.x * A.y
       if (Math.abs(det) < 1e-6) break
       a = (x * B.y - B.x * y) / det
       b = (A.x * y - x * A.y) / det
-      zc = CAM + a * A.z + b * B.z
-      if (zc < 0.4) zc = 0.4
+      zc = CAM + a * A.z + b * B.z - this.cam.z
+      if (zc < 0.35) zc = 0.35
     }
     const rr = Math.hypot(a, b)
-    if (rr > RMAX * 1.5) {
-      const f = (RMAX * 1.5) / rr
+    if (rr > RMAX * 1.4) {
+      const f = (RMAX * 1.4) / rr
       a *= f
       b *= f
     }
-    this.waves.push({ px: a, pz: b, t: 0 })
-    if (this.waves.length > 3) this.waves.shift()
+    return { px: a, pz: b }
+  }
 
-    // lean the camera toward the touched spot and step the magnification up (a
-    // dive owns the camera outright, so don't fight it mid-flight)
-    if (this.zoomEnabled && !this.dive) {
-      this.zoomFocus = { px: a, pz: b }
-      this.zoomTarget = Math.min(this.zoomTarget * ZOOM_STEP, ZOOM_MAX)
-      this.zoomTapAt = this.t
-    }
+  // A tap becomes a wave in the DISK PLANE: an expanding ring sweeps the disk —
+  // stars flare as the front crosses them. The sky answers the hand.
+  ripple(clientX, clientY) {
+    const pt = this._planePoint(clientX, clientY)
+    this.waves.push({ px: pt.px, pz: pt.pz, t: 0 })
+    if (this.waves.length > 3) this.waves.shift()
     this.start()
   }
 
@@ -802,11 +1072,12 @@ export class CommunityGalaxy {
 
   _rot() {
     // While the dive holds a star, freeze the orientation so it sits rock-steady
-    // in the crosshairs instead of swimming under the camera.
+    // in the crosshairs instead of swimming under the camera. The hand's orbit
+    // rides the same envelope, so a dive overrides a half-turned disk cleanly.
     const hold = 1 - this.focus
-    const driftY = Math.sin(this.t * 0.12) * 0.06 * hold
-    const yaw = this.p.x * 0.3 * hold + driftY
-    const tilt = TILT + (this.p.y * 0.18 + Math.sin(this.t * 0.09) * 0.02) * hold
+    const driftY = Math.sin(this.t * 0.12) * 0.05 * hold
+    const yaw = (this.p.x * 0.22 + this.orbit.yaw) * hold + driftY
+    const tilt = TILT + (this.p.y * 0.14 + Math.sin(this.t * 0.09) * 0.02 + this.orbit.pitch) * hold
     return {
       cosS: Math.cos(this.spin),
       sinS: Math.sin(this.spin),
@@ -817,11 +1088,42 @@ export class CommunityGalaxy {
     }
   }
 
+  // ── the frame-time governor ─────────────────────────────────────────────────
+  // An EMA of raw frame time steps quality down (backing resolution + the
+  // decorative layers' density) when the device can't hold the frame, and back
+  // up when it can. The countable pings are never traded away. Hysteresis on
+  // both edges so it never flaps.
+  _govern(rawMs, ts) {
+    if (rawMs > 0 && rawMs < 250) this._ftEma = this._ftEma * 0.94 + rawMs * 0.06
+    if (ts - this._qAt < 1600) return
+    if (this._ftEma > 34 && this.qLevel < 2) {
+      this.qLevel++
+      this._qAt = ts
+      this._applyQuality()
+    } else if (this._ftEma < 17 && this.qLevel > 0 && ts - this._qAt > 6000) {
+      this.qLevel--
+      this._qAt = ts
+      this._applyQuality()
+    }
+  }
+  _applyQuality() {
+    const scale = [1, 0.78, 0.6][this.qLevel]
+    this.dprEff = Math.max(1, this.dpr * scale)
+    this._ftEma = 22 // re-center the meter so one step gets a fair trial
+    this.resize(true)
+  }
+  // decorative layers draw every `step`-th particle under pressure
+  get _decorStep() {
+    return this.qLevel === 0 ? 1 : 2
+  }
+
   // ── the loop ────────────────────────────────────────────────────────────────
   _tick(ts) {
     if (!this.running) return
-    const dt = Math.min(0.05, (ts - this.lastTs) / 1000)
+    const raw = ts - this.lastTs
+    const dt = Math.min(0.05, raw / 1000)
     this.lastTs = ts
+    this._govern(raw, ts)
 
     // the dive timeline: glide in, hold on the flaring star, glide out
     if (this.dive) {
@@ -840,10 +1142,14 @@ export class CommunityGalaxy {
 
     if (this.reduced) {
       this.t += dt
+      this._easeZoom(dt)
       this._draw(0)
       const busy =
         this.locateFx ||
         this.waves.length ||
+        this.zoom !== this.zoomTarget ||
+        this.zoom > 1.001 !== this.zoomTarget > 1.001 ||
+        Math.abs(this.zoom - this.zoomTarget) > 0.002 ||
         this.stars.some((s) => s.settleAt > 0 && this.t - s.settleAt < 1.2) ||
         this.consts.some((c) => !c.dying && this.t - c.born < 2.4)
       if (!busy && this.t > 1) {
@@ -859,23 +1165,41 @@ export class CommunityGalaxy {
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.5))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.5))
 
-    // tap-to-zoom: hold the magnification for ~3 s after the last tap, then ease
-    // all the way back. The push-in is a touch quicker than the release, so a tap
-    // feels responsive and the reset feels like a settle, not a snap.
-    if (this.zoom !== 1 || this.zoomTarget !== 1) {
-      if (this.zoomTarget > 1 && this.t - this.zoomTapAt > ZOOM_RESET_AFTER) this.zoomTarget = 1
-      const k = this.zoomTarget > this.zoom ? 4.5 : 2.6
-      this.zoom = lerp(this.zoom, this.zoomTarget, Math.min(1, dt * k))
-      if (this.zoomTarget === 1 && Math.abs(this.zoom - 1) < 0.002) this.zoom = 1
-      const active = this.zoom > 1.03
-      if (active !== this._zoomActive) {
-        this._zoomActive = active
-        if (this.onZoomState) this.onZoomState(active)
+    // the hand's orbit: inertia coasts past release, then the disk drifts home
+    const g = this.gest
+    if (g.mode !== 'drag') {
+      this.orbit.yaw = clamp(this.orbit.yaw + this.orbit.vyaw * dt, -ORBIT_YAW_MAX, ORBIT_YAW_MAX)
+      this.orbit.pitch = clamp(this.orbit.pitch + this.orbit.vpitch * dt, ORBIT_PITCH_MIN, ORBIT_PITCH_MAX)
+      const dec = Math.exp(-dt * 2.4)
+      this.orbit.vyaw *= dec
+      this.orbit.vpitch *= dec
+      if (this.zoom < 1.04 && this.t - this._interactAt > 4) {
+        const home = Math.min(1, dt * 0.5)
+        this.orbit.yaw = lerp(this.orbit.yaw, 0, home)
+        this.orbit.pitch = lerp(this.orbit.pitch, 0, home)
       }
     }
 
+    this._easeZoom(dt)
+
     this._draw(dt)
     requestAnimationFrame(this._boundTick)
+  }
+
+  // the dolly eases toward the hand's target: a touch quicker pushing in than
+  // settling out, so a gesture feels answered and a release feels like a glide.
+  // The screen only goes immersive once the zoom is a commitment (not a nudge),
+  // and comes back a little below that so the chrome never flickers at the edge.
+  _easeZoom(dt) {
+    if (this.zoom === this.zoomTarget) return
+    const k = this.zoomTarget > this.zoom ? 6 : 3.4
+    this.zoom = lerp(this.zoom, this.zoomTarget, Math.min(1, dt * k))
+    if (Math.abs(this.zoom - this.zoomTarget) < 0.002) this.zoom = this.zoomTarget
+    const active = this._zoomActive ? this.zoom > 1.18 : this.zoom > 1.32
+    if (active !== this._zoomActive) {
+      this._zoomActive = active
+      if (this.onZoomState) this.onZoomState(active)
+    }
   }
 
   _draw(dt) {
@@ -892,11 +1216,11 @@ export class CommunityGalaxy {
       this.cam.y = f * T.y
       this.cam.z = f * (CAM + T.z - STANDOFF)
     } else if (this.zoom > 1.001) {
-      // tap-zoom: dolly the camera toward the touched disk point. `cen` (0→1 as
-      // zoom climbs) both magnifies that point by ~`zoom`× (its camera-space depth
-      // shrinks to zc0/zoom) and slides it toward frame center — nearer stars swell
-      // faster than far ones, so the lean-in reads as real 3D depth. At zoom≈1 the
-      // offset is zero: the identity camera, no seam with the resting sky.
+      // the hand's dolly: `cen` (0→1 as zoom climbs) both magnifies the focused
+      // point by ~`zoom`× (its camera-space depth shrinks to zc0/zoom) and
+      // slides it toward frame center — nearer stars swell faster than far
+      // ones, so the lean-in reads as real 3D depth. At zoom≈1 the offset is
+      // zero: the identity camera, no seam with the resting sky.
       const T = this._view(this.zoomFocus.px, 0, this.zoomFocus.pz, rot)
       const zc0 = CAM + T.z
       const cen = 1 - 1 / this.zoom
@@ -907,9 +1231,13 @@ export class CommunityGalaxy {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
 
-    // as the camera commits, the field melts back so the hero star arrives alone
+    // as the camera commits to a dive, the field melts back so the hero star
+    // arrives alone
     const d = 1 - this.focus * 0.5
     const fillFrac = clamp(this.stars.length / CAP, 0, 1)
+    // the population envelope: how far out the disk is lit (arm dust and gas
+    // only glow where real pings already live)
+    const fillR = Math.max(Math.sqrt(Math.max(this.stars.length, 30) / CAP) * RMAX, 0.3)
 
     // deep-space backdrop — the SAME gradient as galaxy.js, so swapping between
     // the two skies never changes the color of space itself
@@ -924,12 +1252,13 @@ export class CommunityGalaxy {
     ctx.fillStyle = this._bgGrad
     ctx.fillRect(0, 0, this.w, this.h)
 
-    this._drawBackground(dt, d)
-    this._drawNebula(dt, d, fillFrac)
+    this._drawShell(dt, d)
+    this._drawNebula(dt, d, this.forming ? 0.8 : fillFrac, fillR)
 
     const o = this._project(0, 0, 0) || { sx: this.cx, sy: this.cy, persp: 1 }
     this._drawCore(o, d, fillFrac)
     this._drawDiskHaze(o, d, fillFrac)
+    this._drawArmDust(dt, d, fillFrac, fillR)
     this._drawDust(dt, d)
 
     if (this.forming) {
@@ -951,27 +1280,28 @@ export class CommunityGalaxy {
     ctx.globalCompositeOperation = 'source-over'
   }
 
-  // full-frame background starfield — always fully lit: the universe is there
-  // even when the community is empty; the pings are what's missing, not space.
-  _drawBackground(dt, d) {
+  // the volumetric deep field — always fully lit: the universe is there even
+  // when the community is empty; the pings are what's missing, not space.
+  _drawShell(dt, d) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'source-over'
-    const px = this.p.x, py = this.p.y
-    for (const b of this.bg) {
-      b.tw += dt * b.tws
-      const par = (1 - b.z) * 26
-      const x = b.x * this.w - px * par
-      const y = b.y * this.h - py * par
-      if (x < -4 || x > this.w + 4 || y < -4 || y > this.h + 4) continue
-      const a = b.base * (0.5 + 0.5 * Math.sin(b.tw)) * d
+    const step = this._decorStep
+    const magnified = this.focus > 0.001 || this.zoom > 1.05
+    for (let i = 0; i < this.shell.length; i += step) {
+      const b = this.shell[i]
+      const pr = this._project(b.px, b.py, b.pz)
+      if (!pr || pr.sx < -8 || pr.sx > this.w + 8 || pr.sy < -8 || pr.sy > this.h + 8) continue
+      b.tw += dt * b.tws * step
+      const a = b.base * (0.55 + 0.45 * Math.sin(b.tw)) * d
       if (a <= 0.01) continue
       ctx.globalAlpha = Math.min(0.85, a)
-      if (b.rad > 1.1) {
-        const D = b.rad * 2.4
-        ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
+      const D = clamp(b.rad * pr.persp * 2.6, 1.1, 5)
+      if (D >= 1.9 || magnified) {
+        ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
       } else {
         ctx.fillStyle = b.hue
-        ctx.fillRect(x - b.rad, y - b.rad, b.rad * 2, b.rad * 2)
+        const s2 = D * 0.5
+        ctx.fillRect(pr.sx - s2, pr.sy - s2, s2 * 2, s2 * 2)
       }
     }
   }
@@ -989,13 +1319,15 @@ export class CommunityGalaxy {
     return this._nebGrad[hex]
   }
 
-  // in-plane nebula gas. Its light grows with the community — a young sky is
-  // thin and clear; a full one is milky with unresolved starlight.
-  _drawNebula(dt, d, fillFrac) {
+  // arm-riding nebula gas. Its light grows with the community — a young sky is
+  // thin and clear; a full one is milky with unresolved starlight along the
+  // spiral lanes.
+  _drawNebula(dt, d, fillFrac, fillR) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'lighter'
-    const grow = this.forming ? 0.8 : 0.55 + 0.45 * fillFrac
+    const grow = this.forming ? 0.8 : 0.45 + 0.55 * fillFrac
     for (const nb of this.nebula) {
+      if (!this.forming && nb.r > fillR + 0.18) continue // unlit beyond the population
       const pr = this._project(nb.px, nb.py, nb.pz)
       if (!pr) continue
       nb.tw += dt * nb.tws
@@ -1019,19 +1351,22 @@ export class CommunityGalaxy {
   // community is a faint ember; a dense one glows like a real bulge.
   _drawCore(o, d, fillFrac) {
     const ctx = this.ctx
-    const fill = this.forming ? 0.66 : clamp(0.16 + this.stars.length / 240, 0.16, 1)
-    const coreR = Math.min(this.unit * (0.28 + 0.3 * fillFrac + (this.forming ? 0.18 : 0)) * o.persp, Math.max(this.w, this.h) * 2)
+    const fill = this.forming ? 0.66 : clamp(0.18 + this.stars.length / 220, 0.18, 1)
+    // capped well under the frame: deep in a zoom the bulge's bloom must stay a
+    // place the camera is passing, never a gray wash over the whole view
+    const coreR = Math.min(this.unit * (0.3 + 0.28 * fillFrac + (this.forming ? 0.18 : 0)) * o.persp, Math.max(this.w, this.h) * 1.05)
     if (!this._coreGrad) {
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
-      g.addColorStop(0, 'rgba(255,236,206,0.22)')
-      g.addColorStop(0.16, 'rgba(255,214,176,0.13)')
-      g.addColorStop(0.46, 'rgba(214,150,120,0.05)')
+      g.addColorStop(0, 'rgba(255,236,206,0.3)')
+      g.addColorStop(0.15, 'rgba(255,214,176,0.16)')
+      g.addColorStop(0.42, 'rgba(214,150,120,0.055)')
       g.addColorStop(1, 'rgba(0,0,0,0)')
       this._coreGrad = g
     }
     ctx.save()
     ctx.globalCompositeOperation = 'lighter'
-    ctx.globalAlpha = fill * d
+    // thinning with the dolly: passing INTO the bulge's light, not into fog
+    ctx.globalAlpha = (fill * d) / (1 + (this.zoom - 1) * 0.3)
     ctx.translate(o.sx, o.sy)
     ctx.scale(coreR, coreR)
     ctx.fillStyle = this._coreGrad
@@ -1050,14 +1385,14 @@ export class CommunityGalaxy {
     const ax = this._project(1, 0, 0)
     const az = this._project(0, 0, 1)
     if (!ax || !az) return
-    const spread = this.forming ? 0.62 : 0.35 + 0.75 * Math.sqrt(fillFrac)
+    const spread = this.forming ? 0.62 : 0.32 + 0.72 * Math.sqrt(fillFrac)
     const ux = (ax.sx - o.sx) * spread, uy = (ax.sy - o.sy) * spread
     const vx = (az.sx - o.sx) * spread, vy = (az.sy - o.sy) * spread
     if (!this._hazeGrad) {
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
-      g.addColorStop(0, 'rgba(255,226,196,0.055)')
-      g.addColorStop(0.45, 'rgba(206,170,210,0.038)')
-      g.addColorStop(0.8, 'rgba(150,150,200,0.014)')
+      g.addColorStop(0, 'rgba(255,226,196,0.05)')
+      g.addColorStop(0.45, 'rgba(206,170,210,0.034)')
+      g.addColorStop(0.8, 'rgba(150,150,200,0.012)')
       g.addColorStop(1, 'rgba(0,0,0,0)')
       this._hazeGrad = g
     }
@@ -1072,40 +1407,62 @@ export class CommunityGalaxy {
     ctx.restore()
   }
 
+  // unresolved starlight along the spiral lanes — the arms' connective glow.
+  // Gated to the lit disk (fillR), so it grows outward WITH the community.
+  _drawArmDust(dt, d, fillFrac, fillR) {
+    if (this.forming || fillFrac < 0.015) return
+    const ctx = this.ctx
+    ctx.globalCompositeOperation = 'lighter'
+    const step = this._decorStep
+    const grow = 0.35 + 0.65 * fillFrac
+    for (let i = 0; i < this.armDust.length; i += step) {
+      const p = this.armDust[i]
+      const edge = clamp((fillR + 0.12 - p.r) / 0.15, 0, 1) // feathered frontier
+      if (edge <= 0.01) continue
+      const pr = this._project(p.px, p.y, p.pz)
+      if (!pr || pr.sx < -20 || pr.sx > this.w + 20 || pr.sy < -20 || pr.sy > this.h + 20) continue
+      p.tw += dt * p.tws * step
+      const a = p.base * grow * edge * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.35, 1.2)
+      if (a <= 0.004) continue
+      ctx.globalAlpha = Math.min(0.4, a)
+      const rel = pr.persp / P0
+      const D = clamp(p.rad * 2.2 * Math.pow(rel, 0.55), 1.2, 6)
+      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+    }
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
   _drawDust(dt, d) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'source-over'
-    const magnified = this.focus > 0.001 || this.zoom > 1.03
+    const step = this._decorStep
     const warmSprite = this._dotFor(PAL.warm), creamSprite = this._dotFor(PAL.cream)
-    for (const p of this.dust) {
+    for (let i = 0; i < this.dust.length; i += step) {
+      const p = this.dust[i]
       const pr = this._project(p.px, p.py, p.pz)
       if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
-      p.tw += dt * p.tws
+      p.tw += dt * p.tws * step
       const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2)
       if (a <= 0.004) continue
       ctx.globalAlpha = Math.min(0.5, a)
-      const D = clamp(p.rad * pr.persp * 2.4, 1.4, this.h * 0.3)
-      if (magnified) {
-        // magnified, a bare square mote reads as a box — draw the soft sprite
-        ctx.drawImage(p.warm ? warmSprite : creamSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        ctx.fillStyle = p.warm ? PAL.warm : PAL.cream
-        const s = D * 0.4
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
-      }
+      const rel = pr.persp / P0
+      const D = clamp(p.rad * 2.4 * Math.pow(rel, 0.6), 1.2, 9)
+      ctx.drawImage(p.warm ? warmSprite : creamSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
   }
 
   // ── the ping stars ──────────────────────────────────────────────────────────
+  // A star is a POINT SOURCE: approach barely grows its core (sub-linear, hard
+  // capped) — instead it brightens, blooms, and earns diffraction spikes. That
+  // is what keeps a deep zoom reading as flying toward real stars instead of
+  // inflating a texture.
   _drawStars(dt, d) {
     const ctx = this.ctx
     const glowQ = []
     const meteors = []
     const focusing = this.focus > 0.001
-    // when the field is magnified (a dive or a tap-zoom), even the faint sub-pixel
-    // crowd must be drawn as round sprites — the cheap square-fill shortcut that's
-    // invisible at rest becomes a grid of visible boxes once blown up.
-    const magnified = focusing || this.zoom > 1.03
+    const magnified = focusing || this.zoom > 1.05
+    const liteGlow = this.qLevel >= 2
     const waves = this.waves
 
     for (const st of this.stars) {
@@ -1150,35 +1507,44 @@ export class CommunityGalaxy {
       // during a dive everything but the hero melts back into the depth
       const fade = focusing ? 1 - 0.82 * this.focus : 1
       const tw = 0.7 + 0.3 * Math.sin(slot.phase)
-      const a = (slot.base * tw * pr.shade * settle + flare * 0.5) * fade
+      const rel = pr.persp / P0 // 1 at the resting center; grows on approach
+      const lum = clamp(Math.pow(rel, 1.1), 0.3, 2.1)
+      const a = (slot.base * tw * pr.shade * settle * lum + flare * 0.5) * fade
       if (a <= 0.004) continue
 
       ctx.globalCompositeOperation = 'source-over'
-      ctx.globalAlpha = Math.min(0.96, a * 1.5)
-      const D = clamp(slot.rad * pr.persp * 3, 1.9, this.h * 0.5) * (1 + ignite * 1.1 + flare * 0.5)
-      if (D >= 2.4 || a >= 0.34 || magnified) {
+      ctx.globalAlpha = Math.min(0.96, a * 1.4)
+      const D = Math.min(slot.rad * 2.9 * Math.pow(rel, 0.5), 11) * (1 + ignite * 0.9 + flare * 0.45)
+      if (D >= 2 || magnified) {
         ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
       } else {
         ctx.fillStyle = slot.hue
         const s = D * 0.42
         ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
       }
-      if (slot.glow || ignite > 0 || flare > 0.25) glowQ.push([pr, slot, a, ignite, flare])
+      const near = rel > 1.45
+      if (!liteGlow && (slot.glow || near || ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
+      else if (liteGlow && (ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
     }
 
-    // additive pass: tinted blooms; diffraction spikes on ignition + the brightest
+    // additive pass: tinted blooms; diffraction spikes for ignitions, the
+    // brightest residents, and any star the camera is closing in on. Every
+    // approach term rides the star's OWN faded alpha (a) — during a dive the
+    // melting field must never bloom back through the fade — and bloom sizes
+    // are hard-capped: brightness is spent as light, never as a bokeh disc.
     ctx.globalCompositeOperation = 'lighter'
-    for (const [pr, slot, a, ignite, flare] of glowQ) {
-      const sz = slot.rad * (7 + ignite * 10 + flare * 5) * pr.persp
-      ctx.globalAlpha = Math.min(0.6, a * 0.7 + ignite * 0.4 + flare * 0.3)
+    for (const [pr, slot, a, ignite, flare, rel, D] of glowQ) {
+      const sz = Math.min(slot.rad * (6 + ignite * 10 + flare * 5) * Math.pow(rel, 0.8), 30)
+      ctx.globalAlpha = Math.min(0.6, a * (0.55 + Math.max(0, rel - 1.4) * 0.22) + ignite * 0.4 + flare * 0.3)
       ctx.drawImage(this._glowFor(slot.hue), pr.sx - sz / 2, pr.sy - sz / 2, sz, sz)
+      const approach = clamp((rel - 1.45) * 0.5, 0, 0.8)
       if (ignite > 0) {
         const ss = 22 + ignite * 34
         ctx.globalAlpha = ignite * 0.85
         ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-      } else if (a > 0.5 && slot.glow) {
-        const ss = sz * 2.4
-        ctx.globalAlpha = Math.min(0.2, (a - 0.5) * 0.3)
+      } else if ((approach > 0.05 && a > 0.1) || (a > 0.5 && slot.glow)) {
+        const ss = clamp(D * (2.4 + rel * 0.7), 14, 64)
+        ctx.globalAlpha = Math.min(0.7, approach * a * 1.5 + (slot.glow ? 0.14 * a : 0))
         ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
       }
     }
@@ -1188,11 +1554,14 @@ export class CommunityGalaxy {
   }
 
   // ── the viewer's own stars ────────────────────────────────────────────────
-  // One per ping this device placed — a white-hot core inside layered amber and
-  // rose light, wearing the product's diffraction glisten and a fine breathing
-  // ring. Unmistakably yours without shouting over the field. During a locate
-  // dive the target flares to its full photographic signature and the @ it
-  // holds (device-held plaintext — no one else's sky ever shows it) rises above.
+  // One per ping this device placed — a white-hot core wearing full diffraction
+  // spikes inside a halo tinted by who the ping is to them (the category's
+  // light: rose for a crush, ember for an ex, blue for a friend, violet for
+  // complicated — theme.js's CATEGORY_TINTS, first met on the options tab).
+  // Unmistakably a STAR, unmistakably yours, never shouting over the field.
+  // During a locate dive the target flares to its full photographic signature
+  // and the @ it holds (device-held plaintext — no one else's sky ever shows
+  // it) rises above.
   _drawMine(dt) {
     if (!this.mine.length) return
     const ctx = this.ctx
@@ -1221,42 +1590,40 @@ export class CommunityGalaxy {
       let settle = 1
       if (st.settleAt > 0) settle = smooth(clamp((this.t - st.settleAt) / 0.9, 0, 1))
       if (settle <= 0.01) continue
-      const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.3 + slot.phase)
+      const tint = CATEGORY_TINTS[m.kind] || this.you
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + slot.phase)
+      const rel = pr.persp / P0
+      const near = Math.pow(clamp(rel, 0.5, 3), 0.55)
       const base = settle * fade
 
       ctx.globalCompositeOperation = 'lighter'
-      // a whisper of rose outside the amber — both of the product's lights
-      const ro = (15 + pulse * 3) * (1 + f * 2.2)
-      ctx.globalAlpha = (0.1 + 0.08 * pulse) * base
-      ctx.drawImage(this.glows.them, pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
-      const go = (9 + pulse * 2.5) * (1 + f * 3)
-      ctx.globalAlpha = (0.42 + 0.3 * pulse) * base
-      ctx.drawImage(this.glows.you, pr.sx - go, pr.sy - go, go * 2, go * 2)
-      // the diffraction glisten — resting small and shy, flaring on landing
-      const ss = (17 + pulse * 5 + ignite * 22) * (1 + f * 2.8)
-      ctx.globalAlpha = Math.min(1, (0.2 + 0.16 * pulse) * base + ignite * 0.6 + f * 0.55)
-      ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-      // the white-hot core
-      const cd = (2.7 + pulse * 0.7) * (1 + f * 2.4)
-      ctx.globalAlpha = Math.min(1, (0.8 + 0.2 * pulse) * base + f)
+      // the tinted halo — the category's light, read at a glance
+      const ro = (13 + pulse * 3) * near * (1 + f * 2.4)
+      ctx.globalAlpha = (0.2 + 0.12 * pulse) * base
+      ctx.drawImage(this._glowFor(tint), pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
+      // an inner warm-white bloom seats the core in its halo
+      const go = (6.5 + pulse * 1.8) * near * (1 + f * 2.6)
+      ctx.globalAlpha = (0.4 + 0.22 * pulse) * base
+      ctx.drawImage(this.glows.white, pr.sx - go, pr.sy - go, go * 2, go * 2)
+      // full diffraction spikes, tinted at the feathered ends — always worn:
+      // this is what makes your star read as a STAR
+      const ss = (30 + pulse * 6 + ignite * 26) * near * (1 + f * 2.6)
+      ctx.globalAlpha = Math.min(1, (0.4 + 0.18 * pulse) * base + ignite * 0.5 + f * 0.5)
+      ctx.drawImage(this._spikeFor(tint), pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+      // the white-hot core — a point, never a blob
+      const cd = Math.min((2.9 + pulse * 0.5) * near, 5) * (1 + f * 1.6)
+      ctx.globalAlpha = Math.min(1, (0.85 + 0.15 * pulse) * base + f)
       ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
-      // a fine ring, breathing — the seal that marks it as yours
-      ctx.globalAlpha = (0.22 + 0.2 * pulse) * base * (1 - f) + f * 0.85
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.arc(pr.sx, pr.sy, (7 + pulse * 1.5) * (1 + f * 2.2), 0, TWO)
-      ctx.stroke()
 
       // arrival: the @ this ping holds rises over the star on a slim tick
       if (isDive && this.diveLabel && f > 0.55) {
         const fl = smooth((f - 0.55) / 0.45)
-        const off = 30 + f * 22
+        const off = 34 + f * 22
         ctx.globalAlpha = fl * 0.4
         ctx.strokeStyle = 'rgba(255,255,255,0.8)'
         ctx.lineWidth = 1
         ctx.beginPath()
-        ctx.moveTo(pr.sx, pr.sy - 14 - f * 8)
+        ctx.moveTo(pr.sx, pr.sy - 16 - f * 8)
         ctx.lineTo(pr.sx, pr.sy - off + 9)
         ctx.stroke()
         this._drawTag(pr.sx, pr.sy - off, '@' + this.diveLabel, fl * 0.96, 14.5, true)
@@ -1270,20 +1637,46 @@ export class CommunityGalaxy {
   // Members who chose to announce themselves: small resting tags over real
   // stars. Enough that the sky reads as inhabited by real people — never a
   // roster (capped, faint, melting back during a dive), and never who anyone
-  // pinged. The viewer's own tag sits a touch brighter.
+  // pinged. Only drawn where the screen turns the layer on. Tags DECLUTTER
+  // themselves: when two would collide on screen, the lower-priority one yields
+  // and fades — the sky never piles handles into a heap. All appearance and
+  // retreat is eased, so nothing pops.
   _drawPublicTags(dt, d) {
-    if (!this.publicTags.length) return
+    if (!this.tagsEnabled || !this.publicTags.length) return
     const fade = (1 - this.focus * 0.92) * d
-    if (fade <= 0.03) return
+    const taken = [] // reserved screen rects, priority order
     for (const tag of this.publicTags) {
       const st = tag.st
-      if (!st || st.state === 'meteor') continue
-      const slot = this._slot(st.i)
-      const pr = this._project(slot.px, slot.y, slot.pz)
-      if (!pr || pr.sx < 24 || pr.sx > this.w - 24 || pr.sy < 30 || pr.sy > this.h + 10) continue
+      let want = false
+      let x = 0, y = 0, size = 10
+      if (st && st.state !== 'meteor' && fade > 0.03) {
+        const slot = this._slot(st.i)
+        const pr = this._project(slot.px, slot.y, slot.pz)
+        if (pr && pr.sx > 30 && pr.sx < this.w - 30 && pr.sy > 40 && pr.sy < this.h - 8) {
+          const rel = pr.persp / P0
+          size = clamp((tag.own ? 11 : 10) * Math.pow(rel, 0.45), 9, 14)
+          x = pr.sx
+          y = pr.sy - clamp(8 * rel, 7, 18) - 5
+          const wpx = size * 0.62 * (tag.label.length + 1) + 12
+          const rect = { x0: x - wpx / 2, x1: x + wpx / 2, y0: y - size - 4, y1: y + 4 }
+          let clear = true
+          for (const r of taken) {
+            if (rect.x0 < r.x1 && rect.x1 > r.x0 && rect.y0 < r.y1 && rect.y1 > r.y0) {
+              clear = false
+              break
+            }
+          }
+          if (clear) {
+            taken.push(rect)
+            want = true
+          }
+        }
+      }
+      tag.vis = clamp(tag.vis + (want ? 1 : -1) * dt * 3, 0, 1)
+      if (tag.vis <= 0.02 || !want) continue
       tag.tw += dt * 0.5
-      const a = (tag.own ? 0.78 : 0.38 + 0.12 * Math.sin(tag.tw)) * fade * clamp(pr.shade, 0.4, 1.1)
-      this._drawTag(pr.sx, pr.sy - clamp(9 * pr.persp, 7, 16) - 5, '@' + tag.label, a, tag.own ? 11 : 10)
+      const a = (tag.own ? 0.8 : 0.42 + 0.1 * Math.sin(tag.tw)) * fade * smooth(tag.vis)
+      this._drawTag(x, y, '@' + tag.label, a, size)
     }
   }
 
@@ -1368,7 +1761,9 @@ export class CommunityGalaxy {
 
   // ── the anonymous match-constellations ──────────────────────────────────────
   // Small asterisms living IN the disk, riding its rotation. A newborn figure is
-  // traced by a travelling spark, node to node; a retiring one dissolves.
+  // traced by a travelling spark, node to node; a retiring one dissolves. Two
+  // solid strokes per segment (a rose under-glow beneath a cream thread) — no
+  // per-frame gradient allocations, so two dozen figures cost nothing.
   _drawConstellations(dt, d) {
     const ctx = this.ctx
     const fade = 1 - this.focus * 0.85
@@ -1404,7 +1799,6 @@ export class CommunityGalaxy {
       const segs = pts.length - 1
       const frontier = reveal * segs
       ctx.globalCompositeOperation = 'lighter'
-      ctx.lineWidth = 1
       ctx.lineCap = 'round'
       let sparkX = null, sparkY = null
       for (let k = 0; k < segs; k++) {
@@ -1417,12 +1811,16 @@ export class CommunityGalaxy {
           sparkX = bx
           sparkY = by
         }
-        const grd = ctx.createLinearGradient(a.sx, a.sy, b.sx, b.sy)
-        grd.addColorStop(0, this._rgba(this.them, 0.04))
-        grd.addColorStop(0.5, `rgba(245,236,246,${0.2 * shimmer})`)
-        grd.addColorStop(1, this._rgba(this.you, 0.13 * shimmer))
-        ctx.strokeStyle = grd
-        ctx.globalAlpha = life * depth * fade
+        const la = life * depth * fade
+        ctx.strokeStyle = this._rgba(this.them, 0.07 * shimmer)
+        ctx.globalAlpha = la
+        ctx.lineWidth = 2.2
+        ctx.beginPath()
+        ctx.moveTo(a.sx, a.sy)
+        ctx.lineTo(bx, by)
+        ctx.stroke()
+        ctx.strokeStyle = `rgba(245,236,246,${(0.11 + 0.06 * shimmer).toFixed(3)})`
+        ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(a.sx, a.sy)
         ctx.lineTo(bx, by)
@@ -1435,11 +1833,11 @@ export class CommunityGalaxy {
         if (on <= 0) continue
         const pt = pts[k]
         const glint = reveal < 1 ? clamp(1 - Math.abs(frontier - k) * 1.6, 0, 1) : 0
-        ctx.globalAlpha = (0.34 * shimmer + glint * 0.45) * life * depth * fade
-        const gs = 4.5 + glint * 5
+        ctx.globalAlpha = (0.26 * shimmer + glint * 0.45) * life * depth * fade
+        const gs = 4 + glint * 5
         ctx.drawImage(this.glows.them, pt.sx - gs, pt.sy - gs, gs * 2, gs * 2)
         ctx.globalCompositeOperation = 'source-over'
-        ctx.globalAlpha = (0.72 * shimmer + glint * 0.28) * life * depth * fade
+        ctx.globalAlpha = (0.6 * shimmer + glint * 0.32) * life * depth * fade
         const ds = 2.1 + glint * 1.7
         ctx.drawImage(this._dotFor('#FFFFFF'), pt.sx - ds, pt.sy - ds, ds * 2, ds * 2)
         ctx.globalCompositeOperation = 'lighter'

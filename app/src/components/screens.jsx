@@ -23,6 +23,7 @@ import {
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
 } from './ui.jsx'
+import { CATEGORY_TINTS } from '../theme.js'
 import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR, nextRevealAt, bySlug } from '../communities.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
@@ -112,15 +113,20 @@ export const categoryOf = (id) => (CATEGORIES.find((c) => c.intents.includes(id)
 export const intentLine = (t, id) => (id && INTENTS.includes(id) ? t(`intent.${id}`) : '')
 
 // A small selectable chip — sans for a category (a label), serif italic for an
-// intent line (a feeling). Shared so both rows read as one control.
-function PickChip({ C, on, serif, onClick, children }) {
+// intent line (a feeling). Shared so both rows read as one control. A category
+// chip carries its tint — the same light that star will burn with in your
+// community's sky — as a small star-point beside the word, brightening when
+// chosen; the option row is where the color code is learned.
+function PickChip({ C, on, serif, tint, onClick, children }) {
+  const accent = tint || C.star
   return (
     <button
       onClick={onClick}
       style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
         padding: serif ? '8px 13px' : '7px 14px', borderRadius: RADIUS.chip, cursor: 'pointer',
-        background: on ? rgba(C.star, 0.12) : 'transparent',
-        border: `1px solid ${on ? rgba(C.star, 0.5) : C.line}`,
+        background: on ? rgba(accent, 0.12) : 'transparent',
+        border: `1px solid ${on ? rgba(accent, 0.55) : C.line}`,
         color: on ? C.cream : C.muted, transition: 'all .2s',
         fontFamily: serif ? "'Instrument Serif', serif" : "'Space Grotesk', sans-serif",
         fontStyle: serif ? 'italic' : 'normal',
@@ -128,6 +134,17 @@ function PickChip({ C, on, serif, onClick, children }) {
         letterSpacing: serif ? 0 : '.2px',
       }}
     >
+      {tint && (
+        <span
+          aria-hidden
+          style={{
+            width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+            background: on ? tint : rgba(tint, 0.55),
+            boxShadow: on ? `0 0 8px ${rgba(tint, 0.9)}` : `0 0 5px ${rgba(tint, 0.4)}`,
+            transition: 'all .2s',
+          }}
+        />
+      )}
       {children}
     </button>
   )
@@ -143,7 +160,7 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
         <FieldLabel C={C} optional={t('intent.optional')}>{t('category.label')}</FieldLabel>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
           {CATEGORIES.map((c) => (
-            <PickChip key={c.id} C={C} on={category === c.id} onClick={() => onCategory(category === c.id ? '' : c.id)}>
+            <PickChip key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
               {t(`category.${c.id}`)}
             </PickChip>
           ))}
@@ -1719,15 +1736,18 @@ export function CommunityScreen({ C, ctx }) {
     if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4600) }
   }
 
-  // tap-to-zoom lives ONLY on this page: switch it on for whichever galaxy is the
-  // hero here (the shared home field, or a browsed community's own), and fade the
-  // centered seal while a zoom holds so it doesn't float away from the core it
-  // marks. Everywhere else this same engine is just the ambient backdrop, so its
-  // taps stay a ripple with no zoom.
+  // The hand-driven sky lives ONLY on this page: switch on the camera gestures
+  // (drag orbits, pinch/scroll zooms, double-tap dives) and the public-@ layer
+  // for whichever galaxy is the hero here (the shared home field, or a browsed
+  // community's own). While a zoom holds, the page goes IMMERSIVE — the seal
+  // and every panel melt away so the sky owns the whole frame, with one quiet
+  // pill to pull back. Everywhere else this same engine is just the ambient
+  // backdrop: no gestures, no handles floating behind foreground cards.
   const [zoomed, setZoomed] = React.useState(false)
   const wireZoom = React.useCallback((f) => {
     if (!f || !f.setZoomEnabled) return
     f.setZoomEnabled(true)
+    if (f.setTagsEnabled) f.setTagsEnabled(true)
     f.onZoomState = setZoomed
   }, [])
   React.useEffect(() => {
@@ -1735,11 +1755,22 @@ export function CommunityScreen({ C, ctx }) {
     return () => {
       const g = galaxyRef.current
       if (g && g.setZoomEnabled) g.setZoomEnabled(false)
+      if (g && g.setTagsEnabled) g.setTagsEnabled(false)
       if (g && g.onZoomState === setZoomed) g.onZoomState = null
       setZoomed(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useShared, slug])
+  const pullBack = () => {
+    if (galaxyRef.current && galaxyRef.current.resetView) galaxyRef.current.resetView()
+  }
+  // chrome melts away while the sky is held zoomed — and for the length of a
+  // find-your-star dive, so the flight owns the whole frame. One shared
+  // envelope; the entrance animations must be suppressed for the melt (their
+  // fill-mode would pin opacity at 1 and override the inline fade — same trick
+  // App plays for the fly-to-a-star flight).
+  const skyHeld = zoomed || finding
+  const melt = { opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyHeld ? 'none' : 'auto', animation: skyHeld ? 'none' : undefined }
 
   if (!community) {
     return (
@@ -1775,8 +1806,10 @@ export function CommunityScreen({ C, ctx }) {
         />
       )}
       {/* the seal at the galaxy's heart — the community's mark resting in its own
-          core light (the engine centers the disk at ~42% of the viewport). It
-          fades away whenever a camera dive takes the sky over. */}
+          core light (the engine centers the disk at ~42% of the viewport). A soft
+          ink clearing sits under it so the dense bulge stars never fight the
+          mark (no hard ring — the core's own light is the frame). It fades away
+          whenever a camera dive or a held zoom takes the sky over. */}
       <div
         aria-hidden
         style={{
@@ -1785,22 +1818,48 @@ export function CommunityScreen({ C, ctx }) {
           opacity: finding || ctx.skyFlight || zoomed ? 0 : 1, transition: 'opacity .8s ease',
         }}
       >
-        <span style={{ position: 'absolute', width: 210, height: 210, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.12)}, ${rgba(C.them, 0.04)} 55%, transparent 72%)`, filter: 'blur(3px)' }} />
-        <span style={{ position: 'absolute', width: 104, height: 104, borderRadius: '50%', border: `1px solid ${rgba(C.cream, 0.13)}` }} />
-        <span style={{ opacity: 0.9, filter: `drop-shadow(0 0 20px ${rgba(C.star, 0.4)})` }}>
-          <SchoolMark C={C} slug={community.slug} size={58} />
+        <span style={{ position: 'absolute', width: 126, height: 126, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink, 0.42)}, ${rgba(C.ink, 0.18)} 46%, transparent 68%)` }} />
+        <span style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.1)}, ${rgba(C.them, 0.035)} 55%, transparent 72%)`, filter: 'blur(3px)' }} />
+        <span style={{ opacity: 0.92, filter: `drop-shadow(0 0 18px ${rgba(C.star, 0.38)})` }}>
+          <SchoolMark C={C} slug={community.slug} size={54} />
         </span>
       </div>
 
       {/* a soft scrim seats the readout + actions on quiet space without walling
-          off the sky (z0, over canvas) */}
-      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0 }} />
+          off the sky (z0, over canvas). It lifts with the rest of the chrome
+          while the sky is held zoomed. */}
+      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }} />
 
-      {/* all content sits above the field (z1) */}
-      <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* the way home from a held zoom — one quiet pill, floating clear of the
+          melted chrome. data-noripple so the tap lands on it, not the sky. */}
+      {zoomed && !finding && (
+        <div data-noripple style={{ position: 'fixed', left: '50%', bottom: 'max(30px, env(safe-area-inset-bottom))', transform: 'translateX(-50%)', zIndex: 5 }}>
+          <button
+            onClick={pullBack}
+            className="fade"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer',
+              padding: '9px 18px', borderRadius: RADIUS.chip,
+              background: rgba(C.ink2, 0.78), border: `1px solid ${rgba(C.cream, 0.22)}`,
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+              fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '1px', textTransform: 'uppercase',
+              color: rgba(C.cream, 0.92), boxShadow: '0 12px 40px rgba(0,0,0,.5)',
+            }}
+          >
+            <span aria-hidden style={{ display: 'inline-flex', transform: 'rotate(180deg)' }}>
+              <Icon name="arrow" size={12} color="currentColor" stroke={2} />
+            </span>
+            {t('sky.reset')}
+          </button>
+        </div>
+      )}
+
+      {/* all content sits above the field (z1). touch-action yields horizontal
+          drags (and, once zoomed, everything) to the sky's camera. */}
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', touchAction: zoomed ? 'none' : 'pan-y' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <BackBtn C={C} onClick={() => ctx.go('worlds')} />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }}>
             <Kicker C={C}>{t('communities.kicker')}</Kicker>
             {ctx.demo && <SandboxChip C={C} />}
           </div>
@@ -1809,7 +1868,7 @@ export function CommunityScreen({ C, ctx }) {
 
         {/* identity — the seal now rests at the galaxy's heart; up here only the
             name and where it stands, so the sky stays the page's real hero. */}
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, paddingTop: 8 }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, paddingTop: 8, ...melt }}>
           <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
@@ -1818,17 +1877,21 @@ export function CommunityScreen({ C, ctx }) {
         </div>
 
         {/* the sky breathes in this open zone — nothing overlaps it; the live
-            pulse is a single caption docked at its foot. Its floor is generous so
-            the readout below is pushed low and the galaxy owns the middle of the
+            pulse is a single caption docked at its foot, with one whispered line
+            of how to hold the sky beneath it. Its floor is generous so the
+            readout below is pushed low and the galaxy owns the middle of the
             frame (it used to crowd up over the disk, worst on a short phone). */}
-        <div style={{ flex: 1, minHeight: 'clamp(150px, 26vh, 240px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        <div style={{ flex: 1, minHeight: 'clamp(150px, 26vh, 240px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', ...melt }}>
           <LivePulse C={C} beat={pulse.beat} />
+          <p aria-hidden style={{ margin: '0 0 2px', textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.muted, 0.5) }}>
+            {t('sky.hint')}
+          </p>
         </div>
 
         {/* the readout — the numbers and the shared reveal clock, one quiet panel.
-            data-noripple so a tap on the numbers doesn't fire the sky's tap-zoom;
+            data-noripple so a tap on the numbers doesn't reach the sky;
             padding is kept tight so its top edge sits low over the galaxy. */}
-        <div className="fade" data-noripple>
+        <div className="fade" data-noripple style={melt}>
           <GlassPanel C={C} inset style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <RevealCountdown C={C} open={open} />
             <span aria-hidden style={{ height: 1, background: rgba(C.cream, 0.07) }} />
@@ -1865,8 +1928,8 @@ export function CommunityScreen({ C, ctx }) {
 
         {/* one action — a member pings + finds their star; a watcher joins (which
             sends a .edu code first). Everyone can watch. data-noripple keeps a tap
-            on the controls from firing the sky's tap-zoom. */}
-        <div className="enter" data-noripple style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12 }}>
+            on the controls from reaching the sky. */}
+        <div className="enter" data-noripple style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12, ...melt }}>
           {joined ? (
             <>
               <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
@@ -3049,8 +3112,10 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
 // Your ping only ever reaches people from your own community, so joining one asks
 // for a code emailed to an address at that school's domain. Two steps: enter the
 // address, then the code. On success it reports { slug, email } up so App can flip
-// membership. The sandbox (and any build without the backend wired) auto-confirms
-// once six digits are entered, so the whole shape is playable with nothing sent.
+// membership. The sandbox runs this exact real pipeline too (a real code, really
+// emailed, really verified) — its one carve-out is the domain check, which also
+// accepts @gmail.com. Only a build with no backend configured at all falls back
+// to a local auto-confirm, so the shape stays playable with nothing wired.
 export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
@@ -3058,7 +3123,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const domain = community.domain || 'school.edu'
   const name = community.name || 'your school'
   const short = community.short || name
-  const real = !demo && eduVerifyEnabled()
+  const real = eduVerifyEnabled()
 
   const [phase, setPhase] = React.useState('email') // email | sending | code | verifying | verified
   const [email, setEmail] = React.useState('')
@@ -3074,7 +3139,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
 
   const send = async () => {
     setErrCode('')
-    const pre = localEmailCheck(email, slug)
+    const pre = localEmailCheck(email, slug, demo)
     if (!pre.ok) { setErrCode(pre.error); return }
     setPhase('sending')
     if (!real) {
@@ -3083,7 +3148,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
       return
     }
     try {
-      const r = await sendEduCode({ email, slug })
+      const r = await sendEduCode({ email, slug, demo })
       tokenRef.current = r.token
       setPhase('code')
     } catch (e) {
@@ -3185,7 +3250,8 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
               </span>
             </PrimaryButton>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoGmailNote')}</p>}
           </>
         ) : (
           <>
@@ -3220,7 +3286,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
               <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
               <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
             </div>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>

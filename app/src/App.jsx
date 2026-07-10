@@ -12,7 +12,7 @@ import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftof
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
-  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet,
+  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
 } from './components/screens.jsx'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen, MATCH_FLOOR } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
@@ -183,8 +183,12 @@ export default function App() {
   const homeCommunity = useMemo(() => communities.find((c) => c.joined) || null, [communities])
 
   // The @s this device's pings hold, in ping order — the labels of your own
-  // stars in whichever sky is behind the app. Plaintext lives here only.
-  const mineLabels = useMemo(() => pings.filter((p) => p.handle).map((p) => normHandle(p.handle)), [pings])
+  // stars in whichever sky is behind the app, each carrying who that ping is to
+  // you (the category tint its star wears). Plaintext lives here only.
+  const mineLabels = useMemo(
+    () => pings.filter((p) => p.handle).map((p) => ({ label: normHandle(p.handle), kind: categoryOf(p.intent) })),
+    [pings],
+  )
   // aligned by index with the ambient field's sealed stars (null = restored
   // from another device; that star stays unnamed)
   const sealLabels = useMemo(() => pings.map((p) => (p.handle ? normHandle(p.handle) : null)), [pings])
@@ -627,7 +631,7 @@ export default function App() {
         // its @ so it stays findable in the crowd), and — in the sandbox — the
         // community's live ping count ticks. The ping itself already reached its
         // person above, community or not: the sky is a lens, never a boundary.
-        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true, label: target })
+        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true, label: target, kind: categoryOf(chosen) })
         if (demo && homeCommunity && communityOpen(homeCommunity)) {
           setCommLive((prev) => {
             const cur = prev[homeCommunity.slug] || {}

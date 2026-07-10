@@ -86,6 +86,16 @@ export function isEduEmail(email) {
   return /^[^\s@]+@[^\s@]+\.edu$/.test(at)
 }
 
+// Is `email` a @gmail.com address? The one exception the sandbox carves into the
+// .edu gate: a tester can prove the REAL send-a-code-verify-a-code pipeline
+// end to end with an inbox they actually hold, without needing a real school
+// address. Every other domain still has to be the real, matching .edu.
+export function isGmailAddress(email) {
+  const at = String(email || '').trim().toLowerCase()
+  const m = at.match(/^[^\s@]+@([^\s@]+)$/)
+  return !!m && m[1] === 'gmail.com'
+}
+
 // The next weekly reveal — Sunday 20:00 in the viewer's own timezone. Deterministic
 // and always in the future, so the community countdown actually ticks down and
 // resets each week. The reveal is the shared moment the sky lights its matches.

@@ -5,9 +5,14 @@
 // there: a 6-digit code sent to an address at the school's domain.
 //
 // Two actions on one endpoint:
-//   { action:'send',   email, slug }        → validate the address is at the
+//   { action:'send',   email, slug, demo? }  → validate the address is at the
 //        school's domain, rate-limit, mint a 6-digit code, store ONLY its SHA-256
 //        hash, email the code via Resend, and return a random correlation `token`.
+//        `demo: true` is the app's sandbox flag: it runs this exact real
+//        pipeline too, with one carve-out — a @gmail.com address is silently
+//        accepted alongside the real school domain, so the flow is testable
+//        with an inbox anyone actually holds. Every other domain still has to
+//        genuinely match the school, demo or not.
 //        Response: { ok:true, token, expires_at } | { ok:false, error }
 //   { action:'verify', token, code }        → compare the code to the stored hash
 //        (never returning it); on a match mark the row verified and report back.
@@ -64,10 +69,11 @@ function emailDomain(email: string): string | null {
   return m ? m[1] : null;
 }
 
-function matchesSchool(email: string, slug: string): boolean {
+function matchesSchool(email: string, slug: string, demo: boolean): boolean {
   const s = SCHOOLS[slug];
   const host = emailDomain(email);
   if (!s || !host) return false;
+  if (demo && host === 'gmail.com') return true;
   return host === s.domain || host.endsWith('.' + s.domain);
 }
 
@@ -137,10 +143,11 @@ Deno.serve(async (req) => {
   if (action === 'send') {
     const email = String(body.email || '').trim().toLowerCase();
     const slug = String(body.slug || '');
+    const demo = body.demo === true;
     const school = SCHOOLS[slug];
     if (!school) return json({ ok: false, error: 'domain' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'email' });
-    if (!matchesSchool(email, slug)) return json({ ok: false, error: 'domain' });
+    if (!matchesSchool(email, slug, demo)) return json({ ok: false, error: 'domain' });
 
     // Rate-limit fresh codes per address, and sweep expired rows opportunistically.
     const sinceIso = new Date(Date.now() - 3600_000).toISOString();
