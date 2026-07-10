@@ -389,6 +389,12 @@ const en = {
   'home.switchNo': 'stay in {current}',
   'home.locate': 'find your star',
 
+  // ── holding the sky (the community page's camera) ────────────────────────────
+  // the sky is handled, not watched: one whispered line of how, and the way home
+  // from a held zoom. calm, mechanical — mono metadata voice.
+  'sky.hint': 'drag to orbit · pinch to zoom · double-tap to dive',
+  'sky.reset': 'pull back',
+
   // ── the public @ (announce yourself in your community's sky) ─────────────────
   // off by default: your star is anonymous. flipping it public rests your own @
   // above your own star — an announcement that you're here, never who you
