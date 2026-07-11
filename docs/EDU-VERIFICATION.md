@@ -30,19 +30,26 @@ supabase/functions/
     celestual-edu-verify/index.ts                    the edge function (the only writer)
 supabase/migrations/
     0007_edu_verification.sql                        the celestual_edu_verifications table
+    0008_edu_hardening.sql                           per-IP send accounting (anti-spray)
 ```
 
 **The security model (why it's shaped this way):**
 
-- The 6-digit code is a **secret**. It is emailed, **never returned to the
+- The 4-digit code is a **secret**. It is emailed, **never returned to the
   browser**, and only its **SHA-256 hash** is stored. A dump of the table reveals
   no live codes. (This is the opposite of the Instagram DM code, which the user
-  re-sends to us — see `docs/DEBUG-IG-WEBHOOK.md`.)
+  re-sends to us — see `docs/DEBUG-IG-WEBHOOK.md`.) Four digits is enough here
+  because a code dies after 6 wrong guesses and 10 minutes, and fresh codes are
+  themselves rate-limited per address and per IP.
 - The table is **RLS-locked to the service role**: `anon`/`authenticated` get
   nothing. Only the edge function (running as the service role) reads or writes
   it. The browser only ever holds a random correlation `token`, never a secret.
-- **Rate limited:** max **5** fresh codes per address per hour. Codes live **10
-  minutes** and die after **6** wrong guesses. Expired rows self-sweep.
+- **Rate limited:** max **5** fresh codes per address per hour and **15** per IP
+  per hour (0008). Codes live **10 minutes** and die after **6** wrong guesses.
+  Expired rows self-sweep.
+- The sandbox's **@gmail.com carve-out is server-gated**: it only works when the
+  operator sets `CELESTUAL_SANDBOX_GMAIL=1` on the function. The client's `demo`
+  flag is untrusted input and can never weaken the production gate by itself.
 - A subdomain counts as the school (`andrew.cmu.edu` ⊂ `cmu.edu`).
 
 **The request shape** (one endpoint, two actions):
@@ -76,7 +83,7 @@ Creates `celestual_edu_verifications` (one row per code issued) with RLS on and
 no client grant.
 
 ```bash
-supabase db push          # applies supabase/migrations/0007_edu_verification.sql
+supabase db push          # applies 0007_edu_verification.sql + 0008_edu_hardening.sql
 ```
 
 Verify it exists and is locked down:
@@ -106,6 +113,11 @@ supabase secrets set RESEND_API_KEY="re_xxxxxxxxxxxxxxxxx"
 supabase secrets set CELESTUAL_FROM_EMAIL="celestual <hello@celestual.us>"
 # optional — only used in the email footer link; defaults to https://celestual.us
 supabase secrets set CELESTUAL_SITE_URL="https://celestual.us"
+# optional — the /demo sandbox's @gmail.com carve-out. OFF by default, and it
+# should stay off in production: the client's demo flag is untrusted input, so
+# only this server-side switch can enable the carve-out. Set to 1 only on a
+# staging project where testers need to run the pipeline with a gmail inbox.
+supabase secrets set CELESTUAL_SANDBOX_GMAIL="0"
 ```
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the platform — you

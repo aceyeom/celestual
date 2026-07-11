@@ -100,7 +100,7 @@
       <a class="brand" href="/"><span class="dot"></span> celestual</a>
 
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated 3 July 2026</p>
+      <p class="updated">Last updated 11 July 2026</p>
 
       <p class="lead">
         Celestual (<a href="https://celestual.us">celestual.us</a>) is a double-blind,
@@ -146,11 +146,28 @@
           Instagram account.
         </li>
         <li>
-          <strong>Worlds and campus preregistrations (optional).</strong> If you tag
-          a community you belong to, or preregister for a campus opening, we store
-          your handle with that community or campus, plus your optional email for the
-          opening note. Community counters are shown only in aggregate, and only
-          once a community passes one hundred members.
+          <strong>School email verification (optional).</strong> Joining a school
+          community requires proving you're there: we email a one-time code to an
+          address at that school's domain. We store the address you gave, the
+          school it was for, a one-way hash of the code (never the code itself),
+          and the requesting IP for rate-limiting. Codes expire within ten
+          minutes and expired records are pruned automatically. The address is
+          used only for this confirmation — it is never shown to anyone and never
+          used for marketing.
+        </li>
+        <li>
+          <strong>Communities and campus preregistrations (optional).</strong> If
+          you join a community, or preregister for a campus opening, we store
+          your handle with that community or campus, plus your optional email for
+          the opening note. Community counters are shown only in aggregate, and
+          only once a community passes one hundred members.
+        </li>
+        <li>
+          <strong>Your public @ (optional, off by default).</strong> Your star in a
+          community sky is anonymous. If you explicitly choose "announce your @,"
+          your own handle is shown above your star to people viewing that sky. It
+          announces only that you're here — never who you pinged. You can turn it
+          off again at any time, in one tap.
         </li>
         <li>
           <strong>Basic technical data.</strong> Standard request/log data needed to
@@ -187,6 +204,7 @@
         <li>To show you, and only you, the state of your own pings.</li>
         <li>To enforce the three-slot rule, the sixty-day lapse, and the anti-abuse rate limits, server-side.</li>
         <li>To verify that a handle belongs to the person using it before anything can match to it.</li>
+        <li>To confirm you're really at a school — by a one-time code emailed to an address at its domain — before you join its community.</li>
         <li>To run campus openings: counting verified preregistrations toward a public threshold and mailing everyone at once when it trips.</li>
       </ul>
 
@@ -204,7 +222,7 @@
         <li><strong>Supabase</strong> — database and backend functions that store the records described above.</li>
         <li><strong>Vercel</strong> — hosting and delivery of the website.</li>
         <li><strong>ManyChat &amp; Meta Platforms (Instagram)</strong> — relay the one-time DM verification message and tell us the code was received from your handle.</li>
-        <li><strong>Resend</strong> — sends the match, lapse and campus-opening emails, when you've given an address.</li>
+        <li><strong>Resend</strong> — sends the match, lapse, campus-opening and school-verification-code emails, when you've given an address.</li>
       </ul>
 
       <h2>If your handle was entered</h2>

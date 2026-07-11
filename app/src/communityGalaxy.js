@@ -55,74 +55,10 @@
 // thousand-star sky stays fluid on a weak phone.
 
 import { CATEGORY_TINTS } from './theme.js'
-
-function hexToRgb(hex) {
-  const h = (hex || '#ffffff').replace('#', '')
-  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-// ── sprites ───────────────────────────────────────────────────────────────────
-// All the light in the sky comes from three pre-baked sprites per hue, cached.
-function makeGlow(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const grd = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grd.addColorStop(0, `rgba(${r},${g},${b},0.95)`)
-  grd.addColorStop(0.3, `rgba(${r},${g},${b},0.42)`)
-  grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
-  c.fillStyle = grd
-  c.fillRect(0, 0, size, size)
-  return s
-}
-// A point of light: a hard white-hot core dropping fast through the star's own
-// hue to a tight halo. The energy is concentrated in the middle third, so the
-// sprite stays a crisp STAR when drawn small and never becomes a soft disc
-// when drawn large — the falloff carries the "point source" read at any scale.
-function makeStarSprite(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const m = size / 2
-  const wr = (r + 255 * 2) / 3, wg = (g + 255 * 2) / 3, wb = (b + 255 * 2) / 3
-  const grd = c.createRadialGradient(m, m, 0, m, m, m)
-  grd.addColorStop(0.0, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.16, `rgba(${wr | 0},${wg | 0},${wb | 0},0.98)`)
-  grd.addColorStop(0.34, `rgba(${r},${g},${b},0.55)`)
-  grd.addColorStop(0.55, `rgba(${r},${g},${b},0.18)`)
-  grd.addColorStop(0.8, `rgba(${r},${g},${b},0.04)`)
-  grd.addColorStop(1.0, `rgba(${r},${g},${b},0)`)
-  c.fillStyle = grd
-  c.beginPath()
-  c.arc(m, m, m, 0, Math.PI * 2)
-  c.fill()
-  return s
-}
-// Four soft diffraction spikes — the photographic signature of a bright star
-// through a lens. White-hot at the crossing, feathering into the given hue.
-function makeSpikeSprite(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const m = size / 2
-  for (const horiz of [true, false]) {
-    const g1 = horiz ? c.createLinearGradient(0, m, size, m) : c.createLinearGradient(m, 0, m, size)
-    g1.addColorStop(0, `rgba(${r},${g},${b},0)`)
-    g1.addColorStop(0.28, `rgba(${r},${g},${b},0.28)`)
-    g1.addColorStop(0.5, `rgba(255,255,255,0.92)`)
-    g1.addColorStop(0.72, `rgba(${r},${g},${b},0.28)`)
-    g1.addColorStop(1, `rgba(${r},${g},${b},0)`)
-    c.fillStyle = g1
-    const th = Math.max(1, size * 0.012)
-    if (horiz) c.fillRect(0, m - th, size, th * 2)
-    else c.fillRect(m - th, 0, th * 2, size)
-  }
-  return s
-}
+// The star sprites — the shared instrument both skies draw their light with
+// (see starSprites.js): an Airy-style point source with hairline rays for every
+// star, the full tapered diffraction burst for the bright ones.
+import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
 
 const TWO = Math.PI * 2
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
@@ -226,6 +162,18 @@ export class CommunityGalaxy {
     this.locateFx = null // reduced-motion fallback: a converging ring, no travel
     this.focus = 0 // eased dive progress the camera transform reads
     this.cam = { x: 0, y: 0, z: 0 }
+    // the ship's instruments: how hard the camera is travelling this frame.
+    // `rush` (0→1) rises with any real camera motion — a dolly, a dive, a fast
+    // hand-swing — and drives the interstellar-travel rendering: stars streak
+    // along their apparent motion, exposure lifts, the field STREAMS past.
+    this._camPrev = { x: 0, y: 0, z: 0 }
+    this.travel = 0
+    this.rush = 0
+    this.exposure = 1
+    // chrome insets (set by the screen): the disk centers itself in the band of
+    // sky the foreground actually leaves clear, so no card ever hides the heart
+    this.insetT = 0
+    this.insetB = 0
 
     // The hand-driven camera: `zoom` eases toward `zoomTarget` (a dolly toward
     // `zoomFocus`, a point on the disk plane); `orbit` is the drag-steered
@@ -251,6 +199,7 @@ export class CommunityGalaxy {
     this._dotCache = {}
     this._glowCache = {}
     this._spikeCache = {}
+    this._tagCache = {} // pre-rendered @ pills — drawn once, blitted every frame
     this.glows = { you: makeGlow(this.you, 64), them: makeGlow(this.them, 64), white: makeGlow('#FFFFFF', 64) }
     this._spike = makeSpikeSprite('#FFFFFF', 128)
 
@@ -519,12 +468,28 @@ export class CommunityGalaxy {
     // Frame the disk generously: the sky is a place, not a picture, so the
     // rim is ALLOWED to spill past the frame — on a phone the outer stars
     // bleed off both edges (space keeps going past the glass) and on a wide
-    // monitor the field reads expansive rather than contained.
-    this.unit = Math.min(w * 0.8, h * 0.52) + Math.max(w, h) * 0.04
+    // monitor the field reads expansive rather than contained. When the screen
+    // has declared its chrome insets, the heart centers itself in the band of
+    // sky the foreground actually leaves clear — a readout card can never
+    // hide the galaxy again.
+    const avail = Math.max(h * 0.42, h - this.insetT - this.insetB)
+    this.unit = Math.min(w * 0.8, avail * 0.56) + Math.max(w, h) * 0.04
     this.cx = w / 2
-    this.cy = h * 0.42 // the heart rests in the page's hero zone
+    this.cy = clamp(this.insetT + avail * 0.44, h * 0.24, h * 0.6)
     this._bgGrad = null
     if (this.reduced) this.start()
+  }
+
+  // The screen tells the sky how much of the frame its chrome occupies (top
+  // header, bottom readout+actions); the disk re-centers in what's left.
+  setViewInsets(top = 0, bottom = 0) {
+    const t = Math.max(0, Math.round(top))
+    const b = Math.max(0, Math.round(bottom))
+    if (t === this.insetT && b === this.insetB) return
+    this.insetT = t
+    this.insetB = b
+    this.resize(true)
+    this.start()
   }
 
   setPalette(you, them) {
@@ -532,6 +497,7 @@ export class CommunityGalaxy {
     this.them = them
     this.glows.you = makeGlow(you, 64)
     this.glows.them = makeGlow(them, 64)
+    this._tagCache = {} // pills carry the palette — re-bake on change
     this.start()
   }
 
@@ -807,35 +773,44 @@ export class CommunityGalaxy {
     this.start()
   }
 
+  // One mutual match = one BOND: two stars — one in the viewer's amber, one in
+  // the rose — joined by a single arced thread of light. Not an abstract
+  // asterism: it literally draws TWO PEOPLE FINDING EACH OTHER. A newborn bond
+  // ignites both stars, sends a spark inward from each end, and blooms where
+  // they MEET; a settled bond breathes, a soft pulse travelling its thread.
+  // Anonymous by construction — the pair is seated at its own place in the
+  // disk, never on any identifiable ping star.
   addConstellation(instant) {
     // Keep the sky legible however long a session runs: past a cap the oldest
-    // figure fades out (a constellation dissolving, not a list shifting).
+    // bond fades out (a figure dissolving, not a list shifting).
     const MAX = 24
     const live = this.consts.filter((c) => !c.dying)
     if (live.length >= MAX) live[0].dying = this.t
     const idx = ++this._cSeed
     let s = (idx * 99991) >>> 0
     const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 4294967296)
-    // Seat the figure INSIDE the lit disk (never the empty rim): its radius rides
-    // the current fill envelope, and golden-angle sequencing keeps figures from
+    // Seat the pair INSIDE the lit disk (never the empty rim): its radius rides
+    // the current fill envelope, and golden-angle sequencing keeps bonds from
     // ever piling onto each other.
     const fill = Math.max(Math.sqrt(Math.max(this.stars.length, 60) / CAP) * RMAX, 0.42)
     const angC = idx * GOLDEN * 2.2
     const rC = (0.24 + rnd() * 0.5) * fill
     const cxp = Math.cos(angC) * rC
     const czp = Math.sin(angC) * rC
-    const nn = 3 + Math.floor(rnd() * 3)
-    const nodes = []
-    for (let k = 0; k < nn; k++) {
-      nodes.push({
-        px: cxp + (rnd() - 0.5) * 0.15,
-        pz: czp + (rnd() - 0.5) * 0.15,
-        y: 0.04 + rnd() * 0.06, // floats a breath above the plane, over the stars
-      })
-    }
-    // an open path sorted by angle around the centroid — never self-crossing
-    nodes.sort((a, b) => Math.atan2(a.pz - czp, a.px - cxp) - Math.atan2(b.pz - czp, b.px - cxp))
-    this.consts.push({ nodes, born: instant ? -10 : this.t, tw: rnd() * TWO, dying: 0 })
+    // the two ends — close enough to be a pair, far enough to be two people
+    const span = 0.065 + rnd() * 0.075
+    const dir = rnd() * TWO
+    const yA = 0.035 + rnd() * 0.04
+    const yB = 0.035 + rnd() * 0.04
+    this.consts.push({
+      a: { px: cxp - Math.cos(dir) * span * 0.5, pz: czp - Math.sin(dir) * span * 0.5, y: yA },
+      b: { px: cxp + Math.cos(dir) * span * 0.5, pz: czp + Math.sin(dir) * span * 0.5, y: yB },
+      mid: { px: cxp, pz: czp, y: Math.max(yA, yB) + 0.026 }, // the thread arcs a breath higher
+      born: instant ? -10 : this.t,
+      met: instant ? -10 : 0, // stamped the moment the two sparks meet
+      tw: rnd() * TWO,
+      dying: 0,
+    })
     this.start()
   }
 
@@ -1046,7 +1021,7 @@ export class CommunityGalaxy {
     for (const tag of this.publicTags) {
       if (tag.vis < 0.25 || tag.sx == null) continue
       const dx = tag.sx - clientX
-      const dy = tag.sy - clientY + 8 // the tag floats just over its star
+      const dy = tag.sy - clientY // sy is the pill's center
       const d = dx * dx + dy * dy
       if (d < bestD) {
         bestD = d
@@ -1291,13 +1266,15 @@ export class CommunityGalaxy {
     requestAnimationFrame(this._boundTick)
   }
 
-  // the dolly eases toward the hand's target: a touch quicker pushing in than
-  // settling out, so a gesture feels answered and a release feels like a glide.
+  // the dolly eases toward the hand's target — shaped like a burn, not a lerp
+  // to a still picture: pushing IN answers hard (the ship throttles up), and a
+  // release settles out on a long glide, so travel reads as velocity the
+  // streak pass can render, never as a picture scaling.
   // The screen only goes immersive once the zoom is a commitment (not a nudge),
   // and comes back a little below that so the chrome never flickers at the edge.
   _easeZoom(dt) {
     if (this.zoom === this.zoomTarget) return
-    const k = this.zoomTarget > this.zoom ? 6 : 3.4
+    const k = this.zoomTarget > this.zoom ? 7.5 : 2.9
     this.zoom = lerp(this.zoom, this.zoomTarget, Math.min(1, dt * k))
     if (Math.abs(this.zoom - this.zoomTarget) < 0.002) this.zoom = this.zoomTarget
     const active = this._zoomActive ? this.zoom > 1.18 : this.zoom > 1.32
@@ -1335,6 +1312,26 @@ export class CommunityGalaxy {
     } else {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
+
+    // ── the ship's instruments ──────────────────────────────────────────────
+    // How hard the camera is travelling this frame: real dolly/dive speed in
+    // world units, plus the hand's orbital swing. `rush` (0→1) is what the
+    // layers read — streaks lengthen, exposure lifts, and the whole field
+    // STREAMS past the viewer, the interstellar-travel view.
+    if (dt > 0) {
+      const cvx = (this.cam.x - this._camPrev.x) / dt
+      const cvy = (this.cam.y - this._camPrev.y) / dt
+      const cvz = (this.cam.z - this._camPrev.z) / dt
+      const speed = Math.hypot(cvx, cvy, cvz)
+      const target = clamp(speed / 1.9, 0, 1)
+      this.travel = lerp(this.travel, target, Math.min(1, dt * (target > this.travel ? 12 : 3.2)))
+    }
+    this._camPrev.x = this.cam.x
+    this._camPrev.y = this.cam.y
+    this._camPrev.z = this.cam.z
+    const swing = clamp((Math.abs(this.orbit.vyaw) + Math.abs(this.orbit.vpitch)) * 0.55, 0, 0.7)
+    this.rush = this.reduced ? 0 : Math.max(this.travel, swing)
+    this.exposure = 1 + this.rush * 0.4
 
     // as the camera commits to a dive, the field melts back so the hero star
     // arrives alone
@@ -1441,27 +1438,47 @@ export class CommunityGalaxy {
 
   // the volumetric deep field — always fully lit: the universe is there even
   // when the community is empty; the pings are what's missing, not space.
+  // Under way (a dolly, a dive, a fast swing) each far sun stretches along its
+  // own apparent motion — the star-streaming view out a ship's window.
   _drawShell(dt, d) {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'source-over'
     const step = this._decorStep
-    const magnified = this.focus > 0.001 || this.zoom > 1.05
+    const rush = this.rush
+    const streaking = rush > 0.05 && !this.reduced
+    const maxStreak = Math.min(this.w, this.h) * 0.42
+    ctx.lineCap = 'round'
     for (let i = 0; i < this.shell.length; i += step) {
       const b = this.shell[i]
       const pr = this._project(b.px, b.py, b.pz)
-      if (!pr || pr.sx < -8 || pr.sx > this.w + 8 || pr.sy < -8 || pr.sy > this.h + 8) continue
-      b.tw += dt * b.tws * step
-      const a = b.base * (0.55 + 0.45 * Math.sin(b.tw)) * d
-      if (a <= 0.01) continue
-      ctx.globalAlpha = Math.min(0.85, a)
-      const D = clamp(b.rad * pr.persp * 2.6, 1.1, 5)
-      if (D >= 1.9 || magnified) {
-        ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        ctx.fillStyle = b.hue
-        const s2 = D * 0.5
-        ctx.fillRect(pr.sx - s2, pr.sy - s2, s2 * 2, s2 * 2)
+      if (!pr || pr.sx < -8 || pr.sx > this.w + 8 || pr.sy < -8 || pr.sy > this.h + 8) {
+        b.lx = null
+        continue
       }
+      b.tw += dt * b.tws * step
+      const a = b.base * (0.55 + 0.45 * Math.sin(b.tw)) * d * this.exposure
+      if (a <= 0.01) {
+        b.lx = pr.sx
+        b.ly = pr.sy
+        continue
+      }
+      const D = clamp(b.rad * pr.persp * 2.6, 1.2, 5)
+      if (streaking && b.lx != null) {
+        const sp = Math.hypot(pr.sx - b.lx, pr.sy - b.ly)
+        if (sp > 2.2 && sp < maxStreak) {
+          ctx.globalAlpha = Math.min(0.7, a * (0.35 + sp * 0.02)) * rush
+          ctx.strokeStyle = b.hue
+          ctx.lineWidth = Math.min(2, D * 0.45)
+          ctx.beginPath()
+          ctx.moveTo(b.lx, b.ly)
+          ctx.lineTo(pr.sx, pr.sy)
+          ctx.stroke()
+        }
+      }
+      ctx.globalAlpha = Math.min(0.85, a)
+      ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      b.lx = pr.sx
+      b.ly = pr.sy
     }
   }
 
@@ -1620,9 +1637,12 @@ export class CommunityGalaxy {
     const glowQ = []
     const meteors = []
     const focusing = this.focus > 0.001
-    const magnified = focusing || this.zoom > 1.05
     const liteGlow = this.qLevel >= 2
     const waves = this.waves
+    const rush = this.rush
+    const streaking = rush > 0.05 && !this.reduced
+    const maxStreak = Math.min(this.w, this.h) * 0.42
+    ctx.lineCap = 'round'
 
     for (const st of this.stars) {
       const slot = this._slot(st.i)
@@ -1637,7 +1657,10 @@ export class CommunityGalaxy {
       if (st.mine) continue
 
       const pr = this._project(slot.px, slot.y, slot.pz)
-      if (!pr || pr.sx < -40 || pr.sx > this.w + 40 || pr.sy < -40 || pr.sy > this.h + 40) continue
+      if (!pr || pr.sx < -40 || pr.sx > this.w + 40 || pr.sy < -40 || pr.sy > this.h + 40) {
+        st.lx = null
+        continue
+      }
       slot.phase += dt * slot.tws
 
       // seeded stars settle in on a stagger; launched stars are already lit
@@ -1663,24 +1686,40 @@ export class CommunityGalaxy {
         else ignite = Math.sin(Math.PI * clamp(q, 0, 1))
       }
 
-      // during a dive everything but the hero melts back into the depth
-      const fade = focusing ? 1 - 0.82 * this.focus : 1
+      // during a dive the field melts back so the hero arrives alone — but only
+      // as the ship slows: at full travel speed the field stays lit and STREAMS,
+      // and the melt completes on arrival as the rush dies away.
+      const fade = focusing ? 1 - (0.82 - rush * 0.34) * this.focus : 1
       const tw = 0.7 + 0.3 * Math.sin(slot.phase)
       const rel = pr.persp / P0 // 1 at the resting center; grows on approach
       const lum = clamp(Math.pow(rel, 1.1), 0.3, 2.1)
-      const a = (slot.base * tw * pr.shade * settle * lum + flare * 0.5) * fade
-      if (a <= 0.004) continue
+      const a = (slot.base * tw * pr.shade * settle * lum + flare * 0.5) * fade * this.exposure
+      if (a <= 0.004) {
+        st.lx = pr.sx
+        st.ly = pr.sy
+        continue
+      }
 
       ctx.globalCompositeOperation = 'source-over'
-      ctx.globalAlpha = Math.min(0.96, a * 1.4)
       const D = Math.min(slot.rad * 2.9 * Math.pow(rel, 0.5), 11) * (1 + ignite * 0.9 + flare * 0.45)
-      if (D >= 2 || magnified) {
-        ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        ctx.fillStyle = slot.hue
-        const s = D * 0.42
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
+      // under way, the star stretches along its own apparent motion — real
+      // velocity rendered, the view from a moving ship
+      if (streaking && st.lx != null) {
+        const sp = Math.hypot(pr.sx - st.lx, pr.sy - st.ly)
+        if (sp > 2.2 && sp < maxStreak) {
+          ctx.globalAlpha = Math.min(0.8, a * (0.4 + sp * 0.022)) * rush
+          ctx.strokeStyle = slot.hue
+          ctx.lineWidth = Math.min(2.6, D * 0.4)
+          ctx.beginPath()
+          ctx.moveTo(st.lx, st.ly)
+          ctx.lineTo(pr.sx, pr.sy)
+          ctx.stroke()
+        }
       }
+      ctx.globalAlpha = Math.min(0.96, a * 1.4)
+      ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      st.lx = pr.sx
+      st.ly = pr.sy
       const near = rel > 1.45
       if (!liteGlow && (slot.glow || near || ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
       else if (liteGlow && (ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
@@ -1803,25 +1842,32 @@ export class CommunityGalaxy {
   // retreat is eased, so nothing pops.
   _drawPublicTags(dt, d) {
     if (!this.tagsEnabled || !this.publicTags.length) return
-    const fade = (1 - this.focus * 0.92) * d
+    const ctx = this.ctx
+    const fade = (1 - this.focus * 0.92) * d * (1 - this.rush * 0.7) // pills yield to travel
     const taken = [] // reserved screen rects, priority order
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.lineWidth = 1
     for (const tag of this.publicTags) {
       const st = tag.st
       let want = false
-      let x = 0, y = 0, size = 10
+      let x = 0, pillB = 0, wpx = 0, hpx = 0, starY = 0, spr = null
       if (st && st.state !== 'meteor' && fade > 0.03) {
         const slot = this._slot(st.i)
         const pr = this._project(slot.px, slot.y, slot.pz)
-        if (pr && pr.sx > 30 && pr.sx < this.w - 30 && pr.sy > 40 && pr.sy < this.h - 8) {
+        if (pr && pr.sx > 30 && pr.sx < this.w - 30 && pr.sy > 46 && pr.sy < this.h - 8) {
           const rel = pr.persp / P0
-          size = clamp((tag.own ? 11 : 10) * Math.pow(rel, 0.45), 9, 14)
+          const size = clamp((tag.own ? 11 : 10) * Math.pow(rel, 0.45), 9, 14)
+          spr = this._tagSpriteFor('@' + tag.label, { own: tag.own })
+          const sc = size / 11
+          wpx = spr._w * sc
+          hpx = spr._h * sc
           x = pr.sx
-          y = pr.sy - clamp(8 * rel, 7, 18) - 5
-          const wpx = size * 0.62 * (tag.label.length + 1) + 12
-          const rect = { x0: x - wpx / 2, x1: x + wpx / 2, y0: y - size - 4, y1: y + 4 }
+          starY = pr.sy
+          pillB = pr.sy - clamp(9 * rel, 8, 18)
+          const rect = { x0: x - wpx / 2, x1: x + wpx / 2, y0: pillB - hpx, y1: pillB }
           let clear = true
           for (const r of taken) {
-            if (rect.x0 < r.x1 && rect.x1 > r.x0 && rect.y0 < r.y1 && rect.y1 > r.y0) {
+            if (rect.x0 < r.x1 + 4 && rect.x1 > r.x0 - 4 && rect.y0 < r.y1 + 3 && rect.y1 > r.y0 - 3) {
               clear = false
               break
             }
@@ -1833,30 +1879,93 @@ export class CommunityGalaxy {
         }
       }
       tag.vis = clamp(tag.vis + (want ? 1 : -1) * dt * 3, 0, 1)
-      // remember where the tag sits on screen, so a tap can land on it
+      // remember where the pill sits on screen, so a tap can land on it
       tag.sx = want ? x : null
-      tag.sy = want ? y : null
+      tag.sy = want ? pillB - hpx / 2 : null
       if (tag.vis <= 0.02 || !want) continue
       tag.tw += dt * 0.5
-      const a = (tag.own ? 0.8 : 0.48 + 0.1 * Math.sin(tag.tw)) * fade * smooth(tag.vis)
-      this._drawTag(x, y, '@' + tag.label, a, size)
+      const a = (tag.own ? 0.95 : 0.72 + 0.07 * Math.sin(tag.tw)) * fade * smooth(tag.vis)
+      // the stem — a hairline seating the pill on its own star, so a handle
+      // reads as belonging to a light, never floating as UI litter
+      ctx.globalAlpha = a * 0.5
+      ctx.strokeStyle = tag.own ? this._rgba(this.you, 0.75) : 'rgba(243,236,246,0.55)'
+      ctx.beginPath()
+      ctx.moveTo(x, pillB)
+      ctx.lineTo(x, starY - 3.5)
+      ctx.stroke()
+      ctx.globalAlpha = a
+      ctx.drawImage(spr, x - wpx / 2, pillB - hpx, wpx, hpx)
     }
+    ctx.globalAlpha = 1
   }
 
-  // A small mono @ tag floating over a star — screen-space, quietly lit.
+  // One @ as a pre-rendered glass pill — baked ONCE per label (rounded ink
+  // surface, hairline border, the @ in the product's amber, the handle in
+  // cream), then blitted every frame. No per-frame text or shadow work: this is
+  // what makes a sky full of handles cost nothing.
+  _tagSpriteFor(text, opts = {}) {
+    const { own = false, bright = false } = opts
+    const key = `${text}|${own ? 1 : 0}|${bright ? 1 : 0}`
+    const hit = this._tagCache[key]
+    if (hit) return hit
+    const SCALE = 3 // baked large; scaled down/up at draw — crisp through a zoom
+    const size = 11
+    const font = `700 ${size}px 'Space Mono', monospace`
+    if (!this._measCtx) this._measCtx = document.createElement('canvas').getContext('2d')
+    const mc = this._measCtx
+    mc.font = font
+    const tw = mc.measureText(text).width
+    const atW = mc.measureText('@').width
+    const padX = 9
+    const h = 21
+    const w = Math.ceil(tw + padX * 2)
+    const cv = document.createElement('canvas')
+    cv.width = w * SCALE
+    cv.height = h * SCALE
+    const g = cv.getContext('2d')
+    g.scale(SCALE, SCALE)
+    // the glass pill
+    const r = h / 2 - 0.5
+    g.beginPath()
+    g.moveTo(r + 0.5, 0.5)
+    g.arcTo(w - 0.5, 0.5, w - 0.5, h - 0.5, r)
+    g.arcTo(w - 0.5, h - 0.5, 0.5, h - 0.5, r)
+    g.arcTo(0.5, h - 0.5, 0.5, 0.5, r)
+    g.arcTo(0.5, 0.5, w - 0.5, 0.5, r)
+    g.closePath()
+    g.fillStyle = bright ? 'rgba(13,9,22,0.88)' : 'rgba(13,9,22,0.74)'
+    g.fill()
+    g.lineWidth = 1
+    g.strokeStyle = own || bright ? this._rgba(this.you, own ? 0.62 : 0.5) : 'rgba(243,236,246,0.22)'
+    g.stroke()
+    // the handle — amber @, cream name
+    g.font = font
+    g.textBaseline = 'middle'
+    g.textAlign = 'left'
+    const cy = h / 2 + 0.5
+    g.fillStyle = this._rgba(this.you, 0.95)
+    g.fillText('@', padX, cy)
+    g.fillStyle = bright ? 'rgba(255,250,244,0.98)' : 'rgba(243,236,246,0.92)'
+    g.fillText(text.slice(1), padX + atW, cy)
+    cv._w = w
+    cv._h = h
+    this._tagCache[key] = cv
+    return cv
+  }
+
+  // A pill floating over a star at an arbitrary anchor (the dive label).
+  // `y` is the old text baseline; the pill rests just above it.
   _drawTag(x, y, text, alpha, size = 11, bright = false) {
     if (alpha <= 0.02) return
     const ctx = this.ctx
+    const spr = this._tagSpriteFor(text, { bright })
+    const sc = size / 11
+    const w = spr._w * sc
+    const h = spr._h * sc
     ctx.save()
     ctx.globalCompositeOperation = 'source-over'
     ctx.globalAlpha = clamp(alpha, 0, 1)
-    ctx.font = `700 ${size}px 'Space Mono', monospace`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'alphabetic'
-    ctx.shadowColor = 'rgba(0,0,0,0.85)'
-    ctx.shadowBlur = 8
-    ctx.fillStyle = bright ? 'rgba(255,250,244,0.98)' : 'rgba(243,236,246,0.85)'
-    ctx.fillText(text, x, y)
+    ctx.drawImage(spr, x - w / 2, y - h + 4, w, h)
     ctx.restore()
   }
 
@@ -1922,19 +2031,22 @@ export class CommunityGalaxy {
     ctx.drawImage(this._dotFor('#FFFFFF'), x - 4, y - 4, 8, 8)
   }
 
-  // ── the anonymous match-constellations ──────────────────────────────────────
-  // Small asterisms living IN the disk, riding its rotation. A newborn figure is
-  // traced by a travelling spark, node to node; a retiring one dissolves. Two
-  // solid strokes per segment (a rose under-glow beneath a cream thread) — no
-  // per-frame gradient allocations, so two dozen figures cost nothing.
+  // ── the anonymous match-bonds ───────────────────────────────────────────────
+  // One per mutual match: TWO stars — amber and rose, the product's two lights —
+  // joined by one arced thread. A newborn bond ignites both ends, sends a spark
+  // inward from each, and blooms where they meet; a settled bond breathes, one
+  // soft pulse travelling its thread. Everything rides the disk's rotation.
+  // Two strokes + a few sprite blits per bond — two dozen cost nothing.
   _drawConstellations(dt, d) {
     const ctx = this.ctx
     const fade = 1 - this.focus * 0.85
     if (fade <= 0.02) return
     const gone = []
+    const N = 14 // thread samples — smooth on any screen, still cheap
+    ctx.lineCap = 'round'
     for (const cn of this.consts) {
-      cn.tw += dt * 0.6
-      const shimmer = 0.6 + 0.4 * Math.sin(cn.tw)
+      cn.tw += dt * 0.7
+      const shimmer = 0.72 + 0.28 * Math.sin(cn.tw)
       let life = 1
       if (cn.dying) {
         life = 1 - clamp((this.t - cn.dying) / 1.2, 0, 1)
@@ -1943,85 +2055,111 @@ export class CommunityGalaxy {
           continue
         }
       }
-      const reveal = clamp((this.t - cn.born) / 2.0, 0, 1)
-      const pts = []
-      let vis = true
-      let depth = 0
-      for (const n of cn.nodes) {
-        const pr = this._project(n.px, n.y, n.pz)
-        if (!pr) {
-          vis = false
-          break
-        }
-        depth += pr.shade
-        pts.push(pr)
-      }
-      if (!vis) continue
-      depth = clamp(depth / pts.length, 0.4, 1.1) // back-side figures sit dimmer
+      const reveal = clamp((this.t - cn.born) / 1.7, 0, 1)
+      if (reveal >= 1 && !cn.met) cn.met = this.t
+      const pa = this._project(cn.a.px, cn.a.y, cn.a.pz)
+      const pm = this._project(cn.mid.px, cn.mid.y, cn.mid.pz)
+      const pb = this._project(cn.b.px, cn.b.y, cn.b.pz)
+      if (!pa || !pm || !pb) continue
+      const depth = clamp((pa.shade + pb.shade) / 2, 0.4, 1.1) // back-side bonds sit dimmer
+      const la = life * depth * fade
 
-      const segs = pts.length - 1
-      const frontier = reveal * segs
+      // sample the thread — a quadratic through the lifted midpoint
+      const pts = this._bondPts || (this._bondPts = new Array(N + 1))
+      for (let k = 0; k <= N; k++) {
+        const u = k / N
+        const w0 = (1 - u) * (1 - u), w1 = 2 * (1 - u) * u, w2 = u * u
+        pts[k] = [w0 * pa.sx + w1 * pm.sx + w2 * pb.sx, w0 * pa.sy + w1 * pm.sy + w2 * pb.sy]
+      }
+
+      // the thread reveals from BOTH ends toward the middle — two people
+      // reaching each other. Rose under-glow beneath a cream hairline.
+      const half = N / 2
+      const frontier = reveal * half
       ctx.globalCompositeOperation = 'lighter'
-      ctx.lineCap = 'round'
-      let sparkX = null, sparkY = null
-      for (let k = 0; k < segs; k++) {
-        const segReveal = clamp(frontier - k, 0, 1)
-        if (segReveal <= 0) break
-        const a = pts[k], b = pts[k + 1]
-        const bx = lerp(a.sx, b.sx, segReveal)
-        const by = lerp(a.sy, b.sy, segReveal)
-        if (segReveal < 1) {
-          sparkX = bx
-          sparkY = by
+      const drawRun = (from, to, dirStep) => {
+        let k = from
+        ctx.beginPath()
+        ctx.moveTo(pts[k][0], pts[k][1])
+        while (k !== to) {
+          k += dirStep
+          ctx.lineTo(pts[k][0], pts[k][1])
         }
-        const la = life * depth * fade
-        ctx.strokeStyle = this._rgba(this.them, 0.07 * shimmer)
+        ctx.stroke()
+      }
+      const endA = Math.floor(Math.min(frontier, half))
+      const endB = N - endA
+      if (endA > 0) {
+        ctx.strokeStyle = this._rgba(this.them, 0.06 * shimmer)
         ctx.globalAlpha = la
         ctx.lineWidth = 2.2
-        ctx.beginPath()
-        ctx.moveTo(a.sx, a.sy)
-        ctx.lineTo(bx, by)
-        ctx.stroke()
-        ctx.strokeStyle = `rgba(245,236,246,${(0.11 + 0.06 * shimmer).toFixed(3)})`
+        drawRun(0, endA, 1)
+        drawRun(N, endB, -1)
+        ctx.strokeStyle = `rgba(245,236,246,${(0.09 + 0.05 * shimmer).toFixed(3)})`
         ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(a.sx, a.sy)
-        ctx.lineTo(bx, by)
-        ctx.stroke()
+        drawRun(0, endA, 1)
+        drawRun(N, endB, -1)
       }
-      // nodes pop as the frontier passes them: a rose glow + a white point,
-      // with a brief glint right when each one lights
-      for (let k = 0; k < pts.length; k++) {
-        const on = clamp(frontier - (k - 1), 0, 1)
-        if (on <= 0) continue
-        const pt = pts[k]
-        const glint = reveal < 1 ? clamp(1 - Math.abs(frontier - k) * 1.6, 0, 1) : 0
-        ctx.globalAlpha = (0.26 * shimmer + glint * 0.45) * life * depth * fade
-        const gs = 4 + glint * 5
-        ctx.drawImage(this.glows.them, pt.sx - gs, pt.sy - gs, gs * 2, gs * 2)
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.globalAlpha = (0.6 * shimmer + glint * 0.32) * life * depth * fade
-        const ds = 2.1 + glint * 1.7
-        ctx.drawImage(this._dotFor('#FFFFFF'), pt.sx - ds, pt.sy - ds, ds * 2, ds * 2)
-        ctx.globalCompositeOperation = 'lighter'
-        if (glint > 0.35) {
-          const ss = 12 + glint * 12
-          ctx.globalAlpha = glint * 0.55 * life * fade
-          ctx.drawImage(this._spike, pt.sx - ss / 2, pt.sy - ss / 2, ss, ss)
+
+      // the two sparks travelling inward while the bond is forming
+      if (reveal < 1) {
+        for (const [sx, sy] of [pts[endA], pts[endB]]) {
+          ctx.globalAlpha = 0.9 * fade * life
+          ctx.drawImage(this._dotFor('#FFFFFF'), sx - 2.6, sy - 2.6, 5.2, 5.2)
+          ctx.globalAlpha = 0.5 * fade * life
+          ctx.drawImage(this.glows.them, sx - 7, sy - 7, 14, 14)
         }
       }
-      // the travelling spark drawing the figure
-      if (sparkX != null && reveal < 1) {
-        ctx.globalAlpha = 0.9 * fade
-        ctx.drawImage(this._dotFor('#FFFFFF'), sparkX - 3, sparkY - 3, 6, 6)
-        ctx.globalAlpha = 0.5 * fade
-        ctx.drawImage(this.glows.them, sparkX - 8, sparkY - 8, 16, 16)
+
+      // the MEETING — a bloom at the middle the moment the sparks touch
+      if (cn.met) {
+        const q = (this.t - cn.met) / 0.8
+        if (q < 1) {
+          const bell = Math.sin(Math.PI * clamp(q, 0, 1))
+          const bs = 10 + bell * 22
+          ctx.globalAlpha = bell * 0.8 * fade
+          ctx.drawImage(this.glows.white, pm.sx - bs, pm.sy - bs, bs * 2, bs * 2)
+          const ss = 16 + bell * 26
+          ctx.globalAlpha = bell * 0.85 * fade
+          ctx.drawImage(this._spike, pm.sx - ss / 2, pm.sy - ss / 2, ss, ss)
+        }
       }
+
+      // a settled bond BREATHES: one soft pulse gliding end to end and back —
+      // the thread carrying light between the two of them
+      if (reveal >= 1 && !this.reduced && this.qLevel < 2) {
+        const u = 0.5 - 0.5 * Math.cos(this.t * 0.7 + cn.tw)
+        const k = Math.round(u * N)
+        const [sx, sy] = pts[k]
+        ctx.globalAlpha = 0.4 * shimmer * la
+        ctx.drawImage(this.glows.white, sx - 4, sy - 4, 8, 8)
+      }
+
+      // the PAIR — one amber star, one rose star, each wearing a small burst.
+      // This is what makes a bond read as two people, not decoration.
+      const drawEnd = (pr, hue, phase) => {
+        const breathe = 0.85 + 0.15 * Math.sin(cn.tw * 1.3 + phase)
+        const glint = reveal < 1 ? 1 : 0 // newborn ends burn brighter
+        ctx.globalAlpha = Math.min(1, (0.42 + glint * 0.3) * shimmer * la + 0.1)
+        const gs = 7.5 * breathe
+        ctx.drawImage(this._glowFor(hue), pr.sx - gs, pr.sy - gs, gs * 2, gs * 2)
+        ctx.globalAlpha = Math.min(1, (0.62 + glint * 0.34) * shimmer * la + 0.18)
+        const ss = (17 + glint * 8) * breathe
+        ctx.drawImage(this._spikeFor(hue), pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+        ctx.globalCompositeOperation = 'source-over'
+        ctx.globalAlpha = Math.min(1, (0.85 + glint * 0.15) * la)
+        const dsz = 2.7 * breathe
+        ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - dsz, pr.sy - dsz, dsz * 2, dsz * 2)
+        ctx.globalCompositeOperation = 'lighter'
+      }
+      drawEnd(pa, this.you, 0)
+      drawEnd(pb, this.them, Math.PI)
     }
     for (const g of gone) {
       const at = this.consts.indexOf(g)
       if (at >= 0) this.consts.splice(at, 1)
     }
+    ctx.globalCompositeOperation = 'source-over'
   }
 
   // ── the forming proto-galaxy ────────────────────────────────────────────────
