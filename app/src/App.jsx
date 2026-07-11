@@ -13,6 +13,7 @@ import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
+  StarViewOverlay, CopyCodeScreen,
 } from './components/screens.jsx'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen, MATCH_FLOOR } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
@@ -34,6 +35,7 @@ const SCREENS = {
   match: MatchScreen, //    8 · the match
   fourth: FourthSlotScreen, // 9 · the fourth slot (dormant)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
+  copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
 }
 
 const STORE = 'celestual:v2'
@@ -70,6 +72,12 @@ const parseRoute = () => {
   const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
   if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
   if (path === '/optout') return { optout: true }
+  // /copy#c=1234 — the verification email's copy button. The code rides the
+  // FRAGMENT so it never appears in a request line or a server log.
+  if (path === '/copy') {
+    const m = (window.location.hash || '').match(/c=(\d{4,8})/)
+    return { copy: true, copyCode: m ? m[1] : '' }
+  }
   return {}
 }
 
@@ -234,6 +242,7 @@ export default function App() {
     if (route.poster) return 'open'
     if (route.community) return 'community'
     if (route.optout) return 'privacy'
+    if (route.copy) return 'copy'
     if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'schools'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
@@ -492,57 +501,45 @@ export default function App() {
     [go],
   )
 
-  // ── fly to a ping's star (the status page's "see it in the sky") ──
-  // Tapping one of your pings sends the backdrop camera diving to that ping's
-  // own star — the @ rising above it at arrival — while the foreground melts
-  // away for the flight. Works over both skies: the community galaxy's locate
-  // dive, or the ambient field's focus glide when no community is joined.
-  const [skyFlight, setSkyFlight] = useState(false)
-  const flightTimer = useRef(null)
-  const flightOutTimer = useRef(null)
-  const endFlight = useCallback(() => {
-    if (flightTimer.current) clearTimeout(flightTimer.current)
-    if (flightOutTimer.current) clearTimeout(flightOutTimer.current)
-    flightTimer.current = null
-    flightOutTimer.current = null
-    if (ambientGalaxyRef.current) ambientGalaxyRef.current.clearFocus()
-    setSkyFlight(false)
+  // ── the star view (the status page's "see it in the sky") ──
+  // Tapping one of your pings flies the backdrop camera to that ping's own star
+  // and STAYS there — the foreground melts away, a designed overlay names the
+  // star (the @ in the product's amber, its intent line beneath), and the hand
+  // is free: drag orbits the whole galaxy around the held star, pinch pulls
+  // closer. One clear close button glides the camera home to the pings page.
+  // Works over both skies: the community galaxy's held dive, or the ambient
+  // field's held focus when no community is joined.
+  const [skyView, setSkyView] = useState(null) // { handle, intent, kind } while held
+  const skyFlight = !!skyView
+  const endSkyView = useCallback(() => {
+    if (homeGalaxyRef.current && homeGalaxyRef.current.releaseDive) homeGalaxyRef.current.releaseDive()
+    if (ambientGalaxyRef.current) {
+      ambientGalaxyRef.current.clearFocus()
+      if (ambientGalaxyRef.current.setNavEnabled) ambientGalaxyRef.current.setNavEnabled(false)
+    }
+    setSkyView(null)
   }, [])
-  useEffect(() => () => endFlight(), [endFlight])
   const locatePing = useCallback(
     (handle) => {
       const h = normHandle(handle)
-      if (!h || skyFlight) return
-      let dur = 0
+      if (!h || skyView) return
+      const row = pings.find((p) => normHandle(p.handle || '') === h)
+      let ok = false
       if (homeCommunity && homeGalaxyRef.current) {
-        // in → hold (the @ readable) → out; matches the engine's dive timeline
-        if (homeGalaxyRef.current.locateMine(h)) dur = 4600
+        ok = !!homeGalaxyRef.current.locateMine(h, { hold: true })
       } else if (ambientGalaxyRef.current) {
         const i = pings.findIndex((p) => normHandle(p.handle || '') === h)
         if (i >= 0) {
-          ambientGalaxyRef.current.focusStar(i)
-          flightOutTimer.current = setTimeout(() => {
-            if (ambientGalaxyRef.current) ambientGalaxyRef.current.clearFocus()
-          }, 2800)
-          dur = 3800
+          ambientGalaxyRef.current.focusStar(i, { hold: true })
+          if (ambientGalaxyRef.current.setNavEnabled) ambientGalaxyRef.current.setNavEnabled(true)
+          ok = true
         }
       }
-      if (!dur) return
-      setSkyFlight(true)
-      if (flightTimer.current) clearTimeout(flightTimer.current)
-      flightTimer.current = setTimeout(() => {
-        flightTimer.current = null
-        setSkyFlight(false)
-      }, dur)
+      if (!ok) return
+      setSkyView({ handle: h, intent: (row && row.intent) || null, kind: categoryOf((row && row.intent) || '') })
     },
-    [homeCommunity, pings, skyFlight],
+    [homeCommunity, pings, skyView],
   )
-  // a tap anywhere brings the screen back early — the flight never traps you
-  useEffect(() => {
-    if (!skyFlight) return undefined
-    window.addEventListener('pointerdown', endFlight)
-    return () => window.removeEventListener('pointerdown', endFlight)
-  }, [skyFlight, endFlight])
 
   // ── the public @ (announce yourself in your community's sky) ──
   // Turning it ON goes through the warning sheet; turning it OFF is one tap.
@@ -1047,6 +1044,7 @@ export default function App() {
     lastPlaced, match,
     demoFourthSlot, buyFourthSlot, placeFourth,
     posterHandle: route.poster || '',
+    copyCode: route.copyCode || '',
     verifyEnabled: igVerifyEnabled() || demo,
     setMe, setEmail, setThem,
     altHandles, addAltHandle, removeAltHandle,
@@ -1142,6 +1140,10 @@ export default function App() {
       >
         <Screen C={C} ctx={ctx} />
       </div>
+
+      {/* the held star view: the @ resting in amber over its star, the intent
+          line beneath, the hand free to orbit — and one clear way home. */}
+      {skyView && <StarViewOverlay C={C} view={skyView} onClose={endSkyView} />}
 
       {/* the send-off morph: the @ field collapsing into a star (torn down by the
           morphTimer once its one-shot gesture has played). */}

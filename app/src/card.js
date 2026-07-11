@@ -308,12 +308,12 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
     hY + 168,
   )
 
-  // ── the live stat row ──
+  // ── the live stat row — the same playful captions the in-app card wears ──
   const pills = []
-  pills.push([members.toLocaleString(), 'INSIDE'])
-  if (open && matches != null && matches >= 10) pills.push([matches.toLocaleString(), 'MATCHED'])
-  if (open && pings != null) pills.push([pings.toLocaleString(), 'PINGS'])
-  const pillW = 250
+  pills.push([members.toLocaleString(), 'SOULS INSIDE'])
+  if (open && matches != null && matches >= 10) pills.push([matches.toLocaleString(), 'FOUND EACH OTHER'])
+  if (open && pings != null) pills.push([pings.toLocaleString(), 'SECRETS IN ORBIT'])
+  const pillW = 300
   const pillH = 128
   const gap = 26
   const rowW = pills.length * pillW + (pills.length - 1) * gap
@@ -357,9 +357,6 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   ctx.lineTo(ax + 15, ay)
   ctx.lineTo(ax + 4, ay + 11)
   ctx.stroke()
-
-  // the tap hint under the pill
-  drawTracked(ctx, 'T A P   T H E   L I N K', W / 2, bpY + bpH + 60, 26, 2, rgba(TOKENS.star, 0.9))
 
   // ── the footer — the invite link, the metadata register ──
   ctx.textAlign = 'center'

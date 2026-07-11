@@ -7,8 +7,9 @@
 //
 // The flow:
 //   1. send(email, slug)  → the celestual-edu-verify edge function checks the
-//      address is at the school's domain, mints a 6-digit code, stores only its
-//      SHA-256 hash, emails the code, and returns a random correlation `token`.
+//      address is at the school's domain, mints a 4-digit code, stores only its
+//      SHA-256 hash, emails the code (the code rides the subject line too, so
+//      the notification alone is enough), and returns a correlation `token`.
 //   2. verify(token, code) → the same function checks the code against the stored
 //      hash (never returning it) and, on a match, reports the email + slug back.
 //

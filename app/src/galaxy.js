@@ -146,6 +146,7 @@ export class GalaxyField {
     // fewer points still fill the frame.
     const count = opts.count || (window.innerWidth < 540 ? 1150 : 1800)
     this._gen(count)
+    this._genPassers()
     this.trail = []
     this.motes = null
     // where the @ became a star (normalized 0..1 screen coords) — the send-off
@@ -170,6 +171,18 @@ export class GalaxyField {
     this.focusP = 0 // linear focus progress 0..1; `focus` is its ease-in-out
     this.focusTarget = 0
     this.focusIndex = -1
+    // A held focus doesn't glide back on its own: the viewer stays with the
+    // star (free to orbit around it) until clearFocus() — the pings screen's
+    // star view. While held, the canvas skips its own @ label; the DOM overlay
+    // owns the star's name and intent line.
+    this.focusHold = false
+    // The hand-driven camera, live only while a star view is held (or a caller
+    // flips setNavEnabled): drag orbits the whole sky around the focus point,
+    // pinch/wheel dollies closer or further (a multiplier on the standoff).
+    this.navEnabled = false
+    this.orbit = { yaw: 0, pitch: 0 }
+    this.viewDist = 1
+    this._nav = { pts: new Map(), mode: null, lx: 0, ly: 0, dist0: 1, dist1: 1 }
     // Live camera offset in view-aligned world space, folded into the perspective
     // projection so the WHOLE field (stars, dust, nebula, core) flies past as one.
     // (0,0,0) is the resting camera; during focus it travels laterally to frame the
@@ -323,6 +336,33 @@ export class GalaxyField {
     }
   }
 
+  // The near-field passers — loose stars drifting between the camera and the
+  // disk. At rest they're a whisper; the moment the camera travels (a dive, a
+  // held orbit, a pinch) they sweep past with real parallax, streaking like the
+  // window of a ship — close ones fast and bright, far ones slow and faint.
+  _genPassers() {
+    let s = 51733
+    const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280
+    this.passers = []
+    const n = window.innerWidth < 540 ? 30 : 44
+    for (let i = 0; i < n; i++) {
+      this.passers.push({
+        px: (rnd() - 0.5) * 4.6,
+        py: (rnd() - 0.5) * 3.0,
+        pz: (rnd() - 0.5) * 4.6,
+        // a slow autonomous drift, so a few are always passing by
+        vx: (rnd() - 0.5) * 0.05,
+        vy: (rnd() - 0.5) * 0.02,
+        vz: (rnd() - 0.5) * 0.05,
+        rad: 0.5 + rnd() * 1.1,
+        base: 0.1 + rnd() * 0.3,
+        hue: rnd() < 0.2 ? PAL.blue : rnd() < 0.28 ? PAL.warm : '#FFFFFF',
+        lx: null,
+        ly: null,
+      })
+    }
+  }
+
   _bind() {
     this._onResize = () => this.resize()
     this._onPointer = (e) => {
@@ -349,6 +389,62 @@ export class GalaxyField {
       if (document.hidden) this.stop()
       else this.start()
     }
+    // The star-view hand: drag orbits around the held star, pinch/wheel pulls
+    // closer or further. Live only while navEnabled — everywhere else these
+    // handlers fall straight through and the backdrop stays a backdrop.
+    this._navDown = (e) => {
+      if (!this.navEnabled) return
+      const el = e.target
+      if (el && el.closest && el.closest('button, a, input, textarea, [role="button"], [data-noripple]')) return
+      const nv = this._nav
+      nv.pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (nv.pts.size === 2) {
+        const [p1, p2] = [...nv.pts.values()]
+        nv.mode = 'pinch'
+        nv.dist0 = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
+        nv.dist1 = this.viewDist
+      } else if (nv.pts.size === 1) {
+        nv.mode = 'drag'
+        nv.lx = e.clientX
+        nv.ly = e.clientY
+      }
+      this.start()
+    }
+    this._navMove = (e) => {
+      if (!this.navEnabled) return
+      const nv = this._nav
+      const p = nv.pts.get(e.pointerId)
+      if (!p) return
+      p.x = e.clientX
+      p.y = e.clientY
+      if (nv.mode === 'pinch' && nv.pts.size >= 2) {
+        const [p1, p2] = [...nv.pts.values()]
+        const d = Math.hypot(p1.x - p2.x, p1.y - p2.y) || 1
+        this.viewDist = clamp(nv.dist1 * (nv.dist0 / d), 0.35, 3.2)
+      } else if (nv.mode === 'drag') {
+        this.orbit.yaw = clamp(this.orbit.yaw + (e.clientX - nv.lx) * 0.0042, -2.4, 2.4)
+        this.orbit.pitch = clamp(this.orbit.pitch - (e.clientY - nv.ly) * 0.0032, -1.1, 1.1)
+        nv.lx = e.clientX
+        nv.ly = e.clientY
+      }
+      this.start()
+    }
+    this._navUp = (e) => {
+      const nv = this._nav
+      if (!nv.pts.delete(e.pointerId)) return
+      if (nv.pts.size < 2 && nv.mode === 'pinch') nv.mode = nv.pts.size === 1 ? 'drag' : null
+      if (nv.pts.size === 0) nv.mode = null
+    }
+    this._navWheel = (e) => {
+      if (!this.navEnabled) return
+      this.viewDist = clamp(this.viewDist * Math.exp(e.deltaY * 0.0014), 0.35, 3.2)
+      this.start()
+    }
+    window.addEventListener('pointerdown', this._navDown, { passive: true })
+    window.addEventListener('pointermove', this._navMove, { passive: true })
+    window.addEventListener('pointerup', this._navUp, { passive: true })
+    window.addEventListener('pointercancel', this._navUp, { passive: true })
+    window.addEventListener('wheel', this._navWheel, { passive: true })
     window.addEventListener('resize', this._onResize)
     document.addEventListener('visibilitychange', this._onVis)
     // Reduced-motion: skip pointer/tilt parallax entirely (it's continuous motion).
@@ -417,6 +513,11 @@ export class GalaxyField {
     document.removeEventListener('visibilitychange', this._onVis)
     window.removeEventListener('pointermove', this._onPointer)
     window.removeEventListener('deviceorientation', this._onTilt)
+    window.removeEventListener('pointerdown', this._navDown)
+    window.removeEventListener('pointermove', this._navMove)
+    window.removeEventListener('pointerup', this._navUp)
+    window.removeEventListener('pointercancel', this._navUp)
+    window.removeEventListener('wheel', this._navWheel)
   }
   setMotion(m) {
     this.motion = m
@@ -424,15 +525,36 @@ export class GalaxyField {
   }
 
   // Drift the camera toward sealed star `i` and zoom in. Pass -1 (or clearFocus)
-  // to drift back out.
-  focusStar(i) {
+  // to drift back out. `opts.hold` keeps the camera there — the star view: the
+  // viewer stays with the star, hand-orbiting the sky around it, until
+  // clearFocus() pulls back out.
+  focusStar(i, opts = {}) {
     if (i == null || i < 0 || i >= this.sealed.length) return this.clearFocus()
     this.focusIndex = i
     this.focusTarget = 1
+    this.focusHold = !!opts.hold
     this.start()
   }
   clearFocus() {
     this.focusTarget = 0
+    this.focusHold = false
+    this.start()
+  }
+
+  // Turn the star-view hand on/off (drag orbits, pinch/wheel dollies). Turning
+  // it off lets the view glide home — orbit and distance ease back to rest.
+  setNavEnabled(on) {
+    this.navEnabled = !!on
+    if (!on) {
+      this._nav.pts.clear()
+      this._nav.mode = null
+      // reduced motion never runs the easing loop — settle home instantly
+      if (this.reduced) {
+        this.orbit.yaw = 0
+        this.orbit.pitch = 0
+        this.viewDist = 1
+      }
+    }
     this.start()
   }
 
@@ -588,8 +710,11 @@ export class GalaxyField {
     // crosshairs instead of swimming while we fly in.
     const hold = 1 - this.focus
     const driftY = Math.sin(this.t * 0.12) * 0.07 * hold
-    const yaw = this.p.x * 0.32 * hold + driftY
-    const tilt = TILT + (this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025) * hold
+    // The hand's orbit rides OUTSIDE the focus envelope: during a held star
+    // view the camera re-aims at the star every frame, so orbiting swings the
+    // whole sky around the hero with true parallax while it stays centered.
+    const yaw = this.p.x * 0.32 * hold + driftY + this.orbit.yaw
+    const tilt = TILT + (this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025) * hold + this.orbit.pitch
     return {
       cosS: Math.cos(this.spin),
       sinS: Math.sin(this.spin),
@@ -644,6 +769,13 @@ export class GalaxyField {
     this.spin += dt * (this.motion / 100) * 0.16 * (1 - this.focus * 0.96)
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.6))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.6))
+    // with the hand gone, the view glides home (orbit unwinds, distance rests)
+    if (!this.navEnabled) {
+      const home = Math.min(1, dt * 2.2)
+      this.orbit.yaw = lerp(this.orbit.yaw, 0, home)
+      this.orbit.pitch = lerp(this.orbit.pitch, 0, home)
+      this.viewDist = lerp(this.viewDist, 1, home)
+    }
     this._draw(dt)
     requestAnimationFrame(this._boundTick)
   }
@@ -702,10 +834,12 @@ export class GalaxyField {
       const s = this.sealed[this.focusIndex]
       const T = this._view(Math.cos(s.theta0) * s.r, s.y, Math.sin(s.theta0) * s.r, rot)
       const f = this.focus
-      // forward travel so the target's camera-space depth eases CAM+T.z → STANDOFF
+      // forward travel so the target's camera-space depth eases CAM+T.z →
+      // STANDOFF (× the pinch-adjustable view distance, so a held view can
+      // pull closer or lean back)
       this.cam.x = f * T.x
       this.cam.y = f * T.y
-      this.cam.z = f * (CAM + T.z - STANDOFF)
+      this.cam.z = f * (CAM + T.z - STANDOFF * this.viewDist)
     } else {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
@@ -821,7 +955,60 @@ export class GalaxyField {
       }
     }
 
+    this._drawPassers(dt, d, rot)
     this._drawHero(dt, rot)
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // The near-field passers: loose stars drifting between the camera and the
+  // disk. Each remembers its last screen position — when the camera travels
+  // (a dive, a hand-orbit, a pinch) they draw short streaks along their own
+  // apparent motion, so flying feels like flying. At rest they are a whisper.
+  _drawPassers(dt, d, rot) {
+    if (!this.passers || !this.passers.length) return
+    const ctx = this.ctx
+    const active = this.focus > 0.02 || this.navEnabled || Math.abs(this.viewDist - 1) > 0.02
+    const lift = active ? 1 : 0.5
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.lineCap = 'round'
+    for (const p of this.passers) {
+      p.px += p.vx * dt
+      p.py += p.vy * dt
+      p.pz += p.vz * dt
+      // wrap the drift inside its shell so the pool never thins out
+      if (p.px > 2.4) p.px = -2.4
+      else if (p.px < -2.4) p.px = 2.4
+      if (p.py > 1.6) p.py = -1.6
+      else if (p.py < -1.6) p.py = 1.6
+      if (p.pz > 2.4) p.pz = -2.4
+      else if (p.pz < -2.4) p.pz = 2.4
+      const pr = this._project(p.px, p.py, p.pz, rot)
+      if (!pr || pr.sx < -80 || pr.sx > this.w + 80 || pr.sy < -80 || pr.sy > this.h + 80) {
+        p.lx = null
+        continue
+      }
+      const a = p.base * d * lift * clamp(pr.persp / (FOCAL / CAM), 0.4, 2.4)
+      const D = clamp(p.rad * pr.persp * 2.4, 1.2, 8)
+      if (!this.reduced && p.lx != null) {
+        const sp = Math.hypot(pr.sx - p.lx, pr.sy - p.ly)
+        // a streak only when the star is genuinely sweeping past (and never
+        // across a wrap teleport)
+        if (sp > 2.5 && sp < 320) {
+          ctx.globalAlpha = Math.min(0.6, a * (0.45 + sp * 0.02))
+          ctx.strokeStyle = p.hue
+          ctx.lineWidth = Math.min(2.2, D * 0.4)
+          ctx.beginPath()
+          ctx.moveTo(p.lx, p.ly)
+          ctx.lineTo(pr.sx, pr.sy)
+          ctx.stroke()
+        }
+      }
+      ctx.globalAlpha = Math.min(0.85, a)
+      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      p.lx = pr.sx
+      p.ly = pr.sy
+    }
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -995,6 +1182,11 @@ export class GalaxyField {
       const sh = clamp(pr.shade, 0.45, 1.2)
       const isFocus = focusing && i === this.focusIndex
       const f = isFocus ? this.focus : 0
+      // a HELD star view lives with the star for as long as the viewer stays,
+      // so its dressing is bounded to a beautiful medium star instead of the
+      // momentary frame-filling flare of the timed dive (which the old
+      // auto-pull-out made survivable). The overlay names it; the star burns.
+      const held = isFocus && this.focusHold
       // during a dive, everything but the hero melts back into the depth
       const fade = focusing && !isFocus ? 1 - 0.82 * this.focus : 1
       // Your own star, dressed like it matters: a white-hot core inside layered
@@ -1003,27 +1195,34 @@ export class GalaxyField {
       // flares to its full photographic signature with its @ risen above it.
       const ctx = this.ctx
       ctx.globalCompositeOperation = 'lighter'
-      const ro = clamp((14 + pulse * 3) * pr.persp, 8, this.h * 0.3) * (1 + f * 2)
+      let ro = clamp((14 + pulse * 3) * pr.persp, 8, this.h * 0.3) * (1 + f * 2)
+      if (held) ro = Math.min(ro, 110)
       ctx.globalAlpha = (0.09 + 0.07 * pulse) * sh * fade
       ctx.drawImage(this.glows.them, pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
-      const go = clamp((9 + pulse * 2.5) * pr.persp, 6, this.h * 0.28) * (1 + f * 2.6)
+      let go = clamp((9 + pulse * 2.5) * pr.persp, 6, this.h * 0.28) * (1 + f * 2.6)
+      if (held) go = Math.min(go, 84)
       ctx.globalAlpha = (0.36 + 0.26 * pulse) * sh * fade
       ctx.drawImage(this.glows.seal, pr.sx - go, pr.sy - go, go * 2, go * 2)
-      const ss = clamp((16 + pulse * 5) * pr.persp, 10, this.h * 0.3) * (1 + f * 2.8)
+      let ss = clamp((16 + pulse * 5) * pr.persp, 10, this.h * 0.3) * (1 + f * 2.8)
+      if (held) ss = Math.min(ss, 190)
       ctx.globalAlpha = Math.min(1, (0.18 + 0.15 * pulse) * fade + f * 0.55)
       ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-      const cd = clamp(2.5 * pr.persp, 1.6, this.h * 0.08) * (1 + f * 2.2) * (0.9 + pulse * 0.2)
+      let cd = clamp(2.5 * pr.persp, 1.6, this.h * 0.08) * (1 + f * 2.2) * (0.9 + pulse * 0.2)
+      if (held) cd = Math.min(cd, 10)
       ctx.globalAlpha = Math.min(1, (0.78 + 0.22 * pulse) * fade + f)
       ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
-      ctx.globalAlpha = (0.2 + 0.18 * pulse) * fade * (1 - f) + f * 0.85
+      ctx.globalAlpha = (0.2 + 0.18 * pulse) * fade * (1 - f) + f * (held ? 0.5 : 0.85)
       ctx.strokeStyle = 'rgba(255,255,255,0.9)'
       ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.arc(pr.sx, pr.sy, clamp((6.5 + pulse * 1.4) * pr.persp, 5, 40) * (1 + f * 1.9), 0, TWO)
+      const ringR = clamp((6.5 + pulse * 1.4) * pr.persp, 5, 40) * (1 + f * 1.9)
+      ctx.arc(pr.sx, pr.sy, held ? Math.min(ringR, 52) : ringR, 0, TWO)
       ctx.stroke()
-      // arrival: the @ this ping holds rises over the star on a slim tick
+      // arrival: the @ this ping holds rises over the star on a slim tick.
+      // A HELD star view skips this — the DOM overlay carries the @ and the
+      // intent line there, designed rather than canvas-set.
       const label = this.sealLabels[i]
-      if (isFocus && label && f > 0.55) {
+      if (isFocus && label && f > 0.55 && !this.focusHold) {
         const fl = smooth((f - 0.55) / 0.45)
         const off = 32 + f * 22
         ctx.globalAlpha = fl * 0.4
