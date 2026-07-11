@@ -739,11 +739,8 @@ export class GalaxyField {
       // while everything around it dissolves.
       d = this.dim * (1 - this.focus * 0.45),
       rot = this._rot()
-    // When zoomed, the whole field is magnified, so even tiny points must be drawn
-    // as round sprites or they'd smear into squares. Un-zoomed, the faint sub-pixel
-    // majority can take a cheap fill (they read as points either way) — that's what
-    // keeps the soft-sprite field affordable on low-end hardware.
-    const zoomed = this.focus > 0.01
+    // Every point of light draws from its sprite — a scaled blit costs the same
+    // as a quad and never leaves a square pixel in the sky.
 
     // deep-space backdrop with a faint cool zenith glow. The vertical gradient only
     // depends on height, so build it once per resize instead of every frame.
@@ -841,14 +838,7 @@ export class GalaxyField {
       if (a <= 0.004) continue
       ctx.globalAlpha = Math.min(0.55, a)
       const D = clamp(p.rad * pr.persp * 2.6, 1.6, this.h * 0.4)
-      if (zoomed) {
-        ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        // faint near-field mote — a cheap point un-zoomed
-        ctx.fillStyle = p.warm ? PAL.warm : PAL.cream
-        const s = D * 0.4
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
-      }
+      ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
 
     // arm/bulge/halo stars (round, anti-aliased) + collect glow stars for the
@@ -871,14 +861,9 @@ export class GalaxyField {
       const D = clamp(st.rad * pr.persp * 3, 1.9, this.h * 0.5)
       // The round sprite is what kills the pixelation, but it's only worth its cost
       // on stars big or bright enough to actually read as a disc; the faint sub-2px
-      // crowd takes a cheap point fill (indistinguishable at that size, far cheaper).
-      if (zoomed || D >= 2.4 || a >= 0.34) {
-        ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        ctx.fillStyle = st.hue
-        const s = D * 0.42
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
-      }
+      // every star draws from its sprite — a scaled blit costs the same as a
+      // quad and never leaves a square pixel in the sky
+      ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
 
     // glow pass (additive): a tinted bloom on every glow star, and on the very
@@ -1002,14 +987,8 @@ export class GalaxyField {
       // The deep backdrop sits behind the zoom transform, so it's never magnified —
       // at 0.5–2px these read as points. A cheap fill (round for the few big ones,
       // a fast 1px dot for the faint majority) keeps the frame light.
-      if (b.rad > 1.1) {
-        const D = b.rad * 2.4
-        ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
-      } else {
-        ctx.fillStyle = b.hue
-        const s = b.rad
-        ctx.fillRect(x - s, y - s, s * 2, s * 2)
-      }
+      const D = Math.max(1.4, b.rad * 2.4)
+      ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
     }
   }
 
