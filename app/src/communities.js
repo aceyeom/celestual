@@ -41,11 +41,6 @@ export function communityOpen(c) {
   return m >= OPEN_FLOOR
 }
 
-// The ring's center label. Intentionally literal (gamified) rather than voice-
-// compliant, and kept OUT of i18n/strings.js so it never trips the voice linter
-// — the ring is a demo-forward growth surface, not part of the product's copy.
-export const RING_LABELS = { climbing: 'unlocked', open: 'open' }
-
 // Progress toward the fixed-100 open floor, as a fraction and a flag. Reads
 // `members` (falling back to the legacy `current`). Used by the recruiter/placed
 // surfaces and the finder; the community page itself no longer shows a fraction.

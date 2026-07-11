@@ -8,13 +8,15 @@
 //
 // Two actions on one endpoint:
 //   { action:'send',   email, slug, demo? }  → validate the address is at the
-//        school's domain, rate-limit, mint a 4-digit code, store ONLY its SHA-256
-//        hash, email the code via Resend, and return a random correlation `token`.
-//        `demo: true` is the app's sandbox flag: it runs this exact real
-//        pipeline too, with one carve-out — a @gmail.com address is silently
-//        accepted alongside the real school domain, so the flow is testable
-//        with an inbox anyone actually holds. Every other domain still has to
-//        genuinely match the school, demo or not.
+//        school's domain, rate-limit (per address AND per IP), mint a 4-digit
+//        code, store ONLY its SHA-256 hash, email the code via Resend, and
+//        return a random correlation `token`.
+//        `demo: true` is the app's sandbox flag. The sandbox's @gmail.com
+//        carve-out is honored ONLY when the operator has explicitly enabled it
+//        server-side (CELESTUAL_SANDBOX_GMAIL=1) — the flag alone is client
+//        input and must never weaken the production gate. With the env var off
+//        (the default), every address has to genuinely match the school,
+//        demo or not.
 //        Response: { ok:true, token, expires_at } | { ok:false, error }
 //   { action:'verify', token, code }        → compare the code to the stored hash
 //        (never returning it); on a match mark the row verified and report back.
@@ -36,6 +38,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
+// Operator opt-in for the sandbox's @gmail.com carve-out. OFF by default: the
+// client's `demo` flag is untrusted input, so without this env var the gate is
+// identical in the sandbox and production.
+const SANDBOX_GMAIL = Deno.env.get('CELESTUAL_SANDBOX_GMAIL') === '1';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -53,6 +59,7 @@ const SCHOOLS: Record<string, { name: string; domain: string }> = {
 const CODE_TTL_MIN = 10;
 const MAX_ATTEMPTS = 6; // guesses per code before it's dead
 const SEND_PER_EMAIL_HOUR = 5; // fresh codes per address per hour
+const SEND_PER_IP_HOUR = 15; // fresh codes per IP per hour (anti-spray)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -75,7 +82,9 @@ function matchesSchool(email: string, slug: string, demo: boolean): boolean {
   const s = SCHOOLS[slug];
   const host = emailDomain(email);
   if (!s || !host) return false;
-  if (demo && host === 'gmail.com') return true;
+  // The carve-out needs BOTH the client's sandbox flag and the operator's
+  // server-side opt-in — a crafted `demo:true` against production buys nothing.
+  if (demo && SANDBOX_GMAIL && host === 'gmail.com') return true;
   return host === s.domain || host.endsWith('.' + s.domain);
 }
 
@@ -181,7 +190,10 @@ Deno.serve(async (req) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'email' });
     if (!matchesSchool(email, slug, demo)) return json({ ok: false, error: 'domain' });
 
-    // Rate-limit fresh codes per address, and sweep expired rows opportunistically.
+    // Rate-limit fresh codes per address AND per IP, and sweep expired rows
+    // opportunistically. The IP guard stops one machine spraying codes across
+    // many addresses (each send costs a real email).
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
     const sinceIso = new Date(Date.now() - 3600_000).toISOString();
     const { count } = await supabase
       .from('celestual_edu_verifications')
@@ -189,6 +201,14 @@ Deno.serve(async (req) => {
       .eq('email', email)
       .gte('created_at', sinceIso);
     if ((count ?? 0) >= SEND_PER_EMAIL_HOUR) return json({ ok: false, error: 'rate' });
+    if (ip) {
+      const { count: ipCount } = await supabase
+        .from('celestual_edu_verifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('ip', ip)
+        .gte('created_at', sinceIso);
+      if ((ipCount ?? 0) >= SEND_PER_IP_HOUR) return json({ ok: false, error: 'rate' });
+    }
     if (Math.random() < 0.2) {
       await supabase.from('celestual_edu_verifications').delete().lt('expires_at', new Date(Date.now() - 60_000).toISOString());
     }
@@ -205,6 +225,7 @@ Deno.serve(async (req) => {
       code_hash: codeHash,
       expires_at: expiresAt,
       status: 'pending',
+      ip,
     });
     if (insErr) {
       console.error('edu insert failed', insErr.message);

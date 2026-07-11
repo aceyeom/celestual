@@ -217,76 +217,6 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
   )
 }
 
-// ── the night field (retired backdrop, kept for reference) ─────────────────────
-// The still navy field used by the "night edition". Superseded by GalaxyCanvas —
-// the living galaxy is the product's backdrop again. Left exported so nothing
-// imports break; not mounted.
-function mulberry32(a) {
-  return function () {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-export function NightField({ style }) {
-  const ref = React.useRef(null)
-  React.useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const draw = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const w = window.innerWidth
-      const h = window.innerHeight
-      canvas.width = Math.round(w * dpr)
-      canvas.height = Math.round(h * dpr)
-      const ctx = canvas.getContext('2d')
-      ctx.scale(dpr, dpr)
-      ctx.clearRect(0, 0, w, h)
-      // a barely-there vertical falloff so the field has depth without a hue swing
-      const g = ctx.createLinearGradient(0, 0, 0, h)
-      g.addColorStop(0, 'rgba(20,29,49,0.35)')
-      g.addColorStop(0.55, 'rgba(20,29,49,0)')
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, w, h)
-      const rand = mulberry32(20260703) // fixed seed: one sky, always
-      const n = Math.round((w * h) / 11000) // sparse — emptiness is the point
-      for (let i = 0; i < n; i++) {
-        const x = rand() * w
-        const y = rand() * h
-        const r = 0.3 + rand() * 0.9
-        const a = 0.05 + rand() * 0.3
-        // one star in ~14 carries a whisper of warmth; the rest are cool dust
-        const warm = rand() < 0.07
-        ctx.beginPath()
-        ctx.arc(x, y, r, 0, Math.PI * 2)
-        ctx.fillStyle = warm ? `rgba(255,162,92,${a * 0.8})` : `rgba(226,232,244,${a})`
-        ctx.fill()
-      }
-    }
-    draw()
-    let raf = 0
-    const onResize = () => {
-      if (raf) cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(draw)
-    }
-    window.addEventListener('resize', onResize)
-    return () => {
-      window.removeEventListener('resize', onResize)
-      if (raf) cancelAnimationFrame(raf)
-    }
-  }, [])
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden
-      style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', background: TOKENS.ink, ...style }}
-    />
-  )
-}
-
 // ── the star ──────────────────────────────────────────────────────────────────
 // The single warm star — the only bright thing in the product. A white core
 // breathing in light inside a soft warm halo. `size` is the whole mark's box;
@@ -452,58 +382,6 @@ export function GlassPanel({ C, children, style, inset = false, ...rest }) {
     >
       {children}
     </div>
-  )
-}
-
-// ── the hero typewriter ───────────────────────────────────────────────────────
-// Types a sequence of short phrases one after another — type, hold, erase, next —
-// with a blinking caret. Timing is deliberately uneven (each phrase can set its
-// own hold) so it feels spoken, not mechanical; the last phrase (the payoff)
-// holds longest before the loop resets. `phrases`: [{ text, hold }]. `render`
-// lets a caller style a phrase (e.g. amber the @, serif the payoff).
-export function Typewriter({ phrases, className, style, caretColor, render }) {
-  const reduce =
-    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const [i, setI] = React.useState(0)
-  const [n, setN] = React.useState(reduce ? (phrases[0]?.text.length || 0) : 0)
-  const [erasing, setErasing] = React.useState(false)
-  React.useEffect(() => {
-    if (reduce) return // reduced motion: show the first phrase, fully, no motion
-    const phrase = phrases[i]
-    if (!phrase) return
-    const full = phrase.text.length
-    let delay
-    if (!erasing && n < full) {
-      // type — a touch irregular, like a hand. A phrase can set its own pace
-      // (typeSpeed = base ms/char, typeVar = jitter) so a hero line can hurry.
-      delay = (phrase.typeSpeed ?? 46) + Math.random() * (phrase.typeVar ?? 34)
-    } else if (!erasing && n >= full) {
-      delay = phrase.hold ?? 1400 // hold on the finished phrase
-    } else if (erasing && n > 0) {
-      delay = 26 // erase — quicker than typing
-    } else {
-      delay = 220 // a breath before the next phrase begins
-    }
-    const id = setTimeout(() => {
-      if (!erasing && n < full) setN(n + 1)
-      else if (!erasing && n >= full) setErasing(true)
-      else if (erasing && n > 0) setN(n - 1)
-      else {
-        setErasing(false)
-        setI((i + 1) % phrases.length)
-      }
-    }, delay)
-    return () => clearTimeout(id)
-  }, [i, n, erasing, phrases, reduce])
-  const phrase = phrases[i] || phrases[0]
-  const shown = phrase.text.slice(0, n)
-  return (
-    <span className={className} style={style}>
-      {render ? render(shown, phrase) : shown}
-      <span className="tw-caret" aria-hidden style={{ color: caretColor || 'currentColor', fontWeight: 300, marginLeft: 1 }}>
-        |
-      </span>
-    </span>
   )
 }
 
@@ -904,69 +782,6 @@ export function Meter({ C, count, threshold }) {
             boxShadow: `0 0 8px 2px ${rgba(C.star, 0.8)}`,
           }}
         />
-      </div>
-    </div>
-  )
-}
-
-// ── the progress ring ─────────────────────────────────────────────────────────
-// A community's climb toward its team-set threshold, shown as a ring instead of
-// a raw count: a faint cream track, an amber→rose arc that fills once on mount
-// and eases smoothly whenever the value changes (so live activity visibly climbs
-// it), and a white star riding the leading edge — the Meter's edge-star, curved.
-// The percentage is the serif hero (the product's hero-number register); the
-// label sits in mono beneath. Collapses to a static ring under reduced-motion.
-export function ProgressRing({ C, frac = 0, size = 150, label, sublabel }) {
-  const reduce =
-    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const r = 52
-  const circ = 2 * Math.PI * r
-  const target = Math.max(0, Math.min(1, frac || 0))
-  const pct = Math.round(target * 100)
-  const [mounted, setMounted] = React.useState(reduce)
-  React.useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
-  const shown = mounted ? target : 0
-  const offset = circ * (1 - shown)
-  const deg = 360 * shown
-  const gid = React.useId()
-  const ease = 'cubic-bezier(.2,.7,.2,1)'
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 120 120" style={{ display: 'block' }}>
-        <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={C.star} />
-            <stop offset="62%" stopColor={C.star} />
-            <stop offset="100%" stopColor={C.them} />
-          </linearGradient>
-        </defs>
-        <g transform="rotate(-90 60 60)">
-          <circle cx="60" cy="60" r={r} fill="none" stroke={rgba(C.cream, 0.08)} strokeWidth="8" />
-          <circle
-            cx="60" cy="60" r={r} fill="none" stroke={`url(#${gid})`} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circ} strokeDashoffset={offset}
-            style={{ transition: reduce ? 'none' : `stroke-dashoffset 1.15s ${ease}`, filter: `drop-shadow(0 0 5px ${rgba(C.star, 0.5)})` }}
-          />
-        </g>
-        {/* the star travelling the leading edge */}
-        <g style={{ transformBox: 'view-box', transformOrigin: '60px 60px', transform: `rotate(${deg}deg)`, transition: reduce ? 'none' : `transform 1.15s ${ease}` }}>
-          <circle cx="60" cy="8" r="6" fill={rgba(C.star, 0.45)} />
-          <circle cx="60" cy="8" r="2.7" fill="#fff" style={{ filter: `drop-shadow(0 0 4px ${rgba(C.star, 0.9)})` }} />
-        </g>
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-        <span key={pct} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: size * 0.3, lineHeight: 1, color: C.cream }}>
-          {pct}<span style={{ fontSize: size * 0.135, color: rgba(C.cream, 0.66) }}>%</span>
-        </span>
-        {label && (
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: Math.max(9, size * 0.058), letterSpacing: '1.6px', textTransform: 'uppercase', color: rgba(C.star, 0.92) }}>{label}</span>
-        )}
-        {sublabel && (
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: Math.max(8.5, size * 0.05), letterSpacing: '.4px', color: C.muted }}>{sublabel}</span>
-        )}
       </div>
     </div>
   )

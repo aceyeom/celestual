@@ -59,9 +59,10 @@ celestual/
 │   │   └── main.jsx
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
-│   ├── migrations/   0001–0005 history · 0006 the ping model (current)
+│   ├── migrations/   0001–0005 history · 0006 the ping model (current) ·
+│   │                 0007–0008 the .edu membership gate
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
-│                     celestual-manychat · celestual-ig-webhook
+│                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)

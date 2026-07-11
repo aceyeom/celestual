@@ -1663,9 +1663,11 @@ function RevealCountdown({ C, open }) {
   const c = fmtCountdown(target - now)
   const label = open ? t('reveal.week') : t('reveal.opens')
   // One quiet line — the page's heartbeat, not its headline: label in mono
-  // metadata, the time itself in amber. Docked low, so the ⓘ note opens UPWARD.
+  // metadata, the time itself in amber. Docked low, so the ⓘ note opens UPWARD,
+  // anchored to the readout strip (the nearest positioned ancestor) so it can
+  // never clip off a narrow screen.
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, flexWrap: 'wrap' }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
         <Icon name="clock" size={12} color={rgba(C.star, 0.85)} stroke={1.8} />
         <Kicker C={C} style={{ fontSize: 9, letterSpacing: '1.8px', color: rgba(C.muted, 0.95) }}>{label}</Kicker>
@@ -1704,14 +1706,13 @@ function RevealCountdown({ C, open }) {
             className="fade"
             data-noripple
             style={{
-              position: 'absolute', bottom: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)', zIndex: 30,
-              width: 'min(320px, 86vw)', padding: '16px 17px', borderRadius: RADIUS.card,
+              position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, right: 0, zIndex: 30,
+              padding: '16px 17px', borderRadius: RADIUS.card,
               background: rgba(C.ink2, 0.97), border: `1px solid ${rgba(C.star, 0.24)}`,
               boxShadow: '0 24px 70px rgba(0,0,0,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
               display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left',
             }}
           >
-            <span aria-hidden style={{ position: 'absolute', bottom: -6, left: '50%', width: 12, height: 12, transform: 'translateX(-50%) rotate(45deg)', background: rgba(C.ink2, 0.97), borderRight: `1px solid ${rgba(C.star, 0.24)}`, borderBottom: `1px solid ${rgba(C.star, 0.24)}` }} />
             <Kicker C={C} style={{ fontSize: 10 }}>{t('reveal.infoTitle')}</Kicker>
             {[['clock', t('reveal.infoWhat')], ['lock', t('reveal.infoReq')], ['star', t('reveal.infoReveals')]].map(([ic, tx]) => (
               <div key={ic} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -1903,6 +1904,9 @@ export function CommunityScreen({ C, ctx }) {
     if (f.setTagsEnabled) f.setTagsEnabled(true)
     f.onZoomState = setZoomed
     f.onTagTap = (label) => setMeet({ label })
+    // the engine may arrive after the measuring effect ran — push the chrome
+    // insets to it the moment it's live
+    if (insetsPushRef.current) insetsPushRef.current()
   }, [])
   React.useEffect(() => {
     if (useShared) wireZoom(galaxyRef.current)
@@ -1921,6 +1925,46 @@ export function CommunityScreen({ C, ctx }) {
     if (galaxyRef.current && galaxyRef.current.resetView) galaxyRef.current.resetView()
     setMeet(null)
   }
+
+  // The sky owns the frame: the screen measures its own chrome (the header
+  // lockup, the readout strip + actions) and hands those insets to the engine,
+  // which re-centers the disk in the band of sky the foreground leaves clear.
+  // The heart-seal follows the engine's own center, so the mark always rests
+  // exactly in the core light — on any phone, any fold, any monitor.
+  const topRef = React.useRef(null)
+  const botRef = React.useRef(null)
+  const insetsPushRef = React.useRef(null)
+  const [sealY, setSealY] = React.useState(null)
+  React.useEffect(() => {
+    let raf = 0
+    const send = () => {
+      const g = galaxyRef.current
+      if (!g || !g.setViewInsets) return
+      const tb = topRef.current ? topRef.current.getBoundingClientRect().bottom : 0
+      const bb = botRef.current ? Math.max(0, window.innerHeight - botRef.current.getBoundingClientRect().top) : 0
+      g.setViewInsets(Math.max(0, tb), bb + 6)
+      if (g.cy) setSealY(g.cy)
+    }
+    const queue = () => {
+      if (raf) cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(send)
+    }
+    insetsPushRef.current = queue
+    queue()
+    const ro = window.ResizeObserver ? new ResizeObserver(queue) : null
+    if (ro && topRef.current) ro.observe(topRef.current)
+    if (ro && botRef.current) ro.observe(botRef.current)
+    window.addEventListener('resize', queue)
+    return () => {
+      if (ro) ro.disconnect()
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('resize', queue)
+      insetsPushRef.current = null
+      const g = galaxyRef.current
+      if (g && g.setViewInsets) g.setViewInsets(0, 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, useShared, community && community.joined, open])
   // chrome melts away while the sky is held zoomed — and for the length of a
   // find-your-star dive, so the flight owns the whole frame. One shared
   // envelope; the entrance animations must be suppressed for the melt (their
@@ -1970,9 +2014,9 @@ export function CommunityScreen({ C, ctx }) {
       <div
         aria-hidden
         style={{
-          position: 'fixed', left: '50%', top: '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
+          position: 'fixed', left: '50%', top: sealY != null ? sealY : '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
           pointerEvents: 'none', display: 'grid', placeItems: 'center',
-          opacity: finding || ctx.skyFlight || zoomed ? 0 : 1, transition: 'opacity .8s ease',
+          opacity: finding || ctx.skyFlight || zoomed ? 0 : 1, transition: 'opacity .8s ease, top .45s cubic-bezier(.2,.7,.2,1)',
         }}
       >
         <span style={{ position: 'absolute', width: 126, height: 126, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink, 0.42)}, ${rgba(C.ink, 0.18)} 46%, transparent 68%)` }} />
@@ -1985,7 +2029,7 @@ export function CommunityScreen({ C, ctx }) {
       {/* a soft scrim seats the readout + actions on quiet space without walling
           off the sky (z0, over canvas). It lifts with the rest of the chrome
           while the sky is held zoomed. */}
-      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '44%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.5)} 48%, ${rgba(C.ink, 0.86)})`, pointerEvents: 'none', zIndex: 0, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }} />
+      <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '32%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.44)} 52%, ${rgba(C.ink, 0.82)})`, pointerEvents: 'none', zIndex: 0, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }} />
 
       {/* a tapped public @ — the meeting card: who they are, one outward step,
           one quiet dismiss. Floats above the pull-back pill. */}
@@ -2071,9 +2115,11 @@ export function CommunityScreen({ C, ctx }) {
         </div>
 
         {/* identity — the seal now rests at the galaxy's heart; up here only the
-            name and where it stands, so the sky stays the page's real hero. */}
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, paddingTop: 8, ...melt }}>
-          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(24px, 6.5vw, 32px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
+            name and where it stands, so the sky stays the page's real hero.
+            (topRef: this block's bottom edge is the chrome inset the engine
+            centers the disk beneath.) */}
+        <div ref={topRef} className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 8, ...melt }}>
+          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(23px, 6vw, 30px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
             <SkyStatus C={C} open={open} size={14.5} />
@@ -2082,32 +2128,121 @@ export function CommunityScreen({ C, ctx }) {
 
         {/* the sky breathes in this open zone — nothing overlaps it; the live
             pulse is a single caption docked at its foot, with one whispered line
-            of how to hold the sky beneath it. Its floor is generous so the
-            readout below is pushed low and the galaxy owns the middle of the
-            frame (it used to crowd up over the disk, worst on a short phone). */}
-        <div style={{ flex: 1, minHeight: 'clamp(150px, 26vh, 240px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', ...melt }}>
+            of how to hold the sky beneath it. */}
+        <div style={{ flex: 1, minHeight: 'clamp(170px, 30vh, 300px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', ...melt }}>
           <LivePulse C={C} beat={pulse.beat} />
           <p aria-hidden style={{ margin: '0 0 2px', textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.muted, 0.5) }}>
             {t('sky.hint')}
           </p>
         </div>
 
-        {/* the readout — the numbers and the shared reveal clock, one quiet panel.
-            data-noripple so a tap on the numbers doesn't reach the sky;
-            padding is kept tight so its top edge sits low over the galaxy. */}
-        <div className="fade" data-noripple style={melt}>
-          <GlassPanel C={C} inset style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <RevealCountdown C={C} open={open} />
-            <span aria-hidden style={{ height: 1, background: rgba(C.cream, 0.07) }} />
+        {/* the foot of the page (botRef: measured as the bottom chrome inset).
+            The readout is ONE thin strip — the clock and the headline number in
+            a single line; the full weekly detail unfolds as a floating sheet
+            ABOVE the strip on demand, so nothing ever stands as a wall between
+            the viewer and the galaxy. */}
+        <div ref={botRef} data-noripple style={{ display: 'flex', flexDirection: 'column', gap: 9, ...melt }}>
+          <SkyReadout
+            C={C}
+            open={open}
+            matches={matches}
+            showMatches={showMatches}
+            pings={pings}
+            week={week}
+          />
+
+          {/* one action — a member pings + finds their star; a watcher joins
+              (which sends a .edu code first). Everyone can watch. */}
+          {joined ? (
+            <>
+              <PrimaryButton C={C} onClick={ctx.findOut} style={{ padding: '14px 22px' }}>{t('communities.place')}</PrimaryButton>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                {isHome && (
+                  <GhostButton C={C} onClick={findStar} style={{ padding: '5px 4px', fontSize: 12, color: rgba(C.star, finding ? 1 : 0.9) }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon name={finding ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
+                    </span>
+                  </GhostButton>
+                )}
+                {/* announce your @ — the one mutual, deliberate way a handle ever
+                    shows in a public sky. on goes through the warning sheet;
+                    off is one quiet tap. */}
+                {isHome && (
+                  <GhostButton
+                    C={C}
+                    onClick={ctx.publicStar ? ctx.retractPublicStar : ctx.askPublicStar}
+                    style={{ padding: '5px 4px', fontSize: 12, color: ctx.publicStar ? rgba(C.star, 0.95) : undefined }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon name="eye" size={13} color="currentColor" stroke={1.8} /> {ctx.publicStar ? t('public.on') : t('public.announce')}
+                    </span>
+                  </GhostButton>
+                )}
+                <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ padding: '5px 4px', fontSize: 12 }}>{t('communities.leave')}</GhostButton>
+              </div>
+            </>
+          ) : (
+            <>
+              <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)} style={{ padding: '14px 22px' }}>{t('communities.join', { name: community.short })}</PrimaryButton>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.9) }}>{t('home.watch', { name: community.short })}</p>
+            </>
+          )}
+          {ctx.demo && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
+                ✦ {t(open ? 'communities.demoWave' : 'communities.demoGather')}
+              </GhostButton>
+            </div>
+          )}
+        </div>
+      </div>
+    </Shell>
+  )
+}
+
+// The community readout, folded to a single line: the reveal clock on the left,
+// the one headline fact on the right, and a small toggle that unfolds the full
+// weekly detail as a sheet FLOATING over the sky (absolute, above the strip) —
+// the strip's own height never changes, so the galaxy's frame stays rock-steady
+// and no card ever walls off the disk. data-noripple everywhere: taps here must
+// never reach the sky.
+function SkyReadout({ C, open, matches, showMatches, pings, week }) {
+  const { t } = useI18n()
+  const [more, setMore] = React.useState(false)
+  const headline = open
+    ? showMatches
+      ? `${matches.toLocaleString()} ${t('communities.matchedShort')}`
+      : t('communities.matchesSoon')
+    : t('communities.gathering')
+  return (
+    <div data-noripple style={{ position: 'relative' }}>
+      {more && (
+        <>
+          {/* tap-away veil under the floating detail */}
+          <button
+            aria-hidden
+            onClick={() => setMore(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 5, background: 'transparent', border: 'none', cursor: 'default' }}
+          />
+          <div
+            className="fade"
+            style={{
+              position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, right: 0, zIndex: 6,
+              padding: '14px 16px', borderRadius: RADIUS.card,
+              background: rgba(C.ink2, 0.94), border: `1px solid ${rgba(C.star, 0.22)}`,
+              boxShadow: '0 24px 70px rgba(0,0,0,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+              display: 'flex', flexDirection: 'column', gap: 9,
+            }}
+          >
             {open ? (
               <>
                 {showMatches ? (
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 8.5vw, 42px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
-                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 16, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
+                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(28px, 7.5vw, 38px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 16.5, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
+                  <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
                 )}
                 {week && week.topReason && (
                   <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
@@ -2123,61 +2258,37 @@ export function CommunityScreen({ C, ctx }) {
               </>
             ) : (
               <>
-                <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 18, lineHeight: 1.3, color: rgba(C.cream, 0.92) }}>{t('communities.gatheringHero')}</p>
+                <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, lineHeight: 1.3, color: rgba(C.cream, 0.92) }}>{t('communities.gatheringHero')}</p>
                 <p style={{ margin: '0 auto', textAlign: 'center', fontSize: 12.5, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
               </>
             )}
-          </GlassPanel>
-        </div>
-
-        {/* one action — a member pings + finds their star; a watcher joins (which
-            sends a .edu code first). Everyone can watch. data-noripple keeps a tap
-            on the controls from reaching the sky. */}
-        <div className="enter" data-noripple style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 12, ...melt }}>
-          {joined ? (
-            <>
-              <PrimaryButton C={C} onClick={ctx.findOut}>{t('communities.place')}</PrimaryButton>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                {isHome && (
-                  <GhostButton C={C} onClick={findStar} style={{ fontSize: 12.5, color: rgba(C.star, finding ? 1 : 0.9) }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Icon name={finding ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
-                    </span>
-                  </GhostButton>
-                )}
-                {/* announce your @ — the one mutual, deliberate way a handle ever
-                    shows in a public sky. on goes through the warning sheet;
-                    off is one quiet tap. */}
-                {isHome && (
-                  <GhostButton
-                    C={C}
-                    onClick={ctx.publicStar ? ctx.retractPublicStar : ctx.askPublicStar}
-                    style={{ fontSize: 12.5, color: ctx.publicStar ? rgba(C.star, 0.95) : undefined }}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Icon name="eye" size={13} color="currentColor" stroke={1.8} /> {ctx.publicStar ? t('public.on') : t('public.announce')}
-                    </span>
-                  </GhostButton>
-                )}
-                <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ fontSize: 12.5 }}>{t('communities.leave')}</GhostButton>
-              </div>
-            </>
-          ) : (
-            <>
-              <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)}>{t('communities.join', { name: community.short })}</PrimaryButton>
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.9) }}>{t('home.watch', { name: community.short })}</p>
-            </>
-          )}
-          {ctx.demo && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
-                ✦ {t(open ? 'communities.demoWave' : 'communities.demoGather')}
-              </GhostButton>
-            </div>
-          )}
-        </div>
+          </div>
+        </>
+      )}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+          padding: '8px 8px 8px 14px', borderRadius: RADIUS.field,
+          background: rgba(C.ink2, 0.58), border: `1px solid ${rgba(C.cream, 0.08)}`,
+          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        <RevealCountdown C={C} open={open} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: showMatches ? rgba(C.star, 0.95) : rgba(C.muted, 0.9), whiteSpace: 'nowrap' }}>
+            {headline}
+          </span>
+          <button
+            onClick={() => setMore((v) => !v)}
+            aria-label={t('communities.thisWeek')}
+            aria-expanded={more}
+            style={{ display: 'grid', placeItems: 'center', width: 26, height: 26, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transform: more ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform .25s ease' }}
+          >
+            <Icon name="back" size={13} color={rgba(C.muted, more ? 1 : 0.8)} stroke={2} />
+          </button>
+        </span>
       </div>
-    </Shell>
+    </div>
   )
 }
 

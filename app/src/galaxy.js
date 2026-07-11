@@ -13,70 +13,10 @@
 // Modes: 'idle' (slow orbit), 'sendoff' (your star coalesces where the @ became a
 //        star, then drifts into its place), 'resting' (the stacked set rests in
 //        the disk), 'match' (two stars drift together into a calm glowing binary).
-function hexToRgb(hex) {
-  const h = hex.replace('#', '')
-  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-function makeGlow(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const grd = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grd.addColorStop(0, `rgba(${r},${g},${b},0.95)`)
-  grd.addColorStop(0.3, `rgba(${r},${g},${b},0.42)`)
-  grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
-  c.fillStyle = grd
-  c.fillRect(0, 0, size, size)
-  return s
-}
-// A single star as a round, anti-aliased sprite: a hot near-white core that
-// falls off through the star's own hue to a soft transparent edge. Drawn (scaled)
-// in place of 1px square quads, so the field reads as real points of light with
-// a faint bloom instead of a grid of pixels. One per hue, cached.
-function makeStarSprite(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const m = size / 2
-  // pull the inner core toward white so even tinted stars burn white-hot at center
-  const wr = (r + 255 * 1.6) / 2.6, wg = (g + 255 * 1.6) / 2.6, wb = (b + 255 * 1.6) / 2.6
-  const grd = c.createRadialGradient(m, m, 0, m, m, m)
-  grd.addColorStop(0.0, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.28, `rgba(${wr | 0},${wg | 0},${wb | 0},0.98)`)
-  grd.addColorStop(0.5, `rgba(${r},${g},${b},0.62)`)
-  grd.addColorStop(0.78, `rgba(${r},${g},${b},0.16)`)
-  grd.addColorStop(1.0, `rgba(${r},${g},${b},0)`)
-  c.fillStyle = grd
-  c.beginPath()
-  c.arc(m, m, m, 0, Math.PI * 2)
-  c.fill()
-  return s
-}
-// Four soft diffraction spikes (a slim cross that fades to nothing) — the
-// photographic signature of a bright star through a lens. Added, very faintly,
-// only to the few brightest stars so the field looks shot, not drawn.
-function makeSpikeSprite(color, size) {
-  const s = document.createElement('canvas')
-  s.width = s.height = size
-  const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
-  const m = size / 2
-  for (const horiz of [true, false]) {
-    const g1 = horiz ? c.createLinearGradient(0, m, size, m) : c.createLinearGradient(m, 0, m, size)
-    g1.addColorStop(0, `rgba(${r},${g},${b},0)`)
-    g1.addColorStop(0.5, `rgba(255,255,255,0.9)`)
-    g1.addColorStop(1, `rgba(${r},${g},${b},0)`)
-    c.fillStyle = g1
-    // a hairline that tapers — drawn as a thin triangle-ish bar via a soft 2px line
-    const th = Math.max(1, size * 0.014)
-    if (horiz) c.fillRect(0, m - th, size, th * 2)
-    else c.fillRect(m - th, 0, th * 2, size)
-  }
-  return s
-}
+// The star sprites — the shared instrument both skies draw their light with
+// (see starSprites.js): an Airy-style point source with hairline rays for every
+// star, the full tapered diffraction burst for the bright ones.
+import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
 const smooth = (p) => p * p * (3 - 2 * p)
@@ -799,11 +739,8 @@ export class GalaxyField {
       // while everything around it dissolves.
       d = this.dim * (1 - this.focus * 0.45),
       rot = this._rot()
-    // When zoomed, the whole field is magnified, so even tiny points must be drawn
-    // as round sprites or they'd smear into squares. Un-zoomed, the faint sub-pixel
-    // majority can take a cheap fill (they read as points either way) — that's what
-    // keeps the soft-sprite field affordable on low-end hardware.
-    const zoomed = this.focus > 0.01
+    // Every point of light draws from its sprite — a scaled blit costs the same
+    // as a quad and never leaves a square pixel in the sky.
 
     // deep-space backdrop with a faint cool zenith glow. The vertical gradient only
     // depends on height, so build it once per resize instead of every frame.
@@ -901,14 +838,7 @@ export class GalaxyField {
       if (a <= 0.004) continue
       ctx.globalAlpha = Math.min(0.55, a)
       const D = clamp(p.rad * pr.persp * 2.6, 1.6, this.h * 0.4)
-      if (zoomed) {
-        ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        // faint near-field mote — a cheap point un-zoomed
-        ctx.fillStyle = p.warm ? PAL.warm : PAL.cream
-        const s = D * 0.4
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
-      }
+      ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
 
     // arm/bulge/halo stars (round, anti-aliased) + collect glow stars for the
@@ -931,14 +861,9 @@ export class GalaxyField {
       const D = clamp(st.rad * pr.persp * 3, 1.9, this.h * 0.5)
       // The round sprite is what kills the pixelation, but it's only worth its cost
       // on stars big or bright enough to actually read as a disc; the faint sub-2px
-      // crowd takes a cheap point fill (indistinguishable at that size, far cheaper).
-      if (zoomed || D >= 2.4 || a >= 0.34) {
-        ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
-      } else {
-        ctx.fillStyle = st.hue
-        const s = D * 0.42
-        ctx.fillRect(pr.sx - s, pr.sy - s, s * 2, s * 2)
-      }
+      // every star draws from its sprite — a scaled blit costs the same as a
+      // quad and never leaves a square pixel in the sky
+      ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
 
     // glow pass (additive): a tinted bloom on every glow star, and on the very
@@ -1062,14 +987,8 @@ export class GalaxyField {
       // The deep backdrop sits behind the zoom transform, so it's never magnified —
       // at 0.5–2px these read as points. A cheap fill (round for the few big ones,
       // a fast 1px dot for the faint majority) keeps the frame light.
-      if (b.rad > 1.1) {
-        const D = b.rad * 2.4
-        ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
-      } else {
-        ctx.fillStyle = b.hue
-        const s = b.rad
-        ctx.fillRect(x - s, y - s, s * 2, s * 2)
-      }
+      const D = Math.max(1.4, b.rad * 2.4)
+      ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
     }
   }
 

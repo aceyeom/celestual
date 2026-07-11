@@ -30,6 +30,11 @@ Idempotent migrations, applied in order:
   pings, sixty-day lapse + purge, salted-hash targets, hashed opt-out,
   members/reachability, the intent line, community counters (100-floor),
   assurance-contract campus windows, and every current RPC.
+- `migrations/0007_edu_verification.sql` — the school (.edu) email gate:
+  one-time codes for community membership, hash-stored, service-role only
+  (see docs/EDU-VERIFICATION.md).
+- `migrations/0008_edu_hardening.sql` — per-IP send accounting for the .edu
+  gate, so code email can't be sprayed from one machine.
 
 **SQL Editor:** paste each file's contents and Run, in order.
 

@@ -331,6 +331,7 @@ const en = {
   'communities.thisWeek': 'this week',
   'communities.matchedLabel': 'matched this week',
   'communities.matchFloor': 'matches show at ten and up, so no match can be guessed at.',
+  'communities.matchesSoon': 'matches show at ten',
   'communities.reasonLabel': 'most said',
   'communities.pings': '{n} pings placed',
   'communities.joinedWeek': '+{n} joined',
