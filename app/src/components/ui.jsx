@@ -63,7 +63,7 @@ export function useDialog(onClose) {
 // with a whisper of pointer/tilt parallax. This is the cosmos the product lives
 // inside — the two stars (amber `you`, rose `them`) are the field's own light.
 // Mount it once, in idle mode, as a fixed full-bleed layer under the content.
-export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, seals = 0, sealLabels, onReady, style }) {
+export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origin, seals = 0, sealLabels, sealKinds, onReady, style }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   React.useEffect(() => {
@@ -72,6 +72,7 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
     f.setMode(mode, { dim, origin })
     if (seals) f.setSeals(seals)
     if (sealLabels) f.setSealLabels(sealLabels)
+    if (sealKinds) f.setSealKinds(sealKinds)
     f.start()
     if (onReady) onReady(f)
     if (import.meta.env.DEV) window.__galaxyField = f
@@ -107,6 +108,10 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
   React.useEffect(() => {
     if (field.current) field.current.setSealLabels(sealLabels || [])
   }, [sealLabels])
+  // Who each ping is to the viewer — the category tint its star wears.
+  React.useEffect(() => {
+    if (field.current) field.current.setSealKinds(sealKinds || [])
+  }, [sealKinds])
   React.useEffect(() => {
     if (field.current) field.current.setPalette(you, them)
   }, [you, them])

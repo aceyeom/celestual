@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
   suppressHandle, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
+  SUB_SLOT_CAP, SUB_PING_DAYS,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
@@ -33,7 +34,7 @@ const SCREENS = {
   worlds: WorldsScreen, //  communities — the curated list
   community: CommunityScreen, // a community page (/c/slug) — the ring + weekly readout
   match: MatchScreen, //    8 · the match
-  fourth: FourthSlotScreen, // 9 · the fourth slot (dormant)
+  fourth: FourthSlotScreen, // 9 · the third-slot checkout (route key kept as 'fourth' for old sessions)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
 }
@@ -125,10 +126,18 @@ export default function App() {
   const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
   const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
-  // sandbox only: whether the one-time fourth slot has been "bought" in the demo
-  // checkout — raises the local cap to four so the preview is playable.
-  const [demoFourthSlot, setDemoFourthSlot] = useState(false)
-  const slotCap = demo && demoFourthSlot ? SLOT_CAP + 1 : SLOT_CAP
+  // sandbox only: the monetization preview state (docs/PRICING-REVENUE.md keeps
+  // production dormant — the free two, one door, no money). `demoExtraSlots`
+  // counts one-time $2.99 slots bought beyond the free two; `demoSubscribed` is
+  // the $12.99/mo plan, which raises the cap to ten and (in placeCommit, below)
+  // makes newly placed demo pings stand six months instead of sixty days.
+  const [demoExtraSlots, setDemoExtraSlots] = useState(0)
+  const [demoSubscribed, setDemoSubscribed] = useState(false)
+  const slotCap = demo ? (demoSubscribed ? SUB_SLOT_CAP : SLOT_CAP + demoExtraSlots) : SLOT_CAP
+  // sandbox only: which standing ping is mid-checkout for an extend ($2.99) —
+  // set by startExtend when the status page's renew is tapped, cleared once the
+  // checkout succeeds (finishExtend) or the moment the screen is left.
+  const [extendHandle, setExtendHandle] = useState(null)
 
   // ── communities (the curated launch spaces) ──
   // Membership (which curated slugs you've joined) persists like a light
@@ -200,6 +209,9 @@ export default function App() {
   // aligned by index with the ambient field's sealed stars (null = restored
   // from another device; that star stays unnamed)
   const sealLabels = useMemo(() => pings.map((p) => (p.handle ? normHandle(p.handle) : null)), [pings])
+  // who each ping is to you, same alignment — the category tint each sealed
+  // star wears in the ambient field (the same light the community sky uses)
+  const sealKinds = useMemo(() => pings.map((p) => categoryOf(p.intent)), [pings])
   // The opted-in public @s resting in your community's sky. The sandbox seeds a
   // handful per community; production fills this from the server when the
   // opt-in ships its backend.
@@ -304,6 +316,13 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [applyScreen])
+
+  // Leaving the checkout screen any other way (back button, "not now", "let one
+  // go") drops the pending extend — otherwise a later visit for an unrelated
+  // reason (a fresh slot purchase) would wrongly re-open in extend mode.
+  useEffect(() => {
+    if (screen !== 'fourth' && extendHandle) setExtendHandle(null)
+  }, [screen, extendHandle])
 
   // ── persistence (never in the sandbox) ──
   const persistReady = useRef(false)
@@ -490,13 +509,14 @@ export default function App() {
         setMorph(null)
         morphTimer.current = null
       }, 1400)
-      // after the full flight, settle the galaxy to idle and reveal the result.
+      // after the full flight (coalesce + meteor + ignite, ~2.8s, plus a
+      // breath of rest), settle the galaxy to idle and reveal the result.
       if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
       sendoffTimer.current = setTimeout(() => {
         setGalaxyMode('idle')
         go(afterScreen)
         sendoffTimer.current = null
-      }, 4700)
+      }, 3600)
     },
     [go],
   )
@@ -577,8 +597,11 @@ export default function App() {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
       const target = normHandle(them)
       const chosen = intent || ''
+      // The sandbox subscription stands its pings six months instead of sixty
+      // days (SUB_PING_DAYS) — production duration stays server-set.
+      const days = demo && demoSubscribed ? SUB_PING_DAYS : undefined
       try {
-        const res = await placePing({ me, them: target, email, proof, intent: chosen, demo })
+        const res = await placePing({ me, them: target, email, proof, intent: chosen, demo, days })
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
           go('fourth')
@@ -645,7 +668,7 @@ export default function App() {
         go('who')
       }
     },
-    [me, them, email, intent, demo, session, go, t, runSendoff, homeCommunity],
+    [me, them, email, intent, demo, demoSubscribed, session, go, t, runSendoff, homeCommunity],
   )
 
   // ── communities (curated: join / leave, view, and the sandbox live feed) ──
@@ -747,8 +770,9 @@ export default function App() {
       setError(t('who.errSelf'))
       return
     }
-    // The three-slot rule, honored client-side too (the server is authority).
-    // `slotCap` is three everywhere except the sandbox once the fourth is bought.
+    // The two-slot rule, honored client-side too (the server is authority).
+    // `slotCap` is two everywhere except the sandbox, once a slot is bought or
+    // the subscription raises it to ten.
     if (standingCount(pings) >= slotCap) {
       go('fourth')
       return
@@ -906,27 +930,57 @@ export default function App() {
     [demo, pings, go],
   )
 
-  // ── sandbox: "buy" the one-time fourth slot ──
-  // Flips the local cap to four so the checkout preview is playable end-to-end.
-  // Never touches a server; production never reaches this (the fourth-slot screen
-  // shows only the free door there).
-  const buyFourthSlot = useCallback(() => {
-    if (!demo) return
-    setDemoFourthSlot(true)
-  }, [demo])
+  // ── sandbox: "buy" one more one-time slot, or subscribe ──
+  // Neither ever touches a server; production never reaches this (the checkout
+  // only renders in the sandbox — production keeps the single dormant "let one
+  // go" door). Re-enterable: each one-time purchase adds another slot; sub=true
+  // instead raises the cap straight to ten (SUB_SLOT_CAP).
+  const buySlot = useCallback(
+    (sub) => {
+      if (!demo) return
+      if (sub) setDemoSubscribed(true)
+      else setDemoExtraSlots((n) => n + 1)
+    },
+    [demo],
+  )
 
-  // After the sandbox checkout, go place the newly-held fourth. Raising the cap
-  // and navigating in one step avoids the fourth-slot gate re-blocking on a stale
-  // cap (the cap check reads the freshly-mounted send screen instead).
-  const placeFourth = useCallback(() => {
-    if (!demo) return
-    setDemoFourthSlot(true)
-    setThem('')
-    setIntent('')
-    setCategory('')
-    setError('')
-    go('who')
-  }, [demo, go])
+  // After the sandbox checkout, go place the newly-bought slot. Granting it and
+  // navigating in one step avoids the paywall gate re-blocking on a stale cap
+  // (the cap check reads the freshly-mounted send screen instead).
+  const placeBoughtSlot = useCallback(
+    (sub) => {
+      if (!demo) return
+      if (sub) setDemoSubscribed(true)
+      else setDemoExtraSlots((n) => n + 1)
+      setThem('')
+      setIntent('')
+      setCategory('')
+      setError('')
+      go('who')
+    },
+    [demo, go],
+  )
+
+  // ── sandbox: extend a near-lapse ping through the same checkout ──
+  // Tapping renew on the status page lands here instead of renewing outright;
+  // `finishExtend` performs the actual (free, unlimited) renew once the mock
+  // payment succeeds. Production's renew is untouched — see PingCard in
+  // screens.jsx, which only detours through this in the sandbox.
+  const startExtend = useCallback(
+    (handle) => {
+      if (!demo) return
+      setExtendHandle(normHandle(handle))
+      go('fourth')
+    },
+    [demo, go],
+  )
+
+  const finishExtend = useCallback(async () => {
+    if (!demo || !extendHandle) return
+    await renew(extendHandle)
+    setExtendHandle(null)
+    go('pings')
+  }, [demo, extendHandle, renew, go])
 
   // ── the exits ──
   const wipeLocalState = useCallback(() => {
@@ -1042,7 +1096,7 @@ export default function App() {
     locatePing, skyFlight,
     publicStar, askPublicStar, retractPublicStar,
     lastPlaced, match,
-    demoFourthSlot, buyFourthSlot, placeFourth,
+    demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     verifyEnabled: igVerifyEnabled() || demo,
@@ -1105,6 +1159,7 @@ export default function App() {
           origin={sendoffOrigin}
           seals={pings.length}
           sealLabels={sealLabels}
+          sealKinds={sealKinds}
           you={C.you}
           them={C.them}
           onReady={(f) => (ambientGalaxyRef.current = f)}

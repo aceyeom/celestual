@@ -1,7 +1,7 @@
 // demoData.js — the sandbox's hardcoded world (/demo only).
 //
 // The demo runs the full product workflow, exactly like production — placing,
-// verifying, matching, communities, the fourth slot — except NOTHING reaches a
+// verifying, matching, communities, the slot checkout — except NOTHING reaches a
 // server: every value here is temporary and obviously sample, and it all resets
 // when the tab closes. It exists to show what a live launch looks like before one
 // exists: pings in every state, the curated communities lit up and climbing, a

@@ -1,4 +1,4 @@
-// pings.js — display helpers for the sixty-day ping clock and the three-slot
+// pings.js — display helpers for the sixty-day ping clock and the two-slot
 // rule. Enforcement lives entirely server-side (migration 0006); this module
 // only shapes those facts for the status rows and the slot pips.
 
