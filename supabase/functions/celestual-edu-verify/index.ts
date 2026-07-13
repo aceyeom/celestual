@@ -12,11 +12,12 @@
 //        code, store ONLY its SHA-256 hash, email the code via Resend, and
 //        return a random correlation `token`.
 //        `demo: true` is the app's sandbox flag. The sandbox's @gmail.com
-//        carve-out is honored ONLY when the operator has explicitly enabled it
-//        server-side (CELESTUAL_SANDBOX_GMAIL=1) — the flag alone is client
-//        input and must never weaken the production gate. With the env var off
-//        (the default), every address has to genuinely match the school,
-//        demo or not.
+//        carve-out is ON BY DEFAULT for demo requests — the product owner has
+//        no .edu inbox to test with — but it still requires `demo:true` on the
+//        request; a non-demo request NEVER accepts gmail, no matter the env
+//        var. An operator can explicitly turn the carve-out off server-side
+//        with CELESTUAL_SANDBOX_GMAIL=0, which makes even demo requests need a
+//        genuine school match.
 //        Response: { ok:true, token, expires_at } | { ok:false, error }
 //   { action:'verify', token, code }        → compare the code to the stored hash
 //        (never returning it); on a match mark the row verified and report back.
@@ -38,10 +39,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
-// Operator opt-in for the sandbox's @gmail.com carve-out. OFF by default: the
-// client's `demo` flag is untrusted input, so without this env var the gate is
-// identical in the sandbox and production.
-const SANDBOX_GMAIL = Deno.env.get('CELESTUAL_SANDBOX_GMAIL') === '1';
+// Operator opt-OUT for the sandbox's @gmail.com carve-out. ON by default, so
+// demo requests work out of the box without an .edu inbox to test with; set
+// CELESTUAL_SANDBOX_GMAIL=0 to disable it. HONEST CAVEAT: `demo` is client
+// input, so while this default stands a crafted `demo:true` request could use
+// a gmail address against the real gate too — acceptable for the pre-launch
+// sandbox this serves, but set CELESTUAL_SANDBOX_GMAIL=0 before a real launch.
+const SANDBOX_GMAIL = Deno.env.get('CELESTUAL_SANDBOX_GMAIL') !== '0';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -82,8 +86,8 @@ function matchesSchool(email: string, slug: string, demo: boolean): boolean {
   const s = SCHOOLS[slug];
   const host = emailDomain(email);
   if (!s || !host) return false;
-  // The carve-out needs BOTH the client's sandbox flag and the operator's
-  // server-side opt-in — a crafted `demo:true` against production buys nothing.
+  // The carve-out needs both the request's sandbox flag and the operator not
+  // having disabled it server-side (see SANDBOX_GMAIL's caveat above).
   if (demo && SANDBOX_GMAIL && host === 'gmail.com') return true;
   return host === s.domain || host.endsWith('.' + s.domain);
 }

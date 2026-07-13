@@ -2,12 +2,15 @@
 //
 // The mechanism (docs/ULTIMATE-PRODUCT-FRAMEWORK.md §2): placePing records a
 // one-way ping at @them. It resolves ONLY if they independently ping you back —
-// then both of you learn at the same instant. Three standing pings max; each
-// stands sixty days unless renewed; retiring one frees the slot. The server
-// stores WHO a ping points at only as a salted hash (privacy: even a database
-// dump can't read the map of longing) — which is why the status page sends the
-// device-held plaintext list up per read instead of ever asking the server to
-// remember it.
+// then both of you learn at the same instant. Two standing pings max free;
+// each stands sixty days unless renewed; retiring one frees the slot. A third
+// (and each one after) is a one-time sandbox-only add, and a sandbox-only
+// subscription raises the cap to ten and stands each of those pings six months
+// instead of sixty days (screens.jsx's SlotPaywall previews the checkout;
+// production has no gate but the free two). The server stores WHO a ping
+// points at only as a salted hash (privacy: even a database dump can't read
+// the map of longing) — which is why the status page sends the device-held
+// plaintext list up per read instead of ever asking the server to remember it.
 //
 // All matching/anonymity logic lives in SECURITY DEFINER RPCs (RLS on, zero
 // client read policies; see supabase/migrations/0006_ping_model.sql).
@@ -28,8 +31,13 @@ export function isValidHandle(h) {
   return n.length >= 1 && n.length <= 30;
 }
 
-export const SLOT_CAP = 3;
+export const SLOT_CAP = 2;
 export const PING_DAYS = 60;
+
+// The sandbox-only $12.99/mo subscription tier (App.jsx's demoSubscribed):
+// ten standing pings, each held six months instead of sixty days.
+export const SUB_SLOT_CAP = 10;
+export const SUB_PING_DAYS = 180;
 
 // A "full slots" snapshot — the safe fallback when there's no backend.
 export const FULL_SLOTS = { standing: 0, cap: SLOT_CAP };
@@ -43,7 +51,9 @@ const iso = (ms) => new Date(ms).toISOString();
 // `proof` is the Instagram-DM ownership secret (api/igverify.js); `intent` is an
 // optional intent-line id, sealed until mutual. `demo` short-circuits to a local
 // simulation so /demo never writes real data — @demo is the guaranteed mutual.
-export async function placePing({ me, them, email, proof, intent, demo }) {
+// `days` overrides the standing period (demo-only — App.jsx passes SUB_PING_DAYS
+// while the sandbox subscription is active; production duration is server-set).
+export async function placePing({ me, them, email, proof, intent, demo, days }) {
   if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 600));
     const mutual = normHandle(them) === 'demo';
@@ -54,7 +64,7 @@ export async function placePing({ me, them, email, proof, intent, demo }) {
       match_intent: mutual ? 'exUnsaid' : null,
       // in the sandbox, roughly half the world is "already here"
       reachable: mutual || normHandle(them).length % 2 === 0,
-      expires_at: iso(Date.now() + PING_DAYS * 864e5),
+      expires_at: iso(Date.now() + (days || PING_DAYS) * 864e5),
       slots: FULL_SLOTS,
       demo: true,
     };
@@ -111,7 +121,10 @@ export async function fetchMyPings({ handle, proof, demo } = {}) {
   }
 }
 
-// One tap keeps a ping standing another sixty days. Free, unlimited.
+// One tap keeps a ping standing another sixty days. Free, unlimited — this
+// function never changes. Production calls it straight from the status page;
+// the sandbox previews a $2.99 checkout in front of it first (screens.jsx's
+// SlotPaywall, extend mode), then calls this exact same thing on success.
 export async function renewPing({ me, them, proof, demo }) {
   if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));

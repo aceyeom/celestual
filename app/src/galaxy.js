@@ -17,6 +17,7 @@
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
 import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
+import { CATEGORY_TINTS } from './theme.js'
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
 const smooth = (p) => p * p * (3 - 2 * p)
@@ -37,16 +38,24 @@ const PAL = {
 const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
 // The cinematic fly-into-a-star focus is time-driven (not an exponential chase),
 // so it has a fixed, deliberate length: a longer, graceful push IN and a slightly
-// quicker — but equally smooth — pull back OUT.
-const FOCUS_IN = 1.45 // seconds — camera glide into the tapped star
-const FOCUS_OUT = 0.9 // seconds — camera drift back out to the resting sky
+// quicker — but equally smooth — pull back OUT. The SAME timings as the
+// community sky's dive (communityGalaxy.js), so the two skies share one
+// cinematic grammar.
+const FOCUS_IN = 1.5 // seconds — camera glide into the tapped star
+const FOCUS_OUT = 0.95 // seconds — camera drift back out to the resting sky
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
 const TILT = 1.04 // base disk tilt toward the camera (rad)
 // How close the camera comes to rest in FRONT of the focused star (camera-space z
-// at full focus). Small = a deep, dramatic arrival that fills the frame; bounded
-// well above the near plane so the hero never blows past into bare pixels.
-const STANDOFF = 0.26
+// at full focus) — the community sky's standoff, shared. Bounded well above the
+// near plane so the hero never blows past into bare pixels.
+const STANDOFF = 0.34
+// The send-off meteor — the same grammar as communityGalaxy.js's launch(): the
+// new star streaks out of the morph point, decelerates into its slot, and
+// ignites with a diffraction-spike glisten.
+const COAL_DUR = 1.0 // the star forming under the DOM morph before it flies
+const METEOR_DUR = 1.25 // the streak from the morph point into the disk
+const IGNITE_DUR = 0.55 // the landing glisten
 const TWO = Math.PI * 2
 
 export class GalaxyField {
@@ -80,7 +89,8 @@ export class GalaxyField {
     this.sealHue = null
     this._glowCache = {}
     this._dotCache = {} // hue -> round star sprite
-    this._spike = makeSpikeSprite('#FFFFFF', 64) // shared diffraction cross (white, tinted via alpha)
+    this._spikeCache = {} // hue -> tinted diffraction burst (the seal stars wear these)
+    this._spike = makeSpikeSprite('#FFFFFF', 128) // shared diffraction cross (white, tinted via alpha)
     // Soft round sprites cost more per star than the old square quads, so the
     // field is a touch leaner — it reads denser now (each star carries a glow), so
     // fewer points still fill the frame.
@@ -104,6 +114,19 @@ export class GalaxyField {
     // The @ each sealed star holds (device-held plaintext, aligned by index) —
     // drawn over the star at a focus dive's arrival, never at rest.
     this.sealLabels = []
+    // Who each ping is to the viewer (crush / ex / friend / complicated) —
+    // aligned by index. The tint each sealed star's halo and spikes wear
+    // (theme.js's CATEGORY_TINTS), exactly like the community sky's own stars.
+    this.sealKinds = []
+    // the ship's instruments (shared with communityGalaxy.js): how hard the
+    // camera is travelling this frame. `rush` (0→1) rises with any real camera
+    // motion and drives the interstellar-travel rendering — stars streak along
+    // their apparent motion and exposure lifts, so a dive STREAMS the field
+    // past the viewer instead of scaling a picture.
+    this._camPrev = { x: 0, y: 0, z: 0 }
+    this.travel = 0
+    this.rush = 0
+    this.exposure = 1
     // Camera focus on a single star (the interactive resting field): the camera
     // physically flies THROUGH the field toward sealed[focusIndex] — neighbours
     // stream past with real depth parallax and the hero swells as we close on it.
@@ -144,11 +167,16 @@ export class GalaxyField {
     if (!this._glowCache[hex]) this._glowCache[hex] = makeGlow(hex, 64)
     return this._glowCache[hex]
   }
-  // Round star sprite cache (one per hue) — the anti-aliased point of light that
-  // replaces the old square quads.
+  // Round star sprite cache (one per hue) — generously sized like the community
+  // sky's, so a focus dive magnifying the field never blows a small sprite up
+  // into a stepped blob (drawImage cost tracks the DESTINATION size).
   _dotFor(hex) {
-    if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 32)
+    if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
+  }
+  _spikeFor(hex) {
+    if (!this._spikeCache[hex]) this._spikeCache[hex] = makeSpikeSprite(hex, 128)
+    return this._spikeCache[hex]
   }
 
   _gen(n) {
@@ -588,6 +616,13 @@ export class GalaxyField {
     this.start()
   }
 
+  // Who each ping is to the viewer, aligned with `sealed` by index — the
+  // category tint its star wears ('' falls back to the seal/`you` light).
+  setSealKinds(kinds) {
+    this.sealKinds = kinds || []
+    this.start()
+  }
+
   // Remove the slot at index `i` (identity-stable): the survivors keep their own
   // positions, and the focus/vanish indices follow the splice. This is what keeps
   // each drifting star matched to the tag it's labelled with after a release.
@@ -705,8 +740,9 @@ export class GalaxyField {
     }
     this.t += dt
     // nearly freeze the slow orbit while a star is held in focus, so it sits
-    // still under the camera instead of drifting out of frame
-    this.spin += dt * (this.motion / 100) * 0.16 * (1 - this.focus * 0.96)
+    // still under the camera instead of drifting out of frame. The resting pace
+    // matches the community sky's calm orbit (0.024 rad/s at default motion).
+    this.spin += dt * (this.motion / 100) * 0.12 * (1 - this.focus * 0.96)
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.6))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.6))
     // with the hand gone, the view glides home (orbit unwinds, distance rests)
@@ -726,7 +762,7 @@ export class GalaxyField {
   _settled() {
     const dimDone = Math.abs(this.dim - this.dimTarget) < 0.004
     const focusDone = Math.abs(this.focus - this.focusTarget) < 0.004
-    const transient = (this.mode === 'sendoff' && this.modeT < 4.2) || (this.mode === 'match' && this.modeT < 5.5)
+    const transient = (this.mode === 'sendoff' && this.modeT < COAL_DUR + METEOR_DUR + IGNITE_DUR + 0.3) || (this.mode === 'match' && this.modeT < 5.5)
     return dimDone && focusDone && !this.vanish && !transient
   }
 
@@ -780,6 +816,22 @@ export class GalaxyField {
     } else {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
+
+    // the ship's instruments: real dolly/dive speed in world units → `rush`
+    // (0→1), which the star pass reads — streaks lengthen and exposure lifts,
+    // so a dive STREAMS the field past the viewer (communityGalaxy's grammar).
+    if (dt > 0) {
+      const cvx = (this.cam.x - this._camPrev.x) / dt
+      const cvy = (this.cam.y - this._camPrev.y) / dt
+      const cvz = (this.cam.z - this._camPrev.z) / dt
+      const target = clamp(Math.hypot(cvx, cvy, cvz) / 1.9, 0, 1)
+      this.travel = lerp(this.travel, target, Math.min(1, dt * (target > this.travel ? 12 : 3.2)))
+    }
+    this._camPrev.x = this.cam.x
+    this._camPrev.y = this.cam.y
+    this._camPrev.z = this.cam.z
+    this.rush = this.reduced ? 0 : this.travel
+    this.exposure = 1 + this.rush * 0.4
 
     // projected galactic core → anchor for the core glow + hero events (after the
     // camera offset is set, so the core sweeps aside correctly during a dive).
@@ -842,28 +894,53 @@ export class GalaxyField {
     }
 
     // arm/bulge/halo stars (round, anti-aliased) + collect glow stars for the
-    // additive bloom/spike pass.
+    // additive bloom/spike pass. Under way (a dive) each star remembers its
+    // last screen position and stretches along its own apparent motion — the
+    // star-streaming view out a ship's window, communityGalaxy's grammar.
     const glowQ = []
+    const rush = this.rush
+    const streaking = rush > 0.05 && !this.reduced
+    const maxStreak = Math.min(this.w, this.h) * 0.42
+    ctx.lineCap = 'round'
     for (const st of this.stars) {
       const pr = this._project(st.px, st.py, st.pz, rot)
-      if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
+      if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) {
+        st.lx = null
+        continue
+      }
       st.tw += dt * st.tws
-      const a = st.base * (0.7 + 0.3 * Math.sin(st.tw)) * d * pr.shade
+      const a = st.base * (0.7 + 0.3 * Math.sin(st.tw)) * d * pr.shade * this.exposure
       if (st.glow) glowQ.push([pr, st, a])
-      if (a <= 0.004) continue
-      // a soft sprite spreads its light over more area than the old solid quad, so
-      // lift the alpha to keep the field reading bright and crisp, not washed thin.
-      ctx.globalAlpha = Math.min(0.96, a * 1.5)
+      if (a <= 0.004) {
+        st.lx = pr.sx
+        st.ly = pr.sy
+        continue
+      }
       // diameter: the bright core ≈ the old quad, plus a soft feathered halo so
       // it reads as a point of light. A floor keeps the faintest stars visible; a
       // ceiling stops a star the camera dives past from ballooning into a costly
       // full-frame wash on the way by.
       const D = clamp(st.rad * pr.persp * 3, 1.9, this.h * 0.5)
-      // The round sprite is what kills the pixelation, but it's only worth its cost
-      // on stars big or bright enough to actually read as a disc; the faint sub-2px
+      if (streaking && st.lx != null) {
+        const sp = Math.hypot(pr.sx - st.lx, pr.sy - st.ly)
+        if (sp > 2.2 && sp < maxStreak) {
+          ctx.globalAlpha = Math.min(0.8, a * (0.4 + sp * 0.022)) * rush
+          ctx.strokeStyle = st.hue
+          ctx.lineWidth = Math.min(2.6, D * 0.4)
+          ctx.beginPath()
+          ctx.moveTo(st.lx, st.ly)
+          ctx.lineTo(pr.sx, pr.sy)
+          ctx.stroke()
+        }
+      }
+      // a soft sprite spreads its light over more area than the old solid quad, so
+      // lift the alpha to keep the field reading bright and crisp, not washed thin.
+      ctx.globalAlpha = Math.min(0.96, a * 1.5)
       // every star draws from its sprite — a scaled blit costs the same as a
       // quad and never leaves a square pixel in the sky
       ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      st.lx = pr.sx
+      st.ly = pr.sy
     }
 
     // glow pass (additive): a tinted bloom on every glow star, and on the very
@@ -1051,12 +1128,12 @@ export class GalaxyField {
       this._drawMatch(dt)
       return
     }
-    // sendoff drifts the newest star into place; every other mode just rests the
-    // whole stacked set so it survives the screen change without a cut.
+    // sendoff streaks the newest star into place; every other mode just rests
+    // the whole stacked set so it survives the screen change without a cut.
     this.sealedScreen.length = this.sealed.length // drop tags for trimmed stars
-    const flying = this.mode === 'sendoff'
+    const flying = this.mode === 'sendoff' && this.modeT < COAL_DUR + METEOR_DUR
     this._drawSealed(rot, flying)
-    if (flying) this._drawFlyIn(rot)
+    if (this.mode === 'sendoff') this._drawFlyIn(rot, flying)
   }
 
   // Position of a sealed star in 3D disk space. _project applies the galaxy
@@ -1108,35 +1185,37 @@ export class GalaxyField {
       const held = isFocus && this.focusHold
       // during a dive, everything but the hero melts back into the depth
       const fade = focusing && !isFocus ? 1 - 0.82 * this.focus : 1
-      // Your own star, dressed like it matters: a white-hot core inside layered
-      // amber + rose light, the product's diffraction glisten resting shyly on
-      // top, and a fine breathing ring. It swells with the dive and, at arrival,
-      // flares to its full photographic signature with its @ risen above it.
+      // Your own star wears the SAME dressing as in the community sky
+      // (communityGalaxy's _drawMine): a white-hot core with full diffraction
+      // spikes inside a halo tinted by who the ping is to you (CATEGORY_TINTS —
+      // rose for a crush, ember for an ex, blue for a friend, violet for
+      // complicated). One star design across both skies. It swells with the
+      // dive and, at arrival, flares to its full photographic signature.
+      const tint = CATEGORY_TINTS[this.sealKinds[i]] || this.sealHue || this.you
+      const near = Math.pow(clamp(pr.persp / (FOCAL / CAM), 0.5, 3), 0.55)
       const ctx = this.ctx
       ctx.globalCompositeOperation = 'lighter'
-      let ro = clamp((14 + pulse * 3) * pr.persp, 8, this.h * 0.3) * (1 + f * 2)
-      if (held) ro = Math.min(ro, 110)
-      ctx.globalAlpha = (0.09 + 0.07 * pulse) * sh * fade
-      ctx.drawImage(this.glows.them, pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
-      let go = clamp((9 + pulse * 2.5) * pr.persp, 6, this.h * 0.28) * (1 + f * 2.6)
-      if (held) go = Math.min(go, 84)
-      ctx.globalAlpha = (0.36 + 0.26 * pulse) * sh * fade
-      ctx.drawImage(this.glows.seal, pr.sx - go, pr.sy - go, go * 2, go * 2)
-      let ss = clamp((16 + pulse * 5) * pr.persp, 10, this.h * 0.3) * (1 + f * 2.8)
-      if (held) ss = Math.min(ss, 190)
-      ctx.globalAlpha = Math.min(1, (0.18 + 0.15 * pulse) * fade + f * 0.55)
-      ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-      let cd = clamp(2.5 * pr.persp, 1.6, this.h * 0.08) * (1 + f * 2.2) * (0.9 + pulse * 0.2)
-      if (held) cd = Math.min(cd, 10)
-      ctx.globalAlpha = Math.min(1, (0.78 + 0.22 * pulse) * fade + f)
+      // the tinted halo — the category's light, read at a glance
+      let ro = (13 + pulse * 3) * near * (1 + f * 2.4)
+      if (held) ro = Math.min(ro, 96)
+      ctx.globalAlpha = (0.2 + 0.12 * pulse) * sh * fade
+      ctx.drawImage(this._glowFor(tint), pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
+      // an inner warm-white bloom seats the core in its halo
+      let go = (6.5 + pulse * 1.8) * near * (1 + f * 2.6)
+      if (held) go = Math.min(go, 72)
+      ctx.globalAlpha = (0.4 + 0.22 * pulse) * sh * fade
+      ctx.drawImage(this.glows.white, pr.sx - go, pr.sy - go, go * 2, go * 2)
+      // full diffraction spikes, tinted at the feathered ends — always worn:
+      // this is what makes your star read as a STAR
+      let ss = (30 + pulse * 6) * near * (1 + f * 2.6)
+      if (held) ss = Math.min(ss, 170)
+      ctx.globalAlpha = Math.min(1, (0.4 + 0.18 * pulse) * fade + f * 0.5)
+      ctx.drawImage(this._spikeFor(tint), pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+      // the white-hot core — a point, never a blob
+      let cd = Math.min((2.9 + pulse * 0.5) * near, 5) * (1 + f * 1.6)
+      if (held) cd = Math.min(cd, 9)
+      ctx.globalAlpha = Math.min(1, (0.85 + 0.15 * pulse) * fade + f)
       ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
-      ctx.globalAlpha = (0.2 + 0.18 * pulse) * fade * (1 - f) + f * (held ? 0.5 : 0.85)
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      const ringR = clamp((6.5 + pulse * 1.4) * pr.persp, 5, 40) * (1 + f * 1.9)
-      ctx.arc(pr.sx, pr.sy, held ? Math.min(ringR, 52) : ringR, 0, TWO)
-      ctx.stroke()
       // arrival: the @ this ping holds rises over the star on a slim tick.
       // A HELD star view skips this — the DOM overlay carries the @ and the
       // intent line there, designed rather than canvas-set.
@@ -1145,6 +1224,8 @@ export class GalaxyField {
         const fl = smooth((f - 0.55) / 0.45)
         const off = 32 + f * 22
         ctx.globalAlpha = fl * 0.4
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)'
+        ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(pr.sx, pr.sy - 15 - f * 8)
         ctx.lineTo(pr.sx, pr.sy - off + 9)
@@ -1167,11 +1248,14 @@ export class GalaxyField {
     }
   }
 
-  // The send-off: the star coalesces exactly where the @ became a star, then
-  // drifts on a long, decelerating arc into its resting slot — settling, not
-  // flashing. Hands off seamlessly to _drawSealed's resting size at the end.
-  _drawFlyIn(rot) {
-    const s = this.sealed[this.sealed.length - 1]
+  // The send-off: the SAME meteor grammar as the community sky's launch()
+  // (communityGalaxy._drawMeteor). The star coalesces exactly where the @
+  // became a star (under the DOM morph), then streaks across real sky into its
+  // slot — a slim tapered trail decelerating in — and ignites with a
+  // diffraction-spike glisten, handing off to _drawSealed's resting star.
+  _drawFlyIn(rot, flying) {
+    const n = this.sealed.length
+    const s = this.sealed[n - 1]
     if (!s) return
     const ctx = this.ctx
     const pr = this._sealedAt(s, rot)
@@ -1179,56 +1263,91 @@ export class GalaxyField {
       ty = pr ? pr.sy : this.oy
     const ox = this.origin ? this.origin.x * this.w : this.cx
     const oy = this.origin ? this.origin.y * this.h : this.h * 0.43
-
-    // COAL holds the forming star at the origin long enough to align with the DOM
-    // morph overlay's collapse+ignite+glisten (~1.25s), so the galaxy star is
-    // already sitting under the overlay when it dissolves — a seamless handoff —
-    // and only THEN does it drift out with its trail.
-    const COAL = 1.0,
-      DRIFT = 2.7
+    const tint = CATEGORY_TINTS[this.sealKinds[n - 1]] || this.sealHue || this.you
     const tt = this.modeT
 
-    // phase 1 — coalesce: the star gathers and brightens at the origin point
-    if (tt < COAL) {
-      const f = smooth(tt / COAL)
-      // a faint halo contracting into the forming point
+    // phase 1 — coalesce: the star gathers and brightens at the origin point,
+    // long enough to align with the DOM morph overlay's collapse+ignite
+    // (~1.25s), so the galaxy star is already sitting under the overlay when
+    // it dissolves — a seamless handoff — and only THEN does it fly.
+    if (tt < COAL_DUR) {
+      const fc = smooth(tt / COAL_DUR)
       ctx.globalCompositeOperation = 'lighter'
-      const hr = 26 * (1 - f) + 9
-      ctx.globalAlpha = 0.4 * f
-      ctx.drawImage(this.glows.seal, ox - hr, oy - hr, hr * 2, hr * 2)
+      // a faint halo contracting into the forming point
+      const hr = 26 * (1 - fc) + 9
+      ctx.globalAlpha = 0.4 * fc
+      ctx.drawImage(this._glowFor(tint), ox - hr, oy - hr, hr * 2, hr * 2)
+      const ss = 10 + fc * 16
+      ctx.globalAlpha = 0.25 + 0.55 * fc
+      ctx.drawImage(this._spikeFor(tint), ox - ss / 2, oy - ss / 2, ss, ss)
+      const cd = 1.4 + fc * 1.6
       ctx.globalAlpha = 1
-      this._star(ox, oy, 'seal', 1.2 + 0.9 * f, 8 + 7 * f, 0.18 + 0.34 * f)
-      this.sealedScreen[this.sealed.length - 1] = { x: ox, y: oy, vis: true }
+      ctx.drawImage(this._dotFor('#FFFFFF'), ox - cd, oy - cd, cd * 2, cd * 2)
+      ctx.globalCompositeOperation = 'source-over'
+      this.sealedScreen[n - 1] = { x: ox, y: oy, vis: true }
       this.trail = []
       return
     }
 
-    // phase 2 — drift: gentle S-curve, easeInOut so it departs and arrives slowly
-    const e = easeInOut(Math.min(1, (tt - COAL) / DRIFT))
-    const dx = tx - ox,
-      dy = ty - oy
-    const mx = (ox + tx) / 2 - dy * 0.16
-    const my = (oy + ty) / 2 + dx * 0.16
-    const x = (1 - e) * (1 - e) * ox + 2 * (1 - e) * e * mx + e * e * tx
-    const y = (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * my + e * e * ty
-
-    // soft drifting wake (additive, fading toward the tail)
-    this.trail.push([x, y])
-    if (this.trail.length > 32) this.trail.shift()
-    ctx.globalCompositeOperation = 'lighter'
-    for (let i = 0; i < this.trail.length; i++) {
-      const tp = this.trail[i],
-        f = i / this.trail.length
-      ctx.globalAlpha = f * f * 0.26 * (1 - e * 0.5)
-      const sz = 2 + f * 7
-      ctx.drawImage(this.glows.seal, tp[0] - sz, tp[1] - sz, sz * 2, sz * 2)
+    // phase 2 — the meteor: an eased, gently bowed streak into the (live-
+    // projected) slot; the trail thins to nothing behind the hot head
+    if (flying) {
+      const e = easeInOut(clamp((tt - COAL_DUR) / METEOR_DUR, 0, 1))
+      const dx = tx - ox,
+        dy = ty - oy
+      const mx = (ox + tx) / 2 - dy * 0.14
+      const my = (oy + ty) / 2 + dx * 0.14
+      const x = (1 - e) * (1 - e) * ox + 2 * (1 - e) * e * mx + e * e * tx
+      const y = (1 - e) * (1 - e) * oy + 2 * (1 - e) * e * my + e * e * ty
+      this.trail.push([x, y])
+      if (this.trail.length > 15) this.trail.shift()
+      this.sealedScreen[n - 1] = { x, y, vis: true }
+      if (this.trail.length < 2) return
+      ctx.globalCompositeOperation = 'lighter'
+      const [tr, tg, tb] = hexToRgb(tint)
+      // walk BACK from the head, accumulating at most ~a hand's width of tail,
+      // alphas rising toward the head and widths tapering away from it
+      const MAXLEN = Math.min(this.w, this.h) * 0.34
+      let len = 0
+      ctx.lineCap = 'round'
+      for (let k = this.trail.length - 1; k >= 1; k--) {
+        const ax = this.trail[k][0],
+          ay = this.trail[k][1]
+        const bx = this.trail[k - 1][0],
+          by = this.trail[k - 1][1]
+        len += Math.hypot(ax - bx, ay - by)
+        if (len > MAXLEN) break
+        const fq = 1 - len / MAXLEN // 1 at the head → 0 at the tail's end
+        ctx.globalAlpha = fq * fq * 0.55
+        ctx.strokeStyle = fq > 0.8 ? 'rgba(255,250,244,0.95)' : `rgba(${tr},${tg},${tb},0.8)`
+        ctx.lineWidth = 0.3 + fq * 1.6
+        ctx.beginPath()
+        ctx.moveTo(ax, ay)
+        ctx.lineTo(bx, by)
+        ctx.stroke()
+      }
+      // the hot head
+      ctx.globalAlpha = 0.5
+      ctx.drawImage(this._glowFor(tint), x - 7, y - 7, 14, 14)
+      ctx.globalAlpha = 1
+      ctx.drawImage(this._dotFor('#FFFFFF'), x - 4, y - 4, 8, 8)
+      ctx.globalCompositeOperation = 'source-over'
+      return
     }
-    ctx.globalAlpha = 1
 
-    this.sealedScreen[this.sealed.length - 1] = { x, y, vis: true }
-    // size eases down to the resting size; a slow breath instead of a shine
-    const breathe = 0.48 + 0.06 * Math.sin(this.t * 2)
-    this._star(x, y, 'seal', 1.9 + (1 - e) * 0.5, 14 - e * 2, breathe)
+    // phase 3 — the landing glisten over the (now resting) star
+    if (!pr) return
+    const q = (tt - COAL_DUR - METEOR_DUR) / IGNITE_DUR
+    if (q >= 1) return
+    const bell = Math.sin(Math.PI * clamp(q, 0, 1))
+    ctx.globalCompositeOperation = 'lighter'
+    const ss = 22 + bell * 34
+    ctx.globalAlpha = bell * 0.85
+    ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+    const gs = 8 + bell * 12
+    ctx.globalAlpha = bell * 0.5
+    ctx.drawImage(this._glowFor(tint), pr.sx - gs, pr.sy - gs, gs * 2, gs * 2)
+    ctx.globalCompositeOperation = 'source-over'
   }
 
   // MATCH — calm, on-theme coalescence. The two stars drift together along

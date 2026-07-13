@@ -29,8 +29,10 @@
 //   · a new ping arrives as a METEOR: a slim streak that decelerates out of deep
 //     space into its slot and ignites with a diffraction-spike glisten, then
 //     settles to a twinkle.
-//   · matches trace themselves in as in-disk asterisms — a travelling spark
-//     draws the light-threads node to node; the figures ride the disk rotation.
+//   · matches rest in the disk as star-chart figures: straight hairlines
+//     joining a shared hub star to its partners — mostly plain pairs, sometimes
+//     a small fan when several matches reach the same star. A newborn line
+//     draws itself in once, then the figure holds still and rides the rotation.
 //   · below the privacy floor the community is FORMING: a slowly swirling proto-
 //     galaxy of luminous gas and uncountable motes.
 //   · the sky is HANDLED, not watched: drag orbits the disk, pinch (or wheel,
@@ -256,6 +258,52 @@ export class CommunityGalaxy {
         hue: rnd() < 0.16 ? PAL.blue : rnd() < 0.22 ? PAL.warm : '#FFFFFF',
         tw: rnd() * TWO,
         tws: 0.15 + rnd() * 0.7,
+      })
+    }
+
+    // the FAR field — minute suns much deeper out (8 → 20 world units), the
+    // layer that gives camera travel its spatial contrast: it barely creeps
+    // while the near shell streams past, so a dolly reads as moving THROUGH
+    // space instead of scaling a picture. Sub-2px, dim, and spilling far past
+    // the frame in every direction (space keeps going past the glass).
+    this.farField = []
+    const fn = mobile ? 420 : 640
+    for (let i = 0; i < fn; i++) {
+      const rr = 8 + Math.pow(rnd(), 1.3) * 12
+      const v = rnd() * 2 - 1
+      const u = rnd() * TWO
+      const ring = Math.sqrt(1 - v * v)
+      this.farField.push({
+        px: rr * ring * Math.cos(u),
+        py: rr * v * 0.9,
+        pz: rr * ring * Math.sin(u),
+        rad: 0.35 + rnd() * 0.5,
+        base: 0.08 + rnd() * 0.26,
+        hue: rnd() < 0.12 ? PAL.blue : rnd() < 0.18 ? PAL.warm : '#FFFFFF',
+        tw: rnd() * TWO,
+        tws: 0.1 + rnd() * 0.5,
+      })
+    }
+
+    // far nebula — vast, dim washes resting far behind the disk (7 → 15 units
+    // out), something for a deep dolly to move AGAINST. Cool interstellar
+    // hues only, faint enough to read as depth, never as weather.
+    this.farNebula = []
+    const FNCOL = ['#41386B', '#5E7BB0', '#6B4A66', '#31456B']
+    for (let i = 0; i < 5; i++) {
+      const rr = 7 + rnd() * 8
+      const v = rnd() * 2 - 1
+      const u = rnd() * TWO
+      const ring = Math.sqrt(1 - v * v)
+      this.farNebula.push({
+        px: rr * ring * Math.cos(u),
+        py: rr * v * 0.7,
+        pz: rr * ring * Math.sin(u),
+        rad: 2.6 + rnd() * 3.4,
+        col: FNCOL[i % FNCOL.length],
+        a: 0.03 + rnd() * 0.035,
+        tw: rnd() * TWO,
+        tws: 0.03 + rnd() * 0.06,
       })
     }
 
@@ -528,7 +576,10 @@ export class CommunityGalaxy {
     return this.stars.length
   }
   get matchCount() {
-    return this.consts.length
+    // one mutual match = one spoke (a pair is a hub + its first spoke)
+    let n = 0
+    for (const c of this.consts) n += c.spokes.length
+    return n
   }
 
   // A viewer's-own entry arrives as a plain label or { label, kind } — kind is
@@ -689,11 +740,15 @@ export class CommunityGalaxy {
     this.start()
   }
 
-  // Whether the @ layer renders at all. Only the community page — where the sky
-  // is the hero — turns it on; everywhere else this same engine is an ambient
-  // backdrop, and handles floating behind foreground cards read as glitches.
+  // Whether the @ layer renders at all. Only the community page — and there
+  // only while the sky is held FULLY EXPANDED (the immersive zoom) — turns it
+  // on; everywhere else this same engine is an ambient backdrop, and handles
+  // floating behind foreground cards read as glitches. Turning the layer on
+  // stamps a cascade clock: the tags rise one by one, never as a wall.
   setTagsEnabled(on) {
-    this.tagsEnabled = !!on
+    on = !!on
+    if (on && !this.tagsEnabled) this._tagsAt = this.t
+    this.tagsEnabled = on
     this.start()
   }
 
@@ -765,52 +820,85 @@ export class CommunityGalaxy {
     this.start()
   }
 
-  // Ensure `n` anonymous match-constellations exist; new ones trace themselves in.
+  // Ensure `n` mutual matches exist (one match = one spoke); new ones draw in.
   setConstellations(n) {
     n = Math.max(0, Math.floor(n))
-    while (this.consts.length < n) this.addConstellation(this.consts.length < n - 1)
-    while (this.consts.length > n) this.consts.pop()
+    while (this.matchCount < n) this.addConstellation(this.matchCount < n - 1)
+    while (this.matchCount > n) {
+      const c = this.consts[this.consts.length - 1]
+      c.spokes.pop()
+      if (!c.spokes.length) this.consts.pop()
+    }
     this.start()
   }
 
-  // One mutual match = one BOND: two stars — one in the viewer's amber, one in
-  // the rose — joined by a single arced thread of light. Not an abstract
-  // asterism: it literally draws TWO PEOPLE FINDING EACH OTHER. A newborn bond
-  // ignites both stars, sends a spark inward from each end, and blooms where
-  // they MEET; a settled bond breathes, a soft pulse travelling its thread.
-  // Anonymous by construction — the pair is seated at its own place in the
-  // disk, never on any identifiable ping star.
+  // a cheap deterministic hash → [0,1) for figure/spoke geometry
+  _h01(seed) {
+    let s = (seed * 1664525 + 1013904223) >>> 0
+    s ^= s >>> 13
+    s = (s * 1274126177) >>> 0
+    return s / 4294967296
+  }
+
+  // Seat spoke `k` of a figure around its hub: the first sits along the
+  // figure's own base direction, later ones fan around it in golden-angle
+  // steps — so a shared hub reads as a small tidy asterism, never a scribble.
+  _spoke(fig, k, born) {
+    const j1 = this._h01(fig.seed * 97 + k * 131 + 1)
+    const j2 = this._h01(fig.seed * 61 + k * 17 + 7)
+    const ang = fig.dir + k * 2.39996323 + (j1 - 0.5) * 0.7
+    const span = 0.06 + j2 * 0.07
+    return {
+      px: fig.hub.px + Math.cos(ang) * span,
+      pz: fig.hub.pz + Math.sin(ang) * span,
+      y: 0.028 + j1 * 0.042,
+      born,
+    }
+  }
+
+  // One mutual match = one straight thread of light between two stars — a rose
+  // hub and an amber partner. Mostly the figures are plain PAIRS; sometimes a
+  // new match reaches a star other matches already found, and the figure grows
+  // into a small fan around one shared hub (several people, one crush). Drawn
+  // like a star chart: hairline, straight, still. Anonymous by construction —
+  // figures are seated at their own places in the disk, never on any
+  // identifiable ping star.
   addConstellation(instant) {
+    const born = instant ? -10 : this.t
+    // roughly one match in four joins an existing young figure at its hub
+    const open = this.consts.filter((c) => !c.dying && c.spokes.length < 4)
+    if (open.length && this._h01(this._cSeed * 7 + 13) < 0.28) {
+      const fig = open[Math.floor(this._h01(this._cSeed * 31 + 5) * open.length)]
+      fig.spokes.push(this._spoke(fig, fig.spokes.length, born))
+      this._cSeed++
+      this.start()
+      return
+    }
     // Keep the sky legible however long a session runs: past a cap the oldest
-    // bond fades out (a figure dissolving, not a list shifting).
-    const MAX = 24
+    // figure fades out (a chart dissolving, not a list shifting).
+    const MAX = 16
     const live = this.consts.filter((c) => !c.dying)
     if (live.length >= MAX) live[0].dying = this.t
     const idx = ++this._cSeed
     let s = (idx * 99991) >>> 0
     const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 4294967296)
-    // Seat the pair INSIDE the lit disk (never the empty rim): its radius rides
-    // the current fill envelope, and golden-angle sequencing keeps bonds from
+    // Seat the hub INSIDE the lit disk (never the empty rim): its radius rides
+    // the current fill envelope, and golden-angle sequencing keeps figures from
     // ever piling onto each other.
     const fill = Math.max(Math.sqrt(Math.max(this.stars.length, 60) / CAP) * RMAX, 0.42)
     const angC = idx * GOLDEN * 2.2
     const rC = (0.24 + rnd() * 0.5) * fill
-    const cxp = Math.cos(angC) * rC
-    const czp = Math.sin(angC) * rC
-    // the two ends — close enough to be a pair, far enough to be two people
-    const span = 0.065 + rnd() * 0.075
-    const dir = rnd() * TWO
-    const yA = 0.035 + rnd() * 0.04
-    const yB = 0.035 + rnd() * 0.04
-    this.consts.push({
-      a: { px: cxp - Math.cos(dir) * span * 0.5, pz: czp - Math.sin(dir) * span * 0.5, y: yA },
-      b: { px: cxp + Math.cos(dir) * span * 0.5, pz: czp + Math.sin(dir) * span * 0.5, y: yB },
-      mid: { px: cxp, pz: czp, y: Math.max(yA, yB) + 0.026 }, // the thread arcs a breath higher
-      born: instant ? -10 : this.t,
-      met: instant ? -10 : 0, // stamped the moment the two sparks meet
+    const fig = {
+      hub: { px: Math.cos(angC) * rC, pz: Math.sin(angC) * rC, y: 0.03 + rnd() * 0.04 },
+      dir: rnd() * TWO,
+      seed: idx,
+      spokes: [],
+      born,
       tw: rnd() * TWO,
       dying: 0,
-    })
+    }
+    fig.spokes.push(this._spoke(fig, 0, born))
+    this.consts.push(fig)
     this.start()
   }
 
@@ -1228,7 +1316,7 @@ export class CommunityGalaxy {
         this.zoom > 1.001 !== this.zoomTarget > 1.001 ||
         Math.abs(this.zoom - this.zoomTarget) > 0.002 ||
         this.stars.some((s) => s.settleAt > 0 && this.t - s.settleAt < 1.2) ||
-        this.consts.some((c) => !c.dying && this.t - c.born < 2.4)
+        this.consts.some((c) => !c.dying && c.spokes.some((sp) => sp.born > 0 && this.t - sp.born < 2.2))
       if (!busy && this.t > 1) {
         this.running = false
         return
@@ -1354,6 +1442,8 @@ export class CommunityGalaxy {
     ctx.fillStyle = this._bgGrad
     ctx.fillRect(0, 0, this.w, this.h)
 
+    this._drawFarNebula(dt, d)
+    this._drawFarField(dt, d)
     this._drawShell(dt, d)
     this._drawNebula(dt, d, this.forming ? 0.8 : fillFrac, fillR)
 
@@ -1433,6 +1523,56 @@ export class CommunityGalaxy {
       p.ly = pr.sy
     }
     ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // the far minute-star field — the deepest layer of suns, barely creeping
+  // while everything nearer streams past: the spatial contrast that makes
+  // camera travel feel like moving through space. Plain sub-2px points, no
+  // streaks — at this distance nothing should appear to move fast.
+  _drawFarField(dt, d) {
+    if (!this.farField || this.qLevel >= 2) return
+    const ctx = this.ctx
+    ctx.globalCompositeOperation = 'source-over'
+    const step = this._decorStep
+    for (let i = 0; i < this.farField.length; i += step) {
+      const b = this.farField[i]
+      const pr = this._project(b.px, b.py, b.pz)
+      if (!pr || pr.sx < -6 || pr.sx > this.w + 6 || pr.sy < -6 || pr.sy > this.h + 6) continue
+      b.tw += dt * b.tws * step
+      const a = b.base * (0.6 + 0.4 * Math.sin(b.tw)) * d
+      if (a <= 0.012) continue
+      ctx.globalAlpha = Math.min(0.6, a)
+      const D = clamp(b.rad * pr.persp * 2.4, 0.9, 2.2)
+      ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+    }
+  }
+
+  // the far nebula — huge dim washes far behind the disk. They spill freely
+  // past the frame; their slow relative drift under a dolly is what gives the
+  // travel its distance cue.
+  _drawFarNebula(dt, d) {
+    if (!this.farNebula || this.qLevel >= 2) return
+    const ctx = this.ctx
+    ctx.globalCompositeOperation = 'lighter'
+    for (const nb of this.farNebula) {
+      const pr = this._project(nb.px, nb.py, nb.pz)
+      if (!pr) continue
+      nb.tw += dt * nb.tws
+      const rr = nb.rad * this.unit * pr.persp
+      if (rr < 40 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
+      const a = nb.a * (0.8 + 0.2 * Math.sin(nb.tw)) * d
+      if (a <= 0.004) continue
+      ctx.save()
+      ctx.globalAlpha = clamp(a, 0, 1)
+      ctx.translate(pr.sx, pr.sy)
+      ctx.scale(rr, rr)
+      ctx.fillStyle = this._nebGradFor(nb.col)
+      ctx.beginPath()
+      ctx.arc(0, 0, 1, 0, TWO)
+      ctx.fill()
+      ctx.restore()
+    }
     ctx.globalCompositeOperation = 'source-over'
   }
 
@@ -1845,10 +1985,14 @@ export class CommunityGalaxy {
     const ctx = this.ctx
     const fade = (1 - this.focus * 0.92) * d * (1 - this.rush * 0.7) // pills yield to travel
     const taken = [] // reserved screen rects, priority order
+    const since = this.t - (this._tagsAt || 0) // the cascade clock
     ctx.globalCompositeOperation = 'source-over'
     ctx.lineWidth = 1
-    for (const tag of this.publicTags) {
+    for (let ti = 0; ti < this.publicTags.length; ti++) {
+      const tag = this.publicTags[ti]
       const st = tag.st
+      // each handle waits its turn — a quiet one-by-one arrival, not a wall
+      const due = this.reduced || since > 0.25 + ti * 0.16
       let want = false
       let x = 0, pillB = 0, wpx = 0, hpx = 0, starY = 0, spr = null
       if (st && st.state !== 'meteor' && fade > 0.03) {
@@ -2031,22 +2175,22 @@ export class CommunityGalaxy {
     ctx.drawImage(this._dotFor('#FFFFFF'), x - 4, y - 4, 8, 8)
   }
 
-  // ── the anonymous match-bonds ───────────────────────────────────────────────
-  // One per mutual match: TWO stars — amber and rose, the product's two lights —
-  // joined by one arced thread. A newborn bond ignites both ends, sends a spark
-  // inward from each, and blooms where they meet; a settled bond breathes, one
-  // soft pulse travelling its thread. Everything rides the disk's rotation.
-  // Two strokes + a few sprite blits per bond — two dozen cost nothing.
+  // ── the anonymous match figures ─────────────────────────────────────────────
+  // Star-chart constellations: straight hairlines joining a rose hub star to
+  // its amber partners. Mostly plain pairs (one line); a fan when several
+  // matches reached the same star. A newborn line draws itself in ONCE, from
+  // the new star to the one it found, glints at both ends the moment it
+  // connects — and then the figure RESTS, still as a chart, its stars only
+  // breathing faintly. No arcs, no travelling sparks, no pulsing threads.
   _drawConstellations(dt, d) {
     const ctx = this.ctx
     const fade = 1 - this.focus * 0.85
     if (fade <= 0.02) return
     const gone = []
-    const N = 14 // thread samples — smooth on any screen, still cheap
+    const REVEAL = 1.1 // seconds a newborn line takes to draw in
     ctx.lineCap = 'round'
     for (const cn of this.consts) {
-      cn.tw += dt * 0.7
-      const shimmer = 0.72 + 0.28 * Math.sin(cn.tw)
+      cn.tw += dt * 0.5
       let life = 1
       if (cn.dying) {
         life = 1 - clamp((this.t - cn.dying) / 1.2, 0, 1)
@@ -2055,105 +2199,77 @@ export class CommunityGalaxy {
           continue
         }
       }
-      const reveal = clamp((this.t - cn.born) / 1.7, 0, 1)
-      if (reveal >= 1 && !cn.met) cn.met = this.t
-      const pa = this._project(cn.a.px, cn.a.y, cn.a.pz)
-      const pm = this._project(cn.mid.px, cn.mid.y, cn.mid.pz)
-      const pb = this._project(cn.b.px, cn.b.y, cn.b.pz)
-      if (!pa || !pm || !pb) continue
-      const depth = clamp((pa.shade + pb.shade) / 2, 0.4, 1.1) // back-side bonds sit dimmer
-      const la = life * depth * fade
-
-      // sample the thread — a quadratic through the lifted midpoint
-      const pts = this._bondPts || (this._bondPts = new Array(N + 1))
-      for (let k = 0; k <= N; k++) {
-        const u = k / N
-        const w0 = (1 - u) * (1 - u), w1 = 2 * (1 - u) * u, w2 = u * u
-        pts[k] = [w0 * pa.sx + w1 * pm.sx + w2 * pb.sx, w0 * pa.sy + w1 * pm.sy + w2 * pb.sy]
-      }
-
-      // the thread reveals from BOTH ends toward the middle — two people
-      // reaching each other. Rose under-glow beneath a cream hairline.
-      const half = N / 2
-      const frontier = reveal * half
+      const ph = this._project(cn.hub.px, cn.hub.y, cn.hub.pz)
+      if (!ph) continue
+      let hubGlint = 0
+      let hubOn = 0 // the hub lights with its brightest-revealed spoke
       ctx.globalCompositeOperation = 'lighter'
-      const drawRun = (from, to, dirStep) => {
-        let k = from
-        ctx.beginPath()
-        ctx.moveTo(pts[k][0], pts[k][1])
-        while (k !== to) {
-          k += dirStep
-          ctx.lineTo(pts[k][0], pts[k][1])
-        }
-        ctx.stroke()
-      }
-      const endA = Math.floor(Math.min(frontier, half))
-      const endB = N - endA
-      if (endA > 0) {
-        ctx.strokeStyle = this._rgba(this.them, 0.06 * shimmer)
+      for (let k = 0; k < cn.spokes.length; k++) {
+        const sp = cn.spokes[k]
+        const ps = this._project(sp.px, sp.y, sp.pz)
+        if (!ps) continue
+        const reveal = sp.born < 0 ? 1 : smooth(clamp((this.t - sp.born) / REVEAL, 0, 1))
+        if (reveal <= 0.001) continue
+        hubOn = Math.max(hubOn, reveal)
+        const depth = clamp((ph.shade + ps.shade) / 2, 0.4, 1.1) // back-side figures sit dimmer
+        const la = life * depth * fade
+        // the line draws once from the new star toward the one it found
+        const ex = lerp(ps.sx, ph.sx, reveal)
+        const ey = lerp(ps.sy, ph.sy, reveal)
+        // a faint rose under-glow beneath a cream hairline — a chart line that
+        // still reads as light, never as UI
         ctx.globalAlpha = la
+        ctx.strokeStyle = this._rgba(this.them, 0.055)
         ctx.lineWidth = 2.2
-        drawRun(0, endA, 1)
-        drawRun(N, endB, -1)
-        ctx.strokeStyle = `rgba(245,236,246,${(0.09 + 0.05 * shimmer).toFixed(3)})`
+        ctx.beginPath()
+        ctx.moveTo(ps.sx, ps.sy)
+        ctx.lineTo(ex, ey)
+        ctx.stroke()
+        ctx.strokeStyle = 'rgba(245,236,246,0.15)'
         ctx.lineWidth = 1
-        drawRun(0, endA, 1)
-        drawRun(N, endB, -1)
-      }
-
-      // the two sparks travelling inward while the bond is forming
-      if (reveal < 1) {
-        for (const [sx, sy] of [pts[endA], pts[endB]]) {
-          ctx.globalAlpha = 0.9 * fade * life
-          ctx.drawImage(this._dotFor('#FFFFFF'), sx - 2.6, sy - 2.6, 5.2, 5.2)
-          ctx.globalAlpha = 0.5 * fade * life
-          ctx.drawImage(this.glows.them, sx - 7, sy - 7, 14, 14)
+        ctx.beginPath()
+        ctx.moveTo(ps.sx, ps.sy)
+        ctx.lineTo(ex, ey)
+        ctx.stroke()
+        // arrival: one glint at the new star as its line completes (the hub
+        // answers below) — a single beat, then stillness
+        if (sp.born > 0) {
+          const q = (this.t - sp.born - REVEAL) / 0.7
+          if (q > 0 && q < 1) {
+            const bell = Math.sin(Math.PI * q)
+            hubGlint = Math.max(hubGlint, bell)
+            const ss = 12 + bell * 18
+            ctx.globalAlpha = bell * 0.8 * fade * life
+            ctx.drawImage(this._spikeFor(this.you), ps.sx - ss / 2, ps.sy - ss / 2, ss, ss)
+          }
         }
+        // the partner star — a modest amber point wearing a small burst
+        const breathe = 0.92 + 0.08 * Math.sin(cn.tw + k * 1.7)
+        const on = sp.born < 0 ? 1 : smooth(clamp((this.t - sp.born) / 0.4, 0, 1))
+        const gs = 6.5 * breathe
+        ctx.globalAlpha = Math.min(1, 0.4 * la + 0.08) * on
+        ctx.drawImage(this._glowFor(this.you), ps.sx - gs, ps.sy - gs, gs * 2, gs * 2)
+        const ss2 = 14 * breathe
+        ctx.globalAlpha = Math.min(1, 0.55 * la + 0.14) * on
+        ctx.drawImage(this._spikeFor(this.you), ps.sx - ss2 / 2, ps.sy - ss2 / 2, ss2, ss2)
+        ctx.globalAlpha = Math.min(1, 0.85 * la + 0.1) * on
+        const dsz = 2.3 * breathe
+        ctx.drawImage(this._dotFor('#FFFFFF'), ps.sx - dsz, ps.sy - dsz, dsz * 2, dsz * 2)
       }
-
-      // the MEETING — a bloom at the middle the moment the sparks touch
-      if (cn.met) {
-        const q = (this.t - cn.met) / 0.8
-        if (q < 1) {
-          const bell = Math.sin(Math.PI * clamp(q, 0, 1))
-          const bs = 10 + bell * 22
-          ctx.globalAlpha = bell * 0.8 * fade
-          ctx.drawImage(this.glows.white, pm.sx - bs, pm.sy - bs, bs * 2, bs * 2)
-          const ss = 16 + bell * 26
-          ctx.globalAlpha = bell * 0.85 * fade
-          ctx.drawImage(this._spike, pm.sx - ss / 2, pm.sy - ss / 2, ss, ss)
-        }
+      if (hubOn > 0.001) {
+        // the hub — the shared rose star, a touch larger than its partners
+        const la = life * clamp(ph.shade, 0.4, 1.1) * fade * hubOn
+        const breathe = 0.92 + 0.08 * Math.sin(cn.tw * 1.2)
+        const gs = (8.5 + hubGlint * 6) * breathe
+        ctx.globalAlpha = Math.min(1, (0.45 + hubGlint * 0.35) * la + 0.1)
+        ctx.drawImage(this._glowFor(this.them), ph.sx - gs, ph.sy - gs, gs * 2, gs * 2)
+        const ss = (18 + hubGlint * 14) * breathe
+        ctx.globalAlpha = Math.min(1, (0.6 + hubGlint * 0.3) * la + 0.16)
+        ctx.drawImage(this._spikeFor(this.them), ph.sx - ss / 2, ph.sy - ss / 2, ss, ss)
+        ctx.globalAlpha = Math.min(1, 0.9 * la + 0.1)
+        const dsz = 2.8 * breathe
+        ctx.drawImage(this._dotFor('#FFFFFF'), ph.sx - dsz, ph.sy - dsz, dsz * 2, dsz * 2)
       }
-
-      // a settled bond BREATHES: one soft pulse gliding end to end and back —
-      // the thread carrying light between the two of them
-      if (reveal >= 1 && !this.reduced && this.qLevel < 2) {
-        const u = 0.5 - 0.5 * Math.cos(this.t * 0.7 + cn.tw)
-        const k = Math.round(u * N)
-        const [sx, sy] = pts[k]
-        ctx.globalAlpha = 0.4 * shimmer * la
-        ctx.drawImage(this.glows.white, sx - 4, sy - 4, 8, 8)
-      }
-
-      // the PAIR — one amber star, one rose star, each wearing a small burst.
-      // This is what makes a bond read as two people, not decoration.
-      const drawEnd = (pr, hue, phase) => {
-        const breathe = 0.85 + 0.15 * Math.sin(cn.tw * 1.3 + phase)
-        const glint = reveal < 1 ? 1 : 0 // newborn ends burn brighter
-        ctx.globalAlpha = Math.min(1, (0.42 + glint * 0.3) * shimmer * la + 0.1)
-        const gs = 7.5 * breathe
-        ctx.drawImage(this._glowFor(hue), pr.sx - gs, pr.sy - gs, gs * 2, gs * 2)
-        ctx.globalAlpha = Math.min(1, (0.62 + glint * 0.34) * shimmer * la + 0.18)
-        const ss = (17 + glint * 8) * breathe
-        ctx.drawImage(this._spikeFor(hue), pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.globalAlpha = Math.min(1, (0.85 + glint * 0.15) * la)
-        const dsz = 2.7 * breathe
-        ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - dsz, pr.sy - dsz, dsz * 2, dsz * 2)
-        ctx.globalCompositeOperation = 'lighter'
-      }
-      drawEnd(pa, this.you, 0)
-      drawEnd(pb, this.them, Math.PI)
     }
     for (const g of gone) {
       const at = this.consts.indexOf(g)

@@ -25,6 +25,7 @@ import {
 } from './ui.jsx'
 import { CATEGORY_TINTS } from '../theme.js'
 import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR, nextRevealAt, bySlug } from '../communities.js'
+import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
 
@@ -232,12 +233,14 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
 
 // The slot pips — one small star per slot: a held slot burns amber, an open
 // one waits as a faint outline star. The product's own ritual marks (✦ ✧),
-// never indicator dots.
-export function SlotPips({ C, standing, cap, compact }) {
+// never indicator dots. `cap` is whatever the caller is holding it to (two,
+// free; ten, sandbox-subscribed) — this component never assumes a number.
+// `subscribed` adds a small, subtle mono note alongside (sandbox only).
+export function SlotPips({ C, standing, cap, compact, subscribed }) {
   const { t } = useI18n()
   const free = Math.max(0, cap - standing)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
       {Array.from({ length: cap }).map((_, i) => (
         <span
           key={i}
@@ -254,6 +257,11 @@ export function SlotPips({ C, standing, cap, compact }) {
       {!compact && (
         <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.muted }}>
           {standing > 0 ? t('slots.holding', { n: standing, cap }) : t('slots.free', { n: free, cap })}
+        </span>
+      )}
+      {subscribed && (
+        <span style={{ marginLeft: compact ? 2 : 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', color: rgba(C.star, 0.75) }}>
+          {t('paywall.subscribedNote')}
         </span>
       )}
     </div>
@@ -513,7 +521,7 @@ export function WhoScreen({ C, ctx }) {
             are: before you've identified, your slot count is genuinely unknown. */}
         {ctx.established && (
           <div className="enter" style={{ animationDelay: '.12s', display: 'flex', justifyContent: 'flex-start' }}>
-            <SlotPips C={C} standing={ctx.slotsStanding} cap={ctx.slotsCap} />
+            <SlotPips C={C} standing={ctx.slotsStanding} cap={ctx.slotsCap} subscribed={ctx.demoSubscribed} />
           </div>
         )}
       </div>
@@ -730,6 +738,38 @@ function SpreadingNote({ C, lines }) {
   )
 }
 
+// The one hero shared by every placed state: the @ handle, big, bold, and
+// amber-lit — the single thing that tells you at a glance whether they're
+// here yet. Same bones everywhere (mono sigil + handle, full-width, tight
+// leading, ellipsis on overflow); only the status line beneath it ever
+// changes, and that's the whole point — the design should read as one family.
+function PlacedHandleHero({ C, handle, reachable }) {
+  const { t } = useI18n()
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11, textAlign: 'center', width: '100%' }}>
+      <div
+        style={{
+          width: '100%', fontFamily: "'Space Mono', monospace", fontWeight: 700,
+          fontSize: 'clamp(38px, 11vw, 54px)', lineHeight: 1.02,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          textShadow: `0 0 30px ${rgba(C.star, 0.4)}, 0 2px 22px rgba(0,0,0,.7)`,
+        }}
+      >
+        <span style={{ color: C.star }}>@</span><span style={{ color: C.cream }}>{handle}</span>
+      </div>
+      <p
+        style={{
+          margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontWeight: 400,
+          fontSize: 'clamp(16.5px, 4.4vw, 19px)', lineHeight: 1.35,
+          color: reachable ? rgba(C.star, 0.95) : rgba(C.cream, 0.8),
+        }}
+      >
+        {reachable ? t('placed.reachableHead') : t('placed.waitingHead')}
+      </p>
+    </div>
+  )
+}
+
 // State A — they're already reachable, and in your (still-gathering) community.
 // The question you can't answer yet is the emotional peak; the meter is the
 // answer's gate, and it's the thing you control.
@@ -739,9 +779,9 @@ function PlacedReachable({ C, ctx, handle, community }) {
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, padding: '16px 0 8px' }}>
-        {/* confirmation */}
+        {/* confirmation — the @ hero leads, same as every other placed state */}
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
-          <div className="floaty"><StarMark C={C} size={60} /></div>
+          <PlacedHandleHero C={C} handle={handle} reachable />
           <Kicker C={C} color={rgba(C.star, 0.92)}>{g.live}</Kicker>
           <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: rgba(C.cream, 0.92), maxWidth: 340 }}>{g.here}</p>
         </div>
@@ -784,15 +824,9 @@ function PlacedWaiting({ C, ctx, handle, community }) {
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22, padding: '16px 0 8px' }}>
-        {/* the handle, large, held */}
+        {/* the handle, large, held — the @ hero leads, same as every other placed state */}
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
-          <Sonar C={C} size={28} />
-          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(34px, 10vw, 46px)', lineHeight: 1.04, color: C.cream, maxWidth: '94%' }}>
-            <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{handle}
-            </span>
-            <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
-          </h1>
+          <PlacedHandleHero C={C} handle={handle} reachable={false} />
           <p className="enter" style={{ animationDelay: '.1s', margin: '4px 0 0', fontSize: 14, lineHeight: 1.65, color: C.muted, maxWidth: 350 }}>{g.only}</p>
         </div>
 
@@ -826,26 +860,20 @@ function PlacedQuiet({ C, ctx, handle, reachable, needsCommunity }) {
     : reachable
       ? t('placed.standingSub', { handle })
       : t('placed.waitingSub')
+  // reachable still gets its own title ("one more thing." / "your ping is
+  // live.") — it's just demoted beneath the @ hero now, since the @ + status
+  // line is the headline in every placed state, not just this one.
+  const subTitle = reachable ? (needsCommunity ? t('placed.joinTitle') : t('placed.standingTitle')) : null
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
-        {reachable ? (
-          <>
-            <div className="enter floaty"><StarMark C={C} size={78} /></div>
-            <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 40px)', lineHeight: 1.1, color: C.cream }}>
-              {needsCommunity ? t('placed.joinTitle') : t('placed.standingTitle')}
-            </h1>
-          </>
-        ) : (
-          <>
-            <div className="enter" style={{ paddingBottom: 2 }}><Sonar C={C} size={30} /></div>
-            <h1 className="enter" style={{ animationDelay: '.06s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(36px, 10.5vw, 50px)', lineHeight: 1.02, color: C.cream, maxWidth: '92%' }}>
-              <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontStyle: 'normal', fontSize: '0.72em', color: C.star }}>@</span>{handle}
-              </span>
-              <span style={{ display: 'block', marginTop: 4, color: rgba(C.cream, 0.92) }}>{t('placed.waitingHead')}</span>
-            </h1>
-          </>
+        <div className="enter" style={{ width: '100%' }}>
+          <PlacedHandleHero C={C} handle={handle} reachable={reachable} />
+        </div>
+        {subTitle && (
+          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(19px, 5.4vw, 24px)', lineHeight: 1.2, color: C.cream }}>
+            {subTitle}
+          </p>
         )}
         <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>{body}</p>
       </div>
@@ -921,7 +949,15 @@ function PingCard({ C, ping, ctx }) {
   const soon = !ping.mutual && nearLapse(ping.expires_at)
   const state = ping.mutual ? 'mutual' : ping.reachable ? 'standing' : 'waiting'
   const chipColor = ping.mutual ? C.star : ping.reachable ? rgba(C.star, 0.92) : C.muted
+  // Production renews outright, free, instantly (unchanged). The sandbox
+  // detours through the same checkout the third slot uses (SlotPaywall, extend
+  // mode) so the eventual $2.99 shape is visible; the actual renew only runs
+  // once that mock payment succeeds (App.jsx's finishExtend).
   const renew = async () => {
+    if (ctx.demo) {
+      ctx.startExtend(ping.handle)
+      return
+    }
     await ctx.renew(ping.handle)
     setRenewed(true)
   }
@@ -1023,8 +1059,11 @@ function PingCard({ C, ping, ctx }) {
 }
 
 // An empty slot — a dashed glass placeholder holding a faint star, so the number
-// of slots you have (and how many are open) is always visible at a glance.
-function EmptySlotCard({ C, onClick }) {
+// of slots you have (and how many are open) is always visible at a glance. Once
+// both free slots are held, this same shape becomes the door to the third
+// (`paywall`): the dash warms to amber and the copy names what tapping it opens
+// — the checkout, not a free placement.
+function EmptySlotCard({ C, onClick, paywall }) {
   const { t } = useI18n()
   const [h, setH] = React.useState(false)
   return (
@@ -1036,16 +1075,16 @@ function EmptySlotCard({ C, onClick }) {
         display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px', textAlign: 'left', cursor: 'pointer',
         borderRadius: RADIUS.card,
         background: h ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.3),
-        border: `1.5px dashed ${rgba(C.cream, h ? 0.26 : 0.15)}`,
+        border: `1.5px dashed ${paywall ? rgba(C.star, h ? 0.42 : 0.26) : rgba(C.cream, h ? 0.26 : 0.15)}`,
         backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', transition: 'all .2s',
       }}
     >
-      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', flexShrink: 0, border: `1px solid ${rgba(C.cream, 0.14)}`, opacity: h ? 1 : 0.7, transition: 'opacity .2s' }}>
+      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', flexShrink: 0, border: `1px solid ${paywall ? rgba(C.star, 0.3) : rgba(C.cream, 0.14)}`, opacity: h ? 1 : 0.7, transition: 'opacity .2s' }}>
         <Brandmark C={C} size={15} />
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{t('pings.slotEmpty')}</span>
-        <span style={{ fontSize: 12, color: C.muted }}>{t('pings.slotEmptySub')}</span>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</span>
+        <span style={{ fontSize: 12, color: C.muted }}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</span>
       </span>
       <span style={{ flex: 1 }} />
       <Icon name="plus" size={16} color={rgba(C.star, 0.8)} stroke={2} />
@@ -1163,6 +1202,9 @@ export function PingsScreen({ C, ctx }) {
   const used = Math.min(active.length, cap)
   const emptyCount = Math.max(0, cap - active.length)
   const empty = pings.length === 0
+  // both slots held (or however many the sandbox has raised the cap to) — the
+  // last card in the list becomes the door to the next one, same shape, warmer.
+  const atCap = !empty && active.length >= cap
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38, paddingTop: 6 }}>
@@ -1192,7 +1234,7 @@ export function PingsScreen({ C, ctx }) {
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
                 <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
-                <SlotPips C={C} standing={used} cap={cap} compact />
+                <SlotPips C={C} standing={used} cap={cap} compact subscribed={ctx.demoSubscribed} />
               </div>
               {active.map((p, i) => (
                 <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
@@ -1200,6 +1242,7 @@ export function PingsScreen({ C, ctx }) {
               {Array.from({ length: emptyCount }).map((_, i) => (
                 <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
               ))}
+              {atCap && <EmptySlotCard key="door" C={C} onClick={ctx.placeAnother} paywall />}
             </>
           )}
 
@@ -1901,13 +1944,20 @@ export function CommunityScreen({ C, ctx }) {
   const wireZoom = React.useCallback((f) => {
     if (!f || !f.setZoomEnabled) return
     f.setZoomEnabled(true)
-    if (f.setTagsEnabled) f.setTagsEnabled(true)
     f.onZoomState = setZoomed
     f.onTagTap = (label) => setMeet({ label })
     // the engine may arrive after the measuring effect ran — push the chrome
     // insets to it the moment it's live
     if (insetsPushRef.current) insetsPushRef.current()
   }, [])
+  // The public @s appear ONLY while the sky is held fully expanded (the
+  // immersive zoom): at rest the galaxy stays pure light, and the moment the
+  // chrome melts away the opted-in handles rise one by one over their stars.
+  React.useEffect(() => {
+    const g = galaxyRef.current
+    if (g && g.setTagsEnabled) g.setTagsEnabled(zoomed)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoomed])
   React.useEffect(() => {
     if (useShared) wireZoom(galaxyRef.current)
     return () => {
@@ -2003,6 +2053,7 @@ export function CommunityScreen({ C, ctx }) {
           pings={pings}
           matches={showMatches ? matches : 0}
           forming={!open}
+          publicHandles={ctx.demo ? DEMO_PUBLIC[slug] || [] : []}
           onReady={(f) => { localGalaxyRef.current = f; wireZoom(f) }}
         />
       )}
@@ -2579,12 +2630,14 @@ export function SendoffScreen({ C, ctx }) {
   )
 }
 
-// ── 9 · THE FOURTH SLOT ───────────────────────────────────────────────────────
+// ── 9 · THE THIRD SLOT (route key stays 'fourth' — see App.jsx's SCREENS) ────
 // Production keeps ONE door — "let one go" — with no money anywhere, per
 // docs/PRICING-REVENUE.md (Stripe stays plumbed and dormant until density is
-// proven). The /demo build previews the one-time fourth slot behind a realistic
-// checkout, so the eventual shape is visible without waking anything real. The
-// checkout only ever appears here, at the moment a user runs out of slots.
+// proven). The /demo build previews the real shape behind a realistic
+// checkout: a one-time slot ($2.99, repeatable) or a $12.99/mo subscription
+// (ten pings, each standing six months). The checkout appears here at the
+// moment a user runs out of slots, and — in the sandbox only — also fronts the
+// renew action on a near-lapse ping ("extend" mode, $2.99 to keep it standing).
 
 // The card-brand marks that sit at the end of a Stripe card field — the two
 // product stars double as the mastercard glyph, so no third hue enters.
@@ -2624,9 +2677,61 @@ function PayField({ C, value, onChange, placeholder, mono, trailing, inputMode }
   )
 }
 
-// The sandbox checkout for the one-time fourth slot.
-function FourthSlotPaywall({ C, ctx }) {
+// One of the two checkout offers — tap to choose. The chosen one lights amber
+// like an IntentLineChip; the subscription additionally wears a small badge
+// ("the better deal") so it reads as the smart pick without shouting.
+function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={on}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 6, width: '100%', textAlign: 'left', cursor: 'pointer',
+        padding: '13px 15px', borderRadius: RADIUS.card,
+        background: on ? rgba(C.star, 0.1) : rgba(C.ink2, 0.4),
+        border: `1.5px solid ${on ? rgba(C.star, 0.6) : C.line}`,
+        boxShadow: on ? `0 0 20px ${rgba(C.star, 0.14)}` : 'none',
+        transition: 'all .2s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+          <span
+            aria-hidden
+            style={{
+              display: 'grid', placeItems: 'center', width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+              border: `1.5px solid ${on ? C.star : rgba(C.cream, 0.32)}`,
+            }}
+          >
+            {on && <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.star, boxShadow: `0 0 7px ${rgba(C.star, 0.8)}` }} />}
+          </span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, color: C.cream }}>{title}</span>
+        </span>
+        {badge && (
+          <span style={{ flexShrink: 0, fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.5px', textTransform: 'uppercase', color: rgba(C.star, 0.9), border: `1px solid ${rgba(C.star, 0.4)}`, borderRadius: RADIUS.chip, padding: '2px 7px' }}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingLeft: 25 }}>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 16, fontWeight: 700, color: C.cream }}>{price}</span>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', textTransform: 'uppercase', color: C.muted }}>{unit}</span>
+      </div>
+      <p style={{ margin: 0, paddingLeft: 25, fontSize: 12, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>{detail}</p>
+    </button>
+  )
+}
+
+// The sandbox checkout — one more ping (or, arriving from a renew, keeping one
+// standing), $2.99 once, alongside the $12.99/mo subscription. `mode` is
+// 'slot' (the default: hit the cap, or tapped "place another") or 'extend'
+// (tapped renew on a near-lapse ping — App.jsx's extendHandle names it).
+function SlotPaywall({ C, ctx, mode }) {
   const { t } = useI18n()
+  const extend = mode === 'extend'
+  // default: the single-ping option, matching how they arrived either way —
+  // the subscription is the upsell, never the assumption.
+  const [choice, setChoice] = React.useState('once') // 'once' | 'sub'
   const [phase, setPhase] = React.useState('form') // form | paying | done
   const [card, setCard] = React.useState('')
   const [exp, setExp] = React.useState('')
@@ -2634,6 +2739,7 @@ function FourthSlotPaywall({ C, ctx }) {
   const [zip, setZip] = React.useState('')
   const timer = React.useRef(null)
   React.useEffect(() => () => timer.current && clearTimeout(timer.current), [])
+  const sub = choice === 'sub'
   const pay = () => {
     if (phase !== 'form') return
     setPhase('paying')
@@ -2641,32 +2747,42 @@ function FourthSlotPaywall({ C, ctx }) {
     // would swap this screen out from under its own success view.
     timer.current = setTimeout(() => setPhase('done'), 1500)
   }
-  const price = t('paywall.price')
+  const price = sub ? t('paywall.subPrice') : t('paywall.price')
+  const kicker = extend ? t('paywall.extendKicker') : t('paywall.kicker')
+
+  // The success view's one action: extend just runs the actual renew and heads
+  // back; a slot purchase (once or sub) goes place the newly-held ping.
+  const finish = () => (extend ? ctx.finishExtend() : ctx.placeBoughtSlot(sub))
+  const viewPingsInstead = () => {
+    ctx.buySlot(sub)
+    ctx.go('pings')
+  }
 
   if (phase === 'done') {
+    const title = extend ? t('paywall.doneTitleExtend') : sub ? t('paywall.doneTitleSub') : t('paywall.doneTitleOnce')
+    const doneSub = extend ? t('paywall.doneSubExtend') : sub ? t('paywall.doneSubSub') : t('paywall.doneSubOnce')
     return (
       <Shell>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ width: 38 }} />
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <Kicker C={C}>{t('paywall.kicker')}</Kicker>
+            <Kicker C={C}>{kicker}</Kicker>
             <SandboxChip C={C} />
           </div>
           <div style={{ width: 38 }} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
           <div className="enter floaty"><StarMark C={C} size={78} /></div>
-          <div style={{ display: 'flex', gap: 11 }}>
-            {[0, 1, 2, 3].map((i) => <Brandmark key={i} C={C} size={17} />)}
-          </div>
-          <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{t('paywall.doneTitle')}</h1>
-          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('paywall.doneSub')}</p>
+          <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{title}</h1>
+          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{doneSub}</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <PrimaryButton C={C} onClick={ctx.placeFourth}>{t('paywall.donePlace')}</PrimaryButton>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GhostButton C={C} onClick={() => { ctx.buyFourthSlot(); ctx.go('pings') }} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
-          </div>
+          <PrimaryButton C={C} onClick={finish}>{extend ? t('paywall.doneBack') : t('paywall.donePlace')}</PrimaryButton>
+          {!extend && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GhostButton C={C} onClick={viewPingsInstead} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+            </div>
+          )}
         </div>
       </Shell>
     )
@@ -2677,31 +2793,47 @@ function FourthSlotPaywall({ C, ctx }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <BackBtn C={C} onClick={() => ctx.go('pings')} />
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <Kicker C={C}>{t('paywall.kicker')}</Kicker>
+          <Kicker C={C}>{kicker}</Kicker>
           <SandboxChip C={C} />
         </div>
         <div style={{ width: 38 }} />
       </div>
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16, paddingTop: 12 }}>
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 15, paddingTop: 10 }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{t('paywall.title')}</h1>
-          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('paywall.sub')}</p>
+          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7.4vw, 33px)', color: C.cream }}>
+            {extend ? t('paywall.extendTitle') : t('paywall.title')}
+          </h1>
+          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>
+            {extend ? t('paywall.extendSub') : t('paywall.sub')}
+          </p>
         </div>
 
-        {/* the checkout card */}
-        <GlassPanel C={C} style={{ padding: '16px 16px 15px', display: 'flex', flexDirection: 'column', gap: 13 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingBottom: 3 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
-              <Brandmark C={C} size={16} />
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: C.cream }}>{t('paywall.kicker')}</span>
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 17, fontWeight: 700, color: C.cream }}>{price}</span>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.5px', textTransform: 'uppercase', color: C.muted }}>{t('paywall.priceUnit')}</span>
-            </span>
-          </div>
+        {/* the two offers — one tap picks; the checkout below runs whichever's lit */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <OfferOption
+            C={C}
+            on={!sub}
+            onClick={() => setChoice('once')}
+            title={extend ? t('paywall.onceExtendLabel') : t('paywall.onceLabel')}
+            price={t('paywall.price')}
+            unit={t('paywall.priceUnit')}
+            detail={t('paywall.onceDetail')}
+          />
+          <OfferOption
+            C={C}
+            on={sub}
+            onClick={() => setChoice('sub')}
+            title={t('paywall.subLabel')}
+            price={t('paywall.subPrice')}
+            unit={t('paywall.subUnit')}
+            detail={t('paywall.subDetail')}
+            badge={t('paywall.subBadge')}
+          />
+        </div>
 
+        {/* the checkout card — the same fake-stripe fields regardless of choice */}
+        <GlassPanel C={C} style={{ padding: '16px 16px 15px', display: 'flex', flexDirection: 'column', gap: 13 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <PayField C={C} value={card} onChange={setCard} placeholder={t('paywall.cardNumber')} mono trailing={<CardBrands C={C} />} />
             <div style={{ display: 'flex', gap: 8 }}>
@@ -2713,7 +2845,7 @@ function FourthSlotPaywall({ C, ctx }) {
 
           <PrimaryButton C={C} disabled={phase === 'paying'} onClick={pay}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-              {phase === 'paying' ? t('paywall.paying') : <><Icon name="lock" size={15} color={C.onStar} stroke={2} /> {t('paywall.pay', { price })}</>}
+              {phase === 'paying' ? t('paywall.paying') : <><Icon name="lock" size={15} color={C.onStar} stroke={2} /> {sub ? t('paywall.paySub', { price }) : t('paywall.pay', { price })}</>}
             </span>
           </PrimaryButton>
 
@@ -2736,10 +2868,13 @@ function FourthSlotPaywall({ C, ctx }) {
 
 export function FourthSlotScreen({ C, ctx }) {
   const { t } = useI18n()
-  // sandbox only, and only until the fourth is actually held: the checkout
-  // preview. everywhere else — production, or the demo once four are held — the
-  // single dormant door.
-  if (ctx.demo && !ctx.demoFourthSlot) return <FourthSlotPaywall C={C} ctx={ctx} />
+  // sandbox only, and only while there's still something to sell: an extend
+  // checkout for a near-lapse ping takes priority (it can happen regardless of
+  // subscription state); otherwise the next-slot/subscription offer, until
+  // subscribed and genuinely at the ten-ping cap. Everywhere else — production,
+  // always — the single dormant door.
+  if (ctx.demo && ctx.extendHandle) return <SlotPaywall C={C} ctx={ctx} mode="extend" />
+  if (ctx.demo && !ctx.demoSubscribed) return <SlotPaywall C={C} ctx={ctx} mode="slot" />
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2748,12 +2883,8 @@ export function FourthSlotScreen({ C, ctx }) {
         <div style={{ width: 38 }} />
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
-        {/* the slots, all held — shown as the product's own star icon */}
-        <div style={{ display: 'flex', gap: 12 }}>
-          {Array.from({ length: ctx.slotsCap }).map((_, i) => (
-            <Brandmark key={i} C={C} size={18} />
-          ))}
-        </div>
+        {/* the slots, all held */}
+        <SlotPips C={C} standing={ctx.slotsCap} cap={ctx.slotsCap} subscribed={ctx.demoSubscribed} />
         <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8vw, 38px)', color: C.cream }}>
           {t('fourth.title')}
         </h1>

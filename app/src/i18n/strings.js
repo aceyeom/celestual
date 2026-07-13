@@ -130,6 +130,9 @@ const en = {
   'placed.standingSub': '@{handle} is on celestual. the second they ping you back, you both know. until then, nothing shows.',
   'placed.waitingHead': 'isn’t on celestual yet.',
   'placed.waitingSub': 'your ping is held, unseen, until they arrive. they’ll never know it was you.',
+  // the hero @ handle's status line when they're already reachable — the
+  // one-line answer to "are they here yet?", paired with waitingHead above
+  'placed.reachableHead': 'is already on celestual.',
   // the no-community nudge: the flow only opens once your world is here
   'placed.joinTitle': 'one more thing.',
   'placed.joinReachable': '@{handle} is already on celestual. but celestual opens up only once enough of your world is here. bring yours in.',
@@ -143,7 +146,7 @@ const en = {
   // ── screen 4 · your pings (the status page) ────────────────────────────
   'pings.kicker': 'your pings',
   'pings.emptyTitle': 'no pings yet.',
-  'pings.emptyBody': 'three slots, sixty days each. for the people who actually stayed on your mind.',
+  'pings.emptyBody': 'two slots, sixty days each. for the people who actually stayed on your mind.',
   'pings.emptyCta': 'place your first',
   // the three ping states, in plain words read at a glance
   'pings.standing': 'active',
@@ -161,6 +164,9 @@ const en = {
   'pings.slotsUsed': '{used} of {cap} slots',
   'pings.slotEmpty': 'open slot',
   'pings.slotEmptySub': 'tap to place a ping',
+  // once every slot is held, the last card becomes the door to the next one
+  'pings.slotNext': 'a third slot',
+  'pings.slotNextSub': 'tap to hold one, from $2.99',
   // renew / let go — plain words, no jargon
   'pings.expiringSoon': 'lapses in {n} days',
   'pings.renew': 'renew',
@@ -223,34 +229,55 @@ const en = {
   'match.cta': 'go say it',
   'match.exit': 'the rest is yours. celestual’s part is done.',
 
-  // ── screen 9 · the fourth slot ──────────────────────────────────────────
+  // ── screen 9 · the third slot (route key stays 'fourth' — old sessions may
+  // still hold it in localStorage) ────────────────────────────────────────
   'fourth.title': 'your slots are full.',
-  'fourth.body': 'three is the point. each one costs something. let one go and the slot’s yours again.',
+  'fourth.body': 'each one costs something. let one go, and the slot’s yours again.',
   'fourth.cta': 'let one go',
   'fourth.back': 'not now',
 
-  // the fourth-slot checkout — SANDBOX ONLY. production keeps one door ("let one
-  // go") until monetization wakes (docs/PRICING-REVENUE.md); the sandbox previews
-  // the one-time fourth slot behind a real-looking checkout so the shape is
-  // visible. one-time, never a subscription. no banned paywall words.
-  'paywall.kicker': 'a fourth slot',
-  'paywall.title': 'hold a fourth.',
-  'paywall.sub': 'when a fourth person is really on your mind, hold them too. one time, never a subscription.',
-  'paywall.price': '$3.99',
+  // the slot checkout — SANDBOX ONLY. production keeps one door ("let one go")
+  // until monetization wakes (docs/PRICING-REVENUE.md); the sandbox previews the
+  // real thing behind a real-looking checkout: a one-time add ($2.99, repeatable)
+  // or a $12.99/mo subscription (ten pings, each standing six months). also
+  // fronts the renew action on a near-lapse ping (mode="extend") — same checkout,
+  // same fields, a one-time $2.99 to keep it standing. no banned paywall words.
+  'paywall.kicker': 'a third ping',
+  'paywall.extendKicker': 'extend a ping',
+  'paywall.title': 'hold a third.',
+  'paywall.extendTitle': 'keep it standing.',
+  'paywall.sub': 'when a third person is really on your mind, hold them too. once, or settle in for good.',
+  'paywall.extendSub': 'give it another sixty days. or settle in for good.',
+  'paywall.onceLabel': 'one more ping',
+  'paywall.onceExtendLabel': 'keep it standing',
+  'paywall.onceDetail': 'one time, never a subscription.',
+  'paywall.subLabel': 'go steady',
+  'paywall.subDetail': 'ten pings a month. each stands six months.',
+  'paywall.subBadge': 'the better deal',
+  'paywall.subscribedNote': 'subscribed · ten a month',
+  'paywall.price': '$2.99',
   'paywall.priceUnit': 'once',
+  'paywall.subPrice': '$12.99',
+  'paywall.subUnit': 'month',
   'paywall.cardLabel': 'card',
   'paywall.cardNumber': '1234 1234 1234 1234',
   'paywall.expiry': 'MM / YY',
   'paywall.cvc': 'CVC',
   'paywall.zip': 'ZIP',
   'paywall.pay': 'pay {price}',
+  'paywall.paySub': 'subscribe, {price} a month',
   'paywall.paying': 'confirming…',
   'paywall.secure': 'secure checkout',
   'paywall.stripe': 'powered by stripe',
   'paywall.demoNote': 'sandbox. a mock checkout. no card is read, nothing is charged, nothing is saved.',
-  'paywall.doneTitle': 'you’re holding four.',
-  'paywall.doneSub': 'the fourth slot is yours. place it whenever the feeling’s ready.',
-  'paywall.donePlace': 'place the fourth',
+  'paywall.doneTitleOnce': 'one more, held.',
+  'paywall.doneSubOnce': 'the slot is yours. place it whenever the feeling’s ready.',
+  'paywall.doneTitleSub': 'you’re subscribed.',
+  'paywall.doneSubSub': 'ten pings a month, each standing six months. place whenever you like.',
+  'paywall.doneTitleExtend': 'it’s standing.',
+  'paywall.doneSubExtend': 'another sixty days, held.',
+  'paywall.donePlace': 'place it',
+  'paywall.doneBack': 'back to your pings',
   'paywall.letgo': 'or let one go, free, always',
   'paywall.back': 'not now',
 

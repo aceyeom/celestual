@@ -18,10 +18,12 @@
 // verify) whenever the backend is configured — it is not faked. The one carve-out
 // is the domain check: alongside the real school domain, the sandbox can also
 // accept a @gmail.com address so the flow is testable with an inbox anyone
-// actually holds — but ONLY when the operator has switched that on server-side
-// (CELESTUAL_SANDBOX_GMAIL=1 on the edge function; the client flag alone never
-// weakens the gate). Only when no backend is configured at all (a preview build
-// with nothing wired) does the sheet fall back to a local accept.
+// actually holds — the product owner has no .edu inbox to test with. This is ON
+// BY DEFAULT for demo requests server-side; an operator can turn it off with
+// CELESTUAL_SANDBOX_GMAIL=0 on the edge function. Either way the client's `demo`
+// flag alone never weakens the gate — a non-demo request never accepts gmail.
+// Only when no backend is configured at all (a preview build with nothing
+// wired) does the sheet fall back to a local accept.
 import { supabase, hasSupabase } from './supabase.js'
 import { emailMatchesSchool, isEduEmail, isGmailAddress } from '../communities.js'
 
