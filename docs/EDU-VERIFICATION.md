@@ -5,7 +5,7 @@ from its safe local stub into the real, email-backed thing in production.
 
 A ping only ever reaches people from your own community, so **membership has to
 be real, not self-declared.** Joining a curated school requires proving you're
-there: a 6-digit code is emailed to an address at that school's domain, and you
+there: a 4-digit code is emailed to an address at that school's domain, and you
 enter it back to confirm. This doc is the operator playbook for wiring that up.
 
 ---
@@ -17,7 +17,7 @@ modes depending on a single flag:
 
 | Mode | When | What happens |
 | --- | --- | --- |
-| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, or no Supabase env, or `/demo` | The join sheet accepts any plausibly-formatted school address, waits a beat, accepts any 6 digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview fully testable. |
+| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, or no Supabase env | The join sheet accepts any plausibly-formatted school address, waits a beat, accepts any 4 digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview fully testable. |
 | **Live** | `VITE_EDU_VERIFY_ENABLED=1` **and** Supabase URL/anon key set | Real code emailed via Resend, hashed + stored in Postgres, verified server-side. |
 
 The pieces that make the **live** mode work:
@@ -47,9 +47,14 @@ supabase/migrations/
 - **Rate limited:** max **5** fresh codes per address per hour and **15** per IP
   per hour (0008). Codes live **10 minutes** and die after **6** wrong guesses.
   Expired rows self-sweep.
-- The sandbox's **@gmail.com carve-out is server-gated**: it only works when the
-  operator sets `CELESTUAL_SANDBOX_GMAIL=1` on the function. The client's `demo`
-  flag is untrusted input and can never weaken the production gate by itself.
+- The sandbox's **@gmail.com carve-out** lets a `demo:true` request also pass
+  with a gmail address (the product owner has no .edu inbox to test the real
+  pipeline with). It is **ON by default** pre-launch and controlled server-side:
+  set `CELESTUAL_SANDBOX_GMAIL=0` on the function to force even demo requests
+  through the genuine school-domain check. **Honest caveat:** while the default
+  stands, a crafted `demo:true` request could use a gmail address against the
+  real gate too — acceptable for the pre-launch sandbox, but **setting it to `0`
+  is a release gate** (it's on the SECURITY.md operator checklist).
 - A subdomain counts as the school (`andrew.cmu.edu` ⊂ `cmu.edu`).
 
 **The request shape** (one endpoint, two actions):
@@ -113,10 +118,10 @@ supabase secrets set RESEND_API_KEY="re_xxxxxxxxxxxxxxxxx"
 supabase secrets set CELESTUAL_FROM_EMAIL="celestual <hello@celestual.us>"
 # optional — only used in the email footer link; defaults to https://celestual.us
 supabase secrets set CELESTUAL_SITE_URL="https://celestual.us"
-# optional — the /demo sandbox's @gmail.com carve-out. OFF by default, and it
-# should stay off in production: the client's demo flag is untrusted input, so
-# only this server-side switch can enable the carve-out. Set to 1 only on a
-# staging project where testers need to run the pipeline with a gmail inbox.
+# the /demo sandbox's @gmail.com carve-out — ON by default so the pipeline is
+# testable with an inbox you actually hold. RELEASE GATE: set it to 0 before a
+# real launch, because the client's demo flag is untrusted input and could
+# otherwise pass a gmail address through the production gate too.
 supabase secrets set CELESTUAL_SANDBOX_GMAIL="0"
 ```
 

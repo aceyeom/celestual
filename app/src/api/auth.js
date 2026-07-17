@@ -10,8 +10,12 @@
 // A session is a small local record of "this browser proved it owns @handle":
 //   { verified:true, handle, proof, provider:'instagram_dm', email, name }
 // `proof` is the bearer secret celestual_submit checks at seal time — treat it like
-// an auth token. When verification isn't wired yet (VITE_IG_VERIFY_ENABLED=0 or no
-// Supabase) we fall back to a local stub so dev/preview stays fully testable.
+// an auth token. Server-side the verified session is a 30-DAY SLIDING window
+// (migration 0009): every successful use extends it another 30 days, so an active
+// person never redoes the DM dance; a stale proof simply reads 'unverified' and
+// the app re-opens the verify sheet. When verification isn't wired yet
+// (VITE_IG_VERIFY_ENABLED=0 or no Supabase) we fall back to a local stub so
+// dev/preview stays fully testable.
 import { igVerifyEnabled } from './igverify.js'
 
 const STORE = 'celestual:auth'

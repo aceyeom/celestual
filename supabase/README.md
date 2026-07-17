@@ -35,6 +35,20 @@ Idempotent migrations, applied in order:
   (see docs/EDU-VERIFICATION.md).
 - `migrations/0008_edu_hardening.sql` — per-IP send accounting for the .edu
   gate, so code email can't be sprayed from one machine.
+- `migrations/0009_verification_hardening.sql` — **the auth-audit pass**:
+  spoof-resistant rate-limit IPs (`celestual_client_ip` prefers
+  `cf-connecting-ip` over the forgeable x-forwarded-for first hop), the
+  verified DM session raised from 24 h to a **30-day sliding window** (active
+  users never redo the DM dance), `celestual_norm` capped at Instagram's
+  30-char handle max, and a token index for poll reads.
+
+**Which migrations are live vs. historical:** the schema is append-only — every
+file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
+(`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
+replaced by 0006's ping model, and 0009 carries the current definitions of
+`celestual_norm`, `celestual_submit`, `celestual_suppress` and the four
+IG-verification functions. When reading for current behaviour: **0006 + 0007 +
+0008 + 0009** are the truth; 0001/0004 for the tables they created.
 
 **SQL Editor:** paste each file's contents and Run, in order.
 
@@ -53,8 +67,8 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to the earlier entrant (retry + dead-letter) | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
-| `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, and calls `celestual_complete_ig_verification` — no Meta developer portal | `MANYCHAT_SHARED_SECRET` |
-| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
+| `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. **Full setup guide: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md)** | `MANYCHAT_SHARED_SECRET` |
+| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, DMs the verified/mismatch feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
