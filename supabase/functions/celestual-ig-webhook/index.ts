@@ -22,7 +22,10 @@
 //                       optionally send the confirmation DM). graph.instagram.com.
 // Optional:
 //   IG_GRAPH_VERSION  — Graph API version (default 'v21.0')
-//   IG_CONFIRM_DM     — '1' to DM "you're verified ✦" back (best-effort)
+//   IG_CONFIRM_DM     — the "you're verified ✦" feedback DM, sent back the moment
+//                       verification completes. ON by default (best-effort; it
+//                       replies within Meta's 24-hour standard messaging window,
+//                       so it's ToS-clean). Set '0' to disable.
 // Injected automatically:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -35,7 +38,7 @@ const APP_SECRET = Deno.env.get('IG_APP_SECRET') ?? '';
 const VERIFY_TOKEN = Deno.env.get('IG_VERIFY_TOKEN') ?? '';
 const ACCESS_TOKEN = Deno.env.get('IG_ACCESS_TOKEN') ?? '';
 const GRAPH_VERSION = Deno.env.get('IG_GRAPH_VERSION') ?? 'v21.0';
-const CONFIRM_DM = Deno.env.get('IG_CONFIRM_DM') === '1';
+const CONFIRM_DM = Deno.env.get('IG_CONFIRM_DM') !== '0';
 const GRAPH = 'https://graph.instagram.com';
 
 const supabase = createClient(
@@ -90,18 +93,23 @@ async function fetchUsername(igsid: string): Promise<string | null> {
   }
 }
 
-async function sendConfirm(igsid: string, handle: string) {
+// Best-effort feedback DM. Always a direct reply to a message the person just
+// sent, so it sits inside Meta's 24-hour standard messaging window (ToS-clean).
+async function sendDm(igsid: string, text: string) {
   if (!CONFIRM_DM || !ACCESS_TOKEN) return;
   try {
     await fetch(`${GRAPH}/${GRAPH_VERSION}/me/messages?access_token=${encodeURIComponent(ACCESS_TOKEN)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipient: { id: igsid }, message: { text: `✦ @${handle} is verified on CELESTUAL. You can close this and finish sealing your star.` } }),
+      body: JSON.stringify({ recipient: { id: igsid }, message: { text } }),
     });
   } catch (e) {
-    console.error('confirm DM failed', String(e));
+    console.error('feedback DM failed', String(e));
   }
 }
+
+const sendConfirm = (igsid: string, handle: string) =>
+  sendDm(igsid, `✦ @${handle} is verified on CELESTUAL. You can close this and finish sealing your star.`);
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
@@ -157,6 +165,7 @@ Deno.serve(async (req) => {
         // Try each candidate code against a pending session; the RPC enforces the
         // username == claimed-handle rule and flips the row to 'verified'.
         let done = false;
+        let mismatched = false;
         for (const token of candidates) {
           const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
             p_token: token,
@@ -173,8 +182,16 @@ Deno.serve(async (req) => {
             done = true;
             break;
           }
+          if (data?.error === 'handle_mismatch') mismatched = true;
         }
-        if (!done) results.push({ igsid, username, matched: false });
+        if (!done) {
+          // Feedback instead of silence: a live code sent from the wrong account
+          // is the #1 stuck state — tell the sender so they can fix it themselves.
+          if (mismatched) {
+            await sendDm(String(igsid), 'That code was started for a different @. Open the app with this account and get a fresh code.');
+          }
+          results.push({ igsid, username, matched: false, mismatched });
+        }
       }
     }
   } catch (e) {

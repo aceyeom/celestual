@@ -9,9 +9,11 @@
 -- celestual-edu-verify edge function, which is the ONLY thing that reads or writes
 -- it (via the service role) — the browser never touches it directly.
 --
--- The 6-digit code is a SECRET (unlike the Instagram DM correlation code): it is
+-- The 4-digit code is a SECRET (unlike the Instagram DM correlation code): it is
 -- emailed, never returned to the browser, and only its SHA-256 hash is stored here,
--- so a leak of this table reveals no live codes. Rows self-expire after ~10 minutes.
+-- so a leak of this table reveals no live codes. Rows self-expire after ~10 minutes;
+-- a code dies after 6 wrong guesses, and fresh codes are rate-limited per address
+-- and per IP — which is why four digits is enough.
 --
 -- Re-runnable (IF NOT EXISTS / CREATE OR REPLACE).
 
@@ -30,7 +32,7 @@ create table if not exists celestual_edu_verifications (
   token       text not null unique,          -- correlation id handed to the browser
   email       text not null,                 -- lowercased school address
   slug        text not null,                 -- community (school) being joined
-  code_hash   text not null,                 -- sha256 hex of the 6-digit code
+  code_hash   text not null,                 -- sha256 hex of the 4-digit code
   attempts    int  not null default 0,       -- wrong guesses so far (capped)
   status      text not null default 'pending',
   created_at  timestamptz not null default now(),

@@ -196,8 +196,15 @@ Deno.serve(async (req) => {
 
     // Rate-limit fresh codes per address AND per IP, and sweep expired rows
     // opportunistically. The IP guard stops one machine spraying codes across
-    // many addresses (each send costs a real email).
-    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
+    // many addresses (each send costs a real email). Prefer the proxy-set
+    // headers a client can't forge (cf-connecting-ip is written by Cloudflare
+    // itself); the first x-forwarded-for hop — which a client CAN prepend — is
+    // the last resort only.
+    const ip =
+      req.headers.get('cf-connecting-ip')?.trim() ||
+      req.headers.get('x-real-ip')?.trim() ||
+      (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+      null;
     const sinceIso = new Date(Date.now() - 3600_000).toISOString();
     const { count } = await supabase
       .from('celestual_edu_verifications')

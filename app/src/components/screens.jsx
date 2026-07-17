@@ -3379,7 +3379,19 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       }
     }
     pollRef.current = setInterval(tick, 2500)
-    return stopPoll
+    // Coming back from Instagram (tab regains focus/visibility) checks at once,
+    // so the flip to "verified" is instant instead of up to a poll-beat late —
+    // and a background-throttled interval can't strand the wait.
+    const onReturn = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') tick()
+    }
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+    return () => {
+      stopPoll()
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+    }
   }, [phase, token, onVerified, demo])
 
   const copyAndOpen = () => {
@@ -3391,10 +3403,11 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const inApp = isInAppBrowser()
   const mobile = isMobile()
 
-  const dismiss = () => {
-    clearPending()
-    onClose()
-  }
+  // Closing the sheet KEEPS the pending record: the DM may already be on its
+  // way, and savePending self-expires with the code TTL. Reopening resumes this
+  // exact code (the mount effect), so an accidental outside-tap or Escape can
+  // never strand a verification mid-flight.
+  const dismiss = () => onClose()
   const dialogRef = useDialog(dismiss)
 
   const errMsg =
@@ -3432,7 +3445,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         </div>
 
         {phase === 'verified' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
+          <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
@@ -3465,7 +3478,9 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
               {phase === 'starting' || !token ? (
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
               ) : (
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.star, 0.4)}` }}>{dmCode(token)}</span>
+                /* userSelect:'all' — one long-press/click selects the whole code,
+                   so a blocked clipboard never strands anyone. */
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.star, 0.4)}`, userSelect: 'all', WebkitUserSelect: 'all' }}>{dmCode(token)}</span>
               )}
             </div>
 
@@ -3485,7 +3500,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
               ))}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
+            <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
               <Sonar C={C} size={12} /> {t('verify.waiting')}
             </div>
 

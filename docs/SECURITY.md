@@ -32,7 +32,8 @@ only entry points are the `SECURITY DEFINER` RPCs (`celestual_submit`,
 `celestual_start_ig_verification`, `celestual_poll_ig_verification`), which
 return only small status objects — never other people's rows. Internal helpers
 (`celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
-`celestual_consume_ig_proof`, `celestual_ig_required`) and the operator paths
+`celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`)
+and the operator paths
 (`celestual_complete_ig_verification`, `celestual_campus_reveal`,
 `celestual_purge_expired`) are **not** granted to clients.
 
@@ -71,7 +72,12 @@ use never feels it; a sweep trips it fast.
 **per-`from` handle (20/hr)**, **per-target (60/hr, compared by hash)**.
 Attempt logs store the target hashed and are pruned on a rolling ~2-hour
 basis. `celestual_suppress` is rate-limited per IP (10/hr) against mass-wipe
-griefing; verification starts are capped per IP and per handle.
+griefing; verification starts are capped per IP and per handle. Since 0009 the
+"per-IP" identity comes from `celestual_client_ip()`, which prefers
+`cf-connecting-ip` (written by Cloudflare itself — a client cannot forge it)
+over the spoofable first `x-forwarded-for` hop, so rotating fake XFF values no
+longer resets the caps. The edu-verify edge function uses the same preference
+order.
 
 ### §5 — Loop A's one bit, anti-scan
 After (and only after) placing a ping, the sender learns whether the target is
@@ -83,9 +89,10 @@ cap, and the hourly limits make enumeration cost slots, time, and identity.
 actually placed.
 
 ### §verify — Handle-ownership verification (Instagram DM)
-Unchanged from 0004 and load-bearing: a one-time 4-digit code DM'd to
-`@celestual.us`; Meta's authenticated sender identity (relayed by ManyChat's
-External Request or the direct Meta webhook — see
+Load-bearing and unchanged in principle since 0004: a one-time 4-digit code
+DM'd to `@celestual.us`; Meta's authenticated sender identity (relayed by
+ManyChat's External Request — setup in
+[MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md) — or the direct Meta webhook — see
 [DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md)) must equal the claimed handle.
 The browser mints a 256-bit proof, stores only its hash server-side, and
 presents the raw proof at placement; `celestual_consume_ig_proof` makes the
@@ -94,8 +101,16 @@ impersonation fix the framework calls non-negotiable (§6.5). Gated by
 `celestual_settings.require_ig_verification`; with it on, the proof also gates
 `celestual_ping_status`, `celestual_my_pings`, `celestual_slots_for`,
 `celestual_renew`, `celestual_set_worlds` and `celestual_campus_preregister`.
-The `/demo` sandbox runs the same overlay but auto-verifies locally and never
-touches the backend.
+
+Session lifetime (0009): a completed verification stands **30 days, sliding**
+— each successful proof use extends it another 30, so an active person never
+re-verifies while an abandoned proof still dies. The exposure profile is that
+of a long-lived session cookie: the proof lives only in that browser's
+localStorage, signing out destroys it, and a leaked proof still can't move the
+verification to another handle. Both relay paths DM instant feedback to the
+sender (verified ✓ / wrong-account) inside Meta's 24-hour standard messaging
+window. The `/demo` sandbox runs the same overlay but auto-verifies locally
+and never touches the backend.
 
 ### §ident — Multi-account identity
 A person can link up to 3 of their own @s (`celestual_link`); matching and the
@@ -166,7 +181,7 @@ conservatism on purpose (framework §6.7).
 
 ## Operator checklist
 
-- [ ] All migrations applied (`0001`–`0006`); RLS **on**, **zero policies**,
+- [ ] All migrations applied (`0001`–`0009`); RLS **on**, **zero policies**,
       on every `celestual_*` table.
 - [ ] `anon` has **execute** only on the §1 public RPC list — and **not** on
       `celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
@@ -185,3 +200,6 @@ conservatism on purpose (framework §6.7).
       the browser env; the service-role key never appears in `app/`.
 - [ ] **Release gate:** `celestual_settings.require_ig_verification = 'true'`
       before any campus window opens.
+- [ ] **Release gate:** `CELESTUAL_SANDBOX_GMAIL=0` on `celestual-edu-verify`
+      before any real launch (the pre-launch default accepts a gmail address on
+      `demo:true` requests so the pipeline is testable without a .edu inbox).

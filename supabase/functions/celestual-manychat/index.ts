@@ -9,7 +9,7 @@
 // secret. The 4-digit code is only a correlation id (see
 // supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
 //
-// ManyChat External Request setup (see supabase/README.md):
+// ManyChat External Request setup — full step-by-step in docs/MANYCHAT-SETUP.md:
 //   • Trigger:   Default Reply, gated by a Condition — only call this when the DM
 //                text contains "star-" (people send "star-1283"), so ordinary DMs
 //                never ping the backend.
@@ -17,6 +17,12 @@
 //   • Header:  X-Celestual-Token: <MANYCHAT_SHARED_SECRET>
 //   • Body (JSON), inserting ManyChat fields with the "+" picker:
 //       { "username": "{{instagram.username}}", "text": "{{last_text_input}}" }
+//   • Response Mapping: map JSONPath $.reply to a text field and send that field
+//     back as the next DM — that's the instant "you're verified ✦" feedback the
+//     sender sees. EVERY response carries a `reply`, so the automation can always
+//     answer (verified, wrong account, expired code) instead of going silent.
+//     Replying immediately to a user-initiated DM sits inside Meta's 24-hour
+//     standard messaging window, so this is ToS-clean.
 //
 // Required secret (Supabase → Edge Functions → Secrets):
 //   MANYCHAT_SHARED_SECRET — a long random string you also set in the ManyChat
@@ -53,7 +59,8 @@ function safeEqual(a: string, b: string) {
 function codeCandidates(text: string): string[] {
   const s = String(text ?? '');
   const out: string[] = [];
-  for (const m of s.matchAll(/star[-\s]?(\d{4})/gi)) out.push(m[1]);
+  // Tolerate the dashes phone keyboards substitute (– —) in the prefixed form.
+  for (const m of s.matchAll(/star[-–—\s]?(\d{4})/gi)) out.push(m[1]);
   for (const m of s.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }
@@ -84,10 +91,14 @@ Deno.serve(async (req) => {
   const text = typeof body.text === 'string' ? body.text : '';
   // ManyChat's contact id (optional) — stored as the igsid for audit if provided.
   const subscriberId = body.subscriber_id != null ? String(body.subscriber_id) : '';
-  if (!username) return json({ ok: false, status: 'no_username' });
+  if (!username) {
+    return json({ ok: false, status: 'no_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
+  }
 
   const candidates = codeCandidates(text);
-  if (candidates.length === 0) return json({ ok: false, status: 'no_code' });
+  if (candidates.length === 0) {
+    return json({ ok: false, status: 'no_code', reply: 'Send the code exactly as the app shows it — like star-1234.' });
+  }
 
   for (const token of candidates) {
     const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
