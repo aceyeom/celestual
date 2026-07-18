@@ -19,12 +19,12 @@ const en = {
   // ── screen 1 · the cold landing ────────────────────────────────────────
   // the hero names the feeling; one quiet line beneath it names the promise,
   // typed once and held (§4.1).
-  'landing.head1': 'they’re still thinking about you.',
-  'landing.head2': 'stop guessing. find out who.',
+  'landing.head1': 'someone’s on your mind.',
+  'landing.head2': 'are you on theirs?',
   // the promise under the headline — typed as two lines with a held breath
   // between them (both line-boxes are reserved, so nothing ever shifts)
-  'landing.hero1': 'the only way to find out,',
-  'landing.hero2': 'without ever risking a thing.',
+  'landing.hero1': 'enter their @.',
+  'landing.hero2': 'if it’s not mutual, it never happened.',
   'landing.cta': 'find out',
   'landing.safety': 'no profiles. no browsing. nothing happens unless it’s mutual.',
   'landing.login': 'log in',
@@ -291,6 +291,8 @@ const en = {
   'verify.step2': 'send it to {ig} as a dm.',
   'verify.step3': 'come back here. it confirms on its own.',
   'verify.waiting': 'waiting for your dm…',
+  'verify.stuckHint': 'sent it and nothing happened?',
+  'verify.stuckAction': 'get a fresh code',
   'verify.verified': 'verified. it’s really you.',
   'verify.verifiedSub': 'carrying on…',
   'verify.expiredTitle': 'that code lapsed.',

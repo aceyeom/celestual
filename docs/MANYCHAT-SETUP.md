@@ -144,11 +144,19 @@ function's `reply` back.* Three nodes.
 
 **Step 1 — the trigger.** Create a new Automation. Add the Instagram trigger:
 
-- Easiest: **Keyword** trigger → condition **"message contains"** → `star-`.
-- Alternative (what the code comments describe): **Default Reply** trigger, then a
-  **Condition** node checking *Last Text Input contains `star-`* before the request
-  step. Either works; the point is that **ordinary DMs never reach your backend** —
-  only ones carrying the `star-` marker.
+- **Use the Keyword trigger** → condition **"message contains"** → `star-`.
+  Keyword triggers fire on **every** matching message, which is exactly what
+  verification needs — people verify more than once (new device, new session,
+  a retry, a second handle).
+- ⚠ **Do NOT build this on the Default Reply trigger.** Default Reply fires at
+  most **once per contact per 24 hours** by default, which turns verification
+  into a **one-and-done**: a person's first DM verifies instantly, and every
+  later attempt is silently swallowed by ManyChat — the site just polls until
+  the code dies. If you already built it that way, either rebuild on Keyword or
+  open the Default Reply settings and set it to trigger **"Every time"**.
+
+  The point of the `star-` gate either way: **ordinary DMs never reach your
+  backend** — only ones carrying the `star-` marker.
 
 **Step 2 — the External Request.** Add an **Action → External Request** node:
 
@@ -220,12 +228,13 @@ Watch both sides while testing:
 
 | Symptom | Cause → fix |
 | --- | --- |
+| **Verification works ONCE per person, then never again** (first DM verifies; later DMs from the same account get no journey entry and no reply) | The automation is built on the **Default Reply** trigger, which fires once per contact per 24 h by default. Rebuild it on a **Keyword** trigger (`star-`), or set Default Reply to trigger **"Every time"** (§4 Step 1). |
 | DM sent, nothing happens, no ManyChat journey entry | Automation not live, trigger doesn't match (`star-` missing/typo'd), or Instagram "Allow access to messages" is OFF (§1.2). |
 | Journey shows the request fired, function log = `401 unauthorized` | Header secret ≠ Supabase secret. Re-set both to the same value (§2). The header name must be exactly `X-Celestual-Token`. |
 | Function log = `no_username` | The `username` body field isn't mapped (typed by hand instead of the `+` picker). Re-insert it. |
 | Function log = `no_code` | The `text` field isn't mapped, or the person sent only the digits with the prefix mangled. The function reads `star-1234`, `star 1234`, `star–1234`, and bare `1234`. |
 | `status:"handle_mismatch"` | Working as designed: the sender's real @ ≠ the @ typed on the site. The person gets a DM telling them to retry from the right account. |
-| `status:"no_match"` | Code expired (>10 min), already used, or random digits. Fresh code, resend. |
+| `status:"no_match"` | Random/unknown digits. Fresh code, resend. (An expired code now answers `code_expired`; a re-sent code from someone already verified answers `already_verified` — both with an honest DM, so neither reads as broken.) |
 | Function reachable but Meta's DMs are delayed | First-time DMs from strangers can land in **Message Requests**; open @celestual.us → Requests → Accept once, then it flows. |
 | `{"code":401,"message":"Missing authorization header"}` on the health-check GET | JWT verification still on — redeploy `--no-verify-jwt` (§2 Step 4). |
 

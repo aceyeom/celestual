@@ -16,13 +16,20 @@
 // The star sprites — the shared instrument both skies draw their light with
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
-import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
+import { hexToRgb, makeGlow, makeStarSprite, makeStarSpriteSmall, makeSpikeSprite } from './starSprites.js'
 // the baked milky-way ribbon (see nebula.js) — real clumped, riven starlight
-// for the deepest layer of the night, baked once and blitted per frame
-import { makeBandSheet, makeNebulaSheet } from './nebula.js'
+// for the deepest layer of the night — plus the VOLUMETRIC cloud: true 3D gas
+// puffs seated in the disk volume, projected and depth-sorted per frame, so
+// the nebula holds its body on any camera axis instead of collapsing like a
+// painted sheet
+import { makeBandSheet, makePuff, makeDarkPuff, genVolumetricCloud } from './nebula.js'
 import { CATEGORY_TINTS } from './theme.js'
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
+// the flight easing: quintic ease-in-out — a longer, silkier gather and
+// exhale than the cubic, so camera moves read as a ship committing to a burn
+// and gliding out of it, never a UI transition
+const easeFlight = (p) => (p < 0.5 ? 16 * p * p * p * p * p : 1 - Math.pow(-2 * p + 2, 5) / 2)
 const smooth = (p) => p * p * (3 - 2 * p)
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const lerp = (a, b, t) => a + (b - a) * t
@@ -47,8 +54,12 @@ const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
 // turning to its side axis under a still camera. THEN the RUN: the camera
 // commits and dives through the field, neighbours streaming past with real
 // depth parallax. Release unwinds camera and bank together.
-const FOCUS_IN = 1.5 // seconds — camera glide into the tapped star
-const FOCUS_OUT = 0.95 // seconds — camera drift back out to the resting sky
+const FOCUS_IN = 1.8 // seconds — camera glide into the tapped star
+const FOCUS_OUT = 1.1 // seconds — camera drift back out to the resting sky
+// The run ignites while the bank is still swinging (at this fraction of the
+// bank), so the turn and the dive read as ONE continuous gesture — the old
+// bank-THEN-run sequencing is what felt robotic and separated.
+const FOCUS_OVERLAP = 0.38
 const FOCUS_TILT_MIN = 0.6 // the bank's length breathes with the swing
 const FOCUS_TILT_MAX = 1.1
 const FOCUS_BANK_TILT = 0.34 // the banked disk tilt (rad) — near edge-on
@@ -97,7 +108,8 @@ export class GalaxyField {
     // means "follow the `you` palette"; set via setSealColor().
     this.sealHue = null
     this._glowCache = {}
-    this._dotCache = {} // hue -> round star sprite
+    this._dotCache = {} // hue -> round star sprite (the big bake, for close-ups)
+    this._dotSmallCache = {} // hue -> the near-native small bake tiny draws stay crisp with
     this._spikeCache = {} // hue -> tinted diffraction burst (the seal stars wear these)
     this._spike = makeSpikeSprite('#FFFFFF', 128) // shared diffraction cross (white, tinted via alpha)
     // Soft round sprites cost more per star than the old square quads, so the
@@ -190,6 +202,14 @@ export class GalaxyField {
   _dotFor(hex) {
     if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
+  }
+  // Pick the bake nearest the destination size: minifying the 128px sprite all
+  // the way down to a 2px field star is what made the far field read blurry —
+  // tiny draws pull from a 32px bake instead and stay needle sharp.
+  _dotSpr(hex, D) {
+    if (D >= 6) return this._dotFor(hex)
+    if (!this._dotSmallCache[hex]) this._dotSmallCache[hex] = makeStarSpriteSmall(hex)
+    return this._dotSmallCache[hex]
   }
   _spikeFor(hex) {
     if (!this._spikeCache[hex]) this._spikeCache[hex] = makeSpikeSprite(hex, 128)
@@ -285,23 +305,23 @@ export class GalaxyField {
       })
     }
 
-    // Nebula — soft colored gas clouds living in the disk; depth + space vibe.
-    this.nebula = []
-    const NCOL = [PAL.blue, '#7E6BA8', '#C77E8A', PAL.warm, '#5E7BB0']
-    for (let i = 0; i < 13; i++) {
-      const r = 0.2 + rnd() * 1.05
-      const a = rnd() * TWO
-      this.nebula.push({
-        px: Math.cos(a) * r,
-        py: gauss() * 0.12,
-        pz: Math.sin(a) * r,
-        rad: 0.34 + rnd() * 0.55,
-        col: NCOL[Math.floor(rnd() * NCOL.length)],
-        a: 0.045 + rnd() * 0.06,
-        tw: rnd() * TWO,
-        tws: 0.05 + rnd() * 0.12,
-      })
-    }
+    // The VOLUMETRIC nebula — true 3D gas living IN the disk (nebula.js's
+    // genVolumetricCloud): spiral filaments with real out-of-plane thickness,
+    // dark dust carving the arms' inner edges, everything projected and
+    // depth-sorted per frame. It replaces both the old flat gradient knots
+    // (which read as round pale stains) and the baked sheet (which collapsed
+    // into a sliver the moment the camera banked toward edge-on).
+    this.cloud = genVolumetricCloud({
+      seed: 6113,
+      count: window.innerWidth < 540 ? 440 : 660,
+      extent: 1.55,
+      angle: (arm, r) => arm * Math.PI + r * 2.6,
+      arms: 2,
+      feather: 0.17,
+      ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#5E7BB0'],
+      thickness: (r) => 0.05 + 0.15 * Math.exp(-r * 2.0),
+      dustFrac: 0.3,
+    })
 
     // Deep background starfield — screen-space, fills the whole frame so the scene
     // reads as a window into space, not a shape on black. Subtle parallax +
@@ -742,23 +762,25 @@ export class GalaxyField {
     this.lastTs = ts
     this.modeT += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
-    // Camera focus is time-driven and eased, NOT an exponential chase — and it
-    // is TWO movements in sequence. In: the bank first (oriP — the disk swings
-    // its target around the near side and drops toward the side axis), THEN
-    // the travel (focusP — the camera runs in through the field). Out: both
-    // unwind together, so the pull-back and the disk's return read as one
-    // gesture. A re-tap mid-pull-out simply reverses the same ramps. Reduced
+    // Camera focus is time-driven and eased, NOT an exponential chase — and
+    // its two movements OVERLAP into one continuous flight. In: the bank leads
+    // (oriP — the disk swings its target around the near side and drops toward
+    // the side axis) and the travel IGNITES while the swing is still carrying
+    // (focusP, from FOCUS_OVERLAP of the bank) — turn and dive breathing as a
+    // single gesture, quintic-eased so it gathers and exhales slowly, instead
+    // of the old bank-stop-run sequencing that read robotic. Out: both unwind
+    // together. A re-tap mid-pull-out simply reverses the same ramps. Reduced
     // motion skips the bank (there's no camera travel to set up).
     if (this.focusTarget === 1 && (this.reduced || !this.focusOri)) this.oriP = 1
     if (this.focusTarget === 1) {
-      if (this.oriP < 1) this.oriP = clamp(this.oriP + dt / (this.oriDur || 0.85), 0, 1)
-      else this.focusP = clamp(this.focusP + dt / FOCUS_IN, 0, 1)
+      this.oriP = clamp(this.oriP + dt / (this.oriDur || 0.85), 0, 1)
+      if (this.oriP > FOCUS_OVERLAP) this.focusP = clamp(this.focusP + dt / FOCUS_IN, 0, 1)
     } else {
       this.focusP = clamp(this.focusP - dt / FOCUS_OUT, 0, 1)
       this.oriP = clamp(this.oriP - dt / FOCUS_OUT, 0, 1)
     }
-    this.focus = easeInOut(this.focusP)
-    this.oriB = this.reduced || !this.focusOri ? 0 : easeInOut(this.oriP)
+    this.focus = easeFlight(this.focusP)
+    this.oriB = this.reduced || !this.focusOri ? 0 : easeFlight(this.oriP)
     // the bank's swing speed feeds the streak pass — the turn itself streams
     this._bankVel = dt > 0 ? Math.abs(this.oriB - this._obPrev) / dt : 0
     this._obPrev = this.oriB
@@ -893,11 +915,10 @@ export class GalaxyField {
     this.ox = o.sx
     this.oy = o.sy
 
-    // nebula gas (additive, behind the stars): the old soft knots for volume,
-    // plus the baked filament sheet riding the disk's own arms — knots, dark
-    // rifts and milky grain instead of plain gradient washes
-    this._drawNebula(dt, d, rot)
-    this._drawDiskGas(d, rot)
+    // the volumetric nebula (behind the stars): true 3D gas, projected and
+    // depth-sorted through the live camera — filaments, knots and carved dust
+    // that hold their body on any axis the viewer turns the galaxy to
+    this._drawCloud(dt, d, rot)
 
     // soft core glow (additive) — a luminous, layered galactic bulge: a tight
     // bright heart inside a broad warm halo, so the centre reads as a real core.
@@ -936,18 +957,20 @@ export class GalaxyField {
     this._drawDiskHaze(d, rot, o)
 
     // foreground dust (source-over, twinkling) — strong parallax. Soft round
-    // motes (a warm/cream sprite) rather than square specks.
+    // motes that stay MOTES: hard size cap and a near-plane dissolve, because a
+    // mote the camera brushes past used to balloon into a pale smear across
+    // half the frame (the "white stains").
     ctx.globalCompositeOperation = 'source-over'
-    const dustSprite = this._dotFor(PAL.cream), dustWarm = this._dotFor(PAL.warm)
     for (const p of this.dust) {
       const pr = this._project(p.px, p.py, p.pz, rot)
       if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
       p.tw += dt * p.tws
-      const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2)
+      const prox = clamp((pr.zc - 0.55) / 0.7, 0, 1)
+      const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2) * prox
       if (a <= 0.004) continue
-      ctx.globalAlpha = Math.min(0.55, a)
-      const D = clamp(p.rad * pr.persp * 2.6, 1.6, this.h * 0.4)
-      ctx.drawImage(p.warm ? dustWarm : dustSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.globalAlpha = Math.min(0.4, a)
+      const D = clamp(p.rad * pr.persp * 2.6, 1.6, 10)
+      ctx.drawImage(this._dotSpr(p.warm ? PAL.warm : PAL.cream, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
 
     // arm/bulge/halo stars (round, anti-aliased) + collect glow stars for the
@@ -993,9 +1016,9 @@ export class GalaxyField {
       // a soft sprite spreads its light over more area than the old solid quad, so
       // lift the alpha to keep the field reading bright and crisp, not washed thin.
       ctx.globalAlpha = Math.min(0.96, a * 1.5)
-      // every star draws from its sprite — a scaled blit costs the same as a
-      // quad and never leaves a square pixel in the sky
-      ctx.drawImage(this._dotFor(st.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      // every star draws from the bake nearest its destination size — tiny
+      // draws stay needle sharp, close-ups stay smooth
+      ctx.drawImage(this._dotSpr(st.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       st.lx = pr.sx
       st.ly = pr.sy
     }
@@ -1064,7 +1087,7 @@ export class GalaxyField {
         }
       }
       ctx.globalAlpha = Math.min(0.85, a)
-      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(p.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       p.lx = pr.sx
       p.ly = pr.sy
     }
@@ -1072,29 +1095,50 @@ export class GalaxyField {
     ctx.globalCompositeOperation = 'source-over'
   }
 
-  // the baked filament gas seated on the disk's own spiral (the same TWIST the
-  // stars wind with), mapped onto the tilted plane in one transform — it
-  // tilts, spins and parallaxes with the galaxy like everything else
-  _drawDiskGas(d, rot) {
-    if (!this._gasSheet) {
-      this._gasSheet = makeNebulaSheet({
-        seed: 6113, size: 512, extent: 1.7,
-        angle: (arm, r) => arm * Math.PI + r * 2.6, arms: 2, feather: 0.17,
-        ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#5E7BB0'], lanes: 0.7, grain: 0.8,
-      })
-    }
-    const o = this._project(0, 0, 0, rot)
-    const A = this._project(1, 0, 0, rot)
-    const B = this._project(0, 0, 1, rot)
-    if (!o || !A || !B) return
+  // The volumetric nebula pass. Every gas puff is a real point in disk SPACE:
+  // it rides the same spin/yaw/tilt/camera as the stars, so turning the galaxy
+  // to any axis keeps the cloud a body — edge-on it stacks into a luminous
+  // band with true parallax between its layers, and a dive streams it past
+  // the window. Far → near sort lets the dark dust puffs occlude the light
+  // behind them (a rift is matter in front of glow, not an eraser mark), and
+  // puffs DISSOLVE as they close on the near plane — gas the camera passes
+  // through must never smear across the glass (the old "white stains").
+  _drawCloud(dt, d, rot) {
     const ctx = this.ctx
-    const E = this._gasSheet._extent
-    ctx.save()
-    ctx.globalCompositeOperation = 'lighter'
-    ctx.globalAlpha = 0.5 * d
-    ctx.transform(A.sx - o.sx, A.sy - o.sy, B.sx - o.sx, B.sy - o.sy, o.sx, o.sy)
-    ctx.drawImage(this._gasSheet, -E, -E, E * 2, E * 2)
-    ctx.restore()
+    if (!this._puffSpr) {
+      this._puffSpr = {}
+      this._darkPuff = makeDarkPuff()
+    }
+    const q = this._cloudQ || (this._cloudQ = [])
+    q.length = 0
+    const maxD = Math.max(this.w, this.h)
+    for (const p of this.cloud) {
+      p.tw += dt * p.tws
+      const pr = this._project(Math.cos(p.ang) * p.r, p.y, Math.sin(p.ang) * p.r, rot)
+      if (!pr) continue
+      const D = p.rad * this.unit * pr.persp * 2
+      if (D < 3) continue
+      if (pr.sx < -D || pr.sx > this.w + D || pr.sy < -D || pr.sy > this.h + D) continue
+      const prox = clamp((pr.zc - 0.5) / 0.8, 0, 1)
+      if (prox <= 0.01) continue
+      const sizeFade = clamp(1.65 - D / (maxD * 0.6), 0.2, 1)
+      const a = p.a * (0.82 + 0.18 * Math.sin(p.tw)) * d * prox * sizeFade
+      if (a <= 0.004) continue
+      q.push([pr.zc, pr.sx, pr.sy, D, p, a])
+    }
+    q.sort((A, B) => B[0] - A[0])
+    let op = null
+    for (let i = 0; i < q.length; i++) {
+      const e = q[i]
+      const p = e[4]
+      const want = p.dark ? 'source-over' : 'lighter'
+      if (op !== want) ctx.globalCompositeOperation = op = want
+      ctx.globalAlpha = e[5]
+      const spr = p.dark ? this._darkPuff : this._puffSpr[p.hue] || (this._puffSpr[p.hue] = makePuff(p.hue))
+      const D = e[3]
+      ctx.drawImage(spr, e[1] - D / 2, e[2] - D / 2, D, D)
+    }
+    ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
 
@@ -1165,11 +1209,11 @@ export class GalaxyField {
       const a = b.base * (0.72 + 0.28 * Math.sin(b.tw)) * d
       if (a <= 0.01) continue
       ctx.globalAlpha = Math.min(0.9, a)
-      // The deep backdrop sits behind the zoom transform, so it's never magnified —
-      // at 0.5–2px these read as points. A cheap fill (round for the few big ones,
-      // a fast 1px dot for the faint majority) keeps the frame light.
+      // The deep backdrop sits behind the zoom transform, so it's never
+      // magnified — at 1.5–3px these draw from the SMALL bake and read as
+      // needle points, never as minified mush.
       const D = Math.max(1.5, b.rad * 2.4)
-      ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(b.hue, D), x - D / 2, y - D / 2, D, D)
       // the biggest anchors wear a whisper of diffraction even at rest
       if (b.rad > 1.3 && a > 0.35) {
         const ss = D * 3.2
@@ -1178,47 +1222,6 @@ export class GalaxyField {
         ctx.drawImage(this._spike, x - ss / 2, y - ss / 2, ss, ss)
         ctx.globalCompositeOperation = 'source-over'
       }
-    }
-  }
-
-  // One normalized (unit-radius, full-alpha) radial gradient per nebula colour,
-  // built once and reused — the per-frame `a` rides on globalAlpha. Rebuilding 13
-  // radial gradients every frame was a top mobile cost (felt on the match screen).
-  _nebGradFor(hex) {
-    if (!this._nebGrad) this._nebGrad = {}
-    if (!this._nebGrad[hex]) {
-      const [r, g, b] = hexToRgb(hex)
-      const grd = this.ctx.createRadialGradient(0, 0, 0, 0, 0, 1)
-      grd.addColorStop(0, `rgba(${r},${g},${b},1)`)
-      grd.addColorStop(0.5, `rgba(${r},${g},${b},0.4)`)
-      grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
-      this._nebGrad[hex] = grd
-    }
-    return this._nebGrad[hex]
-  }
-
-  _drawNebula(dt, d, rot) {
-    const ctx = this.ctx
-    ctx.globalCompositeOperation = 'lighter'
-    for (const nb of this.nebula) {
-      const pr = this._project(nb.px, nb.py, nb.pz, rot)
-      if (!pr) continue
-      nb.tw += dt * nb.tws
-      const rr = nb.rad * this.unit * pr.persp
-      // skip clouds too small to see, fully off-frame, or so close they'd be a flat
-      // full-screen wash (cheap guard for the fly-in's near field)
-      if (rr < 5 || rr > Math.max(this.w, this.h) * 1.6 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
-      const a = nb.a * (0.7 + 0.3 * Math.sin(nb.tw)) * d * clamp(pr.shade, 0.4, 1.2)
-      if (a <= 0.002) continue
-      ctx.save()
-      ctx.globalAlpha = clamp(a, 0, 1)
-      ctx.translate(pr.sx, pr.sy)
-      ctx.scale(rr, rr)
-      ctx.fillStyle = this._nebGradFor(nb.col)
-      ctx.beginPath()
-      ctx.arc(0, 0, 1, 0, TWO)
-      ctx.fill()
-      ctx.restore()
     }
   }
 

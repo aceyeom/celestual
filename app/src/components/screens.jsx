@@ -3328,11 +3328,18 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const [token, setToken] = React.useState('')
   const [errCode, setErrCode] = React.useState('')
   const [copied, setCopied] = React.useState(false)
+  // After a while stuck on "waiting", surface a self-serve way out (the DM can
+  // be dropped by the relay; a fresh code re-runs the whole path).
+  const [stuck, setStuck] = React.useState(false)
   const proofRef = React.useRef(null)
   const hashRef = React.useRef(null)
   const expiryRef = React.useRef(0)
   const pollRef = React.useRef(null)
   const doneRef = React.useRef(null)
+  // Guards the mount effect against double-invocation (StrictMode / rapid
+  // remount) minting TWO codes back-to-back — the second would orphan the
+  // first, and whichever the person actually DMs might be the orphan.
+  const startedRef = React.useRef(false)
 
   const stopPoll = () => {
     if (pollRef.current) {
@@ -3347,6 +3354,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     setPhase('starting')
     setErrCode('')
     setCopied(false)
+    setStuck(false)
     setToken('')
     // Demo: never touch the backend. Mint a local code + proof and let the
     // polling effect auto-confirm after a beat — the whole DM flow reads
@@ -3375,6 +3383,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   }, [handle, demo])
 
   React.useEffect(() => {
+    if (startedRef.current === normHandle(handle)) return stopPoll
+    startedRef.current = normHandle(handle)
     if (demo) {
       begin()
       return stopPoll
@@ -3403,12 +3413,9 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       return () => clearTimeout(id)
     }
     const tick = async () => {
-      if (Date.now() > expiryRef.current) {
-        stopPoll()
-        clearPending()
-        setPhase('expired')
-        return
-      }
+      const lapsed = Date.now() > expiryRef.current
+      // Even past the local clock, ask the server one last time — the DM can
+      // land in the final seconds, and "expired" must never beat a real ✓.
       const status = await pollVerification(token, hashRef.current)
       if (status === 'verified') {
         stopPoll()
@@ -3416,7 +3423,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         setPhase('verified')
         const proof = proofRef.current
         doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS)
-      } else if (status === 'expired') {
+      } else if (status === 'expired' || lapsed) {
         stopPoll()
         clearPending()
         setPhase('expired')
@@ -3431,8 +3438,12 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     }
     document.addEventListener('visibilitychange', onReturn)
     window.addEventListener('focus', onReturn)
+    // A DM that the relay drops would otherwise strand the wait for the full
+    // code TTL with no way out — after a minute, offer a fresh start inline.
+    const stuckId = setTimeout(() => setStuck(true), 60000)
     return () => {
       stopPoll()
+      clearTimeout(stuckId)
       document.removeEventListener('visibilitychange', onReturn)
       window.removeEventListener('focus', onReturn)
     }
@@ -3547,6 +3558,18 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
               <Sonar C={C} size={12} /> {t('verify.waiting')}
             </div>
+
+            {stuck && !demo && phase === 'waiting' && (
+              <div className="fade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: C.muted }}>
+                <span>{t('verify.stuckHint')}</span>
+                <button
+                  onClick={begin}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.star, fontSize: 12, fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                >
+                  {t('verify.stuckAction')}
+                </button>
+              </div>
+            )}
 
             {demo && (
               <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('verify.demoNote')}</p>

@@ -7,10 +7,10 @@
 // (and each one after) is a one-time sandbox-only add, and a sandbox-only
 // subscription raises the cap to ten and stands each of those pings six months
 // instead of sixty days (screens.jsx's SlotPaywall previews the checkout;
-// production has no gate but the free two). The server stores WHO a ping
-// points at only as a salted hash (privacy: even a database dump can't read
-// the map of longing) — which is why the status page sends the device-held
-// plaintext list up per read instead of ever asking the server to remember it.
+// production has no gate but the free two). Matching and suppression still run
+// on salted hashes, but since migration 0010 the server also keeps the
+// normalised target so the owner's pings restore BY NAME on any device they
+// verify on (the old device-locked restore read as a bug and was retired).
 //
 // All matching/anonymity logic lives in SECURITY DEFINER RPCs (RLS on, zero
 // client read policies; see supabase/migrations/0006_ping_model.sql).
@@ -100,9 +100,11 @@ export async function pingStatus({ me, handles, proof, demo }) {
   }
 }
 
-// Cross-device restore for the proven owner. Only MUTUAL pings come back with a
-// name — unmatched targets exist server-side only as hashes, so they return as
-// anonymous standing rows. The placing device keeps the plaintext locally.
+// Cross-device restore for the proven owner. Every live ping comes back NAMED
+// (migration 0010 stores the normalised target alongside its hash for exactly
+// this read) — matched or standing, any device, gated by the DM proof. Only
+// rows placed before 0010 can still arrive as anonymous standing rows (their
+// plaintext cannot be recovered from a hash).
 // Returns: [{ handle|null, time, expires_at, mutual, intent }]
 export async function fetchMyPings({ handle, proof, demo } = {}) {
   if (demo || !hasSupabase || !normHandle(handle) || !proof) return [];

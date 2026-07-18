@@ -42,13 +42,25 @@ Idempotent migrations, applied in order:
   users never redo the DM dance), `celestual_norm` capped at Instagram's
   30-char handle max, and a token index for poll reads.
 
+- `migrations/0010_verification_rerun_and_named_restore.sql` — **the re-run
+  fix + named restore**: `celestual_complete_ig_verification` now answers
+  `already_verified` / `code_expired` when nothing is pending (so a re-sent DM
+  gets an honest reply instead of a dead-end — half of the "verification works
+  once, then never again" report; the other half is the ManyChat Default-Reply
+  trigger trap, documented in docs/MANYCHAT-SETUP.md), restates 0009's 30-day
+  sliding sessions for databases that stopped earlier, and retires the
+  device-locked ping restore: `celestual_submit` stores the normalised
+  plaintext target beside its hash, and `celestual_my_pings` returns every
+  live ping NAMED to the DM-proven owner (matching/suppression still run on
+  hashes; pre-0010 rows stay anonymous until re-placed).
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
-replaced by 0006's ping model, and 0009 carries the current definitions of
+replaced by 0006's ping model, and 0009+0010 carry the current definitions of
 `celestual_norm`, `celestual_submit`, `celestual_suppress` and the four
 IG-verification functions. When reading for current behaviour: **0006 + 0007 +
-0008 + 0009** are the truth; 0001/0004 for the tables they created.
+0008 + 0009 + 0010** are the truth; 0001/0004 for the tables they created.
 
 **SQL Editor:** paste each file's contents and Run, in order.
 
