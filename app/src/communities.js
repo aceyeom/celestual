@@ -1,10 +1,7 @@
 // communities.js — the official, curated launch spaces.
 //
 // Communities are NOT user-created. The Celestual team owns this list; a user
-// only ever JOINS or LEAVES one. Each has a team-set `threshold` (the number of
-// people that opens it); progress toward it is shown as a ring, and at 100% the
-// community "opens" and its live weekly readout lights up. `threshold` values
-// here are launch placeholders — the team tunes them per school.
+// only ever JOINS or LEAVES one.
 //
 // The mark: each community renders a small monochrome seal (see `SchoolMark` in
 // components/ui.jsx) — a cosmos ring around a serif monogram, tinted to the two
@@ -17,37 +14,35 @@
 // the school too, so the matcher accepts the domain itself or anything ending in
 // `.<domain>`.
 export const CURATED = [
-  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', threshold: 2500, domain: 'berkeley.edu', asset: '/schools/uc-berkeley.png' },
-  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', threshold: 900, domain: 'wesleyan.edu', asset: '/schools/wesleyan.png' },
-  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', threshold: 1800, domain: 'cmu.edu', asset: '/schools/cmu.png' },
+  { slug: 'uc-berkeley', name: 'UC Berkeley', short: 'Berkeley', mono: 'Cal', domain: 'berkeley.edu', asset: '/schools/uc-berkeley.png' },
+  { slug: 'wesleyan', name: 'Wesleyan', short: 'Wesleyan', mono: 'Wes', domain: 'wesleyan.edu', asset: '/schools/wesleyan.png' },
+  { slug: 'cmu', name: 'Carnegie Mellon', short: 'CMU', mono: 'CMU', domain: 'cmu.edu', asset: '/schools/cmu.png' },
 ]
 
 export const CURATED_SLUGS = CURATED.map((c) => c.slug)
 
-// The fixed-100 model (masterguide §2.5): a community is globally open — anyone
-// can ping from day one. What 100 MEMBERS gates is not access but a reward: at
-// 100 the community "opens" and its weekly stats + its match-constellations
-// light up. Below 100 it's "gathering" — its exact counts stay hidden (small
-// counts de-anonymize), so its galaxy shows uncountable forming gas, not stars.
-export const OPEN_FLOOR = 100
-// A match count only PUBLISHES at ten and up (§2.7), so a small week can't be
-// reverse-guessed. Below the floor we show "matches open at ten," not a number.
+// THE LAUNCH CLOCK — the one thing that opens a community's sky. There is no
+// member threshold and no unlock ladder anymore: every community's sky opens
+// together, at one shared moment, when this countdown ends. Anyone can ping
+// from day one; what the clock gates is the REVEAL surface (weekly stats + the
+// match constellations lighting up).
+//
+// PLACEHOLDER: the real date is the end of O-Week — the team sets it before
+// launch. `VITE_LAUNCH_AT` (any Date-parseable string) overrides it without a
+// code change.
+export const LAUNCH_AT = new Date(import.meta.env.VITE_LAUNCH_AT || '2026-08-30T20:00:00')
+
+// A match count only PUBLISHES at ten and up (§2.7) — a privacy floor, not an
+// unlock: below it a small week could be reverse-guessed, so we show "matches
+// show at ten," never a number.
 export const MATCH_FLOOR = 10
 
-// Is this community open (past the member floor)? Reads `members`, falling back
-// to the legacy `current` field so older seeds still resolve.
+// Is this community's sky open? Time decides, the same instant for everyone.
+// The sandbox can force a state per community (`open: true|false` in its live
+// overlay) so all three sky states stay previewable before the real launch.
 export function communityOpen(c) {
-  const m = Number((c && (c.members != null ? c.members : c.current)) || 0)
-  return m >= OPEN_FLOOR
-}
-
-// Progress toward the fixed-100 open floor, as a fraction and a flag. Reads
-// `members` (falling back to the legacy `current`). Used by the recruiter/placed
-// surfaces and the finder; the community page itself no longer shows a fraction.
-export function communityProgress(c) {
-  const members = Number((c && (c.members != null ? c.members : c.current)) || 0)
-  const frac = members / OPEN_FLOOR
-  return { frac: Math.max(0, Math.min(1, frac)), open: members >= OPEN_FLOOR, members }
+  if (c && c.open != null) return !!c.open
+  return Date.now() >= LAUNCH_AT.getTime()
 }
 
 export function bySlug(slug) {

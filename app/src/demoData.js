@@ -41,19 +41,21 @@ export const DEMO_PINGS = [
   },
 ]
 
-// The curated communities' live sample state (the fixed-100 model — see
-// communities.js). `members` gates the OPEN reward at 100; `pings` is the count
-// of pings placed (the galaxy's stars); `matches` is mutual matches this week
-// (the anonymous constellations). A gathering community (<100 members) hides its
-// exact counts, so `pings`/`matches` are absent and its galaxy shows forming gas.
+// The curated communities' live sample state. In production the launch
+// countdown alone decides whether a sky is open (communities.js LAUNCH_AT);
+// the sandbox forces a state per community with `open` so every sky state
+// stays previewable before the real launch. `pings` is the count of pings
+// placed (the galaxy's stars); `matches` is mutual matches this week (the
+// anonymous constellations). A still-gathering community withholds its exact
+// counts, so `pings`/`matches` are absent and its galaxy shows forming gas.
 //
 // The set spans all three galaxy states on purpose: Berkeley is the hero — a
 // dense, open galaxy with a sky full of constellations; Wesleyan is a smaller
 // open galaxy; CMU is still gathering (a forming nebula, counts withheld).
 export const DEMO_COMMUNITIES = {
-  'uc-berkeley': { members: 214, pings: 386, matches: 18, week: { joined: 71, topReason: 'crushThink' } },
-  wesleyan: { members: 128, pings: 154, matches: 11, week: { joined: 33, topReason: 'exUnsaid' } },
-  cmu: { members: 74 }, // gathering — under 100, all counts withheld
+  'uc-berkeley': { open: true, members: 214, pings: 386, matches: 18, week: { joined: 71, topReason: 'crushThink' } },
+  wesleyan: { open: true, members: 128, pings: 154, matches: 11, week: { joined: 33, topReason: 'exUnsaid' } },
+  cmu: { open: false, members: 74 }, // gathering — its sky opens with the countdown
 }
 
 // Members who flipped their @ public in each community's sky (the opt-in
