@@ -60,11 +60,12 @@ import { CATEGORY_TINTS } from './theme.js'
 // The star sprites — the shared instrument both skies draw their light with
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
-import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
-// The baked cloud instrument (see nebula.js): real filamentary gas — noise-
-// driven puffs on the arms' own spiral, carved by dark dust lanes, dusted with
-// unresolved grain — baked once and mapped onto the disk plane per frame.
-import { makeNebulaSheet, makeBandSheet } from './nebula.js'
+import { hexToRgb, makeGlow, makeStarSprite, makeStarSpriteSmall, makeSpikeSprite } from './starSprites.js'
+// The cloud instruments (see nebula.js): the deep-sky band sheet for the far
+// backdrop, and the VOLUMETRIC cloud — true 3D gas puffs seated in the disk
+// volume, projected and depth-sorted per frame, so the nebula holds its body
+// on any camera axis instead of collapsing like a painted sheet.
+import { makeBandSheet, makePuff, makeDarkPuff, genVolumetricCloud } from './nebula.js'
 
 const TWO = Math.PI * 2
 const GOLDEN = Math.PI * (3 - Math.sqrt(5))
@@ -73,6 +74,10 @@ const lerp = (a, b, t) => a + (b - a) * t
 const smooth = (p) => p * p * (3 - 2 * p)
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
+// the flight easing: quintic ease-in-out — a longer, silkier gather and
+// exhale than the cubic, so camera moves read as a ship committing to a burn
+// and gliding out of it, never a UI transition
+const easeFlight = (p) => (p < 0.5 ? 16 * p * p * p * p * p : 1 - Math.pow(-2 * p + 2, 5) / 2)
 
 // Stellar palette — warm gold bulge, cream body, cool young arms, rare red
 // giant. The community's own two lights (`you`, `them`) join it at runtime.
@@ -109,9 +114,13 @@ const IGNITE_DUR = 0.55 // the glisten when it lands
 // dives along the banked plane, the field streaming past with real depth
 // parallax. Then the hold on the flaring star, and the glide back out (camera
 // and bank unwinding together).
-const DIVE_IN = 1.5
+const DIVE_IN = 1.8
 const DIVE_HOLD = 1.9 // long enough to read the @ resting over the star
-const DIVE_OUT = 0.95
+const DIVE_OUT = 1.1
+// The run ignites while the bank is still swinging (at this fraction of the
+// bank's length) — turn and travel breathe as ONE gesture; the old
+// bank-THEN-run sequencing is what felt robotic and separated.
+const DIVE_OVERLAP = 0.42
 const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 // the bank: its length breathes with how far the disk has to swing, and the
 // banked tilt is near edge-on — the galaxy seen from its side
@@ -239,6 +248,15 @@ export class CommunityGalaxy {
   _dotFor(hex) {
     if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
+  }
+  // Pick the bake nearest the destination size: minifying the 128px sprite all
+  // the way down to a 2px field star is what made the deep field read blurry —
+  // tiny draws pull from a 32px bake instead and stay needle sharp.
+  _dotSpr(hex, D) {
+    if (D >= 6) return this._dotFor(hex)
+    if (!this._dotSmallCache) this._dotSmallCache = {}
+    if (!this._dotSmallCache[hex]) this._dotSmallCache[hex] = makeStarSpriteSmall(hex)
+    return this._dotSmallCache[hex]
   }
   _glowFor(hex) {
     if (!this._glowCache[hex]) this._glowCache[hex] = makeGlow(hex, 64)
@@ -397,26 +415,39 @@ export class CommunityGalaxy {
       })
     }
 
-    // nebula gas — knots of luminous cloud riding the arms (cool, star-forming
-    // blues and violets) with a warm pair resting in the bulge.
-    this.nebula = []
-    const NCOL = [PAL.blue, '#7E6BA8', '#C77E8A', '#5E7BB0']
-    for (let i = 0; i < 10; i++) {
-      const inCore = i < 2
-      const r = inCore ? 0.08 + rnd() * 0.14 : 0.28 + rnd() * 0.62
-      const ang = inCore ? rnd() * TWO : armAngle(i % 2, r) + gauss() * 0.16
-      this.nebula.push({
-        px: Math.cos(ang) * r,
-        py: gauss() * 0.06,
-        pz: Math.sin(ang) * r,
-        rad: 0.22 + rnd() * 0.4,
-        col: inCore ? PAL.warm : NCOL[Math.floor(rnd() * NCOL.length)],
-        a: 0.045 + rnd() * 0.05,
-        r,
-        tw: rnd() * TWO,
-        tws: 0.05 + rnd() * 0.12,
-      })
-    }
+    // The VOLUMETRIC nebula — true 3D gas living IN the disk (nebula.js's
+    // genVolumetricCloud), seated on this galaxy's own spiral equation so gas
+    // and population describe one object. Two clouds: the open sky's milky
+    // body (warm heart, cool star-forming lanes, dark dust carving the arms),
+    // and the wilder proto-cloud a gathering community swirls as. Every puff
+    // is projected and depth-sorted per frame, so the cloud holds its body on
+    // ANY axis the hand turns it to — edge-on it stacks into a real luminous
+    // band; the old flat sheets collapsed into a sliver there, and their
+    // circular clip cut the gas off at a hard rim.
+    const cloudAngle = (arm, r) => armAngle(arm, clamp(r, 0, RMAX))
+    this.cloud = genVolumetricCloud({
+      seed: 9241,
+      count: mobile ? 460 : 680,
+      extent: RMAX * 1.12,
+      angle: cloudAngle,
+      arms: 2,
+      feather: 0.14,
+      ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#5E7BB0'],
+      thickness: (r) => 0.035 + 0.12 * Math.exp(-r * 2.6),
+      dustFrac: 0.32,
+    })
+    this.protoCloud = genVolumetricCloud({
+      seed: 7321,
+      count: mobile ? 340 : 480,
+      extent: RMAX * 0.98,
+      angle: (arm, r) => arm * (TWO / 3) + (r / RMAX) * 3.9,
+      arms: 3,
+      feather: 0.3,
+      ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#4E7E8C'],
+      thickness: (r) => 0.05 + 0.1 * Math.exp(-r * 2.0),
+      dustFrac: 0.26,
+      swirlJitter: 0.22,
+    })
   }
 
   // ── the deterministic disk slot for the i-th ping ───────────────────────────
@@ -812,8 +843,8 @@ export class CommunityGalaxy {
   }
 
   // Enter/leave the forming (gathering, count-withheld) state. The proto-galaxy
-  // is a REAL nebula, never the true count: the baked filament sheets swirl as
-  // luminous riven cloud (drawn by _drawGasSheets), and these motes are the
+  // is a REAL nebula, never the true count: the volumetric proto-cloud swirls
+  // as luminous riven gas (drawn by _drawGasVolume), and these motes are the
   // embers inside it — crisp sub-resolution sparks, not blurry dots.
   setForming(on) {
     this.forming = !!on
@@ -837,80 +868,81 @@ export class CommunityGalaxy {
     this.start()
   }
 
-  // ── the baked gas sheets (lazy — one bake per engine) ──────────────────────
-  // Three clouds, all seated on this galaxy's own spiral equation so gas and
-  // population describe ONE object: the warm milky body, the cool star-forming
-  // lanes riding the same arms, and the wilder proto-cloud a gathering
-  // community swirls as before its stars come out.
-  _nebSheets() {
-    if (this._sheets) return this._sheets
-    const ang = (arm, r) => armAngle(arm, clamp(r, 0, RMAX))
-    this._sheets = {
-      body: makeNebulaSheet({
-        seed: 9241, size: 512, extent: RMAX * 1.14, angle: ang, arms: 2, feather: 0.15,
-        ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#41386B'], lanes: 0.75, grain: 1,
-      }),
-      lanes: makeNebulaSheet({
-        seed: 5137, size: 512, extent: RMAX * 1.14, angle: ang, arms: 2, feather: 0.1,
-        ramp: [PAL.blue, PAL.ice, '#5E7BB0', '#41386B'], lanes: 0.55, grain: 0.7,
-      }),
-      proto: makeNebulaSheet({
-        seed: 7321, size: 512, extent: RMAX * 1.05,
-        angle: (arm, r) => arm * (TWO / 3) + (r / RMAX) * 3.9, arms: 3, feather: 0.34,
-        ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#4E7E8C'], lanes: 0.8, grain: 1,
-      }),
-    }
-    return this._sheets
-  }
-
-  // Map a baked sheet onto the disk plane — an extra `theta` spins it WITHIN
-  // the plane (differential rotation between layers) — and blit it in one
-  // transform, so the whole cloud tilts, orbits and parallaxes with the disk.
-  _drawNebSheet(sheet, theta, alpha, clipR) {
-    if (alpha <= 0.004) return
+  // ── the volumetric gas pass ────────────────────────────────────────────────
+  // Every puff is a real point in disk SPACE: it rides the same spin, yaw,
+  // tilt and camera as the stars, so the hand can turn the galaxy to ANY axis
+  // and the cloud keeps its body — edge-on it stacks into a true luminous
+  // band with parallax between its layers. Far → near sorting lets the dark
+  // dust occlude the glow behind it (a rift is matter in front of light), and
+  // puffs DISSOLVE approaching the near plane so a dive streams through gas
+  // instead of smearing it across the glass. `theta` spins a cloud within its
+  // plane (the forming sky's slow swirl); `fillR` feathers the open sky's gas
+  // to the population frontier — a soft frontier, never the old clipped rim.
+  _drawCloudPuffs(puffs, dt, gain, theta, fillR) {
+    if (gain <= 0.004) return
     const ctx = this.ctx
-    const o = this._project(0, 0, 0)
+    if (!this._puffSpr) {
+      this._puffSpr = {}
+      this._darkPuff = makeDarkPuff()
+    }
+    const q = this._cloudQ || (this._cloudQ = [])
+    q.length = 0
+    const maxD = Math.max(this.w, this.h)
     const ct = Math.cos(theta)
     const st = Math.sin(theta)
-    const A = this._project(ct, 0, st)
-    const B = this._project(-st, 0, ct)
-    if (!o || !A || !B) return
-    const ux = A.sx - o.sx
-    const uy = A.sy - o.sy
-    const vx = B.sx - o.sx
-    const vy = B.sy - o.sy
-    const E = sheet._extent
-    ctx.save()
-    ctx.globalCompositeOperation = 'lighter'
-    ctx.globalAlpha = clamp(alpha, 0, 1)
-    ctx.transform(ux, uy, vx, vy, o.sx, o.sy)
-    if (clipR) {
-      ctx.beginPath()
-      ctx.arc(0, 0, clipR, 0, TWO)
-      ctx.clip()
+    const step = this.qLevel >= 2 ? 2 : 1
+    for (let i = 0; i < puffs.length; i += step) {
+      const p = puffs[i]
+      let edge = 1
+      if (fillR != null) {
+        edge = clamp((fillR + 0.16 - p.r) / 0.22, 0, 1)
+        if (edge <= 0.01) continue
+      }
+      p.tw += dt * p.tws * step
+      const ca = Math.cos(p.ang)
+      const sa = Math.sin(p.ang)
+      const px = (ca * ct - sa * st) * p.r
+      const pz = (sa * ct + ca * st) * p.r
+      const pr = this._project(px, p.y, pz)
+      if (!pr) continue
+      const D = p.rad * this.unit * pr.persp * 2
+      if (D < 3) continue
+      if (pr.sx < -D || pr.sx > this.w + D || pr.sy < -D || pr.sy > this.h + D) continue
+      const prox = clamp((pr.zc - 0.5) / 0.8, 0, 1)
+      if (prox <= 0.01) continue
+      const sizeFade = clamp(1.65 - D / (maxD * 0.6), 0.2, 1)
+      const a = p.a * gain * edge * (0.82 + 0.18 * Math.sin(p.tw)) * prox * sizeFade
+      if (a <= 0.004) continue
+      q.push([pr.zc, pr.sx, pr.sy, D, p, a])
     }
-    ctx.drawImage(sheet, -E, -E, E * 2, E * 2)
-    ctx.restore()
+    q.sort((A, B) => B[0] - A[0])
+    let op = null
+    for (let i = 0; i < q.length; i++) {
+      const e = q[i]
+      const p = e[4]
+      const want = p.dark ? 'source-over' : 'lighter'
+      if (op !== want) ctx.globalCompositeOperation = op = want
+      ctx.globalAlpha = e[5]
+      const spr = p.dark ? this._darkPuff : this._puffSpr[p.hue] || (this._puffSpr[p.hue] = makePuff(p.hue))
+      const D = e[3]
+      ctx.drawImage(spr, e[1] - D / 2, e[2] - D / 2, D, D)
+    }
+    ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
 
-  // The living gas pass. A gathering sky swirls two counter-rotating proto
-  // layers — a real cloud with knots, rifts and grain, mesmerizing with no
-  // stars at all. An open sky wears the milky body + the cool lanes along its
-  // arms, growing outward with the population (clipped to the lit disk).
-  _drawGasSheets(d, fillFrac, fillR) {
-    const sheets = this._nebSheets()
+  // The living gas. A gathering sky slowly swirls the wilder proto-cloud; an
+  // open sky wears the milky spiral body, its gas growing outward WITH the
+  // population behind a feathered frontier.
+  _drawGasVolume(dt, d, fillFrac, fillR) {
     const breathe = 0.9 + 0.1 * Math.sin(this.t * 0.05)
     if (this.forming) {
-      this._drawNebSheet(sheets.proto, this.t * 0.012, 0.85 * d * breathe)
-      this._drawNebSheet(sheets.proto, -this.t * 0.008 + 2.1, 0.5 * d)
+      this._drawCloudPuffs(this.protoCloud, dt, 1.1 * d * breathe, this.t * 0.01, null)
       return
     }
     if (fillFrac < 0.015) return
-    const grow = clamp(0.25 + 0.85 * fillFrac, 0, 1)
-    const clip = fillR + 0.16
-    this._drawNebSheet(sheets.body, 0, 0.62 * grow * d * breathe, clip)
-    this._drawNebSheet(sheets.lanes, this.t * 0.004, 0.5 * grow * d, clip)
+    const grow = clamp(0.3 + 0.85 * fillFrac, 0, 1)
+    this._drawCloudPuffs(this.cloud, dt, grow * d * breathe, 0, fillR)
   }
 
   // Ensure `n` mutual matches exist (one match = one spoke); new ones draw in.
@@ -1037,7 +1069,9 @@ export class CommunityGalaxy {
   releaseDive() {
     if (this.dive && this.dive.held) {
       // jump the timeline to the start of the pull-out phase
-      this.dive = { t: this.diveTiltDur + DIVE_IN + DIVE_HOLD, held: false }
+      const tiltDur = this.diveTiltDur || 0.85
+      const inEnd = Math.max(tiltDur, tiltDur * DIVE_OVERLAP + DIVE_IN)
+      this.dive = { t: inEnd + DIVE_HOLD, held: false }
     }
     this.start()
   }
@@ -1394,26 +1428,27 @@ export class CommunityGalaxy {
     this.lastTs = ts
     this._govern(raw, ts)
 
-    // the dive timeline — the bank, THEN the run, the hold, and the return
-    // (camera and bank unwinding together). A HELD dive parks at full focus —
-    // the star view — until releaseDive().
+    // the dive timeline — one continuous flight: the bank leads, the run
+    // IGNITES while the swing is still carrying (DIVE_OVERLAP), both complete
+    // together, then the hold, and the return (camera and bank unwinding as
+    // one). Quintic-eased throughout, so the whole gesture gathers and
+    // exhales slowly — interstellar travel, never a two-step re-frame. A HELD
+    // dive parks at full focus — the star view — until releaseDive().
     if (this.dive) {
       const tiltDur = this.diveTiltDur || 0.85
-      this.dive.t = this.dive.held ? Math.min(this.dive.t + dt, tiltDur + DIVE_IN) : this.dive.t + dt
+      const runStart = tiltDur * DIVE_OVERLAP
+      const inEnd = Math.max(tiltDur, runStart + DIVE_IN)
+      this.dive.t = this.dive.held ? Math.min(this.dive.t + dt, inEnd) : this.dive.t + dt
       const t = this.dive.t
-      if (t < tiltDur) {
-        // the bank: the galaxy swings to its side axis; the camera holds still
-        this.oriBlend = easeInOut(t / tiltDur)
-        this.focus = 0
-      } else if (t < tiltDur + DIVE_IN) {
-        // the run: the camera dives along the banked plane
-        this.oriBlend = 1
-        this.focus = easeInOut((t - tiltDur) / DIVE_IN)
-      } else if (this.dive.held || t < tiltDur + DIVE_IN + DIVE_HOLD) {
+      if (t < inEnd) {
+        // turn + travel, breathing together
+        this.oriBlend = easeFlight(clamp(t / tiltDur, 0, 1))
+        this.focus = easeFlight(clamp((t - runStart) / DIVE_IN, 0, 1))
+      } else if (this.dive.held || t < inEnd + DIVE_HOLD) {
         this.oriBlend = 1
         this.focus = 1
-      } else if (t < tiltDur + DIVE_IN + DIVE_HOLD + DIVE_OUT) {
-        const q = easeInOut(1 - (t - tiltDur - DIVE_IN - DIVE_HOLD) / DIVE_OUT)
+      } else if (t < inEnd + DIVE_HOLD + DIVE_OUT) {
+        const q = easeFlight(1 - (t - inEnd - DIVE_HOLD) / DIVE_OUT)
         this.focus = q
         this.oriBlend = q
       } else {
@@ -1447,6 +1482,7 @@ export class CommunityGalaxy {
         this.locateFx ||
         this.waves.length ||
         this.zoom !== this.zoomTarget ||
+        Math.abs(this._zoomV || 0) > 0.0005 ||
         this.zoom > 1.001 !== this.zoomTarget > 1.001 ||
         Math.abs(this.zoom - this.zoomTarget) > 0.002 ||
         this.stars.some((s) => s.settleAt > 0 && this.t - s.settleAt < 1.2) ||
@@ -1490,17 +1526,35 @@ export class CommunityGalaxy {
     requestAnimationFrame(this._boundTick)
   }
 
-  // the dolly eases toward the hand's target — shaped like a burn, not a lerp
-  // to a still picture: pushing IN answers hard (the ship throttles up), and a
-  // release settles out on a long glide, so travel reads as velocity the
-  // streak pass can render, never as a picture scaling.
+  // The dolly is a critically-damped SPRING toward the hand's target, not an
+  // exponential lerp. A lerp jumps to full closing speed the instant the
+  // target moves and dies off asymmetrically — the robotic feel. The spring
+  // accelerates INTO the move and exhales out of it: real inertia, a ship
+  // committing to a burn and gliding to rest, and its velocity is exactly what
+  // the streak pass renders as travel.
   // The screen only goes immersive once the zoom is a commitment (not a nudge),
   // and comes back a little below that so the chrome never flickers at the edge.
   _easeZoom(dt) {
-    if (this.zoom === this.zoomTarget) return
-    const k = this.zoomTarget > this.zoom ? 7.5 : 2.9
-    this.zoom = lerp(this.zoom, this.zoomTarget, Math.min(1, dt * k))
-    if (Math.abs(this.zoom - this.zoomTarget) < 0.002) this.zoom = this.zoomTarget
+    let v = this._zoomV || 0
+    if (this.zoom !== this.zoomTarget || Math.abs(v) > 0.0005) {
+      const k = 30 // stiffness; damping is critical (2√k) — no overshoot, no snap
+      const c = 2 * Math.sqrt(k)
+      const x = this.zoom - this.zoomTarget
+      v += (-k * x - c * v) * dt
+      this.zoom += v * dt
+      if (this.zoom < 1) {
+        this.zoom = 1
+        if (v < 0) v = 0
+      } else if (this.zoom > ZOOM_MAX) {
+        this.zoom = ZOOM_MAX
+        if (v > 0) v = 0
+      }
+      if (Math.abs(this.zoom - this.zoomTarget) < 0.0015 && Math.abs(v) < 0.004) {
+        this.zoom = this.zoomTarget
+        v = 0
+      }
+      this._zoomV = v
+    }
     const active = this._zoomActive ? this.zoom > 1.18 : this.zoom > 1.32
     if (active !== this._zoomActive) {
       this._zoomActive = active
@@ -1587,9 +1641,9 @@ export class CommunityGalaxy {
     this._drawFarNebula(dt, d)
     this._drawFarField(dt, d)
     this._drawShell(dt, d)
-    this._drawNebula(dt, d, this.forming ? 0.8 : fillFrac, fillR)
-    // the baked filament sheets — the milky, riven body of the galaxy itself
-    this._drawGasSheets(d, fillFrac, fillR)
+    // the volumetric nebula — the milky, riven body of the galaxy itself,
+    // real 3D gas that survives any axis the hand turns the sky to
+    this._drawGasVolume(dt, d, fillFrac, fillR)
 
     const o = this._project(0, 0, 0) || { sx: this.cx, sy: this.cy, persp: 1 }
     this._drawCore(o, d, fillFrac)
@@ -1662,7 +1716,7 @@ export class CommunityGalaxy {
         }
       }
       ctx.globalAlpha = Math.min(0.85, a)
-      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(p.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       p.lx = pr.sx
       p.ly = pr.sy
     }
@@ -1688,7 +1742,7 @@ export class CommunityGalaxy {
       if (a <= 0.012) continue
       ctx.globalAlpha = Math.min(0.7, a)
       const D = clamp(b.rad * pr.persp * 2.4, 1, 2.4)
-      ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(b.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
   }
 
@@ -1784,7 +1838,7 @@ export class CommunityGalaxy {
         }
       }
       ctx.globalAlpha = Math.min(0.9, a)
-      ctx.drawImage(this._dotFor(b.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(b.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       // the largest far suns wear a whisper of diffraction even at rest — the
       // anchors that make the deep field read as STARS, not noise
       if (b.rad > 1.2 && a > 0.3) {
@@ -1810,34 +1864,6 @@ export class CommunityGalaxy {
       this._nebGrad[hex] = grd
     }
     return this._nebGrad[hex]
-  }
-
-  // arm-riding nebula gas. Its light grows with the community — a young sky is
-  // thin and clear; a full one is milky with unresolved starlight along the
-  // spiral lanes.
-  _drawNebula(dt, d, fillFrac, fillR) {
-    const ctx = this.ctx
-    ctx.globalCompositeOperation = 'lighter'
-    const grow = this.forming ? 0.8 : 0.45 + 0.55 * fillFrac
-    for (const nb of this.nebula) {
-      if (!this.forming && nb.r > fillR + 0.18) continue // unlit beyond the population
-      const pr = this._project(nb.px, nb.py, nb.pz)
-      if (!pr) continue
-      nb.tw += dt * nb.tws
-      const rr = nb.rad * this.unit * pr.persp
-      if (rr < 5 || rr > Math.max(this.w, this.h) * 1.6 || pr.sx < -rr || pr.sx > this.w + rr || pr.sy < -rr || pr.sy > this.h + rr) continue
-      const a = nb.a * grow * (0.7 + 0.3 * Math.sin(nb.tw)) * d * clamp(pr.shade, 0.4, 1.2)
-      if (a <= 0.002) continue
-      ctx.save()
-      ctx.globalAlpha = clamp(a, 0, 1)
-      ctx.translate(pr.sx, pr.sy)
-      ctx.scale(rr, rr)
-      ctx.fillStyle = this._nebGradFor(nb.col)
-      ctx.beginPath()
-      ctx.arc(0, 0, 1, 0, TWO)
-      ctx.fill()
-      ctx.restore()
-    }
   }
 
   // the luminous heart — its brightness tracks how full the galaxy is. An empty
@@ -1920,7 +1946,7 @@ export class CommunityGalaxy {
       ctx.globalAlpha = Math.min(0.4, a)
       const rel = pr.persp / P0
       const D = clamp(p.rad * 2.2 * Math.pow(rel, 0.55), 1.2, 6)
-      ctx.drawImage(this._dotFor(p.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(p.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -1929,18 +1955,19 @@ export class CommunityGalaxy {
     const ctx = this.ctx
     ctx.globalCompositeOperation = 'source-over'
     const step = this._decorStep
-    const warmSprite = this._dotFor(PAL.warm), creamSprite = this._dotFor(PAL.cream)
     for (let i = 0; i < this.dust.length; i += step) {
       const p = this.dust[i]
       const pr = this._project(p.px, p.py, p.pz)
       if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
       p.tw += dt * p.tws * step
-      const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2)
+      // a mote the camera brushes past dissolves instead of smearing the glass
+      const prox = clamp((pr.zc - 0.55) / 0.7, 0, 1)
+      const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2) * prox
       if (a <= 0.004) continue
-      ctx.globalAlpha = Math.min(0.5, a)
+      ctx.globalAlpha = Math.min(0.4, a)
       const rel = pr.persp / P0
       const D = clamp(p.rad * 2.4 * Math.pow(rel, 0.6), 1.2, 9)
-      ctx.drawImage(p.warm ? warmSprite : creamSprite, pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(p.warm ? PAL.warm : PAL.cream, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
     }
   }
 
@@ -2035,7 +2062,7 @@ export class CommunityGalaxy {
         }
       }
       ctx.globalAlpha = Math.min(0.96, a * 1.4)
-      ctx.drawImage(this._dotFor(slot.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(slot.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       st.lx = pr.sx
       st.ly = pr.sy
       const near = rel > 1.45
@@ -2476,7 +2503,7 @@ export class CommunityGalaxy {
       if (a <= 0.015) continue
       const D = clamp(m.rad * pr.persp * 2.2, 1, 4.5)
       ctx.globalAlpha = Math.min(0.8, a)
-      ctx.drawImage(this._dotFor(m.hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
+      ctx.drawImage(this._dotSpr(m.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       // the rare glint — an ember catching the light for a breath
       if (m.glint) {
         const g = Math.sin(m.tw * 0.5)

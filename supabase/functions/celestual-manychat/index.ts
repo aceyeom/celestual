@@ -10,9 +10,15 @@
 // supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
 //
 // ManyChat External Request setup — full step-by-step in docs/MANYCHAT-SETUP.md:
-//   • Trigger:   Default Reply, gated by a Condition — only call this when the DM
-//                text contains "star-" (people send "star-1283"), so ordinary DMs
-//                never ping the backend.
+//   • Trigger:   a KEYWORD trigger — "message contains star-" (people send
+//                "star-1283"), so ordinary DMs never ping the backend. Keyword
+//                triggers fire on EVERY matching message.
+//                ⚠ Do NOT build this on the Default Reply trigger: Default Reply
+//                fires at most ONCE PER CONTACT PER 24 HOURS by default, which
+//                makes verification "one and done" — a person's first DM
+//                verifies, and every later attempt is silently dropped by
+//                ManyChat before it ever reaches this function. If you must use
+//                Default Reply, set it to trigger "every time".
 //   • Method: POST   URL: this function's URL
 //   • Header:  X-Celestual-Token: <MANYCHAT_SHARED_SECRET>
 //   • Body (JSON), inserting ManyChat fields with the "+" picker:
@@ -100,6 +106,8 @@ Deno.serve(async (req) => {
     return json({ ok: false, status: 'no_code', reply: 'Send the code exactly as the app shows it — like star-1234.' });
   }
 
+  let alreadyVerified: string | null = null;
+  let codeExpired = false;
   for (const token of candidates) {
     const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
       p_token: token,
@@ -117,8 +125,18 @@ Deno.serve(async (req) => {
     if (data?.error === 'handle_mismatch') {
       return json({ ok: false, status: 'handle_mismatch', reply: 'That code was started for a different @. Start again from the app with this account.' });
     }
+    if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
+    if (data?.code_expired) codeExpired = true;
   }
 
-  // No candidate matched a live pending session (expired, already used, or random DM).
+  // Nothing was pending under any candidate code. Tell the sender the TRUTH
+  // about their state instead of a dead-end: a re-sent code after a success
+  // (or after the direct Meta webhook won the race) means they're already in.
+  if (alreadyVerified) {
+    return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
+  }
+  if (codeExpired) {
+    return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 10 minutes.' });
+  }
   return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request. Get a fresh code in the app and send it here.' });
 });

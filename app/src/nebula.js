@@ -65,7 +65,7 @@ function makeNoise(seed) {
 // a soft gas puff — cooler-hearted than a star glow, so clouds read as matter
 // catching light, never as blurred stars
 const puffCache = {}
-function makePuff(color) {
+export function makePuff(color) {
   if (puffCache[color]) return puffCache[color]
   const size = 64
   const s = document.createElement('canvas')
@@ -83,7 +83,7 @@ function makePuff(color) {
 }
 
 let darkPuff = null
-function makeDarkPuff() {
+export function makeDarkPuff() {
   if (darkPuff) return darkPuff
   const size = 64
   const s = document.createElement('canvas')
@@ -216,6 +216,96 @@ export function makeNebulaSheet({
   ctx.globalCompositeOperation = 'source-over'
   cv._extent = extent
   return cv
+}
+
+// ── the VOLUMETRIC cloud ─────────────────────────────────────────────────────
+// The baked disk sheet above is a flat texture mapped onto the disk plane —
+// perfect face-on, but turn the galaxy toward its side axis and a painting
+// has no thickness: it collapses into a sliver and the illusion breaks. This
+// generator replaces it with a TRUE 3D cloud: hundreds of gas puffs seated in
+// the disk VOLUME (spiral filaments in the plane, a real gaussian thickness
+// out of it, pooling toward the heart), each one projected through the
+// engine's own camera every frame and drawn as a depth-sorted soft billboard.
+// Rotate the galaxy on any axis and the cloud holds its body — near puffs
+// spread past the camera, far ones recede, edge-on it stacks into a proper
+// luminous band with real parallax between its layers.
+//
+// Density, hue and the dark dust are driven by the same fBm the sheet used,
+// so the cloud keeps its knots, shoals and carved rifts — dust puffs are
+// generated as `dark: true` and the engine paints them near-ink BETWEEN the
+// depth-sorted light (occlusion, not erasure), which is what a real rift is.
+//
+// Deterministic in its seed; generation happens once, drawing is a per-frame
+// project + sort + blit. Each puff:
+//   { ang, r, y, rad, hue, a, dark, tw, tws }
+//   ang/r/y — cylinder coordinates in disk space (the engine adds spin/tilt)
+//   rad     — world-unit radius of the billboard
+//   hue     — a color from `ramp` (dark puffs ignore it)
+export function genVolumetricCloud({
+  seed = 1,
+  count = 520,
+  extent = 1.2,
+  angle = (arm, r) => arm * Math.PI + r * 3,
+  arms = 2,
+  feather = 0.16,
+  ramp = ['#F4C9A1', '#C77E8A', '#7E6BA8', '#5E7BB0'],
+  thickness = (r) => 0.045 + 0.14 * Math.exp(-r * 2.4),
+  dustFrac = 0.32,
+  coreFrac = 0.2,
+  swirlJitter = 0, // 0 = clean spiral gas; higher = wilder proto-cloud swirl
+} = {}) {
+  const { noise, fbm } = makeNoise(seed)
+  let s = (seed * 48271) % 2147483647 || 7
+  const rnd = () => (s = (s * 48271) % 2147483647) / 2147483647
+  const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5
+
+  const puffs = []
+  const target = Math.round(count)
+  let guard = target * 14
+  while (puffs.length < target && guard-- > 0) {
+    const dark = rnd() < dustFrac
+    const inCore = !dark && rnd() < coreFrac
+    let r, ang
+    if (inCore) {
+      // the heart — gas pooled dense and warm around the bulge
+      r = Math.pow(rnd(), 1.5) * extent * 0.34
+      ang = rnd() * TWO
+    } else if (dark) {
+      // dust rides the arms' INNER edges — the carved rift of a real spiral
+      r = (0.12 + Math.pow(rnd(), 0.72) * 0.82) * extent
+      const arm = puffs.length % Math.max(1, arms)
+      ang = angle(arm, r) - feather * (0.35 + rnd() * 0.55) + gauss() * feather * 0.5
+    } else {
+      const onArm = rnd() < 0.68
+      r = (onArm ? Math.pow(rnd(), 0.72) * 0.88 : Math.pow(rnd(), 0.58) * 0.94) * extent
+      const arm = puffs.length % Math.max(1, arms)
+      ang = onArm
+        ? angle(arm, r) + gauss() * (feather + feather * 1.5 * (r / extent) + swirlJitter)
+        : rnd() * TWO
+    }
+    const wx = Math.cos(ang) * r
+    const wz = Math.sin(ang) * r
+    // fBm gates density so real knots, shoals and empty gaps survive
+    const den = dark ? fbm(wx * 3.4 + 210, wz * 3.4 + 210) : fbm(wx * 2.6 + 40, wz * 2.6 + 40)
+    const gate = Math.max(0, den - (dark ? 0.46 : 0.33))
+    if (gate <= 0.006) continue
+    const heart = Math.exp(-(r / extent) * 2.1)
+    // hue cools from the heart outward, stirred so color pools, never bands
+    const stir = noise(wx * 5 + 90, wz * 5 + 90) * 0.55
+    const hueT = Math.min(0.999, Math.max(0, (r / extent) * 0.9 + stir - heart * 0.45))
+    puffs.push({
+      ang,
+      r,
+      y: gauss() * thickness(r) * (dark ? 0.55 : 1), // dust hugs the plane
+      rad: (dark ? 0.05 + Math.pow(gate, 0.75) * 0.16 : 0.06 + Math.pow(gate, 0.7) * 0.24 + heart * 0.05) * (extent / 1.2),
+      hue: ramp[Math.min(ramp.length - 1, Math.floor(hueT * ramp.length))],
+      a: dark ? Math.min(0.38, 0.1 + gate * 0.85) : Math.min(0.17, gate * (0.12 + heart * 0.14) * 1.5),
+      dark,
+      tw: rnd() * TWO,
+      tws: 0.04 + rnd() * 0.1,
+    })
+  }
+  return puffs
 }
 
 // ── the deep-sky band ────────────────────────────────────────────────────────

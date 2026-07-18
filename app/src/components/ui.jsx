@@ -790,11 +790,14 @@ export function LoginButton({ C, label, onClick }) {
 }
 
 // ── the dock ──────────────────────────────────────────────────────────────────
-// The product's three places — the sky, the communities, your pings — held in
-// one quiet glass dock at the foot of the resting hub screens, so moving
-// between them is always one tap, never a hunt through footers and back
-// arrows. The lit item is where you are; the dock melts away whenever the sky
-// takes the whole frame (a dive, a held zoom, the send-off).
+// The product's three places — the sky, the communities, your pings — drawn in
+// the product's own vocabulary instead of an app-store glass pill: a fragment
+// of STAR CHART resting at the foot of the screen. One hairline meridian runs
+// through three stations; where you are burns as a small four-ray star over
+// its name set in the brand serif, and the other two rest as charted points
+// with their tiny monospace ticks. No container, no blur slab — the chart floats
+// on the sky itself over a breath of ink so it stays legible, and melts away
+// whenever the sky takes the whole frame (a dive, a held zoom, the send-off).
 export function NavDock({ C, items, hidden }) {
   return (
     <nav
@@ -802,37 +805,74 @@ export function NavDock({ C, items, hidden }) {
       aria-label="celestual"
       style={{
         position: 'fixed', left: '50%', transform: 'translateX(-50%)',
-        bottom: 'max(14px, env(safe-area-inset-bottom))', zIndex: 22,
-        display: 'inline-flex', alignItems: 'center', gap: 2, padding: 5,
-        borderRadius: 999, background: rgba(C.ink2, 0.78),
-        border: `1px solid ${rgba(C.cream, 0.12)}`,
-        boxShadow: '0 18px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)',
-        backdropFilter: 'blur(16px) saturate(1.05)', WebkitBackdropFilter: 'blur(16px) saturate(1.05)',
+        bottom: 'max(10px, env(safe-area-inset-bottom))', zIndex: 22,
+        width: 'min(392px, calc(100vw - 40px))',
         opacity: hidden ? 0 : 1, pointerEvents: hidden ? 'none' : 'auto',
         transition: 'opacity .45s ease',
       }}
     >
-      {items.map((it) => (
-        <button
-          key={it.id}
-          onClick={it.onClick}
-          aria-label={it.label}
-          aria-current={it.active ? 'page' : undefined}
-          style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-            minWidth: 76, padding: '8px 14px 7px', borderRadius: 999, border: 'none', cursor: 'pointer',
-            background: it.active ? rgba(C.star, 0.12) : 'transparent',
-            color: it.active ? C.star : rgba(C.cream, 0.72),
-            textShadow: it.active ? `0 0 12px ${rgba(C.star, 0.4)}` : 'none',
-            transition: 'background .25s ease, color .25s ease',
-          }}
-        >
-          <Icon name={it.icon} size={17} color="currentColor" stroke={1.8} />
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1.6px', textTransform: 'uppercase' }}>
-            {it.label}
-          </span>
-        </button>
+      {/* a breath of ink beneath the chart — legibility without a glass slab */}
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute', left: '-10%', right: '-10%', top: -26, bottom: -14,
+          background: `radial-gradient(75% 150% at 50% 78%, ${rgba(C.ink, 0.72)}, ${rgba(C.ink, 0.3)} 60%, transparent 78%)`,
+          pointerEvents: 'none',
+        }}
+      />
+      {/* the meridian — a hairline through the three stations, dissolving at
+          its ends, with faint minor ticks charted between them */}
+      <span aria-hidden style={{ position: 'absolute', left: 0, right: 0, top: 13, height: 1, background: `linear-gradient(90deg, transparent, ${rgba(C.cream, 0.26)} 14%, ${rgba(C.cream, 0.26)} 86%, transparent)`, pointerEvents: 'none' }} />
+      {['29%', '37.5%', '62.5%', '71%'].map((left, i) => (
+        <span key={i} aria-hidden style={{ position: 'absolute', left, top: 12.5, width: 2, height: 2, borderRadius: '50%', background: rgba(C.cream, 0.3), transform: 'translateX(-50%)', pointerEvents: 'none' }} />
       ))}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch' }}>
+        {items.map((it) => (
+          <button
+            key={it.id}
+            onClick={it.onClick}
+            aria-label={it.label}
+            aria-current={it.active ? 'page' : undefined}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+              padding: '2px 8px 6px', background: 'none', border: 'none', cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {/* the station: the lit star where you are, a charted point elsewhere */}
+            <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 24, height: 24 }}>
+              {it.active ? (
+                <>
+                  <span aria-hidden style={{ position: 'absolute', width: 26, height: 26, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.4)}, ${rgba(C.star, 0.1)} 55%, transparent 75%)` }} />
+                  <svg width="17" height="17" viewBox="0 0 20 20" style={{ position: 'relative', filter: `drop-shadow(0 0 7px ${rgba(C.star, 0.85)})` }}>
+                    <path d="M10 1.6 L11.9 8.1 L18.4 10 L11.9 11.9 L10 18.4 L8.1 11.9 L1.6 10 L8.1 8.1 Z" fill={C.star} />
+                    <path d="M10 5.4 L10.9 9.1 L14.6 10 L10.9 10.9 L10 14.6 L9.1 10.9 L5.4 10 L9.1 9.1 Z" fill="#FFF6EA" />
+                  </svg>
+                </>
+              ) : (
+                <span
+                  aria-hidden
+                  style={{
+                    width: 6.5, height: 6.5, borderRadius: '50%',
+                    border: `1px solid ${rgba(C.cream, 0.55)}`, background: rgba(C.ink, 0.5),
+                    boxShadow: `0 0 8px ${rgba(C.cream, 0.14)}`,
+                    transition: 'border-color .25s ease',
+                  }}
+                />
+              )}
+            </span>
+            <span
+              style={
+                it.active
+                  ? { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontWeight: 400, fontSize: 14.5, lineHeight: '15px', color: C.cream, textShadow: `0 0 14px ${rgba(C.star, 0.45)}`, letterSpacing: '.2px' }
+                  : { fontFamily: "'Space Mono', monospace", fontSize: 8.5, lineHeight: '15px', letterSpacing: '1.8px', textTransform: 'uppercase', color: rgba(C.cream, 0.6) }
+              }
+            >
+              {it.label}
+            </span>
+          </button>
+        ))}
+      </div>
     </nav>
   )
 }

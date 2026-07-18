@@ -166,6 +166,8 @@ Deno.serve(async (req) => {
         // username == claimed-handle rule and flips the row to 'verified'.
         let done = false;
         let mismatched = false;
+        let alreadyVerified: string | null = null;
+        let codeExpired = false;
         for (const token of candidates) {
           const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
             p_token: token,
@@ -183,14 +185,20 @@ Deno.serve(async (req) => {
             break;
           }
           if (data?.error === 'handle_mismatch') mismatched = true;
+          if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
+          if (data?.code_expired) codeExpired = true;
         }
         if (!done) {
-          // Feedback instead of silence: a live code sent from the wrong account
-          // is the #1 stuck state — tell the sender so they can fix it themselves.
+          // Feedback instead of silence: tell the sender the truth about the
+          // state they're actually in, so a re-run never reads as broken.
           if (mismatched) {
             await sendDm(String(igsid), 'That code was started for a different @. Open the app with this account and get a fresh code.');
+          } else if (alreadyVerified) {
+            await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
+          } else if (codeExpired) {
+            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 10 minutes.');
           }
-          results.push({ igsid, username, matched: false, mismatched });
+          results.push({ igsid, username, matched: false, mismatched, alreadyVerified: !!alreadyVerified, codeExpired });
         }
       }
     }

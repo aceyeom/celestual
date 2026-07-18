@@ -1194,8 +1194,9 @@ export default function App() {
         </div>
       )}
 
-      {/* during a fly-to-a-star the foreground melts away so the sky is the
-          whole screen; any tap brings it back. The entrance animation must be
+      {/* during a fly-to-a-star the foreground melts away COMPLETELY so the sky
+          is the whole screen — any residual opacity reads as a ghost of the
+          pings page floating over the star view. The entrance animation must be
           suppressed for the melt — its fill-mode would otherwise pin opacity
           at 1 and override the inline fade. */}
       <div
@@ -1205,7 +1206,7 @@ export default function App() {
         style={{
           position: 'relative', zIndex: 4,
           animation: skyFlight ? 'none' : undefined,
-          opacity: skyFlight ? 0.04 : 1,
+          opacity: skyFlight ? 0 : 1,
           transition: 'opacity .55s ease',
           pointerEvents: skyFlight ? 'none' : 'auto',
         }}
@@ -1224,9 +1225,11 @@ export default function App() {
               icon: 'star',
               label: t('nav.sky'),
               active: screen === 'community',
-              // your community's living sky — or, before you've joined one,
-              // the communities list so you can find yours
-              onClick: () => (homeCommunity ? viewCommunity(homeCommunity.slug) : go('worlds')),
+              // your community's living sky — or, before you've joined one, the
+              // featured community's sky (view-only). It must ALWAYS open a sky:
+              // routing to the worlds list made this tab a dead button that
+              // duplicated its neighbour.
+              onClick: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
             },
             { id: 'worlds', icon: 'planet', label: t('nav.worlds'), active: screen === 'worlds', onClick: () => go('worlds') },
             { id: 'pings', icon: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },

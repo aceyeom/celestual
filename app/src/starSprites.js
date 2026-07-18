@@ -65,9 +65,9 @@ export function makeStarSprite(color, size) {
   c.save()
   c.translate(m, m)
   for (let k = 0; k < 4; k++) {
-    ray(c, m * 0.96, size * 0.014, [
-      [0, `rgba(255,255,255,0.55)`],
-      [0.3, `rgba(${wr},${wg},${wb},0.2)`],
+    ray(c, m * 0.96, size * 0.016, [
+      [0, `rgba(255,255,255,0.72)`],
+      [0.3, `rgba(${wr},${wg},${wb},0.24)`],
       [1, `rgba(${r},${g},${b},0)`],
     ])
     c.rotate(Math.PI / 2)
@@ -75,20 +75,30 @@ export function makeStarSprite(color, size) {
   c.restore()
 
   // the point source: a hard white heart, a steep drop through the hue, a
-  // tight halo — energy lives in the middle third so scale never blurs it
+  // tight halo — energy lives in the middle FIFTH so scale never blurs it:
+  // a star stays a needle of light at any draw size, never a soft disc
   const grd = c.createRadialGradient(m, m, 0, m, m, m)
   grd.addColorStop(0.0, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.1, 'rgba(255,255,255,0.99)')
-  grd.addColorStop(0.2, `rgba(${wr},${wg},${wb},0.9)`)
-  grd.addColorStop(0.36, `rgba(${r},${g},${b},0.42)`)
-  grd.addColorStop(0.56, `rgba(${r},${g},${b},0.13)`)
-  grd.addColorStop(0.8, `rgba(${r},${g},${b},0.03)`)
+  grd.addColorStop(0.13, 'rgba(255,255,255,1)')
+  grd.addColorStop(0.21, `rgba(${wr},${wg},${wb},0.95)`)
+  grd.addColorStop(0.33, `rgba(${r},${g},${b},0.5)`)
+  grd.addColorStop(0.5, `rgba(${r},${g},${b},0.15)`)
+  grd.addColorStop(0.74, `rgba(${r},${g},${b},0.04)`)
   grd.addColorStop(1.0, `rgba(${r},${g},${b},0)`)
   c.fillStyle = grd
   c.beginPath()
   c.arc(m, m, m, 0, Math.PI * 2)
   c.fill()
   return s
+}
+
+// A small companion bake of the same point source. Down-scaling one huge
+// sprite to a 2px field star hands the browser an extreme minification —
+// exactly the mush that read as "blurry, low-quality stars". Tiny draws pull
+// from this near-native bake instead, so the faint background stays needle
+// sharp; the big bake serves the close-ups a dive magnifies.
+export function makeStarSpriteSmall(color) {
+  return makeStarSprite(color, 32)
 }
 
 export function makeSpikeSprite(color, size) {
