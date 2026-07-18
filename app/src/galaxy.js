@@ -17,6 +17,9 @@
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
 import { hexToRgb, makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
+// the baked milky-way ribbon (see nebula.js) — real clumped, riven starlight
+// for the deepest layer of the night, baked once and blitted per frame
+import { makeBandSheet, makeNebulaSheet } from './nebula.js'
 import { CATEGORY_TINTS } from './theme.js'
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
@@ -37,12 +40,18 @@ const PAL = {
 // camera / projection
 const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
 // The cinematic fly-into-a-star focus is time-driven (not an exponential chase),
-// so it has a fixed, deliberate length: a longer, graceful push IN and a slightly
-// quicker — but equally smooth — pull back OUT. The SAME timings as the
-// community sky's dive (communityGalaxy.js), so the two skies share one
-// cinematic grammar.
+// so it has a fixed, deliberate length — and it comes in TWO movements, the
+// SAME grammar as the community sky's dive (communityGalaxy.js). First the
+// BANK: the whole field swings on its axes, yaw carrying the target star
+// around to the near side while the tilt drops toward edge-on — the galaxy
+// turning to its side axis under a still camera. THEN the RUN: the camera
+// commits and dives through the field, neighbours streaming past with real
+// depth parallax. Release unwinds camera and bank together.
 const FOCUS_IN = 1.5 // seconds — camera glide into the tapped star
 const FOCUS_OUT = 0.95 // seconds — camera drift back out to the resting sky
+const FOCUS_TILT_MIN = 0.6 // the bank's length breathes with the swing
+const FOCUS_TILT_MAX = 1.1
+const FOCUS_BANK_TILT = 0.34 // the banked disk tilt (rad) — near edge-on
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
 const TILT = 1.04 // base disk tilt toward the camera (rad)
@@ -134,6 +143,14 @@ export class GalaxyField {
     this.focusP = 0 // linear focus progress 0..1; `focus` is its ease-in-out
     this.focusTarget = 0
     this.focusIndex = -1
+    // the bank — the dive's first movement: { yaw, tilt } aimed at the focused
+    // star, blended by oriP/oriB (linear/eased) BEFORE the camera travels
+    this.focusOri = null
+    this.oriP = 0
+    this.oriB = 0
+    this.oriDur = 0.85
+    this._obPrev = 0
+    this._bankVel = 0
     // A held focus doesn't glide back on its own: the viewer stays with the
     // star (free to orbit around it) until clearFocus() — the pings screen's
     // star view. While held, the canvas skips its own @ label; the DOM overlay
@@ -287,16 +304,18 @@ export class GalaxyField {
     }
 
     // Deep background starfield — screen-space, fills the whole frame so the scene
-    // reads as a window into space, not a shape on black. Subtle parallax + twinkle.
+    // reads as a window into space, not a shape on black. Subtle parallax +
+    // twinkle. Dense and bright enough to hold the night on a STILL screen —
+    // the field must read at rest, not only when the camera moves.
     this.bg = []
-    const bn = window.innerWidth < 540 ? 200 : 340
+    const bn = window.innerWidth < 540 ? 260 : 430
     for (let i = 0; i < bn; i++) {
       this.bg.push({
         x: rnd(),
         y: rnd(),
         z: 0.3 + rnd() * 0.7, // parallax depth (smaller = nearer = moves more)
-        rad: rnd() < 0.92 ? 0.5 + rnd() * 0.7 : 1.0 + rnd() * 0.9,
-        base: 0.12 + rnd() * 0.5,
+        rad: rnd() < 0.88 ? 0.5 + rnd() * 0.75 : 1.1 + rnd() * 1.0,
+        base: 0.2 + rnd() * 0.55,
         hue: rnd() < 0.15 ? PAL.blue : rnd() < 0.2 ? PAL.warm : '#FFFFFF',
         tw: rnd() * TWO,
         tws: 0.15 + rnd() * 0.7,
@@ -501,6 +520,16 @@ export class GalaxyField {
     this.focusIndex = i
     this.focusTarget = 1
     this.focusHold = !!opts.hold
+    // the BANK, aimed once at the dive's start: swing the disk so this star
+    // comes around the NEAR side, tilt dropping toward the side axis; the
+    // swing's length breathes with how far it has to travel
+    const s = this.sealed[i]
+    if (s) {
+      const wrap = (v) => Math.atan2(Math.sin(v), Math.cos(v))
+      const yawGoal = wrap(s.theta0 - this.spin + Math.PI / 2)
+      this.focusOri = { yaw: yawGoal, tilt: FOCUS_BANK_TILT }
+      this.oriDur = FOCUS_TILT_MIN + (FOCUS_TILT_MAX - FOCUS_TILT_MIN) * (Math.abs(yawGoal) / Math.PI)
+    }
     this.start()
   }
   clearFocus() {
@@ -680,16 +709,23 @@ export class GalaxyField {
   }
 
   _rot() {
-    // As the camera commits to a dive, freeze its orientation: pointer parallax and
-    // the idle drift wind down toward 0 so the target star holds rock-steady in the
-    // crosshairs instead of swimming while we fly in.
-    const hold = 1 - this.focus
+    // As the dive takes the sky (the bank or the run), freeze the resting
+    // orientation: pointer parallax and the idle drift wind down toward 0 so
+    // the target star holds rock-steady, while the bank (focusOri × oriB)
+    // rides on top — the disk swinging to its side axis before the camera
+    // ever moves.
+    const ob = this.focusOri ? this.oriB : 0
+    const hold = 1 - Math.max(this.focus, ob)
     const driftY = Math.sin(this.t * 0.12) * 0.07 * hold
     // The hand's orbit rides OUTSIDE the focus envelope: during a held star
     // view the camera re-aims at the star every frame, so orbiting swings the
     // whole sky around the hero with true parallax while it stays centered.
-    const yaw = this.p.x * 0.32 * hold + driftY + this.orbit.yaw
-    const tilt = TILT + (this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025) * hold + this.orbit.pitch
+    const yaw = this.p.x * 0.32 * hold + driftY + this.orbit.yaw + (this.focusOri ? this.focusOri.yaw * ob : 0)
+    const tilt =
+      TILT +
+      (this.p.y * 0.2 + Math.sin(this.t * 0.09) * 0.025) * hold +
+      this.orbit.pitch +
+      (this.focusOri ? (this.focusOri.tilt - TILT) * ob : 0)
     return {
       cosS: Math.cos(this.spin),
       sinS: Math.sin(this.spin),
@@ -706,18 +742,30 @@ export class GalaxyField {
     this.lastTs = ts
     this.modeT += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
-    // Camera focus is time-driven and eased, NOT an exponential chase: focusP is
-    // linear progress (ramping 0→1 toward the tapped star, 1→0 on release over a
-    // fixed duration), and `focus` is its ease-in-out. So the camera departs
-    // gently, accelerates through the field, and SETTLES softly onto the star —
-    // a deliberate cinematic glide instead of a fast lurch that then creeps the
-    // final few percent. A re-tap mid-pull-out simply reverses the same ramp.
-    const fdur = this.focusTarget === 1 ? FOCUS_IN : FOCUS_OUT
-    this.focusP = clamp(this.focusP + (this.focusTarget === 1 ? 1 : -1) * (dt / fdur), 0, 1)
+    // Camera focus is time-driven and eased, NOT an exponential chase — and it
+    // is TWO movements in sequence. In: the bank first (oriP — the disk swings
+    // its target around the near side and drops toward the side axis), THEN
+    // the travel (focusP — the camera runs in through the field). Out: both
+    // unwind together, so the pull-back and the disk's return read as one
+    // gesture. A re-tap mid-pull-out simply reverses the same ramps. Reduced
+    // motion skips the bank (there's no camera travel to set up).
+    if (this.focusTarget === 1 && (this.reduced || !this.focusOri)) this.oriP = 1
+    if (this.focusTarget === 1) {
+      if (this.oriP < 1) this.oriP = clamp(this.oriP + dt / (this.oriDur || 0.85), 0, 1)
+      else this.focusP = clamp(this.focusP + dt / FOCUS_IN, 0, 1)
+    } else {
+      this.focusP = clamp(this.focusP - dt / FOCUS_OUT, 0, 1)
+      this.oriP = clamp(this.oriP - dt / FOCUS_OUT, 0, 1)
+    }
     this.focus = easeInOut(this.focusP)
-    if (this.focusP <= 0.0001 && this.focusTarget === 0) {
+    this.oriB = this.reduced || !this.focusOri ? 0 : easeInOut(this.oriP)
+    // the bank's swing speed feeds the streak pass — the turn itself streams
+    this._bankVel = dt > 0 ? Math.abs(this.oriB - this._obPrev) / dt : 0
+    this._obPrev = this.oriB
+    if (this.focusP <= 0.0001 && this.oriP <= 0.0001 && this.focusTarget === 0) {
       this.focus = 0
       this.focusIndex = -1
+      this.focusOri = null
     }
     // advance (and retire) a star's wink-out
     if (this.vanish) {
@@ -739,10 +787,10 @@ export class GalaxyField {
       return
     }
     this.t += dt
-    // nearly freeze the slow orbit while a star is held in focus, so it sits
-    // still under the camera instead of drifting out of frame. The resting pace
+    // nearly freeze the slow orbit through the whole dive (bank included), so
+    // the aimed-at star sits still under the flight path. The resting pace
     // matches the community sky's calm orbit (0.024 rad/s at default motion).
-    this.spin += dt * (this.motion / 100) * 0.12 * (1 - this.focus * 0.96)
+    this.spin += dt * (this.motion / 100) * 0.12 * (1 - Math.max(this.focus, this.oriB) * 0.96)
     this.p.x = lerp(this.p.x, this.pTarget.x, Math.min(1, dt * 2.6))
     this.p.y = lerp(this.p.y, this.pTarget.y, Math.min(1, dt * 2.6))
     // with the hand gone, the view glides home (orbit unwinds, distance rests)
@@ -791,8 +839,10 @@ export class GalaxyField {
     ctx.fillStyle = this._bgGrad
     ctx.fillRect(0, 0, this.w, this.h)
 
-    // full-frame background starfield (screen-space parallax + twinkle)
+    // full-frame background starfield (screen-space parallax + twinkle), with
+    // the milky-way ribbon slanting behind the disk — the deepest light
     this._drawBackground(dt, d)
+    this._drawBand(d)
 
     // Camera focus: fly the camera THROUGH the field toward the focused star.
     // Instead of a flat 2D magnification, we offset the perspective camera in
@@ -830,7 +880,11 @@ export class GalaxyField {
     this._camPrev.x = this.cam.x
     this._camPrev.y = this.cam.y
     this._camPrev.z = this.cam.z
-    this.rush = this.reduced ? 0 : this.travel
+    // the bank is real camera motion too — the swing streams the field
+    const bank = this.focusOri
+      ? clamp(this._bankVel * (Math.abs(this.focusOri.yaw) + (TILT - this.focusOri.tilt)) * 0.6, 0, 0.85)
+      : 0
+    this.rush = this.reduced ? 0 : Math.max(this.travel, bank)
     this.exposure = 1 + this.rush * 0.4
 
     // projected galactic core → anchor for the core glow + hero events (after the
@@ -839,8 +893,11 @@ export class GalaxyField {
     this.ox = o.sx
     this.oy = o.sy
 
-    // nebula gas (additive, behind the stars)
+    // nebula gas (additive, behind the stars): the old soft knots for volume,
+    // plus the baked filament sheet riding the disk's own arms — knots, dark
+    // rifts and milky grain instead of plain gradient washes
     this._drawNebula(dt, d, rot)
+    this._drawDiskGas(d, rot)
 
     // soft core glow (additive) — a luminous, layered galactic bulge: a tight
     // bright heart inside a broad warm halo, so the centre reads as a real core.
@@ -1015,6 +1072,51 @@ export class GalaxyField {
     ctx.globalCompositeOperation = 'source-over'
   }
 
+  // the baked filament gas seated on the disk's own spiral (the same TWIST the
+  // stars wind with), mapped onto the tilted plane in one transform — it
+  // tilts, spins and parallaxes with the galaxy like everything else
+  _drawDiskGas(d, rot) {
+    if (!this._gasSheet) {
+      this._gasSheet = makeNebulaSheet({
+        seed: 6113, size: 512, extent: 1.7,
+        angle: (arm, r) => arm * Math.PI + r * 2.6, arms: 2, feather: 0.17,
+        ramp: [PAL.warm, '#C77E8A', '#7E6BA8', '#5E7BB0'], lanes: 0.7, grain: 0.8,
+      })
+    }
+    const o = this._project(0, 0, 0, rot)
+    const A = this._project(1, 0, 0, rot)
+    const B = this._project(0, 0, 1, rot)
+    if (!o || !A || !B) return
+    const ctx = this.ctx
+    const E = this._gasSheet._extent
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.globalAlpha = 0.5 * d
+    ctx.transform(A.sx - o.sx, A.sy - o.sy, B.sx - o.sx, B.sy - o.sy, o.sx, o.sy)
+    ctx.drawImage(this._gasSheet, -E, -E, E * 2, E * 2)
+    ctx.restore()
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // the deep milky-way ribbon — the light of the far bigger galaxy this field
+  // hangs inside, slanted across the frame at effectively infinite distance
+  // (screen-space with only a whisper of pointer parallax — exactly how
+  // something that far behaves). Baked once (nebula.js); one blit per frame.
+  _drawBand(d) {
+    if (!this._bandSheet) this._bandSheet = makeBandSheet({ seed: 4177 })
+    const ctx = this.ctx
+    const L = Math.max(this.w, this.h) * 2.0
+    const Lh = L * 0.3
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.globalAlpha = 0.3 * d
+    ctx.translate(this.cx - this.p.x * 9, this.cy * 0.92 - this.p.y * 7)
+    ctx.rotate(-0.42)
+    ctx.drawImage(this._bandSheet, -L / 2, -Lh / 2, L, Lh)
+    ctx.restore()
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
   // Soft luminous disk: map a radial gradient onto the disk's projected ellipse
   // by projecting its in-plane major (+x) and minor (+z) axes, so the haze tilts
   // and spins with the galaxy. Additive + very faint, so it reads as glow, not fog.
@@ -1058,14 +1160,24 @@ export class GalaxyField {
       const x = b.x * this.w - px * par
       const y = b.y * this.h - py * par
       if (x < -4 || x > this.w + 4 || y < -4 || y > this.h + 4) continue
-      const a = b.base * (0.5 + 0.5 * Math.sin(b.tw)) * d
+      // a high twinkle floor: the field glitters at rest instead of winking
+      // out — a still screen still reads as a full night
+      const a = b.base * (0.72 + 0.28 * Math.sin(b.tw)) * d
       if (a <= 0.01) continue
-      ctx.globalAlpha = Math.min(0.85, a)
+      ctx.globalAlpha = Math.min(0.9, a)
       // The deep backdrop sits behind the zoom transform, so it's never magnified —
       // at 0.5–2px these read as points. A cheap fill (round for the few big ones,
       // a fast 1px dot for the faint majority) keeps the frame light.
-      const D = Math.max(1.4, b.rad * 2.4)
+      const D = Math.max(1.5, b.rad * 2.4)
       ctx.drawImage(this._dotFor(b.hue), x - D / 2, y - D / 2, D, D)
+      // the biggest anchors wear a whisper of diffraction even at rest
+      if (b.rad > 1.3 && a > 0.35) {
+        const ss = D * 3.2
+        ctx.globalCompositeOperation = 'lighter'
+        ctx.globalAlpha = Math.min(0.3, (a - 0.35) * 0.55)
+        ctx.drawImage(this._spike, x - ss / 2, y - ss / 2, ss, ss)
+        ctx.globalCompositeOperation = 'source-over'
+      }
     }
   }
 

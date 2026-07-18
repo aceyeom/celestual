@@ -18,6 +18,7 @@
 // enough to be worth the step and legible at thumbnail size. Everything
 // derives from theme.js tokens; the card IS the brand.
 import { TOKENS, rgba } from './theme.js'
+import { LAUNCH_AT } from './communities.js'
 import { makeGlow, makeStarSprite, makeSpikeSprite } from './starSprites.js'
 
 const W = 1080
@@ -399,6 +400,19 @@ function drawTracked(ctx, text, x, y, size, tracking, color, weight = 700) {
 // deadpan is the one register that is funny enough to post AS A JOKE and
 // still carries the proof, the seal, and the link.
 const n = (v) => Number(v || 0).toLocaleString()
+
+// The launch clock, spoken plainly ("12 days", "9 hours") — the gathering
+// card's whole pitch is the shared moment the countdown ends.
+function untilLaunch(now = Date.now()) {
+  const s = Math.max(0, Math.floor((LAUNCH_AT.getTime() - now) / 1000))
+  const d = Math.floor(s / 86400)
+  if (d >= 2) return `${d} days`
+  const h = Math.floor(s / 3600)
+  if (h >= 2) return `${h} hours`
+  const m = Math.max(1, Math.floor(s / 60))
+  return `${m} minutes`
+}
+
 const OPEN_LINES = [
   (s) => `every star up there is someone at ${s.short} who won’t say it in person.`,
   (s) => `${n(s.pings)} unspoken crushes, mapped for scientific purposes.`,
@@ -406,7 +420,7 @@ const OPEN_LINES = [
 ]
 const GATHERING_LINES = [
   (s) => `what happens at ${s.short} is nobody’s business. yet.`,
-  (s) => `${n(s.left)} more people and everyone finds out what’s been going on here.`,
+  (s) => `${s.until} and everyone finds out what’s been going on here.`,
   (s) => `the sky over ${s.short} is filling up. draw your own conclusions.`,
 ]
 const pickLine = (slug, open, data) => {
@@ -498,8 +512,8 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   ctx.fillText(line2, W / 2, hY + 102)
 
   // the deadpan line — the reason this gets posted
-  const left = Math.max(0, 100 - members)
-  const deadpan = pickLine(slug || short, open, { short, pings, members, left })
+  const until = untilLaunch()
+  const deadpan = pickLine(slug || short, open, { short, pings, members, until })
   ctx.fillStyle = rgba(TOKENS.cream, 0.85)
   ctx.font = 'italic 400 40px "Instrument Serif", Georgia, serif'
   // naive two-line wrap so a long line never runs off the card
@@ -518,7 +532,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   bits.push(`${n(members)} souls inside`)
   if (open && pings != null) bits.push(`${n(pings)} secrets in orbit`)
   if (open && matches != null && matches > 0) bits.push(`${n(matches)} found each other`)
-  if (!open) bits.push(`${n(left)} to open`)
+  if (!open) bits.push(`opens in ${until}`)
   const strip = bits.join(' · ')
   let stripSize = 26
   ctx.font = `700 ${stripSize}px "Space Mono", monospace`

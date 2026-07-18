@@ -19,18 +19,19 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderSkyCard } from '../card.js'
 import {
-  Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel, Meter,
+  Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
 } from './ui.jsx'
 import { CATEGORY_TINTS } from '../theme.js'
-import { communityProgress, communityOpen, MATCH_FLOOR, OPEN_FLOOR, nextRevealAt, bySlug } from '../communities.js'
+import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../communities.js'
 import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
-// intimate measure on wide monitors.
+// intimate measure on wide monitors. --nav-pad (set by App) reserves the foot
+// of the hub screens for the dock, so no action ever sits under it.
 export function Shell({ children }) {
   return (
     <div
@@ -39,7 +40,7 @@ export function Shell({ children }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: 'max(40px, env(safe-area-inset-top)) clamp(20px, 5vw, 40px) max(28px, env(safe-area-inset-bottom))',
+        padding: 'max(40px, env(safe-area-inset-top)) clamp(20px, 5vw, 40px) calc(max(28px, env(safe-area-inset-bottom)) + var(--nav-pad, 0px))',
       }}
     >
       <div style={{ width: '100%', maxWidth: 460, flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
@@ -709,11 +710,19 @@ function ShareInviteButton({ C, slug }) {
   )
 }
 
-// The community's climb, as a labeled panel: the seal + name + status on top, the
-// count-of-threshold meter beneath. The shared anchor of both placed states — the
-// one thing on the screen the reader can actually move.
-function CommunityProgressCard({ C, community }) {
-  const { open } = communityProgress(community)
+// The launch clock, large — the shared anchor of both placed states. The seal +
+// name + status on top; beneath, the live countdown to the one shared moment
+// the whole sky opens. No thresholds, no progress bars: time is the only gate,
+// and it's the same time for everyone.
+function LaunchClockCard({ C, community }) {
+  const { t } = useI18n()
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const open = communityOpen(community)
+  const c = fmtCountdown(LAUNCH_AT.getTime() - now)
   return (
     <GlassPanel C={C} style={{ width: '100%', maxWidth: 360, padding: '17px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -721,7 +730,17 @@ function CommunityProgressCard({ C, community }) {
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
         <SkyStatus C={C} open={open} />
       </div>
-      <Meter C={C} count={community.members || 0} threshold={OPEN_FLOOR} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 9, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(38px, 10vw, 50px)', lineHeight: 1, color: C.cream, textShadow: `0 0 26px ${rgba(C.star, 0.22)}` }}>
+            {c ? c.big : t('reveal.now')}
+          </span>
+          {c && c.small && (
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, letterSpacing: '.5px', color: rgba(C.star, 0.92) }}>{c.small}</span>
+          )}
+        </span>
+        <Kicker C={C} style={{ fontSize: 9.5, letterSpacing: '2px' }}>{t('reveal.opens')}</Kicker>
+      </div>
     </GlassPanel>
   )
 }
@@ -775,7 +794,7 @@ function PlacedHandleHero({ C, handle, reachable }) {
 // answer's gate, and it's the thing you control.
 function PlacedReachable({ C, ctx, handle, community }) {
   const { t } = useI18n()
-  const g = placedReachable({ handle, short: community.short, threshold: OPEN_FLOOR })
+  const g = placedReachable({ handle, short: community.short })
   return (
     <Shell>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, padding: '16px 0 8px' }}>
@@ -794,9 +813,9 @@ function PlacedReachable({ C, ctx, handle, community }) {
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{g.until}</p>
         </div>
 
-        {/* the anchor — the meter you can actually move */}
+        {/* the anchor — the launch clock, ticking toward the shared night */}
         <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <CommunityProgressCard C={C} community={community} />
+          <LaunchClockCard C={C} community={community} />
           <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.fill}</p>
         </div>
       </div>
@@ -830,9 +849,9 @@ function PlacedWaiting({ C, ctx, handle, community }) {
           <p className="enter" style={{ animationDelay: '.1s', margin: '4px 0 0', fontSize: 14, lineHeight: 1.65, color: C.muted, maxWidth: 350 }}>{g.only}</p>
         </div>
 
-        {/* the anchor — the meter */}
+        {/* the anchor — the launch clock */}
         <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <CommunityProgressCard C={C} community={community} />
+          <LaunchClockCard C={C} community={community} />
           <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.bring}</p>
         </div>
       </div>
@@ -898,7 +917,7 @@ export function PlacedScreen({ C, ctx }) {
   const handle = placed.handle
   // your own community drives this screen — the thing you can actually move.
   const community = (ctx.communities || []).find((c) => c.joined) || null
-  const gathering = community && !communityProgress(community).open
+  const gathering = community && !communityOpen(community)
   if (community && gathering) {
     return reachable
       ? <PlacedReachable C={C} ctx={ctx} handle={handle} community={community} />
@@ -1511,7 +1530,7 @@ export function SkyCardScreen({ C, ctx }) {
               {open && pings != null ? (
                 <SkyStat C={C} value={pings.toLocaleString()} label={t('sky.statPings')} onTap={beatMeteor} />
               ) : (
-                <SkyStat C={C} value={Math.max(0, OPEN_FLOOR - stats.members).toLocaleString()} label={t('sky.statToOpen')} onTap={beatWave} />
+                <SkyStat C={C} value={untilLaunchShort()} label={t('sky.statOpens')} onTap={beatWave} />
               )}
               {showMatches && <SkyStat C={C} value={matches.toLocaleString()} label={t('sky.statMatches')} onTap={beatMatch} />}
             </div>
@@ -1552,10 +1571,11 @@ export function SkyCardScreen({ C, ctx }) {
 
 // ── COMMUNITIES (the official, curated launch spaces) ─────────────────────────
 // Communities are not user-created — the team owns the list (communities.js); a
-// user only joins or leaves. Placing a ping never depends on any of this. Each
-// community climbs toward a team-set threshold, shown as a ring; at the threshold
-// it OPENS and its live weekly readout lights up. The demo seeds them live, with
-// a rolling activity feed, and lets you join — all in-memory, gone on tab close.
+// user only joins or leaves. Placing a ping never depends on any of this. There
+// is no member threshold: every community's sky OPENS together when the launch
+// countdown ends (communities.js LAUNCH_AT), and its live weekly readout lights
+// up. The demo seeds them live, with a rolling activity feed, and lets you
+// join — all in-memory, gone on tab close.
 
 // How a community's state reads: not a badge, not a pill, no pulsing "live"
 // dot (a named tell in DESIGN.md §9) — a quiet spoken line in the emotional
@@ -1694,6 +1714,13 @@ function fmtCountdown(ms) {
   return { big: `${pad(m)}m ${pad(sec)}s`, small: null }
 }
 
+// The launch clock compressed to one short token ("12d 04h", "3h 12m") for a
+// tight stat slot — the share card's countdown stat.
+function untilLaunchShort(now = Date.now()) {
+  const c = fmtCountdown(LAUNCH_AT.getTime() - now)
+  return c ? c.big : 'soon'
+}
+
 function RevealCountdown({ C, open }) {
   const { t } = useI18n()
   const [now, setNow] = React.useState(() => Date.now())
@@ -1702,7 +1729,14 @@ function RevealCountdown({ C, open }) {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
-  const target = React.useMemo(() => nextRevealAt(new Date(now)).getTime(), [Math.floor(now / 30000)])
+  // Open: the weekly reveal (sunday night). Gathering: the LAUNCH itself — the
+  // one shared moment every community's sky opens. No thresholds anywhere;
+  // time is the only gate, and it's the same time for everyone.
+  const target = React.useMemo(
+    () => (open ? nextRevealAt(new Date(now)).getTime() : LAUNCH_AT.getTime()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, Math.floor(now / 30000)],
+  )
   const c = fmtCountdown(target - now)
   const label = open ? t('reveal.week') : t('reveal.opens')
   // One quiet line — the page's heartbeat, not its headline: label in mono
@@ -1927,7 +1961,8 @@ export function CommunityScreen({ C, ctx }) {
   const findStar = () => {
     if (finding) return
     const ok = galaxyRef.current && galaxyRef.current.locateMine()
-    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 4600) }
+    // the full flight: the bank (≤1.1s) + the run in + the hold + the return
+    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 5700) }
   }
 
   // The hand-driven sky lives ONLY on this page: switch on the camera gestures
@@ -2022,6 +2057,15 @@ export function CommunityScreen({ C, ctx }) {
   // App plays for the fly-to-a-star flight).
   const skyHeld = zoomed || finding
   const melt = { opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyHeld ? 'none' : 'auto', animation: skyHeld ? 'none' : undefined }
+
+  // the dock melts with the rest of the chrome while the sky is held
+  React.useEffect(() => {
+    if (ctx.setNavHidden) ctx.setNavHidden(skyHeld)
+    return () => {
+      if (ctx.setNavHidden) ctx.setNavHidden(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skyHeld])
 
   if (!community) {
     return (
@@ -2359,7 +2403,7 @@ function MemberBadge({ C }) {
 function FinderRow({ C, community, onPick }) {
   const { t } = useI18n()
   const [h, setH] = React.useState(false)
-  const { open } = communityProgress(community)
+  const open = communityOpen(community)
   return (
     <button
       onClick={() => onPick(community.slug)}
@@ -3051,7 +3095,7 @@ function CommunitiesSummary({ C, ctx }) {
         <span style={{ fontSize: 13, lineHeight: 1.5, color: C.muted }}>{t('communities.summaryNone')}</span>
       ) : (
         joined.map((c) => {
-          const { open } = communityProgress(c)
+          const open = communityOpen(c)
           return (
             <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
               <SchoolMark C={C} slug={c.slug} size={30} />
@@ -3609,7 +3653,8 @@ export function StarViewOverlay({ C, view, onClose }) {
         style={{
           position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
           pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-          paddingTop: 30, textAlign: 'center', animationDelay: '1.05s',
+          // the name arrives WITH the camera: after the bank (≤1.1s) + the run
+          paddingTop: 30, textAlign: 'center', animationDelay: '2.1s',
         }}
       >
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
@@ -3640,7 +3685,7 @@ export function StarViewOverlay({ C, view, onClose }) {
       </div>
 
       {/* how to move — one whispered line, low and out of the way */}
-      <div aria-hidden className="fade" style={{ position: 'fixed', left: 0, right: 0, bottom: 'max(18px, env(safe-area-inset-bottom))', zIndex: 24, pointerEvents: 'none', textAlign: 'center', animationDelay: '1.6s' }}>
+      <div aria-hidden className="fade" style={{ position: 'fixed', left: 0, right: 0, bottom: 'max(18px, env(safe-area-inset-bottom))', zIndex: 24, pointerEvents: 'none', textAlign: 'center', animationDelay: '2.8s' }}>
         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '1.2px', textTransform: 'uppercase', color: rgba(C.muted, 0.75) }}>
           {t('starview.hint')}
         </span>

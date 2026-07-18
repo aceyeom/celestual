@@ -123,7 +123,7 @@ const en = {
 
   // ── screen 3 · placed (the recruiter screen) ───────────────────────────
   // the placed screen turns on your community: the growth-narrative copy (both
-  // states, with the gamified threshold + count language) lives in growth.js,
+  // states, with the gamified countdown language) lives in growth.js,
   // deliberately out of this linted file. these keys are the quiet fallbacks (no
   // community joined, or your community already open) and the shared labels.
   'placed.standingTitle': 'your ping is live.',
@@ -135,7 +135,7 @@ const en = {
   'placed.reachableHead': 'is already on celestual.',
   // the no-community nudge: the flow only opens once your world is here
   'placed.joinTitle': 'one more thing.',
-  'placed.joinReachable': '@{handle} is already on celestual. but celestual opens up only once enough of your world is here. bring yours in.',
+  'placed.joinReachable': '@{handle} is already on celestual. now pick your community, so your ping has a sky to light when the countdown ends.',
   'placed.joinWaiting': 'celestual only works when your world is here. pick your community and bring it in.',
   'placed.findComm': 'find your community',
   'placed.share': 'share your invite link',
@@ -196,7 +196,7 @@ const en = {
   'sky.title1': 'share the',
   'sky.title2': 'open sky.',
   'sky.subOpen': 'this card is your community’s real sky, alive. post it — everyone who joins from it brings the next match closer.',
-  'sky.subGathering': 'this card shows {name} gathering. the sooner it fills, the sooner its sky opens.',
+  'sky.subGathering': 'this card shows {name} gathering. when the countdown ends, its sky opens for everyone at once.',
   'sky.story': 'post it to your story',
   'sky.dm': 'send it in a dm',
   'sky.copy': 'copy the invite link',
@@ -209,7 +209,7 @@ const en = {
   'sky.statInside': 'souls inside',
   'sky.statPings': 'secrets in orbit',
   'sky.statMatches': 'found each other',
-  'sky.statToOpen': 'more to open it',
+  'sky.statOpens': 'until it opens',
   'sky.foot': 'the card names a place, never a person. nothing on it says who you’ve entered.',
   'sky.none': 'join your community first, then you can share its sky.',
   'sky.find': 'find your community',
@@ -341,12 +341,12 @@ const en = {
 
   // ── communities (official, curated launch spaces) ───────────────────────
   // communities are not user-created — the team curates them. placing a ping
-  // never depends on one. each climbs toward a team-set threshold (shown as a
-  // ring); at the threshold it opens and its weekly readout goes live. NOTE: the
-  // ring's own center label and the sandbox live-feed copy are intentionally
-  // literal and live in communities.js / demoData.js, out of this linted file.
+  // never depends on one. there is no member threshold: every community's sky
+  // opens together when the launch countdown ends (communities.js LAUNCH_AT).
+  // NOTE: the sandbox live-feed copy is intentionally literal and lives in
+  // demoData.js, out of this linted file.
   'communities.kicker': 'communities',
-  'communities.intro': 'everyone can ping from day one. at 100 people, a community opens its sky.',
+  'communities.intro': 'everyone can ping from day one. when the countdown ends, every sky opens at once.',
   'communities.foot': 'curated by celestual. more schools soon.',
   'communities.open': 'open',
   'communities.gathering': 'gathering',
@@ -362,17 +362,13 @@ const en = {
   'communities.reasonLabel': 'most said',
   'communities.pings': '{n} pings placed',
   'communities.joinedWeek': '+{n} joined',
-  'communities.gatheringBody': 'the more people in, the sooner it opens. what opens:',
-  'communities.lock1': 'mutual matches this week',
-  'communities.lock2': 'the most common reason',
-  'communities.lock3': 'pings placed',
   'communities.join': 'join {name}',
   'communities.leave': 'leave this community',
   'communities.place': 'place a ping',
   'communities.matchedShort': 'matched',
   // the galaxy community page — a gathering community's sky is still forming
   'communities.gatheringHero': 'a sky still forming.',
-  'communities.gatheringBody2': 'everyone here can already ping. at 100 people, its stars come out — and its matches begin to show.',
+  'communities.gatheringBody2': 'everyone here can already ping. when the countdown ends, its stars come out — and its matches begin to show.',
   'communities.demoWave': 'sandbox: send a wave of pings',
   'communities.demoGather': 'sandbox: bring people in',
   'communities.label': 'your communities',
@@ -412,7 +408,7 @@ const en = {
   'reveal.now': 'lighting up now',
   'reveal.infoTitle': 'the countdown',
   'reveal.infoWhat': 'every sunday night the week’s matches light up across the sky at once — so the reveal is a shared moment, not a lonely refresh.',
-  'reveal.infoReq': 'a community opens at 100 people. matches only ever show at ten and up, so no single match can be reverse-guessed.',
+  'reveal.infoReq': 'the sky opens for everyone at the same moment, when the countdown ends. matches only ever show at ten and up, so no single match can be reverse-guessed.',
   'reveal.infoReveals': 'what lights up: mutual matches this week, the most-said reason, and every ping placed.',
   'reveal.close': 'got it',
 
@@ -435,6 +431,13 @@ const en = {
   // from a held zoom. calm, mechanical — mono metadata voice.
   'sky.hint': 'drag to orbit · pinch to zoom · tap an @ to meet them',
   'sky.reset': 'pull back',
+
+  // ── the dock (the app's three places, always one tap away) ──────────────────
+  // quiet mono labels: the sky (your community's living galaxy), the communities
+  // list, and your pings. the dock only shows on the resting hub screens.
+  'nav.sky': 'sky',
+  'nav.worlds': 'communities',
+  'nav.pings': 'pings',
 
   // ── the public @ (announce yourself in your community's sky) ─────────────────
   // off by default: your star is anonymous. flipping it public rests your own @

@@ -753,45 +753,6 @@ export function Sonar({ C, color, size = 16 }) {
   )
 }
 
-// ── the meter ─────────────────────────────────────────────────────────────────
-// The campus assurance-contract meter: a thin horizontal line filling with warm
-// light, the count in large numerals beside/above it. The count shown is always
-// the true count — the meter IS the campaign.
-export function Meter({ C, count, threshold }) {
-  const frac = Math.max(0, Math.min(1, threshold > 0 ? count / threshold : 0))
-  return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 10 }}>
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(44px, 12vw, 58px)', lineHeight: 1, color: C.cream }}>
-          {Number(count).toLocaleString()}
-        </span>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 13, letterSpacing: '.5px', color: C.muted }}>
-          of {Number(threshold).toLocaleString()}
-        </span>
-      </div>
-      <div style={{ position: 'relative', height: 2, borderRadius: 2, background: rgba(C.cream, 0.09), overflow: 'visible' }}>
-        <div
-          className="meter-fill"
-          style={{
-            position: 'absolute', left: 0, top: 0, bottom: 0, width: `${frac * 100}%`,
-            borderRadius: 2, background: `linear-gradient(90deg, ${rgba(C.star, 0.4)}, ${C.star})`,
-            boxShadow: `0 0 12px ${rgba(C.star, 0.55)}`,
-          }}
-        />
-        {/* the leading edge glows like a star travelling the line */}
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute', top: '50%', left: `${frac * 100}%`, transform: 'translate(-50%, -50%)',
-            width: 5, height: 5, borderRadius: '50%', background: '#fff',
-            boxShadow: `0 0 8px 2px ${rgba(C.star, 0.8)}`,
-          }}
-        />
-      </div>
-    </div>
-  )
-}
-
 export function BackBtn({ C, onClick, label = 'back' }) {
   return (
     <button
@@ -825,6 +786,54 @@ export function LoginButton({ C, label, onClick }) {
       <Icon name="enter" size={15} color={rgba(C.star, 0.95)} stroke={2} />
       {label}
     </button>
+  )
+}
+
+// ── the dock ──────────────────────────────────────────────────────────────────
+// The product's three places — the sky, the communities, your pings — held in
+// one quiet glass dock at the foot of the resting hub screens, so moving
+// between them is always one tap, never a hunt through footers and back
+// arrows. The lit item is where you are; the dock melts away whenever the sky
+// takes the whole frame (a dive, a held zoom, the send-off).
+export function NavDock({ C, items, hidden }) {
+  return (
+    <nav
+      data-noripple
+      aria-label="celestual"
+      style={{
+        position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+        bottom: 'max(14px, env(safe-area-inset-bottom))', zIndex: 22,
+        display: 'inline-flex', alignItems: 'center', gap: 2, padding: 5,
+        borderRadius: 999, background: rgba(C.ink2, 0.78),
+        border: `1px solid ${rgba(C.cream, 0.12)}`,
+        boxShadow: '0 18px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)',
+        backdropFilter: 'blur(16px) saturate(1.05)', WebkitBackdropFilter: 'blur(16px) saturate(1.05)',
+        opacity: hidden ? 0 : 1, pointerEvents: hidden ? 'none' : 'auto',
+        transition: 'opacity .45s ease',
+      }}
+    >
+      {items.map((it) => (
+        <button
+          key={it.id}
+          onClick={it.onClick}
+          aria-label={it.label}
+          aria-current={it.active ? 'page' : undefined}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+            minWidth: 76, padding: '8px 14px 7px', borderRadius: 999, border: 'none', cursor: 'pointer',
+            background: it.active ? rgba(C.star, 0.12) : 'transparent',
+            color: it.active ? C.star : rgba(C.cream, 0.72),
+            textShadow: it.active ? `0 0 12px ${rgba(C.star, 0.4)}` : 'none',
+            transition: 'background .25s ease, color .25s ease',
+          }}
+        >
+          <Icon name={it.icon} size={17} color="currentColor" stroke={1.8} />
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1.6px', textTransform: 'uppercase' }}>
+            {it.label}
+          </span>
+        </button>
+      ))}
+    </nav>
   )
 }
 
@@ -953,6 +962,21 @@ export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) 
         <circle cx="14.5" cy="5" r="2.2" {...p} />
         <circle cx="14.5" cy="15" r="2.2" {...p} />
         <path d="M7 8.9l5.5-2.8M7 11.1l5.5 2.8" {...p} />
+      </>
+    ),
+    // a small ringed world — the communities dock item
+    planet: (
+      <>
+        <circle cx="10" cy="10" r="4.6" {...p} />
+        <ellipse cx="10" cy="10" rx="8.6" ry="3" transform="rotate(-16 10 10)" {...p} />
+      </>
+    ),
+    // a still point with its two sound rings — the pings dock item
+    pings: (
+      <>
+        <circle cx="10" cy="10" r="1.5" fill={color} stroke="none" />
+        <path d="M13.6 6.4a5.1 5.1 0 010 7.2" {...p} />
+        <path d="M6.4 6.4a5.1 5.1 0 000 7.2" {...p} />
       </>
     ),
   }

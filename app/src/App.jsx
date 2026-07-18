@@ -9,7 +9,7 @@ import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff } from './components/ui.jsx'
+import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
@@ -49,7 +49,8 @@ const seedDemoCommLive = () => {
   for (const slug of CURATED_SLUGS) {
     const d = DEMO_COMMUNITIES[slug] || {}
     o[slug] = {
-      members: Number(d.members || 0), // gates the open reward at 100
+      open: d.open != null ? !!d.open : undefined, // sandbox-forced sky state (production: the countdown decides)
+      members: Number(d.members || 0),
       pings: d.pings != null ? Number(d.pings) : null, // galaxy stars (null = withheld while gathering)
       matches: d.matches != null ? Number(d.matches) : null, // constellations
       week: d.week || null,
@@ -185,6 +186,7 @@ export default function App() {
         const live = commLive[c.slug] || {}
         return {
           ...c,
+          open: live.open, // sandbox-only override; undefined in production, where the countdown decides
           members: Number(live.members || 0),
           pings: live.pings != null ? Number(live.pings) : null,
           matches: live.matches != null ? Number(live.matches) : null,
@@ -225,6 +227,11 @@ export default function App() {
   const [accountOpen, setAccountOpen] = useState(false)
   // { handle, onDone } while the DM-verification overlay is up.
   const [verify, setVerify] = useState(null)
+
+  // ── the dock ──
+  // A screen can ask the dock to melt away while its sky takes the frame (the
+  // community page's held zoom / find-your-star flight sets this).
+  const [navHidden, setNavHidden] = useState(false)
 
   // ── the send-off animation ──
   // When a ping is finalized the @ field collapses into a star (the Liftoff
@@ -1106,6 +1113,7 @@ export default function App() {
     startLogin, login,
     renew, letGo, simulateMutual, openConversation, suppressHandle: suppress,
     openAccount, closeAccount, signOut, deleteEverything,
+    setNavHidden,
   }
 
   const Screen = SCREENS[screen] || SCREENS.landing
@@ -1136,8 +1144,17 @@ export default function App() {
   const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
   const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
 
+  // ── the dock (the app's three places, one tap apart) ──
+  // Lives on the resting hub screens only — the focused flows (the send, the
+  // identity step, the send-off, the match) stay single-purpose. It melts, not
+  // unmounts, during any cinematic (a star flight, a held zoom, the send-off),
+  // and the screens pad their foot by --nav-pad so nothing sits under it.
+  const NAV_SCREENS = ['pings', 'worlds', 'community', 'door']
+  const navHere = NAV_SCREENS.includes(screen)
+  const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
+
   return (
-    <div className="celestual-app">
+    <div className="celestual-app" style={{ '--nav-pad': navHere ? '84px' : '0px' }}>
       {homeCommunity ? (
         <CommunityGalaxyCanvas
           key={homeCommunity.slug}
@@ -1195,6 +1212,27 @@ export default function App() {
       >
         <Screen C={C} ctx={ctx} />
       </div>
+
+      {/* the dock — sky · communities · pings, always one tap apart */}
+      {navHere && (
+        <NavDock
+          C={C}
+          hidden={navMelt}
+          items={[
+            {
+              id: 'sky',
+              icon: 'star',
+              label: t('nav.sky'),
+              active: screen === 'community',
+              // your community's living sky — or, before you've joined one,
+              // the communities list so you can find yours
+              onClick: () => (homeCommunity ? viewCommunity(homeCommunity.slug) : go('worlds')),
+            },
+            { id: 'worlds', icon: 'planet', label: t('nav.worlds'), active: screen === 'worlds', onClick: () => go('worlds') },
+            { id: 'pings', icon: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },
+          ]}
+        />
+      )}
 
       {/* the held star view: the @ resting in amber over its star, the intent
           line beneath, the hand free to orbit — and one clear way home. */}
