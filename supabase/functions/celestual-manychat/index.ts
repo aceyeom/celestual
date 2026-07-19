@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
   }
   if (codeExpired) {
-    return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 10 minutes.' });
+    return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 24 hours.' });
   }
   return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request. Get a fresh code in the app and send it here.' });
 });

@@ -106,7 +106,8 @@ export async function pollVerification(token, proofHash) {
 // return the overlay resumes THIS code and keeps polling; it's cleared the moment
 // verification succeeds, expires, or the user cancels. The proof is the same class
 // of secret already kept in localStorage for the verified session (see auth.js),
-// and it self-expires with the ~10-minute code TTL, so this widens nothing.
+// and it self-expires with the ~24-hour code TTL (migration 0011), so this
+// widens nothing.
 const PENDING = 'celestual:igpending'
 
 export function savePending(rec) {

@@ -260,6 +260,160 @@ Watch both sides while testing:
 
 ---
 
+## 8. Root-cause investigation — "it only verifies the first time" & the "different @" reply
+
+This section is the written record of a July 2026 investigation into two live
+complaints:
+
+1. **"The OAuth only works the first time for new users; after ~12–24 h it makes
+   them do the DM again, and the repeat DM never verifies."**
+2. **A user sent a code and got back:** *"That code was started for a different @.
+   Start again from the app with this account."*
+
+It is deliberately blunt about where the fault actually lies, because the
+first-glance explanation (a code TTL that was too short, or "Instagram is
+throttling us") is only the *last* link in the chain, not the cause.
+
+### 8.1 What the data actually shows
+
+Pulled from `celestual_ig_verifications` (production, `vwbsjwaqnycyghvwlxhd`):
+
+| Handle | Attempts in ~30 h | Verified | Left pending (failed) |
+| --- | --- | --- | --- |
+| `ace03d` | **9** | 5 | 4 |
+| `sogeum_in` | 3 | 1 | 2 |
+| `aooo9290` | 3 | 1 | 2 |
+
+The decisive fact: **`ace03d` verified five separate times in about thirty
+hours.** A verified session is a **30-day sliding window** (migrations 0009/0010).
+If the app trusted that session, `ace03d` would have DM'd **once** and never
+again for a month. Five verifications in thirty hours means the app kept
+**throwing the session away and forcing a fresh DM** — and *that* is what
+manufactured the repeat-DM pattern in the first place.
+
+The failed rows cluster exactly where you'd predict if Instagram were dropping
+rapid repeats: `star-9866` verified after a 16-hour gap, then `star-7376` sent
+**7.8 minutes later** never reached ManyChat at all (zero Edge Function
+invocations, no ManyChat journey entry). The DM died in the Instagram→ManyChat
+hop — Meta-side anti-spam suppression of repetitive automated-looking DMs to a
+business account.
+
+### 8.2 The real causal chain (surface → root)
+
+```
+  "works once, then fails"                          ← the complaint
+        ▲
+  Instagram throttles the repeat DM, drops it       ← Meta-side, uncontrollable
+        ▲
+  the user is FORCED to DM again and again          ← the actual bug lives here
+        ▲
+  the app lost its verified session and re-prompts  ← ROOT CAUSE
+        ▲
+  the session + its `proof` secret live ONLY in
+  localStorage, with no server-backed recovery      ← the architectural gap
+```
+
+- **Root cause.** `getSession()` (app/src/api/auth.js) reads a verified session
+  purely from `localStorage['celestual:auth']`, and `verified` in App.jsx is
+  `session.verified && normHandle(session.handle) === normHandle(me)`. The moment
+  that localStorage entry is gone — **Instagram's in-app browser sandbox** (the
+  most common test/entry path, and it does not share storage with the real
+  browser), **iOS Safari ITP** (script-writable storage is evicted after ~7 days
+  of no interaction, sometimes sooner), private mode, a cleared browser, or simply
+  **a different device** — the app has *no way* to know the handle is already
+  verified. The 30-day verified row still sits happily in Postgres, but it is
+  unreachable: the only key to it is the `proof` secret, and that secret also
+  lived only in the localStorage that just vanished.
+- **Second-order effect.** Because a lost session can only be recovered by DMing
+  again, an active user (or a tester) generates many DMs from the same account in
+  a short window. Instagram's integrity/anti-spam layer reads a stream of
+  `star-####` DMs to a business account as automated spam and silently stops
+  delivering them to ManyChat. Nothing downstream — not ManyChat, not the Edge
+  Function, not the code TTL — can rescue a DM that Meta never delivers.
+- **Why the code-TTL bump helped but did not fix it.** Raising the pending TTL
+  from 10 minutes to 24 hours (done live, now captured in **migration
+  `0011_pending_ttl_24h.sql`**) removes the "code died while it sat in Message
+  Requests" failure, which is real and worth keeping. But it does nothing about a
+  session that was discarded and has to be re-earned by DM. TTL was never the
+  root cause.
+
+### 8.3 The "That code was started for a different @" case
+
+This is `handle_mismatch` in `celestual_complete_ig_verification`: a pending code
+was found, but the **Meta-authenticated username of the account that DM'd it**
+did not equal the **@ typed on the site** when the code was started. It is
+*working as designed* as a security gate — a guessed code from the wrong account
+must verify nothing — but it becomes a wall for legitimate people when:
+
+- they **typo'd** their handle on the site (`sogeum_in` vs `soguem_in` both appear
+  in the data), or
+- they manage **several Instagram accounts** and DM'd from the wrong one, or
+- during testing, a code is started for a throwaway handle (`p`, `0p32j8h`,
+  `aooo9290`) and then DM'd from the real account (`ace03d`) — which is exactly
+  what produced this reply in our logs.
+
+The gate is sound; the **product shape** around it is what forces the mismatch:
+the site asks the user to *type* the identity, then demands the DM prove that
+exact typed string, so any drift between "what I typed" and "which account I'm
+actually messaging from" is a dead end.
+
+### 8.4 The fixes
+
+Ordered from "already done / no decision" to "product decisions to confirm."
+
+**A. Done — make git honest about the live TTL.** Migration
+`0011_pending_ttl_24h.sql` restates `celestual_start_ig_verification` with the
+24-hour pending TTL that was hand-edited into production, so a fresh
+`supabase db reset` or a new environment matches production. The stale "codes
+last about 10 minutes" copy in the `code_expired` reply is corrected to 24 hours.
+
+**B. The real fix — a durable, recoverable verified session ("permanent login").**
+The goal is that a handle is DM-verified **once, ever**, and every later
+return — new session, evicted storage, new device — restores that identity
+*without another DM*, so Instagram never sees a repeat pattern to throttle. Two
+building blocks:
+
+  - **Trust an existing local session and stop re-prompting while it is valid.**
+    Today several flows re-open the verify sheet even when a live session exists;
+    a verified handle should sail straight through.
+  - **A server-backed recovery that does not require a DM.** The robust,
+    ToS-clean choice is an **email magic-link re-login**: on the one-time DM
+    verification we bind `handle ⇄ email` (email is already collected), and a
+    "sign back in" flow emails a link that re-issues a fresh `proof` bound to that
+    handle. This survives any storage loss and works cross-device, using the
+    existing `celestual-notify` / `celestual-remind` email infrastructure. It
+    turns the DM into a one-time step instead of a recurring tax.
+
+**C. Eliminate the "different @" wall — let the DMing account define identity.**
+Flip the model so the 4-digit code is a **pure correlation id** and the verified
+identity is *always* the Meta-authenticated account that actually sends the DM.
+The browser starts a code without pre-binding a handle; whoever DMs it is
+verified as that account, and the site adopts that @. This removes the entire
+`handle_mismatch` class (there is nothing to mismatch against) and is strictly
+*more* secure, because identity is never a typed claim. The alternative, lighter
+touch is to keep the strict match but, on mismatch, tell the person which @ they
+DM'd from and offer a one-tap switch to verify *that* account.
+
+**D. Delivery resilience — run the direct Meta webhook in parallel.** The direct
+webhook (`celestual-ig-webhook`, see [DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md))
+receives message events through a *different* Meta delivery path than the
+third-party ManyChat relay and can be less aggressively throttled for the
+repetitive pattern. Running it alongside ManyChat (with `IG_CONFIRM_DM=0` so
+ManyChat still owns the feedback DM; completion is idempotent) is the
+architecturally sound hedge the SECURITY.md "Meta platform risk" note already
+recommends. Gate: it needs the Meta app to pass review. Once **B** lands, repeat
+DMs become rare, so this is a resilience layer rather than a dependency.
+
+### 8.5 Bottom line
+
+The code TTL and the Instagram throttle are real, but they are symptoms. The
+durable fix is **B** — stop discarding the verified session, and give it a
+server-backed, DM-free recovery — with **C** removing the wrong-account wall.
+After that, the "one and done" complaint and the "different @" reply both stop
+being reachable in normal use, and **D** covers the residual Meta-platform risk.
+
+---
+
 Back to: [supabase/README.md](../supabase/README.md) (functions overview) ·
 [DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md) (the direct-Meta path) ·
 [SECURITY.md](./SECURITY.md)
