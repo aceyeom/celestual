@@ -70,6 +70,7 @@ const FOCUS_BANK_TILT = 0.34 // the banked disk tilt (rad) — near edge-on
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
 const TILT = 1.04 // base disk tilt toward the camera (rad)
+const P0 = FOCAL / CAM // resting perspective at the galactic center
 // How close the camera comes to rest in FRONT of the focused star (camera-space z
 // at full focus) — the community sky's standoff, shared. Bounded well above the
 // near plane so the hero never blows past into bare pixels.
@@ -188,6 +189,18 @@ export class GalaxyField {
     // A star being withdrawn plays a brief implosion-then-fade in place before
     // the React layer drops it from the set: { i, t }.
     this.vanish = null
+    // Ambient shooting stars — a slim meteor crossing a corner of the deep sky
+    // every few seconds, the same streak grammar as the community sky's ping
+    // meteors. Screen-space, whisper-subtle, skipped under reduced motion.
+    this.shoots = []
+    this._shootAt = 3 + Math.random() * 4
+    // The frame-time governor (the community sky's, shared): when a device
+    // can't hold the frame, backing resolution and decorative density step
+    // down (and back up when it recovers) — the fix for a laggy weak phone.
+    this.qLevel = 0
+    this._ftEma = 16
+    this._qAt = 0
+    this.dprEff = this.dpr
     // Bind the frame callback ONCE (the loop used to allocate a fresh bound
     // function every frame — needless GC churn at 60fps).
     this._boundTick = (ts) => this._tick(ts)
@@ -465,7 +478,7 @@ export class GalaxyField {
     }
   }
 
-  resize() {
+  resize(force) {
     const rect = this.canvas.getBoundingClientRect()
     const w = rect.width || (this.canvas.parentElement && this.canvas.parentElement.clientWidth) || window.innerWidth || 402
     const h = rect.height || window.innerHeight || 700
@@ -474,12 +487,12 @@ export class GalaxyField {
     // and re-centering the field on every toolbar frame is what made the galaxy
     // "vibrate" inside the Instagram in-app browser. A width change or a real height
     // change (orientation, keyboard) still does a full resize.
-    if (this.w && w === this.w && Math.abs(h - this.h) < 130) return
+    if (!force && this.w && w === this.w && Math.abs(h - this.h) < 130) return
     this.w = w
     this.h = h
-    this.canvas.width = this.w * this.dpr
-    this.canvas.height = this.h * this.dpr
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0)
+    this.canvas.width = Math.round(this.w * this.dprEff)
+    this.canvas.height = Math.round(this.h * this.dprEff)
+    this.ctx.setTransform(this.dprEff, 0, 0, this.dprEff, 0, 0)
     // Spread the field so the disk spills past the frame on wide monitors as
     // well as tall phones — it should read as a window into a much bigger space,
     // not a single contained shape. (Star pixel sizes don't scale with unit, so
@@ -760,10 +773,40 @@ export class GalaxyField {
     }
   }
 
+  // ── the frame-time governor (the community sky's, verbatim behavior) ────────
+  // An EMA of raw frame time steps quality down (backing resolution + the
+  // decorative layers' density) when the device can't hold the frame, and back
+  // up when it can. Hysteresis on both edges so it never flaps.
+  _govern(rawMs, ts) {
+    if (rawMs > 0 && rawMs < 250) this._ftEma = this._ftEma * 0.94 + rawMs * 0.06
+    if (ts - this._qAt < 1600) return
+    if (this._ftEma > 34 && this.qLevel < 2) {
+      this.qLevel++
+      this._qAt = ts
+      this._applyQuality()
+    } else if (this._ftEma < 17 && this.qLevel > 0 && ts - this._qAt > 6000) {
+      this.qLevel--
+      this._qAt = ts
+      this._applyQuality()
+    }
+  }
+  _applyQuality() {
+    const scale = [1, 0.78, 0.6][this.qLevel]
+    this.dprEff = Math.max(1, this.dpr * scale)
+    this._ftEma = 22 // re-center the meter so one step gets a fair trial
+    this.resize(true)
+  }
+  // decorative layers draw every `step`-th particle under pressure
+  get _decorStep() {
+    return this.qLevel === 0 ? 1 : 2
+  }
+
   _tick(ts) {
     if (!this.running) return
-    const dt = Math.min(0.05, (ts - this.lastTs) / 1000)
+    const raw = ts - this.lastTs
+    const dt = Math.min(0.05, raw / 1000)
     this.lastTs = ts
+    this._govern(raw, ts)
     this.modeT += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
     // Camera focus is time-driven and eased, NOT an exponential chase — and
@@ -826,8 +869,37 @@ export class GalaxyField {
       this.orbit.pitch = lerp(this.orbit.pitch, 0, home)
       this.viewDist = lerp(this.viewDist, 1, home)
     }
+    // now and then a shooting star crosses the deep sky — only while the field
+    // rests (never over a dive, the send-off meteor, or the match), and never
+    // more than one at a time: an occasional grace note, not weather
+    this._shootAt -= dt
+    if (this._shootAt <= 0) {
+      this._shootAt = 4 + Math.random() * 5
+      const calm = (this.mode === 'idle' || this.mode === 'resting') && this.focus < 0.2 && this.dim > 0.3
+      if (calm && this.shoots.length === 0) this._spawnShoot()
+    }
     this._draw(dt)
     requestAnimationFrame(this._boundTick)
+  }
+
+  // One ambient shooting star: a slim decelerating streak on a shallow downward
+  // line across a random patch of the upper sky (screen-space — it lives in the
+  // deep background, in front of nothing).
+  _spawnShoot() {
+    const m = Math.min(this.w, this.h)
+    const len = m * (0.18 + Math.random() * 0.14)
+    const th = 0.1 + Math.random() * 0.55 // shallow, always a little downward
+    const sgn = Math.random() < 0.5 ? -1 : 1
+    this.shoots.push({
+      x0: (0.1 + Math.random() * 0.8) * this.w,
+      y0: (0.06 + Math.random() * 0.5) * this.h,
+      dx: Math.cos(th) * len * sgn,
+      dy: Math.sin(th) * len,
+      dist: len,
+      tail: m * (0.06 + Math.random() * 0.05),
+      dur: 0.8 + Math.random() * 0.5,
+      t: 0,
+    })
   }
 
   // Reduced-motion only: has everything that animates come to rest? True once the
@@ -869,6 +941,7 @@ export class GalaxyField {
     // the milky-way ribbon slanting behind the disk — the deepest light
     this._drawBackground(dt, d)
     this._drawBand(d)
+    this._drawShoots(dt, d)
 
     // Camera focus: fly the camera THROUGH the field toward the focused star.
     // Instead of a flat 2D magnification, we offset the perspective camera in
@@ -977,10 +1050,12 @@ export class GalaxyField {
     // mote the camera brushes past used to balloon into a pale smear across
     // half the frame (the "white stains").
     ctx.globalCompositeOperation = 'source-over'
-    for (const p of this.dust) {
+    const dstep = this._decorStep
+    for (let di = 0; di < this.dust.length; di += dstep) {
+      const p = this.dust[di]
       const pr = this._project(p.px, p.py, p.pz, rot)
       if (!pr || pr.sx < -30 || pr.sx > this.w + 30 || pr.sy < -30 || pr.sy > this.h + 30) continue
-      p.tw += dt * p.tws
+      p.tw += dt * p.tws * dstep
       const prox = clamp((pr.zc - 0.55) / 0.7, 0, 1)
       const a = p.base * (0.7 + 0.3 * Math.sin(p.tw)) * d * clamp(pr.shade, 0.3, 1.2) * prox
       if (a <= 0.004) continue
@@ -1005,18 +1080,22 @@ export class GalaxyField {
         continue
       }
       st.tw += dt * st.tws
-      const a = st.base * (0.7 + 0.3 * Math.sin(st.tw)) * d * pr.shade * this.exposure
-      if (st.glow) glowQ.push([pr, st, a])
+      // A star is a POINT SOURCE (the community sky's law, shared): approach
+      // barely grows its core — sub-linear and hard-capped — and is spent as
+      // LIGHT instead: the star brightens and earns diffraction spikes in the
+      // glow pass. This is what keeps a dive reading as flying toward real
+      // stars; the old linear persp scaling ballooned every background star
+      // into a blurry low-fi disc the moment the camera closed on a ping.
+      const rel = pr.persp / P0
+      const lum = clamp(Math.pow(rel, 1.1), 0.3, 2.1)
+      const a = st.base * (0.7 + 0.3 * Math.sin(st.tw)) * d * pr.shade * lum * this.exposure
+      const D = clamp(st.rad * 2.9 * Math.pow(rel, 0.5), 1.6, 11)
+      if (st.glow || rel > 1.45) glowQ.push([pr, st, a, rel, D])
       if (a <= 0.004) {
         st.lx = pr.sx
         st.ly = pr.sy
         continue
       }
-      // diameter: the bright core ≈ the old quad, plus a soft feathered halo so
-      // it reads as a point of light. A floor keeps the faintest stars visible; a
-      // ceiling stops a star the camera dives past from ballooning into a costly
-      // full-frame wash on the way by.
-      const D = clamp(st.rad * pr.persp * 3, 1.9, this.h * 0.5)
       if (streaking && st.lx != null) {
         const sp = Math.hypot(pr.sx - st.lx, pr.sy - st.ly)
         if (sp > 2.2 && sp < maxStreak) {
@@ -1039,16 +1118,26 @@ export class GalaxyField {
       st.ly = pr.sy
     }
 
-    // glow pass (additive): a tinted bloom on every glow star, and on the very
-    // brightest a faint diffraction cross so the field looks photographed.
+    // glow pass (additive): tinted blooms on the glow stars and on any star the
+    // camera is closing in on. Bloom sizes are hard-capped (brightness is spent
+    // as light, never as a bokeh disc), and only the brightest — or a genuine
+    // close approach — earn the diffraction cross, so the field reads
+    // photographed, not glittered.
     ctx.globalCompositeOperation = 'lighter'
-    for (const [pr, st, a] of glowQ) {
-      const sz = st.rad * 7 * pr.persp
-      ctx.globalAlpha = Math.min(0.55, a * 0.7)
+    for (const [pr, st, a, rel, D] of glowQ) {
+      const sz = Math.min(st.rad * 6 * Math.pow(rel, 0.8), 30)
+      ctx.globalAlpha = Math.min(0.55, a * (0.6 + Math.max(0, rel - 1.4) * 0.22))
       ctx.drawImage(this._glowFor(st.hue), pr.sx - sz / 2, pr.sy - sz / 2, sz, sz)
-      if (a > 0.5) {
-        const ss = sz * 2.6
+      // ONLY the designated brightest wear the diffraction cross — spikes on
+      // every near star read as glitter, not as a photographed sky
+      const approach = clamp((rel - 1.45) * 0.5, 0, 0.8)
+      if (st.glow && a > 0.5) {
+        const ss = Math.min(sz * 2.6, 64)
         ctx.globalAlpha = Math.min(0.22, (a - 0.5) * 0.32)
+        ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
+      } else if (st.glow && approach > 0.05 && a > 0.1) {
+        const ss = clamp(D * (2.4 + rel * 0.7), 14, 64)
+        ctx.globalAlpha = Math.min(0.7, approach * a * 1.5)
         ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
       }
     }
@@ -1064,7 +1153,7 @@ export class GalaxyField {
   // (a dive, a hand-orbit, a pinch) they draw short streaks along their own
   // apparent motion, so flying feels like flying. At rest they are a whisper.
   _drawPassers(dt, d, rot) {
-    if (!this.passers || !this.passers.length) return
+    if (!this.passers || !this.passers.length || this.qLevel >= 2) return
     const ctx = this.ctx
     const active = this.focus > 0.02 || this.navEnabled || Math.abs(this.viewDist - 1) > 0.02
     const lift = active ? 1 : 0.5
@@ -1124,8 +1213,10 @@ export class GalaxyField {
     const q = this._cloudQ || (this._cloudQ = [])
     q.length = 0
     const maxD = Math.max(this.w, this.h)
-    for (const p of this.cloud) {
-      p.tw += dt * p.tws
+    const step = this.qLevel >= 2 ? 2 : 1
+    for (let ci = 0; ci < this.cloud.length; ci += step) {
+      const p = this.cloud[ci]
+      p.tw += dt * p.tws * step
       const pr = this._project(Math.cos(p.ang) * p.r, p.y, Math.sin(p.ang) * p.r, rot)
       if (!pr) continue
       const D = p.rad * this.unit * pr.persp * 2
@@ -1154,6 +1245,46 @@ export class GalaxyField {
       const D = e[3]
       ctx.drawImage(spr, e[1] - D / 2, e[2] - D / 2, D, D)
     }
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // The ambient shooting stars: a slim tapered streak decelerating across the
+  // deep sky, a hot head thinning to nothing behind — the community sky's
+  // meteor grammar, worn here as an occasional whisper in the background.
+  _drawShoots(dt, d) {
+    if (!this.shoots.length) return
+    const ctx = this.ctx
+    ctx.globalCompositeOperation = 'lighter'
+    ctx.lineCap = 'round'
+    this.shoots = this.shoots.filter((s) => {
+      s.t += dt
+      const p = s.t / s.dur
+      if (p >= 1) return false
+      const e = 1 - Math.pow(1 - p, 2.1) // entering fast, exhaling to rest
+      const hx = s.x0 + s.dx * e
+      const hy = s.y0 + s.dy * e
+      const bell = Math.sin(Math.PI * p) // fade in, burn, fade out
+      const tail = s.tail * (0.35 + 0.65 * bell)
+      const nx = s.dx / s.dist
+      const ny = s.dy / s.dist
+      const tx = hx - nx * tail
+      const ty = hy - ny * tail
+      const g = ctx.createLinearGradient(hx, hy, tx, ty)
+      g.addColorStop(0, `rgba(255,250,244,${0.45 * bell * d})`)
+      g.addColorStop(0.4, `rgba(222,216,242,${0.16 * bell * d})`)
+      g.addColorStop(1, 'rgba(200,200,236,0)')
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = g
+      ctx.lineWidth = 1.1
+      ctx.beginPath()
+      ctx.moveTo(hx, hy)
+      ctx.lineTo(tx, ty)
+      ctx.stroke()
+      ctx.globalAlpha = Math.min(0.8, 0.7 * bell * d)
+      ctx.drawImage(this._dotSpr('#FFFFFF', 3), hx - 1.5, hy - 1.5, 3, 3)
+      return true
+    })
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -1214,8 +1345,10 @@ export class GalaxyField {
     ctx.globalCompositeOperation = 'source-over'
     const px = this.p.x,
       py = this.p.y
-    for (const b of this.bg) {
-      b.tw += dt * b.tws
+    const step = this._decorStep
+    for (let bi = 0; bi < this.bg.length; bi += step) {
+      const b = this.bg[bi]
+      b.tw += dt * b.tws * step
       const par = (1 - b.z) * 26
       const x = b.x * this.w - px * par
       const y = b.y * this.h - py * par

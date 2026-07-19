@@ -2,11 +2,11 @@
 //
 // This is a different instrument from the ambient backdrop (galaxy.js). There,
 // stars are procedural dust that sets the mood for the general public. Here the
-// sky is LIVE and COUNTABLE: every disk star is one real ping, the field starts
-// empty and fills as pings arrive (0 → a thousand+), and every mutual match
-// lights a small ANONYMOUS constellation — never tied to an identifiable ping,
-// so watching the sky can never reveal who matched whom. That anonymity is
-// structural, not incidental — it's the double-blind, kept.
+// sky is LIVE and COUNTABLE: every disk star is one real ping, and the field
+// starts empty and fills as pings arrive (0 → a thousand+). Matches are only
+// ever a NUMBER in the readout — nothing in the sky marks one, so watching it
+// can never reveal who matched whom. That anonymity is structural, not
+// incidental — it's the double-blind, kept.
 //
 // It shares the backdrop galaxy's visual language on purpose — the same deep-
 // space gradient, perspective camera and tilt, soft round star sprites and
@@ -29,10 +29,6 @@
 //   · a new ping arrives as a METEOR: a slim streak that decelerates out of deep
 //     space into its slot and ignites with a diffraction-spike glisten, then
 //     settles to a twinkle.
-//   · matches rest in the disk as star-chart figures: straight hairlines
-//     joining a shared hub star to its partners — mostly plain pairs, sometimes
-//     a small fan when several matches reach the same star. A newborn line
-//     draws itself in once, then the figure holds still and rides the rotation.
 //   · below the privacy floor the community is FORMING: a slowly swirling proto-
 //     galaxy of luminous gas and uncountable motes.
 //   · the sky is HANDLED, not watched: drag orbits the disk, pinch (or wheel,
@@ -68,7 +64,6 @@ import { hexToRgb, makeGlow, makeStarSprite, makeStarMips, starMipFor, makeSpike
 import { makeBandSheet, makePuff, makeDarkPuff, genVolumetricCloud } from './nebula.js'
 
 const TWO = Math.PI * 2
-const GOLDEN = Math.PI * (3 - Math.sqrt(5))
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const lerp = (a, b, t) => a + (b - a) * t
 const smooth = (p) => p * p * (3 - 2 * p)
@@ -161,9 +156,7 @@ export class CommunityGalaxy {
 
     // ── the live populations ──
     this.stars = [] // one per ping: { i, born, state, settleAt, mine, label, kind, ox, oy, trail }
-    this.consts = [] // one per mutual match: { nodes, born, tw, dying }
     this._slots = [] // deterministic disk slot per ping index (built lazily)
-    this._cSeed = 0
     // The viewer's OWN stars — one per ping this device placed, each carrying its
     // device-held plaintext @ and who that ping is to them (the category tint):
     // [{ st, label, kind }]. A list, not a single index, so "find your star"
@@ -634,12 +627,6 @@ export class CommunityGalaxy {
   get count() {
     return this.stars.length
   }
-  get matchCount() {
-    // one mutual match = one spoke (a pair is a hub + its first spoke)
-    let n = 0
-    for (const c of this.consts) n += c.spokes.length
-    return n
-  }
 
   // A viewer's-own entry arrives as a plain label or { label, kind } — kind is
   // who the ping is to them (crush / ex / friend / complicated), the tint the
@@ -949,86 +936,12 @@ export class CommunityGalaxy {
     this._drawCloudPuffs(this.cloud, dt, grow * d * breathe, 0, fillR)
   }
 
-  // Ensure `n` mutual matches exist (one match = one spoke); new ones draw in.
-  setConstellations(n) {
-    n = Math.max(0, Math.floor(n))
-    while (this.matchCount < n) this.addConstellation(this.matchCount < n - 1)
-    while (this.matchCount > n) {
-      const c = this.consts[this.consts.length - 1]
-      c.spokes.pop()
-      if (!c.spokes.length) this.consts.pop()
-    }
-    this.start()
-  }
-
-  // a cheap deterministic hash → [0,1) for figure/spoke geometry
+  // a cheap deterministic hash → [0,1) (the tap waves' organic jitter)
   _h01(seed) {
     let s = (seed * 1664525 + 1013904223) >>> 0
     s ^= s >>> 13
     s = (s * 1274126177) >>> 0
     return s / 4294967296
-  }
-
-  // Seat spoke `k` of a figure around its hub: the first sits along the
-  // figure's own base direction, later ones fan around it in golden-angle
-  // steps — so a shared hub reads as a small tidy asterism, never a scribble.
-  _spoke(fig, k, born) {
-    const j1 = this._h01(fig.seed * 97 + k * 131 + 1)
-    const j2 = this._h01(fig.seed * 61 + k * 17 + 7)
-    const ang = fig.dir + k * 2.39996323 + (j1 - 0.5) * 0.7
-    const span = 0.06 + j2 * 0.07
-    return {
-      px: fig.hub.px + Math.cos(ang) * span,
-      pz: fig.hub.pz + Math.sin(ang) * span,
-      y: 0.028 + j1 * 0.042,
-      born,
-    }
-  }
-
-  // One mutual match = one straight thread of light between two stars — a rose
-  // hub and an amber partner. Mostly the figures are plain PAIRS; sometimes a
-  // new match reaches a star other matches already found, and the figure grows
-  // into a small fan around one shared hub (several people, one crush). Drawn
-  // like a star chart: hairline, straight, still. Anonymous by construction —
-  // figures are seated at their own places in the disk, never on any
-  // identifiable ping star.
-  addConstellation(instant) {
-    const born = instant ? -10 : this.t
-    // roughly one match in four joins an existing young figure at its hub
-    const open = this.consts.filter((c) => !c.dying && c.spokes.length < 4)
-    if (open.length && this._h01(this._cSeed * 7 + 13) < 0.28) {
-      const fig = open[Math.floor(this._h01(this._cSeed * 31 + 5) * open.length)]
-      fig.spokes.push(this._spoke(fig, fig.spokes.length, born))
-      this._cSeed++
-      this.start()
-      return
-    }
-    // Keep the sky legible however long a session runs: past a cap the oldest
-    // figure fades out (a chart dissolving, not a list shifting).
-    const MAX = 16
-    const live = this.consts.filter((c) => !c.dying)
-    if (live.length >= MAX) live[0].dying = this.t
-    const idx = ++this._cSeed
-    let s = (idx * 99991) >>> 0
-    const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 4294967296)
-    // Seat the hub INSIDE the lit disk (never the empty rim): its radius rides
-    // the current fill envelope, and golden-angle sequencing keeps figures from
-    // ever piling onto each other.
-    const fill = Math.max(Math.sqrt(Math.max(this.stars.length, 60) / CAP) * RMAX, 0.42)
-    const angC = idx * GOLDEN * 2.2
-    const rC = (0.24 + rnd() * 0.5) * fill
-    const fig = {
-      hub: { px: Math.cos(angC) * rC, pz: Math.sin(angC) * rC, y: 0.03 + rnd() * 0.04 },
-      dir: rnd() * TWO,
-      seed: idx,
-      spokes: [],
-      born,
-      tw: rnd() * TWO,
-      dying: 0,
-    }
-    fig.spokes.push(this._spoke(fig, 0, born))
-    this.consts.push(fig)
-    this.start()
   }
 
   // The find-your-star gesture: the camera dives through the field to one of the
@@ -1065,6 +978,27 @@ export class CommunityGalaxy {
     this.zoomTarget = 1
     if (this.reduced) this.locateFx = { t0: this.t } // clock-based: survives dt=0 draws
     else this.dive = { t: 0, held: !!opts.hold }
+    this.start()
+    return true
+  }
+
+  // Fly the camera to ANY resident star and stay with it — the meeting view a
+  // tapped public @ opens. The exact grammar as find-your-star (the bank, the
+  // run, the held standoff; hand free to orbit and pinch), so every dive in
+  // the product arrives the same way. releaseDive() glides back out.
+  diveToStar(st) {
+    if (!st || !this.stars.includes(st)) return false
+    this.diveSt = st
+    this.diveLabel = null // the screen's overlay owns the name here
+    this.diveDist = 1
+    const slot = this._slot(st.i)
+    const wrap = (v) => Math.atan2(Math.sin(v), Math.cos(v))
+    const yawGoal = wrap(Math.atan2(slot.pz, slot.px) - this.spin + Math.PI / 2)
+    this.diveOri = { yaw: yawGoal, tilt: DIVE_BANK_TILT }
+    this.diveTiltDur = DIVE_TILT_MIN + (DIVE_TILT_MAX - DIVE_TILT_MIN) * (Math.abs(yawGoal) / Math.PI)
+    // the dive owns the camera — release any hand-held zoom first
+    this.zoomTarget = 1
+    this.dive = { t: 0, held: true }
     this.start()
     return true
   }
@@ -1223,13 +1157,20 @@ export class CommunityGalaxy {
     g.lastTap = now
     g.lastTapX = e.clientX
     g.lastTapY = e.clientY
-    // a tap on a public @ answers as a meeting, not a ripple: the camera dollies
-    // to that person's star and the screen is told who it is
+    // a tap on a public @ answers as a MEETING: the camera flies to that
+    // person's star with the same held cinematic dive as find-your-star (the
+    // bank, the run, the standoff) and the screen is told who it is. Reduced
+    // motion trades the flight for a calm dolly to the same star.
     const tag = this._tagAt(e.clientX, e.clientY)
     if (tag) {
-      const slot = this._slot(tag.st.i)
-      this.zoomFocus = { px: slot.px, pz: slot.pz }
-      this.zoomTarget = Math.max(this.zoomTarget, 3.4)
+      if (this.reduced) {
+        const slot = this._slot(tag.st.i)
+        this.zoomFocus = { px: slot.px, pz: slot.pz }
+        this.zoomTarget = Math.max(this.zoomTarget, 3.4)
+        this.diveSt = tag.st
+      } else {
+        this.diveToStar(tag.st)
+      }
       this._interactAt = this.t
       if (this.onTagTap) this.onTagTap(tag.label, tag.own)
       this.start()
@@ -1489,8 +1430,7 @@ export class CommunityGalaxy {
         Math.abs(this._zoomV || 0) > 0.0005 ||
         this.zoom > 1.001 !== this.zoomTarget > 1.001 ||
         Math.abs(this.zoom - this.zoomTarget) > 0.002 ||
-        this.stars.some((s) => s.settleAt > 0 && this.t - s.settleAt < 1.2) ||
-        this.consts.some((c) => !c.dying && c.spokes.some((sp) => sp.born > 0 && this.t - sp.born < 2.2))
+        this.stars.some((s) => s.settleAt > 0 && this.t - s.settleAt < 1.2)
       if (!busy && this.t > 1) {
         this.running = false
         return
@@ -1675,7 +1615,6 @@ export class CommunityGalaxy {
       this._drawMine(dt)
     } else {
       this._drawStars(dt, d)
-      this._drawConstellations(dt, d)
       this._drawPublicTags(dt, d)
       this._drawMine(dt)
     }
@@ -2049,8 +1988,10 @@ export class CommunityGalaxy {
 
       // during a dive the field melts back so the hero arrives alone — but only
       // as the ship slows: at full travel speed the field stays lit and STREAMS,
-      // and the melt completes on arrival as the rush dies away.
-      const fade = focusing ? 1 - (0.82 - rush * 0.34) * this.focus : 1
+      // and the melt completes on arrival as the rush dies away. The star the
+      // dive is flying TO (a tapped public @'s) is the hero — it never melts.
+      const isDive = focusing && st === this.diveSt
+      const fade = focusing && !isDive ? 1 - (0.82 - rush * 0.34) * this.focus : 1
       const tw = 0.7 + 0.3 * Math.sin(slot.phase)
       const rel = pr.persp / P0 // 1 at the resting center; grows on approach
       const lum = clamp(Math.pow(rel, 1.1), 0.3, 2.1)
@@ -2081,6 +2022,28 @@ export class CommunityGalaxy {
       ctx.drawImage(this._dotSpr(slot.hue, D), pr.sx - D / 2, pr.sy - D / 2, D, D)
       st.lx = pr.sx
       st.ly = pr.sy
+      // the meeting's hero: as the camera arrives the tapped star ignites into
+      // the full held-view signature — amber halo, warm-white bloom, tinted
+      // diffraction spikes, a white-hot point — the same dressing a held star
+      // view gives the viewer's own star, so every dive lands the same way.
+      if (isDive) {
+        const f = this.focus
+        const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + slot.phase)
+        ctx.globalCompositeOperation = 'lighter'
+        const ro = Math.min((13 + pulse * 3) * (1 + f * 2.4), 96)
+        ctx.globalAlpha = (0.2 + 0.12 * pulse) * f
+        ctx.drawImage(this._glowFor(this.you), pr.sx - ro, pr.sy - ro, ro * 2, ro * 2)
+        const go = Math.min((6.5 + pulse * 1.8) * (1 + f * 2.6), 72)
+        ctx.globalAlpha = (0.4 + 0.22 * pulse) * f
+        ctx.drawImage(this.glows.white, pr.sx - go, pr.sy - go, go * 2, go * 2)
+        const hs = Math.min((30 + pulse * 6) * (1 + f * 2.6), 170)
+        ctx.globalAlpha = Math.min(1, (0.4 + 0.18 * pulse) * f)
+        ctx.drawImage(this._spikeFor(this.you), pr.sx - hs / 2, pr.sy - hs / 2, hs, hs)
+        const cd = Math.min((2.9 + pulse * 0.5) * (1 + f * 1.6), 9)
+        ctx.globalAlpha = Math.min(1, f)
+        ctx.drawImage(this._dotFor('#FFFFFF'), pr.sx - cd, pr.sy - cd, cd * 2, cd * 2)
+        ctx.globalCompositeOperation = 'source-over'
+      }
       const near = rel > 1.45
       if (!liteGlow && (slot.glow || near || ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
       else if (liteGlow && (ignite > 0 || flare > 0.25)) glowQ.push([pr, slot, a, ignite, flare, rel, D])
@@ -2101,9 +2064,12 @@ export class CommunityGalaxy {
         const ss = 22 + ignite * 34
         ctx.globalAlpha = ignite * 0.85
         ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
-      } else if ((approach > 0.05 && a > 0.1) || (a > 0.5 && slot.glow)) {
+      } else if (slot.glow && (approach > 0.05 || a > 0.5)) {
+        // ONLY the designated brightest wear the diffraction cross — in a real
+        // photograph spikes belong to a handful of luminous suns, and a zoom
+        // that puts a cross on every star reads as glitter, not as a sky
         const ss = clamp(D * (2.4 + rel * 0.7), 14, 64)
-        ctx.globalAlpha = Math.min(0.7, approach * a * 1.5 + (slot.glow ? 0.14 * a : 0))
+        ctx.globalAlpha = Math.min(0.7, approach * a * 1.5 + 0.14 * a)
         ctx.drawImage(this._spike, pr.sx - ss / 2, pr.sy - ss / 2, ss, ss)
       }
     }
@@ -2394,109 +2360,6 @@ export class CommunityGalaxy {
     ctx.drawImage(this.glows.you, x - 7, y - 7, 14, 14)
     ctx.globalAlpha = enter
     ctx.drawImage(this._dotFor('#FFFFFF'), x - 4, y - 4, 8, 8)
-  }
-
-  // ── the anonymous match figures ─────────────────────────────────────────────
-  // Star-chart constellations: straight hairlines joining a rose hub star to
-  // its amber partners. Mostly plain pairs (one line); a fan when several
-  // matches reached the same star. A newborn line draws itself in ONCE, from
-  // the new star to the one it found, glints at both ends the moment it
-  // connects — and then the figure RESTS, still as a chart, its stars only
-  // breathing faintly. No arcs, no travelling sparks, no pulsing threads.
-  _drawConstellations(dt, d) {
-    const ctx = this.ctx
-    const fade = 1 - this.focus * 0.85
-    if (fade <= 0.02) return
-    const gone = []
-    const REVEAL = 1.1 // seconds a newborn line takes to draw in
-    ctx.lineCap = 'round'
-    for (const cn of this.consts) {
-      cn.tw += dt * 0.5
-      let life = 1
-      if (cn.dying) {
-        life = 1 - clamp((this.t - cn.dying) / 1.2, 0, 1)
-        if (life <= 0) {
-          gone.push(cn)
-          continue
-        }
-      }
-      const ph = this._project(cn.hub.px, cn.hub.y, cn.hub.pz)
-      if (!ph) continue
-      let hubGlint = 0
-      let hubOn = 0 // the hub lights with its brightest-revealed spoke
-      ctx.globalCompositeOperation = 'lighter'
-      for (let k = 0; k < cn.spokes.length; k++) {
-        const sp = cn.spokes[k]
-        const ps = this._project(sp.px, sp.y, sp.pz)
-        if (!ps) continue
-        const reveal = sp.born < 0 ? 1 : smooth(clamp((this.t - sp.born) / REVEAL, 0, 1))
-        if (reveal <= 0.001) continue
-        hubOn = Math.max(hubOn, reveal)
-        const depth = clamp((ph.shade + ps.shade) / 2, 0.4, 1.1) // back-side figures sit dimmer
-        const la = life * depth * fade
-        // the line draws once from the new star toward the one it found
-        const ex = lerp(ps.sx, ph.sx, reveal)
-        const ey = lerp(ps.sy, ph.sy, reveal)
-        // a faint rose under-glow beneath a cream hairline — a chart line that
-        // still reads as light, never as UI
-        ctx.globalAlpha = la
-        ctx.strokeStyle = this._rgba(this.them, 0.055)
-        ctx.lineWidth = 2.2
-        ctx.beginPath()
-        ctx.moveTo(ps.sx, ps.sy)
-        ctx.lineTo(ex, ey)
-        ctx.stroke()
-        ctx.strokeStyle = 'rgba(245,236,246,0.15)'
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(ps.sx, ps.sy)
-        ctx.lineTo(ex, ey)
-        ctx.stroke()
-        // arrival: one glint at the new star as its line completes (the hub
-        // answers below) — a single beat, then stillness
-        if (sp.born > 0) {
-          const q = (this.t - sp.born - REVEAL) / 0.7
-          if (q > 0 && q < 1) {
-            const bell = Math.sin(Math.PI * q)
-            hubGlint = Math.max(hubGlint, bell)
-            const ss = 12 + bell * 18
-            ctx.globalAlpha = bell * 0.8 * fade * life
-            ctx.drawImage(this._spikeFor(this.you), ps.sx - ss / 2, ps.sy - ss / 2, ss, ss)
-          }
-        }
-        // the partner star — a modest amber point wearing a small burst
-        const breathe = 0.92 + 0.08 * Math.sin(cn.tw + k * 1.7)
-        const on = sp.born < 0 ? 1 : smooth(clamp((this.t - sp.born) / 0.4, 0, 1))
-        const gs = 6.5 * breathe
-        ctx.globalAlpha = Math.min(1, 0.4 * la + 0.08) * on
-        ctx.drawImage(this._glowFor(this.you), ps.sx - gs, ps.sy - gs, gs * 2, gs * 2)
-        const ss2 = 14 * breathe
-        ctx.globalAlpha = Math.min(1, 0.55 * la + 0.14) * on
-        ctx.drawImage(this._spikeFor(this.you), ps.sx - ss2 / 2, ps.sy - ss2 / 2, ss2, ss2)
-        ctx.globalAlpha = Math.min(1, 0.85 * la + 0.1) * on
-        const dsz = 2.3 * breathe
-        ctx.drawImage(this._dotFor('#FFFFFF'), ps.sx - dsz, ps.sy - dsz, dsz * 2, dsz * 2)
-      }
-      if (hubOn > 0.001) {
-        // the hub — the shared rose star, a touch larger than its partners
-        const la = life * clamp(ph.shade, 0.4, 1.1) * fade * hubOn
-        const breathe = 0.92 + 0.08 * Math.sin(cn.tw * 1.2)
-        const gs = (8.5 + hubGlint * 6) * breathe
-        ctx.globalAlpha = Math.min(1, (0.45 + hubGlint * 0.35) * la + 0.1)
-        ctx.drawImage(this._glowFor(this.them), ph.sx - gs, ph.sy - gs, gs * 2, gs * 2)
-        const ss = (18 + hubGlint * 14) * breathe
-        ctx.globalAlpha = Math.min(1, (0.6 + hubGlint * 0.3) * la + 0.16)
-        ctx.drawImage(this._spikeFor(this.them), ph.sx - ss / 2, ph.sy - ss / 2, ss, ss)
-        ctx.globalAlpha = Math.min(1, 0.9 * la + 0.1)
-        const dsz = 2.8 * breathe
-        ctx.drawImage(this._dotFor('#FFFFFF'), ph.sx - dsz, ph.sy - dsz, dsz * 2, dsz * 2)
-      }
-    }
-    for (const g of gone) {
-      const at = this.consts.indexOf(g)
-      if (at >= 0) this.consts.splice(at, 1)
-    }
-    ctx.globalCompositeOperation = 'source-over'
   }
 
   // ── the forming proto-galaxy ────────────────────────────────────────────────

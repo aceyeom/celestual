@@ -16,7 +16,7 @@ import {
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
   StarViewOverlay, CopyCodeScreen,
 } from './components/screens.jsx'
-import { CURATED, CURATED_SLUGS, isCurated, communityOpen, MATCH_FLOOR } from './communities.js'
+import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
@@ -1140,7 +1140,6 @@ export default function App() {
   // still owns the send-off drift. On the community page your sky is the hero
   // (full bright); elsewhere it's calmed so the foreground reads.
   const homeOpen = homeCommunity ? communityOpen(homeCommunity) : false
-  const homeMatches = homeCommunity && homeCommunity.matches != null ? Number(homeCommunity.matches) : 0
   const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
   const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
 
@@ -1161,7 +1160,6 @@ export default function App() {
           you={C.you}
           them={C.them}
           pings={homePings}
-          matches={homeOpen && homeMatches >= MATCH_FLOOR ? homeMatches : 0}
           forming={!homeOpen}
           dim={communityDim}
           mine={mineLabels}

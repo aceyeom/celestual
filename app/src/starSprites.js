@@ -6,10 +6,11 @@
 //
 //   makeGlow        — a soft round halo (bloom under a core, nebula knots)
 //   makeStarSprite  — a POINT SOURCE: a tiny white-hot core dropping steeply
-//                     through the star's own hue, with four hairline rays baked
-//                     in at a whisper. Small draws read as crisp stars (never
-//                     featureless dots); large draws read as a photographed
-//                     star (never an inflated blob).
+//                     through the star's own hue — a real rendered star, ROUND.
+//                     No baked rays: a field of tiny four-point crosses read as
+//                     glitter, not as a night sky. Small draws are crisp points
+//                     of light; large draws are a luminous disc with a hard
+//                     heart, the way a camera actually renders a star.
 //   makeStarMips    — the same point source baked at a ladder of sizes, so
 //                     every draw can sample near 2× its destination and even
 //                     the tiniest field star stays needle sharp (starMipFor
@@ -69,19 +70,6 @@ export function makeStarSprite(color, size) {
   const [r, g, b] = hexToRgb(color)
   const m = size / 2
   const wr = ((r + 255 * 2) / 3) | 0, wg = ((g + 255 * 2) / 3) | 0, wb = ((b + 255 * 2) / 3) | 0
-
-  // four hairline rays, baked at a whisper — what keeps a small star a STAR
-  c.save()
-  c.translate(m, m)
-  for (let k = 0; k < 4; k++) {
-    ray(c, m * 0.96, size * 0.016, [
-      [0, `rgba(255,255,255,0.72)`],
-      [0.3, `rgba(${wr},${wg},${wb},0.24)`],
-      [1, `rgba(${r},${g},${b},0)`],
-    ])
-    c.rotate(Math.PI / 2)
-  }
-  c.restore()
 
   // the point source: a hard white heart, then a LONG smooth exhale through
   // the hue — stop-laddered close enough to a true exponential falloff that

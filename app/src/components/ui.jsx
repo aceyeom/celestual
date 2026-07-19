@@ -126,15 +126,15 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
 
 // ── the community galaxy (a countable galaxy: one star per real ping) ─────────
 // The community page's own galaxy — distinct from the ambient backdrop above.
-// Every star is one ping; the field fills as pings arrive and lights anonymous
-// match-constellations. Full-bleed at z-index 0 so it sits UNDER the screen's
-// content (which the screen wraps at z-index 1) but OVER the ambient backdrop.
-// `onReady(field)` hands the live engine to the screen so it can launch() a ping
-// and addConstellation() a match as the demo (or real data) ticks. Remount on a
-// community change by giving it key={slug}.
+// Every star is one ping; the field fills as pings arrive. Full-bleed at
+// z-index 0 so it sits UNDER the screen's content (which the screen wraps at
+// z-index 1) but OVER the ambient backdrop.
+// `onReady(field)` hands the live engine to the screen so it can launch() a
+// ping as the demo (or real data) ticks. Remount on a community change by
+// giving it key={slug}.
 // `inline` mounts the field inside its parent box (absolute, not fixed) — the
 // live share card uses this to carry a real, breathing galaxy inside a card.
-export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady, inline = false }) {
+export function CommunityGalaxyCanvas({ you, them, pings = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady, inline = false }) {
   const ref = React.useRef(null)
   const field = React.useRef(null)
   const readyRef = React.useRef(onReady)
@@ -150,7 +150,6 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
       f.setForming(true)
     } else {
       f.seed(pings)
-      f.setConstellations(matches)
     }
     f.syncMine(mineRef.current || [])
     f.setPublicHandles(publicHandles || [], ownPublic || null)
@@ -181,8 +180,8 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
   // Live reconciliation: the sky tracks its community's numbers after mount too.
   // A gathering community that crosses the floor RESOLVES — the forming gas gives
   // way to its real, countable stars. Counts only ever reconcile upward here
-  // (screen-driven launch()/addConstellation() already lead the props; a server
-  // refresh that jumps ahead settles the difference in without a meteor storm).
+  // (screen-driven launch() already leads the props; a server refresh that
+  // jumps ahead settles the difference in without a meteor storm).
   React.useEffect(() => {
     const f = field.current
     if (!f) return
@@ -194,12 +193,10 @@ export function CommunityGalaxyCanvas({ you, them, pings = 0, matches = 0, formi
       f.setForming(false)
       f.seed(pings, [])
       f.syncMine(mineRef.current || [])
-      f.setConstellations(matches)
       return
     }
     if (pings > f.count) f.setCount(pings)
-    if (matches > f.matchCount) f.setConstellations(matches)
-  }, [forming, pings, matches])
+  }, [forming, pings])
   // the viewer's own stars follow the device-held ping list (adds rest in
   // quietly; a released ping's star leaves the sky)
   React.useEffect(() => {
