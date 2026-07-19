@@ -10,6 +10,10 @@
 //                     in at a whisper. Small draws read as crisp stars (never
 //                     featureless dots); large draws read as a photographed
 //                     star (never an inflated blob).
+//   makeStarMips    — the same point source baked at a ladder of sizes, so
+//                     every draw can sample near 2× its destination and even
+//                     the tiniest field star stays needle sharp (starMipFor
+//                     picks the right rung).
 //   makeSpikeSprite — the full diffraction burst a BRIGHT star earns: four long
 //                     tapered primary rays (white-hot at the crossing, the hue
 //                     feathering to nothing at the tips), a faint diagonal
@@ -29,9 +33,14 @@ export function makeGlow(color, size) {
   s.width = s.height = size
   const c = s.getContext('2d')
   const [r, g, b] = hexToRgb(color)
+  // a silk falloff — enough stops that the halo breathes out with no visible
+  // shoulder; a two-stop gradient leaves a ring the eye reads as a sticker
   const grd = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grd.addColorStop(0, `rgba(${r},${g},${b},0.95)`)
-  grd.addColorStop(0.3, `rgba(${r},${g},${b},0.42)`)
+  grd.addColorStop(0, `rgba(${r},${g},${b},0.9)`)
+  grd.addColorStop(0.2, `rgba(${r},${g},${b},0.56)`)
+  grd.addColorStop(0.42, `rgba(${r},${g},${b},0.24)`)
+  grd.addColorStop(0.66, `rgba(${r},${g},${b},0.085)`)
+  grd.addColorStop(0.85, `rgba(${r},${g},${b},0.024)`)
   grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
   c.fillStyle = grd
   c.fillRect(0, 0, size, size)
@@ -74,16 +83,19 @@ export function makeStarSprite(color, size) {
   }
   c.restore()
 
-  // the point source: a hard white heart, a steep drop through the hue, a
-  // tight halo — energy lives in the middle FIFTH so scale never blurs it:
-  // a star stays a needle of light at any draw size, never a soft disc
+  // the point source: a hard white heart, then a LONG smooth exhale through
+  // the hue — stop-laddered close enough to a true exponential falloff that
+  // no shoulder or ring survives at any draw size. Energy still lives in the
+  // middle fifth, so a star stays a needle of light, never a soft disc.
   const grd = c.createRadialGradient(m, m, 0, m, m, m)
   grd.addColorStop(0.0, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.13, 'rgba(255,255,255,1)')
-  grd.addColorStop(0.21, `rgba(${wr},${wg},${wb},0.95)`)
-  grd.addColorStop(0.33, `rgba(${r},${g},${b},0.5)`)
-  grd.addColorStop(0.5, `rgba(${r},${g},${b},0.15)`)
-  grd.addColorStop(0.74, `rgba(${r},${g},${b},0.04)`)
+  grd.addColorStop(0.11, 'rgba(255,255,255,1)')
+  grd.addColorStop(0.19, `rgba(${wr},${wg},${wb},0.96)`)
+  grd.addColorStop(0.28, `rgba(${r},${g},${b},0.6)`)
+  grd.addColorStop(0.38, `rgba(${r},${g},${b},0.3)`)
+  grd.addColorStop(0.5, `rgba(${r},${g},${b},0.13)`)
+  grd.addColorStop(0.64, `rgba(${r},${g},${b},0.05)`)
+  grd.addColorStop(0.8, `rgba(${r},${g},${b},0.016)`)
   grd.addColorStop(1.0, `rgba(${r},${g},${b},0)`)
   c.fillStyle = grd
   c.beginPath()
@@ -92,13 +104,22 @@ export function makeStarSprite(color, size) {
   return s
 }
 
-// A small companion bake of the same point source. Down-scaling one huge
-// sprite to a 2px field star hands the browser an extreme minification —
-// exactly the mush that read as "blurry, low-quality stars". Tiny draws pull
-// from this near-native bake instead, so the faint background stays needle
-// sharp; the big bake serves the close-ups a dive magnifies.
-export function makeStarSpriteSmall(color) {
-  return makeStarSprite(color, 32)
+// The point-source MIP LADDER. One big bake minified 10–60× down to a 2px
+// field star is exactly the mush that read as low-fidelity: bilinear
+// sampling collapses past ~2× minification and the needle core averages away
+// into a gray smudge. So the same star is baked at a ladder of sizes, and
+// every draw pulls the bake nearest 2× its destination — each star on
+// screen, from a 1.5px background point to a full close-up, samples inside
+// bilinear's sweet spot and stays a crisp point of light. Five tiny canvases
+// per hue, baked once; picking from the ladder is a four-compare loop.
+const MIP_SIZES = [8, 16, 32, 64, 128]
+export function makeStarMips(color) {
+  return MIP_SIZES.map((sz) => makeStarSprite(color, sz))
+}
+export function starMipFor(mips, D) {
+  const want = D * 2
+  for (let i = 0; i < mips.length; i++) if (mips[i].width >= want) return mips[i]
+  return mips[mips.length - 1]
 }
 
 export function makeSpikeSprite(color, size) {

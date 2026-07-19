@@ -60,7 +60,7 @@ import { CATEGORY_TINTS } from './theme.js'
 // The star sprites — the shared instrument both skies draw their light with
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
-import { hexToRgb, makeGlow, makeStarSprite, makeStarSpriteSmall, makeSpikeSprite } from './starSprites.js'
+import { hexToRgb, makeGlow, makeStarSprite, makeStarMips, starMipFor, makeSpikeSprite } from './starSprites.js'
 // The cloud instruments (see nebula.js): the deep-sky band sheet for the far
 // backdrop, and the VOLUMETRIC cloud — true 3D gas puffs seated in the disk
 // volume, projected and depth-sorted per frame, so the nebula holds its body
@@ -74,10 +74,14 @@ const lerp = (a, b, t) => a + (b - a) * t
 const smooth = (p) => p * p * (3 - 2 * p)
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
-// the flight easing: quintic ease-in-out — a longer, silkier gather and
-// exhale than the cubic, so camera moves read as a ship committing to a burn
-// and gliding out of it, never a UI transition
-const easeFlight = (p) => (p < 0.5 ? 16 * p * p * p * p * p : 1 - Math.pow(-2 * p + 2, 5) / 2)
+// The flight easing: Perlin's smootherstep. Flat-launched and flat-landed
+// like the old quintic in-out, but its peak velocity is barely 1.9× the mean
+// where the quintic's was 5× — the quintic hoarded the whole flight into a
+// violent mid-course whoosh (the "quick dart"). This curve SPENDS the travel
+// across the flight: a long gathering acceleration, a sustained glide, a long
+// exhale. Paired with the geometric depth path in _draw, which keeps the
+// apparent magnification rate even instead of detonating near arrival.
+const easeFlight = (p) => p * p * p * (p * (p * 6 - 15) + 10)
 
 // Stellar palette — warm gold bulge, cream body, cool young arms, rare red
 // giant. The community's own two lights (`you`, `them`) join it at runtime.
@@ -114,18 +118,18 @@ const IGNITE_DUR = 0.55 // the glisten when it lands
 // dives along the banked plane, the field streaming past with real depth
 // parallax. Then the hold on the flaring star, and the glide back out (camera
 // and bank unwinding together).
-const DIVE_IN = 1.8
+const DIVE_IN = 2.4
 const DIVE_HOLD = 1.9 // long enough to read the @ resting over the star
-const DIVE_OUT = 1.1
-// The run ignites while the bank is still swinging (at this fraction of the
-// bank's length) — turn and travel breathe as ONE gesture; the old
-// bank-THEN-run sequencing is what felt robotic and separated.
-const DIVE_OVERLAP = 0.42
+const DIVE_OUT = 1.6
+// The run ignites early in the bank's swing — turn and travel breathe as ONE
+// gesture; the old bank-THEN-run sequencing is what felt robotic and
+// separated, and even a late ignition read as two moves.
+const DIVE_OVERLAP = 0.24
 const STANDOFF = 0.34 // how close (camera-space z) the dive comes to rest
 // the bank: its length breathes with how far the disk has to swing, and the
 // banked tilt is near edge-on — the galaxy seen from its side
-const DIVE_TILT_MIN = 0.6
-const DIVE_TILT_MAX = 1.1
+const DIVE_TILT_MIN = 0.9
+const DIVE_TILT_MAX = 1.6
 const DIVE_BANK_TILT = 0.34
 
 // The hand-driven camera. Zoom is a real dolly toward a point on the disk plane
@@ -249,14 +253,14 @@ export class CommunityGalaxy {
     if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
   }
-  // Pick the bake nearest the destination size: minifying the 128px sprite all
-  // the way down to a 2px field star is what made the deep field read blurry —
-  // tiny draws pull from a 32px bake instead and stay needle sharp.
+  // Pick the mip-ladder bake nearest 2× the destination size: minifying the
+  // 128px sprite all the way down to a 2px field star is what made the deep
+  // field read blurry — every draw now samples inside bilinear's sweet spot,
+  // so the faintest far sun and the deepest close-up are equally crisp.
   _dotSpr(hex, D) {
-    if (D >= 6) return this._dotFor(hex)
-    if (!this._dotSmallCache) this._dotSmallCache = {}
-    if (!this._dotSmallCache[hex]) this._dotSmallCache[hex] = makeStarSpriteSmall(hex)
-    return this._dotSmallCache[hex]
+    if (!this._dotMips) this._dotMips = {}
+    const m = this._dotMips[hex] || (this._dotMips[hex] = makeStarMips(hex))
+    return starMipFor(m, D)
   }
   _glowFor(hex) {
     if (!this._glowCache[hex]) this._glowCache[hex] = makeGlow(hex, 64)
@@ -881,10 +885,6 @@ export class CommunityGalaxy {
   _drawCloudPuffs(puffs, dt, gain, theta, fillR) {
     if (gain <= 0.004) return
     const ctx = this.ctx
-    if (!this._puffSpr) {
-      this._puffSpr = {}
-      this._darkPuff = makeDarkPuff()
-    }
     const q = this._cloudQ || (this._cloudQ = [])
     q.length = 0
     const maxD = Math.max(this.w, this.h)
@@ -910,8 +910,11 @@ export class CommunityGalaxy {
       if (pr.sx < -D || pr.sx > this.w + D || pr.sy < -D || pr.sy > this.h + D) continue
       const prox = clamp((pr.zc - 0.5) / 0.8, 0, 1)
       if (prox <= 0.01) continue
-      const sizeFade = clamp(1.65 - D / (maxD * 0.6), 0.2, 1)
-      const a = p.a * gain * edge * (0.82 + 0.18 * Math.sin(p.tw)) * prox * sizeFade
+      // a puff swelling toward the frame's own scale dissolves EARLY — a
+      // near billboard must never wash the glass, however soft its sprite
+      const sizeFade = clamp(1.4 - D / (maxD * 0.55), 0.1, 1)
+      // gas breathes, it does not twinkle: a whisper of slow shimmer only
+      const a = p.a * gain * edge * (0.92 + 0.08 * Math.sin(p.tw)) * prox * sizeFade
       if (a <= 0.004) continue
       q.push([pr.zc, pr.sx, pr.sy, D, p, a])
     }
@@ -923,7 +926,8 @@ export class CommunityGalaxy {
       const want = p.dark ? 'source-over' : 'lighter'
       if (op !== want) ctx.globalCompositeOperation = op = want
       ctx.globalAlpha = e[5]
-      const spr = p.dark ? this._darkPuff : this._puffSpr[p.hue] || (this._puffSpr[p.hue] = makePuff(p.hue))
+      // each puff wears its own riven silhouette (nebula.js caches the bakes)
+      const spr = p.dark ? makeDarkPuff(p.v || 0) : makePuff(p.hue, p.v || 0)
       const D = e[3]
       ctx.drawImage(spr, e[1] - D / 2, e[2] - D / 2, D, D)
     }
@@ -1567,14 +1571,26 @@ export class CommunityGalaxy {
     const rot = (this._rotCache = this._rot())
 
     // the dive's camera travel: offset toward the target star in view space so
-    // the WHOLE field (gas, dust, every star) flies past as one
+    // the WHOLE field (gas, dust, every star) flies past as one. The travel is
+    // GEOMETRIC, not linear — magnification goes as 1/depth, so a linear depth
+    // lerp detonates nearly all of the apparent zoom in the final stretch (the
+    // "quick dart"). The target's camera-space depth glides to the standoff
+    // along a log-space curve instead (each second multiplies the
+    // magnification by the same factor), and the lateral line is solved
+    // against that same depth so the star's screen offset shrinks exactly
+    // with (1 − f): one even swell, the hero gliding into the crosshairs,
+    // never whipping across the axis as the perspective steepens.
     if (this.focus > 0.0005 && this.diveSt) {
       const slot = this._slot(this.diveSt.i)
       const T = this._view(slot.px, slot.y, slot.pz, rot)
       const f = this.focus
-      this.cam.x = f * T.x
-      this.cam.y = f * T.y
-      this.cam.z = f * (CAM + T.z - STANDOFF * this.diveDist)
+      const zc0 = Math.max(CAM + T.z, STANDOFF + 0.06)
+      const stand = Math.min(STANDOFF * this.diveDist, zc0 * 0.95)
+      const depth = zc0 * Math.pow(stand / zc0, f)
+      const fLat = 1 - (1 - f) * (depth / zc0)
+      this.cam.x = fLat * T.x
+      this.cam.y = fLat * T.y
+      this.cam.z = CAM + T.z - depth
     } else if (this.zoom > 1.001) {
       // the hand's dolly: `cen` (0→1 as zoom climbs) both magnifies the focused
       // point by ~`zoom`× (its camera-space depth shrinks to zc0/zoom) and
