@@ -16,7 +16,7 @@
 // The star sprites — the shared instrument both skies draw their light with
 // (see starSprites.js): an Airy-style point source with hairline rays for every
 // star, the full tapered diffraction burst for the bright ones.
-import { hexToRgb, makeGlow, makeStarSprite, makeStarSpriteSmall, makeSpikeSprite } from './starSprites.js'
+import { hexToRgb, makeGlow, makeStarSprite, makeStarMips, starMipFor, makeSpikeSprite } from './starSprites.js'
 // the baked milky-way ribbon (see nebula.js) — real clumped, riven starlight
 // for the deepest layer of the night — plus the VOLUMETRIC cloud: true 3D gas
 // puffs seated in the disk volume, projected and depth-sorted per frame, so
@@ -26,10 +26,14 @@ import { makeBandSheet, makePuff, makeDarkPuff, genVolumetricCloud } from './neb
 import { CATEGORY_TINTS } from './theme.js'
 const easeOut = (p) => 1 - Math.pow(1 - p, 3)
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
-// the flight easing: quintic ease-in-out — a longer, silkier gather and
-// exhale than the cubic, so camera moves read as a ship committing to a burn
-// and gliding out of it, never a UI transition
-const easeFlight = (p) => (p < 0.5 ? 16 * p * p * p * p * p : 1 - Math.pow(-2 * p + 2, 5) / 2)
+// The flight easing: Perlin's smootherstep. Flat-launched and flat-landed
+// like the old quintic in-out, but its peak velocity is barely 1.9× the mean
+// where the quintic's was 5× — the quintic hoarded the whole flight into a
+// violent mid-course whoosh (the "quick dart"). This curve SPENDS the travel
+// across the flight: a long gathering acceleration, a sustained glide, a long
+// exhale. Paired with the geometric depth path in _draw, which keeps the
+// apparent magnification rate even instead of detonating near arrival.
+const easeFlight = (p) => p * p * p * (p * (p * 6 - 15) + 10)
 const smooth = (p) => p * p * (3 - 2 * p)
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const lerp = (a, b, t) => a + (b - a) * t
@@ -54,14 +58,14 @@ const VANISH_DUR = 0.55 // seconds — the star's wink-out when withdrawn
 // turning to its side axis under a still camera. THEN the RUN: the camera
 // commits and dives through the field, neighbours streaming past with real
 // depth parallax. Release unwinds camera and bank together.
-const FOCUS_IN = 1.8 // seconds — camera glide into the tapped star
-const FOCUS_OUT = 1.1 // seconds — camera drift back out to the resting sky
-// The run ignites while the bank is still swinging (at this fraction of the
-// bank), so the turn and the dive read as ONE continuous gesture — the old
-// bank-THEN-run sequencing is what felt robotic and separated.
-const FOCUS_OVERLAP = 0.38
-const FOCUS_TILT_MIN = 0.6 // the bank's length breathes with the swing
-const FOCUS_TILT_MAX = 1.1
+const FOCUS_IN = 2.4 // seconds — camera glide into the tapped star
+const FOCUS_OUT = 1.6 // seconds — camera drift back out to the resting sky
+// The run ignites early in the bank's swing, so the turn and the dive read as
+// ONE continuous gesture — the old bank-THEN-run sequencing is what felt
+// robotic and separated, and even a late ignition read as two moves.
+const FOCUS_OVERLAP = 0.24
+const FOCUS_TILT_MIN = 0.9 // the bank's length breathes with the swing
+const FOCUS_TILT_MAX = 1.6
 const FOCUS_BANK_TILT = 0.34 // the banked disk tilt (rad) — near edge-on
 const CAM = 2.7 // camera distance from galactic center
 const FOCAL = 2.35 // focal length (bigger = flatter / less perspective)
@@ -109,7 +113,7 @@ export class GalaxyField {
     this.sealHue = null
     this._glowCache = {}
     this._dotCache = {} // hue -> round star sprite (the big bake, for close-ups)
-    this._dotSmallCache = {} // hue -> the near-native small bake tiny draws stay crisp with
+    this._dotMips = {} // hue -> the point source's full mip ladder (starSprites.js)
     this._spikeCache = {} // hue -> tinted diffraction burst (the seal stars wear these)
     this._spike = makeSpikeSprite('#FFFFFF', 128) // shared diffraction cross (white, tinted via alpha)
     // Soft round sprites cost more per star than the old square quads, so the
@@ -203,13 +207,13 @@ export class GalaxyField {
     if (!this._dotCache[hex]) this._dotCache[hex] = makeStarSprite(hex, 128)
     return this._dotCache[hex]
   }
-  // Pick the bake nearest the destination size: minifying the 128px sprite all
-  // the way down to a 2px field star is what made the far field read blurry —
-  // tiny draws pull from a 32px bake instead and stay needle sharp.
+  // Pick the mip-ladder bake nearest 2× the destination size: minifying the
+  // 128px sprite all the way down to a 2px field star is what made the far
+  // field read blurry — every draw now samples inside bilinear's sweet spot,
+  // so the faintest background point and the deepest close-up are equally crisp.
   _dotSpr(hex, D) {
-    if (D >= 6) return this._dotFor(hex)
-    if (!this._dotSmallCache[hex]) this._dotSmallCache[hex] = makeStarSpriteSmall(hex)
-    return this._dotSmallCache[hex]
+    const m = this._dotMips[hex] || (this._dotMips[hex] = makeStarMips(hex))
+    return starMipFor(m, D)
   }
   _spikeFor(hex) {
     if (!this._spikeCache[hex]) this._spikeCache[hex] = makeSpikeSprite(hex, 128)
@@ -879,12 +883,24 @@ export class GalaxyField {
       const s = this.sealed[this.focusIndex]
       const T = this._view(Math.cos(s.theta0) * s.r, s.y, Math.sin(s.theta0) * s.r, rot)
       const f = this.focus
-      // forward travel so the target's camera-space depth eases CAM+T.z →
-      // STANDOFF (× the pinch-adjustable view distance, so a held view can
-      // pull closer or lean back)
-      this.cam.x = f * T.x
-      this.cam.y = f * T.y
-      this.cam.z = f * (CAM + T.z - STANDOFF * this.viewDist)
+      // The travel is GEOMETRIC, not linear. What the eye reads in a zoom is
+      // the MAGNIFICATION rate — and magnification goes as 1/depth, so easing
+      // depth linearly detonates nearly all of the apparent zoom in the final
+      // stretch (the old "quick dart"). Instead the target's camera-space
+      // depth glides from its resting value to the standoff along a log-space
+      // curve (each second multiplies the magnification by the same factor):
+      // one even, elegant swell from the first inch of travel to the last.
+      // The lateral line is solved against that same depth so the star's
+      // screen offset shrinks exactly with (1 − f): the hero glides into the
+      // crosshairs on one continuous eased path, never whipping across the
+      // axis as the perspective steepens near arrival.
+      const zc0 = Math.max(CAM + T.z, STANDOFF + 0.06)
+      const stand = Math.min(STANDOFF * this.viewDist, zc0 * 0.95)
+      const depth = zc0 * Math.pow(stand / zc0, f)
+      const fLat = 1 - (1 - f) * (depth / zc0)
+      this.cam.x = fLat * T.x
+      this.cam.y = fLat * T.y
+      this.cam.z = CAM + T.z - depth
     } else {
       this.cam.x = this.cam.y = this.cam.z = 0
     }
@@ -1105,10 +1121,6 @@ export class GalaxyField {
   // through must never smear across the glass (the old "white stains").
   _drawCloud(dt, d, rot) {
     const ctx = this.ctx
-    if (!this._puffSpr) {
-      this._puffSpr = {}
-      this._darkPuff = makeDarkPuff()
-    }
     const q = this._cloudQ || (this._cloudQ = [])
     q.length = 0
     const maxD = Math.max(this.w, this.h)
@@ -1121,8 +1133,11 @@ export class GalaxyField {
       if (pr.sx < -D || pr.sx > this.w + D || pr.sy < -D || pr.sy > this.h + D) continue
       const prox = clamp((pr.zc - 0.5) / 0.8, 0, 1)
       if (prox <= 0.01) continue
-      const sizeFade = clamp(1.65 - D / (maxD * 0.6), 0.2, 1)
-      const a = p.a * (0.82 + 0.18 * Math.sin(p.tw)) * d * prox * sizeFade
+      // a puff swelling toward the frame's own scale dissolves EARLY — a
+      // near billboard must never wash the glass, however soft its sprite
+      const sizeFade = clamp(1.4 - D / (maxD * 0.55), 0.1, 1)
+      // gas breathes, it does not twinkle: a whisper of slow shimmer only
+      const a = p.a * (0.92 + 0.08 * Math.sin(p.tw)) * d * prox * sizeFade
       if (a <= 0.004) continue
       q.push([pr.zc, pr.sx, pr.sy, D, p, a])
     }
@@ -1134,7 +1149,8 @@ export class GalaxyField {
       const want = p.dark ? 'source-over' : 'lighter'
       if (op !== want) ctx.globalCompositeOperation = op = want
       ctx.globalAlpha = e[5]
-      const spr = p.dark ? this._darkPuff : this._puffSpr[p.hue] || (this._puffSpr[p.hue] = makePuff(p.hue))
+      // each puff wears its own riven silhouette (nebula.js caches the bakes)
+      const spr = p.dark ? makeDarkPuff(p.v || 0) : makePuff(p.hue, p.v || 0)
       const D = e[3]
       ctx.drawImage(spr, e[1] - D / 2, e[2] - D / 2, D, D)
     }

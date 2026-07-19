@@ -62,40 +62,105 @@ function makeNoise(seed) {
   return { noise, fbm }
 }
 
-// a soft gas puff — cooler-hearted than a star glow, so clouds read as matter
-// catching light, never as blurred stars
+// ── the structured puff ──────────────────────────────────────────────────────
+// The old puff was a bare radial gradient, and a cloud assembled from bare
+// radial gradients reads as exactly that: rows of round pale stains. Real gas
+// catches light unevenly — it is riven. So every puff now draws through a
+// baked fBm alpha MASK: the billboard is torn into wisps and clumps with
+// feathered, irregular edges, and its silhouette is no longer a circle. A
+// small family of masks (each its own noise seed) breaks the repetition so
+// neighbouring puffs never share a shape; masks are applied at bake time, so
+// a structured puff still costs the engines exactly one drawImage.
+export const PUFF_VARIANTS = 4
+const maskCache = {}
+function puffMask(variant) {
+  const v = ((variant | 0) % PUFF_VARIANTS + PUFF_VARIANTS) % PUFF_VARIANTS
+  if (maskCache[v]) return maskCache[v]
+  const size = 96
+  const cv = document.createElement('canvas')
+  cv.width = cv.height = size
+  const c = cv.getContext('2d')
+  const { fbm } = makeNoise(7717 + v * 991)
+  const img = c.createImageData(size, size)
+  const data = img.data
+  const m = size / 2
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = (x - m) / m
+      const dy = (y - m) / m
+      const r2 = dx * dx + dy * dy
+      if (r2 >= 1) continue
+      // radial envelope — full through the body, feathering hard to nothing
+      // at the rim so no scaled billboard ever shows a square or a hard edge
+      const env = Math.pow(1 - r2, 1.6)
+      // the rive — fBm across the billboard, gated deep enough that true
+      // holes open inside the body (light through torn gas, not a disc)
+      const n = fbm(dx * 2.3 + v * 11.7, dy * 2.3 + v * 7.3, 4)
+      const a = env * Math.min(1, Math.max(0, n * 1.9 - 0.5))
+      const at = (y * size + x) * 4
+      data[at] = 255
+      data[at + 1] = 255
+      data[at + 2] = 255
+      data[at + 3] = (a * 255) | 0
+    }
+  }
+  c.putImageData(img, 0, 0)
+  maskCache[v] = cv
+  return cv
+}
+
+// a riven gas puff — the mask torn into wisps, tinted by an inner-glow
+// gradient so each clump is brighter-hearted than its edges: matter catching
+// light, never a blurred star
 const puffCache = {}
-export function makePuff(color) {
-  if (puffCache[color]) return puffCache[color]
-  const size = 64
+export function makePuff(color, variant = 0) {
+  const key = color + '|' + (variant | 0)
+  if (puffCache[key]) return puffCache[key]
+  const size = 96
   const s = document.createElement('canvas')
   s.width = s.height = size
   const c = s.getContext('2d')
-  const [r, g, b] = hexToRgb(color)
+  c.drawImage(puffMask(variant), 0, 0)
+  c.globalCompositeOperation = 'source-in'
+  // additive stacking desaturates — dozens of overlapping tints average
+  // toward gray — so each puff is baked a shade RICHER than its ramp color
+  // (channels pushed away from luma) and the sky sums back to the true hue
+  const [r0, g0, b0] = hexToRgb(color)
+  const luma = 0.299 * r0 + 0.587 * g0 + 0.114 * b0
+  const sat = (v) => Math.max(0, Math.min(255, Math.round(luma + (v - luma) * 1.45)))
+  const r = sat(r0), g = sat(g0), b = sat(b0)
   const grd = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grd.addColorStop(0, `rgba(${r},${g},${b},0.5)`)
-  grd.addColorStop(0.4, `rgba(${r},${g},${b},0.2)`)
-  grd.addColorStop(1, `rgba(${r},${g},${b},0)`)
+  grd.addColorStop(0, `rgba(${r},${g},${b},0.6)`)
+  grd.addColorStop(0.45, `rgba(${r},${g},${b},0.32)`)
+  grd.addColorStop(1, `rgba(${r},${g},${b},0.12)`)
   c.fillStyle = grd
   c.fillRect(0, 0, size, size)
-  puffCache[color] = s
+  c.globalCompositeOperation = 'source-over'
+  puffCache[key] = s
   return s
 }
 
-let darkPuff = null
-export function makeDarkPuff() {
-  if (darkPuff) return darkPuff
-  const size = 64
+// the dust clump — the same riven silhouette, near-ink with a whisper of warm
+// brown (interstellar dust is sooty, not void-black). destination-out callers
+// only read its alpha; the volumetric pass paints it BETWEEN the sorted light.
+const darkPuffCache = {}
+export function makeDarkPuff(variant = 0) {
+  const key = variant | 0
+  if (darkPuffCache[key]) return darkPuffCache[key]
+  const size = 96
   const s = document.createElement('canvas')
   s.width = s.height = size
   const c = s.getContext('2d')
+  c.drawImage(puffMask(variant), 0, 0)
+  c.globalCompositeOperation = 'source-in'
   const grd = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
-  grd.addColorStop(0, 'rgba(0,0,0,0.85)')
-  grd.addColorStop(0.5, 'rgba(0,0,0,0.4)')
-  grd.addColorStop(1, 'rgba(0,0,0,0)')
+  grd.addColorStop(0, 'rgba(9,6,12,0.85)')
+  grd.addColorStop(0.5, 'rgba(9,6,12,0.42)')
+  grd.addColorStop(1, 'rgba(9,6,12,0.14)')
   c.fillStyle = grd
   c.fillRect(0, 0, size, size)
-  darkPuff = s
+  c.globalCompositeOperation = 'source-over'
+  darkPuffCache[key] = s
   return s
 }
 
@@ -237,10 +302,11 @@ export function makeNebulaSheet({
 //
 // Deterministic in its seed; generation happens once, drawing is a per-frame
 // project + sort + blit. Each puff:
-//   { ang, r, y, rad, hue, a, dark, tw, tws }
+//   { ang, r, y, rad, hue, a, dark, v, tw, tws }
 //   ang/r/y — cylinder coordinates in disk space (the engine adds spin/tilt)
 //   rad     — world-unit radius of the billboard
-//   hue     — a color from `ramp` (dark puffs ignore it)
+//   hue     — a blended color off `ramp` (dark puffs ignore it)
+//   v       — which riven mask silhouette the puff wears (see makePuff)
 export function genVolumetricCloud({
   seed = 1,
   count = 520,
@@ -259,6 +325,23 @@ export function genVolumetricCloud({
   const rnd = () => (s = (s * 48271) % 2147483647) / 2147483647
   const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5
 
+  // The hue ramp is CONTINUOUS: sample the four stops with linear blending
+  // (gently quantized so sprite bakes stay bounded), so neighbouring puffs
+  // shade into each other through real intermediate colors. The old discrete
+  // pick jumped between four paint pots — the patchy, inconsistent color.
+  const rampRgb = ramp.map(hexToRgb)
+  const hueAt = (t) => {
+    const q = Math.min(0.999, Math.max(0, t)) * (rampRgb.length - 1)
+    const i = q | 0
+    const f = Math.round((q - i) * 3) / 3
+    const A = rampRgb[i]
+    const B = rampRgb[Math.min(i + 1, rampRgb.length - 1)]
+    const r = Math.round(A[0] + (B[0] - A[0]) * f)
+    const g = Math.round(A[1] + (B[1] - A[1]) * f)
+    const b = Math.round(A[2] + (B[2] - A[2]) * f)
+    return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)
+  }
+
   const puffs = []
   const target = Math.round(count)
   let guard = target * 14
@@ -266,6 +349,7 @@ export function genVolumetricCloud({
     const dark = rnd() < dustFrac
     const inCore = !dark && rnd() < coreFrac
     let r, ang
+    let offArm = false
     if (inCore) {
       // the heart — gas pooled dense and warm around the bulge
       r = Math.pow(rnd(), 1.5) * extent * 0.34
@@ -276,7 +360,12 @@ export function genVolumetricCloud({
       const arm = puffs.length % Math.max(1, arms)
       ang = angle(arm, r) - feather * (0.35 + rnd() * 0.55) + gauss() * feather * 0.5
     } else {
-      const onArm = rnd() < 0.68
+      // gas belongs to the LANES. Four in five puffs hug the arm equation;
+      // the loose remainder must also pass a harder density gate below, so
+      // stray gas only survives where the fBm field is genuinely dense —
+      // never as lone blobs scattered across empty disk.
+      const onArm = rnd() < 0.8
+      offArm = !onArm
       r = (onArm ? Math.pow(rnd(), 0.72) * 0.88 : Math.pow(rnd(), 0.58) * 0.94) * extent
       const arm = puffs.length % Math.max(1, arms)
       ang = onArm
@@ -285,22 +374,27 @@ export function genVolumetricCloud({
     }
     const wx = Math.cos(ang) * r
     const wz = Math.sin(ang) * r
-    // fBm gates density so real knots, shoals and empty gaps survive
+    // fBm gates density so real knots, shoals and empty gaps survive; loose
+    // inter-arm gas answers to a much deeper gate than the lanes
     const den = dark ? fbm(wx * 3.4 + 210, wz * 3.4 + 210) : fbm(wx * 2.6 + 40, wz * 2.6 + 40)
-    const gate = Math.max(0, den - (dark ? 0.46 : 0.33))
+    const gate = Math.max(0, den - (dark ? 0.46 : offArm ? 0.42 : 0.33))
     if (gate <= 0.006) continue
     const heart = Math.exp(-(r / extent) * 2.1)
-    // hue cools from the heart outward, stirred so color pools, never bands
-    const stir = noise(wx * 5 + 90, wz * 5 + 90) * 0.55
-    const hueT = Math.min(0.999, Math.max(0, (r / extent) * 0.9 + stir - heart * 0.45))
+    // hue cools smoothly from the heart outward, stirred only enough that
+    // color pools — a gentle hand, so the ramp stays one coherent gradient
+    const stir = noise(wx * 5 + 90, wz * 5 + 90) * 0.3
+    const hueT = Math.min(0.999, Math.max(0, (r / extent) * 1.05 + stir - heart * 0.4))
     puffs.push({
       ang,
       r,
       y: gauss() * thickness(r) * (dark ? 0.55 : 1), // dust hugs the plane
-      rad: (dark ? 0.05 + Math.pow(gate, 0.75) * 0.16 : 0.06 + Math.pow(gate, 0.7) * 0.24 + heart * 0.05) * (extent / 1.2),
-      hue: ramp[Math.min(ramp.length - 1, Math.floor(hueT * ramp.length))],
-      a: dark ? Math.min(0.38, 0.1 + gate * 0.85) : Math.min(0.17, gate * (0.12 + heart * 0.14) * 1.5),
+      rad: (dark ? 0.05 + Math.pow(gate, 0.75) * 0.16 : 0.05 + Math.pow(gate, 0.7) * 0.21 + heart * 0.04) * (extent / 1.2),
+      hue: hueAt(hueT),
+      // quieter than it once was: the cloud's beauty is spent on structure,
+      // not wattage — and loose gas whispers under the lanes it drifts between
+      a: dark ? Math.min(0.34, 0.1 + gate * 0.8) : Math.min(0.13, gate * (0.1 + heart * 0.12) * 1.4) * (offArm ? 0.6 : 1),
       dark,
+      v: (rnd() * PUFF_VARIANTS) | 0, // which riven silhouette this puff wears
       tw: rnd() * TWO,
       tws: 0.04 + rnd() * 0.1,
     })
