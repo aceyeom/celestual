@@ -771,7 +771,9 @@ function PlacedHandleHero({ C, handle, reachable }) {
           width: '100%', fontFamily: "'Space Mono', monospace", fontWeight: 700,
           fontSize: 'clamp(38px, 11vw, 54px)', lineHeight: 1.02,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          textShadow: `0 0 30px ${rgba(C.star, 0.4)}, 0 2px 22px rgba(0,0,0,.7)`,
+          // no glow shadow inside an overflow-hidden box — the clip edge turns
+          // a soft glow into a faint rectangular highlight behind the handle
+          textShadow: '0 2px 22px rgba(0,0,0,.7)',
         }}
       >
         <span style={{ color: C.star }}>@</span><span style={{ color: C.cream }}>{handle}</span>
@@ -1441,7 +1443,9 @@ export function SkyCardScreen({ C, ctx }) {
     if (cardGalaxy.current) cardGalaxy.current.launch(1)
   }
   const beatMatch = () => {
-    if (cardGalaxy.current) cardGalaxy.current.addConstellation()
+    // a match is never marked in the sky (the double-blind, kept) — the sky
+    // simply answers the touch with a wave through its heart
+    beatWave()
   }
 
   // No community joined yet → there's no sky to share. Send them to find one.
@@ -1505,7 +1509,6 @@ export function SkyCardScreen({ C, ctx }) {
             you={C.you}
             them={C.them}
             pings={open && pings != null ? pings : 0}
-            matches={showMatches ? Math.min(matches, 24) : 0}
             forming={!open}
             onReady={(f) => (cardGalaxy.current = f)}
           />
@@ -1597,6 +1600,78 @@ function SkyStatus({ C, open, size = 13.5 }) {
   )
 }
 
+// ── the meeting view (a tapped public @) ──────────────────────────────────────
+// The camera has flown to their star with the SAME held cinematic dive as the
+// star view, so this overlay speaks the star view's exact language: a hairline
+// stem rising from the held star, the @ large in the product's amber, one glass
+// pill for the single outward step, and one clear way home top-right. A column,
+// centered, everything ellipsized — nothing can ever overflow its box.
+function MeetOverlay({ C, label, onClose }) {
+  const { t } = useI18n()
+  const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // the name arrives WITH the camera: after the bank (≤1.1s) + the run
+  const arrive = reduced ? '0.2s' : '2.1s'
+  return (
+    <>
+      {/* the close — releases the dive; the camera glides home on its own */}
+      <div data-noripple style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 'max(14px, env(safe-area-inset-right))', zIndex: 30 }}>
+        <button
+          onClick={onClose}
+          aria-label={t('reveal.close')}
+          className="fade"
+          style={{
+            width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
+            background: rgba(C.ink2, 0.8), border: `1px solid ${rgba(C.cream, 0.22)}`,
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.92),
+            boxShadow: '0 10px 34px rgba(0,0,0,.5)',
+          }}
+        >
+          <Icon name="x" size={16} color="currentColor" stroke={2} />
+        </button>
+      </div>
+
+      {/* the name, risen beneath the held star (arrives with the camera) */}
+      <div
+        className="fade"
+        style={{
+          position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
+          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+          paddingTop: 30, textAlign: 'center', animationDelay: arrive,
+        }}
+      >
+        <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
+        <span
+          style={{
+            fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(22px, 6vw, 28px)',
+            letterSpacing: '.5px', color: C.star, textShadow: '0 2px 18px rgba(0,0,0,.85)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '86vw',
+          }}
+        >
+          @{label}
+        </span>
+        <a
+          href={`https://www.instagram.com/${label}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-noripple
+          style={{
+            pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: '86vw',
+            padding: '9px 16px', borderRadius: RADIUS.chip,
+            background: rgba(C.ink2, 0.82), border: `1px solid ${rgba(C.star, 0.42)}`,
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            color: C.cream, textDecoration: 'none', fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 13, fontWeight: 600, boxShadow: '0 10px 34px rgba(0,0,0,.45)',
+          }}
+        >
+          <span style={{ flexShrink: 0, display: 'inline-flex' }}><Icon name="instagram" size={14} color={rgba(C.star, 0.95)} stroke={1.9} /></span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('public.meet')}</span>
+        </a>
+      </div>
+    </>
+  )
+}
+
 // ── community life: the live pulse ────────────────────────────────────────────
 
 // The demo's living pulse. On an OPEN community it fires the real beats: a ping
@@ -1640,9 +1715,9 @@ function useCommunityPulse({ demo, open, slug, galaxyRef, bump }) {
     const timers = []
     if (open) {
       timers.push(setInterval(firePing, 3200 + Math.random() * 1400))
-      // a match, now and then: a new constellation traces itself in
+      // a match, now and then — only ever a caption and a count: nothing in
+      // the sky marks a match (the double-blind, kept)
       timers.push(setInterval(() => {
-        if (galaxyRef.current) galaxyRef.current.addConstellation()
         if (bumpRef.current) bumpRef.current(slug, 'match')
         pushBeat('it just became mutual for two people here', 'match')
       }, 16000 + Math.random() * 6000))
@@ -1997,6 +2072,7 @@ export function CommunityScreen({ C, ctx }) {
     if (useShared) wireZoom(galaxyRef.current)
     return () => {
       const g = galaxyRef.current
+      if (g && g.dive && g.dive.held && g.releaseDive) g.releaseDive()
       if (g && g.setZoomEnabled) g.setZoomEnabled(false)
       if (g && g.setTagsEnabled) g.setTagsEnabled(false)
       if (g && g.onZoomState === setZoomed) g.onZoomState = null
@@ -2007,7 +2083,15 @@ export function CommunityScreen({ C, ctx }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useShared, slug])
   const pullBack = () => {
-    if (galaxyRef.current && galaxyRef.current.resetView) galaxyRef.current.resetView()
+    const g = galaxyRef.current
+    if (g && g.dive && g.dive.held && g.releaseDive) g.releaseDive()
+    if (g && g.resetView) g.resetView()
+    setMeet(null)
+  }
+  // the meeting over: release the held dive — the camera glides home on its own
+  const closeMeet = () => {
+    const g = galaxyRef.current
+    if (g && g.releaseDive) g.releaseDive()
     setMeet(null)
   }
 
@@ -2055,7 +2139,7 @@ export function CommunityScreen({ C, ctx }) {
   // envelope; the entrance animations must be suppressed for the melt (their
   // fill-mode would pin opacity at 1 and override the inline fade — same trick
   // App plays for the fly-to-a-star flight).
-  const skyHeld = zoomed || finding
+  const skyHeld = zoomed || finding || !!meet
   const melt = { opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyHeld ? 'none' : 'auto', animation: skyHeld ? 'none' : undefined }
 
   // the dock melts with the rest of the chrome while the sky is held
@@ -2095,7 +2179,6 @@ export function CommunityScreen({ C, ctx }) {
           you={C.you}
           them={C.them}
           pings={pings}
-          matches={showMatches ? matches : 0}
           forming={!open}
           publicHandles={ctx.demo ? DEMO_PUBLIC[slug] || [] : []}
           onReady={(f) => { localGalaxyRef.current = f; wireZoom(f) }}
@@ -2111,7 +2194,7 @@ export function CommunityScreen({ C, ctx }) {
         style={{
           position: 'fixed', left: '50%', top: sealY != null ? sealY : '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
           pointerEvents: 'none', display: 'grid', placeItems: 'center',
-          opacity: finding || ctx.skyFlight || zoomed ? 0 : 1, transition: 'opacity .8s ease, top .45s cubic-bezier(.2,.7,.2,1)',
+          opacity: skyHeld || ctx.skyFlight ? 0 : 1, transition: 'opacity .8s ease, top .45s cubic-bezier(.2,.7,.2,1)',
         }}
       >
         <span style={{ position: 'absolute', width: 126, height: 126, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink, 0.42)}, ${rgba(C.ink, 0.18)} 46%, transparent 68%)` }} />
@@ -2126,56 +2209,14 @@ export function CommunityScreen({ C, ctx }) {
           while the sky is held zoomed. */}
       <div aria-hidden style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: '32%', background: `linear-gradient(to bottom, transparent, ${rgba(C.ink, 0.44)} 52%, ${rgba(C.ink, 0.82)})`, pointerEvents: 'none', zIndex: 0, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }} />
 
-      {/* a tapped public @ — the meeting card: who they are, one outward step,
-          one quiet dismiss. Floats above the pull-back pill. */}
-      {meet && !finding && (
-        <div
-          data-noripple
-          style={{
-            position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex: 6,
-            bottom: zoomed ? 'calc(max(30px, env(safe-area-inset-bottom)) + 58px)' : 'max(30px, env(safe-area-inset-bottom))',
-            transition: 'bottom .3s ease',
-          }}
-        >
-          <div
-            key={meet.label}
-            className="fade"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 12, padding: '10px 12px 10px 16px',
-              borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.86), border: `1px solid ${rgba(C.star, 0.32)}`,
-              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 14px 44px rgba(0,0,0,.55)',
-              maxWidth: '92vw',
-            }}
-          >
-            <span style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 14.5, color: C.cream, flexShrink: 0, maxWidth: '38vw', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ color: C.star }}>@</span>{meet.label}
-            </span>
-            <a
-              href={`https://www.instagram.com/${meet.label}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '7px 13px',
-                borderRadius: RADIUS.chip, background: rgba(C.star, 0.12), border: `1px solid ${rgba(C.star, 0.4)}`,
-                color: C.cream, textDecoration: 'none', fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, fontWeight: 600,
-              }}
-            >
-              <Icon name="instagram" size={13} color={rgba(C.star, 0.95)} stroke={1.9} /> {t('public.meet')}
-            </a>
-            <button
-              onClick={() => setMeet(null)}
-              aria-label={t('reveal.close')}
-              style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${rgba(C.cream, 0.16)}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.75) }}
-            >
-              <Icon name="x" size={12} color="currentColor" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* a tapped public @ — the MEETING view: the camera has flown to their
+          star with the same held dive as the star view; this overlay names
+          them beneath it and offers the one outward step. */}
+      {meet && !finding && <MeetOverlay key={meet.label} C={C} label={meet.label} onClose={closeMeet} />}
 
       {/* the way home from a held zoom — one quiet pill, floating clear of the
           melted chrome. data-noripple so the tap lands on it, not the sky. */}
-      {zoomed && !finding && (
+      {zoomed && !finding && !meet && (
         <div data-noripple style={{ position: 'fixed', left: '50%', bottom: 'max(30px, env(safe-area-inset-bottom))', transform: 'translateX(-50%)', zIndex: 5 }}>
           <button
             onClick={pullBack}
@@ -3681,11 +3722,14 @@ export function StarViewOverlay({ C, view, onClose }) {
         }}
       >
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
+        {/* no glow shadow here: a soft text-shadow clipped by the ellipsis box
+            (overflow: hidden) paints a faint rectangular highlight behind the
+            handle — the star above carries all the light this needs */}
         <span
           style={{
             fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(23px, 6.5vw, 30px)',
             letterSpacing: '.5px', color: C.star,
-            textShadow: `0 0 28px ${rgba(C.star, 0.55)}, 0 2px 18px rgba(0,0,0,.85)`,
+            textShadow: '0 2px 18px rgba(0,0,0,.85)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '88vw',
           }}
         >
