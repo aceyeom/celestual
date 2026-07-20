@@ -309,6 +309,14 @@ const en = {
   'verify.youHint': 'next, a quick dm confirms it’s yours. nobody is told.',
   'verify.youDone': 'verified. this @ is yours.',
   'verify.continue': 'verify & continue',
+  // instagram login (oauth) — the instant path, offered above the code when wired
+  'verify.oauthCta': 'continue with instagram',
+  'verify.oauthOr': 'or send a one-time code instead',
+  'verify.oauthSub': 'log in to instagram to confirm this @ is yours. we only read your username — no posting, no messaging, no password.',
+  'verify.oauthFinishing': 'finishing with instagram…',
+  'verify.oauthReturn': 'come back here when instagram’s done. it confirms on its own.',
+  'verify.oauthMismatch': 'that’s a different account. start again with the @ you’re verifying.',
+  'verify.oauthDenied': 'instagram sign-in was cancelled. try again, or send a code instead.',
 
   // ── account ──────────────────────────────────────────────────────────────
   'account.kicker': 'your account',

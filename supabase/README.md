@@ -54,6 +54,17 @@ Idempotent migrations, applied in order:
   live ping NAMED to the DM-proven owner (matching/suppression still run on
   hashes; pre-0010 rows stay anonymous until re-placed).
 
+- `migrations/0011_ig_oauth.sql` — **Instagram Login (OAuth 2.0), the scale
+  path.** Adds one visitor-facing RPC, `celestual_start_ig_oauth`, which issues a
+  high-entropy `state` (stored in the same `celestual_ig_verifications.token`
+  column as a pending row) instead of a 4-digit DM code. Everything downstream is
+  reused unchanged: the `celestual-ig-oauth` edge function does the
+  code→token→username exchange with Meta and calls the existing service-role
+  `celestual_complete_ig_verification`; the browser polls with the existing
+  `celestual_poll_ig_verification`. No DM, no ManyChat, no Facebook Page. See
+  [../docs/OAUTH-SCALING-STRATEGY.md](../docs/OAUTH-SCALING-STRATEGY.md) and
+  [../docs/IG-OAUTH-SETUP.md](../docs/IG-OAUTH-SETUP.md).
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
@@ -80,7 +91,8 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. **Full setup guide: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md)** | `MANYCHAT_SHARED_SECRET` |
-| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, DMs the verified/mismatch feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
+| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, DMs the verified/mismatch feedback back). Now replies to **every** inbound so the first contact accepts the thread out of Instagram's message-requests folder — the "only the first DM ever arrives" fix (`IG_CONFIRM_DM=0` to stay silent when ManyChat owns replies) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
+| `functions/celestual-ig-oauth` | **(the scale path)** Instagram Login (OAuth 2.0) redirect target: exchanges the auth `code` for a token, reads the real username from `graph.instagram.com/me`, and completes via the same service-role `celestual_complete_ig_verification` — no DM, no ManyChat, no Facebook Page. **Full setup: [../docs/IG-OAUTH-SETUP.md](../docs/IG-OAUTH-SETUP.md)** | `IG_OAUTH_CLIENT_ID`, `IG_OAUTH_CLIENT_SECRET`, `IG_OAUTH_REDIRECT_URI`, `CELESTUAL_SITE_URL` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
@@ -129,7 +141,8 @@ back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
 `celestual_set_worlds` / `celestual_world_counts` (counters, 100-floor) ·
 `celestual_campus` / `celestual_campus_preregister` ·
 `celestual_start_ig_verification` / `celestual_poll_ig_verification` ·
-`celestual_norm`.
+`celestual_start_ig_oauth` (Instagram Login: issues the OAuth `state`; completion
+reuses `celestual_complete_ig_verification`) · `celestual_norm`.
 
 **Operator-only (service role):** `celestual_complete_ig_verification` (the
 webhook's completion path), `celestual_campus_reveal` (snapshot + publish week

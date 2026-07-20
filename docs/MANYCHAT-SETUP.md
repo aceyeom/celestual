@@ -13,6 +13,13 @@ risk"). The direct-Meta alternative is documented in
 
 Written for a beginner — follow it top to bottom. ~30 minutes.
 
+> **Planning for scale?** ManyChat is a relay for *inbound DMs*. The
+> **Instagram Login (OAuth 2.0)** path needs no DM at all, so it needs **no
+> ManyChat** — the person just logs in and Meta tells us their @. If you're
+> weighing how to verify thousands of users, read
+> [OAUTH-SCALING-STRATEGY.md](./OAUTH-SCALING-STRATEGY.md) first; set ManyChat up as
+> the fallback, not the foundation.
+
 > **Your specific values** (used throughout):
 >
 > | Thing | Value |

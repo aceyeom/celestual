@@ -15,6 +15,7 @@ import { daysLeft, nearLapse } from '../api/pings.js'
 import {
   startVerification, pollVerification, igDeepLink, igWebLink, igUsername,
   dmCode, savePending, loadPending, clearPending, genProof,
+  igOAuthEnabled, startOAuthVerification,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { renderSkyCard } from '../card.js'
@@ -3372,6 +3373,12 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // After a while stuck on "waiting", surface a self-serve way out (the DM can
   // be dropped by the relay; a fresh code re-runs the whole path).
   const [stuck, setStuck] = React.useState(false)
+  // OAuth (Instagram Login) mode: while true, the "waiting" phase shows a quiet
+  // "finishing…" state instead of the DM code, and we poll the same way. Set when
+  // the person taps "continue with instagram", or when we resume an oauth pending
+  // record after a full redirect back into this tab.
+  const [oauthMode, setOauthMode] = React.useState(false)
+  const oauthOffered = !demo && igOAuthEnabled()
   const proofRef = React.useRef(null)
   const hashRef = React.useRef(null)
   const expiryRef = React.useRef(0)
@@ -3396,6 +3403,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     setErrCode('')
     setCopied(false)
     setStuck(false)
+    setOauthMode(false)
     setToken('')
     // Demo: never touch the backend. Mint a local code + proof and let the
     // polling effect auto-confirm after a beat — the whole DM flow reads
@@ -3423,6 +3431,67 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     }
   }, [handle, demo])
 
+  // The Instagram Login (OAuth) path: mint the same proof + a server `state`, then
+  // hand off to Instagram. Desktop opens a POPUP, so the main tab — and the entry
+  // the person is composing — never navigates away; mobile / in-app webviews
+  // full-redirect and resume from the pending record on return. Either way we then
+  // poll the `state` exactly like a DM code, and the server flip is the authority.
+  const beginOAuth = React.useCallback(async () => {
+    setErrCode('')
+    setCopied(false)
+    setStuck(false)
+    try {
+      const r = await startOAuthVerification(handle)
+      proofRef.current = r.proof
+      hashRef.current = r.proofHash
+      expiryRef.current = Date.parse(r.expiresAt) || Date.now() + 15 * 60 * 1000
+      setToken(r.token)
+      setOauthMode(true)
+      setPhase('waiting')
+      if (isInAppBrowser() || isMobile()) {
+        window.location.href = r.authorizeUrl
+        return
+      }
+      try {
+        const w = 520
+        const h = 720
+        const aw = window.screen?.availWidth || 1280
+        const ah = window.screen?.availHeight || 800
+        const left = Math.max(0, (aw - w) / 2)
+        const top = Math.max(0, (ah - h) / 2)
+        // No `noopener`: the return page postMessages the outcome back to us for an
+        // instant mismatch/cancel answer (the happy path is confirmed by polling
+        // regardless, so a blocked message never strands anyone).
+        const popup = window.open(r.authorizeUrl, 'celestual_ig_oauth', `popup,width=${w},height=${h},left=${left},top=${top}`)
+        if (!popup) window.location.href = r.authorizeUrl
+      } catch {
+        window.location.href = r.authorizeUrl
+      }
+    } catch (e) {
+      setErrCode(e?.code || 'error')
+      setPhase('error')
+    }
+  }, [handle])
+
+  // Instant answer from the OAuth popup. 'ok' is intentionally NOT trusted here —
+  // the poll effect confirms it against the server before flipping to verified;
+  // this only speeds up the visibly-wrong outcomes.
+  React.useEffect(() => {
+    if (!oauthMode) return
+    const onMsg = (e) => {
+      const d = e && e.data
+      if (!d || d.source !== 'celestual-ig-oauth') return
+      if (d.outcome === 'mismatch' || d.outcome === 'denied' || d.outcome === 'error') {
+        stopPoll()
+        clearPending()
+        setErrCode(d.outcome === 'mismatch' ? 'oauth_mismatch' : d.outcome === 'denied' ? 'oauth_denied' : 'error')
+        setPhase('error')
+      }
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [oauthMode])
+
   React.useEffect(() => {
     if (startedRef.current === normHandle(handle)) return stopPoll
     startedRef.current = normHandle(handle)
@@ -3436,6 +3505,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       hashRef.current = saved.proofHash
       expiryRef.current = Date.parse(saved.expiresAt) || 0
       setToken(saved.token)
+      if (saved.oauth) setOauthMode(true)   // resumed after the Instagram redirect
       setPhase('waiting')
       return stopPoll
     }
@@ -3507,7 +3577,11 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const dialogRef = useDialog(dismiss)
 
   const errMsg =
-    errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
+    errCode === 'oauth_mismatch' ? t('verify.oauthMismatch')
+    : errCode === 'oauth_denied' ? t('verify.oauthDenied')
+    : errCode === 'rate_limited' ? t('verify.errRate')
+    : errCode === 'busy' ? t('verify.errBusy')
+    : t('verify.errGeneric')
 
   return (
     <div
@@ -3565,9 +3639,37 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: rgba(C.star, 0.95) }}>{errMsg}</p>
             <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
           </div>
+        ) : oauthMode ? (
+          <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '26px 0 20px' }}>
+            <Sonar C={C} size={16} />
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 20, color: C.cream, textAlign: 'center' }}>{t('verify.oauthFinishing')}</div>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.55, color: C.muted, maxWidth: 300 }}>{t('verify.oauthReturn')}</p>
+            {stuck && (
+              <button onClick={begin} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.star, fontSize: 12, fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                {t('verify.stuckAction')}
+              </button>
+            )}
+          </div>
         ) : (
           <>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('verify.sub')}</p>
+            {oauthOffered ? (
+              <>
+                <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('verify.oauthSub')}</p>
+                <PrimaryButton C={C} onClick={beginOAuth}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+                    <Icon name="instagram" size={16} color={C.onStar} stroke={2} />
+                    {t('verify.oauthCta')}
+                  </span>
+                </PrimaryButton>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: C.muted, fontSize: 11 }}>
+                  <span aria-hidden style={{ flex: 1, height: 1, background: C.line }} />
+                  <span style={{ fontFamily: "'Space Mono', monospace", letterSpacing: '0.5px', textTransform: 'lowercase' }}>{t('verify.oauthOr')}</span>
+                  <span aria-hidden style={{ flex: 1, height: 1, background: C.line }} />
+                </div>
+              </>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('verify.sub')}</p>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
               <Kicker C={C}>{t('verify.code')}</Kicker>

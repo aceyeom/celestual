@@ -17,6 +17,18 @@ the direct-Meta alternative. Written for a beginner — follow it top to bottom.
 > automatically (`IG_CONFIRM_DM`, on by default — set `0` to disable, e.g. when
 > ManyChat is also live and already sending the feedback DM).
 
+> **⚠ "It verifies on an account's FIRST DM, then never again."** This is the
+> message-requests folder, not your code. A person who doesn't follow `@celestual.us`
+> lands in **Requests**; Meta delivers the first message but won't reliably deliver
+> that account's *later* messages until the business **replies once** (which accepts
+> the thread into the general inbox). The webhook now **always replies** to every
+> inbound so the first contact accepts the thread — deploy the latest
+> `celestual-ig-webhook` to get the fix. If you set `IG_CONFIRM_DM=0` (to avoid
+> double-DMs with ManyChat), then ManyChat's reply must be what accepts the thread.
+> The permanent scale answer is the OAuth path — no DMs, no Requests folder:
+> [OAUTH-SCALING-STRATEGY.md](./OAUTH-SCALING-STRATEGY.md) ·
+> [IG-OAUTH-SETUP.md](./IG-OAUTH-SETUP.md).
+
 > **Your specific values** (used throughout):
 >
 > | Thing | Value |

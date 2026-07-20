@@ -29,6 +29,13 @@ verify_jwt = false
 [functions.celestual-manychat]
 verify_jwt = false
 
+# The Instagram Login (OAuth 2.0) redirect target. Instagram sends the browser here
+# with ?code&state after consent; no Supabase login token is present, so JWT
+# verification is off. It authenticates via the OAuth code exchange with Meta and
+# completes only through the service-role RPC. See docs/IG-OAUTH-SETUP.md.
+[functions.celestual-ig-oauth]
+verify_jwt = false
+
 # School (.edu) email verification. Invoked by anonymous visitors (with the anon
 # key) from the join sheet, so JWT verification is off; the function enforces its
 # own domain check, per-address rate limit, and code-hash comparison instead.

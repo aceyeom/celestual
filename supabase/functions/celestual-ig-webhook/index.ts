@@ -22,10 +22,27 @@
 //                       optionally send the confirmation DM). graph.instagram.com.
 // Optional:
 //   IG_GRAPH_VERSION  — Graph API version (default 'v21.0')
-//   IG_CONFIRM_DM     — the "you're verified ✦" feedback DM, sent back the moment
-//                       verification completes. ON by default (best-effort; it
-//                       replies within Meta's 24-hour standard messaging window,
-//                       so it's ToS-clean). Set '0' to disable.
+//   IG_CONFIRM_DM     — master switch for outbound replies from this function.
+//                       ON by default. Set '0' ONLY when ManyChat (or another
+//                       relay) owns the replies, to avoid double-DMing people.
+//
+// WHY WE NOW REPLY TO *EVERY* INBOUND (the "only the first DM ever arrives" fix):
+//   A person who doesn't follow @celestual.us is a stranger to it, so their DM
+//   lands in Instagram's **message-requests** folder. Meta delivers a webhook for
+//   that FIRST message, but the thread stays "pending acceptance" until the
+//   business replies once — and Instagram does NOT reliably deliver webhooks for
+//   the sender's LATER messages while the thread sits unaccepted. A reply is what
+//   moves the thread into the general inbox and "accepts" it. So the old behavior
+//   (reply only on a *successful* verification, and only if IG_CONFIRM_DM≠0) left
+//   every first-contact that wasn't an instant success — a typo'd code, a bare
+//   "hi", a Graph read that briefly failed — with NO reply, the thread stuck in
+//   requests, and the person's re-send silently never webhooked. That is exactly
+//   the "verification works once per account, then never again" report. We now
+//   send exactly ONE reply per inbound we process (unless IG_CONFIRM_DM=0), so the
+//   very first contact always accepts the thread and every later DM gets through.
+//   (This cannot fix Development-mode delivery — while the app is in Dev mode Meta
+//   only webhooks accounts that hold an app role. Going Live via App Review, or the
+//   OAuth path in docs/OAUTH-SCALING-STRATEGY.md, is the scale answer to that.)
 // Injected automatically:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
@@ -38,7 +55,9 @@ const APP_SECRET = Deno.env.get('IG_APP_SECRET') ?? '';
 const VERIFY_TOKEN = Deno.env.get('IG_VERIFY_TOKEN') ?? '';
 const ACCESS_TOKEN = Deno.env.get('IG_ACCESS_TOKEN') ?? '';
 const GRAPH_VERSION = Deno.env.get('IG_GRAPH_VERSION') ?? 'v21.0';
-const CONFIRM_DM = Deno.env.get('IG_CONFIRM_DM') !== '0';
+// Master switch for ALL outbound replies (kept under the historical env name).
+// '0' = stay silent (ManyChat/another relay owns replies). Default = reply.
+const REPLIES_ON = Deno.env.get('IG_CONFIRM_DM') !== '0';
 const GRAPH = 'https://graph.instagram.com';
 
 const supabase = createClient(
@@ -94,17 +113,27 @@ async function fetchUsername(igsid: string): Promise<string | null> {
 }
 
 // Best-effort feedback DM. Always a direct reply to a message the person just
-// sent, so it sits inside Meta's 24-hour standard messaging window (ToS-clean).
-async function sendDm(igsid: string, text: string) {
-  if (!CONFIRM_DM || !ACCESS_TOKEN) return;
+// sent, so it sits inside Meta's 24-hour standard messaging window (ToS-clean) —
+// AND that reply is what accepts a message-request thread into the general inbox,
+// which is what lets Instagram keep delivering the sender's later messages. So we
+// treat "did we already reply on this inbound?" as important: exactly one reply
+// per message keeps threads healthy without double-DMing.
+async function sendDm(igsid: string, text: string): Promise<boolean> {
+  if (!REPLIES_ON || !ACCESS_TOKEN) return false;
   try {
-    await fetch(`${GRAPH}/${GRAPH_VERSION}/me/messages?access_token=${encodeURIComponent(ACCESS_TOKEN)}`, {
+    const res = await fetch(`${GRAPH}/${GRAPH_VERSION}/me/messages?access_token=${encodeURIComponent(ACCESS_TOKEN)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipient: { id: igsid }, message: { text } }),
     });
+    if (!res.ok) {
+      console.error('reply DM failed', res.status, await res.text());
+      return false;
+    }
+    return true;
   } catch (e) {
-    console.error('feedback DM failed', String(e));
+    console.error('reply DM error', String(e));
+    return false;
   }
 }
 
@@ -150,15 +179,32 @@ Deno.serve(async (req) => {
         const msg = ev?.message;
         if (!msg || msg.is_echo) continue;               // ignore our own outbound echoes
         const igsid = ev?.sender?.id;
+        if (!igsid) continue;
         const text = typeof msg.text === 'string' ? msg.text : '';
-        if (!igsid || !text) continue;
+
+        // ALWAYS reply once (see header): the first reply on a thread accepts it
+        // out of the message-requests folder, which is what lets Instagram keep
+        // delivering this sender's later DMs. A non-text message (a like, a share,
+        // an unsupported attachment) still gets one nudge so the thread opens.
+        if (!text) {
+          await sendDm(String(igsid), 'Send the code the app shows you — it looks like star-1234 — and I’ll verify your @ here.');
+          results.push({ igsid, replied: 'no_text' });
+          continue;
+        }
 
         const candidates = codeCandidates(text);
-        if (candidates.length === 0) continue;
+        if (candidates.length === 0) {
+          await sendDm(String(igsid), 'Send the code exactly as the app shows it — like star-1234 — and I’ll verify your @ here.');
+          results.push({ igsid, replied: 'no_code' });
+          continue;
+        }
 
         const username = await fetchUsername(igsid);
         if (!username) {
-          results.push({ igsid, error: 'no_username' });
+          // Reply anyway so the thread is accepted; the person can re-send once we
+          // can read them. Silence here is what strands the whole conversation.
+          await sendDm(String(igsid), 'Couldn’t read your account just now — send the code again in a moment and I’ll verify your @.');
+          results.push({ igsid, error: 'no_username', replied: true });
           continue;
         }
 
@@ -189,14 +235,17 @@ Deno.serve(async (req) => {
           if (data?.code_expired) codeExpired = true;
         }
         if (!done) {
-          // Feedback instead of silence: tell the sender the truth about the
-          // state they're actually in, so a re-run never reads as broken.
+          // Exactly one reply, telling the sender the truth about the state they're
+          // actually in — including a generic line for an unknown/foreign code — so
+          // a re-run never reads as broken AND the thread still gets accepted.
           if (mismatched) {
             await sendDm(String(igsid), 'That code was started for a different @. Open the app with this account and get a fresh code.');
           } else if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
           } else if (codeExpired) {
             await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 10 minutes.');
+          } else {
+            await sendDm(String(igsid), 'That code didn’t match an active request. Get a fresh one in the app and send it here — codes last about 10 minutes.');
           }
           results.push({ igsid, username, matched: false, mismatched, alreadyVerified: !!alreadyVerified, codeExpired });
         }

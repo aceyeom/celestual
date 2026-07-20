@@ -7,7 +7,7 @@ import {
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
-import { igVerifyEnabled, loadPending } from './api/igverify.js'
+import { igVerifyEnabled, igOAuthEnabled, loadPending, clearPending } from './api/igverify.js'
 import { makeColors } from './theme.js'
 import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
 import {
@@ -369,9 +369,29 @@ export default function App() {
   )
 
   // Resume a verification interrupted by the Instagram hand-off (mobile can
-  // reload this tab; the saved code keeps polling instead of stranding them).
+  // reload this tab; the saved code/state keeps polling instead of stranding them).
+  // Also the landing spot for the OAuth redirect: strip the ?ig_oauth marker so a
+  // reload can't re-trigger, then resume the pending record — the sheet re-opens in
+  // its "finishing" state and polls the state to completion (or offers a retry).
   useEffect(() => {
-    if (demo || session?.verified || !igVerifyEnabled()) return
+    if (demo || session?.verified) return
+    if (!igVerifyEnabled() && !igOAuthEnabled()) return
+    let outcome = null
+    try {
+      const sp = new URLSearchParams(window.location.search || '')
+      if (sp.has('ig_oauth')) {
+        outcome = sp.get('ig_oauth')
+        sp.delete('ig_oauth')
+        const qs = sp.toString()
+        window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + (window.location.hash || ''))
+      }
+    } catch {
+      /* ignore */
+    }
+    // A declined / mismatched / errored OAuth return leaves the row un-flipped;
+    // drop the pending record so the sheet opens fresh (retryable) instead of
+    // polling a doomed state for its whole TTL.
+    if (outcome && outcome !== 'ok') clearPending()
     const saved = loadPending()
     if (!saved || !saved.handle) return
     setMe((m) => m || saved.handle)
@@ -1106,7 +1126,7 @@ export default function App() {
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
-    verifyEnabled: igVerifyEnabled() || demo,
+    verifyEnabled: igVerifyEnabled() || igOAuthEnabled() || demo,
     setMe, setEmail, setThem,
     altHandles, addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,

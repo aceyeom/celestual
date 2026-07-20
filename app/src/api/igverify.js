@@ -80,8 +80,69 @@ export async function startVerification(handle) {
   return { token: data.token, expiresAt: data.expires_at, proof, proofHash }
 }
 
+// ── Instagram Login (OAuth 2.0) — the scale path ──────────────────────────
+// The DM flow above is fragile at scale for reasons that are Meta's, not ours
+// (message-requests folder delivery, Development-mode webhooks, a single inbox /
+// ManyChat as a chokepoint — see docs/OAUTH-SCALING-STRATEGY.md). OAuth proves the
+// same thing — "you own this @" — by having the person log into Instagram directly.
+// No DM, no ManyChat, no Facebook Page; scales to unlimited users.
+//
+// It REUSES everything below: the same `proof` secret, the same poll RPC, the same
+// service-role completion. The only new server call is celestual_start_ig_oauth,
+// which returns a high-entropy `state` (stored as the pending row's token). The
+// celestual-ig-oauth edge function does the code↔token↔username exchange with Meta
+// and calls the existing completion RPC; the browser then polls the state like a code.
+//
+// On when the flag is set AND Supabase is configured AND the public OAuth client id
+// + redirect are present. Otherwise the button is simply not offered.
+export const igOAuthEnabled = () =>
+  import.meta.env.VITE_IG_OAUTH_ENABLED === '1' &&
+  hasSupabase &&
+  !!import.meta.env.VITE_IG_OAUTH_CLIENT_ID &&
+  !!import.meta.env.VITE_IG_OAUTH_REDIRECT_URI
+
+// Instagram's consent screen for "Instagram API with Instagram Login". We ask only
+// for `instagram_business_basic` — the lowest-risk scope, enough to read the
+// username. `state` is the unguessable value minted server-side; it doubles as the
+// OAuth CSRF token and the correlation id the redirect comes back with.
+const IG_OAUTH_AUTHORIZE = 'https://www.instagram.com/oauth/authorize'
+const IG_OAUTH_SCOPE = 'instagram_business_basic'
+export function igOAuthAuthorizeUrl(state) {
+  const p = new URLSearchParams({
+    client_id: import.meta.env.VITE_IG_OAUTH_CLIENT_ID || '',
+    redirect_uri: import.meta.env.VITE_IG_OAUTH_REDIRECT_URI || '',
+    response_type: 'code',
+    scope: IG_OAUTH_SCOPE,
+    state,
+  })
+  return `${IG_OAUTH_AUTHORIZE}?${p.toString()}`
+}
+
+// Begin an OAuth verification for `handle`. Mints the same proof secret as the DM
+// flow, gets a `state` from the server, persists the pending record (flagged oauth
+// so the UI shows a "finishing" state on return, not a DM code), and returns the
+// authorize URL to open. Throws on a backend/rate error so the caller can surface it.
+export async function startOAuthVerification(handle) {
+  const proof = genProof()
+  const proofHash = await sha256Hex(proof)
+  const { data, error } = await supabase.rpc('celestual_start_ig_oauth', {
+    p_handle: handle,
+    p_proof_hash: proofHash,
+  })
+  if (error) throw error
+  if (!data?.ok) {
+    const e = new Error(data?.error || 'start_failed')
+    e.code = data?.error
+    throw e
+  }
+  const rec = { handle, token: data.state, proofHash, proof, expiresAt: data.expires_at, oauth: true }
+  savePending(rec)
+  return { ...rec, authorizeUrl: igOAuthAuthorizeUrl(data.state) }
+}
+
 // Poll for the DM result. Returns 'pending' | 'verified' | 'expired' | 'none'.
 // Never throws — a transient failure reads as 'pending' so the UI keeps watching.
+// (Works for the OAuth path too: `token` is just the `state`.)
 export async function pollVerification(token, proofHash) {
   try {
     const { data, error } = await supabase.rpc('celestual_poll_ig_verification', {
