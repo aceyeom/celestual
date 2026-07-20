@@ -17,8 +17,12 @@ the direct-Meta alternative. Written for a beginner — follow it top to bottom.
 > automatically (`IG_CONFIRM_DM`, on by default — set `0` to disable, e.g. when
 > ManyChat is also live and already sending the feedback DM).
 
-> **⚠ "It verifies on an account's FIRST DM, then never again."** This is the
-> message-requests folder, not your code. A person who doesn't follow `@celestual.us`
+> **⚠ "It verifies on an account's FIRST DM, then never again."** First, which relay
+> are you on? **If you're on ManyChat** (`celestual-manychat`) and the DMs are *not*
+> stuck in Requests, this is a **ManyChat trigger firing setting**, not the below — see
+> the "#1 failure" section in [MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md).
+> On the **direct webhook**, it's the message-requests folder, not your code. A person
+> who doesn't follow `@celestual.us`
 > lands in **Requests**; Meta delivers the first message but won't reliably deliver
 > that account's *later* messages until the business **replies once** (which accepts
 > the thread into the general inbox). The webhook now **always replies** to every

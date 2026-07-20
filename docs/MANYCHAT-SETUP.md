@@ -62,6 +62,49 @@ POSTing fake "DMs" at your function — treat it like a password.
 
 ---
 
+## ⚠ The #1 failure: "it only verifies on an account's FIRST DM, then never again"
+
+If Instagram is delivering the DMs fine (they're **not** stuck in the message-requests
+folder) but a given account verifies once and every later attempt is silently ignored,
+the automation is **firing only once per contact**. This is a **ManyChat trigger**
+setting, not Instagram and not your backend. There are exactly two causes:
+
+1. **The trigger's firing frequency is "once every 24 hours," not "every time."**
+   ManyChat triggers have a firing/frequency control: *activate every time a user sends
+   a message*, or *limit to once every 24 hours for the same user*. The **Default Reply**
+   trigger **defaults to once-per-24-hours** — so the first DM verifies and every other
+   DM that day is dropped by ManyChat before it ever reaches your function. If a person's
+   first attempt has a typo or an expired code, they're then **locked out for 24 hours**.
+   That is what "breaking the product" looks like.
+   ([ManyChat: firing settings](https://help.manychat.com/hc/en-us/articles/14281159586588-Default-Reply-in-Manychat))
+2. **You're on a first-contact-only trigger type.** A **Welcome Message / Conversation
+   Starter / "Follow to DM"** trigger fires **only on a contact's first-ever message**
+   (Follow-to-DM is even capped by Meta at once per user per week). Those are the wrong
+   trigger for verification — people verify more than once (new device, new session, a
+   retry, a second handle).
+
+**The fix (do both):**
+- Build the verification automation on a **Keyword** trigger — condition **"message
+  contains"** → `star-` — **not** Default Reply and **not** a welcome/conversation-starter.
+- Open that trigger's settings and set firing to **"every time"** (not "once in 24
+  hours"). Keyword triggers fire on every matching message, which is exactly what
+  verification needs.
+
+**Confirm which cause is yours in 60 seconds** — send two `star-` DMs from the same test
+account a minute apart, then check both windows:
+
+| ManyChat contact "journey" (Live Chat → the contact) | Supabase → `celestual-manychat` → Invocations | Meaning |
+| --- | --- | --- |
+| Automation fired **once** (only the 1st DM) | **one** invocation | Trigger frequency/type — apply the fix above. **This is the usual answer.** |
+| Automation fired **twice** | **two** invocations | ManyChat is fine; the "once" you saw was the 30-day session (you were already verified) — not a bug. |
+| Automation fired **twice** | **one** invocation | The **External Request** node is conditional or the 2nd run errored — check the node's condition and the `X-Celestual-Token` header. |
+
+The permanent way out of all ManyChat trigger quirks is **Instagram Login (OAuth 2.0)** —
+no DM, no ManyChat, no per-contact firing limits at all. See
+[IG-OAUTH-SETUP.md](./IG-OAUTH-SETUP.md) and [OAUTH-SCALING-STRATEGY.md](./OAUTH-SCALING-STRATEGY.md).
+
+---
+
 ## 1. What you need before you start
 
 1. **@celestual.us switched to a Professional account** (Instagram app → Settings →

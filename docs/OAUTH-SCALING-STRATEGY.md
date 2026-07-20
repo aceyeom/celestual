@@ -23,9 +23,31 @@ fallback.
 ## 1. Why "only the first DM from an account" verifies — the root cause
 
 Your report: an account DMs `@celestual.us`, it verifies; that same account DMs again
-later (a re-verify, a retry, a second device) and **the webhook never fires**. This is
-not your code — it's how Instagram routes messages, compounded by one gap in ours.
+later (a re-verify, a retry, a second device) and **nothing fires**. The cause depends on
+**which relay you run**, so diagnose by path:
 
+### If you're on the ManyChat path (`celestual-manychat`) — the current setup
+
+Instagram *is* delivering the DMs (they're **not** stuck in Requests); ManyChat receives
+every message but only **acts on the first per account**. That's a **ManyChat trigger
+firing setting**, not Instagram and not your backend:
+
+- **Firing frequency = "once every 24 hours" instead of "every time."** ManyChat triggers
+  can activate every message or once per 24 h per user; the **Default Reply** trigger
+  *defaults to once-per-24-h*. First DM verifies, the rest of the day is dropped — and a
+  first attempt with a typo locks the person out for 24 h.
+- **A first-contact-only trigger type** (Welcome / Conversation Starter / Follow-to-DM)
+  fires only on a contact's first-ever message.
+
+**Fix:** build on a **Keyword** trigger (`message contains star-`) set to **"every
+time."** Full diagnostic (ManyChat journey vs. Supabase invocations) in
+[MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md). No SQL can fix a relay that never calls — this
+is a ManyChat configuration, or you move to OAuth (§3), which has no per-contact firing
+limit at all.
+
+### If you're on the direct Meta webhook (`celestual-ig-webhook`)
+
+There the cause is Instagram's **message-requests** routing plus one gap we've now closed.
 **Three compounding causes:**
 
 1. **The message-requests folder (the big one).** A person who doesn't follow
