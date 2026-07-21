@@ -547,8 +547,14 @@ export function YouScreen({ C, ctx }) {
   // age is ever sent up or stored (data minimization): we keep whether, not when.
   const [over18, setOver18] = React.useState(false)
   const valid = handleOk && emailOk && (login || over18)
-  const submit = () => valid && (login ? ctx.login() : ctx.continueFromYou())
+  // In login mode the primary action is the DM-free email magic link whenever
+  // recovery is available (real backend, not the sandbox); otherwise the DM/stub
+  // sign-in. A verified local session just restores straight through (Fix B).
+  const recovery = login && !ctx.verified && ctx.recoveryEnabled
+  const doLogin = () => (recovery ? ctx.requestSignIn() : ctx.login())
+  const submit = () => valid && (login ? doLogin() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
+  const meHandle = ctx.me.trim().replace(/^@+/, '')
   const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
   return (
     <Shell>
@@ -573,7 +579,7 @@ export function YouScreen({ C, ctx }) {
             ctx.verified ? (
               <Hint C={C} icon="check" color={rgba(C.star, 0.9)}>{t('verify.youDone')}</Hint>
             ) : (
-              <Hint C={C} icon="instagram" color={rgba(C.star, 0.85)}>{t('you.loginNote')}</Hint>
+              <Hint C={C} icon={recovery ? 'mail' : 'instagram'} color={rgba(C.star, 0.85)}>{recovery ? t('you.linkNote') : t('you.loginNote')}</Hint>
             )
           ) : ctx.verifyEnabled && handleOk ? (
             ctx.verified ? (
@@ -650,12 +656,37 @@ export function YouScreen({ C, ctx }) {
         </Collapse>
       </div>
 
-      <PrimaryButton C={C} disabled={!valid} onClick={submit}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-          {needsVerify && <Icon name="instagram" size={16} color={C.onStar} stroke={2} />}
-          {login ? t('you.loginCta') : needsVerify ? t('verify.continue') : t('you.continue')}
-        </span>
-      </PrimaryButton>
+      {login && recovery && ctx.signInSent ? (
+        // The link is on its way. Say so honestly (we never confirm the handle is
+        // registered), and keep both escape hatches: resend, or fall back to a DM.
+        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '15px 16px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55), border: `1px solid ${C.line}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <Icon name="mail" size={16} color={rgba(C.star, 0.95)} stroke={1.9} />
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: C.cream }}>{t('you.linkSentTitle')}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: C.muted }}>{t('you.linkSentNote', { handle: meHandle })}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <GhostButton C={C} onClick={ctx.requestSignIn} style={{ fontSize: 12.5 }}>{t('you.linkResend')}</GhostButton>
+            <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
+          </div>
+        </div>
+      ) : (
+        <>
+          <PrimaryButton C={C} disabled={!valid} onClick={submit}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+              {login ? (recovery ? <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> : null) : needsVerify ? <Icon name="instagram" size={16} color={C.onStar} stroke={2} /> : null}
+              {login ? (recovery ? t('you.linkCta') : t('you.loginCta')) : needsVerify ? t('verify.continue') : t('you.continue')}
+            </span>
+          </PrimaryButton>
+          {login && recovery && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+              <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
+            </div>
+          )}
+        </>
+      )}
     </Shell>
   )
 }
@@ -3457,13 +3488,15 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       const lapsed = Date.now() > expiryRef.current
       // Even past the local clock, ask the server one last time — the DM can
       // land in the final seconds, and "expired" must never beat a real ✓.
-      const status = await pollVerification(token, hashRef.current)
+      const { status, handle: adopted } = await pollVerification(token, hashRef.current)
       if (status === 'verified') {
         stopPoll()
         clearPending()
         setPhase('verified')
         const proof = proofRef.current
-        doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS)
+        // The DM authenticated a real account (migration 0012); adopt THAT @,
+        // not necessarily the one typed. onVerified reconciles `me` to it.
+        doneRef.current = setTimeout(() => onVerified(proof, adopted), VERIFIED_HOLD_MS)
       } else if (status === 'expired' || lapsed) {
         stopPoll()
         clearPending()
@@ -3809,6 +3842,56 @@ export function CopyCodeScreen({ C, ctx }) {
   )
 }
 
+// ── /signin#t=… — the sign-back-in magic link lands here (Fix B) ──────────────
+// Opening the emailed link redeems its one-time token for a FRESH proof (minted
+// here, only its hash sent up) and a full 30-day session, then restores the
+// pings — no DM. On success ctx.redeemSignIn navigates on to the pings page; a
+// dead/used/expired link falls back to the ordinary sign-in.
+export function SignInScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const token = String(ctx.signinToken || '')
+  const [phase, setPhase] = React.useState(token ? 'working' : 'missing') // working | error | missing
+  const startedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!token || startedRef.current) return
+    startedRef.current = true
+    let live = true
+    ctx.redeemSignIn(token).then((res) => {
+      // On success ctx.redeemSignIn has already navigated to the pings page.
+      if (live && (!res || !res.ok)) setPhase('error')
+    })
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+  return (
+    <Shell>
+      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+        <Brandmark C={C} size={26} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 16 }}>
+        {phase === 'working' ? (
+          <>
+            <div style={{ fontSize: 28, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.5)}` }}>✦</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: C.muted, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>
+              <Sonar C={C} size={12} /> {t('signin.working')}
+            </div>
+          </>
+        ) : phase === 'error' ? (
+          <>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 24, color: C.cream }}>{t('signin.errTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>{t('signin.errBody')}</p>
+          </>
+        ) : (
+          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>{t('signin.missing')}</p>
+        )}
+      </div>
+      {(phase === 'error' || phase === 'missing') && (
+        <PrimaryButton C={C} onClick={ctx.startLogin}>{t('signin.errCta')}</PrimaryButton>
+      )}
+    </Shell>
+  )
+}
+
 // ── the .edu gate — join a community by proving you're at that school ──────────
 // Your ping only ever reaches people from your own community, so joining one asks
 // for a code emailed to an address at that school's domain. Two steps: enter the
@@ -3824,7 +3907,9 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const domain = community.domain || 'school.edu'
   const name = community.name || 'your school'
   const short = community.short || name
-  const real = eduVerifyEnabled()
+  // /demo fakes the whole flow locally — any address, any code, no server. Live
+  // (non-demo) mode with the backend wired runs the real send/verify pipeline.
+  const real = eduVerifyEnabled() && !demo
 
   const [phase, setPhase] = React.useState('email') // email | sending | code | verifying | verified
   const [email, setEmail] = React.useState('')
@@ -3951,8 +4036,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
               </span>
             </PrimaryButton>
-            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
-            {demo && real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoGmailNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         ) : (
           <>
@@ -3987,7 +4071,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
               <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
               <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
             </div>
-            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>

@@ -5,15 +5,17 @@
 // VISITOR never does any Facebook/Instagram OAuth — they just DM a short code to
 // our Instagram account, and Meta delivers that message here, signed.
 //
-// WHAT MAKES IT SECURE (mirror of supabase/migrations/0004_ig_verification.sql):
+// WHAT MAKES IT SECURE (mirror of supabase/migrations/0004 + 0012):
 //   1. We verify Meta's X-Hub-Signature-256 (HMAC-SHA256 of the raw body with the
 //      app secret) — a forged webhook can't fake a DM.
 //   2. We do NOT trust any username in the payload. We re-fetch the sender's REAL
 //      username from the Graph API using the sender's Instagram-scoped id (IGSID).
-//   3. The decisive comparison (username == claimed handle) happens in the
-//      SECURITY DEFINER RPC celestual_complete_ig_verification, callable only by
-//      the service role. A 4-digit code guess buys nothing — it just names a
-//      pending session; ownership is decided by the Meta-authenticated identity.
+//   3. That Meta-authenticated username IS the identity. The 4-digit code is a
+//      pure correlation id (migration 0012): it only names "this DM ↔ this
+//      pending browser session", and whoever DMs a live code is verified as
+//      THAT account. Adoption happens in the SECURITY DEFINER RPC
+//      celestual_complete_ig_verification, callable only by the service role — so
+//      a code guess buys nothing, and there is no typed @ to "mismatch" against.
 //
 // Required secrets (Supabase → Edge Functions → Secrets):
 //   IG_APP_SECRET     — Meta app secret (verifies the webhook signature)
@@ -162,10 +164,10 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Try each candidate code against a pending session; the RPC enforces the
-        // username == claimed-handle rule and flips the row to 'verified'.
+        // Try each candidate code against a pending session; the RPC adopts THIS
+        // sender's Meta-authenticated username as the identity and flips the row
+        // to 'verified'. There is no typed @ to mismatch (migration 0012).
         let done = false;
-        let mismatched = false;
         let alreadyVerified: string | null = null;
         let codeExpired = false;
         for (const token of candidates) {
@@ -184,21 +186,18 @@ Deno.serve(async (req) => {
             done = true;
             break;
           }
-          if (data?.error === 'handle_mismatch') mismatched = true;
           if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
           if (data?.code_expired) codeExpired = true;
         }
         if (!done) {
           // Feedback instead of silence: tell the sender the truth about the
           // state they're actually in, so a re-run never reads as broken.
-          if (mismatched) {
-            await sendDm(String(igsid), 'That code was started for a different @. Open the app with this account and get a fresh code.');
-          } else if (alreadyVerified) {
+          if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
           } else if (codeExpired) {
-            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 10 minutes.');
+            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 24 hours.');
           }
-          results.push({ igsid, username, matched: false, mismatched, alreadyVerified: !!alreadyVerified, codeExpired });
+          results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired });
         }
       }
     }

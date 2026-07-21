@@ -120,6 +120,14 @@ const en = {
   'you.loginTitle2': 'back.',
   'you.loginNote': 'prove it’s yours and your pings come back.',
   'you.loginCta': 'sign back in',
+  // the durable, dm-free return: a one-time link to the email you left when you
+  // first verified brings you back on any device, no dm (Fix B).
+  'you.linkNote': 'we email a one-time link to the address on file — no dm needed.',
+  'you.linkCta': 'email me a sign-in link',
+  'you.linkDm': 'verify by dm instead',
+  'you.linkSentTitle': 'check your email.',
+  'you.linkSentNote': 'if @{handle} has an email on file, a one-time sign-in link is on its way. it lasts twenty minutes.',
+  'you.linkResend': 'send again',
 
   // ── screen 3 · placed (the recruiter screen) ───────────────────────────
   // the placed screen turns on your community: the growth-narrative copy (both
@@ -482,8 +490,7 @@ const en = {
   'edu.errExpired': 'that code lapsed. send a fresh one.',
   'edu.errRate': 'too many tries. give it a minute, then start again.',
   'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'edu.demoNote': 'sandbox. no real email is sent — enter any four digits and it confirms.',
-  'edu.demoGmailNote': 'sandbox: a @gmail.com address is accepted here too, alongside the real school domain.',
+  'edu.demoNote': 'sandbox. any address works, no real email is sent — enter any four digits and it confirms.',
 
   // ── affiliated schools (new-user onboarding step) ───────────────────────
   'schools.kicker': 'one more thing',
@@ -531,6 +538,13 @@ const en = {
   'copy.cta': 'copy the code',
   'copy.copied': 'copied. now paste it in.',
   'copy.missing': 'this link is missing its code. open the email again and tap copy there.',
+
+  // ── /signin — the sign-back-in magic link redeems here (Fix B) ───────────
+  'signin.working': 'signing you back in…',
+  'signin.errTitle': 'this link has lapsed.',
+  'signin.errBody': 'a sign-in link lasts twenty minutes and works once. start again and we’ll send a fresh one.',
+  'signin.errCta': 'sign back in',
+  'signin.missing': 'this link is missing its token. open the email again and tap the button there.',
 
   // ── demo (the sandbox) ────────────────────────────────────────────────────
   'demo.badge': 'sandbox',

@@ -54,6 +54,23 @@ Idempotent migrations, applied in order:
   live ping NAMED to the DM-proven owner (matching/suppression still run on
   hashes; pre-0010 rows stay anonymous until re-placed).
 
+- `migrations/0011_pending_ttl_24h.sql` — raises the pending-code TTL from
+  10 minutes to 24 hours (captures a live hand-edit into git).
+
+- `migrations/0012_ig_code_pure_correlation.sql` — **the code becomes a pure
+  correlation id (Fix C).** `celestual_complete_ig_verification` now adopts the
+  Meta-authenticated DMing account as the identity (overwriting the typed hint)
+  instead of demanding username == typed handle, and
+  `celestual_poll_ig_verification` returns that adopted @ to the proof-holder.
+  Removes the entire `handle_mismatch` class (the "different @" reply is gone).
+
+- `migrations/0013_durable_relogin.sql` — **durable, DM-free recovery (Fix B).**
+  New `celestual_recovery` (handle⇄email, written only under a live proof via
+  `celestual_bind_recovery`) and `celestual_relogin_tokens` (hash-stored,
+  single-use, 20-min magic-link tokens). `celestual_relogin_store` /
+  `celestual_relogin_redeem` (service-role only) issue and redeem the link,
+  minting a fresh 30-day proof with no DM. The opt-out wipe now covers both.
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
@@ -80,7 +97,8 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. **Full setup guide: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md)** | `MANYCHAT_SHARED_SECRET` |
-| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, DMs the verified/mismatch feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
+| `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
+| `functions/celestual-relogin` | durable, DM-free re-login (Fix B): `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
@@ -109,6 +127,9 @@ them; each enforces its own checks. See
   the slot count are group-aware.
 - **`celestual_ig_verifications`** / **`celestual_settings`** — DM ownership
   proofs; operator flags (`require_ig_verification`, `handle_salt`).
+- **`celestual_recovery`** / **`celestual_relogin_tokens`** — durable, DM-free
+  recovery (0013): the handle⇄email binding written only under a live proof, and
+  the hash-stored, single-use, short-TTL magic-link tokens.
 - **`celestual_communities`** / **`celestual_community_members`** — "your
   worlds"; counters are floored at 100 server-side.
 - **`celestual_campuses`** / **`celestual_campus_prereg`** /
@@ -129,10 +150,13 @@ back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
 `celestual_set_worlds` / `celestual_world_counts` (counters, 100-floor) ·
 `celestual_campus` / `celestual_campus_preregister` ·
 `celestual_start_ig_verification` / `celestual_poll_ig_verification` ·
-`celestual_norm`.
+`celestual_bind_recovery` (bind handle⇄email under a live proof, for DM-free
+re-login) · `celestual_norm`.
 
 **Operator-only (service role):** `celestual_complete_ig_verification` (the
-webhook's completion path), `celestual_campus_reveal` (snapshot + publish week
+webhook's completion path — adopts the DMing account as the identity),
+`celestual_relogin_store` / `celestual_relogin_redeem` (issue + redeem the
+sign-back-in magic link), `celestual_campus_reveal` (snapshot + publish week
 one), `celestual_purge_expired` (the sixty-day broom).
 
 ### Operator playbook

@@ -8,13 +8,14 @@ import {
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
+import { bindRecovery, requestSignInLink, redeemSignInLink } from './api/relogin.js'
 import { makeColors } from './theme.js'
 import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
-  StarViewOverlay, CopyCodeScreen,
+  StarViewOverlay, CopyCodeScreen, SignInScreen,
 } from './components/screens.jsx'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
@@ -37,6 +38,7 @@ const SCREENS = {
   fourth: FourthSlotScreen, // 9 · the third-slot checkout (route key kept as 'fourth' for old sessions)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
+  signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
 }
 
 const STORE = 'celestual:v2'
@@ -79,6 +81,13 @@ const parseRoute = () => {
   if (path === '/copy') {
     const m = (window.location.hash || '').match(/c=(\d{4,8})/)
     return { copy: true, copyCode: m ? m[1] : '' }
+  }
+  // /signin#t=<token> — the sign-back-in magic link (Fix B). The one-time token
+  // rides the FRAGMENT so it never reaches a server log; the SignInScreen redeems
+  // it for a fresh proof and restores the pings.
+  if (path === '/signin') {
+    const m = (window.location.hash || '').match(/t=([0-9a-fA-F]{16,128})/)
+    return { signin: true, signinToken: m ? m[1] : '' }
   }
   return {}
 }
@@ -127,6 +136,9 @@ export default function App() {
   const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
   const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
+  // Sign-back-in: once a magic-link email has been requested for `me`, the login
+  // screen shows "check your email" with a DM fallback beneath (Fix B).
+  const [signInSent, setSignInSent] = useState(false)
   // sandbox only: the monetization preview state (docs/PRICING-REVENUE.md keeps
   // production dormant — the free two, one door, no money). `demoExtraSlots`
   // counts one-time $2.99 slots bought beyond the free two; `demoSubscribed` is
@@ -262,7 +274,8 @@ export default function App() {
     if (route.community) return 'community'
     if (route.optout) return 'privacy'
     if (route.copy) return 'copy'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'schools'].includes(init.screen)) return init.screen
+    if (route.signin) return 'signin'
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'schools', 'signin', 'copy'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -355,23 +368,37 @@ export default function App() {
   }, [])
   const closeVerify = useCallback(() => setVerify(null), [])
   const onVerified = useCallback(
-    (proof) => {
+    (proof, adoptedHandle) => {
       if (!verify) return
+      // Migration 0012: identity is the Meta-authenticated account that DM'd, not
+      // the typed hint. Adopt that @ (falling back to the typed one for the demo
+      // stub, which returns no adopted handle).
+      const handle = normHandle(adoptedHandle) || verify.handle
       const s = demo
-        ? { verified: true, provider: 'instagram_dm', handle: verify.handle, proof, email: '', name: '' }
-        : markVerified(verify.handle, proof)
+        ? { verified: true, provider: 'instagram_dm', handle, proof, email: '', name: '' }
+        : markVerified(handle, proof)
       setSession(s)
+      // Reconcile `me` to the adopted @ so `verified` (which compares
+      // session.handle to me) holds and the ping's "from" is the real account.
+      if (handle && normHandle(me) !== handle) setMe(handle)
+      // Fix B: bind handle⇄email for DM-free recovery, but ONLY under this fresh
+      // proof and only when an email exists to recover to. Best-effort, off the
+      // critical path.
+      const recoveryEmail = email && email.trim()
+      if (!demo && proof && recoveryEmail) {
+        bindRecovery({ handle, proof, email: recoveryEmail }).catch(() => {})
+      }
       const done = verify.onDone
       setVerify(null)
-      if (done) done(proof)
+      if (done) done(proof, handle)
     },
-    [verify, demo],
+    [verify, demo, me, email],
   )
 
   // Resume a verification interrupted by the Instagram hand-off (mobile can
   // reload this tab; the saved code keeps polling instead of stranding them).
   useEffect(() => {
-    if (demo || session?.verified || !igVerifyEnabled()) return
+    if (demo || route.signin || session?.verified || !igVerifyEnabled()) return
     const saved = loadPending()
     if (!saved || !saved.handle) return
     setMe((m) => m || saved.handle)
@@ -600,15 +627,19 @@ export default function App() {
   // Commit the placement once identity is settled. `proofOverride` comes from a
   // just-completed verification.
   const placeCommit = useCallback(
-    async (proofOverride) => {
+    async (proofOverride, meOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      // `meOverride` carries the just-adopted @ from a fresh verification, which
+      // may differ from the typed `me` (migration 0012) and is what the proof is
+      // bound to — so the ping's "from" must be it, not the stale typed value.
+      const from = normHandle(meOverride) || normHandle(me)
       const target = normHandle(them)
       const chosen = intent || ''
       // The sandbox subscription stands its pings six months instead of sixty
       // days (SUB_PING_DAYS) — production duration stays server-set.
       const days = demo && demoSubscribed ? SUB_PING_DAYS : undefined
       try {
-        const res = await placePing({ me, them: target, email, proof, intent: chosen, demo, days })
+        const res = await placePing({ me: from, them: target, email, proof, intent: chosen, demo, days })
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
           go('fourth')
@@ -685,9 +716,12 @@ export default function App() {
   useEffect(() => {
     joinedRef.current = joinedSlugs
   }, [joinedSlugs])
-  // Which fresh verification proof to carry through the onboarding schools step
-  // into the final placement (the session state hasn't re-rendered yet).
+  // Which fresh verification proof + adopted @ to carry through the onboarding
+  // schools step into the final placement (the session state hasn't re-rendered
+  // yet). The handle can differ from what was typed — the DM adopts the real
+  // account (migration 0012) — so it must ride through too.
   const onboardProof = useRef(undefined)
+  const onboardHandle = useRef(undefined)
 
   // Commit membership once the .edu code is verified. SINGLE by construction: this
   // replaces any prior membership, and stamps the verified credential. In the
@@ -762,8 +796,10 @@ export default function App() {
   const finishOnboarding = useCallback(() => {
     setSchoolsSeen(true)
     const proof = onboardProof.current
+    const handle = onboardHandle.current
     onboardProof.current = undefined
-    placeCommit(proof)
+    onboardHandle.current = undefined
+    placeCommit(proof, handle)
   }, [placeCommit])
 
   // Place — from the send screen. Runs the identity gate first when needed.
@@ -791,7 +827,7 @@ export default function App() {
       return
     }
     if (!verified && (demo || igVerifyEnabled())) {
-      openVerify(me, (proof) => placeCommit(proof))
+      openVerify(me, (proof, handle) => placeCommit(proof, handle))
       return
     }
     if (!verified && !demo) setSession(signInStub())
@@ -801,7 +837,7 @@ export default function App() {
   // From the identity step: prove the @, then resume whatever was waiting.
   const continueFromYou = useCallback(() => {
     if (!isValidHandle(me)) return
-    const resume = (proof) => {
+    const resume = (proof, handle) => {
       pendingAction.current = null
       // no target yet (login-free signup with no crush named) — go name one.
       if (!normHandle(them)) {
@@ -809,13 +845,14 @@ export default function App() {
         return
       }
       // a target is chosen. for a first-time user, offer the affiliated schools
-      // once (carrying the fresh proof through) before placing; otherwise place.
+      // once (carrying the fresh proof + adopted @ through) before placing.
       if (!schoolsSeen) {
         onboardProof.current = proof
+        onboardHandle.current = handle
         go('schools')
         return
       }
-      placeCommit(proof)
+      placeCommit(proof, handle)
     }
     if (!verified && (demo || igVerifyEnabled())) {
       openVerify(me, resume)
@@ -828,15 +865,32 @@ export default function App() {
   // ── sign back in (cross-device) ──
   const startLogin = useCallback(() => {
     setError('')
+    setSignInSent(false)
     setLoginMode(true)
     go('you')
   }, [go])
 
+  // The DM-free recovery: email a one-time sign-in link to the address bound at
+  // verification (Fix B). Always resolves the same way — the server never reveals
+  // whether the handle is registered — so we optimistically show "check your
+  // email" and offer a DM fallback beneath it for handles with no bound address.
+  const requestSignIn = useCallback(async () => {
+    if (!isValidHandle(me)) return
+    setError('')
+    setSignInSent(true)
+    try {
+      await requestSignInLink(me)
+    } catch {
+      /* the confirmation + DM fallback stand regardless */
+    }
+  }, [me])
+
   const restorePings = useCallback(
-    async (proofOverride) => {
+    async (proofOverride, meOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
+      const handle = normHandle(meOverride) || normHandle(me)
       try {
-        const server = await fetchMyPings({ handle: me, proof, demo })
+        const server = await fetchMyPings({ handle, proof, demo })
         if (server.length) {
           setPings((local) => {
             // Local plaintext wins. The server adds (a) mutual rows this device
@@ -870,12 +924,29 @@ export default function App() {
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
     if (!verified && (demo || igVerifyEnabled())) {
-      openVerify(me, (proof) => restorePings(proof))
+      openVerify(me, (proof, handle) => restorePings(proof, handle))
       return
     }
     if (!verified && !demo) setSession(signInStub())
     restorePings()
   }, [me, demo, verified, openVerify, restorePings])
+
+  // Redeem a magic-link token (the SignInScreen calls this on mount): mint a fresh
+  // proof, adopt the recovered handle, and restore the pings — no DM. Defined
+  // after restorePings so it can depend on it.
+  const redeemSignIn = useCallback(
+    async (token) => {
+      const res = await redeemSignInLink(token)
+      if (!res.ok) return { ok: false }
+      const handle = normHandle(res.handle)
+      setSession(markVerified(handle, res.proof))
+      setMe(handle)
+      setLoginMode(false)
+      await restorePings(res.proof, handle)
+      return { ok: true, handle }
+    },
+    [restorePings],
+  )
 
   // ── the status page's actions ──
   const renew = useCallback(
@@ -1106,11 +1177,16 @@ export default function App() {
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
+    signinToken: route.signinToken || '',
     verifyEnabled: igVerifyEnabled() || demo,
+    // Email magic-link recovery is available when the real backend is wired and
+    // we're not in the sandbox (the demo has no email infra) — see Fix B.
+    recoveryEnabled: igVerifyEnabled() && !demo,
+    signInSent,
     setMe, setEmail, setThem,
     altHandles, addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,
-    startLogin, login,
+    startLogin, login, requestSignIn, redeemSignIn,
     renew, letGo, simulateMutual, openConversation, suppressHandle: suppress,
     openAccount, closeAccount, signOut, deleteEverything,
     setNavHidden,

@@ -368,10 +368,17 @@ Ordered from "already done / no decision" to "product decisions to confirm."
 last about 10 minutes" copy in the `code_expired` reply is corrected to 24 hours.
 
 **B. The real fix — a durable, recoverable verified session ("permanent login").**
-The goal is that a handle is DM-verified **once, ever**, and every later
-return — new session, evicted storage, new device — restores that identity
-*without another DM*, so Instagram never sees a repeat pattern to throttle. Two
-building blocks:
+**✅ SHIPPED** — migration `0013_durable_relogin.sql`, the `celestual-relogin`
+edge function, `app/src/api/relogin.js`, and the `/signin` route. At the one-time
+DM verification the browser binds `handle ⇄ email` under its fresh proof
+(`celestual_bind_recovery`); a "sign back in" emails a one-time, hash-stored,
+20-minute magic link (`${SITE}/signin#t=…`) that mints a fresh proof client-side
+and a full 30-day session with no DM (`celestual_relogin_redeem`, service-role
+only). The login screen leads with the email link and keeps a DM fallback for
+handles with no bound address. The goal is that a handle is DM-verified **once,
+ever**, and every later return — new session, evicted storage, new device —
+restores that identity *without another DM*, so Instagram never sees a repeat
+pattern to throttle. The building blocks:
 
   - **Trust an existing local session and stop re-prompting while it is valid.**
     Today several flows re-open the verify sheet even when a live session exists;
@@ -385,14 +392,16 @@ building blocks:
     turns the DM into a one-time step instead of a recurring tax.
 
 **C. Eliminate the "different @" wall — let the DMing account define identity.**
-Flip the model so the 4-digit code is a **pure correlation id** and the verified
-identity is *always* the Meta-authenticated account that actually sends the DM.
-The browser starts a code without pre-binding a handle; whoever DMs it is
-verified as that account, and the site adopts that @. This removes the entire
-`handle_mismatch` class (there is nothing to mismatch against) and is strictly
-*more* secure, because identity is never a typed claim. The alternative, lighter
-touch is to keep the strict match but, on mismatch, tell the person which @ they
-DM'd from and offer a one-tap switch to verify *that* account.
+**✅ SHIPPED** — migration `0012_ig_code_pure_correlation.sql` plus the matching
+edits to `celestual-ig-webhook`, `celestual-manychat`, `igverify.js` and the app.
+The 4-digit code is now a **pure correlation id** and the verified identity is
+*always* the Meta-authenticated account that actually sends the DM:
+`celestual_complete_ig_verification` adopts that username (overwriting the typed
+hint), and `celestual_poll_ig_verification` hands the adopted @ back to the
+proof-holder so the site adopts it. This removes the entire `handle_mismatch`
+class (there is nothing to mismatch against — the "that code was started for a
+different @" reply is gone from both relays) and is strictly *more* secure,
+because identity is never a typed claim.
 
 **D. Delivery resilience — run the direct Meta webhook in parallel.** The direct
 webhook (`celestual-ig-webhook`, see [DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md))
@@ -409,8 +418,12 @@ DMs become rare, so this is a resilience layer rather than a dependency.
 The code TTL and the Instagram throttle are real, but they are symptoms. The
 durable fix is **B** — stop discarding the verified session, and give it a
 server-backed, DM-free recovery — with **C** removing the wrong-account wall.
-After that, the "one and done" complaint and the "different @" reply both stop
-being reachable in normal use, and **D** covers the residual Meta-platform risk.
+**Both now ship** (migrations 0012 + 0013): the verified session survives storage
+loss and returns by email magic link on any device, and identity is always the
+Meta-authenticated account that DMs. The "one and done" complaint and the
+"different @" reply are no longer reachable in normal use, and **D** (running the
+direct Meta webhook in parallel) remains the optional hedge for residual
+Meta-platform risk.
 
 ---
 

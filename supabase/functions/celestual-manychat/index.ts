@@ -6,8 +6,9 @@
 // endpoint, passing the sender's real Instagram username and the message text.
 // We trust the username because ManyChat obtained it from Meta's official API, and
 // we authenticate that the request truly comes from YOUR ManyChat with a shared
-// secret. The 4-digit code is only a correlation id (see
-// supabase/migrations/0004_ig_verification.sql) — the username match is the gate.
+// secret. The 4-digit code is only a correlation id (migrations 0004 + 0012): the
+// Meta-authenticated sender IS the identity — whoever DMs a live code is verified
+// as that account, so there is nothing to "mismatch" against.
 //
 // ManyChat External Request setup — full step-by-step in docs/MANYCHAT-SETUP.md:
 //   • Trigger:   a KEYWORD trigger — "message contains star-" (people send
@@ -121,9 +122,6 @@ Deno.serve(async (req) => {
     if (data?.ok) {
       // ManyChat can map `reply` to a field and send it back as a DM (optional).
       return json({ ok: true, status: 'verified', handle: data.handle, reply: `✦ @${data.handle} is verified on CELESTUAL — head back to the app to finish.` });
-    }
-    if (data?.error === 'handle_mismatch') {
-      return json({ ok: false, status: 'handle_mismatch', reply: 'That code was started for a different @. Start again from the app with this account.' });
     }
     if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
     if (data?.code_expired) codeExpired = true;

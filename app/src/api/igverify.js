@@ -1,12 +1,16 @@
 // igverify.js — Instagram DM handle-ownership verification (no Facebook OAuth).
 //
-// The flow this drives (see docs/DEBUG-IG-WEBHOOK.md and migration 0004):
+// The flow this drives (see docs/DEBUG-IG-WEBHOOK.md and migrations 0004/0012):
 //   1. start(handle) → the browser mints a random 256-bit `proof`, sends only its
-//      SHA-256 hash to the server, and gets back a one-time 4-digit code.
+//      SHA-256 hash to the server (with the typed handle as a HINT), and gets back
+//      a one-time 4-digit code.
 //   2. The user copies the code and DMs it to our Instagram account (deep-linked
-//      via ig.me). Meta's webhook tells our backend who really sent it; if that
-//      account's username matches the claimed handle, the session flips verified.
-//   3. poll(token, proofHash) → the browser watches for that flip.
+//      via ig.me). Meta's webhook tells our backend who REALLY sent it, and that
+//      Meta-authenticated account IS the identity: whoever DMs a live code is
+//      verified as that account (migration 0012 — the code is a pure correlation
+//      id; there is no typed @ to "mismatch" against).
+//   3. poll(token, proofHash) → the browser watches for the flip AND reads back
+//      the adopted @, so it can adopt the real account the DM authenticated.
 //   4. The raw `proof` is the capability the browser then hands to celestual_submit
 //      to prove ownership at seal time. It is a secret — treated like an auth token.
 //
@@ -80,7 +84,10 @@ export async function startVerification(handle) {
   return { token: data.token, expiresAt: data.expires_at, proof, proofHash }
 }
 
-// Poll for the DM result. Returns 'pending' | 'verified' | 'expired' | 'none'.
+// Poll for the DM result. Returns { status, handle }:
+//   status: 'pending' | 'verified' | 'expired' | 'none'
+//   handle: the adopted @ (the Meta-authenticated account that DM'd), present
+//           only once status is 'verified' — the browser adopts it as identity.
 // Never throws — a transient failure reads as 'pending' so the UI keeps watching.
 export async function pollVerification(token, proofHash) {
   try {
@@ -88,10 +95,10 @@ export async function pollVerification(token, proofHash) {
       p_token: token,
       p_proof_hash: proofHash,
     })
-    if (error) return 'pending'
-    return data?.status || 'pending'
+    if (error) return { status: 'pending', handle: null }
+    return { status: data?.status || 'pending', handle: data?.handle || null }
   } catch {
-    return 'pending'
+    return { status: 'pending', handle: null }
   }
 }
 
