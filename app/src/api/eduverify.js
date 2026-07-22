@@ -14,18 +14,16 @@
 //      hash (never returning it) and, on a match, reports the email + slug back.
 //
 // The code is a SECRET: it is emailed, never returned to the browser, and only
-// its hash is stored. The sandbox runs this exact same pipeline (real send, real
-// verify) whenever the backend is configured — it is not faked. The one carve-out
-// is the domain check: alongside the real school domain, the sandbox can also
-// accept a @gmail.com address so the flow is testable with an inbox anyone
-// actually holds — the product owner has no .edu inbox to test with. This is ON
-// BY DEFAULT for demo requests server-side; an operator can turn it off with
-// CELESTUAL_SANDBOX_GMAIL=0 on the edge function. Either way the client's `demo`
-// flag alone never weakens the gate — a non-demo request never accepts gmail.
-// Only when no backend is configured at all (a preview build with nothing
-// wired) does the sheet fall back to a local accept.
+// its hash is stored.
+//
+// THE /demo SANDBOX FAKES THIS ENTIRELY. In the sandbox nothing reaches a
+// server: any address you type is accepted (whatever the domain), no email is
+// sent, and any four digits confirm — so the join shape is playable end to end
+// without a real .edu inbox. `eduVerifyEnabled()` is force-off in demo (see the
+// sheet), and `localEmailCheck` drops the domain rule for demo. Live (non-demo)
+// mode runs the real send/verify pipeline against the genuine school domain.
 import { supabase, hasSupabase } from './supabase.js'
-import { emailMatchesSchool, isEduEmail, isGmailAddress } from '../communities.js'
+import { emailMatchesSchool, isEduEmail } from '../communities.js'
 
 const FUNCTION = 'celestual-edu-verify'
 
@@ -36,13 +34,21 @@ export const eduVerifyEnabled = () =>
 
 // Client-side domain pre-check, so we never fire a send for an address that can't
 // belong to the school (the server re-checks — this is only to fail fast +
-// kindly). In the sandbox a @gmail.com address is silently accepted too, on top
-// of the real school domain — every other domain still has to genuinely match.
+// kindly). The /demo sandbox fakes the whole workflow with NO server: any
+// plausibly-formatted address is accepted, whatever the domain, so the join
+// shape is playable end to end without a real .edu inbox. Live (non-demo) mode
+// still enforces the real school domain below.
 export function localEmailCheck(email, slug, demo) {
-  if (demo && isGmailAddress(email)) return { ok: true }
+  if (demo) return looksLikeEmail(email) ? { ok: true } : { ok: false, error: 'email' }
   if (!isEduEmail(email)) return { ok: false, error: 'email' }
   if (!emailMatchesSchool(email, slug)) return { ok: false, error: 'domain' }
   return { ok: true }
+}
+
+// The loosest sanity check — is this shaped like an email at all? Used only for
+// the sandbox's any-address accept; the real gate is the school-domain match.
+function looksLikeEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
 }
 
 // Send a code to `email` for `slug`. Returns { token, expiresAt }. Throws an Error
