@@ -541,7 +541,12 @@ export function YouScreen({ C, ctx }) {
   const { t } = useI18n()
   const login = ctx.loginMode
   const emailVal = ctx.email.trim()
-  const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
+  const emailFormatOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
+  // Email is REQUIRED at signup — it's the mutual-match reveal channel AND the
+  // DM-free sign-back-in anchor (Fix B). Login mode never collects one (recovery
+  // reads the address already on file), so an empty value stays valid there.
+  const emailOk = login ? (emailVal === '' || emailFormatOk) : emailFormatOk
+  const isEdu = /\.edu$/i.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
   // the 18+ hard gate (§4.4) — signup only. one tap to confirm; nothing about
   // age is ever sent up or stored (data minimization): we keep whether, not when.
@@ -555,7 +560,6 @@ export function YouScreen({ C, ctx }) {
   const submit = () => valid && (login ? doLogin() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
   const meHandle = ctx.me.trim().replace(/^@+/, '')
-  const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -627,31 +631,14 @@ export function YouScreen({ C, ctx }) {
           </div>
         </Collapse>
 
-        {/* email — optional, revealed after a handle exists (signup only) */}
+        {/* email — REQUIRED at signup: the mutual-match reveal channel and the
+            DM-free sign-back-in anchor (Fix B). School (.edu) address encouraged —
+            it's the core audience, and it doubles as community setup. */}
         <Collapse open={handleOk && !login}>
-          <div style={{ paddingTop: 4 }}>
-            {!emailOpen ? (
-              <button
-                onClick={() => setEmailOpen(true)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '15px 17px',
-                  borderRadius: RADIUS.field, cursor: 'pointer', textAlign: 'left',
-                  background: C.ink2, border: `1px solid ${C.line}`,
-                  color: C.cream, fontFamily: "'Space Grotesk', sans-serif",
-                }}
-              >
-                <Icon name="mail" size={18} color={rgba(C.star, 0.9)} stroke={1.7} />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
-                <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.92), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{t('you.emailOptional')}</span>
-                <Icon name="plus" size={16} color={rgba(C.star, 0.9)} stroke={2} />
-              </button>
-            ) : (
-              <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                <FieldLabel C={C} optional={t('you.emailOptional')}>{t('you.emailLabel')}</FieldLabel>
-                <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} autoFocus onEnter={submit} />
-                <Hint C={C} icon="mail">{t('you.note')}</Hint>
-              </div>
-            )}
+          <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <FieldLabel C={C}>{t('you.emailLabel')}</FieldLabel>
+            <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} onEnter={submit} />
+            <Hint C={C} icon={isEdu ? 'check' : 'mail'} color={isEdu ? rgba(C.star, 0.9) : undefined}>{isEdu ? t('you.emailEdu') : t('you.note')}</Hint>
           </div>
         </Collapse>
       </div>
@@ -3396,10 +3383,14 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
   const ig = igUsername()
-  const [phase, setPhase] = React.useState('starting') // starting | waiting | verified | expired | error
+  const [phase, setPhase] = React.useState('starting') // starting | waiting | confirm | verified | expired | error
   const [token, setToken] = React.useState('')
   const [errCode, setErrCode] = React.useState('')
   const [copied, setCopied] = React.useState(false)
+  // The @ the DM actually authenticated, when it differs from the one typed — we
+  // confirm before adopting it (migration 0012 adopts the DMing account; a stray
+  // code from another account should never silently swap someone's identity).
+  const [adopted, setAdopted] = React.useState('')
   // After a while stuck on "waiting", surface a self-serve way out (the DM can
   // be dropped by the relay; a fresh code re-runs the whole path).
   const [stuck, setStuck] = React.useState(false)
@@ -3435,8 +3426,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     if (demo) {
       proofRef.current = genProof()
       hashRef.current = null
-      expiryRef.current = Date.now() + 10 * 60 * 1000
-      setToken(String(Math.floor(1000 + Math.random() * 9000)))
+      expiryRef.current = Date.now() + 30 * 60 * 1000
+      setToken(String(Math.floor(100000 + Math.random() * 900000)))
       setPhase('waiting')
       return
     }
@@ -3488,15 +3479,22 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       const lapsed = Date.now() > expiryRef.current
       // Even past the local clock, ask the server one last time — the DM can
       // land in the final seconds, and "expired" must never beat a real ✓.
-      const { status, handle: adopted } = await pollVerification(token, hashRef.current)
+      const { status, handle: adoptedHandle } = await pollVerification(token, hashRef.current)
       if (status === 'verified') {
         stopPoll()
         clearPending()
-        setPhase('verified')
         const proof = proofRef.current
-        // The DM authenticated a real account (migration 0012); adopt THAT @,
-        // not necessarily the one typed. onVerified reconciles `me` to it.
-        doneRef.current = setTimeout(() => onVerified(proof, adopted), VERIFIED_HOLD_MS)
+        // The DM authenticated a real account (migration 0012). If that @ differs
+        // from the one typed, pause on a confirm so a stray/guessed code from
+        // another account can never silently swap identity; otherwise sail through.
+        const a = adoptedHandle ? normHandle(adoptedHandle) : ''
+        if (a && a !== normHandle(handle)) {
+          setAdopted(a)
+          setPhase('confirm')
+        } else {
+          setPhase('verified')
+          doneRef.current = setTimeout(() => onVerified(proof, adoptedHandle), VERIFIED_HOLD_MS)
+        }
       } else if (status === 'expired' || lapsed) {
         stopPoll()
         clearPending()
@@ -3573,7 +3571,14 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           </button>
         </div>
 
-        {phase === 'verified' ? (
+        {phase === 'confirm' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 21, color: C.cream }}>{t('verify.confirmTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.muted }}>{t('verify.confirmBody', { handle: adopted })}</p>
+            <PrimaryButton C={C} onClick={() => { setPhase('verified'); doneRef.current = setTimeout(() => onVerified(proofRef.current, adopted), VERIFIED_HOLD_MS) }}>{t('verify.confirmYes', { handle: adopted })}</PrimaryButton>
+            <GhostButton C={C} onClick={begin} style={{ fontSize: 12.5 }}>{t('verify.confirmNo')}</GhostButton>
+          </div>
+        ) : phase === 'verified' ? (
           <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />

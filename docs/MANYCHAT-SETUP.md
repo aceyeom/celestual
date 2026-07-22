@@ -46,7 +46,7 @@ Written for a beginner — follow it top to bottom. ~30 minutes.
   page polls, sees 'verified', flips to ✓
 ```
 
-Security in one line: the 4-digit code is only a correlation id — the gate is the
+Security in one line: the code (6 digits, migration 0014) is only a correlation id — the gate is the
 **sender's real username**, which ManyChat gets from Meta's official API and your
 backend compares to the claimed handle
 (`celestual_complete_ig_verification`, service-role only). A guessed code from the
@@ -331,11 +331,13 @@ business account.
   delivering them to ManyChat. Nothing downstream — not ManyChat, not the Edge
   Function, not the code TTL — can rescue a DM that Meta never delivers.
 - **Why the code-TTL bump helped but did not fix it.** Raising the pending TTL
-  from 10 minutes to 24 hours (done live, now captured in **migration
-  `0011_pending_ttl_24h.sql`**) removes the "code died while it sat in Message
-  Requests" failure, which is real and worth keeping. But it does nothing about a
-  session that was discarded and has to be re-earned by DM. TTL was never the
-  root cause.
+  from 10 minutes to 24 hours (done live, captured in **migration
+  `0011_pending_ttl_24h.sql`**) removed the "code died while it sat in Message
+  Requests" failure. But it did nothing about a session that was discarded and
+  has to be re-earned by DM. TTL was never the root cause. (Once **B** shipped
+  and killed the repeat-DM pressure, **migration `0014`** shortened the TTL again
+  to **30 minutes** — long enough for the Message-Requests lag, short enough to
+  keep the 6-digit code pool sparse.)
 
 ### 8.3 The "That code was started for a different @" case
 

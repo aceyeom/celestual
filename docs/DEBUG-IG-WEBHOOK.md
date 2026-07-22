@@ -96,7 +96,7 @@ What you get back tells you a lot:
 | A new invocation, but it **returns 401** | Meta reached you but the **signature failed** → `IG_APP_SECRET` is wrong. | **Fix #7** |
 | A new invocation returns **200**, logs show `no_username` | Webhook ran but couldn't read the sender's name → `IG_ACCESS_TOKEN` is wrong/expired/missing a permission. | **Fix #8** |
 | A new invocation returns **200**, logs show `ok:true` | Verified — the sender's real @ was adopted as the identity (migration 0012). | done |
-| A new invocation returns **200**, logs show `no_pending` | The code expired (>10 min) or was already used. Start fresh and DM within 10 minutes. | **Fix #10** |
+| A new invocation returns **200**, logs show `no_pending` | The code expired (>30 min) or was already used. Start fresh and DM within 30 minutes. | **Fix #10** |
 
 Write down which row you landed on. Now jump to that fix.
 
@@ -248,11 +248,11 @@ nothing to mismatch, so this reply is gone — a typo or a second logged-in acco
 simply verifies the account that actually sent the DM. If you're on an older
 build, deploy 0012 and the updated `celestual-ig-webhook`.
 
-### Fix #10 — Logs show `no_pending` → you raced the 10-minute clock
+### Fix #10 — Logs show `no_pending` → you raced the clock (or reused a code)
 
-Codes are valid for **~10 minutes** and are single-use. If you took longer, or reused an
-old code, you'll get `no_pending`. Start a brand-new verification and DM the new code
-within a couple of minutes.
+Codes are valid for **~30 minutes** (migration 0014; 6 digits) and are single-use. If
+you took longer, or reused an old code, you'll get `no_pending`. Start a brand-new
+verification and DM the new code.
 
 ---
 

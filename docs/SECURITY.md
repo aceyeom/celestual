@@ -110,7 +110,13 @@ a second logged-in account used to dead-end at "that code was started for a
 different @") and is strictly *more* secure — you can only ever verify the
 account you actually control. `celestual_poll_ig_verification` returns the
 adopted @ to the proof-holder (and only the proof-holder) so the browser can
-adopt it.
+adopt it. The one residual — a stray/guessed DM that matches *someone else's*
+live code, which would adopt the DMing account onto their session — is bounded
+three ways: the code is **6 digits** with a **30-minute TTL** (0014, so the
+live-code pool is small and a collision is ~1-in-a-million per stray DM), the
+unique-pending-code index means a code maps to at most one session at a time,
+and the browser shows a **"sign in as @X?" confirm** whenever the adopted @
+differs from the one typed, so an unexpected identity can never commit silently.
 
 Session lifetime (0009): a completed verification stands **30 days, sliding**
 — each successful proof use extends it another 30, so an active person never
@@ -134,7 +140,11 @@ as the other mail) whose token is stored only as a hash, is single-use, and
 lasts 20 minutes; opening it mints a fresh proof client-side and a full 30-day
 session (`celestual_relogin_redeem`, service-role only) with no DM. The DM is a
 one-time step; email ownership carries every return, cross-device. Both writers
-are service-role-only, so the browser can never mint its own proof.
+are service-role-only, so the browser can never mint its own proof. **Email is
+required at signup** (not optional): it is both the mutual-match reveal channel
+(§mutual) and this recovery anchor, so every account can be reached and can
+return without a DM. School (`.edu`) addresses are encouraged — the core
+audience — and double as community setup.
 
 ### §ident — Multi-account identity
 A person can link up to 3 of their own @s (`celestual_link`); matching and the
@@ -180,7 +190,9 @@ Three emails exist: *it's mutual* (to the earlier entrant's own address),
 *your ping lapses soon* (about the sender's own action; names no handle —
 §2), and the campus *open/reveal* notes (to preregistrants). None of them can
 state or imply anything about any other person's activity. That line is
-load-bearing legally (FTC v. NGL) and is pre-committed here in writing.
+load-bearing legally (FTC v. NGL) and is pre-committed here in writing. The
+transactional mails — the `.edu` join code and the sign-back-in magic link —
+speak only to the recipient about their own action and name no one else.
 
 ### §age — Adults
 The landing states the 18+ condition on the primary action; marketing is
@@ -211,7 +223,7 @@ conservatism on purpose (framework §6.7).
 
 ## Operator checklist
 
-- [ ] All migrations applied (`0001`–`0013`); RLS **on**, **zero policies**,
+- [ ] All migrations applied (`0001`–`0014`); RLS **on**, **zero policies**,
       on every `celestual_*` table.
 - [ ] `anon` has **execute** only on the §1 public RPC list — and **not** on
       `celestual_group`, `celestual_hash_handle`, `celestual_is_member`,

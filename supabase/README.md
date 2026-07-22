@@ -71,6 +71,11 @@ Idempotent migrations, applied in order:
   `celestual_relogin_redeem` (service-role only) issue and redeem the link,
   minting a fresh 30-day proof with no DM. The opt-out wipe now covers both.
 
+- `migrations/0014_ig_code_6digit_30min.sql` — **DM code tuning.** Widens the
+  pending code from 4 to 6 digits (~100× smaller collision surface) and shortens
+  its TTL from 24 h to 30 min (the durable re-login removed the repeat-DM pressure
+  the long TTL guarded against). The relays parse `\d{4,6}` through the cutover.
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was

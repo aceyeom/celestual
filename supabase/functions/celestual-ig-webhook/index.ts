@@ -69,11 +69,13 @@ async function validSignature(raw: string, header: string | null): Promise<boole
   return safeEqual(hex(mac), sig.toLowerCase());
 }
 
-// Pull every standalone 4-digit run out of the message text, most-specific first.
-// (Security doesn't rest on parsing — a wrong code simply finds no pending session.)
+// Pull every standalone 4–6 digit run out of the message text (codes are 6 digits
+// since migration 0014; \d{4,6} still resolves any 4-digit code left in flight
+// during the cutover). Security doesn't rest on parsing — a wrong code simply
+// finds no pending session.
 function codeCandidates(text: string): string[] {
   const out: string[] = [];
-  for (const m of text.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
+  for (const m of text.matchAll(/(?<!\d)(\d{4,6})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }
 
@@ -195,7 +197,7 @@ Deno.serve(async (req) => {
           if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
           } else if (codeExpired) {
-            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 24 hours.');
+            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.');
           }
           results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired });
         }

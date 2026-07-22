@@ -56,19 +56,20 @@ function safeEqual(a: string, b: string) {
   return out === 0;
 }
 
-// Pull the 4-digit correlation code out of the DM text. The app tells people to send
-// the prefixed form — "star-1283" — and your ManyChat automation's Condition only
-// forwards messages containing "star-", so in practice the text is "star-1283". We
-// read the prefixed form first (case-insensitive, separator optional), then fall back
-// to any bare 4-digit run so a stray format still resolves. Parsing is never the
-// security boundary — a wrong code just finds no pending session; the sender's
-// username is the gate.
+// Pull the correlation code out of the DM text. Codes are 6 digits (migration
+// 0014); \d{4,6} still resolves any 4-digit code left in flight during the
+// cutover. The app tells people to send the prefixed form — "star-128340" — and
+// your ManyChat automation's Condition only forwards messages containing "star-",
+// so in practice the text is "star-128340". We read the prefixed form first
+// (case-insensitive, separator optional), then fall back to any bare 4–6 digit run
+// so a stray format still resolves. Parsing is never the security boundary — a
+// wrong code just finds no pending session; the sender's username is the gate.
 function codeCandidates(text: string): string[] {
   const s = String(text ?? '');
   const out: string[] = [];
   // Tolerate the dashes phone keyboards substitute (– —) in the prefixed form.
-  for (const m of s.matchAll(/star[-–—\s]?(\d{4})/gi)) out.push(m[1]);
-  for (const m of s.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) out.push(m[1]);
+  for (const m of s.matchAll(/star[-–—\s]?(\d{4,6})/gi)) out.push(m[1]);
+  for (const m of s.matchAll(/(?<!\d)(\d{4,6})(?!\d)/g)) out.push(m[1]);
   return [...new Set(out)];
 }
 
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
     return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
   }
   if (codeExpired) {
-    return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 24 hours.' });
+    return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.' });
   }
   return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request. Get a fresh code in the app and send it here.' });
 });
