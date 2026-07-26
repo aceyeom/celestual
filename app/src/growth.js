@@ -25,12 +25,12 @@
 export function placedReachable({ handle, short }) {
   return {
     live: 'your ping is live.',
-    here: `@${handle} is already on celestual, and your ping just became a star in your ${short} sky.`,
+    here: `your ping just became a star in your ${short} sky.`,
     question: `so here’s the question: did they ping you too?`,
-    until: `the second they do, you both find out. until then, nothing shows, to anyone.`,
-    fill: `and when the countdown ends, the whole ${short} sky opens at once: the weekly matches, the numbers, the constellations.`,
-    foot: `the sky opens on one shared night, the same moment for everyone. every person from ${short} who joins before then is standing under it when it does.`,
-    spreading: `it names no one, and it’s already spreading. share it and you’re just part of ${short} getting in, same as everyone.`,
+    until: `the second they do, you both find out. until then, nothing shows.`,
+    fill: `when the countdown ends, the whole ${short} sky opens at once.`,
+    foot: `one shared night, the same moment for everyone. every person from ${short} who joins before then is standing under it.`,
+    spreading: `it names no one. share it and you’re just part of ${short} getting in.`,
   }
 }
 
@@ -40,8 +40,8 @@ export function placedReachable({ handle, short }) {
 export function placedWaiting({ handle, short }) {
   return {
     notHere: `@${handle} isn’t on celestual yet.`,
-    only: `celestual only works when your world is here. right now, the people you’re looking for aren’t in yet.`,
-    bring: `bring ${short} in before the countdown ends. when the sky opens, the people you’ve been waiting on are standing under it with you.`,
-    spreading: `it names no one, and it’s already spreading. share it and you’re just part of ${short} getting in, same as everyone.`,
+    only: `celestual works when your world is here. right now, the people you’re looking for aren’t in yet.`,
+    bring: `bring ${short} in before the countdown ends. when the sky opens, they’re standing under it with you.`,
+    spreading: `it names no one. share it and you’re just part of ${short} getting in.`,
   }
 }

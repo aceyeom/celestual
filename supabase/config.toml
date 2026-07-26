@@ -41,3 +41,9 @@ verify_jwt = false
 # proof-gated binding, both enforced in service-role-only RPCs.
 [functions.celestual-relogin]
 verify_jwt = false
+
+# The recruitment program's comment webhook. Called by ManyChat's External
+# Request when someone comments "celestual" under the recruitment reel,
+# authenticated by the same shared secret as celestual-manychat.
+[functions.celestual-recruit]
+verify_jwt = false

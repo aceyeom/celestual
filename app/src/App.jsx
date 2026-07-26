@@ -8,15 +8,16 @@ import {
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
-import { bindRecovery, requestSignInLink, redeemSignInLink } from './api/relogin.js'
+import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
 import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  SkyCardScreen, CommunityScreen, WorldsScreen, SchoolsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
+  SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
-  StarViewOverlay, CopyCodeScreen, SignInScreen,
+  StarViewOverlay, CopyCodeScreen, SignInScreen, RecruitScreen,
 } from './components/screens.jsx'
+import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -27,7 +28,6 @@ const SCREENS = {
   open: OpenDoorScreen, //    the personal open-door page (/@handle)
   who: WhoScreen, //        2 · the send (crush @ first)
   you: YouScreen, //            identity (so the ping can resolve to you)
-  schools: SchoolsScreen, //    new-user opt-in to affiliated communities
   sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
@@ -39,6 +39,7 @@ const SCREENS = {
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
   signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
+  recruit: RecruitScreen, // /recruit: the agreement, then the recruit's own numbers
 }
 
 const STORE = 'celestual:v2'
@@ -76,6 +77,27 @@ const parseRoute = () => {
   const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
   if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
   if (path === '/optout') return { optout: true }
+  // /r/<code> — a recruit's personal tracking link (migration 0016). It lands on
+  // the ordinary cold landing; the code is remembered so the signup it leads to
+  // is credited to them.
+  const ref = path.match(/^\/r\/([a-z0-9]{4,16})$/i)
+  if (ref) return { ref: ref[1].toLowerCase() }
+  // /recruit#t=<token>   — the agreement, opened from the DM
+  // /recruit#c=..&k=..   — a signed recruit's own numbers
+  // Both ride the FRAGMENT: a one-time token and a dashboard key must never
+  // reach an access log.
+  if (path === '/recruit') {
+    const h = window.location.hash || ''
+    const tok = h.match(/t=([0-9a-fA-F]{16,128})/)
+    const code = h.match(/c=([a-z0-9]{4,16})/i)
+    const key = h.match(/k=([0-9a-fA-F]{16,128})/)
+    return {
+      recruit: true,
+      recruitToken: tok ? tok[1] : '',
+      recruitCode: code ? code[1].toLowerCase() : '',
+      recruitKey: key ? key[1] : '',
+    }
+  }
   // /copy#c=1234 — the verification email's copy button. The code rides the
   // FRAGMENT so it never appears in a request line or a server log.
   if (path === '/copy') {
@@ -136,9 +158,26 @@ export default function App() {
   const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
   const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
-  // Sign-back-in: once a magic-link email has been requested for `me`, the login
-  // screen shows "check your email" with a DM fallback beneath (Fix B).
-  const [signInSent, setSignInSent] = useState(false)
+  // ── the identity router (migration 0015) ──
+  // The identity screen has ONE field and ONE button; this holds the answer the
+  // SERVER gave about the @ in it, so the screen never has to guess (or hedge in
+  // print) about which way in this person takes.
+  //   phase: 'idle' → nothing asked yet
+  //          'checking' → the question is out
+  //          'resolved' → `route` is 'signup' | 'dm' | 'email'; `to` is the
+  //                       masked inbox the link actually went to
+  const [identity, setIdentity] = useState({ phase: 'idle', route: '', to: '', fresh: false })
+  // ── recruitment attribution (migration 0016) ──
+  // The tracking code this visitor arrived through, if any. Held until they
+  // finish verifying, at which point the signup is credited to that recruiter
+  // once and the code is dropped. Nothing about the visitor is ever sent with it.
+  const [ref, setRef] = useState(() => (demo ? '' : route.ref || init.ref || loadRef()))
+  useEffect(() => {
+    if (demo || !route.ref) return
+    rememberRef(route.ref)
+    countVisit(route.ref)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // sandbox only: the monetization preview state (docs/PRICING-REVENUE.md keeps
   // production dormant — the free two, one door, no money). `demoExtraSlots`
   // counts one-time $2.99 slots bought beyond the free two; `demoSubscribed` is
@@ -156,7 +195,7 @@ export default function App() {
   // Membership (which curated slugs you've joined) persists like a light
   // preference; the live numbers (progress, weekly readout) are ephemeral —
   // seeded in the sandbox, best-effort fetched in production. The onboarding
-  // schools step is offered once (schoolsSeen). `openCommunity` is which one the
+  // `openCommunity` is which one the
   // community page is showing.
   // Membership is SINGLE — you can be in exactly one community, the one you're
   // really at, proven by a .edu code (schoolCred). What it scopes is the SKY,
@@ -171,7 +210,6 @@ export default function App() {
   // like a light preference (never the code — that lived only server-side).
   const [schoolCred, setSchoolCred] = useState(() => (demo ? null : init.schoolCred || null))
   const [commLive, setCommLive] = useState(() => (demo ? seedDemoCommLive() : {}))
-  const [schoolsSeen, setSchoolsSeen] = useState(() => (demo ? !!route.seed : !!init.schoolsSeen))
   const [openCommunity, setOpenCommunity] = useState(route.community || CURATED_SLUGS[0])
   // The .edu gate overlay: { slug } while it's up. Verified → membership commits.
   const [eduVerify, setEduVerify] = useState(null)
@@ -267,6 +305,9 @@ export default function App() {
   const pendingAction = useRef(null)
 
   const established = verified || pings.length > 0
+  // Email recovery (and therefore the server-side identity router) is available
+  // whenever the real backend is wired and we're not in the sandbox.
+  const recoveryEnabled = igVerifyEnabled() && !demo
 
   // ── navigation ──
   const firstScreen = () => {
@@ -275,7 +316,8 @@ export default function App() {
     if (route.optout) return 'privacy'
     if (route.copy) return 'copy'
     if (route.signin) return 'signin'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'schools', 'signin', 'copy'].includes(init.screen)) return init.screen
+    if (route.recruit) return 'recruit'
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -352,15 +394,15 @@ export default function App() {
   useEffect(() => {
     if (demo || !persistReady.current) return
     try {
-      const identity = established ? { me, email, altHandles } : {}
+      const who = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...identity, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, schoolsSeen, publicStar }),
+        JSON.stringify({ screen, ...who, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, publicStar, ref }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, schoolsSeen, publicStar, established])
+  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, publicStar, ref, established])
 
   // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
@@ -388,11 +430,18 @@ export default function App() {
       if (!demo && proof && recoveryEmail) {
         bindRecovery({ handle, proof, email: recoveryEmail }).catch(() => {})
       }
+      // If they arrived through a recruit's tracking link, this is the moment
+      // that counts: a verified handle, credited once to the code that sent
+      // them. Best-effort and off the critical path.
+      if (!demo && handle && ref) {
+        attributeSignup(handle).catch(() => {})
+        setRef('')
+      }
       const done = verify.onDone
       setVerify(null)
       if (done) done(proof, handle)
     },
-    [verify, demo, me, email],
+    [verify, demo, me, email, ref],
   )
 
   // Resume a verification interrupted by the Instagram hand-off (mobile can
@@ -716,12 +765,6 @@ export default function App() {
   useEffect(() => {
     joinedRef.current = joinedSlugs
   }, [joinedSlugs])
-  // Which fresh verification proof + adopted @ to carry through the onboarding
-  // schools step into the final placement (the session state hasn't re-rendered
-  // yet). The handle can differ from what was typed — the DM adopts the real
-  // account (migration 0012) — so it must ride through too.
-  const onboardProof = useRef(undefined)
-  const onboardHandle = useRef(undefined)
 
   // Commit membership once the .edu code is verified. SINGLE by construction: this
   // replaces any prior membership, and stamps the verified credential. In the
@@ -791,17 +834,6 @@ export default function App() {
     [demo],
   )
 
-  // The new-user schools step is done → mark it seen and place the held ping,
-  // carrying the verification proof through from the identity step.
-  const finishOnboarding = useCallback(() => {
-    setSchoolsSeen(true)
-    const proof = onboardProof.current
-    const handle = onboardHandle.current
-    onboardProof.current = undefined
-    onboardHandle.current = undefined
-    placeCommit(proof, handle)
-  }, [placeCommit])
-
   // Place — from the send screen. Runs the identity gate first when needed.
   const place = useCallback(async () => {
     setError('')
@@ -835,21 +867,20 @@ export default function App() {
   }, [me, them, pings, demo, verified, go, t, placeCommit, openVerify])
 
   // From the identity step: prove the @, then resume whatever was waiting.
+  //
+  // This used to detour a first-time user through a whole "affiliated schools"
+  // screen before their first ping ever landed — three forms deep before the
+  // thing they came to do happened. Joining a community is not a prerequisite
+  // for placing a ping (MASTER-GUIDE §2.6 is explicit about that), and the
+  // placed screen already asks for it at the moment it starts to matter. So the
+  // step is gone from this path: prove the @, place the ping.
   const continueFromYou = useCallback(() => {
     if (!isValidHandle(me)) return
     const resume = (proof, handle) => {
       pendingAction.current = null
-      // no target yet (login-free signup with no crush named) — go name one.
+      // no target yet (signed up without naming anyone) — go name one.
       if (!normHandle(them)) {
         go('who')
-        return
-      }
-      // a target is chosen. for a first-time user, offer the affiliated schools
-      // once (carrying the fresh proof + adopted @ through) before placing.
-      if (!schoolsSeen) {
-        onboardProof.current = proof
-        onboardHandle.current = handle
-        go('schools')
         return
       }
       placeCommit(proof, handle)
@@ -860,28 +891,24 @@ export default function App() {
     }
     if (!verified && !demo) setSession(signInStub())
     resume()
-  }, [me, them, demo, verified, schoolsSeen, openVerify, placeCommit, go])
+  }, [me, them, demo, verified, openVerify, placeCommit, go])
 
   // ── sign back in (cross-device) ──
   const startLogin = useCallback(() => {
     setError('')
-    setSignInSent(false)
+    setIdentity({ phase: 'idle', route: '', to: '' })
     setLoginMode(true)
     go('you')
   }, [go])
 
-  // The DM-free recovery: email a one-time sign-in link to the address bound at
-  // verification (Fix B). Always resolves the same way — the server never reveals
-  // whether the handle is registered — so we optimistically show "check your
-  // email" and offer a DM fallback beneath it for handles with no bound address.
+  // Re-send the link that the router already sent once.
   const requestSignIn = useCallback(async () => {
     if (!isValidHandle(me)) return
     setError('')
-    setSignInSent(true)
     try {
       await requestSignInLink(me)
     } catch {
-      /* the confirmation + DM fallback stand regardless */
+      /* the confirmation on screen stands regardless */
     }
   }, [me])
 
@@ -930,6 +957,59 @@ export default function App() {
     if (!verified && !demo) setSession(signInStub())
     restorePings()
   }, [me, demo, verified, openVerify, restorePings])
+
+  // ── the identity router ──
+  // One button on the identity screen calls this; the server answers which way
+  // this @ gets in and we simply do it. The person is never asked to pick a
+  // mechanism, and no sentence about their account is ever written in the
+  // conditional.
+  //
+  // The two flows want different things from the same answer, and that is on
+  // purpose:
+  //   · SIGNING BACK IN — the email link is the good door: it crosses devices,
+  //     and it is exactly what the bound address is for.
+  //   · MID-PING (they've already named someone) — the DM is the good door: it
+  //     completes in this tab, so the ping they are holding survives. Mailing a
+  //     link here would strand it in another session.
+  // Either way an @ we have never seen unfolds the signup panel instead.
+  const resetIdentity = useCallback(() => {
+    setIdentity((s) => (s.phase === 'idle' ? s : { phase: 'idle', route: '', to: '' }))
+  }, [])
+
+  const resolveIdentity = useCallback(async () => {
+    if (!isValidHandle(me)) return
+    setError('')
+    const wantsEmail = loginMode && !verified
+    // Nothing to ask when there's no backend (the sandbox, local dev): a device
+    // that already holds pings is returning, anyone else is new.
+    if (demo || !recoveryEnabled) {
+      const route = established ? 'dm' : 'signup'
+      setIdentity({ phase: 'resolved', route, to: '', fresh: loginMode && route === 'signup' })
+      if (route === 'signup') setLoginMode(false)
+      if (route === 'dm') (loginMode ? login : continueFromYou)()
+      return
+    }
+    setIdentity({ phase: 'checking', route: '', to: '' })
+    const r = await beginSignIn(me)
+    if (r.route === 'signup') {
+      // A new @ signs up here, whichever button they arrived through. `fresh`
+      // remembers that they came in through "log in", so the screen can say the
+      // one thing worth saying: we've never seen this @. Someone who arrived
+      // through the send flow already knows they're new; the panel unfolding is
+      // the whole message there.
+      setIdentity({ phase: 'resolved', route: 'signup', to: '', fresh: loginMode })
+      setLoginMode(false)
+      return
+    }
+    if (r.route === 'email' && wantsEmail) {
+      setIdentity({ phase: 'resolved', route: 'email', to: r.to || '' })
+      requestSignInLink(me).catch(() => {})
+      return
+    }
+    setIdentity({ phase: 'resolved', route: 'dm', to: '' })
+    ;(loginMode ? login : continueFromYou)()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me, demo, loginMode, verified, established, login, continueFromYou])
 
   // Redeem a magic-link token (the SignInScreen calls this on mount): mint a fresh
   // proof, adopt the recovered handle, and restore the pings — no DM. Defined
@@ -1077,8 +1157,11 @@ export default function App() {
     setPings([])
     setJoinedSlugs([])
     setSchoolCred(null)
-    setSchoolsSeen(false)
     setPublicStar(false)
+    // a pending recruit attribution belongs to the person who arrived, so it
+    // goes with them on a sign-out or a delete
+    clearRef()
+    setRef('')
     setMatch(null)
     setLastPlaced(null)
     setSlots(FULL_SLOTS)
@@ -1170,7 +1253,7 @@ export default function App() {
     pings, slotsStanding, slotsCap: slotCap,
     intent, setIntent, category, setCategory,
     communities, openCommunity, homeCommunity, homeGalaxyRef,
-    viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity, finishOnboarding,
+    viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity,
     locatePing, skyFlight,
     publicStar, askPublicStar, retractPublicStar,
     lastPlaced, match,
@@ -1178,11 +1261,12 @@ export default function App() {
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
+    recruitToken: route.recruitToken || '',
+    recruitCode: route.recruitCode || '',
+    recruitKey: route.recruitKey || '',
     verifyEnabled: igVerifyEnabled() || demo,
-    // Email magic-link recovery is available when the real backend is wired and
-    // we're not in the sandbox (the demo has no email infra) — see Fix B.
-    recoveryEnabled: igVerifyEnabled() && !demo,
-    signInSent,
+    recoveryEnabled,
+    identity, resolveIdentity, resetIdentity,
     setMe, setEmail, setThem,
     altHandles, addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,
@@ -1207,7 +1291,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'schools', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open']
+  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'recruit']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   // The backdrop: once you've joined a community, the app-wide field IS your
@@ -1224,7 +1308,12 @@ export default function App() {
   // identity step, the send-off, the match) stay single-purpose. It melts, not
   // unmounts, during any cinematic (a star flight, a held zoom, the send-off),
   // and the screens pad their foot by --nav-pad so nothing sits under it.
-  const NAV_SCREENS = ['pings', 'worlds', 'community', 'door']
+  // The dock belongs to the two RESTING places only. `worlds` (the community
+  // picker) and `door` (the share card) are leaves you arrive at from one of
+  // them and leave with their own back button; giving them a dock too meant two
+  // competing ways back on one screen, and a fixed bar sitting over their
+  // actions.
+  const NAV_SCREENS = ['pings', 'community']
   const navHere = NAV_SCREENS.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
 
@@ -1288,7 +1377,12 @@ export default function App() {
         <Screen C={C} ctx={ctx} />
       </div>
 
-      {/* the dock — sky · communities · pings, always one tap apart */}
+      {/* the dock — TWO stations, because this product has two places.
+          It carried three, and two of them ("sky" and "communities") opened the
+          same thing: a community, and the list you pick a community from. A
+          picker is not a destination. The list now lives inside the sky page,
+          where switching actually happens, and the dock stops offering a choice
+          that wasn't one. */}
       {navHere && (
         <NavDock
           C={C}
@@ -1296,17 +1390,11 @@ export default function App() {
           items={[
             {
               id: 'sky',
-              icon: 'star',
               label: t('nav.sky'),
               active: screen === 'community',
-              // your community's living sky — or, before you've joined one, the
-              // featured community's sky (view-only). It must ALWAYS open a sky:
-              // routing to the worlds list made this tab a dead button that
-              // duplicated its neighbour.
               onClick: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
             },
-            { id: 'worlds', icon: 'planet', label: t('nav.worlds'), active: screen === 'worlds', onClick: () => go('worlds') },
-            { id: 'pings', icon: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },
+            { id: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },
           ]}
         />
       )}

@@ -19,15 +19,17 @@ import {
 import { useI18n } from '../i18n/index.js'
 import { renderSkyCard } from '../card.js'
 import {
-  Brandmark, StarMark, SchoolMark, Kicker, Rule, StateDot, Sonar, GlassPanel,
+  Brandmark, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
   BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
+  Display, Title, Lead, Body, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, LINE, TRACK, ICON,
 } from './ui.jsx'
 import { CATEGORY_TINTS } from '../theme.js'
 import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../communities.js'
 import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
+import { openInvite, signAgreement, recruitStats, recruitLink, loadDash, saveDash } from '../api/recruit.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
 // intimate measure on wide monitors. --nav-pad (set by App) reserves the foot
@@ -48,15 +50,10 @@ export function Shell({ children }) {
   )
 }
 
-// A quiet hint line under a field.
-function Hint({ C, icon, color, children }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, color: C.muted, fontSize: 12, lineHeight: 1.55, padding: '0 2px' }}>
-      {icon && <span style={{ marginTop: 1, flexShrink: 0 }}><Icon name={icon} size={13} color={color || C.muted} /></span>}
-      <span>{children}</span>
-    </div>
-  )
-}
+// The old `Hint` was an icon + a sentence under every field. The icon never said
+// anything the sentence didn't, so it's gone; `Note` (ui.jsx) is the whole
+// treatment now. Most of the sentences went with it — a field that needs a
+// paragraph under it is a field that isn't clear enough.
 
 // Smoothly reveals/hides children by animating grid-rows 0fr→1fr.
 function Collapse({ open, children }) {
@@ -76,10 +73,10 @@ function Collapse({ open, children }) {
 
 function FieldLabel({ C, children, optional }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '0 2px' }}>
-      <Kicker C={C} style={{ fontSize: 11, letterSpacing: '1.5px' }}>{children}</Kicker>
+    <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '0 2px' }}>
+      <Kicker C={C} style={{ fontSize: SIZE.meta, letterSpacing: TRACK.meta }}>{children}</Kicker>
       {optional && (
-        <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.92), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
+        <span style={{ fontSize: SIZE.micro, letterSpacing: TRACK.meta, fontFamily: FONT.mono, color: rgba(C.star, 0.92), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{optional}</span>
       )}
     </div>
   )
@@ -89,7 +86,7 @@ function FieldLabel({ C, children, optional }) {
 export function SandboxChip({ C }) {
   const { t } = useI18n()
   return (
-    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '1.5px', textTransform: 'uppercase', color: rgba(C.star, 0.92), background: rgba(C.star, 0.08), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 9px' }}>
+    <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.star, 0.92), background: rgba(C.star, 0.08), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 9px' }}>
       {t('demo.badge')}
     </span>
   )
@@ -126,8 +123,8 @@ function CategoryWord({ C, on, tint, onClick, children }) {
       aria-pressed={on}
       style={{
         position: 'relative', background: 'none', border: 'none', cursor: 'pointer',
-        padding: '5px 2px 10px', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic',
-        fontSize: 19, lineHeight: 1, letterSpacing: '.2px',
+        padding: '5px 2px 10px', fontFamily: FONT.serif, fontStyle: 'italic',
+        fontSize: SIZE.lead, lineHeight: 1, letterSpacing: '.2px',
         color: on ? tint : rgba(C.cream, 0.6),
         textShadow: on ? `0 0 18px ${rgba(tint, 0.55)}` : 'none',
         transition: 'color .22s, text-shadow .22s',
@@ -162,7 +159,7 @@ function IntentLineChip({ C, on, tint, onClick, children }) {
         border: `1px solid ${on ? rgba(accent, 0.6) : C.line}`,
         color: on ? C.cream : rgba(C.cream, 0.62),
         boxShadow: on ? `0 0 18px ${rgba(accent, 0.16)}` : 'none',
-        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, lineHeight: 1.3,
+        fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.3,
         transition: 'all .2s',
       }}
     >
@@ -185,23 +182,23 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
   }
   if (skipped) {
     return (
-      <div className="fade" style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', padding: '2px 2px' }}>
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.muted, 0.95) }}>
+      <div className="fade" style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.md, flexWrap: 'wrap', padding: '2px 2px' }}>
+        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.muted, 0.95) }}>
           {t('category.skipped')}
         </span>
-        <GhostButton C={C} onClick={() => setSkipped(false)} style={{ padding: 0, fontSize: 12.5, color: rgba(C.star, 0.85) }}>
+        <GhostButton C={C} onClick={() => setSkipped(false)} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.star, 0.85) }}>
           {t('category.unskip')}
         </GhostButton>
       </div>
     )
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
       {/* who are they to you? — with the way out in plain sight */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '0 2px' }}>
-          <Kicker C={C} style={{ fontSize: 11, letterSpacing: '1.5px' }}>{t('category.label')}</Kicker>
-          <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: 12.5, color: rgba(C.muted, 0.95) }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md, padding: '0 2px' }}>
+          <Kicker C={C} style={{ fontSize: SIZE.meta, letterSpacing: TRACK.meta }}>{t('category.label')}</Kicker>
+          <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
             {t('category.skip')}
           </GhostButton>
         </div>
@@ -216,16 +213,16 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
 
       {/* why them? — the lines shift with the category above, and wear its light */}
       <Collapse open={!!cat}>
-        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 2 }}>
+        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 2 }}>
           <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.sm }}>
             {(cat?.intents || []).map((id) => (
               <IntentLineChip key={id} C={C} tint={tint} on={value === id} onClick={() => onChange(value === id ? '' : id)}>
                 {t(`intent.${id}`)}
               </IntentLineChip>
             ))}
           </div>
-          <Hint C={C} icon="lock">{t('intent.note')}</Hint>
+          <Note C={C}>{t('intent.note')}</Note>
         </div>
       </Collapse>
     </div>
@@ -241,13 +238,13 @@ export function SlotPips({ C, standing, cap, compact, subscribed }) {
   const { t } = useI18n()
   const free = Math.max(0, cap - standing)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: SPACE.sm }}>
       {Array.from({ length: cap }).map((_, i) => (
         <span
           key={i}
           aria-hidden
           style={{
-            fontSize: 12, lineHeight: 1,
+            fontSize: SIZE.meta, lineHeight: 1,
             color: i < standing ? C.star : rgba(C.cream, 0.3),
             textShadow: i < standing ? `0 0 9px ${rgba(C.star, 0.65)}` : 'none',
           }}
@@ -256,12 +253,12 @@ export function SlotPips({ C, standing, cap, compact, subscribed }) {
         </span>
       ))}
       {!compact && (
-        <span style={{ marginLeft: 4, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: C.muted }}>
+        <span style={{ marginLeft: 4, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.3px', color: C.muted }}>
           {standing > 0 ? t('slots.holding', { n: standing, cap }) : t('slots.free', { n: free, cap })}
         </span>
       )}
       {subscribed && (
-        <span style={{ marginLeft: compact ? 2 : 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', color: rgba(C.star, 0.75) }}>
+        <span style={{ marginLeft: compact ? 2 : 6, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', color: rgba(C.star, 0.75) }}>
           {t('paywall.subscribedNote')}
         </span>
       )}
@@ -319,8 +316,8 @@ function HeroSequence({ C }) {
       aria-label={`${l1} ${l2}`}
       style={{
         animationDelay: '.16s', width: '100%', maxWidth: 420, padding: '0 6px', textAlign: 'center',
-        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic',
-        fontSize: 'clamp(19px, 5.4vw, 24px)', color: rgba(C.cream, 0.94),
+        fontFamily: FONT.serif, fontStyle: 'italic',
+        fontSize: SIZE.lead, color: rgba(C.cream, 0.94),
       }}
     >
       <div style={line}>
@@ -344,10 +341,10 @@ export function LandingScreen({ C, ctx }) {
         <div className="floaty"><Brandmark C={C} size={34} /></div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: SPACE.xxl }}>
         <h1
           className="enter"
-          style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 46px)', lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
+          style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
         >
           <div>{t('landing.head1')}</div>
           <div style={{ color: C.star }}>{t('landing.head2')}</div>
@@ -355,38 +352,38 @@ export function LandingScreen({ C, ctx }) {
         <HeroSequence C={C} />
       </div>
 
-      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
         <PrimaryButton C={C} onClick={ctx.findOut}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
             {t('landing.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
           </span>
         </PrimaryButton>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 12, color: C.muted }}>{t('landing.safety')}</p>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('landing.safety')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
           {t('landing.age')}{' '}
           <a href="/terms" target="_blank" rel="noopener" style={{ color: rgba(C.muted, 0.9), textDecoration: 'underline' }}>{t('landing.terms')}</a>.
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 2, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.md, paddingTop: 2, flexWrap: 'wrap' }}>
           {[
             ['/privacy', t('footer.privacy')],
             ['/terms', t('footer.terms')],
           ].map(([href, label], idx) => (
             <React.Fragment key={href}>
               {idx > 0 && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
-              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.5px', color: C.muted, textDecoration: 'none' }}>
+              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecoration: 'none' }}>
                 {label}
               </a>
             </React.Fragment>
           ))}
           <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
-          <GhostButton C={C} onClick={() => ctx.go('privacy')} style={{ padding: 0, fontSize: 11.5, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
+          <GhostButton C={C} onClick={() => ctx.go('privacy')} style={{ padding: 0, fontSize: SIZE.meta, fontFamily: FONT.mono, letterSpacing: '.5px' }}>
             {t('footer.optout')}
           </GhostButton>
         </div>
         {ctx.demo && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.md, alignItems: 'center' }}>
             <SandboxChip C={C} />
-            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ padding: 0, fontSize: 11.5, color: rgba(C.star, 0.85) }}>
+            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ padding: 0, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
               {t('demo.worlds')} →
             </GhostButton>
           </div>
@@ -405,31 +402,31 @@ export function OpenDoorScreen({ C, ctx }) {
       <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
         <div className="floaty"><Brandmark C={C} size={30} /></div>
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md }}>
           <HandleChip C={C} handle={poster} big />
           <Kicker C={C}>{t('open.reach')}</Kicker>
         </div>
-        <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 36px)', lineHeight: 1.2, color: C.cream, maxWidth: 360, textWrap: 'balance' }}>
+        <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.2, color: C.cream, maxWidth: 360, textWrap: 'balance' }}>
           {t('open.line')}
         </h1>
-        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>
+        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>
           {t('open.mech')}
         </p>
       </div>
-      <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="enter" style={{ animationDelay: '.2s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         {/* the prefilled ping — two taps from Story to placed ping */}
         <PrimaryButton C={C} onClick={() => ctx.startFromDoor(poster)}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
             {t('open.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
           </span>
         </PrimaryButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.startFromDoor('')} style={{ fontSize: 12.5 }}>
+          <GhostButton C={C} onClick={() => ctx.startFromDoor('')} style={{ fontSize: SIZE.small }}>
             {t('open.else')}
           </GhostButton>
         </div>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.muted }}>{t('landing.safety')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('landing.safety')}</p>
       </div>
     </Shell>
   )
@@ -461,24 +458,20 @@ export function WhoScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-        <Brandmark C={C} size={18} />
-        <div style={{ width: 38 }} />
-      </div>
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16, textAlign: 'left' }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: SPACE.lg, textAlign: 'left' }}>
           {/* the header, as a full serif headline, left-aligned — the accent line
               in amber (the "you" star), one warm light with the landing page */}
-          <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8.5vw, 38px)', lineHeight: 1.08, color: C.cream }}>
+          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, lineHeight: 1.08, color: C.cream }}>
             {t('who.title1')}<br />
             <span style={{ color: C.star }}>{t('who.title2')}</span>
           </h2>
           {/* self @ first: the ping is FROM you, shown under the headline */}
           {normHandle(ctx.me) && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Kicker C={C} style={{ fontSize: 10 }}>{t('who.fromLabel')}</Kicker>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+              <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('who.fromLabel')}</Kicker>
               <HandleChip C={C} handle={normHandle(ctx.me)} />
             </span>
           )}
@@ -488,17 +481,16 @@ export function WhoScreen({ C, ctx }) {
             <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onPlace} />
           </div>
           {confirming && valid ? (
-            <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontSize: 13, lineHeight: 1.5, padding: '0 2px' }}>
-              <Icon name="lock" size={13} color={rgba(C.star, 0.85)} />
+            <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px' }}>
               <span>{t('who.confirm1')}</span>
               <HandleChip C={C} handle={normd} />
               <span>{t('who.confirm2')}</span>
             </div>
           ) : (
-            <Hint C={C} icon="eye">{t('who.note')}</Hint>
+            <Note C={C}>{t('who.note')}</Note>
           )}
-          {ctx.error && <div style={{ color: rgba(C.star, 0.95), fontSize: 13, padding: '0 2px' }}>{ctx.error}</div>}
-          {ctx.demo && <Hint C={C} icon="star" color={rgba(C.star, 0.85)}>{t('who.demoHint')}</Hint>}
+          {ctx.error && <div style={{ color: rgba(C.star, 0.95), fontSize: SIZE.small, padding: '0 2px' }}>{ctx.error}</div>}
+          {ctx.demo && <Note C={C} tone="accent">{t('who.demoHint')}</Note>}
         </div>
 
         {/* categorize them, then say why — the chosen line is read only if it's
@@ -528,8 +520,8 @@ export function WhoScreen({ C, ctx }) {
       </div>
 
       <PrimaryButton C={C} disabled={!valid || busy} onClick={onPlace}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-          {!busy && <Icon name="lock" size={16} color={C.onStar} stroke={2} />} {busy ? '…' : confirming ? t('who.ctaConfirm') : t('who.cta')}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+          {busy ? '…' : confirming ? t('who.ctaConfirm') : t('who.cta')}
         </span>
       </PrimaryButton>
     </Shell>
@@ -537,70 +529,75 @@ export function WhoScreen({ C, ctx }) {
 }
 
 // ── the identity step (your side — so the ping can resolve to you) ────────────
+// ONE field and ONE button. The person types their @ and the SERVER decides what
+// happens next (migration 0015 + celestual-relogin `start`):
+//
+//   never seen this @   → it's a signup: the email and the age confirm unfold
+//   known, has an email → the link goes to that inbox, and we name it
+//   known, no email     → the DM sheet opens on its own
+//
+// What this replaces: two competing buttons ("email me a sign-in link" /
+// "verify by dm instead"), a hint under the field explaining the difference,
+// and a confirmation written in the conditional because the client could not
+// tell which door it had just gone through. The person never chooses a
+// mechanism again; they only ever type who they are.
 export function YouScreen({ C, ctx }) {
   const { t } = useI18n()
   const login = ctx.loginMode
+  const id = ctx.identity // { phase:'idle'|'checking'|'resolved', route, to }
   const emailVal = ctx.email.trim()
   const emailFormatOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
-  // Email is REQUIRED at signup — it's the mutual-match reveal channel AND the
-  // DM-free sign-back-in anchor (Fix B). Login mode never collects one (recovery
-  // reads the address already on file), so an empty value stays valid there.
-  const emailOk = login ? (emailVal === '' || emailFormatOk) : emailFormatOk
-  const isEdu = /\.edu$/i.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
-  // the 18+ hard gate (§4.4) — signup only. one tap to confirm; nothing about
-  // age is ever sent up or stored (data minimization): we keep whether, not when.
+  // The signup panel: the email (the reveal channel and the way back in) and the
+  // 18+ confirm (§4.4 — one tap, never stored: we keep whether, not when).
+  const signup = id.phase === 'resolved' && id.route === 'signup'
   const [over18, setOver18] = React.useState(false)
-  const valid = handleOk && emailOk && (login || over18)
-  // In login mode the primary action is the DM-free email magic link whenever
-  // recovery is available (real backend, not the sandbox); otherwise the DM/stub
-  // sign-in. A verified local session just restores straight through (Fix B).
-  const recovery = login && !ctx.verified && ctx.recoveryEnabled
-  const doLogin = () => (recovery ? ctx.requestSignIn() : ctx.login())
-  const submit = () => valid && (login ? doLogin() : ctx.continueFromYou())
-  const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
-  const meHandle = ctx.me.trim().replace(/^@+/, '')
+  const ready = signup ? handleOk && emailFormatOk && over18 : handleOk
+  const busy = id.phase === 'checking'
+  const submit = () => {
+    if (!ready || busy) return
+    if (signup) ctx.continueFromYou()
+    else ctx.resolveIdentity()
+  }
+  // The @ changed under a resolved answer: that answer is about a different
+  // person now, so drop it and let the server answer again.
+  React.useEffect(() => {
+    if (id.phase !== 'idle') ctx.resetIdentity()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.me])
+
+  const sent = id.phase === 'resolved' && id.route === 'email'
+  const unknown = id.phase === 'resolved' && id.route === 'signup' && !!id.fresh
+  const cta = signup && !login ? t('verify.continue') : busy ? t('you.checking') : t('you.continue')
+
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(login ? 'landing' : 'who')} />
-        <Brandmark C={C} size={18} />
-        <div style={{ width: 38 }} />
-      </div>
+      <ScreenHeader C={C} onBack={() => ctx.go(login ? 'landing' : 'who')} label={<Brandmark C={C} size={18} />} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
-        <h2 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8vw, 36px)', lineHeight: 1.12, color: C.cream }}>
+        <Display C={C} className="enter">
           {login ? (
             <>{t('you.loginTitle1')}<br /><span style={{ color: C.star }}>{t('you.loginTitle2')}</span></>
           ) : (
             <>{t('you.title1')}<br /><span style={{ color: C.star }}>{t('you.title2')}</span></>
           )}
-        </h2>
+        </Display>
 
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder={t('you.handle')} autoFocus emphasis onEnter={submit} />
-          {login && handleOk ? (
-            ctx.verified ? (
-              <Hint C={C} icon="check" color={rgba(C.star, 0.9)}>{t('verify.youDone')}</Hint>
-            ) : (
-              <Hint C={C} icon={recovery ? 'mail' : 'instagram'} color={rgba(C.star, 0.85)}>{recovery ? t('you.linkNote') : t('you.loginNote')}</Hint>
-            )
-          ) : ctx.verifyEnabled && handleOk ? (
-            ctx.verified ? (
-              <Hint C={C} icon="check" color={rgba(C.star, 0.9)}>{t('verify.youDone')}</Hint>
-            ) : (
-              <Hint C={C} icon="instagram" color={rgba(C.star, 0.85)}>{t('verify.youHint')}</Hint>
-            )
-          ) : (
-            <Hint C={C} icon="instagram">{t('you.handleNote')}</Hint>
-          )}
+          {/* the ONLY line that ever sits under this field, and only once the
+              server has actually decided something */}
+          {ctx.verified && <Note C={C} tone="accent">{t('verify.youDone')}</Note>}
+          {unknown && <Note C={C}>{t('you.unknown')}</Note>}
         </div>
 
-        {/* the 18+ hard gate (§4.4), signup only — now one tap, not a birthdate.
-            checked here, never stored: we keep whether, not when. */}
-        <Collapse open={handleOk && !login}>
-          <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
-            <FieldLabel C={C}>{t('you.ageLabel')}</FieldLabel>
+        {/* the signup panel — unfolds only for an @ the server has never seen */}
+        <Collapse open={signup && !login}>
+          <div className="fade" style={{ paddingTop: SPACE.xs, display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+              <FieldLabel C={C}>{t('you.emailLabel')}</FieldLabel>
+              <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} onEnter={submit} />
+            </div>
             <button
               onClick={() => setOver18((v) => !v)}
               aria-pressed={over18}
@@ -609,7 +606,7 @@ export function YouScreen({ C, ctx }) {
                 borderRadius: RADIUS.field, cursor: 'pointer', textAlign: 'left',
                 background: over18 ? rgba(C.star, 0.1) : C.ink2,
                 border: `1.5px solid ${over18 ? rgba(C.star, 0.55) : C.line}`,
-                color: C.cream, fontFamily: "'Space Grotesk', sans-serif", transition: 'all .2s',
+                color: C.cream, fontFamily: FONT.sans, transition: 'all .2s',
               }}
             >
               <span
@@ -623,56 +620,30 @@ export function YouScreen({ C, ctx }) {
               >
                 {over18 && <Icon name="check" size={15} color={C.onStar} stroke={2.6} />}
               </span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 500 }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: SIZE.body, fontWeight: 500 }}>
                 {over18 ? t('you.ageConfirmed') : t('you.ageConfirm')}
               </span>
             </button>
-            <Hint C={C} icon="lock">{t('you.ageNote')}</Hint>
-          </div>
-        </Collapse>
-
-        {/* email — REQUIRED at signup: the mutual-match reveal channel and the
-            DM-free sign-back-in anchor (Fix B). School (.edu) address encouraged —
-            it's the core audience, and it doubles as community setup. */}
-        <Collapse open={handleOk && !login}>
-          <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
-            <FieldLabel C={C}>{t('you.emailLabel')}</FieldLabel>
-            <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} onEnter={submit} />
-            <Hint C={C} icon={isEdu ? 'check' : 'mail'} color={isEdu ? rgba(C.star, 0.9) : undefined}>{isEdu ? t('you.emailEdu') : t('you.note')}</Hint>
           </div>
         </Collapse>
       </div>
 
-      {login && recovery && ctx.signInSent ? (
-        // The link is on its way. Say so honestly (we never confirm the handle is
-        // registered), and keep both escape hatches: resend, or fall back to a DM.
-        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '15px 16px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55), border: `1px solid ${C.line}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <Icon name="mail" size={16} color={rgba(C.star, 0.95)} stroke={1.9} />
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: C.cream }}>{t('you.linkSentTitle')}</span>
-            </div>
-            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: C.muted }}>{t('you.linkSentNote', { handle: meHandle })}</p>
+      {sent ? (
+        // The link is really sent, to a real inbox we can name. No "if".
+        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, padding: '17px 18px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55), border: `1px solid ${C.line}` }}>
+            <Lead C={C}>{t('you.linkSentTitle')}</Lead>
+            <Small C={C}>{t('you.linkSentNote', { to: id.to })}</Small>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <GhostButton C={C} onClick={ctx.requestSignIn} style={{ fontSize: 12.5 }}>{t('you.linkResend')}</GhostButton>
-            <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
-          </div>
+          <ExitRow C={C}>
+            <GhostButton C={C} onClick={ctx.requestSignIn}>{t('you.linkResend')}</GhostButton>
+            <GhostButton C={C} onClick={ctx.login}>{t('you.linkDm')}</GhostButton>
+          </ExitRow>
         </div>
       ) : (
-        <>
-          <PrimaryButton C={C} disabled={!valid} onClick={submit}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-              {login ? (recovery ? <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> : null) : needsVerify ? <Icon name="instagram" size={16} color={C.onStar} stroke={2} /> : null}
-              {login ? (recovery ? t('you.linkCta') : t('you.loginCta')) : needsVerify ? t('verify.continue') : t('you.continue')}
-            </span>
-          </PrimaryButton>
-          {login && recovery && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-              <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
-            </div>
-          )}
-        </>
+        <PrimaryButton C={C} disabled={!ready || busy} onClick={submit}>
+          {cta}
+        </PrimaryButton>
       )}
     </Shell>
   )
@@ -720,8 +691,7 @@ function ShareInviteButton({ C, slug }) {
   }
   return (
     <PrimaryButton C={C} onClick={share}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-        <Icon name={done ? 'check' : 'share'} size={16} color={C.onStar} stroke={2} />
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
         {done ? t('placed.shared') : t('placed.share')}
       </span>
     </PrimaryButton>
@@ -742,22 +712,22 @@ function LaunchClockCard({ C, community }) {
   const open = communityOpen(community)
   const c = fmtCountdown(LAUNCH_AT.getTime() - now)
   return (
-    <GlassPanel C={C} style={{ width: '100%', maxWidth: 360, padding: '17px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <GlassPanel C={C} style={{ width: '100%', maxWidth: 360, padding: '17px 18px 20px', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
         <SchoolMark C={C} slug={community.slug} size={38} />
-        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 21, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
         <SkyStatus C={C} open={open} />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 9, fontVariantNumeric: 'tabular-nums' }}>
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(38px, 10vw, 50px)', lineHeight: 1, color: C.cream, textShadow: `0 0 26px ${rgba(C.star, 0.22)}` }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.sm }}>
+        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.md, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.cream, textShadow: `0 0 26px ${rgba(C.star, 0.22)}` }}>
             {c ? c.big : t('reveal.now')}
           </span>
           {c && c.small && (
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, letterSpacing: '.5px', color: rgba(C.star, 0.92) }}>{c.small}</span>
+            <span style={{ fontFamily: FONT.mono, fontSize: SIZE.body, letterSpacing: '.5px', color: rgba(C.star, 0.92) }}>{c.small}</span>
           )}
         </span>
-        <Kicker C={C} style={{ fontSize: 9.5, letterSpacing: '2px' }}>{t('reveal.opens')}</Kicker>
+        <Kicker C={C} style={{ fontSize: SIZE.micro, letterSpacing: TRACK.micro }}>{t('reveal.opens')}</Kicker>
       </div>
     </GlassPanel>
   )
@@ -767,9 +737,9 @@ function LaunchClockCard({ C, community }) {
 // "it's already spreading, and it names no one" note.
 function SpreadingNote({ C, lines }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '13px 15px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.4), border: `1px solid ${C.line}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, padding: '13px 15px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.4), border: `1px solid ${C.line}` }}>
       {lines.map((l, i) => (
-        <p key={i} style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: rgba(C.muted, 0.92) }}>{l}</p>
+        <p key={i} style={{ margin: 0, fontSize: SIZE.meta, lineHeight: 1.6, color: rgba(C.muted, 0.92) }}>{l}</p>
       ))}
     </div>
   )
@@ -783,11 +753,11 @@ function SpreadingNote({ C, lines }) {
 function PlacedHandleHero({ C, handle, reachable }) {
   const { t } = useI18n()
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11, textAlign: 'center', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center', width: '100%' }}>
       <div
         style={{
-          width: '100%', fontFamily: "'Space Mono', monospace", fontWeight: 700,
-          fontSize: 'clamp(38px, 11vw, 54px)', lineHeight: 1.02,
+          width: '100%', fontFamily: FONT.mono, fontWeight: 700,
+          fontSize: SIZE.hero, lineHeight: 1.02,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           // no glow shadow inside an overflow-hidden box — the clip edge turns
           // a soft glow into a faint rectangular highlight behind the handle
@@ -798,8 +768,8 @@ function PlacedHandleHero({ C, handle, reachable }) {
       </div>
       <p
         style={{
-          margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(16.5px, 4.4vw, 19px)', lineHeight: 1.35,
+          margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
+          fontSize: SIZE.lead, lineHeight: 1.35,
           color: reachable ? rgba(C.star, 0.95) : rgba(C.cream, 0.8),
         }}
       >
@@ -817,38 +787,38 @@ function PlacedReachable({ C, ctx, handle, community }) {
   const g = placedReachable({ handle, short: community.short })
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, padding: '16px 0 8px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xxl, padding: '16px 0 8px' }}>
         {/* confirmation — the @ hero leads, same as every other placed state */}
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
           <PlacedHandleHero C={C} handle={handle} reachable />
           <Kicker C={C} color={rgba(C.star, 0.92)}>{g.live}</Kicker>
-          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: rgba(C.cream, 0.92), maxWidth: 340 }}>{g.here}</p>
+          <p style={{ margin: 0, fontSize: SIZE.body, lineHeight: 1.6, color: rgba(C.cream, 0.92), maxWidth: 340 }}>{g.here}</p>
         </div>
 
         {/* the question — the emotional peak */}
-        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
-          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(23px, 6.4vw, 31px)', lineHeight: 1.24, color: C.cream, maxWidth: 390, textWrap: 'balance' }}>
+        <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
+          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.24, color: C.cream, maxWidth: 390, textWrap: 'balance' }}>
             {g.question}
           </h1>
-          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{g.until}</p>
+          <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{g.until}</p>
         </div>
 
         {/* the anchor — the launch clock, ticking toward the shared night */}
-        <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md }}>
           <LaunchClockCard C={C} community={community} />
-          <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.fill}</p>
+          <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.small, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.fill}</p>
         </div>
       </div>
 
       {/* the actions */}
-      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <ShareInviteButton C={C} slug={community.slug} />
         <OutlineButton C={C} onClick={() => ctx.go('door')} style={{ width: '100%', padding: '14px 22px', borderRadius: RADIUS.field }}>
-          <Icon name="download" size={15} color="currentColor" stroke={1.9} /> {t('placed.door')}
+          {t('placed.door')}
         </OutlineButton>
         <SpreadingNote C={C} lines={[g.foot, g.spreading]} />
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>{t('placed.pings')}</GhostButton>
         </div>
       </div>
     </Shell>
@@ -862,25 +832,25 @@ function PlacedWaiting({ C, ctx, handle, community }) {
   const g = placedWaiting({ handle, short: community.short })
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 22, padding: '16px 0 8px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl, padding: '16px 0 8px' }}>
         {/* the handle, large, held — the @ hero leads, same as every other placed state */}
-        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+        <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
           <PlacedHandleHero C={C} handle={handle} reachable={false} />
-          <p className="enter" style={{ animationDelay: '.1s', margin: '4px 0 0', fontSize: 14, lineHeight: 1.65, color: C.muted, maxWidth: 350 }}>{g.only}</p>
+          <p className="enter" style={{ animationDelay: '.1s', margin: '4px 0 0', fontSize: SIZE.body, lineHeight: 1.65, color: C.muted, maxWidth: 350 }}>{g.only}</p>
         </div>
 
         {/* the anchor — the launch clock */}
-        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md }}>
           <LaunchClockCard C={C} community={community} />
-          <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.bring}</p>
+          <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.small, lineHeight: 1.6, color: rgba(C.star, 0.9), maxWidth: 340 }}>{g.bring}</p>
         </div>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="enter" style={{ animationDelay: '.22s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <ShareInviteButton C={C} slug={community.slug} />
         <SpreadingNote C={C} lines={[g.spreading]} />
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>{t('placed.pings')}</GhostButton>
         </div>
       </div>
     </Shell>
@@ -905,26 +875,26 @@ function PlacedQuiet({ C, ctx, handle, reachable, needsCommunity }) {
   const subTitle = reachable ? (needsCommunity ? t('placed.joinTitle') : t('placed.standingTitle')) : null
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         <div className="enter" style={{ width: '100%' }}>
           <PlacedHandleHero C={C} handle={handle} reachable={reachable} />
         </div>
         {subTitle && (
-          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(19px, 5.4vw, 24px)', lineHeight: 1.2, color: C.cream }}>
+          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.2, color: C.cream }}>
             {subTitle}
           </p>
         )}
-        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>{body}</p>
+        <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: SIZE.body, lineHeight: 1.7, color: C.muted, maxWidth: 330 }}>{body}</p>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         {needsCommunity ? (
           <PrimaryButton C={C} onClick={() => ctx.go('worlds')}>{t('placed.findComm')}</PrimaryButton>
         ) : (
           <PrimaryButton C={C} onClick={() => ctx.go('door')}>{t('placed.door')}</PrimaryButton>
         )}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>{t('placed.pings')}</GhostButton>
         </div>
       </div>
     </Shell>
@@ -964,8 +934,8 @@ function RowBtn({ C, onClick, icon, children, tone = 'default' }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: RADIUS.chip,
-        cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 500, fontSize: 13, color: col,
+        display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, padding: '8px 14px', borderRadius: RADIUS.chip,
+        cursor: 'pointer', fontFamily: FONT.sans, fontWeight: 500, fontSize: SIZE.small, color: col,
         background: h ? rgba(accent ? C.star : C.cream, 0.1) : accent ? rgba(C.star, 0.08) : 'transparent',
         border: `1px solid ${accent ? rgba(C.star, h ? 0.6 : 0.4) : rgba(C.cream, h ? 0.28 : 0.14)}`,
         transition: 'all .18s',
@@ -1013,31 +983,29 @@ function PingCard({ C, ping, ctx }) {
       title={ping.handle ? t('pings.locate') : undefined}
       style={{ padding: '15px 16px 13px', cursor: ping.handle ? 'pointer' : 'default' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left' }}>
-        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Instrument Serif', serif", fontSize: 20, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', textAlign: 'left' }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ping.handle ? (
             <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
           ) : (
-            <span style={{ fontStyle: 'italic', fontSize: 15 }}>{t('pings.elsewhere')}</span>
+            <span style={{ fontStyle: 'italic', fontSize: SIZE.body }}>{t('pings.elsewhere')}</span>
           )}
         </span>
-        {ping.handle && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0, fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.75) }}>
-            <Icon name="star" size={11} color={rgba(C.star, 0.7)} stroke={1.8} /> {t('pings.locateShort')}
-          </span>
-        )}
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
+        {/* the "its star" tag that used to sit here is gone: the whole card is
+            the way to the sky, and it already carries that label for a screen
+            reader. Printing a caption next to an affordance is not a design. */}
+        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
           {t(`pings.${state}`)}
         </span>
       </div>
 
       {ping.handle && t(`pings.${state}Sub`) && (
-        <p style={{ margin: '8px 0 0', fontSize: 12.5, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
+        <p style={{ margin: '8px 0 0', fontSize: SIZE.small, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
           {t(`pings.${state}Sub`)}
         </p>
       )}
       {ping.intent && (
-        <p style={{ margin: '7px 0 0', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14, color: rgba(C.cream, 0.7) }}>
+        <p style={{ margin: '7px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.7) }}>
           “{intentLine(t, ping.intent)}”
         </p>
       )}
@@ -1045,17 +1013,17 @@ function PingCard({ C, ping, ctx }) {
       {(ping.handle || (!ping.mutual && days != null)) && (
         <div style={{ marginTop: 12, paddingTop: 11, borderTop: `1px solid ${rgba(C.cream, 0.07)}` }}>
           {confirmGo ? (
-            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-              <span style={{ fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>{t('pings.letgoConfirm')}</span>
-              <div style={{ display: 'flex', gap: 10 }}>
+            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+              <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('pings.letgoConfirm')}</span>
+              <div style={{ display: 'flex', gap: SPACE.md }}>
                 <RowBtn C={C} tone="danger" icon="x" onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowBtn>
                 <RowBtn C={C} onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowBtn>
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
               {!ping.mutual && days != null && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 11, color: soon ? rgba(C.star, 0.92) : rgba(C.muted, 0.8) }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, color: soon ? rgba(C.star, 0.92) : rgba(C.muted, 0.8) }}>
                   {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
                 </span>
               )}
@@ -1065,7 +1033,7 @@ function PingCard({ C, ping, ctx }) {
               ) : ping.handle ? (
                 <>
                   {renewed ? (
-                    <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: rgba(C.star, 0.9) }}>
+                    <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontSize: SIZE.small, color: rgba(C.star, 0.9) }}>
                       <Icon name="check" size={13} color={rgba(C.star, 0.9)} /> {t('pings.renewed')}
                     </span>
                   ) : (
@@ -1087,7 +1055,7 @@ function PingCard({ C, ping, ctx }) {
               e.stopPropagation()
               ctx.simulateMutual(ping.handle)
             }}
-            style={{ padding: 0, fontSize: 11, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}
+            style={{ padding: 0, fontSize: SIZE.meta, letterSpacing: TRACK.meta, fontFamily: FONT.mono, color: rgba(C.star, 0.8) }}
           >
             ✦ {t('pings.sim')}
           </GhostButton>
@@ -1111,7 +1079,7 @@ function EmptySlotCard({ C, onClick, paywall }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px', textAlign: 'left', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', padding: '15px 16px', textAlign: 'left', cursor: 'pointer',
         borderRadius: RADIUS.card,
         background: h ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.3),
         border: `1.5px dashed ${paywall ? rgba(C.star, h ? 0.42 : 0.26) : rgba(C.cream, h ? 0.26 : 0.15)}`,
@@ -1122,11 +1090,11 @@ function EmptySlotCard({ C, onClick, paywall }) {
         <Brandmark C={C} size={15} />
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</span>
-        <span style={{ fontSize: 12, color: C.muted }}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</span>
+        <span style={{ fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</span>
+        <span style={{ fontSize: SIZE.meta, color: C.muted }}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</span>
       </span>
       <span style={{ flex: 1 }} />
-      <Icon name="plus" size={16} color={rgba(C.star, 0.8)} stroke={2} />
+      
     </button>
   )
 }
@@ -1138,23 +1106,23 @@ function MutualCard({ C, ping, ctx }) {
   const { t } = useI18n()
   return (
     <GlassPanel C={C} style={{ padding: '12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
         <button
           onClick={() => ctx.locatePing(ping.handle)}
           aria-label={t('pings.locate')}
           title={t('pings.locate')}
           style={{
-            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 11, padding: 0, textAlign: 'left',
+            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: SPACE.md, padding: 0, textAlign: 'left',
             background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer',
           }}
         >
           <StateDot C={C} state="mutual" />
           <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 19, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
             </span>
             {ping.intent && (
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 13, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.small, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 “{intentLine(t, ping.intent)}”
               </span>
             )}
@@ -1186,12 +1154,12 @@ function CommunityHome({ C, ctx }) {
     demo: ctx.demo, open, slug: community && community.slug, galaxyRef: ctx.homeGalaxyRef, bump: ctx.bumpCommunityActivity,
   })
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0 2px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, padding: '0 2px' }}>
         <Kicker C={C}>{community ? t('communities.yourCommunity') : t('communities.findYours')}</Kicker>
         {community && (
-          <GhostButton C={C} onClick={() => setSearching((s) => !s)} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.85) }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <GhostButton C={C} onClick={() => setSearching((s) => !s)} style={{ padding: 0, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
               <Icon name="search" size={12} color="currentColor" stroke={2} /> {t('communities.searchMore')}
             </span>
           </GhostButton>
@@ -1199,17 +1167,17 @@ function CommunityHome({ C, ctx }) {
       </div>
       {community ? (
         <>
-          <GlassPanel C={C} style={{ padding: '15px 16px 14px', display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+          <GlassPanel C={C} style={{ padding: '15px 16px 14px', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.lg }}>
               <SchoolMark C={C} slug={community.slug} size={44} />
               <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 20, lineHeight: 1.08, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+                <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1.08, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
                 <SkyStatus C={C} open={open} />
               </span>
               {showStat && (
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
-                  <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 25, lineHeight: 1, color: C.star }}>{matches}</span>
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
+                  <span style={{ fontFamily: FONT.serif, fontSize: SIZE.figure, lineHeight: 1, color: C.star }}>{matches}</span>
+                  <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
                 </span>
               )}
             </div>
@@ -1247,32 +1215,32 @@ export function PingsScreen({ C, ctx }) {
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38, paddingTop: 6 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
           <Brandmark C={C} size={16} />
           <Kicker C={C}>{t('pings.kicker')}</Kicker>
           {ctx.demo && <SandboxChip C={C} />}
         </div>
       </div>
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 11, paddingTop: 18 }}>
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 18 }}>
         {/* your community first — the place; the slots below are the pings */}
         <CommunityHome C={C} ctx={ctx} />
 
         {/* the slot space, clearly its own section under its own rule — always
             exactly `cap` rows: standing pings, then open slots. mutual matches
             are resolved and never sit here. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginTop: 4, paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, marginTop: 4, paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
           {empty ? (
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, margin: '6px 0 4px' }}>
-              <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 33px)', color: C.cream }}>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, margin: '6px 0 4px' }}>
+              <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>
                 {t('pings.emptyTitle')}
               </h2>
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
+              <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
             </div>
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
-                <Kicker C={C} style={{ fontSize: 10 }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
+                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
                 <SlotPips C={C} standing={used} cap={cap} compact subscribed={ctx.demoSubscribed} />
               </div>
               {active.map((p, i) => (
@@ -1287,8 +1255,8 @@ export function PingsScreen({ C, ctx }) {
 
           {/* mutual — its own section, so a match never crowds the slots */}
           {mutual.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: empty ? 0 : 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: empty ? 0 : 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '0 4px' }}>
                 <Kicker C={C} color={rgba(C.star, 0.9)}>✦ {t('pings.mutualKicker')} · {mutual.length}</Kicker>
                 <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
               </div>
@@ -1299,19 +1267,19 @@ export function PingsScreen({ C, ctx }) {
           )}
 
           {pings.some((p) => !p.handle) && (
-            <p style={{ margin: '4px 4px 0', fontSize: 11.5, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
+            <p style={{ margin: '4px 4px 0', fontSize: SIZE.meta, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
           )}
         </div>
       </div>
 
-      <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 20 }}>
+      <div className="enter" style={{ animationDelay: '.12s', display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 20 }}>
         <PrimaryButton C={C} onClick={ctx.placeAnother}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="plus" size={16} color={C.onStar} stroke={2.1} /> {empty ? t('pings.emptyCta') : t('pings.add')}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+            {empty ? t('pings.emptyCta') : t('pings.add')}
           </span>
         </PrimaryButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('door')} style={{ fontSize: 12.5 }}>
+          <GhostButton C={C} onClick={() => ctx.go('door')} style={{ fontSize: SIZE.small }}>
             {t('pings.door')}
           </GhostButton>
         </div>
@@ -1342,14 +1310,14 @@ function SkyStat({ C, value, label, onTap }) {
       onPointerLeave={() => setPress(false)}
       style={{
         pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-        padding: '9px 12px 8px', minWidth: 74, cursor: 'pointer',
+        padding: '9px 10px 8px', minWidth: 62, cursor: 'pointer',
         background: rgba(C.ink, 0.36), border: `1px solid ${rgba(C.star, 0.24)}`, borderRadius: RADIUS.inner,
         backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         transform: press ? 'scale(0.94)' : 'scale(1)', transition: 'transform .15s ease',
       }}
     >
-      <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 23, lineHeight: 1, color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.4)}` }}>{value}</span>
-      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 7.5, letterSpacing: '.9px', textTransform: 'uppercase', color: rgba(C.cream, 0.75), whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1, color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.4)}` }}>{value}</span>
+      <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.cream, 0.75), whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   )
 }
@@ -1470,14 +1438,10 @@ export function SkyCardScreen({ C, ctx }) {
   if (!community) {
     return (
       <Shell>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-          <Kicker C={C}>{t('sky.kicker')}</Kicker>
-          <div style={{ width: 38 }} />
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
+        <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={t('sky.kicker')} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
           <div className="floaty"><StarMark C={C} size={64} /></div>
-          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 20, lineHeight: 1.35, color: rgba(C.cream, 0.9), maxWidth: 320 }}>{t('sky.none')}</p>
+          <p style={{ margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.35, color: rgba(C.cream, 0.9), maxWidth: 320 }}>{t('sky.none')}</p>
         </div>
         <div className="enter" style={{ paddingTop: 12 }}>
           <PrimaryButton C={C} onClick={() => ctx.go('worlds')}>{t('sky.find')}</PrimaryButton>
@@ -1492,18 +1456,14 @@ export function SkyCardScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-        <Kicker C={C}>{t('sky.kicker')}</Kicker>
-        <div style={{ width: 38 }} />
-      </div>
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={t('sky.kicker')} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 12 }}>
-        <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.1, color: C.cream }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg, paddingTop: 12 }}>
+        <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.1, color: C.cream }}>
             {t('sky.title1')} <span style={{ color: C.star }}>{t('sky.title2')}</span>
           </h2>
-          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>
+          <p style={{ margin: '0 auto', fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>
             {t(open ? 'sky.subOpen' : 'sky.subGathering', { name: community.short })}
           </p>
         </div>
@@ -1533,20 +1493,20 @@ export function SkyCardScreen({ C, ctx }) {
           {/* the card's face — laid over the live sky, taps falling through
               except on the numbers */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 12px 13px', pointerEvents: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm }}>
               <SchoolMark C={C} slug={community.slug} size={26} />
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2.5px', textTransform: 'uppercase', color: rgba(C.cream, 0.85) }}>{community.short}</span>
+              <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.cream, 0.85) }}>{community.short}</span>
             </div>
             <div style={{ flex: 1 }} />
             <div style={{ textAlign: 'center', textShadow: '0 2px 18px rgba(0,0,0,.85)' }}>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 25, lineHeight: 1.12, color: C.cream }}>
+              <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.figure, lineHeight: 1.12, color: C.cream }}>
                 {t('sky.cardLine', { name: community.short })}
               </div>
-              <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 25, lineHeight: 1.12, color: open ? C.star : rgba(C.cream, 0.9) }}>
+              <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.figure, lineHeight: 1.12, color: open ? C.star : rgba(C.cream, 0.9) }}>
                 {open ? t('sky.cardOpen') : t('sky.cardGathering')}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 13 }}>
+            <div style={{ display: 'flex', gap: SPACE.sm, justifyContent: 'center', flexWrap: 'wrap', marginTop: 13 }}>
               <SkyStat C={C} value={stats.members.toLocaleString()} label={t('sky.statInside')} onTap={beatWave} />
               {open && pings != null ? (
                 <SkyStat C={C} value={pings.toLocaleString()} label={t('sky.statPings')} onTap={beatMeteor} />
@@ -1555,36 +1515,33 @@ export function SkyCardScreen({ C, ctx }) {
               )}
               {showMatches && <SkyStat C={C} value={matches.toLocaleString()} label={t('sky.statMatches')} onTap={beatMatch} />}
             </div>
-            <div style={{ marginTop: 12, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '.4px', color: rgba(C.cream, 0.65), textShadow: '0 1px 10px rgba(0,0,0,.8)' }}>
+            <div style={{ marginTop: 12, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', color: rgba(C.cream, 0.65), textShadow: '0 1px 10px rgba(0,0,0,.8)' }}>
               celestual.us/c/{community.slug}
             </div>
           </div>
         </div>
-        <p aria-hidden style={{ margin: 0, textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.muted, 0.6) }}>
-          {t('sky.cardHint')}
-        </p>
       </div>
 
       {/* two ways out, both one hop — no saving, no steps */}
-      <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16 }}>
+      <div className="enter" style={{ animationDelay: '.14s', display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 16 }}>
         <PrimaryButton C={C} onClick={storyShare}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="instagram" size={16} color={C.onStar} stroke={2} /> {t('sky.story')}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+            {t('sky.story')}
           </span>
         </PrimaryButton>
         <OutlineButton C={C} onClick={dmShare} style={{ width: '100%', padding: '13px 22px', borderRadius: RADIUS.field }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name={copied ? 'check' : 'message'} size={15} color="currentColor" stroke={1.9} /> {copied ? t('sky.copied') : t('sky.dm')}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+            {copied ? t('sky.copied') : t('sky.dm')}
           </span>
         </OutlineButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={copyLink} style={{ fontSize: 12.5 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <Icon name={copied ? 'check' : 'copy'} size={13} color="currentColor" /> {copied ? t('sky.copied') : t('sky.copy')}
+          <GhostButton C={C} onClick={copyLink} style={{ fontSize: SIZE.small }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+              {copied ? t('sky.copied') : t('sky.copy')}
             </span>
           </GhostButton>
         </div>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.55, color: rgba(C.muted, 0.8) }}>{t('sky.foot')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.55, color: rgba(C.muted, 0.8) }}>{t('sky.foot')}</p>
       </div>
     </Shell>
   )
@@ -1607,7 +1564,7 @@ function SkyStatus({ C, open, size = 13.5 }) {
   return (
     <span
       style={{
-        fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: size, lineHeight: 1.25,
+        fontFamily: FONT.serif, fontStyle: 'italic', fontSize: size, lineHeight: 1.25,
         color: open ? rgba(C.cream, 0.92) : rgba(C.muted, 0.92),
         textShadow: open ? `0 0 14px ${rgba(C.star, 0.35)}` : 'none',
         whiteSpace: 'nowrap',
@@ -1635,7 +1592,7 @@ function MeetOverlay({ C, label, onClose }) {
       <div data-noripple style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 'max(14px, env(safe-area-inset-right))', zIndex: 30 }}>
         <button
           onClick={onClose}
-          aria-label={t('reveal.close')}
+          aria-label={t('account.close')}
           className="fade"
           style={{
             width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
@@ -1645,7 +1602,7 @@ function MeetOverlay({ C, label, onClose }) {
             boxShadow: '0 10px 34px rgba(0,0,0,.5)',
           }}
         >
-          <Icon name="x" size={16} color="currentColor" stroke={2} />
+          <Icon name="close" size={16} color="currentColor" stroke={2} />
         </button>
       </div>
 
@@ -1654,14 +1611,14 @@ function MeetOverlay({ C, label, onClose }) {
         className="fade"
         style={{
           position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
-          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md,
           paddingTop: 30, textAlign: 'center', animationDelay: arrive,
         }}
       >
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
         <span
           style={{
-            fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(22px, 6vw, 28px)',
+            fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.title,
             letterSpacing: '.5px', color: C.star, textShadow: '0 2px 18px rgba(0,0,0,.85)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '86vw',
           }}
@@ -1674,15 +1631,14 @@ function MeetOverlay({ C, label, onClose }) {
           rel="noopener noreferrer"
           data-noripple
           style={{
-            pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: '86vw',
+            pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, maxWidth: '86vw',
             padding: '9px 16px', borderRadius: RADIUS.chip,
             background: rgba(C.ink2, 0.82), border: `1px solid ${rgba(C.star, 0.42)}`,
             backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-            color: C.cream, textDecoration: 'none', fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 13, fontWeight: 600, boxShadow: '0 10px 34px rgba(0,0,0,.45)',
+            color: C.cream, textDecoration: 'none', fontFamily: FONT.sans,
+            fontSize: SIZE.small, fontWeight: 600, boxShadow: '0 10px 34px rgba(0,0,0,.45)',
           }}
         >
-          <span style={{ flexShrink: 0, display: 'inline-flex' }}><Icon name="instagram" size={14} color={rgba(C.star, 0.95)} stroke={1.9} /></span>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('public.meet')}</span>
         </a>
       </div>
@@ -1775,12 +1731,11 @@ function LivePulse({ C, beat }) {
           key={beat.id}
           className="pulse-line"
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, maxWidth: '94%', whiteSpace: 'nowrap',
-            fontFamily: "'Space Grotesk', sans-serif", fontSize: 12.5, letterSpacing: '.2px',
+            display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, maxWidth: '94%', whiteSpace: 'nowrap',
+            fontFamily: FONT.sans, fontSize: SIZE.small, letterSpacing: '.2px',
             color: rgba(C.cream, 0.82), textShadow: '0 1px 12px rgba(0,0,0,.8)',
           }}
         >
-          <Icon name={beat.kind === 'join' ? 'plus' : 'star'} size={11} color={rgba(col, 0.9)} stroke={2} />
           {beat.text}
         </span>
       )}
@@ -1814,10 +1769,19 @@ function untilLaunchShort(now = Date.now()) {
   return c ? c.big : 'soon'
 }
 
+// The clock, stacked: the time on top in amber, what it counts down to beneath
+// it in mono. Two rows in one column, so it can never truncate or force the
+// strip beside it to wrap.
+//
+// The ⓘ that used to sit next to it is gone. It opened a three-line panel
+// explaining the countdown, the match floor and what lights up: a second
+// disclosure competing with the "this week" panel already in the same strip,
+// reached through a generic outline icon. The one line of it that mattered
+// (matches show at ten and up) now lives in that panel, where a reader who
+// opened it was already asking.
 function RevealCountdown({ C, open }) {
   const { t } = useI18n()
   const [now, setNow] = React.useState(() => Date.now())
-  const [info, setInfo] = React.useState(false)
   React.useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
@@ -1831,72 +1795,16 @@ function RevealCountdown({ C, open }) {
     [open, Math.floor(now / 30000)],
   )
   const c = fmtCountdown(target - now)
-  const label = open ? t('reveal.week') : t('reveal.opens')
-  // One quiet line — the page's heartbeat, not its headline: label in mono
-  // metadata, the time itself in amber. Docked low, so the ⓘ note opens UPWARD,
-  // anchored to the readout strip (the nearest positioned ancestor) so it can
-  // never clip off a narrow screen.
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, flexWrap: 'wrap' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-        <Icon name="clock" size={12} color={rgba(C.star, 0.85)} stroke={1.8} />
-        <Kicker C={C} style={{ fontSize: 9, letterSpacing: '1.8px', color: rgba(C.muted, 0.95) }}>{label}</Kicker>
+    <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.xs, fontFamily: FONT.mono, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: SIZE.body, letterSpacing: '.5px', color: C.star, textShadow: `0 0 14px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
+        {c && c.small && <span style={{ fontSize: SIZE.meta, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
       </span>
-      {/* the time + its ⓘ stay one unit, so a narrow viewport breaks between the
-          label and the clock — never stranding the info button on its own line */}
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-        <span
-          style={{
-            display: 'inline-flex', alignItems: 'baseline', gap: 5,
-            fontFamily: "'Space Mono', monospace", fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          <span style={{ fontSize: 14.5, letterSpacing: '.5px', color: C.star, textShadow: `0 0 14px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
-          {c && c.small && <span style={{ fontSize: 11, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
-        </span>
-        <button
-          onClick={() => setInfo((v) => !v)}
-          aria-label={t('reveal.infoTitle')}
-          data-noripple
-          style={{ display: 'grid', placeItems: 'center', width: 18, height: 18, borderRadius: '50%', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-        >
-          <Icon name="info" size={14} color={rgba(C.muted, info ? 1 : 0.7)} stroke={1.7} />
-        </button>
-      </span>
-
-      {info && (
-        <>
-          <button
-            aria-hidden
-            onClick={() => setInfo(false)}
-            data-noripple
-            style={{ position: 'fixed', inset: 0, zIndex: 29, background: 'transparent', border: 'none', cursor: 'default' }}
-          />
-          <div
-            className="fade"
-            data-noripple
-            style={{
-              position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, right: 0, zIndex: 30,
-              padding: '16px 17px', borderRadius: RADIUS.card,
-              background: rgba(C.ink2, 0.97), border: `1px solid ${rgba(C.star, 0.24)}`,
-              boxShadow: '0 24px 70px rgba(0,0,0,.6)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left',
-            }}
-          >
-            <Kicker C={C} style={{ fontSize: 10 }}>{t('reveal.infoTitle')}</Kicker>
-            {[['clock', t('reveal.infoWhat')], ['lock', t('reveal.infoReq')], ['star', t('reveal.infoReveals')]].map(([ic, tx]) => (
-              <div key={ic} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <span style={{ marginTop: 1, flexShrink: 0 }}><Icon name={ic} size={13} color={rgba(C.star, 0.8)} stroke={1.8} /></span>
-                <span style={{ fontSize: 12.5, lineHeight: 1.55, color: rgba(C.cream, 0.86) }}>{tx}</span>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <GhostButton C={C} onClick={() => setInfo(false)} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.9) }}>{t('reveal.close')}</GhostButton>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+      <Kicker C={C} micro color={rgba(C.muted, 0.9)} style={{ whiteSpace: 'nowrap' }}>
+        {open ? t('reveal.week') : t('reveal.opens')}
+      </Kicker>
+    </span>
   )
 }
 
@@ -1917,24 +1825,24 @@ function CommunityCard({ C, community, ctx }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', textAlign: 'left', cursor: 'pointer',
         padding: '14px 15px', borderRadius: RADIUS.card,
         background: rgba(C.ink2, h ? 0.72 : 0.6), border: `1px solid ${rgba(C.cream, h ? 0.16 : 0.1)}`,
         backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', transition: 'background .2s, border-color .2s',
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={46} />
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 20, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: SPACE.xs }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, minWidth: 0, maxWidth: '100%' }}>
+          <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
           {community.joined && <Icon name="check" size={13} color={rgba(C.star, 0.9)} />}
         </span>
         <SkyStatus C={C} open={open} />
       </span>
       {showStat ? (
         <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 26, lineHeight: 1, color: C.star }}>{matches}</span>
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
+          <span style={{ fontFamily: FONT.serif, fontSize: SIZE.figure, lineHeight: 1, color: C.star }}>{matches}</span>
+          <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.muted, 0.9) }}>{t('communities.matchedShort')}</span>
         </span>
       ) : (
         <Icon name="arrow" size={18} color={rgba(C.muted, 0.7)} stroke={1.9} />
@@ -1956,28 +1864,24 @@ export function WorldsScreen({ C, ctx }) {
   )
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
           <Kicker C={C}>{t('communities.kicker')}</Kicker>
           {ctx.demo && <SandboxChip C={C} />}
-        </div>
-        <div style={{ width: 38 }} />
-      </div>
+        </div>} />
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 16 }}>
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 16 }}>
         {/* your one community, made unmistakable and one tap away */}
         {ctx.homeCommunity ? (
           <HomeCommunityBanner C={C} community={ctx.homeCommunity} onOpen={() => ctx.viewCommunity(ctx.homeCommunity.slug)} />
         ) : (
-          <p style={{ margin: '0 2px', fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
+          <p style={{ margin: '0 2px', fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{t('communities.intro')}</p>
         )}
         {ordered.map((c) => (
           <CommunityCard key={c.slug} C={C} community={c} ctx={ctx} />
         ))}
       </div>
 
-      <p style={{ margin: '16px 2px 0', textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+      <p style={{ margin: '16px 2px 0', textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
         {ctx.homeCommunity ? t('home.oneOnly') : t('communities.foot')}
       </p>
     </Shell>
@@ -1996,7 +1900,7 @@ function HomeCommunityBanner({ C, community, onOpen }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', textAlign: 'left', cursor: 'pointer',
         padding: '15px 16px', borderRadius: RADIUS.card,
         background: `linear-gradient(120deg, ${rgba(C.star, h ? 0.16 : 0.12)}, ${rgba(C.them, 0.06)})`,
         border: `1px solid ${rgba(C.star, h ? 0.5 : 0.36)}`,
@@ -2005,10 +1909,10 @@ function HomeCommunityBanner({ C, community, onOpen }) {
     >
       <SchoolMark C={C} slug={community.slug} size={44} />
       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2px', textTransform: 'uppercase', color: rgba(C.star, 0.95) }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.star, 0.95) }}>
           <Icon name="check" size={11} color={rgba(C.star, 0.95)} stroke={2.6} /> {t('home.badge')}
         </span>
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 21, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+        <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
       </span>
       <Icon name="arrow" size={18} color={rgba(C.star, 0.9)} stroke={2} />
     </button>
@@ -2172,13 +2076,9 @@ export function CommunityScreen({ C, ctx }) {
   if (!community) {
     return (
       <Shell>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <BackBtn C={C} onClick={() => ctx.go('worlds')} />
-          <Brandmark C={C} size={18} />
-          <div style={{ width: 38 }} />
-        </div>
+        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} label={<Brandmark C={C} size={18} />} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ fontSize: 13, color: C.muted }}>{t('communities.none')}</p>
+          <p style={{ fontSize: SIZE.small, color: C.muted }}>{t('communities.none')}</p>
         </div>
         <div />
       </Shell>
@@ -2240,11 +2140,11 @@ export function CommunityScreen({ C, ctx }) {
             onClick={pullBack}
             className="fade"
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, cursor: 'pointer',
               padding: '9px 18px', borderRadius: RADIUS.chip,
               background: rgba(C.ink2, 0.78), border: `1px solid ${rgba(C.cream, 0.22)}`,
               backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-              fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '1px', textTransform: 'uppercase',
+              fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.meta, textTransform: 'uppercase',
               color: rgba(C.cream, 0.92), boxShadow: '0 12px 40px rgba(0,0,0,.5)',
             }}
           >
@@ -2259,22 +2159,18 @@ export function CommunityScreen({ C, ctx }) {
       {/* all content sits above the field (z1). touch-action yields horizontal
           drags (and, once zoomed, everything) to the sky's camera. */}
       <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', touchAction: zoomed ? 'none' : 'pan-y' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <BackBtn C={C} onClick={() => ctx.go('worlds')} />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }}>
+        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} label={<div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, opacity: skyHeld ? 0 : 1, transition: 'opacity .5s ease' }}>
             <Kicker C={C}>{t('communities.kicker')}</Kicker>
             {ctx.demo && <SandboxChip C={C} />}
-          </div>
-          <div style={{ width: 38 }} />
-        </div>
+          </div>} />
 
         {/* identity — the seal now rests at the galaxy's heart; up here only the
             name and where it stands, so the sky stays the page's real hero.
             (topRef: this block's bottom edge is the chrome inset the engine
             centers the disk beneath.) */}
-        <div ref={topRef} className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 8, ...melt }}>
-          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(23px, 6vw, 30px)', lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div ref={topRef} className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.sm, paddingTop: 8, ...melt }}>
+          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
             <SkyStatus C={C} open={open} size={14.5} />
           </div>
@@ -2285,9 +2181,6 @@ export function CommunityScreen({ C, ctx }) {
             of how to hold the sky beneath it. */}
         <div style={{ flex: 1, minHeight: 'clamp(170px, 30vh, 300px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', ...melt }}>
           <LivePulse C={C} beat={pulse.beat} />
-          <p aria-hidden style={{ margin: '0 0 2px', textAlign: 'center', fontFamily: "'Space Mono', monospace", fontSize: 8.5, letterSpacing: '1px', textTransform: 'uppercase', color: rgba(C.muted, 0.5) }}>
-            {t('sky.hint')}
-          </p>
         </div>
 
         {/* the foot of the page (botRef: measured as the bottom chrome inset).
@@ -2295,7 +2188,7 @@ export function CommunityScreen({ C, ctx }) {
             a single line; the full weekly detail unfolds as a floating sheet
             ABOVE the strip on demand, so nothing ever stands as a wall between
             the viewer and the galaxy. */}
-        <div ref={botRef} data-noripple style={{ display: 'flex', flexDirection: 'column', gap: 9, ...melt }}>
+        <div ref={botRef} data-noripple style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, ...melt }}>
           <SkyReadout
             C={C}
             open={open}
@@ -2310,11 +2203,11 @@ export function CommunityScreen({ C, ctx }) {
           {joined ? (
             <>
               <PrimaryButton C={C} onClick={ctx.findOut} style={{ padding: '14px 22px' }}>{t('communities.place')}</PrimaryButton>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.lg, alignItems: 'center', flexWrap: 'wrap' }}>
                 {isHome && (
-                  <GhostButton C={C} onClick={findStar} style={{ padding: '5px 4px', fontSize: 12, color: rgba(C.star, finding ? 1 : 0.9) }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Icon name={finding ? 'check' : 'star'} size={13} color="currentColor" stroke={1.9} /> {t('home.locate')}
+                  <GhostButton C={C} onClick={findStar} style={{ padding: '5px 4px', fontSize: SIZE.meta, color: rgba(C.star, finding ? 1 : 0.9) }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+                      {t('home.locate')}
                     </span>
                   </GhostButton>
                 )}
@@ -2325,25 +2218,25 @@ export function CommunityScreen({ C, ctx }) {
                   <GhostButton
                     C={C}
                     onClick={ctx.publicStar ? ctx.retractPublicStar : ctx.askPublicStar}
-                    style={{ padding: '5px 4px', fontSize: 12, color: ctx.publicStar ? rgba(C.star, 0.95) : undefined }}
+                    style={{ padding: '5px 4px', fontSize: SIZE.meta, color: ctx.publicStar ? rgba(C.star, 0.95) : undefined }}
                   >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                      <Icon name="eye" size={13} color="currentColor" stroke={1.8} /> {ctx.publicStar ? t('public.on') : t('public.announce')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+                      {ctx.publicStar ? t('public.on') : t('public.announce')}
                     </span>
                   </GhostButton>
                 )}
-                <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ padding: '5px 4px', fontSize: 12 }}>{t('communities.leave')}</GhostButton>
+                <GhostButton C={C} onClick={() => ctx.leaveCommunity(community.slug)} style={{ padding: '5px 4px', fontSize: SIZE.meta }}>{t('communities.leave')}</GhostButton>
               </div>
             </>
           ) : (
             <>
               <PrimaryButton C={C} onClick={() => ctx.joinCommunity(community.slug)} style={{ padding: '14px 22px' }}>{t('communities.join', { name: community.short })}</PrimaryButton>
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.muted, 0.9) }}>{t('home.watch', { name: community.short })}</p>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.9) }}>{t('home.watch', { name: community.short })}</p>
             </>
           )}
           {ctx.demo && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: 11, letterSpacing: '.5px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.8) }}>
+              <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: SIZE.meta, letterSpacing: '.5px', fontFamily: FONT.mono, color: rgba(C.star, 0.8) }}>
                 ✦ {t(open ? 'communities.demoWave' : 'communities.demoGather')}
               </GhostButton>
             </div>
@@ -2385,26 +2278,26 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
               padding: '14px 16px', borderRadius: RADIUS.card,
               background: rgba(C.ink2, 0.94), border: `1px solid ${rgba(C.star, 0.22)}`,
               boxShadow: '0 24px 70px rgba(0,0,0,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              display: 'flex', flexDirection: 'column', gap: 9,
+              display: 'flex', flexDirection: 'column', gap: SPACE.md,
             }}
           >
             {open ? (
               <>
                 {showMatches ? (
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <span key={matches} className="fade" style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(28px, 7.5vw, 38px)', lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
-                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.md, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <span key={matches} className="fade" style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                    <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15.5, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
+                  <p style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
                 )}
                 {week && week.topReason && (
-                  <p style={{ margin: 0, textAlign: 'center', fontSize: 12.5, lineHeight: 1.5, color: C.muted }}>
+                  <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>
                     {t('communities.reasonLabel')}{' '}
-                    <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.cream, 0.92) }}>“{intentLine(t, week.topReason)}”</span>
+                    <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.92) }}>“{intentLine(t, week.topReason)}”</span>
                   </p>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap', fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, justifyContent: 'center', flexWrap: 'wrap', fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
                   <span>{t('communities.pings', { n: pings.toLocaleString() })}</span>
                   {week && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
                   {week && week.joined != null && <span style={{ color: rgba(C.star, 0.85) }}>{t('communities.joinedWeek', { n: Number(week.joined).toLocaleString() })}</span>}
@@ -2412,24 +2305,26 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
               </>
             ) : (
               <>
-                <p style={{ margin: 0, textAlign: 'center', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17, lineHeight: 1.3, color: rgba(C.cream, 0.92) }}>{t('communities.gatheringHero')}</p>
-                <p style={{ margin: '0 auto', textAlign: 'center', fontSize: 12.5, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
+                <p style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.head, lineHeight: 1.3, color: rgba(C.cream, 0.92) }}>{t('communities.gatheringHero')}</p>
+                <p style={{ margin: '0 auto', textAlign: 'center', fontSize: SIZE.small, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>{t('communities.gatheringBody2')}</p>
               </>
             )}
           </div>
         </>
       )}
+      {/* ONE line, always. It used to wrap to two on a narrow phone, which made
+          the sky above it jump by a row every time the clock changed width. */}
       <div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm,
           padding: '8px 8px 8px 14px', borderRadius: RADIUS.field,
           background: rgba(C.ink2, 0.58), border: `1px solid ${rgba(C.cream, 0.08)}`,
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         }}
       >
         <RevealCountdown C={C} open={open} />
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: '.4px', color: showMatches ? rgba(C.star, 0.95) : rgba(C.muted, 0.9), whiteSpace: 'nowrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.xs, marginLeft: 'auto', minWidth: 0 }}>
+          <span style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.4px', color: showMatches ? rgba(C.star, 0.95) : rgba(C.muted, 0.9), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {headline}
           </span>
           <button
@@ -2451,7 +2346,7 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
 function MemberBadge({ C }) {
   const { t } = useI18n()
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.6px', textTransform: 'uppercase', color: rgba(C.star, 0.98), background: rgba(C.star, 0.14), border: `1px solid ${rgba(C.star, 0.42)}`, borderRadius: RADIUS.chip, padding: '4px 11px', flexShrink: 0 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.star, 0.98), background: rgba(C.star, 0.14), border: `1px solid ${rgba(C.star, 0.42)}`, borderRadius: RADIUS.chip, padding: '4px 11px', flexShrink: 0 }}>
       <Icon name="check" size={12} color={rgba(C.star, 0.98)} stroke={2.4} /> {t('home.badge')}
     </span>
   )
@@ -2469,22 +2364,18 @@ function FinderRow({ C, community, onPick }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        display: 'flex', width: '100%', alignItems: 'center', gap: 12, padding: '10px 10px', borderRadius: RADIUS.inner,
+        display: 'flex', width: '100%', alignItems: 'center', gap: SPACE.md, padding: '10px 10px', borderRadius: RADIUS.inner,
         border: 'none', cursor: 'pointer', textAlign: 'left', background: h ? rgba(C.star, 0.09) : 'transparent', transition: 'background .16s',
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={34} />
       <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 17, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', textTransform: 'uppercase', color: open ? rgba(C.star, 0.9) : C.muted }}>
+        <span style={{ fontFamily: FONT.serif, fontSize: SIZE.head, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
+        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', textTransform: 'uppercase', color: open ? rgba(C.star, 0.9) : C.muted }}>
           {open ? t('communities.open') : t('communities.gathering')}{community.joined ? ` · ${t('communities.joinedTag')}` : ''}
         </span>
       </span>
-      {community.joined ? (
-        <Icon name="check" size={16} color={rgba(C.star, 0.9)} stroke={2.2} />
-      ) : (
-        <Icon name="plus" size={15} color={rgba(C.star, 0.85)} stroke={2} />
-      )}
+      {community.joined && <Icon name="check" size={ICON.md} color={rgba(C.star, 0.9)} stroke={2.2} />}
     </button>
   )
 }
@@ -2517,7 +2408,7 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
       <div
         onClick={() => setOpen(true)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '15px 16px', borderRadius: RADIUS.field,
+          display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', padding: '15px 16px', borderRadius: RADIUS.field,
           background: C.ink2, border: `1.5px solid ${lit ? rgba(C.star, 0.7) : C.line}`,
           boxShadow: lit ? SHADOW.focus(C.star) : 'none', transition: 'border-color .2s, box-shadow .25s', cursor: 'text',
         }}
@@ -2532,7 +2423,7 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
           autoFocus={autoFocus}
           spellCheck={false}
           autoCapitalize="none"
-          style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, letterSpacing: '.2px' }}
+          style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: FONT.sans, fontSize: SIZE.head, letterSpacing: '.2px' }}
         />
         <span aria-hidden style={{ display: 'grid', placeItems: 'center', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s', opacity: 0.75 }}>
           <Icon name="back" size={14} color={C.muted} stroke={1.9} />
@@ -2550,7 +2441,7 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
           {results.length ? (
             results.map((c) => <FinderRow key={c.slug} C={C} community={c} onPick={(slug) => { onPick(slug); setOpen(false) }} />)
           ) : (
-            <div style={{ padding: '14px 12px', fontSize: 13, lineHeight: 1.5, color: C.muted }}>{t('communities.searchNone')}</div>
+            <div style={{ padding: '14px 12px', fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('communities.searchNone')}</div>
           )}
         </div>
       )}
@@ -2558,101 +2449,13 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
   )
 }
 
-// The one community you've joined, worn as a real badge — a full-width, amber-
-// lit panel that says "you're in" at a glance. There is only ever ONE (the
-// one-community rule), so it takes the room a single membership deserves
-// instead of hiding in a small chip.
-function JoinedBadge({ C, community, onRemove }) {
-  const { t } = useI18n()
-  return (
-    <div
-      className="fade"
-      style={{
-        display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px',
-        borderRadius: RADIUS.card,
-        background: `linear-gradient(120deg, ${rgba(C.star, 0.13)}, ${rgba(C.them, 0.06)})`,
-        border: `1px solid ${rgba(C.star, 0.42)}`,
-        boxShadow: `0 0 30px ${rgba(C.star, 0.13)}`,
-      }}
-    >
-      <SchoolMark C={C} slug={community.slug} size={46} />
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 9.5, letterSpacing: '2px', textTransform: 'uppercase', color: rgba(C.star, 0.95) }}>
-          <Icon name="check" size={11} color={rgba(C.star, 0.95)} stroke={2.6} /> {t('schools.joined')}
-        </span>
-        <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: 22, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{community.name}</span>
-      </span>
-      <button
-        onClick={onRemove}
-        aria-label={t('communities.leave')}
-        style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${rgba(C.cream, 0.16)}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.72) }}
-      >
-        <Icon name="x" size={13} color="currentColor" />
-      </button>
-    </div>
-  )
-}
-
-// ── AFFILIATED SCHOOLS (new-user onboarding, after identity) ──────────────────
-// Shown once, between proving your @ and placing your first ping: a search that
-// reveals the curated communities. You can be in exactly one — the one you're
-// actually at — and your ping only reaches people from it, so picking one opens
-// the .edu gate (App owns the sheet) to confirm you're really there before it
-// joins. One primary action places the ping.
-export function SchoolsScreen({ C, ctx }) {
-  const { t } = useI18n()
-  const communities = ctx.communities || []
-  const joined = communities.filter((c) => c.joined)
-  // Picking a school hands off to ctx.joinCommunity, which opens the .edu code
-  // sheet; membership is single, so joining one leaves any other.
-  const askJoin = (slug) => {
-    const c = communities.find((x) => x.slug === slug)
-    if (c && !c.joined) ctx.joinCommunity(slug)
-  }
-  return (
-    <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('you')} />
-        <Brandmark C={C} size={18} />
-        <div style={{ width: 38 }} />
-      </div>
-
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl, paddingTop: 8 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'center', alignItems: 'center' }}>
-          <Kicker C={C}>{t('schools.kicker')}</Kicker>
-          <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', lineHeight: 1.12, color: C.cream }}>
-            {t('schools.title1')}<br /><span style={{ color: C.star }}>{t('schools.title2')}</span>
-          </h2>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>{t('schools.sub')}</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <FieldLabel C={C} optional={t('communities.searchOptional')}>{t('communities.searchLabel')}</FieldLabel>
-          <CommunityFinder C={C} ctx={ctx} onPick={askJoin} />
-          {joined.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, paddingTop: 2 }}>
-              {joined.map((c) => (
-                <JoinedBadge key={c.slug} C={C} community={c} onRemove={() => ctx.leaveCommunity(c.slug)} />
-              ))}
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.3px', color: rgba(C.muted, 0.85), padding: '0 2px' }}>{t('home.oneOnly')}</span>
-            </div>
-          ) : (
-            <Hint C={C} icon="search" color={rgba(C.star, 0.85)}>{t('communities.searchOpen')}</Hint>
-          )}
-        </div>
-      </div>
-
-      <div className="enter" style={{ animationDelay: '.1s', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <PrimaryButton C={C} onClick={ctx.finishOnboarding}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-            <Icon name="lock" size={16} color={C.onStar} stroke={2} /> {joined.length > 0 ? t('schools.cta') : t('schools.ctaSkip')}
-          </span>
-        </PrimaryButton>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.muted }}>{t('schools.foot')}</p>
-      </div>
-    </Shell>
-  )
-}
+// The onboarding "affiliated schools" screen used to live here, between proving
+// your @ and placing your first ping. It is gone. Joining a community was never
+// a prerequisite for placing a ping (MASTER-GUIDE §2.6), so making it the third
+// form a brand-new person filled in before the thing they came to do actually
+// happened was pure friction. The placed screen already asks for a community at
+// the moment it starts to matter, and the communities page is one tap away from
+// everywhere. Its JoinedBadge went with it.
 
 // ── 8 · THE MATCH ─────────────────────────────────────────────────────────────
 export function MatchScreen({ C, ctx }) {
@@ -2661,29 +2464,29 @@ export function MatchScreen({ C, ctx }) {
   const them = m.them || normHandle(ctx.them) || 'them'
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 22 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         {/* the one place the brand permits brightness — the star, larger than anywhere */}
         <div className="enter"><StarMark C={C} size={128} /></div>
-        <h1 className="enter" style={{ animationDelay: '.1s', margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(38px, 11vw, 52px)', lineHeight: 1.05, color: C.cream }}>
+        <h1 className="enter" style={{ animationDelay: '.1s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.hero, lineHeight: 1.05, color: C.cream }}>
           {t('match.title')}
         </h1>
-        <p className="enter" style={{ animationDelay: '.18s', margin: 0, fontSize: 14, lineHeight: 1.7, color: C.muted, maxWidth: 320 }}>
+        <p className="enter" style={{ animationDelay: '.18s', margin: 0, fontSize: SIZE.body, lineHeight: 1.7, color: C.muted, maxWidth: 320 }}>
           {t('match.sub', { them })}
         </p>
         {(m.theirIntent || m.yourIntent) && (
-          <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 330 }}>
+          <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: SPACE.md, width: '100%', maxWidth: 330 }}>
             {m.theirIntent && (
-              <div style={{ border: `1px solid ${rgba(C.star, 0.35)}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <Kicker C={C} style={{ fontSize: 10 }}>{t('match.theySaid')}</Kicker>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: C.cream }}>
+              <div style={{ border: `1px solid ${rgba(C.star, 0.35)}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: SPACE.xs }}>
+                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('match.theySaid')}</Kicker>
+                <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>
                   “{intentLine(t, m.theirIntent)}”
                 </span>
               </div>
             )}
             {m.yourIntent && (
-              <div style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <Kicker C={C} style={{ fontSize: 10 }}>{t('match.youSaid')}</Kicker>
-                <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: rgba(C.cream, 0.85) }}>
+              <div style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: SPACE.xs }}>
+                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('match.youSaid')}</Kicker>
+                <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: rgba(C.cream, 0.85) }}>
                   “{intentLine(t, m.yourIntent)}”
                 </span>
               </div>
@@ -2692,18 +2495,18 @@ export function MatchScreen({ C, ctx }) {
         )}
       </div>
 
-      <div className="enter" style={{ animationDelay: '.32s', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="enter" style={{ animationDelay: '.32s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <PrimaryButton C={C} onClick={() => ctx.openConversation(them)}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
             {t('match.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
           </span>
         </PrimaryButton>
         {/* no share button, no confetti, no screenshot-bait: the story travels by
             telling, and the absence of a gotcha artifact IS the anti-humiliation
             architecture (framework Screen 8) */}
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, color: C.muted }}>{t('match.exit')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('match.exit')}</p>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12 }}>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.meta }}>
             {t('placed.pings')}
           </GhostButton>
         </div>
@@ -2722,9 +2525,9 @@ export function SendoffScreen({ C, ctx }) {
   return (
     <Shell>
       <div style={{ flex: 1 }} />
-      <div className="sendoff-line" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 11, paddingBottom: 'clamp(24px, 12vh, 90px)' }}>
-        <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 'clamp(24px, 7vw, 30px)', color: C.cream }}>{t('sendoff.title')}</div>
-        <div style={{ fontSize: 12.5, color: C.muted, fontFamily: "'Space Mono', monospace", letterSpacing: '.5px' }}>
+      <div className="sendoff-line" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingBottom: 'clamp(24px, 12vh, 90px)' }}>
+        <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>{t('sendoff.title')}</div>
+        <div style={{ fontSize: SIZE.small, color: C.muted, fontFamily: FONT.mono, letterSpacing: '.5px' }}>
           {t('sendoff.sub')}
         </div>
       </div>
@@ -2747,8 +2550,8 @@ export function SendoffScreen({ C, ctx }) {
 function CardBrands({ C }) {
   const shell = { width: 26, height: 16, borderRadius: 3, border: `1px solid ${C.line}`, background: rgba(C.cream, 0.06), display: 'grid', placeItems: 'center', flexShrink: 0 }
   return (
-    <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }} aria-hidden>
-      <span style={{ ...shell, fontFamily: "'Space Mono', monospace", fontSize: 7, fontWeight: 700, letterSpacing: '.5px', color: rgba(C.cream, 0.55) }}>VISA</span>
+    <span style={{ display: 'inline-flex', gap: SPACE.xs, alignItems: 'center' }} aria-hidden>
+      <span style={{ ...shell, fontFamily: FONT.mono, fontSize: SIZE.micro, fontWeight: 700, letterSpacing: '.5px', color: rgba(C.cream, 0.55) }}>VISA</span>
       <span style={shell}>
         <span style={{ display: 'inline-flex' }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: rgba(C.them, 0.85) }} />
@@ -2764,7 +2567,7 @@ function CardBrands({ C }) {
 function PayField({ C, value, onChange, placeholder, mono, trailing, inputMode }) {
   const [focus, setFocus] = React.useState(false)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 13px', borderRadius: RADIUS.inner, background: C.ink, border: `1px solid ${focus ? rgba(C.star, 0.55) : C.line}`, transition: 'border-color .18s' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, padding: '12px 13px', borderRadius: RADIUS.inner, background: C.ink, border: `1px solid ${focus ? rgba(C.star, 0.55) : C.line}`, transition: 'border-color .18s' }}>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -2773,7 +2576,7 @@ function PayField({ C, value, onChange, placeholder, mono, trailing, inputMode }
         placeholder={placeholder}
         inputMode={inputMode || 'numeric'}
         spellCheck={false}
-        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: mono ? "'Space Mono', monospace" : "'Space Grotesk', sans-serif", fontSize: 14.5, letterSpacing: mono ? '.5px' : '.2px' }}
+        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: mono ? "'Space Mono', monospace" : "'Space Grotesk', sans-serif", fontSize: SIZE.body, letterSpacing: mono ? '.5px' : '.2px' }}
       />
       {trailing}
     </div>
@@ -2789,7 +2592,7 @@ function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
       onClick={onClick}
       aria-pressed={on}
       style={{
-        display: 'flex', flexDirection: 'column', gap: 6, width: '100%', textAlign: 'left', cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', gap: SPACE.sm, width: '100%', textAlign: 'left', cursor: 'pointer',
         padding: '13px 15px', borderRadius: RADIUS.card,
         background: on ? rgba(C.star, 0.1) : rgba(C.ink2, 0.4),
         border: `1.5px solid ${on ? rgba(C.star, 0.6) : C.line}`,
@@ -2797,8 +2600,8 @@ function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
         transition: 'all .2s',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, minWidth: 0 }}>
           <span
             aria-hidden
             style={{
@@ -2808,19 +2611,19 @@ function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
           >
             {on && <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.star, boxShadow: `0 0 7px ${rgba(C.star, 0.8)}` }} />}
           </span>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 14.5, fontWeight: 600, color: C.cream }}>{title}</span>
+          <span style={{ fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: C.cream }}>{title}</span>
         </span>
         {badge && (
-          <span style={{ flexShrink: 0, fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.5px', textTransform: 'uppercase', color: rgba(C.star, 0.9), border: `1px solid ${rgba(C.star, 0.4)}`, borderRadius: RADIUS.chip, padding: '2px 7px' }}>
+          <span style={{ flexShrink: 0, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.5px', textTransform: 'uppercase', color: rgba(C.star, 0.9), border: `1px solid ${rgba(C.star, 0.4)}`, borderRadius: RADIUS.chip, padding: '2px 7px' }}>
             {badge}
           </span>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingLeft: 25 }}>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 16, fontWeight: 700, color: C.cream }}>{price}</span>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.4px', textTransform: 'uppercase', color: C.muted }}>{unit}</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.sm, paddingLeft: 25 }}>
+        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.head, fontWeight: 700, color: C.cream }}>{price}</span>
+        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', textTransform: 'uppercase', color: C.muted }}>{unit}</span>
       </div>
-      <p style={{ margin: 0, paddingLeft: 25, fontSize: 12, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>{detail}</p>
+      <p style={{ margin: 0, paddingLeft: 25, fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>{detail}</p>
     </button>
   )
 }
@@ -2866,24 +2669,25 @@ function SlotPaywall({ C, ctx, mode }) {
     const doneSub = extend ? t('paywall.doneSubExtend') : sub ? t('paywall.doneSubSub') : t('paywall.doneSubOnce')
     return (
       <Shell>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ width: 38 }} />
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <Kicker C={C}>{kicker}</Kicker>
-            <SandboxChip C={C} />
-          </div>
-          <div style={{ width: 38 }} />
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+        <ScreenHeader
+          C={C}
+          label={
+            <>
+              <Kicker C={C}>{kicker}</Kicker>
+              <SandboxChip C={C} />
+            </>
+          }
+        />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
           <div className="enter floaty"><StarMark C={C} size={78} /></div>
-          <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(28px, 8vw, 36px)', color: C.cream }}>{title}</h1>
-          <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{doneSub}</p>
+          <Title C={C} as="h1" align="center" className="enter">{title}</Title>
+          <Small C={C} align="center" className="enter" style={{ maxWidth: 300 }}>{doneSub}</Small>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <PrimaryButton C={C} onClick={finish}>{extend ? t('paywall.doneBack') : t('paywall.donePlace')}</PrimaryButton>
           {!extend && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GhostButton C={C} onClick={viewPingsInstead} style={{ fontSize: 12.5 }}>{t('placed.pings')}</GhostButton>
+              <GhostButton C={C} onClick={viewPingsInstead} style={{ fontSize: SIZE.small }}>{t('placed.pings')}</GhostButton>
             </div>
           )}
         </div>
@@ -2893,27 +2697,23 @@ function SlotPaywall({ C, ctx, mode }) {
 
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('pings')} />
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <ScreenHeader C={C} onBack={() => ctx.go('pings')} label={<div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
           <Kicker C={C}>{kicker}</Kicker>
           <SandboxChip C={C} />
-        </div>
-        <div style={{ width: 38 }} />
-      </div>
+        </div>} />
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 15, paddingTop: 10 }}>
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h1 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7.4vw, 33px)', color: C.cream }}>
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.lg, paddingTop: 10 }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>
             {extend ? t('paywall.extendTitle') : t('paywall.title')}
           </h1>
-          <p style={{ margin: '0 auto', fontSize: 13, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>
+          <p style={{ margin: '0 auto', fontSize: SIZE.small, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>
             {extend ? t('paywall.extendSub') : t('paywall.sub')}
           </p>
         </div>
 
         {/* the two offers — one tap picks; the checkout below runs whichever's lit */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <OfferOption
             C={C}
             on={!sub}
@@ -2936,10 +2736,10 @@ function SlotPaywall({ C, ctx, mode }) {
         </div>
 
         {/* the checkout card — the same fake-stripe fields regardless of choice */}
-        <GlassPanel C={C} style={{ padding: '16px 16px 15px', display: 'flex', flexDirection: 'column', gap: 13 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <GlassPanel C={C} style={{ padding: '16px 16px 15px', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <PayField C={C} value={card} onChange={setCard} placeholder={t('paywall.cardNumber')} mono trailing={<CardBrands C={C} />} />
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: SPACE.sm }}>
               <div style={{ flex: 1.15, minWidth: 0 }}><PayField C={C} value={exp} onChange={setExp} placeholder={t('paywall.expiry')} mono /></div>
               <div style={{ flex: 1, minWidth: 0 }}><PayField C={C} value={cvc} onChange={setCvc} placeholder={t('paywall.cvc')} mono /></div>
               <div style={{ flex: 1, minWidth: 0 }}><PayField C={C} value={zip} onChange={setZip} placeholder={t('paywall.zip')} /></div>
@@ -2947,23 +2747,23 @@ function SlotPaywall({ C, ctx, mode }) {
           </div>
 
           <PrimaryButton C={C} disabled={phase === 'paying'} onClick={pay}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-              {phase === 'paying' ? t('paywall.paying') : <><Icon name="lock" size={15} color={C.onStar} stroke={2} /> {sub ? t('paywall.paySub', { price }) : t('paywall.pay', { price })}</>}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+              {phase === 'paying' ? t('paywall.paying') : <>{sub ? t('paywall.paySub', { price }) : t('paywall.pay', { price })}</>}
             </span>
           </PrimaryButton>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', color: rgba(C.muted, 0.85) }}>
-            <Icon name="lock" size={11} color={rgba(C.muted, 0.75)} stroke={1.8} /> {t('paywall.secure')}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', color: rgba(C.muted, 0.85) }}>
+            {t('paywall.secure')}
             <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
             {t('paywall.stripe')}
           </div>
         </GlassPanel>
 
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.star, 0.85) }}>{t('paywall.demoNote')}</p>
+        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.85) }}>{t('paywall.demoNote')}</p>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8 }}>
-        <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>{t('paywall.letgo')}</GhostButton>
+        <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>{t('paywall.letgo')}</GhostButton>
       </div>
     </Shell>
   )
@@ -2980,25 +2780,21 @@ export function FourthSlotScreen({ C, ctx }) {
   if (ctx.demo && !ctx.demoSubscribed) return <SlotPaywall C={C} ctx={ctx} mode="slot" />
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go('pings')} />
-        <Brandmark C={C} size={18} />
-        <div style={{ width: 38 }} />
-      </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+      <ScreenHeader C={C} onBack={() => ctx.go('pings')} label={<Brandmark C={C} size={18} />} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         {/* the slots, all held */}
         <SlotPips C={C} standing={ctx.slotsCap} cap={ctx.slotsCap} subscribed={ctx.demoSubscribed} />
-        <h1 className="enter" style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(30px, 8vw, 38px)', color: C.cream }}>
+        <h1 className="enter" style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, color: C.cream }}>
           {t('fourth.title')}
         </h1>
-        <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: 13.5, lineHeight: 1.65, color: C.muted, maxWidth: 300 }}>
+        <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: SIZE.small, lineHeight: 1.65, color: C.muted, maxWidth: 300 }}>
           {t('fourth.body')}
         </p>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <PrimaryButton C={C} onClick={() => ctx.go('pings')}>{t('fourth.cta')}</PrimaryButton>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: 12.5 }}>
+          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>
             {t('fourth.back')}
           </GhostButton>
         </div>
@@ -3025,20 +2821,16 @@ export function PrivacyScreen({ C, ctx }) {
     }
   }
   const H = ({ children }) => (
-    <h3 style={{ margin: '20px 0 6px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 14, fontWeight: 600, color: C.cream }}>{children}</h3>
+    <h3 style={{ margin: '20px 0 6px', fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: C.cream }}>{children}</h3>
   )
-  const P = ({ children }) => <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted }}>{children}</p>
+  const P = ({ children }) => <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{children}</p>
 
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <BackBtn C={C} onClick={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
-        <Brandmark C={C} size={18} />
-        <div style={{ width: 38 }} />
-      </div>
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 8 }}>
-        <h2 style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(26px, 7vw, 34px)', lineHeight: 1.16, color: C.cream }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xs, paddingTop: 8 }}>
+        <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.16, color: C.cream }}>
           {t('privacy.title')}
         </h2>
 
@@ -3055,7 +2847,7 @@ export function PrivacyScreen({ C, ctx }) {
 
         <H>{t('privacy.h5')}</H>
         <P>{t('privacy.p5')}</P>
-        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Field C={C} kind="handle" value={handle} onChange={setHandle} placeholder={t('privacy.removePlaceholder')} />
           <PrimaryButton C={C} disabled={!ok || status === 'working'} onClick={submit}>
             {status === 'working' ? t('privacy.removing') : t('privacy.removeCta')}
@@ -3065,13 +2857,13 @@ export function PrivacyScreen({ C, ctx }) {
               {t('privacy.removed1')} <HandleChip C={C} handle={normHandle(handle)} /> {t('privacy.removed2')}
             </P>
           )}
-          {status === 'error' && <div style={{ fontSize: 13, color: rgba(C.star, 0.95) }}>{t('privacy.removeErr')}</div>}
+          {status === 'error' && <div style={{ fontSize: SIZE.small, color: rgba(C.star, 0.95) }}>{t('privacy.removeErr')}</div>}
         </div>
 
-        <p style={{ margin: '22px 0 0', fontSize: 11, lineHeight: 1.55, color: C.muted }}>
+        <p style={{ margin: '22px 0 0', fontSize: SIZE.meta, lineHeight: 1.55, color: C.muted }}>
           {t('privacy.foot')} <a href="mailto:privacy@celestual.us" style={{ color: C.muted }}>privacy@celestual.us</a>.
         </p>
-        <p style={{ margin: '10px 0 0', fontSize: 11, lineHeight: 1.55, color: C.muted }}>
+        <p style={{ margin: '10px 0 0', fontSize: SIZE.meta, lineHeight: 1.55, color: C.muted }}>
           <a href="/privacy" target="_blank" rel="noopener" style={{ color: C.muted, textDecoration: 'underline' }}>{t('privacy.fullPolicy')}</a>
           {' · '}
           <a href="/terms" target="_blank" rel="noopener" style={{ color: C.muted, textDecoration: 'underline' }}>{t('privacy.tos')}</a>
@@ -3103,36 +2895,36 @@ function AccountsEditor({ C, ctx }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', color: rgba(C.star, 0.9), fontFamily: "'Space Grotesk', sans-serif", fontSize: 13 }}
+        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, background: 'none', border: 'none', cursor: 'pointer', color: rgba(C.star, 0.9), fontFamily: FONT.sans, fontSize: SIZE.small }}
       >
-        <Icon name="plus" size={14} color="currentColor" stroke={2} /> {t('accounts.add')}
+        {t('accounts.add')}
       </button>
     )
   }
   return (
-    <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+    <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
       <FieldLabel C={C} optional={t('accounts.optional')}>{t('accounts.label')}</FieldLabel>
       {ctx.altHandles.map((h) => (
-        <div key={h} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div key={h} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm }}>
           <HandleChip C={C} handle={h} />
           <button
             onClick={() => ctx.removeAltHandle(h)}
             aria-label={t('accounts.remove')}
             style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}
           >
-            <Icon name="x" size={13} color="currentColor" />
+            <Icon name="close" size={13} color="currentColor" />
           </button>
         </div>
       ))}
       {canAdd && (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', gap: SPACE.sm, alignItems: 'stretch' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Field C={C} kind="handle" value={draft} onChange={setDraft} placeholder={t('accounts.placeholder')} onEnter={add} />
           </div>
           <OutlineButton C={C} onClick={add} style={{ flexShrink: 0 }}>{t('accounts.addBtn')}</OutlineButton>
         </div>
       )}
-      <Hint C={C} icon="instagram" color={rgba(C.star, 0.85)}>{t('accounts.note')}</Hint>
+      <Note C={C}>{t('accounts.note')}</Note>
     </div>
   )
 }
@@ -3143,23 +2935,23 @@ function CommunitiesSummary({ C, ctx }) {
   const { t } = useI18n()
   const joined = (ctx.communities || []).filter((c) => c.joined)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm }}>
         <FieldLabel C={C}>{t('communities.label')}</FieldLabel>
-        <GhostButton C={C} onClick={() => { ctx.closeAccount(); ctx.go('worlds') }} style={{ padding: 0, fontSize: 12, color: rgba(C.star, 0.85) }}>
+        <GhostButton C={C} onClick={() => { ctx.closeAccount(); ctx.go('worlds') }} style={{ padding: 0, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
           {t('communities.browse')} →
         </GhostButton>
       </div>
       {joined.length === 0 ? (
-        <span style={{ fontSize: 13, lineHeight: 1.5, color: C.muted }}>{t('communities.summaryNone')}</span>
+        <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('communities.summaryNone')}</span>
       ) : (
         joined.map((c) => {
           const open = communityOpen(c)
           return (
-            <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+            <div key={c.slug} style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, minWidth: 0 }}>
               <SchoolMark C={C} slug={c.slug} size={30} />
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '.4px', textTransform: 'uppercase', color: open ? rgba(C.star, 0.9) : C.muted, flexShrink: 0 }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: SIZE.body, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+              <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', textTransform: 'uppercase', color: open ? rgba(C.star, 0.9) : C.muted, flexShrink: 0 }}>
                 {open ? t('communities.open') : t('communities.gathering')}
               </span>
             </div>
@@ -3204,42 +2996,37 @@ export function AccountSheet({ C, ctx }) {
         aria-label={t('account.kicker')}
         tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 410, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '30px 26px 26px', display: 'flex', flexDirection: 'column', gap: 24, outline: 'none' }}
+        style={{ position: 'relative', width: '100%', maxWidth: 410, margin: 'auto 0', background: rgba(C.ink2, 0.97), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '30px 26px 26px', display: 'flex', flexDirection: 'column', gap: SPACE.xxl, outline: 'none' }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACE.lg }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm }}>
               <Brandmark C={C} size={14} />
               <Kicker C={C}>{t('account.kicker')}</Kicker>
               {ctx.demo && <SandboxChip C={C} />}
             </div>
-            <div style={{ marginTop: 12, fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(30px, 9vw, 37px)', lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ marginTop: 12, fontFamily: FONT.serif, fontSize: SIZE.display, lineHeight: 1.05, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <span style={{ color: C.star }}>@</span>{ctx.me || 'you'}
             </div>
-            <div style={{ marginTop: 9, display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '.3px', color: ctx.verified ? rgba(C.star, 0.95) : C.muted }}>
-              {ctx.verified && <Icon name="instagram" size={12} color={rgba(C.star, 0.95)} />}
+            <div style={{ marginTop: 9, display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.3px', color: ctx.verified ? rgba(C.star, 0.95) : C.muted }}>
               {ctx.verified ? t('account.verified') : t('account.localOnly')}
             </div>
           </div>
           <button onClick={close} aria-label={t('account.close')} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: 'none', border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
-            <Icon name="x" size={15} color="currentColor" />
+            <Icon name="close" size={15} color="currentColor" />
           </button>
         </div>
 
         <Rule C={C} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <FieldLabel C={C}>{t('account.handleLabel')}</FieldLabel>
             <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder="your.handle" />
-            {ctx.verifyEnabled && !ctx.verified && (
-              <Hint C={C} icon="instagram" color={rgba(C.star, 0.85)}>{t('account.reverifyNote')}</Hint>
-            )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.emailLabel')}</FieldLabel>
             <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder="you@email.com" />
-            <Hint C={C} icon="mail">{t('account.emailNote')}</Hint>
           </div>
           <AccountsEditor C={C} ctx={ctx} />
         </div>
@@ -3251,14 +3038,14 @@ export function AccountSheet({ C, ctx }) {
 
         <Rule C={C} />
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: standing ? C.cream : C.muted, fontFamily: "'Space Mono', monospace", fontSize: 13 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, color: standing ? C.cream : C.muted, fontFamily: FONT.mono, fontSize: SIZE.small }}>
             {standing > 0 && (
-              <span aria-hidden style={{ color: C.star, fontSize: 12, textShadow: `0 0 8px ${rgba(C.star, 0.6)}` }}>✦</span>
+              <span aria-hidden style={{ color: C.star, fontSize: SIZE.meta, textShadow: `0 0 8px ${rgba(C.star, 0.6)}` }}>✦</span>
             )}{' '}
             {standing > 0 ? t('account.pingsLine', { n: standing }) : t('account.pingsNone')}
           </span>
-          <GhostButton C={C} onClick={() => { close(); ctx.go('pings') }} style={{ padding: 0, fontSize: 12.5, color: C.star }}>
+          <GhostButton C={C} onClick={() => { close(); ctx.go('pings') }} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
             {t('account.pingsOpen')} →
           </GhostButton>
         </div>
@@ -3269,29 +3056,29 @@ export function AccountSheet({ C, ctx }) {
           // sign out / delete are available everywhere, including the sandbox
           // (there they reset the demo and land back on the cold landing — the
           // handlers are already demo-safe, nothing reaches a server).
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
             {ctx.demo && (
-              <span style={{ fontSize: 12, lineHeight: 1.55, color: C.muted }}>{t('account.sandboxNote')}</span>
+              <span style={{ fontSize: SIZE.meta, lineHeight: 1.55, color: C.muted }}>{t('account.sandboxNote')}</span>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.xl, flexWrap: 'wrap' }}>
               {(ctx.verified || ctx.demo) && (
-                <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: 13, color: C.cream }}>
+                <GhostButton C={C} onClick={ctx.signOut} style={{ padding: 0, fontSize: SIZE.small, color: C.cream }}>
                   {t('account.signOut')}
                 </GhostButton>
               )}
-              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: rgba(C.muted, 0.9) }}>
+              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.muted, 0.9) }}>
                 {t('account.delete')}
               </GhostButton>
             </div>
           </div>
         ) : (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <span style={{ fontSize: 13, lineHeight: 1.5, color: C.cream }}>{ctx.demo ? t('account.deleteConfirmDemo') : t('account.deleteConfirm')}</span>
-            <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: 13, color: C.star }}>
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.cream }}>{ctx.demo ? t('account.deleteConfirmDemo') : t('account.deleteConfirm')}</span>
+            <div style={{ display: 'flex', gap: SPACE.xl, alignItems: 'center', flexWrap: 'wrap' }}>
+              <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
                 {deleting ? t('account.deleting') : t('account.deleteYes')}
               </GhostButton>
-              <GhostButton C={C} onClick={() => setConfirmDel(false)} style={{ padding: 0, fontSize: 13, color: C.muted }}>
+              <GhostButton C={C} onClick={() => setConfirmDel(false)} style={{ padding: 0, fontSize: SIZE.small, color: C.muted }}>
                 {t('account.cancel')}
               </GhostButton>
             </div>
@@ -3554,32 +3341,32 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         aria-label={t('verify.title')}
         tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: SPACE.xl, outline: 'none' }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
           <span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, borderRadius: '50%', background: rgba(C.star, 0.12), flexShrink: 0 }}>
-            <Icon name="instagram" size={20} color={C.star} stroke={1.8} />
+            
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 22, color: C.cream, lineHeight: 1.1 }}>{t('verify.title')}</div>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream, lineHeight: 1.1 }}>{t('verify.title')}</div>
             <div style={{ marginTop: 6 }}>
               <HandleChip C={C} handle={handle} />
             </div>
           </div>
           <button onClick={dismiss} aria-label={t('verify.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
-            <Icon name="x" size={14} color="currentColor" />
+            <Icon name="close" size={14} color="currentColor" />
           </button>
         </div>
 
         {phase === 'confirm' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 21, color: C.cream }}>{t('verify.confirmTitle')}</div>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.muted }}>{t('verify.confirmBody', { handle: adopted })}</p>
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t('verify.confirmTitle')}</div>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{t('verify.confirmBody', { handle: adopted })}</p>
             <PrimaryButton C={C} onClick={() => { setPhase('verified'); doneRef.current = setTimeout(() => onVerified(proofRef.current, adopted), VERIFIED_HOLD_MS) }}>{t('verify.confirmYes', { handle: adopted })}</PrimaryButton>
-            <GhostButton C={C} onClick={begin} style={{ fontSize: 12.5 }}>{t('verify.confirmNo')}</GhostButton>
+            <GhostButton C={C} onClick={begin} style={{ fontSize: SIZE.small }}>{t('verify.confirmNo')}</GhostButton>
           </div>
         ) : phase === 'verified' ? (
-          <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
+          <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg, padding: '26px 0 22px' }}>
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
@@ -3587,63 +3374,62 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 23, color: C.cream }}>{t('verify.verified')}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Space Mono', monospace", fontSize: 11.5, letterSpacing: '0.5px', color: rgba(C.star, 0.9) }}>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t('verify.verified')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '0.5px', color: rgba(C.star, 0.9) }}>
               <Sonar C={C} size={11} /> {t('verify.verifiedSub')}
             </div>
           </div>
         ) : phase === 'expired' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 21, color: C.cream }}>{t('verify.expiredTitle')}</div>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.muted }}>{t('verify.expiredBody')}</p>
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t('verify.expiredTitle')}</div>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{t('verify.expiredBody')}</p>
             <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
           </div>
         ) : phase === 'error' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: rgba(C.star, 0.95) }}>{errMsg}</p>
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+            <p style={{ margin: 0, fontSize: SIZE.body, lineHeight: 1.55, color: rgba(C.star, 0.95) }}>{errMsg}</p>
             <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
           </div>
         ) : (
           <>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('verify.sub')}</p>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{t('verify.sub')}</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.sm, padding: '16px 0', borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
               <Kicker C={C}>{t('verify.code')}</Kicker>
               {phase === 'starting' || !token ? (
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
+                <span style={{ fontFamily: FONT.mono, fontSize: 38, letterSpacing: '10px', color: C.muted, paddingLeft: 10 }}>····</span>
               ) : (
                 /* userSelect:'all' — one long-press/click selects the whole code,
                    so a blocked clipboard never strands anyone. */
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.star, 0.4)}`, userSelect: 'all', WebkitUserSelect: 'all' }}>{dmCode(token)}</span>
+                <span style={{ fontFamily: FONT.mono, fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.star, 0.4)}`, userSelect: 'all', WebkitUserSelect: 'all' }}>{dmCode(token)}</span>
               )}
             </div>
 
             <PrimaryButton C={C} disabled={phase === 'starting' || !token} onClick={copyAndOpen}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-                <Icon name={copied ? 'check' : 'copy'} size={16} color={C.onStar} stroke={2} />
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
                 {copied ? t('verify.copied') : t('verify.copyOpen')}
               </span>
             </PrimaryButton>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
               {[t('verify.step1'), t('verify.step2', { ig: '@' + ig }), t('verify.step3')].map((s, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: C.muted, fontSize: 12.5, lineHeight: 1.5 }}>
-                  <span style={{ display: 'grid', placeItems: 'center', width: 19, height: 19, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), color: C.star, fontFamily: "'Space Mono', monospace", fontSize: 11 }}>{i + 1}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md, color: C.muted, fontSize: SIZE.small, lineHeight: 1.5 }}>
+                  <span style={{ display: 'grid', placeItems: 'center', width: 19, height: 19, borderRadius: '50%', flexShrink: 0, background: rgba(C.star, 0.12), color: C.star, fontFamily: FONT.mono, fontSize: SIZE.meta }}>{i + 1}</span>
                   <span>{s}</span>
                 </div>
               ))}
             </div>
 
-            <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, color: C.muted, fontSize: 12.5, fontFamily: "'Space Mono', monospace" }}>
+            <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.md, color: C.muted, fontSize: SIZE.small, fontFamily: FONT.mono }}>
               <Sonar C={C} size={12} /> {t('verify.waiting')}
             </div>
 
             {stuck && !demo && phase === 'waiting' && (
-              <div className="fade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: C.muted }}>
+              <div className="fade" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm, fontSize: SIZE.meta, color: C.muted }}>
                 <span>{t('verify.stuckHint')}</span>
                 <button
                   onClick={begin}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.star, fontSize: 12, fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: C.star, fontSize: SIZE.meta, fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}
                 >
                   {t('verify.stuckAction')}
                 </button>
@@ -3651,16 +3437,16 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             )}
 
             {demo && (
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('verify.demoNote')}</p>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('verify.demoNote')}</p>
             )}
             {!demo && inApp && (
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('verify.inApp')}</p>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('verify.inApp')}</p>
             )}
             {!demo && !mobile && !inApp && (
-              <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: C.muted }}>{t('verify.desktop')}</p>
+              <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: C.muted }}>{t('verify.desktop')}</p>
             )}
 
-            <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
+            <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: C.muted }}>{t('verify.tosNote')}</p>
           </>
         )}
       </div>
@@ -3692,26 +3478,25 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
         aria-label={t('public.title')}
         tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '26px 22px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '26px 22px 22px', display: 'flex', flexDirection: 'column', gap: SPACE.xl, outline: 'none' }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
           <span style={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: '50%', background: rgba(C.star, 0.12) }}>
-            <Icon name="eye" size={20} color={C.star} stroke={1.7} />
+            
           </span>
-          <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 23, lineHeight: 1.15, color: C.cream }}>{t('public.title')}</div>
+          <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.15, color: C.cream }}>{t('public.title')}</div>
           {handle && <HandleChip C={C} handle={handle} />}
         </div>
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: C.muted, textAlign: 'center' }}>{t('public.body', { name })}</p>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', borderRadius: RADIUS.inner, background: rgba(C.ink, 0.6), border: `1px solid ${C.line}` }}>
-          <span style={{ marginTop: 1, flexShrink: 0 }}><Icon name="lock" size={13} color={rgba(C.star, 0.85)} /></span>
-          <span style={{ fontSize: 12, lineHeight: 1.55, color: rgba(C.cream, 0.85) }}>{t('public.keeps')}</span>
+        <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.65, color: C.muted, textAlign: 'center' }}>{t('public.body', { name })}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.sm, padding: '12px 14px', borderRadius: RADIUS.inner, background: rgba(C.ink, 0.6), border: `1px solid ${C.line}` }}>
+          <span style={{ fontSize: SIZE.meta, lineHeight: 1.55, color: rgba(C.cream, 0.85) }}>{t('public.keeps')}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <PrimaryButton C={C} onClick={onConfirm}>{t('public.confirm')}</PrimaryButton>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GhostButton C={C} onClick={onClose} style={{ fontSize: 13 }}>{t('public.cancel')}</GhostButton>
+            <GhostButton C={C} onClick={onClose} style={{ fontSize: SIZE.small }}>{t('public.cancel')}</GhostButton>
           </div>
-          <p style={{ margin: 0, textAlign: 'center', fontSize: 11, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('public.note')}</p>
+          <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('public.note')}</p>
         </div>
       </div>
     </div>
@@ -3743,7 +3528,7 @@ export function StarViewOverlay({ C, view, onClose }) {
             boxShadow: '0 10px 34px rgba(0,0,0,.5)',
           }}
         >
-          <Icon name="x" size={16} color="currentColor" stroke={2} />
+          <Icon name="close" size={16} color="currentColor" stroke={2} />
         </button>
       </div>
 
@@ -3754,7 +3539,7 @@ export function StarViewOverlay({ C, view, onClose }) {
         className="fade"
         style={{
           position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
-          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md,
           // the name arrives WITH the camera: after the bank (≤1.1s) + the run
           paddingTop: 30, textAlign: 'center', animationDelay: '2.1s',
         }}
@@ -3765,7 +3550,7 @@ export function StarViewOverlay({ C, view, onClose }) {
             handle — the star above carries all the light this needs */}
         <span
           style={{
-            fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(23px, 6.5vw, 30px)',
+            fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.title,
             letterSpacing: '.5px', color: C.star,
             textShadow: '0 2px 18px rgba(0,0,0,.85)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '88vw',
@@ -3774,27 +3559,21 @@ export function StarViewOverlay({ C, view, onClose }) {
           @{view.handle}
         </span>
         {view.intent ? (
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 17.5, lineHeight: 1.4, color: rgba(C.cream, 0.94), textShadow: '0 2px 16px rgba(0,0,0,.85)', maxWidth: 330 }}>
+          <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.head, lineHeight: 1.4, color: rgba(C.cream, 0.94), textShadow: '0 2px 16px rgba(0,0,0,.85)', maxWidth: 330 }}>
             “{intentLine(t, view.intent)}”
           </span>
         ) : (
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 14.5, color: rgba(C.muted, 0.95), textShadow: '0 2px 14px rgba(0,0,0,.85)' }}>
+          <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.muted, 0.95), textShadow: '0 2px 14px rgba(0,0,0,.85)' }}>
             {t('starview.noIntent')}
           </span>
         )}
         {view.kind && (
-          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '2.2px', textTransform: 'uppercase', color: rgba(tint, 0.98), textShadow: `0 0 12px ${rgba(tint, 0.5)}, 0 2px 12px rgba(0,0,0,.8)` }}>
+          <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(tint, 0.98), textShadow: `0 0 12px ${rgba(tint, 0.5)}, 0 2px 12px rgba(0,0,0,.8)` }}>
             {t(`category.${view.kind}`)}
           </span>
         )}
       </div>
 
-      {/* how to move — one whispered line, low and out of the way */}
-      <div aria-hidden className="fade" style={{ position: 'fixed', left: 0, right: 0, bottom: 'max(18px, env(safe-area-inset-bottom))', zIndex: 24, pointerEvents: 'none', textAlign: 'center', animationDelay: '2.8s' }}>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '1.2px', textTransform: 'uppercase', color: rgba(C.muted, 0.75) }}>
-          {t('starview.hint')}
-        </span>
-      </div>
     </>
   )
 }
@@ -3815,30 +3594,30 @@ export function CopyCodeScreen({ C, ctx }) {
       <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
         <Brandmark C={C} size={26} />
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 18 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         {code ? (
           <>
             <Kicker C={C}>{t('copy.kicker')}</Kicker>
             <div
               className="enter"
               style={{
-                fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: 'clamp(44px, 15vw, 60px)',
+                fontFamily: FONT.mono, fontWeight: 700, fontSize: 'clamp(44px, 15vw, 60px)',
                 letterSpacing: '14px', paddingLeft: 14, color: C.star, textShadow: `0 0 34px ${rgba(C.star, 0.4)}`,
               }}
             >
               {code}
             </div>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('copy.note')}</p>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('copy.note')}</p>
           </>
         ) : (
-          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>
+          <p style={{ margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>
             {t('copy.missing')}
           </p>
         )}
       </div>
       {code && (
         <PrimaryButton C={C} onClick={copy}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
             <Icon name={copied ? 'check' : 'copy'} size={16} color={C.onStar} stroke={2} /> {copied ? t('copy.copied') : t('copy.cta')}
           </span>
         </PrimaryButton>
@@ -3873,21 +3652,21 @@ export function SignInScreen({ C, ctx }) {
       <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
         <Brandmark C={C} size={26} />
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 16 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.lg }}>
         {phase === 'working' ? (
           <>
             <div style={{ fontSize: 28, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.5)}` }}>✦</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: C.muted, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, color: C.muted, fontFamily: FONT.mono, fontSize: SIZE.small }}>
               <Sonar C={C} size={12} /> {t('signin.working')}
             </div>
           </>
         ) : phase === 'error' ? (
           <>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 24, color: C.cream }}>{t('signin.errTitle')}</div>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>{t('signin.errBody')}</p>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.figure, color: C.cream }}>{t('signin.errTitle')}</div>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>{t('signin.errBody')}</p>
           </>
         ) : (
-          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>{t('signin.missing')}</p>
+          <p style={{ margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>{t('signin.missing')}</p>
         )}
       </div>
       {(phase === 'error' || phase === 'missing') && (
@@ -3997,20 +3776,20 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
         aria-label={t('edu.title', { name })}
         tabIndex={-1}
         className="readout-in"
-        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: 18, outline: 'none' }}
+        style={{ position: 'relative', width: '100%', maxWidth: 400, margin: 'auto', background: rgba(C.ink2, 0.98), border: `1px solid ${C.line}`, borderRadius: RADIUS.card, boxShadow: SHADOW.card, padding: '24px 22px', display: 'flex', flexDirection: 'column', gap: SPACE.xl, outline: 'none' }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
           <SchoolMark C={C} slug={slug} size={42} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 22, color: C.cream, lineHeight: 1.12 }}>{t('edu.title', { name })}</div>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream, lineHeight: 1.12 }}>{t('edu.title', { name })}</div>
           </div>
           <button onClick={dismiss} aria-label={t('edu.cancel')} style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}>
-            <Icon name="x" size={14} color="currentColor" />
+            <Icon name="close" size={14} color="currentColor" />
           </button>
         </div>
 
         {phase === 'verified' ? (
-          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg, padding: '26px 0 22px' }}>
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
@@ -4018,12 +3797,12 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 23, color: C.cream, textAlign: 'center' }}>{t('edu.verified', { name: short })}</div>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream, textAlign: 'center' }}>{t('edu.verified', { name: short })}</div>
           </div>
         ) : phase === 'email' || phase === 'sending' ? (
           <>
-            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted }}>{t('edu.sub', { domain, name })}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{t('edu.sub', { domain, name })}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
               <FieldLabel C={C}>{t('edu.emailLabel')}</FieldLabel>
               <Field
                 C={C}
@@ -4034,19 +3813,19 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 autoFocus
                 onEnter={send}
               />
-              {errMsg && <span style={{ fontSize: 12, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
+              {errMsg && <span style={{ fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
             </div>
             <PrimaryButton C={C} disabled={busy || !email.trim()} onClick={send}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-                <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
+                {phase === 'sending' ? t('edu.sending') : t('edu.send')}
               </span>
             </PrimaryButton>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         ) : (
           <>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: C.muted }}>{t('edu.codeSent', { email })}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{t('edu.codeSent', { email })}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
               <FieldLabel C={C}>{t('edu.codeLabel')}</FieldLabel>
               <input
                 value={code}
@@ -4061,25 +3840,315 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 style={{
                   width: '100%', height: 58, textAlign: 'center', borderRadius: RADIUS.field,
                   background: C.ink, border: `1.5px solid ${errMsg ? rgba(C.star, 0.6) : C.line}`, color: C.star,
-                  fontFamily: "'Space Mono', monospace", fontSize: 32, fontWeight: 700, letterSpacing: '16px', paddingLeft: 16,
+                  fontFamily: FONT.mono, fontSize: 32, fontWeight: 700, letterSpacing: '16px', paddingLeft: 16,
                   outline: 'none', textShadow: `0 0 22px ${rgba(C.star, 0.35)}`,
                 }}
               />
-              {errMsg && <span style={{ fontSize: 12, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
+              {errMsg && <span style={{ fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}
             </div>
             <PrimaryButton C={C} disabled={busy || code.length !== 4} onClick={submit}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
                 <Icon name="check" size={16} color={C.onStar} stroke={2.2} /> {phase === 'verifying' ? t('edu.verifying') : t('edu.verify')}
               </span>
             </PrimaryButton>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-              <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
-              <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.lg, flexWrap: 'wrap' }}>
+              <GhostButton C={C} onClick={resend} style={{ fontSize: SIZE.meta }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
+              <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: SIZE.meta }}>{t('edu.change')}</GhostButton>
             </div>
-            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>
     </div>
+  )
+}
+
+// ── /recruit — the recruitment program (migration 0016) ──────────────────────
+// One screen, two states, because they are two moments of the same thing:
+//
+//   the AGREEMENT — arrived at from the DM that answered a "celestual" comment
+//   under the recruitment reel. The rules, then a name typed as a signature.
+//
+//   the NUMBERS — the moment they sign, this same screen becomes their personal
+//   tracking link and the count of what it has brought in. A signed recruit
+//   coming back on the same device lands straight here.
+//
+// The invite token and the dashboard key both ride the URL fragment and are
+// hashed before they touch the network (api/recruit.js), so neither can appear
+// in a server log.
+
+// One rule, numbered. The number is set in the product's own mono, not drawn as
+// a bullet glyph — the count IS the ornament.
+function RuleLine({ C, n, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
+      <span style={{ flexShrink: 0, width: 18, paddingTop: 2, fontFamily: FONT.mono, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
+        {String(n).padStart(2, '0')}
+      </span>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.sans, fontSize: SIZE.small, lineHeight: LINE.body, color: rgba(C.cream, 0.86) }}>
+        {children}
+      </span>
+    </div>
+  )
+}
+
+// One number on the recruit's readout: the figure in the emotional register, the
+// thing it counts whispered in mono beneath it. Same bones as the community
+// readout's stats, deliberately — a number reads the same everywhere here.
+function RecruitStat({ C, value, label, lit }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.xs, padding: `${SPACE.md}px ${SPACE.sm}px` }}>
+      <span style={{ fontFamily: FONT.serif, fontSize: SIZE.title, lineHeight: 1, color: lit ? C.star : C.cream, textShadow: lit ? `0 0 26px ${rgba(C.star, 0.3)}` : 'none' }}>
+        {value}
+      </span>
+      <Kicker C={C} micro>{label}</Kicker>
+    </div>
+  )
+}
+
+// The last seven days of link opens, drawn as the sky draws everything else:
+// points of light on a baseline, brighter where the day was busier. Not a chart
+// widget — a constellation of the week.
+function WeekTrail({ C, days }) {
+  const max = Math.max(1, ...days.map((d) => Number(d.n) || 0))
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: SPACE.sm, height: 34, padding: `0 ${SPACE.sm}px` }}>
+      {days.map((d, i) => {
+        const n = Number(d.n) || 0
+        const h = Math.max(2, Math.round((n / max) * 30))
+        return (
+          <span
+            key={i}
+            title={`${d.day}: ${n}`}
+            style={{
+              flex: 1, height: h, borderRadius: 999,
+              background: n ? `linear-gradient(180deg, ${rgba(C.star, 0.9)}, ${rgba(C.star, 0.35)})` : rgba(C.cream, 0.12),
+              boxShadow: n ? `0 0 10px ${rgba(C.star, 0.4)}` : 'none',
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+export function RecruitScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const saved = React.useMemo(() => loadDash(), [])
+  // The fragment wins over what this device remembers, so a recruit can move
+  // their dashboard to a new phone by opening their own keep-this link there.
+  const code = ctx.recruitCode || (saved && saved.code) || ''
+  const key = ctx.recruitKey || (saved && saved.key) || ''
+  const token = ctx.recruitToken || ''
+
+  const [phase, setPhase] = React.useState('loading') // loading | agree | signed | dead
+  const [handle, setHandle] = React.useState('')
+  const [myCode, setMyCode] = React.useState(code)
+  const [myKey, setMyKey] = React.useState(key)
+  const [name, setName] = React.useState('')
+  const [err, setErr] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const [stats, setStats] = React.useState(null)
+  const [copied, setCopied] = React.useState(false)
+  const copyTimer = React.useRef(null)
+  React.useEffect(() => () => copyTimer.current && clearTimeout(copyTimer.current), [])
+
+  // Open whichever door the URL (or this device) points at.
+  React.useEffect(() => {
+    let live = true
+    ;(async () => {
+      if (myCode && myKey) {
+        const s = await recruitStats({ code: myCode, key: myKey })
+        if (!live) return
+        if (s.ok) {
+          setStats(s)
+          setHandle(s.handle || '')
+          setPhase('signed')
+          saveDash({ code: myCode, key: myKey })
+          return
+        }
+      }
+      if (!token) {
+        if (live) setPhase('dead')
+        return
+      }
+      const r = await openInvite(token)
+      if (!live) return
+      if (!r.ok) {
+        setPhase('dead')
+        return
+      }
+      setHandle(r.handle || '')
+      setPhase(r.status === 'signed' && r.code ? 'agree' : 'agree')
+    })()
+    return () => {
+      live = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Refresh the numbers once they exist, so a recruit watching the page sees it
+  // move as their link works.
+  React.useEffect(() => {
+    if (phase !== 'signed' || !myCode || !myKey) return undefined
+    const id = setInterval(async () => {
+      const s = await recruitStats({ code: myCode, key: myKey })
+      if (s.ok) setStats(s)
+    }, 30000)
+    return () => clearInterval(id)
+  }, [phase, myCode, myKey])
+
+  const link = myCode ? recruitLink(myCode) : ''
+
+  const sign = async () => {
+    if (busy || name.trim().length < 2) return
+    setBusy(true)
+    setErr('')
+    const r = await signAgreement({ token, name })
+    setBusy(false)
+    if (!r.ok) {
+      setErr(r.error === 'name' ? t('recruit.errName') : t('recruit.errLink'))
+      return
+    }
+    setMyCode(r.code)
+    setMyKey(r.key)
+    setPhase('signed')
+    const s = await recruitStats({ code: r.code, key: r.key })
+    if (s.ok) setStats(s)
+  }
+
+  const share = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: link })
+        return
+      }
+    } catch {
+      /* sheet dismissed — fall through to a copy */
+    }
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      if (copyTimer.current) clearTimeout(copyTimer.current)
+      copyTimer.current = setTimeout(() => setCopied(false), 2200)
+    } catch {
+      /* the link is on screen either way */
+    }
+  }
+
+  if (phase === 'loading') {
+    return (
+      <Shell>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm }}>
+          <Sonar C={C} size={12} />
+          <Mono C={C}>{t('recruit.loading')}</Mono>
+        </div>
+      </Shell>
+    )
+  }
+
+  if (phase === 'dead') {
+    return (
+      <Shell>
+        <ScreenHeader C={C} label={<Brandmark C={C} size={18} />} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.lg }}>
+          <Title C={C} align="center">{t('recruit.deadTitle')}</Title>
+          <Small C={C} align="center" style={{ maxWidth: 320 }}>{t('recruit.deadBody')}</Small>
+        </div>
+        <PrimaryButton C={C} onClick={() => ctx.go('landing')}>{t('recruit.deadCta')}</PrimaryButton>
+      </Shell>
+    )
+  }
+
+  // ── the numbers ──
+  if (phase === 'signed') {
+    const visits = stats ? Number(stats.visits || 0) : 0
+    const signups = stats ? Number(stats.signups || 0) : 0
+    const days = stats && Array.isArray(stats.days) ? stats.days : []
+    return (
+      <Shell>
+        <ScreenHeader C={C} label={t('recruit.kicker')} />
+
+        <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xl, paddingTop: SPACE.xl }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+            <Title C={C}>{t('recruit.liveTitle')}</Title>
+            {handle && <HandleChip C={C} handle={handle} />}
+          </div>
+
+          {/* the link, given the weight of the thing it is */}
+          <GlassPanel C={C} style={{ padding: `${SPACE.lg}px ${SPACE.lg}px ${SPACE.md}px`, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+            <Kicker C={C}>{t('recruit.linkLabel')}</Kicker>
+            <span
+              style={{
+                fontFamily: FONT.mono, fontWeight: 700, fontSize: 'clamp(15px, 4.6vw, 19px)',
+                letterSpacing: '.2px', color: C.cream, wordBreak: 'break-all', userSelect: 'all', WebkitUserSelect: 'all',
+              }}
+            >
+              {link.replace(/^https?:\/\//, '')}
+            </span>
+            <PrimaryButton C={C} onClick={share}>{copied ? t('recruit.copied') : t('recruit.share')}</PrimaryButton>
+          </GlassPanel>
+
+          {/* what it has done */}
+          <GlassPanel C={C} inset style={{ padding: `${SPACE.sm}px 0 ${SPACE.md}px` }}>
+            <div style={{ display: 'flex', alignItems: 'stretch' }}>
+              <RecruitStat C={C} value={visits.toLocaleString()} label={t('recruit.statVisits')} />
+              <span aria-hidden style={{ width: 1, alignSelf: 'stretch', margin: `${SPACE.md}px 0`, background: C.line }} />
+              <RecruitStat C={C} value={signups.toLocaleString()} label={t('recruit.statSignups')} lit={signups > 0} />
+            </div>
+            {days.length > 0 && (
+              <>
+                <WeekTrail C={C} days={days} />
+                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: SPACE.sm }}>
+                  <Kicker C={C} micro>{t('recruit.week')}</Kicker>
+                </div>
+              </>
+            )}
+          </GlassPanel>
+
+          <Note C={C} tone="quiet">{t('recruit.keepNote')}</Note>
+        </div>
+
+        <ExitRow C={C} style={{ paddingTop: SPACE.lg }}>
+          <GhostButton C={C} onClick={() => ctx.go('landing')}>{t('recruit.toApp')}</GhostButton>
+        </ExitRow>
+      </Shell>
+    )
+  }
+
+  // ── the agreement ──
+  const rules = [t('recruit.rule1'), t('recruit.rule2'), t('recruit.rule3'), t('recruit.rule4'), t('recruit.rule5')]
+  return (
+    <Shell>
+      <ScreenHeader C={C} label={t('recruit.kicker')} />
+
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xl, paddingTop: SPACE.xl }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+          <Display C={C}>
+            {t('recruit.title1')}<br /><span style={{ color: C.star }}>{t('recruit.title2')}</span>
+          </Display>
+          {handle && <HandleChip C={C} handle={handle} />}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+          {rules.map((r, i) => (
+            <RuleLine key={i} C={C} n={i + 1}>{r}</RuleLine>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          <FieldLabel C={C}>{t('recruit.signLabel')}</FieldLabel>
+          <Field C={C} kind="text" value={name} onChange={setName} placeholder={t('recruit.signPlaceholder')} onEnter={sign} />
+          {err && <Note C={C} tone="accent">{err}</Note>}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: SPACE.lg }}>
+        <PrimaryButton C={C} disabled={busy || name.trim().length < 2} onClick={sign}>
+          {busy ? t('recruit.signing') : t('recruit.sign')}
+        </PrimaryButton>
+        <Note C={C} tone="quiet" align="center">{t('recruit.signNote')}</Note>
+      </div>
+    </Shell>
   )
 }

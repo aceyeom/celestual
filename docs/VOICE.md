@@ -103,14 +103,42 @@ Banned everywhere (enforced by the linter):
 - The fishing frame: "find out who likes you", "see who entered you"
 - Implied activity: "someone entered you", "people are looking at you" — the
   forbidden lever, in any phrasing
+- **Em and en dashes.** Not one, anywhere in copy. A dash is a writer stalling:
+  it welds two thoughts together instead of choosing one, and a page of them
+  reads as machine-written. Use a full stop, or cut the second half. (Code
+  comments and these docs may use them; product copy may not.)
+
+## §5b — Nothing explains the interface
+
+The rule that removed the most words from this product, added 2026-07-26.
+
+A sentence under a control telling you what the control is for is a confession
+that the control is unclear. Fix the control. What went, and what stood in for
+it:
+
+| Cut | What carries it now |
+| --- | --- |
+| "your instagram @, so the ping can resolve to you." | the label, and the `@` in the field |
+| "so a mutual match can reach you, and so you can sign back in on any device, no dm. at a school? use your .edu." | the placeholder `you@school.edu` |
+| "for adults. tap to confirm. nothing is stored." | the tap itself: *i'm 18 or older* |
+| "we email a one-time link to the address on file, no dm needed." | the server picks the route; nothing is offered to choose between |
+| "drag to orbit · pinch to zoom · tap an @ to meet them" | a sky you can drag is discovered by dragging it |
+| the ⓘ panel explaining the countdown | the one line that mattered moved into the panel already there |
+
+**And never write about someone's own account in the conditional.** The screen
+in the report that started this pass said *"if @ace03d has an email on file, a
+one-time sign-in link is on its way."* The server knew. Migration 0015 makes it
+answer, and the screen now names the inbox it actually sent to.
 
 ## §6 — Enforcement: `npm run lint:voice`
 
-`scripts/voice-lint.mjs` scans the canonical copy (`app/src/i18n/strings.js`)
-and the static pages (`app/public/*.html`) for the §5 banned list, emoji
-ranges, and exclamation marks, and fails the build on a hit. It is
+`scripts/voice-lint.mjs` scans the canonical copy (`app/src/i18n/strings.js`),
+the growth copy (`app/src/growth.js`) and the static pages
+(`app/public/*.html`) for the §5 banned list, emoji ranges, exclamation marks
+and **dashes**, and fails the build on a hit. Comments are blanked before the
+scan, so a `//` explaining a rule can't trip the rule it explains. It is
 deliberately dumb — a tripwire, not a critic. The interesting judgments
-(register, frames, vocabulary) belong in review, with this file open.
+(register, frames, vocabulary, and §5b) belong in review, with this file open.
 
 ## §7 — Litmus lines (calibrate by example)
 
