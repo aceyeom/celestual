@@ -43,7 +43,8 @@ the direct-Meta alternative. Written for a beginner — follow it top to bottom.
                           celestual-ig-webhook  ◀──── Meta POSTs the DM here  ⬅ THE BROKEN STEP
                             ├─ 1. is Meta's signature valid? (IG_APP_SECRET)
                             ├─ 2. ask Meta: who really sent this? (IG_ACCESS_TOKEN)
-                            └─ 3. does that real @ == "ace03d"?  ✔ → row = 'verified'
+                            └─ 3. adopt that real @ as the identity → row = 'verified'
+                                  (the code is a pure correlation id — migration 0012)
   page polls, sees 'verified', flips to ✓ ✅ (only happens if the webhook ran)
 ```
 
@@ -94,8 +95,8 @@ What you get back tells you a lot:
 | **No new invocation appears at all** | Meta is **not delivering** the DM to your backend. The webhook subscription/permissions aren't actually live. | **Section 2 (Fixes #3–#5)** — the most common case |
 | A new invocation, but it **returns 401** | Meta reached you but the **signature failed** → `IG_APP_SECRET` is wrong. | **Fix #7** |
 | A new invocation returns **200**, logs show `no_username` | Webhook ran but couldn't read the sender's name → `IG_ACCESS_TOKEN` is wrong/expired/missing a permission. | **Fix #8** |
-| A new invocation returns **200**, logs show `handle_mismatch` | Working as designed — the **sending account's real @ ≠ the @ you typed.** DM from the exact account you're verifying. | **Fix #9** |
-| A new invocation returns **200**, logs show `no_pending` | The code expired (>10 min) or was already used. Start fresh and DM within 10 minutes. | **Fix #10** |
+| A new invocation returns **200**, logs show `ok:true` | Verified — the sender's real @ was adopted as the identity (migration 0012). | done |
+| A new invocation returns **200**, logs show `no_pending` | The code expired (>30 min) or was already used. Start fresh and DM within 30 minutes. | **Fix #10** |
 
 Write down which row you landed on. Now jump to that fix.
 
@@ -236,24 +237,22 @@ expired, or lacks permission to read the sender's username.
 > with Instagram login** (recommended — matches this code), or tell me and I'll adapt the
 > function to the Page-token/`graph.facebook.com` shape.
 
-### Fix #9 — Logs show `handle_mismatch` → DM from the right account
+### Fix #9 — `handle_mismatch` no longer happens (migration 0012)
 
-This is the security check doing its job: the **real** username of whoever sent the DM
-didn't equal the `@` you typed on the site. Most common causes:
+**Obsolete as of migration 0012.** The webhook used to reject a DM whose real
+username didn't equal the `@` typed on the site (`handle_mismatch` — "that code
+was started for a different @"). The code is now a **pure correlation id**: it
+only names the pending browser session, and whoever DMs a live code is verified
+as **their own** Meta-authenticated account, which the site then adopts. There is
+nothing to mismatch, so this reply is gone — a typo or a second logged-in account
+simply verifies the account that actually sent the DM. If you're on an older
+build, deploy 0012 and the updated `celestual-ig-webhook`.
 
-- You typed `@ace03d` on the site but sent the DM from a **different** logged-in account
-  (phones with multiple accounts switch silently). Confirm the sender is literally
-  `@ace03d`.
-- You typed `@celestual.us` on the site and tried to DM **from** `@celestual.us` — an
-  account can't DM itself. Always verify **from a second account** (here, `@ace03d`).
+### Fix #10 — Logs show `no_pending` → you raced the clock (or reused a code)
 
-Fix the account, start fresh, DM again.
-
-### Fix #10 — Logs show `no_pending` → you raced the 10-minute clock
-
-Codes are valid for **~10 minutes** and are single-use. If you took longer, or reused an
-old code, you'll get `no_pending`. Start a brand-new verification and DM the new code
-within a couple of minutes.
+Codes are valid for **~30 minutes** (migration 0014; 6 digits) and are single-use. If
+you took longer, or reused an old code, you'll get `no_pending`. Start a brand-new
+verification and DM the new code.
 
 ---
 

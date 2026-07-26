@@ -34,3 +34,10 @@ verify_jwt = false
 # own domain check, per-address rate limit, and code-hash comparison instead.
 [functions.celestual-edu-verify]
 verify_jwt = false
+
+# Durable, DM-free re-login (the email magic link). Invoked by anonymous visitors
+# (with the anon key) from the sign-back-in flow and the /signin redeem, so JWT
+# verification is off; identity rests on the one-time emailed token + the
+# proof-gated binding, both enforced in service-role-only RPCs.
+[functions.celestual-relogin]
+verify_jwt = false

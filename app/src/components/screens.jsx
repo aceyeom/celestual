@@ -541,15 +541,25 @@ export function YouScreen({ C, ctx }) {
   const { t } = useI18n()
   const login = ctx.loginMode
   const emailVal = ctx.email.trim()
-  const emailOk = emailVal === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
+  const emailFormatOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
+  // Email is REQUIRED at signup — it's the mutual-match reveal channel AND the
+  // DM-free sign-back-in anchor (Fix B). Login mode never collects one (recovery
+  // reads the address already on file), so an empty value stays valid there.
+  const emailOk = login ? (emailVal === '' || emailFormatOk) : emailFormatOk
+  const isEdu = /\.edu$/i.test(emailVal)
   const handleOk = ctx.me.trim().length >= 2
   // the 18+ hard gate (§4.4) — signup only. one tap to confirm; nothing about
   // age is ever sent up or stored (data minimization): we keep whether, not when.
   const [over18, setOver18] = React.useState(false)
   const valid = handleOk && emailOk && (login || over18)
-  const submit = () => valid && (login ? ctx.login() : ctx.continueFromYou())
+  // In login mode the primary action is the DM-free email magic link whenever
+  // recovery is available (real backend, not the sandbox); otherwise the DM/stub
+  // sign-in. A verified local session just restores straight through (Fix B).
+  const recovery = login && !ctx.verified && ctx.recoveryEnabled
+  const doLogin = () => (recovery ? ctx.requestSignIn() : ctx.login())
+  const submit = () => valid && (login ? doLogin() : ctx.continueFromYou())
   const needsVerify = ctx.verifyEnabled && handleOk && !ctx.verified
-  const [emailOpen, setEmailOpen] = React.useState(() => emailVal !== '')
+  const meHandle = ctx.me.trim().replace(/^@+/, '')
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -573,7 +583,7 @@ export function YouScreen({ C, ctx }) {
             ctx.verified ? (
               <Hint C={C} icon="check" color={rgba(C.star, 0.9)}>{t('verify.youDone')}</Hint>
             ) : (
-              <Hint C={C} icon="instagram" color={rgba(C.star, 0.85)}>{t('you.loginNote')}</Hint>
+              <Hint C={C} icon={recovery ? 'mail' : 'instagram'} color={rgba(C.star, 0.85)}>{recovery ? t('you.linkNote') : t('you.loginNote')}</Hint>
             )
           ) : ctx.verifyEnabled && handleOk ? (
             ctx.verified ? (
@@ -621,41 +631,49 @@ export function YouScreen({ C, ctx }) {
           </div>
         </Collapse>
 
-        {/* email — optional, revealed after a handle exists (signup only) */}
+        {/* email — REQUIRED at signup: the mutual-match reveal channel and the
+            DM-free sign-back-in anchor (Fix B). School (.edu) address encouraged —
+            it's the core audience, and it doubles as community setup. */}
         <Collapse open={handleOk && !login}>
-          <div style={{ paddingTop: 4 }}>
-            {!emailOpen ? (
-              <button
-                onClick={() => setEmailOpen(true)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '15px 17px',
-                  borderRadius: RADIUS.field, cursor: 'pointer', textAlign: 'left',
-                  background: C.ink2, border: `1px solid ${C.line}`,
-                  color: C.cream, fontFamily: "'Space Grotesk', sans-serif",
-                }}
-              >
-                <Icon name="mail" size={18} color={rgba(C.star, 0.9)} stroke={1.7} />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 500 }}>{t('you.emailAdd')}</span>
-                <span style={{ fontSize: 10.5, letterSpacing: '.6px', fontFamily: "'Space Mono', monospace", color: rgba(C.star, 0.92), background: rgba(C.star, 0.1), border: `1px solid ${rgba(C.star, 0.28)}`, borderRadius: RADIUS.chip, padding: '2px 8px', textTransform: 'uppercase' }}>{t('you.emailOptional')}</span>
-                <Icon name="plus" size={16} color={rgba(C.star, 0.9)} stroke={2} />
-              </button>
-            ) : (
-              <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                <FieldLabel C={C} optional={t('you.emailOptional')}>{t('you.emailLabel')}</FieldLabel>
-                <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} autoFocus onEnter={submit} />
-                <Hint C={C} icon="mail">{t('you.note')}</Hint>
-              </div>
-            )}
+          <div className="fade" style={{ paddingTop: 4, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <FieldLabel C={C}>{t('you.emailLabel')}</FieldLabel>
+            <Field C={C} kind="email" value={ctx.email} onChange={ctx.setEmail} placeholder={t('you.email')} onEnter={submit} />
+            <Hint C={C} icon={isEdu ? 'check' : 'mail'} color={isEdu ? rgba(C.star, 0.9) : undefined}>{isEdu ? t('you.emailEdu') : t('you.note')}</Hint>
           </div>
         </Collapse>
       </div>
 
-      <PrimaryButton C={C} disabled={!valid} onClick={submit}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
-          {needsVerify && <Icon name="instagram" size={16} color={C.onStar} stroke={2} />}
-          {login ? t('you.loginCta') : needsVerify ? t('verify.continue') : t('you.continue')}
-        </span>
-      </PrimaryButton>
+      {login && recovery && ctx.signInSent ? (
+        // The link is on its way. Say so honestly (we never confirm the handle is
+        // registered), and keep both escape hatches: resend, or fall back to a DM.
+        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '15px 16px', borderRadius: RADIUS.card, background: rgba(C.ink2, 0.55), border: `1px solid ${C.line}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <Icon name="mail" size={16} color={rgba(C.star, 0.95)} stroke={1.9} />
+              <span style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, color: C.cream }}>{t('you.linkSentTitle')}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: C.muted }}>{t('you.linkSentNote', { handle: meHandle })}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <GhostButton C={C} onClick={ctx.requestSignIn} style={{ fontSize: 12.5 }}>{t('you.linkResend')}</GhostButton>
+            <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
+          </div>
+        </div>
+      ) : (
+        <>
+          <PrimaryButton C={C} disabled={!valid} onClick={submit}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, justifyContent: 'center' }}>
+              {login ? (recovery ? <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> : null) : needsVerify ? <Icon name="instagram" size={16} color={C.onStar} stroke={2} /> : null}
+              {login ? (recovery ? t('you.linkCta') : t('you.loginCta')) : needsVerify ? t('verify.continue') : t('you.continue')}
+            </span>
+          </PrimaryButton>
+          {login && recovery && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+              <GhostButton C={C} onClick={ctx.login} style={{ fontSize: 12.5 }}>{t('you.linkDm')}</GhostButton>
+            </div>
+          )}
+        </>
+      )}
     </Shell>
   )
 }
@@ -3365,10 +3383,14 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const { t } = useI18n()
   const SHADOW = makeShadow(C)
   const ig = igUsername()
-  const [phase, setPhase] = React.useState('starting') // starting | waiting | verified | expired | error
+  const [phase, setPhase] = React.useState('starting') // starting | waiting | confirm | verified | expired | error
   const [token, setToken] = React.useState('')
   const [errCode, setErrCode] = React.useState('')
   const [copied, setCopied] = React.useState(false)
+  // The @ the DM actually authenticated, when it differs from the one typed — we
+  // confirm before adopting it (migration 0012 adopts the DMing account; a stray
+  // code from another account should never silently swap someone's identity).
+  const [adopted, setAdopted] = React.useState('')
   // After a while stuck on "waiting", surface a self-serve way out (the DM can
   // be dropped by the relay; a fresh code re-runs the whole path).
   const [stuck, setStuck] = React.useState(false)
@@ -3404,8 +3426,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     if (demo) {
       proofRef.current = genProof()
       hashRef.current = null
-      expiryRef.current = Date.now() + 10 * 60 * 1000
-      setToken(String(Math.floor(1000 + Math.random() * 9000)))
+      expiryRef.current = Date.now() + 30 * 60 * 1000
+      setToken(String(Math.floor(100000 + Math.random() * 900000)))
       setPhase('waiting')
       return
     }
@@ -3457,13 +3479,22 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       const lapsed = Date.now() > expiryRef.current
       // Even past the local clock, ask the server one last time — the DM can
       // land in the final seconds, and "expired" must never beat a real ✓.
-      const status = await pollVerification(token, hashRef.current)
+      const { status, handle: adoptedHandle } = await pollVerification(token, hashRef.current)
       if (status === 'verified') {
         stopPoll()
         clearPending()
-        setPhase('verified')
         const proof = proofRef.current
-        doneRef.current = setTimeout(() => onVerified(proof), VERIFIED_HOLD_MS)
+        // The DM authenticated a real account (migration 0012). If that @ differs
+        // from the one typed, pause on a confirm so a stray/guessed code from
+        // another account can never silently swap identity; otherwise sail through.
+        const a = adoptedHandle ? normHandle(adoptedHandle) : ''
+        if (a && a !== normHandle(handle)) {
+          setAdopted(a)
+          setPhase('confirm')
+        } else {
+          setPhase('verified')
+          doneRef.current = setTimeout(() => onVerified(proof, adoptedHandle), VERIFIED_HOLD_MS)
+        }
       } else if (status === 'expired' || lapsed) {
         stopPoll()
         clearPending()
@@ -3540,7 +3571,14 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           </button>
         </div>
 
-        {phase === 'verified' ? (
+        {phase === 'confirm' ? (
+          <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 21, color: C.cream }}>{t('verify.confirmTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: C.muted }}>{t('verify.confirmBody', { handle: adopted })}</p>
+            <PrimaryButton C={C} onClick={() => { setPhase('verified'); doneRef.current = setTimeout(() => onVerified(proofRef.current, adopted), VERIFIED_HOLD_MS) }}>{t('verify.confirmYes', { handle: adopted })}</PrimaryButton>
+            <GhostButton C={C} onClick={begin} style={{ fontSize: 12.5 }}>{t('verify.confirmNo')}</GhostButton>
+          </div>
+        ) : phase === 'verified' ? (
           <div className="fade" role="status" aria-live="polite" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, padding: '26px 0 22px' }}>
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
@@ -3809,6 +3847,56 @@ export function CopyCodeScreen({ C, ctx }) {
   )
 }
 
+// ── /signin#t=… — the sign-back-in magic link lands here (Fix B) ──────────────
+// Opening the emailed link redeems its one-time token for a FRESH proof (minted
+// here, only its hash sent up) and a full 30-day session, then restores the
+// pings — no DM. On success ctx.redeemSignIn navigates on to the pings page; a
+// dead/used/expired link falls back to the ordinary sign-in.
+export function SignInScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const token = String(ctx.signinToken || '')
+  const [phase, setPhase] = React.useState(token ? 'working' : 'missing') // working | error | missing
+  const startedRef = React.useRef(false)
+  React.useEffect(() => {
+    if (!token || startedRef.current) return
+    startedRef.current = true
+    let live = true
+    ctx.redeemSignIn(token).then((res) => {
+      // On success ctx.redeemSignIn has already navigated to the pings page.
+      if (live && (!res || !res.ok)) setPhase('error')
+    })
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+  return (
+    <Shell>
+      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
+        <Brandmark C={C} size={26} />
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 16 }}>
+        {phase === 'working' ? (
+          <>
+            <div style={{ fontSize: 28, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.5)}` }}>✦</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, color: C.muted, fontFamily: "'Space Mono', monospace", fontSize: 12.5 }}>
+              <Sonar C={C} size={12} /> {t('signin.working')}
+            </div>
+          </>
+        ) : phase === 'error' ? (
+          <>
+            <div style={{ fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 24, color: C.cream }}>{t('signin.errTitle')}</div>
+            <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>{t('signin.errBody')}</p>
+          </>
+        ) : (
+          <p style={{ margin: 0, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 19, lineHeight: 1.4, color: rgba(C.cream, 0.9), maxWidth: 300 }}>{t('signin.missing')}</p>
+        )}
+      </div>
+      {(phase === 'error' || phase === 'missing') && (
+        <PrimaryButton C={C} onClick={ctx.startLogin}>{t('signin.errCta')}</PrimaryButton>
+      )}
+    </Shell>
+  )
+}
+
 // ── the .edu gate — join a community by proving you're at that school ──────────
 // Your ping only ever reaches people from your own community, so joining one asks
 // for a code emailed to an address at that school's domain. Two steps: enter the
@@ -3824,7 +3912,9 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   const domain = community.domain || 'school.edu'
   const name = community.name || 'your school'
   const short = community.short || name
-  const real = eduVerifyEnabled()
+  // /demo fakes the whole flow locally — any address, any code, no server. Live
+  // (non-demo) mode with the backend wired runs the real send/verify pipeline.
+  const real = eduVerifyEnabled() && !demo
 
   const [phase, setPhase] = React.useState('email') // email | sending | code | verifying | verified
   const [email, setEmail] = React.useState('')
@@ -3951,8 +4041,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 <Icon name="mail" size={16} color={C.onStar} stroke={1.9} /> {phase === 'sending' ? t('edu.sending') : t('edu.send')}
               </span>
             </PrimaryButton>
-            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
-            {demo && real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoGmailNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         ) : (
           <>
@@ -3987,7 +4076,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
               <GhostButton C={C} onClick={resend} style={{ fontSize: 12 }}>{resent ? t('edu.resent') : t('edu.resend')}</GhostButton>
               <GhostButton C={C} onClick={() => { setPhase('email'); setCode(''); setErrCode('') }} style={{ fontSize: 12 }}>{t('edu.change')}</GhostButton>
             </div>
-            {demo && !real && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
+            {demo && <p style={{ margin: 0, textAlign: 'center', fontSize: 11.5, lineHeight: 1.5, color: rgba(C.star, 0.9) }}>{t('edu.demoNote')}</p>}
           </>
         )}
       </div>

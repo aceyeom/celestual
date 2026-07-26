@@ -20,21 +20,22 @@ database."* Every control below exists to make both worthless.
 All tables (`celestual_entries`, `celestual_matches`, `celestual_notifications`,
 `celestual_attempts`, `celestual_suppressions`, `celestual_placements`,
 `celestual_members`, `celestual_handle_links`, `celestual_ig_verifications`,
-`celestual_settings`, `celestual_communities`, `celestual_community_members`,
-`celestual_campuses`, `celestual_campus_prereg`, `celestual_campus_mail`) have
-**RLS enabled with zero policies**, and all privileges are revoked from
-`anon`/`authenticated`. The browser literally cannot `select` from them. The
-only entry points are the `SECURITY DEFINER` RPCs (`celestual_submit`,
-`celestual_withdraw`, `celestual_renew`, `celestual_ping_status`,
-`celestual_my_pings`, `celestual_slots_for`, `celestual_suppress`,
-`celestual_link`, `celestual_set_worlds`, `celestual_world_counts`,
-`celestual_campus`, `celestual_campus_preregister`,
-`celestual_start_ig_verification`, `celestual_poll_ig_verification`), which
-return only small status objects — never other people's rows. Internal helpers
+`celestual_recovery`, `celestual_relogin_tokens`, `celestual_settings`,
+`celestual_communities`, `celestual_community_members`, `celestual_campuses`,
+`celestual_campus_prereg`, `celestual_campus_mail`) have **RLS enabled with zero
+policies**, and all privileges are revoked from `anon`/`authenticated`. The
+browser literally cannot `select` from them. The only entry points are the
+`SECURITY DEFINER` RPCs (`celestual_submit`, `celestual_withdraw`,
+`celestual_renew`, `celestual_ping_status`, `celestual_my_pings`,
+`celestual_slots_for`, `celestual_suppress`, `celestual_link`,
+`celestual_set_worlds`, `celestual_world_counts`, `celestual_campus`,
+`celestual_campus_preregister`, `celestual_start_ig_verification`,
+`celestual_poll_ig_verification`, `celestual_bind_recovery`), which return only
+small status objects — never other people's rows. Internal helpers
 (`celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
 `celestual_consume_ig_proof`, `celestual_ig_required`, `celestual_client_ip`)
-and the operator paths
-(`celestual_complete_ig_verification`, `celestual_campus_reveal`,
+and the operator / service-role paths (`celestual_complete_ig_verification`,
+`celestual_relogin_store`, `celestual_relogin_redeem`, `celestual_campus_reveal`,
 `celestual_purge_expired`) are **not** granted to clients.
 
 ### §2 — Hashed shadow data (the 0006 centerpiece)
@@ -89,18 +90,33 @@ cap, and the hourly limits make enumeration cost slots, time, and identity.
 actually placed.
 
 ### §verify — Handle-ownership verification (Instagram DM)
-Load-bearing and unchanged in principle since 0004: a one-time 4-digit code
-DM'd to `@celestual.us`; Meta's authenticated sender identity (relayed by
-ManyChat's External Request — setup in
+Load-bearing since 0004: a one-time 4-digit code DM'd to `@celestual.us`; Meta's
+authenticated sender identity (relayed by ManyChat's External Request — setup in
 [MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md) — or the direct Meta webhook — see
-[DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md)) must equal the claimed handle.
-The browser mints a 256-bit proof, stores only its hash server-side, and
-presents the raw proof at placement; `celestual_consume_ig_proof` makes the
-server the authority. **No match can fire to an unverified claimant** — the
-impersonation fix the framework calls non-negotiable (§6.5). Gated by
+[DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md)) decides who is verified. The
+browser mints a 256-bit proof, stores only its hash server-side, and presents
+the raw proof at placement; `celestual_consume_ig_proof` makes the server the
+authority. **No match can fire to an unverified claimant** — the impersonation
+fix the framework calls non-negotiable (§6.5). Gated by
 `celestual_settings.require_ig_verification`; with it on, the proof also gates
 `celestual_ping_status`, `celestual_my_pings`, `celestual_slots_for`,
 `celestual_renew`, `celestual_set_worlds` and `celestual_campus_preregister`.
+
+**The code is a pure correlation id (0012).** Identity is *never* a typed claim:
+the 4-digit code only links "this incoming DM" ↔ "this browser session", and
+whoever DMs a live code is verified as *that* Meta-authenticated account, which
+the site then adopts. This removes the entire `handle_mismatch` class (a typo or
+a second logged-in account used to dead-end at "that code was started for a
+different @") and is strictly *more* secure — you can only ever verify the
+account you actually control. `celestual_poll_ig_verification` returns the
+adopted @ to the proof-holder (and only the proof-holder) so the browser can
+adopt it. The one residual — a stray/guessed DM that matches *someone else's*
+live code, which would adopt the DMing account onto their session — is bounded
+three ways: the code is **6 digits** with a **30-minute TTL** (0014, so the
+live-code pool is small and a collision is ~1-in-a-million per stray DM), the
+unique-pending-code index means a code maps to at most one session at a time,
+and the browser shows a **"sign in as @X?" confirm** whenever the adopted @
+differs from the one typed, so an unexpected identity can never commit silently.
 
 Session lifetime (0009): a completed verification stands **30 days, sliding**
 — each successful proof use extends it another 30, so an active person never
@@ -108,9 +124,27 @@ re-verifies while an abandoned proof still dies. The exposure profile is that
 of a long-lived session cookie: the proof lives only in that browser's
 localStorage, signing out destroys it, and a leaked proof still can't move the
 verification to another handle. Both relay paths DM instant feedback to the
-sender (verified ✓ / wrong-account) inside Meta's 24-hour standard messaging
-window. The `/demo` sandbox runs the same overlay but auto-verifies locally
-and never touches the backend.
+sender (verified ✓ / already-verified / expired) inside Meta's 24-hour standard
+messaging window. The `/demo` sandbox runs the same overlay but auto-verifies
+locally and never touches the backend.
+
+**Durable, DM-free recovery (0013).** A verified session used to be reachable
+*only* through the proof in that one browser's localStorage — so losing it
+(Instagram's in-app browser, iOS ITP, a new device) forced a fresh DM, which is
+the repetitive pattern Instagram throttles (the root cause in
+[MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md) §8). Now, at the one-time DM
+verification the browser binds `handle ⇄ email` under its fresh proof
+(`celestual_bind_recovery` — writable *only* with a live proof). A later "sign
+back in" emails a one-time magic link (`celestual-relogin`, the same Resend path
+as the other mail) whose token is stored only as a hash, is single-use, and
+lasts 20 minutes; opening it mints a fresh proof client-side and a full 30-day
+session (`celestual_relogin_redeem`, service-role only) with no DM. The DM is a
+one-time step; email ownership carries every return, cross-device. Both writers
+are service-role-only, so the browser can never mint its own proof. **Email is
+required at signup** (not optional): it is both the mutual-match reveal channel
+(§mutual) and this recovery anchor, so every account can be reached and can
+return without a DM. School (`.edu`) addresses are encouraged — the core
+audience — and double as community setup.
 
 ### §ident — Multi-account identity
 A person can link up to 3 of their own @s (`celestual_link`); matching and the
@@ -156,7 +190,9 @@ Three emails exist: *it's mutual* (to the earlier entrant's own address),
 *your ping lapses soon* (about the sender's own action; names no handle —
 §2), and the campus *open/reveal* notes (to preregistrants). None of them can
 state or imply anything about any other person's activity. That line is
-load-bearing legally (FTC v. NGL) and is pre-committed here in writing.
+load-bearing legally (FTC v. NGL) and is pre-committed here in writing. The
+transactional mails — the `.edu` join code and the sign-back-in magic link —
+speak only to the recipient about their own action and name no one else.
 
 ### §age — Adults
 The landing states the 18+ condition on the primary action; marketing is
@@ -175,19 +211,28 @@ conservatism on purpose (framework §6.7).
   log access, treat `celestual_entries` as the crown jewels regardless.
 - **Meta platform risk** — verification rides Meta's webhook surface; keep the
   bio-code/ManyChat fallback maintained forever (framework §6.6).
+- **Email is a recovery factor (0013)** — once a handle binds a recovery email,
+  whoever controls that inbox can re-login as the handle via the magic link. This
+  is the standard magic-link tradeoff and the same address already trusted for
+  the mutual/lapse mail; the binding is only ever written under a live DM proof,
+  the link is single-use + short-TTL + hash-only at rest, and the opt-out wipes
+  the binding and any live tokens. Treat `celestual_recovery` as sensitive.
 - **Pre-enforcement window** — while `require_ig_verification` is `'false'`
   (dev default), identity is the typed handle. Flip it on before any real
   launch; the operator checklist below makes it a release gate.
 
 ## Operator checklist
 
-- [ ] All migrations applied (`0001`–`0009`); RLS **on**, **zero policies**,
+- [ ] All migrations applied (`0001`–`0014`); RLS **on**, **zero policies**,
       on every `celestual_*` table.
 - [ ] `anon` has **execute** only on the §1 public RPC list — and **not** on
       `celestual_group`, `celestual_hash_handle`, `celestual_is_member`,
       `celestual_complete_ig_verification`, `celestual_consume_ig_proof`,
-      `celestual_ig_required`, `celestual_campus_reveal`,
+      `celestual_ig_required`, `celestual_relogin_store`,
+      `celestual_relogin_redeem`, `celestual_campus_reveal`,
       `celestual_purge_expired`.
+- [ ] `celestual-relogin` deployed (the sign-back-in magic link) and reachable;
+      it reuses `RESEND_API_KEY` / `CELESTUAL_FROM_EMAIL`.
 - [ ] `handle_salt` exists in `celestual_settings` (0006 seeds it) and is
       never logged or exported.
 - [ ] Edge-function secrets set in Supabase, never in the front-end bundle

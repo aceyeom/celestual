@@ -60,9 +60,11 @@ celestual/
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
 │   ├── migrations/   0001–0005 history · 0006 the ping model (current) ·
-│   │                 0007–0008 the .edu membership gate
+│   │                 0007–0008 the .edu membership gate · 0009–0011 verification
+│   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
-│                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify
+│                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
+│                     celestual-relogin
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)
@@ -77,6 +79,7 @@ celestual/
 | `/@handle` | someone's open door — ping field prefilled (Loop B) |
 | `/c/<campus>` | a campus window: the meter, then "it's open.", then week one (Loop C) |
 | `/optout` | the public opt-out — any handle owner, no account needed |
+| `/signin` | the sign-back-in magic link lands here — redeems a fresh proof, no DM (Fix B) |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
@@ -103,7 +106,8 @@ carries **"sandbox: they enter you back"**, which plays the full match reveal.
 Run out of your three slots and the sandbox shows a **realistic Stripe-style
 checkout** for a one-time fourth slot (production shows only the free "let one
 go" door). Identity verification runs the real overlay but **auto-verifies
-locally**. The campus window (the optional launch tool) lives on in production
+locally**, and joining a curated community (the `.edu` gate) is faked the same
+way — **any address, any four digits, nothing sent**. The campus window (the optional launch tool) lives on in production
 at `/c/<campus>`; the sandbox headlines communities instead, since global,
 always-open access is now the default and no one waits behind a campus.
 

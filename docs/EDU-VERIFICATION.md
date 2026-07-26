@@ -17,8 +17,15 @@ modes depending on a single flag:
 
 | Mode | When | What happens |
 | --- | --- | --- |
-| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, or no Supabase env | The join sheet accepts any plausibly-formatted school address, waits a beat, accepts any 4 digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview fully testable. |
-| **Live** | `VITE_EDU_VERIFY_ENABLED=1` **and** Supabase URL/anon key set | Real code emailed via Resend, hashed + stored in Postgres, verified server-side. |
+| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, no Supabase env, **or the `/demo` sandbox** | The join sheet accepts **any** plausibly-formatted address (any domain), waits a beat, accepts any 4 digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview + the `/demo` sandbox fully testable with no real inbox. |
+| **Live** | `VITE_EDU_VERIFY_ENABLED=1` **and** Supabase URL/anon key set, **outside `/demo`** | Real code emailed via Resend, hashed + stored in Postgres, verified server-side against the genuine school domain. |
+
+> **`/demo` always uses Stub mode**, even on a build with the flag on and Supabase
+> wired: the sandbox fakes the whole workflow locally so a reviewer can join a
+> community with any address and any code, and nothing ever reaches a server
+> (`EduVerifySheet` sets `real = eduVerifyEnabled() && !demo`). To smoke-test the
+> *real* email pipeline, use a normal (non-demo) preview build with the flag on
+> and a genuine school address.
 
 The pieces that make the **live** mode work:
 
@@ -47,14 +54,14 @@ supabase/migrations/
 - **Rate limited:** max **5** fresh codes per address per hour and **15** per IP
   per hour (0008). Codes live **10 minutes** and die after **6** wrong guesses.
   Expired rows self-sweep.
-- The sandbox's **@gmail.com carve-out** lets a `demo:true` request also pass
-  with a gmail address (the product owner has no .edu inbox to test the real
-  pipeline with). It is **ON by default** pre-launch and controlled server-side:
-  set `CELESTUAL_SANDBOX_GMAIL=0` on the function to force even demo requests
-  through the genuine school-domain check. **Honest caveat:** while the default
-  stands, a crafted `demo:true` request could use a gmail address against the
-  real gate too — acceptable for the pre-launch sandbox, but **setting it to `0`
-  is a release gate** (it's on the SECURITY.md operator checklist).
+- The server keeps a legacy **@gmail.com carve-out** for `demo:true` requests
+  (`CELESTUAL_SANDBOX_GMAIL`, ON by default). **The app no longer reaches it:**
+  `/demo` now fakes the flow entirely client-side (any address, no send), so the
+  browser never issues a `demo:true` edu request. The carve-out therefore only
+  matters to a hand-crafted `demo:true` call against the live function — which is
+  why **setting `CELESTUAL_SANDBOX_GMAIL=0` before launch stays a release gate**
+  (it's on the SECURITY.md operator checklist). With the frontend change it is
+  belt-and-suspenders rather than the sandbox's test path.
 - A subdomain counts as the school (`andrew.cmu.edu` ⊂ `cmu.edu`).
 
 **The request shape** (one endpoint, two actions):
