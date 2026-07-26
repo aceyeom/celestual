@@ -88,9 +88,54 @@ screens start looking assembled-by-template. Fonts are loaded in
 - **Space Mono, uppercase, letterspaced** — the metadata register. Kickers,
   labels, counts, day-clocks, statuses, the @ prefix. Never feelings.
 
+### The size ladder (`SIZE` in `theme.js`)
+
+Three faces is only half the system; the other half is that **nothing invents a
+size**. `theme.js` holds one ladder and every piece of text in the product is a
+step on it:
+
+| Step | Use |
+| --- | --- |
+| `hero` | the match reveal, and nowhere else |
+| `display` | the one headline a screen is allowed |
+| `title` | a sheet's or a section's headline |
+| `figure` | a number that IS the point of its card |
+| `lead` | a spoken serif line inside a card |
+| `head` | a card title, a button |
+| `body` | the reading size |
+| `small` | secondary sans |
+| `meta` / `micro` | mono metadata, with `TRACK.meta` / `TRACK.micro` |
+
+`ui.jsx` exports these as components — `Display`, `Title`, `Lead`, `Body`,
+`Small`, `Kicker`, `Mono`, `Note` — and screens use those rather than inline
+styles. Before 2026-07-26 they didn't: the app carried **26 distinct font
+sizes**, seven letterspacings and twelve different `clamp()` headline formulas,
+which is why the same idea looked like three different products on three
+different screens. A new size is a change to `theme.js`, argued for there, not a
+number typed into a style object.
+
 Hard rules: an intent line never renders in mono; a count never renders in
 serif; nothing anywhere gets an exclamation mark; `✦` is reserved for ritual
 moments (mutuality) — it is not a bullet point.
+
+## §3b — Icons: five, and that is the whole set
+
+`Icon` in `ui.jsx` draws exactly **back, arrow, close, check, search**. Nothing
+else. There is no icon for mail, lock, eye, instagram, clock, info, message,
+share, planet, plus, copy, download or refresh, and adding one back is a design
+decision that belongs in this file first.
+
+A generic outline icon set is the single fastest way to make a product look like
+every other product. This one carried twenty of them: an envelope on the email
+hint, a padlock beside the privacy line, an eyeball on "no alert", a camera on
+every mention of Instagram, a share node-graph. None of them said anything the
+sentence beside them did not already say, they came from the same free outline
+vocabulary everyone draws from, and because each call site picked its own size
+and stroke they did not even match each other.
+
+**What replaced them:** words, or nothing. The five that survive are the ones a
+*hand* needs — go back, go on, close, confirm — plus the affordance on a real
+search field. Meaning is carried by type, by light, and by the one star.
 
 ## §4 — The galaxy field (the backdrop)
 
@@ -166,6 +211,14 @@ template/AI output:
       needs less.)
 - [ ] No cards-in-cards, no icon grids, no gradient buttons, no glassmorphism
       panels, no emoji, no exclamation marks, no confetti.
+- [ ] **Any icon at all?** Five exist (§3b). If the screen wants a sixth, it
+      wants a word instead.
+- [ ] **Every size a step on the ladder?** (§3. A raw `fontSize: 12.5` is a
+      review failure, not a detail.)
+- [ ] **Does anything explain the interface?** A note under a field saying what
+      the field is for means the field is wrong. Delete the note, fix the field.
+- [ ] **Any em or en dash in the copy?** `npm run lint:voice` fails the build on
+      one. A dash is a writer stalling; choose a thought and end the sentence.
 - [ ] **No status pills.** A bordered uppercase chip with a colored "live" dot
       (the `● OPEN` badge) is a named tell of AI-template output and is banned
       here permanently — it shipped once (the communities' amber "open" chip)
@@ -195,6 +248,23 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-07-26** — **The consistency pass** (human-directed: "the biggest
+  problem throughout the entire web is design inconsistency"). The system had
+  the right *rules* and no enforcement, so every screen drifted:
+  - **One size ladder** (§3). 26 font sizes → 9 steps; 7 letterspacings → 2;
+    12 headline `clamp()`s → 3. Typography primitives (`Display`, `Title`,
+    `Lead`, `Body`, `Small`, `Note`) added to `ui.jsx` so screens stop
+    hand-rolling type.
+  - **Twenty icons → five** (§3b). The rest became words or nothing.
+  - **One `ScreenHeader`.** Every screen used to hand-roll a header row with a
+    guessed-width spacer, which is why nothing lined up between them.
+  - **The dock lost a station.** Three, two of which opened the same place.
+  - **Explanation text cut** throughout. The identity screen alone lost five
+    notes and a sentence about the reader's own account written in the
+    conditional ("*if* @ace03d has an email on file…") — the server knows the
+    answer, so migration 0015 has it decide and the screen just reports.
+  - **Zero em dashes** in copy, enforced by `npm run lint:voice`.
 
 - **2026-07-09 (b)** — **Ping-logic + UI refinements pass** (human-directed;
   identity untouched — same cosmos, two stars, one primary action per screen):

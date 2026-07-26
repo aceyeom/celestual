@@ -34,6 +34,14 @@ The product direction is fixed by one document —
   gate: an ambassador *can* open a whole school at once by preregistering
   toward a visible threshold (`/c/<campus>`) with an exact week-one reveal, but
   no one waits behind it to use the product.
+- **Recruitment, run as a program.** A reel goes up with ad spend behind it;
+  people enter by commenting **`celestual`**, which auto-DMs them the rules and an
+  agreement. Signing mints their own tracking link (`celestual.us/r/<code>`), and
+  every open and signup through it is counted against them, so we can see who is
+  really bringing people in. It counts traffic, never people: an open is one
+  integer per day with no visitor identity, a signup is a handle that actually
+  verified, and none of it can see who anyone pinged
+  (**[docs/RECRUITMENT.md](./docs/RECRUITMENT.md)**).
 - **No monetization.** Nothing is for sale anywhere; the only thing that will
   ever be considered is a one-time fourth slot, dormant until density is
   proven (docs/PRICING-REVENUE.md). `/demo` previews what that checkout could
@@ -61,10 +69,11 @@ celestual/
 ├── supabase/         the backend
 │   ├── migrations/   0001–0005 history · 0006 the ping model (current) ·
 │   │                 0007–0008 the .edu membership gate · 0009–0011 verification
-│   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login
+│   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login ·
+│   │                 0015 the identity router · 0016 the recruitment program
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
-│                     celestual-relogin
+│                     celestual-relogin · celestual-recruit
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)
@@ -80,6 +89,8 @@ celestual/
 | `/c/<campus>` | a campus window: the meter, then "it's open.", then week one (Loop C) |
 | `/optout` | the public opt-out — any handle owner, no account needed |
 | `/signin` | the sign-back-in magic link lands here — redeems a fresh proof, no DM (Fix B) |
+| `/recruit` | the recruitment program: the agreement (`#t=`), then that recruit's own numbers (`#c=&k=`) |
+| `/r/<code>` | a recruit's personal tracking link — lands on `/`, and credits the signup it leads to |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
@@ -130,6 +141,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
+| [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | The recruitment program: comment → DM → agreement → a personal tracking link, and how to wire the ManyChat comment automation |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |
 | [app/README.md](./app/README.md) | Front-end architecture & flow |

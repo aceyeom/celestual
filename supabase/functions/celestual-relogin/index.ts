@@ -6,7 +6,16 @@
 // browser, iOS ITP, a new device). This function lets a returning person get a
 // FRESH proof by email instead of re-DMing, so the DM is a one-time step.
 //
-// Two actions on one endpoint (mirrors celestual-edu-verify's shape):
+// Three actions on one endpoint (mirrors celestual-edu-verify's shape):
+//   { action:'start', handle }                 → THE ROUTER (migration 0015). The
+//        server, not the person, decides how this @ gets in. Read-only; it sends
+//        nothing. Answers one of:
+//          { ok:true, route:'signup' }                     unknown @: collect an email
+//          { ok:true, route:'dm' }                         known @, no address on file
+//          { ok:true, route:'email', to:'j•••@gmail.com' } known @: mail the link
+//        This replaces the screen that showed both doors and then hedged ("if @x
+//        has an email on file…"). The masked address is a courtesy so the person
+//        knows WHICH inbox to open; the plaintext never leaves Postgres here.
 //   { action:'request', handle }               → if a recovery email is bound to
 //        the handle (celestual_bind_recovery wrote it under a live DM proof), mint
 //        a one-time token, store ONLY its SHA-256 hash, and email a magic link
@@ -67,6 +76,7 @@ function randomToken(): string {
   crypto.getRandomValues(b);
   return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
+
 
 // The sign-in email — the same galaxy the code email lives in (deep field, amber
 // and rose nebulae resting in the corners so the center stays dark behind the
@@ -137,6 +147,26 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'bad_input' }, 400);
   }
   const action = String(body.action || '');
+
+  // ── START (the router: the server picks the way in) ───────────────────────
+  // Side-effect free by design — it answers "which door?" so the screen can stop
+  // showing two and hedging about which works. Sending the link is still
+  // `request`, below, which the client calls once it has committed to the email
+  // door. Falls back to the DM route on any failure: that path always works.
+  if (action === 'start') {
+    const handle = String(body.handle || '');
+    try {
+      const { data, error } = await supabase.rpc('celestual_handle_route', { p_handle: handle });
+      if (error) throw error;
+      if (!data?.ok) return json({ ok: true, route: 'dm' });
+      if (!data.known) return json({ ok: true, route: 'signup' });
+      if (!data.has_email) return json({ ok: true, route: 'dm' });
+      return json({ ok: true, route: 'email', to: String(data.mask || '') });
+    } catch (e) {
+      console.error('relogin start failed', String(e));
+      return json({ ok: true, route: 'dm' });
+    }
+  }
 
   // ── REQUEST (send the magic link) ─────────────────────────────────────────
   if (action === 'request') {

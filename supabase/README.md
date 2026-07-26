@@ -76,6 +76,24 @@ Idempotent migrations, applied in order:
   its TTL from 24 h to 30 min (the durable re-login removed the repeat-DM pressure
   the long TTL guarded against). The relays parse `\d{4,6}` through the cutover.
 
+- `migrations/0015_identity_start.sql` — **the identity router.**
+  `celestual_handle_route(handle)` answers, read-only, which way in an @ takes:
+  unknown (sign up), known with no bound address (prove it by DM), or known with
+  one (mail the sign-in link, and hand back the address masked to
+  `j•••@gmail.com`). Service-role only. This is what let the sign-in screen stop
+  offering two doors and stop hedging in print about which one worked.
+
+- `migrations/0016_recruit_program.sql` — **the recruitment program.**
+  `celestual_recruits` (one row per person who commented under the recruitment
+  reel: the invite, the signed agreement version, the name typed as a signature,
+  their personal code), `celestual_recruit_visits` (one integer per code per day,
+  no visitor identity of any kind) and `celestual_recruit_signups`
+  `(code, handle)`, written only for a handle celestual has actually verified.
+  Two hashed secrets: the one-time invite token and the recruit's own dashboard
+  key, both minted outside Postgres. `celestual_suppress` extended to erase all
+  three. Nothing here meets `celestual_entries`, so it can never see who pinged
+  whom. **Setup: [../docs/RECRUITMENT.md](../docs/RECRUITMENT.md)**
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
@@ -103,7 +121,9 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. **Full setup guide: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
-| `functions/celestual-relogin` | durable, DM-free re-login (Fix B): `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+
+| `functions/celestual-recruit` | the recruitment program's front door: ManyChat's comment automation fires here when someone comments `celestual` under the reel; mints a one-time signing token and returns the `reply` ManyChat DMs back (the rules + the agreement link, or their tracking link if they've already signed). Reuses the same shared secret as `celestual-manychat`. **Full setup: [../docs/RECRUITMENT.md](../docs/RECRUITMENT.md)** | `MANYCHAT_SHARED_SECRET`, `CELESTUAL_SITE_URL` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
@@ -135,6 +155,11 @@ them; each enforces its own checks. See
 - **`celestual_recovery`** / **`celestual_relogin_tokens`** — durable, DM-free
   recovery (0013): the handle⇄email binding written only under a live proof, and
   the hash-stored, single-use, short-TTL magic-link tokens.
+- **`celestual_recruits`** / **`celestual_recruit_visits`** /
+  **`celestual_recruit_signups`** — the recruitment program (0016): the signed
+  agreement record, a per-day open count per code, and one row per attributed
+  signup. Traffic is counted, people are not profiled; no join exists from here
+  to a ping.
 - **`celestual_communities`** / **`celestual_community_members`** — "your
   worlds"; counters are floored at 100 server-side.
 - **`celestual_campuses`** / **`celestual_campus_prereg`** /

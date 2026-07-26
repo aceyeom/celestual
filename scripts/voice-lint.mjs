@@ -13,13 +13,24 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // What gets scanned. strings.js is scanned whole (every locale should hold the
-// voice); public/*.html are the legal/trust pages.
+// voice); growth.js carries the placed screen's growth copy; public/*.html are
+// the legal/trust pages.
 const files = [
   join(root, 'app/src/i18n/strings.js'),
+  join(root, 'app/src/growth.js'),
   ...readdirSync(join(root, 'app/public'))
     .filter((f) => f.endsWith('.html'))
     .map((f) => join(root, 'app/public', f)),
 ]
+
+// Comments are for us, copy is for the reader. Blank out comment text before the
+// checks so a `//` explaining a rule can't trip the rule it explains.
+function stripComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, (m, p1) => p1 + ' '.repeat(m.length - p1.length))
+}
 
 // VOICE.md §5 — the banned list. Case-insensitive substrings.
 const BANNED = [
@@ -57,9 +68,15 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{2725}\u{2727}-\u
 // the "Success!" pattern the voice bans; `<!doctype`, `!=`, `!important` pass.
 const EXCLAIM = /[a-zA-Z]!/
 
+// Dashes. An em or en dash in copy is a writer stalling: it welds two thoughts
+// together instead of choosing one, and it reads as machine-written. Use a full
+// stop, or cut the second half. Also catches the &mdash;/&ndash; entities the
+// legal pages could reach for.
+const DASH = /[—–]|&[mn]dash;/
+
 let failures = 0
 for (const file of files) {
-  const text = readFileSync(file, 'utf8')
+  const text = stripComments(readFileSync(file, 'utf8'))
   const lines = text.split('\n')
   lines.forEach((line, i) => {
     const where = `${file.replace(root + '/', '')}:${i + 1}`
@@ -76,6 +93,10 @@ for (const file of files) {
     }
     if (EXCLAIM.test(line)) {
       console.error(`✗ ${where} exclamation mark: ${line.trim().slice(0, 90)}`)
+      failures++
+    }
+    if (DASH.test(line)) {
+      console.error(`✗ ${where} dash in copy (use a full stop): ${line.trim().slice(0, 90)}`)
       failures++
     }
   })

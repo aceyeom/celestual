@@ -6,11 +6,11 @@
 import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
 import { CommunityGalaxy } from '../communityGalaxy.js'
-import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS } from '../theme.js'
+import { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS, FONT, SIZE, LINE, TRACK, ICON } from '../theme.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
 import { bySlug } from '../communities.js'
 
-export { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS }
+export { makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS, FONT, SIZE, LINE, TRACK, ICON }
 
 // ── dialog accessibility ──────────────────────────────────────────────────────
 // One shared hook for every overlay: moves focus in, traps Tab inside, closes on
@@ -348,7 +348,7 @@ export function Liftoff({ C, handle, geom }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
         }}
       >
-        <span className="lo-text" style={{ fontFamily: "'Space Mono', monospace", fontWeight: 700, fontSize: Math.min(22, h * 0.36), color: C.cream, whiteSpace: 'nowrap' }}>
+        <span className="lo-text" style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: Math.min(22, h * 0.36), color: C.cream, whiteSpace: 'nowrap' }}>
           <span style={{ color: hue }}>@</span>{handle}
         </span>
       </div>
@@ -388,12 +388,79 @@ export function GlassPanel({ C, children, style, inset = false, ...rest }) {
 }
 
 // ── the three type registers, as components (docs/DESIGN.md §type) ───────────
-// Kicker: the metadata register — mono, uppercase, letterspaced. Never feelings.
-export function Kicker({ C, children, color, style }) {
+// EVERY piece of text in the product goes through one of these. Nothing inline
+// picks its own size, face or leading any more: that drift is exactly what made
+// the same idea look like three different products on three different screens.
+
+// Display: the one headline a screen is allowed. Serif italic, fluid.
+export function Display({ C, children, color, align = 'left', style }) {
+  return (
+    <h1
+      style={{
+        margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
+        fontSize: SIZE.display, lineHeight: LINE.tight, color: color || C.cream,
+        textAlign: align, textWrap: 'balance', ...style,
+      }}
+    >
+      {children}
+    </h1>
+  )
+}
+
+// Title: a sheet's or a section's headline — one step under Display.
+export function Title({ C, children, color, align = 'left', as = 'h2', style }) {
+  const Tag = as
+  return (
+    <Tag
+      style={{
+        margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
+        fontSize: SIZE.title, lineHeight: LINE.tight, color: color || C.cream,
+        textAlign: align, textWrap: 'balance', ...style,
+      }}
+    >
+      {children}
+    </Tag>
+  )
+}
+
+// Lead: a spoken serif line inside a card or under a title.
+export function Lead({ C, children, color, size = SIZE.lead, style }) {
   return (
     <span
       style={{
-        fontFamily: "'Space Mono', monospace", fontSize: 10.5, letterSpacing: '2.5px',
+        fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
+        fontSize: size, lineHeight: LINE.snug, color: color || C.cream, ...style,
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+// Body / Small: the mechanical register.
+export function Body({ C, children, color, align, style }) {
+  return (
+    <p style={{ margin: 0, fontFamily: FONT.sans, fontSize: SIZE.body, lineHeight: LINE.body, color: color || C.muted, textAlign: align, ...style }}>
+      {children}
+    </p>
+  )
+}
+
+export function Small({ C, children, color, align, style }) {
+  return (
+    <p style={{ margin: 0, fontFamily: FONT.sans, fontSize: SIZE.small, lineHeight: LINE.body, color: color || C.muted, textAlign: align, ...style }}>
+      {children}
+    </p>
+  )
+}
+
+// Kicker: the metadata register — mono, uppercase, letterspaced. Never feelings.
+export function Kicker({ C, children, color, micro, style }) {
+  return (
+    <span
+      style={{
+        fontFamily: FONT.mono, fontSize: micro ? SIZE.micro : SIZE.meta,
+        letterSpacing: micro ? TRACK.micro : TRACK.meta,
         textTransform: 'uppercase', color: color || C.muted, ...style,
       }}
     >
@@ -402,15 +469,19 @@ export function Kicker({ C, children, color, style }) {
   )
 }
 
-// Serif: the emotional register — Instrument Serif, italic by default.
-export function Serif({ C, children, size = 30, italic = true, color, style }) {
+// Mono: metadata that is NOT a label — counts, clocks, codes. Not uppercased.
+export function Mono({ C, children, color, size = SIZE.meta, style }) {
   return (
-    <span
-      style={{
-        fontFamily: "'Instrument Serif', serif", fontStyle: italic ? 'italic' : 'normal',
-        fontWeight: 400, fontSize: size, lineHeight: 1.16, color: color || C.cream, ...style,
-      }}
-    >
+    <span style={{ fontFamily: FONT.mono, fontSize: size, letterSpacing: '.3px', color: color || C.muted, ...style }}>
+      {children}
+    </span>
+  )
+}
+
+// Serif kept as a thin alias so older call sites keep rendering in one register.
+export function Serif({ C, children, size = SIZE.lead, italic = true, color, style }) {
+  return (
+    <span style={{ fontFamily: FONT.serif, fontStyle: italic ? 'italic' : 'normal', fontWeight: 400, fontSize: size, lineHeight: LINE.snug, color: color || C.cream, ...style }}>
       {children}
     </span>
   )
@@ -430,7 +501,44 @@ export function Rule({ C, delay = 0, width = '76%' }) {
   )
 }
 
+// ── the one screen header ─────────────────────────────────────────────────────
+// Every screen that has a way back wears THIS, so the back button, the label and
+// the right-hand slot land on the same pixel everywhere. Screens used to each
+// hand-roll a flex row with a spacer div of a guessed width; that is why nothing
+// lined up between them.
+export function ScreenHeader({ C, onBack, label, right, style }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, minHeight: 38, ...style }}>
+      <span style={{ width: 38, flexShrink: 0, display: 'flex' }}>{onBack ? <BackBtn C={C} onClick={onBack} /> : null}</span>
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm }}>
+        {typeof label === 'string' ? <Kicker C={C}>{label}</Kicker> : label}
+      </span>
+      <span style={{ width: 38, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>{right}</span>
+    </div>
+  )
+}
+
+// A quiet note under a field or an action. No icon, no bullet, no chrome: the
+// indent and the hush are the whole treatment.
+export function Note({ C, children, tone, align, style }) {
+  return (
+    <p
+      style={{
+        margin: 0, padding: '0 2px', fontFamily: FONT.sans, fontSize: SIZE.small,
+        lineHeight: LINE.body, textAlign: align,
+        color: tone === 'accent' ? rgba(C.star, 0.92) : tone === 'quiet' ? rgba(C.muted, 0.8) : C.muted,
+        ...style,
+      }}
+    >
+      {children}
+    </p>
+  )
+}
+
 // ── buttons ───────────────────────────────────────────────────────────────────
+// Three weights of action, one geometry each. A screen gets ONE primary; an
+// outline is the alternative to it; a ghost is the way out. Nothing else is a
+// button.
 export function PrimaryButton({ C, children, onClick, disabled, style }) {
   const [h, setH] = React.useState(false)
   const SHADOW = makeShadow(C)
@@ -445,9 +553,9 @@ export function PrimaryButton({ C, children, onClick, disabled, style }) {
         cursor: disabled ? 'default' : 'pointer',
         padding: '17px 22px',
         borderRadius: RADIUS.field,
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: FONT.sans,
         fontWeight: 600,
-        fontSize: 16,
+        fontSize: SIZE.head,
         letterSpacing: '.2px',
         color: disabled ? C.muted : C.onStar,
         background: disabled ? C.ink3 : `linear-gradient(180deg, ${C.star}, ${rgba(C.star, 0.86)})`,
@@ -462,6 +570,8 @@ export function PrimaryButton({ C, children, onClick, disabled, style }) {
   )
 }
 
+// Full width and the same corner as the primary, so a stacked pair reads as one
+// column instead of a button and a pill.
 export function OutlineButton({ C, children, onClick, style }) {
   const [h, setH] = React.useState(false)
   return (
@@ -470,19 +580,20 @@ export function OutlineButton({ C, children, onClick, style }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
+        width: '100%',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        padding: '12px 22px',
-        borderRadius: RADIUS.chip,
+        gap: SPACE.sm,
+        padding: '15px 22px',
+        borderRadius: RADIUS.field,
         cursor: 'pointer',
         background: h ? rgba(C.cream, 0.06) : 'transparent',
         border: `1px solid ${h ? rgba(C.cream, 0.3) : C.line}`,
         color: C.cream,
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: FONT.sans,
         fontWeight: 500,
-        fontSize: 14,
+        fontSize: SIZE.body,
         letterSpacing: '.2px',
         backdropFilter: 'blur(3px)',
         WebkitBackdropFilter: 'blur(3px)',
@@ -507,9 +618,9 @@ export function GhostButton({ C, children, onClick, style }) {
         border: 'none',
         cursor: 'pointer',
         padding: '8px 6px',
-        fontFamily: "'Space Grotesk', sans-serif",
+        fontFamily: FONT.sans,
         fontWeight: 500,
-        fontSize: 13.5,
+        fontSize: SIZE.small,
         color: h ? C.cream : C.muted,
         transition: 'color .2s',
         letterSpacing: '.2px',
@@ -518,6 +629,16 @@ export function GhostButton({ C, children, onClick, style }) {
     >
       {children}
     </button>
+  )
+}
+
+// The row a screen's exits live on, so "not now" / "your pings" / "leave" never
+// again sit at three different offsets on three different screens.
+export function ExitRow({ C, children, style }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.xl, flexWrap: 'wrap', ...style }}>
+      {children}
+    </div>
   )
 }
 
@@ -548,10 +669,10 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFo
         transition: 'border-color .2s, box-shadow .25s',
       }}
     >
+      {/* the @ is the product's own mark, so it stays. An email field gets no
+          envelope glyph: the placeholder already says what it is. */}
       {kind === 'handle' ? (
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: emphasis ? 22 : 19, color: rgba(col, 0.9), fontWeight: 700 }}>@</span>
-      ) : kind === 'email' ? (
-        <Icon name="mail" size={emphasis ? 21 : 18} color={col} stroke={1.7} />
+        <span style={{ fontFamily: FONT.mono, fontSize: emphasis ? 22 : 19, color: rgba(col, 0.9), fontWeight: 700 }}>@</span>
       ) : null}
       <input
         ref={ref}
@@ -574,7 +695,7 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFo
           background: 'none',
           border: 'none',
           outline: 'none',
-          fontFamily: kind === 'handle' ? "'Space Mono', monospace" : "'Space Grotesk', sans-serif",
+          fontFamily: kind === 'handle' ? FONT.mono : FONT.sans,
           fontSize: emphasis ? 19 : 17,
           color: C.cream,
           letterSpacing: '.2px',
@@ -597,7 +718,7 @@ export function HandleChip({ C, handle, big }) {
         borderRadius: RADIUS.chip,
         background: rgba(col, 0.1),
         border: `1px solid ${rgba(col, 0.38)}`,
-        fontFamily: "'Space Mono', monospace",
+        fontFamily: FONT.mono,
         fontWeight: 700,
         fontSize: big ? 17 : 13.5,
         color: C.cream,
@@ -688,11 +809,11 @@ export function HandleSearchField({ C, value, onChange, placeholder, autoFocus, 
                 {r.avatar ? (
                   <img src={r.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <span style={{ color: C.star, fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>@</span>
+                  <span style={{ color: C.star, fontFamily: FONT.mono, fontWeight: 700 }}>@</span>
                 )}
               </span>
               <span style={{ minWidth: 0, flex: 1 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.cream, fontFamily: "'Space Mono', monospace", fontSize: 14 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.cream, fontFamily: FONT.mono, fontSize: 14 }}>
                   {r.handle}
                   {r.verified && <Icon name="check" size={13} color={C.star} />}
                 </span>
@@ -775,27 +896,38 @@ export function LoginButton({ C, label, onClick }) {
         borderRadius: RADIUS.chip, background: rgba(C.ink2, h ? 0.86 : 0.7),
         border: `1px solid ${h ? rgba(C.star, 0.42) : C.line}`, color: C.cream, cursor: 'pointer',
         backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-        fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 600, letterSpacing: '.2px', transition: 'all .2s',
+        fontFamily: FONT.sans, fontSize: SIZE.small, fontWeight: 600, letterSpacing: '.2px', transition: 'all .2s',
       }}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
     >
-      <Icon name="enter" size={15} color={rgba(C.star, 0.95)} stroke={2} />
       {label}
     </button>
   )
 }
 
 // ── the dock ──────────────────────────────────────────────────────────────────
-// The product's three places — the sky, the communities, your pings — drawn in
-// the product's own vocabulary instead of an app-store glass pill: a fragment
-// of STAR CHART resting at the foot of the screen. One hairline meridian runs
-// through three stations; where you are burns as a small four-ray star over
-// its name set in the brand serif, and the other two rest as charted points
-// with their tiny monospace ticks. No container, no blur slab — the chart floats
-// on the sky itself over a breath of ink so it stays legible, and melts away
-// whenever the sky takes the whole frame (a dive, a held zoom, the send-off).
+// The product's TWO places — your sky and your pings — drawn in the product's
+// own vocabulary instead of an app-store glass pill: a fragment of STAR CHART
+// resting at the foot of the screen. One hairline meridian runs through the
+// stations; where you are burns as a small four-ray star over its name set in
+// the brand serif, and the rest sit as charted points with their tiny monospace
+// ticks. No container, no blur slab: the chart floats on the sky itself over a
+// breath of ink so it stays legible, and melts away whenever the sky takes the
+// whole frame (a dive, a held zoom, the send-off).
+//
+// It used to carry three stations, two of which opened the same place — a
+// community list and that community's sky. The list is not a destination, it is
+// a picker, so it now lives inside the sky page and the dock stops lying about
+// how many places this product has.
 export function NavDock({ C, items, hidden }) {
+  // The minor ticks charted between the stations, derived from however many
+  // there are, so the meridian stays even at two stations or at four.
+  const ticks = []
+  for (let i = 1; i < items.length; i++) {
+    const mid = (i / items.length) * 100
+    ticks.push(mid - 4, mid + 4)
+  }
   return (
     <nav
       data-noripple
@@ -820,8 +952,8 @@ export function NavDock({ C, items, hidden }) {
       {/* the meridian — a hairline through the three stations, dissolving at
           its ends, with faint minor ticks charted between them */}
       <span aria-hidden style={{ position: 'absolute', left: 0, right: 0, top: 13, height: 1, background: `linear-gradient(90deg, transparent, ${rgba(C.cream, 0.26)} 14%, ${rgba(C.cream, 0.26)} 86%, transparent)`, pointerEvents: 'none' }} />
-      {['29%', '37.5%', '62.5%', '71%'].map((left, i) => (
-        <span key={i} aria-hidden style={{ position: 'absolute', left, top: 12.5, width: 2, height: 2, borderRadius: '50%', background: rgba(C.cream, 0.3), transform: 'translateX(-50%)', pointerEvents: 'none' }} />
+      {ticks.map((left, i) => (
+        <span key={i} aria-hidden style={{ position: 'absolute', left: `${left}%`, top: 12.5, width: 2, height: 2, borderRadius: '50%', background: rgba(C.cream, 0.3), transform: 'translateX(-50%)', pointerEvents: 'none' }} />
       ))}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch' }}>
         {items.map((it) => (
@@ -861,8 +993,8 @@ export function NavDock({ C, items, hidden }) {
             <span
               style={
                 it.active
-                  ? { fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontWeight: 400, fontSize: 14.5, lineHeight: '15px', color: C.cream, textShadow: `0 0 14px ${rgba(C.star, 0.45)}`, letterSpacing: '.2px' }
-                  : { fontFamily: "'Space Mono', monospace", fontSize: 8.5, lineHeight: '15px', letterSpacing: '1.8px', textTransform: 'uppercase', color: rgba(C.cream, 0.6) }
+                  ? { fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400, fontSize: 15, lineHeight: '15px', color: C.cream, textShadow: `0 0 14px ${rgba(C.star, 0.45)}`, letterSpacing: '.2px' }
+                  : { fontFamily: FONT.mono, fontSize: SIZE.micro, lineHeight: '15px', letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.cream, 0.6) }
               }
             >
               {it.label}
@@ -884,12 +1016,12 @@ export function ProfileButton({ C, handle, onClick }) {
         display: 'inline-flex', alignItems: 'center', gap: 8, height: 34, padding: '0 13px 0 7px',
         borderRadius: RADIUS.chip, background: rgba(C.ink2, 0.7), border: `1px solid ${C.line}`,
         color: C.cream, cursor: 'pointer', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-        fontFamily: "'Space Mono', monospace", fontSize: 12.5, letterSpacing: '.2px', maxWidth: 220,
+        fontFamily: FONT.mono, fontSize: SIZE.small, letterSpacing: '.2px', maxWidth: 220,
       }}
     >
-      <span style={{ display: 'grid', placeItems: 'center', width: 23, height: 23, borderRadius: '50%', background: `radial-gradient(circle at 34% 30%, #fff, ${rgba(C.star, 0.85)})`, flexShrink: 0 }}>
-        <Icon name="star" size={12} color={C.onStar} stroke={2} />
-      </span>
+      {/* the account mark is the product's own star, lit — never a stroked
+          person-in-a-circle avatar glyph */}
+      <span aria-hidden style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, background: `radial-gradient(circle at 34% 30%, #fff, ${rgba(C.star, 0.9)} 62%, ${rgba(C.star, 0.5)})`, boxShadow: `0 0 10px ${rgba(C.star, 0.5)}` }} />
       {handle ? (
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           <span style={{ color: C.star }}>@</span>
@@ -902,123 +1034,43 @@ export function ProfileButton({ C, handle, onClick }) {
   )
 }
 
-export function Icon({ name, size = 16, color = 'currentColor', stroke = 1.8 }) {
+// ── the icon set ──────────────────────────────────────────────────────────────
+// FIVE glyphs. That is the whole set, deliberately.
+//
+// This used to be twenty outline icons — an envelope on the email hint, a
+// padlock on the privacy line, an eyeball on the "no alert" note, a camera on
+// every mention of Instagram, a planet, a speech bubble, a share node graph.
+// None of them carried meaning the sentence beside them did not already carry,
+// they came from the same free outline vocabulary every other app draws from,
+// and because each call site picked its own size and stroke they never even
+// matched each other. Removing them is the single biggest thing that stops this
+// product looking like a template.
+//
+// What survives is only what a HAND needs: go back, go on, close, and the check
+// that confirms a thing is done, plus a search affordance for a real search
+// field. Meaning is carried by type, by light and by the one star.
+export function Icon({ name, size = ICON.md, color = 'currentColor', stroke = 1.8 }) {
   const p = { fill: 'none', stroke: color, strokeWidth: stroke, strokeLinecap: 'round', strokeLinejoin: 'round' }
   const paths = {
-    lock: (
-      <>
-        <rect x="4" y="9.5" width="12" height="8.5" rx="2.2" {...p} />
-        <path d="M6.5 9.5V7a3.5 3.5 0 017 0v2.5" {...p} />
-      </>
-    ),
+    back: <path d="M12 4l-6 6 6 6" {...p} />,
     arrow: (
       <>
         <path d="M4 10h11" {...p} />
         <path d="M11 5.5L15.5 10 11 14.5" {...p} />
       </>
     ),
+    close: <path d="M5 5l10 10M15 5L5 15" {...p} />,
     check: <path d="M4 10.5l4 4 8-9" {...p} />,
-    eye: (
-      <>
-        <path d="M2.5 10S5.5 5 10 5s7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z" {...p} />
-        <circle cx="10" cy="10" r="2.2" {...p} />
-      </>
-    ),
-    back: <path d="M12 4l-6 6 6 6" {...p} />,
-    mail: (
-      <>
-        <rect x="2.5" y="4.5" width="15" height="11" rx="2.2" {...p} />
-        <path d="M3 6l7 5 7-5" {...p} />
-      </>
-    ),
-    star: <path d="M10 2.5l1.6 5 5 .2-4 3.1 1.5 4.9-4.1-3-4.1 3 1.5-4.9-4-3.1 5-.2z" {...p} />,
-    info: (
-      <>
-        <circle cx="10" cy="10" r="7.4" {...p} />
-        <path d="M10 9v4.2" {...p} />
-        <circle cx="10" cy="6.4" r="0.5" fill={color} stroke="none" />
-      </>
-    ),
-    clock: (
-      <>
-        <circle cx="10" cy="10" r="7.2" {...p} />
-        <path d="M10 5.8V10l3 1.8" {...p} />
-      </>
-    ),
-    x: (
-      <>
-        <path d="M5 5l10 10M15 5L5 15" {...p} />
-      </>
-    ),
-    instagram: (
-      <>
-        <rect x="3.2" y="3.2" width="13.6" height="13.6" rx="4.2" {...p} />
-        <circle cx="10" cy="10" r="3.4" {...p} />
-        <circle cx="14" cy="6" r="0.7" {...p} />
-      </>
-    ),
-    plus: <path d="M10 4.6v10.8M4.6 10h10.8" {...p} />,
-    copy: (
-      <>
-        <rect x="7" y="7" width="9.5" height="9.5" rx="2" {...p} />
-        <path d="M13 7V5.5a2 2 0 00-2-2H5.5a2 2 0 00-2 2V11a2 2 0 002 2H7" {...p} />
-      </>
-    ),
-    download: (
-      <>
-        <path d="M10 3.5v9M6.5 9.5L10 13l3.5-3.5" {...p} />
-        <path d="M4 16.5h12" {...p} />
-      </>
-    ),
-    refresh: (
-      <>
-        <path d="M15.5 4.6v4h-4" {...p} />
-        <path d="M13.8 14.6A6 6 0 1 1 15.5 8.6" {...p} />
-      </>
-    ),
-    message: (
-      <>
-        <path d="M4 5h12a1.5 1.5 0 011.5 1.5v6A1.5 1.5 0 0116 14H8l-3.5 3v-3H4a1.5 1.5 0 01-1.5-1.5v-6A1.5 1.5 0 014 5z" {...p} />
-      </>
-    ),
-    enter: (
-      <>
-        <path d="M9.5 4H14a2 2 0 012 2v8a2 2 0 01-2 2H9.5" {...p} />
-        <path d="M3.5 10h8M8.5 6.5L12 10l-3.5 3.5" {...p} />
-      </>
-    ),
     search: (
       <>
         <circle cx="8.8" cy="8.8" r="5.2" {...p} />
         <path d="M12.7 12.7L16.5 16.5" {...p} />
       </>
     ),
-    share: (
-      <>
-        <circle cx="5" cy="10" r="2.2" {...p} />
-        <circle cx="14.5" cy="5" r="2.2" {...p} />
-        <circle cx="14.5" cy="15" r="2.2" {...p} />
-        <path d="M7 8.9l5.5-2.8M7 11.1l5.5 2.8" {...p} />
-      </>
-    ),
-    // a small ringed world — the communities dock item
-    planet: (
-      <>
-        <circle cx="10" cy="10" r="4.6" {...p} />
-        <ellipse cx="10" cy="10" rx="8.6" ry="3" transform="rotate(-16 10 10)" {...p} />
-      </>
-    ),
-    // a still point with its two sound rings — the pings dock item
-    pings: (
-      <>
-        <circle cx="10" cy="10" r="1.5" fill={color} stroke="none" />
-        <path d="M13.6 6.4a5.1 5.1 0 010 7.2" {...p} />
-        <path d="M6.4 6.4a5.1 5.1 0 000 7.2" {...p} />
-      </>
-    ),
   }
+  if (!paths[name]) return null
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden style={{ display: 'block', flexShrink: 0 }}>
       {paths[name]}
     </svg>
   )

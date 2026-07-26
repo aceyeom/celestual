@@ -46,6 +46,38 @@ export const CATEGORY_TINTS = {
   complicated: '#B9A3E8',
 }
 
+// ── Type — three faces, ONE size ladder. ─────────────────────────────────────
+// Every piece of text in the product is one of the steps below. Nothing invents
+// a size. The three faces map to the three registers (docs/DESIGN.md §type):
+// serif carries feeling, sans carries mechanics, mono carries metadata.
+export const FONT = {
+  serif: "'Instrument Serif', Georgia, serif",
+  sans: "'Space Grotesk', system-ui, -apple-system, sans-serif",
+  mono: "'Space Mono', ui-monospace, monospace",
+}
+
+// The ladder. `display` and `title` are fluid; everything below is fixed, so a
+// card reads identically on every screen it appears on.
+export const SIZE = {
+  // the ONE place the brand is allowed to shout: the match reveal, and nowhere
+  // else. Kept as a named step so nobody reaches for it by accident.
+  hero: 'clamp(38px, 11vw, 52px)',
+  display: 'clamp(30px, 8.4vw, 42px)', // one per screen, serif italic
+  title: 'clamp(23px, 6.2vw, 28px)', //   sheet + section headline
+  figure: 26, //                          a number that is the point of its card
+  lead: 19, //                            a spoken serif line inside a card
+  head: 16, //                            card title, sans 600
+  body: 15, //                            the reading size
+  small: 13, //                           secondary sans
+  meta: 11, //                            mono metadata
+  micro: 9.5, //                          the quietest mono tick
+}
+
+export const LINE = { tight: 1.1, snug: 1.3, body: 1.55 }
+
+// The letterspacing that goes with mono metadata, by step.
+export const TRACK = { meta: '1.6px', micro: '2px' }
+
 // ── Geometry — one soft-radius scale, one spacing rhythm. ────────────────────
 // Inputs and buttons share ONE corner (`field`); cards step up one notch; true
 // pills are reserved for tiny chips. Shapes never compete.
@@ -57,8 +89,16 @@ export const RADIUS = {
   circle: '50%', // back button, x/remove buttons
 }
 
-// 4px spacing rhythm.
-export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 }
+// 4px spacing rhythm. Every gap and pad in the product is one of these.
+export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40 }
+
+// ── Icons — deliberately almost none. ────────────────────────────────────────
+// A generic outline icon set is the fastest way to make a product look like
+// every other product. Celestual draws its meaning from type, light and the one
+// star; the only glyphs that survive are the ones a hand needs to navigate
+// (back, close, forward) plus a confirmation check. Everything that used to be
+// iconified is now said in words, or not said at all. See ui.jsx's `Icon`.
+export const ICON = { sm: 14, md: 16, lg: 18 }
 
 // Named glow/elevation presets — the star-halo aesthetic, centralized.
 export function makeShadow(C) {

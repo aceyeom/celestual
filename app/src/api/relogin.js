@@ -20,6 +20,30 @@ import { igVerifyEnabled, genProof, sha256Hex } from './igverify.js'
 // Recovery rides the same backend + flag as Instagram verification.
 export const reloginConfigured = () => igVerifyEnabled()
 
+// ── the router (migration 0015) ───────────────────────────────────────────────
+// Ask the SERVER how this @ gets in, instead of showing the person both doors
+// and hedging about which one works. One of three routes comes back:
+//
+//   { route: 'signup' }                       we've never seen this @: sign up
+//   { route: 'dm' }                           known @, nothing to email: prove by DM
+//   { route: 'email', to: 'j•••@gmail.com' }  known @: the link is already sent
+//
+// Falls back to 'dm' whenever there's no backend to ask (local dev, the sandbox),
+// because the DM path is the one that always works.
+export async function beginSignIn(handle) {
+  const h = String(handle || '').trim()
+  if (!hasSupabase || !h) return { route: 'dm' }
+  try {
+    const { data, error } = await supabase.functions.invoke('celestual-relogin', {
+      body: { action: 'start', handle: h },
+    })
+    if (error || !data?.ok || !data.route) return { route: 'dm' }
+    return { route: data.route, to: data.to || '' }
+  } catch {
+    return { route: 'dm' }
+  }
+}
+
 // Bind handle⇄email under the fresh DM proof. Best-effort — a failure just means
 // no email recovery is available yet (the DM path still works). Never throws.
 export async function bindRecovery({ handle, proof, email }) {

@@ -199,6 +199,32 @@ The landing states the 18+ condition on the primary action; marketing is
 college-and-up only; suspected-minor accounts are purged fast. Boring
 conservatism on purpose (framework §6.7).
 
+### §recruit — The recruitment program (0016)
+A reel comment mints an invite; signing mints a personal tracking link whose
+opens and signups are counted. The whole program is deliberately **walled off
+from the ping graph**: no table here has a join to `celestual_entries`, so it
+cannot see, infer or leak who pinged whom.
+
+- **Identity comes from Meta**, not a form. `celestual_recruit_invite` is
+  service-role only and is reachable solely through the edge function, which
+  authenticates ManyChat with the shared secret; the username is the one
+  ManyChat read from Meta's API.
+- **Two hashed secrets**, both minted outside Postgres: the one-time invite
+  token (14 days, in the DM link's fragment) and the recruit's dashboard key
+  (minted in their browser at signing, like the DM `proof`). Only SHA-256 is
+  stored. Losing the key costs the dashboard, not the code.
+- **An open is one integer per code per day.** No IP, no user agent, no visitor
+  id, nothing to profile with. Rate-limited per IP through `celestual_attempts`
+  so a loop cannot inflate a recruiter's numbers.
+- **A signup requires a real verified handle.** `celestual_recruit_attribute`
+  refuses a handle with no `celestual_members` row, refuses self-crediting, and
+  the `(code, handle)` primary key makes double-counting impossible.
+- **The opt-out reaches it.** `celestual_suppress` erases the person's recruit
+  record, the traffic counted against their code, and any credit they gave
+  someone else.
+- **The agreement is versioned.** A signature stores the version it signed, so
+  changing the rules never silently re-points an old signature at new terms.
+
 ## Residual risks, named
 
 - **Instant reveal is an oracle bounded, not removed** — 3 slots + 6
@@ -217,6 +243,14 @@ conservatism on purpose (framework §6.7).
   the mutual/lapse mail; the binding is only ever written under a live DM proof,
   the link is single-use + short-TTL + hash-only at rest, and the opt-out wipes
   the binding and any live tokens. Treat `celestual_recovery` as sensitive.
+- **The identity router answers "is this @ registered?" (0015)** —
+  `celestual_handle_route` tells the caller whether a handle is known, which is
+  how the sign-in screen stopped hedging in print. This discloses nothing new:
+  `celestual_submit` already returns `reachable` for any handle you place a ping
+  on, so membership has always been observable by design (it is Loop A's own
+  readout). The bound address is never returned in full — Postgres masks it to
+  its first letter and domain before it leaves. The RPC is service-role only, so
+  it is reachable only through the edge function, where rate limiting lives.
 - **Pre-enforcement window** — while `require_ig_verification` is `'false'`
   (dev default), identity is the typed handle. Flip it on before any real
   launch; the operator checklist below makes it a release gate.
