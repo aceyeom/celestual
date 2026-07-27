@@ -61,36 +61,94 @@ supabase functions deploy celestual-recruit
 supabase db push          # applies 0016_recruit_program.sql
 ```
 
-Check it's up: `GET` the function URL returns
-`{"ok":true,"service":"celestual-recruit"}`.
+Check it's up:
+
+```bash
+curl https://vwbsjwaqnycyghvwlxhd.functions.supabase.co/celestual-recruit
+#  {"ok":true,"service":"celestual-recruit"}
+```
+
+Then prove the whole backend half before touching ManyChat, by pretending to be
+it (use a throwaway @ so you don't burn a real one into the table):
+
+```bash
+curl -s -X POST https://vwbsjwaqnycyghvwlxhd.functions.supabase.co/celestual-recruit \
+  -H 'Content-Type: application/json' \
+  -H 'X-Celestual-Token: <MANYCHAT_SHARED_SECRET>' \
+  -d '{"username":"test.recruit"}'
+```
+
+You should get `{"ok":true,"status":"invited","reply":"You're in. Here's how it
+works. …"}` with a `celestual.us/recruit#t=…` link in it. Open that link: the
+agreement should render. A `401` here means the header secret does not match the
+Supabase secret, and nothing in ManyChat will fix that.
 
 ### 3. Build the automation
 
-In ManyChat → **Automation → New Automation → Instagram → Comments**:
+In ManyChat → **Automation → New Automation**, add the Instagram trigger
+**"User comments on your post"**.
 
-1. **Trigger**: *User comments on a post*. Pick the recruitment reel. Keyword:
-   `celestual`. Set it to fire **every time**, not once per contact.
-   > A "once per contact per 24h" trigger silently drops the second attempt, and
-   > people re-comment when a DM doesn't arrive. This is the same trap
-   > documented for the verification flow.
-2. **Action → Send Message**: one short opening DM. ManyChat requires the
-   contact to be opted in before an External Request's reply can be delivered,
-   so this first message is what opens the thread.
-3. **Action → External Request**:
-   - Method: `POST`
-   - URL: your `celestual-recruit` function URL
-   - Header: `X-Celestual-Token: <MANYCHAT_SHARED_SECRET>`
-   - Body (JSON), using the `+` field picker:
-     ```json
-     { "username": "{{instagram.username}}", "subscriber_id": "{{contact.id}}" }
-     ```
-   - **Response Mapping**: map JSONPath `$.reply` to a text field.
-4. **Action → Send Message**: send that mapped field.
+**Node order matters here.** The External Request goes **before** the message,
+and there is exactly **ONE** message node in the whole flow:
+
+```
+  Trigger: comment on the reel, keyword "celestual"
+     │
+     ├─ Action · External Request   ← mints the token, returns the DM text
+     │
+     └─ Send Message: {{celestual_reply}}   ← the ONE private reply
+```
+
+> **Why one message.** Instagram allows **one private reply per comment**. An
+> "opening DM" followed by a second message carrying the link would spend that
+> one reply on a greeting and leave the link undeliverable until the person
+> writes back. An External Request is a server call, not a message, so putting
+> it first costs nothing and lets the single reply carry the rules and the link
+> together.
+
+**Step 1 — the trigger.**
+
+- Pick the recruitment reel.
+- Condition: **comment contains** `celestual`.
+- Set it to trigger **every time**, not once per contact.
+  > A "once per contact per 24h" setting silently drops the second attempt, and
+  > people re-comment when a DM doesn't arrive. Same trap as the verification
+  > flow (docs/MANYCHAT-SETUP.md §4).
+- Optionally also enable the **public comment reply** ("sent, check your DMs").
+  A public reply is not a private reply, so it costs nothing here, and it is
+  free social proof under an ad.
+
+**Step 2 — the External Request.** Add **Action → External Request**:
+
+- **Request type:** `POST`
+- **URL:** `https://vwbsjwaqnycyghvwlxhd.functions.supabase.co/celestual-recruit`
+- **Headers:**
+  - `Content-Type`: `application/json`
+  - `X-Celestual-Token`: the exact `MANYCHAT_SHARED_SECRET` value
+- **Body** — raw JSON, inserting the fields with the **`+` picker** (pick them,
+  don't type the placeholders, or they won't resolve):
+
+  ```json
+  {
+    "username": "{{Instagram Username}}",
+    "subscriber_id": "{{Contact Id}}"
+  }
+  ```
+
+  `username` is required. `subscriber_id` is optional (audit trail only).
+
+- **Response Mapping:** map JSONPath **`$.reply`** to a new custom field, e.g.
+  `celestual_reply`.
+
+**Step 3 — the one message.** Add a **Send Message** node after the request
+containing just `{{celestual_reply}}`.
 
 Every response carries `reply`, including the failure paths, so the automation
-always has something to say.
+is never left with nothing to say.
 
-### 4. What the DM says
+**Step 4 — set it LIVE.** Drafts don't fire.
+
+### 4. What that one DM says
 
 | Their state | `status` | The DM |
 | --- | --- | --- |
