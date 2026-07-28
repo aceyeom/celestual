@@ -21,7 +21,12 @@ import { supabase, hasSupabase } from './supabase.js'
 
 // On when the flag is set AND a real Supabase backend is configured. Otherwise the
 // app uses the local verified stub so dev/preview stays fully testable.
-export const igVerifyEnabled = () => import.meta.env.VITE_IG_VERIFY_ENABLED === '1' && hasSupabase
+//
+// TEMPORARILY DISABLED: the Meta/Instagram DM verification step is pulled from the
+// production workflow for now, independent of VITE_IG_VERIFY_ENABLED — everyone gets
+// the local stub (auth.js signInStub) instead of the real DM flow. To restore it,
+// delete the `false &&` short-circuit below.
+export const igVerifyEnabled = () => false && import.meta.env.VITE_IG_VERIFY_ENABLED === '1' && hasSupabase
 
 // The Instagram account people DM the code to. Set VITE_IG_USERNAME to your handle
 // (without the @). ig.me/m/<username> opens straight into a DM thread with it.
