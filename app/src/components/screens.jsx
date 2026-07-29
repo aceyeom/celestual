@@ -10,6 +10,7 @@
 // All user-facing copy comes through useI18n().t(); all color comes through C
 // (the single theme). Nothing here defines its own hex or hard-codes strings.
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { normHandle } from '../api/celestual.js'
 import { daysLeft, nearLapse } from '../api/pings.js'
 import {
@@ -21,8 +22,8 @@ import { renderSkyCard } from '../card.js'
 import {
   Brandmark, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
-  Display, Title, Lead, Body, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, LINE, TRACK, ICON,
+  Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
+  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, TRACK, ICON,
 } from './ui.jsx'
 import { CATEGORY_TINTS } from '../theme.js'
 import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../communities.js'
@@ -2846,15 +2847,21 @@ export function PrivacyScreen({ C, ctx }) {
 
         <H>{t('privacy.h5')}</H>
         <P>{t('privacy.p5')}</P>
+        {/* 0020 — the two doors, told apart. This one is about being ENTERED,
+            not about having an account, and it is not the delete button. */}
+        <P>{t('privacy.p5b')}</P>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Field C={C} kind="handle" value={handle} onChange={setHandle} placeholder={t('privacy.removePlaceholder')} />
           <PrimaryButton C={C} disabled={!ok || status === 'working'} onClick={submit}>
             {status === 'working' ? t('privacy.removing') : t('privacy.removeCta')}
           </PrimaryButton>
           {status === 'done' && (
-            <P>
-              {t('privacy.removed1')} <HandleChip C={C} handle={normHandle(handle)} /> {t('privacy.removed2')}
-            </P>
+            <>
+              <P>
+                {t('privacy.removed1')} <HandleChip C={C} handle={normHandle(handle)} /> {t('privacy.removed2')}
+              </P>
+              <P>{t('privacy.removedLift')}</P>
+            </>
           )}
           {status === 'error' && <div style={{ fontSize: SIZE.small, color: rgba(C.star, 0.95) }}>{t('privacy.removeErr')}</div>}
         </div>
@@ -2981,7 +2988,14 @@ export function AccountSheet({ C, ctx }) {
     }
   }
   const standing = ctx.slotsStanding
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={close}
       style={{ position: 'fixed', inset: 0, zIndex: 30, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3073,6 +3087,12 @@ export function AccountSheet({ C, ctx }) {
         ) : (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
             <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.cream }}>{ctx.demo ? t('account.deleteConfirmDemo') : t('account.deleteConfirm')}</span>
+            {/* The line that stops this being mistaken for the opt-out. Until
+                0020 it WAS the opt-out, applied to your own @, and nobody
+                tapping "delete everything" was asking to be barred for good. */}
+            {!ctx.demo && (
+              <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('account.deleteKeep')}</span>
+            )}
             <div style={{ display: 'flex', gap: SPACE.xl, alignItems: 'center', flexWrap: 'wrap' }}>
               <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
                 {deleting ? t('account.deleting') : t('account.deleteYes')}
@@ -3081,10 +3101,22 @@ export function AccountSheet({ C, ctx }) {
                 {t('account.cancel')}
               </GhostButton>
             </div>
+            {!ctx.demo && (
+              <span style={{ fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+                {t('account.deleteOptOut')}{' '}
+                <button
+                  onClick={() => ctx.go('privacy')}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: C.muted, textDecoration: 'underline', textUnderlineOffset: 3 }}
+                >
+                  {t('account.deleteOptOutLink')}
+                </button>
+              </span>
+            )}
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3310,7 +3342,17 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           setAssumed(true)
           setPhase('verified')
           doneRef.current = setTimeout(() => onVerified(proof, g.handle || handle), VERIFIED_HOLD_MS)
-        } else if (g.error === 'expired' || g.error === 'banned') {
+        } else if (g.error === 'banned') {
+          // NOT a lapse. This @ is suppressed (its own "delete everything", the
+          // /privacy opt-out, or an admin ban), so neither the DM nor the grace
+          // can ever admit it. Mapping this onto the expired screen is what made
+          // a live code read as "that code lapsed" twenty seconds in, sending
+          // people round the get-a-new-code loop with no way to learn why.
+          stopPoll()
+          clearPending()
+          setErrCode('banned')
+          setPhase('error')
+        } else if (g.error === 'expired') {
           stopPoll()
           clearPending()
           setPhase('expired')
@@ -3357,10 +3399,26 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const dismiss = () => onClose()
   const dialogRef = useDialog(dismiss)
 
+  // 'banned' is the suppressed-@ lockout (0018). It is the one error a fresh
+  // code cannot fix, so it loses the retry button — offering one is what kept
+  // people minting codes against a closed door.
   const errMsg =
-    errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
+    errCode === 'banned'
+      ? t('verify.errBlocked')
+      : errCode === 'rate_limited'
+        ? t('verify.errRate')
+        : errCode === 'busy'
+          ? t('verify.errBusy')
+          : t('verify.errGeneric')
 
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3421,7 +3479,11 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         ) : phase === 'error' ? (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
             <p style={{ margin: 0, fontSize: SIZE.body, lineHeight: 1.55, color: rgba(C.star, 0.95) }}>{errMsg}</p>
-            <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+            {errCode === 'banned' ? (
+              <PrimaryButton C={C} onClick={dismiss}>{t('verify.errBlockedAction')}</PrimaryButton>
+            ) : (
+              <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+            )}
           </div>
         ) : (
           <>
@@ -3483,7 +3545,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3497,7 +3560,14 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
   const SHADOW = makeShadow(C)
   const dialogRef = useDialog(onClose)
   const name = (community && (community.short || community.name)) || t('communities.yourCommunity')
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3532,7 +3602,8 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
           <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('public.note')}</p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3795,7 +3866,14 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
 
   const busy = phase === 'sending' || phase === 'verifying'
 
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3892,7 +3970,8 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

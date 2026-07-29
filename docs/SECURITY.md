@@ -225,6 +225,24 @@ cannot see, infer or leak who pinged whom.
 - **The agreement is versioned.** A signature stores the version it signed, so
   changing the rules never silently re-points an old signature at new terms.
 
+### Response headers (`vercel.json`)
+
+HSTS (2 years, preload), `nosniff`, a strict `Referrer-Policy`, a
+`Permissions-Policy` that turns off camera / mic / geolocation / payment / USB,
+and a CSP with no `unsafe-eval`, no `unsafe-inline` script, `object-src 'none'`
+and `base-uri 'self'`. `connect-src` is limited to self, the Supabase project and
+Google Fonts.
+
+**Framing is `'self'`, not `'none'`.** It was `X-Frame-Options: DENY` +
+`frame-ancestors 'none'`, which is the right default and was also a bug the moment
+`/trial` started showing the competition doc in a same-origin iframe: `DENY`
+forbids framing by *anyone*, including us, so the doc sheet would have rendered
+blank in production while looking fine in `vite preview` (which applies none of
+these headers). It is now `X-Frame-Options: SAMEORIGIN` +
+`frame-src 'self'; frame-ancestors 'self'`. Cross-origin framing is still refused,
+so the clickjacking posture is unchanged; only our own pages may frame our own
+pages. If the doc viewer is ever removed, put this back to `'none'`.
+
 ## Residual risks, named
 
 - **Instant reveal is an oracle bounded, not removed** — 3 slots + 6

@@ -56,14 +56,18 @@ function safeEqual(a: string, b: string) {
   return out === 0;
 }
 
-// Pull the correlation code out of the DM text. Codes are 6 digits (migration
-// 0014); \d{4,6} still resolves any 4-digit code left in flight during the
-// cutover. The app tells people to send the prefixed form — "star-128340" — and
-// your ManyChat automation's Condition only forwards messages containing "star-",
-// so in practice the text is "star-128340". We read the prefixed form first
-// (case-insensitive, separator optional), then fall back to any bare 4–6 digit run
-// so a stray format still resolves. Parsing is never the security boundary — a
-// wrong code just finds no pending session; the sender's username is the gate.
+// Pull the correlation code out of the DM text. Codes are 4 digits again
+// (migration 0019 — six bought nothing but friction, since the code is a pure
+// correlation id and the Meta-authenticated sender is the identity). The
+// \d{4,6} range is kept deliberately so any six-digit code still in flight from
+// the 0014→0019 era resolves normally.
+//
+// The app tells people to send the prefixed form — "star-1283" — and your
+// ManyChat automation's Condition only forwards messages containing "star-", so
+// in practice that is the whole text. We read the prefixed form first
+// (case-insensitive, separator optional), then fall back to any bare 4–6 digit
+// run so a stray format still resolves. Parsing is never the security boundary
+// — a wrong code just finds no pending session; the sender's username is the gate.
 function codeCandidates(text: string): string[] {
   const s = String(text ?? '');
   const out: string[] = [];
@@ -110,6 +114,14 @@ Deno.serve(async (req) => {
 
   let alreadyVerified: string | null = null;
   let codeExpired = false;
+  // 0018: three failures used to be indistinguishable from "unknown digits" —
+  // a suppressed sender, an unreadable username, and a thrown RPC all fell
+  // through to the no_match reply below. That is exactly how a live, correct
+  // code came back as "didn't match an active request" for a week. Each now
+  // carries its own flag, its own reply, and a log line.
+  let banned = false;
+  let badInput = false;
+  let rpcFailed = false;
   for (const token of candidates) {
     const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
       p_token: token,
@@ -117,15 +129,21 @@ Deno.serve(async (req) => {
       p_username: username,
     });
     if (error) {
-      console.error('complete error', token, error.message);
+      console.error('complete rpc threw', JSON.stringify({ token, username, error: error.message }));
+      rpcFailed = true;
       continue;
     }
+    // Log EVERY outcome, not just thrown errors: a { ok:false } answer is the
+    // interesting case and used to leave no trace at all in the logs.
+    console.log('complete', JSON.stringify({ token, username, result: data }));
     if (data?.ok) {
       // ManyChat can map `reply` to a field and send it back as a DM (optional).
       return json({ ok: true, status: 'verified', handle: data.handle, reply: `✦ @${data.handle} is verified on CELESTUAL — head back to the app to finish.` });
     }
     if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
     if (data?.code_expired) codeExpired = true;
+    if (data?.error === 'banned') banned = true;
+    if (data?.error === 'bad_input') badInput = true;
   }
 
   // Nothing was pending under any candidate code. Tell the sender the TRUTH
@@ -134,11 +152,28 @@ Deno.serve(async (req) => {
   if (alreadyVerified) {
     return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
   }
+  // This sender is BANNED (since 0020 that is the only thing that reaches here —
+  // an opt-out no longer blocks anyone from verifying). The code was fine, so
+  // saying "it may have lapsed" sent people round the mint-a-new-code loop
+  // forever. Name it, and point at the one thing that can undo it.
+  if (banned) {
+    return json({ ok: false, status: 'banned', reply: 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
+  }
   if (codeExpired) {
     return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.' });
   }
+  // The username ManyChat sent didn't survive normalisation (an unmapped or
+  // mangled {{instagram.username}} field). The person can't fix this — say so
+  // instead of blaming their code, and check the log line above.
+  if (badInput) {
+    return json({ ok: false, status: 'bad_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
+  }
+  if (rpcFailed) {
+    return json({ ok: false, status: 'rpc_error', reply: 'Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.' });
+  }
   // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
-  // code_expired above for a full week, so landing HERE means a typo'd code, a
-  // code older than that retention, or a completion RPC error in the logs.)
+  // code_expired above for a full week, so landing HERE means a typo'd code or
+  // a code older than that retention — every other failure now has its own
+  // status above.)
   return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.' });
 });

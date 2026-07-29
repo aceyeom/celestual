@@ -46,7 +46,7 @@ Written for a beginner — follow it top to bottom. ~30 minutes.
   page polls, sees 'verified', flips to ✓
 ```
 
-Security in one line: the code (6 digits, migration 0014) is only a correlation id — the gate is the
+Security in one line: the code (4 digits, migration 0019) is only a correlation id — the gate is the
 **sender's real username**, which ManyChat gets from Meta's official API and your
 backend compares to the claimed handle
 (`celestual_complete_ig_verification`, service-role only). A guessed code from the
@@ -194,6 +194,9 @@ That message IS the verified-feedback DM: the function returns a human `reply` o
 | verified ✓ | `✦ @handle is verified on CELESTUAL — head back to the app to finish.` |
 | wrong account | `That code was started for a different @. Start again from the app with this account.` |
 | expired code (retained 7 days since 0017) | `That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.` |
+| **sender's @ is suppressed** (0018) | `This account asked to be erased from CELESTUAL, so it can't verify back in. If that wasn't you — or you've changed your mind — write to privacy@celestual.us and we'll reopen it.` |
+| username unreadable (0018) | `Something went sideways reading your account — get a fresh code in the app and send it again.` |
+| completion RPC threw (0018) | `Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.` |
 | unknown / typo'd / long-pruned code | `That code didn't match an active request — it may have lapsed. Get a fresh code in the app and send it here.` |
 | no code found in the text | `Send the code exactly as the app shows it — like star-1234.` |
 
@@ -235,7 +238,10 @@ Watch both sides while testing:
 | Function log = `no_username` | The `username` body field isn't mapped (typed by hand instead of the `+` picker). Re-insert it. |
 | Function log = `no_code` | The `text` field isn't mapped, or the person sent only the digits with the prefix mangled. The function reads `star-1234`, `star 1234`, `star–1234`, and bare `1234`. |
 | `status:"handle_mismatch"` | Working as designed: the sender's real @ ≠ the @ typed on the site. The person gets a DM telling them to retry from the right account. |
-| `status:"no_match"` | Random/unknown digits — or, before migration 0017, an expired code whose row the start-RPC prune had already deleted (rows lasted ~1 minute past their 30-min TTL, so any DM delayed past that — e.g. sitting in Message Requests — degraded from the honest `code_expired` to `no_match`). 0017 retains lapsed rows 7 days, so `code_expired` answers for the whole realistic window; a re-sent code from someone already verified answers `already_verified`. A `no_match` can also mean the completion RPC errored — check the function logs, errors there are swallowed per-candidate. |
+| **Correct, live codes rejected forever** — the DM says "didn't match an active request" while the browser says "that code lapsed" at ~20 seconds, and `celestual_ig_verifications` shows the rows sitting `pending` with a live `expires_at` | The sender's @ is in `celestual_suppressions`. Before 0020 that could be an admin **ban**, the **/privacy opt-out**, *or* the account screen's **delete everything** (which called the opt-out on your own handle). Since 0020 only a `kind='ban'` row blocks verifying, and "delete everything" sets no flag at all. Both completion paths refuse it (`error:'banned'`); before 0018 `start()` had no such check, so codes kept minting against a shut door and *neither* refusal was named to anyone. Check it on the desk: **/admin → look up an @**, or `select exists(select 1 from celestual_suppressions where handle_hash = celestual_hash_handle('theirhandle'));`. Lift it with the desk's **lift the lockout**, or `select celestual_admin_unban_user('theirhandle');`. Since 0018 the DM answers `status:"banned"` and the sheet says so outright. |
+| `status:"banned"` | Working as designed (0018): the sender opted out or was banned. Lift it as above if that was a mistake. |
+| `status:"bad_username"` / `status:"rpc_error"` | The `username` field didn't survive normalisation, or the completion RPC threw. Both used to hide inside `no_match`; both now log a line (`complete rpc threw` / `complete`) with the token, username and full RPC result. |
+| `status:"no_match"` | Random/unknown digits — or, before migration 0017, an expired code whose row the start-RPC prune had already deleted (rows lasted ~1 minute past their 30-min TTL, so any DM delayed past that — e.g. sitting in Message Requests — degraded from the honest `code_expired` to `no_match`). 0017 retains lapsed rows 7 days, so `code_expired` answers for the whole realistic window; a re-sent code from someone already verified answers `already_verified`. Since 0018 a `no_match` really is unknown digits: a suppressed sender, an unreadable username and a thrown RPC each carry their own status and their own log line instead of collapsing in here. |
 | Function reachable but Meta's DMs are delayed | First-time DMs from strangers can land in **Message Requests**; open @celestual.us → Requests → Accept once, then it flows. |
 | `{"code":401,"message":"Missing authorization header"}` on the health-check GET | JWT verification still on — redeploy `--no-verify-jwt` (§2 Step 4). |
 
@@ -338,7 +344,17 @@ business account.
   has to be re-earned by DM. TTL was never the root cause. (Once **B** shipped
   and killed the repeat-DM pressure, **migration `0014`** shortened the TTL again
   to **30 minutes** — long enough for the Message-Requests lag, short enough to
-  keep the 6-digit code pool sparse.)
+  keep the code pool sparse.)
+
+- **Code length: back to four digits (migration `0019`).** `0014` widened the
+  code to six. Six digits buys nothing here — the code is a pure correlation id
+  (`0012`), never a secret, so a guessed code finds a session you cannot finish
+  without being the Meta-authenticated sender. What it did buy was friction:
+  `star-753520` is a harder thing to read off a screen and retype into a DM than
+  `star-1283`, and every extra character is a place to drop one. Four digits is
+  10,000 codes, unique among *currently pending* rows only, against a 30-minute
+  TTL. Both relays parse `\d{4,6}`, so six-digit codes still in flight during the
+  cutover keep resolving.
 
 ### 8.3 The "That code was started for a different @" case
 

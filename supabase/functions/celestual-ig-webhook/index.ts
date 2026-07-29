@@ -69,10 +69,10 @@ async function validSignature(raw: string, header: string | null): Promise<boole
   return safeEqual(hex(mac), sig.toLowerCase());
 }
 
-// Pull every standalone 4–6 digit run out of the message text (codes are 6 digits
-// since migration 0014; \d{4,6} still resolves any 4-digit code left in flight
-// during the cutover). Security doesn't rest on parsing — a wrong code simply
-// finds no pending session.
+// Pull every standalone 4–6 digit run out of the message text. Codes are 4
+// digits again (migration 0019); the range stays 4–6 so any six-digit code
+// still in flight from the 0014→0019 era resolves normally. Security doesn't
+// rest on parsing — a wrong code simply finds no pending session.
 function codeCandidates(text: string): string[] {
   const out: string[] = [];
   for (const m of text.matchAll(/(?<!\d)(\d{4,6})(?!\d)/g)) out.push(m[1]);
@@ -172,6 +172,11 @@ Deno.serve(async (req) => {
         let done = false;
         let alreadyVerified: string | null = null;
         let codeExpired = false;
+        // 0018 — the suppressed sender. Without this the RPC's 'banned' answer
+        // produced total silence here: no DM, and a `matched:false` line in the
+        // results with nothing saying why. Same lockout the ManyChat relay was
+        // hiding behind "didn't match an active request".
+        let banned = false;
         for (const token of candidates) {
           const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
             p_token: token,
@@ -190,16 +195,19 @@ Deno.serve(async (req) => {
           }
           if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
           if (data?.code_expired) codeExpired = true;
+          if (data?.error === 'banned') banned = true;
         }
         if (!done) {
           // Feedback instead of silence: tell the sender the truth about the
           // state they're actually in, so a re-run never reads as broken.
           if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
+          } else if (banned) {
+            await sendDm(String(igsid), 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.');
           } else if (codeExpired) {
             await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.');
           }
-          results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired });
+          results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired, banned });
         }
       }
     }

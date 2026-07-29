@@ -1,25 +1,31 @@
-// trialContent.js — the First Light brief, distilled for the /trial page.
+// trialContent.js — the Celestual Challenge, distilled for the /trial page.
 //
 // SOURCE OF TRUTH: the official competition doc, served as-is from
-// /first-light.docx and /first-light.pdf (app/public). The PAGE is deliberately
-// visual and short — a poster, not a reprint: stat tiles, the five steps, the
-// two videos, the weighted score bars, the rules, the prize. Every detail cut
-// from the screen still lives in the doc, which is why the doc card sits at
-// the top. If the doc changes, change BOTH.
+// /celestual-challenge.docx and /celestual-challenge.pdf (app/public) and
+// readable in place through the viewer sheet on the page. The PAGE is
+// deliberately a poster, not a reprint: the numbers, the five steps, the two
+// videos, the weighted score, the rules, the prize. Every detail cut from the
+// screen still lives in the doc, which is why the doc card sits near the top
+// and opens without leaving the page. If the doc changes, change BOTH.
 //
 // Like demoData.js, this file sits outside the voice-linted copy (strings.js
-// carries the page's chrome; this quotes the doc's own language).
+// carries the page's chrome; this quotes the doc's own language, which is
+// sentence-case and speaks as the company).
 
 export const TRIAL_DOC = {
-  docx: '/first-light.docx',
-  pdf: '/first-light.pdf',
+  // read in place, inside the page (the viewer sheet loads this in an iframe)
+  html: '/celestual-challenge.html',
+  // the same document, printable and signable
+  pdf: '/celestual-challenge.pdf',
+  docx: '/celestual-challenge.docx',
 }
 
 export const TRIAL = {
-  kicker: 'first light',
+  kicker: 'the celestual challenge',
   title1: 'market celestual for one week.',
   title2: 'the best one gets hired.',
-  intro: 'We post everything as a series. The winner becomes our head of marketing.',
+  intro:
+    'We’re hiring a head of marketing. Instead of an interview, we want to see if you’re willing to try. Everyone who enters spends one week marketing Celestual however they want, and we post all of it.',
 
   // the three numbers that ARE the pitch
   stats: [
@@ -29,58 +35,82 @@ export const TRIAL = {
   ],
 
   doc: {
-    title: 'the official brief',
-    sub: 'Hooks, shot lists, scoring detail, the full agreement. Read it once before you film anything.',
+    title: 'the official doc',
+    sub: 'Hooks, shot notes, the full scoring, the hard rules, and the agreement you sign. Read it once before you film anything.',
   },
 
   steps: [
-    { head: 'register below.', body: 'Verify your email, sign, pick your four letters.' },
-    { head: 'share your link.', body: 'celestual.us/yours. Every open and signup is counted for you.' },
-    { head: 'make two videos.', body: 'An intro and a result. The doc lays out both.' },
-    { head: 'email them in.', body: 'Both to contact@celestual.app.' },
-    { head: 'we post and score.', body: 'Everything goes on our page. The best one wins.' },
+    { head: 'apply.', body: 'Read the doc, then register below and sign it.' },
+    { head: 'get your link.', body: 'Four letters, yours: celestual.us/jack. Every open and signup through it is counted for you.' },
+    { head: 'make two videos.', body: 'An intro and a result. Both are laid out below and in the doc.' },
+    { head: 'send them in.', body: 'Email both videos and your signed doc to contact@celestual.app.' },
+    { head: 'we post and score.', body: 'Your videos go on our page. We score everyone and hire the winner.' },
   ],
 
-  deadline: '3 days to enter once our video posts · then 7 days to send both videos',
+  deadline: 'applications are open until august 10 · send both videos to contact@celestual.app',
 
   videos: [
     {
       title: 'video 1 · the intro',
-      sub: 'Your pitch, straight to camera. 25 to 60 seconds, vertical.',
-      pts: ['Open on a hook.', 'Your plan, one sentence.', 'Explain celestual so a stranger gets it.'],
+      sub: 'Your pitch. Who you are, what you’re going to do, and why it’ll work. 20 to 60 seconds, vertical, lit well.',
+      pts: [
+        'Open on a hook, said with a straight face, like you mean it.',
+        'Say plainly that you’re in Celestual’s competition to become their head of marketing.',
+        'Your plan for the week — brief, but detailed.',
+        'Explain Celestual to someone who’s never heard of it. Not the steps: what it saves you from.',
+        'Close on “follow Celestual to see how I do.”',
+      ],
     },
     {
       title: 'video 2 · the result',
-      sub: 'What you actually did. 30 seconds or more.',
-      pts: ['The real thing you made, or the story of what happened.', 'It has to land the mechanic.', 'Real numbers if you have them.'],
+      sub: 'What you actually did. 30 seconds or more, no cap. This one is posted on the Celestual account.',
+      pts: [
+        'If your campaign was content, submit the real thing you made and posted.',
+        'If it happened in the real world, tell the story: the setup, people showing up, the moment it worked.',
+        'It has to land the mechanic, or a viewer finishes with nothing.',
+        'End on what you accomplished, in one line, with real numbers if you have them.',
+      ],
     },
   ],
 
+  // straight from the doc's table
   scoring: [
-    { cat: 'engagement', weight: 60, what: 'share + save rate · link clicks · views' },
-    { cat: 'fit', weight: 20, what: 'sounds like us · explains it right' },
-    { cat: 'signups', weight: 10, what: 'through your link and code' },
-    { cat: 'quality', weight: 10, what: 'hook · shot well · holds to the end' },
+    { cat: 'engagement', weight: 40, what: 'share and save rate · link clicks · views' },
+    { cat: 'quality', weight: 30, what: 'strong hook · shot and cut well · holds to the end' },
+    { cat: 'fit', weight: 20, what: 'sounds like us · explains the product right · good first impression' },
+    { cat: 'signups', weight: 10, what: 'through your link and code · matches that fired' },
   ],
-  scoringNote: 'Scored against the best in the group. Rates, not totals — a small following can win.',
-  zeroRule: 'Miss the mechanic — their @ goes in, they’re never told, only mutual reveals — and engagement scores zero.',
+  scoringNote: 'Signups are only a small part of the score. If your campaign has nowhere natural to put a link, don’t force one.',
+  zeroRule: 'The video has to get the mechanic across. One that goes viral and teaches nobody what we do isn’t worth much.',
 
   hardRules: [
-    'Nothing aimed at under-18s or high schools.',
-    'Don’t rebrand or restyle celestual.',
-    'Don’t inflate results. Our tracker is the score.',
-    'No paid promotion or bought engagement.',
-    'Never enter anyone’s @ without their knowledge.',
+    'No advertising or targeting anyone under 18, and nothing filmed at or aimed at a high school audience.',
+    'No paid promotion, boosting, or bought views, followers, or engagement.',
+    'Don’t claim to speak for the company.',
+    'If the video or the idea is too shabby, it probably won’t be posted on our account. Try your best.',
   ],
-  hardNote: 'Breaking one drops you immediately.',
+  hardNote: 'Breaking any one of these is a hard drop.',
 
   win: {
     headline: 'head of marketing. 1% equity.',
-    sub: 'Two-year vest, one-year cliff. Pay discussed with the winner.',
-    everyone: 'Every finisher becomes an official celestual ambassador, in writing.',
+    sub: 'Vesting over two years with a one-year cliff. Monthly pay is discussed directly with the winner.',
+    everyone:
+      'Everyone who finishes becomes an official Celestual ambassador with monthly pay, and gets a signed letter confirming it. That’s a real job. You keep everything you shoot.',
   },
 
-  mechanic: 'their @ goes in. they’re never told. if they enter you too, you both find out at the same second.',
+  mechanic:
+    'you put someone’s handle in. they’re never told. if they put you in too, you both find out at the same second.',
 
-  agreementNote: 'The Content, IP & Rights Agreement is in the doc above.',
+  // the doc's "the part you should understand" — the strategic note that makes
+  // a competitor make better calls all week, so it belongs on the page.
+  understand: {
+    title: 'the part you should understand',
+    body:
+      'Celestual only works when the people around a person are on it too. One user alone enters a handle and nothing fires, because the other side isn’t there yet. That’s why, right now, reach matters more to us than signups. A person who joins an empty app leaves and doesn’t come back. A follower costs us nothing and stays. So we’re paying you to make people watch, share, and remember us — not just to fill the app.',
+  },
+
+  contact: 'Questions any time: @celestual.us on Instagram, or contact@celestual.app.',
+
+  agreementNote:
+    'Registering below records your signature on the Content, IP & Rights Agreement in the doc — eligibility, who owns the content, the licence you grant us, and the eight clauses in full.',
 }

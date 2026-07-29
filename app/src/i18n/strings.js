@@ -286,6 +286,12 @@ const en = {
   // window the person is let in as the @ they typed. the line stays honest.
   // "you're in", never "it's really you".
   'verify.assumed': 'you’re in.',
+  // the ban (0018 named it; 0020 made a ban the ONLY thing that reaches here).
+  // this used to render as "that code lapsed" twenty seconds in: a live code,
+  // described as a dead one, with a button that minted another dead one. no
+  // retry here, because a fresh code cannot open a closed door.
+  'verify.errBlocked': 'this @ can’t be verified on celestual. if that’s a mistake, write to privacy@celestual.us and we’ll look at it.',
+  'verify.errBlockedAction': 'close',
   'verify.errRate': 'too many tries. give it a minute, then start again.',
   'verify.errBusy': 'the line is busy. try again in a moment.',
   'verify.errGeneric': 'the verification couldn’t start. check your connection, then try once more.',
@@ -310,7 +316,15 @@ const en = {
   'account.sandboxNote': 'sandbox. nothing here reaches a server.',
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',
-  'account.deleteConfirm': 'this erases every ping you’ve placed, closes your door, and blocks your handle. it can’t be undone.',
+  // 0020 — this used to say "and blocks your handle", because it did: it called
+  // the public opt-out on your own @, so tidying up your account barred it from
+  // ever verifying again. two different decisions wearing one button. deleting
+  // your data is housekeeping and says so; never being entered is its own
+  // choice, on /privacy, made on purpose.
+  'account.deleteConfirm': 'this erases every ping you’ve placed and every record of you. it can’t be undone.',
+  'account.deleteKeep': 'your @ stays yours. you can come back and verify again any time.',
+  'account.deleteOptOut': 'wanted the other thing? never let anyone enter your @ again.',
+  'account.deleteOptOutLink': 'opt out instead',
   'account.deleteConfirmDemo': 'sandbox. this just starts the demo fresh.',
   'account.deleteYes': 'erase it all',
   'account.deleting': 'erasing…',
@@ -436,12 +450,15 @@ const en = {
   'privacy.h4': 'for adults',
   'privacy.p4': 'celestual is for people 18 and older.',
   'privacy.h5': 'the opt-out',
-  'privacy.p5': 'any handle owner, on celestual or not, can make their handle permanently un-pingable and erase everything referencing it. free, immediate, never behind a login.',
+  'privacy.p5': 'any handle owner, on celestual or not, can make their handle un-pingable and erase everything referencing it. free, immediate, never behind a login.',
+  // 0020 — the two doors, named. people were choosing one and getting the other.
+  'privacy.p5b': 'this is not the same as deleting an account. it stops anyone entering your @, forever, whether or not you use celestual. it does not stop you signing up yourself, and we’ll lift it if you write to us.',
   'privacy.removePlaceholder': 'handle.to.remove',
   'privacy.removeCta': 'opt this handle out, permanently',
   'privacy.removing': 'closing the door…',
   'privacy.removed1': 'done.',
   'privacy.removed2': 'is now un-pingable, and everything referencing it is gone.',
+  'privacy.removedLift': 'changed your mind? write to privacy@celestual.us and we’ll lift it.',
   'privacy.removeErr': 'that didn’t go through. email us and we’ll do it by hand.',
   'privacy.h6': 'always free',
   'privacy.p6': 'placing, matching, the reveal, renewing, letting go, the opt-out, verification, your door, your communities. all of it, forever.',
@@ -471,8 +488,11 @@ const en = {
   // ── the first light trial (/trial, migration 0017) ──────────────────────
   // the page's chrome only. the brief itself is quoted from the official doc
   // and lives in trialContent.js, out of this linted file, like demoData.js.
-  'trial.docView': 'view the official doc',
-  'trial.docDownload': 'download the doc (.docx)',
+  'trial.docView': 'read the official doc',
+  'trial.docPdf': 'pdf',
+  'trial.docDocx': '.docx',
+  'trial.docClose': 'close the doc',
+  'trial.docDownload': 'download to sign (.docx)',
   'trial.registerKicker': 'register',
   'trial.enterKicker': 'enter the trial',
   'trial.enterTitle': 'claim your link.',
@@ -530,41 +550,9 @@ const en = {
   'landing.trial1': 'first light.',
   'landing.trial2': 'the marketing trial →',
 
-  // ── the admin dashboard (/admin) ─────────────────────────────────────────
-  'admin.kicker': 'admin dashboard',
-  'admin.passLabel': 'password',
-  'admin.enter': 'open the dashboard',
-  'admin.checking': 'checking…',
-  'admin.errPass': 'not it.',
-  'admin.errRate': 'too many tries. give it a minute.',
-  'admin.errNetwork': 'the dashboard didn’t answer. try again.',
-  'admin.refresh': 'refresh',
-  'admin.signout': 'lock the dashboard',
-  'admin.competitors': 'trial competitors',
-  'admin.users': 'users',
-  'admin.attempts': 'unfinished verifications',
-  'admin.colName': 'name',
-  'admin.colHandle': 'handle',
-  'admin.colEmail': 'email',
-  'admin.colCode': 'code',
-  'admin.colLink': 'link',
-  'admin.colOpens': 'opens',
-  'admin.colJoined': 'joined',
-  'admin.colSigned': 'signed',
-  'admin.colVerified': 'verified',
-  'admin.colVia': 'via',
-  'admin.colPings': 'pings',
-  'admin.colStarted': 'started',
-  'admin.viaDm': 'dm confirmed',
-  'admin.viaTimeout': 'assumed at 20s',
-  'admin.viaNone': 'no dm record',
-  'admin.expired': 'lapsed',
-  'admin.pending': 'waiting',
-  'admin.delete': 'delete',
-  'admin.ban': 'ban',
-  'admin.remove': 'remove',
-  'admin.yes': 'sure?',
-  'admin.empty': 'nothing here yet.',
+  // the triage tool (0018). "their codes are correct and nothing works" was
+  // unanswerable from this desk — a suppressed @ looked identical to a relay
+  // outage from every surface we had.
 
   // ── demo (the sandbox) ────────────────────────────────────────────────────
   'demo.badge': 'sandbox',

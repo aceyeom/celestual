@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
-  suppressHandle, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
+  suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
   SUB_SLOT_CAP, SUB_PING_DAYS,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
@@ -10,14 +10,15 @@ import { getSession, signInStub, markVerified, signOut as clearAuthSession, resu
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner } from './components/ui.jsx'
+import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner, rgba } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
   StarViewOverlay, CopyCodeScreen, SignInScreen,
 } from './components/screens.jsx'
-import { TrialScreen, AdminScreen } from './components/trial.jsx'
+import { TrialScreen } from './components/trial.jsx'
+import { AdminScreen } from './components/admin.jsx'
 import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
 import { RESERVED_CODES } from './api/trial.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
@@ -1175,12 +1176,18 @@ export default function App() {
     setTimeout(() => (persistReady.current = true), 800)
   }, [go, wipeLocalState])
 
-  // Delete everything: the opt-out on your own handle (erases every ping you
-  // placed, closes your door, blocks your handle) + a local wipe.
+  // Delete everything: erase every ping you placed and every record of you,
+  // plus a local wipe. It does NOT block your handle any more (migration 0020).
+  //
+  // It used to call suppressHandle(me) — the public opt-out — on your own @.
+  // That meant tidying up your account quietly barred the handle from ever
+  // verifying again, permanently, with nothing in the product able to say so or
+  // undo it. "Delete everything" is housekeeping; "never let anyone enter me"
+  // is a different decision, lives on /privacy, and is chosen deliberately.
   const deleteEverything = useCallback(async () => {
     persistReady.current = false
     try {
-      if (!demo && normHandle(me)) await suppressHandle(me)
+      if (!demo && normHandle(me)) await eraseAccount(me)
     } catch {
       /* clear locally regardless */
     }
@@ -1312,9 +1319,38 @@ export default function App() {
   const navHere = NAV_SCREENS.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
 
+  // ── /admin renders ALONE, above everything ──
+  // The desk is a full-viewport white console with its own design; it is not one
+  // of the app's screens and must not sit inside the screen wrapper. That
+  // wrapper carries `.fade`, whose keyframes animate `transform` — and a
+  // transformed ancestor becomes the containing block for `position: fixed`
+  // descendants, so the desk's own fixed overlay was being laid out against a
+  // mid-page box instead of the viewport. Returning it here skips the wrapper,
+  // the galaxy, the dock and the chrome in one move, which is what it wants
+  // anyway. (Every hook above has already run, so this early return is safe.)
+  if (screen === 'admin') return <AdminScreen />
+
+  // ── the page that gets no sky ──
+  // /trial is a long read someone makes a week-long decision from. A galaxy
+  // drifting behind it is motion competing with text that has to be understood,
+  // and it is the one page people arrive at from a link, on data, on a phone.
+  // Skipping the canvas outright (rather than dimming it) also means the page
+  // stops paying for a full-screen animation loop it never uses.
+  const BARE = screen === 'trial'
+
   return (
     <div className="celestual-app" style={{ '--nav-pad': navHere ? '84px' : '0px' }}>
-      {homeCommunity ? (
+      {BARE ? (
+        // A still field, not a dead one: one soft rise of colour off the
+        // bottom-left so the page still feels like it belongs to us.
+        <div
+          aria-hidden
+          style={{
+            position: 'fixed', inset: 0, zIndex: 0, background: C.ink,
+            backgroundImage: `radial-gradient(120% 80% at 12% 100%, ${rgba(C.star, 0.1)} 0%, transparent 58%), radial-gradient(90% 60% at 88% 0%, ${rgba(C.them, 0.07)} 0%, transparent 55%)`,
+          }}
+        />
+      ) : homeCommunity ? (
         <CommunityGalaxyCanvas
           key={homeCommunity.slug}
           you={C.you}

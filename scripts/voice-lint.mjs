@@ -15,11 +15,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 // What gets scanned. strings.js is scanned whole (every locale should hold the
 // voice); growth.js carries the placed screen's growth copy; public/*.html are
 // the legal/trust pages.
+//
+// EXEMPT: celestual-challenge.html is not our copy. It is a faithful reproduction
+// of the official competition document — the same words the .docx and .pdf carry,
+// the ones a competitor signs. Its voice is the document's (sentence case, first
+// person plural, exclamation marks and all), and linting it here would mean
+// editing a signed agreement to satisfy a style rule. If the doc changes, it
+// changes in the doc.
+const EXEMPT = new Set(['celestual-challenge.html'])
+
 const files = [
   join(root, 'app/src/i18n/strings.js'),
   join(root, 'app/src/growth.js'),
   ...readdirSync(join(root, 'app/public'))
-    .filter((f) => f.endsWith('.html'))
+    .filter((f) => f.endsWith('.html') && !EXEMPT.has(f))
     .map((f) => join(root, 'app/public', f)),
 ]
 

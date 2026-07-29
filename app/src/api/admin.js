@@ -8,8 +8,6 @@ import { supabase, hasSupabase } from './supabase.js'
 
 const FUNCTION = 'celestual-admin'
 
-export const adminEnabled = () => hasSupabase
-
 async function call(body) {
   if (!hasSupabase) return { ok: false, error: 'network' }
   try {
@@ -33,9 +31,40 @@ export function adminDeleteUser(password, handle) {
   return call({ password, action: 'delete_user', handle })
 }
 
-// Erase + suppress: the @ can't be pinged and can't verify back in.
+// Erase + ban (kind='ban'): the @ can't be pinged and can't verify back in.
+// This is the ONLY thing that refuses an identity. "Delete everything" in the
+// account screen does not go through here and closes no doors (migration 0020).
 export function adminBanUser(password, handle) {
   return call({ password, action: 'ban_user', handle })
+}
+
+// Lift whatever is on this @ (0018), ban or opt-out alike. Since 0020 only a
+// ban blocks verifying, so this is for reversing a ban or honouring a changed
+// mind about an opt-out. Erased pings stay erased; only the door reopens.
+//   { ok:true, handle, lifted:bool }
+export function adminUnbanUser(password, handle) {
+  return call({ password, action: 'unban_user', handle })
+}
+
+// One @, the whole truth: suppressed? member? what its last verification
+// attempts did (0018). Use this the moment someone says their codes are
+// correct and nothing happens.
+//   { ok:true, handle, suppressed, member, verifications:[…] }
+export function adminHandleStatus(password, handle) {
+  return call({ password, action: 'handle_status', handle })
+}
+
+// Drop a handle's unfinished verification rows (0019) — the cure for someone
+// stuck behind their own stale codes.
+export function adminClearPending(password, handle) {
+  return call({ password, action: 'clear_pending', handle })
+}
+
+// Admit a handle by hand (0019). Stamped verified_via='manual' so the desk
+// never mistakes our word for Meta's. Refused for a suppressed @ — lift the
+// lockout first, deliberately.
+export function adminVerifyUser(password, handle) {
+  return call({ password, action: 'verify_user', handle })
 }
 
 // Remove a trial competitor (their row + link counters), leaving any ordinary

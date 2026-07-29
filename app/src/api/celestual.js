@@ -179,25 +179,6 @@ export async function linkHandles(handles, { demo } = {}) {
   }
 }
 
-// ── worlds (community counters — framework §2.5) ──────────────────────────
-// Tag the real communities you belong to (school + scenes, three total).
-// Counters are floored at 100 SERVER-side: below it they come back null.
-export async function setWorlds({ me, names, proof, demo }) {
-  const list = (names || []).map((n) => String(n || '').trim()).filter(Boolean).slice(0, 3);
-  if (demo || !hasSupabase || !normHandle(me)) return { ok: true, worlds: list.map((n) => ({ slug: n, name: n, count: null })) };
-  try {
-    const { data, error } = await supabase.rpc('celestual_set_worlds', {
-      p_handle: me,
-      p_names: list,
-      p_proof: proof || null,
-    });
-    if (error || !data?.ok) return { ok: false, worlds: [] };
-    return data;
-  } catch {
-    return { ok: false, worlds: [] };
-  }
-}
-
 export async function worldCounts(slugs) {
   const list = (slugs || []).filter(Boolean).slice(0, 6);
   if (!hasSupabase || !list.length) return [];
@@ -209,6 +190,19 @@ export async function worldCounts(slugs) {
     return [];
   }
 }
+
+// ── CAMPUS: the client half of a server feature nothing currently calls ───────
+// These two mirror live RPCs (celestual_campus, celestual_campus_preregister)
+// and the server side is fully built and still RUNNING: the celestual_campuses /
+// celestual_campus_prereg / celestual_campus_mail tables exist, and the
+// celestual-remind cron drains that mail queue every hour. But no screen imports
+// either function, so the feature has no way in.
+//
+// They are kept deliberately, and labelled, rather than deleted: cutting them
+// would leave an hourly cron draining a queue nothing can fill, with no trace in
+// the client of why those tables exist. Either finish the campus entry point or
+// retire the whole feature (tables, RPCs and the remind job together) — that is
+// a product decision, not a cleanup.
 
 // ── campus windows (assurance contracts — framework §2.3) ─────────────────
 export async function fetchCampus(slug) {
@@ -254,8 +248,32 @@ export async function searchHandles(query) {
   }
 }
 
+// ── the two different doors (migration 0020) ─────────────────────────────────
+// These used to be one call, and conflating them locked people out of their own
+// accounts for tidying up. Keep them apart:
+//
+//   eraseAccount  — "take my data off your servers." Erases everything, closes
+//                   nothing. You can verify again tomorrow. This is what the
+//                   account screen's "delete everything" calls.
+//   suppressHandle — "nobody may ever enter my @." The real opt-out, for any
+//                   handle owner whether or not they use celestual. Permanent
+//                   by intent (we lift it by hand on request), and it does NOT
+//                   stop the owner signing up — being un-pingable and being
+//                   unwelcome are different facts.
+
+// Erase everything about a handle and leave every door open.
+export async function eraseAccount(handle) {
+  if (!hasSupabase) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { erased: 0, handle: normHandle(handle) }
+  }
+  const { data, error } = await supabase.rpc('celestual_erase_account', { p_handle: handle });
+  if (error) throw error;
+  return data; // { erased: number, handle: string }
+}
+
 // Public opt-out: verify-and-vanish for any handle owner, user or not (§2.5).
-// Blocks the handle from ever being pinged and erases everything referencing it.
+// Blocks the handle from ever being PINGED and erases everything referencing it.
 export async function suppressHandle(handle) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));

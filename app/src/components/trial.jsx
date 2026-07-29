@@ -1,30 +1,32 @@
-// trial.jsx — the First Light trial page (/trial) and the admin desk (/admin).
+// trial.jsx — the Celestual Challenge page at /trial.
 //
-// /trial is the competition's whole front door (migration 0017): the official
-// doc distilled to a screen (trialContent.js), the doc itself to view and
-// download, and the self-serve entry — verify an email, sign, choose the four
-// letters that become a root-level tracking link (celestual.us/<code>).
-// A competitor coming back sees their entry: the link, the code, the numbers.
+// The competition's whole front door: the official doc distilled to a screen
+// (trialContent.js), the doc itself readable IN PLACE (a viewer sheet, not a
+// tab that navigates people away mid-decision), and the self-serve entry —
+// verify an email, sign, choose the four letters that become a root-level
+// tracking link (celestual.us/<code>). A competitor coming back sees their
+// entry: the link, the code, the numbers.
 //
-// /admin is the desk: password-gated (checked only server-side, in the
-// celestual-admin edge function), an organized read of competitors and users —
-// including exactly how each user verified ('dm' vs the 20-second 'timeout'
-// grace, with the DM code held, for manual checking) — plus delete and ban.
+// This page runs WITHOUT the living galaxy behind it (App.jsx skips the canvas
+// here). The sky is the product's feeling; this page's job is to be read, at
+// length, by someone deciding whether to spend a week on us. It keeps the
+// palette and a still gradient, and drops the motion.
 //
-// Both live outside screens.jsx deliberately: they are operational surfaces
-// grafted onto the product, not part of the nine-screen story.
+// It lives outside screens.jsx deliberately: an operational surface grafted
+// onto the product, not part of the nine-screen story. The admin desk, once
+// here too, now has its own file (components/admin.jsx) and its own look.
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { normHandle, isValidHandle } from '../api/celestual.js'
 import { recruitStats, loadDash } from '../api/recruit.js'
 import {
   startEmail, checkChoice, claimTrial, loginTrial, trialLink, normChoice,
   choiceProblem, loadTrialAccount, clearTrialAccount, trialEnabled,
 } from '../api/trial.js'
-import { adminOverview, adminDeleteUser, adminBanUser, adminDeleteCompetitor } from '../api/admin.js'
 import { useI18n } from '../i18n/index.js'
 import {
   Brandmark, Kicker, Mono, GlassPanel, PrimaryButton, GhostButton, OutlineButton,
-  Field, Note, ExitRow, Display, Title, Small, Serif, Sonar,
+  Field, Note, ExitRow, Display, Title, Small, Serif, Icon, useDialog,
   rgba, RADIUS, SPACE, FONT, SIZE,
 } from './ui.jsx'
 import { Shell } from './screens.jsx'
@@ -52,15 +54,6 @@ async function copyText(text) {
     return ok
   } catch {
     return false
-  }
-}
-
-const fmtDay = (x) => {
-  if (!x) return ''
-  try {
-    return new Date(x).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase()
-  } catch {
-    return ''
   }
 }
 
@@ -139,6 +132,80 @@ function WeekBars({ C, days }) {
   )
 }
 
+// ── the doc, read in place ───────────────────────────────────────────────────
+// The doc used to open in a new tab. That is the worst moment to send someone
+// away: they are mid-decision, on a phone, and a downloaded .docx or a PDF
+// viewer that fights mobile Safari is where the decision quietly ends. The
+// sheet loads the doc's own HTML edition in an iframe — same document, same
+// words, reflowed for a phone — and keeps the PDF and .docx one tap away for
+// anyone who wants to print or sign.
+//
+// PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+// `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+// `both` — so the transform never goes away, and a transformed ancestor is the
+// containing block for `position: fixed` descendants. On a short screen nobody
+// notices; on THIS page, which is several viewports tall, `inset: 0` resolved
+// to the whole page and the sheet centred itself a thousand pixels below the
+// fold. The scrim still looked right, which is what makes it a nasty one.
+function DocSheet({ C, onClose }) {
+  const { t } = useI18n()
+  const ref = useDialog(onClose)
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom))' }}
+    >
+      <div aria-hidden className="scrim-in" style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.8), backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={TRIAL.doc.title}
+        tabIndex={-1}
+        className="readout-in"
+        style={{
+          position: 'relative', width: '100%', maxWidth: 780, height: '100%', maxHeight: 900,
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          background: C.ink2, border: `1px solid ${C.line}`, borderRadius: RADIUS.card, outline: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, padding: `${SPACE.md}px ${SPACE.lg}px`, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
+          <Kicker C={C} style={{ flex: 1, minWidth: 0 }}>{TRIAL.doc.title}</Kicker>
+          <a
+            href={TRIAL_DOC.pdf}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, color: C.muted, textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            {t('trial.docPdf')}
+          </a>
+          <a
+            href={TRIAL_DOC.docx}
+            download
+            style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, color: C.muted, textDecoration: 'none', whiteSpace: 'nowrap' }}
+          >
+            {t('trial.docDocx')}
+          </a>
+          <button
+            onClick={onClose}
+            aria-label={t('trial.docClose')}
+            style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, background: C.ink3, border: `1px solid ${C.line}`, cursor: 'pointer', display: 'grid', placeItems: 'center', color: C.muted }}
+          >
+            <Icon name="close" size={13} color="currentColor" />
+          </button>
+        </div>
+        <iframe
+          src={TRIAL_DOC.html}
+          title={TRIAL.doc.title}
+          style={{ flex: 1, width: '100%', border: 'none', background: '#fff' }}
+        />
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 // One of the poster's three numbers — a figure in the emotional register, its
 // unit whispered beneath. The tiles are the page's first read.
 function StatTile({ C, v, l }) {
@@ -178,6 +245,8 @@ export function TrialScreen({ C, ctx }) {
   const [welcomeBack, setWelcomeBack] = React.useState(false)
   const [stats, setStats] = React.useState(null)
   const [copied, setCopied] = React.useState(false)
+  // the doc, read without leaving the page
+  const [docOpen, setDocOpen] = React.useState(false)
   const copyTimer = React.useRef(null)
   React.useEffect(() => () => copyTimer.current && clearTimeout(copyTimer.current), [])
 
@@ -449,12 +518,16 @@ export function TrialScreen({ C, ctx }) {
           ))}
         </div>
 
-        {/* the doc — the whole detail lives there; the page is the poster */}
+        {/* the doc — the whole detail lives there; the page is the poster.
+            It opens IN PLACE (see DocSheet) so reading it never costs the tab. */}
         <GlassPanel C={C} style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Kicker C={C}>{TRIAL.doc.title}</Kicker>
           <Small C={C}>{TRIAL.doc.sub}</Small>
-          <OutlineButton C={C} onClick={() => window.open(TRIAL_DOC.pdf, '_blank', 'noopener')}>{t('trial.docView')}</OutlineButton>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <OutlineButton C={C} onClick={() => setDocOpen(true)}>{t('trial.docView')}</OutlineButton>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.lg }}>
+            <a href={TRIAL_DOC.pdf} target="_blank" rel="noopener noreferrer" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecorationColor: rgba(C.muted, 0.5), textUnderlineOffset: 3 }}>
+              {t('trial.docPdf')}
+            </a>
             <a href={TRIAL_DOC.docx} download style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecorationColor: rgba(C.muted, 0.5), textUnderlineOffset: 3 }}>
               {t('trial.docDownload')}
             </a>
@@ -515,311 +588,31 @@ export function TrialScreen({ C, ctx }) {
           <Serif C={C} size={SIZE.lead} style={{ color: rgba(C.cream, 0.92) }}>{TRIAL.mechanic}</Serif>
         </div>
 
+        {/* the doc's strategy note — the one paragraph that changes how a
+            competitor spends the week, so it earns a place on the page */}
+        <GlassPanel C={C} inset style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+          <Kicker C={C}>{TRIAL.understand.title}</Kicker>
+          <Small C={C} style={{ lineHeight: 1.7 }}>{TRIAL.understand.body}</Small>
+        </GlassPanel>
+
         {entry}
+
+        <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
+          <Mono C={C}>{TRIAL.contact}</Mono>
+        </div>
       </div>
 
       <ExitRow C={C} style={{ paddingTop: SPACE.xl }}>
         <GhostButton C={C} onClick={() => { window.location.href = '/' }}>{t('trial.toApp')}</GhostButton>
       </ExitRow>
+
+      {docOpen && <DocSheet C={C} onClose={() => setDocOpen(false)} />}
     </Shell>
   )
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// THE ADMIN DESK — celestual.us/admin
-// ═════════════════════════════════════════════════════════════════════════════
-
-const PW_STORE = 'celestual:adminpw' // session-scoped; the server re-checks every call
-
-// A two-tap destructive button: first tap arms it, second fires. Leaves no
-// window.confirm in a product that never uses one.
-function ArmedButton({ C, label, confirmLabel, onFire, tone }) {
-  const [armed, setArmed] = React.useState(false)
-  React.useEffect(() => {
-    if (!armed) return undefined
-    const id = setTimeout(() => setArmed(false), 3200)
-    return () => clearTimeout(id)
-  }, [armed])
-  const col = tone === 'hot' ? C.them : C.muted
-  return (
-    <button
-      onClick={() => {
-        if (!armed) return setArmed(true)
-        setArmed(false)
-        onFire()
-      }}
-      style={{
-        background: armed ? rgba(col, 0.16) : 'none',
-        border: `1px solid ${armed ? rgba(col, 0.7) : C.line}`,
-        borderRadius: 8,
-        padding: '3px 9px',
-        cursor: 'pointer',
-        color: armed ? col : C.muted,
-        fontFamily: FONT.mono,
-        fontSize: SIZE.meta,
-        letterSpacing: '.4px',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {armed ? confirmLabel : label}
-    </button>
-  )
-}
-
-function DeskTable({ C, cols, children }) {
-  return (
-    <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: `1px solid ${C.line}`, borderRadius: RADIUS.inner }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 640 }}>
-        <thead>
-          <tr>
-            {cols.map((c, i) => (
-              <th key={i} style={{ textAlign: 'left', padding: '9px 12px', fontFamily: FONT.mono, fontWeight: 400, fontSize: SIZE.micro, letterSpacing: '1.6px', textTransform: 'lowercase', color: C.muted, borderBottom: `1px solid ${C.line}`, whiteSpace: 'nowrap' }}>
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  )
-}
-
-const td = (C, extra = {}) => ({
-  padding: '9px 12px',
-  fontSize: SIZE.small,
-  color: C.cream,
-  borderBottom: `1px solid ${C.line}`,
-  verticalAlign: 'top',
-  whiteSpace: 'nowrap',
-  ...extra,
-})
-
-export function AdminScreen({ C }) {
-  const { t } = useI18n()
-  const [password, setPassword] = React.useState(() => {
-    try {
-      return sessionStorage.getItem(PW_STORE) || ''
-    } catch {
-      return ''
-    }
-  })
-  const [entered, setEntered] = React.useState('')
-  const [data, setData] = React.useState(null)
-  const [busy, setBusy] = React.useState(false)
-  const [err, setErr] = React.useState('')
-
-  const load = React.useCallback(
-    async (pw) => {
-      if (!pw) return
-      setBusy(true)
-      setErr('')
-      const r = await adminOverview(pw)
-      setBusy(false)
-      if (!r?.ok) {
-        setData(null)
-        setPassword('')
-        try {
-          sessionStorage.removeItem(PW_STORE)
-        } catch {
-          /* ignore */
-        }
-        setErr(r?.error === 'password' ? t('admin.errPass') : r?.error === 'rate' ? t('admin.errRate') : t('admin.errNetwork'))
-        return
-      }
-      setPassword(pw)
-      try {
-        sessionStorage.setItem(PW_STORE, pw)
-      } catch {
-        /* ignore */
-      }
-      setData(r)
-    },
-    [t],
-  )
-
-  React.useEffect(() => {
-    if (password) load(password)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const act = async (fn, handle) => {
-    if (busy) return
-    setBusy(true)
-    const r = await fn(password, handle)
-    setBusy(false)
-    if (!r?.ok) {
-      setErr(t('admin.errNetwork'))
-      return
-    }
-    load(password)
-  }
-
-  const lock = () => {
-    setData(null)
-    setPassword('')
-    setEntered('')
-    try {
-      sessionStorage.removeItem(PW_STORE)
-    } catch {
-      /* ignore */
-    }
-  }
-
-  // ── the gate ──
-  if (!data) {
-    return (
-      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <Brandmark C={C} size={26} />
-          </div>
-          <Kicker C={C} style={{ textAlign: 'center' }}>{t('admin.kicker')}</Kicker>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              load(entered)
-            }}
-            style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}
-          >
-            <input
-              type="password"
-              value={entered}
-              onChange={(e) => setEntered(e.target.value)}
-              placeholder={t('admin.passLabel')}
-              autoFocus
-              style={{
-                width: '100%', padding: '15px 17px', borderRadius: RADIUS.field, background: C.ink2,
-                border: `1.5px solid ${C.line}`, outline: 'none', color: C.cream,
-                fontFamily: FONT.mono, fontSize: 16, letterSpacing: '2px',
-              }}
-            />
-            {err && <Note C={C} tone="accent">{err}</Note>}
-            <PrimaryButton C={C} disabled={busy || !entered}>{busy ? t('admin.checking') : t('admin.enter')}</PrimaryButton>
-          </form>
-        </div>
-      </div>
-    )
-  }
-
-  // ── the desk ──
-  const counts = data.counts || {}
-  const competitors = Array.isArray(data.competitors) ? data.competitors : []
-  const users = Array.isArray(data.users) ? data.users : []
-  const attempts = Array.isArray(data.attempts) ? data.attempts : []
-  const mono = { fontFamily: FONT.mono, fontSize: SIZE.meta }
-
-  return (
-    <div style={{ minHeight: '100dvh', padding: 'max(18px, env(safe-area-inset-top)) 16px 48px' }}>
-      <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: SPACE.xxl }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
-            <Brandmark C={C} size={22} />
-            <Kicker C={C}>{t('admin.kicker')}</Kicker>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
-            {busy && <Sonar C={C} size={11} />}
-            <GhostButton C={C} onClick={() => load(password)} style={{ fontSize: SIZE.meta }}>{t('admin.refresh')}</GhostButton>
-            <GhostButton C={C} onClick={lock} style={{ fontSize: SIZE.meta }}>{t('admin.signout')}</GhostButton>
-          </div>
-        </div>
-
-        {err && <Note C={C} tone="accent">{err}</Note>}
-
-        <div style={{ display: 'flex', gap: SPACE.lg, flexWrap: 'wrap' }}>
-          {[
-            [counts.competitors, t('admin.competitors')],
-            [counts.members, t('admin.users')],
-            [counts.assumed, t('admin.viaTimeout')],
-          ].map(([n, label], i) => (
-            <GlassPanel key={i} C={C} inset style={{ padding: `${SPACE.md}px ${SPACE.xl}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.figure, color: C.cream }}>{Number(n || 0)}</span>
-              <Kicker C={C} micro>{label}</Kicker>
-            </GlassPanel>
-          ))}
-        </div>
-
-        {/* ── trial competitors ── */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-          <Title C={C}>{t('admin.competitors')}</Title>
-          {competitors.length === 0 ? (
-            <Mono C={C}>{t('admin.empty')}</Mono>
-          ) : (
-            <DeskTable C={C} cols={[t('admin.colName'), t('admin.colHandle'), t('admin.colEmail'), t('admin.colCode'), t('admin.colLink'), t('admin.colOpens'), t('admin.colJoined'), t('admin.colSigned'), '']}>
-              {competitors.map((r) => (
-                <tr key={r.handle}>
-                  <td style={td(C)}>{r.name || ''}</td>
-                  <td style={td(C, mono)}>@{r.handle}</td>
-                  <td style={td(C, { color: C.muted })}>{r.email || ''}</td>
-                  <td style={td(C, { ...mono, color: C.star, fontWeight: 700, letterSpacing: '2px' })}>{r.code}</td>
-                  <td style={td(C, mono)}>
-                    <a href={trialLink(r.code)} target="_blank" rel="noopener noreferrer" style={{ color: C.muted }}>
-                      {trialLink(r.code).replace(/^https?:\/\//, '')}
-                    </a>
-                  </td>
-                  <td style={td(C, mono)}>{Number(r.visits || 0)}</td>
-                  <td style={td(C, { ...mono, color: Number(r.signups || 0) > 0 ? C.star : C.cream })} title={(r.signup_handles || []).map((h) => '@' + h).join('  ')}>
-                    {Number(r.signups || 0)}
-                  </td>
-                  <td style={td(C, { ...mono, color: C.muted })}>{fmtDay(r.signed_at)}</td>
-                  <td style={td(C)}>
-                    <ArmedButton C={C} label={t('admin.remove')} confirmLabel={t('admin.yes')} onFire={() => act(adminDeleteCompetitor, r.handle)} />
-                  </td>
-                </tr>
-              ))}
-            </DeskTable>
-          )}
-        </section>
-
-        {/* ── users (successful and unsuccessful, with how each verified) ── */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-          <Title C={C}>{t('admin.users')}</Title>
-          {users.length === 0 ? (
-            <Mono C={C}>{t('admin.empty')}</Mono>
-          ) : (
-            <DeskTable C={C} cols={[t('admin.colHandle'), t('admin.colVia'), t('admin.colCode'), t('admin.colVerified'), t('admin.colPings'), '', '']}>
-              {users.map((r) => (
-                <tr key={r.handle}>
-                  <td style={td(C, mono)}>@{r.handle}</td>
-                  <td style={td(C, { ...mono, color: r.via === 'dm' ? C.star : r.via === 'timeout' ? C.them : C.muted })}>
-                    {r.via === 'dm' ? t('admin.viaDm') : r.via === 'timeout' ? t('admin.viaTimeout') : t('admin.viaNone')}
-                  </td>
-                  <td style={td(C, { ...mono, color: r.via === 'timeout' ? C.them : C.muted, fontWeight: r.via === 'timeout' ? 700 : 400, letterSpacing: '1px' })}>
-                    {r.code || ''}
-                  </td>
-                  <td style={td(C, { ...mono, color: C.muted })}>{fmtDay(r.verified_at || r.first_verified_at)}</td>
-                  <td style={td(C, mono)}>{Number(r.pings || 0)}</td>
-                  <td style={td(C)}>
-                    <ArmedButton C={C} label={t('admin.delete')} confirmLabel={t('admin.yes')} onFire={() => act(adminDeleteUser, r.handle)} />
-                  </td>
-                  <td style={td(C)}>
-                    <ArmedButton C={C} label={t('admin.ban')} confirmLabel={t('admin.yes')} onFire={() => act(adminBanUser, r.handle)} tone="hot" />
-                  </td>
-                </tr>
-              ))}
-            </DeskTable>
-          )}
-        </section>
-
-        {/* ── verifications started but never finished ── */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-          <Title C={C}>{t('admin.attempts')}</Title>
-          {attempts.length === 0 ? (
-            <Mono C={C}>{t('admin.empty')}</Mono>
-          ) : (
-            <DeskTable C={C} cols={[t('admin.colHandle'), t('admin.colCode'), t('admin.colStarted'), '']}>
-              {attempts.map((r, i) => (
-                <tr key={`${r.code}-${i}`}>
-                  <td style={td(C, mono)}>@{r.handle}</td>
-                  <td style={td(C, { ...mono, color: C.star, fontWeight: 700, letterSpacing: '1px' })}>{r.code}</td>
-                  <td style={td(C, { ...mono, color: C.muted })}>{fmtDay(r.created_at)}</td>
-                  <td style={td(C, { ...mono, color: C.muted })}>{r.expired ? t('admin.expired') : t('admin.pending')}</td>
-                </tr>
-              ))}
-            </DeskTable>
-          )}
-        </section>
-      </div>
-    </div>
-  )
-}
+// The admin desk used to live here. It now has its own file — components/admin.jsx —
+// because it stopped sharing anything with this one: no palette, no ui.jsx, no
+// type scale. An operations console and a competition poster want opposite
+// things from a design, and keeping them in one file kept pulling the console
+// back toward the product's voice.

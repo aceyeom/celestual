@@ -42,14 +42,6 @@ verify_jwt = false
 [functions.celestual-relogin]
 verify_jwt = false
 
-# The recruitment program's comment webhook. Called by ManyChat's External
-# Request when someone comments "celestual" under the recruitment reel,
-# authenticated by the same shared secret as celestual-manychat.
-# SUPERSEDED by celestual-trial (the First Light self-serve signup); kept only
-# so an already-deployed copy can be managed.
-[functions.celestual-recruit]
-verify_jwt = false
-
 # The First Light trial's front door (celestual.us/trial). Invoked by anonymous
 # visitors (with the anon key), so JWT verification is off; identity rests on
 # the emailed one-time code, checked server-side against its stored hash.
