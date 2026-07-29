@@ -906,6 +906,40 @@ export function LoginButton({ C, label, onClick }) {
   )
 }
 
+// ── the first light banner ────────────────────────────────────────────────────
+// The landing's one door to the trial: a small designed banner resting top-right
+// (mirroring the login chip's corner), not a chip — a hairline card with the
+// star's own light down its leading edge, the program name in the serif voice
+// and the invitation ticked beneath in mono. Quiet at rest, lit on hover.
+export function TrialBanner({ C, line1, line2, href = '/trial' }) {
+  const [h, setH] = React.useState(false)
+  return (
+    <a
+      href={href}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 3, padding: '8px 13px 7px 12px',
+        borderRadius: RADIUS.inner, textDecoration: 'none',
+        background: rgba(C.ink2, h ? 0.92 : 0.78),
+        border: `1px solid ${h ? rgba(C.star, 0.5) : rgba(C.star, 0.26)}`,
+        borderLeft: `2px solid ${rgba(C.star, h ? 0.95 : 0.7)}`,
+        boxShadow: h ? `0 8px 28px rgba(0,0,0,.5), 0 0 22px ${rgba(C.star, 0.14)}` : '0 6px 22px rgba(0,0,0,.4)',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        transition: 'all .25s ease',
+      }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span aria-hidden style={{ color: C.star, fontSize: 10, lineHeight: 1, textShadow: `0 0 10px ${rgba(C.star, 0.8)}` }}>✦</span>
+        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1, color: C.cream }}>{line1}</span>
+      </span>
+      <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.star, 0.9), paddingLeft: 16 }}>
+        {line2}
+      </span>
+    </a>
+  )
+}
+
 // ── the dock ──────────────────────────────────────────────────────────────────
 // The product's TWO places — your sky and your pings — drawn in the product's
 // own vocabulary instead of an app-store glass pill: a fragment of STAR CHART

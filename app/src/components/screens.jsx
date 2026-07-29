@@ -14,7 +14,7 @@ import { normHandle } from '../api/celestual.js'
 import { daysLeft, nearLapse } from '../api/pings.js'
 import {
   startVerification, pollVerification, igDeepLink, igWebLink, igUsername,
-  dmCode, savePending, loadPending, clearPending, genProof,
+  dmCode, savePending, loadPending, clearPending, genProof, graceVerify, GRACE_MS,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { renderSkyCard } from '../card.js'
@@ -29,7 +29,6 @@ import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../
 import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
-import { openInvite, signAgreement, recruitStats, recruitLink, loadDash, saveDash } from '../api/recruit.js'
 
 // Shared centered column: at least one dynamic-viewport tall, capped to an
 // intimate measure on wide monitors. --nav-pad (set by App) reserves the foot
@@ -3181,9 +3180,15 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // After a while stuck on "waiting", surface a self-serve way out (the DM can
   // be dropped by the relay; a fresh code re-runs the whole path).
   const [stuck, setStuck] = React.useState(false)
+  // TEMPORARY (0017): the relay has been dropping DMs, so past GRACE_MS the
+  // typed @ is admitted without the webhook. `assumed` keeps the success copy
+  // honest ("you're in", not "it's really you"); the admin desk lists these.
+  const [assumed, setAssumed] = React.useState(false)
   const proofRef = React.useRef(null)
   const hashRef = React.useRef(null)
   const expiryRef = React.useRef(0)
+  const startedAtRef = React.useRef(0)
+  const graceBusyRef = React.useRef(false)
   const pollRef = React.useRef(null)
   const doneRef = React.useRef(null)
   // Guards the mount effect against double-invocation (StrictMode / rapid
@@ -3205,6 +3210,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     setErrCode('')
     setCopied(false)
     setStuck(false)
+    setAssumed(false)
     setToken('')
     // Demo: never touch the backend. Mint a local code + proof and let the
     // polling effect auto-confirm after a beat — the whole DM flow reads
@@ -3223,7 +3229,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       proofRef.current = r.proof
       hashRef.current = r.proofHash
       expiryRef.current = Date.parse(r.expiresAt) || Date.now() + 10 * 60 * 1000
-      savePending({ handle, token: r.token, proofHash: r.proofHash, proof: r.proof, expiresAt: r.expiresAt })
+      startedAtRef.current = Date.now()
+      savePending({ handle, token: r.token, proofHash: r.proofHash, proof: r.proof, expiresAt: r.expiresAt, startedAt: startedAtRef.current })
       setToken(r.token)
       setPhase('waiting')
     } catch (e) {
@@ -3244,6 +3251,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       proofRef.current = saved.proof
       hashRef.current = saved.proofHash
       expiryRef.current = Date.parse(saved.expiresAt) || 0
+      startedAtRef.current = saved.startedAt || Date.now()
       setToken(saved.token)
       setPhase('waiting')
       return stopPoll
@@ -3286,9 +3294,33 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         stopPoll()
         clearPending()
         setPhase('expired')
+      } else if (Date.now() - (startedAtRef.current || 0) >= GRACE_MS && !graceBusyRef.current) {
+        // TEMPORARY (0017): the DM relay has been failing, so past the grace
+        // window the typed @ is admitted without the webhook. The server holds
+        // its own 20-second clock and the proof-hash gate; a DM that already
+        // landed wins (the poll above catches it first). An 'early' or
+        // transient answer just means the next tick tries again.
+        graceBusyRef.current = true
+        const g = await graceVerify(token, hashRef.current)
+        graceBusyRef.current = false
+        if (g.ok) {
+          stopPoll()
+          clearPending()
+          const proof = proofRef.current
+          setAssumed(true)
+          setPhase('verified')
+          doneRef.current = setTimeout(() => onVerified(proof, g.handle || handle), VERIFIED_HOLD_MS)
+        } else if (g.error === 'expired' || g.error === 'banned') {
+          stopPoll()
+          clearPending()
+          setPhase('expired')
+        }
       }
     }
     pollRef.current = setInterval(tick, 2500)
+    // Fire a check right at the grace boundary too, so admission lands at
+    // ~20s instead of waiting out the tail of a poll interval.
+    const graceId = setTimeout(tick, Math.max(0, GRACE_MS - (Date.now() - (startedAtRef.current || Date.now()))) + 150)
     // Coming back from Instagram (tab regains focus/visibility) checks at once,
     // so the flip to "verified" is instant instead of up to a poll-beat late —
     // and a background-throttled interval can't strand the wait.
@@ -3303,10 +3335,11 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     return () => {
       stopPoll()
       clearTimeout(stuckId)
+      clearTimeout(graceId)
       document.removeEventListener('visibilitychange', onReturn)
       window.removeEventListener('focus', onReturn)
     }
-  }, [phase, token, onVerified, demo])
+  }, [phase, token, onVerified, demo, handle])
 
   const copyAndOpen = () => {
     copyText(dmCode(token)).then(setCopied)
@@ -3374,7 +3407,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
-            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t('verify.verified')}</div>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t(assumed ? 'verify.assumed' : 'verify.verified')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '0.5px', color: rgba(C.star, 0.9) }}>
               <Sonar C={C} size={11} /> {t('verify.verifiedSub')}
             </div>
@@ -3863,292 +3896,3 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
   )
 }
 
-// ── /recruit — the recruitment program (migration 0016) ──────────────────────
-// One screen, two states, because they are two moments of the same thing:
-//
-//   the AGREEMENT — arrived at from the DM that answered a "celestual" comment
-//   under the recruitment reel. The rules, then a name typed as a signature.
-//
-//   the NUMBERS — the moment they sign, this same screen becomes their personal
-//   tracking link and the count of what it has brought in. A signed recruit
-//   coming back on the same device lands straight here.
-//
-// The invite token and the dashboard key both ride the URL fragment and are
-// hashed before they touch the network (api/recruit.js), so neither can appear
-// in a server log.
-
-// One rule, numbered. The number is set in the product's own mono, not drawn as
-// a bullet glyph — the count IS the ornament.
-function RuleLine({ C, n, children }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
-      <span style={{ flexShrink: 0, width: 18, paddingTop: 2, fontFamily: FONT.mono, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
-        {String(n).padStart(2, '0')}
-      </span>
-      <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.sans, fontSize: SIZE.small, lineHeight: LINE.body, color: rgba(C.cream, 0.86) }}>
-        {children}
-      </span>
-    </div>
-  )
-}
-
-// One number on the recruit's readout: the figure in the emotional register, the
-// thing it counts whispered in mono beneath it. Same bones as the community
-// readout's stats, deliberately — a number reads the same everywhere here.
-function RecruitStat({ C, value, label, lit }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.xs, padding: `${SPACE.md}px ${SPACE.sm}px` }}>
-      <span style={{ fontFamily: FONT.serif, fontSize: SIZE.title, lineHeight: 1, color: lit ? C.star : C.cream, textShadow: lit ? `0 0 26px ${rgba(C.star, 0.3)}` : 'none' }}>
-        {value}
-      </span>
-      <Kicker C={C} micro>{label}</Kicker>
-    </div>
-  )
-}
-
-// The last seven days of link opens, drawn as the sky draws everything else:
-// points of light on a baseline, brighter where the day was busier. Not a chart
-// widget — a constellation of the week.
-function WeekTrail({ C, days }) {
-  const max = Math.max(1, ...days.map((d) => Number(d.n) || 0))
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: SPACE.sm, height: 34, padding: `0 ${SPACE.sm}px` }}>
-      {days.map((d, i) => {
-        const n = Number(d.n) || 0
-        const h = Math.max(2, Math.round((n / max) * 30))
-        return (
-          <span
-            key={i}
-            title={`${d.day}: ${n}`}
-            style={{
-              flex: 1, height: h, borderRadius: 999,
-              background: n ? `linear-gradient(180deg, ${rgba(C.star, 0.9)}, ${rgba(C.star, 0.35)})` : rgba(C.cream, 0.12),
-              boxShadow: n ? `0 0 10px ${rgba(C.star, 0.4)}` : 'none',
-            }}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-export function RecruitScreen({ C, ctx }) {
-  const { t } = useI18n()
-  const saved = React.useMemo(() => loadDash(), [])
-  // The fragment wins over what this device remembers, so a recruit can move
-  // their dashboard to a new phone by opening their own keep-this link there.
-  const code = ctx.recruitCode || (saved && saved.code) || ''
-  const key = ctx.recruitKey || (saved && saved.key) || ''
-  const token = ctx.recruitToken || ''
-
-  const [phase, setPhase] = React.useState('loading') // loading | agree | signed | dead
-  const [handle, setHandle] = React.useState('')
-  const [myCode, setMyCode] = React.useState(code)
-  const [myKey, setMyKey] = React.useState(key)
-  const [name, setName] = React.useState('')
-  const [err, setErr] = React.useState('')
-  const [busy, setBusy] = React.useState(false)
-  const [stats, setStats] = React.useState(null)
-  const [copied, setCopied] = React.useState(false)
-  const copyTimer = React.useRef(null)
-  React.useEffect(() => () => copyTimer.current && clearTimeout(copyTimer.current), [])
-
-  // Open whichever door the URL (or this device) points at.
-  React.useEffect(() => {
-    let live = true
-    ;(async () => {
-      if (myCode && myKey) {
-        const s = await recruitStats({ code: myCode, key: myKey })
-        if (!live) return
-        if (s.ok) {
-          setStats(s)
-          setHandle(s.handle || '')
-          setPhase('signed')
-          saveDash({ code: myCode, key: myKey })
-          return
-        }
-      }
-      if (!token) {
-        if (live) setPhase('dead')
-        return
-      }
-      const r = await openInvite(token)
-      if (!live) return
-      if (!r.ok) {
-        setPhase('dead')
-        return
-      }
-      setHandle(r.handle || '')
-      setPhase(r.status === 'signed' && r.code ? 'agree' : 'agree')
-    })()
-    return () => {
-      live = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Refresh the numbers once they exist, so a recruit watching the page sees it
-  // move as their link works.
-  React.useEffect(() => {
-    if (phase !== 'signed' || !myCode || !myKey) return undefined
-    const id = setInterval(async () => {
-      const s = await recruitStats({ code: myCode, key: myKey })
-      if (s.ok) setStats(s)
-    }, 30000)
-    return () => clearInterval(id)
-  }, [phase, myCode, myKey])
-
-  const link = myCode ? recruitLink(myCode) : ''
-
-  const sign = async () => {
-    if (busy || name.trim().length < 2) return
-    setBusy(true)
-    setErr('')
-    const r = await signAgreement({ token, name })
-    setBusy(false)
-    if (!r.ok) {
-      setErr(r.error === 'name' ? t('recruit.errName') : t('recruit.errLink'))
-      return
-    }
-    setMyCode(r.code)
-    setMyKey(r.key)
-    setPhase('signed')
-    const s = await recruitStats({ code: r.code, key: r.key })
-    if (s.ok) setStats(s)
-  }
-
-  const share = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({ url: link })
-        return
-      }
-    } catch {
-      /* sheet dismissed — fall through to a copy */
-    }
-    try {
-      await navigator.clipboard.writeText(link)
-      setCopied(true)
-      if (copyTimer.current) clearTimeout(copyTimer.current)
-      copyTimer.current = setTimeout(() => setCopied(false), 2200)
-    } catch {
-      /* the link is on screen either way */
-    }
-  }
-
-  if (phase === 'loading') {
-    return (
-      <Shell>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.sm }}>
-          <Sonar C={C} size={12} />
-          <Mono C={C}>{t('recruit.loading')}</Mono>
-        </div>
-      </Shell>
-    )
-  }
-
-  if (phase === 'dead') {
-    return (
-      <Shell>
-        <ScreenHeader C={C} label={<Brandmark C={C} size={18} />} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.lg }}>
-          <Title C={C} align="center">{t('recruit.deadTitle')}</Title>
-          <Small C={C} align="center" style={{ maxWidth: 320 }}>{t('recruit.deadBody')}</Small>
-        </div>
-        <PrimaryButton C={C} onClick={() => ctx.go('landing')}>{t('recruit.deadCta')}</PrimaryButton>
-      </Shell>
-    )
-  }
-
-  // ── the numbers ──
-  if (phase === 'signed') {
-    const visits = stats ? Number(stats.visits || 0) : 0
-    const signups = stats ? Number(stats.signups || 0) : 0
-    const days = stats && Array.isArray(stats.days) ? stats.days : []
-    return (
-      <Shell>
-        <ScreenHeader C={C} label={t('recruit.kicker')} />
-
-        <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xl, paddingTop: SPACE.xl }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-            <Title C={C}>{t('recruit.liveTitle')}</Title>
-            {handle && <HandleChip C={C} handle={handle} />}
-          </div>
-
-          {/* the link, given the weight of the thing it is */}
-          <GlassPanel C={C} style={{ padding: `${SPACE.lg}px ${SPACE.lg}px ${SPACE.md}px`, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-            <Kicker C={C}>{t('recruit.linkLabel')}</Kicker>
-            <span
-              style={{
-                fontFamily: FONT.mono, fontWeight: 700, fontSize: 'clamp(15px, 4.6vw, 19px)',
-                letterSpacing: '.2px', color: C.cream, wordBreak: 'break-all', userSelect: 'all', WebkitUserSelect: 'all',
-              }}
-            >
-              {link.replace(/^https?:\/\//, '')}
-            </span>
-            <PrimaryButton C={C} onClick={share}>{copied ? t('recruit.copied') : t('recruit.share')}</PrimaryButton>
-          </GlassPanel>
-
-          {/* what it has done */}
-          <GlassPanel C={C} inset style={{ padding: `${SPACE.sm}px 0 ${SPACE.md}px` }}>
-            <div style={{ display: 'flex', alignItems: 'stretch' }}>
-              <RecruitStat C={C} value={visits.toLocaleString()} label={t('recruit.statVisits')} />
-              <span aria-hidden style={{ width: 1, alignSelf: 'stretch', margin: `${SPACE.md}px 0`, background: C.line }} />
-              <RecruitStat C={C} value={signups.toLocaleString()} label={t('recruit.statSignups')} lit={signups > 0} />
-            </div>
-            {days.length > 0 && (
-              <>
-                <WeekTrail C={C} days={days} />
-                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: SPACE.sm }}>
-                  <Kicker C={C} micro>{t('recruit.week')}</Kicker>
-                </div>
-              </>
-            )}
-          </GlassPanel>
-
-          <Note C={C} tone="quiet">{t('recruit.keepNote')}</Note>
-        </div>
-
-        <ExitRow C={C} style={{ paddingTop: SPACE.lg }}>
-          <GhostButton C={C} onClick={() => ctx.go('landing')}>{t('recruit.toApp')}</GhostButton>
-        </ExitRow>
-      </Shell>
-    )
-  }
-
-  // ── the agreement ──
-  const rules = [t('recruit.rule1'), t('recruit.rule2'), t('recruit.rule3'), t('recruit.rule4'), t('recruit.rule5')]
-  return (
-    <Shell>
-      <ScreenHeader C={C} label={t('recruit.kicker')} />
-
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xl, paddingTop: SPACE.xl }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          <Display C={C}>
-            {t('recruit.title1')}<br /><span style={{ color: C.star }}>{t('recruit.title2')}</span>
-          </Display>
-          {handle && <HandleChip C={C} handle={handle} />}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {rules.map((r, i) => (
-            <RuleLine key={i} C={C} n={i + 1}>{r}</RuleLine>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          <FieldLabel C={C}>{t('recruit.signLabel')}</FieldLabel>
-          <Field C={C} kind="text" value={name} onChange={setName} placeholder={t('recruit.signPlaceholder')} onEnter={sign} />
-          {err && <Note C={C} tone="accent">{err}</Note>}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: SPACE.lg }}>
-        <PrimaryButton C={C} disabled={busy || name.trim().length < 2} onClick={sign}>
-          {busy ? t('recruit.signing') : t('recruit.sign')}
-        </PrimaryButton>
-        <Note C={C} tone="quiet" align="center">{t('recruit.signNote')}</Note>
-      </div>
-    </Shell>
-  )
-}

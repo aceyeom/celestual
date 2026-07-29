@@ -10,14 +10,16 @@ import { getSession, signInStub, markVerified, signOut as clearAuthSession, resu
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
+import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
-  StarViewOverlay, CopyCodeScreen, SignInScreen, RecruitScreen,
+  StarViewOverlay, CopyCodeScreen, SignInScreen,
 } from './components/screens.jsx'
+import { TrialScreen, AdminScreen } from './components/trial.jsx'
 import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
+import { RESERVED_CODES } from './api/trial.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -39,7 +41,8 @@ const SCREENS = {
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
   signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
-  recruit: RecruitScreen, // /recruit: the agreement, then the recruit's own numbers
+  trial: TrialScreen, //     /trial: the first light competition — the brief + entry
+  admin: AdminScreen, //     /admin: the password-gated desk
 }
 
 const STORE = 'celestual:v2'
@@ -77,27 +80,16 @@ const parseRoute = () => {
   const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
   if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
   if (path === '/optout') return { optout: true }
-  // /r/<code> — a recruit's personal tracking link (migration 0016). It lands on
-  // the ordinary cold landing; the code is remembered so the signup it leads to
-  // is credited to them.
+  // /r/<code> — an old-style tracking link (migration 0016), kept as an alias.
+  // It lands on the ordinary cold landing; the code is remembered so the signup
+  // it leads to is credited to its competitor.
   const ref = path.match(/^\/r\/([a-z0-9]{4,16})$/i)
   if (ref) return { ref: ref[1].toLowerCase() }
-  // /recruit#t=<token>   — the agreement, opened from the DM
-  // /recruit#c=..&k=..   — a signed recruit's own numbers
-  // Both ride the FRAGMENT: a one-time token and a dashboard key must never
-  // reach an access log.
-  if (path === '/recruit') {
-    const h = window.location.hash || ''
-    const tok = h.match(/t=([0-9a-fA-F]{16,128})/)
-    const code = h.match(/c=([a-z0-9]{4,16})/i)
-    const key = h.match(/k=([0-9a-fA-F]{16,128})/)
-    return {
-      recruit: true,
-      recruitToken: tok ? tok[1] : '',
-      recruitCode: code ? code[1].toLowerCase() : '',
-      recruitKey: key ? key[1] : '',
-    }
-  }
+  // /trial — the first light competition: the brief, the doc, the entry.
+  // /admin — the desk. /recruit (the retired 0016 flow) lands on the trial too,
+  // so any link still out in a DM keeps working.
+  if (path === '/trial' || path === '/recruit') return { trial: true }
+  if (path === '/admin') return { admin: true }
   // /copy#c=1234 — the verification email's copy button. The code rides the
   // FRAGMENT so it never appears in a request line or a server log.
   if (path === '/copy') {
@@ -111,6 +103,11 @@ const parseRoute = () => {
     const m = (window.location.hash || '').match(/t=([0-9a-fA-F]{16,128})/)
     return { signin: true, signinToken: m ? m[1] : '' }
   }
+  // /<code> — a trial competitor's ROOT-LEVEL tracking link (migration 0017):
+  // exactly four letters, chosen by them. Checked LAST so every named route
+  // above wins first, and never for the words the router reserves.
+  const four = path.match(/^\/([a-z]{4})$/i)
+  if (four && !RESERVED_CODES.includes(four[1].toLowerCase())) return { ref: four[1].toLowerCase() }
   return {}
 }
 
@@ -316,8 +313,9 @@ export default function App() {
     if (route.optout) return 'privacy'
     if (route.copy) return 'copy'
     if (route.signin) return 'signin'
-    if (route.recruit) return 'recruit'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree'].includes(init.screen)) return init.screen
+    if (route.trial) return 'trial'
+    if (route.admin) return 'admin'
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -1261,9 +1259,6 @@ export default function App() {
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
-    recruitToken: route.recruitToken || '',
-    recruitCode: route.recruitCode || '',
-    recruitKey: route.recruitKey || '',
     verifyEnabled: igVerifyEnabled() || demo,
     recoveryEnabled,
     identity, resolveIdentity, resetIdentity,
@@ -1291,7 +1286,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'recruit']
+  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   // The backdrop: once you've joined a community, the app-wide field IS your
@@ -1354,6 +1349,14 @@ export default function App() {
           ) : (
             <LoginButton C={C} label={t('landing.login')} onClick={startLogin} />
           )}
+        </div>
+      )}
+
+      {/* the first light banner — the landing's one door to the trial, resting
+          in the opposite corner from the login chip */}
+      {!demo && screen === 'landing' && (
+        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
+          <TrialBanner C={C} line1={t('landing.trial1')} line2={t('landing.trial2')} />
         </div>
       )}
 

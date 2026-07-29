@@ -1,5 +1,14 @@
 # The recruitment program
 
+> **RETIRED (First Light, migration 0017).** The comment → DM → invite loop
+> described here is no longer the way in: candidates now register on
+> **`celestual.us/trial`** (email verification, in-app signature, a chosen
+> four-letter code, root-level links `celestual.us/<code>`), and `/recruit`
+> redirects there. The counting layer this doc specifies — `celestual_recruits`,
+> the visit/attribute/stats RPCs — lives on unchanged underneath the trial.
+> Current guide: **[FIRST-LIGHT-TRIAL.md](./FIRST-LIGHT-TRIAL.md)**. The
+> ManyChat wiring below is kept for reference only.
+
 **comment → DM → agreement → a personal tracking link.**
 
 A recruitment reel goes up with ad spend behind it. People enter by commenting

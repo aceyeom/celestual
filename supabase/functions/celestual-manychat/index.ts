@@ -137,5 +137,8 @@ Deno.serve(async (req) => {
   if (codeExpired) {
     return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.' });
   }
-  return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request. Get a fresh code in the app and send it here.' });
+  // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
+  // code_expired above for a full week, so landing HERE means a typo'd code, a
+  // code older than that retention, or a completion RPC error in the logs.)
+  return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.' });
 });
