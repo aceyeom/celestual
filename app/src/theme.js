@@ -32,8 +32,6 @@ export const TOKENS = {
 }
 
 // Palette passed to the galaxy canvas + makeColors, as a 2-tuple [you, them].
-export const PALETTE = [TOKENS.you, TOKENS.them]
-
 // The category lights — one tint per "who are they to you" answer, introduced
 // on the options tab and worn by the person's own stars in their community's
 // sky. Soft pastels of the same starlight family (never neon): rose for a

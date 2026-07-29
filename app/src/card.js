@@ -590,16 +590,3 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
 
   return canvas.toDataURL('image/png')
 }
-
-// Trigger a download of the rendered card.
-export async function downloadSkyCard({ community, open, stats }) {
-  const url = await renderSkyCard({ community, open, stats })
-  const slug = (community && community.slug) || 'sky'
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `celestual-${slug}-sky.png`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  return url
-}

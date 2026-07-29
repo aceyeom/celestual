@@ -1,25 +1,24 @@
-// recruit.js — the recruitment program's client half (migration 0016).
+// recruit.js — the tracking-link half of the trial program (migration 0016).
 //
-// The loop: a reel goes up, someone comments "celestual", ManyChat DMs them a
-// signing link (the celestual-recruit edge function), they sign, and they get a
-// personal tracking link — celestual.us/r/<code> — whose visits and signups are
-// counted against them.
+// WHAT THIS IS NOW. 0016 shipped a comment→DM→invite loop: a reel went up,
+// someone commented "celestual", ManyChat DMed them a signing link, they signed,
+// and they got a tracking link. 0017 replaced that whole front door with the
+// self-serve signup at /trial, and the invite half of this file (openInvite,
+// signAgreement) plus the celestual-recruit edge function are gone.
 //
-// Two secrets live in the browser here, and neither is ever sent in the clear:
+// What survives is the part the trial links actually run on, unchanged: remember
+// which link a visitor arrived through, count the visit, credit the signup when
+// they verify, and read a competitor's numbers back for their account page.
 //
-//   · the INVITE token, which arrives in the DM link's fragment. We hash it
-//     before it touches the network, exactly like the DM proof.
-//   · the DASH key, minted HERE at signing time. Its hash goes up and binds the
-//     recruit's dashboard; the raw key stays on this device (and in the link we
-//     hand them to keep). Losing it costs the dashboard, not the code — a fresh
-//     comment re-issues one.
+// One secret lives in the browser here and is never sent in the clear: the DASH
+// key, minted at signing time by the trial flow. Its hash goes up and binds the
+// competitor's dashboard; the raw key stays on this device. Losing it costs the
+// dashboard, not the code — logging back in with the same email re-binds it.
 import { supabase, hasSupabase } from './supabase.js'
 import { genProof, sha256Hex } from './igverify.js'
 
 const REF = 'celestual:ref' //  the code a visitor arrived through
 const DASH = 'celestual:dash' // this device's own recruit dashboard key
-
-export const recruitEnabled = () => hasSupabase
 
 // ── the visitor side (celestual.us/r/<code>) ─────────────────────────────────
 
@@ -56,11 +55,6 @@ export function normCode(code) {
   return String(code || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16)
 }
 
-export function recruitLink(code) {
-  const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://celestual.us'
-  return `${origin}/r/${normCode(code)}`
-}
-
 // Count the open. One integer per code per day, server-side; nothing about the
 // visitor is recorded. Best-effort — a failed count never blocks the page.
 export async function countVisit(code) {
@@ -90,43 +84,6 @@ export async function attributeSignup(handle) {
 }
 
 // ── the recruit side (celestual.us/recruit) ──────────────────────────────────
-
-// Open an invite from the DM link. Returns what the agreement page needs:
-//   { ok:true, handle, status:'invited' }
-//   { ok:true, handle, status:'signed', code }
-//   { ok:false }
-export async function openInvite(token) {
-  if (!hasSupabase || !token) return { ok: false }
-  try {
-    const hash = await sha256Hex(String(token).trim())
-    const { data, error } = await supabase.rpc('celestual_recruit_open', { p_invite_hash: hash })
-    if (error || !data?.ok) return { ok: false }
-    return data
-  } catch {
-    return { ok: false }
-  }
-}
-
-// Sign it. Mints this device's dashboard key, sends only its hash, and gets the
-// personal code back. On success the key is saved so the dashboard opens by
-// itself on this device from now on.
-export async function signAgreement({ token, name }) {
-  if (!hasSupabase || !token) return { ok: false, error: 'invalid' }
-  try {
-    const dash = genProof()
-    const [inviteHash, dashHash] = await Promise.all([sha256Hex(String(token).trim()), sha256Hex(dash)])
-    const { data, error } = await supabase.rpc('celestual_recruit_sign', {
-      p_invite_hash: inviteHash,
-      p_name: String(name || '').trim(),
-      p_dash_hash: dashHash,
-    })
-    if (error || !data?.ok) return { ok: false, error: data?.error || 'invalid' }
-    saveDash({ code: data.code, key: dash })
-    return { ok: true, code: data.code, handle: data.handle, key: dash }
-  } catch {
-    return { ok: false, error: 'invalid' }
-  }
-}
 
 // Their numbers: link opens, signups, and the last seven days for the sparkline.
 export async function recruitStats({ code, key }) {

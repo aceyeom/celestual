@@ -10,6 +10,7 @@
 // All user-facing copy comes through useI18n().t(); all color comes through C
 // (the single theme). Nothing here defines its own hex or hard-codes strings.
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { normHandle } from '../api/celestual.js'
 import { daysLeft, nearLapse } from '../api/pings.js'
 import {
@@ -21,8 +22,8 @@ import { renderSkyCard } from '../card.js'
 import {
   Brandmark, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
-  BackBtn, Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
-  Display, Title, Lead, Body, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, LINE, TRACK, ICON,
+  Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
+  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, TRACK, ICON,
 } from './ui.jsx'
 import { CATEGORY_TINTS } from '../theme.js'
 import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../communities.js'
@@ -2987,7 +2988,14 @@ export function AccountSheet({ C, ctx }) {
     }
   }
   const standing = ctx.slotsStanding
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={close}
       style={{ position: 'fixed', inset: 0, zIndex: 30, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3107,7 +3115,8 @@ export function AccountSheet({ C, ctx }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3402,7 +3411,14 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           ? t('verify.errBusy')
           : t('verify.errGeneric')
 
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3529,7 +3545,8 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3543,7 +3560,14 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
   const SHADOW = makeShadow(C)
   const dialogRef = useDialog(onClose)
   const name = (community && (community.short || community.name)) || t('communities.yourCommunity')
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3578,7 +3602,8 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
           <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>{t('public.note')}</p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -3841,7 +3866,14 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
 
   const busy = phase === 'sending' || phase === 'verifying'
 
-  return (
+  // PORTALLED TO <body>, and it has to be. The screen wrapper in App.jsx carries
+  // `.fade`, whose keyframes end on `transform: translateY(0)` with fill-mode
+  // `both` — so the transform never goes away, and a transformed ancestor is the
+  // containing block for `position: fixed` descendants. `inset: 0` then resolves
+  // to the WHOLE PAGE rather than the viewport: on a tall or scrolled screen the
+  // sheet centres itself below the fold while its scrim still covers everything,
+  // which is what makes this one hard to spot. Short screens hid it.
+  return createPortal(
     <div
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
@@ -3938,7 +3970,8 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -8,8 +8,6 @@ import { supabase, hasSupabase } from './supabase.js'
 
 const FUNCTION = 'celestual-admin'
 
-export const adminEnabled = () => hasSupabase
-
 async function call(body) {
   if (!hasSupabase) return { ok: false, error: 'network' }
   try {

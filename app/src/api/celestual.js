@@ -179,25 +179,6 @@ export async function linkHandles(handles, { demo } = {}) {
   }
 }
 
-// ── worlds (community counters — framework §2.5) ──────────────────────────
-// Tag the real communities you belong to (school + scenes, three total).
-// Counters are floored at 100 SERVER-side: below it they come back null.
-export async function setWorlds({ me, names, proof, demo }) {
-  const list = (names || []).map((n) => String(n || '').trim()).filter(Boolean).slice(0, 3);
-  if (demo || !hasSupabase || !normHandle(me)) return { ok: true, worlds: list.map((n) => ({ slug: n, name: n, count: null })) };
-  try {
-    const { data, error } = await supabase.rpc('celestual_set_worlds', {
-      p_handle: me,
-      p_names: list,
-      p_proof: proof || null,
-    });
-    if (error || !data?.ok) return { ok: false, worlds: [] };
-    return data;
-  } catch {
-    return { ok: false, worlds: [] };
-  }
-}
-
 export async function worldCounts(slugs) {
   const list = (slugs || []).filter(Boolean).slice(0, 6);
   if (!hasSupabase || !list.length) return [];
@@ -209,6 +190,19 @@ export async function worldCounts(slugs) {
     return [];
   }
 }
+
+// ── CAMPUS: the client half of a server feature nothing currently calls ───────
+// These two mirror live RPCs (celestual_campus, celestual_campus_preregister)
+// and the server side is fully built and still RUNNING: the celestual_campuses /
+// celestual_campus_prereg / celestual_campus_mail tables exist, and the
+// celestual-remind cron drains that mail queue every hour. But no screen imports
+// either function, so the feature has no way in.
+//
+// They are kept deliberately, and labelled, rather than deleted: cutting them
+// would leave an hourly cron draining a queue nothing can fill, with no trace in
+// the client of why those tables exist. Either finish the campus entry point or
+// retire the whole feature (tables, RPCs and the remind job together) — that is
+// a product decision, not a cleanup.
 
 // ── campus windows (assurance contracts — framework §2.3) ─────────────────
 export async function fetchCampus(slug) {

@@ -1,5 +1,21 @@
 # The recruitment program
 
+> ## ⛔ RETIRED — do not build from this document
+>
+> This describes the **0016 comment→DM→invite loop**: a reel goes up, someone
+> comments "celestual", ManyChat DMs them a signing link, they sign, they get a
+> tracking link. **0017 replaced that entire front door** with the self-serve
+> signup at `celestual.us/trial`, and the code it depended on is gone:
+> `supabase/functions/celestual-recruit` is deleted, `/recruit` redirects to
+> `/trial`, and `openInvite` / `signAgreement` are removed from
+> `app/src/api/recruit.js`.
+>
+> **Live runbook: [FIRST-LIGHT-TRIAL.md](./FIRST-LIGHT-TRIAL.md).**
+>
+> Kept only for the reasoning behind the *counting* model, which is unchanged and
+> still in use: `celestual_recruit_visits`, `celestual_recruit_signups`, and the
+> stats RPC are exactly what the trial's four-letter links run on today.
+
 > **RETIRED (First Light, migration 0017).** The comment → DM → invite loop
 > described here is no longer the way in: candidates now register on
 > **`celestual.us/trial`** (email verification, in-app signature, a chosen

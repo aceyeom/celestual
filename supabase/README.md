@@ -148,11 +148,18 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 | `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 
-| `functions/celestual-recruit` | RETIRED (0017) — the old comment-automation front door; kept for reference | `MANYCHAT_SHARED_SECRET`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
+
+`functions/celestual-recruit` was **deleted**. It was the comment→DM→invite front
+door of the 0016 recruitment loop, which 0017 replaced with the self-serve
+`/trial` signup: nothing invoked it, `/recruit` now redirects to `/trial`, and the
+client half of that flow (`openInvite`, `signAgreement`) is gone too. 0016's
+*counting* surfaces are untouched and still live — visits, credited signups and
+the stats RPC are what the trial links run on. If you had it deployed, remove it:
+`supabase functions delete celestual-recruit`.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
 for these in `config.toml` because anonymous visitors (or Meta's webhook) call
 them; each enforces its own checks. See

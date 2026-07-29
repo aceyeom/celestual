@@ -250,7 +250,7 @@ build, deploy 0012 and the updated `celestual-ig-webhook`.
 
 ### Fix #10 — Logs show `no_pending` → you raced the clock (or reused a code)
 
-Codes are valid for **~30 minutes** (migration 0014; 6 digits) and are single-use. If
+Codes are valid for **~30 minutes** (0014) and are **4 digits** again (0019). Single-use. If
 you took longer, or reused an old code, you'll get `no_pending`. Start a brand-new
 verification and DM the new code.
 

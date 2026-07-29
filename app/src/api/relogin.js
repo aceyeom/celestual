@@ -18,8 +18,6 @@ import { supabase, hasSupabase } from './supabase.js'
 import { igVerifyEnabled, genProof, sha256Hex } from './igverify.js'
 
 // Recovery rides the same backend + flag as Instagram verification.
-export const reloginConfigured = () => igVerifyEnabled()
-
 // ── the router (migration 0015) ───────────────────────────────────────────────
 // Ask the SERVER how this @ gets in, instead of showing the person both doors
 // and hedging about which one works. One of three routes comes back:

@@ -57,15 +57,6 @@ async function copyText(text) {
   }
 }
 
-const fmtDay = (x) => {
-  if (!x) return ''
-  try {
-    return new Date(x).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toLowerCase()
-  } catch {
-    return ''
-  }
-}
-
 // ── the brief's little building blocks ───────────────────────────────────────
 
 function NumLine({ C, n, head, children }) {
