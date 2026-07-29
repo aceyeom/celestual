@@ -10,7 +10,7 @@ import { getSession, signInStub, markVerified, signOut as clearAuthSession, resu
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock } from './components/ui.jsx'
+import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
@@ -1349,6 +1349,14 @@ export default function App() {
           ) : (
             <LoginButton C={C} label={t('landing.login')} onClick={startLogin} />
           )}
+        </div>
+      )}
+
+      {/* the first light banner — the landing's one door to the trial, resting
+          in the opposite corner from the login chip */}
+      {!demo && screen === 'landing' && (
+        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
+          <TrialBanner C={C} line1={t('landing.trial1')} line2={t('landing.trial2')} />
         </div>
       )}
 

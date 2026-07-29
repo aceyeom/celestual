@@ -23,10 +23,16 @@
 --      exactly which accounts were assumed (and the code they held, for manual
 --      DM checking). A DM that lands first still wins and marks 'dm'.
 --
---   3. THE ADMIN DESK (celestual.us/admin, served by the celestual-admin edge
---      function). Read-only overview of competitors and users, plus delete /
---      ban. Every RPC here is SERVICE ROLE ONLY — the browser never touches
---      them; the edge function holds the password gate.
+--   3. THE ADMIN DASHBOARD (celestual.us/admin, served by the celestual-admin
+--      edge function). Read-only overview of competitors and users, plus
+--      delete / ban. Every RPC here is SERVICE ROLE ONLY — the browser never
+--      touches them; the edge function holds the password gate.
+--
+--   4. HONEST EXPIRY (the "didn’t match an active request" fix): expired
+--      verification rows are now retained 7 days instead of ~1 minute, so a
+--      late DM gets the truthful "that code expired" reply and the dashboard's
+--      unfinished-verifications list stays complete. See the
+--      celestual_start_ig_verification revision at the bottom.
 --
 -- Re-runnable (IF NOT EXISTS / CREATE OR REPLACE). Safe on top of 0001→0016.
 
@@ -525,9 +531,89 @@ end;
 $$;
 
 -- ──────────────────────────────────────────────────────────────────────
+-- celestual_start_ig_verification (0017 revision) — identical to 0014 except
+-- the prune keeps EXPIRED rows for 7 days instead of 1 minute.
+--
+-- WHY. The relay's "That code didn’t match an active request" reply traced to
+-- this prune: a code that lapsed (30-min TTL — and a first DM from a stranger
+-- can sit in Instagram's Message Requests far longer) answered the honest
+-- 'code_expired' only while its row survived; the moment any later start()
+-- pruned it, the same DM degraded to 'no_pending' → "didn’t match an active
+-- request", which reads as broken. Keeping lapsed rows a week (a) preserves
+-- the honest "that code expired" DM for the whole realistic retry window, and
+-- (b) keeps the admin dashboard's "unfinished verifications" list complete —
+-- pruned rows used to vanish from it. The partial unique index only covers
+-- PENDING rows, so retention does not shrink the live code space.
+-- ──────────────────────────────────────────────────────────────────────
+create or replace function celestual_start_ig_verification(p_handle text, p_proof_hash text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  nh text := celestual_norm(p_handle);
+  v_ip text;
+  v_n  int;
+  v_token text;
+  v_try int := 0;
+  c_pending_ttl      constant interval := interval '30 minutes';
+  c_start_per_ip     constant int := 15;   -- per IP / hour
+  c_start_per_handle constant int := 8;    -- per handle / hour
+begin
+  if nh is null then raise exception 'invalid handle'; end if;
+  if p_proof_hash is null or p_proof_hash !~ '^[0-9a-fA-F]{64}$' then
+    raise exception 'invalid proof';
+  end if;
+
+  v_ip := celestual_client_ip();
+
+  if v_ip is not null then
+    select count(*) into v_n from celestual_attempts
+      where ip = v_ip and from_handle = 'celestual:igstart' and created_at > now() - interval '1 hour';
+    if v_n >= c_start_per_ip then return jsonb_build_object('ok', false, 'error', 'rate_limited'); end if;
+  end if;
+  select count(*) into v_n from celestual_attempts
+    where to_handle = nh and from_handle = 'celestual:igstart' and created_at > now() - interval '1 hour';
+  if v_n >= c_start_per_handle then return jsonb_build_object('ok', false, 'error', 'rate_limited'); end if;
+
+  -- Prune rows only once they've been lapsed a full week — see the header.
+  -- (Was 1 minute past expiry; same rule, longer grace, pending and stale
+  -- verified sessions alike. The pending-only partial unique index means the
+  -- retained rows never shrink the live code space.)
+  if random() < 0.2 then
+    delete from celestual_ig_verifications where expires_at < now() - interval '7 days';
+  end if;
+
+  -- Issue a 6-digit code unique among CURRENTLY pending rows (retry on collision).
+  loop
+    v_try := v_try + 1;
+    v_token := lpad((floor(random() * 1000000))::int::text, 6, '0');
+    begin
+      insert into celestual_ig_verifications (handle, token, proof_hash, expires_at)
+      values (nh, v_token, lower(p_proof_hash), now() + c_pending_ttl);
+      exit;
+    exception when unique_violation then
+      if v_try >= 30 then
+        return jsonb_build_object('ok', false, 'error', 'busy');
+      end if;
+    end;
+  end loop;
+
+  insert into celestual_attempts (ip, from_handle, to_handle) values (v_ip, 'celestual:igstart', nh);
+
+  return jsonb_build_object(
+    'ok', true,
+    'token', v_token,
+    'expires_at', to_char((now() + c_pending_ttl) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  );
+end;
+$$;
+
+-- ──────────────────────────────────────────────────────────────────────
 -- GRANTS. The grace RPC is the only client-facing addition (proof-gated, like
 -- poll). Everything else is the edge functions' alone.
 -- ──────────────────────────────────────────────────────────────────────
+revoke all on function celestual_start_ig_verification(text, text) from public;
+grant execute on function celestual_start_ig_verification(text, text) to anon, authenticated;
+
 revoke all on function celestual_ig_verify_timeout(text, text) from public;
 grant execute on function celestual_ig_verify_timeout(text, text) to anon, authenticated;
 

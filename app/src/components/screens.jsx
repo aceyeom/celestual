@@ -358,20 +358,6 @@ export function LandingScreen({ C, ctx }) {
           </span>
         </PrimaryButton>
         <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('landing.safety')}</p>
-        {/* the one quiet door to the first light trial (/trial) */}
-        {!ctx.demo && (
-          <a
-            href="/trial"
-            style={{
-              alignSelf: 'center', display: 'inline-flex', alignItems: 'baseline', gap: SPACE.sm,
-              padding: '8px 16px', borderRadius: 999, textDecoration: 'none',
-              border: `1px solid ${rgba(C.star, 0.35)}`, background: rgba(C.star, 0.07),
-            }}
-          >
-            <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.small, color: C.star }}>{t('landing.trial1')}</span>
-            <span style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted }}>{t('landing.trial2')} →</span>
-          </a>
-        )}
         <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
           {t('landing.age')}{' '}
           <a href="/terms" target="_blank" rel="noopener" style={{ color: rgba(C.muted, 0.9), textDecoration: 'underline' }}>{t('landing.terms')}</a>.

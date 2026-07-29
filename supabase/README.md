@@ -103,9 +103,9 @@ Idempotent migrations, applied in order:
   on `celestual_recruits` (verified email, source, one email = one competitor)
   and CHOSEN four-letter codes at the site root. Plus the **20-second DM
   grace** (`celestual_ig_verify_timeout`, proof-gated, temporary — admits the
-  typed @ as `verified_via='timeout'` so the desk can list what was assumed),
+  typed @ as `verified_via='timeout'` so the admin dashboard can list what was assumed),
   `celestual_complete_ig_verification` v6 (stamps `verified_via='dm'`, refuses
-  banned handles), and the **admin desk RPCs** (`celestual_admin_overview` /
+  banned handles), and the **admin dashboard RPCs** (`celestual_admin_overview` /
   `_delete_user` / `_ban_user` / `_delete_competitor`, service-role only,
   password-gated in the `celestual-admin` function).
   **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)**
@@ -120,8 +120,11 @@ Paste it into the SQL editor yourself, once, when you mean it.
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
 replaced by 0006's ping model, and 0009+0010 carry the current definitions of
-`celestual_norm`, `celestual_submit`, `celestual_suppress` and the four
-IG-verification functions. When reading for current behaviour: **0006 + 0007 +
+`celestual_norm`, `celestual_submit` and `celestual_suppress` (0016 re-extends
+suppress). Of the IG-verification functions, **0017** now carries the current
+`celestual_start_ig_verification` (7-day expired-row retention) and
+`celestual_complete_ig_verification` (verified_via stamp + ban check); poll is
+0012's. When reading for current behaviour: **0006 + 0007 +
 0008 + 0009 + 0010** are the truth; 0001/0004 for the tables they created.
 
 **SQL Editor:** paste each file's contents and Run, in order.
@@ -147,7 +150,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 
 | `functions/celestual-recruit` | RETIRED (0017) — the old comment-automation front door; kept for reference | `MANYCHAT_SHARED_SECRET`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled

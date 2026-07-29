@@ -1,4 +1,4 @@
-# First Light — the trial, the links, the desk
+# First Light — the trial, the links, the admin dashboard
 
 The First Light launch replaces the ManyChat comment→DM recruitment loop
 (docs/RECRUITMENT.md, now retired) with three surfaces:
@@ -7,12 +7,12 @@ The First Light launch replaces the ManyChat comment→DM recruitment loop
 | --- | --- | --- |
 | the trial page | `celestual.us/trial` | the competition brief (the official doc distilled), the doc itself to view/download, and self-serve entry: email verification → in-app signature → a chosen four-letter code |
 | root tracking links | `celestual.us/<code>` | each competitor's personal link — exactly four letters, chosen by them. Opens and credited signups count exactly as 0016 did (`/r/<code>` still works as an alias) |
-| the admin desk | `celestual.us/admin` | password-gated overview of competitors and users, with delete / ban |
+| the admin dashboard | `celestual.us/admin` | password-gated overview of competitors and users, with delete / ban |
 
 It also ships the **20-second DM grace** (temporary): the Instagram DM
 verification flow is unchanged, but a browser that has waited 20+ seconds on
 "waiting for your dm…" is let in as the typed @, recorded
-`verified_via='timeout'`, and listed on the desk with the DM code it held so
+`verified_via='timeout'`, and listed on the admin dashboard with the DM code it held so
 each can be checked by hand in the Instagram DMs. Remove
 `celestual_ig_verify_timeout` (0017) and the sheet's timer once the relay is
 fixed.
@@ -39,7 +39,7 @@ fixed.
 
 4. **Secrets.** `celestual-trial` reuses the existing Resend secrets
    (`RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL`).
-   `celestual-admin` reads `CELESTUAL_ADMIN_PASSWORD`; without it the desk
+   `celestual-admin` reads `CELESTUAL_ADMIN_PASSWORD`; without it the dashboard
    opens with the launch password (`acedavid123`). **Set the secret and rotate
    that password once the trial is over** — it has been shared in plain text.
 5. **Deploy the app** (merge to main; Vercel builds `dist/`).
@@ -67,7 +67,7 @@ Four-letter codes are `[a-z]{4}`, minus the reserved words
 (`celestual_trial_code_ok` server-side, `RESERVED_CODES` client-side — keep
 them in step). Named routes always win over `/<code>`.
 
-## What the desk shows
+## What the admin dashboard shows
 
 - **trial competitors** — name, @, email, code, link, opens, credited signups
   (hover the count for the handles), signed date; remove (trial row only).

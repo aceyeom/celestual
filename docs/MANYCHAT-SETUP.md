@@ -193,7 +193,8 @@ That message IS the verified-feedback DM: the function returns a human `reply` o
 | --- | --- |
 | verified ✓ | `✦ @handle is verified on CELESTUAL — head back to the app to finish.` |
 | wrong account | `That code was started for a different @. Start again from the app with this account.` |
-| expired / already used / random code | `That code didn't match an active request. Get a fresh code in the app and send it here.` |
+| expired code (retained 7 days since 0017) | `That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.` |
+| unknown / typo'd / long-pruned code | `That code didn't match an active request — it may have lapsed. Get a fresh code in the app and send it here.` |
 | no code found in the text | `Send the code exactly as the app shows it — like star-1234.` |
 
 Because the DM is an immediate reply to a message the person just sent, it sits
@@ -234,7 +235,7 @@ Watch both sides while testing:
 | Function log = `no_username` | The `username` body field isn't mapped (typed by hand instead of the `+` picker). Re-insert it. |
 | Function log = `no_code` | The `text` field isn't mapped, or the person sent only the digits with the prefix mangled. The function reads `star-1234`, `star 1234`, `star–1234`, and bare `1234`. |
 | `status:"handle_mismatch"` | Working as designed: the sender's real @ ≠ the @ typed on the site. The person gets a DM telling them to retry from the right account. |
-| `status:"no_match"` | Random/unknown digits. Fresh code, resend. (An expired code now answers `code_expired`; a re-sent code from someone already verified answers `already_verified` — both with an honest DM, so neither reads as broken.) |
+| `status:"no_match"` | Random/unknown digits — or, before migration 0017, an expired code whose row the start-RPC prune had already deleted (rows lasted ~1 minute past their 30-min TTL, so any DM delayed past that — e.g. sitting in Message Requests — degraded from the honest `code_expired` to `no_match`). 0017 retains lapsed rows 7 days, so `code_expired` answers for the whole realistic window; a re-sent code from someone already verified answers `already_verified`. A `no_match` can also mean the completion RPC errored — check the function logs, errors there are swallowed per-candidate. |
 | Function reachable but Meta's DMs are delayed | First-time DMs from strangers can land in **Message Requests**; open @celestual.us → Requests → Accept once, then it flows. |
 | `{"code":401,"message":"Missing authorization header"}` on the health-check GET | JWT verification still on — redeploy `--no-verify-jwt` (§2 Step 4). |
 

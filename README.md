@@ -42,7 +42,7 @@ The product direction is fixed by one document —
   them, so we can see who is really bringing people in — traffic, never people:
   an open is one integer per day with no visitor identity, a signup is a handle
   that actually verified, and none of it can see who anyone pinged. A
-  password-gated desk at `/admin` reads it all
+  password-gated admin dashboard at `/admin` reads it all
   (**[docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md)**).
 - **No monetization.** Nothing is for sale anywhere; the only thing that will
   ever be considered is a one-time fourth slot, dormant until density is
@@ -73,7 +73,7 @@ celestual/
 │   │                 0007–0008 the .edu membership gate · 0009–0011 verification
 │   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login ·
 │   │                 0015 the identity router · 0016 the recruitment program ·
-│   │                 0017 the First Light trial + the 20s grace + the desk
+│   │                 0017 the First Light trial + the 20s grace + the admin dashboard
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
@@ -96,7 +96,7 @@ celestual/
 | `/signin` | the sign-back-in magic link lands here — redeems a fresh proof, no DM (Fix B) |
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
-| `/admin` | the desk: competitors, users (how each verified), delete/ban — password checked server-side |
+| `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
@@ -147,7 +147,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
-| [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin desk, and the launch runbook (migration + wipe order) |
+| [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |

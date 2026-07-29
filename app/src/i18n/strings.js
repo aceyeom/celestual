@@ -487,7 +487,7 @@ const en = {
   'trial.choiceTaken': 'taken. pick another.',
   'trial.choiceReserved': 'that one is ours. pick another.',
   'trial.choiceFormat': 'four letters, a to z.',
-  'trial.agree': 'i agree to the content, ip and rights agreement above. signing records my name, my @, my email and the date.',
+  'trial.agree': 'i agree to the content, ip and rights agreement in the official doc. signing records my name, my @, my email and the date.',
   'trial.register': 'verify my email',
   'trial.sending': 'sending…',
   'trial.codeTitle': 'check your email.',
@@ -526,20 +526,20 @@ const en = {
   'trial.login': 'open my entry',
   'trial.toApp': 'go to celestual',
 
-  // ── the landing's one-line door to the trial ─────────────────────────────
+  // ── the landing's banner door to the trial (top right) ───────────────────
   'landing.trial1': 'first light.',
-  'landing.trial2': 'the marketing trial is open',
+  'landing.trial2': 'the marketing trial →',
 
-  // ── the admin desk (/admin) ──────────────────────────────────────────────
-  'admin.kicker': 'the desk',
+  // ── the admin dashboard (/admin) ─────────────────────────────────────────
+  'admin.kicker': 'admin dashboard',
   'admin.passLabel': 'password',
-  'admin.enter': 'open the desk',
+  'admin.enter': 'open the dashboard',
   'admin.checking': 'checking…',
   'admin.errPass': 'not it.',
   'admin.errRate': 'too many tries. give it a minute.',
-  'admin.errNetwork': 'the desk didn’t answer. try again.',
+  'admin.errNetwork': 'the dashboard didn’t answer. try again.',
   'admin.refresh': 'refresh',
-  'admin.signout': 'lock the desk',
+  'admin.signout': 'lock the dashboard',
   'admin.competitors': 'trial competitors',
   'admin.users': 'users',
   'admin.attempts': 'unfinished verifications',

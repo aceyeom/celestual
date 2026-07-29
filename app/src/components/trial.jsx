@@ -24,7 +24,7 @@ import { adminOverview, adminDeleteUser, adminBanUser, adminDeleteCompetitor } f
 import { useI18n } from '../i18n/index.js'
 import {
   Brandmark, Kicker, Mono, GlassPanel, PrimaryButton, GhostButton, OutlineButton,
-  Field, Note, ScreenHeader, ExitRow, Display, Title, Small, Sonar,
+  Field, Note, ExitRow, Display, Title, Small, Serif, Sonar,
   rgba, RADIUS, SPACE, FONT, SIZE,
 } from './ui.jsx'
 import { Shell } from './screens.jsx'
@@ -135,6 +135,17 @@ function WeekBars({ C, days }) {
           style={{ width: 14, height: Math.max(3, Math.round((Number(d.n || 0) / max) * 30)), borderRadius: 3, background: Number(d.n || 0) > 0 ? rgba(C.star, 0.75) : rgba(C.cream, 0.1) }}
         />
       ))}
+    </div>
+  )
+}
+
+// One of the poster's three numbers — a figure in the emotional register, its
+// unit whispered beneath. The tiles are the page's first read.
+function StatTile({ C, v, l }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '16px 8px 13px', borderRadius: RADIUS.inner, border: `1px solid ${C.line}`, background: rgba(C.ink2, 0.55) }}>
+      <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 30, lineHeight: 1, color: C.star, textShadow: `0 0 22px ${rgba(C.star, 0.35)}` }}>{v}</span>
+      <Kicker C={C} micro>{l}</Kicker>
     </div>
   )
 }
@@ -431,15 +442,24 @@ export function TrialScreen({ C, ctx }) {
           <Small C={C} style={{ lineHeight: 1.65 }}>{TRIAL.intro}</Small>
         </div>
 
-        {/* the doc, as is — view in the browser, or take the file itself */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+        {/* the three numbers that are the pitch */}
+        <div style={{ display: 'flex', gap: SPACE.md }}>
+          {TRIAL.stats.map((s) => (
+            <StatTile key={s.l} C={C} v={s.v} l={s.l} />
+          ))}
+        </div>
+
+        {/* the doc — the whole detail lives there; the page is the poster */}
+        <GlassPanel C={C} style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+          <Kicker C={C}>{TRIAL.doc.title}</Kicker>
+          <Small C={C}>{TRIAL.doc.sub}</Small>
           <OutlineButton C={C} onClick={() => window.open(TRIAL_DOC.pdf, '_blank', 'noopener')}>{t('trial.docView')}</OutlineButton>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <a href={TRIAL_DOC.docx} download style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecorationColor: rgba(C.muted, 0.5), textUnderlineOffset: 3 }}>
               {t('trial.docDownload')}
             </a>
           </div>
-        </div>
+        </GlassPanel>
 
         <SectionTitle C={C}>how it runs</SectionTitle>
         <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
@@ -447,65 +467,53 @@ export function TrialScreen({ C, ctx }) {
             <NumLine key={i} C={C} n={i + 1} head={s.head}>{s.body}</NumLine>
           ))}
         </div>
-        <Note C={C} tone="quiet">{TRIAL.deadline}</Note>
-
-        <SectionTitle C={C}>{TRIAL.video1.title}</SectionTitle>
-        <Small C={C}>{TRIAL.video1.sub}</Small>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.video1.beats.map((b, i) => (
-            <NumLine key={i} C={C} n={i + 1}>{b}</NumLine>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Mono C={C}>{TRIAL.deadline}</Mono>
         </div>
-        <GlassPanel C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.video1.shoot.map((s, i) => (
-            <DotLine key={i} C={C}>{s}</DotLine>
-          ))}
-        </GlassPanel>
-        <Note C={C} tone="quiet">{TRIAL.video1.crosspost}</Note>
 
-        <SectionTitle C={C}>{TRIAL.video2.title}</SectionTitle>
-        <Small C={C}>{TRIAL.video2.sub}</Small>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.video2.beats.map((b, i) => (
-            <DotLine key={i} C={C}>{b}</DotLine>
+        {/* the two videos, side by side where the screen allows */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SPACE.md }}>
+          {TRIAL.videos.map((v) => (
+            <GlassPanel key={v.title} C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+              <Kicker C={C} micro>{v.title}</Kicker>
+              <Small C={C} style={{ color: C.cream }}>{v.sub}</Small>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+                {v.pts.map((p, i) => (
+                  <DotLine key={i} C={C}>{p}</DotLine>
+                ))}
+              </div>
+            </GlassPanel>
           ))}
         </div>
 
         <SectionTitle C={C}>how we score it</SectionTitle>
-        <Small C={C}>{TRIAL.scoring.note}</Small>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {TRIAL.scoring.rows.map((r) => (
+          {TRIAL.scoring.map((r) => (
             <ScoreRow key={r.cat} C={C} cat={r.cat} weight={r.weight} what={r.what} />
           ))}
         </div>
-        <Note C={C} tone="accent">{TRIAL.scoring.zeroRule}</Note>
+        <Mono C={C}>{TRIAL.scoringNote}</Mono>
+        <Note C={C} tone="accent">{TRIAL.zeroRule}</Note>
 
         <SectionTitle C={C}>hard rules</SectionTitle>
-        <Small C={C}>{TRIAL.hardRules.note}</Small>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.hardRules.rows.map((r, i) => (
-            <NumLine key={i} C={C} n={i + 1}>{r}</NumLine>
-          ))}
-        </div>
-
-        <SectionTitle C={C}>{TRIAL.win.title}</SectionTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.win.rows.map((r, i) => (
+        <GlassPanel C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          {TRIAL.hardRules.map((r, i) => (
             <DotLine key={i} C={C}>{r}</DotLine>
           ))}
+          <Mono C={C} style={{ paddingTop: SPACE.xs }}>{TRIAL.hardNote}</Mono>
+        </GlassPanel>
+
+        <SectionTitle C={C}>what you win</SectionTitle>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          <Serif C={C} size={SIZE.title} style={{ color: C.star }}>{TRIAL.win.headline}</Serif>
+          <Small C={C}>{TRIAL.win.sub}</Small>
+          <Small C={C}>{TRIAL.win.everyone}</Small>
         </div>
 
-        <SectionTitle C={C}>what celestual is</SectionTitle>
-        <Small C={C} style={{ lineHeight: 1.65 }}>{TRIAL.reference}</Small>
-        <Small C={C} style={{ lineHeight: 1.65 }}>{TRIAL.understand}</Small>
-
-        <SectionTitle C={C}>{TRIAL.agreement.title}</SectionTitle>
-        <GlassPanel C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.agreement.points.map((p, i) => (
-            <DotLine key={i} C={C}>{p}</DotLine>
-          ))}
-          <Mono C={C}>{TRIAL.agreement.foot}</Mono>
-        </GlassPanel>
+        {/* the product, in its own one line */}
+        <div style={{ padding: `${SPACE.lg}px 0`, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, textAlign: 'center' }}>
+          <Serif C={C} size={SIZE.lead} style={{ color: rgba(C.cream, 0.92) }}>{TRIAL.mechanic}</Serif>
+        </div>
 
         {entry}
       </div>
