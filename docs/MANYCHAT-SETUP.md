@@ -344,7 +344,17 @@ business account.
   has to be re-earned by DM. TTL was never the root cause. (Once **B** shipped
   and killed the repeat-DM pressure, **migration `0014`** shortened the TTL again
   to **30 minutes** — long enough for the Message-Requests lag, short enough to
-  keep the 6-digit code pool sparse.)
+  keep the code pool sparse.)
+
+- **Code length: back to four digits (migration `0019`).** `0014` widened the
+  code to six. Six digits buys nothing here — the code is a pure correlation id
+  (`0012`), never a secret, so a guessed code finds a session you cannot finish
+  without being the Meta-authenticated sender. What it did buy was friction:
+  `star-753520` is a harder thing to read off a screen and retype into a DM than
+  `star-1283`, and every extra character is a place to drop one. Four digits is
+  10,000 codes, unique among *currently pending* rows only, against a 30-minute
+  TTL. Both relays parse `\d{4,6}`, so six-digit codes still in flight during the
+  cutover keep resolving.
 
 ### 8.3 The "That code was started for a different @" case
 

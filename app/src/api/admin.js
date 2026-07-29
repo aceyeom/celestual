@@ -54,6 +54,19 @@ export function adminHandleStatus(password, handle) {
   return call({ password, action: 'handle_status', handle })
 }
 
+// Drop a handle's unfinished verification rows (0019) — the cure for someone
+// stuck behind their own stale codes.
+export function adminClearPending(password, handle) {
+  return call({ password, action: 'clear_pending', handle })
+}
+
+// Admit a handle by hand (0019). Stamped verified_via='manual' so the desk
+// never mistakes our word for Meta's. Refused for a suppressed @ — lift the
+// lockout first, deliberately.
+export function adminVerifyUser(password, handle) {
+  return call({ password, action: 'verify_user', handle })
+}
+
 // Remove a trial competitor (their row + link counters), leaving any ordinary
 // user data they hold untouched.
 export function adminDeleteCompetitor(password, handle) {

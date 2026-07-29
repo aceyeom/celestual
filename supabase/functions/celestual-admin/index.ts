@@ -118,6 +118,10 @@ Deno.serve(async (req) => {
     // lockout instead of leaving it to be guessed from a DM reply.
     unban_user: 'celestual_admin_unban_user',
     handle_status: 'celestual_admin_handle_status',
+    // 0019 — clear a handle's stuck pending codes, and admit someone by hand
+    // when the DM relay is down (stamped verified_via='manual', never 'dm').
+    clear_pending: 'celestual_admin_clear_pending',
+    verify_user: 'celestual_admin_verify_user',
   };
 
   if (HANDLE_ACTIONS[action]) {

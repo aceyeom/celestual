@@ -477,8 +477,11 @@ const en = {
   // ── the first light trial (/trial, migration 0017) ──────────────────────
   // the page's chrome only. the brief itself is quoted from the official doc
   // and lives in trialContent.js, out of this linted file, like demoData.js.
-  'trial.docView': 'view the official doc',
-  'trial.docDownload': 'download the doc (.docx)',
+  'trial.docView': 'read the official doc',
+  'trial.docPdf': 'pdf',
+  'trial.docDocx': '.docx',
+  'trial.docClose': 'close the doc',
+  'trial.docDownload': 'download to sign (.docx)',
   'trial.registerKicker': 'register',
   'trial.enterKicker': 'enter the trial',
   'trial.enterTitle': 'claim your link.',

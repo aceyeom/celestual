@@ -7,7 +7,7 @@ The First Light launch replaces the ManyChat comment→DM recruitment loop
 | --- | --- | --- |
 | the trial page | `celestual.us/trial` | the competition brief (the official doc distilled), the doc itself to view/download, and self-serve entry: email verification → in-app signature → a chosen four-letter code |
 | root tracking links | `celestual.us/<code>` | each competitor's personal link — exactly four letters, chosen by them. Opens and credited signups count exactly as 0016 did (`/r/<code>` still works as an alias) |
-| the admin dashboard | `celestual.us/admin` | password-gated overview of competitors and users, with delete / ban |
+| the admin dashboard | `celestual.us/admin` | password-gated operations console: users, unverified people, competitors, growth and an activity log, with delete / ban / unban / manual admit |
 
 It also ships the **20-second DM grace** (temporary): the Instagram DM
 verification flow is unchanged, but a browser that has waited 20+ seconds on
@@ -19,14 +19,17 @@ fixed.
 
 ## Going live — the order of operations
 
-1. **Paste the migration.** SQL editor → run
-   `supabase/migrations/0017_first_light_trial.sql`, then
-   `supabase/migrations/0018_verification_lockout.sql`. Everything is
-   `create or replace` / `if not exists`; safe to re-run.
+1. **Paste the migrations.** SQL editor → run, in order,
+   `supabase/migrations/0017_first_light_trial.sql`,
+   `0018_verification_lockout.sql`, then `0019_four_digit_and_desk.sql`.
+   Everything is `create or replace` / `if not exists`; safe to re-run.
 
    0018 closes the lockout that made correct codes read as lapsed ones: a
    suppressed @ was refused by both completion paths while `start()` happily
    kept minting codes for it. See the migration header for the whole trace.
+   0019 puts the DM code back to **four digits** and gives the desk its data:
+   deduplicated users, one row per stuck handle, a 30-day growth series, and a
+   unified activity log.
 2. **Wipe the old user data** (you said you'd do this by hand):
    SQL editor → run `supabase/wipe-all-user-data.sql`. ⚠ Irreversible. It
    erases every account and everything accounts produced, and deliberately
@@ -72,7 +75,22 @@ Four-letter codes are `[a-z]{4}`, minus the reserved words
 (`celestual_trial_code_ok` server-side, `RESERVED_CODES` client-side — keep
 them in step). Named routes always win over `/<code>`.
 
-## What the admin dashboard shows
+## The admin dashboard
+
+`/admin` is a **white, light-mode operations console** and shares nothing with
+the rest of the app — not the palette, not `ui.jsx`, not the type scale. It
+lives in `app/src/components/admin.jsx`, and `App.jsx` returns it *before* the
+app shell so it gets no galaxy, no dock, and no screen wrapper. (That wrapper
+carries `.fade`, whose keyframes leave a `transform` in place; a transformed
+ancestor is the containing block for `position: fixed`, which is why anything
+full-screen must escape it.)
+
+Five tabs: **Overview** (KPI tiles, the members-over-time curve, the @-lookup
+triage tool, latest activity), **Users**, **Unverified**, **Competitors**,
+**Activity log**. Every tab past Overview has a filter box. Destructive buttons
+arm on the first tap and fire on the second.
+
+### What it shows
 
 - **trial competitors** — name, @, email, code, link, opens, credited signups
   (hover the count for the handles), signed date; remove (trial row only).
@@ -83,7 +101,7 @@ them in step). Named routes always win over `/<code>`.
   - `no dm record` — legacy/campus rows with no verification row.
   Plus delete (erase, may return) and ban (erase + suppress; the 0017 ban
   checks keep a banned @ from verifying back in).
-- **look up an @** (0018) — the triage tool. Is this @ suppressed, is it a
+- **look up an @** (0018, on the Overview tab) — the triage tool. Is this @ suppressed, is it a
   member, and what did its last twenty verification attempts do. Start here
   whenever someone says their code is correct and nothing happens; a suppressed
   @ is refused by both completion paths and used to be invisible from every
@@ -93,8 +111,17 @@ them in step). Named routes always win over `/<code>`.
 - **locked out** (the counter) — how many hashes sit in
   `celestual_suppressions`. A list that only ever grows and is never looked at
   is how the 0018 bug survived a week.
-- **unfinished verifications** — codes started but never completed (waiting or
-  lapsed), each with the typed @ and its code.
+- **unverified** — people who started and never finished, **one row per
+  handle** (0019). It used to be one row per pending *row*, so somebody who
+  retried four times filled four lines and the list read as four people. Each
+  row now carries the attempt count and the *latest* code — the one you actually
+  want when searching the Instagram inbox — plus first/last tried and whether
+  anything is still live. Admit, lift a lockout, or clear their stale codes
+  from the row.
+- **activity log** — one feed across verifications, codes issued, pings,
+  matches, trial signups, lockouts and failed admin logins.
+- **members over time** — the running total for the last 30 days, with each
+  day's arrivals as bars behind it.
 
 The password is checked only in the edge function; the data RPCs are
 service-role only, so nothing is readable from the browser without it. Wrong
@@ -102,8 +129,27 @@ tries are rate limited per IP (20/hour).
 
 ## The doc on the trial page
 
-`app/public/first-light.docx` and `first-light.pdf` are what /trial serves.
-They are a faithful regeneration of the official doc with three deliberate
-touches: the apply step also names the trial page, the example link matches
-the four-letter format, and one typo ("pplght") is fixed. To serve the
-original byte-for-byte instead, overwrite those two files.
+Three files in `app/public`, all the same document:
+
+| File | What it's for |
+| --- | --- |
+| `celestual-challenge.docx` | the original, byte-for-byte as supplied. The one people download, print, and sign. |
+| `celestual-challenge.html` | the readable edition. `/trial`'s viewer sheet loads this in an iframe, so the doc opens **in place** instead of sending someone to a new tab mid-decision (which, on a phone, is where the decision ends). |
+| `celestual-challenge.pdf` | rendered from the `.html` above, so the two can't drift. |
+
+To regenerate the PDF after editing the HTML:
+
+```bash
+chromium --headless --no-pdf-header-footer \
+  --print-to-pdf=app/public/celestual-challenge.pdf \
+  file://$PWD/app/public/celestual-challenge.html
+```
+
+`app/src/trialContent.js` is the poster — the page's own distillation of the
+doc. It is NOT the doc. If the document changes, change the `.docx`, the
+`.html`, the regenerated `.pdf`, **and** `trialContent.js`.
+
+The HTML edition is deliberately exempt from `npm run lint:voice` (see the
+`EXEMPT` set in `scripts/voice-lint.mjs`): it reproduces the competition
+document's own voice, and that document is signed. Style rules do not get to
+edit an agreement.

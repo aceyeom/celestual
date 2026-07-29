@@ -56,14 +56,18 @@ function safeEqual(a: string, b: string) {
   return out === 0;
 }
 
-// Pull the correlation code out of the DM text. Codes are 6 digits (migration
-// 0014); \d{4,6} still resolves any 4-digit code left in flight during the
-// cutover. The app tells people to send the prefixed form — "star-128340" — and
-// your ManyChat automation's Condition only forwards messages containing "star-",
-// so in practice the text is "star-128340". We read the prefixed form first
-// (case-insensitive, separator optional), then fall back to any bare 4–6 digit run
-// so a stray format still resolves. Parsing is never the security boundary — a
-// wrong code just finds no pending session; the sender's username is the gate.
+// Pull the correlation code out of the DM text. Codes are 4 digits again
+// (migration 0019 — six bought nothing but friction, since the code is a pure
+// correlation id and the Meta-authenticated sender is the identity). The
+// \d{4,6} range is kept deliberately so any six-digit code still in flight from
+// the 0014→0019 era resolves normally.
+//
+// The app tells people to send the prefixed form — "star-1283" — and your
+// ManyChat automation's Condition only forwards messages containing "star-", so
+// in practice that is the whole text. We read the prefixed form first
+// (case-insensitive, separator optional), then fall back to any bare 4–6 digit
+// run so a stray format still resolves. Parsing is never the security boundary
+// — a wrong code just finds no pending session; the sender's username is the gate.
 function codeCandidates(text: string): string[] {
   const s = String(text ?? '');
   const out: string[] = [];
