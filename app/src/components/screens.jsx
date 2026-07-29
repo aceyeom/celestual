@@ -3310,7 +3310,17 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
           setAssumed(true)
           setPhase('verified')
           doneRef.current = setTimeout(() => onVerified(proof, g.handle || handle), VERIFIED_HOLD_MS)
-        } else if (g.error === 'expired' || g.error === 'banned') {
+        } else if (g.error === 'banned') {
+          // NOT a lapse. This @ is suppressed (its own "delete everything", the
+          // /privacy opt-out, or an admin ban), so neither the DM nor the grace
+          // can ever admit it. Mapping this onto the expired screen is what made
+          // a live code read as "that code lapsed" twenty seconds in, sending
+          // people round the get-a-new-code loop with no way to learn why.
+          stopPoll()
+          clearPending()
+          setErrCode('banned')
+          setPhase('error')
+        } else if (g.error === 'expired') {
           stopPoll()
           clearPending()
           setPhase('expired')
@@ -3357,8 +3367,17 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   const dismiss = () => onClose()
   const dialogRef = useDialog(dismiss)
 
+  // 'banned' is the suppressed-@ lockout (0018). It is the one error a fresh
+  // code cannot fix, so it loses the retry button — offering one is what kept
+  // people minting codes against a closed door.
   const errMsg =
-    errCode === 'rate_limited' ? t('verify.errRate') : errCode === 'busy' ? t('verify.errBusy') : t('verify.errGeneric')
+    errCode === 'banned'
+      ? t('verify.errBlocked')
+      : errCode === 'rate_limited'
+        ? t('verify.errRate')
+        : errCode === 'busy'
+          ? t('verify.errBusy')
+          : t('verify.errGeneric')
 
   return (
     <div
@@ -3421,7 +3440,11 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         ) : phase === 'error' ? (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
             <p style={{ margin: 0, fontSize: SIZE.body, lineHeight: 1.55, color: rgba(C.star, 0.95) }}>{errMsg}</p>
-            <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+            {errCode === 'banned' ? (
+              <PrimaryButton C={C} onClick={dismiss}>{t('verify.errBlockedAction')}</PrimaryButton>
+            ) : (
+              <PrimaryButton C={C} onClick={begin}>{t('verify.regen')}</PrimaryButton>
+            )}
           </div>
         ) : (
           <>

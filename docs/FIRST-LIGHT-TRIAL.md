@@ -20,8 +20,13 @@ fixed.
 ## Going live — the order of operations
 
 1. **Paste the migration.** SQL editor → run
-   `supabase/migrations/0017_first_light_trial.sql`. Everything is
+   `supabase/migrations/0017_first_light_trial.sql`, then
+   `supabase/migrations/0018_verification_lockout.sql`. Everything is
    `create or replace` / `if not exists`; safe to re-run.
+
+   0018 closes the lockout that made correct codes read as lapsed ones: a
+   suppressed @ was refused by both completion paths while `start()` happily
+   kept minting codes for it. See the migration header for the whole trace.
 2. **Wipe the old user data** (you said you'd do this by hand):
    SQL editor → run `supabase/wipe-all-user-data.sql`. ⚠ Irreversible. It
    erases every account and everything accounts produced, and deliberately
@@ -78,6 +83,16 @@ them in step). Named routes always win over `/<code>`.
   - `no dm record` — legacy/campus rows with no verification row.
   Plus delete (erase, may return) and ban (erase + suppress; the 0017 ban
   checks keep a banned @ from verifying back in).
+- **look up an @** (0018) — the triage tool. Is this @ suppressed, is it a
+  member, and what did its last twenty verification attempts do. Start here
+  whenever someone says their code is correct and nothing happens; a suppressed
+  @ is refused by both completion paths and used to be invisible from every
+  surface we had. A **lift the lockout** button undoes the suppression —
+  necessary because the account screen's "delete everything" suppresses your own
+  @, and before 0018 nothing in the product could ever take it back out.
+- **locked out** (the counter) — how many hashes sit in
+  `celestual_suppressions`. A list that only ever grows and is never looked at
+  is how the 0018 bug survived a week.
 - **unfinished verifications** — codes started but never completed (waiting or
   lapsed), each with the typed @ and its code.
 

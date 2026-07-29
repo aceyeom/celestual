@@ -10,6 +10,13 @@
 //   { password, action:'delete_user', handle }         → erase one person.
 //   { password, action:'ban_user', handle }            → erase + suppress; the
 //        ban checks in 0017 keep the @ from verifying back in.
+//   { password, action:'unban_user', handle }          → lift a suppression (0018).
+//        Also the only cure for a self-erase or a mistaken opt-out — before it,
+//        a suppressed @ was locked out permanently with no product surface able
+//        to say so or undo it.
+//   { password, action:'handle_status', handle }       → is this @ suppressed,
+//        is it a member, what did its last verifications do (0018). The
+//        five-second answer to "their codes are correct and nothing works".
 //   { password, action:'delete_competitor', handle }   → remove a trial row +
 //        its link counters, leaving their ordinary user data alone.
 //
@@ -103,14 +110,19 @@ Deno.serve(async (req) => {
     return json(data);
   }
 
-  if (action === 'delete_user' || action === 'ban_user' || action === 'delete_competitor') {
+  const HANDLE_ACTIONS: Record<string, string> = {
+    delete_user: 'celestual_admin_delete_user',
+    ban_user: 'celestual_admin_ban_user',
+    delete_competitor: 'celestual_admin_delete_competitor',
+    // 0018 — the way back out of a suppression, and the call that names a
+    // lockout instead of leaving it to be guessed from a DM reply.
+    unban_user: 'celestual_admin_unban_user',
+    handle_status: 'celestual_admin_handle_status',
+  };
+
+  if (HANDLE_ACTIONS[action]) {
     if (!handle) return json({ ok: false, error: 'bad_input' }, 400);
-    const rpc =
-      action === 'delete_user'
-        ? 'celestual_admin_delete_user'
-        : action === 'ban_user'
-          ? 'celestual_admin_ban_user'
-          : 'celestual_admin_delete_competitor';
+    const rpc = HANDLE_ACTIONS[action];
     const { data, error } = await supabase.rpc(rpc, { p_handle: handle });
     if (error) {
       console.error(`admin ${action} failed`, error.message);

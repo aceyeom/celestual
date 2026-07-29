@@ -20,7 +20,10 @@ import {
   startEmail, checkChoice, claimTrial, loginTrial, trialLink, normChoice,
   choiceProblem, loadTrialAccount, clearTrialAccount, trialEnabled,
 } from '../api/trial.js'
-import { adminOverview, adminDeleteUser, adminBanUser, adminDeleteCompetitor } from '../api/admin.js'
+import {
+  adminOverview, adminDeleteUser, adminBanUser, adminDeleteCompetitor,
+  adminUnbanUser, adminHandleStatus,
+} from '../api/admin.js'
 import { useI18n } from '../i18n/index.js'
 import {
   Brandmark, Kicker, Mono, GlassPanel, PrimaryButton, GhostButton, OutlineButton,
@@ -655,6 +658,40 @@ export function AdminScreen({ C }) {
     load(password)
   }
 
+  // ── the lockout lookup (0018) ──
+  // A suppressed @ is refused by BOTH completion paths while start() — before
+  // 0018 — kept handing it codes, so the person saw "that code lapsed" at 20
+  // seconds and "didn't match an active request" in their DMs. Nothing here
+  // could say why. This does, and lifts it.
+  const [lookup, setLookup] = React.useState('')
+  const [status, setStatus] = React.useState(null)
+  const checkHandle = async (h) => {
+    const q = String(h || '').trim().replace(/^@+/, '')
+    if (!q || busy) return
+    setBusy(true)
+    setErr('')
+    const r = await adminHandleStatus(password, q)
+    setBusy(false)
+    if (!r?.ok) {
+      setStatus(null)
+      setErr(t('admin.errNetwork'))
+      return
+    }
+    setStatus(r)
+  }
+  const unban = async (h) => {
+    if (busy) return
+    setBusy(true)
+    const r = await adminUnbanUser(password, h)
+    setBusy(false)
+    if (!r?.ok) {
+      setErr(t('admin.errNetwork'))
+      return
+    }
+    checkHandle(h)
+    load(password)
+  }
+
   const lock = () => {
     setData(null)
     setPassword('')
@@ -731,6 +768,7 @@ export function AdminScreen({ C }) {
             [counts.competitors, t('admin.competitors')],
             [counts.members, t('admin.users')],
             [counts.assumed, t('admin.viaTimeout')],
+            [counts.suppressed, t('admin.suppressed')],
           ].map(([n, label], i) => (
             <GlassPanel key={i} C={C} inset style={{ padding: `${SPACE.md}px ${SPACE.xl}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
               <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.figure, color: C.cream }}>{Number(n || 0)}</span>
@@ -738,6 +776,70 @@ export function AdminScreen({ C }) {
             </GlassPanel>
           ))}
         </div>
+
+        {/* ── look up an @ (0018): the answer to "my code is right and nothing happens" ── */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+          <Title C={C}>{t('admin.lookup')}</Title>
+          <Mono C={C}>{t('admin.lookupHint')}</Mono>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              checkHandle(lookup)
+            }}
+            style={{ display: 'flex', gap: SPACE.md, flexWrap: 'wrap', alignItems: 'center' }}
+          >
+            <input
+              value={lookup}
+              onChange={(e) => setLookup(e.target.value)}
+              placeholder={t('admin.colHandle')}
+              style={{
+                flex: '1 1 200px', minWidth: 0, padding: '12px 15px', borderRadius: RADIUS.field,
+                background: C.ink2, border: `1.5px solid ${C.line}`, outline: 'none',
+                color: C.cream, fontFamily: FONT.mono, fontSize: 16,
+              }}
+            />
+            <GhostButton C={C} style={{ fontSize: SIZE.meta, opacity: busy || !lookup.trim() ? 0.45 : 1 }}>{t('admin.lookupGo')}</GhostButton>
+          </form>
+
+          {status && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+              <Note C={C} tone={status.suppressed ? 'accent' : undefined}>
+                @{status.handle} — {status.suppressed ? t('admin.lookupBlocked') : t('admin.lookupOpen')}
+              </Note>
+              <Mono C={C}>
+                {!status.member
+                  ? t('admin.lookupNoMember')
+                  : status.member_since
+                    ? t('admin.lookupMember', { when: fmtDay(status.member_since) })
+                    : t('admin.lookupMemberPlain')}
+              </Mono>
+              {status.suppressed && (
+                <div>
+                  <ArmedButton C={C} label={t('admin.unban')} confirmLabel={t('admin.yes')} onFire={() => unban(status.handle)} tone="hot" />
+                </div>
+              )}
+              {(status.verifications || []).length === 0 ? (
+                <Mono C={C}>{t('admin.lookupNone')}</Mono>
+              ) : (
+                <DeskTable C={C} cols={[t('admin.colCode'), t('admin.colStatus'), t('admin.colVia'), t('admin.colStarted'), t('admin.colVerified')]}>
+                  {(status.verifications || []).map((v, i) => (
+                    <tr key={`${v.code}-${i}`}>
+                      <td style={td(C, { ...mono, color: C.star, fontWeight: 700, letterSpacing: '1px' })}>{v.code}</td>
+                      <td style={td(C, mono)}>
+                        {v.status === 'verified' ? t('admin.statusVerified') : v.live ? t('admin.pending') : t('admin.expired')}
+                      </td>
+                      <td style={td(C, { ...mono, color: v.via === 'dm' ? C.star : v.via === 'timeout' ? C.them : C.muted })}>
+                        {v.via === 'dm' ? t('admin.viaDm') : v.via === 'timeout' ? t('admin.viaTimeout') : t('admin.viaNone')}
+                      </td>
+                      <td style={td(C, { ...mono, color: C.muted })}>{fmtDay(v.created_at)}</td>
+                      <td style={td(C, { ...mono, color: C.muted })}>{v.verified_at ? fmtDay(v.verified_at) : ''}</td>
+                    </tr>
+                  ))}
+                </DeskTable>
+              )}
+            </div>
+          )}
+        </section>
 
         {/* ── trial competitors ── */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>

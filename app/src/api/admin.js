@@ -38,6 +38,22 @@ export function adminBanUser(password, handle) {
   return call({ password, action: 'ban_user', handle })
 }
 
+// Lift a suppression so the @ can verify again (0018). The cure for a mistaken
+// "delete everything", a mistaken opt-out, or a ban worth reversing — erased
+// pings stay erased, only the door reopens.
+//   { ok:true, handle, lifted:bool }
+export function adminUnbanUser(password, handle) {
+  return call({ password, action: 'unban_user', handle })
+}
+
+// One @, the whole truth: suppressed? member? what its last verification
+// attempts did (0018). Use this the moment someone says their codes are
+// correct and nothing happens.
+//   { ok:true, handle, suppressed, member, verifications:[…] }
+export function adminHandleStatus(password, handle) {
+  return call({ password, action: 'handle_status', handle })
+}
+
 // Remove a trial competitor (their row + link counters), leaving any ordinary
 // user data they hold untouched.
 export function adminDeleteCompetitor(password, handle) {

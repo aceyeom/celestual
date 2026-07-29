@@ -172,6 +172,11 @@ Deno.serve(async (req) => {
         let done = false;
         let alreadyVerified: string | null = null;
         let codeExpired = false;
+        // 0018 — the suppressed sender. Without this the RPC's 'banned' answer
+        // produced total silence here: no DM, and a `matched:false` line in the
+        // results with nothing saying why. Same lockout the ManyChat relay was
+        // hiding behind "didn't match an active request".
+        let banned = false;
         for (const token of candidates) {
           const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
             p_token: token,
@@ -190,16 +195,19 @@ Deno.serve(async (req) => {
           }
           if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
           if (data?.code_expired) codeExpired = true;
+          if (data?.error === 'banned') banned = true;
         }
         if (!done) {
           // Feedback instead of silence: tell the sender the truth about the
           // state they're actually in, so a re-run never reads as broken.
           if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
+          } else if (banned) {
+            await sendDm(String(igsid), 'This account asked to be erased from CELESTUAL, so it can’t verify back in. If that wasn’t you — or you’ve changed your mind — write to privacy@celestual.us and we’ll reopen it.');
           } else if (codeExpired) {
             await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.');
           }
-          results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired });
+          results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired, banned });
         }
       }
     }

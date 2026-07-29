@@ -286,6 +286,12 @@ const en = {
   // window the person is let in as the @ they typed. the line stays honest.
   // "you're in", never "it's really you".
   'verify.assumed': 'you’re in.',
+  // the suppressed-@ lockout (0018). this used to render as "that code lapsed"
+  // twenty seconds in — a live code, described as a dead one, with a button
+  // that minted another dead one. no retry here: a fresh code cannot open a
+  // closed door, and only we can reopen it.
+  'verify.errBlocked': 'this @ asked to be erased from celestual, so it can’t verify back in. if that wasn’t you, or you’ve changed your mind, write to privacy@celestual.us and we’ll reopen it.',
+  'verify.errBlockedAction': 'close',
   'verify.errRate': 'too many tries. give it a minute, then start again.',
   'verify.errBusy': 'the line is busy. try again in a moment.',
   'verify.errGeneric': 'the verification couldn’t start. check your connection, then try once more.',
@@ -560,6 +566,22 @@ const en = {
   'admin.viaNone': 'no dm record',
   'admin.expired': 'lapsed',
   'admin.pending': 'waiting',
+  'admin.suppressed': 'locked out',
+  // the triage tool (0018). "their codes are correct and nothing works" was
+  // unanswerable from this desk — a suppressed @ looked identical to a relay
+  // outage from every surface we had.
+  'admin.lookup': 'look up an @',
+  'admin.lookupHint': 'someone says their code is right and nothing happens? start here.',
+  'admin.lookupGo': 'check',
+  'admin.lookupBlocked': 'locked out. this @ is suppressed, so every code it takes will be refused, by dm and by the 20-second grace alike.',
+  'admin.lookupOpen': 'not locked out. this @ can verify.',
+  'admin.lookupMember': 'member since {when}.',
+  'admin.lookupMemberPlain': 'a member.',
+  'admin.lookupNoMember': 'not a member yet.',
+  'admin.lookupNone': 'no verification has ever been started for this @.',
+  'admin.unban': 'lift the lockout',
+  'admin.colStatus': 'status',
+  'admin.statusVerified': 'verified',
   'admin.delete': 'delete',
   'admin.ban': 'ban',
   'admin.remove': 'remove',

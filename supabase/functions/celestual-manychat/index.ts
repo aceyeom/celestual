@@ -110,6 +110,14 @@ Deno.serve(async (req) => {
 
   let alreadyVerified: string | null = null;
   let codeExpired = false;
+  // 0018: three failures used to be indistinguishable from "unknown digits" —
+  // a suppressed sender, an unreadable username, and a thrown RPC all fell
+  // through to the no_match reply below. That is exactly how a live, correct
+  // code came back as "didn't match an active request" for a week. Each now
+  // carries its own flag, its own reply, and a log line.
+  let banned = false;
+  let badInput = false;
+  let rpcFailed = false;
   for (const token of candidates) {
     const { data, error } = await supabase.rpc('celestual_complete_ig_verification', {
       p_token: token,
@@ -117,15 +125,21 @@ Deno.serve(async (req) => {
       p_username: username,
     });
     if (error) {
-      console.error('complete error', token, error.message);
+      console.error('complete rpc threw', JSON.stringify({ token, username, error: error.message }));
+      rpcFailed = true;
       continue;
     }
+    // Log EVERY outcome, not just thrown errors: a { ok:false } answer is the
+    // interesting case and used to leave no trace at all in the logs.
+    console.log('complete', JSON.stringify({ token, username, result: data }));
     if (data?.ok) {
       // ManyChat can map `reply` to a field and send it back as a DM (optional).
       return json({ ok: true, status: 'verified', handle: data.handle, reply: `✦ @${data.handle} is verified on CELESTUAL — head back to the app to finish.` });
     }
     if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;
     if (data?.code_expired) codeExpired = true;
+    if (data?.error === 'banned') banned = true;
+    if (data?.error === 'bad_input') badInput = true;
   }
 
   // Nothing was pending under any candidate code. Tell the sender the TRUTH
@@ -134,11 +148,28 @@ Deno.serve(async (req) => {
   if (alreadyVerified) {
     return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
   }
+  // The door is shut for this sender (the account screen's "delete everything",
+  // the /privacy opt-out, or an admin ban all land here). The code was fine —
+  // saying "it may have lapsed" sent people round the mint-a-new-code loop
+  // forever. Name it, and point at the one thing that can undo it.
+  if (banned) {
+    return json({ ok: false, status: 'banned', reply: 'This account asked to be erased from CELESTUAL, so it can’t verify back in. If that wasn’t you — or you’ve changed your mind — write to privacy@celestual.us and we’ll reopen it.' });
+  }
   if (codeExpired) {
     return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.' });
   }
+  // The username ManyChat sent didn't survive normalisation (an unmapped or
+  // mangled {{instagram.username}} field). The person can't fix this — say so
+  // instead of blaming their code, and check the log line above.
+  if (badInput) {
+    return json({ ok: false, status: 'bad_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
+  }
+  if (rpcFailed) {
+    return json({ ok: false, status: 'rpc_error', reply: 'Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.' });
+  }
   // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
-  // code_expired above for a full week, so landing HERE means a typo'd code, a
-  // code older than that retention, or a completion RPC error in the logs.)
+  // code_expired above for a full week, so landing HERE means a typo'd code or
+  // a code older than that retention — every other failure now has its own
+  // status above.)
   return json({ ok: false, status: 'no_match', reply: 'That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.' });
 });
