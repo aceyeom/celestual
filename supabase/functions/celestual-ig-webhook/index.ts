@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
           if (alreadyVerified) {
             await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
           } else if (banned) {
-            await sendDm(String(igsid), 'This account asked to be erased from CELESTUAL, so it can’t verify back in. If that wasn’t you — or you’ve changed your mind — write to privacy@celestual.us and we’ll reopen it.');
+            await sendDm(String(igsid), 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.');
           } else if (codeExpired) {
             await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.');
           }

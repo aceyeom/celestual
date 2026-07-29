@@ -2846,15 +2846,21 @@ export function PrivacyScreen({ C, ctx }) {
 
         <H>{t('privacy.h5')}</H>
         <P>{t('privacy.p5')}</P>
+        {/* 0020 — the two doors, told apart. This one is about being ENTERED,
+            not about having an account, and it is not the delete button. */}
+        <P>{t('privacy.p5b')}</P>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Field C={C} kind="handle" value={handle} onChange={setHandle} placeholder={t('privacy.removePlaceholder')} />
           <PrimaryButton C={C} disabled={!ok || status === 'working'} onClick={submit}>
             {status === 'working' ? t('privacy.removing') : t('privacy.removeCta')}
           </PrimaryButton>
           {status === 'done' && (
-            <P>
-              {t('privacy.removed1')} <HandleChip C={C} handle={normHandle(handle)} /> {t('privacy.removed2')}
-            </P>
+            <>
+              <P>
+                {t('privacy.removed1')} <HandleChip C={C} handle={normHandle(handle)} /> {t('privacy.removed2')}
+              </P>
+              <P>{t('privacy.removedLift')}</P>
+            </>
           )}
           {status === 'error' && <div style={{ fontSize: SIZE.small, color: rgba(C.star, 0.95) }}>{t('privacy.removeErr')}</div>}
         </div>
@@ -3073,6 +3079,12 @@ export function AccountSheet({ C, ctx }) {
         ) : (
           <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
             <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.cream }}>{ctx.demo ? t('account.deleteConfirmDemo') : t('account.deleteConfirm')}</span>
+            {/* The line that stops this being mistaken for the opt-out. Until
+                0020 it WAS the opt-out, applied to your own @, and nobody
+                tapping "delete everything" was asking to be barred for good. */}
+            {!ctx.demo && (
+              <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('account.deleteKeep')}</span>
+            )}
             <div style={{ display: 'flex', gap: SPACE.xl, alignItems: 'center', flexWrap: 'wrap' }}>
               <GhostButton C={C} onClick={onDelete} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
                 {deleting ? t('account.deleting') : t('account.deleteYes')}
@@ -3081,6 +3093,17 @@ export function AccountSheet({ C, ctx }) {
                 {t('account.cancel')}
               </GhostButton>
             </div>
+            {!ctx.demo && (
+              <span style={{ fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+                {t('account.deleteOptOut')}{' '}
+                <button
+                  onClick={() => ctx.go('privacy')}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: C.muted, textDecoration: 'underline', textUnderlineOffset: 3 }}
+                >
+                  {t('account.deleteOptOutLink')}
+                </button>
+              </span>
+            )}
           </div>
         )}
       </div>

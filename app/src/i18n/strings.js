@@ -286,11 +286,11 @@ const en = {
   // window the person is let in as the @ they typed. the line stays honest.
   // "you're in", never "it's really you".
   'verify.assumed': 'you’re in.',
-  // the suppressed-@ lockout (0018). this used to render as "that code lapsed"
-  // twenty seconds in — a live code, described as a dead one, with a button
-  // that minted another dead one. no retry here: a fresh code cannot open a
-  // closed door, and only we can reopen it.
-  'verify.errBlocked': 'this @ asked to be erased from celestual, so it can’t verify back in. if that wasn’t you, or you’ve changed your mind, write to privacy@celestual.us and we’ll reopen it.',
+  // the ban (0018 named it; 0020 made a ban the ONLY thing that reaches here).
+  // this used to render as "that code lapsed" twenty seconds in: a live code,
+  // described as a dead one, with a button that minted another dead one. no
+  // retry here, because a fresh code cannot open a closed door.
+  'verify.errBlocked': 'this @ can’t be verified on celestual. if that’s a mistake, write to privacy@celestual.us and we’ll look at it.',
   'verify.errBlockedAction': 'close',
   'verify.errRate': 'too many tries. give it a minute, then start again.',
   'verify.errBusy': 'the line is busy. try again in a moment.',
@@ -316,7 +316,15 @@ const en = {
   'account.sandboxNote': 'sandbox. nothing here reaches a server.',
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',
-  'account.deleteConfirm': 'this erases every ping you’ve placed, closes your door, and blocks your handle. it can’t be undone.',
+  // 0020 — this used to say "and blocks your handle", because it did: it called
+  // the public opt-out on your own @, so tidying up your account barred it from
+  // ever verifying again. two different decisions wearing one button. deleting
+  // your data is housekeeping and says so; never being entered is its own
+  // choice, on /privacy, made on purpose.
+  'account.deleteConfirm': 'this erases every ping you’ve placed and every record of you. it can’t be undone.',
+  'account.deleteKeep': 'your @ stays yours. you can come back and verify again any time.',
+  'account.deleteOptOut': 'wanted the other thing? never let anyone enter your @ again.',
+  'account.deleteOptOutLink': 'opt out instead',
   'account.deleteConfirmDemo': 'sandbox. this just starts the demo fresh.',
   'account.deleteYes': 'erase it all',
   'account.deleting': 'erasing…',
@@ -442,12 +450,15 @@ const en = {
   'privacy.h4': 'for adults',
   'privacy.p4': 'celestual is for people 18 and older.',
   'privacy.h5': 'the opt-out',
-  'privacy.p5': 'any handle owner, on celestual or not, can make their handle permanently un-pingable and erase everything referencing it. free, immediate, never behind a login.',
+  'privacy.p5': 'any handle owner, on celestual or not, can make their handle un-pingable and erase everything referencing it. free, immediate, never behind a login.',
+  // 0020 — the two doors, named. people were choosing one and getting the other.
+  'privacy.p5b': 'this is not the same as deleting an account. it stops anyone entering your @, forever, whether or not you use celestual. it does not stop you signing up yourself, and we’ll lift it if you write to us.',
   'privacy.removePlaceholder': 'handle.to.remove',
   'privacy.removeCta': 'opt this handle out, permanently',
   'privacy.removing': 'closing the door…',
   'privacy.removed1': 'done.',
   'privacy.removed2': 'is now un-pingable, and everything referencing it is gone.',
+  'privacy.removedLift': 'changed your mind? write to privacy@celestual.us and we’ll lift it.',
   'privacy.removeErr': 'that didn’t go through. email us and we’ll do it by hand.',
   'privacy.h6': 'always free',
   'privacy.p6': 'placing, matching, the reveal, renewing, letting go, the opt-out, verification, your door, your communities. all of it, forever.',

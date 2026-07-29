@@ -33,14 +33,16 @@ export function adminDeleteUser(password, handle) {
   return call({ password, action: 'delete_user', handle })
 }
 
-// Erase + suppress: the @ can't be pinged and can't verify back in.
+// Erase + ban (kind='ban'): the @ can't be pinged and can't verify back in.
+// This is the ONLY thing that refuses an identity. "Delete everything" in the
+// account screen does not go through here and closes no doors (migration 0020).
 export function adminBanUser(password, handle) {
   return call({ password, action: 'ban_user', handle })
 }
 
-// Lift a suppression so the @ can verify again (0018). The cure for a mistaken
-// "delete everything", a mistaken opt-out, or a ban worth reversing — erased
-// pings stay erased, only the door reopens.
+// Lift whatever is on this @ (0018), ban or opt-out alike. Since 0020 only a
+// ban blocks verifying, so this is for reversing a ban or honouring a changed
+// mind about an opt-out. Erased pings stay erased; only the door reopens.
 //   { ok:true, handle, lifted:bool }
 export function adminUnbanUser(password, handle) {
   return call({ password, action: 'unban_user', handle })

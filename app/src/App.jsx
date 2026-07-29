@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
-  suppressHandle, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
+  suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
   SUB_SLOT_CAP, SUB_PING_DAYS,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
@@ -1176,12 +1176,18 @@ export default function App() {
     setTimeout(() => (persistReady.current = true), 800)
   }, [go, wipeLocalState])
 
-  // Delete everything: the opt-out on your own handle (erases every ping you
-  // placed, closes your door, blocks your handle) + a local wipe.
+  // Delete everything: erase every ping you placed and every record of you,
+  // plus a local wipe. It does NOT block your handle any more (migration 0020).
+  //
+  // It used to call suppressHandle(me) — the public opt-out — on your own @.
+  // That meant tidying up your account quietly barred the handle from ever
+  // verifying again, permanently, with nothing in the product able to say so or
+  // undo it. "Delete everything" is housekeeping; "never let anyone enter me"
+  // is a different decision, lives on /privacy, and is chosen deliberately.
   const deleteEverything = useCallback(async () => {
     persistReady.current = false
     try {
-      if (!demo && normHandle(me)) await suppressHandle(me)
+      if (!demo && normHandle(me)) await eraseAccount(me)
     } catch {
       /* clear locally regardless */
     }

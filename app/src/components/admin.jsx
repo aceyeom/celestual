@@ -13,9 +13,12 @@
 // over the whole viewport (position:fixed) so the galaxy canvas behind it never
 // shows through, and App.jsx skips rendering that canvas here at all.
 //
-// The data is one call — celestual_admin_overview (migration 0019) — returning
-// counts, users (one row per member), unverified (ONE ROW PER HANDLE, not per
-// attempt), competitors, a 30-day growth series, and a unified activity log.
+// The data is one call — celestual_admin_overview (migrations 0019 + 0020) —
+// returning counts, users (one row per member), unverified (ONE ROW PER HANDLE,
+// not per attempt), competitors, a 30-day growth series, and a unified activity
+// log. Two block states are reported and shown separately, because they are not
+// the same fact: BANNED (identity refused, cannot verify) and OPTED OUT (nobody
+// may enter this @, but they may still sign up themselves).
 // The password is checked only in the celestual-admin edge function; every data
 // RPC behind it is service-role only, so nothing here is readable without it.
 import * as React from 'react'
@@ -415,7 +418,7 @@ export function AdminScreen() {
     const r = await fn(password, handle)
     setBusy(false)
     if (!r?.ok) {
-      setErr(r?.error === 'banned' ? 'That @ is locked out. Lift the lockout first.' : 'That did not go through. Try again.')
+      setErr(r?.error === 'banned' ? 'That @ is banned. Lift the ban first.' : 'That did not go through. Try again.')
       return
     }
     say(msg.replace('{h}', '@' + handle))
@@ -605,8 +608,18 @@ export function AdminScreen() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Stat label="Stuck unverified" value={n(counts.unverified)} tone={Number(counts.unverified || 0) > 0 ? 'warn' : undefined} sub="people, not attempts" />
             <Stat label="Assumed at 20s" value={n(counts.assumed)} tone={Number(counts.assumed || 0) > 0 ? 'warn' : undefined} sub="grace, not a DM" />
-            <Stat label="Manual admits" value={n(counts.manual)} />
-            <Stat label="Locked out" value={n(counts.suppressed)} tone={Number(counts.suppressed || 0) > 0 ? 'bad' : undefined} sub="suppressed handles" />
+            <Stat label="Manual admits" value={n(counts.manual)} sub="let in by hand" />
+            {/* 0020 — two tiles, because they are two different facts. A ban
+                refuses an identity; an opt-out only means "nobody may enter
+                this @". Showing them as one number is the habit that let a
+                self-erase read as a ban for a week. */}
+            <Stat
+              label="Banned"
+              value={n(counts.banned != null ? counts.banned : counts.suppressed)}
+              tone={Number(counts.banned != null ? counts.banned : counts.suppressed || 0) > 0 ? 'bad' : undefined}
+              sub="cannot verify"
+            />
+            <Stat label="Opted out" value={n(counts.opted_out)} sub="un-pingable by choice" />
           </div>
 
           <Card>
@@ -626,7 +639,7 @@ export function AdminScreen() {
           <Card>
             <div style={{ fontSize: 15, fontWeight: 650, letterSpacing: '-0.02em' }}>Look up an @</div>
             <div style={{ fontSize: 12.5, color: A.muted, marginTop: 2, marginBottom: 12 }}>
-              Is this handle locked out, is it a member, and what did its last verification attempts do.
+              Banned, opted out, or neither. Whether it&rsquo;s a member, and what its last verification attempts did.
             </div>
             <form
               onSubmit={(e) => {
@@ -652,18 +665,32 @@ export function AdminScreen() {
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${A.lineSoft}`, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <Handle>{status.handle}</Handle>
-                  {status.suppressed ? <Pill tone="bad">Locked out</Pill> : <Pill tone="good">Can verify</Pill>}
+                  {status.banned ? <Pill tone="bad">Banned</Pill> : <Pill tone="good">Can verify</Pill>}
+                  {status.opted_out && <Pill tone="warn">Opted out</Pill>}
                   {status.member ? <Pill tone="accent">Member</Pill> : <Pill>Not a member</Pill>}
                   {status.member_since && <span style={{ fontSize: 12.5, color: A.muted }}>since {fmtDate(status.member_since)}</span>}
                 </div>
-                {status.suppressed && (
+                {status.banned && (
                   <div style={{ fontSize: 13, color: A.body, background: A.badSoft, border: '1px solid #f2cccc', borderRadius: 9, padding: '10px 12px', whiteSpace: 'normal' }}>
-                    Every code this @ takes will be refused — by DM and by the 20-second grace alike. This is what
-                    &ldquo;that code lapsed&rdquo; really means when the code was correct.
+                    Banned. Every code this @ takes will be refused, by DM and by the 20-second grace alike. This is
+                    what &ldquo;that code lapsed&rdquo; really means when the code was correct.
+                  </div>
+                )}
+                {status.opted_out && (
+                  <div style={{ fontSize: 13, color: A.body, background: A.warnSoft, border: '1px solid #f0dcb8', borderRadius: 9, padding: '10px 12px', whiteSpace: 'normal' }}>
+                    Asked never to be entered. Nobody can place a ping on this @, but they can still sign up
+                    themselves. This is not a ban and never blocks verification.
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {status.suppressed && <Armed kind="good" label="Lift the lockout" armedLabel="Confirm lift" onFire={() => act(adminUnbanUser, status.handle, 'Lockout lifted for {h}.')} />}
+                  {(status.banned || status.opted_out) && (
+                    <Armed
+                      kind="good"
+                      label={status.banned ? 'Lift the ban' : 'Lift the opt-out'}
+                      armedLabel="Confirm lift"
+                      onFire={() => act(adminUnbanUser, status.handle, 'Lifted for {h}.')}
+                    />
+                  )}
                   {!status.member && <Armed kind="good" label="Admit by hand" armedLabel="Confirm admit" onFire={() => act(adminVerifyUser, status.handle, '{h} admitted manually.')} />}
                   <Armed label="Clear pending codes" armedLabel="Confirm clear" kind="default" onFire={() => act(adminClearPending, status.handle, 'Cleared pending codes for {h}.')} />
                 </div>
@@ -710,7 +737,8 @@ export function AdminScreen() {
                 <td style={cell()}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <Handle>{u.handle}</Handle>
-                    {u.suppressed && <Pill tone="bad">Locked</Pill>}
+                    {u.suppressed && <Pill tone="bad">Banned</Pill>}
+                    {u.opted_out && <Pill tone="warn">Opted out</Pill>}
                     {u.competitor && <Pill tone="accent">Competitor</Pill>}
                   </div>
                 </td>
@@ -725,7 +753,7 @@ export function AdminScreen() {
                   <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <Btn size="sm" onClick={() => { setLookup(u.handle); setTab('overview'); checkHandle(u.handle) }}>Inspect</Btn>
                     {u.suppressed
-                      ? <Armed kind="good" label="Unban" armedLabel="Confirm" onFire={() => act(adminUnbanUser, u.handle, 'Lockout lifted for {h}.')} />
+                      ? <Armed kind="good" label="Unban" armedLabel="Confirm" onFire={() => act(adminUnbanUser, u.handle, 'Ban lifted for {h}.')} />
                       : <Armed label="Ban" armedLabel="Confirm ban" onFire={() => act(adminBanUser, u.handle, '{h} erased and banned.')} />}
                     <Armed label="Delete" armedLabel="Confirm delete" onFire={() => act(adminDeleteUser, u.handle, '{h} erased.')} />
                   </div>
@@ -749,7 +777,7 @@ export function AdminScreen() {
                 <td style={cell()}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <Handle>{u.handle}</Handle>
-                    {u.suppressed && <Pill tone="bad">Locked out</Pill>}
+                    {u.suppressed && <Pill tone="bad">Banned</Pill>}
                   </div>
                 </td>
                 <td style={cell()}><Code>{u.code}</Code></td>
@@ -763,7 +791,7 @@ export function AdminScreen() {
                   <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <Btn size="sm" onClick={() => { setLookup(u.handle); setTab('overview'); checkHandle(u.handle) }}>Inspect</Btn>
                     {u.suppressed
-                      ? <Armed kind="good" label="Lift lockout" armedLabel="Confirm" onFire={() => act(adminUnbanUser, u.handle, 'Lockout lifted for {h}.')} />
+                      ? <Armed kind="good" label="Lift ban" armedLabel="Confirm" onFire={() => act(adminUnbanUser, u.handle, 'Ban lifted for {h}.')} />
                       : <Armed kind="good" label="Admit" armedLabel="Confirm admit" onFire={() => act(adminVerifyUser, u.handle, '{h} admitted manually.')} />}
                     <Armed label="Clear" armedLabel="Confirm clear" kind="default" onFire={() => act(adminClearPending, u.handle, 'Cleared pending codes for {h}.')} />
                   </div>
@@ -851,7 +879,8 @@ function LogKind({ kind }) {
     ping: ['accent', 'Ping'],
     match: ['good', 'Match'],
     trial: ['accent', 'Trial signup'],
-    blocked: ['bad', 'Locked out'],
+    blocked: ['bad', 'Banned'],
+    optout: ['warn', 'Opted out'],
     admin_fail: ['warn', 'Bad password'],
   }
   const [tone, label] = map[kind] || [null, kind]

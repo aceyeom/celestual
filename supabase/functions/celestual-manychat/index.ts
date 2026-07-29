@@ -152,12 +152,12 @@ Deno.serve(async (req) => {
   if (alreadyVerified) {
     return json({ ok: true, status: 'already_verified', handle: alreadyVerified, reply: `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.` });
   }
-  // The door is shut for this sender (the account screen's "delete everything",
-  // the /privacy opt-out, or an admin ban all land here). The code was fine —
+  // This sender is BANNED (since 0020 that is the only thing that reaches here —
+  // an opt-out no longer blocks anyone from verifying). The code was fine, so
   // saying "it may have lapsed" sent people round the mint-a-new-code loop
   // forever. Name it, and point at the one thing that can undo it.
   if (banned) {
-    return json({ ok: false, status: 'banned', reply: 'This account asked to be erased from CELESTUAL, so it can’t verify back in. If that wasn’t you — or you’ve changed your mind — write to privacy@celestual.us and we’ll reopen it.' });
+    return json({ ok: false, status: 'banned', reply: 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
   }
   if (codeExpired) {
     return json({ ok: false, status: 'code_expired', reply: 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.' });

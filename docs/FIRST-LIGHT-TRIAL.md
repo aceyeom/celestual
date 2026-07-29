@@ -30,6 +30,9 @@ fixed.
    0019 puts the DM code back to **four digits** and gives the desk its data:
    deduplicated users, one row per stuck handle, a 30-day growth series, and a
    unified activity log.
+   **0020 empties `celestual_suppressions` once** (everyone unbanned) and splits
+   the flag in two so it can't happen again. See "The two doors" below before
+   running it.
 2. **Wipe the old user data** (you said you'd do this by hand):
    SQL editor → run `supabase/wipe-all-user-data.sql`. ⚠ Irreversible. It
    erases every account and everything accounts produced, and deliberately
@@ -61,7 +64,8 @@ applied.
 
 One row in `celestual_recruits` (the same table 0016 used, so the counting
 RPCs are untouched): the typed name as the signature, the agreement version
-(`first-light-v1`), the @ they entered, the verified email, the chosen code,
+(`challenge-v1` since 0020; rows signed earlier keep `first-light-v1`), the
+@ they entered, the verified email, the chosen code,
 `source='trial'`. The email-ownership codes live hashed in
 `celestual_trial_emails`, written only by the edge function.
 
@@ -74,6 +78,45 @@ can never silently change once minted.
 Four-letter codes are `[a-z]{4}`, minus the reserved words
 (`celestual_trial_code_ok` server-side, `RESERVED_CODES` client-side — keep
 them in step). Named routes always win over `/<code>`.
+
+## The two doors (0020)
+
+`celestual_suppressions` was doing two unrelated jobs under one flag, and a
+third by accident:
+
+| | What it means | Blocks pings? | Blocks verifying? |
+| --- | --- | --- | --- |
+| `kind = 'optout'` | "nobody may enter my @" — the privacy-policy opt-out, for any handle owner, user or not | yes | **no** |
+| `kind = 'ban'` | "not welcome here" — the admin ban | yes | yes |
+
+The accident was **"delete everything"** in the account screen: it called
+`celestual_suppress` on your own handle, so tidying up your account quietly
+opted you out — and because every identity check read the flag without asking
+which kind it was, that handle could never verify again. Permanently, with
+nothing in the product able to say so or undo it. That is the bug behind
+"that code lapsed" on a live, correct code.
+
+What changed:
+
+- **The list was emptied once.** Every handle unbanned, every accidental
+  self-lock lifted. The wipe is guarded by a `suppressions_reset_0020` marker in
+  `celestual_settings`, so re-applying the migration can never erase opt-outs
+  recorded later. **Do not remove that guard** — those rows are people who asked
+  never to be entered, and honouring that is a published promise.
+- **Identity checks ask `celestual_is_banned()`**, which reads `kind = 'ban'`
+  only. One function, four callers (start, complete, the 20-second grace, the
+  trial claim), so they can never drift apart again.
+- **Ping-blocking is unchanged** and still reads the whole table: both kinds
+  mean "do not enter this @" (`celestual_is_member`, `celestual_submit`).
+- **`celestual_erase_account`** is new and client-callable: the same erasure
+  `celestual_suppress` performs, minus the flag. "Delete everything" calls this
+  now. Same 10-per-IP-per-hour limit; it erases strictly less than the opt-out
+  already did for the same input, so it opens no new exposure.
+- **Copy, in three places** — the account screen ("your @ stays yours, you can
+  come back and verify again any time", with a link to the opt-out for anyone who
+  wanted the other thing), `/privacy`, and `data-deletion.html`. Both pages now
+  say plainly that opting out is about not being *entered*, is reversible on
+  request, and never stops you signing up yourself.
 
 ## The admin dashboard
 
@@ -105,12 +148,13 @@ arm on the first tap and fire on the second.
   member, and what did its last twenty verification attempts do. Start here
   whenever someone says their code is correct and nothing happens; a suppressed
   @ is refused by both completion paths and used to be invisible from every
-  surface we had. A **lift the lockout** button undoes the suppression —
-  necessary because the account screen's "delete everything" suppresses your own
-  @, and before 0018 nothing in the product could ever take it back out.
-- **locked out** (the counter) — how many hashes sit in
-  `celestual_suppressions`. A list that only ever grows and is never looked at
-  is how the 0018 bug survived a week.
+  surface we had. A **lift** button undoes it, necessary because before 0020 the
+  account screen's "delete everything" suppressed your own @ and nothing in the
+  product could ever take it back out.
+- **banned** and **opted out** (two counters, 0020) — how many hashes sit in
+  `celestual_suppressions` of each kind. Shown apart on purpose: one refuses an
+  identity, the other only means "nobody may enter this @". Showing them as one
+  number is how the 0018 bug survived a week.
 - **unverified** — people who started and never finished, **one row per
   handle** (0019). It used to be one row per pending *row*, so somebody who
   retried four times filled four lines and the list read as four people. Each

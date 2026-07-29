@@ -254,8 +254,32 @@ export async function searchHandles(query) {
   }
 }
 
+// ── the two different doors (migration 0020) ─────────────────────────────────
+// These used to be one call, and conflating them locked people out of their own
+// accounts for tidying up. Keep them apart:
+//
+//   eraseAccount  — "take my data off your servers." Erases everything, closes
+//                   nothing. You can verify again tomorrow. This is what the
+//                   account screen's "delete everything" calls.
+//   suppressHandle — "nobody may ever enter my @." The real opt-out, for any
+//                   handle owner whether or not they use celestual. Permanent
+//                   by intent (we lift it by hand on request), and it does NOT
+//                   stop the owner signing up — being un-pingable and being
+//                   unwelcome are different facts.
+
+// Erase everything about a handle and leave every door open.
+export async function eraseAccount(handle) {
+  if (!hasSupabase) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { erased: 0, handle: normHandle(handle) }
+  }
+  const { data, error } = await supabase.rpc('celestual_erase_account', { p_handle: handle });
+  if (error) throw error;
+  return data; // { erased: number, handle: string }
+}
+
 // Public opt-out: verify-and-vanish for any handle owner, user or not (§2.5).
-// Blocks the handle from ever being pinged and erases everything referencing it.
+// Blocks the handle from ever being PINGED and erases everything referencing it.
 export async function suppressHandle(handle) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
