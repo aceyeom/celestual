@@ -84,6 +84,33 @@ export async function startVerification(handle) {
   return { token: data.token, expiresAt: data.expires_at, proof, proofHash }
 }
 
+// ── The 20-second grace (TEMPORARY — migration 0017) ──────────────────────
+// The DM relay has been dropping verifications in production. The DM path
+// stays untouched and still wins when it lands; but once a code has been out
+// for GRACE_MS, the browser may ask to be let in as the TYPED @ (the server
+// enforces its own 20-second clock and the same proof-hash gate poll uses).
+// Such sessions are recorded verified_via='timeout' so the admin desk can list
+// exactly which accounts were assumed, with the code each held, for manual DM
+// checking. Remove this (and the sheet's timer) once the relay is fixed.
+export const GRACE_MS = 20000
+
+// Ask the server to admit this verification past the grace window.
+// Returns { ok:true, handle } or { ok:false, error:'early'|'none'|'expired'|'banned' }.
+// Never throws — a transient failure (including the RPC not existing yet)
+// reads as { ok:false, error:'early' } so the caller simply tries again.
+export async function graceVerify(token, proofHash) {
+  try {
+    const { data, error } = await supabase.rpc('celestual_ig_verify_timeout', {
+      p_token: token,
+      p_proof_hash: proofHash,
+    })
+    if (error) return { ok: false, error: 'early' }
+    return data?.ok ? { ok: true, handle: data.handle || null } : { ok: false, error: data?.error || 'early' }
+  } catch {
+    return { ok: false, error: 'early' }
+  }
+}
+
 // Poll for the DM result. Returns { status, handle }:
 //   status: 'pending' | 'verified' | 'expired' | 'none'
 //   handle: the adopted @ (the Meta-authenticated account that DM'd), present

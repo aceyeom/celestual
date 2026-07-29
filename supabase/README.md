@@ -92,7 +92,29 @@ Idempotent migrations, applied in order:
   Two hashed secrets: the one-time invite token and the recruit's own dashboard
   key, both minted outside Postgres. `celestual_suppress` extended to erase all
   three. Nothing here meets `celestual_entries`, so it can never see who pinged
-  whom. **Setup: [../docs/RECRUITMENT.md](../docs/RECRUITMENT.md)**
+  whom. **Setup: [../docs/RECRUITMENT.md](../docs/RECRUITMENT.md)** (retired —
+  see 0017)
+
+- `migrations/0017_first_light_trial.sql` — **the First Light trial.**
+  Self-serve competitor signup on `/trial` replaces the 0016 comment→DM loop:
+  email-ownership codes (`celestual_trial_emails`, hash-stored),
+  `celestual_trial_claim` / `celestual_trial_login` / `celestual_trial_check`
+  (service-role only, called by the `celestual-trial` function), trial columns
+  on `celestual_recruits` (verified email, source, one email = one competitor)
+  and CHOSEN four-letter codes at the site root. Plus the **20-second DM
+  grace** (`celestual_ig_verify_timeout`, proof-gated, temporary — admits the
+  typed @ as `verified_via='timeout'` so the desk can list what was assumed),
+  `celestual_complete_ig_verification` v6 (stamps `verified_via='dm'`, refuses
+  banned handles), and the **admin desk RPCs** (`celestual_admin_overview` /
+  `_delete_user` / `_ban_user` / `_delete_competitor`, service-role only,
+  password-gated in the `celestual-admin` function).
+  **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)**
+
+**The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
+migration chain so `db push` can never run it) erases every account and
+everything accounts produced, while keeping suppressions (opt-outs stay
+honored), settings (the salt!), and operator-created communities/campuses.
+Paste it into the SQL editor yourself, once, when you mean it.
 
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
@@ -123,7 +145,9 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 | `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 
-| `functions/celestual-recruit` | the recruitment program's front door: ManyChat's comment automation fires here when someone comments `celestual` under the reel; mints a one-time signing token and returns the `reply` ManyChat DMs back (the rules + the agreement link, or their tracking link if they've already signed). Reuses the same shared secret as `celestual-manychat`. **Full setup: [../docs/RECRUITMENT.md](../docs/RECRUITMENT.md)** | `MANYCHAT_SHARED_SECRET`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-recruit` | RETIRED (0017) — the old comment-automation front door; kept for reference | `MANYCHAT_SHARED_SECRET`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 Deploy with `supabase functions deploy <name>`. JWT verification is disabled
