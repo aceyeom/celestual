@@ -24,6 +24,7 @@ import { TrialScreen } from './components/trial.jsx'
 import { AdminScreen } from './components/admin.jsx'
 import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
 import { RESERVED_CODES } from './api/trial.js'
+import { TRIAL_BANNER, TRIAL_DEADLINE } from './trialContent.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -1463,10 +1464,10 @@ export default function App() {
       )}
 
       {/* the first light banner — the landing's one door to the trial, resting
-          in the opposite corner from the login chip */}
+          in the opposite corner from the login chip, its deadline ticking */}
       {!demo && screen === 'landing' && (
         <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
-          <TrialBanner C={C} line1={t('landing.trial1')} line2={t('landing.trial2')} />
+          <TrialBanner C={C} line={TRIAL_BANNER} deadline={TRIAL_DEADLINE} />
         </div>
       )}
 

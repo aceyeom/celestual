@@ -906,12 +906,96 @@ export function LoginButton({ C, label, onClick }) {
   )
 }
 
+// ── the countdown ─────────────────────────────────────────────────────────────
+// One clock, shared by the landing banner and the trial page, ticking to a fixed
+// instant. It re-renders once a SECOND, which is the whole point: a deadline
+// written as a date is information, a deadline that moves while you look at it
+// is pressure. `done` is true once the instant has passed, so every caller can
+// say its own thing instead of counting backwards into negative numbers.
+export function useCountdown(iso) {
+  const target = React.useMemo(() => new Date(iso).getTime(), [iso])
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    // Aligned to the wall clock rather than to mount, so the digits flip on the
+    // second and not 380ms into it. setInterval alone drifts; this re-aims after
+    // every tick, which also recovers cleanly when a phone wakes from sleep.
+    let id
+    const tick = () => {
+      setNow(Date.now())
+      id = setTimeout(tick, 1000 - (Date.now() % 1000))
+    }
+    id = setTimeout(tick, 1000 - (Date.now() % 1000))
+    return () => clearTimeout(id)
+  }, [target])
+  const left = Math.max(0, target - now)
+  const s = Math.floor(left / 1000)
+  return {
+    done: left <= 0,
+    days: Math.floor(s / 86400),
+    hours: Math.floor((s % 86400) / 3600),
+    mins: Math.floor((s % 3600) / 60),
+    secs: s % 60,
+  }
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+// The clock as four counted units, each under its own tick — read at a glance,
+// never mistaken for a phone number. `compact` is the banner's edition: one
+// dense mono line that fits a corner of a phone.
+export function Countdown({ C, iso, compact, closedLabel = 'closed', color }) {
+  const { done, days, hours, mins, secs } = useCountdown(iso)
+  const lit = color || C.star
+  if (done) {
+    return (
+      <span style={{ fontFamily: FONT.mono, fontSize: compact ? SIZE.micro : SIZE.meta, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: C.muted }}>
+        {closedLabel}
+      </span>
+    )
+  }
+  if (compact) {
+    return (
+      <span
+        aria-label={`${days} days ${hours} hours ${mins} minutes ${secs} seconds left`}
+        style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '1.2px', color: lit, fontVariantNumeric: 'tabular-nums' }}
+      >
+        {days}d {pad2(hours)}h {pad2(mins)}m {pad2(secs)}s
+      </span>
+    )
+  }
+  const units = [
+    [days, 'days'],
+    [pad2(hours), 'hrs'],
+    [pad2(mins), 'min'],
+    [pad2(secs), 'sec'],
+  ]
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
+      {units.map(([v, l], i) => (
+        <React.Fragment key={l}>
+          {i > 0 && (
+            <span aria-hidden style={{ fontFamily: FONT.mono, fontSize: 22, lineHeight: '30px', color: rgba(C.cream, 0.18) }}>:</span>
+          )}
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 34 }}>
+            <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 26, lineHeight: '30px', color: lit, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 20px ${rgba(lit, 0.35)}` }}>
+              {v}
+            </span>
+            <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: C.muted }}>{l}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
 // ── the first light banner ────────────────────────────────────────────────────
 // The landing's one door to the trial: a small designed banner resting top-right
 // (mirroring the login chip's corner), not a chip — a hairline card with the
-// star's own light down its leading edge, the program name in the serif voice
-// and the invitation ticked beneath in mono. Quiet at rest, lit on hover.
-export function TrialBanner({ C, line1, line2, href = '/trial' }) {
+// star's own light down its leading edge, the call in the serif voice and the
+// deadline ticking beneath it, second by second. The clock is the banner's real
+// argument: a job opening with a date on it is a notice, one that is visibly
+// running out is a decision.
+export function TrialBanner({ C, line, deadline, href = '/trial' }) {
   const [h, setH] = React.useState(false)
   return (
     <a
@@ -920,6 +1004,9 @@ export function TrialBanner({ C, line1, line2, href = '/trial' }) {
       onMouseLeave={() => setH(false)}
       style={{
         display: 'flex', flexDirection: 'column', gap: 3, padding: '8px 13px 7px 12px',
+        // capped so the line wraps rather than growing left into the login chip
+        // on a narrow phone, where the two corners are only a thumb apart
+        maxWidth: 'min(58vw, 290px)',
         borderRadius: RADIUS.inner, textDecoration: 'none',
         background: rgba(C.ink2, h ? 0.92 : 0.78),
         border: `1px solid ${h ? rgba(C.star, 0.5) : rgba(C.star, 0.26)}`,
@@ -929,12 +1016,12 @@ export function TrialBanner({ C, line1, line2, href = '/trial' }) {
         transition: 'all .25s ease',
       }}
     >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span aria-hidden style={{ color: C.star, fontSize: 10, lineHeight: 1, textShadow: `0 0 10px ${rgba(C.star, 0.8)}` }}>✦</span>
-        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1, color: C.cream }}>{line1}</span>
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+        <span aria-hidden style={{ flexShrink: 0, color: C.star, fontSize: 10, lineHeight: 1, textShadow: `0 0 10px ${rgba(C.star, 0.8)}` }}>✦</span>
+        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.2, color: C.cream }}>{line}</span>
       </span>
-      <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.star, 0.9), paddingLeft: 16 }}>
-        {line2}
+      <span style={{ paddingLeft: 16 }}>
+        <Countdown C={C} iso={deadline} compact closedLabel="applications closed" color={rgba(C.star, 0.92)} />
       </span>
     </a>
   )
