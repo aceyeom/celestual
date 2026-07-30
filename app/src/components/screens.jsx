@@ -111,56 +111,95 @@ export const categoryOf = (id) => (CATEGORIES.find((c) => c.intents.includes(id)
 // the line every intent id renders as (first person; same under "they"/"you").
 export const intentLine = (t, id) => (id && INTENTS.includes(id) ? t(`intent.${id}`) : '')
 
-// The "who are they to you" words — set like a line of handwriting, not a row
-// of system chips: lowercase serif words, each one carrying its category's own
-// light when chosen (the word itself warms and a hairline of that light rests
-// under it). The option row is where the color code is learned — the same tint
-// that person's star will burn with in your community's sky.
-function CategoryWord({ C, on, tint, onClick, children }) {
+// ── THE BOOKMARK ──────────────────────────────────────────────────────────────
+// Who they are to you, and why: ONE object, not two rows that happen to sit
+// near each other. It was a line of handwritten words above a scatter of
+// outlined tags, and the two halves shared no shape, no edge and no rhythm, so
+// the eye read them as unrelated controls that both happened to be optional.
+//
+// They are now a book with its tabs out. The four relationships are the tabs
+// along the top, and the chosen one FUSES into the leaf below it (its bottom
+// edge is gone; the card is the same surface, carrying the same tint). Inside,
+// the four "why them" quotes are bookmarks down the leaf's spine: flat on the
+// left where the binding is, rounded on the right, the chosen one pulled out
+// and lit. Both halves are cut from one shape vocabulary, and moving between
+// tabs visibly swaps the leaf rather than re-rendering a nearby list.
+//
+// The tint work is unchanged and load-bearing: each tab wears its category's
+// own light (rose for a crush, ember for an ex, ice-blue for a friend, violet
+// for complicated), which is the same light that person's star will burn with
+// in your community's sky. The bookmark is where that code is learned.
+// The leaf's surface, shared by the leaf and by whichever tab is fused into it.
+// One value, one blur, in both places: the moment these two drift apart the
+// seam under the active tab reappears and the illusion of one sheet is gone.
+const PANEL_BG = (C) => rgba(C.ink2, 0.8)
+const PANEL_BLUR = 'blur(14px) saturate(1.05)'
+
+function CategoryTab({ C, on, tint, onClick, children }) {
+  const [h, setH] = React.useState(false)
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
       aria-pressed={on}
       style={{
-        position: 'relative', background: 'none', border: 'none', cursor: 'pointer',
-        padding: '5px 2px 10px', fontFamily: FONT.serif, fontStyle: 'italic',
-        fontSize: SIZE.lead, lineHeight: 1, letterSpacing: '.2px',
-        color: on ? tint : rgba(C.cream, 0.6),
-        textShadow: on ? `0 0 18px ${rgba(tint, 0.55)}` : 'none',
-        transition: 'color .22s, text-shadow .22s',
+        position: 'relative', flexShrink: 1, minWidth: 0, whiteSpace: 'nowrap', cursor: 'pointer',
+        // the tab's own shape: rounded shoulders, square feet, standing ON the leaf
+        padding: '9px 11px 10px', marginBottom: -1,
+        borderRadius: `${RADIUS.inner}px ${RADIUS.inner}px 0 0`,
+        background: on ? PANEL_BG(C) : h ? rgba(C.cream, 0.05) : 'transparent',
+        backdropFilter: on ? PANEL_BLUR : 'none',
+        WebkitBackdropFilter: on ? PANEL_BLUR : 'none',
+        borderTop: `1px solid ${on ? rgba(tint, 0.5) : 'transparent'}`,
+        borderLeft: `1px solid ${on ? C.line : 'transparent'}`,
+        borderRight: `1px solid ${on ? C.line : 'transparent'}`,
+        borderBottom: `1px solid ${on ? 'transparent' : C.line}`,
+        fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1,
+        letterSpacing: '.2px',
+        color: on ? tint : rgba(C.cream, h ? 0.78 : 0.55),
+        textShadow: on ? `0 0 18px ${rgba(tint, 0.5)}` : 'none',
+        transition: 'color .2s, background .2s, border-color .2s',
       }}
     >
-      {children}
+      {/* the lit edge along the tab's top: the category's light, caught */}
       <span
         aria-hidden
         style={{
-          position: 'absolute', left: 1, right: 1, bottom: 3, height: 1.5, borderRadius: 2,
+          position: 'absolute', top: -1, left: 6, right: 6, height: 2, borderRadius: 2,
           background: on ? `linear-gradient(90deg, transparent, ${tint}, transparent)` : 'transparent',
           boxShadow: on ? `0 0 12px ${rgba(tint, 0.7)}` : 'none',
           transition: 'background .22s, box-shadow .22s',
         }}
       />
+      {children}
     </button>
   )
 }
 
-// One "why them" line — a spoken phrase in a soft-cornered tag, lit by the
-// PARENT category's tint when chosen, so a crush's reasons glow rose, an ex's
-// ember, a friend's ice-blue: one light per route, learned once, kept.
-function IntentLineChip({ C, on, tint, onClick, children }) {
+// One "why them" line as a bookmark down the leaf's spine: flat left edge on
+// the binding, rounded right, its spine lit with the parent tab's tint. The
+// chosen one is pulled a few pixels clear of the page, the way a marked one is.
+function QuoteBookmark({ C, on, tint, onClick, children }) {
+  const [h, setH] = React.useState(false)
   const accent = tint || C.star
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
       aria-pressed={on}
       style={{
-        padding: '9px 14px', borderRadius: RADIUS.inner, cursor: 'pointer', textAlign: 'left',
-        background: on ? rgba(accent, 0.13) : 'transparent',
-        border: `1px solid ${on ? rgba(accent, 0.6) : C.line}`,
-        color: on ? C.cream : rgba(C.cream, 0.62),
-        boxShadow: on ? `0 0 18px ${rgba(accent, 0.16)}` : 'none',
+        display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+        padding: '11px 14px', borderRadius: `0 ${RADIUS.inner}px ${RADIUS.inner}px 0`,
+        background: on ? rgba(accent, 0.13) : h ? rgba(C.cream, 0.045) : rgba(C.cream, 0.025),
+        border: '1px solid transparent',
+        borderLeft: `3px solid ${on ? accent : rgba(C.cream, h ? 0.24 : 0.13)}`,
+        color: on ? C.cream : rgba(C.cream, h ? 0.8 : 0.62),
+        boxShadow: on ? `0 0 20px ${rgba(accent, 0.14)}` : 'none',
+        transform: on ? 'translateX(6px)' : 'translateX(0)',
         fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.3,
-        transition: 'all .2s',
+        transition: 'transform .22s ease, background .2s, color .2s, border-color .2s, box-shadow .22s',
       }}
     >
       {children}
@@ -193,38 +232,54 @@ export function IntentPicker({ C, category, onCategory, value, onChange }) {
     )
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
       {/* who are they to you? — with the way out in plain sight */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md, padding: '0 2px' }}>
-          <Kicker C={C} style={{ fontSize: SIZE.meta, letterSpacing: TRACK.meta }}>{t('category.label')}</Kicker>
-          <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
-            {t('category.skip')}
-          </GhostButton>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '2px 22px', padding: '0 2px' }}>
-          {CATEGORIES.map((c) => (
-            <CategoryWord key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
-              {t(`category.${c.id}`)}
-            </CategoryWord>
-          ))}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md, padding: '0 2px' }}>
+        <Kicker C={C} style={{ fontSize: SIZE.meta, letterSpacing: TRACK.meta }}>{t('category.label')}</Kicker>
+        <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
+          {t('category.skip')}
+        </GhostButton>
       </div>
 
-      {/* why them? — the lines shift with the category above, and wear its light */}
-      <Collapse open={!!cat}>
-        <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 2 }}>
-          <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.sm }}>
-            {(cat?.intents || []).map((id) => (
-              <IntentLineChip key={id} C={C} tint={tint} on={value === id} onClick={() => onChange(value === id ? '' : id)}>
-                {t(`intent.${id}`)}
-              </IntentLineChip>
-            ))}
-          </div>
-          <Note C={C}>{t('intent.note')}</Note>
+      {/* the book: the tabs standing on the leaf's top edge, and the leaf.
+          ONE stack with no gap between them, so the chosen tab reads as part of
+          the same sheet of paper rather than a control hovering above one. */}
+      <div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-end' }}>
+          {CATEGORIES.map((c) => (
+            <CategoryTab key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
+              {t(`category.${c.id}`)}
+            </CategoryTab>
+          ))}
+          {/* the rest of the top edge, past the last tab */}
+          <span aria-hidden style={{ flex: 1, minWidth: 8, borderBottom: `1px solid ${C.line}` }} />
         </div>
-      </Collapse>
+
+        {/* the leaf — the chosen tab's quotes, as bookmarks down its spine */}
+        <Collapse open={!!cat}>
+          <div
+            className="fade"
+            key={category || 'none'}
+            style={{
+              display: 'flex', flexDirection: 'column', gap: 6,
+              padding: `${SPACE.lg}px ${SPACE.lg}px ${SPACE.md}px`,
+              background: PANEL_BG(C),
+              backdropFilter: PANEL_BLUR, WebkitBackdropFilter: PANEL_BLUR,
+              border: `1px solid ${C.line}`, borderTop: 'none',
+              borderRadius: `0 0 ${RADIUS.card}px ${RADIUS.card}px`,
+              boxShadow: cat ? `inset 0 26px 44px -32px ${rgba(tint, 0.55)}, 0 20px 60px rgba(0,0,0,.4)` : 'none',
+            }}
+          >
+            <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
+            {(cat?.intents || []).map((id) => (
+              <QuoteBookmark key={id} C={C} tint={tint} on={value === id} onClick={() => onChange(value === id ? '' : id)}>
+                {t(`intent.${id}`)}
+              </QuoteBookmark>
+            ))}
+            <Note C={C} style={{ paddingTop: SPACE.xs }}>{t('intent.note')}</Note>
+          </div>
+        </Collapse>
+      </div>
     </div>
   )
 }

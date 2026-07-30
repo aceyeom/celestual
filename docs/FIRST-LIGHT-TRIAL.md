@@ -189,9 +189,18 @@ chromium --headless --no-pdf-header-footer \
   file://$PWD/app/public/celestual-challenge.html
 ```
 
-`app/src/trialContent.js` is the poster — the page's own distillation of the
-doc. It is NOT the doc. If the document changes, change the `.docx`, the
-`.html`, the regenerated `.pdf`, **and** `trialContent.js`.
+`app/src/trialContent.js` is the DOOR, not the doc, and no longer a reprint of
+it. The page carries only what a decision needs: the three-line pitch, the live
+countdown, the two videos and the one percent, four steps, and the entry field.
+The scoring table, the hard rules, the shot notes and the agreement live in the
+doc alone, which opens in place. If the document changes, change the `.docx`,
+the `.html`, the regenerated `.pdf`, **and** `trialContent.js`.
+
+`TRIAL_DEADLINE` in that file is the single instant the countdown runs to (the
+landing banner and the trial page both read it). Move the date there and both
+clocks follow. `TRIAL_BANNER` is the landing banner's line; it lives here and
+not in `strings.js` because it is the job ad's voice, not the product's, and it
+is therefore outside `npm run lint:voice`.
 
 The HTML edition is deliberately exempt from `npm run lint:voice` (see the
 `EXEMPT` set in `scripts/voice-lint.mjs`): it reproduces the competition

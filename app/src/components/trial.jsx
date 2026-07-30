@@ -1,16 +1,20 @@
 // trial.jsx — the Celestual Challenge page at /trial.
 //
-// The competition's whole front door: the official doc distilled to a screen
-// (trialContent.js), the doc itself readable IN PLACE (a viewer sheet, not a
-// tab that navigates people away mid-decision), and the self-serve entry —
-// verify an email, sign, choose the four letters that become a root-level
-// tracking link (celestual.us/<code>). A competitor coming back sees their
-// entry: the link, the code, the numbers.
+// A DOOR, NOT A DOSSIER. This page used to be the whole official doc typed out
+// again: the weighted scoring table, the hard rules, the shot notes for both
+// videos, the strategy essay, the prize, the agreement — several screens of
+// reading before the one field that actually matters. All of it is in the doc,
+// which is downloadable, signable, and one tap away. Reprinting it here made
+// the page a second document to read rather than a place to decide.
+//
+// What survives is what a decision needs: what this is (three lines), a clock
+// that is visibly running out, the two things you make and the one thing you
+// win, four steps, and the field that hands you your link. The doc sits between
+// the visuals and the steps for anyone who wants the detail, and it opens IN
+// PLACE so reading it never costs the tab.
 //
 // This page runs WITHOUT the living galaxy behind it (App.jsx skips the canvas
-// here). The sky is the product's feeling; this page's job is to be read, at
-// length, by someone deciding whether to spend a week on us. It keeps the
-// palette and a still gradient, and drops the motion.
+// here). It keeps the palette and a still gradient, and drops the motion.
 //
 // It lives outside screens.jsx deliberately: an operational surface grafted
 // onto the product, not part of the nine-screen story. The admin desk, once
@@ -26,11 +30,11 @@ import {
 import { useI18n } from '../i18n/index.js'
 import {
   Brandmark, Kicker, Mono, GlassPanel, PrimaryButton, GhostButton, OutlineButton,
-  Field, Note, ExitRow, Display, Title, Small, Serif, Icon, useDialog,
+  Field, Note, ExitRow, Display, Title, Small, Icon, Countdown, useCountdown, useDialog,
   rgba, RADIUS, SPACE, FONT, SIZE,
 } from './ui.jsx'
 import { Shell } from './screens.jsx'
-import { TRIAL, TRIAL_DOC } from '../trialContent.js'
+import { TRIAL, TRIAL_DOC, TRIAL_DEADLINE } from '../trialContent.js'
 
 async function copyText(text) {
   try {
@@ -57,51 +61,97 @@ async function copyText(text) {
   }
 }
 
-// ── the brief's little building blocks ───────────────────────────────────────
+// ── the page's parts ─────────────────────────────────────────────────────────
 
-function NumLine({ C, n, head, children }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
-      <span style={{ display: 'grid', placeItems: 'center', width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 1, background: rgba(C.star, 0.12), color: C.star, fontFamily: FONT.mono, fontSize: SIZE.meta }}>
-        {n}
-      </span>
-      <span style={{ fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>
-        {head && <span style={{ color: C.cream, fontWeight: 600 }}>{head} </span>}
-        {children}
-      </span>
-    </div>
-  )
-}
-
-function DotLine({ C, children }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md }}>
-      <span aria-hidden style={{ color: rgba(C.star, 0.8), fontFamily: FONT.serif, fontSize: 13, lineHeight: '20px', flexShrink: 0 }}>✦</span>
-      <span style={{ fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{children}</span>
-    </div>
-  )
-}
-
+// A section's name, said once, quietly, with a hairline under it. The page has
+// three of these and no other headings.
 function SectionTitle({ C, children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, paddingTop: SPACE.md }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
       <Kicker C={C}>{children}</Kicker>
       <span aria-hidden style={{ height: 1, width: 42, background: rgba(C.star, 0.4) }} />
     </div>
   )
 }
 
-function ScoreRow({ C, cat, weight, what }) {
+// The page's main visual: three cards, and between them they answer the only
+// two questions a competitor has before reading anything. What do I make? Two
+// videos, side by side, because they are a pair. What do I get? One percent,
+// on its own line, lit, because it is the reason anyone is reading.
+function MakeCard({ C, n, kind, title, line }) {
+  const prize = kind === 'prize'
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: `${SPACE.md}px 0`, borderBottom: `1px solid ${C.line}` }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md }}>
-        <span style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: SIZE.body, color: C.cream }}>{cat}</span>
-        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, color: C.star }}>{weight}</span>
+    <div
+      style={{
+        flex: prize ? '1 1 100%' : '1 1 150px', minWidth: 0,
+        display: 'flex', flexDirection: prize ? 'row' : 'column', alignItems: prize ? 'center' : 'stretch',
+        gap: prize ? SPACE.lg : SPACE.sm,
+        padding: prize ? `${SPACE.lg}px ${SPACE.xl}px` : `${SPACE.lg}px ${SPACE.lg}px ${SPACE.xl}px`,
+        borderRadius: RADIUS.card,
+        background: prize ? `linear-gradient(120deg, ${rgba(C.star, 0.16)}, ${rgba(C.ink2, 0.6)} 62%)` : rgba(C.ink2, 0.55),
+        border: `1px solid ${prize ? rgba(C.star, 0.42) : C.line}`,
+        boxShadow: prize ? `0 0 34px ${rgba(C.star, 0.12)}` : 'none',
+      }}
+    >
+      <span
+        style={{
+          flexShrink: 0,
+          fontFamily: FONT.serif, fontStyle: 'italic', lineHeight: 1,
+          fontSize: prize ? 46 : 32,
+          color: prize ? C.star : rgba(C.cream, 0.45),
+          textShadow: prize ? `0 0 26px ${rgba(C.star, 0.4)}` : 'none',
+        }}
+      >
+        {n}
+      </span>
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: SIZE.head, color: C.cream }}>{title}</span>
+        <span style={{ fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{line}</span>
       </div>
-      <div aria-hidden style={{ height: 3, borderRadius: 2, background: rgba(C.cream, 0.07), overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${weight}%`, borderRadius: 2, background: `linear-gradient(90deg, ${rgba(C.star, 0.9)}, ${rgba(C.them, 0.7)})` }} />
-      </div>
-      <span style={{ fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{what}</span>
+    </div>
+  )
+}
+
+// The four steps, on a rail. A numbered dot per step, a hairline running
+// between them, the step's name in the interface voice and one line beneath.
+function StepRail({ C, steps }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {steps.map((s, i) => (
+        <div key={s.head} style={{ display: 'flex', gap: SPACE.md, alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flexShrink: 0 }}>
+            <span style={{ display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: '50%', background: rgba(C.star, 0.13), border: `1px solid ${rgba(C.star, 0.32)}`, color: C.star, fontFamily: FONT.mono, fontSize: SIZE.micro }}>
+              {i + 1}
+            </span>
+            {i < steps.length - 1 && <span aria-hidden style={{ flex: 1, width: 1, background: rgba(C.star, 0.2) }} />}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: i < steps.length - 1 ? SPACE.lg : 0 }}>
+            <span style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: SIZE.body, color: C.cream }}>{s.head}</span>
+            <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{s.body}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// The clock. The deadline used to be a sentence in the middle of the page; it
+// is now the second thing you see and it is moving.
+function DeadlineCard({ C }) {
+  const { done } = useCountdown(TRIAL_DEADLINE)
+  const { t } = useI18n()
+  return (
+    <div
+      style={{
+        display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
+        gap: SPACE.md, padding: `${SPACE.lg}px ${SPACE.xl}px`,
+        borderRadius: RADIUS.card, border: `1px solid ${rgba(C.star, 0.24)}`,
+        background: `linear-gradient(120deg, ${rgba(C.star, 0.07)}, ${rgba(C.ink2, 0.5)})`,
+      }}
+    >
+      <Countdown C={C} iso={TRIAL_DEADLINE} closedLabel={t('trial.closed')} />
+      <Kicker C={C} micro>{TRIAL.deadline}</Kicker>
+      {done && <span style={{ width: '100%' }} />}
     </div>
   )
 }
@@ -128,6 +178,44 @@ function WeekBars({ C, days }) {
           style={{ width: 14, height: Math.max(3, Math.round((Number(d.n || 0) / max) * 30)), borderRadius: 3, background: Number(d.n || 0) > 0 ? rgba(C.star, 0.75) : rgba(C.cream, 0.1) }}
         />
       ))}
+    </div>
+  )
+}
+
+// The four letters, shown as the link they become while you type them, with
+// their state as a small mark on the right. There used to be a sentence under
+// this field explaining what the letters were for; the preview says it.
+function LinkPreview({ C, choice, state }) {
+  const { t } = useI18n()
+  const code = normChoice(choice)
+  const ghost = !code
+  const bad = state === 'taken' || state === 'reserved'
+  const good = state === 'free'
+  const mark = good
+    ? { text: t('trial.choiceFree'), color: C.star }
+    : state === 'taken'
+      ? { text: t('trial.choiceTaken'), color: C.them }
+      : state === 'reserved'
+        ? { text: t('trial.choiceReserved'), color: C.them }
+        : state === 'format'
+          ? { text: t('trial.choiceFormat'), color: C.muted }
+          : state === 'checking'
+            ? { text: t('you.checking'), color: C.muted }
+            : null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: `${SPACE.xs}px ${SPACE.md}px`, padding: '0 2px' }}>
+      <span style={{ fontFamily: FONT.mono, fontSize: SIZE.small, color: bad ? rgba(C.them, 0.85) : rgba(C.cream, 0.85) }}>
+        celestual.us/
+        <span style={{ fontWeight: 700, color: ghost ? rgba(C.cream, 0.3) : good ? C.star : 'inherit' }}>
+          {code || 'abcd'}
+        </span>
+      </span>
+      {mark && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: FONT.mono, fontSize: SIZE.meta, color: mark.color }}>
+          {good && <span aria-hidden style={{ fontSize: 10 }}>✦</span>}
+          {mark.text}
+        </span>
+      )}
     </div>
   )
 }
@@ -203,17 +291,6 @@ function DocSheet({ C, onClose }) {
       </div>
     </div>,
     document.body,
-  )
-}
-
-// One of the poster's three numbers — a figure in the emotional register, its
-// unit whispered beneath. The tiles are the page's first read.
-function StatTile({ C, v, l }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '16px 8px 13px', borderRadius: RADIUS.inner, border: `1px solid ${C.line}`, background: rgba(C.ink2, 0.55) }}>
-      <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 30, lineHeight: 1, color: C.star, textShadow: `0 0 22px ${rgba(C.star, 0.35)}` }}>{v}</span>
-      <Kicker C={C} micro>{l}</Kicker>
-    </div>
   )
 }
 
@@ -386,21 +463,6 @@ export function TrialScreen({ C, ctx }) {
     setMode('register')
   }
 
-  const availLine =
-    avail === 'checking' ? (
-      <Mono C={C}>{t('you.checking')}</Mono>
-    ) : avail === 'free' ? (
-      <Mono C={C} color={C.star}>{t('trial.choiceFree')}</Mono>
-    ) : avail === 'taken' ? (
-      <Mono C={C} color={C.them}>{t('trial.choiceTaken')}</Mono>
-    ) : avail === 'reserved' ? (
-      <Mono C={C} color={C.them}>{t('trial.choiceReserved')}</Mono>
-    ) : avail === 'format' ? (
-      <Mono C={C}>{t('trial.choiceFormat')}</Mono>
-    ) : (
-      <Mono C={C}>{t('trial.choiceNote', { code: normChoice(choice) || 'abcd' })}</Mono>
-    )
-
   // ── the entry panel (form / code / account), rendered inside the page ──
   const entry = (
     <GlassPanel C={C} style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.lg }} id="enter">
@@ -477,7 +539,7 @@ export function TrialScreen({ C, ctx }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <Kicker C={C} micro>{t('trial.choiceLabel')}</Kicker>
             <Field C={C} kind="text" value={choice} onChange={(v) => setChoice(normChoice(v))} placeholder="abcd" />
-            {availLine}
+            <LinkPreview C={C} choice={choice} state={avail} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: SPACE.md, cursor: 'pointer', userSelect: 'none' }}>
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3, accentColor: C.star, width: 16, height: 16 }} />
@@ -502,7 +564,8 @@ export function TrialScreen({ C, ctx }) {
         <div className="floaty"><Brandmark C={C} size={30} /></div>
       </div>
 
-      <div className="enter" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.xl, paddingTop: SPACE.xxl }}>
+      <div className="enter" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.xxl, paddingTop: SPACE.xxl }}>
+        {/* what this is, in three lines */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Kicker C={C}>{TRIAL.kicker}</Kicker>
           <Display C={C}>
@@ -511,18 +574,18 @@ export function TrialScreen({ C, ctx }) {
           <Small C={C} style={{ lineHeight: 1.65 }}>{TRIAL.intro}</Small>
         </div>
 
-        {/* the three numbers that are the pitch */}
-        <div style={{ display: 'flex', gap: SPACE.md }}>
-          {TRIAL.stats.map((s) => (
-            <StatTile key={s.l} C={C} v={s.v} l={s.l} />
+        {/* the clock */}
+        <DeadlineCard C={C} />
+
+        {/* the two videos and the one percent: the page's main visual */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.md }}>
+          {TRIAL.makes.map((m) => (
+            <MakeCard key={m.title} C={C} n={m.n} kind={m.kind} title={m.title} line={m.line} />
           ))}
         </div>
 
-        {/* the doc — the whole detail lives there; the page is the poster.
-            It opens IN PLACE (see DocSheet) so reading it never costs the tab. */}
-        <GlassPanel C={C} style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          <Kicker C={C}>{TRIAL.doc.title}</Kicker>
-          <Small C={C}>{TRIAL.doc.sub}</Small>
+        {/* everything else is in the doc, and the doc opens here */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <OutlineButton C={C} onClick={() => setDocOpen(true)}>{t('trial.docView')}</OutlineButton>
           <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.lg }}>
             <a href={TRIAL_DOC.pdf} target="_blank" rel="noopener noreferrer" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecorationColor: rgba(C.muted, 0.5), textUnderlineOffset: 3 }}>
@@ -532,72 +595,19 @@ export function TrialScreen({ C, ctx }) {
               {t('trial.docDownload')}
             </a>
           </div>
-        </GlassPanel>
-
-        <SectionTitle C={C}>how it runs</SectionTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          {TRIAL.steps.map((s, i) => (
-            <NumLine key={i} C={C} n={i + 1} head={s.head}>{s.body}</NumLine>
-          ))}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <Mono C={C}>{TRIAL.deadline}</Mono>
         </div>
 
-        {/* the two videos, side by side where the screen allows */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SPACE.md }}>
-          {TRIAL.videos.map((v) => (
-            <GlassPanel key={v.title} C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-              <Kicker C={C} micro>{v.title}</Kicker>
-              <Small C={C} style={{ color: C.cream }}>{v.sub}</Small>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-                {v.pts.map((p, i) => (
-                  <DotLine key={i} C={C}>{p}</DotLine>
-                ))}
-              </div>
-            </GlassPanel>
-          ))}
+        {/* four steps */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
+          <SectionTitle C={C}>{t('trial.stepsLabel')}</SectionTitle>
+          <StepRail C={C} steps={TRIAL.steps} />
         </div>
 
-        <SectionTitle C={C}>how we score it</SectionTitle>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {TRIAL.scoring.map((r) => (
-            <ScoreRow key={r.cat} C={C} cat={r.cat} weight={r.weight} what={r.what} />
-          ))}
-        </div>
-        <Mono C={C}>{TRIAL.scoringNote}</Mono>
-        <Note C={C} tone="accent">{TRIAL.zeroRule}</Note>
-
-        <SectionTitle C={C}>hard rules</SectionTitle>
-        <GlassPanel C={C} inset style={{ padding: SPACE.lg, display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          {TRIAL.hardRules.map((r, i) => (
-            <DotLine key={i} C={C}>{r}</DotLine>
-          ))}
-          <Mono C={C} style={{ paddingTop: SPACE.xs }}>{TRIAL.hardNote}</Mono>
-        </GlassPanel>
-
-        <SectionTitle C={C}>what you win</SectionTitle>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          <Serif C={C} size={SIZE.title} style={{ color: C.star }}>{TRIAL.win.headline}</Serif>
-          <Small C={C}>{TRIAL.win.sub}</Small>
-          <Small C={C}>{TRIAL.win.everyone}</Small>
-        </div>
-
-        {/* the product, in its own one line */}
-        <div style={{ padding: `${SPACE.lg}px 0`, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, textAlign: 'center' }}>
-          <Serif C={C} size={SIZE.lead} style={{ color: rgba(C.cream, 0.92) }}>{TRIAL.mechanic}</Serif>
-        </div>
-
-        {/* the doc's strategy note — the one paragraph that changes how a
-            competitor spends the week, so it earns a place on the page */}
-        <GlassPanel C={C} inset style={{ padding: SPACE.xl, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-          <Kicker C={C}>{TRIAL.understand.title}</Kicker>
-          <Small C={C} style={{ lineHeight: 1.7 }}>{TRIAL.understand.body}</Small>
-        </GlassPanel>
-
+        {/* and the field that hands you your link */}
         {entry}
 
-        <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
+          <Small C={C} align="center" style={{ lineHeight: 1.6 }}>{TRIAL.everyone}</Small>
           <Mono C={C}>{TRIAL.contact}</Mono>
         </div>
       </div>

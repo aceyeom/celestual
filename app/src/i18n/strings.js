@@ -517,6 +517,8 @@ const en = {
   // ── the first light trial (/trial, migration 0017) ──────────────────────
   // the page's chrome only. the brief itself is quoted from the official doc
   // and lives in trialContent.js, out of this linted file, like demoData.js.
+  'trial.stepsLabel': 'how it works',
+  'trial.closed': 'applications closed',
   'trial.docView': 'read the official doc',
   'trial.docPdf': 'pdf',
   'trial.docDocx': '.docx',
@@ -531,7 +533,7 @@ const en = {
   'trial.emailLabel': 'your email',
   'trial.emailPlaceholder': 'you@example.com',
   'trial.choiceLabel': 'your four letters',
-  'trial.choiceNote': 'your link becomes celestual.us/{code}.',
+  // no note under this field. the link preview beside it IS the explanation.
   'trial.choiceFree': 'available',
   'trial.choiceTaken': 'taken. pick another.',
   'trial.choiceReserved': 'that one is ours. pick another.',
@@ -575,9 +577,9 @@ const en = {
   'trial.login': 'open my entry',
   'trial.toApp': 'go to celestual',
 
-  // ── the landing's banner door to the trial (top right) ───────────────────
-  'landing.trial1': 'first light.',
-  'landing.trial2': 'the marketing trial →',
+  // The landing's banner door to the trial (top right) carries the job ad's own
+  // wording and its live countdown, both from trialContent.js. It is the doc's
+  // voice, not the product's, so it is not keyed here.
 
   // the triage tool (0018). "their codes are correct and nothing works" was
   // unanswerable from this desk — a suppressed @ looked identical to a relay
