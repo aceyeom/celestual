@@ -2769,13 +2769,54 @@ function SlotPaywall({ C, ctx, mode }) {
   )
 }
 
+// ── the production paid door (docs/PRICING-REVENUE.md §3) ────────────────────
+// Dormant unless VITE_STRIPE_ENABLED=1 (api/billing.js). When it's on, Screen 9
+// carries a SECOND door under the free one: hold another ping for a one-time
+// $2.99, or, if the plan is offered too, ten a month. Tapping one hands off to
+// Stripe's own page; nothing about a card is typed here, and nothing is charged
+// by this component. The free door above it never changes.
+function HoldDoors({ C, ctx }) {
+  const { t } = useI18n()
+  const state = ctx.holdState || { phase: 'idle', error: '' }
+  const opening = state.phase === 'opening'
+  const errorLine = () => {
+    switch (state.error) {
+      case 'at_cap': return t('hold.errCap')
+      case 'has_plan': return t('hold.errPlan')
+      case 'unverified': return t('hold.errVerify')
+      default: return t('hold.err')
+    }
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'center' }}>
+      <GhostButton
+        C={C}
+        onClick={opening ? undefined : () => ctx.hold('slot')}
+        style={{ fontSize: SIZE.small }}
+      >
+        {opening ? t('hold.opening') : t('hold.slot', { price: t('paywall.price') })}
+      </GhostButton>
+      {ctx.planOn && !opening && (
+        <GhostButton C={C} onClick={() => ctx.hold('steady')} style={{ fontSize: SIZE.small }}>
+          {t('hold.plan', { price: t('paywall.subPrice') })}
+        </GhostButton>
+      )}
+      {state.phase === 'error' ? (
+        <Note C={C} align="center" tone="accent">{errorLine()}</Note>
+      ) : (
+        <Mono C={C} size={SIZE.micro} style={{ textAlign: 'center' }}>{t('hold.note')}</Mono>
+      )}
+    </div>
+  )
+}
+
 export function FourthSlotScreen({ C, ctx }) {
   const { t } = useI18n()
   // sandbox only, and only while there's still something to sell: an extend
   // checkout for a near-lapse ping takes priority (it can happen regardless of
   // subscription state); otherwise the next-slot/subscription offer, until
-  // subscribed and genuinely at the ten-ping cap. Everywhere else — production,
-  // always — the single dormant door.
+  // subscribed and genuinely at the ten-ping cap. Everywhere else — production —
+  // the free door, plus the real Stripe door under it once that's turned on.
   if (ctx.demo && ctx.extendHandle) return <SlotPaywall C={C} ctx={ctx} mode="extend" />
   if (ctx.demo && !ctx.demoSubscribed) return <SlotPaywall C={C} ctx={ctx} mode="slot" />
   return (
@@ -2793,11 +2834,92 @@ export function FourthSlotScreen({ C, ctx }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <PrimaryButton C={C} onClick={() => ctx.go('pings')}>{t('fourth.cta')}</PrimaryButton>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>
-            {t('fourth.back')}
-          </GhostButton>
+        {ctx.billingOn && !ctx.demo ? (
+          <HoldDoors C={C} ctx={ctx} />
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>
+              {t('fourth.back')}
+            </GhostButton>
+          </div>
+        )}
+      </div>
+    </Shell>
+  )
+}
+
+// ── COMING BACK FROM STRIPE (celestual.us/paid) ───────────────────────────────
+// Stripe sends people here with the session id in the query. The webhook is what
+// actually grants the slot (migration 0021); this screen asks the edge function
+// to confirm the same session so a person who just paid sees it immediately
+// rather than waiting on a delivery. The ask is idempotent, so both landing
+// first is fine. `?c=1` means they backed out of the payment page: nothing was
+// charged, and the free door is still right there.
+export function PaidScreen({ C, ctx }) {
+  const { t } = useI18n()
+  const [phase, setPhase] = React.useState(ctx.paidReturn?.cancelled ? 'cancelled' : 'confirming')
+  const [kind, setKind] = React.useState('slot')
+  const asked = React.useRef(false)
+
+  React.useEffect(() => {
+    if (asked.current || phase !== 'confirming') return
+    asked.current = true
+    const session = ctx.paidReturn?.session || ''
+    if (!session) {
+      setPhase('slow')
+      return
+    }
+    let live = true
+    ctx.confirmPaid(session)
+      .then((res) => {
+        if (!live) return
+        if (res?.ok && res.paid) {
+          setKind(res.kind === 'steady' ? 'steady' : 'slot')
+          setPhase('held')
+        } else {
+          setPhase('slow')
+        }
+      })
+      .catch(() => live && setPhase('slow'))
+    return () => {
+      live = false
+    }
+  }, [phase, ctx])
+
+  const title =
+    phase === 'confirming' ? t('paid.confirming')
+      : phase === 'cancelled' ? t('paid.cancelTitle')
+        : phase === 'slow' ? t('paid.slowTitle')
+          : kind === 'steady' ? t('paid.planTitle') : t('paid.title')
+  const sub =
+    phase === 'confirming' ? null
+      : phase === 'cancelled' ? t('paid.cancelSub')
+        : phase === 'slow' ? t('paid.slowSub')
+          : kind === 'steady' ? t('paid.planSub') : t('paid.sub')
+
+  return (
+    <Shell>
+      <ScreenHeader C={C} label={<Kicker C={C}>{t('paid.kicker')}</Kicker>} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
+        <div className={phase === 'held' ? 'enter floaty' : 'enter'}>
+          <StarMark C={C} size={phase === 'held' ? 78 : 54} />
         </div>
+        <Title C={C} as="h1" align="center" className="enter">{title}</Title>
+        {sub && <Small C={C} align="center" className="enter" style={{ maxWidth: 300 }}>{sub}</Small>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
+        {phase === 'held' ? (
+          <PrimaryButton C={C} onClick={() => ctx.placeAnother()}>{t('paid.place')}</PrimaryButton>
+        ) : (
+          <PrimaryButton C={C} onClick={() => ctx.go('pings')}>{t('paid.back')}</PrimaryButton>
+        )}
+        {phase === 'held' && (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.small }}>
+              {t('paid.back')}
+            </GhostButton>
+          </div>
+        )}
       </div>
     </Shell>
   )

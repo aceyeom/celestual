@@ -22,6 +22,9 @@ export const trialEnabled = () => hasSupabase
 export const RESERVED_CODES = [
   'demo', 'copy', 'priv', 'term', 'data', 'sign', 'page', 'home', 'root', 'help',
   'info', 'mail', 'news', 'blog', 'docs', 'shop', 'apps', 'star', 'ping', 'test',
+  // 'paid' is where Stripe sends someone back (migration 0021). A competitor
+  // holding it would swallow every return from a payment page.
+  'paid',
 ]
 
 export function normChoice(code) {

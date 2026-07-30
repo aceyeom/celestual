@@ -54,3 +54,18 @@ verify_jwt = false
 # limited per IP.
 [functions.celestual-admin]
 verify_jwt = false
+
+# The paid door (migration 0021, docs/STRIPE-SETUP.md). Invoked from Screen 9 with
+# the anon key, so JWT verification is off; buying anything requires the same
+# Instagram-DM ownership proof placing a ping requires, checked server-side in
+# celestual_billing_begin.
+[functions.celestual-stripe]
+verify_jwt = false
+
+# Stripe's webhook. JWT verification MUST stay off here: Stripe cannot send a
+# Supabase JWT, and this endpoint's authentication is the Stripe signature, which
+# the function verifies itself (HMAC-SHA256 over "<timestamp>.<raw body>",
+# constant-time, five-minute tolerance) before reading a single field. Deploy it
+# with `--no-verify-jwt` too.
+[functions.celestual-stripe-webhook]
+verify_jwt = false
