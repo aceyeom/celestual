@@ -15,8 +15,11 @@ import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
   SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
-  StarViewOverlay, CopyCodeScreen, SignInScreen,
+  StarViewOverlay, CopyCodeScreen, SignInScreen, PaidScreen,
 } from './components/screens.jsx'
+import {
+  billingEnabled, planOffered, startCheckout, confirmCheckout, returnFromCheckout, scrubReturnUrl,
+} from './api/billing.js'
 import { TrialScreen } from './components/trial.jsx'
 import { AdminScreen } from './components/admin.jsx'
 import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
@@ -44,6 +47,7 @@ const SCREENS = {
   signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
   trial: TrialScreen, //     /trial: the first light competition — the brief + entry
   admin: AdminScreen, //     /admin: the password-gated desk
+  paid: PaidScreen, //       /paid: coming back from Stripe (docs/STRIPE-SETUP.md)
 }
 
 const STORE = 'celestual:v2'
@@ -91,6 +95,10 @@ const parseRoute = () => {
   // so any link still out in a DM keeps working.
   if (path === '/trial' || path === '/recruit') return { trial: true }
   if (path === '/admin') return { admin: true }
+  // /paid?s=<checkout session> — where Stripe sends someone back after the
+  // hosted payment page (?c=1 if they backed out). The word is reserved in
+  // api/trial.js so a competitor can never claim it as a four-letter code.
+  if (path === '/paid') return { paid: true }
   // /copy#c=1234 — the verification email's copy button. The code rides the
   // FRAGMENT so it never appears in a request line or a server log.
   if (path === '/copy') {
@@ -183,7 +191,13 @@ export default function App() {
   // makes newly placed demo pings stand six months instead of sixty days.
   const [demoExtraSlots, setDemoExtraSlots] = useState(0)
   const [demoSubscribed, setDemoSubscribed] = useState(false)
-  const slotCap = demo ? (demoSubscribed ? SUB_SLOT_CAP : SLOT_CAP + demoExtraSlots) : SLOT_CAP
+  // In production the cap is the SERVER's answer (migration 0021: the free two
+  // plus whatever this person holds, and ten while a plan is live), never a
+  // client constant — a bought slot has to show up on every device the moment
+  // it's paid for. SLOT_CAP is the floor for the no-backend fallback.
+  const slotCap = demo
+    ? (demoSubscribed ? SUB_SLOT_CAP : SLOT_CAP + demoExtraSlots)
+    : Math.max(SLOT_CAP, Number(slots?.cap) || 0)
   // sandbox only: which standing ping is mid-checkout for an extend ($2.99) —
   // set by startExtend when the status page's renew is tapped, cleared once the
   // checkout succeeds (finishExtend) or the moment the screen is left.
@@ -316,7 +330,8 @@ export default function App() {
     if (route.signin) return 'signin'
     if (route.trial) return 'trial'
     if (route.admin) return 'admin'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin'].includes(init.screen)) return init.screen
+    if (route.paid) return 'paid'
+    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin', 'paid'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -1139,6 +1154,64 @@ export default function App() {
     go('pings')
   }, [demo, extendHandle, renew, go])
 
+  // ── the production paid door (docs/PRICING-REVENUE.md §3 · docs/STRIPE-SETUP.md) ──
+  // Dormant unless VITE_STRIPE_ENABLED=1, and never in the sandbox (which
+  // previews the shape locally and must not reach a payment processor). What
+  // `hold` does is small on purpose: ask the edge function for a Stripe-hosted
+  // URL and follow it. No card is read here, no entitlement is written here, and
+  // this browser is never the thing that decides a slot was paid for. That is
+  // the webhook's job alone (migration 0021).
+  const billingOn = useMemo(() => billingEnabled() && !demo, [demo])
+  const planOn = useMemo(() => planOffered() && !demo, [demo])
+  const [holdState, setHoldState] = useState({ phase: 'idle', error: '' })
+  const hold = useCallback(
+    async (kind) => {
+      if (demo || !billingOn) return
+      setHoldState({ phase: 'opening', error: '' })
+      const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+      try {
+        const res = await startCheckout({ handle: me, proof, kind, demo })
+        if (res?.ok && res.url) {
+          window.location.assign(res.url)
+          return
+        }
+        setHoldState({ phase: 'error', error: res?.error || 'network' })
+      } catch (e) {
+        console.error(e)
+        setHoldState({ phase: 'error', error: 'network' })
+      }
+    },
+    [demo, billingOn, me, session],
+  )
+
+  // What Stripe sent us home with, read once (the id is dropped from the address
+  // bar as soon as it's been confirmed).
+  const paidReturn = useMemo(
+    () => (route.paid ? returnFromCheckout() : { session: '', cancelled: false }),
+    [route.paid],
+  )
+
+  // The /paid screen's one call. The webhook is the source of truth; this just
+  // asks the same question from the returning tab so the meter is right
+  // immediately. Idempotent server-side, so both arriving is fine.
+  const confirmPaid = useCallback(
+    async (sessionId) => {
+      const res = await confirmCheckout(sessionId)
+      scrubReturnUrl()
+      if (res?.ok && res.paid) {
+        const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+        try {
+          const s = await fetchSlots(me, { proof, demo })
+          if (s) setSlots(s)
+        } catch {
+          /* the meter refreshes on its own on the next mount */
+        }
+      }
+      return res
+    },
+    [me, demo, session],
+  )
+
   // ── the exits ──
   const wipeLocalState = useCallback(() => {
     try {
@@ -1263,6 +1336,7 @@ export default function App() {
     publicStar, askPublicStar, retractPublicStar,
     lastPlaced, match,
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
+    billingOn, planOn, holdState, hold, paidReturn, confirmPaid,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
@@ -1293,7 +1367,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin']
+  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin', 'paid']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   // The backdrop: once you've joined a community, the app-wide field IS your

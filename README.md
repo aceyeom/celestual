@@ -44,10 +44,14 @@ The product direction is fixed by one document —
   that actually verified, and none of it can see who anyone pinged. A
   password-gated admin dashboard at `/admin` reads it all
   (**[docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md)**).
-- **No monetization.** Nothing is for sale anywhere; the only thing that will
-  ever be considered is a one-time fourth slot, dormant until density is
-  proven (docs/PRICING-REVENUE.md). `/demo` previews what that checkout could
-  look like; production shows only the free "let one go" door.
+- **No monetization, and Stripe plumbed behind a flag.** Nothing is for sale in
+  production: the slots screen shows one door, "let one go", free and always
+  (docs/PRICING-REVENUE.md). The one thing that will ever be sold — **one more
+  standing ping, $2.99, once** — is now fully built and fully **off**
+  (`VITE_STRIPE_ENABLED=0`): the entitlement layer, the two edge functions and the
+  second door all exist, dormant until density is proven and the wake decision is
+  taken (**docs/STRIPE-SETUP.md**). `/demo` still previews the shape with an inert
+  checkout that reaches no server.
 - **Everything shown to anyone is literally true, always.** That truth is the
   legal and ethical margin the entire design lives inside.
 
@@ -73,12 +77,15 @@ celestual/
 │   │                 0007–0008 the .edu membership gate · 0009–0011 verification
 │   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login ·
 │   │                 0015 the identity router · 0016 the recruitment program ·
-│   │                 0017 the First Light trial + the 20s grace + the admin dashboard
+│   │                 0017 the First Light trial + the 20s grace + the admin dashboard ·
+│   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
+│   │                 entitlement layer (per-person slot cap; dormant)
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
 │                     celestual-relogin · celestual-recruit (retired) ·
-│                     celestual-trial · celestual-admin
+│                     celestual-trial · celestual-admin ·
+│                     celestual-stripe · celestual-stripe-webhook
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)
@@ -147,6 +154,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
+| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
 | [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |

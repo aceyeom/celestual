@@ -261,6 +261,35 @@ const en = {
   'paywall.doneBack': 'back to your pings',
   'paywall.letgo': 'or let one go, free, always',
 
+  // ── the paid door · PRODUCTION (only with VITE_STRIPE_ENABLED=1) ─────────
+  // Screen 9's second door. It sits BESIDE the free one ("let one go"), never in
+  // front of it, and it only ever appears to someone already holding their free
+  // two (docs/PRICING-REVENUE.md §3, runbook docs/STRIPE-SETUP.md). The two
+  // amounts live at paywall.price / paywall.subPrice so the sandbox preview, the
+  // real door and the Stripe dashboard have one number each to agree on.
+  'hold.slot': 'or hold a third for {price}, once',
+  'hold.plan': 'or ten a month, {price}',
+  'hold.opening': 'opening a secure page…',
+  'hold.note': 'stripe takes the payment. no card reaches us.',
+  'hold.err': 'that didn’t open. nothing was charged.',
+  'hold.errCap': 'you’re holding all ten already.',
+  'hold.errPlan': 'the ten a month already covers this.',
+  'hold.errVerify': 'prove your @ again, then this door opens.',
+
+  // coming back from stripe — celestual.us/paid
+  'paid.kicker': 'the slot',
+  'paid.confirming': 'confirming…',
+  'paid.title': 'one more, held.',
+  'paid.sub': 'the slot is yours.',
+  'paid.planTitle': 'ten, held.',
+  'paid.planSub': 'each one stands six months.',
+  'paid.place': 'place it',
+  'paid.back': 'back to your pings',
+  'paid.cancelTitle': 'nothing was charged.',
+  'paid.cancelSub': 'you can let one go instead. free, always.',
+  'paid.slowTitle': 'it’s still landing.',
+  'paid.slowSub': 'if the payment went through, the slot arrives on its own. nothing to do.',
+
   // ── verify (instagram dm handle-ownership) ──────────────────────────────
   'verify.title': 'prove it’s your @',
   'verify.sub': 'dm this code to our instagram. no password, no oauth, nobody told.',

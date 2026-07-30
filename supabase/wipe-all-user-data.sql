@@ -12,7 +12,9 @@
 -- and pending), .edu codes, email identities and login links, recovery
 -- bindings, magic-link tokens, multi-account links, the whole recruitment /
 -- trial program (competitors, link counters, credited signups, trial email
--- codes), placement logs and rate-limit logs.
+-- codes), anything anyone bought (entitlements, the purchase ledger, the Stripe
+-- event guard — refund real payments in Stripe BEFORE running this), placement
+-- logs and rate-limit logs.
 --
 -- WHAT IT KEEPS, deliberately:
 --   · celestual_suppressions — people who opted out STAY opted out. An opt-out
@@ -59,6 +61,15 @@ declare
     'celestual_recruit_signups',
     'celestual_recruits',
     'celestual_trial_emails',
+    -- what anyone bought (migration 0021). A pre-launch reset takes the
+    -- entitlements and the ledger with everything else; if real money has been
+    -- taken by the time you run this, refund it in Stripe FIRST (the rows are
+    -- what a refund would have reversed here). The events table is Stripe's
+    -- replay guard, not user data, and is dropped with them because the
+    -- purchases it guarded are gone.
+    'celestual_entitlements',
+    'celestual_purchases',
+    'celestual_stripe_events',
     -- logs
     'celestual_attempts'
   ];

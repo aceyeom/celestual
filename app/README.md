@@ -31,6 +31,10 @@ src/
 │   ├── pings.js       day-clock helpers for the sixty-day lapse
 │   ├── igverify.js    Instagram-DM ownership proof (code + 256-bit proof)
 │   ├── auth.js        the local verified-session record
+│   ├── billing.js     the one paid door (OFF by default): a Stripe-hosted
+│   │                  checkout for one more standing ping. No card is read
+│   │                  here and no slot is granted here — see
+│   │                  ../../docs/STRIPE-SETUP.md
 │   └── supabase.js    the client (safe no-backend fallback)
 └── i18n/              the canonical copy (English; key-by-key fallback kept
                        so future locales can land as partial objects)
@@ -44,8 +48,10 @@ src/
 
 Side doors: `/@poster` prefills the send field (Loop B); `/c/slug` runs the
 campus window (Loop C: count me in → verified preregistration; "it's open.";
-the week-one numbers); the fourth-slot screen appears only when a fourth
-placement is attempted; `/optout` is the public escape hatch.
+the week-one numbers); the slots screen appears only when a placement is
+attempted with every slot held (and carries the paid door under the free one
+when `VITE_STRIPE_ENABLED=1`); `/paid` is where Stripe returns a buyer;
+`/optout` is the public escape hatch.
 
 ## Privacy invariants the front-end holds
 

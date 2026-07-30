@@ -110,6 +110,26 @@ Idempotent migrations, applied in order:
   password-gated in the `celestual-admin` function).
   **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)**
 
+- `migrations/0018_verification_lockout.sql` → `0020_two_different_doors.sql` —
+  the verification lockout, the four-digit code + the admin desk, and the split of
+  "delete everything" from "never let anyone enter me" (`celestual_erase_account`
+  alongside `celestual_suppress`, with `kind` on `celestual_suppressions`).
+
+- `migrations/0021_stripe_slots.sql` — **the money layer, dormant.**
+  `celestual_entitlements` (what a handle is owed, read across the identity
+  group), `celestual_purchases` (the ledger, and the idempotency key of the whole
+  flow), `celestual_stripe_events` (the webhook replay guard), and the
+  `celestual_billing_*` RPCs — one proof-gated read for the browser
+  (`celestual_billing_status`), every write service-role only. The constant
+  `c_standing_cap` is gone: `celestual_submit`, `celestual_slots_for` and
+  `celestual_renew` now ask `celestual_cap_for()` / `celestual_ping_window()`, so
+  the cap is per person (the free two, plus what they bought, ten while a plan is
+  live) and the standing window is theirs too (sixty days, or six months on a
+  plan). Erasure and the opt-out forget the entitlement with the rest of the
+  account (`celestual_billing_forget`); the ledger row survives with its handle
+  nulled. `'paid'` joins the reserved four-letter codes.
+  **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay
@@ -124,8 +144,12 @@ replaced by 0006's ping model, and 0009+0010 carry the current definitions of
 suppress). Of the IG-verification functions, **0017** now carries the current
 `celestual_start_ig_verification` (7-day expired-row retention) and
 `celestual_complete_ig_verification` (verified_via stamp + ban check); poll is
-0012's. When reading for current behaviour: **0006 + 0007 +
-0008 + 0009 + 0010** are the truth; 0001/0004 for the tables they created.
+0012's. **0021 now carries the current `celestual_submit`, `celestual_slots_for`,
+`celestual_renew`, `celestual_erase_account`, `celestual_suppress` and
+`celestual_trial_code_ok`** (the money layer had to reach into the cap, the
+standing window and erasure). When reading for current behaviour: **0006 + 0007 +
+0008 + 0009 + 0010 + 0020 + 0021** are the truth; 0001/0004 for the tables they
+created.
 
 **SQL Editor:** paste each file's contents and Run, in order.
 
@@ -150,6 +174,8 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 
 | `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
+| `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
@@ -203,10 +229,12 @@ them; each enforces its own checks. See
 
 ### RPCs (the only public surface)
 
-`celestual_submit` (place a ping: proof gate, hashed suppression check, the
-three-slot rule, the cadence cap, hashed group-aware matching, instant mutual
-result + reachability + slot snapshot) · `celestual_withdraw` ("let it go";
-frees the slot) · `celestual_renew` (another sixty days, free) ·
+`celestual_submit` (place a ping: proof gate, hashed suppression check, the slot
+rule — per person since 0021 — the cadence cap, hashed group-aware matching,
+instant mutual result + reachability + slot snapshot) · `celestual_withdraw`
+("let it go"; frees the slot) · `celestual_renew` (another sixty days, free.
+Six months on a plan) · `celestual_billing_status` (proof-gated: standing, cap,
+what was bought) ·
 `celestual_ping_status` (the status page: device sends its plaintext list up,
 owner-gated) · `celestual_my_pings` (cross-device restore; unmatched rows come
 back anonymous by design) · `celestual_slots_for` (owner's slot snapshot) ·
@@ -221,7 +249,10 @@ re-login) · `celestual_norm`.
 webhook's completion path — adopts the DMing account as the identity),
 `celestual_relogin_store` / `celestual_relogin_redeem` (issue + redeem the
 sign-back-in magic link), `celestual_campus_reveal` (snapshot + publish week
-one), `celestual_purge_expired` (the sixty-day broom).
+one), `celestual_purge_expired` (the sixty-day broom),
+`celestual_billing_begin` / `_complete` / `_plan_sync` / `_revoke` / `_seen` /
+`_unsee` (0021: the paid slot, granted only by the signature-verified Stripe
+webhook).
 
 ### Operator playbook
 
