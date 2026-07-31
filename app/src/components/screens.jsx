@@ -3826,14 +3826,18 @@ export function StarViewOverlay({ C, view, onClose }) {
         }}
       >
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
-        {/* no glow shadow here: a soft text-shadow clipped by the ellipsis box
-            (overflow: hidden) paints a faint rectangular highlight behind the
-            handle — the star above carries all the light this needs */}
+        {/* The ellipsis box clips (overflow: hidden), and a text-shadow wide
+            enough to lift the handle off a bright star is still opaque where
+            that clip lands — which paints a hard-edged dark RECTANGLE around
+            the name, the thing it was there to avoid. So the box carries enough
+            horizontal padding for the shadow to reach nothing before the clip
+            does, and the shadow itself is tight. */}
         <span
           style={{
             fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.title,
             letterSpacing: '.5px', color: C.star,
-            textShadow: '0 2px 18px rgba(0,0,0,.85)',
+            textShadow: '0 1px 6px rgba(0,0,0,.7)',
+            padding: '2px 22px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '88vw',
           }}
         >

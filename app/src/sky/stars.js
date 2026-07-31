@@ -210,6 +210,13 @@ ${hero ? `
   // of its own colour over every pixel — technically the point-spread's tail,
   // visually a tinted fog across the whole screen.
   float maxPx  = mix(26.0 * uPsf, max(26.0 * uPsf, corePx * 3.2), uResolve * disc);
+  // And one absolute ceiling on top of that, in real screen pixels. At the end
+  // of a dive a resolved star's own disc is most of the frame, so 3.2x its disc
+  // is a quad several times the viewport running the photosphere shader on
+  // every pixel of it — which is both the tinted wash that swallowed the whole
+  // screen and the frame-rate stutter that made the arrival read as jittery.
+  // The light it was spending out there was below a thousandth of its core.
+  maxPx = min(maxPx, min(uViewport.x, uViewport.y) * 0.62);
   float extPx  = min(corePx * spread, maxPx);
   // The fragment shader needs to know where the sprite ENDS, so it can take the
   // point-spread's long tail to exactly zero there. Without this the aureole —
@@ -236,9 +243,18 @@ ${hero ? `
   // pinned dead centre, its frame-to-frame motion is precisely zero, and the
   // one star the viewer asked to look at was the only one in the sky that
   // vanished. Nudging the vector off zero costs nothing and cannot NaN.
+  //
+  // And the nudge is SIZED, not fixed. The sprite's own frame is what the
+  // diffraction spikes are drawn in, so whatever sets this axis sets which way
+  // a bright star's rays point. Below a couple of pixels of travel the raw
+  // delta is numerical noise from the orbit clock — with a constant nudge that
+  // noise still won, and a star the camera was holding still flicked its rays
+  // around at frame rate, which is most of what read as jitter at the end of a
+  // dive. Fading the nudge out as real motion arrives holds a still star still
+  // and a travelling one true, with no switch to pop across.
   vec2 motion = (sPrev.z > 0.0) ? (s.xy - sPrev.xy) : vec2(0.0);
   float mlen = min(length(motion) * uMotion, min(uViewport.x, uViewport.y) * 0.16);
-  vec2 dir = normalize(motion + vec2(1e-5, 0.0));
+  vec2 dir = normalize(motion + vec2(max(6.0 - mlen * 3.0, 1.0e-5), 0.0));
   vec2 perp = vec2(-dir.y, dir.x);
   float halfLen = mlen * 0.5;
 
@@ -295,8 +311,20 @@ void main(){
   // moving, so a resting field costs nothing extra for the motion support
   vec2 q = vec2(max(abs(vOffset.x) - vSeg, 0.0), vOffset.y);
   float r = length(q);
-  float window = smoothstep(vEdge, vEdge * 0.68, r);
-  if (window <= 0.0 && vDisc < 0.5) discard;
+  // A DESCENDING ramp, written the only way that is defined. smoothstep's
+  // result is undefined when edge0 > edge1, and a driver that takes the spec at
+  // its word hands back NaN rather than the falling ramp every desktop GPU
+  // happens to give — see the note on the frag write below for what a single
+  // NaN does to this pipeline.
+  float e = max(vEdge, 1.0e-4);
+  float window = 1.0 - smoothstep(e * 0.68, e, r);
+  // Nothing outside the sprite's own footprint may reach the buffer, resolved
+  // or not. The old test spared resolved stars from the discard entirely, so
+  // their quad corners were shaded and then multiplied by a zero window — and
+  // a large light meeting a zero coverage is exactly where an Inf becomes a
+  // NaN. A resolved star still needs its photosphere out to r = 1.02.
+  float keep = max(e, vDisc > 0.5 ? 1.06 : 0.0);
+  if (r > keep) discard;
 
   // ── chromatic bloom ──────────────────────────────────────────────────────
   // A real lens does not focus every wavelength at the same point. Sampling the
@@ -310,8 +338,10 @@ void main(){
   );
   // the halo shades from the star's own blackbody heart out into its category
   // light; at vTintMix = 0 (every ordinary star) this costs one mix and changes
-  // nothing
-  vec3 col = mix(vColor, vTint, clamp(r * 0.45, 0.0, 0.7) * vTintMix);
+  // nothing. Held well under half: at full tint the aureole's long tail paints
+  // the category's colour over the entire frame at the end of a dive, and the
+  // star stops being a star inside a flat wash of rose.
+  vec3 col = mix(vColor, vTint, clamp(r * 0.30, 0.0, 0.42) * vTintMix);
   vec3 light = col * vI * psf;
 
   // the diffraction cross, earned
@@ -322,7 +352,7 @@ void main(){
 
   // ── the resolved photosphere ─────────────────────────────────────────────
   if (vDisc > 0.002) {
-    float inside = smoothstep(1.02, 0.90, r);
+    float inside = 1.0 - smoothstep(0.90, 1.02, r); // descending: see the window ramp above
     if (inside > 0.0) {
       // limb darkening: the edge of a star's disc is dimmer and redder than its
       // centre, because there you are looking through more of its atmosphere at
@@ -341,7 +371,18 @@ void main(){
     }
   }
 
-  frag = vec4(light * window, 1.0);
+  // The whole sky lands in ONE half-float buffer, and that buffer has no way
+  // back from a value that is not a finite number. An Inf (a half-float tops
+  // out at 65504, and this is an ADDITIVE buffer) or a NaN survives the bloom
+  // chain untouched, and then ACES divides it by itself: Inf/Inf is NaN, NaN
+  // clamps to zero on every driver that resolves min/max toward the non-NaN
+  // operand, and the frame shows a hard-edged BLACK POLYGON sitting on the sky
+  // wherever that one sprite's quad was — moving with it, frame after frame.
+  // It is the one bug in this renderer that cannot be tuned away downstream, so
+  // it is made impossible here, at the only place light is written.
+  vec3 outc = min(light * window, vec3(512.0));
+  outc = mix(outc, vec3(0.0), vec3(isnan(outc)));
+  frag = vec4(max(outc, vec3(0.0)), 1.0);
 }
 `
 

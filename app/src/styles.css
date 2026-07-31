@@ -14,7 +14,7 @@ body {
   color: #F3ECF6;
   /* single cosmic base — matches theme.js TOKENS.ink so there's no flash of a
      different background color before the galaxy canvas paints */
-  background: #0B0814;
+  background: #06050C;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;

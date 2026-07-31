@@ -124,20 +124,29 @@ export class GalaxyField extends SkyEngine {
     // Proportions matter more than counts. A galaxy that is mostly disk with a
     // dense heart and a sparse halo reads instantly; get the ratio wrong and no
     // amount of stars will save it.
-    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.19), { seed: 9011, radius: 0.29 }), {
-      gain: 0.030, radiusScale: 0.00042, resolve: 0.3,
+    // The core is the one place a galaxy can go wrong by being GENEROUS. Packed
+    // as tightly as it was, the bulge stopped resolving into stars at all and
+    // read as one bright smudge with a clump of discs sitting on it. Fewer
+    // stars, spread through a wider bulge, at a lower gain: the heart is still
+    // unmistakably the heart, and you can see that it is made of suns.
+    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.12), { seed: 9011, radius: 0.35 }), {
+      gain: 0.022, radiusScale: 0.00034, resolve: 0.3,
     })
     this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.63), { seed: 9013, rDisk: 1.2, armFrac: 0.55 }), {
       gain: 0.070, radiusScale: 0.00055,
     })
-    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.18), { seed: 9017, rMax: 2.8 }), {
-      gain: 0.075, radiusScale: 0.0003, resolve: 0, pattern: 0,
+    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.13), { seed: 9017, rMax: 2.8 }), {
+      gain: 0.050, radiusScale: 0.0003, resolve: 0, pattern: 0,
     })
     // The deep field: the rest of the universe, well outside this galaxy. It
     // barely creeps while the disk streams past during a dive, and that
     // contrast is the entire reason camera travel reads as travel.
-    this.gDeep = this.starPass.createGroup(genDeepField(b.deep, { seed: 9019, rMin: 3.4, rMax: 30 }), {
-      gain: 0.34, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
+    // Deliberately SPARSE. This layer is scenery behind every screen in the
+    // product, and at full density it stopped being depth and became a texture
+    // of dots reading over the type — the galaxy is the subject, not the
+    // backdrop it hangs in.
+    this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * 0.5), { seed: 9019, rMin: 3.4, rMax: 30 }), {
+      gain: 0.24, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
     })
     // The near field, drawn IN FRONT of the gas: loose stars between the camera
     // and the disk, whose fast sweep past the glass is what makes a dive feel
@@ -151,6 +160,10 @@ export class GalaxyField extends SkyEngine {
     this.gHero = this.starPass.createHeroGroup(48)
     this.gHero.inFront = true
     this.gHero.radiusScale = 0.0062 // yours resolve into a body well before the field does
+    // A held star is the calmest frame in the product: you are looking AT
+    // someone. Scintillation on a photosphere you are close enough to read the
+    // surface of is not physics, it is fidget.
+    this.gHero.twinkle = 0.1
 
     this.frameRadius = 1.45
     this._layout()
@@ -420,7 +433,7 @@ export class GalaxyField extends SkyEngine {
       // The exposure stops DOWN as the camera closes, the way a real one would
       // on a source getting four hundred times brighter. Without it the
       // inverse-square law wins and the arrival is a white screen.
-      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.62)
+      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.80)
 
       // the withdrawal: the halo blooms outward as the core contracts to a
       // point and winks out, and then React drops it
@@ -438,9 +451,18 @@ export class GalaxyField extends SkyEngine {
       // stacked on top stops reading as a star at all. The category's light,
       // just wide enough to notice, is the entire signature. It grows with the
       // dive, which is when you have actually asked to look at it.
+      // It is a FINDABILITY mark — it says which point of light in a field of
+      // thousands is yours — and flying to the star is the one gesture that
+      // answers that question outright. Growing it into the dive was backwards:
+      // this is a sphere in world space, and closing from 2.7 units to the
+      // standoff magnifies it about fiftyfold, so at the arrival it was a
+      // two-thousand-pixel disc of flat category colour over the entire frame.
+      // That wash — not the star — was what an arrival actually looked like. So
+      // it shrinks as it is approached and is nearly gone by the time you are
+      // there: at that range the photosphere is the subject.
       if (fade > 0.05) {
-        const near = 1 + f * 3.4
-        this.fx.world(w.x, w.y, w.z, (0.030 + pulse * 0.004) * near, tcol, (0.5 + pulse * 0.14) * fade, 0)
+        const near = 1 - f * 0.94
+        this.fx.world(w.x, w.y, w.z, (0.030 + pulse * 0.004) * near, tcol, (0.5 + pulse * 0.14) * fade * (1 - f * 0.9), 0)
       }
     }
   }

@@ -93,16 +93,22 @@ export class CommunityGalaxy extends SkyEngine {
     // The countable stars. One buffer, regrown whenever the community does.
     // This is the only group the governor is never allowed to thin: the pings
     // are the CONTENT, and dropping half of them would make the sky a lie.
-    this.gPings = this.starPass.createGroup(new Float32Array(STAR_STRIDE * 64), { gain: 0.28, radiusScale: 0.0011, dynamic: true })
+    // radiusScale is what decides how readily a ping stops being a POINT and
+    // opens into a disc. Held low on purpose: a ping is one person, and a sky
+    // of soft bokeh saucers reads as out of focus rather than as a crowd. It
+    // still resolves into a body — but only once you have actually flown to it.
+    this.gPings = this.starPass.createGroup(new Float32Array(STAR_STRIDE * 64), { gain: 0.28, radiusScale: 0.00052, dynamic: true })
     this.gPings.count = 0
 
     // Everything else is scenery, and an EMPTY community still opens onto a
-    // real universe — the pings are what is missing, not the cosmos.
-    this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * scale), { seed: 5501, rMin: 3.0, rMax: 28 }), {
-      gain: 0.34, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
+    // real universe — the pings are what is missing, not the cosmos. Sparse by
+    // intent: the countable stars are the content here, and a busy decorative
+    // field is the fastest way to make them uncountable.
+    this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * scale * 0.5), { seed: 5501, rMin: 3.0, rMax: 28 }), {
+      gain: 0.24, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
     })
-    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(b.stars * 0.06 * scale), { seed: 5503, rMin: 1.1, rMax: 3.2 }), {
-      gain: 0.065, radiusScale: 0.0003, resolve: 0, pattern: 0,
+    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(b.stars * 0.04 * scale), { seed: 5503, rMin: 1.1, rMax: 3.2 }), {
+      gain: 0.045, radiusScale: 0.0003, resolve: 0, pattern: 0,
     })
     // Unresolved starlight along the lanes: the connective glow that makes the
     // arms read as continuous rather than as a dotted line of pings. Seeded on
@@ -121,6 +127,7 @@ export class CommunityGalaxy extends SkyEngine {
     this.gHero = this.starPass.createHeroGroup(96)
     this.gHero.inFront = true
     this.gHero.radiusScale = 0.0062
+    this.gHero.twinkle = 0.1 // a held star holds still (galaxy.js says why)
 
     this._tuneGas()
     this._tunePost()
@@ -681,8 +688,12 @@ export class CommunityGalaxy extends SkyEngine {
         const w = this._slotWorld(st)
         if (!w) continue
         const bell = Math.sin(Math.PI * clamp(q, 0, 1))
-        this.fx.world(w.x, w.y, w.z, (0.16 + bell * 0.4) * Math.max(0.4, this.diskR || 1), white, bell * 3.2 * this.dim, 2)
-        this.fx.world(w.x, w.y, w.z, (0.08 + bell * 0.2) * Math.max(0.4, this.diskR || 1), col, bell * 2.2 * this.dim, 0)
+        // A ping landing is a SPARK, not a flare. Sized against the disk it was
+        // most of a screen-width of soft light, which reads as a blurred blob
+        // drifting over the page rather than as a star arriving in its slot.
+        const R = Math.max(0.4, this.diskR || 1)
+        this.fx.world(w.x, w.y, w.z, (0.055 + bell * 0.14) * R, white, bell * 3.0 * this.dim, 2)
+        this.fx.world(w.x, w.y, w.z, (0.028 + bell * 0.07) * R, col, bell * 2.0 * this.dim, 0)
       }
     }
     // a meteor that landed is now an ordinary resident: put its light back into
@@ -712,17 +723,20 @@ export class CommunityGalaxy extends SkyEngine {
       const tint = CATEGORY_TINTS[m.kind] || this.you
       const tcol = linearOf(tint)
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + st.i)
-      const gain = (0.38 + pulse * 0.06) * settle * fade * (1 - f * 0.62) * (1 - this.formingBlend * 0.15)
+      const gain = (0.38 + pulse * 0.06) * settle * fade * (1 - f * 0.80) * (1 - this.formingBlend * 0.15)
       // the same dressing your star wears in the ambient sky, so a ping looks
       // like YOUR ping in whichever sky is behind the app
       // One quiet tinted halo, exactly as in the ambient sky, and sized in
       // proportion to THIS community's disk — so a sky with forty pings wears
       // forty small lights rather than forty beacons on a tiny galaxy.
       const w = this._slotWorld(st)
+      // shrinks and fades INTO the dive rather than growing with it — galaxy.js
+      // carries the note on why (a world-space sphere magnified fiftyfold is a
+      // full-frame wash of category colour, not a halo)
       if (w && fade > 0.05) {
-        const near = 1 + f * 3.4
+        const near = 1 - f * 0.94
         const R = Math.max(0.35, this.diskR || 1)
-        this.fx.world(w.x, w.y, w.z, (0.042 + pulse * 0.006) * near * R, tcol, (0.5 + pulse * 0.14 + ignite * 0.6) * settle * fade, 0)
+        this.fx.world(w.x, w.y, w.z, (0.042 + pulse * 0.006) * near * R, tcol, (0.5 + pulse * 0.14) * settle * fade * (1 - f * 0.9), 0)
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
@@ -829,16 +843,23 @@ export class CommunityGalaxy extends SkyEngine {
       this._motes = []
       let s = 74218
       const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280
-      const n = this.tier >= 2 ? 60 : 130
+      const n = this.tier >= 2 ? 34 : 68
       for (let i = 0; i < n; i++) {
         this._motes.push({
           ang: rnd() * TWO,
-          r: 0.05 + Math.pow(rnd(), 0.7) * 0.55,
+          // Seated out through the BODY of the cloud rather than piled on its
+          // centre. The old distribution put its densest ring almost on the
+          // axis, which stacked a dozen embers into one bright clot right where
+          // the community's seal sits — and a clot is not a gathering.
+          r: 0.22 + Math.pow(rnd(), 0.55) * 0.6,
           y: (rnd() - 0.5) * 0.07,
           spd: 0.03 + rnd() * 0.09,
           tw: rnd() * TWO,
           tws: 0.3 + rnd() * 0.8,
           hot: rnd() < 0.22,
+          // fixed at birth: picking the colour with Math.random() every frame
+          // made each ember strobe between white and blue at 60 Hz
+          cool: rnd() < 0.5,
         })
       }
     }
@@ -853,11 +874,18 @@ export class CommunityGalaxy extends SkyEngine {
       const x = Math.cos(m.ang + this.pattern) * rr
       const z = Math.sin(m.ang + this.pattern) * rr
       const tw = 0.55 + 0.45 * Math.sin(m.tw)
-      const a = fb * tw * this.dim * 1.6
-      this.fx.world(x, m.y, z, (0.035 + (m.hot ? 0.03 : 0)) * R, m.hot ? warm : Math.random() < 0.5 ? white : cool, a, 0)
+      const col = m.hot ? warm : m.cool ? cool : white
+      // A POINT of light, not a bokeh disc. These were drawn at a tenth of the
+      // disk's radius, which on a phone is a forty-pixel soft ball — a field of
+      // them read as an out-of-focus photograph rather than as a sky. Now each
+      // ember is a small halo with a hard bright heart inside it, which is what
+      // a star at this distance actually looks like.
+      const halo = (0.017 + (m.hot ? 0.007 : 0)) * R
+      this.fx.world(x, m.y, z, halo, col, fb * tw * this.dim * 1.9, 0)
+      this.fx.world(x, m.y, z, halo * 0.3, white, fb * tw * this.dim * 6.5, 0)
       // the rare ember catching the light for a breath
       if (m.hot && Math.sin(m.tw * 0.5) > 0.985) {
-        this.fx.world(x, m.y, z, 0.16 * R, white, fb * 2.0, 2)
+        this.fx.world(x, m.y, z, 0.055 * R, white, fb * 1.6, 2)
       }
     }
   }

@@ -178,8 +178,10 @@ void main(){
         : mix(uMid, uCool, (u - 0.45) / 0.55);
       // ionised gas around young stars runs hotter and bluer
       col = mix(col, mix(col, uCool, 0.55) * 1.25, young * 0.5);
-      // the heart is brighter, as a real one is
-      float heart = 1.0 + 1.5 * exp(-u * 3.0);
+      // the heart is brighter, as a real one is — but only a little. A steep
+      // core boost blows the middle of the disk into one featureless hot clot
+      // and takes the arms' structure with it.
+      float heart = 1.0 + 0.8 * exp(-u * 2.4);
       vec3 emit = col * gas * uGain * heart;
       float sigma = gas * 0.55 + dust * 7.0;
       acc += trans * emit * dt;
@@ -188,7 +190,12 @@ void main(){
     t += dt;
   }
 
-  frag = vec4(acc * uDim, clamp(trans, 0.0, 1.0));
+  // the gas composite MULTIPLIES the buffer by this alpha, so a stray NaN here
+  // would not merely add a black shape but erase everything behind it
+  vec3 emit = min(acc * uDim, vec3(512.0));
+  emit = mix(emit, vec3(0.0), vec3(isnan(emit)));
+  float T = clamp(trans, 0.0, 1.0);
+  frag = vec4(max(emit, vec3(0.0)), isnan(T) ? 1.0 : T);
 }
 `
 
