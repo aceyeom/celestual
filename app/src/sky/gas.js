@@ -235,7 +235,8 @@ export class GasPass {
     gl.disable(gl.BLEND)
     gl.useProgram(p.p)
     const u = p.u
-    gl.uniformMatrix3fv(u.uRt, false, cam.Rt)
+    // view -> world, and Rt is likewise stored row-major (see stars.js)
+    gl.uniformMatrix3fv(u.uRt, true, cam.Rt)
     gl.uniform3f(u.uEyeWorld, cam.eyeWorld[0], cam.eyeWorld[1], cam.eyeWorld[2])
     // the march renders at its own resolution; the optical centre and the world
     // scale have to follow it or the gas will not line up with the stars

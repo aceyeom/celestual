@@ -194,7 +194,8 @@ export class BillboardPass {
     const gl = this.gl
     gl.useProgram(this.prog.p)
     const u = this.prog.u
-    gl.uniformMatrix3fv(u.uR, false, cam.R)
+    // row-major source, column-major consumer: transpose on upload (see stars.js)
+    gl.uniformMatrix3fv(u.uR, true, cam.R)
     gl.uniform3f(u.uEye, cam.eye.x, cam.eye.y, cam.eye.z)
     gl.uniform2f(u.uCenter, cam.cx, cam.cy)
     gl.uniform2f(u.uViewport, ctx.width, ctx.height)

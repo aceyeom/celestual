@@ -125,32 +125,32 @@ export class GalaxyField extends SkyEngine {
     // dense heart and a sparse halo reads instantly; get the ratio wrong and no
     // amount of stars will save it.
     this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.19), { seed: 9011, radius: 0.29 }), {
-      gain: 0.05, radiusScale: 0.00045, resolve: 0.35,
+      gain: 0.030, radiusScale: 0.00042, resolve: 0.3,
     })
     this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.63), { seed: 9013, rDisk: 1.2, armFrac: 0.55 }), {
-      gain: 0.125, radiusScale: 0.0006,
+      gain: 0.070, radiusScale: 0.00055,
     })
     this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.18), { seed: 9017, rMax: 2.8 }), {
-      gain: 0.17, radiusScale: 0.0003, resolve: 0, pattern: 0,
+      gain: 0.075, radiusScale: 0.0003, resolve: 0, pattern: 0,
     })
     // The deep field: the rest of the universe, well outside this galaxy. It
     // barely creeps while the disk streams past during a dive, and that
     // contrast is the entire reason camera travel reads as travel.
     this.gDeep = this.starPass.createGroup(genDeepField(b.deep, { seed: 9019, rMin: 3.4, rMax: 30 }), {
-      gain: 0.8, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
+      gain: 0.34, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
     })
     // The near field, drawn IN FRONT of the gas: loose stars between the camera
     // and the disk, whose fast sweep past the glass is what makes a dive feel
     // like flying rather than zooming.
     this.gNear = this.starPass.createGroup(genNearField(b.passers, { seed: 9023, extent: 2.5 }), {
-      gain: 0.075, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
+      gain: 0.04, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
     })
     this.gNear.inFront = true
 
     // the viewer's own stars, plus room for the match's two
     this.gHero = this.starPass.createHeroGroup(48)
     this.gHero.inFront = true
-    this.gHero.radiusScale = 0.0026 // yours resolve into bodies sooner than the field
+    this.gHero.radiusScale = 0.0062 // yours resolve into a body well before the field does
 
     this.frameRadius = 1.45
     this._layout()
@@ -172,7 +172,7 @@ export class GalaxyField extends SkyEngine {
     g.diskR = 1.3
     g.diskH = 0.08
     g.arms = 2
-    g.gain = 0.55
+    g.gain = 0.3
     g.dust = 1.0
     g.fill = 99
     g.forming = 0
@@ -187,10 +187,10 @@ export class GalaxyField extends SkyEngine {
 
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.42
-    p.threshold = 1.15
+    p.bloomAmount = 0.2
+    p.threshold = 1.5
     p.knee = 0.55
-    p.vignette = 0.3
+    p.vignette = 0.4
     p.exposure = 1
   }
 
@@ -375,7 +375,10 @@ export class GalaxyField extends SkyEngine {
 
     // the gas brightens a little as the camera closes on the disk, the way real
     // gas does when you are inside it rather than looking at it
-    this.gasPass.gain = 0.55 * (1 - this.cam.focus * 0.35) * (this.mode === 'match' ? 0.5 : 1)
+    // A dive ends INSIDE the disk, where the ray marches through a great deal of
+    // gas — so the cloud has to fall right back or the arrival is a wash of
+    // nebula with a star somewhere in it. The star is the subject.
+    this.gasPass.gain = 0.3 * (1 - this.cam.focus * 0.88) * (this.mode === 'match' ? 0.5 : 1)
 
     if (this.mode === 'match') this._frameMatch(dt)
     else this._frameSealed(dt)
@@ -410,7 +413,14 @@ export class GalaxyField extends SkyEngine {
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + s.phase)
       const tint = CATEGORY_TINTS[this.sealKinds[i]] || this.sealHue || this.you
       const tcol = linearOf(tint)
-      let gain = (4.6 + pulse * 1.1) * fade * (1 + f * 2.4)
+      // Calibrated at BOTH ends: about 1.5x white at rest, so your star reads
+      // as a little brighter than its neighbours and nothing more, and about
+      // 4x at the end of a dive, so arriving on it is an event without the
+      // frame washing out. The inverse-square law does the rest.
+      // The exposure stops DOWN as the camera closes, the way a real one would
+      // on a source getting four hundred times brighter. Without it the
+      // inverse-square law wins and the arrival is a white screen.
+      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.62)
 
       // the withdrawal: the halo blooms outward as the core contracts to a
       // point and winks out, and then React drops it
@@ -421,20 +431,16 @@ export class GalaxyField extends SkyEngine {
         this.fx.world(w.x, w.y, w.z, 0.1 + vp * 0.55, linearOf(tint), 2.2 * fadeV, 0)
         this.sealedScreen[i] = { x: scr ? scr.sx : 0, y: scr ? scr.sy : 0, vis: false }
       }
-      this._pushHero(hero, s, tint, gain, 0.8 + f * 0.4, f)
-      // The dressing, in the sky's own light: the category's halo around it, a
-      // warm-white bloom seating the core in that halo, and the product's own
-      // four-point glisten resting on top. All three are additive HDR, so they
-      // bloom through the same optics as every other star and can never read as
-      // a sticker laid over the field.
+      this._pushHero(hero, s, tint, gain, 0.2 + f * 0.18, f)
+      // The whole distinction between your star and the field is ONE small
+      // tinted halo. It is deliberately quiet: your ping should be findable in
+      // the sky, not shouting over it, and a beacon with a bloom and a glisten
+      // stacked on top stops reading as a star at all. The category's light,
+      // just wide enough to notice, is the entire signature. It grows with the
+      // dive, which is when you have actually asked to look at it.
       if (fade > 0.05) {
-        const near = 1 + f * 2.2
-        // Sizes are WORLD units, and at the resting camera one world unit is
-        // only ~180 pixels — so a halo that reads as generous here is a much
-        // bigger number than screen-space intuition suggests.
-        this.fx.world(w.x, w.y, w.z, (0.115 + pulse * 0.02) * near, tcol, (1.15 + pulse * 0.4) * fade, 0)
-        this.fx.world(w.x, w.y, w.z, (0.048 + pulse * 0.008) * near, you, (1.5 + pulse * 0.5) * fade, 0)
-        this.fx.world(w.x, w.y, w.z, (0.235 + pulse * 0.04) * near, tcol, (0.7 + pulse * 0.28) * fade, 2)
+        const near = 1 + f * 3.4
+        this.fx.world(w.x, w.y, w.z, (0.030 + pulse * 0.004) * near, tcol, (0.5 + pulse * 0.14) * fade, 0)
       }
     }
   }
@@ -720,7 +726,7 @@ export class GalaxyField extends SkyEngine {
         this.fx.world(x, yy, z, 0.016 + R * 0.05, [1, 0.86, 0.78], bright * 1.5, 0)
       }
       // and the gas genuinely brightens as the front sweeps it
-      this.gasPass.gain = 0.55 + bright * 0.9
+      this.gasPass.gain = 0.3 + bright * 0.55
     }
 
     // ── the binary ──────────────────────────────────────────────────────────

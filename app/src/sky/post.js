@@ -189,17 +189,17 @@ export class PostChain {
     this.up = compile(gl, FULLSCREEN_VS, UP_FS, 'bloom:up')
     this.composite = compile(gl, FULLSCREEN_VS, COMPOSITE_FS, 'composite')
     this.levels = []
-    this.bloomAmount = 0.42
-    this.threshold = 1.15
+    this.bloomAmount = 0.2
+    this.threshold = 1.5
     this.knee = 0.55
     this.exposure = 1
-    this.vignette = 0.3
+    this.vignette = 0.4
     this.chroma = 0.0055
     this.flash = 0
     this.flashColor = [1, 0.95, 0.9]
-    this.bandBright = 0.09
+    this.bandBright = 0.035
     this.bandTilt = -0.42
-    this.sky = { top: [0.024, 0.020, 0.055], mid: [0.015, 0.012, 0.036], bot: [0.011, 0.008, 0.024] }
+    this.sky = { top: [0.0085, 0.0070, 0.0210], mid: [0.0050, 0.0040, 0.0130], bot: [0.0034, 0.0026, 0.0090] }
   }
 
   resize(w, h, count) {

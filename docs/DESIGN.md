@@ -315,6 +315,38 @@ The system extends beyond the app; these must all read as the same cosmos:
     distinct stars, amber and rose, in a stable shared orbit. A merge would have
     said one of them stopped existing.
   - **Reduced motion keeps drifting** (§4) instead of freezing.
+
+- **2026-07-31 (b)** — **The calibration pass**, human-directed, on top of the
+  same-day rebuild. The engine was right and the exposure was not:
+  - **The sky is genuinely dark again.** The deep-space floor dropped by about a
+    third of a stop, the far galaxy's band with it, the vignette deepened, and
+    the field thinned from 120,000 stars to 46,000. The backdrop is what the
+    copy rests on; it had started competing with it.
+  - **Nothing is allowed to be a dinner plate.** A star's point-spread now grows
+    logarithmically to a hard ceiling in core-radii AND an absolute pixel cap,
+    and a resolved star's halo is capped against its own disc rather than the
+    frame. One bright foreground star was spreading a wash of its own colour
+    over every pixel in the frame.
+  - **Your star got quiet.** The beacon (a tinted halo, a warm-white bloom, a
+    glisten, all stacked) is now ONE small tinted halo and a modestly brighter
+    core: about 1.5x white at rest. The point is to be findable, not loud.
+  - **The countable population scales with the community.** A ping is drawn at
+    the instrument's point-spread size, which does not shrink when the galaxy
+    does, so forty pings on a small disk rendered exactly as loud as a thousand
+    on a large one. Ping prominence is now linear in how full the sky is.
+  - **The exposure stops down on approach**, the way a real one would on a
+    source getting four hundred times brighter, so a dive arrives on a star
+    rather than on a white screen.
+  - **The tap-burst is gone.** A backdrop that flashed whenever a thumb brushed
+    it read as a toy and fought every real tap target sitting over the galaxy.
+  - **Two rendering bugs**, both found by driving the real app: the camera basis
+    was uploaded to the GPU row-major when `uniformMatrix3fv` reads
+    column-major, so every shader had been applying the *inverse* rotation and
+    the CPU and GPU disagreed about where every star was (a galaxy rotated the
+    wrong way is still a galaxy, which is why it hid); and a zero-length motion
+    vector was normalized at the exact instant a dive centred its target, which
+    NaN'd `gl_Position` and discarded the one star the viewer had asked to look
+    at.
   - **Everything below the sky is unchanged**: the same lens (`CAM`/`FOCAL`/
     `TILT`), the same framing, the same send-off meteor grammar, the same held
     star view, the same gestures, and every method signature `App.jsx`,

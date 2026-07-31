@@ -42,7 +42,6 @@ import { Community2D } from './sky/fallback2d.js'
 const TWO = Math.PI * 2
 const METEOR_DUR = 1.2 // a new ping's streak in
 const IGNITE_DUR = 0.6 // the glisten when it lands
-const WAVE_DUR = 1.5
 const ZOOM_MAX = 14
 const DBLTAP_STEP = 2.6
 // How far past the lit population the framing stands. Slightly generous: the
@@ -72,7 +71,6 @@ export class CommunityGalaxy extends SkyEngine {
     this._tagsAt = 0
 
     // ── interaction ──
-    this.waves = []
     this.zoomEnabled = false
     this.onZoomState = null
     this._zoomActive = false
@@ -101,10 +99,10 @@ export class CommunityGalaxy extends SkyEngine {
     // Everything else is scenery, and an EMPTY community still opens onto a
     // real universe — the pings are what is missing, not the cosmos.
     this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * scale), { seed: 5501, rMin: 3.0, rMax: 28 }), {
-      gain: 0.8, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
+      gain: 0.34, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
     })
     this.gHalo = this.starPass.createGroup(genHalo(Math.floor(b.stars * 0.06 * scale), { seed: 5503, rMin: 1.1, rMax: 3.2 }), {
-      gain: 0.14, radiusScale: 0.0003, resolve: 0, pattern: 0,
+      gain: 0.065, radiusScale: 0.0003, resolve: 0, pattern: 0,
     })
     // Unresolved starlight along the lanes: the connective glow that makes the
     // arms read as continuous rather than as a dotted line of pings. Seeded on
@@ -113,16 +111,16 @@ export class CommunityGalaxy extends SkyEngine {
     // it is among the first things the governor thins.
     this.gArm = this.starPass.createGroup(
       genDisk(Math.floor(b.stars * 0.10 * scale), { seed: 5507, rCore: 0.14, rDisk: 0.85, armFrac: 0.72 }),
-      { gain: 0.045, radiusScale: 0.0003, twinkle: 0.7, resolve: 0 },
+      { gain: 0.028, radiusScale: 0.0003, twinkle: 0.7, resolve: 0 },
     )
     this.gNear = this.starPass.createGroup(genNearField(b.passers, { seed: 5509, extent: 2.6 }), {
-      gain: 0.075, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
+      gain: 0.04, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
     })
     this.gNear.inFront = true
 
     this.gHero = this.starPass.createHeroGroup(96)
     this.gHero.inFront = true
-    this.gHero.radiusScale = 0.0026
+    this.gHero.radiusScale = 0.0062
 
     this._tuneGas()
     this._tunePost()
@@ -151,10 +149,10 @@ export class CommunityGalaxy extends SkyEngine {
   }
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.44
-    p.threshold = 1.12
+    p.bloomAmount = 0.2
+    p.threshold = 1.5
     p.knee = 0.55
-    p.vignette = 0.28
+    p.vignette = 0.4
   }
   _paletteChanged() {
     this._tuneGas()
@@ -223,6 +221,13 @@ export class CommunityGalaxy extends SkyEngine {
     this.gPings.count = n
     this._dirty = false
     this._reframe()
+    // A ping is drawn at the instrument's point-spread size, which does not
+    // shrink when the galaxy does — so without this, forty pings on a small
+    // disk render exactly as loud as a thousand on a large one and read as a
+    // scatter of beacons. Prominence rises linearly with how full the sky is.
+    const fill = clamp(n / 900, 0, 1)
+    this.gPings.gain = 0.12 + 0.2 * fill
+    this.gArm.gain = 0.010 + 0.026 * fill
   }
 
   // Where ping k's star is in the world, right now.
@@ -464,11 +469,10 @@ export class CommunityGalaxy extends SkyEngine {
     this.gest = new Gestures({
       wheelAlways: held,
       getScale: () => (held() ? this.cam.diveDist : this.cam.zoomTarget),
-      onBackdropTap: (x, y) => {
-        // A backdrop still answers a touch — the sky is never dead under the
-        // hand — but it is never steered.
-        if (!this.reduced) this.ripple(x, y)
-      },
+      // A tap on the sky does nothing. It used to send a wavefront through the
+      // disk plane, which was pretty and which nobody asked for: a backdrop
+      // that flashes every time a thumb brushes it reads as a toy, and it
+      // fought every real tap target sitting over the galaxy.
       onPinchStart: (x, y) => {
         if (!held() && this.cam.zoomTarget <= 1.04) this.cam.zoomFocus = this.cam.planePoint(x, y, (this.diskR || 1) * 1.4)
       },
@@ -495,9 +499,7 @@ export class CommunityGalaxy extends SkyEngine {
         if (tag) {
           this.diveToStar(tag.st)
           if (this.onTagTap) this.onTagTap(tag.label, tag.own)
-          return
         }
-        if (!this.reduced) this.ripple(x, y)
       },
       onDoubleTap: (x, y) => {
         if (held()) return
@@ -564,12 +566,9 @@ export class CommunityGalaxy extends SkyEngine {
   // outward from the touched point, flaring the stars it crosses and lighting
   // the gas as it goes. The sky answers the hand in its own vocabulary, never
   // with a UI ring.
-  ripple(clientX, clientY) {
-    const pt = this.cam.planePoint(clientX, clientY, (this.diskR || 1) * 1.4)
-    this.waves.push({ x: pt.x, z: pt.z, t: 0, seed: (Math.random() * 4096) | 0 })
-    if (this.waves.length > 3) this.waves.shift()
-    this.start()
-  }
+  // Retired, and kept only so nothing that still calls it breaks. The sky no
+  // longer answers a tap with a burst of light.
+  ripple() {}
 
   // ── the frame ─────────────────────────────────────────────────────────────
   _frame(dt) {
@@ -588,7 +587,7 @@ export class CommunityGalaxy extends SkyEngine {
     // A gathering sky IS its cloud, so the gas carries the whole frame there; an
     // open one is mostly stars, and the gas is the body they hang in.
     const fillFrac = clamp(this.stars.length / 900, 0, 1)
-    g.gain = lerp(0.32 + 0.55 * fillFrac, 1.15, fb) * (1 - this.cam.focus * 0.3)
+    g.gain = lerp(0.32 + 0.55 * fillFrac, 1.15, fb) * (1 - this.cam.focus * 0.88)
 
     if (this.cam.dive == null && this.dive) {
       this._endDive()
@@ -602,7 +601,6 @@ export class CommunityGalaxy extends SkyEngine {
 
     this._frameZoomState()
     this._frameMeteors(dt)
-    this._frameWaves(dt)
     this._frameMine(dt)
     this._frameTags(dt)
     if (fb > 0.02) this._frameForming(dt, fb)
@@ -692,49 +690,6 @@ export class CommunityGalaxy extends SkyEngine {
     if (settled) this._dirty = true
   }
 
-  // ── the tap wave ──────────────────────────────────────────────────────────
-  _frameWaves(dt) {
-    if (!this.waves.length) return
-    const white = [1, 0.97, 0.92]
-    const you = linearOf(this.you)
-    const them = linearOf(this.them)
-    this.waves = this.waves.filter((w) => {
-      w.t += dt
-      const p = w.t / WAVE_DUR
-      if (p >= 1) return false
-      // the touch itself: a star's glisten, not a button press
-      const flashP = Math.min(1, p / 0.3)
-      if (flashP < 1) {
-        const bell = Math.sin(Math.PI * flashP)
-        this.fx.world(w.x, 0, w.z, (0.1 + bell * 0.34) * Math.max(0.4, this.diskR || 1), white, (0.5 + bell * 3) * this.dim, 2)
-        this.fx.world(w.x, 0, w.z, (0.06 + bell * 0.14) * Math.max(0.4, this.diskR || 1), you, bell * 2.2 * this.dim, 0)
-      }
-      // two breaths of luminous points riding the PLANE, so the front tilts and
-      // spins with the galaxy instead of being a ring drawn on the glass
-      const N = this.tier >= 2 ? 22 : 40
-      const R0 = (this.diskR || 1) * 0.95
-      for (let k = 0; k < 2; k++) {
-        const pk = clamp(p - k * 0.1, 0, 1)
-        if (pk <= 0.02) continue
-        const R = easeOut(pk) * R0 * (1 + k * 0.14)
-        const fade = (1 - pk) * (1 - pk) * (k === 0 ? 1 : 0.55) * this.dim
-        if (fade <= 0.012) continue
-        for (let i = 0; i < N; i++) {
-          const h1 = ((w.seed * 131 + i * 17 + k * 7) % 97) / 97
-          const a = (i / N) * TWO + h1 * 0.3
-          const rr = R * (0.94 + h1 * 0.13)
-          const shimmer = 0.55 + 0.45 * Math.sin(this.t * 5 + h1 * TWO)
-          this.fx.world(
-            w.x + Math.cos(a) * rr, (h1 - 0.5) * 0.02, w.z + Math.sin(a) * rr,
-            (0.035 + h1 * 0.05) * Math.max(0.4, this.diskR || 1), k === 1 ? them : h1 < 0.6 ? white : you,
-            fade * (0.5 + 0.9 * h1) * shimmer * 1.7, 0,
-          )
-        }
-      }
-      return true
-    })
-  }
-
   // ── the viewer's own stars ────────────────────────────────────────────────
   _frameMine(dt) {
     void dt
@@ -757,19 +712,17 @@ export class CommunityGalaxy extends SkyEngine {
       const tint = CATEGORY_TINTS[m.kind] || this.you
       const tcol = linearOf(tint)
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + st.i)
-      const gain = (4.8 + pulse * 1.1) * settle * fade * (1 + f * 2.4) * (1 - this.formingBlend * 0.15)
+      const gain = (0.38 + pulse * 0.06) * settle * fade * (1 - f * 0.62) * (1 - this.formingBlend * 0.15)
       // the same dressing your star wears in the ambient sky, so a ping looks
       // like YOUR ping in whichever sky is behind the app
+      // One quiet tinted halo, exactly as in the ambient sky, and sized in
+      // proportion to THIS community's disk — so a sky with forty pings wears
+      // forty small lights rather than forty beacons on a tiny galaxy.
       const w = this._slotWorld(st)
       if (w && fade > 0.05) {
-        const near = 1 + f * 2.2
-        const base = settle * fade
-        // world units, scaled to the community's own disk: a small sky is
-        // framed closer, so a fixed world size would swell as the galaxy grew
-        const R = Math.max(0.4, this.diskR || 1)
-        this.fx.world(w.x, w.y, w.z, (0.10 + pulse * 0.018) * near * R, tcol, (1.15 + pulse * 0.4 + ignite * 1.4) * base, 0)
-        this.fx.world(w.x, w.y, w.z, (0.042 + pulse * 0.007) * near * R, [1, 0.94, 0.86], (1.5 + pulse * 0.5) * base, 0)
-        this.fx.world(w.x, w.y, w.z, (0.21 + pulse * 0.035) * near * R, tcol, (0.7 + pulse * 0.28 + ignite * 0.9) * base, 2)
+        const near = 1 + f * 3.4
+        const R = Math.max(0.35, this.diskR || 1)
+        this.fx.world(w.x, w.y, w.z, (0.042 + pulse * 0.006) * near * R, tcol, (0.5 + pulse * 0.14 + ignite * 0.6) * settle * fade, 0)
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
@@ -780,7 +733,7 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o + 1] = c[1]
       hero.tint[o + 2] = c[2]
       hero.tint[o + 3] = gain
-      hero.fx[o] = 0.85 + f * 0.4
+      hero.fx[o] = 0.2 + f * 0.18
       hero.fx[o + 1] = f * 0.6
       hero.fx[o + 2] = 0
       hero.fx[o + 3] = 1
@@ -798,8 +751,8 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o] = c[0]
       hero.tint[o + 1] = c[1]
       hero.tint[o + 2] = c[2]
-      hero.tint[o + 3] = (3.4 + f * 3.2)
-      hero.fx[o] = 0.5 + f * 0.5
+      hero.tint[o + 3] = 0.38 * (1 - f * 0.6)
+      hero.fx[o] = 0.2 + f * 0.18
       hero.fx[o + 1] = f * 0.6
       hero.fx[o + 2] = 0
       hero.fx[o + 3] = 1
