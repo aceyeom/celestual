@@ -29,9 +29,9 @@
 // weak one holding on. The frame-time governor walks between them at runtime;
 // nothing here is chosen once and frozen.
 export const TIER = {
-  0: { stars: 120000, deep: 26000, gasSteps: 32, gasScale: 0.5, bloomLevels: 5, dust: 900, passers: 60 },
-  1: { stars: 55000, deep: 12000, gasSteps: 20, gasScale: 0.5, bloomLevels: 4, dust: 500, passers: 40 },
-  2: { stars: 22000, deep: 5000, gasSteps: 12, gasScale: 0.34, bloomLevels: 3, dust: 240, passers: 24 },
+  0: { stars: 46000, deep: 9000, gasSteps: 32, gasScale: 0.5, bloomLevels: 5, dust: 900, passers: 40 },
+  1: { stars: 26000, deep: 5000, gasSteps: 20, gasScale: 0.5, bloomLevels: 4, dust: 500, passers: 28 },
+  2: { stars: 12000, deep: 2400, gasSteps: 12, gasScale: 0.34, bloomLevels: 3, dust: 240, passers: 18 },
 }
 
 export function createGL(canvas) {

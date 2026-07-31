@@ -35,7 +35,7 @@ export const TILT = 1.04 // the resting tilt of the disk toward the viewer
 // resolves into a body: below about 0.02 world units the star's true angular
 // diameter overtakes its point-spread function and it becomes a disc with a
 // surface. The dive goes all the way in.
-export const STANDOFF = 0.0155
+export const STANDOFF = 0.055
 
 // The flight easing: Perlin's smootherstep. Flat-launched and flat-landed, and
 // its peak velocity is only ~1.9x the mean where a quintic in-out's is 5x — the
@@ -437,7 +437,12 @@ export class Camera {
     const vy = R[3] * x + R[4] * y + R[5] * z - this.eye.y
     const vz = R[6] * x + R[7] * y + R[8] * z
     const zc = CAM + vz - this.eye.z
-    if (zc <= 0.02) return null
+    // Matches the vertex shader's own near cutoff. They MUST agree: this is
+    // what tells the DOM where a star landed, and a stricter limit here means
+    // that at the end of a dive — exactly when the overlay needs the anchor —
+    // the engine reports the star as off-screen while the GPU is drawing it
+    // dead centre.
+    if (zc <= 0.0035) return null
     const persp = FOCAL / zc
     out = out || {}
     out.sx = this.cx + vx * this.unit * persp

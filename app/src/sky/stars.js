@@ -101,7 +101,7 @@ vec3 orbitPos(vec4 orb, float theta0, float y, float clock, float pattern){
 vec3 toScreen(vec3 p, mat3 R, vec3 eye){
   vec3 v = R * p;
   float zc = uCam + v.z - eye.z;
-  if (zc <= 0.008) return vec3(0.0, 0.0, -1.0);
+  if (zc <= 0.0035) return vec3(0.0, 0.0, -1.0);
   float persp = uFocal / zc;
   return vec3(uCenter + (v.xy - eye.xy) * uUnit * persp, zc);
 }
@@ -136,7 +136,12 @@ void main(){
   // that merely happen to lie between the camera and the disk — letting their
   // discs open up as the camera brushes past them is what produced the soft
   // bokeh saucers the old engine spent so many comments capping.
-  vDisc = smoothstep(uPsf * 0.85, uPsf * 2.2, angPx) * uResolve;
+  // Held in LOCALS and only written out to the varyings at the end. Reading an
+  // "out" variable back inside the vertex shader is legal GLSL and works on
+  // most drivers, but not all of them — and when one gets it wrong the symptom
+  // is silent: correct geometry, correct uniforms, correct draw call, and no
+  // pixels. Locals cost nothing and remove the whole class of doubt.
+  float disc = smoothstep(uPsf * 0.85, uPsf * 2.2, angPx) * uResolve;
   corePx = mix(min(corePx, uPsf * 1.6), corePx, uResolve);
 
   // ── how much light arrives ───────────────────────────────────────────────
@@ -153,17 +158,17 @@ void main(){
   // A whisper of scintillation keeps a still field alive — and it fades out
   // completely as a star resolves, because something you are close enough to
   // see the surface of has no business flickering.
-  float tw = 1.0 + uTwinkle * (1.0 - vDisc) * 0.34 * sin(uTime * (0.5 + rnd3.x * 1.4) + rnd3.y * 6.2831);
-  vI = asinh(flux * 34.0) * uGain * uExposure * uDim * tw;
+  float tw = 1.0 + uTwinkle * (1.0 - disc) * 0.34 * sin(uTime * (0.5 + rnd3.x * 1.4) + rnd3.y * 6.2831);
+  float inten = asinh(flux * 34.0) * uGain * uExposure * uDim * tw;
   // and a star the camera is about to pass THROUGH dissolves rather than
   // smearing itself across the glass
-  if (uNear > 0.0) vI *= smoothstep(uNear * 0.22, uNear, zc);
+  if (uNear > 0.0) inten *= smoothstep(uNear * 0.22, uNear, zc);
 
   // Surface brightness is independent of distance (the inverse-square fall in
   // flux is exactly cancelled by the growth in solid angle) and goes as T^4.
   // This is what makes an O-star's photosphere blinding and a red giant's a
   // deep smouldering ember, with no per-star tuning anywhere.
-  vSurface = pow(tRel, 4.0) * 1.15 * uDim * uExposure;
+  float surfB = pow(tRel, 4.0) * 1.15 * uDim * uExposure;
 
 ${hero ? `
   // A hero star keeps its blackbody HEART and wears the category light in its
@@ -173,9 +178,9 @@ ${hero ? `
   // on, and would have made your own stars the only fake ones in the field.
   vTint = aTint.rgb;
   vTintMix = 1.0;
-  vI     *= aTint.a;
-  vSurface *= aTint.a;
-  vSpike  = aFx.x;
+  inten  *= aTint.a;
+  surfB  *= aTint.a;
+  float spike = aFx.x;
   corePx  = max(corePx, uPsf * (1.0 + aFx.y));
 ` : `
   vTint = vColor;
@@ -184,7 +189,7 @@ ${hero ? `
   // near star read as glitter; in a real photograph they belong to a handful
   // of suns, and that scarcity is what makes them read as light rather than as
   // decoration.
-  vSpike = smoothstep(0.9, 6.0, vI) * (1.0 - vDisc * 0.55);
+  float spike = smoothstep(1.2, 7.0, inten) * (1.0 - disc * 0.55);
 `}
   vSpin = rnd3.z * 3.14159;
 
@@ -193,20 +198,47 @@ ${hero ? `
   // logarithmically — which is the whole reason a bright star reads as bright
   // rather than as big. Clamped so one enormous foreground sun can never turn
   // into a full-screen fill.
-  float spread = 1.8 + 2.4 * log2(1.0 + max(vI, 0.0)) + vSpike * 5.5;
-  float extPx  = min(corePx * spread, min(uViewport.x, uViewport.y) * 1.2);
+  // How far the point-spread's wings reach. It grows only logarithmically with
+  // brightness — that is what makes a bright star read as BRIGHT rather than as
+  // BIG — and then it is capped twice: once in core-radii, and once in absolute
+  // pixels. Without the second cap a single luminous foreground star swells into
+  // a soft dinner plate that swallows whatever text is behind it, which is the
+  // exact failure the old canvas engine spent so many hard caps fighting.
+  float spread = min(1.5 + 1.6 * log2(1.0 + max(inten, 0.0)) + spike * 2.6, 9.0);
+  // A resolved star's halo is capped against its OWN disc, not against the
+  // frame. Capping against the viewport let one close star spread a faint wash
+  // of its own colour over every pixel — technically the point-spread's tail,
+  // visually a tinted fog across the whole screen.
+  float maxPx  = mix(26.0 * uPsf, max(26.0 * uPsf, corePx * 3.2), uResolve * disc);
+  float extPx  = min(corePx * spread, maxPx);
   // The fragment shader needs to know where the sprite ENDS, so it can take the
   // point-spread's long tail to exactly zero there. Without this the aureole —
   // which by design falls off very slowly, because real optics do — is still
   // faintly non-zero at the quad's corner, and a bright star leaves a visible
   // rectangle on the sky. It is the one artifact an analytic PSF can have that
   // a baked sprite cannot.
-  vEdge = spread;
+  // what the fragment shader needs, written out exactly once
+  vDisc = disc;
+  vI = inten;
+  vSurface = surfB;
+  vSpike = spike;
+  vEdge = min(spread, extPx / max(corePx, 0.0001));
 
   // ── motion ───────────────────────────────────────────────────────────────
+  // The smear's axis. Normalizing a zero vector gives NaN, and a GLSL ternary
+  // is a SELECT, not a branch — most compilers evaluate both sides, so guarding
+  // it with a length test still computes the normalize on many drivers and
+  // can propagate the NaN into gl_Position, which silently discards the whole
+  // primitive.
+  //
+  // That is not a hypothetical. It is exactly what made a dive arrive on a
+  // blank frame: at the instant the camera settles on its target the star is
+  // pinned dead centre, its frame-to-frame motion is precisely zero, and the
+  // one star the viewer asked to look at was the only one in the sky that
+  // vanished. Nudging the vector off zero costs nothing and cannot NaN.
   vec2 motion = (sPrev.z > 0.0) ? (s.xy - sPrev.xy) : vec2(0.0);
   float mlen = min(length(motion) * uMotion, min(uViewport.x, uViewport.y) * 0.16);
-  vec2 dir = mlen > 0.001 ? normalize(motion) : vec2(1.0, 0.0);
+  vec2 dir = normalize(motion + vec2(1e-5, 0.0));
   vec2 perp = vec2(-dir.y, dir.x);
   float halfLen = mlen * 0.5;
 
@@ -279,7 +311,7 @@ void main(){
   // the halo shades from the star's own blackbody heart out into its category
   // light; at vTintMix = 0 (every ordinary star) this costs one mix and changes
   // nothing
-  vec3 col = mix(vColor, vTint, clamp(r * 0.62, 0.0, 1.0) * vTintMix);
+  vec3 col = mix(vColor, vTint, clamp(r * 0.45, 0.0, 0.7) * vTintMix);
   vec3 light = col * vI * psf;
 
   // the diffraction cross, earned
@@ -458,8 +490,16 @@ export class StarPass {
         gl.useProgram(prog.p)
         cur = prog
         const u = prog.u
-        gl.uniformMatrix3fv(u.uR, false, cam.R)
-        gl.uniformMatrix3fv(u.uRPrev, false, ctx.RPrev)
+      // NOTE the transpose flag. Camera.R is built row-major for readability,
+      // but uniformMatrix*fv reads its input COLUMN-major — so uploading it
+      // flat hands the shader R-transpose, which for a rotation is R-inverse.
+      // The field still looked like a galaxy (a galaxy rotated the wrong way is
+      // still a galaxy), so this hid in plain sight while the CPU and the GPU
+      // quietly disagreed about where every star was: @ tags sat off their
+      // stars, hit-testing missed, and a dive aimed by the CPU arrived at a
+      // patch of empty sky the GPU had drawn nothing in.
+        gl.uniformMatrix3fv(u.uR, true, cam.R)
+        gl.uniformMatrix3fv(u.uRPrev, true, ctx.RPrev)
         gl.uniform3f(u.uEye, cam.eye.x, cam.eye.y, cam.eye.z)
         gl.uniform3f(u.uEyePrev, ctx.eyePrev.x, ctx.eyePrev.y, ctx.eyePrev.z)
         gl.uniform2f(u.uCenter, cam.cx * ctx.scale, cam.cy * ctx.scale)
