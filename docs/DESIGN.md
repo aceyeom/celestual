@@ -141,20 +141,41 @@ search field. Meaning is carried by type, by light, and by the one star.
 
 One persistent backdrop for the whole product: **`GalaxyCanvas`** in
 `app/src/components/ui.jsx`, wrapping **`GalaxyField` in `app/src/galaxy.js`** —
-a real 3D perspective-projected particle galaxy (dependency-free, hand-rolled
-canvas math). Stars live in 3D, spin around the galactic axis, and project
-through a perspective camera the viewer can subtly steer with the pointer or
-device tilt, so the field has genuine **depth and parallax**. Layered
-populations — a bright core bulge, an exponential-falloff disk with feathered
-spiral arms, halo stars, soft drifting nebula gas, and a full-frame background
-starfield — dissolve it into space instead of a contained shape. The two stars
-(`you` amber, `them` rose) are the field's own light.
+a real 3D galaxy rendered on a dependency-free **WebGL2** engine (`app/src/sky/`).
+The two skies (`galaxy.js`, the ambient field, and `communityGalaxy.js`, the
+countable community sky) are two *populations* on that one engine, so they can
+never drift apart.
+
+The physics is the art direction, and everything below follows from it:
+
+- **The arms are density waves, not drawings.** Every star travels its own
+  elliptical orbit; each orbit is rotated slightly further than the one inside
+  it, and where the ellipses crowd, density rises. That crowding *is* the arm.
+  It survives differential rotation (stars flow through the arms; the pattern
+  stays), which is why the field can be permanently, slowly alive.
+- **Colour is demographics.** A star's hue is its blackbody temperature on the
+  Planck locus. The bulge is gold because it is old, the arms are blue because
+  they are where gas is still collapsing into hot short-lived stars, and the
+  red giants are red because they are cool. No palette is picked.
+- **Brightness is luminosity over distance squared**, displayed through an
+  asinh stretch (the standard astronomical transform) so six orders of
+  magnitude fit in one frame without the supergiants erasing everything else.
+- **A star has two sizes**: the instrument's point-spread function, and its
+  true angular diameter. The larger wins. Far away it is a point of light;
+  close enough, it resolves into a **body** — a limb-darkened, granulating
+  photosphere. A dive goes all the way in.
+- **The nebula is a volume**, raymarched with real emission and extinction, so
+  dust genuinely occludes the disk behind it and the camera can fly *through*
+  the gas rather than having to dissolve it on approach.
+- **The frame ends in a sensor**: an unclamped half-float buffer, dual-Kawase
+  bloom, and an ACES tonemap. Brightness is spent as *light*, never as size.
 
 It is mounted **once**, in **idle mode**, as a fixed full-bleed layer beneath the
-content column. It honors `prefers-reduced-motion` (the galaxy settles to a
-near-static window into space). `NightField` — the retired static navy field of
-the interim "night edition" — remains in `ui.jsx` but is **not mounted**; the
-living galaxy is the backdrop.
+content column. Under `prefers-reduced-motion` the sky keeps a slow, steady,
+non-accelerating drift at half frame rate rather than freezing — the preference
+is about vestibular safety, not about wanting a dead picture. Where WebGL2 is
+unavailable the same public API hands back a modest canvas-2D field
+(`sky/fallback2d.js`), so the product is never without a night sky.
 
 What it is *not*: not a flat 2D swirl, not a looping decorative gradient. It's a
 window into a real cosmos, calm at rest.
@@ -248,6 +269,56 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-07-31** — **The sky, rebuilt on a GPU** (human-directed, and an
+  explicit authorization under the design lock: the cosmic-violet field, the two
+  stars and the type registers are untouched; how the cosmos is *rendered* is
+  what changed). The two canvas engines are gone; both skies are now populations
+  on one dependency-free WebGL2 engine in **`app/src/sky/`**.
+  - **One engine, two populations.** `galaxy.js` (1,736 lines) and
+    `communityGalaxy.js` (2,516) each carried their own copy of the camera,
+    projection, dive grammar, nebula pass, frame-time governor and tag renderer,
+    kept identical by hand and by comment. All of it moved into `sky/` once, and
+    the two files became what they always should have been: a description of
+    what lives in each sky. `nebula.js` is retired.
+  - **A hundred and twenty thousand stars, not eighteen hundred.** Orbits are
+    integrated in the vertex shader from eight floats and one clock, so the main
+    thread spends nothing per star per frame.
+  - **The arms are real.** Density-wave orbital mechanics (Lin & Shu) replace
+    `ang = arm * PI + r * TWIST`. The arms emerge from the orbit family instead
+    of being drawn, so they hold their shape at every radius with no feathering
+    hack, and the galaxy shears continuously without winding them up.
+  - **Blackbody colour, inverse-square brightness, resolving bodies.** See §4.
+    A dive now goes *all the way in*: past a certain closeness a star stops being
+    a point of light and becomes a photosphere.
+  - **The nebula became a volume.** Raymarched emission and extinction, sheared
+    with the local orbital speed. Dust occludes because it is in front; you can
+    fly through the gas.
+  - **Real optics.** Half-float HDR, dual-Kawase bloom, ACES, chromatic
+    point-spread, per-star motion blur. Every pre-baked glow and spike sprite is
+    gone — brightness is light now, so the hard caps that fought bokeh discs
+    could be deleted rather than ported.
+  - **The community sky genuinely grows.** A ping's radius was previously divided
+    by a fixed cap of 1,200, so the 1,201st ping silently re-scaled everyone
+    else's position. Radii are absolute now: at 10,000 members the disk really is
+    bigger and the camera simply stands further back. Nobody moves.
+  - **The forming state resolves.** A gathering community and an open one are the
+    same volumetric field at different settings, so crossing the privacy floor
+    turns the proto-cloud into a spiral *in place*.
+  - **The match reveal, redesigned** (it was the weakest thing in the product and
+    the most important frame in it). The old version was a flat screen-space
+    overlay — two dots on arcs, a gradient bridge, ten motes — that merged into
+    ONE star. It is now a real event in the disk: a decaying Keplerian inspiral
+    whose angular speed rises as the pair closes, tidal streams bridging them,
+    a merger flash that sends a **light echo** expanding outward and lighting the
+    surrounding gas from inside as it passes, settling into a **binary** — two
+    distinct stars, amber and rose, in a stable shared orbit. A merge would have
+    said one of them stopped existing.
+  - **Reduced motion keeps drifting** (§4) instead of freezing.
+  - **Everything below the sky is unchanged**: the same lens (`CAM`/`FOCAL`/
+    `TILT`), the same framing, the same send-off meteor grammar, the same held
+    star view, the same gestures, and every method signature `App.jsx`,
+    `ui.jsx` and `CommunityScreen` call.
 
 - **2026-07-26** — **The consistency pass** (human-directed: "the biggest
   problem throughout the entire web is design inconsistency"). The system had

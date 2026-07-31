@@ -67,6 +67,8 @@ celestual/
 ├── app/              the Vite + React SPA (served at celestual.us/)
 │   ├── src/
 │   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
+│   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
+│   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
 │   │   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
 │   │   ├── i18n/     the canonical copy (strings.js)
 │   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js · styles.css
