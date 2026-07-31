@@ -51,7 +51,7 @@ const BANK_MIN = 0.9 // the swing's length breathes with how far it must travel
 const BANK_MAX = 1.6
 const BANK_TILT = 0.34 // the banked tilt: the galaxy turned to its side axis
 const RUN_IN = 2.6 // the camera's committed run into the star
-const RUN_OUT = 1.7 // and the glide back out
+const RUN_OUT = 1.2 // and the glide back out — a close is an exit, not a scene
 // The run ignites early in the bank's swing, so the turn and the dive read as
 // ONE continuous gesture. Sequencing them — bank, stop, run — is what felt
 // robotic, and even a late ignition read as two separate moves.
@@ -94,6 +94,7 @@ export class Camera {
     this.bank = 0 // eased 0..1 — how far through the turn
     this.bankAim = null // { yaw, tilt } computed once, at the dive's start
     this.bankDur = 0.85
+    this.holdDur = 1.9 // mirrored from the engine each update; releaseDive reads it
     this._bankPrev = 0
     this._bankVel = 0
 
@@ -185,10 +186,17 @@ export class Camera {
   }
   // End a held star view: jump the timeline to the start of the pull-out so the
   // camera glides home along the same path it came in on.
-  releaseDive(holdDur = 0) {
+  //
+  // Note where that start actually IS. Once `held` drops, `update` runs the
+  // ordinary timeline, which holds the frame for `holdDur` seconds BEFORE the
+  // pull-out begins — so landing the clock on `inEnd` left the close button
+  // sitting on a frozen sky for the better part of two seconds and reading as a
+  // tap that did nothing. The pull-out starts at inEnd + holdDur; that is where
+  // a release belongs.
+  releaseDive(delay = 0) {
     if (this.dive && this.dive.held) {
       const inEnd = Math.max(this.bankDur, this.bankDur * OVERLAP + RUN_IN)
-      this.dive = { t: inEnd + holdDur, held: false }
+      this.dive = { t: inEnd + this.holdDur + delay, held: false }
     }
   }
   get diving() {
@@ -204,6 +212,7 @@ export class Camera {
   // it comes back to life on the way out.
   update(dt, opts = {}) {
     const holdDur = opts.holdDur != null ? opts.holdDur : 1.9
+    this.holdDur = holdDur
 
     // the dive timeline — bank leading, run igniting inside the swing, both
     // completing together, then the hold, then the return as one unwind
@@ -415,7 +424,13 @@ export class Camera {
       ? clamp(this._bankVel * (Math.abs(this.bankAim.yaw) + (TILT - this.bankAim.tilt)) * 0.6, 0, 0.85)
       : 0
     this.rush = this.reduced ? 0 : Math.max(this.travel, swing, bank)
-    this.exposure = 1 + this.rush * 0.35
+    // Exposure is the ONE instrument that touches every pixel at once, so it is
+    // the one that must never be driven straight off a raw input. `swing` is
+    // recomputed from the last pointer delta, which on a finger arrives in
+    // uneven bursts — fed in directly it made the entire frame flicker in
+    // brightness while a held star was being orbited. Smaller lift, and eased.
+    const wantExp = 1 + this.rush * 0.18
+    this.exposure += (wantExp - this.exposure) * Math.min(1, dt * 3.4)
 
     // The eye's world position, which the volumetric march needs as its ray
     // origin. The eye sits at view-space (ex, ey, ez - CAM) looking down +z.

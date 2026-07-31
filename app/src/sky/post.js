@@ -137,7 +137,13 @@ uniform float uBloomAmount, uExposure, uVignette, uChroma, uTime, uFlash;
 uniform vec3 uFlashColor;
 
 void main(){
-  vec3 scene = texture(uScene, vUv).rgb;
+  // The last line of defence. Every pass that writes the scene buffer already
+  // guarantees a finite, non-negative value (stars.js explains why), but ACES
+  // is where a non-finite one would become visible — Inf/Inf is NaN, and NaN
+  // clamps to black — so the sensor refuses to read one rather than printing a
+  // hole in the sky.
+  vec3 scene = min(texture(uScene, vUv).rgb, vec3(60000.0));
+  scene = mix(scene, vec3(0.0), vec3(isnan(scene)));
 
   // Bloom carries a whisper of lateral chromatic spread — the red halo reaching
   // very slightly further than the blue. It is the same optical truth the star
@@ -150,6 +156,7 @@ void main(){
     texture(uBloom, vUv).g,
     texture(uBloom, vUv - c * 1.4).b
   );
+  bloom = mix(min(bloom, vec3(60000.0)), vec3(0.0), vec3(isnan(bloom)));
   vec3 col = scene + bloom * uBloomAmount;
 
   // the match's light echo, and any other whole-sky flash — added in linear
@@ -197,9 +204,14 @@ export class PostChain {
     this.chroma = 0.0055
     this.flash = 0
     this.flashColor = [1, 0.95, 0.9]
-    this.bandBright = 0.035
+    this.bandBright = 0.019
     this.bandTilt = -0.42
-    this.sky = { top: [0.0085, 0.0070, 0.0210], mid: [0.0050, 0.0040, 0.0130], bot: [0.0034, 0.0026, 0.0090] }
+    // Deep space is BLACK, and the violet in it is the faintest tint rather
+    // than a colour of its own — a lifted floor is what made the sky read as a
+    // dark purple surface with stars printed on it instead of as depth. Kept
+    // just off zero, and dithered in the composite, so it still breathes
+    // vertically and never bands.
+    this.sky = { top: [0.0031, 0.0026, 0.0078], mid: [0.0017, 0.0014, 0.0046], bot: [0.0010, 0.0008, 0.0028] }
   }
 
   resize(w, h, count) {

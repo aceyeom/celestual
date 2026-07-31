@@ -52,7 +52,11 @@ void main(){
     // a world-space billboard's size is a world size, so it grows on approach
     px = aParam.x * uUnit * uScale * persp;
   }
-  px = min(px, min(uViewport.x, uViewport.y) * 1.4);
+  // No event's light is ever a full-frame fill. A world-space billboard's size
+  // is a WORLD size, so anything the camera closes on grows without limit on
+  // the glass; past the short side of the frame it has stopped being a glow and
+  // become a coloured sheet over the whole picture.
+  px = min(px, min(uViewport.x, uViewport.y) * 0.85);
   float c = cos(aParam.z), s = sin(aParam.z);
   vec2 o = vec2(aCorner.x * px * aParam.w, aCorner.y * px);
   vec2 rot = vec2(o.x * c - o.y * s, o.x * s + o.y * c);
@@ -99,9 +103,13 @@ void main(){
   // still faintly non-zero in the corners, and against a near-black sky at
   // event brightness that reads as a visible rectangle — which is precisely
   // what a big merger flash was drawing before this line existed.
-  a *= smoothstep(1.0, 0.7, r);
+  a *= 1.0 - smoothstep(0.7, 1.0, r); // descending — see stars.js on reversed edges
   if (a < 0.0016) discard;
-  frag = vec4(vColor * (a * vI), 1.0);
+  // the same rule the star pass writes under: nothing that is not a finite,
+  // non-negative number may enter the HDR buffer (see stars.js)
+  vec3 outc = min(vColor * (a * vI), vec3(512.0));
+  outc = mix(outc, vec3(0.0), vec3(isnan(outc)));
+  frag = vec4(max(outc, vec3(0.0)), 1.0);
 }
 `
 

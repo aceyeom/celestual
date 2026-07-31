@@ -12,8 +12,11 @@
 // whole product reads as one coherent cosmos on every screen, mobile and web.
 
 export const TOKENS = {
-  // deep-space base — shared by every screen's backdrop and the galaxy void
-  ink: '#0B0814',
+  // deep-space base — shared by every screen's backdrop and the galaxy void.
+  // Very nearly black: this is the VOID, and it has to sit at or below the
+  // darkest thing the renderer paints (sky/post.js's floor) or the page shows
+  // through as a lighter violet card the galaxy is lying on top of.
+  ink: '#06050C',
   ink2: '#16111F',
   ink3: '#211934',
   // text
