@@ -116,6 +116,9 @@ class Field2D {
   }
   destroy() {
     this.stop()
+    if (this._sendoffTimer) clearTimeout(this._sendoffTimer)
+    this._sendoffTimer = null
+    this.onSendoffDone = null
     window.removeEventListener('resize', this._onResize)
     document.removeEventListener('visibilitychange', this._onVis)
   }
@@ -208,8 +211,22 @@ export class Galaxy2D extends Field2D {
     this._seed = 0
   }
   setMode(mode, data = {}) {
+    const changed = mode !== this.mode
     this.mode = mode
     this.dimTarget = mode === 'idle' ? (data.dim != null ? data.dim : 1) : mode === 'resting' ? 0.5 : mode === 'match' ? 0.5 : 0.7
+    // There is no flight to fly here — this is the sky a device gets when it
+    // could not give us WebGL2 at all. But the send-off's ARRIVAL is what the
+    // screen after it waits on, so it still has to be reported, or the words
+    // never come and the placement looks like it failed.
+    if (mode === 'sendoff' && changed) {
+      if (this._sendoffTimer) clearTimeout(this._sendoffTimer)
+      this._sendoffTimer = setTimeout(() => {
+        this._sendoffTimer = null
+        const cb = this.onSendoffDone
+        this.onSendoffDone = null
+        if (cb) cb()
+      }, 1400)
+    }
     this.start()
   }
   setSeals(n) {

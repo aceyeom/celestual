@@ -27,13 +27,13 @@
 // Every method App.jsx, ui.jsx and CommunityScreen call has the same signature
 // it had before.
 
-import { SkyEngine, clamp, lerp, linearOf } from './sky/engine.js'
+import { SkyEngine, clamp, lerp, linearOf, starRadius } from './sky/engine.js'
 import { smooth, easeOut, easeFlight } from './sky/camera.js'
 import {
   STAR_STRIDE, genHalo, genDeepField, genNearField, genDisk,
   writeStar, writeSlot, slotRadius, diskRadiusFor, omegaAt, TILT_RATE,
 } from './sky/model.js'
-import { tempToU } from './sky/blackbody.js'
+import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { Gestures } from './sky/gestures.js'
 import { CATEGORY_TINTS } from './theme.js'
 import { bakeTag } from './sky/fx.js'
@@ -48,6 +48,15 @@ const DBLTAP_STEP = 2.6
 // rim is ALLOWED to spill past the frame, because a galaxy that fits neatly
 // inside its box reads as a graphic rather than as a place.
 const FRAME_PAD = 1.32
+
+// The star a ping is, in one place — so the CPU can size its disc exactly the
+// way stars.js's vertex shader does, which is what the opaque body pass needs
+// in order to draw where the point of light actually was. galaxy.js carries the
+// same three constants for the same reason.
+const HERO_TEMP = 7400
+const HERO_LUM = 4.4
+const HERO_RGB = blackbodyRGB(HERO_TEMP)
+const SURFACE_B = 1.34
 
 export class CommunityGalaxy extends SkyEngine {
   constructor(canvas, opts = {}) {
@@ -426,6 +435,8 @@ export class CommunityGalaxy extends SkyEngine {
     this.diveLabel = entry.label
     this.dive = { held: !!opts.hold }
     this.cam.startDive(() => this._slotWorld(entry.st), { hold: !!opts.hold })
+    // the overlay's name and intent line ride this, not a timer (engine.js)
+    this._armArrival(opts.onArrive)
     this.start()
     return true
   }
@@ -446,12 +457,14 @@ export class CommunityGalaxy extends SkyEngine {
   releaseDive() {
     if (this.cam.held) this.cam.releaseDive(0)
     if (this.dive) this.dive = { held: false }
+    this._armArrival(null)
     this.start()
   }
   _endDive() {
     this.dive = null
     this.diveSt = null
     this.diveLabel = null
+    this._armArrival(null)
     if (this.cam.dive) this.cam.dive = null
   }
   hasMine() {
@@ -579,6 +592,7 @@ export class CommunityGalaxy extends SkyEngine {
 
   // ── the frame ─────────────────────────────────────────────────────────────
   _frame(dt) {
+    this._checkArrival()
     // the forming <-> open resolve
     const want = this.forming ? 1 : 0
     if (Math.abs(this.formingBlend - want) > 0.001) {
@@ -740,7 +754,7 @@ export class CommunityGalaxy extends SkyEngine {
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
-      writeStar(hero.star, k, g.a, g.b, g.phi, omegaAt(g.a), TILT_RATE * g.a, g.y, tempToU(7400), 4.4)
+      writeStar(hero.star, k, g.a, g.b, g.phi, omegaAt(g.a), TILT_RATE * g.a, g.y, tempToU(HERO_TEMP), HERO_LUM)
       const c = linearOf(tint)
       const o = k * 4
       hero.tint[o] = c[0]
@@ -749,8 +763,8 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o + 3] = gain
       hero.fx[o] = 0.2 + f * 0.18
       hero.fx[o + 1] = f * 0.6
-      hero.fx[o + 2] = 0
-      hero.fx[o + 3] = 1
+      hero.fx[o + 2] = 1
+      hero.fx[o + 3] = this._pushBody(st, tint, settle * fade)
     }
     // The star a stranger's @ opened: it is the hero of that dive, so it flares
     // to the same signature your own stars wear. Every dive in the product
@@ -759,7 +773,7 @@ export class CommunityGalaxy extends SkyEngine {
       const g = this.diveSt.geom
       const f = this.cam.focus
       const k = hero.count++
-      writeStar(hero.star, k, g.a, g.b, g.phi, omegaAt(g.a), TILT_RATE * g.a, g.y, tempToU(7200), 4.4)
+      writeStar(hero.star, k, g.a, g.b, g.phi, omegaAt(g.a), TILT_RATE * g.a, g.y, tempToU(HERO_TEMP), HERO_LUM)
       const c = linearOf(this.you)
       const o = k * 4
       hero.tint[o] = c[0]
@@ -768,9 +782,36 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o + 3] = 0.38 * (1 - f * 0.6)
       hero.fx[o] = 0.2 + f * 0.18
       hero.fx[o + 1] = f * 0.6
-      hero.fx[o + 2] = 0
-      hero.fx[o + 3] = 1
+      hero.fx[o + 2] = 1
+      hero.fx[o + 3] = this._pushBody(this.diveSt, this.you, 1)
     }
+  }
+
+  // ── the star you are close enough to see the face of ──────────────────────
+  // A dive in this sky arrives at the same standoff the ambient sky's does, so
+  // it lands on the same thing: a surface. Returns what the star pass should do
+  // with its own disc — 1 = draw it, 0 = the body pass has it — and the band
+  // between the two is a cross-fade rather than a swap. galaxy.js carries the
+  // long note on why an additive photosphere is a ghost.
+  _pushBody(st, tintHex, alive) {
+    void tintHex
+    if (!st || !st.geom) return 1
+    const w = this._slotWorld(st)
+    if (!w) return 1
+    const scr = this.cam.project(w.x, w.y, w.z)
+    if (!scr) return 1
+    const radius = starRadius(this.gHero.radiusScale, HERO_TEMP, HERO_LUM)
+    const hand = this.handoverOf(radius, scr.persp)
+    if (hand <= 0.004) return 1
+    const disc = this.discOf(radius, scr.persp)
+    this.body.push(scr.sx, scr.sy, radius * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * this.gHero.dim * this.cam.exposure * alive, {
+      cover: disc * hand,
+      corona: 0.9,
+      seed: st.i * 3.7 + 1.3,
+      spin: this.t * 0.035 + st.i * 1.9,
+      tip: 0.30 + (st.i % 3) * 0.12,
+    })
+    return 1 - hand
   }
 
   // ── the @ layer ───────────────────────────────────────────────────────────
