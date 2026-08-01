@@ -53,7 +53,7 @@ layout(location=0) in vec2 aCorner;   // the unit quad, [-1,1]
 layout(location=1) in vec4 aOrbit;    // a, b, phi0, omega
 layout(location=2) in vec4 aStar;     // theta0, y, tempU, lum
 ${hero ? 'layout(location=3) in vec4 aTint;   // rgb tint, a = extra gain' : ''}
-${hero ? 'layout(location=4) in vec4 aFx;     // spikeGain, discBias, ringPhase, alive' : ''}
+${hero ? 'layout(location=4) in vec4 aFx;     // spikeGain, discBias, mayResolve, ownsDisc' : ''}
 
 uniform mat3  uR, uRPrev;
 uniform vec3  uEye, uEyePrev;
@@ -88,6 +88,8 @@ out float vSpin;     // its own spike orientation
 out float vSeg;      // half-length of the motion streak, in core units
 out float vEdge;     // where the sprite ends, in core units
 out float vSeed;
+out vec2  vAxis;     // the sprite's frame on the glass, so the rays can leave it
+out float vOwn;      // 1 = this pass draws its own photosphere; 0 = body.js does
 
 vec3 orbitPos(vec4 orb, float theta0, float y, float clock, float pattern){
   float phi = orb.z + orb.w * clock;
@@ -136,13 +138,25 @@ void main(){
   // that merely happen to lie between the camera and the disk — letting their
   // discs open up as the camera brushes past them is what produced the soft
   // bokeh saucers the old engine spent so many comments capping.
+  //
+  // "res" is that permission, and it is per-INSTANCE for the hero group rather
+  // than per-population. A star of yours resting in the disk may resolve; the
+  // same star while it is being LAUNCHED may not. During the send-off the hero
+  // is half a world unit from the lens, which is close enough for its disc to
+  // overtake the point-spread — and a launch that arrives as a dull sixteen-
+  // pixel saucer instead of a hard bright spark is the wrong picture entirely.
+  // Denying resolution keeps it a point of light, and (crucially) also holds
+  // corePx down to the instrument's own width, which is what stops it from
+  // swelling into the fat soft blob the send-off used to fly.
+  //
   // Held in LOCALS and only written out to the varyings at the end. Reading an
   // "out" variable back inside the vertex shader is legal GLSL and works on
   // most drivers, but not all of them — and when one gets it wrong the symptom
   // is silent: correct geometry, correct uniforms, correct draw call, and no
   // pixels. Locals cost nothing and remove the whole class of doubt.
-  float disc = smoothstep(uPsf * 0.85, uPsf * 2.2, angPx) * uResolve;
-  corePx = mix(min(corePx, uPsf * 1.6), corePx, uResolve);
+${hero ? '  float res = uResolve * aFx.z;\n  float owns = aFx.w;' : '  float res = uResolve;\n  float owns = 1.0;'}
+  float disc = smoothstep(uPsf * 0.85, uPsf * 2.2, angPx) * res;
+  corePx = mix(min(corePx, uPsf * 1.6), corePx, res);
 
   // ── how much light arrives ───────────────────────────────────────────────
   // The inverse-square law, and then the problem every astrophotograph has:
@@ -180,17 +194,30 @@ ${hero ? `
   vTintMix = 1.0;
   inten  *= aTint.a;
   surfB  *= aTint.a;
+  vOwn = aFx.w;
   float spike = aFx.x;
   corePx  = max(corePx, uPsf * (1.0 + aFx.y));
 ` : `
   vTint = vColor;
   vTintMix = 0.0;
+  vOwn = 1.0;
   // Only genuinely luminous stars earn the diffraction cross. Spikes on every
   // near star read as glitter; in a real photograph they belong to a handful
   // of suns, and that scarcity is what makes them read as light rather than as
   // decoration.
-  float spike = smoothstep(1.2, 7.0, inten) * (1.0 - disc * 0.55);
+  float spike = smoothstep(1.2, 7.0, inten);
 `}
+  // Diffraction is a property of a POINT source. The cross is the instrument's
+  // own signature — light from an unresolved source folding around the spider
+  // vanes — and the instant a star is close enough to show a face, there is no
+  // point source left to diffract. Real photographs bear this out: nothing that
+  // resolves into a disc has spikes coming out of it.
+  //
+  // So they go out as the disc comes in, completely. That is what removes the
+  // hard rays that used to sit across a fully resolved star at the end of a
+  // dive, which is the single thing that made an arrival read as broken
+  // geometry rather than as a sun.
+  spike *= 1.0 - smoothstep(0.10, 0.72, disc);
   vSpin = rnd3.z * 3.14159;
 
   // ── the sprite's extent ──────────────────────────────────────────────────
@@ -209,7 +236,13 @@ ${hero ? `
   // frame. Capping against the viewport let one close star spread a faint wash
   // of its own colour over every pixel — technically the point-spread's tail,
   // visually a tinted fog across the whole screen.
-  float maxPx  = mix(26.0 * uPsf, max(26.0 * uPsf, corePx * 3.2), uResolve * disc);
+  // ...and only for a star that is drawing its OWN photosphere. Once body.js
+  // has the disc, this pass is back to being a point-spread around it, and a
+  // point-spread does not need a quad three times the width of a disc that
+  // fills the frame. Dropping it back saves the better part of a million
+  // shaded pixels on the one frame of the product that could least afford
+  // them, and takes the last of the wide tinted wash off the arrival with it.
+  float maxPx  = mix(26.0 * uPsf, max(26.0 * uPsf, corePx * 3.2), res * disc * owns);
   // And one absolute ceiling on top of that, in real screen pixels. At the end
   // of a dive a resolved star's own disc is most of the frame, so 3.2x its disc
   // is a quad several times the viewport running the photosphere shader on
@@ -267,6 +300,20 @@ ${hero ? `
 
   vOffset = vec2(aCorner.x * (extPx + halfLen), aCorner.y * extPx) / max(corePx, 0.0001);
   vSeg = halfLen / max(corePx, 0.0001);
+  // The sprite's frame is the MOTION frame — it has to be, because the capsule
+  // is stretched along the star's apparent path. But the diffraction cross does
+  // not live in that frame: an instrument's spider vanes are bolted to the
+  // instrument, so the rays are fixed to the GLASS and a star drifting across
+  // the field keeps them pointing the same way.
+  //
+  // Handing the fragment shader the sprite's axis is what lets it rotate back
+  // out. Without it the rays inherited whatever direction the motion delta had
+  // — and near a standstill that delta is the sized nudge above rather than
+  // real travel, so a star the camera was holding still had rays that swung
+  // to arbitrary angles and jittered between frames. That is the "glitchy
+  // protruding lines": not an artifact of the ray shape at all, but of the
+  // frame it was being drawn in.
+  vAxis = dir;
 
   gl_Position = vec4((px / uViewport) * 2.0 - 1.0, 0.0, 1.0);
   gl_Position.y = -gl_Position.y;
@@ -289,6 +336,8 @@ in float vSpin;
 in float vSeg;
 in float vEdge;
 in float vSeed;
+in vec2  vAxis;
+in float vOwn;
 
 uniform float uTime;
 out vec4 frag;
@@ -323,7 +372,7 @@ void main(){
   // their quad corners were shaded and then multiplied by a zero window — and
   // a large light meeting a zero coverage is exactly where an Inf becomes a
   // NaN. A resolved star still needs its photosphere out to r = 1.02.
-  float keep = max(e, vDisc > 0.5 ? 1.06 : 0.0);
+  float keep = max(e, (vDisc > 0.5 && vOwn > 0.5) ? 1.06 : 0.0);
   if (r > keep) discard;
 
   // ── chromatic bloom ──────────────────────────────────────────────────────
@@ -344,14 +393,34 @@ void main(){
   vec3 col = mix(vColor, vTint, clamp(r * 0.30, 0.0, 0.42) * vTintMix);
   vec3 light = col * vI * psf;
 
-  // the diffraction cross, earned
+  // the diffraction cross, earned — and drawn on the GLASS. vOffset is in the
+  // sprite's motion-aligned frame; rotating it back by that frame's own axis
+  // puts the rays in screen space, where an instrument's vanes actually are.
   if (vSpike > 0.002) {
-    float sp = psfSpikes(q, r, vSpin);
+    vec2 s = vec2(vAxis.x * q.x - vAxis.y * q.y, vAxis.y * q.x + vAxis.x * q.y);
+    float sp = psfSpikes(s, r, vSpin);
     light += col * vI * vSpike * sp * 0.85;
   }
 
+  // How much of this star's disc the body pass has taken over — a RAMP, not a
+  // switch. A hand-off that flipped would pop, and it would pop at exactly the
+  // range where the disc is a few pixels wide and the eye is watching it grow.
+  // At vBody = 0 nothing here changes at all, which is every star in the sky.
+  float vBody = 1.0 - vOwn;
+
+  // Where the body pass has the disc, pull the point-spread's core out from
+  // under it, in step. Otherwise the halo sits on the photosphere as a milky
+  // wash — which is most of what made a zoomed star look "slightly
+  // transparent": it was its own glow, painted over its own surface.
+  if (vBody > 0.002 && vDisc > 0.002) {
+    float inner = 1.0 - smoothstep(0.45, 1.02, r); // descending: see the window ramp
+    light *= 1.0 - inner * vDisc * vBody * 0.94;
+  }
+
   // ── the resolved photosphere ─────────────────────────────────────────────
-  if (vDisc > 0.002) {
+  // Still here, and still correct, for every star the body pass has not taken:
+  // the whole field, and your own stars until their disc is worth the pass.
+  if (vOwn > 0.002 && vDisc > 0.002) {
     float inside = 1.0 - smoothstep(0.90, 1.02, r); // descending: see the window ramp above
     if (inside > 0.0) {
       // limb darkening: the edge of a star's disc is dimmer and redder than its
@@ -367,7 +436,7 @@ void main(){
       // the limb reddens as it darkens — cooler gas, seen obliquely
       vec3 edgeTint = mix(vec3(1.0, 0.72, 0.46), vec3(1.0), pow(mu, 0.4));
       vec3 body = vColor * edgeTint * vSurface * surf;
-      light = mix(light, body + light * 0.35, inside * vDisc);
+      light = mix(light, body + light * 0.35, inside * vDisc * vOwn);
     }
   }
 
@@ -568,7 +637,7 @@ export class StarPass {
       gl.uniform1f(u.uGain, g.gain)
       gl.uniform1f(u.uRadiusScale, g.radiusScale)
       gl.uniform1f(u.uTwinkle, ctx.reduced ? 0 : g.twinkle)
-      gl.uniform1f(u.uMotion, ctx.reduced ? 0 : g.motion)
+      gl.uniform1f(u.uMotion, ctx.reduced ? 0 : g.motion * ctx.motionScale)
       gl.uniform1f(u.uResolve, g.resolve != null ? g.resolve : 1)
       gl.uniform1f(u.uNear, g.nearFade || 0)
       gl.uniform1f(u.uPatternMix, g.pattern != null ? g.pattern : 1)

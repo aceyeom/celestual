@@ -3816,13 +3816,18 @@ export function StarViewOverlay({ C, view, onClose }) {
       {/* the name, risen beneath the held star (arrives with the camera) */}
       {/* full-width so it stays truly centered (the fade animation owns the
           transform, so no translateX can live on this element) */}
+      {/* The camera SAYS when it has landed — galaxy.js arms the callback on
+          the dive and fires it the frame the flight is genuinely over — so the
+          name is mounted on arrival rather than scheduled against a guess at
+          how long the flight would take. A dive's bank breathes with how far
+          the star is, so no single delay was ever going to be right. */}
+      {view.arrived && (
       <div
         className="fade"
         style={{
           position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
           pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md,
-          // the name arrives WITH the camera: after the bank (≤1.1s) + the run
-          paddingTop: 30, textAlign: 'center', animationDelay: '2.1s',
+          paddingTop: 30, textAlign: 'center',
         }}
       >
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
@@ -3858,7 +3863,7 @@ export function StarViewOverlay({ C, view, onClose }) {
           </span>
         )}
       </div>
-
+      )}
     </>
   )
 }

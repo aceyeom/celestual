@@ -10,6 +10,7 @@ import { getSession, signInStub, markVerified, signOut as clearAuthSession, resu
 import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
+import { SENDOFF_SECONDS } from './galaxy.js'
 import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner, rgba } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
@@ -597,24 +598,46 @@ export default function App() {
         /* fall back to the default origin */
       }
       setSendoffOrigin(origin)
+      // The flight reports its own arrival. This used to be a bare 3.6s timer
+      // racing an animation neither side could see the other's clock for — so
+      // the result screen could arrive over a camera still travelling, or leave
+      // it sitting on a landed star with nothing to read. The sky knows when it
+      // has landed; ask it.
+      const done = () => {
+        if (sendoffTimer.current) {
+          clearTimeout(sendoffTimer.current)
+          sendoffTimer.current = null
+        }
+        setGalaxyMode('idle')
+        go(afterScreen)
+      }
+      const f = ambientGalaxyRef.current
+      if (f) f.onSendoffDone = done
       setGalaxyMode('sendoff')
       setMorph({ handle, geom })
       go('sendoff')
       // the DOM morph is a one-shot ~1.25s gesture; drop it once it's played so
-      // the galaxy star (now drifting from the same point) is all that remains.
+      // the galaxy star (now flying from the same point) is all that remains.
       if (morphTimer.current) clearTimeout(morphTimer.current)
       morphTimer.current = setTimeout(() => {
         setMorph(null)
         morphTimer.current = null
       }, 1400)
-      // after the full flight (coalesce + meteor + ignite, ~2.8s, plus a
-      // breath of rest), settle the galaxy to idle and reveal the result.
+      // The deadline, not the schedule. A backgrounded tab stops rendering and
+      // a lost GPU context stops it for good, and either one would otherwise
+      // strand someone on a placement that never resolves.
+      //
+      // The margin is wide because the engine clamps dt at 50 ms for stability,
+      // so a sky drawing below twenty frames a second plays its own animation
+      // slower than wall time — and cutting a phone's flight short is a far
+      // worse failure than making a genuinely broken one wait an extra second.
       if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
       sendoffTimer.current = setTimeout(() => {
+        sendoffTimer.current = null
+        if (f) f.onSendoffDone = null
         setGalaxyMode('idle')
         go(afterScreen)
-        sendoffTimer.current = null
-      }, 3600)
+      }, SENDOFF_SECONDS * 1000 + 3000)
     },
     [go],
   )
@@ -643,18 +666,24 @@ export default function App() {
       if (!h || skyView) return
       const row = pings.find((p) => normHandle(p.handle || '') === h)
       let ok = false
+      // The name rises when the camera has actually landed on the star, which
+      // the sky reports. A dive's length breathes with how far it has to
+      // travel, so the CSS delay this replaces was wrong by up to most of a
+      // second — always in the direction of the words arriving over a camera
+      // still in flight.
+      const onArrive = () => setSkyView((v) => (v && v.handle === h ? { ...v, arrived: true } : v))
       if (homeCommunity && homeGalaxyRef.current) {
-        ok = !!homeGalaxyRef.current.locateMine(h, { hold: true })
+        ok = !!homeGalaxyRef.current.locateMine(h, { hold: true, onArrive })
       } else if (ambientGalaxyRef.current) {
         const i = pings.findIndex((p) => normHandle(p.handle || '') === h)
         if (i >= 0) {
-          ambientGalaxyRef.current.focusStar(i, { hold: true })
+          ambientGalaxyRef.current.focusStar(i, { hold: true, onArrive })
           if (ambientGalaxyRef.current.setNavEnabled) ambientGalaxyRef.current.setNavEnabled(true)
           ok = true
         }
       }
       if (!ok) return
-      setSkyView({ handle: h, intent: (row && row.intent) || null, kind: categoryOf((row && row.intent) || '') })
+      setSkyView({ handle: h, intent: (row && row.intent) || null, kind: categoryOf((row && row.intent) || ''), arrived: false })
     },
     [homeCommunity, pings, skyView],
   )

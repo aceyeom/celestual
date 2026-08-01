@@ -19,21 +19,25 @@
 //     dissolve before the camera reached them
 //   · a dive goes ALL THE WAY IN. Past a certain closeness a star's true
 //     angular diameter overtakes the instrument's point-spread and it stops
-//     being a point of light: a photosphere, limb-darkened, granulating.
+//     being a point of light — and past a certain SIZE it stops being light at
+//     all and becomes a surface, drawn opaque by sky/body.js, occluding the
+//     field behind it the way a body does.
+//   · the send-off is a flight you take rather than a streak you watch: the
+//     camera falls in behind the new star and rides it into the disk.
 //   · the match is no longer two dots meeting on a flat overlay. It is a real
 //     inspiral in the disk, ending in a binary.
 //
 // What deliberately did not change: the lens (CAM/FOCAL/TILT), the two stars,
-// the cosmic-violet void, the send-off's meteor grammar, and every method
-// signature App.jsx and ui.jsx call.
+// the cosmic-violet void, and every method signature App.jsx and ui.jsx call.
 
-import { SkyEngine, clamp, lerp, linearOf } from './sky/engine.js'
+import { SkyEngine, clamp, lerp, linearOf, starRadius } from './sky/engine.js'
 import { smooth, easeOut, easeFlight } from './sky/camera.js'
 import {
   genBulge, genDisk, genHalo, genDeepField, genNearField,
   writeStar, omegaAt, TILT_RATE, eccentricityAt, rng,
 } from './sky/model.js'
-import { tempToU } from './sky/blackbody.js'
+import { tempToU, blackbodyRGB } from './sky/blackbody.js'
+import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
 import { Gestures } from './sky/gestures.js'
 import { CATEGORY_TINTS } from './theme.js'
 import { Galaxy2D } from './sky/fallback2d.js'
@@ -41,10 +45,72 @@ import { Galaxy2D } from './sky/fallback2d.js'
 const TWO = Math.PI * 2
 const VANISH_DUR = 0.62 // the wink-out when a ping is withdrawn
 
-// the send-off, beat for beat — the same grammar as the community sky's launch
-const COAL_DUR = 1.0 // the star forming under the DOM morph, before it flies
-const METEOR_DUR = 1.25 // the streak from the morph point into the disk
-const IGNITE_DUR = 0.6 // the landing glisten
+// ── the send-off ─────────────────────────────────────────────────────────────
+// This used to be a streak drawn on the glass: a bright head and sixteen tail
+// puffs, sliding across a still picture of a galaxy from the @ field to wherever
+// the slot happened to project. It was a 2D animation playing in front of a 3D
+// sky, and it read as one — a thick comet sticker crossing a photograph.
+//
+// Now the star is a real object at a real place in the world, and the camera
+// GOES WITH IT. It launches from just off the lens, arcs up over the disk, and
+// comes down into its slot out along an arm; the camera falls in behind its
+// shoulder, turns to look down the flight line, and rides the whole way. The
+// field does not slide past — it opens out around the frame, because the eye is
+// genuinely travelling through it. The gas closes over you and thins again. The
+// near field tears past and dissolves at the glass.
+//
+// The beats, and what each one is for:
+//
+//   COAL   the @ collapses to a point on the glass, under the DOM morph, so
+//          the hand-off from the form to the sky has nothing visible in it
+//   RUN    the flight
+//   LAND   the star decelerates into its slot and ignites; the camera settles
+//   SETTLE the camera lets go and glides back out to the resting sky, which is
+//          the shot that says what the whole thing was for: your ping, out
+//          there, one light among a hundred thousand
+//
+// and only THEN the words. The old timeline guessed at this with a 3.6s
+// setTimeout in App.jsx and a 2.1s CSS animation-delay; the flight now reports
+// its own arrival, so the text cannot land early on a camera still moving.
+const COAL_DUR = 0.55
+const RUN_DUR = 2.05
+const LAND_DUR = 0.62
+// The pull-out is the longest beat, and it is long on purpose. It is not just a
+// retreat: the camera also has to give back the orientation it borrowed, from
+// looking down the flight line to the galaxy's own resting horizon, and that
+// can be most of a right angle. Taken quickly it whips the entire field across
+// the frame — and because the star pass renders true per-star velocity, every
+// star in the sky smears to its length cap at once and the last thing you see
+// is a swirl of dashes. Given room, the same move is the shot the whole flight
+// was for: the camera easing back until your star is one light among all of
+// them, exactly where you put it.
+const SETTLE_DUR = 1.75
+// What the flight costs, in seconds. Exported because App.jsx needs a deadline
+// to fall back on: the sky reports its own arrival now, but a backgrounded tab
+// stops rendering and a context loss stops it for good, and a send-off that
+// never reports is a user stranded on an animation that has stopped.
+export const SENDOFF_SECONDS = COAL_DUR + RUN_DUR + LAND_DUR + SETTLE_DUR
+
+// How far behind its shoulder the camera rides, in world units. Far enough that
+// the star stays a hard bright spark rather than opening into a disc (a launch
+// is an ignition, not an inspection), close enough that it is unmistakably the
+// subject of the shot.
+const CHASE_STANDOFF = 0.46
+
+// the resting hero star — one temperature and one luminosity, in one place, so
+// the CPU can size its disc exactly the way the vertex shader does
+const HERO_TEMP = 7400
+const HERO_LUM = 4.2
+const HERO_RGB = blackbodyRGB(HERO_TEMP)
+// The photosphere's surface brightness, and it is a TONEMAPPING decision more
+// than a physical one. ACES compresses hard above 1: at 2.0 the whole disc
+// lands between 0.90 and 0.94 on screen, so a granulation pattern with a real
+// 30% swing in it arrives as a 4% swing — which is precisely how a surface with
+// convection cells, spots and faculae on it came out looking like a blank white
+// ball. Sitting the disc's centre near 1.2 puts the variation in the part of
+// the curve that can still show it, and the star reads brighter for it, because
+// what makes something look bright is contrast against what is around it.
+const SURFACE_B = 1.34
 
 // ── the match ────────────────────────────────────────────────────────────────
 // The old reveal was a screen-space overlay that ignored the 3D field entirely:
@@ -82,6 +148,8 @@ export class GalaxyField extends SkyEngine {
     this.mode = 'idle'
     this.modeT = 0
     this.origin = null // where the @ became a star (normalized screen coords)
+    this.flight = null // the send-off's path, while one is being flown
+    this.onSendoffDone = null // fired once, when the camera has actually landed
 
     // ── the viewer's own stars ──
     // One per placed ping, resting in the disk. Slots carry a monotonic seed
@@ -256,8 +324,15 @@ export class GalaxyField extends SkyEngine {
     if (changed) this.modeT = 0
     if (mode === 'idle') this.dimTarget = data.dim != null ? data.dim : 1
     if (mode === 'sendoff') {
-      this.dimTarget = 0.66
+      // The field stays at FULL brightness through a flight. Dimming the sky
+      // was right when the send-off was a streak with a form behind it; it is
+      // wrong when the sky is the thing you are moving through. It comes back
+      // down at the settle, where the words have to read over it.
+      this.dimTarget = 1
       if (data.origin) this.origin = data.origin
+      if (changed) this._startSendoff()
+    } else if (changed && this.flight) {
+      this._endSendoff(false)
     }
     if (mode === 'resting') this.dimTarget = 0.45
     if (mode === 'match') {
@@ -348,10 +423,13 @@ export class GalaxyField extends SkyEngine {
     this.focusHold = !!opts.hold
     const s = this.sealed[i]
     this.cam.startDive(() => this._sealedWorld(s), { hold: !!opts.hold })
+    // the overlay's name and intent line ride this, not a timer (engine.js)
+    this._armArrival(opts.onArrive)
     this.start()
   }
   clearFocus() {
     this.focusHold = false
+    this._armArrival(null)
     if (this.cam.dive) this.cam.releaseDive(0)
     else this.focusIndex = -1
     this.start()
@@ -385,6 +463,7 @@ export class GalaxyField extends SkyEngine {
       if (this.vanish.t >= VANISH_DUR) this.vanish = null
     }
     if (!this.cam.dive && this.focusIndex >= 0 && this.cam.focus <= 0.001) this.focusIndex = -1
+    this._checkArrival()
 
     // the gas brightens a little as the camera closes on the disk, the way real
     // gas does when you are inside it rather than looking at it
@@ -406,10 +485,29 @@ export class GalaxyField extends SkyEngine {
     const hero = this.gHero
     hero.count = 0
     this.sealedScreen.length = this.sealed.length
-    const flying = this.mode === 'sendoff' && this.modeT < COAL_DUR + METEOR_DUR
+    const flying = this.mode === 'sendoff' && this.modeT < COAL_DUR + RUN_DUR + LAND_DUR
     const n = this.sealed.length
     const you = linearOf(this.sealHue || this.you)
     const pr = {}
+    // A chase drives `focus` too — it is the same solver — but it means
+    // something completely different there. In a dive, focus is PROXIMITY: the
+    // camera is closing on one star, everything else should melt back, and the
+    // exposure has to stop down against a source getting four hundred times
+    // brighter. In a chase it is only how far the camera has fallen in behind
+    // a subject at a FIXED distance. Reading it as proximity during a send-off
+    // dimmed the entire sky you had just been asked to fly through to a seventh
+    // of its brightness, and stopped the exposure down on nothing.
+    const proximity = this.cam.chasing ? 0 : this.cam.focus
+    // A star that has just LANDED is still half a world unit from the lens,
+    // which is close enough for its disc to overtake the point-spread — so the
+    // instant the flight handed it back, the spark it had been for four seconds
+    // would open into a seven-pixel grey saucer. It stays a point until the
+    // camera has actually backed away from it, which is what the settle is.
+    let settleRes = 1
+    if (this.mode === 'sendoff' && this.flight && !this.flight.reduced) {
+      const landEnd = COAL_DUR + RUN_DUR + LAND_DUR
+      settleRes = clamp((this.modeT - landEnd) / (SETTLE_DUR * 0.7), 0, 1)
+    }
 
     for (let i = 0; i < n; i++) {
       const s = this.sealed[i]
@@ -419,10 +517,10 @@ export class GalaxyField extends SkyEngine {
       const scr = this.cam.project(w.x, w.y, w.z)
       this.sealedScreen[i] = scr ? { x: scr.sx, y: scr.sy, vis: true } : { x: 0, y: 0, vis: false }
 
-      const isFocus = this.focusIndex === i && this.cam.focus > 0.001
-      const f = isFocus ? this.cam.focus : 0
+      const isFocus = this.focusIndex === i && proximity > 0.001
+      const f = isFocus ? proximity : 0
       // during a dive everything but the hero melts back into the depth
-      const fade = this.cam.focus > 0.001 && !isFocus ? 1 - 0.86 * this.cam.focus : 1
+      const fade = proximity > 0.001 && !isFocus ? 1 - 0.86 * proximity : 1
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + s.phase)
       const tint = CATEGORY_TINTS[this.sealKinds[i]] || this.sealHue || this.you
       const tcol = linearOf(tint)
@@ -434,6 +532,7 @@ export class GalaxyField extends SkyEngine {
       // on a source getting four hundred times brighter. Without it the
       // inverse-square law wins and the arrival is a white screen.
       let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.80)
+      let alive = fade
 
       // the withdrawal: the halo blooms outward as the core contracts to a
       // point and winks out, and then React drops it
@@ -441,10 +540,37 @@ export class GalaxyField extends SkyEngine {
         const vp = clamp(this.vanish.t / VANISH_DUR, 0, 1)
         const fadeV = 1 - vp
         gain *= fadeV * fadeV
+        alive *= fadeV * fadeV
         this.fx.world(w.x, w.y, w.z, 0.1 + vp * 0.55, linearOf(tint), 2.2 * fadeV, 0)
         this.sealedScreen[i] = { x: scr ? scr.sx : 0, y: scr ? scr.sy : 0, vis: false }
       }
-      this._pushHero(hero, s, tint, gain, 0.2 + f * 0.18, f)
+
+      // ── does this one have a face yet? ────────────────────────────────────
+      // The same inequality the vertex shader tests, run here so the CPU knows
+      // when to hand the star over to the opaque body pass. It has to be the
+      // SAME arithmetic — the disc has to appear exactly where the point it
+      // grew out of was — so the radius is Stefan-Boltzmann on the hero's own
+      // temperature and luminosity, and the onset is the shader's own
+      // smoothstep against the point-spread's width.
+      const disc = scr ? this.discOf(this._heroRadius(), scr.persp) * settleRes : 0
+      const own = scr ? 1 - this.handoverOf(this._heroRadius(), scr.persp) : 1
+      if (disc > 0.004 && own < 0.996 && scr) {
+        // Its brightness is NOT the point-source gain. That number is an
+        // exposure trim for a thing being drawn as a point-spread, and using it
+        // here is what left the photosphere sitting at a fifth of the halo that
+        // was painted over it — a dim grey ball under its own glow. A surface
+        // has a surface brightness, it is independent of distance, and it wants
+        // to land in the tonemap's shoulder so the granulation survives.
+        this.body.push(scr.sx, scr.sy, this._heroRadius() * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * hero.dim * this.cam.exposure * alive, {
+          cover: disc * (1 - own),
+          corona: 0.9,
+          seed: s.seed * 3.7 + 1.3,
+          // it turns, slowly, and that is most of what says it is a world
+          spin: this.t * 0.035 + s.seed * 1.9,
+          tip: 0.30 + (s.seed % 3) * 0.12,
+        })
+      }
+      this._pushHero(hero, s, tint, gain, 0.2 + f * 0.18, f, own, settleRes)
       // The whole distinction between your star and the field is ONE small
       // tinted halo. It is deliberately quiet: your ping should be findable in
       // the sky, not shouting over it, and a beacon with a bloom and a glisten
@@ -467,13 +593,20 @@ export class GalaxyField extends SkyEngine {
     }
   }
 
-  // one of the viewer's stars, written into the hero instance buffer
-  _pushHero(hero, s, tintHex, gain, spike, discBias) {
+  // the true radius of one of the viewer's stars — see engine.js's starRadius
+  _heroRadius() {
+    return starRadius(this.gHero.radiusScale, HERO_TEMP, HERO_LUM)
+  }
+
+  // one of the viewer's stars, written into the hero instance buffer.
+  // `owns` is whether this pass still draws the star's own photosphere: once
+  // body.js has taken the disc over it must not, or the surface is lit twice.
+  _pushHero(hero, s, tintHex, gain, spike, discBias, owns = 1, mayResolve = 1) {
     if (hero.count >= hero.capacity) return
     const i = hero.count++
     // A hero star is a real star: a hot white-gold photosphere that will resolve
     // into a body if you fly close enough, wearing its category light as a halo.
-    writeStar(hero.star, i, s.a, s.b, s.phi0, s.omega, s.theta0, s.y, tempToU(7400), 4.2)
+    writeStar(hero.star, i, s.a, s.b, s.phi0, s.omega, s.theta0, s.y, tempToU(HERO_TEMP), HERO_LUM)
     const t = linearOf(tintHex)
     const o = i * 4
     hero.tint[o] = t[0]
@@ -482,12 +615,13 @@ export class GalaxyField extends SkyEngine {
     hero.tint[o + 3] = gain
     hero.fx[o] = spike
     hero.fx[o + 1] = discBias
-    hero.fx[o + 2] = 0
-    hero.fx[o + 3] = 1
+    hero.fx[o + 2] = mayResolve
+    hero.fx[o + 3] = owns
   }
 
-  // a free-floating hero star that is not on a slot (the match's two)
-  _pushHeroAt(hero, x, y, z, tintHex, gain, spike, temp = 7000, lum = 5) {
+  // a free-floating hero star that is not on a slot (the match's two, and the
+  // one being flown to its place during a send-off)
+  _pushHeroAt(hero, x, y, z, tintHex, gain, spike, temp = 7000, lum = 5, opts = {}) {
     if (hero.count >= hero.capacity) return
     const i = hero.count++
     const r = Math.hypot(x, z) || 1e-5
@@ -499,18 +633,162 @@ export class GalaxyField extends SkyEngine {
     hero.tint[o + 2] = t[2]
     hero.tint[o + 3] = gain
     hero.fx[o] = spike
-    hero.fx[o + 1] = 0.4
-    hero.fx[o + 2] = 0
+    hero.fx[o + 1] = opts.bias != null ? opts.bias : 0.4
+    hero.fx[o + 2] = opts.resolve != null ? opts.resolve : 1
     hero.fx[o + 3] = 1
   }
 
   // ── the send-off ──────────────────────────────────────────────────────────
-  // The @ became a star under the DOM morph; now that star coalesces at exactly
-  // that point on the glass, streaks across real sky into its slot, and ignites.
-  // Unchanged in shape from the canvas engine — the grammar was right — but the
-  // trail is now light in the same HDR buffer as everything else, so it blooms
-  // through the same optics as the stars it is flying between.
-  _frameSendoff() {
+  // Set up the flight: where the star leaves from, where it is going, and the
+  // curve between the two. Everything here is world space — that is the whole
+  // difference from what this used to be.
+  _startSendoff() {
+    const n = this.sealed.length
+    const s = this.sealed[n - 1]
+    if (!s) return
+    this.post.flash = 0
+    // Reduced motion gets the arrival without the journey. The preference is
+    // about vestibular safety, and a camera flying through a galaxy is exactly
+    // the thing it is asking not to have; a still frame that resolves to the
+    // same place, quickly, honours it without dropping the moment.
+    if (this.reduced) {
+      this.flight = { reduced: true, done: false }
+      return
+    }
+    // Where it starts: just off the lens, under the point on the glass the @
+    // collapsed at. Unprojecting a screen point at a chosen depth is the
+    // camera's own maths run backwards — this is the one place in the product
+    // that needs it, so it lives here rather than in the camera.
+    const cam = this.cam
+    const ox = (this.origin ? this.origin.x : 0.5) * this.w
+    const oy = (this.origin ? this.origin.y : 0.43) * this.h
+    const zc = 0.40
+    const persp = LENS_FOCAL / zc
+    const vx = (ox - cam.cx) / (cam.unit * persp)
+    const vy = (oy - cam.cy) / (cam.unit * persp)
+    const vz = zc - LENS_CAM
+    const T = cam.Rt
+    this.flight = {
+      reduced: false,
+      done: false,
+      p0: {
+        x: T[0] * vx + T[1] * vy + T[2] * vz,
+        y: T[3] * vx + T[4] * vy + T[5] * vz,
+        z: T[6] * vx + T[7] * vy + T[8] * vz,
+      },
+      slot: s,
+      launched: false,
+      // a scratch point, so a flight costs no allocations per frame
+      _p: { x: 0, y: 0, z: 0 },
+      _d: { x: 0, y: 0, z: 0 },
+    }
+    this.dimTarget = 1
+  }
+
+  // The camera does not move until the star does. Starting the chase at the
+  // send-off's first frame instead swung the whole sky during the COAL beat,
+  // while the only thing on screen was a spark pinned to the glass at the @'s
+  // old position — so the point the star was about to launch from drifted out
+  // from under it, and the hand-off from the form to the flight had a jump in
+  // exactly the place it most needed not to.
+  _launch() {
+    const f = this.flight
+    if (!f || f.launched) return
+    f.launched = true
+    this.cam.startChase(() => this._flightPos(), {
+      aim: () => this._flightDir(),
+      standoff: CHASE_STANDOFF,
+      grab: 0.55,
+    })
+  }
+
+  // The path, as a cubic Bézier, re-solved from the LIVE slot every frame.
+  // Freezing the destination at launch would be simpler and very nearly right —
+  // the galaxy's clock is almost stopped during a chase — but "very nearly"
+  // means the star lands beside its slot rather than in it, and the whole point
+  // of the shot is that it arrives somewhere real.
+  //
+  // The shape matters as much as the endpoints. A straight line from the lens
+  // to a point in the disk is a flight through nothing: the camera never
+  // changes its relationship to the galaxy, so nothing sweeps. This one climbs
+  // out over the disk, so you see the arms from above, and then DESCENDS into
+  // the plane on its final approach — down through the dust, into the arm, and
+  // the field closes over you on the way in.
+  _flightCurve() {
+    const f = this.flight
+    const p0 = f.p0
+    const p3 = this._sealedWorld(f.slot, f._p)
+    const dx = p3.x - p0.x, dy = p3.y - p0.y, dz = p3.z - p0.z
+    const len = Math.hypot(dx, dy, dz) || 1
+    // the climb, and a lateral kick perpendicular to the ground track, so the
+    // path bows rather than lying in one flat plane
+    // Shallow on purpose. A steeper climb is a better ride, but the descent's
+    // final direction is where the camera is LEFT pointing when the flight
+    // ends, and every degree of it has to be given back during the pull-out.
+    const up = Math.min(0.40, len * 0.23)
+    const kx = -dz / len, kz = dx / len
+    return {
+      p0,
+      p1: { x: p0.x + dx * 0.34 + kx * up * 0.60, y: p0.y + dy * 0.34 + up * 0.95, z: p0.z + dz * 0.34 + kz * up * 0.60 },
+      p2: { x: p0.x + dx * 0.82 + kx * up * 0.22, y: p0.y + dy * 0.82 + up * 0.34, z: p0.z + dz * 0.82 + kz * up * 0.22 },
+      p3,
+    }
+  }
+
+  // how far along the path the star is, 0..1
+  _flightU() {
+    const tt = this.modeT - COAL_DUR
+    if (tt <= 0) return 0
+    return easeFlight(clamp(tt / RUN_DUR, 0, 1))
+  }
+
+  _flightPos(out) {
+    const f = this.flight
+    if (!f || f.reduced) return null
+    const c = this._flightCurve()
+    const u = this._flightU()
+    const v = 1 - u
+    const a = v * v * v, b = 3 * v * v * u, d = 3 * v * u * u, e = u * u * u
+    out = out || f._d
+    out.x = a * c.p0.x + b * c.p1.x + d * c.p2.x + e * c.p3.x
+    out.y = a * c.p0.y + b * c.p1.y + d * c.p2.y + e * c.p3.y
+    out.z = a * c.p0.z + b * c.p1.z + d * c.p2.z + e * c.p3.z
+    return out
+  }
+
+  // the path's derivative — where the camera looks. Analytic, so the aim
+  // carries none of the numerical noise a frame-to-frame difference would.
+  _flightDir() {
+    const f = this.flight
+    if (!f || f.reduced) return null
+    const c = this._flightCurve()
+    const u = this._flightU()
+    const v = 1 - u
+    const a = 3 * v * v, b = 6 * v * u, d = 3 * u * u
+    return {
+      x: a * (c.p1.x - c.p0.x) + b * (c.p2.x - c.p1.x) + d * (c.p3.x - c.p2.x),
+      y: a * (c.p1.y - c.p0.y) + b * (c.p2.y - c.p1.y) + d * (c.p3.y - c.p2.y),
+      z: a * (c.p1.z - c.p0.z) + b * (c.p2.z - c.p1.z) + d * (c.p3.z - c.p2.z),
+    }
+  }
+
+  _endSendoff(fire) {
+    this.cam.endChase()
+    this.flight = null
+    this.post.flash = 0
+    this.motionScale = 1
+    if (fire && this.onSendoffDone) {
+      const cb = this.onSendoffDone
+      this.onSendoffDone = null
+      cb()
+    }
+  }
+
+  // ── the flight, frame by frame ────────────────────────────────────────────
+  _frameSendoff(dt) {
+    void dt
+    const f = this.flight
+    if (!f || f.done) return
     const n = this.sealed.length
     const s = this.sealed[n - 1]
     if (!s) return
@@ -518,53 +796,140 @@ export class GalaxyField extends SkyEngine {
     const tint = CATEGORY_TINTS[this.sealKinds[n - 1]] || this.sealHue || this.you
     const col = linearOf(tint)
     const white = [1, 0.96, 0.9]
-    const ox = this.origin ? this.origin.x * this.w : this.w / 2
-    const oy = this.origin ? this.origin.y * this.h : this.h * 0.43
-    const w = this._sealedWorld(s)
-    const scr = this.cam.project(w.x, w.y, w.z)
-    const tx = scr ? scr.sx : this.w / 2
-    const ty = scr ? scr.sy : this.h * 0.44
 
+    if (f.reduced) {
+      // no flight: a short bloom where the star lands, and the words on time
+      const w = this._sealedWorld(s)
+      const q = clamp(tt / 0.9, 0, 1)
+      const bell = Math.sin(Math.PI * q)
+      this.fx.world(w.x, w.y, w.z, 0.045 + bell * 0.05, white, bell * 2.0, 2)
+      this.dimTarget = 0.62
+      if (tt >= 0.9) {
+        f.done = true
+        this._endSendoff(true)
+      }
+      return
+    }
+
+    // ── COAL — the @ collapses to a point on the glass ──────────────────────
+    // Small. This is a spark being struck, not a flare being fired: the old
+    // ninety-pixel bloom under a thirty-four-pixel head is most of what read as
+    // "way too thick", and there is nothing for it to be that big FOR — the
+    // whole gesture is that a handle becomes one point of light.
     if (tt < COAL_DUR) {
-      // phase 1 — gathering. Long enough to sit under the DOM morph's own
-      // collapse, so the handoff when the overlay dissolves is seamless.
+      const ox = (this.origin ? this.origin.x : 0.5) * this.w
+      const oy = (this.origin ? this.origin.y : 0.43) * this.h
       const fc = smooth(tt / COAL_DUR)
-      this.fx.screen(ox, oy, 90 * (1 - fc) + 26, col, 1.2 * fc, 0)
-      this.fx.screen(ox, oy, 26 + fc * 42, white, 0.5 + 2.4 * fc, 2)
-      this.fx.screen(ox, oy, 5 + fc * 3, white, 6 * fc, 0)
+      this.fx.screen(ox, oy, 30 * (1 - fc) + 7, col, 0.9 * fc, 0)
+      this.fx.screen(ox, oy, 9 + fc * 12, white, 0.4 + 1.3 * fc, 2)
+      this.fx.screen(ox, oy, 2.4, white, 3.2 * fc, 0)
       this.sealedScreen[n - 1] = { x: ox, y: oy, vis: true }
       return
     }
-    if (tt < COAL_DUR + METEOR_DUR) {
-      // phase 2 — the meteor: an eased, gently bowed streak into the live-
-      // projected slot, its trail thinning to nothing behind a hot head
-      const e = easeFlight(clamp((tt - COAL_DUR) / METEOR_DUR, 0, 1))
-      const dx = tx - ox, dy = ty - oy
-      const mx = (ox + tx) / 2 - dy * 0.14
-      const my = (oy + ty) / 2 + dx * 0.14
-      const at = (u) => [
-        (1 - u) * (1 - u) * ox + 2 * (1 - u) * u * mx + u * u * tx,
-        (1 - u) * (1 - u) * oy + 2 * (1 - u) * u * my + u * u * ty,
-      ]
-      const [hx, hy] = at(e)
-      const TAIL = 16
-      for (let k = 1; k <= TAIL; k++) {
-        const u = Math.max(0, e - (k / TAIL) * 0.22)
-        const [px, py] = at(u)
-        const q = 1 - k / TAIL
-        this.fx.screen(px, py, 3 + q * 9, k < 4 ? white : col, q * q * 2.6, 0)
+
+    this._launch()
+    const runEnd = COAL_DUR + RUN_DUR
+    const landEnd = runEnd + LAND_DUR
+    const land = clamp((tt - runEnd) / LAND_DUR, 0, 1)
+
+    // ── SETTLE — the camera lets go ─────────────────────────────────────────
+    // From here the star is back in `sealed`'s hands: it has landed, it is a
+    // resting star of yours, and _frameSealed draws it. Drawing it here too
+    // would put two of them in the same place at twice the light. All that is
+    // left to run is the camera's own unwind and the sky coming down to the
+    // brightness the words have to read over.
+    if (tt >= landEnd) {
+      this.post.flash = 0
+      const q = clamp((tt - landEnd) / SETTLE_DUR, 0, 1)
+      this.cam.setChaseOut(q)
+      this.dimTarget = lerp(1, 0.62, q)
+      this.gasPass.gain = lerp(0.084, 0.3, q)
+      // The smear belongs to the RUN. Through the unwind it would only be
+      // drawing the camera's own turn, which is the one kind of motion the eye
+      // reads as a fault rather than as speed.
+      this.motionScale = 1 - smooth(clamp(q * 1.6, 0, 1)) * 0.88
+      if (q >= 1) {
+        f.done = true
+        this._endSendoff(true)
       }
-      this.fx.screen(hx, hy, 34, col, 2.2, 0)
-      this.fx.screen(hx, hy, 7, white, 9, 0)
-      this.sealedScreen[n - 1] = { x: hx, y: hy, vis: true }
       return
     }
-    // phase 3 — the landing glisten, handing off to the resting star
-    const q = (tt - COAL_DUR - METEOR_DUR) / IGNITE_DUR
-    if (q >= 1 || !scr) return
-    const bell = Math.sin(Math.PI * clamp(q, 0, 1))
-    this.fx.world(w.x, w.y, w.z, 0.22 + bell * 0.5, white, bell * 3.4, 2)
-    this.fx.world(w.x, w.y, w.z, 0.1 + bell * 0.26, col, bell * 2.4, 0)
+
+    const p = this._flightPos()
+    if (!p) return
+
+    // ── the gas ─────────────────────────────────────────────────────────────
+    // Alive through the flight, and pulled back on the DESCENT. The dive's rule
+    // (kill the cloud, the star is the subject) is wrong for the run — flying
+    // through the gas, watching it close over the frame, is a large part of
+    // what says you crossed a galaxy — but it is right for the arrival. The
+    // last third of the path drops into the plane, where the ray marches
+    // through the whole thickness of the disk, and left alone that is a flat
+    // brown fog over the entire frame with a star somewhere in it.
+    const deep = clamp((this._flightU() - 0.60) / 0.40, 0, 1)
+    this.gasPass.gain = 0.3 * (1 - deep * 0.72) * (1 - land * 0.55)
+
+    // ── the star ────────────────────────────────────────────────────────────
+    // Held as a POINT for the whole flight (mayResolve = 0). At this range its
+    // true angular diameter would overtake the point-spread and open it into a
+    // sixteen-pixel saucer — a dull grey disc where there should be a spark.
+    const hero = this.gHero
+    // brightest at the launch, easing to exactly the resting star's own gain by
+    // the time the resting star takes over, so the hand-off has no step in it
+    const gain = tt < runEnd ? 1.45 : lerp(1.45, 0.36, easeOut(land))
+    // its rays settle onto the resting star's too, for the same reason
+    const spike = tt < runEnd ? 0.5 : lerp(0.5, 0.2, easeOut(land))
+    this._pushHeroAt(hero, p.x, p.y, p.z, tint, gain, spike, HERO_TEMP, HERO_LUM, {
+      resolve: 0,
+      bias: 0.15,
+    })
+    // its own light, as light: a tight halo in the category's colour
+    this.fx.world(p.x, p.y, p.z, 0.012, col, 2.4 * (1 - land * 0.6), 0)
+
+    // the wake — a short taper of light shed behind it, in the world, so it
+    // recedes with real perspective as the camera closes. Deliberately thin:
+    // the camera is directly behind this, and anything wider is a smear across
+    // the middle of the shot rather than a trail.
+    if (tt < runEnd) {
+      const u = this._flightU()
+      const c = this._flightCurve()
+      const at = (uu) => {
+        const v = 1 - uu
+        const a = v * v * v, b = 3 * v * v * uu, d = 3 * v * uu * uu, e = uu * uu * uu
+        return {
+          x: a * c.p0.x + b * c.p1.x + d * c.p2.x + e * c.p3.x,
+          y: a * c.p0.y + b * c.p1.y + d * c.p2.y + e * c.p3.y,
+          z: a * c.p0.z + b * c.p1.z + d * c.p2.z + e * c.p3.z,
+        }
+      }
+      for (let k = 1; k <= 7; k++) {
+        const uu = u - (k / 7) * 0.075
+        if (uu <= 0) break
+        const q = 1 - k / 7
+        const w = at(uu)
+        this.fx.world(w.x, w.y, w.z, 0.004 + q * 0.008, k < 3 ? white : col, q * q * 1.5, 0)
+      }
+    }
+
+    const scr = this.cam.project(p.x, p.y, p.z)
+    this.sealedScreen[n - 1] = scr ? { x: scr.sx, y: scr.sy, vis: true } : { x: 0, y: 0, vis: false }
+
+    // ── LAND — it takes its place ───────────────────────────────────────────
+    if (tt >= runEnd) {
+      const bell = Math.sin(Math.PI * land)
+      // A glisten, sized in world units against a star whose own halo is 0.012
+      // wide. The old one opened to 0.72 — about a hundred pixels of flat white
+      // at this range, which is not an ignition, it is the frame being erased.
+      this.fx.world(p.x, p.y, p.z, 0.020 + bell * 0.055, white, bell * 2.6, 2)
+      this.fx.world(p.x, p.y, p.z, 0.014 + bell * 0.030, col, bell * 1.8, 0)
+      // and NO whole-sky flash. post.flash adds in linear light before the
+      // tonemap, which is right for the match's light echo — a real expanding
+      // shell — but it means a value as small as 0.045 comes out the far side
+      // of ACES and the sRGB encode as a mid-grey over every pixel in the
+      // frame. The landing was arriving on a sky the colour of wet cardboard.
+      // A ping taking its place is an intimate event; it gets the glisten, and
+      // the glisten is local.
+    }
   }
 
   // ── ambient shooting stars ────────────────────────────────────────────────

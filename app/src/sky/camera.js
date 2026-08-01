@@ -25,6 +25,8 @@
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const lerp = (a, b, t) => a + (b - a) * t
+// the shortest way round the circle — angles are blended, never subtracted raw
+const wrapAngle = (v) => Math.atan2(Math.sin(v), Math.cos(v))
 
 export const CAM = 2.7 // eye distance from the galactic center
 export const FOCAL = 2.35 // focal length (larger = flatter, less perspective)
@@ -97,6 +99,21 @@ export class Camera {
     this.holdDur = 1.9 // mirrored from the engine each update; releaseDive reads it
     this._bankPrev = 0
     this._bankVel = 0
+
+    // ── the chase ──
+    // A dive flies to something that is standing still. A chase follows
+    // something that is RUNNING — and the difference is not the path, it is
+    // where the camera looks. A dive keeps the galaxy's own horizon and closes
+    // on a point in it. A chase turns to face the direction of travel, so the
+    // field opens out around the frame and streams past on every side instead
+    // of swelling toward the middle. That is what makes it a point of view
+    // rather than a zoom. `focus` and `standoff` are shared with the dive on
+    // purpose: holding a target at a fixed camera-space depth is the same solve
+    // either way, and only the LOOK differs.
+    this.chase = null
+    this.chaseAim = null // () => a world-space direction of travel
+    this._aimYaw = null
+    this._aimTilt = null
 
     // ── the instruments ──
     // How hard the camera is actually travelling. Every layer reads `rush`: the
@@ -199,6 +216,64 @@ export class Camera {
       this.dive = { t: inEnd + this.holdDur + delay, held: false }
     }
   }
+  // ── the chase ─────────────────────────────────────────────────────────────
+  // Lock a fixed distance behind a moving target and look along its path.
+  //
+  // Almost all of this reuses the dive's own solver: "hold the target at a
+  // constant camera-space depth" is exactly what `_solveEye` already does at
+  // focus = 1, and the target being a function means it may move as fast as it
+  // likes. What a chase adds is the LOOK — the basis is aimed down the flight
+  // vector rather than left on the galaxy's resting horizon — and a small
+  // deliberate misalignment between the two, so you are behind the subject and
+  // a little off its shoulder rather than staring straight up its exhaust.
+  //
+  // `aim` is separate from `target` on purpose. A path's direction is its
+  // derivative, and asking the caller for it is both exact and free; deriving
+  // it here from frame-to-frame position differences would hand the camera's
+  // entire orientation to whatever numerical noise the path carries.
+  startChase(target, opts = {}) {
+    this.dive = null
+    this.bank = 0
+    this.bankAim = null
+    this.diveTarget = target
+    this.chaseAim = opts.aim || null
+    this.chase = {
+      t: 0,
+      // how long the camera takes to fall in behind the subject
+      grabDur: opts.grab != null ? opts.grab : 0.5,
+      // the off-the-shoulder angles: yaw puts the flight line off to one side
+      // of the frame, tilt looks slightly down along it
+      yawOff: opts.yawOff != null ? opts.yawOff : 0.21,
+      tiltOff: opts.tiltOff != null ? opts.tiltOff : 0.13,
+      // where the subject sits on the glass, as a fraction of the short side
+      offX: opts.offX != null ? opts.offX : 0.11,
+      offY: opts.offY != null ? opts.offY : -0.075,
+      out: 0, // the pull-out, driven from outside as the flight ends
+    }
+    this.standoff = opts.standoff != null ? opts.standoff : 0.42
+    this.diveDist = 1
+    this._aimYaw = null
+    this._aimTilt = null
+    this.zoomTarget = 1
+  }
+  // How far the camera has let go, 0..1. The caller owns this because the
+  // caller owns the flight's timeline; the camera only has to unwind smoothly.
+  setChaseOut(v) {
+    if (this.chase) this.chase.out = clamp(v, 0, 1)
+  }
+  endChase() {
+    if (!this.chase) return
+    this.chase = null
+    this.chaseAim = null
+    this.diveTarget = null
+    this.focus = 0
+    this._aimYaw = null
+    this._aimTilt = null
+  }
+  get chasing() {
+    return !!this.chase
+  }
+
   get diving() {
     return !!this.dive
   }
@@ -213,6 +288,16 @@ export class Camera {
   update(dt, opts = {}) {
     const holdDur = opts.holdDur != null ? opts.holdDur : 1.9
     this.holdDur = holdDur
+
+    // the chase's own timeline is trivial: fall in behind the subject, hold
+    // there for as long as it runs, let go when the caller says so. All the
+    // shape of the flight lives in the PATH, not in the camera.
+    if (this.chase) {
+      this.chase.t += dt
+      const grab = easeFlight(clamp(this.chase.t / this.chase.grabDur, 0, 1))
+      this.focus = grab * (1 - easeFlight(this.chase.out))
+      this.bank = 0
+    }
 
     // the dive timeline — bank leading, run igniting inside the swing, both
     // completing together, then the hold, then the return as one unwind
@@ -238,7 +323,7 @@ export class Camera {
         this.bank = 0
         this.bankAim = null
       }
-    } else {
+    } else if (!this.chase) {
       this.focus = 0
       if (this.bank > 0) {
         // a dive torn down mid-flight (the star was released, the sky reseeded):
@@ -309,17 +394,51 @@ export class Camera {
     // at the star every frame, so orbiting swings the whole sky around the hero
     // with true parallax while it stays pinned in the crosshairs.
     const ow = this.held ? 1 : hold
-    const yaw =
+    let yaw =
       this.azimuth +
       this.parallax.x * this.parallaxGain * hold +
       drift +
       this.orbit.yaw * ow +
       (this.bankAim ? this.bankAim.yaw * this.bank : 0)
-    const tilt =
+    let tilt =
       TILT +
       (this.parallax.y * this.parallaxGain * 0.62 + driftT) * hold +
       this.orbit.pitch * ow +
       (this.bankAim ? (this.bankAim.tilt - TILT) * this.bank : 0)
+
+    // ── looking down the flight line ─────────────────────────────────────────
+    // Solve the basis that maps the direction of travel onto +z in view space —
+    // dead ahead, into the screen. With R = Rx(tilt)·Ry(yaw) it comes out in
+    // closed form: kill the horizontal component to get the yaw, then the
+    // vertical to get the tilt. No iteration, no look-at matrix, and the result
+    // composes with everything above as one more term rather than replacing the
+    // camera with a second one.
+    if (this.chase && this.chaseAim && this.focus > 0.0005) {
+      const d = this.chaseAim()
+      if (d) {
+        const h = Math.hypot(d.x, d.z)
+        if (h > 1e-7 || Math.abs(d.y) > 1e-7) {
+          const wantYaw = Math.atan2(-d.x, d.z) + this.chase.yawOff
+          const wantTilt = Math.atan2(d.y, Math.max(h, 1e-7)) + this.chase.tiltOff
+          // The camera LAGS. A rig bolted rigidly to its subject's velocity
+          // vector transmits every wobble in the path straight to the horizon,
+          // which is nauseating and reads as a bug; a real chase camera is a
+          // heavy thing being dragged along behind, and the lag is most of what
+          // sells it as a point of view rather than a rail.
+          if (this._aimYaw == null) {
+            this._aimYaw = wantYaw
+            this._aimTilt = wantTilt
+          } else {
+            const k = Math.min(1, dt * 3.2)
+            this._aimYaw += wrapAngle(wantYaw - this._aimYaw) * k
+            this._aimTilt += (wantTilt - this._aimTilt) * k
+          }
+          const w = this.focus
+          yaw += wrapAngle(this._aimYaw - yaw) * w
+          tilt += (this._aimTilt - tilt) * w
+        }
+      }
+    }
     this.tilt = tilt
 
     this._basis(yaw, tilt)
@@ -384,6 +503,19 @@ export class Camera {
         e.x = fLat * T.x
         e.y = fLat * T.y
         e.z = CAM + T.z - depth
+        // A chase does not put its subject in the crosshairs — that is a
+        // gunsight, not a camera. Slide the eye so the star sits off-centre on
+        // the glass, with the space it is flying into open in front of it.
+        // Solved against the SAME depth the standoff produced, so the offset is
+        // a fixed fraction of the frame at every point in the flight rather
+        // than something that drifts as the perspective changes.
+        if (this.chase) {
+          const m = Math.min(this.w, this.h)
+          const persp = FOCAL / Math.max(depth, 1e-5)
+          const k = (f * m) / Math.max(this.unit * persp, 1e-5)
+          e.x -= this.chase.offX * k
+          e.y -= this.chase.offY * k
+        }
         return
       }
     }

@@ -30,6 +30,7 @@ import { makeNoiseVolume, makeBlueNoise } from './volume.js'
 import { Camera, CAM, FOCAL, TILT } from './camera.js'
 import { StarPass } from './stars.js'
 import { GasPass } from './gas.js'
+import { BodyPass } from './body.js'
 import { PostChain } from './post.js'
 import { BillboardPass, SpritePass } from './fx.js'
 import { PATTERN_SPEED } from './model.js'
@@ -53,6 +54,21 @@ export function linearOf(hex, gain = 1) {
     return (s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)) * gain
   }
   return [f(r), f(g), f(b)]
+}
+
+// ── when a star stops being a point ──────────────────────────────────────────
+// Stefan-Boltzmann, on the CPU: L = 4(pi)R^2(sigma)T^4, so R goes as
+// sqrt(L)/T^2. This is the same line stars.js's vertex shader runs, and it has
+// to STAY the same line — it is what decides where the opaque body pass draws,
+// and a disc that disagrees with the point it grew out of is a disc sitting
+// beside its own star.
+export function starRadius(radiusScale, temp, lum) {
+  const tRel = temp / 5772
+  return (radiusScale * Math.sqrt(lum)) / (tRel * tRel)
+}
+const sstep = (a, b, x) => {
+  const u = clamp((x - a) / (b - a), 0, 1)
+  return u * u * (3 - 2 * u)
 }
 
 export class SkyEngine {
@@ -87,6 +103,14 @@ export class SkyEngine {
     this.pattern = 0
     this.patternPrev = 0
     this.motion = opts.motion != null ? opts.motion : 20
+    // How much of the per-star velocity smear is actually drawn. Normally 1,
+    // and normally nothing touches it. It exists because motion blur is honest
+    // about camera ROTATION as well as travel, and a camera that swings its
+    // whole horizon in a second smears every star to the length cap at once —
+    // which is physically what a real lens would do and visually a swirl of
+    // dashes that reads as a glitch. A scene that knows it is about to turn
+    // hard can lean on this rather than on the turn being wrong.
+    this.motionScale = 1
     this.dim = 1
     this.dimTarget = 1
     this.running = false
@@ -133,6 +157,7 @@ export class SkyEngine {
     this.gasTarget = null
     this.starPass = new StarPass(gl)
     this.gasPass = new GasPass(gl, this.caps)
+    this.body = new BodyPass(gl)
     this.post = new PostChain(gl, this.caps, this.fullscreen)
     this.fx = new BillboardPass(gl, 3072)
     this.sprites = new SpritePass(gl)
@@ -162,6 +187,7 @@ export class SkyEngine {
     const gl = this.gl
     this.starPass.destroy()
     this.gasPass.destroy()
+    this.body.destroy()
     this.post.destroy()
     this.fx.destroy()
     this.sprites.destroy()
@@ -394,6 +420,53 @@ export class SkyEngine {
   // subclasses advance their own state and enqueue their events here
   _frame() {}
 
+  // ── the star / body hand-off, in one place for both skies ────────────────
+  // `radius` is what starRadius() returned; `persp` is what cam.project() gave
+  // back for the star in question.
+  //
+  //   discOf     — 0 = a point of light, 1 = a body with a face. The shader's
+  //                own ramp, so the two agree about what a star currently IS.
+  //   handoverOf — whether that body is big enough to be worth its own pass.
+  //                Being technically resolved is not the same thing: at the
+  //                resting camera one of your stars is already a hair over the
+  //                point-spread, and its "disc" is about a pixel across. The
+  //                star pass's two lines of limb darkening are exactly right at
+  //                that size; a photosphere shader and its antialiasing are
+  //                not. The band is wide so the swap is a cross-fade, never a
+  //                frame where the star changes what it is made of.
+  // ── "the camera has landed" ──────────────────────────────────────────────
+  // Every screen that flies somewhere has words waiting to arrive with it, and
+  // until now each of them guessed: a CSS animation-delay hard-coded against
+  // what the dive was thought to take. The dive does not take a fixed time —
+  // its bank breathes with how far the star has to travel — so the guess was
+  // wrong by up to nine hundred milliseconds, always in the direction of the
+  // name appearing over a camera that was still moving.
+  //
+  // Subclasses call this once per frame with a live dive; it fires exactly once
+  // per flight, the moment the flight is genuinely over.
+  _armArrival(cb) {
+    this._arriveCb = cb || null
+    this._arrived = false
+  }
+  _checkArrival() {
+    if (!this._arriveCb || this._arrived) return
+    if (this.cam.focus < 0.999) return
+    this._arrived = true
+    const cb = this._arriveCb
+    this._arriveCb = null
+    cb()
+  }
+
+  discOf(radius, persp) {
+    const psf = 0.95 * this.dprEff
+    const angPx = radius * this.cam.unit * persp * this.dprEff
+    return sstep(psf * 0.85, psf * 2.2, angPx)
+  }
+  handoverOf(radius, persp) {
+    const angPx = radius * this.cam.unit * persp * this.dprEff
+    return sstep(6 * this.dprEff, 13 * this.dprEff, angPx)
+  }
+
   get _ctx() {
     return {
       width: this.width,
@@ -416,6 +489,7 @@ export class SkyEngine {
       RPrev: this.RPrev,
       eyePrev: this.eyePrev,
       reduced: this.reduced,
+      motionScale: this.motionScale,
       bandShift: this.bandShift,
     }
   }
@@ -456,12 +530,21 @@ export class SkyEngine {
     for (const g of this.starPass.groups) g.visible = g.enabled !== false
     this.fx.draw(this.cam, ctx)
 
-    // 6 — the @ layer
+    // 6 — the one opaque thing in the sky.
+    // A star close enough to show a face is a SURFACE, and a surface has a
+    // back: it has to occlude the field behind it, which nothing additive can
+    // do. Drawn last of the light, so everything above is genuinely hidden by
+    // it, and before the @ layer, so a handle still reads over its own star.
+    this.body.detail = this.tier === 0 ? 1 : 0
+    this.body.draw(ctx)
+
+    // 7 — the @ layer
     this.sprites.draw(ctx)
 
-    // 7 — the sensor
+    // 8 — the sensor
     this.post.run(this.scene, ctx)
     this.fx.reset()
+    this.body.reset()
     this.sprites.reset()
   }
 }
