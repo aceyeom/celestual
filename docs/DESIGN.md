@@ -273,6 +273,30 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-08-02 (b)** — **The card becomes a composition** (human-directed,
+  continuing the `/beta` prototype). The poster was a centered stack; it is now
+  a placed block whose whole layout is derived from where it sits.
+  - **The type is smaller and it has a place.** A short line takes the lower
+    left, the way a poster puts a caption meant to be read after the picture;
+    longer text moves up the same margin; only the longest goes to the middle,
+    where a circle is wide enough for six lines. The picture is the picture and
+    the words are what you find in it.
+  - **The user drags the block, and the composition re-derives.** Alignment is
+    read off the block's own x, the measure is the circle's real chord at the
+    block's edge, and the credit line moves to whichever half the words left
+    empty, on their margin, in their alignment. Nothing is a control that can
+    be inferred from something already on screen.
+  - **No gradients inside the disc.** The limb darkening and warm rim made the
+    card read as a lens looking at a picture rather than a printed circle with
+    a picture on it. Flat ground, one even scrim over a photograph, the shared
+    grain, one hairline limb.
+  - **The type is choosable**, from the product's own three faces, each with
+    its own scale, leading and tracking — a face swap that keeps one size and
+    one leading is a bug with a dropdown.
+  - **The composer got an instrument.** One labelled two-column panel (ground,
+    type) instead of chips drifting under the card, and the step narration is
+    gone.
+
 - **2026-08-02** — **`/beta`: the star & card system** (human-directed, from a
   written plan). A prototype route, mounted in `main.jsx` beside the real app
   rather than inside its router, so production screens, the ping model and the

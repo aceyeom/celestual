@@ -41,28 +41,43 @@ Everything else follows:
 
 ## 2 · The card
 
-A type poster, cut round. One fixed layout at every size it is ever drawn at.
+A type poster, cut round. One system at every size it is ever drawn at.
 
 ```
-              @ W R E N M I L E S        mono, tracked, quiet
-                    ─────                a hairline
-
-                you always took          serif italic, large, tight
-                 the window seat
-
-                    A U G  2             mono, quieter still
+   ┌──────────────────────┐      the credit line goes in the half the words
+   │   @wren · aug 2      │      left empty, on their margin, in their
+   │                      │      alignment
+   │                      │
+   │   you always took    │      the words: a block with a PLACE, not a
+   │   the window seat    │      centered stack
+   └──────────────────────┘
 ```
 
-The words are set **on** the ground, not under it. That is what makes it a
-poster rather than an image with a caption, and it is why the card survives
-being small: at a hundred and fifty pixels in a spread it is still one object
-saying one thing, where a disc with a paragraph beneath it would have been two.
+The words are set **on** the ground, not under it, and the type is small: the
+picture is the picture, and the words are what you find in it.
 
-A circle is radially symmetric, so centered type is the honest answer to it.
-What makes it read as designed rather than defaulted is scale and restraint:
-one big voice, two small ones, a hairline between them, nothing else. No
-alignment control, no crop, no type colour, no size — the user chooses the
-words and the ground.
+### The composition is derived, not chosen
+
+Where the block starts is decided by how much text there is (`autoPos`). A short
+line takes the **lower left**, which is where a poster puts a caption meant to be
+read after the picture; a middling one moves up the same left margin so it has
+room to break; only the longest text goes to the middle of the disc, because the
+middle is the only part of a circle wide enough for six lines, and by then the
+type *is* the picture.
+
+After that **the user drags it**, and everything else follows from where it
+lands:
+
+| Derived | From | Why |
+| --- | --- | --- |
+| Alignment | the block's own `x` | Text sitting left of centre hangs off a left margin; text in the middle is centred. It is what a person laying this out by hand would do, so it does not need to be a control. |
+| Measure | the circle's real chord at the block's **edge** | A chord is narrower the further it is from the middle, so the width a block may take is a geometric fact about where it is rather than one number applied everywhere. Taken at the edge (`BLEED`) and not at the anchor, where it would be too generous and the last line would run into the limb. |
+| Credit position | which half the words left empty | Words low → credit high, and the reverse. On the words' own margin, in the words' own alignment, so the two read as one composition instead of a caption that came with the frame. |
+
+Dragging is bounded to `REACH` from the centre: past it the block eats its own
+measure faster than it gains position, and a poster whose text can be dragged
+under the limb is not a poster. The block re-composes itself as the text grows
+right up until the moment the person moves it; after that it is theirs.
 
 ### The ground
 
@@ -80,63 +95,91 @@ low-chroma:
 Deliberately a short list rather than a picker. The sky has to keep reading as
 one work, and forty cards in forty saturated hues is exactly the collage the
 plan is trying to avoid; a photograph of a room at night already lands in this
-range on its own, so a plate and a photo sit together instead of looking like
-two different products. These are **grounds, not accents** — `docs/DESIGN.md`'s
+range on its own. These are **grounds, not accents** — `docs/DESIGN.md`'s
 two-accent law governs the interface, and nothing here is ever used as one.
 
-Under a photograph the type gets a flat, even scrim (`ink` at 0.46). Flat rather
-than a gradient shaped behind the text, which reads as a smudge on the picture.
-Its whole job is that every card in the product sets its words at one contrast,
-which is most of what makes forty of them look like one series.
+Under a photograph the type gets a flat, even scrim (`ink` at 0.32) so every
+card sets its words at one contrast. **Nothing inside the disc is a gradient.**
+The limb darkening and the warm rim that used to live here made the card read as
+a lens looking at a picture rather than a printed circle with a picture on it.
+What survives is the flat ground, the shared grain, and one hairline limb.
 
-### Why type sizes here are ratios, not ladder steps
+### The type
 
-Inside the disc, every size is a fraction of the diameter. That is a narrow
-deliberate exception to `docs/DESIGN.md` §3, and it is the same one `card.js`
-already takes: a composed artifact is an artboard, not a screen. The card is
-drawn as a 68px thumbnail, as a ~400px resolve in the sky, as half a spread, and
-as a 1080-wide Story render. A fixed pixel size would be four different designs.
+Three faces, and they are the product's own three (`docs/DESIGN.md` §3), so
+choosing one is choosing a register rather than downloading a font:
+
+| | Face | Scale | Leading | Tracking |
+| --- | --- | --- | --- | --- |
+| `serif` | Instrument Serif italic | 1.00 | 1.15 | 0 |
+| `sans` | Space Grotesk 500 | 0.84 | 1.34 | −0.012em |
+| `mono` | Space Mono, lowercase | 0.68 | 1.60 | +0.02em |
+
+Each carries its own metrics. A face swap that keeps one size and one leading is
+not a design choice, it is a bug with a dropdown: mono needs air and a smaller
+size to hold a line where a serif does not.
+
+### Why sizes here are ratios, not ladder steps
+
+Inside the disc, every size is a fraction of the diameter. Narrow deliberate
+exception to `docs/DESIGN.md` §3, and the same one `card.js` already takes: a
+composed artifact is an artboard, not a screen, and this one is drawn as a 68px
+thumbnail, a resolve in the sky, half a spread, and a 1080-wide Story render.
 
 The words fit in three steps rather than continuously, so the same text always
 produces the same card and two cards of similar length look like a set:
 
 | words | size |
 | --- | --- |
-| ≤ 8 | `0.100 × d` |
-| 9–13 | `0.082 × d` |
-| 14–20 | `0.066 × d` |
+| ≤ 8 | `0.062 × d` |
+| 9–13 | `0.053 × d` |
+| 14–20 | `0.045 × d` |
 
-Metadata is `0.032 × d`, clamped to 8–12px — purely proportional it fell under
-five pixels on the spread and grew to a headline on the Story render. Below
-118px the disc carries no type at all: there is no legible size for a poster in
-a thumbnail, and type too small to read is decoration pretending to be content.
-
-### The body
-
-The poster sits on a body, and the body is why it is a circle:
-
-| Part | Why |
-| --- | --- |
-| Limb darkening | More atmosphere at a shallower angle near the edge, so the rim is dimmer *and* redder. It is the one cue that turns a circle into a sphere; without it the card is a coin. |
-| A light from one side | On a flat plate, the same. Without it a plate is a swatch rather than a body. |
-| Granulation | Convection cells, and simultaneously the one grain every card shares. Two jobs, one texture. |
-| The corona | Light past the limb, seating the disc *in* the field instead of on top of it. |
-| An opaque base | A body occludes. Written with alpha alone the disc let the galaxy shine through and read as a soap bubble. |
+Metadata is `0.026 × d`, clamped to 7–11px. Below 118px the disc carries no type
+at all: there is no legible size for a poster in a thumbnail, and type too small
+to read is decoration pretending to be content.
 
 ### The light a card burns with
 
 The plan bans relationship labels outright (§1.3 — "no dropdown, no category,
-the ambiguity is the product"), so the corona tint cannot come from a picker the
-way production's category tints do.
+the ambiguity is the product"), so the corona tint cannot come from a picker.
 
 For a photograph it is **measured off the image** — luminance-weighted, squared,
 so the light source in the frame decides and the shadows barely count. A flat
 average over a night photograph is an average of mostly darkness, and a warm
-dorm ceiling and a cold street through a window both come back at almost exactly
+ceiling and a cold street through a window both come back at almost exactly
 neutral. For a plate it is the plate's own declared tone.
 
 Either way the result maps between the product's **existing two stars**: warm
 grounds burn amber, cold ones rose. No third hue, no category, nobody asked.
+
+---
+
+## 2b · The composer
+
+The composer *is* the card. You type into the poster at the size and in the face
+it will keep, and you drag the block to where you want it; there is no preview
+step, because the thing on screen is the artifact.
+
+Everything changeable lives in **one labelled panel** under it, on a two-column
+grid that shares a left edge:
+
+```
+┌────────────────────────────────────────┐
+│  GROUND   ● ● ● ● ●        [ PHOTO ]   │
+│  ────────────────────────────────────  │
+│  TYPE     Aa    Aa    Aa               │
+└────────────────────────────────────────┘
+```
+
+What is **not** there is as deliberate: no size, no colour, no alignment, no
+crop. Those are derived from what was chosen, which is the only reason forty of
+these can look like one series.
+
+One gesture carries two meanings — a tap on the block wants the caret, a drag
+wants the block — so distance decides. Under `DRAG_SLOP` nothing is prevented
+and the textarea focuses like any textarea; past it the field is blurred and the
+pointer is captured for the rest of the drag.
 
 ## 3 · The approach (star → card)
 

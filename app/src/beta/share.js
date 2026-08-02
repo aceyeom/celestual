@@ -12,7 +12,10 @@
 // ✦ underneath — the mark docs/DESIGN.md reserves for mutuality and nothing
 // else.
 import { TOKENS, rgba } from '../theme.js'
-import { tintOf, stamp, plateOf, fitRatio } from './model.js'
+import {
+  tintOf, stamp, plateOf, faceOf, fitRatio, metaSize,
+  clampPos, autoPos, alignAt, measureAt, metaPos,
+} from './model.js'
 
 const W = 1080
 const H = 1920
@@ -50,8 +53,10 @@ function night(ctx) {
 }
 
 // ── the body ─────────────────────────────────────────────────────────────────
-// The same object the app draws, in canvas: surface, granulation, limb
-// darkening per channel, corona, hairline limb.
+// The same object the app draws, in canvas: a flat ground, one even scrim over
+// a photograph, the shared grain, the hairline limb and the corona. No
+// gradients inside the disc, for the same reason there are none in Disc.jsx —
+// a vignette on a circle reads as a lens artefact rather than as a print.
 function body(ctx, card, img, cx, cy, r, hue) {
   // the corona, outside the limb
   const cor = ctx.createRadialGradient(cx, cy, r * 0.9, cx, cy, r * 2.1)
@@ -74,41 +79,28 @@ function body(ctx, card, img, cx, cy, r, hue) {
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   if (img) {
     ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2)
-    ctx.fillStyle = rgba(TOKENS.ink, 0.46)
+    ctx.fillStyle = rgba(TOKENS.ink, 0.32)
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   }
 
-  // granulation
+  // Grain, and it has to be GRAIN. Drawn at three to nine pixels across on a
+  // 1080-wide canvas it was bokeh: a field of soft grey discs sitting on the
+  // photograph. Film grain is one or two pixels and there is a great deal of
+  // it, so the count goes up an order of magnitude as the radius comes down.
   let s = 0x1f83d9ab
   const rnd = () => (((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296))
   ctx.globalAlpha = img ? 0.05 : 0.08
-  for (let i = 0; i < 1400; i++) {
+  for (let i = 0; i < 16000; i++) {
     const a = rnd() * Math.PI * 2
-    const d = Math.sqrt(rnd()) * r
-    const cr = 3 + rnd() * 9
+    const dd = Math.sqrt(rnd()) * r
+    const cr = 0.7 + rnd() * 1.5
     ctx.fillStyle = rnd() > 0.5 ? '#FFFFFF' : '#000000'
     ctx.beginPath()
-    ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, cr, 0, Math.PI * 2)
+    ctx.arc(cx + Math.cos(a) * dd, cy + Math.sin(a) * dd, cr, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.globalAlpha = 1
 
-  // limb darkening, and the warmth put back at the very edge
-  const dark = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r)
-  dark.addColorStop(0, 'rgba(0,0,0,0)')
-  dark.addColorStop(0.82, rgba(TOKENS.ink, 0.22))
-  dark.addColorStop(0.96, rgba(TOKENS.ink, 0.6))
-  dark.addColorStop(1, rgba(TOKENS.ink, 0.84))
-  ctx.fillStyle = dark
-  ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
-
-  ctx.globalCompositeOperation = 'screen'
-  const warm = ctx.createRadialGradient(cx, cy, r * 0.58, cx, cy, r)
-  warm.addColorStop(0, 'rgba(0,0,0,0)')
-  warm.addColorStop(1, rgba(hue, 0.22))
-  ctx.fillStyle = warm
-  ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
-  ctx.globalCompositeOperation = 'source-over'
   ctx.restore()
 
   // the limb itself
@@ -126,9 +118,10 @@ function body(ctx, card, img, cx, cy, r, hue) {
 }
 
 // Tracked mono, the way canvas cannot do on its own.
-function tracked(ctx, text, cx, y, size, track, color) {
+function tracked(ctx, text, x0, y, size, track, color, align = 'center') {
   const s = String(text || '').toUpperCase()
   if (!s) return
+  const prevAlign = ctx.textAlign
   ctx.font = `700 ${size}px Space Mono, ui-monospace, monospace`
   ctx.fillStyle = color
   ctx.textAlign = 'left'
@@ -136,11 +129,12 @@ function tracked(ctx, text, cx, y, size, track, color) {
   let w = 0
   for (const ch of s) w += ctx.measureText(ch).width + track
   w -= track
-  let x = cx - w / 2
+  let x = align === 'left' ? x0 : align === 'right' ? x0 - w : x0 - w / 2
   for (const ch of s) {
     ctx.fillText(ch, x, y)
     x += ctx.measureText(ch).width + track
   }
+  ctx.textAlign = prevAlign
 }
 
 // the four-point sparkle — reserved for mutuality, and used once
@@ -214,46 +208,50 @@ export async function renderCard({ card, photoUrl, mutual = false }) {
   body(ctx, card, img, cx, cy, r, hue)
 
   // ── the poster, inside the disc ────────────────────────────────────────────
-  // The same layout the app draws, at the same ratios of the diameter, because
-  // it is the same object. A Story render that re-laid the card out would be a
-  // second design of it.
-  const ms = Math.max(8, Math.min(12, d * 0.032)) * (d / 300) * 1.6
+  // The same composition the app lays out, from the same functions, at the same
+  // ratios of the diameter — because it is the same card. A Story render that
+  // re-laid it out would be a second design of it.
   const words = (card && card.words) || ''
-  const wsize = d * fitRatio(words)
+  const pos = clampPos((card && card.pos) || autoPos(words))
+  const align = alignAt(pos)
+  const width = measureAt(pos) * d
+  const face = faceOf(card && card.face)
+  const ms = metaSize(d)
+  const wsize = d * fitRatio(words) * face.scale
+  const lead = wsize * face.lead
 
-  ctx.font = `italic 400 ${wsize}px Instrument Serif, Georgia, serif`
-  const rows = wrap(ctx, words, d * 0.72)
-  const lead = wsize * 1.18
-  // the block, centered on the disc: the @ and the rule above, the date below
-  const blockH = rows.length * lead + d * 0.038 + d * 0.05 + ms * 2 + d * 0.055
-  let y = cy - blockH / 2 + ms
-
-  tracked(ctx, `@${(card && card.handle) || ''}`, cx, y, ms, ms * 0.16, rgba(TOKENS.cream, 0.56))
-  y += ms + d * 0.038
-  ctx.fillStyle = rgba(TOKENS.cream, 0.2)
-  ctx.fillRect(cx - d * 0.05, y, d * 0.1, 1.5)
-  y += d * 0.05
-
-  ctx.fillStyle = TOKENS.cream
-  ctx.font = `italic 400 ${wsize}px Instrument Serif, Georgia, serif`
-  ctx.textAlign = 'center'
+  // where a block's text starts, given the alignment its position implies
+  const edge = (p) => {
+    const x = cx - r + p.x * d
+    return align === 'left' ? x : align === 'right' ? x - width : x - width / 2
+  }
   ctx.textBaseline = 'middle'
+  ctx.textAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center'
+  const penX = (p) => (align === 'left' ? edge(p) : align === 'right' ? edge(p) + width : edge(p) + width / 2)
+
+  ctx.font = `${face.style} ${face.weight} ${wsize}px ${face.family}`
+  const rows = wrap(ctx, face.transform === 'lowercase' ? words.toLowerCase() : words, width)
+  let y = cy - r + pos.y * d - ((rows.length - 1) * lead) / 2
+  ctx.fillStyle = TOKENS.cream
   for (const row of rows) {
-    y += lead * 0.5
-    ctx.fillText(row, cx, y)
-    y += lead * 0.5
+    ctx.fillText(row, penX(pos), y)
+    y += lead
   }
 
-  y += d * 0.055 + ms * 0.5
-  tracked(ctx, stamp(card && card.placed), cx, y, ms, ms * 0.16, rgba(TOKENS.cream, 0.38))
+  const mp = metaPos(pos)
+  tracked(
+    ctx,
+    [`@${(card && card.handle) || ''}`, stamp(card && card.placed)].join('  ·  '),
+    penX(mp), cy - r + mp.y * d, ms, ms * 0.16, rgba(TOKENS.cream, 0.62), ctx.textAlign,
+  )
 
   // ── outside the disc ──────────────────────────────────────────────────────
   // The mark, and what it means, said once.
+  ctx.textAlign = 'center'
   if (mutual) {
     glyph(ctx, cx, cy + r + 150, 26)
     tracked(ctx, 'it was mutual', cx, cy + r + 232, 26, 5, rgba(TOKENS.muted, 0.95))
   }
-
   tracked(ctx, 'celestual.us', cx, H - 118, 26, 5, rgba(TOKENS.muted, 0.8))
 
   return new Promise((res) => c.toBlob(res, 'image/png'))

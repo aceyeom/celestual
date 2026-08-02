@@ -32,7 +32,7 @@ export async function demoPhoto() {
 // The register the composer's seeds teach: plain, specific, about a detail
 // nobody would invent.
 export const SAMPLES = [
-  { handle: 'wrenmiles', words: 'you always took the window seat', photo: true, bg: 'ink' },
-  { handle: 'juno.k', words: 'you hated that song and sang it anyway', bg: 'violet' },
-  { handle: 'theo_park', words: 'we said we would be roommates', bg: 'ember' },
+  { handle: 'wrenmiles', words: 'you always took the window seat', photo: true, bg: 'ink', face: 'serif' },
+  { handle: 'juno.k', words: 'you hated that song and sang it anyway', bg: 'violet', face: 'sans' },
+  { handle: 'theo_park', words: 'we said we would be roommates', bg: 'ember', face: 'mono', pos: { x: 0.5, y: 0.62 } },
 ]

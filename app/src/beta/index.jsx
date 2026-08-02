@@ -189,8 +189,8 @@ export default function BetaApp() {
   }
 
   const place = React.useCallback(
-    async ({ words, bg, blob, tone }) => {
-      const card = makeCard({ handle: normHandle(them), words, bg, tone })
+    async ({ words, bg, face, pos, blob, tone }) => {
+      const card = makeCard({ handle: normHandle(them), words, bg, face, pos, tone })
       let url = null
       if (blob) {
         card.photoId = card.id
@@ -201,7 +201,7 @@ export default function BetaApp() {
       commit(next)
 
       // where the disc is, so the shrink and the galaxy's flight share a point
-      const size = Math.min(310, Math.round(Math.min(window.innerWidth * 0.78, window.innerHeight * 0.42)))
+      const size = Math.min(320, Math.round(Math.min(window.innerWidth * 0.8, window.innerHeight * 0.4)))
       const cx = window.innerWidth / 2
       const cy = window.innerHeight * 0.38
       setLaunch({ card, url, geom: { cx, cy, size } })
@@ -254,6 +254,7 @@ export default function BetaApp() {
         handle: card.handle,
         words: 'i thought about messaging you a hundred times',
         bg: 'rose',
+        face: 'serif',
         tone: 0,
         placed: Date.now(),
       }

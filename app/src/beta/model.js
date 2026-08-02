@@ -18,6 +18,8 @@
 // Twenty words, hard. Not a character count: a character count teaches people to
 // write shorter sentences, and a word count teaches them to write one true
 // thing.
+import { FONT } from '../theme.js'
+
 export const MAX_WORDS = 20
 
 // The one universal prompt. There is no dropdown, no category, no relationship
@@ -105,32 +107,102 @@ export const PLATES = [
 
 export const plateOf = (id) => PLATES.find((p) => p.id === id) || PLATES[0]
 
+// ── the type ─────────────────────────────────────────────────────────────────
+// Three faces, and they are the product's own three (docs/DESIGN.md §3), so
+// choosing one is choosing a register rather than downloading a font. Each
+// carries its own metrics, because a face swap that keeps one size and one
+// leading is not a design choice, it is a bug with a dropdown: mono needs air
+// and a smaller size to hold a line, sans needs tighter tracking and more
+// leading than a serif does.
+export const FACES = [
+  { id: 'serif', family: FONT.serif, style: 'italic', weight: 400, scale: 1, lead: 1.15, track: '0', transform: 'none' },
+  { id: 'sans', family: FONT.sans, style: 'normal', weight: 500, scale: 0.84, lead: 1.34, track: '-0.012em', transform: 'none' },
+  { id: 'mono', family: FONT.mono, style: 'normal', weight: 400, scale: 0.68, lead: 1.6, track: '0.02em', transform: 'lowercase' },
+]
+
+export const faceOf = (id) => FACES.find((f) => f.id === id) || FACES[0]
+
 // ── the poster ───────────────────────────────────────────────────────────────
-// The words are set INSIDE the disc, and their size is a ratio of it, not a
-// step on the screen ladder. That is a deliberate narrow exception and it is
-// the same one card.js already takes: a composed artifact is an artboard, not a
-// screen, and its type has to hold its proportions at every size it is ever
-// drawn at — a thumbnail in a row, a card resolved in the sky, half of a
-// spread, a 1080-wide Story render. A fixed pixel size would be four different
-// designs.
-//
-// Three steps rather than a continuous fit, so the same words always produce
-// the same card and two cards of similar length look like a set.
+// Every size inside the disc is a fraction of the diameter, not a step on the
+// screen ladder. Narrow deliberate exception, and the same one card.js already
+// takes: a composed artifact is an artboard, not a screen, and this one is
+// drawn as a thumbnail, as a resolve in the sky, as half a spread and as a
+// 1080-wide Story render. A fixed pixel size would be four different designs.
 export function fitRatio(text) {
   const n = wordCount(text)
-  if (n <= 8) return 0.1
-  if (n <= 13) return 0.082
-  return 0.066
+  if (n <= 8) return 0.062
+  if (n <= 13) return 0.053
+  return 0.045
 }
 
-// The metadata rides a floor and a ceiling: purely proportional, it fell under
-// five pixels on the spread and grew to a headline on the Story render.
-export const metaSize = (d) => Math.max(8, Math.min(12, d * 0.032))
+export const metaSize = (d) => Math.max(7, Math.min(11, d * 0.026))
 
-// Below this the disc carries no type at all. Curved or straight, there is no
-// legible size for a poster in a thumbnail, and type too small to read is
-// decoration pretending to be content.
 export const TYPE_FLOOR = 118
+
+// ── the composition ──────────────────────────────────────────────────────────
+// The text block is an object with a place, not a centered stack. Where it
+// starts is chosen by how much text there is, and after that the user can move
+// it; everything else about the layout is derived from where it ended up.
+//
+// A short line wants the lower left, which is where a poster puts a caption
+// that is meant to be read after the picture. A middling one moves up the same
+// left margin so it has room to break. Only the longest text goes to the middle
+// of the disc, because the middle is the only place a circle is wide enough for
+// six lines, and by then the type IS the picture.
+export function autoPos(text) {
+  const n = wordCount(text)
+  if (n <= 6) return { x: 0.2, y: 0.68 }
+  if (n <= 13) return { x: 0.2, y: 0.4 }
+  return { x: 0.5, y: 0.5 }
+}
+
+// How far the anchor may travel. Past this the block starts eating its own
+// measure faster than it gains position, and a poster whose text can be dragged
+// under the limb is not a poster.
+const REACH = 0.3
+
+export function clampPos(pos) {
+  const x = (pos && pos.x) != null ? pos.x : 0.5
+  const y = (pos && pos.y) != null ? pos.y : 0.5
+  const dx = x - 0.5
+  const dy = y - 0.5
+  const d = Math.hypot(dx, dy)
+  if (d <= REACH) return { x, y }
+  return { x: 0.5 + (dx / d) * REACH, y: 0.5 + (dy / d) * REACH }
+}
+
+// Alignment is not a control. It is read off the block's own position, which is
+// how a person laying this out by hand would do it: text sitting left of centre
+// hangs off a left margin, text in the middle is centred. One decision, made
+// once, from a fact already on screen.
+export const alignAt = (pos) => (pos.x < 0.43 ? 'left' : pos.x > 0.57 ? 'right' : 'center')
+
+// The measure, from the circle itself. A chord is narrower the further it is
+// from the middle, so the width a block may take is a real geometric fact about
+// where it is rather than one number applied everywhere. `BLEED` is how far the
+// block is assumed to reach above and below its anchor, so the chord is taken
+// at the block's edge and not at its middle, where it would be too generous and
+// the last line would run into the limb.
+const MARGIN = 0.055
+const BLEED = 0.09
+
+export function measureAt(pos) {
+  const off = Math.min(0.5, Math.abs(pos.y - 0.5) + BLEED)
+  const hw = Math.sqrt(Math.max(0, 0.25 - off * off))
+  const left = 0.5 - hw + MARGIN
+  const right = 0.5 + hw - MARGIN
+  const align = alignAt(pos)
+  if (align === 'left') return Math.max(0.2, right - pos.x)
+  if (align === 'right') return Math.max(0.2, pos.x - left)
+  return Math.max(0.2, 2 * Math.min(pos.x - left, right - pos.x))
+}
+
+// The credit line goes in the half the words left empty, on the words' own
+// margin, in the words' own alignment. That is what makes it read as part of
+// one composition instead of a caption that came with the frame.
+export function metaPos(pos) {
+  return { x: pos.x, y: pos.y > 0.5 ? 0.2 : 0.81 }
+}
 
 // ── the model ────────────────────────────────────────────────────────────────
 // One card per ping. `photoId` points into the local blob store, or is null and
@@ -138,13 +210,16 @@ export const TYPE_FLOOR = 118
 // nothing a user makes reaches the other person before both have chosen each
 // other (the plan, §1.1), and in this prototype that law is enforced by there
 // being no network at all.
-export function makeCard({ handle, words: w, photoId = null, bg = 'ink', tone }) {
+export function makeCard({ handle, words: w, photoId = null, bg = 'ink', face = 'serif', pos, tone }) {
+  const text = clampWords(w || '')
   return {
     id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     handle: String(handle || '').toLowerCase(),
-    words: clampWords(w || ''),
+    words: text,
     photoId,
     bg,
+    face,
+    pos: clampPos(pos || autoPos(text)),
     tone: tone != null ? tone : plateOf(bg).tone,
     placed: Date.now(),
     mutual: false,

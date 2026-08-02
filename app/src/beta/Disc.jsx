@@ -8,31 +8,40 @@
 // behind it, because a body has a horizon. The card is that surface. So it is a
 // circle for the same reason a planet is.
 //
-// The poster part is everything inside the limb. The words are set ON the
-// ground, centered, large, tight — the thing the card is, rather than a caption
-// under an image. A circle is radially symmetric, so centered type is the
-// honest answer to it; what makes it a poster instead of a caption is scale and
-// restraint. One big voice, two small ones, a hairline between them, and
-// nothing else.
+// The poster part is everything inside the limb, and it is a COMPOSITION rather
+// than a stack. The words are a block with a place on the ground:
 //
-//              @ W R E N M I L E S        mono, tracked, quiet
-//                    ─────                a hairline
+//   ┌──────────────────────┐      · where it starts is chosen by how much text
+//   │   @wren · aug 2      │        there is (model.js autoPos). A short line
+//   │                      │        takes the lower left, the way a poster puts
+//   │                      │        a caption meant to be read after the
+//   │   you always took    │        picture; only the longest text goes to the
+//   │   the window seat    │        middle, because the middle is the only part
+//   └──────────────────────┘        of a circle wide enough for six lines.
 //
-//                you always took          serif italic, large, tight
-//                 the window seat
+//                                  · after that the user moves it, and
+//                                    everything else follows from where it
+//                                    lands: alignment is read off the block's
+//                                    own x, the measure is the real chord of
+//                                    the circle at the block's edge, and the
+//                                    credit line goes in the half the words
+//                                    left empty, on their margin, in their
+//                                    alignment.
 //
-//                    A U G  2             mono, quieter still
+// Nothing in here is a gradient. The ground is flat — a photograph or one plate
+// — because a poster is printed, and a vignette on a circle reads as a lens
+// artefact rather than a design. The type is small on purpose: the picture is
+// the picture, and the words are what you find in it.
 //
-// The ground is a photograph or one flat plate (model.js PLATES). Under a
-// photograph the type gets an even scrim, so every card in the product sets its
-// words at the same contrast no matter what is behind them — which is most of
-// what makes forty of them read as one work.
-//
-// The user chooses the words and the ground. Nothing else: no size, no crop, no
-// alignment, no face, no colour for the type.
+// The user chooses the words, the ground, the face and the place. Not the size,
+// not the crop, not the colour, not the alignment: those are derived, which is
+// what keeps forty of these looking like one series.
 import * as React from 'react'
 import { rgba, FONT } from '../components/ui.jsx'
-import { stamp, tintOf, plateOf, fitRatio, metaSize, TYPE_FLOOR } from './model.js'
+import {
+  stamp, tintOf, plateOf, faceOf, fitRatio, metaSize, TYPE_FLOOR,
+  clampPos, autoPos, alignAt, measureAt, metaPos,
+} from './model.js'
 
 // ── granulation ──────────────────────────────────────────────────────────────
 // Fractal noise at three octaves, desaturated to luminance. It is convection
@@ -59,8 +68,12 @@ const seedOf = (s) => {
 }
 
 // ── the ground ───────────────────────────────────────────────────────────────
-export function Surface({ C, card, url, size, tint }) {
-  const hue = tint || tintOf(C, card && card.tone)
+// Flat. A photograph or one plate, one even scrim over the photograph so every
+// card in the product sets its words at the same contrast, and the grain that
+// every card shares. No gradients: the limb darkening and the warm rim that
+// used to live here made the disc read as a lens looking at a picture instead
+// of a printed circle with a picture on it.
+export function Surface({ C, card, url, size }) {
   const plate = plateOf(card && card.bg)
   const seed = seedOf(card && card.id)
   return (
@@ -70,8 +83,6 @@ export function Surface({ C, card, url, size, tint }) {
         position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
         // OPAQUE. sky/body.js gives a resolved star a non-additive pass for one
         // reason — a body has a horizon and the field behind it has to stop.
-        // Written with alpha alone the disc let the galaxy through and read as
-        // a soap bubble.
         background: plate.hex,
       }}
     >
@@ -83,45 +94,11 @@ export function Surface({ C, card, url, size, tint }) {
           }}
         />
       )}
-
-      {/* The scrim, and only over a photograph. Flat rather than a gradient,
-          because the type is centered and any gradient shaped to sit behind it
-          reads as a smudge on the picture. Its whole job is that every card
-          sets its words at one contrast. */}
-      {url && <span style={{ position: 'absolute', inset: 0, background: rgba(C.ink, 0.46) }} />}
-
-      {/* A flat plate is a coin. This is the light falling on a body from one
-          side, which is what keeps a card with no photograph in the same family
-          as one with — and as everything else in the sky. */}
-      {!url && (
-        <span
-          style={{
-            position: 'absolute', inset: 0, mixBlendMode: 'screen',
-            background: `radial-gradient(circle at 38% 32%, ${rgba(hue, 0.16)} 0%, ${rgba(hue, 0.05)} 42%, transparent 72%)`,
-          }}
-        />
-      )}
-
+      {url && <span style={{ position: 'absolute', inset: 0, background: rgba(C.ink, 0.32) }} />}
       <span
         style={{
           position: 'absolute', inset: 0, backgroundImage: grain(seed), backgroundSize: `${Math.max(90, size * 0.34)}px`,
-          mixBlendMode: 'overlay', opacity: url ? 0.14 : 0.24,
-        }}
-      />
-
-      {/* Limb darkening, per channel: more atmosphere at a shallower angle near
-          the edge, so the rim is dimmer AND redder. It is the one cue that
-          turns a circle into a sphere; without it the card is a coin. */}
-      <span
-        style={{
-          position: 'absolute', inset: 0,
-          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 50%, ${rgba(C.ink, 0.3)} 78%, ${rgba(C.ink, 0.66)} 95%, ${rgba(C.ink, 0.88)} 100%)`,
-        }}
-      />
-      <span
-        style={{
-          position: 'absolute', inset: 0, mixBlendMode: 'screen',
-          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 62%, ${rgba(hue, 0.08)} 86%, ${rgba(hue, 0.2)} 100%)`,
+          mixBlendMode: 'overlay', opacity: url ? 0.12 : 0.2,
         }}
       />
     </span>
@@ -129,15 +106,15 @@ export function Surface({ C, card, url, size, tint }) {
 }
 
 // ── the limb ─────────────────────────────────────────────────────────────────
-// The card's edge: a hairline where the body ends, and one brighter arc where
-// the chromosphere catches. Drawn in SVG so nothing clips it.
+// Where the print ends: one hairline, and one brighter arc in the card's own
+// light so the disc still belongs to a sky full of stars.
 function Limb({ C, size, tint }) {
   return (
     <svg
       aria-hidden viewBox="0 0 100 100"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}
     >
-      <circle cx="50" cy="50" r="49.4" fill="none" stroke={rgba(C.cream, 0.16)} strokeWidth="0.5" />
+      <circle cx="50" cy="50" r="49.4" fill="none" stroke={rgba(C.cream, 0.18)} strokeWidth="0.5" />
       <circle
         cx="50" cy="50" r="49.4" fill="none" stroke={rgba(tint, 0.7)} strokeWidth="0.7"
         strokeDasharray="52 260" strokeLinecap="round" transform="rotate(-128 50 50)"
@@ -147,67 +124,76 @@ function Limb({ C, size, tint }) {
   )
 }
 
-// ── the type ─────────────────────────────────────────────────────────────────
-// The poster. `label` overrides the top line — everywhere but the reveal that
-// line is the address on the envelope, and on the fused spread it is the author,
-// because the only question at a reveal is who wrote which half.
-//
-// The measure is 72% of the diameter. A circle is widest at its middle, so a
-// centered block that tall can afford more; 72% keeps the rag comfortably
-// clear of the curve at every line and stops the longest cards from crowding
-// the limb.
-export function Poster({ C, card, size, label, placeholder, children }) {
-  if (size < TYPE_FLOOR) return null
-  const words = (card && card.words) || ''
-  const ms = metaSize(size)
-  const top = label != null ? label : `@${(card && card.handle) || ''}`
+// A block placed at a normalized anchor, aligned by which side of the disc it
+// sits on. `pos` is the block's centre; the transform is what turns an anchor
+// into a left, centre or right hang without any of the three needing their own
+// layout code.
+function Block({ pos, align, width, size, children, style }) {
+  const shift = align === 'left' ? '0' : align === 'right' ? '-100%' : '-50%'
   return (
     <span
       style={{
-        position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: `0 ${size * 0.13}px`, textAlign: 'center', pointerEvents: 'none',
+        position: 'absolute', left: `${pos.x * 100}%`, top: `${pos.y * 100}%`,
+        transform: `translate(${shift}, -50%)`,
+        width: width * size, textAlign: align,
+        ...style,
       }}
     >
-      {!!top && (
+      {children}
+    </span>
+  )
+}
+
+// ── the poster ───────────────────────────────────────────────────────────────
+// `label` overrides the handle — everywhere but the reveal that line is the
+// address on the envelope, and on the fused spread it is the author, because
+// the only question at a reveal is who wrote which half.
+export function Poster({ C, card, size, label, placeholder, children }) {
+  if (size < TYPE_FLOOR) return null
+  const words = (card && card.words) || ''
+  const pos = clampPos((card && card.pos) || autoPos(words))
+  const align = alignAt(pos)
+  const width = measureAt(pos)
+  const mp = metaPos(pos)
+  const face = faceOf(card && card.face)
+  const ms = metaSize(size)
+  const top = label != null ? label : `@${(card && card.handle) || ''}`
+  const credit = [top, stamp(card && card.placed)].filter(Boolean).join('  ·  ')
+
+  return (
+    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', pointerEvents: 'none' }}>
+      <Block pos={mp} align={align} width={width} size={size}>
         <span
           style={{
             fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.16,
-            textTransform: 'uppercase', color: rgba(C.cream, 0.56), whiteSpace: 'nowrap',
-            overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+            textTransform: 'uppercase', color: rgba(C.cream, 0.62),
+            textShadow: '0 1px 10px rgba(0,0,0,.55)', whiteSpace: 'nowrap',
           }}
         >
-          {top}
+          {credit}
         </span>
-      )}
-      <span
-        aria-hidden
-        style={{ width: size * 0.1, height: 1, background: rgba(C.cream, 0.2), margin: `${size * 0.038}px 0 ${size * 0.05}px` }}
-      />
+      </Block>
 
-      {/* The words, or whatever the composer wants to put in their place. */}
-      {children || (
-        <span
-          style={{
-            fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
-            fontSize: size * fitRatio(words), lineHeight: 1.18,
-            color: words ? C.cream : rgba(C.cream, 0.34),
-            maxWidth: size * 0.72,
-          }}
-        >
-          {words || placeholder || ''}
-        </span>
-      )}
-
-      <span
-        style={{
-          fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.16,
-          textTransform: 'uppercase', color: rgba(C.cream, 0.38),
-          marginTop: size * 0.055,
-        }}
-      >
-        {stamp(card && card.placed)}
-      </span>
+      {/* The words. When the composer hands in a live field it goes HERE,
+          inside the same block, at the same measure and alignment — one block,
+          not a second one laid over the first. Pointer events open only for
+          that case; a finished card is not something you can grab. */}
+      <Block pos={pos} align={align} width={width} size={size} style={children ? { pointerEvents: 'auto' } : undefined}>
+        {children || (
+          <span
+            style={{
+              display: 'block',
+              fontFamily: face.family, fontStyle: face.style, fontWeight: face.weight,
+              fontSize: size * fitRatio(words) * face.scale,
+              lineHeight: face.lead, letterSpacing: face.track, textTransform: face.transform,
+              color: words ? C.cream : rgba(C.cream, 0.38),
+              textShadow: '0 2px 16px rgba(0,0,0,.6)',
+            }}
+          >
+            {words || placeholder || ''}
+          </span>
+        )}
+      </Block>
     </span>
   )
 }
@@ -228,7 +214,7 @@ export default function Card({ C, card, url, size = 300, tint, label, placeholde
         ...style,
       }}
     >
-      <Surface C={C} card={card} url={url} size={size} tint={hue} />
+      <Surface C={C} card={card} url={url} size={size} />
       <Poster C={C} card={card} size={size} label={label} placeholder={placeholder}>
         {children}
       </Poster>
@@ -237,7 +223,4 @@ export default function Card({ C, card, url, size = 300, tint, label, placeholde
   )
 }
 
-// The old name, kept because the sky, the spread and the composer all reach for
-// the body of a card rather than a card-plus-lockup. They are now the same
-// thing: everything the card has is inside it.
-export { Card as Body }
+export { Card as Body, Block }
