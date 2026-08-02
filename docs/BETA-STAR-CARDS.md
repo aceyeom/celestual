@@ -33,67 +33,110 @@ Everything else follows:
   by a transition.
 - Opening a card is an **approach**, and the product already knows how to fly
   one.
-- A card with **no photograph is still a star** — the disc shows the
-  photosphere. This is what lets the photo be optional without leaving a hole in
-  the sky.
+- A card with **no photograph is still a star** — it stands on a colour plate
+  and keeps its body, its light and its type. This is what lets the photo be
+  optional without leaving a hole in the sky.
 
 ---
 
 ## 2 · The card
 
-One fixed layout, at every size it ever appears at. The user chooses content and
-never design (plan §3.4) — there is no crop, no filter, no font, no size
-control.
+A type poster, cut round. One fixed layout at every size it is ever drawn at.
 
 ```
-              · · · · · · ·              corona, in the card's own light
-          ╭───────────────────╮
-        ╱      @ H A N D L E    ╲        the rim label: mono, tracked,
-      │                           │      set on the arc — the metadata
-      │      T H E                │      register at the greatest
-      │      S U R F A C E        │      distance a circle allows from
-      │                           │      the words
-        ╲                       ╱        limb darkening, per channel
-          ╰───────────────────╯
+              @ W R E N M I L E S        mono, tracked, quiet
+                    ─────                a hairline
 
-        the small thing you                the words: Instrument Serif
-          still remember                   italic, one measure, 20 max
+                you always took          serif italic, large, tight
+                 the window seat
 
-           AUG 2 · SEALED                  the tick: mono, micro
+                    A U G  2             mono, quieter still
 ```
 
-Three registers, cast exactly as `docs/DESIGN.md` §3 casts them, and not one
-size off the ladder.
+The words are set **on** the ground, not under it. That is what makes it a
+poster rather than an image with a caption, and it is why the card survives
+being small: at a hundred and fifty pixels in a spread it is still one object
+saying one thing, where a disc with a paragraph beneath it would have been two.
 
-**The parts, and why each is there** (`app/src/beta/Disc.jsx`):
+A circle is radially symmetric, so centered type is the honest answer to it.
+What makes it read as designed rather than defaulted is scale and restraint:
+one big voice, two small ones, a hairline between them, nothing else. No
+alignment control, no crop, no type colour, no size — the user chooses the
+words and the ground.
+
+### The ground
+
+A photograph, or one flat plate. `model.js` `PLATES` holds five, all dark and
+low-chroma:
+
+| | |
+| --- | --- |
+| `ink` | `#08070D` |
+| `violet` | `#191327` |
+| `ember` | `#2B1710` |
+| `rose` | `#2B1220` |
+| `blue` | `#101A2E` |
+
+Deliberately a short list rather than a picker. The sky has to keep reading as
+one work, and forty cards in forty saturated hues is exactly the collage the
+plan is trying to avoid; a photograph of a room at night already lands in this
+range on its own, so a plate and a photo sit together instead of looking like
+two different products. These are **grounds, not accents** — `docs/DESIGN.md`'s
+two-accent law governs the interface, and nothing here is ever used as one.
+
+Under a photograph the type gets a flat, even scrim (`ink` at 0.46). Flat rather
+than a gradient shaped behind the text, which reads as a smudge on the picture.
+Its whole job is that every card in the product sets its words at one contrast,
+which is most of what makes forty of them look like one series.
+
+### Why type sizes here are ratios, not ladder steps
+
+Inside the disc, every size is a fraction of the diameter. That is a narrow
+deliberate exception to `docs/DESIGN.md` §3, and it is the same one `card.js`
+already takes: a composed artifact is an artboard, not a screen. The card is
+drawn as a 68px thumbnail, as a ~400px resolve in the sky, as half a spread, and
+as a 1080-wide Story render. A fixed pixel size would be four different designs.
+
+The words fit in three steps rather than continuously, so the same text always
+produces the same card and two cards of similar length look like a set:
+
+| words | size |
+| --- | --- |
+| ≤ 8 | `0.100 × d` |
+| 9–13 | `0.082 × d` |
+| 14–20 | `0.066 × d` |
+
+Metadata is `0.032 × d`, clamped to 8–12px — purely proportional it fell under
+five pixels on the spread and grew to a headline on the Story render. Below
+118px the disc carries no type at all: there is no legible size for a poster in
+a thumbnail, and type too small to read is decoration pretending to be content.
+
+### The body
+
+The poster sits on a body, and the body is why it is a circle:
 
 | Part | Why |
 | --- | --- |
-| Limb darkening, per channel | You look through more atmosphere at a shallower angle near the edge, so the rim is dimmer *and* redder. It is the one cue that turns a circle into a sphere; without it the card is a coin. |
-| Granulation, over everything | Convection cells, and simultaneously the "same grain, every card" the plan asks for. A card with a photo and one without are the same object wearing two surfaces. |
+| Limb darkening | More atmosphere at a shallower angle near the edge, so the rim is dimmer *and* redder. It is the one cue that turns a circle into a sphere; without it the card is a coin. |
+| A light from one side | On a flat plate, the same. Without it a plate is a swatch rather than a body. |
+| Granulation | Convection cells, and simultaneously the one grain every card shares. Two jobs, one texture. |
 | The corona | Light past the limb, seating the disc *in* the field instead of on top of it. |
-| The rim label | An astronomical plate is labelled around its edge. It also solves a layout problem: the handle is metadata and wants to be nowhere near the words. Hidden below ~120px, where curved type stops being legible and becomes decoration. |
 | An opaque base | A body occludes. Written with alpha alone the disc let the galaxy shine through and read as a soap bubble. |
 
 ### The light a card burns with
 
 The plan bans relationship labels outright (§1.3 — "no dropdown, no category,
-the ambiguity is the product"), so the tint cannot come from a picker the way
-production's category tints do.
+the ambiguity is the product"), so the corona tint cannot come from a picker the
+way production's category tints do.
 
-It is **measured off the photograph** instead. A star's colour is its
-temperature, and the card is the star's surface, so the surface decides. The
-measurement is luminance-weighted — squared, so the light source in the frame
-dominates and the shadows barely count — because a flat average over a night
-photograph is an average of mostly darkness, and a warm dorm ceiling and a cold
-street through a window both come back at almost exactly neutral. Weighting by
-what is actually lit is what makes the answer mean something.
+For a photograph it is **measured off the image** — luminance-weighted, squared,
+so the light source in the frame decides and the shadows barely count. A flat
+average over a night photograph is an average of mostly darkness, and a warm
+dorm ceiling and a cold street through a window both come back at almost exactly
+neutral. For a plate it is the plate's own declared tone.
 
-The result maps between the product's **existing two stars**: warm rooms burn
-amber, cold ones rose. No third hue enters, no category is stored, and nobody is
-asked anything.
-
----
+Either way the result maps between the product's **existing two stars**: warm
+grounds burn amber, cold ones rose. No third hue, no category, nobody asked.
 
 ## 3 · The approach (star → card)
 
@@ -104,7 +147,7 @@ engine uses to decide whether a star has resolved:
 | --- | --- |
 | 0.00 → 0.52 | a point of light. Nothing of the card exists. |
 | 0.52 → 0.99 | the disc opens out of the point — blurred at first, the way an unresolved body is, sharpening as it grows, travelling from where the star hangs toward the frame it will hold. |
-| 1.00 | resolved. The words rise. |
+| 1.00 | resolved. A poster, hanging in the field. |
 
 Every one of those is read off the camera **on the frame it is true**, not
 scheduled against a guess at how long the flight takes. `screens.jsx` learned
@@ -183,16 +226,18 @@ production header had to change.**
 
 ## 6 · The seeded sky
 
-`/beta` seeds three cards on a first visit. The plan's §2 makes a claim the whole
-design lives or dies on: that a ceiling, a dashboard and a window at night
-composite into *one work* rather than a collage of strangers' vacations. You
-cannot evaluate that against an empty sky, and you cannot evaluate it against one
-card either.
+`/beta` seeds three cards on a first visit: two on plates and one on a
+photograph, because that is the choice the composer offers and the only way to
+see whether the two grounds belong to the same product is to see them next to
+each other.
 
-The three frames are **drawn, not shipped** (`samples.js`) — abstract low-light
-images in the shape of the real thing, pushed through the same treatment in
-`photo.js` that a real photograph gets, and measured for tone by the same
-function. Nobody is being shown a stock photo and told a user took it.
+The photograph is loaded from **`app/public/beta/demo.jpg`**. It is fetched and
+run through `photo.js` rather than pointed at, so it takes exactly the path a
+photograph a person takes would take — square-cropped, treated, re-encoded,
+measured for tone. A demo image that skipped the treatment would be showing a
+card the product cannot actually make.
+
+If the file is not there that card keeps its plate and nothing breaks.
 
 ---
 
@@ -228,13 +273,13 @@ Still open, from the plan's §7:
 ```
 app/src/beta/
 ├── index.jsx     BetaApp: the route root, the six screens, the flow
-├── Disc.jsx      THE CARD — the circular body, in every state
+├── Disc.jsx      THE CARD — the poster, the ground and the body
 ├── Sky.jsx       the approach: the field, the tap surface, the resolve
 ├── Composer.jsx  the composer, which is the card being filled in
 ├── Spread.jsx    the fused spread, and the unseal
 ├── model.js      the card as data, the prompt, the seeds, the tint
 ├── photo.js      a photograph becomes a surface (strip, treat, measure)
-├── samples.js    three drawn frames, so the sky is not empty on arrival
+├── samples.js    what is in the sky on arrival, and the demo photograph
 ├── share.js      the story render — your card and the mutual mark, never theirs
 └── store.js      localStorage + IndexedDB, and nothing else
 ```

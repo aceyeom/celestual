@@ -31,11 +31,11 @@ import { SENDOFF_SECONDS } from '../galaxy.js'
 import { BetaSky, StarField, StarCard, fullSize } from './Sky.jsx'
 import Composer from './Composer.jsx'
 import Spread from './Spread.jsx'
-import { Body } from './Disc.jsx'
+import Card from './Disc.jsx'
 import { makeCard, stamp } from './model.js'
 import * as store from './store.js'
 import { shareCard } from './share.js'
-import { sampleFrame, SAMPLES } from './samples.js'
+import { demoPhoto, SAMPLES } from './samples.js'
 
 // ── the photographs, as URLs ─────────────────────────────────────────────────
 // Blobs live in IndexedDB; the disc needs strings. This resolves the ones the
@@ -96,7 +96,7 @@ function Launch({ C, card, url, geom }) {
           transition: 'transform 1.05s cubic-bezier(.7,0,.25,1), opacity .95s ease .1s, filter .9s ease',
         }}
       >
-        <Body C={C} card={card} url={url} size={size} glow={1.6} />
+        <Card C={C} card={card} url={url} size={size} glow={1.6} />
       </div>
     </div>
   )
@@ -147,13 +147,20 @@ export default function BetaApp() {
     if (seeded.current || cards.length) return
     seeded.current = true
     ;(async () => {
+      const shot = await demoPhoto()
       const made = []
       for (let i = 0; i < SAMPLES.length; i++) {
-        const { blob, tone } = await sampleFrame(i)
-        const card = makeCard({ ...SAMPLES[i], tone })
-        card.photoId = card.id
+        const { photo, ...rest } = SAMPLES[i]
+        const card = makeCard(rest)
+        // the one photographed card, if the image is installed; otherwise it
+        // keeps its plate and the sky is a card short of a photograph, not a
+        // card short
+        if (photo && shot) {
+          card.photoId = card.id
+          card.tone = shot.tone
+          await store.putPhoto(card.id, shot.blob)
+        }
         card.placed = Date.now() - (i + 1) * 86400000 * 3
-        await store.putPhoto(card.id, blob)
         made.push(card)
       }
       commit({ cards: made, me: '' })
@@ -182,8 +189,8 @@ export default function BetaApp() {
   }
 
   const place = React.useCallback(
-    async ({ words, blob, tone }) => {
-      const card = makeCard({ handle: normHandle(them), words, tone })
+    async ({ words, bg, blob, tone }) => {
+      const card = makeCard({ handle: normHandle(them), words, bg, tone })
       let url = null
       if (blob) {
         card.photoId = card.id
@@ -194,9 +201,9 @@ export default function BetaApp() {
       commit(next)
 
       // where the disc is, so the shrink and the galaxy's flight share a point
-      const size = Math.min(268, Math.round(window.innerWidth * 0.62))
+      const size = Math.min(310, Math.round(Math.min(window.innerWidth * 0.78, window.innerHeight * 0.42)))
       const cx = window.innerWidth / 2
-      const cy = window.innerHeight * 0.36
+      const cy = window.innerHeight * 0.38
       setLaunch({ card, url, geom: { cx, cy, size } })
       setOrigin({ x: cx / window.innerWidth, y: cy / window.innerHeight })
       setGalaxyMode('sendoff')
@@ -246,7 +253,8 @@ export default function BetaApp() {
         id: `${card.id}-r`,
         handle: card.handle,
         words: 'i thought about messaging you a hundred times',
-        tone: 0.2,
+        bg: 'rose',
+        tone: 0,
         placed: Date.now(),
       }
       const next = {
@@ -395,9 +403,7 @@ function OpenScreen({ C, onStart }) {
           <br />
           <span style={{ color: C.star }}>say one small thing.</span>
         </Display>
-        <Small C={C} color={C.muted}>
-          a photo of where you are, and the thing you still remember. sealed until you both enter each other.
-        </Small>
+        <Small C={C} color={C.muted}>sealed until you both enter each other.</Small>
       </div>
       <PrimaryButton C={C} onClick={onStart}>place a ping</PrimaryButton>
     </Shell>
@@ -423,11 +429,10 @@ function SkyScreen({ C, cards, urls, onStart, onPick }) {
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
               aria-label={`open the card for @${c.handle}`}
             >
-              <Body C={C} card={c} url={urls[c.photoId]} size={68} glow={0.7} />
+              <Card C={C} card={c} url={urls[c.photoId]} size={68} glow={0.7} />
             </button>
           ))}
         </div>
-        <Small C={C} color={rgba(C.muted, 0.85)}>tap a star, or one of these, to go to it.</Small>
         <PrimaryButton C={C} onClick={onStart}>place a ping</PrimaryButton>
       </div>
     </Shell>
@@ -442,12 +447,13 @@ function WhoScreen({ C, value, onChange, error, onNext, onBack }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <Display C={C}>who are you thinking about?</Display>
         <Field C={C} kind="handle" value={value} onChange={onChange} placeholder="their instagram" autoFocus onEnter={onNext} />
-        {/* the echo. It is the only defence against a typo that would otherwise
-            leave a card standing forever, addressed to nobody. */}
+        {/* The echo, and the button under it is the question. It is the only
+            defence against a typo that would otherwise leave a card standing
+            forever, addressed to nobody. */}
         {clean && !error && (
-          <Small C={C} align="center" color={rgba(C.cream, 0.9)}>
-            <span style={{ fontFamily: FONT.mono, letterSpacing: '.5px' }}>@{clean}</span> · is that right?
-          </Small>
+          <div style={{ textAlign: 'center', fontFamily: FONT.mono, fontSize: SIZE.title, color: C.star, letterSpacing: '.5px' }}>
+            @{clean}
+          </div>
         )}
         {error && <Small C={C} align="center" color={C.star}>{error}</Small>}
       </div>
@@ -462,7 +468,7 @@ function PlacedScreen({ C, handle, onDone }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl, textAlign: 'center', alignItems: 'center' }}>
         <Display C={C} align="center">it’s in the sky.</Display>
         <Small C={C} align="center" color={C.muted}>
-          @{handle} is told nothing. no notification, no hint, no count. if they enter you, you both find out in the same second.
+          @{handle} is told nothing. if they enter you, you both find out in the same second.
         </Small>
         <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(C.muted, 0.8) }}>
           {stamp(Date.now())} · sealed

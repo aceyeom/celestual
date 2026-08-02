@@ -15,7 +15,7 @@
 //                       way an unresolved body is, sharpening as it grows,
 //                       travelling from wherever the star hangs in the field
 //                       toward the frame it will hold.
-//   focus 1.00          resolved. The words rise.
+//   focus 1.00          resolved. A poster, hanging in the field.
 //
 // and every one of those numbers is read off `cam.focus` on the frame it is
 // true, not scheduled against a guess at how long the flight will take. The
@@ -29,9 +29,9 @@
 // contracts into the point of light it grew out of. There is no exit animation
 // written anywhere in this file.
 import * as React from 'react'
-import { GalaxyCanvas, rgba, SPACE, FONT, SIZE, TRACK, Icon } from '../components/ui.jsx'
-import { Body } from './Disc.jsx'
-import { stamp, tintOf } from './model.js'
+import { GalaxyCanvas, rgba, Icon } from '../components/ui.jsx'
+import Card from './Disc.jsx'
+import { tintOf } from './model.js'
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const smoothstep = (e0, e1, x) => {
@@ -39,16 +39,16 @@ const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t)
 }
 
-// Where a fully resolved card comes to rest. Not dead center: the words live
-// under it, and a disc centered in the viewport puts them below the fold on a
-// short phone.
-const REST_Y = 0.4
+// Where a fully resolved card comes to rest. The poster carries its own words
+// now, so the disc is the entire object and it sits very near the middle of the
+// frame — a shade high, because the eye reads a centered circle as low.
+const REST_Y = 0.46
 
 // The diameter a card holds at full resolve. One number, so every card in the
 // product resolves to the same size and the sky never implies that one ping
 // matters more than another.
 export const fullSize = () =>
-  Math.min(360, Math.round(Math.min(window.innerWidth * 0.76, window.innerHeight * 0.44)))
+  Math.min(400, Math.round(Math.min(window.innerWidth * 0.84, window.innerHeight * 0.56)))
 
 // ── the resolve ──────────────────────────────────────────────────────────────
 // Samples the live camera every frame while a card is open and hands back where
@@ -170,8 +170,10 @@ export function StarField({ fieldRef, onPick, disabled }) {
 }
 
 // ── the resolved card, held in the sky ───────────────────────────────────────
-// The disc rides the camera; the words are mounted on arrival and nowhere near
-// the disc's transform, so nothing they do can jitter it.
+// The disc rides the camera, and that is the whole overlay. There is no text
+// beside it, under it or over it: the words, the @ and the date are set inside
+// the poster, so what arrives at the end of a dive is one object rather than an
+// object with a caption.
 export function StarCard({ C, card, url, index, open, fieldRef, onClose }) {
   const r = useResolve(fieldRef, index, open)
   if (!r || !card) return null
@@ -180,7 +182,7 @@ export function StarCard({ C, card, url, index, open, fieldRef, onClose }) {
 
   return (
     <>
-      {/* the sky recedes as the card resolves, so the words have something to
+      {/* the sky recedes as the card resolves, so the poster has something to
           be read against — but never to black: the point of arriving here is
           that the card is IN the field, not in front of it */}
       <div
@@ -200,43 +202,12 @@ export function StarCard({ C, card, url, index, open, fieldRef, onClose }) {
           opacity: r.opacity,
         }}
       >
-        <Body C={C} card={card} url={url} size={r.size} tint={hue} glow={0.6 + r.focus} />
+        <Card C={C} card={card} url={url} size={r.size} tint={hue} glow={0.6 + r.focus} />
       </div>
 
-      {/* the words, on arrival. Same trigger the production star view uses. */}
-      {r.arrived && (
-        <div
-          className="fade"
-          style={{
-            position: 'fixed', left: 0, right: 0, top: `calc(${REST_Y * 100}% + ${half}px + ${SPACE.xxl}px)`,
-            zIndex: 4, pointerEvents: 'none',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg,
-            padding: `0 ${SPACE.xxl}px`, textAlign: 'center',
-          }}
-        >
-          <p
-            style={{
-              margin: 0, maxWidth: 360, fontFamily: FONT.serif, fontStyle: 'italic',
-              fontSize: SIZE.lead, lineHeight: 1.45, color: C.cream, textShadow: '0 2px 20px rgba(0,0,0,.85)',
-            }}
-          >
-            {card.words}
-          </p>
-          <span
-            style={{
-              fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro,
-              textTransform: 'uppercase', color: rgba(C.muted, 0.92), textShadow: '0 2px 12px rgba(0,0,0,.9)',
-            }}
-          >
-            {stamp(card.placed)} · {card.mutual ? 'open' : 'sealed'}
-          </span>
-        </div>
-      )}
-
       {/* One way back, and it is the same gesture that got here: anywhere. The
-          button is not a second mechanism, it is the one visible sign that the
-          whole screen is a way out — a card resolved in an otherwise empty sky
-          with no chrome on it reads as somewhere you might be stuck. */}
+          button is the one visible sign of it — a card resolved in an otherwise
+          empty sky with no chrome on it reads as somewhere you might be stuck. */}
       {r.arrived && (
         <>
           <div onPointerUp={onClose} style={{ position: 'fixed', inset: 0, zIndex: 5 }} />

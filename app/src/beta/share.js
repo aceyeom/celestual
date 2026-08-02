@@ -7,17 +7,15 @@
 // There is no argument that gets their words into this file, which is the only
 // way to be sure they never end up in the output.
 //
-// The frame is the product's own: the deep cosmic-violet void, the circular
-// body with its limb darkening and its grain, the @ on the rim, the words in
-// serif italic beneath, and one small ✦ — the mark docs/DESIGN.md reserves for
-// mutuality and for nothing else.
+// The frame is the product's own: the deep cosmic-violet void, and the card in
+// the middle of it, drawn at exactly the ratios the app draws it at. One small
+// ✦ underneath — the mark docs/DESIGN.md reserves for mutuality and nothing
+// else.
 import { TOKENS, rgba } from '../theme.js'
-import { tintOf, stamp } from './model.js'
+import { tintOf, stamp, plateOf, fitRatio } from './model.js'
 
 const W = 1080
 const H = 1920
-
-const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 
 // ── the night ────────────────────────────────────────────────────────────────
 function night(ctx) {
@@ -54,7 +52,7 @@ function night(ctx) {
 // ── the body ─────────────────────────────────────────────────────────────────
 // The same object the app draws, in canvas: surface, granulation, limb
 // darkening per channel, corona, hairline limb.
-function body(ctx, img, cx, cy, r, hue) {
+function body(ctx, card, img, cx, cy, r, hue) {
   // the corona, outside the limb
   const cor = ctx.createRadialGradient(cx, cy, r * 0.9, cx, cy, r * 2.1)
   cor.addColorStop(0, rgba(hue, 0.3))
@@ -70,24 +68,20 @@ function body(ctx, img, cx, cy, r, hue) {
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.clip()
 
+  // the ground: one flat plate, or a photograph under the scrim that holds
+  // every card in the product at one contrast
+  ctx.fillStyle = plateOf(card && card.bg).hex
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   if (img) {
     ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2)
-  } else {
-    // the photosphere: what the disc shows when there is nothing on it, which
-    // is not nothing — it is a star
-    const g = ctx.createRadialGradient(cx - r * 0.16, cy - r * 0.2, 0, cx, cy, r)
-    g.addColorStop(0, rgba(hue, 0.55))
-    g.addColorStop(0.36, rgba(hue, 0.3))
-    g.addColorStop(0.76, rgba(TOKENS.ink3, 0.92))
-    g.addColorStop(1, TOKENS.ink)
-    ctx.fillStyle = g
+    ctx.fillStyle = rgba(TOKENS.ink, 0.46)
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   }
 
   // granulation
   let s = 0x1f83d9ab
   const rnd = () => (((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296))
-  ctx.globalAlpha = img ? 0.05 : 0.1
+  ctx.globalAlpha = img ? 0.05 : 0.08
   for (let i = 0; i < 1400; i++) {
     const a = rnd() * Math.PI * 2
     const d = Math.sqrt(rnd()) * r
@@ -100,11 +94,11 @@ function body(ctx, img, cx, cy, r, hue) {
   ctx.globalAlpha = 1
 
   // limb darkening, and the warmth put back at the very edge
-  const dark = ctx.createRadialGradient(cx, cy, r * 0.46, cx, cy, r)
+  const dark = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r)
   dark.addColorStop(0, 'rgba(0,0,0,0)')
-  dark.addColorStop(0.76, rgba(TOKENS.ink, 0.36))
-  dark.addColorStop(0.94, rgba(TOKENS.ink, 0.76))
-  dark.addColorStop(1, rgba(TOKENS.ink, 0.93))
+  dark.addColorStop(0.82, rgba(TOKENS.ink, 0.22))
+  dark.addColorStop(0.96, rgba(TOKENS.ink, 0.6))
+  dark.addColorStop(1, rgba(TOKENS.ink, 0.84))
   ctx.fillStyle = dark
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
 
@@ -131,31 +125,22 @@ function body(ctx, img, cx, cy, r, hue) {
   ctx.stroke()
 }
 
-// the @ set on the arc, centered at the top, reading left to right
-function rim(ctx, text, cx, cy, r, hue) {
+// Tracked mono, the way canvas cannot do on its own.
+function tracked(ctx, text, cx, y, size, track, color) {
   const s = String(text || '').toUpperCase()
   if (!s) return
-  ctx.save()
-  ctx.fillStyle = rgba(hue, 0.85)
-  ctx.font = `700 26px ${'Space Mono, ui-monospace, monospace'}`
-  ctx.textAlign = 'center'
+  ctx.font = `700 ${size}px Space Mono, ui-monospace, monospace`
+  ctx.fillStyle = color
+  ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  const track = 5
-  // total sweep, so the string can be centered on twelve o'clock
-  let total = 0
-  for (const ch of s) total += ctx.measureText(ch).width + track
-  let ang = -Math.PI / 2 - total / (2 * r)
+  let w = 0
+  for (const ch of s) w += ctx.measureText(ch).width + track
+  w -= track
+  let x = cx - w / 2
   for (const ch of s) {
-    const w = ctx.measureText(ch).width + track
-    ang += w / (2 * r)
-    ctx.save()
-    ctx.translate(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r)
-    ctx.rotate(ang + Math.PI / 2)
-    ctx.fillText(ch, 0, 0)
-    ctx.restore()
-    ang += w / (2 * r)
+    ctx.fillText(ch, x, y)
+    x += ctx.measureText(ch).width + track
   }
-  ctx.restore()
 }
 
 // the four-point sparkle — reserved for mutuality, and used once
@@ -223,38 +208,53 @@ export async function renderCard({ card, photoUrl, mutual = false }) {
 
   const hue = tintOf(TOKENS, card && card.tone)
   const cx = W / 2
-  const cy = H * 0.42
-  const r = W * 0.33
-  body(ctx, img, cx, cy, r, hue)
-  rim(ctx, `@${(card && card.handle) || ''}`, cx, cy, r * 0.87, hue)
+  const cy = H * 0.44
+  const r = W * 0.38
+  const d = r * 2
+  body(ctx, card, img, cx, cy, r, hue)
 
-  // the words
+  // ── the poster, inside the disc ────────────────────────────────────────────
+  // The same layout the app draws, at the same ratios of the diameter, because
+  // it is the same object. A Story render that re-laid the card out would be a
+  // second design of it.
+  const ms = Math.max(8, Math.min(12, d * 0.032)) * (d / 300) * 1.6
+  const words = (card && card.words) || ''
+  const wsize = d * fitRatio(words)
+
+  ctx.font = `italic 400 ${wsize}px Instrument Serif, Georgia, serif`
+  const rows = wrap(ctx, words, d * 0.72)
+  const lead = wsize * 1.18
+  // the block, centered on the disc: the @ and the rule above, the date below
+  const blockH = rows.length * lead + d * 0.038 + d * 0.05 + ms * 2 + d * 0.055
+  let y = cy - blockH / 2 + ms
+
+  tracked(ctx, `@${(card && card.handle) || ''}`, cx, y, ms, ms * 0.16, rgba(TOKENS.cream, 0.56))
+  y += ms + d * 0.038
+  ctx.fillStyle = rgba(TOKENS.cream, 0.2)
+  ctx.fillRect(cx - d * 0.05, y, d * 0.1, 1.5)
+  y += d * 0.05
+
   ctx.fillStyle = TOKENS.cream
-  ctx.font = `italic 400 54px ${'Instrument Serif, Georgia, serif'}`
+  ctx.font = `italic 400 ${wsize}px Instrument Serif, Georgia, serif`
   ctx.textAlign = 'center'
-  ctx.textBaseline = 'alphabetic'
-  const rows = wrap(ctx, card && card.words, W * 0.74)
-  let y = cy + r + 150
+  ctx.textBaseline = 'middle'
   for (const row of rows) {
+    y += lead * 0.5
     ctx.fillText(row, cx, y)
-    y += 72
+    y += lead * 0.5
   }
 
-  // the mark, and what it means, said once
+  y += d * 0.055 + ms * 0.5
+  tracked(ctx, stamp(card && card.placed), cx, y, ms, ms * 0.16, rgba(TOKENS.cream, 0.38))
+
+  // ── outside the disc ──────────────────────────────────────────────────────
+  // The mark, and what it means, said once.
   if (mutual) {
-    glyph(ctx, cx, y + 78, 26)
-    ctx.fillStyle = rgba(TOKENS.muted, 0.95)
-    ctx.font = `700 24px ${'Space Mono, ui-monospace, monospace'}`
-    ctx.fillText('IT WAS MUTUAL', cx, y + 168)
+    glyph(ctx, cx, cy + r + 150, 26)
+    tracked(ctx, 'it was mutual', cx, cy + r + 232, 26, 5, rgba(TOKENS.muted, 0.95))
   }
 
-  // the foot
-  ctx.fillStyle = rgba(TOKENS.muted, 0.8)
-  ctx.font = `700 26px ${'Space Mono, ui-monospace, monospace'}`
-  ctx.fillText('CELESTUAL.US', cx, H - 118)
-  ctx.fillStyle = rgba(TOKENS.muted, 0.55)
-  ctx.font = `400 24px ${'Space Grotesk, system-ui, sans-serif'}`
-  ctx.fillText(stamp(card && card.placed), cx, H - 72)
+  tracked(ctx, 'celestual.us', cx, H - 118, 26, 5, rgba(TOKENS.muted, 0.8))
 
   return new Promise((res) => c.toBlob(res, 'image/png'))
 }
@@ -285,5 +285,3 @@ export async function shareCard(args) {
   setTimeout(() => URL.revokeObjectURL(url), 4000)
   return true
 }
-
-export { clamp }

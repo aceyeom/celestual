@@ -1,53 +1,43 @@
 // beta/Disc.jsx — THE CARD.
 //
-// The card is a circle, and it is a circle for a reason that is already in this
-// codebase rather than one invented for a moodboard.
+// A type poster, cut round.
 //
-// sky/body.js: "at the end of a dive a star stops being a point and becomes a
-// surface." The engine already resolves a star into a limb-darkened,
-// granulating photosphere when the camera gets close enough — an opaque disc
-// that occludes the field behind it, because a body has a horizon and light
-// does not. That resolve is the single most expensive thing in the renderer and
-// it currently pays for nothing but a nice arrival.
+// The round part is not a shape choice. sky/body.js exists because at the end
+// of a dive a star stops being a point of light and becomes a surface — a
+// limb-darkened, granulating photosphere, drawn opaque so it occludes the field
+// behind it, because a body has a horizon. The card is that surface. So it is a
+// circle for the same reason a planet is.
 //
-// So the card IS that surface. Not a card floating near a star, not a modal a
-// star opens: the photograph is what the star turns out to be made of when you
-// get close enough to see it. The transition from ping to card is then not a
-// transition at all — it is an approach, and the product already knows how to
-// fly one.
+// The poster part is everything inside the limb. The words are set ON the
+// ground, centered, large, tight — the thing the card is, rather than a caption
+// under an image. A circle is radially symmetric, so centered type is the
+// honest answer to it; what makes it a poster instead of a caption is scale and
+// restraint. One big voice, two small ones, a hairline between them, and
+// nothing else.
 //
-// Everything below follows from that:
+//              @ W R E N M I L E S        mono, tracked, quiet
+//                    ─────                a hairline
 //
-//   · LIMB DARKENING, per channel. You are looking through more atmosphere at a
-//     shallower angle near the edge, so the rim is dimmer AND redder. This is
-//     the one cue that turns a circle into a sphere; without it the card is a
-//     coin. It is the same effect body.js computes in a shader, done here in
-//     two stacked radial gradients.
-//   · GRANULATION over everything, including the photographs. It is the "same
-//     grain, every card" the plan asks for (§3.4) and it is also convection
-//     cells, so a card with no photo and a card with one are the same object
-//     wearing two surfaces.
-//   · A CORONA outside the limb, in the card's own light, bleeding into the sky
-//     so the disc is seated in the field instead of pasted over it.
-//   · THE RIM LABEL — the @ set on the arc, mono, tracked, quiet. An
-//     astronomical plate is labelled around its edge; so is this. It also
-//     solves a real layout problem for free: the handle is metadata and wants
-//     to be nowhere near the words, and the rim is as far from the center as a
-//     circle has.
+//                you always took          serif italic, large, tight
+//                 the window seat
 //
-// The user chooses the content and never the design (the plan, §3.4). There is
-// no size control, no crop, no filter, no font: every card in the product is
-// this component at a different diameter.
+//                    A U G  2             mono, quieter still
+//
+// The ground is a photograph or one flat plate (model.js PLATES). Under a
+// photograph the type gets an even scrim, so every card in the product sets its
+// words at the same contrast no matter what is behind them — which is most of
+// what makes forty of them read as one work.
+//
+// The user chooses the words and the ground. Nothing else: no size, no crop, no
+// alignment, no face, no colour for the type.
 import * as React from 'react'
-import { rgba, FONT, SIZE, TRACK, SPACE } from '../components/ui.jsx'
-import { stamp, tintOf } from './model.js'
+import { rgba, FONT } from '../components/ui.jsx'
+import { stamp, tintOf, plateOf, fitRatio, metaSize, TYPE_FLOOR } from './model.js'
 
 // ── granulation ──────────────────────────────────────────────────────────────
-// Real convection cells, generated rather than shipped: fractal noise at two
-// octaves, desaturated to luminance, at an alpha you would have to be told
-// about to notice on one card and could not miss across forty. Seeded per card
-// so no two surfaces carry the same grain, memoized so the string is built once
-// per seed rather than once per frame of a resolve.
+// Fractal noise at three octaves, desaturated to luminance. It is convection
+// cells on a photosphere and it is also the one grain every card shares, which
+// is the same job done twice. Seeded per card, memoized per seed.
 const grainCache = new Map()
 function grain(seed) {
   const key = seed % 64
@@ -62,43 +52,27 @@ function grain(seed) {
   return url
 }
 
-// A stable seed from the card's id, so the grain survives a reload.
 const seedOf = (s) => {
   let h = 0
   for (let i = 0; i < String(s || '').length; i++) h = (h * 31 + String(s).charCodeAt(i)) | 0
   return Math.abs(h)
 }
 
-// ── the surface ──────────────────────────────────────────────────────────────
-// The disc alone: no rim label, no words. Split out because the story render
-// and the spread both want the body without the lockup, and because it is the
-// one piece that must be pixel-identical everywhere it appears.
+// ── the ground ───────────────────────────────────────────────────────────────
 export function Surface({ C, card, url, size, tint }) {
   const hue = tint || tintOf(C, card && card.tone)
+  const plate = plateOf(card && card.bg)
   const seed = seedOf(card && card.id)
   return (
     <span
       aria-hidden
       style={{
         position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
-        // The photosphere, for a card with no photograph. Not a placeholder and
-        // not a grey hole: a star's actual surface, warm at the center and
-        // cooling outward, which is what the disc shows when there is nothing on
-        // it — because there IS something on it. It is a star.
-        //
-        // Kept dim: an unexposed plate, not a lit lamp. Brighter, an empty
-        // composer was the loudest thing on the screen and a finished card read
-        // as a dimming of it, which is backwards. The photograph is what turns
-        // the light on.
-        // OPAQUE, and that is not a detail. sky/body.js gives a resolved star
-        // its own non-additive pass for exactly one reason: "a body has a
-        // horizon", and the field behind it has to stop. Written with alpha in
-        // the gradient stops alone, the disc let the galaxy shine straight
-        // through itself and read as a soap bubble. The solid base under the
-        // gradient is what makes it a surface.
-        background: url
-          ? '#0B0810'
-          : `radial-gradient(circle at 42% 38%, ${rgba(hue, 0.26)} 0%, ${rgba(hue, 0.12)} 32%, ${rgba(C.ink3, 0.8)} 68%, ${C.ink} 100%), ${C.ink}`,
+        // OPAQUE. sky/body.js gives a resolved star a non-additive pass for one
+        // reason — a body has a horizon and the field behind it has to stop.
+        // Written with alpha alone the disc let the galaxy through and read as
+        // a soap bubble.
+        background: plate.hex,
       }}
     >
       {url && (
@@ -110,85 +84,59 @@ export function Surface({ C, card, url, size, tint }) {
         />
       )}
 
-      {/* granulation — over the photograph too, so every card carries one grain */}
+      {/* The scrim, and only over a photograph. Flat rather than a gradient,
+          because the type is centered and any gradient shaped to sit behind it
+          reads as a smudge on the picture. Its whole job is that every card
+          sets its words at one contrast. */}
+      {url && <span style={{ position: 'absolute', inset: 0, background: rgba(C.ink, 0.46) }} />}
+
+      {/* A flat plate is a coin. This is the light falling on a body from one
+          side, which is what keeps a card with no photograph in the same family
+          as one with — and as everything else in the sky. */}
+      {!url && (
+        <span
+          style={{
+            position: 'absolute', inset: 0, mixBlendMode: 'screen',
+            background: `radial-gradient(circle at 38% 32%, ${rgba(hue, 0.16)} 0%, ${rgba(hue, 0.05)} 42%, transparent 72%)`,
+          }}
+        />
+      )}
+
       <span
         style={{
           position: 'absolute', inset: 0, backgroundImage: grain(seed), backgroundSize: `${Math.max(90, size * 0.34)}px`,
-          mixBlendMode: 'overlay', opacity: url ? 0.16 : 0.3,
+          mixBlendMode: 'overlay', opacity: url ? 0.14 : 0.24,
         }}
       />
 
-      {/* limb darkening, per channel: the rim is dimmer, and it is redder,
-          because blue falls off fastest through the longer path. Two gradients
-          rather than one — the first takes the light out, the second puts the
-          warmth back at the very edge. */}
+      {/* Limb darkening, per channel: more atmosphere at a shallower angle near
+          the edge, so the rim is dimmer AND redder. It is the one cue that
+          turns a circle into a sphere; without it the card is a coin. */}
       <span
         style={{
           position: 'absolute', inset: 0,
-          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 58%, ${rgba(C.ink, 0.2)} 80%, ${rgba(C.ink, 0.58)} 95%, ${rgba(C.ink, 0.82)} 100%)`,
+          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 50%, ${rgba(C.ink, 0.3)} 78%, ${rgba(C.ink, 0.66)} 95%, ${rgba(C.ink, 0.88)} 100%)`,
         }}
       />
       <span
         style={{
           position: 'absolute', inset: 0, mixBlendMode: 'screen',
-          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 58%, ${rgba(hue, 0.1)} 84%, ${rgba(hue, 0.22)} 100%)`,
+          background: `radial-gradient(circle at 50% 50%, transparent 0%, transparent 62%, ${rgba(hue, 0.08)} 86%, ${rgba(hue, 0.2)} 100%)`,
         }}
       />
     </span>
   )
 }
 
-// ── the rim label ────────────────────────────────────────────────────────────
-// The @ set on the arc, centered at the top, reading left to right. Mono,
-// uppercase, tracked — the metadata register, as far from the words as the
-// geometry allows.
-function Rim({ C, handle, label, size, tint }) {
-  const id = React.useId()
-  // The rim names the card. Everywhere but the reveal that is the address on
-  // the envelope — the @ this card is for. On the fused spread it is the author
-  // instead, because the only question at a reveal is who wrote which one.
-  const text = label != null ? label : `@${handle || ''}`
-  // r is in the 100-unit viewBox; 43 leaves the type sitting just inside the
-  // limb rather than riding on it.
-  //
-  // TWO semicircles, not one full-circle arc. An arc whose start and end points
-  // are the same point is degenerate — the spec has to invent a center for it —
-  // and the browser resolved it to a path running the other way, which put the
-  // handle mirrored along the bottom of the disc. Splitting it at the top gives
-  // both arcs unambiguous endpoints, and makes 50% of the path length land
-  // exactly on twelve o'clock, which is where the label goes.
-  //
-  // Starting at the bottom with sweep=1 (increasing angle, which is clockwise
-  // in SVG's y-down system) runs bottom → left → top, so the type reaches the
-  // top travelling left to right and reads the right way up.
-  const path = 'M 50,93 A 43,43 0 0,1 50,7 A 43,43 0 0,1 50,93'
+// ── the limb ─────────────────────────────────────────────────────────────────
+// The card's edge: a hairline where the body ends, and one brighter arc where
+// the chromosphere catches. Drawn in SVG so nothing clips it.
+function Limb({ C, size, tint }) {
   return (
     <svg
-      aria-hidden
-      viewBox="0 0 100 100"
+      aria-hidden viewBox="0 0 100 100"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}
     >
-      <defs><path id={id} d={path} fill="none" /></defs>
-      {/* Below about a thumbnail there is no legible size for type on a curve —
-          it becomes a ring of noise that reads as decoration, which is worse
-          than no label. The limb and the light still identify the card at that
-          size, and the list beside it is already carrying the @ in words. */}
-      {size >= 120 && (
-        <text
-          fontFamily={FONT.mono}
-          fontSize={4.1}
-          letterSpacing={1.1}
-          fill={rgba(tint, 0.82)}
-          style={{ textTransform: 'uppercase' }}
-        >
-          <textPath href={`#${id}`} startOffset="50%" textAnchor="middle">
-            {text}
-          </textPath>
-        </text>
-      )}
-      {/* the limb: a hairline at the edge of the body, and a brighter arc where
-          the chromosphere catches. Drawn in SVG so it never gets clipped by the
-          surface's own overflow. */}
       <circle cx="50" cy="50" r="49.4" fill="none" stroke={rgba(C.cream, 0.16)} strokeWidth="0.5" />
       <circle
         cx="50" cy="50" r="49.4" fill="none" stroke={rgba(tint, 0.7)} strokeWidth="0.7"
@@ -199,10 +147,76 @@ function Rim({ C, handle, label, size, tint }) {
   )
 }
 
-// ── the body ─────────────────────────────────────────────────────────────────
-// Surface + corona + rim, with nothing under it. This is what the sky resolves
-// into and what the spread puts two of; `Card` below adds the words.
-export function Body({ C, card, url, size = 300, tint, label, glow = 1, style }) {
+// ── the type ─────────────────────────────────────────────────────────────────
+// The poster. `label` overrides the top line — everywhere but the reveal that
+// line is the address on the envelope, and on the fused spread it is the author,
+// because the only question at a reveal is who wrote which half.
+//
+// The measure is 72% of the diameter. A circle is widest at its middle, so a
+// centered block that tall can afford more; 72% keeps the rag comfortably
+// clear of the curve at every line and stops the longest cards from crowding
+// the limb.
+export function Poster({ C, card, size, label, placeholder, children }) {
+  if (size < TYPE_FLOOR) return null
+  const words = (card && card.words) || ''
+  const ms = metaSize(size)
+  const top = label != null ? label : `@${(card && card.handle) || ''}`
+  return (
+    <span
+      style={{
+        position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: `0 ${size * 0.13}px`, textAlign: 'center', pointerEvents: 'none',
+      }}
+    >
+      {!!top && (
+        <span
+          style={{
+            fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.16,
+            textTransform: 'uppercase', color: rgba(C.cream, 0.56), whiteSpace: 'nowrap',
+            overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+          }}
+        >
+          {top}
+        </span>
+      )}
+      <span
+        aria-hidden
+        style={{ width: size * 0.1, height: 1, background: rgba(C.cream, 0.2), margin: `${size * 0.038}px 0 ${size * 0.05}px` }}
+      />
+
+      {/* The words, or whatever the composer wants to put in their place. */}
+      {children || (
+        <span
+          style={{
+            fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
+            fontSize: size * fitRatio(words), lineHeight: 1.18,
+            color: words ? C.cream : rgba(C.cream, 0.34),
+            maxWidth: size * 0.72,
+          }}
+        >
+          {words || placeholder || ''}
+        </span>
+      )}
+
+      <span
+        style={{
+          fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.16,
+          textTransform: 'uppercase', color: rgba(C.cream, 0.38),
+          marginTop: size * 0.055,
+        }}
+      >
+        {stamp(card && card.placed)}
+      </span>
+    </span>
+  )
+}
+
+// ── the card ─────────────────────────────────────────────────────────────────
+// Ground, poster, limb, corona. This is the whole object; there is nothing
+// outside it. `children` lets the composer put a live field where the words go
+// without duplicating a single value of the layout.
+export default function Card({ C, card, url, size = 300, tint, label, placeholder, glow = 1, style, children }) {
   const hue = tint || tintOf(C, card && card.tone)
   return (
     <span
@@ -215,48 +229,15 @@ export function Body({ C, card, url, size = 300, tint, label, glow = 1, style })
       }}
     >
       <Surface C={C} card={card} url={url} size={size} tint={hue} />
-      <Rim C={C} handle={card && card.handle} label={label} size={size} tint={hue} />
+      <Poster C={C} card={card} size={size} label={label} placeholder={placeholder}>
+        {children}
+      </Poster>
+      <Limb C={C} size={size} tint={hue} />
     </span>
   )
 }
 
-// ── the card ─────────────────────────────────────────────────────────────────
-// The whole object, in the fixed layout every card in the product wears: the
-// body, the words beneath it in serif italic on one intimate measure, and the
-// tick under that in mono. Three registers, cast exactly as docs/DESIGN.md §3
-// casts them, and not one size off the ladder.
-export default function Card({ C, card, url, size = 300, tone, style, showTick = true }) {
-  const hue = tintOf(C, card && card.tone)
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.xl, ...style }}>
-      <Body C={C} card={card} url={url} size={size} tint={hue} />
-
-      {/* the words. The one place on the card a person's own voice appears, so
-          it gets the emotional register and the full measure, and nothing is
-          allowed to sit beside it competing. */}
-      {card && card.words && (
-        <p
-          style={{
-            margin: 0, textAlign: 'center', maxWidth: Math.min(360, size * 1.15),
-            fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
-            fontSize: SIZE.lead, lineHeight: 1.45, color: C.cream,
-            textShadow: '0 2px 18px rgba(0,0,0,.7)',
-          }}
-        >
-          {card.words}
-        </p>
-      )}
-
-      {showTick && (
-        <span
-          style={{
-            fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro,
-            textTransform: 'uppercase', color: rgba(C.muted, 0.9),
-          }}
-        >
-          {tone || stamp(card && card.placed)}
-        </span>
-      )}
-    </div>
-  )
-}
+// The old name, kept because the sky, the spread and the composer all reach for
+// the body of a card rather than a card-plus-lockup. They are now the same
+// thing: everything the card has is inside it.
+export { Card as Body }

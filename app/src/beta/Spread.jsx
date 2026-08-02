@@ -26,7 +26,7 @@ import * as React from 'react'
 import {
   rgba, SPACE, FONT, SIZE, PrimaryButton, GhostButton, Small, Icon,
 } from '../components/ui.jsx'
-import { Body } from './Disc.jsx'
+import Card from './Disc.jsx'
 
 // galaxy.js's own constants: the inspiral, then the touch. The frame the binary
 // first exists on is the frame the surfaces appear on.
@@ -72,14 +72,15 @@ function useUnseal(fieldRef) {
 }
 
 // ── one half of the spread ───────────────────────────────────────────────────
-// A disc and the words under it. The pair is offset in opposite directions on a
+// One card, and nothing else: the words are set inside the poster, so a half of
+// the spread is a single object. The pair is offset in opposite directions on a
 // tipped axis so the two read as bound rather than stacked, and the offset is
 // the only thing that differs between them.
 function Half({ C, card, url, tint, label, size, side, open, delay }) {
   return (
     <div
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
         transform: `translateX(${side * size * 0.18}px)`,
         // the unseal: out of a point of light, sharpening as it grows. Same
         // curve the sky's approach runs, because it is the same event.
@@ -91,49 +92,8 @@ function Half({ C, card, url, tint, label, size, side, open, delay }) {
           : `opacity .5s ease ${delay}ms, scale 1.15s cubic-bezier(.16,.8,.3,1) ${delay}ms, filter .9s ease ${delay}ms`,
       }}
     >
-      <Body C={C} card={card} url={url} size={size} tint={tint} label={label} glow={1.4} />
-      {card && card.words && (
-        <p
-          style={{
-            margin: 0, textAlign: 'center', maxWidth: Math.min(340, size * 1.5),
-            fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, lineHeight: 1.45,
-            color: C.cream, textShadow: '0 2px 20px rgba(0,0,0,.8)',
-          }}
-        >
-          {card.words}
-        </p>
-      )}
+      <Card C={C} card={card} url={url} size={size} tint={tint} label={label} glow={1.4} />
     </div>
-  )
-}
-
-// ── the tidal bridge ─────────────────────────────────────────────────────────
-// The engine draws one in three dimensions while the pair is closing, made of
-// matter pulled off each star by the other. This is its quiet remainder: one
-// hairline running between the two halves of the spread, rose at their end and
-// amber at yours, drawn on after both have unsealed. It is the only mark on the
-// screen that says these are two parts of one object rather than two cards that
-// happen to be stacked.
-function Bridge({ C, open }) {
-  const id = React.useId()
-  return (
-    <svg
-      aria-hidden width="2" height="40"
-      viewBox="0 0 2 40" preserveAspectRatio="none"
-      style={{
-        display: 'block', overflow: 'visible',
-        opacity: open ? 1 : 0, transition: 'opacity 1.1s ease .55s',
-      }}
-    >
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.them} stopOpacity="0.8" />
-          <stop offset="50%" stopColor={C.cream} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={C.you} stopOpacity="0.8" />
-        </linearGradient>
-      </defs>
-      <line x1="1" y1="0" x2="1" y2="40" stroke={`url(#${id})`} strokeWidth="1" />
-    </svg>
   )
 }
 
@@ -144,7 +104,7 @@ function Bridge({ C, open }) {
 // short, it is the product working.
 export default function Spread({ C, yours, theirs, yourUrl, theirUrl, fieldRef, onSay, onShare, onBack }) {
   const open = useUnseal(fieldRef)
-  const size = Math.min(150, Math.round(window.innerWidth * 0.36))
+  const size = Math.min(228, Math.round(Math.min(window.innerWidth * 0.58, window.innerHeight * 0.27)))
 
   const them = (theirs && theirs.handle) || (yours && yours.handle) || ''
 
@@ -194,8 +154,10 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, fieldRef, 
       {/* the pair. Theirs first: at a reveal, the only thing anyone wants is
           the half they could not see. */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, flex: 1, justifyContent: 'center' }}>
+        {/* The two coronas overlap where the pair is closest, which is the
+            tidal bridge doing its own job in light. A drawn hairline between
+            them was invisible behind exactly that. */}
         <Half C={C} card={theirs} url={theirUrl} tint={C.them} label={`@${them}`} size={size} side={-1} open={open} delay={0} />
-        <Bridge C={C} open={open} />
         <Half C={C} card={yours} url={yourUrl} tint={C.you} label="yours" size={size} side={1} open={open} delay={0} />
       </div>
 

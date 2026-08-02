@@ -289,18 +289,29 @@ The system extends beyond the app; these must all read as the same cosmos:
     crosses the engine's own resolve threshold: blurred first, the way an
     unresolved body is, sharpening as it grows. Closing runs the same curve
     backwards. There is no open or close animation written anywhere.
-  - **The card's fixed layout**, and it is the whole vocabulary: the disc, per-
-    channel limb darkening, a corona in the card's own light, the `@` set on
-    the rim (mono, tracked, the metadata register at the greatest possible
-    distance from the words), twenty words in serif italic beneath, one mono
-    tick under that. The user chooses content and never design.
+  - **The card is a type poster, cut round.** The words are set ON the ground
+    rather than under it: the `@` in tracked mono, a hairline, the twenty words
+    in serif italic large and tight, the date in mono below. Three registers,
+    cast as §3 casts them, inside the disc. A disc with a paragraph beneath it
+    was two objects; this is one, and it survives being a thumbnail.
+  - **Type inside the disc is a ratio of the diameter**, not a step on the
+    ladder. Narrow deliberate exception, and the same one `card.js` already
+    takes: a composed artifact is an artboard, not a screen, and this one is
+    drawn at four sizes from a 68px thumbnail to a 1080-wide Story render. The
+    words fit in three steps so cards of similar length look like a set.
+  - **The ground is a photograph or one of five dark plates.** Grounds, not
+    accents: the two-accent law governs the interface, and a short low-chroma
+    set is what keeps forty cards reading as one work where a colour picker
+    would not. Under a photograph the type gets one flat even scrim, so every
+    card in the product sets its words at the same contrast.
   - **A card's light comes from its photograph.** The plan bans relationship
     labels outright, so the tint cannot come from a picker: it is measured off
     the image, luminance-weighted so the light source in the frame decides, and
     mapped between the two existing stars. A warm room burns amber, a cold one
     rose. No third hue, no category, nobody asked.
-  - **A card with no photograph is still a star** — the disc shows the
-    photosphere. This is the reason the photo can be optional at all.
+  - **A card with no photograph is still a star** — it stands on a plate and
+    keeps its body, its light and its type. This is the reason the photo can be
+    optional at all.
   - **The mutual spread.** The engine's inspiral, flash, light echo and settled
     binary play as built; the two cards then unseal together, out of the two
     stars, on the frame the binary first exists on. The unseal is driven by the
