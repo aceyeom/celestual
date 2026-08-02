@@ -54,7 +54,7 @@ function night(ctx) {
 
 // ── the body ─────────────────────────────────────────────────────────────────
 // The same object the app draws, in canvas: a flat ground, one even scrim over
-// a photograph, the shared grain, the hairline limb and the corona. No
+// a photograph, the shared grain, and the corona — no drawn edge. No
 // gradients inside the disc, for the same reason there are none in Disc.jsx —
 // a vignette on a circle reads as a lens artefact rather than as a print.
 function body(ctx, card, img, cx, cy, r, hue) {
@@ -103,18 +103,10 @@ function body(ctx, card, img, cx, cy, r, hue) {
 
   ctx.restore()
 
-  // the limb itself
-  ctx.strokeStyle = rgba(TOKENS.cream, 0.18)
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, Math.PI * 2)
-  ctx.stroke()
-  // the chromosphere, catching on one arc
-  ctx.strokeStyle = rgba(hue, 0.75)
-  ctx.lineWidth = 3
-  ctx.beginPath()
-  ctx.arc(cx, cy, r, Math.PI * 1.12, Math.PI * 1.42)
-  ctx.stroke()
+  // and nothing is drawn on the limb. Disc.jsx carries the reasoning: a stroked
+  // circle is a badge, and what ends a real body is the light falling off it,
+  // which the corona above already did. This render has to be the same object
+  // the app draws or the share sheet is a different product.
 }
 
 // Tracked mono, the way canvas cannot do on its own.

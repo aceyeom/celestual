@@ -108,25 +108,6 @@ export function Surface({ C, card, url, size }) {
   )
 }
 
-// ── the limb ─────────────────────────────────────────────────────────────────
-// Where the print ends: one hairline, and one brighter arc in the card's own
-// light so the disc still belongs to a sky full of stars.
-function Limb({ C, size, tint }) {
-  return (
-    <svg
-      aria-hidden viewBox="0 0 100 100"
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}
-    >
-      <circle cx="50" cy="50" r="49.4" fill="none" stroke={rgba(C.cream, 0.18)} strokeWidth="0.5" />
-      <circle
-        cx="50" cy="50" r="49.4" fill="none" stroke={rgba(tint, 0.7)} strokeWidth="0.7"
-        strokeDasharray="52 260" strokeLinecap="round" transform="rotate(-128 50 50)"
-        style={{ filter: `drop-shadow(0 0 ${Math.max(2, size * 0.012)}px ${rgba(tint, 0.6)})` }}
-      />
-    </svg>
-  )
-}
-
 // A block placed at a normalized anchor, aligned by which side of the disc it
 // sits on. `pos` is the block's centre; the transform is what turns an anchor
 // into a left, centre or right hang without any of the three needing their own
@@ -202,18 +183,30 @@ export function Poster({ C, card, size, label, placeholder, children }) {
 }
 
 // ── the card ─────────────────────────────────────────────────────────────────
-// Ground, poster, limb, corona. This is the whole object; there is nothing
-// outside it. `children` lets the composer put a live field where the words go
-// without duplicating a single value of the layout.
+// Ground, poster, light. This is the whole object; there is nothing outside it.
+// `children` lets the composer put a live field where the words go without
+// duplicating a single value of the layout.
+//
+// There is no drawn edge. A hairline ring and a bright chromosphere arc used to
+// sit on the limb, and at the size a ping is actually seen — 38px in a list,
+// 46px falling through the sky at a reveal — the ring WAS the object: a drawn
+// circle with a photograph inside it, which is a badge, not a body. Nothing in
+// a real sky has a stroke on it. What ends a star is the light falling off, so
+// that is all that ends this one: the corona in the card's own colour, and a
+// soft shadow under it that seats the disc in the field rather than on top of
+// it. The photograph now runs all the way to its own edge, which is what makes
+// two pings tell each other apart at a glance.
 export default function Card({ C, card, url, size = 300, tint, label, placeholder, glow = 1, style, children }) {
   const hue = tint || tintOf(C, card && card.tone)
   return (
     <span
       style={{
         position: 'relative', display: 'block', width: size, height: size, borderRadius: '50%',
-        // the corona: the light that reaches past the limb, in the card's own
-        // colour, seating the disc in the field rather than on top of it
-        boxShadow: `0 0 ${size * 0.16}px ${rgba(hue, 0.24 * glow)}, 0 0 ${size * 0.5}px ${rgba(hue, 0.11 * glow)}, 0 ${size * 0.06}px ${size * 0.24}px rgba(0,0,0,.55)`,
+        boxShadow:
+          `0 0 ${size * 0.06}px ${rgba(hue, 0.3 * glow)}, ` +
+          `0 0 ${size * 0.2}px ${rgba(hue, 0.22 * glow)}, ` +
+          `0 0 ${size * 0.56}px ${rgba(hue, 0.1 * glow)}, ` +
+          `0 ${size * 0.05}px ${size * 0.2}px rgba(0,0,0,.5)`,
         ...style,
       }}
     >
@@ -221,7 +214,6 @@ export default function Card({ C, card, url, size = 300, tint, label, placeholde
       <Poster C={C} card={card} size={size} label={label} placeholder={placeholder}>
         {children}
       </Poster>
-      <Limb C={C} size={size} tint={hue} />
     </span>
   )
 }
