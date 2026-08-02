@@ -144,6 +144,24 @@ button { font-family: inherit; }
 @keyframes sendoffLine { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
 .sendoff-line { animation: sendoffLine 1s ease .5s both; }
 
+/* ── the sealed mutual ────────────────────────────────────────────────────────
+   A match sits on the status page unopened, and every few seconds it moves:
+   something is in there, and the seal is not going to pretend otherwise. Small
+   and quick, in degrees rather than pixels, so it reads as a thing straining
+   against a lid and not as an element sliding around a list. The rhythm (a
+   beat, then four quiet seconds) is JS — a shake that never stops is a
+   spinner. */
+@keyframes rattle {
+  0%, 100% { transform: rotate(0) translateX(0); }
+  12%      { transform: rotate(-7deg) translateX(-1.5px); }
+  26%      { transform: rotate(6deg) translateX(1.5px); }
+  40%      { transform: rotate(-5deg) translateX(-1px); }
+  54%      { transform: rotate(4deg) translateX(1px); }
+  70%      { transform: rotate(-2deg) translateX(0); }
+  85%      { transform: rotate(1deg) translateX(0); }
+}
+.rattle { animation: rattle .7s cubic-bezier(.36,.07,.19,.97) both; }
+
 /* ── the live activity popup (demo communities) ───────────────────────────────
    One beat at a time: it fades up, holds, and fades away over its own display
    window (the duration is set per-beat via --live-dur), so a keyed re-render
@@ -190,7 +208,7 @@ button { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
-  .enter, .fade, .live-pop { animation: none !important; opacity: 1 !important; }
+  .enter, .fade, .live-pop, .rattle { animation: none !important; opacity: 1 !important; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none !important; }
 }

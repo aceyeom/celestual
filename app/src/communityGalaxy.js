@@ -35,7 +35,7 @@ import {
 } from './sky/model.js'
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { Gestures } from './sky/gestures.js'
-import { CATEGORY_TINTS } from './theme.js'
+import { starTint } from './theme.js'
 import { bakeTag } from './sky/fx.js'
 import { Community2D } from './sky/fallback2d.js'
 
@@ -734,7 +734,7 @@ export class CommunityGalaxy extends SkyEngine {
       let settle = 1
       if (st.settleAt > 0) settle = smooth(clamp((this.t - st.settleAt) / 0.9, 0, 1))
       if (settle <= 0.01) continue
-      const tint = CATEGORY_TINTS[m.kind] || this.you
+      const tint = starTint(m.kind) || this.you
       const tcol = linearOf(tint)
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + st.i)
       const gain = (0.38 + pulse * 0.06) * settle * fade * (1 - f * 0.80) * (1 - this.formingBlend * 0.15)

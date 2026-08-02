@@ -16,6 +16,13 @@ The product direction is fixed by one document —
 - **Three standing pings, sixty days each.** Renewal is free and one tap;
   letting one go frees the slot; lapsed unmatched pings are purged. Scarcity
   is the sincerity mechanism, not a paywall.
+- **Every ping carries a card.** You write a short message on a ground (a
+  photograph you take there and then, or one of five dark plates) in one of the
+  product's three faces, and drag the block where you want it. It is sealed the
+  way the ping is: the words ride on the ping row and the server will only ever
+  release them to the other person once the pair is mutual; the photograph never
+  leaves the phone that took it. At a match both cards unseal in the same
+  instant (**[docs/STAR-CARDS.md](./docs/STAR-CARDS.md)**).
 - **Loop A — the recruiter screen.** The moment a ping is placed you're told
   the truth: *standing* (they're reachable on celestual) or *waiting* (they
   aren't yet — and they'll never know you had anything to do with it), plus
@@ -69,8 +76,8 @@ celestual/
 │   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
 │   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
 │   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
-│   │   ├── beta/     the star & card prototype (/beta) — Disc.jsx (the card) ·
-│   │   │             Sky.jsx (the approach) · Composer.jsx · Spread.jsx · store.js
+│   │   ├── card/     the star & card system — Disc.jsx (the card) · Composer.jsx ·
+│   │   │             Resolve.jsx (the approach) · Spread.jsx · model.js · photos.js
 │   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
 │   │   ├── i18n/     the canonical copy (strings.js)
 │   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js · styles.css
@@ -83,7 +90,7 @@ celestual/
 │   │                 0015 the identity router · 0016 the recruitment program ·
 │   │                 0017 the First Light trial + the 20s grace + the admin dashboard ·
 │   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
-│   │                 entitlement layer (per-person slot cap; dormant)
+│   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
@@ -108,7 +115,6 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
-| `/beta` | **the star & card system** — a self-contained prototype of the card design (`app/src/beta/`, `docs/BETA-STAR-CARDS.md`). Mounted in `main.jsx` beside the real app, so production is untouched; nothing it holds leaves the browser |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
@@ -160,7 +166,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
 | [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
-| [docs/BETA-STAR-CARDS.md](./docs/BETA-STAR-CARDS.md) | **`/beta` — the star & card system**: why the card is a circle, how a ping resolves into one, the mutual spread, and what is stored (nothing leaves the browser) |
+| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | **The star & card system**: the card every ping carries, why it is a circle, how a ping resolves into one, the mutual reveal, and the split that keeps the words on the server and the photograph on the phone |
 | [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |

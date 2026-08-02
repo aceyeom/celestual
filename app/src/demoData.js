@@ -22,7 +22,21 @@ export const DEMO_PINGS = [
     expires_at: new Date(Date.now() + 40 * day).toISOString(),
     mutual: true, // resolved — sits in the mutual section, off the slots
     reachable: true,
-    intent: 'exAgain',
+    // sealed on arrival, so the sandbox shows the reveal the way it really
+    // happens: a slot that shakes until somebody decides to open it
+    revealed: false,
+    card: {
+      handle: 'sofia.reyes',
+      words: 'you always took the window seat',
+      bg: 'ink', face: 'serif', pos: { x: 0.2, y: 0.68 }, tone: 1,
+      placed: Date.now() - 20 * day,
+    },
+    theirCard: {
+      handle: 'sofia.reyes',
+      words: 'i thought about messaging you a hundred times',
+      bg: 'rose', face: 'serif', pos: { x: 0.2, y: 0.4 }, tone: 0,
+      placed: Date.now() - 21 * day,
+    },
   },
   {
     handle: 'aria.chen',
@@ -30,14 +44,24 @@ export const DEMO_PINGS = [
     expires_at: new Date(Date.now() + 48 * day).toISOString(),
     mutual: false,
     reachable: true, // "standing" — she's on celestual
-    intent: 'exUnsaid',
+    card: {
+      handle: 'aria.chen',
+      words: 'you hated that song and sang it anyway',
+      bg: 'violet', face: 'sans', pos: { x: 0.2, y: 0.4 }, tone: 0.42,
+      placed: Date.now() - 12 * day,
+    },
   },
   {
     handle: 'jw.park',
     time: Date.now() - 56 * day,
     expires_at: new Date(Date.now() + 4 * day).toISOString(),
     mutual: false, // "waiting" — not on celestual yet; also near lapse
-    intent: null,
+    card: {
+      handle: 'jw.park',
+      words: 'we said we would be roommates',
+      bg: 'ember', face: 'mono', pos: { x: 0.5, y: 0.62 }, tone: 1,
+      placed: Date.now() - 56 * day,
+    },
   },
 ]
 
@@ -53,8 +77,8 @@ export const DEMO_PINGS = [
 // dense, open galaxy with a sky full of constellations; Wesleyan is a smaller
 // open galaxy; CMU is still gathering (a forming nebula, counts withheld).
 export const DEMO_COMMUNITIES = {
-  'uc-berkeley': { open: true, members: 214, pings: 386, matches: 18, week: { joined: 71, topReason: 'crushThink' } },
-  wesleyan: { open: true, members: 128, pings: 154, matches: 11, week: { joined: 33, topReason: 'exUnsaid' } },
+  'uc-berkeley': { open: true, members: 214, pings: 386, matches: 18, week: { joined: 71 } },
+  wesleyan: { open: true, members: 128, pings: 154, matches: 11, week: { joined: 33 } },
   cmu: { open: false, members: 74 }, // gathering — its sky opens with the countdown
 }
 

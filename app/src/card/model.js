@@ -1,4 +1,4 @@
-// beta/model.js — the card, as data.
+// card/model.js — the card, as data.
 //
 // The change the whole plan turns on (the plan, §0): the two fields are split
 // in time. The PHOTO is now — where you are, this minute, while you're thinking
@@ -23,14 +23,11 @@ import { FONT } from '../theme.js'
 export const MAX_WORDS = 20
 
 // The one universal prompt. There is no dropdown, no category, no relationship
-// label — the ambiguity is the product (the plan, §1.3).
-//
-// "The moment you'd go back to" produces hedges: *hope you're doing well
-// wherever you are.* "The small thing you still remember" produces
-// *you always took the window seat.* Asking for a DETAIL rather than a FEELING
-// is the whole anti-cringe mechanism, and it is one string.
-export const PROMPT = 'the small thing you still remember'
-export const PHOTO_PROMPT = 'where you are, right now'
+// label — the ambiguity is the product (the plan, §1.3). It asks for as little
+// as it can: the field is where a person is going to hesitate, and a prompt
+// that describes the assignment is a prompt they read twice. The three seeds
+// under it do the teaching.
+export const PROMPT = 'leave a short message'
 
 // ── the seeds ────────────────────────────────────────────────────────────────
 // Never show an empty composer. These are the register, taught by example
@@ -205,15 +202,16 @@ export function metaPos(pos) {
 }
 
 // ── the model ────────────────────────────────────────────────────────────────
-// One card per ping. `photoId` points into the local blob store, or is null and
-// `bg` names a plate instead. Nothing here is ever unsealed before a mutual —
-// nothing a user makes reaches the other person before both have chosen each
-// other (the plan, §1.1), and in this prototype that law is enforced by there
-// being no network at all.
-export function makeCard({ handle, words: w, photoId = null, bg = 'ink', face = 'serif', pos, tone }) {
+// One card per ping. `photoId` points into the local blob store (card/photos.js)
+// and never leaves this device; everything else is what rides on the ping row.
+//
+// Nothing a user makes reaches the other person before both have chosen each
+// other (the plan, §1.1). The card is sealed the way the ping itself is: the
+// server holds it, and the only read that can ever return it belongs to the
+// counterpart of a row that is already matched (migration 0022).
+export function makeCard({ handle, words: w, photoId = null, bg = 'ink', face = 'serif', pos, tone, placed }) {
   const text = clampWords(w || '')
   return {
-    id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     handle: String(handle || '').toLowerCase(),
     words: text,
     photoId,
@@ -221,13 +219,50 @@ export function makeCard({ handle, words: w, photoId = null, bg = 'ink', face = 
     face,
     pos: clampPos(pos || autoPos(text)),
     tone: tone != null ? tone : plateOf(bg).tone,
-    placed: Date.now(),
-    mutual: false,
-    // Their card, revealed only at a mutual. Held here so the prototype can
-    // play the reveal; in production it does not exist on this device until
-    // the server has both sides.
-    theirs: null,
+    placed: placed || Date.now(),
   }
+}
+
+// ── the wire ─────────────────────────────────────────────────────────────────
+// What the server is told, and it is exactly the poster: the words, which
+// ground, which face, where the block sits, and the one number the light is
+// mixed from. Flat, because the same shape is validated in SQL
+// (celestual_card_clean) and a nested `pos` would be two casts there for no
+// reason.
+//
+// The photograph is NOT in here and there is no argument that puts it here. It
+// stays in this browser (card/photos.js), which is the only version of "it never
+// left your phone" that is a fact rather than a policy.
+export function toWire(card) {
+  if (!card || !cardReady(card)) return null
+  const pos = clampPos(card.pos || autoPos(card.words))
+  return {
+    words: clampWords(card.words),
+    bg: plateOf(card.bg).id,
+    face: faceOf(card.face).id,
+    x: Number(pos.x.toFixed(4)),
+    y: Number(pos.y.toFixed(4)),
+    tone: Number((card.tone != null ? card.tone : plateOf(card.bg).tone).toFixed(4)),
+  }
+}
+
+// The reverse, and it trusts nothing: a card coming back off the wire is the
+// other person's, so every field is put back through the same clamps the
+// composer writes under.
+export function fromWire(w, { handle, placed } = {}) {
+  if (!w || typeof w !== 'object') return null
+  const words = clampWords(String(w.words || ''))
+  if (!wordCount(words)) return null
+  const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d)
+  return makeCard({
+    handle,
+    words,
+    bg: plateOf(w.bg).id,
+    face: faceOf(w.face).id,
+    pos: { x: num(w.x, 0.5), y: num(w.y, 0.5) },
+    tone: Math.max(0, Math.min(1, num(w.tone, plateOf(w.bg).tone))),
+    placed,
+  })
 }
 
 // The date tick under a card. Mono, uppercase, and never relative ("2 days

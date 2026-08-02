@@ -161,6 +161,38 @@ and any still-pending notification, but never un-tells anyone already mailed.
 A blocked/opted-out handle can never match: suppression is checked (by hash)
 before anything records.
 
+### §card — What a ping carries, and what holds it shut (0022)
+Every ping now carries a **card**: a short message on a ground, in one of three
+faces, with the block where the person left it, plus one number for the light it
+burns with. It lives in `celestual_entries.card`.
+
+- **Rebuilt, never accepted.** `celestual_card_clean` constructs the stored
+  jsonb from scratch on every write — twenty words, a known plate, a known face,
+  a position clamped inside the disc, a tone in range — so an unknown key cannot
+  ride along inside the object and come back out at a reveal.
+- **One door, and it is locked to a matched row.**
+  `celestual_counterpart_card` is the only function that returns a card its
+  caller did not write, it is **not granted to `anon` or `authenticated`**, and
+  its `where` clause carries `matched_at is not null` on the row *being read*.
+  There is no argument to it, and no shape of call to anything else, that
+  returns the words on an unanswered ping.
+- **The photograph is not on the server.** There is no column, no bucket and no
+  upload path. A card's picture is treated, EXIF-stripped and stored in
+  IndexedDB on the phone that took it (`app/src/card/photos.js`). At a mutual
+  you are shown their words, their ground and their light — never their room.
+  This is deliberate: for the words the seal is now a policy a `where` clause
+  keeps, and for the picture it stays a fact about the network.
+- **Deleted by every path that deletes a ping.** The sixty-day purge, "let one
+  go", "delete everything" and the opt-out all work on whole rows. Letting a
+  ping go also drops its photograph from IndexedDB.
+
+Two things follow that are worth stating rather than discovering. A card is
+plaintext at rest in `celestual_entries` — the target handle beside it is a
+salted hash, the words are not, and they cannot be, because the other person has
+to be able to read them. And a card sits in `localStorage` on the device that
+placed it, exactly as the plaintext handles already do. See
+[STAR-CARDS.md](./STAR-CARDS.md) §5.
+
 ### §optout — The public escape hatch
 `celestual_suppress` is the opt-out any handle owner — user or not — can use
 without an account: it hashes the handle into the block list and erases
@@ -269,13 +301,20 @@ pages. If the doc viewer is ever removed, put this back to `'none'`.
   readout). The bound address is never returned in full — Postgres masks it to
   its first letter and domain before it leaves. The RPC is service-role only, so
   it is reachable only through the edge function, where rate limiting lives.
+- **A card is readable by the operator (0022)** — the words are stored in
+  plaintext, because the person they were written to must be able to read them
+  at a mutual and a hash cannot be un-hashed. The target handle beside them is
+  still a salted hash, so a dump of `celestual_entries` gives you what somebody
+  wrote and not who they wrote it to; the pair is only ever joined for a
+  reciprocal that already exists. Treat the column as sensitive in the same
+  breath as the salt: encrypt at rest, log access.
 - **Pre-enforcement window** — while `require_ig_verification` is `'false'`
   (dev default), identity is the typed handle. Flip it on before any real
   launch; the operator checklist below makes it a release gate.
 
 ## Operator checklist
 
-- [ ] All migrations applied (`0001`–`0014`); RLS **on**, **zero policies**,
+- [ ] All migrations applied (`0001`–`0022`); RLS **on**, **zero policies**,
       on every `celestual_*` table.
 - [ ] `anon` has **execute** only on the §1 public RPC list — and **not** on
       `celestual_group`, `celestual_hash_handle`, `celestual_is_member`,

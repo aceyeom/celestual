@@ -278,7 +278,7 @@ export class Galaxy2D extends Field2D {
       }
       this.sealedScreen[i] = { x: pr.sx, y: pr.sy, vis: true }
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + s.phase)
-      const tint = this.sealKinds[i] ? TINT[this.sealKinds[i]] || this.you : this.sealHue || this.you
+      const tint = tintOf(this.sealKinds[i]) || this.sealHue || this.you
       const R = (13 + pulse * 3) * pr.p
       const g = ctx.createRadialGradient(pr.sx, pr.sy, 0, pr.sx, pr.sy, R)
       g.addColorStop(0, hexA(tint, 0.55 * d))
@@ -383,7 +383,10 @@ export class Community2D extends Field2D {
   }
 }
 
+// A seal's light comes off its card now (card/model.js tintOf), so a "kind" is
+// a colour. The four names are the pings placed before the card existed.
 const TINT = { crush: '#F79BC3', ex: '#F08578', friend: '#96BCF8', complicated: '#B9A3E8' }
+const tintOf = (k) => (typeof k === 'string' && k.charAt(0) === '#' ? k : TINT[k]) || null
 function hexA(hex, a) {
   const h = (hex || '#fff').replace('#', '')
   const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)

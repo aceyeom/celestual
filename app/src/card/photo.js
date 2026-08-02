@@ -1,4 +1,4 @@
-// beta/photo.js — a photograph becomes a surface.
+// card/photo.js — a photograph becomes a surface.
 //
 // Two jobs, and the second one is the design.
 //

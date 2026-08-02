@@ -28,7 +28,7 @@ Idempotent migrations, applied in order:
   (superseded by `celestual_my_pings` in 0006).
 - `migrations/0006_ping_model.sql` — **the current model.** Three standing
   pings, sixty-day lapse + purge, salted-hash targets, hashed opt-out,
-  members/reachability, the intent line, community counters (100-floor),
+  members/reachability, community counters (100-floor),
   assurance-contract campus windows, and every current RPC.
 - `migrations/0007_edu_verification.sql` — the school (.edu) email gate:
   one-time codes for community membership, hash-stored, service-role only
@@ -129,6 +129,14 @@ Idempotent migrations, applied in order:
   account (`celestual_billing_forget`); the ledger row survives with its handle
   nulled. `'paid'` joins the reserved four-letter codes.
   **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)**
+- `migrations/0022_the_card.sql` — **the card.** `celestual_entries.card`, the
+  `celestual_card_clean` validator, `celestual_counterpart_card` (the one door
+  to somebody else's card, and it opens only on a matched row), and the three
+  RPCs that changed shape: `celestual_submit` (now takes `p_card`, returns
+  `match_card`), `celestual_ping_status` and `celestual_my_pings`. The old
+  five-argument `celestual_submit` is DROPPED, not kept alongside — PostgREST
+  resolves overloads by argument name and two candidates satisfying the same
+  call is an ambiguity error. See ../docs/STAR-CARDS.md §5.
 
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
@@ -195,9 +203,14 @@ them; each enforces its own checks. See
 
 - **`celestual_entries`** — one ping: `from_handle` (the verified sender),
   `to_hash` (**salted hash** of the target — plaintext is never stored),
-  optional `from_email` + `intent`, the sixty-day `expires_at` clock,
-  `matched_at` / `matched_handle` (plaintext only once mutual — both sides
-  know by then), `renew_notified_at`.
+  optional `from_email`, the **`card`** the ping carries (migration 0022 — the
+  words, the ground, the face, the block's position and the tone, rebuilt by
+  `celestual_card_clean` on the way in and readable by the other person only
+  once `matched_at` is set; **no photograph is ever stored here or anywhere
+  else on the server**), the sixty-day `expires_at` clock, `matched_at` /
+  `matched_handle` (plaintext only once mutual — both sides know by then),
+  `renew_notified_at`. `intent` is a dead column kept for the pings placed
+  before the card existed: nothing reads or writes it.
 - **`celestual_matches`** — one row per mutual pair (canonical ordering).
 - **`celestual_notifications`** — outbound mutual-mail queue (retry /
   dead-letter), drained by `celestual-notify`.

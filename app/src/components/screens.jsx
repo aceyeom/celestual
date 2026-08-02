@@ -25,7 +25,10 @@ import {
   Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
   Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, TRACK, ICON,
 } from './ui.jsx'
-import { CATEGORY_TINTS } from '../theme.js'
+import Card from '../card/Disc.jsx'
+import Composer from '../card/Composer.jsx'
+import Spread from '../card/Spread.jsx'
+import { shareCard } from '../card/share.js'
 import { communityOpen, MATCH_FLOOR, LAUNCH_AT, nextRevealAt, bySlug } from '../communities.js'
 import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
@@ -92,197 +95,14 @@ export function SandboxChip({ C }) {
   )
 }
 
-// ── the category + intent row (categorize them, then say why — §4.5) ──────────
-// You first say who they are to you (crush / ex / friend / complicated); the
-// "why them" lines that follow are drawn from that category, so they fit the
-// real relationship instead of one flat list. Both are optional and never
-// free-text; the chosen line travels with the ping, read only at a mutual
-// reveal. Ids are namespaced by category, and each line's display text lives in
-// i18n/strings.js under `intent.<id>`.
-export const CATEGORIES = [
-  { id: 'crush', intents: ['crushHi', 'crushThink', 'crushCute', 'crushSee'] },
-  { id: 'ex', intents: ['exMiss', 'exAgain', 'exUnsaid', 'exUs'] },
-  { id: 'friend', intents: ['friendTalk', 'friendAround', 'friendLeft', 'friendFix'] },
-  { id: 'complicated', intents: ['compRight', 'compMind', 'compAir', 'compWhat'] },
-]
-export const INTENTS = CATEGORIES.flatMap((c) => c.intents)
-// the category an intent id belongs to (so a saved ping can re-open its group).
-export const categoryOf = (id) => (CATEGORIES.find((c) => c.intents.includes(id)) || {}).id || ''
-// the line every intent id renders as (first person; same under "they"/"you").
-export const intentLine = (t, id) => (id && INTENTS.includes(id) ? t(`intent.${id}`) : '')
-
-// ── THE BOOKMARK ──────────────────────────────────────────────────────────────
-// Who they are to you, and why: ONE object, not two rows that happen to sit
-// near each other. It was a line of handwritten words above a scatter of
-// outlined tags, and the two halves shared no shape, no edge and no rhythm, so
-// the eye read them as unrelated controls that both happened to be optional.
-//
-// They are now a book with its tabs out. The four relationships are the tabs
-// along the top, and the chosen one FUSES into the leaf below it (its bottom
-// edge is gone; the card is the same surface, carrying the same tint). Inside,
-// the four "why them" quotes are bookmarks down the leaf's spine: flat on the
-// left where the binding is, rounded on the right, the chosen one pulled out
-// and lit. Both halves are cut from one shape vocabulary, and moving between
-// tabs visibly swaps the leaf rather than re-rendering a nearby list.
-//
-// The tint work is unchanged and load-bearing: each tab wears its category's
-// own light (rose for a crush, ember for an ex, ice-blue for a friend, violet
-// for complicated), which is the same light that person's star will burn with
-// in your community's sky. The bookmark is where that code is learned.
-// The leaf's surface, shared by the leaf and by whichever tab is fused into it.
-// One value, one blur, in both places: the moment these two drift apart the
-// seam under the active tab reappears and the illusion of one sheet is gone.
-const PANEL_BG = (C) => rgba(C.ink2, 0.8)
-const PANEL_BLUR = 'blur(14px) saturate(1.05)'
-
-function CategoryTab({ C, on, tint, onClick, children }) {
-  const [h, setH] = React.useState(false)
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setH(true)}
-      onMouseLeave={() => setH(false)}
-      aria-pressed={on}
-      style={{
-        position: 'relative', flexShrink: 1, minWidth: 0, whiteSpace: 'nowrap', cursor: 'pointer',
-        // the tab's own shape: rounded shoulders, square feet, standing ON the leaf
-        padding: '9px 11px 10px', marginBottom: -1,
-        borderRadius: `${RADIUS.inner}px ${RADIUS.inner}px 0 0`,
-        background: on ? PANEL_BG(C) : h ? rgba(C.cream, 0.05) : 'transparent',
-        backdropFilter: on ? PANEL_BLUR : 'none',
-        WebkitBackdropFilter: on ? PANEL_BLUR : 'none',
-        borderTop: `1px solid ${on ? rgba(tint, 0.5) : 'transparent'}`,
-        borderLeft: `1px solid ${on ? C.line : 'transparent'}`,
-        borderRight: `1px solid ${on ? C.line : 'transparent'}`,
-        borderBottom: `1px solid ${on ? 'transparent' : C.line}`,
-        fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1,
-        letterSpacing: '.2px',
-        color: on ? tint : rgba(C.cream, h ? 0.78 : 0.55),
-        textShadow: on ? `0 0 18px ${rgba(tint, 0.5)}` : 'none',
-        transition: 'color .2s, background .2s, border-color .2s',
-      }}
-    >
-      {/* the lit edge along the tab's top: the category's light, caught */}
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute', top: -1, left: 6, right: 6, height: 2, borderRadius: 2,
-          background: on ? `linear-gradient(90deg, transparent, ${tint}, transparent)` : 'transparent',
-          boxShadow: on ? `0 0 12px ${rgba(tint, 0.7)}` : 'none',
-          transition: 'background .22s, box-shadow .22s',
-        }}
-      />
-      {children}
-    </button>
-  )
-}
-
-// One "why them" line as a bookmark down the leaf's spine: flat left edge on
-// the binding, rounded right, its spine lit with the parent tab's tint. The
-// chosen one is pulled a few pixels clear of the page, the way a marked one is.
-function QuoteBookmark({ C, on, tint, onClick, children }) {
-  const [h, setH] = React.useState(false)
-  const accent = tint || C.star
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setH(true)}
-      onMouseLeave={() => setH(false)}
-      aria-pressed={on}
-      style={{
-        display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
-        padding: '11px 14px', borderRadius: `0 ${RADIUS.inner}px ${RADIUS.inner}px 0`,
-        background: on ? rgba(accent, 0.13) : h ? rgba(C.cream, 0.045) : rgba(C.cream, 0.025),
-        border: '1px solid transparent',
-        borderLeft: `3px solid ${on ? accent : rgba(C.cream, h ? 0.24 : 0.13)}`,
-        color: on ? C.cream : rgba(C.cream, h ? 0.8 : 0.62),
-        boxShadow: on ? `0 0 20px ${rgba(accent, 0.14)}` : 'none',
-        transform: on ? 'translateX(6px)' : 'translateX(0)',
-        fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.3,
-        transition: 'transform .22s ease, background .2s, color .2s, border-color .2s, box-shadow .22s',
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-export function IntentPicker({ C, category, onCategory, value, onChange }) {
-  const { t } = useI18n()
-  const cat = CATEGORIES.find((c) => c.id === category)
-  const tint = cat ? CATEGORY_TINTS[cat.id] : C.star
-  // Skipping is a real, visible act — not a pill that says "optional". One tap
-  // folds the whole question away; a quiet line holds its place, undoable.
-  const [skipped, setSkipped] = React.useState(false)
-  const skip = () => {
-    onCategory('')
-    onChange('')
-    setSkipped(true)
-  }
-  if (skipped) {
-    return (
-      <div className="fade" style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.md, flexWrap: 'wrap', padding: '2px 2px' }}>
-        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.muted, 0.95) }}>
-          {t('category.skipped')}
-        </span>
-        <GhostButton C={C} onClick={() => setSkipped(false)} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.star, 0.85) }}>
-          {t('category.unskip')}
-        </GhostButton>
-      </div>
-    )
-  }
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-      {/* who are they to you? — with the way out in plain sight */}
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md, padding: '0 2px' }}>
-        <Kicker C={C} style={{ fontSize: SIZE.meta, letterSpacing: TRACK.meta }}>{t('category.label')}</Kicker>
-        <GhostButton C={C} onClick={skip} style={{ padding: 0, fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
-          {t('category.skip')}
-        </GhostButton>
-      </div>
-
-      {/* the book: the tabs standing on the leaf's top edge, and the leaf.
-          ONE stack with no gap between them, so the chosen tab reads as part of
-          the same sheet of paper rather than a control hovering above one. */}
-      <div>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-end' }}>
-          {CATEGORIES.map((c) => (
-            <CategoryTab key={c.id} C={C} on={category === c.id} tint={CATEGORY_TINTS[c.id]} onClick={() => onCategory(category === c.id ? '' : c.id)}>
-              {t(`category.${c.id}`)}
-            </CategoryTab>
-          ))}
-          {/* the rest of the top edge, past the last tab */}
-          <span aria-hidden style={{ flex: 1, minWidth: 8, borderBottom: `1px solid ${C.line}` }} />
-        </div>
-
-        {/* the leaf — the chosen tab's quotes, as bookmarks down its spine */}
-        <Collapse open={!!cat}>
-          <div
-            className="fade"
-            key={category || 'none'}
-            style={{
-              display: 'flex', flexDirection: 'column', gap: 6,
-              padding: `${SPACE.lg}px ${SPACE.lg}px ${SPACE.md}px`,
-              background: PANEL_BG(C),
-              backdropFilter: PANEL_BLUR, WebkitBackdropFilter: PANEL_BLUR,
-              border: `1px solid ${C.line}`, borderTop: 'none',
-              borderRadius: `0 0 ${RADIUS.card}px ${RADIUS.card}px`,
-              boxShadow: cat ? `inset 0 26px 44px -32px ${rgba(tint, 0.55)}, 0 20px 60px rgba(0,0,0,.4)` : 'none',
-            }}
-          >
-            <FieldLabel C={C}>{t('intent.label')}</FieldLabel>
-            {(cat?.intents || []).map((id) => (
-              <QuoteBookmark key={id} C={C} tint={tint} on={value === id} onClick={() => onChange(value === id ? '' : id)}>
-                {t(`intent.${id}`)}
-              </QuoteBookmark>
-            ))}
-            <Note C={C} style={{ paddingTop: SPACE.xs }}>{t('intent.note')}</Note>
-          </div>
-        </Collapse>
-      </div>
-    </div>
-  )
-}
+// The category tabs and the sixteen "why them" lines that used to live here are
+// gone. They were a dropdown standing where a person's own sentence belongs,
+// and the whole of docs/STAR-CARDS.md turns on not having one: the ambiguity is
+// the product, and what travels with a ping is now a card somebody wrote (the
+// composer, one screen on from the @). The light a star burns with used to be
+// looked up from the chosen category; it is measured off the card's own ground
+// instead (card/model.js tintOf), so nobody is asked anything and no third hue
+// enters.
 
 // The slot pips — one small star per slot: a held slot burns amber, an open
 // one waits as a faint outline star. The product's own ritual marks (✦ ✧),
@@ -488,24 +308,25 @@ export function OpenDoorScreen({ C, ctx }) {
 }
 
 // ── 2 · THE SEND ──────────────────────────────────────────────────────────────
+// The @, confirmed, and nothing else. This screen used to place the ping; it now
+// hands off to the composer, because what a ping carries is a card somebody
+// wrote and asking for it after the act would make it read as an extra.
+//
+// The two-tap confirm stays exactly as it was. A typo here is otherwise a
+// permanent, silent, un-diagnosable dead end: the ping resolves to nobody and
+// nothing in the product can ever say so.
 export function WhoScreen({ C, ctx }) {
   const { t } = useI18n()
   const valid = ctx.them.trim().length >= 2 && normHandle(ctx.them) !== normHandle(ctx.me)
   const [confirming, setConfirming] = React.useState(false)
-  const [busy, setBusy] = React.useState(false)
   const normd = normHandle(ctx.them)
-  const onPlace = async () => {
-    if (!valid || busy) return
+  const onNext = () => {
+    if (!valid) return
     if (!confirming) {
       setConfirming(true)
       return
     }
-    setBusy(true)
-    try {
-      await ctx.place()
-    } finally {
-      setBusy(false)
-    }
+    ctx.compose()
   }
   React.useEffect(() => {
     setConfirming(false)
@@ -533,7 +354,7 @@ export function WhoScreen({ C, ctx }) {
         </div>
         <div className="enter" style={{ animationDelay: '.06s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <div data-sendoff-field>
-            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onPlace} />
+            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onNext} />
           </div>
           {confirming && valid ? (
             <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px' }}>
@@ -548,23 +369,6 @@ export function WhoScreen({ C, ctx }) {
           {ctx.demo && <Note C={C} tone="accent">{t('who.demoHint')}</Note>}
         </div>
 
-        {/* categorize them, then say why — the chosen line is read only if it's
-            ever mutual */}
-        <Collapse open={valid}>
-          <div className="fade" style={{ paddingTop: 2 }}>
-            <IntentPicker
-              C={C}
-              category={ctx.category}
-              onCategory={(c) => {
-                ctx.setCategory(c)
-                ctx.setIntent('')
-              }}
-              value={ctx.intent}
-              onChange={ctx.setIntent}
-            />
-          </div>
-        </Collapse>
-
         {/* the slots — the weight under the act. only shown once we know who you
             are: before you've identified, your slot count is genuinely unknown. */}
         {ctx.established && (
@@ -574,11 +378,43 @@ export function WhoScreen({ C, ctx }) {
         )}
       </div>
 
-      <PrimaryButton C={C} disabled={!valid || busy} onClick={onPlace}>
+      <PrimaryButton C={C} disabled={!valid} onClick={onNext}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
-          {busy ? '…' : confirming ? t('who.ctaConfirm') : t('who.cta')}
+          {confirming ? t('who.ctaConfirm') : t('who.cta')}
         </span>
       </PrimaryButton>
+    </Shell>
+  )
+}
+
+// ── 2b · THE CARD ─────────────────────────────────────────────────────────────
+// The composer IS the card (docs/STAR-CARDS.md §2b): you type into the poster,
+// at the size and in the face it will keep, and you drag the block to where you
+// want it. There is no preview step, because the thing on screen is the artifact.
+//
+// No label above it. The card's own rim already carries the @, and a header
+// repeating it is the same fact stated twice on one screen.
+//
+// The identity gate can still open on top of this (a first ping proves the @
+// before it lands), and the composed card survives that: App holds it in a ref
+// from here until the moment the ping is recorded.
+export function ComposeScreen({ C, ctx }) {
+  const [busy, setBusy] = React.useState(false)
+  const place = async (card) => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await ctx.place(card)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Shell>
+      <ScreenHeader C={C} onBack={() => ctx.go('who')} />
+      <div style={{ flex: 1, display: 'flex', paddingTop: SPACE.xl }}>
+        <Composer C={C} handle={normHandle(ctx.them)} busy={busy} onPlace={place} onBack={() => ctx.go('who')} />
+      </div>
     </Shell>
   )
 }
@@ -1039,6 +875,17 @@ function PingCard({ C, ping, ctx }) {
       style={{ padding: '15px 16px 13px', cursor: ping.handle ? 'pointer' : 'default' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', textAlign: 'left' }}>
+        {/* the card this ping carries, at the size a star is. Below 118px the
+            disc sets no type at all (card/model.js TYPE_FLOOR) — there is no
+            legible size for a poster in a thumbnail, and type too small to read
+            is decoration pretending to be content. What it shows here is the
+            ground and the light, which is what makes one ping recognisable
+            from another at a glance. */}
+        {ping.card && (
+          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+            <Card C={C} card={ping.card} url={ping.photoId ? ctx.cardUrls[ping.photoId] : null} size={38} glow={0.7} />
+          </span>
+        )}
         <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {ping.handle ? (
             <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
@@ -1059,9 +906,11 @@ function PingCard({ C, ping, ctx }) {
           {t(`pings.${state}Sub`)}
         </p>
       )}
-      {ping.intent && (
+      {/* what you wrote on it. Yours to re-read; sealed to them until it is
+          mutual, which is the only claim this row makes. */}
+      {ping.card && ping.card.words && (
         <p style={{ margin: '7px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.7) }}>
-          “{intentLine(t, ping.intent)}”
+          “{ping.card.words}”
         </p>
       )}
 
@@ -1154,31 +1003,115 @@ function EmptySlotCard({ C, onClick, paywall }) {
   )
 }
 
-// A mutual match on the status page — a resolved outcome, not a standing slot,
-// so it lives in its own section and reads compact: the star, the handle, one
-// action. It never counts against the three slots.
-function MutualCard({ C, ping, ctx }) {
+// ── the mutual slot ───────────────────────────────────────────────────────────
+// A match arrives SEALED. What sits in the mutual section until someone opens
+// it is a closed disc that will not stay still: it shakes every few seconds, a
+// small physical impatience, because something is in there and the product is
+// not going to pretend otherwise. Nothing about what it says is on this screen.
+//
+// Tapping it is the decision, and the decision is the whole reason the seal
+// exists. It hands the sky its match — the two stars fall together, the merger
+// flashes, the binary settles — and both cards unseal off that same clock.
+//
+// Afterwards it stays open: the two discs, side by side, and the one action
+// that matters. An unsealing that could happen twice was never an unsealing.
+function SealedMutual({ C, ping, onOpen }) {
   const { t } = useI18n()
+  const [shake, setShake] = React.useState(false)
+  React.useEffect(() => {
+    // intermittent, not constant. A thing that shakes without stopping is a
+    // loading spinner; a thing that shakes every few seconds is a thing with
+    // something inside it.
+    let stop = false
+    let off
+    const beat = () => {
+      if (stop) return
+      setShake(true)
+      off = setTimeout(() => setShake(false), 700)
+    }
+    const id = setInterval(beat, 4200)
+    const first = setTimeout(beat, 900)
+    return () => {
+      stop = true
+      clearInterval(id)
+      clearTimeout(first)
+      clearTimeout(off)
+    }
+  }, [])
+
   return (
-    <GlassPanel C={C} style={{ padding: '12px 14px' }}>
+    <button
+      onClick={onOpen}
+      aria-label={t('pings.revealOpen', { them: ping.handle })}
+      style={{
+        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', padding: '14px 16px', textAlign: 'left',
+        cursor: 'pointer', borderRadius: RADIUS.card,
+        background: rgba(C.star, 0.07), border: `1px solid ${rgba(C.star, 0.34)}`,
+        boxShadow: `0 0 34px ${rgba(C.star, 0.12)}`,
+        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      }}
+    >
+      {/* the seal: a disc with the light of a card behind it and nothing of the
+          card visible through it. */}
+      <span
+        className={shake ? 'rattle' : undefined}
+        aria-hidden
+        style={{
+          position: 'relative', display: 'grid', placeItems: 'center', width: 46, height: 46, flexShrink: 0,
+          borderRadius: '50%', background: C.ink2, border: `1px solid ${rgba(C.star, 0.5)}`,
+          boxShadow: `0 0 20px ${rgba(C.star, 0.35)}, inset 0 0 18px ${rgba(C.star, 0.18)}`,
+        }}
+      >
+        <StarMark C={C} size={20} />
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: 1 }}>
+        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>
+          {t('pings.sealedTitle')}
+        </span>
+        <span style={{ fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
+          {t('pings.sealedSub', { them: ping.handle })}
+        </span>
+      </span>
+      <Icon name="arrow" size={16} color={rgba(C.star, 0.9)} stroke={2} />
+    </button>
+  )
+}
+
+// The same slot, open. Both cards at thumbnail size, theirs first — at a reveal
+// the only thing anyone wants is the half they could not see — and the one way
+// on. Tapping the pair plays the spread again; nothing is unsealed a second
+// time, it is simply the size the cards can actually be read at.
+function OpenMutual({ C, ping, ctx }) {
+  const { t } = useI18n()
+  const theirs = ping.theirCard
+  const yours = ping.card
+  const url = ping.photoId ? ctx.cardUrls[ping.photoId] : null
+  return (
+    <GlassPanel C={C} style={{ padding: '13px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
         <button
-          onClick={() => ctx.locatePing(ping.handle)}
-          aria-label={t('pings.locate')}
-          title={t('pings.locate')}
+          onClick={() => ctx.openReveal(ping.handle)}
+          aria-label={t('pings.revealAgain')}
           style={{
             flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: SPACE.md, padding: 0, textAlign: 'left',
             background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer',
           }}
         >
-          <StateDot C={C} state="mutual" />
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
+            {theirs && <Card C={C} card={theirs} size={44} tint={C.them} glow={0.8} />}
+            {yours && (
+              <span style={{ marginLeft: -12 }}>
+                <Card C={C} card={yours} url={url} size={44} tint={C.you} glow={0.8} />
+              </span>
+            )}
+          </span>
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
             </span>
-            {ping.intent && (
+            {theirs && theirs.words && (
               <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.small, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                “{intentLine(t, ping.intent)}”
+                “{theirs.words}”
               </span>
             )}
           </span>
@@ -1187,6 +1120,11 @@ function MutualCard({ C, ping, ctx }) {
       </div>
     </GlassPanel>
   )
+}
+
+function MutualCard({ C, ping, ctx }) {
+  if (!ping.revealed) return <SealedMutual C={C} ping={ping} onOpen={() => ctx.openReveal(ping.handle)} />
+  return <OpenMutual C={C} ping={ping} ctx={ctx} />
 }
 
 // Your community, seated at the TOP of the pings page — clearly its own place,
@@ -2346,12 +2284,11 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
                 ) : (
                   <p style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.85) }}>{t('communities.matchFloor')}</p>
                 )}
-                {week && week.topReason && (
-                  <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>
-                    {t('communities.reasonLabel')}{' '}
-                    <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.92) }}>“{intentLine(t, week.topReason)}”</span>
-                  </p>
-                )}
+                {/* "the most common reason this week" used to sit here. It
+                    counted the intent lines, and there are none: what a ping
+                    carries now is a card somebody wrote to one person, and
+                    aggregating those into a community statistic is the one
+                    thing this product must never do with them. */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, justifyContent: 'center', flexWrap: 'wrap', fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.3px', color: rgba(C.muted, 0.9) }}>
                   <span>{t('communities.pings', { n: pings.toLocaleString() })}</span>
                   {week && week.joined != null && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
@@ -2512,14 +2449,41 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
 // the moment it starts to matter, and the communities page is one tap away from
 // everywhere. Its JoinedBadge went with it.
 
-// ── 8 · THE MATCH ─────────────────────────────────────────────────────────────
-export function MatchScreen({ C, ctx }) {
+// ── 8 · THE MATCH, ANNOUNCED ──────────────────────────────────────────────────
+// Two seconds, one sentence, nothing to press. It says that it happened and it
+// does not say what was said: the cards are opened on the status page, by hand,
+// by someone who has decided to look. A match that unseals itself on the way
+// past takes that decision away, and it is the only one in the product that
+// belongs entirely to the person.
+//
+// The fade is a real deadline and not a hope. It is the same reasoning the
+// send-off uses: a backgrounded tab stops rendering, so this leaves on a timer
+// rather than on the end of an animation.
+const FLASH_MS = 2000
+
+export function MutualScreen({ C, ctx }) {
   const { t } = useI18n()
-  const m = ctx.match || {}
-  const them = m.them || normHandle(ctx.them) || 'them'
+  const them = (ctx.match && ctx.match.them) || normHandle(ctx.them) || 'them'
+  const [going, setGoing] = React.useState(false)
+  const done = ctx.afterMutual
+  React.useEffect(() => {
+    const fade = setTimeout(() => setGoing(true), FLASH_MS - 450)
+    const leave = setTimeout(() => done(), FLASH_MS)
+    return () => {
+      clearTimeout(fade)
+      clearTimeout(leave)
+    }
+  }, [done])
+
   return (
     <Shell>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
+      <div
+        style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          textAlign: 'center', gap: SPACE.xl,
+          opacity: going ? 0 : 1, transition: 'opacity .45s ease',
+        }}
+      >
         {/* the one place the brand permits brightness — the star, larger than anywhere */}
         <div className="enter"><StarMark C={C} size={128} /></div>
         <h1 className="enter" style={{ animationDelay: '.1s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.hero, lineHeight: 1.05, color: C.cream }}>
@@ -2528,45 +2492,48 @@ export function MatchScreen({ C, ctx }) {
         <p className="enter" style={{ animationDelay: '.18s', margin: 0, fontSize: SIZE.body, lineHeight: 1.7, color: C.muted, maxWidth: 320 }}>
           {t('match.sub', { them })}
         </p>
-        {(m.theirIntent || m.yourIntent) && (
-          <div className="enter" style={{ animationDelay: '.26s', display: 'flex', flexDirection: 'column', gap: SPACE.md, width: '100%', maxWidth: 330 }}>
-            {m.theirIntent && (
-              <div style={{ border: `1px solid ${rgba(C.star, 0.35)}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: SPACE.xs }}>
-                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('match.theySaid')}</Kicker>
-                <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>
-                  “{intentLine(t, m.theirIntent)}”
-                </span>
-              </div>
-            )}
-            {m.yourIntent && (
-              <div style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.card, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: SPACE.xs }}>
-                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('match.youSaid')}</Kicker>
-                <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: rgba(C.cream, 0.85) }}>
-                  “{intentLine(t, m.yourIntent)}”
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="enter" style={{ animationDelay: '.32s', display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-        <PrimaryButton C={C} onClick={() => ctx.openConversation(them)}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
-            {t('match.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
-          </span>
-        </PrimaryButton>
-        {/* no share button, no confetti, no screenshot-bait: the story travels by
-            telling, and the absence of a gotcha artifact IS the anti-humiliation
-            architecture (framework Screen 8) */}
-        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('match.exit')}</p>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <GhostButton C={C} onClick={() => ctx.go('pings')} style={{ fontSize: SIZE.meta }}>
-            {t('placed.pings')}
-          </GhostButton>
-        </div>
       </div>
     </Shell>
+  )
+}
+
+// ── 8b · THE REVEAL ───────────────────────────────────────────────────────────
+// The spread, and it is the most important frame in the product: the two stars
+// fall into a shared orbit, the merger flashes, the binary settles, and both
+// cards unseal in the same instant off the engine's own match clock
+// (card/Spread.jsx). Neither person moved second, and the screen has to be able
+// to say so.
+//
+// The share sheet renders YOUR card only. There is no argument to share.js that
+// carries theirs, which is the only way to be certain their words never end up
+// in an image: they were written to exactly one reader.
+export function RevealScreen({ C, ctx }) {
+  const row = React.useMemo(
+    () => (ctx.reveal ? ctx.pings.find((p) => normHandle(p.handle || '') === ctx.reveal.handle) : null),
+    [ctx.reveal, ctx.pings],
+  )
+  // Landing here with nothing to reveal means the browser's back button walked
+  // into a spread that is over. Go where they were going.
+  const go = ctx.go
+  React.useEffect(() => {
+    if (!row) go('pings')
+  }, [row, go])
+  if (!row) return null
+  const handle = normHandle(row.handle || '')
+  const yours = row.card || { handle, words: '', bg: 'ink', tone: 1, placed: row.time }
+  const theirs = row.theirCard || { handle, words: '', bg: 'rose', tone: 0, placed: row.time }
+  const yourUrl = row.photoId ? ctx.cardUrls[row.photoId] : null
+  return (
+    <Spread
+      C={C}
+      yours={yours}
+      theirs={theirs}
+      yourUrl={yourUrl}
+      fieldRef={ctx.ambientGalaxyRef}
+      onSay={() => ctx.openConversation(handle)}
+      onShare={() => shareCard({ card: yours, photoUrl: yourUrl, mutual: true })}
+      onBack={ctx.closeReveal}
+    />
   )
 }
 
@@ -3784,89 +3751,12 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
   )
 }
 
-// ── the held star view (App overlays this while a ping's star is held) ────────
-// The engines pin a held star just above mid-frame; this overlay seats its name
-// beneath it: the @ in the product's amber — larger than it appears anywhere
-// else — with the ping's intent line resting under it in the emotional register
-// and the category's own light naming what they are to you. Everything ignores
-// the pointer (the hand is orbiting the sky) except the one clear way home.
-export function StarViewOverlay({ C, view, onClose }) {
-  const { t } = useI18n()
-  const tint = CATEGORY_TINTS[view.kind] || C.star
-  return (
-    <>
-      {/* the close — glides the camera home to the pings page */}
-      <div data-noripple style={{ position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 'max(14px, env(safe-area-inset-right))', zIndex: 30 }}>
-        <button
-          onClick={onClose}
-          aria-label={t('starview.close')}
-          className="fade"
-          style={{
-            width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
-            background: rgba(C.ink2, 0.8), border: `1px solid ${rgba(C.cream, 0.22)}`,
-            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-            display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.92),
-            boxShadow: '0 10px 34px rgba(0,0,0,.5)',
-          }}
-        >
-          <Icon name="close" size={16} color="currentColor" stroke={2} />
-        </button>
-      </div>
-
-      {/* the name, risen beneath the held star (arrives with the camera) */}
-      {/* full-width so it stays truly centered (the fade animation owns the
-          transform, so no translateX can live on this element) */}
-      {/* The camera SAYS when it has landed — galaxy.js arms the callback on
-          the dive and fires it the frame the flight is genuinely over — so the
-          name is mounted on arrival rather than scheduled against a guess at
-          how long the flight would take. A dive's bank breathes with how far
-          the star is, so no single delay was ever going to be right. */}
-      {view.arrived && (
-      <div
-        className="fade"
-        style={{
-          position: 'fixed', left: 0, right: 0, top: '43%', zIndex: 24,
-          pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md,
-          paddingTop: 30, textAlign: 'center',
-        }}
-      >
-        <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
-        {/* The ellipsis box clips (overflow: hidden), and a text-shadow wide
-            enough to lift the handle off a bright star is still opaque where
-            that clip lands — which paints a hard-edged dark RECTANGLE around
-            the name, the thing it was there to avoid. So the box carries enough
-            horizontal padding for the shadow to reach nothing before the clip
-            does, and the shadow itself is tight. */}
-        <span
-          style={{
-            fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.title,
-            letterSpacing: '.5px', color: C.star,
-            textShadow: '0 1px 6px rgba(0,0,0,.7)',
-            padding: '2px 22px',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '88vw',
-          }}
-        >
-          @{view.handle}
-        </span>
-        {view.intent ? (
-          <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.head, lineHeight: 1.4, color: rgba(C.cream, 0.94), textShadow: '0 2px 16px rgba(0,0,0,.85)', maxWidth: 330 }}>
-            “{intentLine(t, view.intent)}”
-          </span>
-        ) : (
-          <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.muted, 0.95), textShadow: '0 2px 14px rgba(0,0,0,.85)' }}>
-            {t('starview.noIntent')}
-          </span>
-        )}
-        {view.kind && (
-          <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: rgba(tint, 0.98), textShadow: `0 0 12px ${rgba(tint, 0.5)}, 0 2px 12px rgba(0,0,0,.8)` }}>
-            {t(`category.${view.kind}`)}
-          </span>
-        )}
-      </div>
-      )}
-    </>
-  )
-}
+// The held star view used to be an overlay of TEXT: the @ in amber, the intent
+// line under it, the category's light naming what they were to you. All three
+// are gone, and what replaced them is the thing itself. A held star now
+// resolves into its card (card/Resolve.jsx, mounted by App): the @ and the date
+// are set inside the poster, so what arrives at the end of a dive is one object
+// rather than an object with a caption.
 
 // ── /copy — where the verification email's copy button lands ─────────────────
 // An email can't reach the clipboard, so its copy button opens this one-tap

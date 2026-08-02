@@ -1,4 +1,4 @@
-// beta/Composer.jsx — the composer is the card.
+// card/Composer.jsx — the composer is the card.
 //
 // You type into the poster, at the size and in the face it will keep, and you
 // drag the block to where you want it. Nothing is applied at the end and there
@@ -10,8 +10,9 @@
 // no crop. Those are derived from what you did choose, which is the only reason
 // forty of these can look like one series.
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import {
-  rgba, RADIUS, SPACE, FONT, SIZE, TRACK, PrimaryButton, GhostButton, GlassPanel, Small,
+  rgba, RADIUS, SPACE, FONT, SIZE, TRACK, PrimaryButton, GhostButton, GlassPanel, Small, useDialog,
 } from '../components/ui.jsx'
 import Card from './Disc.jsx'
 import {
@@ -46,18 +47,110 @@ function Row({ C, label, children }) {
   )
 }
 
+// ── where a picture comes from ───────────────────────────────────────────────
+// Three doors, because a phone has three and picking the wrong one for someone
+// is a dead end they have to back out of. `capture` opens the camera straight
+// away and CANNOT be undone from inside the sheet it opens, so a single button
+// carrying it means anyone whose picture is already in their camera roll has to
+// take a photo of nothing and start again. The gallery door drops `capture` and
+// asks for images; the files door drops the filter too, for the picture that
+// arrived as a download, sits in Drive, or came out of a chat.
+//
+// It is a menu rather than three chips in the panel for one reason: the panel is
+// the card's own controls, and three ways to do one thing sitting next to the
+// grounds would read as four grounds.
+const SOURCES = [
+  { id: 'camera', label: 'take a photo', accept: 'image/*', capture: 'environment' },
+  { id: 'gallery', label: 'photo library', accept: 'image/*' },
+  { id: 'files', label: 'browse files' },
+]
+
+// Through a portal, and that is not fussiness: the screen wrapper this composer
+// lives inside carries `.fade`, whose keyframes animate `transform` with
+// fill-mode `both`. A transformed ancestor becomes the containing block for
+// every `position: fixed` descendant, so a sheet rendered in place would be
+// laid out against a mid-page box instead of the viewport. App.jsx hit exactly
+// this with the admin desk and left the note; this is the same trap.
+function SourceSheet({ C, onPick, onClose }) {
+  const ref = useDialog(onClose)
+  return createPortal(
+    <div
+      onPointerUp={onClose}
+      className="fade"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        background: rgba(C.ink, 0.62), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        padding: `0 clamp(12px, 4vw, 24px) max(18px, env(safe-area-inset-bottom))`,
+      }}
+    >
+      <div
+        ref={ref}
+        tabIndex={-1}
+        onPointerUp={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="where the picture comes from"
+        style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: SPACE.sm, outline: 'none' }}
+      >
+        <GlassPanel C={C} style={{ padding: 0, overflow: 'hidden' }}>
+          {SOURCES.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onPick(s)}
+              style={{
+                display: 'block', width: '100%', padding: '17px 20px', textAlign: 'center', cursor: 'pointer',
+                background: 'none', border: 'none', borderTop: i ? `1px solid ${rgba(C.cream, 0.08)}` : 'none',
+                fontFamily: FONT.sans, fontSize: SIZE.body, color: C.cream,
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </GlassPanel>
+        <GlassPanel C={C} style={{ padding: 0 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              display: 'block', width: '100%', padding: '17px 20px', textAlign: 'center', cursor: 'pointer',
+              background: 'none', border: 'none', fontFamily: FONT.sans, fontSize: SIZE.body, color: rgba(C.cream, 0.7),
+            }}
+          >
+            not now
+          </button>
+        </GlassPanel>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
-  const cam = React.useRef(null)
-  const lib = React.useRef(null)
+  const input = React.useRef(null)
+  const [asking, setAsking] = React.useState(false)
   const pick = (e) => {
     const f = e.target.files && e.target.files[0]
     e.target.value = '' // so the same file twice in a row still fires
     if (f) onFile(f)
   }
+  // One input, re-pointed. The attributes that decide which sheet the OS opens
+  // are set the instant before the click, because a browser reads them then and
+  // three permanent inputs would be three ways for a stale one to fire.
+  const open = (source) => {
+    setAsking(false)
+    const el = input.current
+    if (!el) return
+    if (source.accept) el.setAttribute('accept', source.accept)
+    else el.removeAttribute('accept')
+    if (source.capture) el.setAttribute('capture', source.capture)
+    else el.removeAttribute('capture')
+    el.click()
+  }
   return (
     <GlassPanel C={C} style={{ width: '100%', padding: `${SPACE.md}px ${SPACE.lg}px` }}>
-      <input ref={cam} type="file" accept="image/*" capture="environment" onChange={pick} style={{ display: 'none' }} />
-      <input ref={lib} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
+      <input ref={input} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
+      {asking && <SourceSheet C={C} onPick={open} onClose={() => setAsking(false)} />}
 
       <Row C={C} label="ground">
         {PLATES.map((p) => {
@@ -81,8 +174,9 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
         })}
         <button
           type="button"
-          onClick={() => (hasPhoto ? lib : cam).current?.click()}
+          onClick={() => setAsking(true)}
           aria-pressed={hasPhoto}
+          aria-haspopup="dialog"
           style={{
             height: 24, padding: '0 11px', flexShrink: 0, borderRadius: RADIUS.chip, cursor: 'pointer', marginLeft: SPACE.xs,
             fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase',
@@ -176,7 +270,9 @@ function Words({ C, value, face, align, size, onChange, dragging }) {
 }
 
 // ── the composer ─────────────────────────────────────────────────────────────
-export default function Composer({ C, handle, onPlace, onBack }) {
+// `locked` is the caller placing the ping: the button holds still while the
+// server answers, and nothing on the card can be changed underneath it.
+export default function Composer({ C, handle, busy: locked, onPlace, onBack }) {
   const [text, setText] = React.useState('')
   const [bg, setBg] = React.useState('ink')
   const [face, setFace] = React.useState('serif')
@@ -344,12 +440,12 @@ export default function Composer({ C, handle, onPlace, onBack }) {
       <div style={{ width: '100%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: SPACE.md, marginTop: 'auto', paddingTop: SPACE.md }}>
         <PrimaryButton
           C={C}
-          disabled={!ready || busy}
+          disabled={!ready || busy || locked}
           onClick={() =>
             onPlace({ words: text, bg, face, pos, blob: photo && photo.blob, tone: photo ? photo.tone : plateOf(bg).tone })
           }
         >
-          place it
+          {locked ? '…' : 'place it'}
         </PrimaryButton>
         {/* The one sentence worth keeping here. It is not an instruction, it is
             the reason twenty honest words are safe to ask for at all. */}

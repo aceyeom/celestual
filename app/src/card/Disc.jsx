@@ -1,4 +1,4 @@
-// beta/Disc.jsx — THE CARD.
+// card/Disc.jsx — THE CARD.
 //
 // A type poster, cut round.
 //
@@ -75,7 +75,10 @@ const seedOf = (s) => {
 // of a printed circle with a picture on it.
 export function Surface({ C, card, url, size }) {
   const plate = plateOf(card && card.bg)
-  const seed = seedOf(card && card.id)
+  // The grain is seeded off the card's own content, so the same card grains the
+  // same way at every size it is ever drawn at — a thumbnail, a resolve, half a
+  // spread — and two different cards never share a field.
+  const seed = seedOf(card && `${card.handle || ''}${card.words || ''}`)
   return (
     <span
       aria-hidden

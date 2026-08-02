@@ -1,15 +1,22 @@
-# `/beta` — the star & card system
+# The star & card system
 
-A prototype of the card design, built from the written plan (*Celestual — The
-Star & Card System*, August 2026). It lives at **`celestual.us/beta`** and in
-`app/src/beta/`.
+Every ping carries a card. It lives in `app/src/card/`, the composer is a step in
+the send flow, and the reveal is on the status page.
 
-**It does not touch production.** The fork happens in `main.jsx`, before
-`App.jsx`'s router ever sees the path, so the prototype is mounted *beside* the
-real app rather than inside it. No ping RPC, no Supabase table, no edge
-function, no `celestual:v2` storage key, and no production screen is read or
-written by anything in `app/src/beta/`. Deleting the directory and two lines of
-`main.jsx` removes it completely.
+This was `/beta` until 2026-08-02: a prototype mounted beside the real app so it
+could not touch anything. It is production now, which changed exactly two things
+about it and nothing else. The words a card carries **ride on the ping row**
+(migration 0022), sealed server-side until both sides exist. The **photograph
+does not** — it is treated, stripped and stored in IndexedDB on the phone that
+took it, and no code path in this repo uploads one.
+
+That split is the whole security posture of the feature, so it is worth stating
+plainly. For the words, the seal stopped being a property of the network and
+became a property of a policy: a `matched_at is not null` clause in one SQL
+function (§5). That is a strictly weaker guarantee than the prototype had, and
+it is the price of both people actually being able to read each other. For the
+photograph the old guarantee is intact and unchanged: the bytes are physically
+incapable of arriving anywhere.
 
 ---
 
@@ -183,7 +190,7 @@ pointer is captured for the rest of the drag.
 
 ## 3 · The approach (star → card)
 
-`app/src/beta/Sky.jsx`. The card is hung on `cam.focus`, the same variable the
+`app/src/card/Resolve.jsx`. The card is hung on `cam.focus`, the same variable the
 engine uses to decide whether a star has resolved:
 
 | `cam.focus` | What you see |
@@ -210,7 +217,7 @@ so there is no seam between them.
 
 ## 4 · The mutual spread
 
-`app/src/beta/Spread.jsx`. The engine's match mode already does the physics: a
+`app/src/card/Spread.jsx`. The engine's match mode already does the physics: a
 decaying Keplerian inspiral whose angular speed rises as the pair closes, tidal
 streams bridging them, a merger flash that sends a light echo out through the
 gas, settling into a **binary** — two distinct stars, amber and rose, in an
@@ -238,62 +245,118 @@ end up in the output (§4, content & safety).
 
 ## 5 · What is stored, and where
 
-Nothing leaves the browser.
+| Thing | Where | Who can read it |
+| --- | --- | --- |
+| The words, the ground, the face, the block's position, the tone | `celestual_entries.card` (jsonb, migration 0022), and in `pings` on the device that placed it | Its author. The other person **only once the pair is matched**. |
+| The photograph | `IndexedDB`, database `celestual-photos`, keyed `card:<handle>` | This device. There is no upload path. |
+| Anything else | nowhere | — |
 
-| Thing | Where |
-| --- | --- |
-| Card text, handles, tone | `localStorage`, key `celestual:beta:v1` |
-| Photographs | `IndexedDB`, database `celestual-beta` |
-| Anything else | nowhere. There is no network call in `app/src/beta/`. |
+### The seal
+
+`celestual_entries` has RLS on with **zero client read policies** — every read
+goes through a `SECURITY DEFINER` RPC — so adding a column added no reader. The
+one function that can return somebody else's card is
+`celestual_counterpart_card`, and it is not granted to `anon` or
+`authenticated` at all: it is called from inside the RPCs that have already
+spent a DM proof, and its `where` clause carries the seal —
+
+```sql
+and e.matched_at is not null
+```
+
+That is a `where` on the row **being read**, not a check on the caller's own
+row, because those two facts are set in the same statement and reading the one
+that actually holds the words is the check that cannot be got around. There is
+no argument to it, and no shape of call to anything else, that returns the words
+on an unanswered ping. Below a mutual, a card is as unreadable as the hash of
+the handle it was addressed to.
+
+Everything a browser sends is rebuilt from scratch by `celestual_card_clean`
+before it is stored — twenty words, a known plate, a known face, a position
+inside the disc, a tone in range — so an unknown key cannot ride along inside
+the jsonb and come back out at a reveal. A client is a suggestion.
+
+The card is deleted by every path that already deletes a ping: the sixty-day
+purge, "let one go", "delete everything", and the public opt-out. Nothing about
+it needed its own cleanup. Letting a ping go also drops its photograph from
+IndexedDB (`card/photos.js` `dropPhoto`) — a blob left behind after the row that
+pointed at it is gone is a picture of somebody's night sitting in a browser
+store, unreachable and undeletable.
+
+### Why the photograph stayed home
 
 EXIF is stripped on the way in: every image is decoded and re-encoded through a
 canvas (`photo.js`), which drops every metadata block for free. There is no path
 in that file by which the original bytes survive.
 
-This is a design position and not only a prototype convenience. The plan's first
-law is that nothing reaches the other person before both have chosen each other,
-and the cheapest possible proof of that law is a build where the bytes are
-physically incapable of arriving anywhere. When this gets a backend, the seal
-stops being a property of the network and becomes a property of a policy — a
-strictly weaker guarantee, and worth knowing you are trading down to.
+It could have been uploaded — a bucket, signed URLs released at a mutual — and
+it deliberately was not. The plan's first law is that nothing reaches the other
+person before both have chosen each other, and for the words that law is now a
+policy a `where` clause keeps. For the photograph it is still a fact about the
+network, which is a strictly stronger thing to be able to say and the reason the
+picture is the half that stayed on the phone.
+
+So at a mutual you are shown their **words**, on their ground, in their light.
+You are not shown their room, and nobody's camera roll is on our servers.
+
+A card restored onto a new device (`celestual_my_pings`) comes back with its
+words and none of its picture, so it stands on its plate — which is the same
+thing that happens when somebody chooses not to add one.
 
 ### The camera
 
-`<input type="file" capture="environment">`, not `getUserMedia`. This is not a
-shortcut: `vercel.json` sets `Permissions-Policy: camera=()`, which disables the
-camera API site-wide. The native capture sheet is not governed by that header,
-needs no permission dialog, and is the better interaction on a phone anyway. **No
-production header had to change.**
+`<input type="file">`, not `getUserMedia`. This is not a shortcut: `vercel.json`
+sets `Permissions-Policy: camera=()`, which disables the camera API site-wide.
+The native capture sheet is not governed by that header, needs no permission
+dialog, and is the better interaction on a phone anyway. **No production header
+had to change.**
+
+Tapping **photo** opens a sheet with three doors, and the reason there are three
+is that `capture` cannot be undone from inside the sheet it opens:
+
+| | what the input carries |
+| --- | --- |
+| take a photo | `accept="image/*" capture="environment"` |
+| photo library | `accept="image/*"` |
+| browse files | neither — for the picture that arrived as a download, sits in Drive, or came out of a chat |
+
+One `<input>` is re-pointed the instant before the click rather than three
+living permanently in the tree, because a browser reads those attributes then
+and three inputs are three ways for a stale one to fire.
 
 ---
 
-## 6 · The seeded sky
+## 6 · What is in the sky on arrival
 
-`/beta` seeds three cards on a first visit: two on plates and one on a
-photograph, because that is the choice the composer offers and the only way to
-see whether the two grounds belong to the same product is to see them next to
-each other.
+Nothing. The prototype seeded three sample cards on a first visit so there was
+something to look at; production shows a person their own pings and no one
+else's, so the seeds and their demo photograph are gone. The register they were
+teaching survives where it is actually useful: as the three example lines under
+an empty composer (`model.js` `SEEDS`), which go the moment there is anything to
+teach against.
 
-The photograph is loaded from **`app/public/beta/demo.jpg`**. It is fetched and
-run through `photo.js` rather than pointed at, so it takes exactly the path a
-photograph a person takes would take — square-cropped, treated, re-encoded,
-measured for tone. A demo image that skipped the treatment would be showing a
-card the product cannot actually make.
-
-If the file is not there that card keeps its plate and nothing breaks.
+`/demo` still ships a seeded world (`demoData.js`) — three cards, one of them
+already mutual and sealed — because the sandbox's whole job is to show what a
+live launch looks like before one exists.
 
 ---
 
 ## 7 · Decisions taken, and the ones still open
 
-Settled for this build:
+Settled:
 
 1. **Words required, photo optional** (the plan's own lean, §7.1). The words are
    the costly signal; the photo is the step most likely to lose someone at 2am,
    and a card without one is still a star.
 2. **The card is a circle**, for the reason in §1 above.
-3. **No relationship categories**, per §1.3 — the tint comes from the photograph.
-4. **Local-only storage**, per §5 above.
+3. **No relationship categories**, per §1.3. The category tabs and the sixteen
+   "why them" lines are deleted, not hidden: a ping's light is measured off its
+   card's ground now, and nobody is asked anything.
+4. **The words on the server, the photograph on the phone**, per §5.
+5. **The reveal is opened by hand.** A match announces itself for two seconds
+   and says nothing about what was written. The cards unseal when somebody
+   decides to look at them, which is the one decision in this product that
+   belongs entirely to the person it happened to.
 
 Deliberately not built:
 
@@ -302,31 +365,42 @@ Deliberately not built:
   reveal has to be right before the thing after the reveal is worth building.
 - **Face detection.** Excluded by direction. The plan's §1.4 still stands as a
   law; nothing here implements it.
+- **Uploading the photograph.** See §5. This one is a decision, not a gap.
 
 Still open, from the plan's §7:
 
 - Is the sky live or cumulative, and does a purged star leave it?
 - Does the first free ping include a card, or is the card the paid upgrade?
 - Who owns abuse review on matched pairs?
+- A card is currently readable by whoever holds the device it was placed on
+  (`localStorage`, like the plaintext handles beside it). That was true of the
+  handles already; it is worth deciding whether the words raise the stakes.
 
 ---
 
 ## 8 · Files
 
 ```
-app/src/beta/
-├── index.jsx     BetaApp: the route root, the six screens, the flow
+app/src/card/
 ├── Disc.jsx      THE CARD — the poster, the ground and the body
-├── Sky.jsx       the approach: the field, the tap surface, the resolve
 ├── Composer.jsx  the composer, which is the card being filled in
+├── Resolve.jsx   the approach: a held star resolving into its card
 ├── Spread.jsx    the fused spread, and the unseal
-├── model.js      the card as data, the prompt, the seeds, the tint
+├── model.js      the card as data, the prompt, the seeds, the tint, the wire
 ├── photo.js      a photograph becomes a surface (strip, treat, measure)
-├── samples.js    what is in the sky on arrival, and the demo photograph
-├── share.js      the story render — your card and the mutual mark, never theirs
-└── store.js      localStorage + IndexedDB, and nothing else
+├── photos.js     the blob store — this device, and nowhere else
+└── share.js      the story render — your card and the mutual mark, never theirs
 ```
 
-Two lines outside it: the fork in `app/src/main.jsx`, and `beta` added to
-`RESERVED_CODES` in `app/src/api/trial.js` so a First Light competitor can never
-claim a four-letter code that collides with the route.
+Where it is wired in:
+
+| | |
+| --- | --- |
+| `App.jsx` | the `compose` screen between the @ and the placement, the draft card held across the identity gate, the sealed/opened mutual state, and the held star's resolve |
+| `components/screens.jsx` | `ComposeScreen`, `MutualScreen` (the two-second announcement), `RevealScreen` (the spread), and the mutual slot that shakes until it is opened |
+| `api/celestual.js` | `placePing` carries the card up; `match_card` and `their_card` are the only ways one ever comes back |
+| `supabase/migrations/0022_the_card.sql` | the column, the validator, the seal, and the three RPCs that changed |
+
+`beta` stays in `RESERVED_CODES` (`app/src/api/trial.js`) even though the route
+is gone: a First Light competitor claiming it would put a four-letter tracking
+link where a year of git history says a prototype lived.

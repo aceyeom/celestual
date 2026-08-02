@@ -34,18 +34,26 @@ export const TOKENS = {
   onStar: '#1A0F0A',
 }
 
-// Palette passed to the galaxy canvas + makeColors, as a 2-tuple [you, them].
-// The category lights — one tint per "who are they to you" answer, introduced
-// on the options tab and worn by the person's own stars in their community's
-// sky. Soft pastels of the same starlight family (never neon): rose for a
-// crush, ember for an ex, ice-blue for a friend, violet for complicated.
-// Subtle by design — the sky stays celestial, never a scatter of markers.
-export const CATEGORY_TINTS = {
+// ── what light a star burns with ─────────────────────────────────────────────
+// This used to be a lookup: one tint per "who are they to you" answer, chosen
+// from a dropdown. The card replaced that outright (docs/STAR-CARDS.md) — there
+// is no category to look up any more, because there is no category. A star's
+// colour is now MEASURED, off the ground of the card it carries (card/model.js
+// tintOf), and it arrives here as a colour rather than as a name.
+//
+// The old table stays for the pings placed before today, whose rows still hold
+// the category they were filed under. Nothing writes it.
+const LEGACY_CATEGORY_TINTS = {
   crush: '#F79BC3',
   ex: '#F08578',
   friend: '#96BCF8',
   complicated: '#B9A3E8',
 }
+
+// A seal's own light, or null to let the field decide. Takes a colour, since
+// that is what a card hands over; still answers to the four old names.
+export const starTint = (k) =>
+  (typeof k === 'string' && k.charAt(0) === '#' ? k : LEGACY_CATEGORY_TINTS[k]) || null
 
 // ── Type — three faces, ONE size ladder. ─────────────────────────────────────
 // Every piece of text in the product is one of the steps below. Nothing invents

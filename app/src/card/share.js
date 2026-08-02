@@ -1,4 +1,4 @@
-// beta/share.js — the shareable, and the thing it is careful not to carry.
+// card/share.js — the shareable, and the thing it is careful not to carry.
 //
 // A screenshot of the fused spread would put another person's private words on
 // a Story, and they wrote them to exactly one reader. So the share sheet does

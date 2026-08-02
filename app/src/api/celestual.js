@@ -45,15 +45,22 @@ export const FULL_SLOTS = { standing: 0, cap: SLOT_CAP };
 const iso = (ms) => new Date(ms).toISOString();
 
 // Place a ping. Returns:
-//   { recorded:true, mutual, match, match_intent, reachable, expires_at,
+//   { recorded:true, mutual, match, match_card, reachable, expires_at,
 //     slots:{standing,cap} }
 //   { recorded:false, error:'rate_limited'|'suppressed'|'no_slots'|'unverified' }
-// `proof` is the Instagram-DM ownership secret (api/igverify.js); `intent` is an
-// optional intent-line id, sealed until mutual. `demo` short-circuits to a local
-// simulation so /demo never writes real data — @demo is the guaranteed mutual.
-// `days` overrides the standing period (demo-only — App.jsx passes SUB_PING_DAYS
-// while the sandbox subscription is active; production duration is server-set).
-export async function placePing({ me, them, email, proof, intent, demo, days }) {
+// `proof` is the Instagram-DM ownership secret (api/igverify.js); `card` is the
+// poster this ping carries (card/model.js toWire — the words, the ground, the
+// face, where the block sits, the tone), sealed server-side until both sides
+// exist. `demo` short-circuits to a local simulation so /demo never writes real
+// data — @demo is the guaranteed mutual. `days` overrides the standing period
+// (demo-only — App.jsx passes SUB_PING_DAYS while the sandbox subscription is
+// active; production duration is server-set).
+//
+// `match_card` is the ONLY way another person's words ever reach this browser,
+// and it is only ever populated when the pair is already mutual (migration
+// 0022's celestual_counterpart_card). There is no read that returns a card
+// belonging to a ping that has not been answered.
+export async function placePing({ me, them, email, proof, card, demo, days }) {
   if (demo || !hasSupabase) {
     await new Promise((r) => setTimeout(r, 600));
     const mutual = normHandle(them) === 'demo';
@@ -61,7 +68,7 @@ export async function placePing({ me, them, email, proof, intent, demo, days }) 
       recorded: true,
       mutual,
       match: mutual ? normHandle(them) : null,
-      match_intent: mutual ? 'exUnsaid' : null,
+      match_card: mutual ? DEMO_CARD : null,
       // in the sandbox, roughly half the world is "already here"
       reachable: mutual || normHandle(them).length % 2 === 0,
       expires_at: iso(Date.now() + (days || PING_DAYS) * 864e5),
@@ -74,16 +81,28 @@ export async function placePing({ me, them, email, proof, intent, demo, days }) 
     p_to: them,
     p_email: email ? email.trim() : null,
     p_proof: proof || null,
-    p_intent: intent || null,
+    p_card: card || null,
   });
   if (error) throw error;
   return data;
 }
 
+// The other half, in the sandbox. One card, in the register the composer's own
+// seeds teach: plain, specific, about a detail nobody would invent.
+export const DEMO_CARD = {
+  words: 'i thought about messaging you a hundred times',
+  bg: 'rose',
+  face: 'serif',
+  x: 0.2,
+  y: 0.4,
+  tone: 0,
+};
+
 // The status page read (Screen 4). Sends the device-held plaintext list up and
 // gets each ping's live state back — the server can't produce the list itself
 // (it only stores hashes). Owner-gated by the same DM proof as placing.
-// Returns: [{ handle, placed, time, expires_at, mutual, intent, reachable }]
+// Returns: [{ handle, placed, time, expires_at, mutual, card, reachable }]
+// `card` is THEIRS, and it is null on every row that is not already mutual.
 export async function pingStatus({ me, handles, proof, demo }) {
   const list = (handles || []).map(normHandle).filter(Boolean).slice(0, 10);
   if (demo || !hasSupabase || !list.length || !normHandle(me)) return [];
@@ -105,7 +124,10 @@ export async function pingStatus({ me, handles, proof, demo }) {
 // this read) — matched or standing, any device, gated by the DM proof. Only
 // rows placed before 0010 can still arrive as anonymous standing rows (their
 // plaintext cannot be recovered from a hash).
-// Returns: [{ handle|null, time, expires_at, mutual, intent }]
+// Returns: [{ handle|null, time, expires_at, mutual, card, theirCard }]
+// `card` is the poster this device placed (restored so a card survives a lost
+// browser, minus its photograph, which never left the phone that took it);
+// `theirCard` is the other half, and only ever arrives on a matched row.
 export async function fetchMyPings({ handle, proof, demo } = {}) {
   if (demo || !hasSupabase || !normHandle(handle) || !proof) return [];
   try {
@@ -116,7 +138,8 @@ export async function fetchMyPings({ handle, proof, demo } = {}) {
       time: Number(p.time) || Date.now(),
       expires_at: p.expires_at || null,
       mutual: !!p.mutual,
-      intent: p.intent || null,
+      card: p.card || null,
+      theirCard: p.their_card || null,
     }));
   } catch {
     return [];

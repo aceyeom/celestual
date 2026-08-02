@@ -259,8 +259,8 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 - **The open-door / share card** (`app/src/card.js`) — the most public pixel the
   brand owns. Gorgeous is a requirement, not a preference.
-- **The card** (`app/src/beta/Disc.jsx`) — the circular body a ping resolves
-  into, and its story render (`app/src/beta/share.js`). One fixed layout at
+- **The card** (`app/src/card/Disc.jsx`) — the circular body a ping resolves
+  into, and its story render (`app/src/card/share.js`). One fixed layout at
   every size it ever appears at; see the 2026-08-02 changelog entry.
 - **The OG share image** (`app/public/og.svg` → `og.png`) — the landing's hero
   restated.
@@ -272,6 +272,22 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-08-02 (c)** — **The card is production** (human-directed). `/beta` is
+  deleted and `src/beta/` is `src/card/`. Nothing in §1–§10 changed; three
+  things moved.
+  - **The composer is a step in the send flow.** The @, confirmed, then the
+    card, then the placement.
+  - **The category tabs and the sixteen intent lines are gone.** A star's tint
+    was looked up from the chosen category; it is measured off the card's own
+    ground now (§9's two stars, walked between). The bookmark component and its
+    tint table went with them.
+  - **The reveal is a thing you open.** A match announces itself for two
+    seconds and says nothing about what was written. On the status page the
+    mutual slot sits sealed, shaking every few seconds, until it is tapped; then
+    the sky plays the match and both cards unseal off its clock. Afterwards the
+    slot holds the two discs, open, and there is no second unsealing.
+
 
 - **2026-08-02 (b)** — **The card becomes a composition** (human-directed,
   continuing the `/beta` prototype). The poster was a centered stack; it is now

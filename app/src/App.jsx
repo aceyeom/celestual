@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
   suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
-  SUB_SLOT_CAP, SUB_PING_DAYS,
+  SUB_SLOT_CAP, SUB_PING_DAYS, DEMO_CARD,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
@@ -14,10 +14,13 @@ import { SENDOFF_SECONDS } from './galaxy.js'
 import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner, rgba } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  SkyCardScreen, CommunityScreen, WorldsScreen, MatchScreen, FourthSlotScreen, PrivacyScreen,
-  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet, categoryOf,
-  StarViewOverlay, CopyCodeScreen, SignInScreen, PaidScreen,
+  SkyCardScreen, CommunityScreen, WorldsScreen, MutualScreen, FourthSlotScreen, PrivacyScreen,
+  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet,
+  ComposeScreen, RevealScreen, CopyCodeScreen, SignInScreen, PaidScreen,
 } from './components/screens.jsx'
+import { makeCard, toWire, fromWire, tintOf } from './card/model.js'
+import * as photos from './card/photos.js'
+import { CardResolve } from './card/Resolve.jsx'
 import {
   billingEnabled, planOffered, startCheckout, confirmCheckout, returnFromCheckout, scrubReturnUrl,
 } from './api/billing.js'
@@ -35,6 +38,7 @@ const SCREENS = {
   landing: LandingScreen, // 1 · the cold landing
   open: OpenDoorScreen, //    the personal open-door page (/@handle)
   who: WhoScreen, //        2 · the send (crush @ first)
+  compose: ComposeScreen, //    the card — the poster the ping carries
   you: YouScreen, //            identity (so the ping can resolve to you)
   sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
@@ -42,7 +46,8 @@ const SCREENS = {
   door: SkyCardScreen, //   5 · the open-sky community share card
   worlds: WorldsScreen, //  communities — the curated list
   community: CommunityScreen, // a community page (/c/slug) — the ring + weekly readout
-  match: MatchScreen, //    8 · the match
+  mutual: MutualScreen, //  8 · the match, announced and then gone
+  reveal: RevealScreen, //      the spread: two stars fusing, two cards unsealing
   fourth: FourthSlotScreen, // 9 · the third-slot checkout (route key kept as 'fourth' for old sessions)
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
@@ -53,6 +58,52 @@ const SCREENS = {
 }
 
 const STORE = 'celestual:v2'
+
+// ── the card, on a ping row ──────────────────────────────────────────────────
+// A ping's card lives with the ping: in `pings` (and therefore in localStorage,
+// beside the plaintext handle it already keeps) and on the server as the sealed
+// jsonb migration 0022 added. The PHOTOGRAPH does not — it is a blob in
+// IndexedDB under this key, on the phone that took it, and nothing uploads it.
+const photoKey = (handle) => (normHandle(handle) ? `card:${normHandle(handle)}` : null)
+
+// What light this ping's star burns with. A colour, straight off its card; the
+// four old category names still resolve for pings placed before the card
+// existed (theme.js starTint), so an old sky does not go grey.
+const starKind = (C, ping) =>
+  ping && ping.card ? tintOf(C, ping.card.tone) : (ping && ping.intent) || ''
+
+// Every photograph the current ping list references, as object URLs, minted
+// once each (the store caches them) so a resolve running at sixty frames a
+// second is not minting sixty object URLs a second.
+function usePhotoUrls(pings) {
+  const [urls, setUrls] = useState({})
+  const ids = useMemo(
+    () => [...new Set(pings.map((p) => p.photoId).filter(Boolean))].join('|'),
+    [pings],
+  )
+  useEffect(() => {
+    let live = true
+    const want = ids ? ids.split('|') : []
+    Promise.all(want.map((id) => photos.photoUrl(id).then((u) => [id, u])))
+      .then((pairs) => {
+        if (!live) return
+        const next = {}
+        for (const [id, u] of pairs) if (u) next[id] = u
+        setUrls((prev) => {
+          const same =
+            Object.keys(next).length === Object.keys(prev).length &&
+            Object.keys(next).every((k) => prev[k] === next[k])
+          return same ? prev : next
+        })
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [ids])
+  useEffect(() => () => photos.releaseUrls(), [])
+  return urls
+}
 
 // Seed the sandbox's live community numbers (progress + weekly readout) from the
 // hardcoded demo overlay, keyed by curated slug. Ephemeral — never persisted, so
@@ -156,14 +207,11 @@ export default function App() {
   // hashes. `handle: null` rows are pings restored from another device.
   const [pings, setPings] = useState(() => (demo ? (route.seed ? DEMO_PINGS : []) : init.pings || []))
   const [them, setThem] = useState(route.poster || '')
-  const [intent, setIntent] = useState('')
-  // who they are to you (crush / ex / friend / complicated) — drives which intent
-  // lines the send screen offers. UI-only: the chosen intent id already carries
-  // the category, so nothing extra is stored or sent.
-  const [category, setCategory] = useState('')
+  // the photographs this device holds for the cards above, as object URLs
+  const cardUrls = usePhotoUrls(pings)
   const [error, setError] = useState('')
   const [lastPlaced, setLastPlaced] = useState(null) // { handle, reachable }
-  const [match, setMatch] = useState(null) // { them, yourIntent, theirIntent }
+  const [match, setMatch] = useState(null) // { them } — what the mutual flash names
   const [slots, setSlots] = useState(FULL_SLOTS)
   const [loginMode, setLoginMode] = useState(false)
   // ── the identity router (migration 0015) ──
@@ -269,15 +317,16 @@ export default function App() {
   // stars in whichever sky is behind the app, each carrying who that ping is to
   // you (the category tint its star wears). Plaintext lives here only.
   const mineLabels = useMemo(
-    () => pings.filter((p) => p.handle).map((p) => ({ label: normHandle(p.handle), kind: categoryOf(p.intent) })),
-    [pings],
+    () => pings.filter((p) => p.handle).map((p) => ({ label: normHandle(p.handle), kind: starKind(C, p) })),
+    [pings, C],
   )
   // aligned by index with the ambient field's sealed stars (null = restored
   // from another device; that star stays unnamed)
   const sealLabels = useMemo(() => pings.map((p) => (p.handle ? normHandle(p.handle) : null)), [pings])
-  // who each ping is to you, same alignment — the category tint each sealed
-  // star wears in the ambient field (the same light the community sky uses)
-  const sealKinds = useMemo(() => pings.map((p) => categoryOf(p.intent)), [pings])
+  // The light each sealed star burns with, same alignment. It is the light of
+  // the card that ping carries: measured off the photograph, or off the plate
+  // it stands on. Nobody chose it from a list, which is the point.
+  const sealKinds = useMemo(() => pings.map((p) => starKind(C, p)), [pings, C])
   // The opted-in public @s resting in your community's sky. The sandbox seeds a
   // handful per community; production fills this from the server when the
   // opt-in ships its backend.
@@ -333,7 +382,7 @@ export default function App() {
     if (route.trial) return 'trial'
     if (route.admin) return 'admin'
     if (route.paid) return 'paid'
-    if (!demo && init.screen && SCREENS[init.screen] && !['match', 'placed', 'you', 'who', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin', 'paid'].includes(init.screen)) return init.screen
+    if (!demo && init.screen && SCREENS[init.screen] && !['mutual', 'reveal', 'placed', 'you', 'who', 'compose', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin', 'paid'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -523,12 +572,19 @@ export default function App() {
             prev.map((p) => {
               const r = rows.find((x) => x.handle === normHandle(p.handle || ''))
               if (!r || !r.placed) return p
+              // A match that happened while this device was closed arrives
+              // HERE, with their card on it. It lands sealed: `revealed` stays
+              // false until the person opens it themselves on the status page.
+              const theirs = r.their_card ? fromWire(r.their_card, { handle: normHandle(p.handle || '') }) : null
               return {
                 ...p,
                 expires_at: r.expires_at || p.expires_at,
                 mutual: !!r.mutual || p.mutual,
                 reachable: r.reachable != null ? !!r.reachable : p.reachable,
-                intent: r.intent || p.intent,
+                // the server's copy of your own poster, for a device that has
+                // the ping but not the card (a restore, a cleared browser)
+                card: p.card || (r.card ? fromWire(r.card, { handle: normHandle(p.handle || ''), placed: r.time }) : null),
+                theirCard: p.theirCard || theirs,
               }
             }),
           )
@@ -644,13 +700,18 @@ export default function App() {
 
   // ── the star view (the status page's "see it in the sky") ──
   // Tapping one of your pings flies the backdrop camera to that ping's own star
-  // and STAYS there — the foreground melts away, a designed overlay names the
-  // star (the @ in the product's amber, its intent line beneath), and the hand
-  // is free: drag orbits the whole galaxy around the held star, pinch pulls
-  // closer. One clear close button glides the camera home to the pings page.
+  // and STAYS there. The foreground melts away, and what is waiting at the end
+  // of the flight is the CARD: the star stops being a point of light and
+  // becomes the surface it was made of all along (card/Resolve.jsx). The disc
+  // grows out of the point at the rate the camera actually resolves it, so
+  // there is no transition to write and nothing to time.
+  //
   // Works over both skies: the community galaxy's held dive, or the ambient
-  // field's held focus when no community is joined.
-  const [skyView, setSkyView] = useState(null) // { handle, intent, kind } while held
+  // field's held focus when no community is joined. Only the ambient field
+  // publishes where each sealed star is on screen, so only there can the disc
+  // grow out of the exact point; over a community sky it opens where the layout
+  // says, which is where it was travelling anyway.
+  const [skyView, setSkyView] = useState(null) // { handle, index, arrived } while held
   const skyFlight = !!skyView
   const endSkyView = useCallback(() => {
     if (homeGalaxyRef.current && homeGalaxyRef.current.releaseDive) homeGalaxyRef.current.releaseDive()
@@ -664,13 +725,11 @@ export default function App() {
     (handle) => {
       const h = normHandle(handle)
       if (!h || skyView) return
-      const row = pings.find((p) => normHandle(p.handle || '') === h)
       let ok = false
-      // The name rises when the camera has actually landed on the star, which
-      // the sky reports. A dive's length breathes with how far it has to
-      // travel, so the CSS delay this replaces was wrong by up to most of a
-      // second — always in the direction of the words arriving over a camera
-      // still in flight.
+      let index = null
+      // The card is READ off the camera every frame, so nothing here has to
+      // guess how long the flight takes. `onArrive` is only the moment the
+      // close button is allowed to appear.
       const onArrive = () => setSkyView((v) => (v && v.handle === h ? { ...v, arrived: true } : v))
       if (homeCommunity && homeGalaxyRef.current) {
         ok = !!homeGalaxyRef.current.locateMine(h, { hold: true, onArrive })
@@ -679,14 +738,29 @@ export default function App() {
         if (i >= 0) {
           ambientGalaxyRef.current.focusStar(i, { hold: true, onArrive })
           if (ambientGalaxyRef.current.setNavEnabled) ambientGalaxyRef.current.setNavEnabled(true)
+          index = i
           ok = true
         }
       }
       if (!ok) return
-      setSkyView({ handle: h, intent: (row && row.intent) || null, kind: categoryOf((row && row.intent) || ''), arrived: false })
+      setSkyView({ handle: h, index, arrived: false })
     },
     [homeCommunity, pings, skyView],
   )
+
+  // What the held star turns out to be. A ping placed before the card existed
+  // (or restored onto a device that never held its photograph) still resolves
+  // into a body: the plate, the limb, the @ and the date. A star with nothing
+  // written on it is still a star, which is the same reason the photograph is
+  // allowed to be optional.
+  const skyCard = useMemo(() => {
+    if (!skyView) return null
+    const row = pings.find((p) => normHandle(p.handle || '') === skyView.handle)
+    if (!row) return null
+    return row.card
+      ? { ...row.card, handle: skyView.handle, photoId: row.photoId || null }
+      : makeCard({ handle: skyView.handle, words: '', placed: row.time })
+  }, [skyView, pings])
 
   // ── the public @ (announce yourself in your community's sky) ──
   // Turning it ON goes through the warning sheet; turning it OFF is one tap.
@@ -698,6 +772,12 @@ export default function App() {
   const retractPublicStar = useCallback(() => setPublicStar(false), [])
 
   // ── the flow ──
+  // The composed card, on its way from the composer to the server. A ref and
+  // not state: the identity gate can sit between those two moments for as long
+  // as a DM takes to arrive, and nothing about a re-render in the middle of
+  // that should be able to drop what somebody wrote.
+  const draftCard = useRef(null)
+
   const findOut = useCallback(() => {
     setLoginMode(false)
     setError('')
@@ -706,6 +786,22 @@ export default function App() {
     // comes after, on the way to placing.
     go('who')
   }, [go])
+
+  // The @ is confirmed; now the card. Nothing has been committed to the handle
+  // yet and nothing is until the poster is written, which is deliberate: the
+  // words are the ping, and asking for them last would make them feel optional.
+  const compose = useCallback(() => {
+    setError('')
+    if (!isValidHandle(them)) {
+      setError(t('who.errInvalid'))
+      return
+    }
+    if (normHandle(me) && normHandle(me) === normHandle(them)) {
+      setError(t('who.errSelf'))
+      return
+    }
+    go('compose')
+  }, [them, me, go, t])
 
   // From an open-door page: land two taps from a placed ping (field prefilled).
   const startFromDoor = useCallback(
@@ -727,12 +823,17 @@ export default function App() {
       // bound to — so the ping's "from" must be it, not the stale typed value.
       const from = normHandle(meOverride) || normHandle(me)
       const target = normHandle(them)
-      const chosen = intent || ''
+      // The card the composer handed over on its way here. It is held in a ref
+      // rather than in state because the identity gate can sit between the
+      // composer and this call for as long as a DM takes to arrive, and a
+      // re-render in the middle of that must not be able to lose the poster.
+      const draft = draftCard.current
+      const card = draft ? makeCard({ ...draft, handle: target }) : null
       // The sandbox subscription stands its pings six months instead of sixty
       // days (SUB_PING_DAYS) — production duration stays server-set.
       const days = demo && demoSubscribed ? SUB_PING_DAYS : undefined
       try {
-        const res = await placePing({ me: from, them: target, email, proof, intent: chosen, demo, days })
+        const res = await placePing({ me: from, them: target, email, proof, card: toWire(card), demo, days })
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
           go('fourth')
@@ -755,6 +856,15 @@ export default function App() {
           go('who')
           return
         }
+        // The photograph, if there is one: onto this device, under the key its
+        // ping row points at, and nowhere else. Written before the row so the
+        // disc never renders against a blob that has not landed yet.
+        const photoId = draft && draft.blob ? photoKey(target) : null
+        if (photoId) await photos.putPhoto(photoId, draft.blob)
+        if (card) card.photoId = photoId
+        // Their half, and it can only exist if the pair is already mutual.
+        const theirCard = res?.mutual && res.match_card ? fromWire(res.match_card, { handle: target }) : null
+
         // Recorded. Add/refresh the local row (the only plaintext there is).
         setPings((prev) => {
           const rest = prev.filter((p) => normHandle(p.handle || '') !== target)
@@ -766,15 +876,22 @@ export default function App() {
               expires_at: res.expires_at || new Date(Date.now() + 60 * 864e5).toISOString(),
               mutual: !!res.mutual,
               reachable: !!res.reachable,
-              intent: chosen || null,
+              card,
+              photoId,
+              theirCard,
+              // sealed. The spread is opened by hand, from the status page.
+              revealed: false,
             },
           ]
         })
-        setIntent('')
-        setCategory('')
+        draftCard.current = null
         if (res?.mutual) {
-          setMatch({ them: target, yourIntent: chosen || null, theirIntent: res.match_intent || null })
-          go('match')
+          // The announcement, and only that: two seconds, no buttons, then the
+          // status page with a sealed mutual slot on it. What is IN the two
+          // cards is not shown on the way past — it is opened deliberately or
+          // it is not opened at all.
+          setMatch({ them: target })
+          go('mutual')
           return
         }
         // If you're in a community, this ping also lands in its sky: your own star
@@ -782,7 +899,9 @@ export default function App() {
         // its @ so it stays findable in the crowd), and — in the sandbox — the
         // community's live ping count ticks. The ping itself already reached its
         // person above, community or not: the sky is a lens, never a boundary.
-        if (homeCommunity && homeGalaxyRef.current) homeGalaxyRef.current.launch(1, { mine: true, label: target, kind: categoryOf(chosen) })
+        if (homeCommunity && homeGalaxyRef.current) {
+          homeGalaxyRef.current.launch(1, { mine: true, label: target, kind: card ? tintOf(C, card.tone) : '' })
+        }
         if (demo && homeCommunity && communityOpen(homeCommunity)) {
           setCommLive((prev) => {
             const cur = prev[homeCommunity.slug] || {}
@@ -799,7 +918,7 @@ export default function App() {
         go('who')
       }
     },
-    [me, them, email, intent, demo, demoSubscribed, session, go, t, runSendoff, homeCommunity],
+    [me, them, email, demo, demoSubscribed, session, go, t, runSendoff, homeCommunity, C],
   )
 
   // ── communities (curated: join / leave, view, and the sandbox live feed) ──
@@ -878,15 +997,21 @@ export default function App() {
     [demo],
   )
 
-  // Place — from the send screen. Runs the identity gate first when needed.
-  const place = useCallback(async () => {
+  // Place — from the composer. `card` is what it composed:
+  // { words, bg, face, pos, tone, blob } — the blob being the treated
+  // photograph, which is put on this device and never sent anywhere.
+  // Runs the identity gate first when needed.
+  const place = useCallback(async (card) => {
     setError('')
+    if (card) draftCard.current = card
     if (!isValidHandle(them)) {
       setError(t('who.errInvalid'))
+      go('who')
       return
     }
     if (normHandle(me) && normHandle(me) === normHandle(them)) {
       setError(t('who.errSelf'))
+      go('who')
       return
     }
     // The two-slot rule, honored client-side too (the server is authority).
@@ -925,6 +1050,13 @@ export default function App() {
       // no target yet (signed up without naming anyone) — go name one.
       if (!normHandle(them)) {
         go('who')
+        return
+      }
+      // named, but nothing written yet: this is someone who signed up from the
+      // send flow before the composer. Their ping is one screen away, not
+      // placed behind their back.
+      if (!draftCard.current) {
+        go('compose')
         return
       }
       placeCommit(proof, handle)
@@ -971,14 +1103,30 @@ export default function App() {
             // row, so only the surplus becomes an anonymous row here.
             const localNamed = local.filter((p) => p.handle)
             const names = new Set(localNamed.map((p) => normHandle(p.handle)))
+            // A restored row rebuilds its cards through the same clamps the
+            // composer writes under, and comes back SEALED: a match this
+            // device has never seen is still a match nobody has opened.
+            const restore = (s) => {
+              const h = normHandle(s.handle || '')
+              return {
+                ...s,
+                card: s.card ? fromWire(s.card, { handle: h, placed: s.time }) : null,
+                // the photograph stayed on the phone that took it, so this
+                // card stands on its plate — the same thing that happens when
+                // somebody chooses not to add one
+                photoId: null,
+                theirCard: s.theirCard ? fromWire(s.theirCard, { handle: h }) : null,
+                revealed: false,
+              }
+            }
             const merged = [...localNamed]
             for (const s of server) {
-              if (s.handle && !names.has(normHandle(s.handle))) merged.push({ ...s, reachable: true })
+              if (s.handle && !names.has(normHandle(s.handle))) merged.push({ ...restore(s), reachable: true })
             }
             const serverAnon = server.filter((s) => !s.handle)
             const localUnmatched = localNamed.filter((p) => !p.mutual).length
             for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
-              merged.push({ ...serverAnon[i], reachable: false })
+              merged.push({ ...restore(serverAnon[i]), reachable: false })
             }
             return merged
           })
@@ -1093,6 +1241,10 @@ export default function App() {
     async (handle) => {
       const h = normHandle(handle)
       setPings((prev) => prev.filter((p) => normHandle(p.handle || '') !== h))
+      // the card goes with the ping, and so does its photograph. A blob left
+      // behind after the row that pointed at it is gone is a picture of
+      // somebody's night sitting in a browser store, unreachable and undeletable.
+      photos.dropPhoto(photoKey(h)).catch(() => {})
       try {
         await retirePing({ me, them: h, demo })
       } catch (e) {
@@ -1104,9 +1256,8 @@ export default function App() {
 
   const placeAnother = useCallback(() => {
     setThem('')
-    setIntent('')
-    setCategory('')
     setError('')
+    draftCard.current = null
     if (standingCount(pings) >= slotCap) {
       go('fourth')
       return
@@ -1114,22 +1265,60 @@ export default function App() {
     go('who')
   }, [pings, slotCap, go])
 
+  // ── the reveal (the mutual slot, opened) ──
+  // A match arrives sealed and stays sealed until it is opened, which is the
+  // whole difference between being told and looking. Opening it hands the sky
+  // its 'match' mode — the two stars fall into a shared orbit, the merger
+  // flashes, the binary settles — and both cards unseal off that same clock
+  // (card/Spread.jsx), together, because neither person moved second.
+  const [reveal, setReveal] = useState(null) // { handle } while the spread is up
+  const openReveal = useCallback(
+    (handle) => {
+      const h = normHandle(handle)
+      const row = pings.find((p) => normHandle(p.handle || '') === h)
+      if (!row || !row.mutual) return
+      setReveal({ handle: h })
+      setGalaxyMode('match')
+      go('reveal')
+    },
+    [pings, go],
+  )
+
+  // Leaving marks it seen. From here on the slot holds the two cards, open, and
+  // there is no second unsealing: it happened once.
+  const closeReveal = useCallback(() => {
+    const h = reveal && reveal.handle
+    if (h) setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, revealed: true } : p)))
+    setGalaxyMode('idle')
+    setReveal(null)
+    go('pings')
+  }, [reveal, go])
+
+  // The status page's mutual flash is a two-second announcement with nothing to
+  // press; this is what it lands on when it fades.
+  const afterMutual = useCallback(() => {
+    setMatch(null)
+    go('pings')
+  }, [go])
+
   // ── sandbox: visualize a match ──
-  // Flips a sample ping to mutual and plays the full match workflow.
+  // Flips a sample ping to mutual, gives it the other half, and plays the real
+  // workflow from the announcement onward.
   const simulateMutual = useCallback(
     (handle) => {
       if (!demo) return
       const h = normHandle(handle)
-      const row = pings.find((p) => normHandle(p.handle || '') === h)
-      setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, mutual: true } : p)))
-      setMatch({
-        them: h,
-        yourIntent: row?.intent || null,
-        theirIntent: row?.intent === 'exMiss' ? 'crushThink' : 'exMiss',
-      })
-      go('match')
+      setPings((prev) =>
+        prev.map((p) =>
+          normHandle(p.handle || '') === h
+            ? { ...p, mutual: true, revealed: false, theirCard: p.theirCard || fromWire(DEMO_CARD, { handle: h }) }
+            : p,
+        ),
+      )
+      setMatch({ them: h })
+      go('mutual')
     },
-    [demo, pings, go],
+    [demo, go],
   )
 
   // ── sandbox: "buy" one more one-time slot, or subscribe ──
@@ -1253,9 +1442,10 @@ export default function App() {
     setEmail('')
     setAltHandles([])
     setThem('')
-    setIntent('')
-    setCategory('')
     setError('')
+    draftCard.current = null
+    // the photographs are part of the device, so leaving the device takes them
+    photos.wipePhotos().catch(() => {})
     setPings([])
     setJoinedSlugs([])
     setSchoolCred(null)
@@ -1265,6 +1455,7 @@ export default function App() {
     clearRef()
     setRef('')
     setMatch(null)
+    setReveal(null)
     setLastPlaced(null)
     setSlots(FULL_SLOTS)
   }, [])
@@ -1359,7 +1550,7 @@ export default function App() {
   const ctx = {
     demo, me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap,
-    intent, setIntent, category, setCategory,
+    cardUrls, compose, openReveal, closeReveal, reveal, afterMutual, ambientGalaxyRef,
     communities, openCommunity, homeCommunity, homeGalaxyRef,
     viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity,
     locatePing, skyFlight,
@@ -1397,8 +1588,14 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin', 'paid']
+  const CALM_SCREENS = ['pings', 'who', 'compose', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin', 'paid']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
+
+  // The reveal happens IN the field: the sky plays the inspiral, the merger and
+  // the binary that settles out of it, and the two cards unseal off that same
+  // clock. So it takes the ambient galaxy even for someone whose backdrop is
+  // normally their community's, because the community sky has no match to play.
+  const inReveal = screen === 'reveal'
 
   // The backdrop: once you've joined a community, the app-wide field IS your
   // community's living galaxy (the merge) — your pings land in it and your own
@@ -1454,7 +1651,7 @@ export default function App() {
             backgroundImage: `radial-gradient(120% 80% at 12% 100%, ${rgba(C.star, 0.1)} 0%, transparent 58%), radial-gradient(90% 60% at 88% 0%, ${rgba(C.them, 0.07)} 0%, transparent 55%)`,
           }}
         />
-      ) : homeCommunity ? (
+      ) : homeCommunity && !inReveal ? (
         <CommunityGalaxyCanvas
           key={homeCommunity.slug}
           you={C.you}
@@ -1470,7 +1667,7 @@ export default function App() {
       ) : (
         <GalaxyCanvas
           mode={galaxyMode}
-          dim={skyFlight ? 1 : galaxyDim}
+          dim={skyFlight || inReveal ? 1 : galaxyDim}
           origin={sendoffOrigin}
           seals={pings.length}
           sealLabels={sealLabels}
@@ -1542,9 +1739,21 @@ export default function App() {
         />
       )}
 
-      {/* the held star view: the @ resting in amber over its star, the intent
-          line beneath, the hand free to orbit — and one clear way home. */}
-      {skyView && <StarViewOverlay C={C} view={skyView} onClose={endSkyView} />}
+      {/* the held star view: the star resolves into the card it was made of.
+          The @ and the date are set INSIDE the poster, so what arrives at the
+          end of the dive is one object rather than an object with a caption,
+          and the hand stays free to orbit it. */}
+      {skyView && (
+        <CardResolve
+          C={C}
+          card={skyCard}
+          url={skyCard && cardUrls[skyCard.photoId]}
+          index={skyView.index}
+          open={!!skyView}
+          fieldRef={homeCommunity ? homeGalaxyRef : ambientGalaxyRef}
+          onClose={endSkyView}
+        />
+      )}
 
       {/* the send-off morph: the @ field collapsing into a star (torn down by the
           morphTimer once its one-shot gesture has played). */}
