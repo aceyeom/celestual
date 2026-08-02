@@ -259,6 +259,9 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 - **The open-door / share card** (`app/src/card.js`) — the most public pixel the
   brand owns. Gorgeous is a requirement, not a preference.
+- **The card** (`app/src/beta/Disc.jsx`) — the circular body a ping resolves
+  into, and its story render (`app/src/beta/share.js`). One fixed layout at
+  every size it ever appears at; see the 2026-08-02 changelog entry.
 - **The OG share image** (`app/public/og.svg` → `og.png`) — the landing's hero
   restated.
 - **Emails** (`supabase/functions/*`) — cosmic-violet field, mono-spaced kicker,
@@ -269,6 +272,78 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-08-02 (b)** — **The card becomes a composition** (human-directed,
+  continuing the `/beta` prototype). The poster was a centered stack; it is now
+  a placed block whose whole layout is derived from where it sits.
+  - **The type is smaller and it has a place.** A short line takes the lower
+    left, the way a poster puts a caption meant to be read after the picture;
+    longer text moves up the same margin; only the longest goes to the middle,
+    where a circle is wide enough for six lines. The picture is the picture and
+    the words are what you find in it.
+  - **The user drags the block, and the composition re-derives.** Alignment is
+    read off the block's own x, the measure is the circle's real chord at the
+    block's edge, and the credit line moves to whichever half the words left
+    empty, on their margin, in their alignment. Nothing is a control that can
+    be inferred from something already on screen.
+  - **No gradients inside the disc.** The limb darkening and warm rim made the
+    card read as a lens looking at a picture rather than a printed circle with
+    a picture on it. Flat ground, one even scrim over a photograph, the shared
+    grain, one hairline limb.
+  - **The type is choosable**, from the product's own three faces, each with
+    its own scale, leading and tracking — a face swap that keeps one size and
+    one leading is a bug with a dropdown.
+  - **The composer got an instrument.** One labelled two-column panel (ground,
+    type) instead of chips drifting under the card, and the step narration is
+    gone.
+
+- **2026-08-02** — **`/beta`: the star & card system** (human-directed, from a
+  written plan). A prototype route, mounted in `main.jsx` beside the real app
+  rather than inside its router, so production screens, the ping model and the
+  Supabase schema are untouched. It adds one object to the system and the rest
+  follows from it. Everything below uses the existing tokens, the existing
+  ladder and the existing two stars; nothing in §1–§9 changed.
+  - **The card is a circle, because the card is the star's surface.**
+    `sky/body.js` already resolves a star into a limb-darkened, granulating
+    photosphere when the camera closes on it. The card is that surface with a
+    photograph on it, so a ping and its card are one object at two distances
+    rather than two things joined by a transition.
+  - **The approach replaces the modal.** Tapping a star flies the existing
+    camera to it, and the disc opens out of the point of light as `cam.focus`
+    crosses the engine's own resolve threshold: blurred first, the way an
+    unresolved body is, sharpening as it grows. Closing runs the same curve
+    backwards. There is no open or close animation written anywhere.
+  - **The card is a type poster, cut round.** The words are set ON the ground
+    rather than under it: the `@` in tracked mono, a hairline, the twenty words
+    in serif italic large and tight, the date in mono below. Three registers,
+    cast as §3 casts them, inside the disc. A disc with a paragraph beneath it
+    was two objects; this is one, and it survives being a thumbnail.
+  - **Type inside the disc is a ratio of the diameter**, not a step on the
+    ladder. Narrow deliberate exception, and the same one `card.js` already
+    takes: a composed artifact is an artboard, not a screen, and this one is
+    drawn at four sizes from a 68px thumbnail to a 1080-wide Story render. The
+    words fit in three steps so cards of similar length look like a set.
+  - **The ground is a photograph or one of five dark plates.** Grounds, not
+    accents: the two-accent law governs the interface, and a short low-chroma
+    set is what keeps forty cards reading as one work where a colour picker
+    would not. Under a photograph the type gets one flat even scrim, so every
+    card in the product sets its words at the same contrast.
+  - **A card's light comes from its photograph.** The plan bans relationship
+    labels outright, so the tint cannot come from a picker: it is measured off
+    the image, luminance-weighted so the light source in the frame decides, and
+    mapped between the two existing stars. A warm room burns amber, a cold one
+    rose. No third hue, no category, nobody asked.
+  - **A card with no photograph is still a star** — it stands on a plate and
+    keeps its body, its light and its type. This is the reason the photo can be
+    optional at all.
+  - **The mutual spread.** The engine's inspiral, flash, light echo and settled
+    binary play as built; the two cards then unseal together, out of the two
+    stars, on the frame the binary first exists on. The unseal is driven by the
+    engine's own match clock, not a timer: the sky clamps `dt`, so on a slow
+    device a wall-clock reveal opens the cards mid-inspiral and the merger flash
+    goes off over the top of it.
+  - **One shared grain over every surface**, photographs included, so forty
+    frames from forty rooms composite into one field instead of a collage.
 
 - **2026-07-31** — **The sky, rebuilt on a GPU** (human-directed, and an
   explicit authorization under the design lock: the cosmic-violet field, the two

@@ -27,6 +27,12 @@ const EXEMPT = new Set(['celestual-challenge.html'])
 const files = [
   join(root, 'app/src/i18n/strings.js'),
   join(root, 'app/src/growth.js'),
+  // /beta (the star & card prototype) writes its copy inline rather than
+  // through i18n, since it is one locale and one surface. It is still copy, so
+  // it is still held to VOICE.md.
+  ...readdirSync(join(root, 'app/src/beta'))
+    .filter((f) => f.endsWith('.js') || f.endsWith('.jsx'))
+    .map((f) => join(root, 'app/src/beta', f)),
   ...readdirSync(join(root, 'app/public'))
     .filter((f) => f.endsWith('.html') && !EXEMPT.has(f))
     .map((f) => join(root, 'app/public', f)),
@@ -83,6 +89,14 @@ const EXCLAIM = /[a-zA-Z]!/
 // legal pages could reach for.
 const DASH = /[—–]|&[mn]dash;/
 
+// A banned phrase is banned as a WORD, not as a run of characters. Matching
+// bare substrings meant the scan tripped on identifiers that merely contain
+// one: IndexedDB's `onupgradeneeded` is not the paywall voice. A leading word
+// boundary is enough to fix it and still catches every real form, including
+// plurals and inflections ("upgrades", "upgrading"), because only the front of
+// the phrase is anchored.
+const bannedRe = (phrase) => new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i')
+
 let failures = 0
 for (const file of files) {
   const text = stripComments(readFileSync(file, 'utf8'))
@@ -91,7 +105,7 @@ for (const file of files) {
     const where = `${file.replace(root + '/', '')}:${i + 1}`
     const lower = line.toLowerCase()
     for (const phrase of BANNED) {
-      if (lower.includes(phrase)) {
+      if (bannedRe(phrase).test(lower)) {
         console.error(`✗ ${where} banned phrase "${phrase}": ${line.trim().slice(0, 90)}`)
         failures++
       }

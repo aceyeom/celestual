@@ -25,6 +25,10 @@ export const RESERVED_CODES = [
   // 'paid' is where Stripe sends someone back (migration 0021). A competitor
   // holding it would swallow every return from a payment page.
   'paid',
+  // 'beta' is the star & card prototype (src/beta/), mounted in main.jsx before
+  // App's router ever sees the path. A competitor holding it would be issued a
+  // tracking link that never reaches the landing page.
+  'beta',
 ]
 
 export function normChoice(code) {
