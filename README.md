@@ -69,7 +69,9 @@ celestual/
 │   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
 │   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
 │   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
-│   │   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
+│   │   ├── beta/     the star & card prototype (/beta) — Disc.jsx (the card) ·
+│   │   │             Sky.jsx (the approach) · Composer.jsx · Spread.jsx · store.js
+│   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
 │   │   ├── i18n/     the canonical copy (strings.js)
 │   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js · styles.css
 │   │   └── main.jsx
@@ -106,6 +108,7 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
+| `/beta` | **the star & card system** — a self-contained prototype of the card design (`app/src/beta/`, `docs/BETA-STAR-CARDS.md`). Mounted in `main.jsx` beside the real app, so production is untouched; nothing it holds leaves the browser |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
@@ -157,6 +160,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
 | [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
+| [docs/BETA-STAR-CARDS.md](./docs/BETA-STAR-CARDS.md) | **`/beta` — the star & card system**: why the card is a circle, how a ping resolves into one, the mutual spread, and what is stored (nothing leaves the browser) |
 | [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |

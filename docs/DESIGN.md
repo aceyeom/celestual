@@ -259,6 +259,9 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 - **The open-door / share card** (`app/src/card.js`) — the most public pixel the
   brand owns. Gorgeous is a requirement, not a preference.
+- **The card** (`app/src/beta/Disc.jsx`) — the circular body a ping resolves
+  into, and its story render (`app/src/beta/share.js`). One fixed layout at
+  every size it ever appears at; see the 2026-08-02 changelog entry.
 - **The OG share image** (`app/public/og.svg` → `og.png`) — the landing's hero
   restated.
 - **Emails** (`supabase/functions/*`) — cosmic-violet field, mono-spaced kicker,
@@ -269,6 +272,43 @@ The system extends beyond the app; these must all read as the same cosmos:
   threshold line, the QR. Nearly empty.
 
 ## §11 — Changelog
+
+- **2026-08-02** — **`/beta`: the star & card system** (human-directed, from a
+  written plan). A prototype route, mounted in `main.jsx` beside the real app
+  rather than inside its router, so production screens, the ping model and the
+  Supabase schema are untouched. It adds one object to the system and the rest
+  follows from it. Everything below uses the existing tokens, the existing
+  ladder and the existing two stars; nothing in §1–§9 changed.
+  - **The card is a circle, because the card is the star's surface.**
+    `sky/body.js` already resolves a star into a limb-darkened, granulating
+    photosphere when the camera closes on it. The card is that surface with a
+    photograph on it, so a ping and its card are one object at two distances
+    rather than two things joined by a transition.
+  - **The approach replaces the modal.** Tapping a star flies the existing
+    camera to it, and the disc opens out of the point of light as `cam.focus`
+    crosses the engine's own resolve threshold: blurred first, the way an
+    unresolved body is, sharpening as it grows. Closing runs the same curve
+    backwards. There is no open or close animation written anywhere.
+  - **The card's fixed layout**, and it is the whole vocabulary: the disc, per-
+    channel limb darkening, a corona in the card's own light, the `@` set on
+    the rim (mono, tracked, the metadata register at the greatest possible
+    distance from the words), twenty words in serif italic beneath, one mono
+    tick under that. The user chooses content and never design.
+  - **A card's light comes from its photograph.** The plan bans relationship
+    labels outright, so the tint cannot come from a picker: it is measured off
+    the image, luminance-weighted so the light source in the frame decides, and
+    mapped between the two existing stars. A warm room burns amber, a cold one
+    rose. No third hue, no category, nobody asked.
+  - **A card with no photograph is still a star** — the disc shows the
+    photosphere. This is the reason the photo can be optional at all.
+  - **The mutual spread.** The engine's inspiral, flash, light echo and settled
+    binary play as built; the two cards then unseal together, out of the two
+    stars, on the frame the binary first exists on. The unseal is driven by the
+    engine's own match clock, not a timer: the sky clamps `dt`, so on a slow
+    device a wall-clock reveal opens the cards mid-inspiral and the merger flash
+    goes off over the top of it.
+  - **One shared grain over every surface**, photographs included, so forty
+    frames from forty rooms composite into one field instead of a collage.
 
 - **2026-07-31** — **The sky, rebuilt on a GPU** (human-directed, and an
   explicit authorization under the design lock: the cosmic-violet field, the two
