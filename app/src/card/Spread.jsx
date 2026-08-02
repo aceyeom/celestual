@@ -1,4 +1,4 @@
-// beta/Spread.jsx — the fused spread.
+// card/Spread.jsx — the fused spread.
 //
 // The most important frame in the product, and the one the plan spends its
 // strictest sentence on: "both cards unseal in the same instant" (§3). Not one

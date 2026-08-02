@@ -16,7 +16,20 @@ src/
 │                      placement/renew/retire flows, verification gating,
 │                      localStorage persistence (the ONLY place plaintext
 │                      targets live — the server stores hashes)
-├── card.js            the open-door Story card renderer (1080×1920 PNG)
+├── card.js            the open-door Story card renderer (1080×1920 PNG). Not to
+│                      be confused with card/ below: this one is the shareable
+│                      about the PLACE, and it names nobody
+├── card/              the star & card system — the poster every ping carries
+│   ├── Disc.jsx       THE CARD: the ground, the type, the limb, the corona
+│   ├── Composer.jsx   the composer, which IS the card being filled in
+│   ├── Resolve.jsx    a held star resolving into its card, off the camera
+│   ├── Spread.jsx     the mutual: two cards unsealing in the same instant
+│   ├── model.js       the card as data, the prompt, the seeds, the tint, and
+│   │                  the wire shape the server validates against
+│   ├── photo.js       a photograph becomes a surface (strip EXIF, treat, measure)
+│   ├── photos.js      the blob store. This device, and nowhere else: a card's
+│   │                  words ride on its ping row, its picture never leaves
+│   └── share.js       the story render — your card, never theirs
 ├── demoData.js        the sandbox's hardcoded world (sample pings, the Reed
 │                      campus window, world counters)
 ├── theme.js           the single source of color/geometry (one warm star)
@@ -42,9 +55,14 @@ src/
 
 ## The flow
 
-`landing → who (the send: handle + optional intent + slot pips) → you
-(identity + optional email; the DM verify overlay gates placement) → placed
-(standing/waiting — the recruiter screen) → pings (the quiet status page)`.
+`landing → who (the send: the handle, confirmed) → compose (the card the ping
+carries — see ../docs/STAR-CARDS.md) → you (identity + optional email; the DM
+verify overlay gates placement) → placed (standing/waiting — the recruiter
+screen) → pings (the quiet status page)`.
+
+A mutual leaves that line: a two-second announcement, then the status page with
+a **sealed** mutual slot on it. Tapping the slot plays the sky's match and
+unseals both cards together; after that it stays open.
 
 Side doors: `/@poster` prefills the send field (Loop B); `/c/slug` runs the
 campus window (Loop C: count me in → verified preregistration; "it's open.";

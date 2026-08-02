@@ -39,7 +39,7 @@ import {
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
 import { Gestures } from './sky/gestures.js'
-import { CATEGORY_TINTS } from './theme.js'
+import { starTint } from './theme.js'
 import { Galaxy2D } from './sky/fallback2d.js'
 
 const TWO = Math.PI * 2
@@ -522,7 +522,7 @@ export class GalaxyField extends SkyEngine {
       // during a dive everything but the hero melts back into the depth
       const fade = proximity > 0.001 && !isFocus ? 1 - 0.86 * proximity : 1
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + s.phase)
-      const tint = CATEGORY_TINTS[this.sealKinds[i]] || this.sealHue || this.you
+      const tint = starTint(this.sealKinds[i]) || this.sealHue || this.you
       const tcol = linearOf(tint)
       // Calibrated at BOTH ends: about 1.5x white at rest, so your star reads
       // as a little brighter than its neighbours and nothing more, and about
@@ -793,7 +793,7 @@ export class GalaxyField extends SkyEngine {
     const s = this.sealed[n - 1]
     if (!s) return
     const tt = this.modeT
-    const tint = CATEGORY_TINTS[this.sealKinds[n - 1]] || this.sealHue || this.you
+    const tint = starTint(this.sealKinds[n - 1]) || this.sealHue || this.you
     const col = linearOf(tint)
     const white = [1, 0.96, 0.9]
 

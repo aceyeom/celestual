@@ -60,42 +60,11 @@ const en = {
   'who.errUnverified': 'we couldn’t confirm the @ is yours. verify again and it’ll place.',
   'who.demoHint': 'sandbox: enter @demo and the match will find you.',
 
-  // who they are to you, so the "why them" lines that follow fit the actual
-  // relationship instead of one flat list.
-  'category.label': 'who are they to you?',
-  'category.crush': 'crush',
-  'category.ex': 'ex',
-  'category.friend': 'friend',
-  'category.complicated': 'complicated',
-  'category.skip': 'skip this',
-  'category.skipped': 'left unsaid. the ping seals just the same.',
-  'category.unskip': 'say it after all',
-
-  // the intent row — an optional line that travels with the ping, read only at a
-  // mutual reveal. written in the first person, so each reads under either
-  // "they said" or "you said".
-  'intent.label': 'why them?',
-  'intent.note': 'read only if it’s mutual.',
-  // crush
-  'intent.crushHi': 'i’ve wanted to say hi',
-  'intent.crushThink': 'i can’t stop thinking about you',
-  'intent.crushCute': 'i think you’re cute',
-  'intent.crushSee': 'let’s see where this goes',
-  // ex
-  'intent.exMiss': 'i miss you',
-  'intent.exAgain': 'i want to try again',
-  'intent.exUnsaid': 'i never got to say something',
-  'intent.exUs': 'i still think about us',
-  // friend
-  'intent.friendTalk': 'we should talk',
-  'intent.friendAround': 'i miss having you around',
-  'intent.friendLeft': 'i hate how we left things',
-  'intent.friendFix': 'let’s fix this',
-  // complicated
-  'intent.compRight': 'i want to make things right',
-  'intent.compMind': 'it’s been on my mind',
-  'intent.compAir': 'we need to clear the air',
-  'intent.compWhat': 'i don’t know what we are',
+  // ── the card (docs/STAR-CARDS.md) ──────────────────────────────────────
+  // The category tabs and the sixteen "why them" lines are gone. A ping carries
+  // a card the person wrote, and the composer's own copy lives with it (it is
+  // one surface and one locale, so it is written inline in card/Composer.jsx
+  // and card/model.js; the voice lint reads those files too).
 
   // the slot line under the field — scarcity is the sincerity mechanism
   'slots.holding': 'holding {n} of {cap}',
@@ -156,6 +125,11 @@ const en = {
   'pings.mutual': 'mutual',
   'pings.mutualSub': '',
   'pings.mutualKicker': 'mutual',
+  // the sealed mutual slot, and the slot once it has been opened
+  'pings.sealedTitle': 'it’s mutual.',
+  'pings.sealedSub': 'you and @{them} entered each other. open it.',
+  'pings.revealOpen': 'open the reveal with @{them}',
+  'pings.revealAgain': 'see the two cards again',
   'pings.days': '{n} days left',
   'pings.today': 'lapses today',
   'pings.elsewhere': 'placed on another device',
@@ -176,8 +150,6 @@ const en = {
   'pings.door': 'share the open sky',
   'pings.open': 'message them',
   'pings.locate': 'see it in the sky',
-  'starview.close': 'back to your pings',
-  'starview.noIntent': 'placed without a word.',
   'pings.sim': 'sandbox: they add you back',
 
   // ── screen 5 · the open-sky share card ──────────────────────────────────
@@ -211,10 +183,6 @@ const en = {
   // ── screen 8 · the match ────────────────────────────────────────────────
   'match.title': 'it’s mutual.',
   'match.sub': 'you entered @{them}. @{them} entered you.',
-  'match.theySaid': 'they said',
-  'match.youSaid': 'you said',
-  'match.cta': 'go say it',
-  'match.exit': 'the rest is yours.',
 
   // ── screen 9 · the third slot (route key stays 'fourth') ────────────────
   'fourth.title': 'your slots are full.',
@@ -385,7 +353,6 @@ const en = {
   'communities.matchedLabel': 'matched this week',
   'communities.matchFloor': 'matches show at ten and up, so no match can be guessed at.',
   'communities.matchesSoon': 'matches show at ten',
-  'communities.reasonLabel': 'most said',
   'communities.pings': '{n} pings placed',
   'communities.joinedWeek': '+{n} joined',
   'communities.join': 'join {name}',

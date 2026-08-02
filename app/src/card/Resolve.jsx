@@ -1,4 +1,4 @@
-// beta/Sky.jsx — the approach.
+// card/Resolve.jsx — the approach.
 //
 // This file is the answer to "how does a ping become a card", and the answer is
 // that it does not become anything. You go to it.
@@ -29,7 +29,7 @@
 // contracts into the point of light it grew out of. There is no exit animation
 // written anywhere in this file.
 import * as React from 'react'
-import { GalaxyCanvas, rgba, Icon } from '../components/ui.jsx'
+import { rgba, Icon } from '../components/ui.jsx'
 import Card from './Disc.jsx'
 import { tintOf } from './model.js'
 
@@ -54,15 +54,26 @@ export const fullSize = () =>
 // Samples the live camera every frame while a card is open and hands back where
 // its disc is, how big it is, and how sharp. Runs only between the tap and the
 // moment the released dive has fully decayed, so a resting sky costs nothing.
+//
+// `index` is which of the ambient field's sealed stars this card belongs to, so
+// the disc can grow out of the exact point of light it is. The community sky
+// flies to its own slot instead and publishes no such list, so the index is
+// allowed to be null there: the card then opens where the layout says, which is
+// where it was travelling anyway.
 function useResolve(fieldRef, index, open) {
   const [r, setR] = React.useState(null)
   const raf = React.useRef(0)
+  // The loop outlives `open` on purpose: closing is the same curve run
+  // backwards, so it keeps sampling until the released dive has decayed. A
+  // card that was never opened never starts one.
+  const running = React.useRef(false)
 
   React.useEffect(() => {
-    if (index == null || index < 0) {
+    if (!open && !running.current) {
       setR(null)
       return undefined
     }
+    running.current = true
     let live = true
     let settled = 0
 
@@ -74,7 +85,7 @@ function useResolve(fieldRef, index, open) {
       // layout says instead of where the star is.
       const cam = f && f.cam
       const focus = cam ? clamp(cam.focus, 0, 1) : open ? 1 : 0
-      const scr = (f && f.sealedScreen && f.sealedScreen[index]) || null
+      const scr = (index != null && index >= 0 && f && f.sealedScreen && f.sealedScreen[index]) || null
 
       const resolve = smoothstep(0.52, 0.995, focus)
       const size = fullSize() * resolve
@@ -106,8 +117,12 @@ function useResolve(fieldRef, index, open) {
       // paying for a rAF that reads the same zero forever.
       if (!open && focus < 0.002) settled++
       else settled = 0
-      if (settled < 4) raf.current = requestAnimationFrame(tick)
-      else setR(null)
+      if (settled < 4) {
+        raf.current = requestAnimationFrame(tick)
+      } else {
+        running.current = false
+        setR(null)
+      }
     }
 
     raf.current = requestAnimationFrame(tick)
@@ -120,61 +135,12 @@ function useResolve(fieldRef, index, open) {
   return r
 }
 
-// ── the sky ──────────────────────────────────────────────────────────────────
-// The ambient field, one star per card, plus everything needed to fly to one.
-// `onReady` hands the live engine up so the composer's send-off can launch into
-// the same sky the cards already live in.
-export function BetaSky({ C, cards, mode = 'idle', dim = 1, origin, onReady, fieldRef }) {
-  const labels = React.useMemo(() => cards.map((c) => c.handle || null), [cards])
-  return (
-    <GalaxyCanvas
-      mode={mode}
-      dim={dim}
-      origin={origin}
-      seals={cards.length}
-      sealLabels={labels}
-      you={C.you}
-      them={C.them}
-      onReady={(f) => {
-        if (fieldRef) fieldRef.current = f
-        if (onReady) onReady(f)
-      }}
-      style={{ zIndex: 0 }}
-    />
-  )
-}
-
-// ── the tap surface ──────────────────────────────────────────────────────────
-// A transparent layer over the canvas that turns a thumb into a star. The
-// engine's own `hitTest` is deliberately generous (a resting star is a small
-// thing and a thumb is not), and a miss is a miss: tapping empty sky does
-// nothing at all, because a backdrop that reacts to every brush of a thumb
-// reads as a toy. The production calibration pass removed exactly that.
-export function StarField({ fieldRef, onPick, disabled }) {
-  const onTap = React.useCallback(
-    (e) => {
-      if (disabled) return
-      const f = fieldRef.current
-      if (!f || !f.hitTest) return
-      const i = f.hitTest(e.clientX, e.clientY, 60)
-      if (i >= 0) onPick(i)
-    },
-    [fieldRef, onPick, disabled],
-  )
-  return (
-    <div
-      onPointerUp={onTap}
-      style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: disabled ? 'none' : 'auto' }}
-    />
-  )
-}
-
 // ── the resolved card, held in the sky ───────────────────────────────────────
 // The disc rides the camera, and that is the whole overlay. There is no text
 // beside it, under it or over it: the words, the @ and the date are set inside
 // the poster, so what arrives at the end of a dive is one object rather than an
 // object with a caption.
-export function StarCard({ C, card, url, index, open, fieldRef, onClose }) {
+export function CardResolve({ C, card, url, index, open, fieldRef, onClose }) {
   const r = useResolve(fieldRef, index, open)
   if (!r || !card) return null
   const hue = tintOf(C, card.tone)

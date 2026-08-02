@@ -27,12 +27,12 @@ const EXEMPT = new Set(['celestual-challenge.html'])
 const files = [
   join(root, 'app/src/i18n/strings.js'),
   join(root, 'app/src/growth.js'),
-  // /beta (the star & card prototype) writes its copy inline rather than
-  // through i18n, since it is one locale and one surface. It is still copy, so
-  // it is still held to VOICE.md.
-  ...readdirSync(join(root, 'app/src/beta'))
+  // The card (the composer, the prompt, the seeds, the spread) writes its copy
+  // inline rather than through i18n, since it is one locale and one surface. It
+  // is still copy, so it is still held to VOICE.md.
+  ...readdirSync(join(root, 'app/src/card'))
     .filter((f) => f.endsWith('.js') || f.endsWith('.jsx'))
-    .map((f) => join(root, 'app/src/beta', f)),
+    .map((f) => join(root, 'app/src/card', f)),
   ...readdirSync(join(root, 'app/public'))
     .filter((f) => f.endsWith('.html') && !EXEMPT.has(f))
     .map((f) => join(root, 'app/public', f)),
