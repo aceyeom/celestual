@@ -113,26 +113,32 @@ const HERO_RGB = blackbodyRGB(HERO_TEMP)
 const SURFACE_B = 1.34
 
 // ── the match ────────────────────────────────────────────────────────────────
-// The old reveal was a screen-space overlay that ignored the 3D field entirely:
-// two dots sliding along arcs, a gradient line between them, ten motes, and a
-// merge into ONE star. It was the least true thing in the product and the most
-// important frame in it.
+// The sky's half of the reveal, and it is deliberately only half.
 //
-// This is what actually happens when two stars find each other, and it says the
-// right thing. They fall into a decaying orbit around a barycenter neither of
-// them is at. As they close, tides pull luminous matter off each one toward the
-// other, so there is a bridge and the bridge is made of them. They touch, and
-// the flash sends a light echo outward through the surrounding gas — a real
-// expanding shell that lights the nebula from inside as it passes.
+// This used to draw the whole thing: two hero stars falling into a decaying
+// orbit out in the disk, a tidal bridge between them, the touch, and a settled
+// binary — with the two cards popping in over the top of it afterwards. The
+// physics was right and the frame was wrong, because the two things a person
+// was looking at were never the two things the reveal was about. The pair in
+// the field were abstractions of the pings; the pings themselves arrived late,
+// as an overlay, already still.
 //
-// And then they are a BINARY. Not one merged star: two, distinct, amber and
-// rose, locked in a slow shared orbit that does not decay and does not end.
-// A merge would have said one of them stopped existing.
-const M_APPROACH = 4.4 // the inspiral
-const M_FLASH = 0.55 // the touch
-const M_ECHO = 3.4 // the light echo's sweep
-const M_SEP0 = 0.34 // where they start, in world units
-const M_SEP1 = 0.052 // the binary's settled separation
+// So the pair moved out of here and into card/Spread.jsx, where the two objects
+// doing the orbiting are the two actual cards. What is left in the sky is what
+// the sky is genuinely better at than any overlay: the place, the dark, and the
+// EVENT. The camera flies out along an arm to somewhere with nothing behind it,
+// and at the touch the gas lights — a real expanding light echo, sweeping
+// outward through the nebula, illuminating it from the inside as it passes.
+//
+// The clock lives here because both halves have to keep it. The overlay reads
+// `field.match.t` every frame and hangs its own choreography on these numbers,
+// so the touch and the flash are the same instant by construction rather than
+// by two timers that agree until a slow device pulls them apart.
+export const MATCH = {
+  approach: 2.8, // the fall, and the whirl at the end of it
+  flash: 0.5, //    the touch
+  echo: 3.4, //     the light echo's sweep outward
+}
 
 export class GalaxyField extends SkyEngine {
   constructor(canvas, opts = {}) {
@@ -987,8 +993,8 @@ export class GalaxyField extends SkyEngine {
   // ── THE MATCH ─────────────────────────────────────────────────────────────
   _startMatch() {
     // Stage it somewhere real: a spot in the disk, out along an arm, far enough
-    // from the core that the two stars have dark sky behind them. The camera
-    // flies there — this happens IN the galaxy, not on a pane in front of it.
+    // from the core that the reveal has dark sky behind it. The camera flies
+    // there — this happens IN the galaxy, not on a pane in front of it.
     const rnd = rng(0x51ce)
     const a = 0.98
     const th = TILT_RATE * a + rnd() * 0.4
@@ -999,96 +1005,50 @@ export class GalaxyField extends SkyEngine {
       cx,
       cy: 0.012,
       cz,
-      // the orbit's own plane, tipped a little out of the disk so the pair
-      // never reads as two dots sliding along a line
-      tip: 0.42,
-      ang: rnd() * TWO,
       echo: [],
-      motes: null,
     }
     this.post.flash = 0
-    // A dive that stops well short: the whole point of this frame is that there
-    // are TWO of them, so the camera has to arrive far enough out to hold both.
-    this.cam.startDive(() => ({ x: cx, y: 0.012, z: cz }), { hold: true, standoff: 0.20 })
+    // A dive that stops a long way short, and the standoff is the whole point of
+    // the number. The camera's job here is to arrive somewhere dark and stop —
+    // not to close on anything, because the two things this frame is about are
+    // drawn over the top of it at a size a person can read. Pressed in to 0.20,
+    // where it was when the pair lived in the field, `discOf()` starts opening
+    // nearby stars into big soft out-of-focus plates: correct optics, and on
+    // this screen a row of grey lens-dust discs sitting across the two cards.
+    // Back here the field stays a field.
+    this.cam.startDive(() => ({ x: cx, y: 0.012, z: cz }), { hold: true, standoff: 0.46 })
   }
 
   _frameMatch(dt) {
     const m = this.match
     if (!m) return
     m.t += dt
-    const hero = this.gHero
-    hero.count = 0
-    const you = this.you
-    const them = this.them
-    const white = [1, 0.97, 0.93]
-    const cyou = linearOf(you)
-    const cthem = linearOf(them)
+    // No hero stars here any more. The two bodies this frame is about are the
+    // two cards, drawn over the top of this by card/Spread.jsx, and a sky that
+    // also drew a pair was a sky arguing with them.
+    this.gHero.count = 0
 
     const t = m.t
-    const p = clamp(t / M_APPROACH, 0, 1)
-
-    // ── the inspiral ────────────────────────────────────────────────────────
-    // Separation decays, and — this is the part that makes it read as physics
-    // rather than as animation — the angular speed rises as the pair closes,
-    // because Kepler's third law says it must. The dance quickens on its own.
-    const sep = lerp(M_SEP0, M_SEP1, easeOut(p))
-    const kepler = Math.pow(M_SEP0 / Math.max(sep, 1e-4), 1.5)
-    m.ang += dt * 0.55 * kepler * (t < M_APPROACH ? 1 : 0.16)
-
-    const ca = Math.cos(m.ang), sa = Math.sin(m.ang)
-    const tip = m.tip
-    // the two stars, on opposite sides of a barycenter neither of them is at
-    const ax = m.cx + ca * sep * 0.5
-    const az = m.cz + sa * sep * 0.5 * Math.cos(tip)
-    const ay = m.cy + sa * sep * 0.5 * Math.sin(tip)
-    const bx = m.cx - ca * sep * 0.5
-    const bz = m.cz - sa * sep * 0.5 * Math.cos(tip)
-    const by = m.cy - sa * sep * 0.5 * Math.sin(tip)
-
-    const merged = t > M_APPROACH
-    const flashP = clamp((t - M_APPROACH) / M_FLASH, 0, 1)
-
-    // ── the tidal bridge ────────────────────────────────────────────────────
-    // As they close, each star pulls luminous matter off the other. The bridge
-    // between them is not a drawn line: it is made of them, and it brightens as
-    // the tide strengthens, which goes as the inverse cube of separation.
-    const tide = clamp(Math.pow(M_SEP0 / Math.max(sep, 1e-4), 3) * 0.02, 0, 1) * (merged ? 1 - flashP : 1)
-    if (tide > 0.01) {
-      const N = 26
-      for (let i = 1; i < N; i++) {
-        const u = i / N
-        // the stream bows outward, the way tidal tails actually do
-        const bow = Math.sin(u * Math.PI) * sep * 0.16
-        const x = lerp(ax, bx, u) - sa * bow
-        const z = lerp(az, bz, u) + ca * bow
-        const y = lerp(ay, by, u)
-        const c = u < 0.5 ? cyou : cthem
-        const w = Math.sin(u * Math.PI)
-        this.fx.world(x, y, z, 0.006 + w * 0.012, c, tide * w * 2.6, 0)
-      }
-    }
-
-    // ── the two ─────────────────────────────────────────────────────────────
-    if (!merged || flashP < 1) {
-      const flare = merged ? 1 + flashP * 26 : 1 + (1 - p) * 0.2
-      this._pushHeroAt(hero, ax, ay, az, you, 5.5 * flare, 0.95, 7600, 9)
-      this._pushHeroAt(hero, bx, by, bz, them, 5.5 * flare, 0.95, 6900, 9)
-    }
+    const white = [1, 0.97, 0.93]
+    const flashP = clamp((t - MATCH.approach) / MATCH.flash, 0, 1)
 
     // ── the touch ───────────────────────────────────────────────────────────
-    if (merged && flashP < 1) {
+    if (t > MATCH.approach && flashP < 1) {
       const bell = Math.sin(Math.PI * flashP)
       // The whole sky lifts for an instant. Added in linear light BEFORE the
       // tonemap, so ACES rolls it off its shoulder the way a real sensor rolls
-      // off a real flash — and kept small, because this frame has to stay
-      // readable. A match is the brightest moment in the product; it is not
-      // supposed to be a white screen.
-      this.post.flash = bell * 0.42
+      // off a real flash — and kept SMALL, because the two things this frame is
+      // about are now drawn over the top of it. Tuned loud, back when the pair
+      // was in here and the flash was the pair's own event, it washed the whole
+      // window to warm grey with two specks floating in it: the loudest frame
+      // in the product, saying nothing. A match is the brightest moment in
+      // celestual; it was never supposed to be a white screen.
+      this.post.flash = bell * 0.15
       this.post.flashColor = [1, 0.88, 0.78]
-      this.fx.world(m.cx, m.cy, m.cz, 0.03 + bell * 0.16, white, bell * 9, 0)
-      this.fx.world(m.cx, m.cy, m.cz, 0.04 + bell * 0.3, white, bell * 4, 2)
+      this.fx.world(m.cx, m.cy, m.cz, 0.02 + bell * 0.07, white, bell * 2.6, 0)
+      this.fx.world(m.cx, m.cy, m.cz, 0.03 + bell * 0.16, white, bell * 1.3, 2)
       if (!m.echo.length && flashP > 0.3) m.echo.push({ t: 0 })
-    } else if (merged) {
+    } else if (t > MATCH.approach) {
       this.post.flash = Math.max(0, this.post.flash - dt * 2.4)
     }
 
@@ -1099,7 +1059,7 @@ export class GalaxyField extends SkyEngine {
     // illuminate from the inside, in a ring, expanding.
     for (const e of m.echo) {
       e.t += dt
-      const q = e.t / M_ECHO
+      const q = e.t / MATCH.echo
       if (q >= 1) continue
       const R = easeOut(q) * 1.15
       const bright = Math.pow(1 - q, 1.6) * (1 - Math.exp(-q * 9))
@@ -1114,31 +1074,6 @@ export class GalaxyField extends SkyEngine {
       }
       // and the gas genuinely brightens as the front sweeps it
       this.gasPass.gain = 0.3 + bright * 0.55
-    }
-
-    // ── the binary ──────────────────────────────────────────────────────────
-    // What they become. Two stars, distinct, orbiting a shared centre at a
-    // separation that no longer decays — a stable system, not a merger. The old
-    // reveal collapsed them into ONE point of light, which said that one of them
-    // stopped existing.
-    if (merged && flashP >= 1) {
-      const settle = smooth(clamp((t - M_APPROACH - M_FLASH) / 2.2, 0, 1))
-      const breathe = 1 + 0.06 * Math.sin(t * 0.9)
-      const g = (4.2 + settle * 2.6) * breathe
-      this._pushHeroAt(hero, ax, ay, az, you, g, 1.0, 7600, 10)
-      this._pushHeroAt(hero, bx, by, bz, them, g, 1.0, 6900, 10)
-      // the shared envelope — gas the pair has drawn around itself, lit from
-      // both sides at once
-      const N = 18
-      for (let i = 0; i < N; i++) {
-        const u = i / (N - 1)
-        const x = lerp(ax, bx, u)
-        const z = lerp(az, bz, u)
-        const y = lerp(ay, by, u)
-        const w2 = Math.sin(u * Math.PI)
-        const c = [lerp(cyou[0], cthem[0], u), lerp(cyou[1], cthem[1], u), lerp(cyou[2], cthem[2], u)]
-        this.fx.world(x, y, z, 0.03 + w2 * 0.05, c, settle * w2 * 0.85, 0)
-      }
     }
   }
 }

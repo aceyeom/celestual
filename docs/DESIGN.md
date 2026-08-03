@@ -273,6 +273,40 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-08-02 (d)** — **The mutual reveal, reworked so the two things orbiting
+  are the two cards** (human-directed). Nothing in §1–§10 changed.
+  - **The pair moved out of the sky and into the overlay.** The sky used to draw
+    the whole event — two hero stars inspiralling out in the disk, a tidal
+    bridge, a merger flash, a settled binary — and the two cards then appeared
+    over the top of it, scaled up out of nothing, and sat still. The pair you
+    watched fall together were abstractions *of* the pings rather than the
+    pings; the pings arrived after the event, having done nothing. A reveal in
+    which the two objects it is about are the two objects that never move is not
+    a reveal. Now the two actual cards fall, whirl, magnify and go on circling
+    (`card/Spread.jsx`; the sequence is set out in `docs/STAR-CARDS.md` §4).
+  - **Kepler sets the speed; the time-lapse sets the playback.** Angular speed
+    goes as separation^−1.5 and the fall is played at a rate that falls as the
+    square root of separation, so the *seen* speed goes as 1/separation: a
+    steady glide that becomes a whirl only because the circle is collapsing.
+    Separation itself decays as (T − t)^⅔ — what two bodies dropped toward each
+    other from rest actually do — because an ease gets slower as it arrives and
+    nothing in a gravitational field does that.
+  - **Both cards ride one orbit at opposite phases.** Same size, same distance,
+    same speed, forever: §3 of the plan ("neither of you moved second") as
+    geometry rather than as a shared timer. The settled binary turns about once
+    every twenty-five seconds and never stops; under `prefers-reduced-motion` it
+    is simply already there, held still.
+  - **The card has no drawn edge.** The hairline ring and the chromosphere arc
+    are gone from `Disc.jsx` and `share.js` alike. At the size a ping is
+    actually seen the ring *was* the object — a badge, not a body. What ends it
+    now is the light falling off: the corona in its own colour over a soft
+    shadow.
+  - **The sky keeps the place, the dark and the light echo**, and got quieter
+    doing it: the flash was tuned when the pair lived in the field, and over the
+    top of two readable cards it washed the window to warm grey. The dive also
+    stands well back now, because pressed in close `discOf()` opens nearby stars
+    into out-of-focus plates that read as lens dust lying across the two cards.
+
 - **2026-08-02 (c)** — **The card is production** (human-directed). `/beta` is
   deleted and `src/beta/` is `src/card/`. Nothing in §1–§10 changed; three
   things moved.

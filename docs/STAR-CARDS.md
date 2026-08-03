@@ -109,7 +109,17 @@ Under a photograph the type gets a flat, even scrim (`ink` at 0.32) so every
 card sets its words at one contrast. **Nothing inside the disc is a gradient.**
 The limb darkening and the warm rim that used to live here made the card read as
 a lens looking at a picture rather than a printed circle with a picture on it.
-What survives is the flat ground, the shared grain, and one hairline limb.
+What survives is the flat ground and the shared grain.
+
+**Nothing is drawn on the edge either.** A hairline ring and a bright
+chromosphere arc used to sit on the limb, and at the size a ping is actually
+seen — 38px in a list, 46px falling through the sky at a reveal — the ring *was*
+the object: a drawn circle with a photograph inside it, which is a badge rather
+than a body. Nothing in a real sky has a stroke on it. What ends a star is the
+light falling off, so that is all that ends this one — the corona in the card's
+own colour, over a soft shadow that seats the disc in the field instead of on
+top of it. `share.js` draws the same object the same way, because a share sheet
+that draws it differently is a different product.
 
 ### The type
 
@@ -217,24 +227,55 @@ so there is no seam between them.
 
 ## 4 · The mutual spread
 
-`app/src/card/Spread.jsx`. The engine's match mode already does the physics: a
-decaying Keplerian inspiral whose angular speed rises as the pair closes, tidal
-streams bridging them, a merger flash that sends a light echo out through the
-gas, settling into a **binary** — two distinct stars, amber and rose, in an
-orbit that does not decay. None of that is re-animated here.
+`app/src/card/Spread.jsx`. **The two things that orbit are the two cards.**
 
-What the spread adds is the moment after: the two stars resolve, **together**,
-into the two cards. The plan's strictest sentence is that both unseal in the
-same instant (§3), because the whole ethical architecture is that neither person
-moved second.
+This used to be split the wrong way. The sky drew the whole event — two hero
+stars falling into a decaying orbit out in the disk, a tidal bridge, a merger
+flash, a settled binary — and then, when it was over, the two cards appeared
+over the top of it, scaled up out of nothing, and sat still. Two things were
+wrong with that and they were the same thing twice: the pair you watched fall
+together were *abstractions of* the pings rather than the pings, and the pings
+themselves arrived after the event, as a result, having done nothing. A reveal
+in which the two objects it is about are the two objects that never move is not
+a reveal.
 
-**The unseal is driven by the engine's match clock, not a timer.** The sky
-advances its own time per frame and clamps `dt` at 50 ms, so a device drawing at
-ten frames a second plays the inspiral at a fraction of wall speed. A
-`setTimeout` opened both cards while the stars were still falling toward each
-other and the merger flash then went off over the top of an already-revealed
-spread, washing it white. The engine knows what time it is in the match it is
-playing; the spread asks it.
+So the pair moved into the overlay and became the cards themselves:
+
+| | |
+| --- | --- |
+| **0.0 → 2.8s** | **the fall.** Two pings — the real ones, each carrying its own ground — come in from off-frame and fall toward a barycentre neither of them is at. Separation decays as (T − t)^⅔, which is what two bodies dropped toward each other from rest actually do: slow off the mark, quickest at the end. An ease gets *slower* as it arrives, and nothing in a gravitational field has ever done that. |
+| **2.8 → 3.3s** | **the touch.** The tightest pass, at the top of the whirl. The sky flashes on the same frame and sends its light echo out through the gas. |
+| **3.3 → 5.2s** | **the zoom.** The camera comes in. Nothing about the orbit changes — the pair is a settled binary now and stays one — but the whole scene magnifies, the discs cross `TYPE_FLOOR` on the way, and the words simply arrive, because a poster is what a ping looks like from close enough. |
+| **5.2s →** | **the binary.** It never stops. The two keep circling, slowly, one passing in front of the other and back again. |
+
+Both cards ride the same orbit at opposite phases, so they are the same size, at
+the same distance, moving at the same speed, forever. There is no arrangement of
+this frame in which one of them is the subject — which is the plan's strictest
+sentence (§3) expressed as geometry rather than as a shared timer.
+
+**Kepler sets the speed and the time-lapse sets the playback.** Angular speed
+rises as separation^−1.5 because Kepler's third law says it must, and the fall
+is played at a rate that falls as the square root of separation — fast while the
+two are far apart and nothing is happening quickly, coming down to real time as
+they close. That is how anyone cutting a time-lapse of an inspiral would cut it,
+and it leaves the *seen* speed going as 1/separation: a steady glide that
+becomes a whirl only because the circle it is on is collapsing. The settle takes
+the rate the rest of the way down, so the binary goes on turning at about a
+revolution every twenty-five seconds.
+
+**The clock is the engine's, not a timer's.** The sky advances its own time per
+frame and clamps `dt` at 50 ms, so a device drawing at ten frames a second plays
+the match at a fraction of wall speed. A `setTimeout` opened both cards while
+the two were still falling toward each other and the flash then went off over
+the top of an already-revealed spread, washing it white. `galaxy.js` exports
+`MATCH` and both halves read it, so the touch and the flash are the same instant
+by construction. Past a five-second grace the wall clock pulls the overlay along
+anyway: a reveal that stays sealed for half a minute on a tired phone is worse
+than one that finishes a beat out of step with a flash.
+
+What is left in the sky is what a sky is better at than any overlay — the place,
+the dark, and the **light echo**: a real expanding shell sweeping outward
+through the nebula, lighting it from the inside as it passes.
 
 The Instagram DM is the loudest thing on the screen from the reveal onward
 (§1.6). **The share sheet renders your card only** — there is no argument that
