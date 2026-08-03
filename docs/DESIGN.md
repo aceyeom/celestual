@@ -273,6 +273,48 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-08-03** — **The mutual reveal, reworked into one object with two
+  faces** (human-directed). Nothing in §1–§10 changed.
+  - **The reveal happens to the ping you actually placed.** It used to arrive by
+    its own private route: a camera flight to an empty patch of disk, which is
+    the one place in the product a person's ping is *not*. It now opens with the
+    ordinary held dive into your own star — the same `focusStar` the status
+    page's "see it in the sky" makes, resolving on the same curve, landing on
+    the same object. `resolveOf()` is exported from `card/Resolve.jsx` and used
+    by both, so "the same zoom" means the same code rather than the same
+    intention.
+  - **Their ping arrives as a crash.** A point of light out of the deep field on
+    a collision bearing: it holds that bearing and only *grows*, because
+    apparent size goes as 1/distance and a body on an intercept has no angular
+    motion to spare. Its scintillation dies out as it closes — only a point of
+    light can twinkle — and it rakes your card with rose light before it lands.
+  - **The two people are one object with two sides.** Yours is the back, theirs
+    is the front, and the strike turns it over: a real tumble, then a spring
+    that catches it on the nearest face showing theirs, overshooting once and
+    rocking flat. Nothing counts revolutions — the impulse decays and the disc
+    picks its own landing — so the turn count reads as physics rather than as a
+    number somebody typed. Tapping the card turns it back to yours.
+  - **What that replaced was a binary that never stopped.** Two actual cards
+    orbiting each other was true to §3 ("neither of you moved second") and had
+    no resting frame: nothing to read, nowhere for the eye to land, and a second
+    disc permanently eating the space the first one needed — so both had to be
+    small, and small is where a poster stops being a poster. One disc gets
+    `fullSize()`, the same size every other resolve in the product lands on.
+  - **The light echo is gone, and so is every other piece of scenery.** The
+    expanding shell was beautiful physics lighting a band of gas across the one
+    screen whose entire job is to hold two people's words still enough to read.
+    The sky's whole part is now `matchStrike()`: one small flash at the impact,
+    in world space, on the star that was actually hit.
+  - **Exactly one object on this screen has a face.** The engine stops drawing
+    the photosphere the card is covering (`matchCover`, fed the card's own
+    opacity so the hand-off runs on one curve, because a disc seen edge-on stops
+    covering what is behind it); and the field is forbidden to resolve at all
+    during a reveal, since `discOf()` scales with `cam.unit` and a standoff that
+    leaves the disk a field of points on a phone opens a dozen of them into
+    lens-dust plates on a laptop.
+  - **Under `prefers-reduced-motion`** there is no dive, no crash and no spin:
+    their card, resolved, square on, and a tap presents the other side outright.
+
 - **2026-08-02 (d)** — **The mutual reveal, reworked so the two things orbiting
   are the two cards** (human-directed). Nothing in §1–§10 changed.
   - **The pair moved out of the sky and into the overlay.** The sky used to draw

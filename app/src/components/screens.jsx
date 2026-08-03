@@ -2498,16 +2498,25 @@ export function MutualScreen({ C, ctx }) {
 }
 
 // ── 8b · THE REVEAL ───────────────────────────────────────────────────────────
-// The spread, and it is the most important frame in the product: the two stars
-// fall into a shared orbit, the merger flashes, the binary settles, and both
-// cards unseal in the same instant off the engine's own match clock
-// (card/Spread.jsx). Neither person moved second, and the screen has to be able
-// to say so.
+// The most important frame in the product: the camera flies to the ping you
+// actually placed, their star comes out of the deep field and hits it, and the
+// disc turns over — yours on the back, theirs on the front (card/Spread.jsx).
+// One object with two sides, which is the whole claim, and neither of you moved
+// second.
+//
+// `index` is which of the ambient field's sealed stars this ping is. It is the
+// SAME index the status page's "see it in the sky" flies to, because it is the
+// same star and the same zoom; without it the reveal would have to invent a
+// place to happen, which is what it used to do.
 //
 // The share sheet renders YOUR card only. There is no argument to share.js that
 // carries theirs, which is the only way to be certain their words never end up
 // in an image: they were written to exactly one reader.
 export function RevealScreen({ C, ctx }) {
+  const index = React.useMemo(
+    () => (ctx.reveal ? ctx.pings.findIndex((p) => normHandle(p.handle || '') === ctx.reveal.handle) : -1),
+    [ctx.reveal, ctx.pings],
+  )
   const row = React.useMemo(
     () => (ctx.reveal ? ctx.pings.find((p) => normHandle(p.handle || '') === ctx.reveal.handle) : null),
     [ctx.reveal, ctx.pings],
@@ -2529,6 +2538,7 @@ export function RevealScreen({ C, ctx }) {
       yours={yours}
       theirs={theirs}
       yourUrl={yourUrl}
+      index={index}
       fieldRef={ctx.ambientGalaxyRef}
       onSay={() => ctx.openConversation(handle)}
       onShare={() => shareCard({ card: yours, photoUrl: yourUrl, mutual: true })}

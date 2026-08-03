@@ -50,6 +50,42 @@ const REST_Y = 0.46
 export const fullSize = () =>
   Math.min(400, Math.round(Math.min(window.innerWidth * 0.84, window.innerHeight * 0.56)))
 
+// ── the curve ────────────────────────────────────────────────────────────────
+// The point-of-light → surface crossing, as one pure function of `cam.focus`.
+//
+// It is exported because the reveal flies the SAME zoom into the same kind of
+// object (card/Spread.jsx) and "the same" has to mean the same code. Two copies
+// of these four numbers are two zooms that agree until somebody tunes one.
+//
+//   focus 0.00 → 0.52   a point of light. Nothing of the card exists.
+//   focus 0.52 → 0.99   the disc opens out of the point, blurred at first the
+//                       way an unresolved body is, sharpening as it grows,
+//                       travelling from wherever the star hangs in the field
+//                       toward the frame it will hold.
+//   focus 1.00          resolved.
+//
+// `star` is where the point of light actually is on screen, or null when
+// nothing published one — the 2D fallback, a community sky, a star behind the
+// camera — in which case the disc simply opens where it was travelling anyway.
+export function resolveOf(focus, star, rest, full) {
+  const resolve = smoothstep(0.52, 0.995, focus)
+  // Both ends are real positions; the resolve is what walks between them.
+  const sx = star && star.vis ? star.x : rest.x
+  const sy = star && star.vis ? star.y : rest.y
+  const e = smoothstep(0.15, 1, resolve)
+  return {
+    x: sx + (rest.x - sx) * e,
+    y: sy + (rest.y - sy) * e,
+    size: full * resolve,
+    // An unresolved body is not a small sharp body. It is a smear the
+    // instrument cannot separate yet, which is why this is a blur and not just
+    // a scale.
+    blur: (1 - resolve) * 9,
+    opacity: clamp(resolve * 1.7, 0, 1),
+    resolve,
+  }
+}
+
 // ── the resolve ──────────────────────────────────────────────────────────────
 // Samples the live camera every frame while a card is open and hands back where
 // its disc is, how big it is, and how sharp. Runs only between the tap and the
@@ -86,28 +122,10 @@ function useResolve(fieldRef, index, open) {
       const cam = f && f.cam
       const focus = cam ? clamp(cam.focus, 0, 1) : open ? 1 : 0
       const scr = (index != null && index >= 0 && f && f.sealedScreen && f.sealedScreen[index]) || null
-
-      const resolve = smoothstep(0.52, 0.995, focus)
-      const size = fullSize() * resolve
-      const restX = window.innerWidth / 2
-      const restY = window.innerHeight * REST_Y
-      // Where the star actually is, until the disc is large enough that the
-      // difference between the star's projection and the frame it wants is
-      // worth crossing. Both ends are real positions; the resolve is what
-      // walks between them.
-      const sx = scr && scr.vis ? scr.x : restX
-      const sy = scr && scr.vis ? scr.y : restY
-      const e = smoothstep(0.15, 1, resolve)
+      const rest = { x: window.innerWidth / 2, y: window.innerHeight * REST_Y }
 
       setR({
-        x: sx + (restX - sx) * e,
-        y: sy + (restY - sy) * e,
-        size,
-        // An unresolved body is not a small sharp body. It is a smear the
-        // instrument cannot separate yet, which is why this is a blur and not
-        // just a scale.
-        blur: (1 - resolve) * 9,
-        opacity: clamp(resolve * 1.7, 0, 1),
+        ...resolveOf(focus, scr, rest, fullSize()),
         arrived: focus > 0.995,
         focus,
       })

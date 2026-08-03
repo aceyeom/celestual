@@ -34,7 +34,7 @@ import { SkyEngine, clamp, lerp, linearOf, starRadius } from './sky/engine.js'
 import { smooth, easeOut, easeFlight } from './sky/camera.js'
 import {
   genBulge, genDisk, genHalo, genDeepField, genNearField,
-  writeStar, omegaAt, TILT_RATE, eccentricityAt, rng,
+  writeStar, omegaAt, TILT_RATE, eccentricityAt,
 } from './sky/model.js'
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
@@ -42,7 +42,6 @@ import { Gestures } from './sky/gestures.js'
 import { starTint } from './theme.js'
 import { Galaxy2D } from './sky/fallback2d.js'
 
-const TWO = Math.PI * 2
 const VANISH_DUR = 0.62 // the wink-out when a ping is withdrawn
 
 // ── the send-off ─────────────────────────────────────────────────────────────
@@ -113,32 +112,28 @@ const HERO_RGB = blackbodyRGB(HERO_TEMP)
 const SURFACE_B = 1.34
 
 // ── the match ────────────────────────────────────────────────────────────────
-// The sky's half of the reveal, and it is deliberately only half.
+// The sky's half of the reveal, and it is now almost nothing. That is the point.
 //
-// This used to draw the whole thing: two hero stars falling into a decaying
-// orbit out in the disk, a tidal bridge between them, the touch, and a settled
-// binary — with the two cards popping in over the top of it afterwards. The
-// physics was right and the frame was wrong, because the two things a person
-// was looking at were never the two things the reveal was about. The pair in
-// the field were abstractions of the pings; the pings themselves arrived late,
-// as an overlay, already still.
+// It has been two other things. First it drew the whole reveal — two hero stars
+// falling into a decaying orbit out in the disk, a tidal bridge, a merger flash,
+// a settled binary — with the cards arriving over the top afterwards. Then the
+// pair moved into card/Spread.jsx as the actual cards, and what stayed here was
+// a flight to an empty patch of disk plus an expanding light echo sweeping the
+// nebula.
 //
-// So the pair moved out of here and into card/Spread.jsx, where the two objects
-// doing the orbiting are the two actual cards. What is left in the sky is what
-// the sky is genuinely better at than any overlay: the place, the dark, and the
-// EVENT. The camera flies out along an arm to somewhere with nothing behind it,
-// and at the touch the gas lights — a real expanding light echo, sweeping
-// outward through the nebula, illuminating it from the inside as it passes.
+// The echo was the last piece of scenery, and scenery is exactly what a reveal
+// cannot afford. It lit a band of gas across the frame on the one screen whose
+// entire job is to hold two people's words still enough to read, and it was
+// doing it a long way from anything either of them had placed. So it is gone,
+// and so is the flight to nowhere: the reveal now begins where the person's own
+// ping already lives, on the ordinary held dive that every other zoom in the
+// product uses (card/Resolve.jsx). The overlay calls `focusStar` itself.
 //
-// The clock lives here because both halves have to keep it. The overlay reads
-// `field.match.t` every frame and hangs its own choreography on these numbers,
-// so the touch and the flash are the same instant by construction rather than
-// by two timers that agree until a slow device pulls them apart.
-export const MATCH = {
-  approach: 2.8, // the fall, and the whirl at the end of it
-  flash: 0.5, //    the touch
-  echo: 3.4, //     the light echo's sweep outward
-}
+// What is left for the sky is the one thing it is genuinely better at than any
+// overlay: being dark, holding still, and burning at the instant of the strike —
+// in world space, at the star that was actually hit, because that is where the
+// event happened. `matchStrike()` is the whole interface.
+const STRIKE = 0.26 // seconds of flare at the impact
 
 export class GalaxyField extends SkyEngine {
   constructor(canvas, opts = {}) {
@@ -428,7 +423,17 @@ export class GalaxyField extends SkyEngine {
     this.focusIndex = i
     this.focusHold = !!opts.hold
     const s = this.sealed[i]
-    this.cam.startDive(() => this._sealedWorld(s), { hold: !!opts.hold })
+    // `standoff` is how far short the dive stops, and almost every caller wants
+    // the default: all the way in, until the star's own disc overtakes the
+    // point-spread and it becomes a surface, because that surface is the card.
+    // The reveal is the one caller that does not. There the card turns over, and
+    // a disc seen edge-on stops covering what is behind it — which at full dive
+    // is a two-hundred-pixel photosphere sitting in the hole, plus a scatter of
+    // nearby field stars opened into soft out-of-focus plates. Correct optics,
+    // and on that screen a row of grey lens-dust discs across the one frame that
+    // has to be legible. Stopping short leaves the field a field and leaves your
+    // star the point of light the card is made of.
+    this.cam.startDive(() => this._sealedWorld(s), { hold: !!opts.hold, standoff: opts.standoff })
     // the overlay's name and intent line ride this, not a timer (engine.js)
     this._armArrival(opts.onArrive)
     this.start()
@@ -478,10 +483,28 @@ export class GalaxyField extends SkyEngine {
     // nebula with a star somewhere in it. The star is the subject.
     this.gasPass.gain = 0.3 * (1 - this.cam.focus * 0.88) * (this.mode === 'match' ? 0.5 : 1)
 
-    if (this.mode === 'match') this._frameMatch(dt)
-    else this._frameSealed(dt)
+    // ── one body on this screen ──
+    // During a reveal nothing in the FIELD is allowed to become a surface. This
+    // is the same inequality `discOf()` runs — a star's true angular diameter
+    // against the instrument's point-spread — and it is scaled by `cam.unit`,
+    // which is roughly twice as large on a laptop as on a phone. So a standoff
+    // that leaves the disk a field of points at 390 pixels wide opens a dozen of
+    // them into big soft plates at 1280, and the most important frame in the
+    // product picks up what looks like dirt on the lens. Correct optics; wrong
+    // screen. The one thing here that has a face is the card.
+    const wide = this.mode === 'match' ? 0 : 1
+    this.gDisk.resolve = wide
+    this.gBulge.resolve = 0.3 * wide
 
+    // The resting set runs in EVERY mode now, the match included, because the
+    // match is a dive into one of these stars. It used to be skipped there —
+    // correct while the reveal was staged at an empty spot in the disk with two
+    // hero bodies invented for it, and wrong the moment the thing being flown to
+    // became the viewer's own ping. Skipping it left `sealedScreen` stale, so the
+    // card had no point of light to grow out of.
+    this._frameSealed(dt)
     if (this.mode === 'sendoff') this._frameSendoff(dt)
+    if (this.mode === 'match') this._frameMatch(dt)
     this._frameShoots(dt)
   }
 
@@ -537,8 +560,12 @@ export class GalaxyField extends SkyEngine {
       // The exposure stops DOWN as the camera closes, the way a real one would
       // on a source getting four hundred times brighter. Without it the
       // inverse-square law wins and the arrival is a white screen.
-      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.80)
-      let alive = fade
+      // A reveal's card has replaced this star outright by the time it is solid
+      // (matchCover). Until then it is still the thing being flown to, so the
+      // two cross over on the card's own curve rather than on a second one.
+      const taken = isFocus && this.match ? this.match.cover : 0
+      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.80) * (1 - taken)
+      let alive = fade * (1 - taken)
 
       // the withdrawal: the halo blooms outward as the core contracts to a
       // point and winks out, and then React drops it
@@ -560,7 +587,10 @@ export class GalaxyField extends SkyEngine {
       // smoothstep against the point-spread's width.
       const disc = scr ? this.discOf(this._heroRadius(), scr.persp) * settleRes : 0
       const own = scr ? 1 - this.handoverOf(this._heroRadius(), scr.persp) : 1
-      if (disc > 0.004 && own < 0.996 && scr) {
+      // `taken` gates the body outright rather than just dimming it: the
+      // photosphere pass is OPAQUE — it exists so a body occludes the field
+      // behind it — so a black one is still a hole.
+      if (disc > 0.004 && own < 0.996 && scr && taken < 0.5) {
         // Its brightness is NOT the point-source gain. That number is an
         // exposure trim for a thing being drawn as a point-spread, and using it
         // here is what left the photosphere sitting at a fifth of the halo that
@@ -991,89 +1021,63 @@ export class GalaxyField extends SkyEngine {
   }
 
   // ── THE MATCH ─────────────────────────────────────────────────────────────
+  // Nothing starts. The reveal's camera move is the ordinary held dive into the
+  // viewer's own ping, which the overlay asks for by name, so the sky's only job
+  // between here and the strike is to be dark and to hold still.
   _startMatch() {
-    // Stage it somewhere real: a spot in the disk, out along an arm, far enough
-    // from the core that the reveal has dark sky behind it. The camera flies
-    // there — this happens IN the galaxy, not on a pane in front of it.
-    const rnd = rng(0x51ce)
-    const a = 0.98
-    const th = TILT_RATE * a + rnd() * 0.4
-    const cx = Math.cos(th) * a
-    const cz = Math.sin(th) * a
-    this.match = {
-      t: 0,
-      cx,
-      cy: 0.012,
-      cz,
-      echo: [],
-    }
+    this.match = { strike: -1, cover: 0 }
     this.post.flash = 0
-    // A dive that stops a long way short, and the standoff is the whole point of
-    // the number. The camera's job here is to arrive somewhere dark and stop —
-    // not to close on anything, because the two things this frame is about are
-    // drawn over the top of it at a size a person can read. Pressed in to 0.20,
-    // where it was when the pair lived in the field, `discOf()` starts opening
-    // nearby stars into big soft out-of-focus plates: correct optics, and on
-    // this screen a row of grey lens-dust discs sitting across the two cards.
-    // Back here the field stays a field.
-    this.cam.startDive(() => ({ x: cx, y: 0.012, z: cz }), { hold: true, standoff: 0.46 })
+  }
+
+  // How completely the overlay's card has taken the star's place, 0..1, set by
+  // card/Spread.jsx every frame because it is the only thing that knows.
+  //
+  // In every other zoom the question never comes up: the card is opaque and sits
+  // exactly over the star it grew out of, so whether the engine also draws a
+  // photosphere under there is unobservable. The reveal turns the card over, and
+  // a disc seen edge-on covers nothing — so for two frames a half-turn the sky
+  // was showing a grey ball where the card had been. Two drawings of one object
+  // is one too many, and the card is the one with the words on it.
+  matchCover(v) {
+    if (this.match) this.match.cover = clamp(v, 0, 1)
+  }
+
+  // The impact, fired once by card/Spread.jsx on the frame their star arrives.
+  // The overlay owns the timing because the overlay owns the object that gets
+  // hit; the sky owns the light, because it is the only one of the two that can
+  // put it in world space, in front of the right stars, through the tonemap.
+  matchStrike() {
+    if (this.match) this.match.strike = 0
+    this.start()
   }
 
   _frameMatch(dt) {
     const m = this.match
-    if (!m) return
-    m.t += dt
-    // No hero stars here any more. The two bodies this frame is about are the
-    // two cards, drawn over the top of this by card/Spread.jsx, and a sky that
-    // also drew a pair was a sky arguing with them.
-    this.gHero.count = 0
-
-    const t = m.t
+    if (!m || m.strike < 0) return
+    m.strike += dt
+    const p = m.strike / STRIKE
+    if (p >= 1) {
+      this.post.flash = Math.max(0, this.post.flash - dt * 3)
+      return
+    }
+    // Instant on, then decay — the overlay's burst is shaped the same way and
+    // for the same reason: a collision is brightest on the frame it happens.
+    const bell = (1 - p) * (1 - p)
+    // The whole sky lifts for an instant. Added in linear light BEFORE the
+    // tonemap, so ACES rolls it off its shoulder the way a real sensor rolls off
+    // a real flash — and kept SMALL, because the thing this frame is about is
+    // drawn over the top of it. A match is the brightest moment in celestual; it
+    // was never supposed to be a white screen.
+    this.post.flash = bell * 0.05
+    this.post.flashColor = [1, 0.88, 0.78]
+    // And the burst itself goes where the event is: on the viewer's own star,
+    // the one the camera is holding and the one the card is drawn over. There is
+    // no second place for it to be.
+    const s = this.sealed[this.focusIndex]
+    if (!s) return
+    const p3 = this._sealedWorld(s, this._strikeAt || (this._strikeAt = {}))
     const white = [1, 0.97, 0.93]
-    const flashP = clamp((t - MATCH.approach) / MATCH.flash, 0, 1)
-
-    // ── the touch ───────────────────────────────────────────────────────────
-    if (t > MATCH.approach && flashP < 1) {
-      const bell = Math.sin(Math.PI * flashP)
-      // The whole sky lifts for an instant. Added in linear light BEFORE the
-      // tonemap, so ACES rolls it off its shoulder the way a real sensor rolls
-      // off a real flash — and kept SMALL, because the two things this frame is
-      // about are now drawn over the top of it. Tuned loud, back when the pair
-      // was in here and the flash was the pair's own event, it washed the whole
-      // window to warm grey with two specks floating in it: the loudest frame
-      // in the product, saying nothing. A match is the brightest moment in
-      // celestual; it was never supposed to be a white screen.
-      this.post.flash = bell * 0.15
-      this.post.flashColor = [1, 0.88, 0.78]
-      this.fx.world(m.cx, m.cy, m.cz, 0.02 + bell * 0.07, white, bell * 2.6, 0)
-      this.fx.world(m.cx, m.cy, m.cz, 0.03 + bell * 0.16, white, bell * 1.3, 2)
-      if (!m.echo.length && flashP > 0.3) m.echo.push({ t: 0 })
-    } else if (t > MATCH.approach) {
-      this.post.flash = Math.max(0, this.post.flash - dt * 2.4)
-    }
-
-    // ── the light echo ──────────────────────────────────────────────────────
-    // A real astronomical phenomenon, and the most beautiful thing this reveal
-    // could possibly do: the flash's light travels outward and lights the gas it
-    // passes through, so for a few seconds you watch the nebula around them
-    // illuminate from the inside, in a ring, expanding.
-    for (const e of m.echo) {
-      e.t += dt
-      const q = e.t / MATCH.echo
-      if (q >= 1) continue
-      const R = easeOut(q) * 1.15
-      const bright = Math.pow(1 - q, 1.6) * (1 - Math.exp(-q * 9))
-      const N = this.tier >= 2 ? 34 : 64
-      for (let i = 0; i < N; i++) {
-        const a2 = (i / N) * TWO
-        const x = m.cx + Math.cos(a2) * R
-        const z = m.cz + Math.sin(a2) * R
-        // the shell is spherical, so it rises out of the disk plane too
-        const yy = m.cy + Math.sin(a2 * 3.1 + q * 2) * R * 0.11
-        this.fx.world(x, yy, z, 0.016 + R * 0.05, [1, 0.86, 0.78], bright * 1.5, 0)
-      }
-      // and the gas genuinely brightens as the front sweeps it
-      this.gasPass.gain = 0.3 + bright * 0.55
-    }
+    this.fx.world(p3.x, p3.y, p3.z, 0.018 + bell * 0.055, white, bell * 2.4, 0)
+    this.fx.world(p3.x, p3.y, p3.z, 0.026 + bell * 0.13, white, bell * 1.2, 2)
   }
 }
