@@ -1,24 +1,24 @@
 // beta/App.jsx — the beta shell.
 //
-// Self-contained by design. It holds its own state in memory, talks to no
-// server, imports nothing from the production app, and resets on reload, so
-// every visit to /beta starts from the same known page and the brand is what is
-// being judged rather than whatever happens to be in localStorage.
+// The brand is new; the machine underneath is production's. This file is
+// deliberately shaped like App.jsx: the same sky handle, the same send-off
+// contract (the flight reports its own arrival and a deadline catches a
+// backgrounded tab), the same held dive for "see it in the sky", the same
+// sealed-star bookkeeping. If a mechanic reads differently here than it does in
+// the demo, that is a bug rather than a decision.
 //
-// The nav is a BOOKMARK RIBBON, not a dock. A dock is the single most generic
-// object in mobile software and it would undo half of what the rest of this
-// costs to build. A ribbon hanging out of the top of the case is what you
-// actually put in a book to get back to a page, it is unmistakably this brand,
-// and on an assessment build it does the one job a dock would have done better:
-// it lets you jump straight to any page in any order.
+// State is in memory, there is no server, and a reload starts the same seeded
+// page every time, so what is being judged is the design.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import './beta.css'
-import { C, TEXT, FONT, S, R, LIGHT, FONT_HREF, rgba, normHandle, daysLeft, stamp } from './tokens.js'
-import { leatherSurface, stitching } from './texture.js'
-import { Frame, Wordmark, Label, Rule } from './ui.jsx'
-import { Chart } from './Chart.jsx'
+import { SENDOFF_SECONDS } from '../galaxy.js'
+import { C, FONT, S, R, LIGHT, FONT_HREF, rgba, normHandle, groundOf, sealLight } from './tokens.js'
+import { Frame, Wordmark, Label, Rule, Seal } from './ui.jsx'
+import { stitching } from './texture.js'
+import { Sky } from './Sky.jsx'
+import { SealResolve } from './Resolve.jsx'
 import { OpenScreen, SendScreen, WriteScreen, FlightScreen, PlacedScreen, PingsScreen, RevealScreen, PlateScreen } from './screens.jsx'
 
 const SCREENS = {
@@ -32,20 +32,13 @@ const SCREENS = {
   plate: { c: PlateScreen, name: 'the specimen' },
 }
 
-// How lit the chart is behind each page. The title page and the reveal get the
-// field at full strength; anything with a paragraph on it gets it pulled back,
-// because a sky competing with body copy is a sky that wins.
-const DIM = { open: 1, flight: 1, reveal: 0.92, plate: 0.3 }
-
-// Where the wordmark is set. The pages with a Head row of their own do not get
-// it; the specimen sheet prints its own.
-const MASTHEAD = ['open', 'flight', 'reveal']
+// Which pages let the field burn at full strength, and which pull it back so
+// the foreground reads. Production's CALM_SCREENS, same idea.
+const CALM = ['send', 'write', 'placed', 'pings', 'plate']
+const MASTHEAD = ['open', 'flight']
 
 const days = (n) => new Date(Date.now() + n * 864e5).toISOString()
 
-// The page opens mid-story on purpose: one ping standing, one waiting, one slot
-// open. An empty product cannot be assessed, and a seeded one shows the ledger,
-// the two states, both card grounds and the empty slot in a single screen.
 const SEED = [
   {
     handle: 'raines',
@@ -67,14 +60,7 @@ const SEED = [
   },
 ]
 
-// The page named in the address, if it names one. Every page in the beta is
-// deep-linkable (`/beta#the-card`), which an assessment build needs: a link to
-// a page is how a design gets discussed, and "click begin, then type something,
-// then press seal" is not a link.
-const SLUGS = {
-  open: 'title', send: 'send', write: 'card', placed: 'truth',
-  pings: 'pings', reveal: 'reveal', plate: 'specimen',
-}
+const SLUGS = { open: 'title', send: 'send', write: 'card', placed: 'truth', pings: 'pings', reveal: 'reveal', plate: 'specimen' }
 const BY_SLUG = Object.fromEntries(Object.entries(SLUGS).map(([k, v]) => [v, k]))
 const fromHash = () => BY_SLUG[String(window.location.hash || '').replace(/^#/, '').toLowerCase()] || ''
 
@@ -85,28 +71,32 @@ export default function BetaApp() {
   const [last, setLast] = useState(() => (fromHash() === 'placed' ? SEED[0] : null))
   const [revealing, setRevealing] = useState('')
   const [mode, setMode] = useState('idle')
+  const [origin, setOrigin] = useState(null)
+  const [liftoff, setLiftoff] = useState(null)
   const [indexOpen, setIndexOpen] = useState(false)
   const pending = useRef(null)
+  const sky = useRef(null)
+  const morphTimer = useRef(null)
+  const sendoffTimer = useRef(null)
   const me = 'you'
 
-  // The three faces, fetched only for this route. Production never pays for a
-  // font it does not set.
   useEffect(() => {
-    if (document.getElementById('beta-faces')) return
-    const l = document.createElement('link')
-    l.id = 'beta-faces'
-    l.rel = 'stylesheet'
-    l.href = FONT_HREF
-    document.head.appendChild(l)
+    if (!document.getElementById('beta-faces')) {
+      const l = document.createElement('link')
+      l.id = 'beta-faces'
+      l.rel = 'stylesheet'
+      l.href = FONT_HREF
+      document.head.appendChild(l)
+    }
     const m = document.querySelector('meta[name="theme-color"]')
     if (m) m.setAttribute('content', C.void)
     document.title = 'celestual — the bindery edition'
+    return () => {
+      if (morphTimer.current) clearTimeout(morphTimer.current)
+      if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
+    }
   }, [])
 
-  // Landing straight on a page must land on a page with something ON it. Jump
-  // to the card with nobody named, or the reveal with nothing mutual, and the
-  // screen would be technically correct and useless to look at, so each one
-  // backfills whatever it needs first.
   const prepare = useCallback(
     (s) => {
       if (s === 'write') setThem((t) => t || 'oleander')
@@ -143,7 +133,6 @@ export default function BetaApp() {
     (s) => {
       prepare(s)
       try {
-        // the flight is a moment, not a place: it never takes an address
         const hash = s === 'flight' ? '' : `#${SLUGS[s] || s}`
         window.history.pushState({ beta: s }, '', `${window.location.pathname}${hash}`)
       } catch {
@@ -154,7 +143,6 @@ export default function BetaApp() {
     [prepare, swap],
   )
 
-  // The OS back button walks the pages instead of leaving the site.
   useEffect(() => {
     const onPop = () => {
       const s = fromHash() || 'open'
@@ -165,7 +153,6 @@ export default function BetaApp() {
     return () => window.removeEventListener('popstate', onPop)
   }, [prepare, swap])
 
-  // and a page entered by address gets its address written back, once
   useEffect(() => {
     if (!window.location.hash) {
       try {
@@ -178,17 +165,16 @@ export default function BetaApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── placing ────────────────────────────────────────────────────────────────
-  // The card is composed, the star is thrown, the chart scribes its ring, and
-  // only then does the page change. The flight reports its own arrival rather
-  // than being raced by a timer, which is the same contract the production sky
-  // has with App.jsx.
+  // ── the send-off ───────────────────────────────────────────────────────────
+  // Production's, exactly: the seal collapses to a point on the glass where it
+  // was standing, a real star launches from that same point, and the camera
+  // falls in behind its shoulder and rides it into the disk. The flight reports
+  // its own arrival; the timer is only a deadline, because a backgrounded tab
+  // stops rendering and a lost context stops it for good.
   const place = useCallback(
     (card) => {
       const handle = normHandle(them)
       if (!handle) return
-      // whether they are already here is the one thing this screen does not get
-      // to decide, so the beta decides it the way a coin does
       const standing = handle.length % 2 === 0
       pending.current = {
         handle,
@@ -199,33 +185,99 @@ export default function BetaApp() {
         card: { ...card, handle, placed: Date.now() },
         theirCard: { handle: me, words: 'i thought about it every time i passed', ground: 'leaf', face: 'hand', placed: Date.now() },
       }
+
+      let o = { x: 0.5, y: 0.44 }
+      try {
+        const el = document.querySelector('[data-sendoff-field]')
+        if (el) {
+          const r = el.getBoundingClientRect()
+          o = { x: (r.left + r.width / 2) / window.innerWidth, y: (r.top + r.height / 2) / window.innerHeight }
+          setLiftoff({ card: pending.current.card, cx: r.left + r.width / 2, cy: r.top + r.height / 2, size: r.width })
+        }
+      } catch {
+        /* fall back to the middle of the glass */
+      }
+      setOrigin(o)
+
+      const done = () => {
+        if (sendoffTimer.current) {
+          clearTimeout(sendoffTimer.current)
+          sendoffTimer.current = null
+        }
+        const p = pending.current
+        pending.current = null
+        setMode('idle')
+        if (!p) return
+        setPings((prev) => [...prev.filter((x) => x.handle !== p.handle), p])
+        setLast(p)
+        setThem('')
+        go('placed')
+      }
+      const f = sky.current
+      if (f) f.onSendoffDone = done
       setMode('sendoff')
       go('flight')
+
+      if (morphTimer.current) clearTimeout(morphTimer.current)
+      morphTimer.current = setTimeout(() => setLiftoff(null), 1300)
+      if (sendoffTimer.current) clearTimeout(sendoffTimer.current)
+      sendoffTimer.current = setTimeout(() => {
+        sendoffTimer.current = null
+        if (f) f.onSendoffDone = null
+        done()
+      }, SENDOFF_SECONDS * 1000 + 3000)
     },
     [them, go],
   )
 
-  const arrived = useCallback(() => {
-    const p = pending.current
-    pending.current = null
-    setMode('idle')
-    if (!p) return
-    setPings((prev) => [...prev.filter((x) => x.handle !== p.handle), p])
-    setLast(p)
-    setThem('')
-    go('placed')
-  }, [go])
-
-  const renew = useCallback((h) => {
-    setPings((prev) => prev.map((p) => (p.handle === h ? { ...p, expires: days(60) } : p)))
+  // ── the held star (the ledger's "see it in the sky") ───────────────────────
+  // Tapping a ping flies the backdrop camera to that ping's own star and STAYS
+  // there. What is waiting at the end of the flight is the seal: the star stops
+  // being a point of light and becomes the surface it was made of.
+  const [skyView, setSkyView] = useState(null)
+  const endSkyView = useCallback(() => {
+    const f = sky.current
+    if (f) {
+      f.clearFocus()
+      if (f.setNavEnabled) f.setNavEnabled(false)
+    }
+    setSkyView(null)
   }, [])
+  const locate = useCallback(
+    (handle) => {
+      const h = normHandle(handle)
+      const f = sky.current
+      if (!h || skyView || !f || !f.focusStar) return
+      const i = pings.findIndex((p) => p.handle === h)
+      if (i < 0) return
+      f.focusStar(i, { hold: true, onArrive: () => setSkyView((v) => (v && v.handle === h ? { ...v, arrived: true } : v)) })
+      if (f.setNavEnabled) f.setNavEnabled(true)
+      setSkyView({ handle: h, index: i, arrived: false })
+    },
+    [pings, skyView],
+  )
 
-  const letGo = useCallback((h) => {
-    setPings((prev) => prev.filter((p) => p.handle !== h))
-  }, [])
+  // A held dive melts the whole foreground away, so a screen change that left
+  // one running would hand somebody an invisible, unclickable page. Leaving the
+  // page releases the camera, always.
+  useEffect(() => {
+    if (!skyView) return
+    endSkyView()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen])
 
-  // The beta's one lever: turn a standing ping into a mutual one, so the reveal
-  // can be looked at without two people and a real backend.
+  const renew = useCallback((h) => setPings((prev) => prev.map((p) => (p.handle === h ? { ...p, expires: days(60) } : p))), [])
+  const letGo = useCallback(
+    (h) => {
+      const i = pings.findIndex((p) => p.handle === h)
+      // the star goes out where it stood, rather than the list simply being one
+      // shorter the next time the sky is looked at
+      if (i >= 0 && sky.current && sky.current.vanishStar) sky.current.vanishStar(i)
+      setPings((prev) => prev.filter((p) => p.handle !== h))
+    },
+    [pings],
+  )
+
   const simulate = useCallback(() => {
     setPings((prev) => {
       const i = prev.findIndex((p) => p.state !== 'mutual')
@@ -240,10 +292,17 @@ export default function BetaApp() {
     (h) => {
       setRevealing(h)
       setPings((prev) => prev.map((p) => (p.handle === h ? { ...p, opened: true } : p)))
+      setMode('match')
       go('reveal')
     },
     [go],
   )
+  const closeReveal = useCallback(() => {
+    const f = sky.current
+    if (f) f.clearFocus()
+    setMode('idle')
+    go('pings')
+  }, [go])
 
   const openConversation = useCallback((h) => {
     const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
@@ -256,57 +315,40 @@ export default function BetaApp() {
     }
   }, [])
 
+  // ── the sealed stars ───────────────────────────────────────────────────────
+  // One per ping, resting in the disk. The light each one burns with is its
+  // card's ground, measured rather than picked, exactly as production measures
+  // it off a photograph.
+  const sealLabels = useMemo(() => pings.map((p) => p.handle), [pings])
+  const sealKinds = useMemo(() => pings.map((p) => sealLight(groundOf(p.card && p.card.ground).tone)), [pings])
+
+  const revealed = pings.find((p) => p.handle === revealing) || null
+  const revealIndex = pings.findIndex((p) => p.handle === revealing)
+
   const ctx = {
-    me,
-    them,
-    setThem,
-    pings,
-    standing: pings.length,
-    last,
-    revealing,
+    me, them, setThem, pings, standing: pings.length, last, revealing, revealed, revealIndex,
     canSimulate: pings.some((p) => p.state !== 'mutual'),
-    error: '',
-    go,
-    place,
-    renew,
-    letGo,
-    simulate,
-    open,
-    openConversation,
+    skyRef: sky, skyFlight: !!skyView,
+    go, place, renew, letGo, simulate, open, closeReveal, openConversation, locate,
   }
 
-  // What the chart is holding. The tick under each label is the same fact the
-  // ledger prints, so the sky and the page never disagree.
-  const chartPings = useMemo(
-    () =>
-      pings.map((p) => ({
-        handle: p.handle,
-        state: p.state,
-        tick: p.state === 'mutual' ? 'mutual' : p.state === 'standing' ? `${daysLeft(p.expires)}d` : 'held',
-      })),
-    [pings],
-  )
-
   const Screen = (SCREENS[screen] || SCREENS.open).c
-  const dim = DIM[screen] != null ? DIM[screen] : 0.55
+  const dim = screen === 'reveal' || skyView ? 1 : CALM.includes(screen) ? 0.38 : 1
 
   return (
     <div className="bindery">
-      <Chart
-        pings={chartPings}
-        dim={dim}
+      <Sky
         mode={mode}
-        origin={{ x: 0.24, y: 0.58 }}
-        onSendoffDone={arrived}
+        dim={dim}
+        origin={origin}
+        seals={pings.length}
+        sealLabels={sealLabels}
+        sealKinds={sealKinds}
+        onReady={(f) => (sky.current = f)}
       />
       <Frame />
 
-      {/* the masthead, and it appears ONCE. A book carries its half-title on
-          the first leaf and never again; the pages after it carry a running
-          head of their own, which here is the Head row on each screen. Keeping
-          the wordmark pinned to every page is a website's habit, and on a phone
-          it lands directly on top of that running head. */}
-      {MASTHEAD.includes(screen) && (
+      {MASTHEAD.includes(screen) && !skyView && (
         <div
           style={{
             position: 'fixed',
@@ -320,28 +362,65 @@ export default function BetaApp() {
         </div>
       )}
 
-      <Ribbon open={indexOpen} onToggle={() => setIndexOpen((v) => !v)} screen={screen} go={go} />
+      {!skyView && <Ribbon open={indexOpen} onToggle={() => setIndexOpen((v) => !v)} screen={screen} go={go} />}
 
-      <div key={screen} style={{ position: 'relative', zIndex: 4 }}>
+      {/* during a flight the foreground melts away completely, so the sky is the
+          whole screen. The entrance animation has to be suppressed for the melt
+          or its fill-mode pins opacity at 1. */}
+      <div
+        key={screen}
+        style={{
+          position: 'relative',
+          zIndex: 4,
+          animation: skyView ? 'none' : undefined,
+          opacity: skyView ? 0 : 1,
+          transition: 'opacity .55s ease',
+          pointerEvents: skyView ? 'none' : 'auto',
+        }}
+      >
         <Screen ctx={ctx} />
       </div>
+
+      {/* the star, resolving into the seal it was made of */}
+      {skyView && (
+        <SealResolve
+          card={(pings.find((p) => p.handle === skyView.handle) || {}).card}
+          index={skyView.index}
+          open={!!skyView}
+          fieldRef={sky}
+          onClose={endSkyView}
+        />
+      )}
+
+      {/* the send-off's first beat: the seal collapses to the point the star
+          launches from, so the hand-off from the page to the sky has nothing
+          visible in it */}
+      {liftoff && <Liftoff {...liftoff} />}
+    </div>
+  )
+}
+
+// ── the collapse ─────────────────────────────────────────────────────────────
+// One shot, ~1.2s, torn down as soon as it has played. It is the same gesture
+// production's Liftoff makes with the @ field, made with the object this brand
+// actually hands over: the seal, pressed down to a point of light.
+function Liftoff({ card, cx, cy, size }) {
+  return (
+    <div
+      aria-hidden
+      className="lift-off"
+      style={{ position: 'fixed', left: cx - size / 2, top: cy - size / 2, width: size, height: size, zIndex: 5, pointerEvents: 'none' }}
+    >
+      <Seal card={card} size={size} />
     </div>
   )
 }
 
 // ── the ribbon ───────────────────────────────────────────────────────────────
-// A bookmark, hanging out of the top of the case, with a notched tail. Pulling
-// it opens the index. It is the only piece of chrome in the product and it is
-// the one place a small flourish is allowed, because a ribbon that did not look
-// like a ribbon would be a tab.
 function Ribbon({ open, onToggle, screen, go }) {
   const items = Object.entries(SCREENS).filter(([, v]) => v.name)
   return (
     <div style={{ position: 'fixed', top: 0, right: 'max(46px, calc(env(safe-area-inset-right) + 38px))', zIndex: 30 }}>
-      {/* A ribbon is woven, not stitched: the first cut had saddle stitching
-          round all four edges of a thirty-pixel strip, which at that width
-          reads as engine turning. What a grosgrain ribbon actually has is a
-          fine warp down its length and a darker selvedge at each edge. */}
       <button
         type="button"
         onClick={onToggle}
@@ -352,7 +431,8 @@ function Ribbon({ open, onToggle, screen, go }) {
           width: 34,
           height: open ? 112 : 96,
           backgroundColor: C.hide2,
-          backgroundImage: `repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 1px, rgba(255,226,186,0.05) 1px 3px), linear-gradient(90deg, rgba(0,0,0,0.5) 0 2px, transparent 2px calc(100% - 2px), rgba(0,0,0,0.5) calc(100% - 2px) 100%)`,
+          backgroundImage:
+            'repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 1px, rgba(255,226,186,0.05) 1px 3px), linear-gradient(90deg, rgba(0,0,0,0.5) 0 2px, transparent 2px calc(100% - 2px), rgba(0,0,0,0.5) calc(100% - 2px) 100%)',
           clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%)',
           boxShadow: '0 10px 22px rgba(0,0,0,.5)',
           transition: 'height .28s cubic-bezier(.16,.84,.28,1)',
@@ -387,7 +467,7 @@ function Ribbon({ open, onToggle, screen, go }) {
             top: 116,
             right: 0,
             width: 232,
-            ...leatherSurface(C.hide),
+            backgroundColor: C.hide,
             borderRadius: R.panel,
             boxShadow: LIGHT.rest,
             padding: `${S.md}px ${S.md}px ${S.sm}px`,
@@ -411,7 +491,7 @@ function Ribbon({ open, onToggle, screen, go }) {
                     width: '100%',
                     textAlign: 'left',
                     padding: '9px 2px',
-                    color: on ? C.ivory : TEXT.quiet,
+                    color: on ? C.ivory : rgba(C.ivory, 0.7),
                   }}
                 >
                   <span

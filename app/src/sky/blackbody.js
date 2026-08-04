@@ -87,18 +87,39 @@ export function blackbodyRGB(T) {
   return [r / lum, g / lum, b / lum]
 }
 
+// Luminance-normalize any colour the way blackbodyRGB normalizes its own: how
+// BRIGHT a star is comes from its magnitude and its distance, never from its
+// hue, and the whole star pipeline downstream depends on that separation
+// holding. Anything handed in through `ramp` goes through here first.
+export function normalizeLum(rgb) {
+  const [r, g, b] = rgb
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  if (!(lum > 0)) return [1, 1, 1]
+  return [r / lum, g / lum, b / lum]
+}
+
 // The 256×1 lookup the shaders sample. u = 0 is T_MIN, u = 1 is T_MAX, spaced
 // logarithmically so the crowded, interesting end of the locus (2,500–8,000 K,
 // where nearly every visible star lives) gets most of the resolution.
-export function makeBlackbodyLUT(gl) {
+//
+// `ramp(u, T)` optionally replaces the Planck locus with another
+// one-dimensional colour curve, which is the single hook a monochrome sky needs:
+// every star in the field, every hero halo and every resolved surface reads its
+// colour from this one texture, so swapping the curve recolours the entire
+// universe without touching a shader. It is used by /beta (see beta/sky.js),
+// where the whole brand is one hue and the locus runs brown to ivory instead of
+// amber to blue. Passing nothing keeps the real physics, which is what every
+// production surface does.
+export function makeBlackbodyLUT(gl, ramp) {
   const N = 256
   // Values above 1 are normal here — a hot star's blue channel genuinely
   // exceeds unit luminance-normalized white — so the LUT has to be float, not
   // an 8-bit texture that would clamp the ends of the locus flat.
   const data = new Float32Array(N * 4)
   for (let i = 0; i < N; i++) {
-    const T = tempAt(i / (N - 1))
-    const [r, g, b] = blackbodyRGB(T)
+    const u = i / (N - 1)
+    const T = tempAt(u)
+    const [r, g, b] = ramp ? normalizeLum(ramp(u, T)) : blackbodyRGB(T)
     data[i * 4] = r
     data[i * 4 + 1] = g
     data[i * 4 + 2] = b

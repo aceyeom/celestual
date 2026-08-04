@@ -748,7 +748,7 @@ export function Slots({ used, cap = 3 }) {
 // reading its name.
 export function Swatches({ items, value, onChange, size = 46, round = true }) {
   return (
-    <div style={{ display: 'flex', gap: S.md, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: S.sm, flexWrap: 'wrap' }}>
       {items.map((it) => {
         const on = it.id === value
         return (
@@ -776,8 +776,11 @@ export function Swatches({ items, value, onChange, size = 46, round = true }) {
               style={{
                 fontFamily: FONT.sans,
                 fontSize: 9.5,
-                letterSpacing: TRACK.label,
+                // tighter than a stamped label: three material names have to
+                // stand side by side inside a phone's measure
+                letterSpacing: '0.13em',
                 textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
                 color: on ? C.caramel : TEXT.faint,
               }}
             >

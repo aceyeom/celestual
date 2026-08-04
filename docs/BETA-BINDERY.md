@@ -3,11 +3,15 @@
 A complete, second brand for celestual, living at **`/beta`**, built to be
 assessed beside the production one rather than merged into it.
 
-It shares **nothing** with the galaxy edition: not a colour token, not a
+It shares **no design** with the galaxy edition: not a colour token, not a
 typeface, not a corner radius, not a shadow, not a screen. `app/src/beta/`
-imports nothing from `app/src/theme.js`, `styles.css`, `components/` or `sky/`,
-and nothing in production imports from `beta/`. The two can be opened in two
-tabs and judged as two products, which is the whole point of the route.
+imports nothing from `app/src/theme.js`, `styles.css` or `components/`, and
+nothing in production imports from `beta/`.
+
+It does share the **machine**: the sky engine (`sky/`, `galaxy.js`) and the zoom
+curve (`card/zoom.js`), parameterized. That is deliberate — the mechanics and
+the animations are meant to be identical to the demo's, and the only honest way
+to be identical to something is to be the same code.
 
 > This does **not** replace [DESIGN.md](./DESIGN.md). The galaxy edition is
 > still the production look and its design lock still holds. This document
@@ -108,30 +112,81 @@ are commented at the site of the fix:
   repeat. Use two integer lattice periods (`fbmA`) instead.
 - A stitch every 15px at half opacity reads as engine turning, not thread.
 
-## §4 — The chart (`beta/Chart.jsx`)
+## §4 — The sky: production's engine, one hue
 
-The production sky is 120,000 stars on a WebGL2 engine, coloured by blackbody
-temperature. This is the opposite decision:
+**The beta runs the real engine.** `beta/sky.js` subclasses `GalaxyField`, so
+the field is production's: the same hundred and twenty thousand stars on real
+density-wave orbits, the same camera and lens, the same nebula volume, the same
+send-off the camera rides, the same held dive, the same opaque body pass. Every
+mechanic and every animation on this route is production's code.
 
-- **~150 stars**, one per 9,000 square pixels. Emptiness is the material.
-- **Ivory only.** No temperature, no second accent.
-- **It is a chart, not a photograph.** A graticule tooled into the case, a
-  chalk band of dust, and each ping drawn the way an astronomer marks an object
-  they have found: a struck star, a scribed ring, a leader out to a hand-set
-  label. The ring is the design.
-- **Your pings make a constellation.** Two or more and the chart joins them
-  with a slack hairline, between the rings rather than through the stars.
-- **The send-off** is a spark that arcs out to its anchor; the ring is then
-  scribed around it, and the flight reports its own arrival rather than being
-  raced by a timer.
+An earlier cut of this route drew its own 2D star chart instead. It was a nice
+drawing and it was the wrong call: the sky here is not a backdrop, it is the
+mechanism — a ping IS a star, you fly to it, and past a certain closeness it
+stops being a point of light and becomes the surface it was made of. A
+hand-rolled chart cannot do any of that, so a rebrand built on one is a rebrand
+of the pictures rather than of the product.
 
-The star *logic* is unchanged from production: pings are stars, placed once and
-staying put, standing burns and waiting does not, and a mutual is a binary.
+What changes is the light, and it changes in **one place**.
 
-**On narrow screens the marked pings are dropped** and the chart keeps only the
-field, band and graticule. There is no margin to engrave into on a phone, so a
-label lands on the sentence being read. A plate printed small loses its legend
-first.
+### The ramp
+
+Every star's colour in this engine comes from a single 256-entry lookup indexed
+by temperature: the Planck locus, deep amber at 2,500 K through white at
+6,500 K to hard blue past 20,000 K. `sky/blackbody.js` now takes an optional
+replacement curve (`makeBlackbodyLUT(gl, ramp)`), so the whole universe is
+recoloured by handing it a different one-dimensional ramp. No shader change, no
+second code path, and production passes nothing and is unaffected.
+
+The Bindery's curve keeps the physics' *shape* and drops its hue: cool stars go
+deep chocolate, hot ones go ivory. That is the honest half of the truth — the
+cool end of the real locus genuinely is brown and the hot end genuinely is
+white. What it gives up is the blue, which is the one thing this brand has no
+room for.
+
+The consequence is why it works at all: **the bulge is old**, so it is full of
+3,000–5,000 K stars and comes out the colour of the leather; **the arms are
+young and hot**, so they come out ivory. The galaxy's structure still reads —
+an old brown heart, pale forming arms — off demographics rather than off
+decoration, in one hue.
+
+### The four other places colour lives
+
+- **The nebula.** Production's ramp is warm heart → H-alpha rose → violet rim.
+  The Bindery's is lit cocoa → saddle → chalk: the same structure read as dust
+  caught in lamplight going cold at the rim.
+- **The floor.** `post.js` gained a `uFloor` — the value the frame never goes
+  below, the way a print on paper has no true black in it because the paper is
+  not black. Zero in production; here it is the colour of a closed case. Without
+  it the rebrand is a brown galaxy on a black screen instead of a brown galaxy
+  *inside something*.
+- **The meteors.** Production's set includes a magnesium blue-white, which is a
+  lovely real detail and the only blue that would ever appear here.
+  `shootHues` is now a field option.
+- **No chromatic aberration.** A real lens artefact, and the one thing in the
+  pipeline that can put a green and a magenta fringe on a bright star. In a
+  one-hue brand that reads as a rendering fault.
+
+Bloom is pulled back rather than switched off: nothing in this brand glows, but
+a star with no bloom is a dot and the field loses its depth.
+
+### The zoom and the reveal
+
+- **The zoom** (`beta/Resolve.jsx`): tap a ping in the ledger and the camera
+  dives to that star and stays there. `resolveOf` is *imported* from
+  `card/zoom.js` rather than reimplemented — two copies of those four numbers
+  are two zooms that agree until somebody tunes one. What arrives at the end of
+  the dive is a struck seal instead of a photographic disc.
+- **The reveal** (`beta/Reveal.jsx`): production's three beats, unchanged. The
+  arrival (the ordinary held dive into your own ping), the light (their light
+  rising around the limb — an eclipse, and the claim of the product in one
+  image), the turn (one half turn about the vertical axis, the way a hand turns
+  something over to read the back).
+
+The turn happens **by itself** the first time, which is also how this route gets
+to carry no instruction. Production prints "turn it over" under the disc, and it
+is right to: an object with a second side is worth nothing if nobody knows it
+has one. An object that turns itself once has already said so.
 
 ## §5 — The seal
 
@@ -177,6 +232,7 @@ in luminosity, and a sealed mutual straining against its lid.
 | the title page | `/beta#title` | the colophon, the one claim, one plate |
 | the send | `/beta#send` | the slip, the ruled line, the form mark |
 | the card | `/beta#card` | three grounds, three hands, twenty words |
+| the flight | (no address) | the star launches and the camera rides it |
 | the truth | `/beta#truth` | standing or waiting, said plainly |
 | your pings | `/beta#pings` | the ledger, the three slots, the empty one |
 | the reveal | `/beta#reveal` | two seals, struck together |

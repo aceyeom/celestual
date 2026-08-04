@@ -149,7 +149,10 @@ export class SkyEngine {
   // rebuilt by calling this again rather than by remounting the whole sky.
   _initGL() {
     const gl = this.gl
-    this.bbTex = makeBlackbodyLUT(gl)
+    // `opts.ramp` swaps the Planck locus for another one-dimensional colour
+    // curve — the one hook a single-hue sky needs (blackbody.js, /beta).
+    // Absent, which it is everywhere in production, this is the real physics.
+    this.bbTex = makeBlackbodyLUT(gl, this.opts.ramp)
     this.noiseTex = makeNoiseVolume(gl, { size: this.tier >= 2 ? 48 : 64, seed: this.opts.noiseSeed || 1337 })
     this.blueTex = makeBlueNoise(gl)
     this.fullscreen = makeFullscreen(gl)
