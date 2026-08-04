@@ -30,7 +30,7 @@
 import { SkyEngine, clamp, lerp, linearOf, starRadius } from './sky/engine.js'
 import { smooth, easeOut, easeFlight } from './sky/camera.js'
 import {
-  STAR_STRIDE, genHalo, genDeepField, genNearField, genDisk,
+  STAR_STRIDE, genHalo, genDeepField, genNearField, genDisk, genBulge,
   writeStar, writeSlot, slotRadius, diskRadiusFor, omegaAt, TILT_RATE,
 } from './sky/model.js'
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
@@ -48,6 +48,12 @@ const DBLTAP_STEP = 2.6
 // rim is ALLOWED to spill past the frame, because a galaxy that fits neatly
 // inside its box reads as a graphic rather than as a place.
 const FRAME_PAD = 1.32
+// How much decoration this sky is allowed, against what it used to carry. The
+// scenery here is thinned by a quarter for the same reason the ambient field is
+// (galaxy.js): past a certain count a field of points stops reading as depth and
+// starts reading as grain over whatever is in front of it. It costs even less
+// here, where the pings are the content and the scenery only has to hold them.
+const DECOR = 0.75
 
 // The star a ping is, in one place — so the CPU can size its disc exactly the
 // way stars.js's vertex shader does, which is what the opaque body pass needs
@@ -94,19 +100,27 @@ export class CommunityGalaxy extends SkyEngine {
   }
 
   // ── the population ────────────────────────────────────────────────────────
+  // How much scenery this sky carries. In one place because the arm glow and
+  // the heart are regenerated at runtime as the galaxy grows, and they have to
+  // come back at exactly the density they were built at.
+  _decorScale() {
+    return (window.innerWidth < 540 ? 0.66 : 1) * DECOR
+  }
+
   _build() {
     const b = this.budget
-    const mobile = window.innerWidth < 540
-    const scale = mobile ? 0.66 : 1
+    const scale = this._decorScale()
 
     // The countable stars. One buffer, regrown whenever the community does.
     // This is the only group the governor is never allowed to thin: the pings
     // are the CONTENT, and dropping half of them would make the sky a lie.
     // radiusScale is what decides how readily a ping stops being a POINT and
-    // opens into a disc. Held low on purpose: a ping is one person, and a sky
-    // of soft bokeh saucers reads as out of focus rather than as a crowd. It
-    // still resolves into a body — but only once you have actually flown to it.
-    this.gPings = this.starPass.createGroup(new Float32Array(STAR_STRIDE * 64), { gain: 0.28, radiusScale: 0.00052, dynamic: true })
+    // opens into a disc. It is now exactly the decorative field's, which is the
+    // whole point: a ping should be the same SIZE of thing as the sky it sits
+    // in, and be told apart by its light rather than by its width. It still
+    // resolves into a body — but only once you have actually flown to it, where
+    // the hero pass has it and this number no longer applies.
+    this.gPings = this.starPass.createGroup(new Float32Array(STAR_STRIDE * 64), { gain: 0.28, radiusScale: 0.00034, dynamic: true })
     this.gPings.count = 0
 
     // Everything else is scenery, and an EMPTY community still opens onto a
@@ -128,14 +142,26 @@ export class CommunityGalaxy extends SkyEngine {
       genDisk(Math.floor(b.stars * 0.10 * scale), { seed: 5507, rCore: 0.14, rDisk: 0.85, armFrac: 0.72 }),
       { gain: 0.028, radiusScale: 0.0003, twinkle: 0.7, resolve: 0 },
     )
-    this.gNear = this.starPass.createGroup(genNearField(b.passers, { seed: 5509, extent: 2.6 }), {
+    // The heart, and it has to be built rather than counted. A slot's radius
+    // grows as sqrt(index), which spreads the population evenly by AREA — so the
+    // countable stars alone put no more light per square degree at the middle
+    // than at the rim, and a galaxy with a flat centre has no centre at all.
+    // This is the unresolved old starlight that gives it one: the same nearly
+    // round, nearly wave-free orbit family a real bulge sits on, regrown with
+    // the disk in _reframe, and always an order of magnitude under a ping so it
+    // can never be mistaken for one. Nothing here is countable; it is the body
+    // the counted stars hang in.
+    this.gCore = this.starPass.createGroup(genBulge(Math.floor(b.stars * 0.045 * scale), { seed: 5511, radius: 0.16 }), {
+      gain: 0.05, radiusScale: 0.00028, twinkle: 0.6, resolve: 0,
+    })
+    this.gNear = this.starPass.createGroup(genNearField(Math.floor(b.passers * DECOR), { seed: 5509, extent: 2.6 }), {
       gain: 0.04, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
     })
     this.gNear.inFront = true
 
     this.gHero = this.starPass.createHeroGroup(96)
     this.gHero.inFront = true
-    this.gHero.radiusScale = 0.0062
+    this.gHero.radiusScale = 0.0044 // galaxy.js carries the note on this number
     this.gHero.twinkle = 0.1 // a held star holds still (galaxy.js says why)
 
     this._tuneGas()
@@ -188,17 +214,23 @@ export class CommunityGalaxy extends SkyEngine {
     const R = diskRadiusFor(Math.max(maxIndex + 1, 40))
     this.diskR = R
     this.setFrameRadius(R * FRAME_PAD)
-    // the connective arm glow is generated at a radius, so a galaxy that has
-    // grown well past it needs it regrown. Hysteresis keeps a busy evening from
-    // rebuilding a buffer on every ping.
+    // the connective arm glow and the heart are both generated at a radius, so
+    // a galaxy that has grown well past theirs needs them regrown. Hysteresis
+    // keeps a busy evening from rebuilding two buffers on every ping.
     if (!this._armR || Math.abs(R - this._armR) / this._armR > 0.35) {
       this._armR = R
       const b = this.budget
-      const scale = window.innerWidth < 540 ? 0.66 : 1
-      const data = genDisk(Math.floor(b.stars * 0.1 * scale), {
-        seed: 5507, rCore: Math.max(0.1, R * 0.16), rDisk: Math.max(0.3, R * 0.94), armFrac: 0.72,
-      })
-      if (this.gArm) this.starPass.updateGroup(this.gArm, data)
+      const scale = this._decorScale()
+      if (this.gArm) {
+        this.starPass.updateGroup(this.gArm, genDisk(Math.floor(b.stars * 0.1 * scale), {
+          seed: 5507, rCore: Math.max(0.1, R * 0.16), rDisk: Math.max(0.3, R * 0.94), armFrac: 0.72,
+        }))
+      }
+      if (this.gCore) {
+        this.starPass.updateGroup(this.gCore, genBulge(Math.floor(b.stars * 0.045 * scale), {
+          seed: 5511, radius: Math.max(0.08, R * 0.26),
+        }))
+      }
     }
     const g = this.gasPass
     g.diskR = Math.max(0.42, R * 1.12)
@@ -237,13 +269,34 @@ export class CommunityGalaxy extends SkyEngine {
     this.gPings.count = n
     this._dirty = false
     this._reframe()
-    // A ping is drawn at the instrument's point-spread size, which does not
-    // shrink when the galaxy does — so without this, forty pings on a small
-    // disk render exactly as loud as a thousand on a large one and read as a
-    // scatter of beacons. Prominence rises linearly with how full the sky is.
-    const fill = clamp(n / 900, 0, 1)
-    this.gPings.gain = 0.12 + 0.2 * fill
-    this.gArm.gain = 0.010 + 0.026 * fill
+    // ── how loud one ping is ────────────────────────────────────────────────
+    // A slot's radius grows as sqrt(index), so the disk's AREA grows with the
+    // count — and the camera frames that whole disk to the same pixels however
+    // big it gets. Twenty pings and two thousand therefore occupy the SAME
+    // circle of sky; the second one simply has a hundred times as many stars
+    // standing in it, every one of them drawn at the instrument's point-spread,
+    // which does not shrink for anybody.
+    //
+    // So the per-ping gain has to come DOWN as the sky fills, or no single
+    // setting can serve both ends: the one that makes twenty pings read as
+    // twenty people turns two thousand into a white clot with a spiral
+    // somewhere behind it, and the one that keeps two thousand legible leaves
+    // twenty as a scatter of grey dots. It falls as the fourth root — a
+    // hundredfold growth in the population is a threefold fall per star — so
+    // the disk's total light still climbs steeply enough that a big community
+    // is unmistakably brighter as well as bigger, while no ping is ever more
+    // than about twice the star it would be in a sky ten times as full.
+    //
+    // It is also the truth of the thing. As a sky fills, one light becomes one
+    // among many. Yours are drawn by the hero pass and never fade with it.
+    const dens = clamp(n / 120, 1, 40)
+    const loud = 0.3 / Math.pow(dens, 0.28)
+    this.gPings.gain = loud
+    // and the scenery holds the same distance from the content at every size:
+    // an order of magnitude under a ping, always, so nothing decorative can
+    // ever be miscounted as somebody
+    this.gArm.gain = loud * 0.1
+    this.gCore.gain = loud * 0.17
   }
 
   // Where ping k's star is in the world, right now.
@@ -608,7 +661,19 @@ export class CommunityGalaxy extends SkyEngine {
     // A gathering sky IS its cloud, so the gas carries the whole frame there; an
     // open one is mostly stars, and the gas is the body they hang in.
     const fillFrac = clamp(this.stars.length / 900, 0, 1)
-    g.gain = lerp(0.32 + 0.55 * fillFrac, 1.15, fb) * (1 - this.cam.focus * 0.88)
+    const base = lerp(0.32 + 0.55 * fillFrac, 1.15, fb)
+    g.gain = base * (1 - this.cam.focus * 0.88)
+    // The heart, and it GROWS. Twenty people are a small gathering with a small
+    // warm middle; two thousand are a galaxy, and a galaxy's heart is the
+    // brightest thing in it. Handing a young community the full bulge would be
+    // the same lie the old fixed radius cap told — size has to be real here, and
+    // that includes the size of the light at the centre. The top of the ramp is
+    // exactly the ambient sky's own heart (0.3 x 4.2, galaxy.js).
+    //
+    // Solved against the cloud's base gain rather than its faded one, because
+    // uCore is a RATIO: a community that has lit its whole disk must not light a
+    // heart three times over, and a dive has to dim both together.
+    g.core = (0.34 + 0.92 * fillFrac) / Math.max(base, 0.15)
 
     if (this.cam.dive == null && this.dive) {
       this._endDive()
@@ -619,6 +684,7 @@ export class CommunityGalaxy extends SkyEngine {
     // withheld, so there is nothing to count
     this.gPings.dim = 1 - fb
     this.gArm.dim = 1 - fb * 0.6
+    this.gCore.dim = 1 - fb * 0.6
 
     this._frameZoomState()
     this._frameMeteors(dt)
@@ -729,6 +795,7 @@ export class CommunityGalaxy extends SkyEngine {
       if (!g) continue
       const isDive = focusing && st === this.diveSt
       const f = isDive ? this.cam.focus : 0
+      const res = smooth(clamp((f - 0.15) / 0.5, 0, 1))
       const fade = focusing && !isDive ? 1 - 0.86 * this.cam.focus : 1
       if (fade <= 0.03) continue
       let settle = 1
@@ -737,7 +804,14 @@ export class CommunityGalaxy extends SkyEngine {
       const tint = starTint(m.kind) || this.you
       const tcol = linearOf(tint)
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 1.1 + st.i)
-      const gain = (0.38 + pulse * 0.06) * settle * fade * (1 - f * 0.80) * (1 - this.formingBlend * 0.15)
+      // Calibrated against the population it stands in rather than against a
+      // constant. The countable field's own gain moves with how full the sky is
+      // (_syncPings), so a fixed number here would drift from "a little brighter
+      // than the rest" in a young community to "the only thing in frame" in a
+      // grown one. A fixed RATIO holds the relationship at every size: about a
+      // quarter brighter than the ping beside it, wearing its category colour,
+      // and nothing else. Being findable is the halo's job, not the star's.
+      const gain = this.gPings.gain * (0.82 + pulse * 0.16) * settle * fade * (1 - f * 0.80) * (1 - this.formingBlend * 0.15)
       // the same dressing your star wears in the ambient sky, so a ping looks
       // like YOUR ping in whichever sky is behind the app
       // One quiet tinted halo, exactly as in the ambient sky, and sized in
@@ -750,7 +824,12 @@ export class CommunityGalaxy extends SkyEngine {
       if (w && fade > 0.05) {
         const near = 1 - f * 0.94
         const R = Math.max(0.35, this.diskR || 1)
-        this.fx.world(w.x, w.y, w.z, (0.042 + pulse * 0.006) * near * R, tcol, (0.5 + pulse * 0.14) * settle * fade * (1 - f * 0.9), 0)
+        // Sized so it lands at the same width ON THE GLASS as the ambient sky's
+        // (galaxy.js: 0.020 world units against a 1.45 frame radius). This
+        // camera frames R * FRAME_PAD instead, so the world size has to carry
+        // that ratio — and then one halo means one thing in both skies, at every
+        // size of community.
+        this.fx.world(w.x, w.y, w.z, (0.019 + pulse * 0.003) * near * R, tcol, (0.34 + pulse * 0.1) * settle * fade * (1 - f * 0.9), 0)
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
@@ -761,10 +840,15 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o + 1] = c[1]
       hero.tint[o + 2] = c[2]
       hero.tint[o + 3] = gain
-      hero.fx[o] = 0.2 + f * 0.18
+      // a whisper of diffraction at rest, earned back on the dive — galaxy.js
+      // carries the note on why a fifth-strength cross on every resting ping
+      // reads as glitter rather than as light
+      hero.fx[o] = 0.075 + f * 0.16
       hero.fx[o + 1] = f * 0.6
-      hero.fx[o + 2] = 1
-      hero.fx[o + 3] = this._pushBody(st, tint, settle * fade)
+      // a resting ping is a point of light on every screen, and becomes a
+      // surface only for the dive that goes to it — galaxy.js carries the note
+      hero.fx[o + 2] = res
+      hero.fx[o + 3] = this._pushBody(st, tint, settle * fade, res)
     }
     // The star a stranger's @ opened: it is the hero of that dive, so it flares
     // to the same signature your own stars wear. Every dive in the product
@@ -772,6 +856,7 @@ export class CommunityGalaxy extends SkyEngine {
     if (focusing && this.diveSt && !this.diveSt.mine && this.diveSt.geom && hero.count < hero.capacity) {
       const g = this.diveSt.geom
       const f = this.cam.focus
+      const res = smooth(clamp((f - 0.15) / 0.5, 0, 1))
       const k = hero.count++
       writeStar(hero.star, k, g.a, g.b, g.phi, omegaAt(g.a), TILT_RATE * g.a, g.y, tempToU(HERO_TEMP), HERO_LUM)
       const c = linearOf(this.you)
@@ -779,11 +864,11 @@ export class CommunityGalaxy extends SkyEngine {
       hero.tint[o] = c[0]
       hero.tint[o + 1] = c[1]
       hero.tint[o + 2] = c[2]
-      hero.tint[o + 3] = 0.38 * (1 - f * 0.6)
-      hero.fx[o] = 0.2 + f * 0.18
+      hero.tint[o + 3] = this.gPings.gain * 0.9 * (1 - f * 0.6)
+      hero.fx[o] = 0.075 + f * 0.16
       hero.fx[o + 1] = f * 0.6
-      hero.fx[o + 2] = 1
-      hero.fx[o + 3] = this._pushBody(this.diveSt, this.you, 1)
+      hero.fx[o + 2] = res
+      hero.fx[o + 3] = this._pushBody(this.diveSt, this.you, 1, res)
     }
   }
 
@@ -793,17 +878,19 @@ export class CommunityGalaxy extends SkyEngine {
   // with its own disc — 1 = draw it, 0 = the body pass has it — and the band
   // between the two is a cross-fade rather than a swap. galaxy.js carries the
   // long note on why an additive photosphere is a ghost.
-  _pushBody(st, tintHex, alive) {
+  // `res` is the dive's own permission to resolve — the same ramp the shader is
+  // handed, so a resting ping is a point of light here too.
+  _pushBody(st, tintHex, alive, res = 1) {
     void tintHex
-    if (!st || !st.geom) return 1
+    if (!st || !st.geom || res <= 0.002) return 1
     const w = this._slotWorld(st)
     if (!w) return 1
     const scr = this.cam.project(w.x, w.y, w.z)
     if (!scr) return 1
     const radius = starRadius(this.gHero.radiusScale, HERO_TEMP, HERO_LUM)
-    const hand = this.handoverOf(radius, scr.persp)
+    const hand = this.handoverOf(radius, scr.persp) * res
     if (hand <= 0.004) return 1
-    const disc = this.discOf(radius, scr.persp)
+    const disc = this.discOf(radius, scr.persp) * res
     this.body.push(scr.sx, scr.sy, radius * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * this.gHero.dim * this.cam.exposure * alive, {
       cover: disc * hand,
       corona: 0.9,

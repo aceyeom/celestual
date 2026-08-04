@@ -202,23 +202,37 @@ export class GalaxyField extends SkyEngine {
     const gl = this.gl
     void gl
     const mobile = window.innerWidth < 540
-    const n = Math.floor(b.stars * (mobile ? 0.62 : 1))
+    // The ambient field is a BACKDROP, and it had grown dense enough to stop
+    // being one. Past a certain count a sky of points is no longer depth: it is
+    // a fine grey grain lying over the type in front of it, and the eye keeps
+    // trying to resolve it while it is trying to read. So everything decorative
+    // here is thinned by a quarter — and the share that comes back is spent on
+    // the one part of this galaxy that was too SPARSE rather than too busy.
+    const DECOR = 0.75
+    const n = Math.floor(b.stars * (mobile ? 0.62 : 1) * DECOR)
 
     // Proportions matter more than counts. A galaxy that is mostly disk with a
     // dense heart and a sparse halo reads instantly; get the ratio wrong and no
     // amount of stars will save it.
-    // The core is the one place a galaxy can go wrong by being GENEROUS. Packed
-    // as tightly as it was, the bulge stopped resolving into stars at all and
-    // read as one bright smudge with a clump of discs sitting on it. Fewer
-    // stars, spread through a wider bulge, at a lower gain: the heart is still
-    // unmistakably the heart, and you can see that it is made of suns.
-    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.12), { seed: 9011, radius: 0.35 }), {
-      gain: 0.022, radiusScale: 0.00034, resolve: 0.3,
+    //
+    // The core had been cut back twice, each time for a real reason — packed
+    // tight and lit hard, the bulge stopped resolving into stars at all and read
+    // as one bright smudge with a clump of discs sitting on it — and the second
+    // cut went well past the mark. A galaxy's heart is not a dim patch. It is
+    // the brightest, densest thing in the frame, and this one had been trimmed
+    // until the middle of the spiral was an empty circle with a few specks
+    // around it. What was wrong was never the star COUNT: it was that a smudge
+    // has no grain. So the stars come back, kept small enough that they stay
+    // points, held back from resolving into discs, and lit to about what a disk
+    // star is lit to rather than a third of it. The heart is unmistakably the
+    // heart again, and you can still see it is made of suns.
+    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.21), { seed: 9011, radius: 0.32 }), {
+      gain: 0.052, radiusScale: 0.0003, resolve: 0.15,
     })
-    this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.63), { seed: 9013, rDisk: 1.2, armFrac: 0.55 }), {
+    this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.56), { seed: 9013, rDisk: 1.2, armFrac: 0.55 }), {
       gain: 0.070, radiusScale: 0.00055,
     })
-    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.13), { seed: 9017, rMax: 2.8 }), {
+    this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.11), { seed: 9017, rMax: 2.8 }), {
       gain: 0.050, radiusScale: 0.0003, resolve: 0, pattern: 0,
     })
     // The deep field: the rest of the universe, well outside this galaxy. It
@@ -228,13 +242,13 @@ export class GalaxyField extends SkyEngine {
     // product, and at full density it stopped being depth and became a texture
     // of dots reading over the type — the galaxy is the subject, not the
     // backdrop it hangs in.
-    this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * 0.5), { seed: 9019, rMin: 3.4, rMax: 30 }), {
+    this.gDeep = this.starPass.createGroup(genDeepField(Math.floor(b.deep * 0.5 * DECOR), { seed: 9019, rMin: 3.4, rMax: 30 }), {
       gain: 0.24, radiusScale: 0.00012, twinkle: 0.8, motion: 0.55, resolve: 0, pattern: 0,
     })
     // The near field, drawn IN FRONT of the gas: loose stars between the camera
     // and the disk, whose fast sweep past the glass is what makes a dive feel
     // like flying rather than zooming.
-    this.gNear = this.starPass.createGroup(genNearField(b.passers, { seed: 9023, extent: 2.5 }), {
+    this.gNear = this.starPass.createGroup(genNearField(Math.floor(b.passers * DECOR), { seed: 9023, extent: 2.5 }), {
       gain: 0.04, radiusScale: 0.00002, resolve: 0, nearFade: 0.55, pattern: 0,
     })
     this.gNear.inFront = true
@@ -242,7 +256,16 @@ export class GalaxyField extends SkyEngine {
     // the viewer's own stars, plus room for the match's two
     this.gHero = this.starPass.createHeroGroup(48)
     this.gHero.inFront = true
-    this.gHero.radiusScale = 0.0062 // yours resolve into a body well before the field does
+    // How readily one of your stars stops being a point and starts being a
+    // surface. It has to be well ahead of the field — yours is the one you fly
+    // TO — but it had been set so far ahead that a resting ping was already a
+    // third wider than everything around it before its brightness, its rays and
+    // its halo were stacked on top. Brought down under the instrument's own
+    // point-spread at the resting camera, a ping of yours is the same SIZE of
+    // object as the field around it and only its colour and its light say that
+    // it is yours. It still opens into a full photosphere on a dive: at the
+    // standoff its disc clears the hand-off threshold by more than threefold.
+    this.gHero.radiusScale = 0.0044
     // A held star is the calmest frame in the product: you are looking AT
     // someone. Scintillation on a photosphere you are close enough to read the
     // surface of is not physics, it is fidget.
@@ -269,6 +292,8 @@ export class GalaxyField extends SkyEngine {
     g.diskH = 0.08
     g.arms = 2
     g.gain = 0.3
+    // the heart, weighed against that gain — gas.js says why it is a ratio
+    g.core = 4.2
     g.dust = 1.0
     g.fill = 99
     g.forming = 0
@@ -566,10 +591,14 @@ export class GalaxyField extends SkyEngine {
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 0.9 + s.phase)
       const tint = starTint(this.sealKinds[i]) || this.sealHue || this.you
       const tcol = linearOf(tint)
-      // Calibrated at BOTH ends: about 1.5x white at rest, so your star reads
-      // as a little brighter than its neighbours and nothing more, and about
-      // 4x at the end of a dive, so arriving on it is an event without the
-      // frame washing out. The inverse-square law does the rest.
+      // Calibrated against the FIELD, which is the only comparison that means
+      // anything: about four times the light of an ordinary disk star, which
+      // puts it level with the handful of genuine supergiants out there and no
+      // higher. It used to sit at twice that, and twice that is not "brighter
+      // than its neighbours" — brightness is spent as reach in this renderer, so
+      // it was a visibly fatter, spikier object stuck onto a spiral it did not
+      // belong to. What distinguishes your star is its category colour, not its
+      // size; that is what the halo below is for.
       // The exposure stops DOWN as the camera closes, the way a real one would
       // on a source getting four hundred times brighter. Without it the
       // inverse-square law wins and the arrival is a white screen.
@@ -577,7 +606,7 @@ export class GalaxyField extends SkyEngine {
       // (matchCover). Until then it is still the thing being flown to, so the
       // two cross over on the card's own curve rather than on a second one.
       const taken = isFocus && this.match ? this.match.cover : 0
-      let gain = (0.36 + pulse * 0.06) * fade * (1 - f * 0.80) * (1 - taken)
+      let gain = (0.185 + pulse * 0.035) * fade * (1 - f * 0.80) * (1 - taken)
       let alive = fade * (1 - taken)
 
       // the withdrawal: the halo blooms outward as the core contracts to a
@@ -598,8 +627,25 @@ export class GalaxyField extends SkyEngine {
       // grew out of was — so the radius is Stefan-Boltzmann on the hero's own
       // temperature and luminosity, and the onset is the shader's own
       // smoothstep against the point-spread's width.
-      const disc = scr ? this.discOf(this._heroRadius(), scr.persp) * settleRes : 0
-      const own = scr ? 1 - this.handoverOf(this._heroRadius(), scr.persp) : 1
+      //
+      // And it is PERMITTED only while you are flying to this one. Whether a
+      // star's angular diameter has overtaken the point-spread depends on
+      // `cam.unit`, which is about twice as large on a laptop as on a phone —
+      // so the radius that leaves your ping a hard spark at 390 pixels wide
+      // opens it into a two-pixel saucer at 1280, and the two devices are
+      // showing two different objects. That is worse than a size mismatch: a
+      // barely resolved disc is DIMMER than the point it replaced, because a
+      // photosphere's surface brightness lands under the point-spread's peak —
+      // so the screens with the most pixels were precisely the ones where your
+      // own stars went soft and grey instead of sharp.
+      //
+      // A surface is what you get for GOING there. Gated on the dive rather
+      // than on the device's pixel density, a resting ping is a point of light
+      // on every screen and opens into a body on the approach, and the shader
+      // is handed the same ramp so the two never disagree about what it is.
+      const res = settleRes * smooth(clamp((f - 0.15) / 0.5, 0, 1))
+      const disc = scr ? this.discOf(this._heroRadius(), scr.persp) * res : 0
+      const own = scr ? 1 - this.handoverOf(this._heroRadius(), scr.persp) * res : 1
       // `taken` gates the body outright rather than just dimming it: the
       // photosphere pass is OPAQUE — it exists so a body occludes the field
       // behind it — so a black one is still a hole.
@@ -619,7 +665,13 @@ export class GalaxyField extends SkyEngine {
           tip: 0.30 + (s.seed % 3) * 0.12,
         })
       }
-      this._pushHero(hero, s, tint, gain, 0.2 + f * 0.18, f, own, settleRes)
+      // The diffraction cross is the last thing holding your star apart from the
+      // sky. A real instrument only gives one to a source bright enough to
+      // overwhelm it, which is why spikes read as light rather than as glitter —
+      // and at a fifth strength on every resting ping they were reading as
+      // glitter. A whisper at rest, earned back on the dive, where the star
+      // genuinely is that bright.
+      this._pushHero(hero, s, tint, gain, 0.075 + f * 0.16, f, own, res)
       // The whole distinction between your star and the field is ONE small
       // tinted halo. It is deliberately quiet: your ping should be findable in
       // the sky, not shouting over it, and a beacon with a bloom and a glisten
@@ -637,7 +689,7 @@ export class GalaxyField extends SkyEngine {
       // there: at that range the photosphere is the subject.
       if (fade > 0.05) {
         const near = 1 - f * 0.94
-        this.fx.world(w.x, w.y, w.z, (0.030 + pulse * 0.004) * near, tcol, (0.5 + pulse * 0.14) * fade * (1 - f * 0.9), 0)
+        this.fx.world(w.x, w.y, w.z, (0.020 + pulse * 0.003) * near, tcol, (0.34 + pulse * 0.10) * fade * (1 - f * 0.9), 0)
       }
     }
   }
@@ -925,9 +977,9 @@ export class GalaxyField extends SkyEngine {
     const hero = this.gHero
     // brightest at the launch, easing to exactly the resting star's own gain by
     // the time the resting star takes over, so the hand-off has no step in it
-    const gain = tt < runEnd ? 1.45 : lerp(1.45, 0.36, easeOut(land))
+    const gain = tt < runEnd ? 1.05 : lerp(1.05, 0.185, easeOut(land))
     // its rays settle onto the resting star's too, for the same reason
-    const spike = tt < runEnd ? 0.5 : lerp(0.5, 0.2, easeOut(land))
+    const spike = tt < runEnd ? 0.34 : lerp(0.34, 0.075, easeOut(land))
     this._pushHeroAt(hero, p.x, p.y, p.z, tint, gain, spike, HERO_TEMP, HERO_LUM, {
       resolve: 0,
       bias: 0.15,
