@@ -25,10 +25,9 @@ export const RESERVED_CODES = [
   // 'paid' is where Stripe sends someone back (migration 0021). A competitor
   // holding it would swallow every return from a payment page.
   'paid',
-  // 'beta' was the star & card prototype's own route. The card is production
-  // now (src/card/) and the route is gone, but the word stays reserved: a
-  // competitor issued /beta as a tracking link would be handing people a URL
-  // that a year of git history says was something else.
+  // '/beta' is a live route again: the Bindery rebrand, forked in main.jsx
+  // before the app mounts (docs/BETA-BINDERY.md). A competitor issued this as
+  // a four-letter tracking link would be handing people a whole other brand.
   'beta',
 ]
 
