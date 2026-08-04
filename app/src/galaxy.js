@@ -24,8 +24,8 @@
 //     field behind it the way a body does.
 //   · the send-off is a flight you take rather than a streak you watch: the
 //     camera falls in behind the new star and rides it into the disk.
-//   · the match is no longer two dots meeting on a flat overlay. It is a real
-//     inspiral in the disk, ending in a binary.
+//   · the match is not an event in here at all any more. The sky's whole part
+//     in a reveal is to hold the dive into the viewer's own ping, and be dark.
 //
 // What deliberately did not change: the lens (CAM/FOCAL/TILT), the two stars,
 // the cosmic-violet void, and every method signature App.jsx and ui.jsx call.
@@ -130,10 +130,16 @@ const SURFACE_B = 1.34
 // product uses (card/Resolve.jsx). The overlay calls `focusStar` itself.
 //
 // What is left for the sky is the one thing it is genuinely better at than any
-// overlay: being dark, holding still, and burning at the instant of the strike —
-// in world space, at the star that was actually hit, because that is where the
-// event happened. `matchStrike()` is the whole interface.
-const STRIKE = 0.26 // seconds of flare at the impact
+// overlay: being dark, and holding still. There is no event in here at all now —
+// no echo, no flight to nowhere, and no flash, because there is no longer an
+// impact to flash at. The reveal's light is a corona rising around the limb of
+// one card, and light around a card belongs in the layer the card is drawn in.
+// A sky that lit up as well would be a sky insisting on being part of it.
+//
+// So the interface is one setter, `matchCover`, and it exists for a compositing
+// reason rather than a dramatic one: the card is opaque, it sits exactly over
+// the star it grew out of, and it turns over — so the sky has to know when to
+// stop drawing the thing underneath.
 
 export class GalaxyField extends SkyEngine {
   constructor(canvas, opts = {}) {
@@ -504,7 +510,6 @@ export class GalaxyField extends SkyEngine {
     // card had no point of light to grow out of.
     this._frameSealed(dt)
     if (this.mode === 'sendoff') this._frameSendoff(dt)
-    if (this.mode === 'match') this._frameMatch(dt)
     this._frameShoots(dt)
   }
 
@@ -1025,7 +1030,7 @@ export class GalaxyField extends SkyEngine {
   // viewer's own ping, which the overlay asks for by name, so the sky's only job
   // between here and the strike is to be dark and to hold still.
   _startMatch() {
-    this.match = { strike: -1, cover: 0 }
+    this.match = { cover: 0 }
     this.post.flash = 0
   }
 
@@ -1042,42 +1047,4 @@ export class GalaxyField extends SkyEngine {
     if (this.match) this.match.cover = clamp(v, 0, 1)
   }
 
-  // The impact, fired once by card/Spread.jsx on the frame their star arrives.
-  // The overlay owns the timing because the overlay owns the object that gets
-  // hit; the sky owns the light, because it is the only one of the two that can
-  // put it in world space, in front of the right stars, through the tonemap.
-  matchStrike() {
-    if (this.match) this.match.strike = 0
-    this.start()
-  }
-
-  _frameMatch(dt) {
-    const m = this.match
-    if (!m || m.strike < 0) return
-    m.strike += dt
-    const p = m.strike / STRIKE
-    if (p >= 1) {
-      this.post.flash = Math.max(0, this.post.flash - dt * 3)
-      return
-    }
-    // Instant on, then decay — the overlay's burst is shaped the same way and
-    // for the same reason: a collision is brightest on the frame it happens.
-    const bell = (1 - p) * (1 - p)
-    // The whole sky lifts for an instant. Added in linear light BEFORE the
-    // tonemap, so ACES rolls it off its shoulder the way a real sensor rolls off
-    // a real flash — and kept SMALL, because the thing this frame is about is
-    // drawn over the top of it. A match is the brightest moment in celestual; it
-    // was never supposed to be a white screen.
-    this.post.flash = bell * 0.05
-    this.post.flashColor = [1, 0.88, 0.78]
-    // And the burst itself goes where the event is: on the viewer's own star,
-    // the one the camera is holding and the one the card is drawn over. There is
-    // no second place for it to be.
-    const s = this.sealed[this.focusIndex]
-    if (!s) return
-    const p3 = this._sealedWorld(s, this._strikeAt || (this._strikeAt = {}))
-    const white = [1, 0.97, 0.93]
-    this.fx.world(p3.x, p3.y, p3.z, 0.018 + bell * 0.055, white, bell * 2.4, 0)
-    this.fx.world(p3.x, p3.y, p3.z, 0.026 + bell * 0.13, white, bell * 1.2, 2)
-  }
 }
