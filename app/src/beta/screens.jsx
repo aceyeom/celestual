@@ -1,47 +1,42 @@
 // beta/screens.jsx — the seven pages and the specimen.
 //
-// The minimum set that lets the whole brand be judged: the title page, the
-// send, the card, the flight, the truth, the status page, the reveal. Plus the
-// plate, which is the specimen sheet the system itself can be read off.
+// ── the copy rule ────────────────────────────────────────────────────────────
+// A screen explains itself or it is wrong. Every note under a control, every
+// reassurance beside a button and every example under a field has been cut,
+// because each one was a confession that the thing above it did not read.
+// What is left on a page is: what happened, what it is called, and the one
+// thing to do next.
 //
-// What is deliberately different from the production screens, structurally,
-// before a single colour is considered:
+// The composer is the clearest case. It carried a prompt, three example
+// messages, a word count with the word "words" after it, a caption under the
+// seal and a sentence beside the button — six pieces of text around one field.
+// It now says "message for them", and the object beside it shows what that
+// does, live, as you type.
 //
-//   NOTHING IS CENTRED. Every page hangs off the spine on the left. A centred
-//   stack of a headline, a subhead and a full-width button is the shape of
-//   every landing page ever generated, and no palette survives it.
-//
-//   ONE OBJECT PER PAGE. The send is a slip. The card is a seal. The status
-//   page is a ledger. Each page has a thing on it that you could pick up,
-//   rather than three cards in a row explaining features.
-//
-//   THE PAGE ADMITS WHAT IT IS. Form numbers, plate marks, a set line at the
-//   foot. Printed matter tells you it was printed, and that is most of why it
-//   feels like it was made by somebody.
+// ── the structure rule ───────────────────────────────────────────────────────
+// Nothing is centred; every page hangs off the spine on the left. One object
+// per page: the send is a slip, the card is a seal, the status page is a
+// ledger. The page admits it was printed.
 
 import { useEffect, useState } from 'react'
 import {
-  C, TEXT, LINE, FONT, SIZE, TRACK, R, S, LIGHT, MEASURE,
+  C, TEXT, LINE, FONT, SIZE, R, S, LIGHT, MEASURE,
   GROUNDS, FACES, MAX_WORDS, wordCount, clampWords,
   rgba, normHandle, isValidHandle, stamp, daysLeft,
 } from './tokens.js'
 import { leatherSurface, paperSurface, chalkSurface, groundSurface, stitching } from './texture.js'
 import {
-  Column, Title, Lead, Body, Small, Label, Tick, Rule, useNarrow,
+  Column, Title, Body, Small, Label, Tick, Rule, useNarrow,
   Reticle, Wordmark, Panel, Leaf, Plate, Quiet, Ruled, Seal, Mark, Head, Slots, Swatches,
 } from './ui.jsx'
+import { Reveal } from './Reveal.jsx'
 
-// The three grounds, as pickable materials.
 const GROUND_ITEMS = GROUNDS.map((g) => ({ id: g.id, name: g.name, surface: groundSurface(g, { scale: 60 }) }))
 
 // ── 1 · the title page ───────────────────────────────────────────────────────
 export function OpenScreen({ ctx }) {
   return (
     <Column>
-      <div style={{ marginBottom: S.xl }}>
-        <Label>the double blind</Label>
-      </div>
-
       <h1 style={{ margin: 0 }}>
         <span
           style={{
@@ -77,31 +72,22 @@ export function OpenScreen({ ctx }) {
 
       <Rule style={{ margin: `${S.xl}px 0 ${S.lg}px`, width: 132 }} />
 
-      <Body quiet style={{ maxWidth: 428 }}>
-        enter their @. they are never told, and they never can be. if they enter
-        yours, you both find out in the same second. if they never do, nothing
-        happened.
-      </Body>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, marginTop: S.xl, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, flexWrap: 'wrap' }}>
         <Plate onClick={() => ctx.go('send')}>find out</Plate>
-        <Quiet onClick={() => ctx.go('pings')}>i have been here before</Quiet>
+        <Quiet onClick={() => ctx.go('pings')}>log in</Quiet>
       </div>
 
-      {/* one string, not three chips with separators between them: a separator
-          that is its own element orphans at the start of a wrapped line */}
-      <div style={{ marginTop: S.xxl, maxWidth: 420 }}>
-        <Tick style={{ lineHeight: 1.9 }}>no profiles · no browsing · three pings, sixty days each</Tick>
-      </div>
+      <Tick style={{ display: 'block', marginTop: S.xxl }}>
+        no profiles · no browsing · nothing happens unless it is mutual
+      </Tick>
     </Column>
   )
 }
 
 // ── 2 · the send ─────────────────────────────────────────────────────────────
-// One slip of paper, laid on the case at half a degree, with a printed caption
-// and a line to write on. The form number in the corner is not a joke: printed
-// matter carries its own plate mark, and it is the detail that makes the object
-// read as issued rather than rendered.
+// A slip of paper with a line on it. The plate mark in the corner stays,
+// because it is ornament rather than instruction: printed matter tells you it
+// was printed, and it is two words, not a sentence about privacy.
 export function SendScreen({ ctx }) {
   const [v, setV] = useState(ctx.them || '')
   const ok = isValidHandle(v) && normHandle(v) !== normHandle(ctx.me)
@@ -120,69 +106,33 @@ export function SendScreen({ ctx }) {
         <em style={{ fontStyle: 'italic', color: C.caramel }}>on your mind?</em>
       </Title>
 
-      <Leaf className="leaf-in" style={{ marginTop: S.xl, padding: `${S.lg}px ${S.lg}px ${S.md}px`, transform: 'rotate(-0.45deg)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: S.md }}>
-          <Tick tone="ink" style={{ color: rgba(C.ink, 0.4) }}>form 01</Tick>
-          <Tick tone="ink" style={{ color: rgba(C.ink, 0.4) }}>double blind</Tick>
-        </div>
-        <Ruled
-          label="their instagram"
-          value={v}
-          onChange={setV}
-          onEnter={submit}
-          placeholder="handle"
-          autoFocus
-          big
-        />
-        <p
-          style={{
-            fontFamily: FONT.sans,
-            fontWeight: 300,
-            fontSize: 12.5,
-            lineHeight: 1.62,
-            color: rgba(C.ink, 0.56),
-            marginTop: S.md,
-            maxWidth: 340,
-          }}
-        >
-          no alert. no trace. the server keeps this as a hash, so there is
-          nothing to leak and nothing to subpoena.
-        </p>
+      <Leaf className="leaf-in" style={{ marginTop: S.xl, padding: `${S.lg}px ${S.lg}px ${S.lg}px`, transform: 'rotate(-0.45deg)' }}>
+        <Tick tone="ink" style={{ display: 'block', color: rgba(C.ink, 0.36), marginBottom: S.md }}>
+          form 01
+        </Tick>
+        <Ruled label="their instagram" value={v} onChange={setV} onEnter={submit} placeholder="handle" autoFocus big />
       </Leaf>
 
-      {ctx.error && (
-        <Small style={{ marginTop: S.md, color: C.wheat }}>{ctx.error}</Small>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, marginTop: S.xl, flexWrap: 'wrap' }}>
+      <div style={{ marginTop: S.xl }}>
         <Plate onClick={submit} disabled={!ok}>
-          write the card
+          next
         </Plate>
-        <Tick>{ctx.standing} of 3 slots held</Tick>
       </div>
     </Column>
   )
 }
 
 // ── 3 · the card ─────────────────────────────────────────────────────────────
-// The one place the product asks a person to make something, so it is the one
-// place with more than a single control. Three materials, three hands, twenty
-// words. Everything else about the composition is derived, exactly as it is in
-// production: nobody is asked to choose an alignment or a size.
-const SEEDS = [
-  'you always took the window seat',
-  'you laughed a beat late, every time',
-  'we said we would be roommates',
-]
-
+// One field, and beside it the thing the field makes. The materials and the
+// hands are shown rather than described: each swatch is the real surface at the
+// real texture, and each hand is the words "still here" set in it.
 export function WriteScreen({ ctx }) {
   const [words, setWords] = useState('')
   const [ground, setGround] = useState('leaf')
   const [face, setFace] = useState('hand')
   const narrow = useNarrow()
   const n = wordCount(words)
-  const over = n > MAX_WORDS
-  const ready = n > 0 && !over
+  const ready = n > 0 && n <= MAX_WORDS
 
   const card = { handle: ctx.them, words: clampWords(words), ground, face, placed: Date.now() }
 
@@ -191,19 +141,18 @@ export function WriteScreen({ ctx }) {
       <Head kicker="the card" onBack={() => ctx.go('send')} right={<Tick>for @{ctx.them}</Tick>} />
 
       <div style={{ display: 'flex', gap: S.xxl, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        {/* the seal, as it will be struck */}
-        <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: S.md }}>
+        {/* the seal, and it is the thing that launches: the send-off measures
+            this element and the star leaves from exactly where it stood */}
+        <div data-sendoff-field style={{ flex: '0 0 auto' }}>
           <Seal key={ground} card={card} size={narrow ? 190 : 252} className="seal-set" />
-          <Tick>the seal, as they will see it</Tick>
         </div>
 
-        {/* the writing */}
         <div style={{ flex: '1 1 300px', minWidth: 280, maxWidth: MEASURE }}>
           <Leaf style={{ padding: S.lg }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: S.md }}>
-              <Label tone="ink" style={{ color: rgba(C.ink, 0.5) }}>the message</Label>
-              <Tick tone="ink" style={{ color: over ? '#8A2B12' : rgba(C.ink, 0.45) }}>
-                {n} / {MAX_WORDS} words
+              <Label tone="ink" style={{ color: rgba(C.ink, 0.5) }}>message for them</Label>
+              <Tick tone="ink" style={{ color: n > MAX_WORDS ? '#8A2B12' : rgba(C.ink, 0.4) }}>
+                {n}/{MAX_WORDS}
               </Tick>
             </div>
             <textarea
@@ -211,8 +160,8 @@ export function WriteScreen({ ctx }) {
               value={words}
               onChange={(e) => setWords(e.target.value)}
               rows={4}
-              placeholder="the small thing you still remember"
               spellCheck={false}
+              autoFocus
               style={{
                 width: '100%',
                 border: 0,
@@ -229,94 +178,53 @@ export function WriteScreen({ ctx }) {
                 padding: 0,
               }}
             />
-            <div style={{ marginTop: S.md, display: 'flex', flexWrap: 'wrap', gap: S.sm }}>
-              {SEEDS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setWords(s)}
-                  style={{
-                    fontFamily: FONT.sans,
-                    fontWeight: 300,
-                    fontSize: 11.5,
-                    color: rgba(C.ink, 0.62),
-                    padding: '5px 9px',
-                    borderRadius: 1,
-                    border: `1px solid ${rgba(C.ink, 0.16)}`,
-                    background: rgba(C.ink, 0.03),
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
           </Leaf>
 
           <div style={{ marginTop: S.xl }}>
-            <Label style={{ marginBottom: S.md }}>the ground</Label>
             <Swatches items={GROUND_ITEMS} value={ground} onChange={setGround} size={52} />
           </div>
 
-          <div style={{ marginTop: S.xl }}>
-            <Label style={{ marginBottom: S.md }}>the hand</Label>
-            <div style={{ display: 'flex', gap: S.md, flexWrap: 'wrap' }}>
-              {FACES.map((f) => {
-                const on = f.id === face
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFace(f.id)}
+          <div style={{ marginTop: S.lg, display: 'flex', gap: S.md, flexWrap: 'wrap' }}>
+            {FACES.map((f) => {
+              const on = f.id === face
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFace(f.id)}
+                  style={{
+                    padding: '11px 15px',
+                    borderRadius: R.press,
+                    border: `1px solid ${on ? rgba(C.caramel, 0.75) : rgba(C.ivory, 0.14)}`,
+                    background: on ? rgba(C.caramel, 0.09) : 'transparent',
+                    color: on ? C.ivory : TEXT.quiet,
+                    textAlign: 'left',
+                    transition: 'border-color .16s linear, background .16s linear',
+                  }}
+                >
+                  <span
                     style={{
-                      padding: '11px 15px',
-                      borderRadius: R.press,
-                      border: `1px solid ${on ? rgba(C.caramel, 0.75) : rgba(C.ivory, 0.14)}`,
-                      background: on ? rgba(C.caramel, 0.09) : 'transparent',
-                      color: on ? C.ivory : TEXT.quiet,
-                      textAlign: 'left',
-                      transition: 'border-color .16s linear, background .16s linear',
+                      display: 'block',
+                      fontFamily: f.family,
+                      fontStyle: f.style,
+                      fontWeight: f.weight,
+                      fontSize: 17,
+                      letterSpacing: f.track,
+                      textTransform: f.transform,
+                      lineHeight: 1.1,
                     }}
                   >
-                    <span
-                      style={{
-                        display: 'block',
-                        fontFamily: f.family,
-                        fontStyle: f.style,
-                        fontWeight: f.weight,
-                        fontSize: 17,
-                        letterSpacing: f.track,
-                        textTransform: f.transform,
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      still here
-                    </span>
-                    <span
-                      style={{
-                        display: 'block',
-                        marginTop: 6,
-                        fontFamily: FONT.sans,
-                        fontSize: 9.5,
-                        letterSpacing: TRACK.label,
-                        textTransform: 'uppercase',
-                        color: on ? C.caramel : TEXT.faint,
-                      }}
-                    >
-                      {f.name}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+                    still here
+                  </span>
+                </button>
+              )
+            })}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, marginTop: S.xl, flexWrap: 'wrap' }}>
+          <div style={{ marginTop: S.xl }}>
             <Plate onClick={() => ctx.place(card)} disabled={!ready}>
               seal it
             </Plate>
-            <Small style={{ maxWidth: 260 }}>
-              sealed the way the ping is. it opens only if they enter you back.
-            </Small>
           </div>
         </div>
       </div>
@@ -325,23 +233,13 @@ export function WriteScreen({ ctx }) {
 }
 
 // ── 4 · the flight ───────────────────────────────────────────────────────────
-// Almost nothing on screen, because the screen is not the point: the chart is
-// doing the work behind it. One line, set once, and it does not move.
+// Nothing on screen. The star has just launched and the camera is riding it
+// into the disk; a page of type over that is a page nobody reads.
 export function FlightScreen() {
-  return (
-    <Column>
-      <div style={{ opacity: 0.9 }}>
-        <Label>placing</Label>
-        <Lead style={{ marginTop: S.md, fontSize: 26 }}>it is going out into the field.</Lead>
-      </div>
-    </Column>
-  )
+  return <div style={{ minHeight: '100dvh' }} />
 }
 
 // ── 5 · the truth ────────────────────────────────────────────────────────────
-// The recruiter screen. The moment a ping lands, the person is told exactly
-// what is true and nothing more, which is the whole legal and ethical margin
-// this product lives inside.
 export function PlacedScreen({ ctx }) {
   const p = ctx.last
   if (!p) return <Column><Body>nothing placed.</Body></Column>
@@ -362,26 +260,26 @@ export function PlacedScreen({ ctx }) {
         )}
       </Title>
 
-      <Body quiet style={{ marginTop: S.lg, maxWidth: 440 }}>
+      <Body quiet style={{ marginTop: S.lg, maxWidth: 400 }}>
         {standing
-          ? 'they are reachable on celestual. the second they enter you back, you both know. until then nothing about you is visible to them or to anyone.'
-          : 'your ping is held, unseen, until they arrive. they will never know it was you who was waiting, because the server does not know either.'}
+          ? 'the second they enter you back, you both know.'
+          : 'it is held, unseen, until they arrive.'}
       </Body>
 
-      <Panel style={{ marginTop: S.xl, padding: S.lg, maxWidth: 440 }}>
-        <div style={{ display: 'flex', gap: S.lg, alignItems: 'center' }}>
+      <Panel style={{ marginTop: S.xl, padding: S.lg, maxWidth: 400 }}>
+        <button
+          type="button"
+          onClick={() => ctx.locate(p.handle)}
+          style={{ display: 'flex', gap: S.lg, alignItems: 'center', textAlign: 'left', width: '100%' }}
+        >
           <Seal card={p.card} size={82} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: S.sm }}>
-              <Mark state={p.state} />
-              <Label tone="read">{standing ? 'standing' : 'waiting'}</Label>
-            </div>
-            <div style={{ marginTop: 7, fontFamily: FONT.mono, fontSize: 15, color: C.ivory, letterSpacing: '0.02em' }}>
+          <span>
+            <span style={{ display: 'block', fontFamily: FONT.mono, fontSize: 15, color: C.ivory, letterSpacing: '0.02em' }}>
               @{p.handle}
-            </div>
-            <Tick style={{ display: 'block', marginTop: 6 }}>{daysLeft(p.expires)} days, then it lapses</Tick>
-          </div>
-        </div>
+            </span>
+            <Tick style={{ display: 'block', marginTop: 6 }}>{daysLeft(p.expires)} days</Tick>
+          </span>
+        </button>
       </Panel>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, marginTop: S.xl, flexWrap: 'wrap' }}>
@@ -393,10 +291,9 @@ export function PlacedScreen({ ctx }) {
 }
 
 // ── 6 · the ledger ───────────────────────────────────────────────────────────
-// The status page, and it is a ledger: ruled entries, one to a line, each with
-// its seal in the margin the way a bound book carries a tipped-in plate. The
-// empty slot is a real empty slot, cut into the leather, so three is a fact you
-// can see rather than a number you are told.
+// Ruled entries, one to a line, each with its seal in the margin. Tapping a
+// seal flies the camera to that ping's star and stays there, which is the whole
+// reason the seal is in the margin and not an icon.
 function Entry({ p, ctx }) {
   const [strain, setStrain] = useState(false)
   const mutual = p.state === 'mutual'
@@ -411,18 +308,16 @@ function Entry({ p, ctx }) {
 
   const days = daysLeft(p.expires)
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: S.lg,
-        alignItems: 'center',
-        padding: `${S.lg}px 0`,
-        borderBottom: `1px solid ${LINE.faint}`,
-      }}
-    >
-      <div className={strain ? 'strain' : ''} style={{ flex: '0 0 auto' }}>
+    <div style={{ display: 'flex', gap: S.lg, alignItems: 'center', padding: `${S.lg}px 0`, borderBottom: `1px solid ${LINE.faint}` }}>
+      <button
+        type="button"
+        onClick={() => ctx.locate(p.handle)}
+        aria-label={`see @${p.handle} in the sky`}
+        className={strain ? 'strain' : ''}
+        style={{ flex: '0 0 auto', borderRadius: '50%' }}
+      >
         <Seal card={p.card} size={88} />
-      </div>
+      </button>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: S.sm, marginBottom: 6 }}>
@@ -432,26 +327,30 @@ function Entry({ p, ctx }) {
         <div style={{ fontFamily: FONT.mono, fontSize: 15, color: C.ivory, letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           @{p.handle}
         </div>
-        <div style={{ marginTop: 7, display: 'flex', gap: S.md, alignItems: 'center', flexWrap: 'wrap' }}>
-          {mutual ? (
-            <Tick tone="lit">you entered each other</Tick>
-          ) : (
-            <>
-              <Tick>{days <= 0 ? 'lapses today' : `${days} days left`}</Tick>
-              <button type="button" onClick={() => ctx.renew(p.handle)} style={{ fontFamily: FONT.sans, fontSize: 11.5, letterSpacing: '0.04em', color: TEXT.quiet, borderBottom: `1px solid ${rgba(C.ivory, 0.2)}`, paddingBottom: 1 }}>
-                renew
-              </button>
-              <button type="button" onClick={() => ctx.letGo(p.handle)} style={{ fontFamily: FONT.sans, fontSize: 11.5, letterSpacing: '0.04em', color: TEXT.faint, borderBottom: `1px solid ${rgba(C.ivory, 0.12)}`, paddingBottom: 1 }}>
-                let it go
-              </button>
-            </>
-          )}
-        </div>
+        {!mutual && (
+          <div style={{ marginTop: 7, display: 'flex', gap: S.md, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Tick>{days <= 0 ? 'lapses today' : `${days} days`}</Tick>
+            <button
+              type="button"
+              onClick={() => ctx.renew(p.handle)}
+              style={{ fontFamily: FONT.sans, fontSize: 11.5, letterSpacing: '0.04em', color: TEXT.quiet, borderBottom: `1px solid ${rgba(C.ivory, 0.2)}`, paddingBottom: 1 }}
+            >
+              renew
+            </button>
+            <button
+              type="button"
+              onClick={() => ctx.letGo(p.handle)}
+              style={{ fontFamily: FONT.sans, fontSize: 11.5, letterSpacing: '0.04em', color: TEXT.faint, borderBottom: `1px solid ${rgba(C.ivory, 0.12)}`, paddingBottom: 1 }}
+            >
+              let it go
+            </button>
+          </div>
+        )}
       </div>
 
       {mutual && (
         <Plate tone="leather" onClick={() => ctx.open(p.handle)} style={{ flex: '0 0 auto', padding: '13px 20px' }}>
-          {p.opened ? 'see it again' : 'open it'}
+          {p.opened ? 'again' : 'open it'}
         </Plate>
       )}
     </div>
@@ -463,15 +362,7 @@ function EmptySlot({ onClick }) {
     <button
       type="button"
       onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: S.lg,
-        width: '100%',
-        textAlign: 'left',
-        padding: `${S.lg}px 0`,
-        borderBottom: `1px solid ${LINE.faint}`,
-      }}
+      style={{ display: 'flex', alignItems: 'center', gap: S.lg, width: '100%', textAlign: 'left', padding: `${S.lg}px 0`, borderBottom: `1px solid ${LINE.faint}` }}
     >
       <span
         style={{
@@ -488,12 +379,7 @@ function EmptySlot({ onClick }) {
       >
         <Reticle size={24} a={0.34} />
       </span>
-      <span>
-        <Label>open slot</Label>
-        <span style={{ display: 'block', marginTop: 7, fontFamily: FONT.serif, fontStyle: 'italic', fontSize: 19, color: rgba(C.ivory, 0.62) }}>
-          there is room for one more.
-        </span>
-      </span>
+      <Label>open slot</Label>
     </button>
   )
 }
@@ -505,14 +391,7 @@ export function PingsScreen({ ctx }) {
     <Column>
       <Head kicker="your pings" onBack={() => ctx.go('open')} right={<Slots used={ctx.pings.length} cap={cap} />} />
 
-      {ctx.pings.length === 0 && (
-        <div style={{ marginBottom: S.lg }}>
-          <Title>nothing is standing.</Title>
-          <Body quiet style={{ marginTop: S.md, maxWidth: 400 }}>
-            three slots, sixty days each. renewal is free and it is one tap.
-          </Body>
-        </div>
-      )}
+      {ctx.pings.length === 0 && <Title style={{ marginBottom: S.lg }}>nothing is standing.</Title>}
 
       <div>
         {ctx.pings.map((p) => (
@@ -553,93 +432,26 @@ export function PingsScreen({ ctx }) {
 }
 
 // ── 7 · the reveal ───────────────────────────────────────────────────────────
-// The one ritual. Two seals, struck at the same moment, joined by a hairline.
-// No confetti, no burst, no sound. The whole ceremony is that both of them are
-// suddenly face up, and the product says the shortest true sentence it has.
+// The dive into your own ping, their light around its limb, and one half turn.
+// The object says what happened; the page says the shortest true sentence it
+// has and then gets out of the way.
 export function RevealScreen({ ctx }) {
-  const p = ctx.pings.find((x) => x.handle === ctx.revealing)
-  const narrow = useNarrow()
-  const seal = narrow ? 168 : 218
-  const [lift, setLift] = useState(false)
-  useEffect(() => {
-    const id = setTimeout(() => setLift(true), 620)
-    return () => clearTimeout(id)
-  }, [])
+  const p = ctx.revealed
   if (!p) return <Column><Body>nothing to open.</Body></Column>
-
   return (
-    <Column wide style={{ justifyContent: 'center' }}>
-      <div style={{ textAlign: 'left' }}>
-        <Label tone="lit">mutual</Label>
-        <h1
-          style={{
-            margin: `${S.md}px 0 0`,
-            fontFamily: FONT.serif,
-            fontStyle: 'italic',
-            fontWeight: 300,
-            fontSize: 'clamp(34px, 8vw, 58px)',
-            lineHeight: 0.98,
-            color: C.ivory,
-          }}
-        >
-          you both did.
-        </h1>
-        <Body quiet style={{ marginTop: S.md, maxWidth: 380 }}>
-          you entered @{p.handle}. @{p.handle} entered you. neither of you moved
-          second.
-        </Body>
-      </div>
-
-      <div
-        style={{
-          marginTop: S.xxl,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 'clamp(18px, 5vw, 54px)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <Seal
-            card={p.card}
-            size={seal}
-            className="seal-set"
-            style={{ transform: lift ? 'rotate(-2deg)' : 'rotate(-7deg)', transition: 'transform 1.1s cubic-bezier(.16,.84,.28,1)' }}
-          />
-          <Tick style={{ display: 'block', marginTop: S.md }}>yours</Tick>
-        </div>
-
-        <div aria-hidden style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>
-          <svg width="52" height="12" viewBox="0 0 52 12">
-            <line x1="0" y1="6" x2="52" y2="6" stroke={rgba(C.caramel, 0.5)} strokeWidth="1" strokeDasharray="3 4" />
-            <circle cx="26" cy="6" r="2.4" fill={C.caramel} />
-          </svg>
-        </div>
-
-        <div style={{ textAlign: 'center' }}>
-          <Seal
-            card={p.theirCard}
-            size={seal}
-            className="seal-set"
-            style={{ transform: lift ? 'rotate(2.4deg)' : 'rotate(8deg)', transition: 'transform 1.1s cubic-bezier(.16,.84,.28,1) .12s' }}
-          />
-          <Tick style={{ display: 'block', marginTop: S.md }}>theirs</Tick>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, marginTop: S.xxl, flexWrap: 'wrap' }}>
+    <Reveal yours={p.card} theirs={p.theirCard} index={ctx.revealIndex} fieldRef={ctx.skyRef}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: S.xl, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Plate onClick={() => ctx.openConversation(p.handle)}>go say it</Plate>
-        <Quiet onClick={() => ctx.go('pings')}>close the book</Quiet>
+        <Quiet onClick={ctx.closeReveal}>your sky</Quiet>
       </div>
-    </Column>
+    </Reveal>
   )
 }
 
 // ── the plate (the specimen sheet) ───────────────────────────────────────────
-// Not a product screen. This is the sheet a press pulls to check the plate
-// before a run: every colour, every material, every face, every part, on one
-// page, so the system can be judged as a system rather than inferred from five
-// screens. It exists because the whole point of the beta route is assessment.
+// Not a product screen. The sheet a press pulls to check the plate before a
+// run, so the system can be judged as a system rather than inferred from six
+// screens. It is the one page in the beta allowed to be wordy.
 function Spec({ title, note, children }) {
   return (
     <section style={{ marginBottom: S.xxl }}>
@@ -669,13 +481,12 @@ const CHIPS = [
 export function PlateScreen({ ctx }) {
   const sample = { handle: 'specimen', words: 'you always took the window seat', ground: 'leaf', face: 'hand', placed: Date.now() }
   return (
-    <Column wide spine={false} style={{ justifyContent: 'flex-start', paddingTop: 96 }}>
+    <Column wide spine={false} style={{ justifyContent: 'flex-start' }}>
       <div style={{ marginBottom: S.xxl }}>
         <Wordmark size={17} sub="specimen sheet · the bindery edition" />
-        <Body quiet style={{ marginTop: S.lg, maxWidth: 480 }}>
+        <Body quiet style={{ marginTop: S.lg, maxWidth: 470 }}>
           one hue, three materials, three faces. hierarchy is carried by value
-          and texture. there is no second colour anywhere in this brand, and no
-          object in it glows.
+          and texture. nothing in this brand glows.
         </Body>
       </div>
 
@@ -697,7 +508,7 @@ export function PlateScreen({ ctx }) {
       <Spec title="the materials" note="drawn per pixel, never a stock image">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: S.lg }}>
           {[
-            ['pebbled hide', leatherSurface(C.hide), 'the case, panels, the dock'],
+            ['pebbled hide', leatherSurface(C.hide), 'the case, panels'],
             ['laid paper', paperSurface(C.ivory), 'slips, cards, the first ground'],
             ['chalk card', chalkSurface(C.chalk), 'the second ground'],
           ].map(([name, surface, role]) => (
@@ -714,31 +525,22 @@ export function PlateScreen({ ctx }) {
           <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: R.panel, ...stitching() }} />
           <div style={{ position: 'relative' }}>
             <Label tone="read">the stitch</Label>
-            <Small style={{ marginTop: 6 }}>saddle stitch, slanted, with the thread shadow under it. it is the detail that says a hand made the object.</Small>
+            <Small style={{ marginTop: 6 }}>saddle stitch, slanted, with the thread shadow under it.</Small>
           </div>
         </div>
       </Spec>
 
       <Spec title="the three hands" note="cormorant garamond · jost · courier prime">
         <div style={{ display: 'grid', gap: S.lg }}>
-          <div>
-            <Tick>the voice</Tick>
-            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 300, fontSize: 42, lineHeight: 1.05, color: C.ivory, marginTop: 6 }}>
-              you still think about them.
-            </div>
+          <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 300, fontSize: 42, lineHeight: 1.05, color: C.ivory }}>
+            you still think about them.
           </div>
-          <div>
-            <Tick>the hand</Tick>
-            <div style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 17, lineHeight: 1.6, color: TEXT.quiet, marginTop: 6, maxWidth: 460 }}>
-              every mechanic in the product is set in this: buttons, captions,
-              body copy, the labels stamped across a plate.
-            </div>
+          <div style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 17, lineHeight: 1.6, color: TEXT.quiet, maxWidth: 460 }}>
+            every mechanic in the product is set in this: buttons, captions, body
+            copy, the labels stamped across a plate.
           </div>
-          <div>
-            <Tick>the stamp</Tick>
-            <div style={{ fontFamily: FONT.mono, fontSize: 13, letterSpacing: '0.08em', color: TEXT.quiet, marginTop: 6 }}>
-              60 days left · placed {stamp(Date.now())} · 2 of 3
-            </div>
+          <div style={{ fontFamily: FONT.mono, fontSize: 13, letterSpacing: '0.08em', color: TEXT.quiet }}>
+            60 days · placed {stamp(Date.now())} · 2 of 3
           </div>
         </div>
       </Spec>

@@ -14,14 +14,17 @@
 // be quiet, correct, and never broken, and it implements the same public
 // surface so nothing calling into it has to know which one it got.
 
-import { blackbodyRGB, sampleStar } from './blackbody.js'
+import { blackbodyRGB, normalizeLum, sampleStar, tempToU } from './blackbody.js'
 import { rng } from './model.js'
 
 const TWO = Math.PI * 2
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 
-function css(T) {
-  const [r, g, b] = blackbodyRGB(T)
+// `ramp` mirrors the WebGL path's LUT hook (blackbody.js): a field built on
+// another colour curve has to fall back to a field built on the same curve, or
+// a machine without WebGL2 gets a different brand.
+function css(T, ramp) {
+  const [r, g, b] = ramp ? normalizeLum(ramp(tempToU(T), T)) : blackbodyRGB(T)
   const f = (v) => Math.max(0, Math.min(255, Math.round(Math.pow(Math.min(1, v * 0.62), 1 / 2.2) * 255)))
   return `rgb(${f(r)},${f(g)},${f(b)})`
 }
@@ -32,6 +35,11 @@ class Field2D {
     this.ctx = canvas.getContext('2d')
     this.you = opts.you || '#FF9E6B'
     this.them = opts.them || '#E6749E'
+    // the LUT hook and the void, mirrored from the WebGL path so a machine
+    // without a GPU still gets the same brand rather than a different one
+    this.ramp = opts.ramp || null
+    this.ground = opts.ground || ['#06050E', '#040309', '#030206']
+    this.core = opts.core || ['255,236,206', '255,214,176', '214,150,120']
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     this.t = 0
@@ -68,7 +76,7 @@ class Field2D {
       this.stars.push({
         r, ang,
         y: (rnd() - 0.5) * (region === 'bulge' ? 0.3 : 0.09) * (region === 'halo' ? 6 : 1),
-        col: css(s.T),
+        col: css(s.T, this.ramp),
         mag: Math.min(1, 0.16 + Math.log(1 + s.lum) * 0.12),
         tw: rnd() * TWO,
         tws: 0.2 + rnd() * 0.6,
@@ -152,9 +160,9 @@ class Field2D {
     const d = this.dim
     if (!this._grad) {
       const g = ctx.createLinearGradient(0, 0, 0, this.h)
-      g.addColorStop(0, '#06050E')
-      g.addColorStop(0.55, '#040309')
-      g.addColorStop(1, '#030206')
+      g.addColorStop(0, this.ground[0])
+      g.addColorStop(0.55, this.ground[1])
+      g.addColorStop(1, this.ground[2])
       this._grad = g
     }
     ctx.globalCompositeOperation = 'source-over'
@@ -167,9 +175,9 @@ class Field2D {
     if (o) {
       const R = this.unit * 0.5
       const g = ctx.createRadialGradient(o.sx, o.sy, 0, o.sx, o.sy, R)
-      g.addColorStop(0, `rgba(255,236,206,${0.2 * d})`)
-      g.addColorStop(0.18, `rgba(255,214,176,${0.11 * d})`)
-      g.addColorStop(0.5, `rgba(214,150,120,${0.04 * d})`)
+      g.addColorStop(0, `rgba(${this.core[0]},${0.2 * d})`)
+      g.addColorStop(0.18, `rgba(${this.core[1]},${0.11 * d})`)
+      g.addColorStop(0.5, `rgba(${this.core[2]},${0.04 * d})`)
       g.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = g
       ctx.beginPath()
@@ -365,7 +373,7 @@ export class Community2D extends Field2D {
       const arm = rnd() < 0.7
       const ang = arm ? (i % 2 ? Math.PI : 0) + r * 4.3 + (rnd() - 0.5) * 0.5 : rnd() * TWO
       const s = sampleStar(rnd, arm ? 'arm' : r < 0.16 ? 'bulge' : 'disk')
-      this.ping.push({ r, ang, y: (rnd() - 0.5) * 0.05, col: css(s.T), mag: 0.4 + rnd() * 0.4, tw: rnd() * TWO, tws: 0.2 + rnd() * 0.6 })
+      this.ping.push({ r, ang, y: (rnd() - 0.5) * 0.05, col: css(s.T, this.ramp), mag: 0.4 + rnd() * 0.4, tw: rnd() * TWO, tws: 0.2 + rnd() * 0.6 })
     }
   }
   _drawOwn(ctx, d) {

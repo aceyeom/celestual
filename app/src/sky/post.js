@@ -134,6 +134,7 @@ out vec4 frag;
 uniform sampler2D uScene, uBloom, uBlue;
 uniform vec2 uViewport;
 uniform float uBloomAmount, uExposure, uVignette, uChroma, uTime, uFlash;
+uniform vec3  uFloor;
 uniform vec3 uFlashColor;
 
 void main(){
@@ -175,6 +176,13 @@ void main(){
   // linear -> sRGB
   col = pow(max(col, 0.0), vec3(1.0 / 2.2));
 
+  // The floor the frame never goes below — a lifted black, the way a print on
+  // paper has no true black in it because the paper is not black. Zero in
+  // production, where the void genuinely is the void; /beta lifts it to the
+  // colour of a closed leather case, which is the difference between a brown
+  // galaxy on a black screen and a brown galaxy inside something.
+  col = uFloor + col * (1.0 - uFloor);
+
   // Dither. A near-black cosmic field in 8-bit banding is one of the most
   // recognisable tells of a rendered background, and a quarter-LSB of noise
   // removes it completely at zero perceptual cost.
@@ -201,6 +209,7 @@ export class PostChain {
     this.knee = 0.55
     this.exposure = 1
     this.vignette = 0.4
+    this.floor = [0, 0, 0]
     this.chroma = 0.0055
     this.flash = 0
     this.flashColor = [1, 0.95, 0.9]
@@ -312,6 +321,7 @@ export class PostChain {
     gl.uniform1f(p.u.uBloomAmount, this.levels.length ? this.bloomAmount : 0)
     gl.uniform1f(p.u.uExposure, this.exposure)
     gl.uniform1f(p.u.uVignette, this.vignette)
+    gl.uniform3fv(p.u.uFloor, this.floor)
     gl.uniform1f(p.u.uChroma, this.chroma)
     gl.uniform1f(p.u.uTime, ctx.t)
     gl.uniform1f(p.u.uFlash, this.flash)

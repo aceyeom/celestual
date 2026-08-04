@@ -36,7 +36,7 @@ import {
   genBulge, genDisk, genHalo, genDeepField, genNearField,
   writeStar, omegaAt, TILT_RATE, eccentricityAt,
 } from './sky/model.js'
-import { tempToU, blackbodyRGB } from './sky/blackbody.js'
+import { tempToU, blackbodyRGB, normalizeLum } from './sky/blackbody.js'
 import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
 import { Gestures } from './sky/gestures.js'
 import { starTint } from './theme.js'
@@ -177,11 +177,19 @@ export class GalaxyField extends SkyEngine {
     this.holdDur = 1.9
 
     // ambient shooting stars — an occasional grace note in the deep sky, never
-    // weather
+    // weather. Sodium yellow, magnesium blue-white, iron orange.
+    this.shootHues = opts.shootHues || ['#9FD8FF', '#FFE7B8', '#FFE7B8', '#FFF6EC', '#FFF6EC', '#FFF6EC']
     this.shoots = []
     this._shootAt = 3 + Math.random() * 4
 
     this.match = null
+
+    // The photosphere a resolved star is painted with. It is the same Planck
+    // colour the LUT would hand back at HERO_TEMP, so a field built on another
+    // colour curve (opts.ramp — blackbody.js) has to take its surface off that
+    // curve too, or the star you dive into is the one object in the sky still
+    // wearing the old palette.
+    this.heroRGB = opts.ramp ? normalizeLum(opts.ramp(tempToU(HERO_TEMP), HERO_TEMP)) : HERO_RGB
 
     this._build()
     this._bindHand()
@@ -602,7 +610,7 @@ export class GalaxyField extends SkyEngine {
         // was painted over it — a dim grey ball under its own glow. A surface
         // has a surface brightness, it is independent of distance, and it wants
         // to land in the tonemap's shoulder so the granulation survives.
-        this.body.push(scr.sx, scr.sy, this._heroRadius() * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * hero.dim * this.cam.exposure * alive, {
+        this.body.push(scr.sx, scr.sy, this._heroRadius() * this.cam.unit * scr.persp, this.heroRGB, SURFACE_B * hero.dim * this.cam.exposure * alive, {
           cover: disc * (1 - own),
           corona: 0.9,
           seed: s.seed * 3.7 + 1.3,
@@ -998,7 +1006,9 @@ export class GalaxyField extends SkyEngine {
           t: 0,
           // a meteor's colour is the metal it is burning — sodium yellow,
           // magnesium blue-white, iron orange. A real detail, cheaply had.
-          hue: Math.random() < 0.3 ? '#9FD8FF' : Math.random() < 0.5 ? '#FFE7B8' : '#FFF6EC',
+          // `shootHues` so a single-hue field (/beta) does not get one blue
+          // streak an hour through a sky that has no blue in it.
+          hue: this.shootHues[Math.floor(Math.random() * this.shootHues.length)],
         })
       }
     }

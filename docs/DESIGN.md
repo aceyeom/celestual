@@ -32,11 +32,19 @@ trips on the copy half.
 > rebrand to be built there and judged beside this one, so it lives in
 > `app/src/beta/` under its own design system
 > ([BETA-BINDERY.md](./BETA-BINDERY.md)) — chocolate and ivory, leather and
-> paper, three different typefaces, its own sky. It is sealed off in both
-> directions: nothing under `beta/` imports from `theme.js` or `styles.css`,
-> nothing in production imports from `beta/`, and the route forks in
-> `main.jsx` before the app mounts. Everything in this document still governs
-> every other route, unchanged.
+> paper, three different typefaces.
+>
+> It shares no design with this one: nothing under `beta/` imports from
+> `theme.js`, `styles.css` or `components/`, nothing in production imports from
+> `beta/`, and the route forks in `main.jsx` before the app mounts. It DOES
+> share the machine — the sky engine (`sky/`, `galaxy.js`) and the zoom curve
+> (`card/zoom.js`) — because its mechanics and animations are meant to be
+> identical to the demo's, and the only honest way to be identical to something
+> is to be the same code. Those files gained small, additive, default-preserving
+> hooks for it (`ramp`, `floor`, `shootHues`); production passes none of them
+> and renders exactly as it did.
+>
+> Everything in this document still governs every other route, unchanged.
 
 ## §1 — The one-paragraph system
 

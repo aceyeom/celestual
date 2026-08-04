@@ -105,6 +105,16 @@ html.beta * { scrollbar-width: thin; scrollbar-color: #3B2716 #150E09; }
 }
 .seal-set { animation: bSealSet 0.7s cubic-bezier(0.2, 0.8, 0.24, 1) both; }
 
+/* the send-off's first beat: the seal presses down to the point of light the
+   star launches from, so the hand-off from the page to the sky has nothing
+   visible in it. One shot, and it is torn down as soon as it has played. */
+@keyframes bLiftOff {
+  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
+  46%  { opacity: 0.92; transform: scale(0.42); filter: blur(1.5px); }
+  100% { opacity: 0; transform: scale(0.03); filter: blur(4px); }
+}
+.lift-off { transform-origin: center; animation: bLiftOff 1.15s cubic-bezier(0.62, 0, 0.24, 1) both; will-change: transform, opacity; }
+
 /* the one thing that repeats: a standing ping's light, breathing in LUMINOSITY
    and never in scale. A pulsing dot is a notification badge; a light that slowly
    deepens and lifts is a lamp somebody left on. */
