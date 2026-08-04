@@ -273,6 +273,52 @@ The system extends beyond the app; these must all read as the same cosmos:
 
 ## §11 — Changelog
 
+- **2026-08-04** — **The mutual reveal, reworked around light instead of
+  motion** (human-directed: *"too finicky and game-like — make it elegant and
+  romantic"*). Nothing in §1–§10 changed.
+  - **The coin flip is gone, and the crash with it.** A coin flip is a *wager* —
+    chance, suspense, heads-or-tails — and a mutual is the precise opposite of
+    chance: two people already decided, separately, weeks ago. A collision is
+    worse; it is violence, and nobody here was hit. Between them they spent
+    eleven separate events (impact, flash, tumble, wobble, overshoot, glint,
+    rock) on a screen that is not a game and has no input to reward. Juice
+    rewards input. §VOICE has the sentence for it: *the 2am message, never the
+    carnival.*
+  - **Nothing arrives now. Something stops being hidden.** Their card has
+    existed since the day they wrote it, in the dark, behind yours, the whole
+    time you were checking and finding nothing — so the reveal is not an event
+    that happens to you, it is a thing you are shown. Three beats: the ordinary
+    held dive into your own ping; their light rising around the limb of it; one
+    half turn.
+  - **The middle beat is an eclipse**, and it is the whole claim of the product
+    in one image: the near body is dark and all you get of the far one is the
+    corona around its edge. Nothing moves for a second and a half.
+  - **The turn is a photograph being turned over, not a coin.** One half turn
+    about the *vertical* axis — end-over-end is the coin, and the axis is most
+    of the difference — on `sky/camera.js`'s own flight curve, with no
+    overshoot, no spring and no bounce anywhere in the file. A hand setting a
+    photograph down does not bounce.
+  - **At rest, your light is still behind theirs**, a quieter corona that never
+    goes away. The other side does not stop existing when you turn to it.
+  - **The light carries the drama, since almost nothing moves.** The corona has
+    three levels — loud through the eclipse, brightest as the disc comes side-on
+    because a disc seen side-on blocks nothing, quiet forever after — it hugs
+    the limb rather than washing the frame, and whose light it is hands over
+    late, in the last quarter of the turn. Crossed over at side-on, amber and
+    rose at full intensity mix to orange and the most important instant in the
+    product came out the colour of a streetlight.
+  - **The sky has no event left at all.** No inspiral, no echo, no flight to
+    nowhere, and now no flash either, because there is no impact to flash at.
+    Light around a card belongs in the layer the card is drawn in. `galaxy.js`
+    keeps one setter, `matchCover`, for a compositing reason rather than a
+    dramatic one.
+  - **Fixed while in there:** past the wall-clock grace the reveal now stops
+    *waiting* on a camera that has not kept up and resolves the card itself,
+    easing in. Before, the floor only started the beats — so on a machine slow
+    enough to take fifteen seconds over the dive, the light came up and the disc
+    turned over a card whose resolve was still at zero, and the screen played to
+    an empty frame.
+
 - **2026-08-03** — **The mutual reveal, reworked into one object with two
   faces** (human-directed). Nothing in §1–§10 changed.
   - **The reveal happens to the ping you actually placed.** It used to arrive by

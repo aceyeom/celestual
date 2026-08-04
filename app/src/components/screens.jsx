@@ -2498,11 +2498,11 @@ export function MutualScreen({ C, ctx }) {
 }
 
 // ── 8b · THE REVEAL ───────────────────────────────────────────────────────────
-// The most important frame in the product: the camera flies to the ping you
-// actually placed, their star comes out of the deep field and hits it, and the
-// disc turns over — yours on the back, theirs on the front (card/Spread.jsx).
-// One object with two sides, which is the whole claim, and neither of you moved
-// second.
+// The most important frame in the product, and almost nothing on it moves. The
+// camera flies to the ping you actually placed; their light comes up around the
+// limb of it, which is an eclipse and is the whole claim of the product in one
+// image; then it turns over once, slowly (card/Spread.jsx). One object with two
+// sides. Nothing arrives — the other side was always there.
 //
 // `index` is which of the ambient field's sealed stars this ping is. It is the
 // SAME index the status page's "see it in the sky" flies to, because it is the

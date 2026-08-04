@@ -227,68 +227,83 @@ so there is no seam between them.
 
 ## 4 · The mutual spread
 
-`app/src/card/Spread.jsx`. **One object, two faces. Yours is the back, theirs is
-the front, and the reveal is the moment it turns over.**
+`app/src/card/Spread.jsx`. **One object with two sides — and nothing on this
+screen arrives. The other side was always there.**
 
-This has been wrong twice, in opposite directions.
+This has now been wrong three times, and the third one is worth writing down
+because it is why the current design looks the way it does.
 
-First the sky drew the whole event — two hero stars falling into a decaying
-orbit out in the disk, a tidal bridge, a merger flash, a settled binary — and
-then, when it was over, the two cards appeared over the top of it, scaled up out
-of nothing, and sat still. The pair you watched fall together were *abstractions
-of* the pings rather than the pings, and the pings themselves arrived after the
-event, as a result, having done nothing.
+First the sky drew the whole event — two invented hero stars inspiralling, a
+merger flash, a settled binary — and the two cards turned up afterwards, having
+done nothing. Then the pair became the actual cards, orbiting each other: truer,
+and with **no resting frame**, because two discs circling forever means nothing
+to read and nowhere for the eye to land. Then their ping came in from the deep
+field on a collision course, struck yours, and set it spinning like a tossed
+coin.
 
-So the pair became the actual cards, orbiting each other in the overlay. Truer,
-and still wrong, for a quieter reason: **an endless binary has no resting
-frame.** Two discs circling forever means nothing to read and nowhere for the eye
-to land, and a second disc permanently eats the space the first one needs — so
-both had to be small, and small is where a poster stops being a poster. It also
-arrived by its own private route: a camera flight to an empty patch of disk,
-which is the one place in the product a person's ping is *not*.
+That last one is the instructive failure. **A coin flip is a wager** — chance,
+suspense, heads-or-tails — and a mutual is the precise opposite of chance: two
+people already decided, separately, weeks ago. A collision is worse; it is
+violence, and nobody here was hit. Between them the two ideas spent **eleven
+separate events** — impact, flash, tumble, wobble, overshoot, glint, rock — on a
+screen that is not a game and has no input to reward. Juice rewards input.
+[VOICE.md](./VOICE.md) has the sentence for it: *the 2am message, never the
+carnival.*
 
-The reveal now happens to the ping you actually placed:
+### What it is now
+
+Their card did not fly in from anywhere. It has existed since the day they wrote
+it, in the dark, behind yours, the whole time you were checking and finding
+nothing. What changes at a reveal is not that something happens — it is that
+something stops being hidden.
 
 | | |
 | --- | --- |
-| **the zoom** | The ordinary held dive into **your** ping — the same `focusStar` the status page's "see it in the sky" makes, resolving on the same curve (`resolveOf`, exported from `card/Resolve.jsx` so the two zooms cannot drift apart), landing on the same object. It has no duration here: `cam.focus` is read every frame, because a dive's bank breathes with how far the star is. |
-| **the dark** | Half a second of your card, resolved, with nothing else happening. This beat is the whole reason the next one lands. |
-| **the crash** | Their star, out of the deep field, on a collision bearing. It holds that bearing and only **grows** — apparent size goes as 1/distance — and its scintillation dies out as it closes, because only a point of light can twinkle. It rakes your card with rose light before it arrives. |
-| **the flip** | The strike lands high on the right limb, off the centre of mass, which is the only kind of blow that makes anything spin. The disc tumbles freely, losing rate to its own settling, then aims itself at the nearest face that shows theirs and springs into it — overshooting about thirty degrees and rocking flat. A coin. |
-| **the rest** | Their card, square on, still, at `fullSize()` — the same size every other resolve in the product lands on. Tap it and it turns back over to yours, on the same integrator, at the same tempo, in a fifth of the travel. |
+| **the arrival** | The ordinary held dive into **your** ping — the same `focusStar` the status page's "see it in the sky" makes, resolving on the same curve (`resolveOf`, exported from `card/Resolve.jsx` so the two zooms cannot drift apart). It has no duration here: `cam.focus` is read every frame, because a dive's bank breathes with how far the star is. |
+| **the light** | Their light rises around the limb of your card, over a second and a half, and **nothing moves**. This is an *eclipse*: the near body is dark and all you get of the far one is the corona around its edge. It is the product's whole claim in one image and it needs no words — there is something on the other side of this. |
+| **the turn** | One half turn, about the **vertical** axis, on `sky/camera.js`'s own flight curve. End-over-end is the coin; turning something over in your hands is this, and the axis is most of the difference. It does not overshoot, because a hand setting a photograph down does not bounce. |
+| **the rest** | Their card at `fullSize()`, square on, still — and yours is now the fainter corona behind it, which never goes away. **The other side does not stop existing when you turn to it.** Tap to turn it back. |
 
-**Nothing counts revolutions.** The strike sets one number — an angular velocity
-— and everything after it is that number decaying. Only when the disc is slow
-enough to be caught does it choose a landing angle, and it chooses the nearest
-face ahead of itself. Landing exactly on their card is therefore a *result*, not
-a schedule, which is what makes three and a half turns look chosen by physics
-instead of by a designer.
+### The light is the drama
 
-**The catch is a spring, and its stiffness is read off how the disc arrived**, so
-a four-turn tumble and a one-tap half turn settle at the same tempo instead of
-one snapping and the other drifting. It is underdamped: one clean overshoot, one
-counter-rock, flat. Because rotation near a face is second-order in what the eye
-sees — thirty degrees of overshoot is an eleven per cent squash — the landing
-also carries a small decaying wobble off the flip's own axis, which is what a
-body coming to rest with momentum left off-axis actually does.
+Given that almost nothing moves, every value on this screen is a lighting value,
+and all of them come off one cosine — how square-on the disc is.
 
-**One lens for the whole product.** The disc is photographed through a
-perspective of 2.35 × its own diameter — `sky/camera.js`'s `FOCAL` — so it
-foreshortens on its way round exactly as hard as a star does on its way past.
-The limb catches the light once per half turn, fired on the *crossing* rather
-than sampled from the angle: at five turns a second the disc jumps forty degrees
-a frame and an instantaneous test gives a coin that flashes at random.
+- **The corona has three levels, not one.** Loud through the eclipse (it is the
+  only thing happening); brightest as the disc comes side-on, because a disc
+  seen side-on is not blocking anything; and quiet forever after, as a residue.
+  The first cut had a single level and the beat meant to carry the whole middle
+  of the screen played at a quarter opacity.
+- **It hugs the limb.** A corona is light escaping past an edge, so it is
+  brightest within a fraction of a radius of the body and gone shortly after.
+  Given the whole frame to spread across it stops being that and becomes a
+  colour wash with a card in it — the same mistake the old impact flash made.
+  Every pixel lifted at once is not brightness; it is a lower contrast ratio.
+- **Whose light it is hands over late.** Theirs holds pure all the way through
+  the side-on peak and gives way only in the last quarter of the turn, where
+  their face has taken the frame and the light has already fallen back. Crossed
+  over at side-on instead, a half-and-half of amber and rose at full intensity
+  is orange, and the most important instant in the product came out the colour
+  of a streetlight.
+- **One lens.** The disc is photographed through a perspective of 2.35 × its own
+  diameter — `sky/camera.js`'s `FOCAL` — so it foreshortens on its way round
+  exactly as hard as a star does on its way past.
 
-**The sky's half is almost nothing, and that is the point.** The light echo — a
-real expanding shell sweeping outward through the nebula — was the last piece of
-scenery, and it lit a band of gas across the one screen whose entire job is to
-hold two people's words still enough to read. It is gone. What is left is
-`matchStrike()`: one small flash at the impact, in world space, on the star that
-was actually hit. Two other things yield on this screen so that exactly one
-object on it has a face — the engine stops drawing the photosphere the card is
-covering (`matchCover`, fed the card's own opacity so the hand-off runs on one
-curve), and the field is forbidden to resolve at all, because `discOf()` scales
-with `cam.unit` and a standoff that leaves the disk a field of points on a phone
+### The sky's part is to be dark
+
+There is no event in `galaxy.js` at all any more: no inspiral, no echo, no
+flight to nowhere, and no flash, because there is no longer an impact to flash
+at. The reveal's light is a corona around one card, and light around a card
+belongs in the layer the card is drawn in; a sky that lit up as well would be a
+sky insisting on being part of it.
+
+What is left is one setter, `matchCover`, and it exists for a compositing reason
+rather than a dramatic one: the card is opaque, sits exactly over the star it
+grew out of, and **turns over** — so the sky has to be told when to stop drawing
+the photosphere underneath, or the turn opens a hole onto a grey ball. It is fed
+the card's own opacity, so the hand-off runs on one curve. Alongside it the
+field is forbidden to resolve during a reveal, because `discOf()` scales with
+`cam.unit` and a standoff that leaves the disk a field of points on a phone
 opens a dozen of them into lens-dust plates on a laptop.
 
 The Instagram DM is the loudest thing on the screen from the reveal onward
