@@ -27,6 +27,16 @@ trips on the copy half.
 > Product **functionality and workflows may keep evolving** (the ping model,
 > the screens, the backend). That is expected. The *visual language* below is
 > what stays fixed until a human deliberately changes it.
+>
+> **One route is deliberately exempt: `/beta`.** A human asked for a full
+> rebrand to be built there and judged beside this one, so it lives in
+> `app/src/beta/` under its own design system
+> ([BETA-BINDERY.md](./BETA-BINDERY.md)) — chocolate and ivory, leather and
+> paper, three different typefaces, its own sky. It is sealed off in both
+> directions: nothing under `beta/` imports from `theme.js` or `styles.css`,
+> nothing in production imports from `beta/`, and the route forks in
+> `main.jsx` before the app mounts. Everything in this document still governs
+> every other route, unchanged.
 
 ## §1 — The one-paragraph system
 

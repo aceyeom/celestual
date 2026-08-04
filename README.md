@@ -116,6 +116,7 @@ celestual/
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
 | `/demo` | the sandbox (below) |
+| `/beta` | **the Bindery** — a complete second brand (chocolate + ivory, leather and paper, an engraved star chart) on seven pages plus a specimen sheet, for assessment beside the production look. Forked before mount, shares no token or component with production (**[docs/BETA-BINDERY.md](./docs/BETA-BINDERY.md)**) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
 ## Quick start (local dev)
@@ -161,6 +162,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | --- | --- |
 | **[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)** | **The masterguide.** The mechanism (Loops A/B/C), the screens, monetization posture, honest odds, failure modes. Everything else implements this. |
 | [docs/DESIGN.md](./docs/DESIGN.md) | The living design system — the night, the one warm star, the three type registers, the anti-generic checklist |
+| [docs/BETA-BINDERY.md](./docs/BETA-BINDERY.md) | **The `/beta` rebrand** — the chocolate-and-ivory second brand: one hue, three materials drawn per pixel, three new faces, the engraved chart, and why each decision is structural rather than a palette swap |
 | [docs/VOICE.md](./docs/VOICE.md) | The living voice guide — vocabulary, registers, the four frames, the banned list |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
