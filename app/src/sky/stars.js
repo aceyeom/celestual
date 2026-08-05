@@ -635,7 +635,10 @@ export class StarPass {
       // the foreground text reads over a quietened cosmos.
       gl.uniform1f(u.uDim, g.hero ? g.dim : g.dim * ctx.dim)
       gl.uniform1f(u.uGain, g.gain)
-      gl.uniform1f(u.uRadiusScale, g.radiusScale)
+      // …divided by how much bigger this window's picture is than the phone
+      // every size here was tuned on (engine.js sizeScale), so a star is the
+      // same object on every screen instead of swelling with the viewport.
+      gl.uniform1f(u.uRadiusScale, g.radiusScale * (ctx.sizeScale != null ? ctx.sizeScale : 1))
       gl.uniform1f(u.uTwinkle, ctx.reduced ? 0 : g.twinkle)
       gl.uniform1f(u.uMotion, ctx.reduced ? 0 : g.motion * ctx.motionScale)
       gl.uniform1f(u.uResolve, g.resolve != null ? g.resolve : 1)

@@ -111,9 +111,14 @@ vec4 field(vec3 p){
   // the march integrates the chimney's whole length into a bright smear sitting
   // well below the centre it is supposed to be at. Flattened by the same 0.72
   // genBulge gives the stars, so the gas and the stars are one body.
-  float rb = max(uDiskR * 0.115, 1e-4);
+  // Its RADIUS is what closes the gap between the heart and the arms. At a
+  // ninth of the disk the bulge's light stopped well inside where the arm ridge
+  // begins, and the annulus between them had neither: a bright middle, a dark
+  // ring, then the spiral. Widened, and with a gentler falloff, the heart's
+  // glow reaches the inner arms and the galaxy is one continuous body again.
+  float rb = max(uDiskR * 0.14, 1e-4);
   float qb = length(vec3(p.x, p.y / 0.72, p.z)) / rb;
-  float core = exp(-qb * qb * 1.6);
+  float core = exp(-qb * qb * 1.35);
 
   // ── the spiral ridge ───────────────────────────────────────────────────
   // The same angle the orbit family crowds at, so gas and stars are one object.

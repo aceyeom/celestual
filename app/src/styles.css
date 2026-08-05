@@ -11,10 +11,11 @@ html, body, #root { width: 100%; }
 
 body {
   font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #F3ECF6;
-  /* single cosmic base — matches theme.js TOKENS.ink so there's no flash of a
-     different background color before the galaxy canvas paints */
-  background: #06050C;
+  color: #F4EDE4;
+  /* the ground — matches theme.js TOKENS.ink (and sky/post.js's floor, which
+     galaxy.js sets from the same token) so the canvas and the page are one
+     surface, and there's no flash of a different colour before it paints */
+  background: #120E0B;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -23,6 +24,51 @@ body {
 #root { min-height: 100dvh; }
 
 .celestual-app { position: relative; width: 100%; }
+
+/* ── the ground's surface ────────────────────────────────────────────────────
+   The galaxy is drawn ON something now rather than photographed through a
+   window, and this is the something: a dark hide with a tooth to it.
+
+   Two scales, because that is what makes a material read as a material rather
+   than as noise. A fine tooth (the high-frequency turbulence) is the grain your
+   eye resolves at reading distance; a broad, slow mottle underneath it is the
+   unevenness of the sheet itself — the part you never consciously see and
+   always notice the absence of. On top of both, a warm bloom from above-left,
+   the way a book on a desk is lit, and a close vignette that puts the corners
+   in shadow.
+
+   It sits between the canvas (z-index auto) and the interface (z-index 4), so
+   the sky is genuinely UNDER the surface — the grain falls across the stars as
+   well as the page, which is exactly the difference between a texture pasted on
+   top of a render and one picture made of both. Never interactive, and it does
+   not scroll: it is the material, not the content. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(120% 90% at 22% -8%, rgba(255, 214, 170, 0.05) 0%, transparent 58%),
+    radial-gradient(115% 100% at 50% 58%, transparent 34%, rgba(8, 5, 4, 0.42) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23t)' opacity='0.34'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: auto, auto, 220px 220px, 420px 420px;
+  mix-blend-mode: soft-light;
+}
+
+/* A phone is held at half the distance and its pixels are a third the size, so
+   the same grain reads twice as loud on one. Quieter there, and quieter again
+   for anyone who has asked the interface to stop moving — a stationary texture
+   is not motion, but it is visual noise, and the preference is a request for
+   less of it. */
+@media (max-width: 540px) {
+  body::after { opacity: 0.4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { opacity: 0.32; }
+}
 
 /* ── custom cursor — a four-point glisten, on-brand on every screen ──────────
    A white sparkle with a soft amber edge (the same star as the favicon/brand),

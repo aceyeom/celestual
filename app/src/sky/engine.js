@@ -129,9 +129,33 @@ export class SkyEngine {
     // further back, and no existing star has to move.
     this.frameRadius = 1.35
     this.frameFit = 0.5
+    // Where the galactic centre sits down the frame. A sky that is a BACKDROP
+    // has to decide this against the type in front of it, not against the
+    // canvas: at 0.44 the brightest, busiest thing in the picture lands exactly
+    // where a centred headline does, and every screen in the product then reads
+    // over the one part of the galaxy that cannot be read over.
+    this.centerY = 0.44
     this.insetT = 0
     this.insetB = 0
     this.bandShift = [0, 0]
+    // ── one star, one size, on every screen ──
+    // `cam.unit` is how many pixels a world unit is worth, and it is solved from
+    // the VIEWPORT: a laptop frames the same galaxy across two and a half times
+    // as many pixels as a phone. That is right for the galaxy — it should fill
+    // the window it is given — and wrong for the individual star, because a
+    // star's rendered size is the larger of the instrument's point-spread
+    // (constant, in pixels) and its own angular diameter (radius x unit). Scale
+    // the frame up and the second term wins: the same field that is a fine
+    // grain of points at 390px opens into fat out-of-focus saucers at 1440, and
+    // the two devices are showing two different skies. It is why a size that
+    // was tuned on a phone "did not go through" on a desktop.
+    //
+    // So the physical radius carries a compensating factor, solved once per
+    // layout against a reference phone's framing. A star is then the same
+    // OBJECT everywhere: the same pixels at rest, resolving into a body at the
+    // same point on the same dive, on any screen. The galaxy still grows with
+    // the window; only its grain stays put.
+    this.sizeScale = 1
 
     // ── the governor ──
     // An EMA of raw frame time walks the quality tier up and down. It only ever
@@ -276,12 +300,20 @@ export class SkyEngine {
     const availTop = this.insetT
     const avail = Math.max(this.h * 0.42, this.h - this.insetT - this.insetB)
     const cx = this.w / 2
-    const cy = this.insetT || this.insetB ? clamp(availTop + avail * 0.44, this.h * 0.24, this.h * 0.62) : this.h * 0.44
+    const cy = this.insetT || this.insetB ? clamp(availTop + avail * 0.44, this.h * 0.24, this.h * 0.62) : this.h * this.centerY
     const minDim = Math.min(this.w, avail)
     const P0 = FOCAL / CAM
     const px = minDim * this.frameFit + Math.max(this.w, this.h) * 0.035
     const unit = px / (this.frameRadius * P0)
     this.cam.setFrame(this.w, this.h, cx, cy, unit)
+    // The framing a 390 x 844 phone would have solved for, which is the screen
+    // every size in this renderer was tuned against. `frameRadius` cancels, so
+    // this is purely "how much bigger is this window's picture than that one",
+    // and a star's radius is divided by it. Clamped: a very small phone should
+    // not be handed visibly fatter stars, and a wall-sized window should not
+    // shrink them into invisibility.
+    const pxRef = 390 * this.frameFit + 844 * 0.035
+    this.sizeScale = clamp(pxRef / Math.max(px, 1e-3), 0.34, 1.08)
   }
 
   // The galaxy grew (or shrank): re-solve the framing so it still fits, without
@@ -460,14 +492,22 @@ export class SkyEngine {
     cb()
   }
 
+  // `radius` here is the RAW radius starRadius() returned; both of these apply
+  // the layout's size compensation themselves, so a caller can never forget it
+  // and leave the CPU disagreeing with the shader about what a star is.
   discOf(radius, persp) {
     const psf = 0.95 * this.dprEff
-    const angPx = radius * this.cam.unit * persp * this.dprEff
+    const angPx = radius * this.sizeScale * this.cam.unit * persp * this.dprEff
     return sstep(psf * 0.85, psf * 2.2, angPx)
   }
   handoverOf(radius, persp) {
-    const angPx = radius * this.cam.unit * persp * this.dprEff
+    const angPx = radius * this.sizeScale * this.cam.unit * persp * this.dprEff
     return sstep(6 * this.dprEff, 13 * this.dprEff, angPx)
+  }
+  // and the drawn radius of a body, in world units — what body.js has to be
+  // handed so its disc lands exactly where the point of light was
+  bodyRadius(radius) {
+    return radius * this.sizeScale
   }
 
   get _ctx() {
@@ -481,6 +521,7 @@ export class SkyEngine {
       patternPrev: this.patternPrev,
       t: this.t,
       dim: this.dim,
+      sizeScale: this.sizeScale,
       psf: 0.95 * this.dprEff,
       gasSteps: this.budget.gasSteps,
       bbTex: this.bbTex,

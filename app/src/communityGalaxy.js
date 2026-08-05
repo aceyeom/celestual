@@ -35,7 +35,7 @@ import {
 } from './sky/model.js'
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { Gestures } from './sky/gestures.js'
-import { starTint } from './theme.js'
+import { starTint, TOKENS, rgbUnit } from './theme.js'
 import { bakeTag } from './sky/fx.js'
 import { Community2D } from './sky/fallback2d.js'
 
@@ -181,20 +181,34 @@ export class CommunityGalaxy extends SkyEngine {
     this._dirty = true
   }
 
+  // The same ground, the same exposure, the same restraint as the ambient sky
+  // (galaxy.js `_tunePost` carries the reasoning). A community's galaxy is the
+  // one place in the product where the sky IS the content rather than the
+  // backdrop, so it keeps a little more light than the ambient field — but it
+  // is printed on the same paper, and a second, colder void behind one screen
+  // would read as a different product.
   _tuneGas() {
     const g = this.gasPass
     g.arms = 2
     g.dust = 1.0
-    g.warm = linearOf('#FFB37A', 1.0)
-    g.mid = linearOf(this.them, 0.95)
-    g.cool = linearOf('#6E7BD8', 0.9)
+    g.warm = linearOf('#F0A876', 1.0)
+    g.mid = linearOf(this.them, 0.88)
+    g.cool = linearOf('#7B7CB0', 0.82)
   }
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.2
-    p.threshold = 1.5
-    p.knee = 0.55
-    p.vignette = 0.4
+    p.bloomAmount = 0.13
+    p.threshold = 1.9
+    p.knee = 0.5
+    p.vignette = 0.55
+    p.exposure = 0.92
+    p.floor = rgbUnit(TOKENS.ink)
+    p.sky = {
+      top: [0.0062, 0.0046, 0.0034],
+      mid: [0.0036, 0.0026, 0.0019],
+      bot: [0.0021, 0.0015, 0.0011],
+    }
+    p.bandBright = 0.012
   }
   _paletteChanged() {
     this._tuneGas()
@@ -750,14 +764,36 @@ export class CommunityGalaxy extends SkyEngine {
         // fades in as it enters, and melts back with the rest of the field
         // during a dive so the hero star holds alone
         const enter = smooth(clamp(p / 0.2, 0, 1)) * (1 - this.cam.focus * 0.75) * this.dim
-        for (let k = 1; k <= 14; k++) {
-          const u = Math.max(0, e - (k / 14) * 0.2)
-          const [px, py] = at(u)
-          const q = 1 - k / 14
-          this.fx.screen(px, py, 3 + q * 8, k < 4 ? white : col, q * q * 2.2 * enter, 0)
+        // ── the trail ──
+        // A LINE, drawn as a line. This used to be fourteen round glows stamped
+        // along the path — up to eleven pixels across each — under a thirty-pixel
+        // ball of colour at the head. A round glow travelling across the screen
+        // is not a streak: it is a big soft star appearing and disappearing, and
+        // at that size it read as a blurred blob drifting over the page.
+        //
+        // The billboard pass has a streak shape with a rotation and an aspect
+        // ratio (fx.js shape 3), which is a hairline of any length at any angle
+        // for one instance. The path here is a curve, so it takes a few of them
+        // chained along it — each straight, each rotated to its own chord, and
+        // each overrunning its neighbour so the joins never show. Five sprites
+        // instead of sixteen, and the whole thing is under two pixels thick.
+        const TAIL = 0.2 // how far back along the curve the trail reaches
+        const SEGS = 5
+        const tw = 1.6 // half-thickness, in CSS pixels
+        for (let k = SEGS - 1; k >= 0; k--) {
+          const [ax, ay] = at(Math.max(0, e - (TAIL * (k + 1)) / SEGS))
+          const [bx, by] = at(Math.max(0, e - (TAIL * k) / SEGS))
+          const sx = bx - ax, sy = by - ay
+          const len = Math.hypot(sx, sy)
+          if (len < 2) continue
+          const q = 1 - k / SEGS
+          this.fx.screen(
+            (ax + bx) / 2, (ay + by) / 2, tw, k === 0 ? white : col,
+            q * q * 1.6 * enter, 3, Math.atan2(sy, sx), (len * 0.62) / tw,
+          )
         }
-        this.fx.screen(hx, hy, 30, col, 1.9 * enter, 0)
-        this.fx.screen(hx, hy, 6.5, white, 8 * enter, 0)
+        // the head: the only round thing in it, and small
+        this.fx.screen(hx, hy, 2.4, white, 3.4 * enter, 0)
       } else if (st.state === 'ignite') {
         const q = (this.t - st.igniteAt) / IGNITE_DUR
         if (q >= 1) {
@@ -772,8 +808,8 @@ export class CommunityGalaxy extends SkyEngine {
         // most of a screen-width of soft light, which reads as a blurred blob
         // drifting over the page rather than as a star arriving in its slot.
         const R = Math.max(0.4, this.diskR || 1)
-        this.fx.world(w.x, w.y, w.z, (0.055 + bell * 0.14) * R, white, bell * 3.0 * this.dim, 2)
-        this.fx.world(w.x, w.y, w.z, (0.028 + bell * 0.07) * R, col, bell * 2.0 * this.dim, 0)
+        this.fx.world(w.x, w.y, w.z, (0.055 + bell * 0.14) * R * this.sizeScale, white, bell * 3.0 * this.dim, 2)
+        this.fx.world(w.x, w.y, w.z, (0.028 + bell * 0.07) * R * this.sizeScale, col, bell * 2.0 * this.dim, 0)
       }
     }
     // a meteor that landed is now an ordinary resident: put its light back into
@@ -829,7 +865,7 @@ export class CommunityGalaxy extends SkyEngine {
         // camera frames R * FRAME_PAD instead, so the world size has to carry
         // that ratio — and then one halo means one thing in both skies, at every
         // size of community.
-        this.fx.world(w.x, w.y, w.z, (0.019 + pulse * 0.003) * near * R, tcol, (0.34 + pulse * 0.1) * settle * fade * (1 - f * 0.9), 0)
+        this.fx.world(w.x, w.y, w.z, (0.019 + pulse * 0.003) * near * R * this.sizeScale, tcol, (0.34 + pulse * 0.1) * settle * fade * (1 - f * 0.9), 0)
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
@@ -891,7 +927,7 @@ export class CommunityGalaxy extends SkyEngine {
     const hand = this.handoverOf(radius, scr.persp) * res
     if (hand <= 0.004) return 1
     const disc = this.discOf(radius, scr.persp) * res
-    this.body.push(scr.sx, scr.sy, radius * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * this.gHero.dim * this.cam.exposure * alive, {
+    this.body.push(scr.sx, scr.sy, this.bodyRadius(radius) * this.cam.unit * scr.persp, HERO_RGB, SURFACE_B * this.gHero.dim * this.cam.exposure * alive, {
       cover: disc * hand,
       corona: 0.9,
       seed: st.i * 3.7 + 1.3,
@@ -1008,12 +1044,12 @@ export class CommunityGalaxy extends SkyEngine {
       // them read as an out-of-focus photograph rather than as a sky. Now each
       // ember is a small halo with a hard bright heart inside it, which is what
       // a star at this distance actually looks like.
-      const halo = (0.017 + (m.hot ? 0.007 : 0)) * R
+      const halo = (0.017 + (m.hot ? 0.007 : 0)) * R * this.sizeScale
       this.fx.world(x, m.y, z, halo, col, fb * tw * this.dim * 1.9, 0)
       this.fx.world(x, m.y, z, halo * 0.3, white, fb * tw * this.dim * 6.5, 0)
       // the rare ember catching the light for a breath
       if (m.hot && Math.sin(m.tw * 0.5) > 0.985) {
-        this.fx.world(x, m.y, z, 0.055 * R, white, fb * 1.6, 2)
+        this.fx.world(x, m.y, z, 0.055 * R * this.sizeScale, white, fb * 1.6, 2)
       }
     }
   }

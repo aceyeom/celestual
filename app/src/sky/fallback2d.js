@@ -38,7 +38,11 @@ class Field2D {
     // the LUT hook and the void, mirrored from the WebGL path so a machine
     // without a GPU still gets the same brand rather than a different one
     this.ramp = opts.ramp || null
-    this.ground = opts.ground || ['#06050E', '#040309', '#030206']
+    // The ground, and it has to be the SAME ground the WebGL path prints on
+    // (theme.js `ink`, which galaxy.js hands to the post chain's floor) — a
+    // machine without a GPU should get a quieter galaxy, never a different
+    // colour of paper.
+    this.ground = opts.ground || ['#150F0C', '#100C09', '#0B0806']
     this.core = opts.core || ['255,236,206', '255,214,176', '214,150,120']
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)

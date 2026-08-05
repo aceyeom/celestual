@@ -28,7 +28,13 @@
 //     in a reveal is to hold the dive into the viewer's own ping, and be dark.
 //
 // What deliberately did not change: the lens (CAM/FOCAL/TILT), the two stars,
-// the cosmic-violet void, and every method signature App.jsx and ui.jsx call.
+// and every method signature App.jsx and ui.jsx call.
+//
+// What DID change, and is the newest thing in here: the void is not a void any
+// more. This sky is printed on the product's own ground now — a dark tobacco
+// with a grain, theme.js's `ink` — rather than photographed against black, and
+// it is exposed for a picture that has to sit under a headline on every screen.
+// `_tunePost` carries the whole argument.
 
 import { SkyEngine, clamp, lerp, linearOf, starRadius } from './sky/engine.js'
 import { smooth, easeOut, easeFlight } from './sky/camera.js'
@@ -39,10 +45,15 @@ import {
 import { tempToU, blackbodyRGB, normalizeLum } from './sky/blackbody.js'
 import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
 import { Gestures } from './sky/gestures.js'
-import { starTint } from './theme.js'
+import { starTint, TOKENS, rgbUnit } from './theme.js'
 import { Galaxy2D } from './sky/fallback2d.js'
 
 const VANISH_DUR = 0.62 // the wink-out when a ping is withdrawn
+
+// How brightly the nebula burns at rest. Down from 0.3: the cloud is the widest
+// thing in the frame, so it is the single biggest contributor to how hard the
+// sky reads under a paragraph of type.
+const GAS_GAIN = 0.23
 
 // ── the send-off ─────────────────────────────────────────────────────────────
 // This used to be a streak drawn on the glass: a bright head and sixteen tail
@@ -209,7 +220,13 @@ export class GalaxyField extends SkyEngine {
     // here is thinned by a quarter — and the share that comes back is spent on
     // the one part of this galaxy that was too SPARSE rather than too busy.
     const DECOR = 0.75
-    const n = Math.floor(b.stars * (mobile ? 0.62 : 1) * DECOR)
+    // Now that a star is the same SIZE on every screen, a bigger window is a
+    // genuinely emptier galaxy: the same population spread over five times the
+    // area. So the count comes back up in proportion to how far the framing was
+    // scaled — bounded, because this is also the number the frame-rate governor
+    // is holding down, and a laptop is not five phones.
+    const spread = clamp(1 / Math.max(this.sizeScale, 0.2), 1, 1.55)
+    const n = Math.floor(b.stars * (mobile ? 0.62 : 1) * DECOR * spread)
 
     // Proportions matter more than counts. A galaxy that is mostly disk with a
     // dense heart and a sparse halo reads instantly; get the ratio wrong and no
@@ -226,11 +243,21 @@ export class GalaxyField extends SkyEngine {
     // points, held back from resolving into discs, and lit to about what a disk
     // star is lit to rather than a third of it. The heart is unmistakably the
     // heart again, and you can still see it is made of suns.
-    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.21), { seed: 9011, radius: 0.32 }), {
-      gain: 0.052, radiusScale: 0.0003, resolve: 0.15,
+    // The heart. It reaches a little further out and falls off a little less
+    // steeply than it did, so that it MEETS the inner disk instead of ending in
+    // mid-air — but only a little, because the empty middle turned out to be
+    // the disk's own doing (model.js, genDisk's inner floor) and not a bulge
+    // that was too small. Over-correcting here is what turns the spiral into a
+    // fuzzy ball with a suggestion of arms around it.
+    this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.23), { seed: 9011, radius: 0.36, concentration: 1.8 }), {
+      gain: 0.05, radiusScale: 0.0003, resolve: 0.15,
     })
-    this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.56), { seed: 9013, rDisk: 1.2, armFrac: 0.55 }), {
-      gain: 0.070, radiusScale: 0.00055,
+    // …and the disk meets it from the other side. A slightly wider arm lobe:
+    // the ridges stay unmistakably arms, and the inter-arm disk keeps enough
+    // population that the galaxy reads as one continuous body rather than as
+    // two bright stripes with dark space between them.
+    this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.57), { seed: 9013, rDisk: 1.2, armFrac: 0.5, armSpread: 0.56 }), {
+      gain: 0.068, radiusScale: 0.00055,
     })
     this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.11), { seed: 9017, rMax: 2.8 }), {
       gain: 0.050, radiusScale: 0.0003, resolve: 0, pattern: 0,
@@ -272,6 +299,13 @@ export class GalaxyField extends SkyEngine {
     this.gHero.twinkle = 0.1
 
     this.frameRadius = 1.45
+    // Below the type, deliberately. Every screen in this product sets its
+    // headline in the upper-middle of the frame, and the galactic centre was
+    // landing inside it — so the busiest, brightest square inch of the picture
+    // was always directly behind the words. Dropped past the fold, the heart
+    // sits in the quiet between the sentence and the button, the arms carry the
+    // upper frame at a fraction of the density, and the type has a ground.
+    this.centerY = 0.6
     this._layout()
     this._tuneGas()
     this._tunePost()
@@ -286,12 +320,15 @@ export class GalaxyField extends SkyEngine {
     this._build()
   }
 
+  // The sky's own brightness, before anything is drawn into it. `GAS_GAIN` is
+  // read in three places (here, the dive, the flight), so it is a constant
+  // rather than the same decimal typed out four times.
   _tuneGas() {
     const g = this.gasPass
     g.diskR = 1.3
     g.diskH = 0.08
     g.arms = 2
-    g.gain = 0.3
+    g.gain = GAS_GAIN
     // the heart, weighed against that gain — gas.js says why it is a ratio
     g.core = 4.2
     g.dust = 1.0
@@ -301,18 +338,45 @@ export class GalaxyField extends SkyEngine {
     // starlight in the heart, H-alpha rose through the mid-disk (656 nm is why
     // every emission nebula you have seen a photograph of is pink), and the
     // cool violet-blue of reflection and doubly-ionised oxygen at the rim.
-    g.warm = linearOf('#FFB37A', 1.0)
-    g.mid = linearOf(this.them, 0.95)
-    g.cool = linearOf('#6E7BD8', 0.9)
+    // Pulled toward the ground the whole picture now sits on: the rim keeps its
+    // cool, but a cold blue against warm leather is two pictures, not one.
+    g.warm = linearOf('#F0A876', 1.0)
+    g.mid = linearOf(this.them, 0.86)
+    g.cool = linearOf('#7B7CB0', 0.8)
   }
 
+  // ── the ground, and the light on it ─────────────────────────────────────────
+  // The galaxy used to be photographed: a black void, a blown white core, hard
+  // specular grain. Photographed light is high-contrast by nature, and this
+  // sky's job is to sit UNDER type on every screen in the product — so on the
+  // landing it fought the headline it was behind, and lost the headline.
+  //
+  // It is drawn now rather than photographed: the same physics, printed on a
+  // ground. The floor is lifted to the page's own colour (theme.js `ink` — a
+  // dark tobacco, the inside of an old leather case), so nothing in the frame
+  // is ever blacker than the paper it is on; the exposure comes down; the bloom
+  // is nearly off, because bloom is what turns stars into lamps; and the
+  // vignette closes in, which is what an illustration pressed into a cover
+  // actually looks like at its edges. Contrast, not brightness, is what was
+  // making it unreadable.
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.2
-    p.threshold = 1.5
-    p.knee = 0.55
-    p.vignette = 0.4
-    p.exposure = 1
+    p.bloomAmount = 0.1
+    p.threshold = 2.1
+    p.knee = 0.5
+    p.vignette = 0.62
+    p.exposure = 0.86
+    // exactly the page's background, so the canvas and the DOM are one surface
+    p.floor = rgbUnit(TOKENS.ink)
+    // the ground itself: a warm near-black that breathes vertically, sitting
+    // just above the floor rather than being a second, bluer colour on top of it
+    p.sky = {
+      top: [0.0062, 0.0046, 0.0034],
+      mid: [0.0036, 0.0026, 0.0019],
+      bot: [0.0021, 0.0015, 0.0011],
+    }
+    // the far galaxy behind this one — kept, quietened, and warmed
+    p.bandBright = 0.012
   }
 
   _paletteChanged() {
@@ -520,7 +584,7 @@ export class GalaxyField extends SkyEngine {
     // A dive ends INSIDE the disk, where the ray marches through a great deal of
     // gas — so the cloud has to fall right back or the arrival is a wash of
     // nebula with a star somewhere in it. The star is the subject.
-    this.gasPass.gain = 0.3 * (1 - this.cam.focus * 0.88) * (this.mode === 'match' ? 0.5 : 1)
+    this.gasPass.gain = GAS_GAIN * (1 - this.cam.focus * 0.88) * (this.mode === 'match' ? 0.5 : 1)
 
     // ── one body on this screen ──
     // During a reveal nothing in the FIELD is allowed to become a surface. This
@@ -531,7 +595,18 @@ export class GalaxyField extends SkyEngine {
     // them into big soft plates at 1280, and the most important frame in the
     // product picks up what looks like dirt on the lens. Correct optics; wrong
     // screen. The one thing here that has a face is the card.
-    const wide = this.mode === 'match' ? 0 : 1
+    //
+    // And the same argument applies to every OTHER flight, not just the reveal.
+    // A dive ends inside the disk and a send-off crosses it at speed, so the
+    // stars nearest the lens are precisely the ones whose discs open — and
+    // because each of them is also being smeared along its own apparent motion,
+    // what the camera actually flies through is a shower of fat white capsules.
+    // Correct optics; it reads as dirt on the lens. The field gives its faces up
+    // as the camera commits, so the one thing with a surface on the screen is
+    // the star you are going to. A chase is closer still, and gives them up
+    // outright.
+    const closing = this.cam.chasing ? 1 : this.cam.focus
+    const wide = (this.mode === 'match' ? 0 : 1) * (1 - 0.92 * smooth(clamp(closing, 0, 1)))
     this.gDisk.resolve = wide
     this.gBulge.resolve = 0.3 * wide
 
@@ -616,7 +691,7 @@ export class GalaxyField extends SkyEngine {
         const fadeV = 1 - vp
         gain *= fadeV * fadeV
         alive *= fadeV * fadeV
-        this.fx.world(w.x, w.y, w.z, 0.1 + vp * 0.55, linearOf(tint), 2.2 * fadeV, 0)
+        this.fx.world(w.x, w.y, w.z, (0.1 + vp * 0.55) * this.sizeScale, linearOf(tint), 2.2 * fadeV, 0)
         this.sealedScreen[i] = { x: scr ? scr.sx : 0, y: scr ? scr.sy : 0, vis: false }
       }
 
@@ -656,7 +731,7 @@ export class GalaxyField extends SkyEngine {
         // was painted over it — a dim grey ball under its own glow. A surface
         // has a surface brightness, it is independent of distance, and it wants
         // to land in the tonemap's shoulder so the granulation survives.
-        this.body.push(scr.sx, scr.sy, this._heroRadius() * this.cam.unit * scr.persp, this.heroRGB, SURFACE_B * hero.dim * this.cam.exposure * alive, {
+        this.body.push(scr.sx, scr.sy, this.bodyRadius(this._heroRadius()) * this.cam.unit * scr.persp, this.heroRGB, SURFACE_B * hero.dim * this.cam.exposure * alive, {
           cover: disc * (1 - own),
           corona: 0.9,
           seed: s.seed * 3.7 + 1.3,
@@ -687,9 +762,12 @@ export class GalaxyField extends SkyEngine {
       // That wash — not the star — was what an arrival actually looked like. So
       // it shrinks as it is approached and is nearly gone by the time you are
       // there: at that range the photosphere is the subject.
+      // …and it is a world-space sphere, so it grows with the framing exactly
+      // the way a star's disc did. Scaled by the same compensation, so the mark
+      // on a laptop is the mark on a phone rather than twice it.
       if (fade > 0.05) {
         const near = 1 - f * 0.94
-        this.fx.world(w.x, w.y, w.z, (0.020 + pulse * 0.003) * near, tcol, (0.34 + pulse * 0.10) * fade * (1 - f * 0.9), 0)
+        this.fx.world(w.x, w.y, w.z, (0.020 + pulse * 0.003) * near * this.sizeScale, tcol, (0.34 + pulse * 0.10) * fade * (1 - f * 0.9), 0)
       }
     }
   }
@@ -903,7 +981,7 @@ export class GalaxyField extends SkyEngine {
       const w = this._sealedWorld(s)
       const q = clamp(tt / 0.9, 0, 1)
       const bell = Math.sin(Math.PI * q)
-      this.fx.world(w.x, w.y, w.z, 0.045 + bell * 0.05, white, bell * 2.0, 2)
+      this.fx.world(w.x, w.y, w.z, (0.045 + bell * 0.05) * this.sizeScale, white, bell * 2.0, 2)
       this.dimTarget = 0.62
       if (tt >= 0.9) {
         f.done = true
@@ -944,7 +1022,7 @@ export class GalaxyField extends SkyEngine {
       const q = clamp((tt - landEnd) / SETTLE_DUR, 0, 1)
       this.cam.setChaseOut(q)
       this.dimTarget = lerp(1, 0.62, q)
-      this.gasPass.gain = lerp(0.084, 0.3, q)
+      this.gasPass.gain = lerp(GAS_GAIN * 0.28, GAS_GAIN, q)
       // The smear belongs to the RUN. Through the unwind it would only be
       // drawing the camera's own turn, which is the one kind of motion the eye
       // reads as a fault rather than as speed.
@@ -968,7 +1046,7 @@ export class GalaxyField extends SkyEngine {
     // through the whole thickness of the disk, and left alone that is a flat
     // brown fog over the entire frame with a star somewhere in it.
     const deep = clamp((this._flightU() - 0.60) / 0.40, 0, 1)
-    this.gasPass.gain = 0.3 * (1 - deep * 0.72) * (1 - land * 0.55)
+    this.gasPass.gain = GAS_GAIN * (1 - deep * 0.72) * (1 - land * 0.55)
 
     // ── the star ────────────────────────────────────────────────────────────
     // Held as a POINT for the whole flight (mayResolve = 0). At this range its
@@ -985,7 +1063,8 @@ export class GalaxyField extends SkyEngine {
       bias: 0.15,
     })
     // its own light, as light: a tight halo in the category's colour
-    this.fx.world(p.x, p.y, p.z, 0.012, col, 2.4 * (1 - land * 0.6), 0)
+    const S = this.sizeScale
+    this.fx.world(p.x, p.y, p.z, 0.012 * S, col, 2.4 * (1 - land * 0.6), 0)
 
     // the wake — a short taper of light shed behind it, in the world, so it
     // recedes with real perspective as the camera closes. Deliberately thin:
@@ -1008,7 +1087,7 @@ export class GalaxyField extends SkyEngine {
         if (uu <= 0) break
         const q = 1 - k / 7
         const w = at(uu)
-        this.fx.world(w.x, w.y, w.z, 0.004 + q * 0.008, k < 3 ? white : col, q * q * 1.5, 0)
+        this.fx.world(w.x, w.y, w.z, (0.004 + q * 0.008) * S, k < 3 ? white : col, q * q * 1.5, 0)
       }
     }
 
@@ -1021,8 +1100,8 @@ export class GalaxyField extends SkyEngine {
       // A glisten, sized in world units against a star whose own halo is 0.012
       // wide. The old one opened to 0.72 — about a hundred pixels of flat white
       // at this range, which is not an ignition, it is the frame being erased.
-      this.fx.world(p.x, p.y, p.z, 0.020 + bell * 0.055, white, bell * 2.6, 2)
-      this.fx.world(p.x, p.y, p.z, 0.014 + bell * 0.030, col, bell * 1.8, 0)
+      this.fx.world(p.x, p.y, p.z, (0.020 + bell * 0.055) * S, white, bell * 2.6, 2)
+      this.fx.world(p.x, p.y, p.z, (0.014 + bell * 0.030) * S, col, bell * 1.8, 0)
       // and NO whole-sky flash. post.flash adds in linear light before the
       // tonemap, which is right for the match's light echo — a real expanding
       // shell — but it means a value as small as 0.045 comes out the far side
@@ -1037,6 +1116,27 @@ export class GalaxyField extends SkyEngine {
   // A slim streak crossing a corner of the deep sky every few seconds. Only
   // while the field is at rest — never over a dive, a send-off or the match —
   // and never more than one at a time. A grace note, not weather.
+  //
+  // It was neither slim nor a streak. Eleven round glows were stamped along the
+  // path — a nine-pixel head at four times brightness and ten more behind it up
+  // to seven pixels wide — and every one of them was scaled by a bell that rose
+  // and fell over the meteor's whole life. A round glow swelling and shrinking
+  // in place is not a trail; it is a big star appearing and disappearing, which
+  // is exactly what it looked like. The path was drawn as a queue of dots
+  // because the only shape available was a dot.
+  //
+  // The billboard pass has had a STREAK shape all along (fx.js, shape 3: hot
+  // along its spine, feathering across it) with a rotation and an aspect ratio,
+  // which is a hairline of any length at any angle for one instance. So the
+  // whole meteor is three of them now: one long faint segment for the tail, one
+  // short bright one for the hot part just behind the head, and a small point at
+  // the head itself. It is thin — under two pixels across — and it is the LENGTH
+  // that carries the light, which is the difference between a trail and a blob.
+  //
+  // What makes it read as a meteor rather than as a moving dash is that the
+  // three parts do not share a life. The head is hard from the first frame; the
+  // tail draws itself out behind as the thing accelerates, and keeps going for
+  // a moment after the head has burnt out, the way a real one does.
   _frameShoots(dt) {
     if (this.reduced) return
     this._shootAt -= dt
@@ -1045,7 +1145,9 @@ export class GalaxyField extends SkyEngine {
       const calm = (this.mode === 'idle' || this.mode === 'resting') && this.cam.focus < 0.2 && this.dim > 0.3
       if (calm && !this.shoots.length) {
         const m = Math.min(this.w, this.h)
-        const len = m * (0.2 + Math.random() * 0.16)
+        // Longer travel than before, and a longer tail behind it. A meteor is a
+        // line; give it room to be one.
+        const len = m * (0.26 + Math.random() * 0.2)
         const th = 0.1 + Math.random() * 0.55
         const sgn = Math.random() < 0.5 ? -1 : 1
         this.shoots.push({
@@ -1053,7 +1155,7 @@ export class GalaxyField extends SkyEngine {
           y0: (0.06 + Math.random() * 0.5) * this.h,
           dx: Math.cos(th) * len * sgn,
           dy: Math.sin(th) * len,
-          tail: m * (0.07 + Math.random() * 0.05),
+          tail: m * (0.1 + Math.random() * 0.07),
           dur: 0.85 + Math.random() * 0.5,
           t: 0,
           // a meteor's colour is the metal it is burning — sodium yellow,
@@ -1065,7 +1167,6 @@ export class GalaxyField extends SkyEngine {
       }
     }
     if (!this.shoots.length) return
-    const dist = (s) => Math.hypot(s.dx, s.dy)
     this.shoots = this.shoots.filter((s) => {
       s.t += dt
       const p = s.t / s.dur
@@ -1073,16 +1174,49 @@ export class GalaxyField extends SkyEngine {
       const e = 1 - Math.pow(1 - p, 2.1)
       const hx = s.x0 + s.dx * e
       const hy = s.y0 + s.dy * e
-      const bell = Math.sin(Math.PI * p)
       const col = linearOf(s.hue)
-      const d = dist(s) || 1
+      const d = Math.hypot(s.dx, s.dy) || 1
       const nx = s.dx / d, ny = s.dy / d
-      const tail = s.tail * (0.35 + 0.65 * bell)
-      for (let k = 1; k <= 10; k++) {
-        const q = 1 - k / 10
-        this.fx.screen(hx - nx * tail * (k / 10), hy - ny * tail * (k / 10), 2 + q * 5, col, q * q * bell * 1.6 * this.dim, 0)
+      // which way the streak lies on the glass. fx.js rotates the sprite by
+      // this, so ONE instance is the whole line.
+      const rot = Math.atan2(ny, nx)
+
+      // The head: hard from the first frame, gone before the tail is. Fading it
+      // in with the tail is what used to make the whole thing arrive as one
+      // swelling object.
+      const alive = 1 - smooth(clamp((p - 0.72) / 0.28, 0, 1))
+      // How far the tail has drawn itself out behind the head, in pixels. It
+      // grows through the flight and then keeps its length while the head dims,
+      // so the last thing on screen is a thinning line rather than a shrinking
+      // dot.
+      const drawn = s.tail * smooth(clamp(p / 0.45, 0, 1))
+      // and how bright the trail is along its length: it never reaches the head's
+      // brightness, because what is glowing back there is the wake and not the
+      // body
+      const glow = alive * 0.5 + (1 - alive) * 0.28
+
+      // the tail: one long hairline, its centre half a length behind the head.
+      // `tw` is its HALF-THICKNESS in CSS pixels, so the line is about three
+      // pixels across at its spine and feathers to nothing either side of that.
+      const tw = 1.6
+      // Three nested segments, each shorter and brighter than the last. One
+      // segment alone is a uniform dash — a painted line with a dot on the end
+      // — and a trail is not uniform: it is hottest just behind the head and
+      // thins to nothing behind that. Nesting them costs three instances and
+      // gives a smooth ramp along the whole length, which no single sprite of
+      // this shape can express.
+      if (drawn > 3) {
+        const seg = (frac, width, colour, gain) => {
+          const L = drawn * frac
+          if (L < 2) return
+          this.fx.screen(hx - nx * L * 0.5, hy - ny * L * 0.5, width, colour, gain * this.dim, 3, rot, L / (2 * width))
+        }
+        seg(1, tw, col, glow * 0.62)
+        seg(0.55, tw * 0.95, col, glow * 0.8)
+        seg(0.24, tw * 0.85, [1, 0.97, 0.92], alive * 1.35)
       }
-      this.fx.screen(hx, hy, 9, [1, 0.98, 0.95], bell * 4 * this.dim, 0)
+      // the head itself: small, and the only round thing in the whole meteor
+      this.fx.screen(hx, hy, 2.3, [1, 0.98, 0.95], alive * 2.4 * this.dim, 0)
       return true
     })
   }

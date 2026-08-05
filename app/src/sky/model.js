@@ -172,13 +172,18 @@ import { sampleStar, tempToU } from './blackbody.js'
 // The bulge: an old, dense, pressure-supported spheroid. It is nearly round, it
 // barely participates in the wave, and it is gold because every blue star it
 // ever had died a long time ago.
-export function genBulge(count, { seed = 11, radius = 0.3, flatten = 0.72 } = {}) {
+export function genBulge(count, { seed = 11, radius = 0.3, flatten = 0.72, concentration = 1.7 } = {}) {
   const rnd = rng(seed)
   const buf = new Float32Array(count * STAR_STRIDE)
   for (let i = 0; i < count; i++) {
-    // r^(1/4)-ish concentration: a real bulge is far denser at its heart than a
-    // uniform sphere, which is what gives it a luminous core rather than a ball
-    const a = Math.pow(rnd(), 2.1) * radius
+    // A real bulge is far denser at its heart than a uniform sphere, which is
+    // what gives it a luminous core rather than a ball. But the exponent is the
+    // difference between a bulge and a PELLET: at 2.1 nine tenths of the stars
+    // landed inside a third of the radius, so the heart was a small hard clot
+    // with nothing between it and the arms — the dark annulus that made the
+    // middle of this galaxy read as an empty ring. Relaxed, the same count
+    // spreads out through the inner disk and the two populations meet.
+    const a = Math.pow(rnd(), concentration) * radius
     const b = a * eccentricityAt(a, radius, radius)
     const phi = rnd() * Math.PI * 2
     // out-of-plane thickness — a bulge is a squashed sphere, not a disk
@@ -194,7 +199,7 @@ export function genBulge(count, { seed = 11, radius = 0.3, flatten = 0.72 } = {}
 // crowding — young, hot, and short-lived, exactly where the gas is being
 // compressed — and the rest are spread evenly along their orbits as the settled
 // older population drifting through.
-export function genDisk(count, { seed = 23, rCore = 0.18, rDisk = 1.15, armFrac = 0.55, thickness = 1 } = {}) {
+export function genDisk(count, { seed = 23, rCore = 0.18, rDisk = 1.15, armFrac = 0.55, thickness = 1, armSpread = 0.44 } = {}) {
   const rnd = rng(seed)
   const buf = new Float32Array(count * STAR_STRIDE)
   // The exponential scale length, in units of the disk being filled. It used to
@@ -209,7 +214,22 @@ export function genDisk(count, { seed = 23, rCore = 0.18, rDisk = 1.15, armFrac 
     // an exponential disk — the radial profile every real spiral has
     let a = -scale * Math.log(1 - rnd() * 0.995)
     if (a > rDisk * 1.5) a = rDisk * (1.0 + rnd() * 0.4)
-    a = Math.max(rDisk * 0.0375, a)
+    // ── THE RING ──
+    // The inner floor used to be a CLAMP: `a = max(aMin, a)`. An exponential
+    // with this scale puts about a tenth of its draws below that floor, and a
+    // clamp does not discard them — it stacks every one of them onto the circle
+    // of radius exactly aMin. A tenth of the disk, thousands of stars, all at
+    // one radius: a hard bright ring with nothing inside it, sitting on the
+    // middle of the galaxy. That is the empty ring at the core, and it was
+    // never the bulge's doing — the bulge was being blamed for a rim the disk
+    // was drawing over the top of it.
+    //
+    // The draws below the floor are still needed (they are the inner disk), so
+    // they are SPREAD across the disc they should have filled rather than
+    // pushed to its edge. sqrt of a uniform gives uniform surface density, so
+    // the middle fills evenly and no radius is special.
+    const aMin = rDisk * 0.0375
+    if (a < aMin) a = aMin * Math.sqrt(rnd())
     const b = a * eccentricityAt(a, rCore, rDisk)
     const young = rnd() < armFrac && a > rCore * 0.8
     let phi
@@ -218,8 +238,15 @@ export function genDisk(count, { seed = 23, rCore = 0.18, rDisk = 1.15, armFrac 
       // axis, so a young star's phase clusters there — this is the physical
       // reason arms are blue, expressed as three lines of generator rather than
       // as an art direction note.
+      //
+      // How TIGHT that clustering is decides whether the arms read as arms or
+      // as a hard ring: a narrow lobe puts most of the disk into two thin
+      // ridges and leaves the space between them bare, which — wound three
+      // quarters of a turn — closes into a circle of specks with a hole in it.
+      // A real arm has width, and stars stream through it rather than living
+      // in it.
       const lobe = rnd() < 0.5 ? 0 : Math.PI
-      phi = lobe + gaussFrom(rnd) * 0.44
+      phi = lobe + gaussFrom(rnd) * armSpread
     } else {
       phi = rnd() * Math.PI * 2
     }
