@@ -62,7 +62,10 @@ class Field2D {
   _gen() {
     const rnd = rng(90210)
     const mobile = window.innerWidth < 540
-    const n = mobile ? 620 : 1000
+    // thinned by a quarter alongside the real engine's field (galaxy.js), so a
+    // machine without a GPU gets the same sky at the same density, not a busier
+    // one
+    const n = mobile ? 465 : 750
     this.stars = []
     for (let i = 0; i < n; i++) {
       // the same three populations the real engine uses, at a thousandth of the
@@ -137,8 +140,13 @@ class Field2D {
     this.lastTs = ts
     this.t += dt
     this.dim += (this.dimTarget - this.dim) * Math.min(1, dt * 2.2)
-    // even here the galaxy turns: slowly, always
-    this.spin += dt * (this.reduced ? 0.004 : 0.011)
+    // Even here the galaxy turns: slowly, always — and clockwise on the glass,
+    // the same way the real engine turns it. The arms are wound outward in the
+    // +angle direction here too (_gen adds r * 3.6 to an arm star's angle), so
+    // this is the sign that makes them TRAIL rather than lead, and a machine
+    // without a GPU gets a galaxy turning the same way as everyone else's.
+    // model.js carries the long note.
+    this.spin -= dt * (this.reduced ? 0.004 : 0.011)
     this._draw(dt)
     requestAnimationFrame(this._boundTick)
   }

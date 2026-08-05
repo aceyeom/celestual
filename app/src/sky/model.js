@@ -54,6 +54,22 @@ export const STAR_STRIDE = 8
 // spiral rather than a pinwheel.
 export const TILT_RATE = 4.3
 
+// ── which way it turns ───────────────────────────────────────────────────────
+// A spiral's arms TRAIL. That is not a stylistic preference, it is the one
+// thing every photograph of a grand-design galaxy agrees on: the pattern winds
+// outward AGAINST the rotation, so the tip of an arm lags behind the material
+// sweeping through it. Get the sign backwards and the galaxy appears to be
+// unscrewing itself — a leading spiral, which is why essentially none exist and
+// why one reads as wrong long before anyone can say what is wrong with it.
+//
+// TILT_RATE is positive, so an orbit's tilt — and with it the arm ridge — winds
+// counter-clockwise ON THE GLASS as radius grows, because the camera puts world
+// +x to the right and world +z up. For those arms to trail, everything that
+// turns has to turn the other way. One sign, applied to the rotation curve and
+// to the pattern speed, carries the whole field; gas.js mirrors it in its own
+// co-rotating frame so the cloud shears with the stars rather than against them.
+export const SPIN = -1
+
 // Orbits are ellipses, and how elongated they are decides how hard the arms
 // bite. Circular orbits (ratio 1) crowd nowhere and give a featureless disc;
 // too elongated and the galaxy reads as a bar. The core is kept nearly round —
@@ -76,13 +92,13 @@ export function eccentricityAt(a, rCore, rDisk) {
 const RC = 0.22 // where the curve turns over
 const OM0 = 0.0125 // scales the whole thing; ~5 min for a mid-disk orbit
 export function omegaAt(a) {
-  return OM0 / Math.sqrt(a * a + RC * RC)
+  return (SPIN * OM0) / Math.sqrt(a * a + RC * RC)
 }
 
 // The pattern itself turns, slowly and rigidly — the wave's own speed, quite
 // separate from the stars moving through it. Slower than everything else in the
 // frame by design: it is the deepest, calmest motion in the product.
-export const PATTERN_SPEED = 0.0061
+export const PATTERN_SPEED = SPIN * 0.0061
 
 // ── deterministic randomness ─────────────────────────────────────────────────
 // Every generator is seeded, so a sky is identical on every mount and across
@@ -181,11 +197,19 @@ export function genBulge(count, { seed = 11, radius = 0.3, flatten = 0.72 } = {}
 export function genDisk(count, { seed = 23, rCore = 0.18, rDisk = 1.15, armFrac = 0.55, thickness = 1 } = {}) {
   const rnd = rng(seed)
   const buf = new Float32Array(count * STAR_STRIDE)
+  // The exponential scale length, in units of the disk being filled. It used to
+  // be the constant 0.42, which is exactly right for the ambient sky's 1.2-unit
+  // disk and badly wrong for anything smaller: a young community's disk is a
+  // fifth of that, so HALF of every star generated for it overshot the cap and
+  // was folded back onto the rim. That is what drew a hard ring of specks around
+  // an empty middle. Scaled, one call fills a disk of any size — and at
+  // rDisk = 1.2 it is still 0.42, so the ambient field is untouched.
+  const scale = rDisk * 0.35
   for (let i = 0; i < count; i++) {
     // an exponential disk — the radial profile every real spiral has
-    let a = -0.42 * Math.log(1 - rnd() * 0.995)
+    let a = -scale * Math.log(1 - rnd() * 0.995)
     if (a > rDisk * 1.5) a = rDisk * (1.0 + rnd() * 0.4)
-    a = Math.max(0.045, a)
+    a = Math.max(rDisk * 0.0375, a)
     const b = a * eccentricityAt(a, rCore, rDisk)
     const young = rnd() < armFrac && a > rCore * 0.8
     let phi
@@ -284,6 +308,33 @@ export function genNearField(count, { seed = 71, extent = 2.4 } = {}) {
 // silently re-scaled everyone else's position.
 const SLOT_SCALE = 0.031
 
+// ── how bright one ping is ───────────────────────────────────────────────────
+// Deliberately NOT sampleStar's luminosity. That function is demographics — a
+// real initial mass function whose bright tail runs to four thousand suns — and
+// demographics is the wrong instrument here. In the ambient sky those tails are
+// the entire point: a handful of supergiants carry the arms. In a community
+// every star is one person, and a population where one ping in two hundred
+// arrives four hundred times brighter than the ping beside it does not read as
+// a crowd. It reads as a mess with beacons in it — a few fat spiked blooms
+// sitting on top of a spiral they are plainly not part of, and a hundred dots
+// too faint to count underneath.
+//
+// So a ping keeps its blackbody COLOUR from the population it seats in (the
+// arms stay blue, the heart stays gold, the field keeps its grain) and its
+// luminosity is held inside one narrow band. Brightness here is also SIZE —
+// stars.js spends it on how far the point-spread's wings reach — so the band is
+// what actually makes the countable sky consistent: across its whole range the
+// widest ping is about a fifth wider than the narrowest, and none of them is
+// bright enough to earn a diffraction cross. One person, one star, and every
+// one of them the same kind of star.
+const PING_LUM_MIN = 0.85
+const PING_LUM_MAX = 2.2
+// biased toward the low end, so the band's top is a rarity rather than an
+// average — a field of stars at its brightest reads as a field at one value
+function pingLum(rnd) {
+  return PING_LUM_MIN + (PING_LUM_MAX - PING_LUM_MIN) * Math.pow(rnd(), 1.7)
+}
+
 export function slotRadius(i) {
   return SLOT_SCALE * Math.sqrt(i + 0.6)
 }
@@ -324,9 +375,8 @@ export function writeSlot(buf, at, i, seedSalt = 0) {
     y = g() * (0.016 + 0.045 * Math.exp(-a * 2.2))
   }
   const b = a * eccentricityAt(a, rCore, Math.max(rDisk, rCore + 0.01))
+  // the colour is the population's; the brightness is the ping's own (above)
   const s2 = sampleStar(rnd, young ? 'arm' : a < 0.16 ? 'bulge' : 'disk')
-  // A ping is a resolved star, not dust: the countable population owns the sky
-  // over every decorative layer, so its floor luminosity is lifted.
-  writeStar(buf, at, a, b, phi, omegaAt(a), TILT_RATE * a, y, tempToU(s2.T), Math.max(1.4, s2.lum))
+  writeStar(buf, at, a, b, phi, omegaAt(a), TILT_RATE * a, y, tempToU(s2.T), pingLum(rnd))
   return { a, b, phi, y }
 }
