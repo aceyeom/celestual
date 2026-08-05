@@ -1,28 +1,41 @@
 // theme.js — CELESTUAL's single source of truth for color and geometry.
 //
 // The visual language is docs/DESIGN.md (the galaxy edition): the whole product
-// lives inside one deep cosmic-violet field, lit by TWO warm stars — starlight-
-// amber (`you`) and rose (`them`), the two stars of the core metaphor. This is
-// the canonical look. Do NOT flatten it back to a single-accent navy scheme
-// unless the human explicitly asks for that; a re-skin is a design decision the
-// human makes, never a cleanup Claude performs on its own.
+// lives on one warm dark ground — the inside of an old leather case — with the
+// galaxy drawn INTO it rather than photographed behind it, lit by TWO warm
+// stars: starlight-amber (`you`) and rose (`them`), the two stars of the core
+// metaphor. This is the canonical look. Do NOT flatten it back to a
+// single-accent scheme, and do not put the cold violet void back, unless the
+// human explicitly asks; a re-skin is a design decision the human makes, never
+// a cleanup Claude performs on its own.
 //
 // Everything visual derives from THESE tokens — the React tree, the galaxy
 // canvas, the story card renderer, and styles.css custom properties — so the
 // whole product reads as one coherent cosmos on every screen, mobile and web.
 
 export const TOKENS = {
-  // deep-space base — shared by every screen's backdrop and the galaxy void.
-  // Very nearly black: this is the VOID, and it has to sit at or below the
-  // darkest thing the renderer paints (sky/post.js's floor) or the page shows
-  // through as a lighter violet card the galaxy is lying on top of.
-  ink: '#06050C',
-  ink2: '#16111F',
-  ink3: '#211934',
+  // ── the ground ──
+  // The base every screen and the galaxy itself are drawn on. It used to be a
+  // cosmic violet-black: the VOID, sitting at or below the darkest thing the
+  // renderer paints. That is the right colour for a photograph of space and the
+  // wrong one for this product, because the sky here is not a photograph the
+  // interface floats over — it is the surface the interface is printed on, and
+  // it has to be quiet enough to hold type anywhere on it.
+  //
+  // So it is a dark tobacco now: the inside of an old leather case, the back of
+  // a foxed endpaper. Warm, so the two stars belong to it rather than sitting
+  // on top of it; lifted just off black, because nothing made of paper or hide
+  // is ever truly black, and a lifted ground is what takes the harsh edge off
+  // every bright thing drawn on it. sky/post.js's floor is set to exactly this
+  // value (galaxy.js `_tunePost`), so the canvas and the page are one surface
+  // with no seam between them.
+  ink: '#120E0B',
+  ink2: '#1E1714',
+  ink3: '#2B211B',
   // text
-  cream: '#F3ECF6', // the emotional + interface voice
-  muted: '#9E92B6', // the mechanical voice (cool violet-grey)
-  line: 'rgba(243,236,246,0.10)',
+  cream: '#F4EDE4', // the emotional + interface voice — warm ivory, not blue-white
+  muted: '#A6988C', // the mechanical voice (warm grey, the colour of old ink)
+  line: 'rgba(244,237,228,0.10)',
   // the two stars — the accents of the whole product
   you: '#FF9E6B', // starlight amber (primary / "you")
   them: '#E6749E', // rose (secondary / "them" / mutuality)
@@ -124,6 +137,16 @@ export function rgba(hex, a) {
   const h = hex.replace('#', '')
   const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
+}
+
+// '#RRGGBB' → three 0..1 components. What the sky's post chain wants for its
+// lifted floor: it is applied AFTER the sRGB encode, so this is a plain byte
+// scale rather than a linearisation — the point is that the canvas comes out at
+// EXACTLY the page's own background colour, with no seam between the two.
+export function rgbUnit(hex) {
+  const h = hex.replace('#', '')
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
 }
 
 // The color object handed down the React tree. Defaults to the singular TOKENS

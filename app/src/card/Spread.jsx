@@ -1,30 +1,42 @@
 // card/Spread.jsx — the reveal.
 //
-// One object with two sides, and nothing on this screen arrives. The other side
-// was already there.
+// Two cards, one screen, both of them yours to read. Nothing on this screen
+// arrives; the other one was already there.
 //
 // ── what this replaces, and why it kept being wrong ──────────────────────────
-// Three designs have stood here. The sky drew an inspiral of two invented stars
+// Four designs have stood here. The sky drew an inspiral of two invented stars
 // and the cards turned up afterwards, having done nothing. Then the pair became
 // the real cards, orbiting forever — truer, and with no resting frame: two discs
 // circling means nothing to read and nowhere for the eye to land. Then their
 // ping came in on a collision course, struck this one, and set it spinning like
 // a tossed coin.
 //
-// That last one failed for a reason worth writing down, because it is the reason
-// this file now looks the way it does. **A coin flip is a wager.** It is chance,
-// suspense, heads-or-tails — and a mutual is the precise opposite of chance:
-// two people already decided, separately, weeks ago. A collision is worse. It is
-// violence, and nobody here was hit. Between them they spent eleven separate
-// events — impact, flash, tumble, wobble, overshoot, glint, rock — on a screen
-// that is not a game and has no input to reward. VOICE.md has the sentence for
-// it: *the 2am message, never the carnival.* That was the carnival.
+// That third one failed for a reason worth writing down. **A coin flip is a
+// wager.** It is chance, suspense, heads-or-tails — and a mutual is the precise
+// opposite of chance: two people already decided, separately, weeks ago. A
+// collision is worse. It is violence, and nobody here was hit. Between them they
+// spent eleven separate events — impact, flash, tumble, wobble, overshoot,
+// glint, rock — on a screen that is not a game and has no input to reward.
+// VOICE.md has the sentence for it: *the 2am message, never the carnival.*
+//
+// So the fourth was one object with two faces: your card, turning over to show
+// theirs on the back. It was quiet, and it was almost right, and it had one
+// structural fault that no amount of tuning could reach — **a two-sided object
+// can only ever show you one side.** At the end of the most important screen in
+// the product, half of what the screen is about is facing away from you. Two
+// people wrote to each other, and the design made you choose which one of them
+// to be looking at. Worse, it made "what did I write" and "what did they write"
+// into two separate acts of memory rather than one image you can see at once.
 //
 // ── what it is now ───────────────────────────────────────────────────────────
+// The pair. Both cards, side by side, at rest, in one frame.
+//
 // Their card did not fly in from anywhere. It has existed since the day they
-// wrote it, in the dark, behind yours, the whole time you were checking and
-// finding nothing. What changes at a reveal is not that something happens — it
-// is that something stops being hidden. So there are three beats and one motion:
+// wrote it, in the dark, DIRECTLY BEHIND yours, the whole time you were checking
+// and finding nothing. That is not a metaphor here, it is the staging: theirs is
+// drawn at the same point, a little smaller, hidden by yours — so the only
+// evidence of it is the light escaping past your limb. Then the two part, and
+// what was behind comes out and sits beside. Four beats, one motion:
 //
 //   the arrival   The ordinary held dive into YOUR ping — the same `focusStar`
 //                 every other zoom in the product makes, on the same curve
@@ -34,24 +46,21 @@
 //                 the far one is the corona around its edge. It is the whole
 //                 claim of the product in one image, and it needs no words —
 //                 there is something on the other side of this.
-//   the turn      One half turn, about the vertical axis, slow, on the camera's
-//                 own easing. Not a coin: the way a hand turns a photograph over
-//                 to read what is written on the back. It does not overshoot,
-//                 because a hand does not.
+//   the parting   The two draw apart, on the camera's own easing, and theirs
+//                 comes up to full size as it clears. Not a reveal-by-motion:
+//                 the motion is the FRAME re-composing itself to hold two things
+//                 where it had been holding one.
+//   the pair      Both at rest, level, the same size, each keeping a quiet halo
+//                 of the other's light. Neither is the front.
 //
-// Then it rests, and their light is on the front — but yours is still behind it,
-// a fainter corona that never goes away. The other side does not stop existing
-// when you turn to it.
+// Tapping either one brings it forward to be read; tapping it again sets it
+// back. That is a reading aid, not a state — the resting frame is the pair.
 //
-// Tapping turns it back, the way you would turn a photograph back.
-//
-// ── what carries the drama, given that almost nothing moves ──────────────────
-// The light does. Every value on this screen is a lighting value: which side the
-// light is on, how much of it escapes past the limb, how hard the face is
-// raking. The turn is the only motion and it is 180 degrees in a second and a
-// half. Everything that used to be spent on kinetics is spent on light instead,
-// which is the difference between a thing happening to you and a thing you are
-// being shown.
+// ── what carries it, given that almost nothing moves ─────────────────────────
+// The light does. Every value on this screen is a lighting value: whose light is
+// escaping, how much of it, and from behind what. The only motion is one slide
+// of about a card's width, in a second and a half, and it does not overshoot,
+// because a hand setting two photographs down side by side does not bounce.
 //
 // ── what it deliberately does NOT add ────────────────────────────────────────
 // A share button that carries their words. The share sheet renders YOUR card
@@ -76,20 +85,15 @@ const reduced = () =>
   typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // ── the beats ────────────────────────────────────────────────────────────────
-// Three numbers, and they are all slow. The old sequence packed its events into
-// the same span; the whole redesign is that this one spends the span on three
-// things instead of eleven.
+// Three numbers, and they are all slow. The old sequence packed eleven events
+// into the same span; this one spends it on three.
 //
 // The zoom has no duration here on purpose: it is the camera's, it breathes with
 // how far your star happens to be, and this file asks `cam.focus` what it is
 // rather than guessing how long it took.
 const HOLD = 0.7 //   your card, alone, before the dark gives anything up
 const BLOOM = 1.5 //  their light coming up around the limb
-const TURN = 1.5 //   the half turn
-// A turn you asked for is an answer to a touch and must not feel sluggish; the
-// first one is the reveal and is allowed to take its time. Same gesture, and the
-// only thing that differs is that one of them is a reply.
-const TAP_TURN = 1.05
+const PART = 1.5 //   the two drawing apart
 
 // How long the wall will wait for a camera that is not keeping up before it
 // starts the reveal anyway. The sky advances its own time per frame and clamps
@@ -107,10 +111,10 @@ const GRACE = 9
 const NO_SKY = 1.2
 // Where the zoom stops. Every other zoom in the product goes all the way in
 // (sky/camera.js STANDOFF) because at the end of one the star IS the card, and
-// the card is opaque over it. This one turns the card over — and a disc seen
-// edge-on covers nothing, so at full dive the turn opens a hole onto a
-// two-hundred-pixel photosphere with a scatter of out-of-focus field stars
-// around it. Stopping short leaves the field a field.
+// the card is opaque over it. This one puts the card somewhere else on the
+// screen before it is done — so at full dive the parting would slide your card
+// off a two-hundred-pixel photosphere and leave it sitting in the gap. Stopping
+// short leaves the field a field, and `matchCover` takes the star itself.
 const STANDOFF = 0.52
 
 // ── the light ────────────────────────────────────────────────────────────────
@@ -123,114 +127,94 @@ const STANDOFF = 0.52
 // because the swell below was doing all the work — so the beat meant to say
 // "there is something on the other side of this" said it almost inaudibly.
 const CORONA_BLOOM = 0.62
-// The residue. Once you have turned to them, yours is the light behind, and it
-// stays there, quieter, forever. The other side does not stop existing.
-const CORONA_REST = 0.34
-// And the swell as the disc comes side-on, because a disc seen side-on is not
-// blocking anything. It is the brightest instant on the screen and it costs
-// nothing to arrange — the same number, read at a different angle.
-const CORONA_EDGE = 0.45
+// The residue. Once the two are side by side each keeps a halo of its own
+// light — quieter, and it never goes away. Nothing here stops existing.
+const CORONA_REST = 0.14
+// And the swell as the gap opens, because the instant a body clears another
+// body is the instant the most light gets past. It is the brightest frame on
+// the screen and it costs nothing to arrange — the same light, read at a
+// different moment.
+const CORONA_EDGE = 0.3
 // How far past the limb it reaches, in card diameters. A corona HUGS the body:
 // it is brightest within a fraction of a radius of the limb and gone not long
 // after. Given the whole screen to spread across it stops being light coming
 // from behind something and becomes a colour wash with a card in it, which is
 // the same mistake the old impact flash made — every pixel lifted at once is
 // not brightness, it is a lower contrast ratio.
-const CORONA_REACH = 1.7
+const CORONA_REACH = 1.55
+// …and it PULLS IN as the two settle. There are two coronas at rest where the
+// eclipse had one, and two of anything at the old reach is not light around a
+// body, it is an orange wash with two cards in it — the exact failure this
+// constant's own note warns about, arrived at from the other direction.
+const CORONA_REACH_REST = 1.15
 
-// ── the turn ─────────────────────────────────────────────────────────────────
-// About the VERTICAL axis. End-over-end is the coin; turning something over in
-// your hands is this, and the axis is most of the difference between the two.
+// ── how the two sit ──────────────────────────────────────────────────────────
+// Not in a row. Two photographs put down on a table do not line up: the second
+// lands a little short of the first and a little to one side, and the near one
+// covers a sliver of the far one. That small failure of alignment is most of
+// what separates "two things someone set down" from "two things a layout
+// placed", and it is the difference between a pair and a diagram.
 //
-// On `easeFlight`, which is sky/camera.js's own flight curve — Perlin's
-// smootherstep, flat-launched and flat-landed, spending the travel across the
-// whole move instead of hoarding it into one mid-course whoosh. The card turns
-// on exactly the curve the camera flies on. There is no overshoot and no spring
-// anywhere in this file: a hand setting a photograph down does not bounce.
-const TIP = 5 // deg. A single hump on the other axis, peaking side-on and back
-//               to nothing — the small tilt anything picked up and turned over
-//               takes. Not a wobble: it does not oscillate, and it is exactly
-//               zero at both ends, so the card always comes to rest square.
-
-// Which face is up, in degrees. 180 shows yours, 360 shows theirs — the disc
-// starts on yours because that is what the dive resolved into.
-const YOURS = 180
-const THEIRS = 360
+// Both numbers are fractions of a card's diameter, and both are deliberately
+// small. The overlap has to stay under the disc's own type margin — nothing
+// either of them wrote may ever be behind the other card — and the offset has
+// to stay well inside the angle at which a pair reads as tumbled rather than
+// as placed.
+const OVERLAP = 0.09 // how far the near card laps over the far one
+const SKEW = 0.06 //    and how far each is set off the shared axis
 
 // ── the stage ────────────────────────────────────────────────────────────────
-// One disc, so it gets the size a card is meant to be read at — the same
-// `fullSize()` every other resolve in the product lands on — minus whatever the
-// line above and the buttons below actually need. Measured off the tightest
-// phone still worth supporting; on anything phone-shaped `fullSize()` wins and
-// this never binds.
-const CHROME = 344
-function sizeOf() {
-  const vh = typeof window === 'undefined' ? 780 : window.innerHeight
-  return Math.round(Math.max(TYPE_FLOOR + 6, Math.min(fullSize(), (vh - CHROME) * 0.98)))
+// Two discs have to fit, both readable, and "readable" has a number:
+// model.js's TYPE_FLOOR is the diameter below which the card's own type stops
+// being type. So the layout solves for the largest pair that fits the box the
+// column actually left, along whichever axis fits them better — side by side on
+// anything wide, stacked on a phone held upright — and never goes under the
+// floor even if that means the pair overflows a little.
+//
+// The overlap BUYS size: two discs that lap over each other need less room than
+// two that do not, and the room they give back goes into the diameter, which is
+// what the words are read at.
+const SPAN = 2 - OVERLAP //  diameters used along the pair's axis
+const CROSS = 1 + 2 * SKEW //           and across it
+function pairOf(box) {
+  const cap = fullSize()
+  const row = Math.min(cap, box.w / SPAN, box.h / CROSS)
+  const col = Math.min(cap, box.h / SPAN, box.w / CROSS)
+  const across = row >= col
+  return {
+    across,
+    size: Math.max(TYPE_FLOOR, Math.round(across ? row : col)),
+  }
 }
 
 // ── the choreography ─────────────────────────────────────────────────────────
 // One rAF loop, and almost all of what it publishes is light. It samples the
-// camera for the zoom, runs one clock for the bloom, and evaluates the turn as a
-// pure function of when that turn started — there is no integrator here, no
-// state to drift, and nothing to settle.
+// camera for the zoom, runs one clock for the bloom and the parting, and
+// evaluates both as pure functions of that clock — there is no integrator here,
+// no state to drift, and nothing to settle.
 function useReveal(fieldRef, index, centre, size) {
   const still = reduced()
   const [s, setS] = React.useState(null)
-  // Reduced motion has no loop to publish from, so its one gesture goes through
-  // state instead: `hand` counts the turns taken by a finger.
-  const [hand, setHand] = React.useState(0)
-  const st = React.useRef(null)
-  // `rot` is where the disc rests; `turn` is the one that is running, if one is.
-  // Reduced motion never travels between the faces, so it starts on the one the
-  // turn would have landed on.
-  if (!st.current) {
-    st.current = { rot: still ? THEIRS : YOURS, turn: null, dir: -1, tap: 0, open: still }
-  }
   // The geometry changes under the loop when a phone turns. Read through a ref
   // so a resize re-frames the reveal without restarting it.
   const geo = React.useRef({ centre, size })
   geo.current = { centre, size }
 
-  // The one gesture the frame accepts, and it is the same motion the reveal
-  // makes — a turn back the way it came, because that is what a hand does with
-  // something it has turned over.
-  const turn = React.useCallback(() => {
-    const g = st.current
-    if (!g.open || g.turn) return
-    g.tap++
-    if (still) {
-      // The preference is about vestibular safety. The object simply presents
-      // its other side: the same information, none of the motion.
-      g.rot = g.rot === THEIRS ? YOURS : THEIRS
-      setHand((n) => n + 1)
-      return
-    }
-    g.dir = -g.dir
-    g.turn = { from: g.rot, to: g.rot + g.dir * 180, at: -1, dur: TAP_TURN }
-  }, [still])
-
   // ── reduced motion ──
-  // Their card, resolved, square on, with the light already settled where it
-  // ends up. Built where it is read rather than pushed from a loop, because a
-  // rAF that recomputes a still frame sixty times a second is the same cost as
-  // the animation it is standing in for.
+  // Both cards, resolved, already apart, with the light settled where it ends
+  // up. Built where it is read rather than pushed from a loop, because a rAF
+  // that recomputes a still frame sixty times a second is the same cost as the
+  // animation it is standing in for.
   const stillFrame = React.useMemo(() => {
     if (!still) return null
-    void hand
-    return {
-      ...resolveOf(1, null, centre, size),
-      rot: st.current.rot, tip: 0, bloom: 1, turned: 1,
-      named: true, told: true, open: true, tap: st.current.tap,
-    }
-  }, [still, hand, centre, size])
+    return { ...resolveOf(1, null, centre, size), part: 1, bloom: 1, named: true, told: true, open: true }
+  }, [still, centre, size])
 
   React.useEffect(() => {
     if (still) return undefined
     let raf = 0
     let live = true
     const t0 = performance.now()
-    const g = st.current
     let prev = 0
     let landed = -1 // wall seconds at which the camera finished the zoom
     let dove = false // whether the zoom has been asked for
@@ -290,68 +274,40 @@ function useReveal(fieldRef, index, centre, size) {
       //
       // Starting the BEATS on this floor while still reading the camera was a
       // real failure: on a machine slow enough to take fifteen seconds over the
-      // dive, the light came up and the disc turned over a card whose resolve
-      // was still at zero. The most important screen in the product played to an
+      // dive, the light came up and the cards drew apart over a resolve that was
+      // still at zero. The most important screen in the product played to an
       // empty frame.
       if (now > GRACE) focus = Math.max(focus, smoothstep(GRACE, GRACE + 0.9, now))
       const scr = (index != null && index >= 0 && f && f.sealedScreen && f.sealedScreen[index]) || null
       const disc = resolveOf(focus, scr, q.centre, q.size)
-      // and tell the sky how much of its star is left to draw. The card is
+      // and tell the sky how much of its star is left to draw. Your card is
       // opaque and sits exactly where the star is, so the two must cross over on
-      // ONE curve — this one — or the turn opens a hole onto a photosphere.
+      // ONE curve — this one — or there are two of the same object on screen.
+      // It stays covered afterwards, through the parting: the card IS the star,
+      // and a star left burning in the gap between the two would be a third
+      // thing on a screen that is about exactly two.
       if (f && f.matchCover) f.matchCover(disc.opacity)
       if (landed < 0 && focus > 0.995) landed = now
 
-      // ── the light, and then the turn ──
+      // ── the light, and then the parting ──
       const u = landed < 0 ? -1 : now - landed
       const at = HOLD + BLOOM
-      // The bloom is still rising as the disc starts to move, and reaches full
-      // right about where the disc goes side-on. One swell across two beats, so
-      // there is no seam between "the light came up" and "it turned" — they are
-      // the same event seen twice.
-      const bloom = u < 0 ? 0 : smoothstep(HOLD, at + TURN * 0.5, u)
-      if (u >= at && !g.turn && g.rot === YOURS && !g.open) {
-        g.turn = { from: YOURS, to: THEIRS, at: now, dur: TURN }
-      }
-      // A tap sets its turn without a start time, because `turn()` runs outside
-      // this loop and the loop is the only thing that knows what time it is.
-      if (g.turn && g.turn.at < 0) g.turn.at = now
-
-      let rot = g.rot
-      let tip = 0
-      // How far through the reveal's own turn the screen is, which is what tells
-      // the light when to stop being an event and start being a residue. It is
-      // the FIRST turn only: a tap afterwards is you looking again, not the
-      // reveal happening a second time, so it stays at 1 from then on.
-      let turned = g.open ? 1 : 0
-      if (g.turn) {
-        const p = clamp((now - g.turn.at) / g.turn.dur, 0, 1)
-        const e = easeFlight(p)
-        rot = g.turn.from + (g.turn.to - g.turn.from) * e
-        tip = TIP * Math.sin(Math.PI * p) * (g.turn.to > g.turn.from ? 1 : -1)
-        if (!g.open) turned = e
-        if (p >= 1) {
-          g.rot = g.turn.to
-          g.turn = null
-          g.open = true
-          rot = g.rot
-          tip = 0
-          turned = 1
-        }
-      }
+      // The bloom is still rising as the two begin to move, and reaches full
+      // right about where the gap opens. One swell across two beats, so there is
+      // no seam between "the light came up" and "they parted" — they are the
+      // same event seen twice.
+      const bloom = u < 0 ? 0 : smoothstep(HOLD, at + PART * 0.5, u)
+      const part = u < 0 ? 0 : easeFlight(clamp((u - at) / PART, 0, 1))
 
       setS({
         ...disc,
-        rot,
-        tip,
         bloom,
-        turned,
+        part,
         named: disc.resolve > 0.55, // "it's mutual." — you learn that it happened
         // and the sentence arrives with their light, because their light IS the
         // second half of it
         told: bloom > 0.06,
-        open: g.open,
-        tap: g.tap,
+        open: part >= 1,
       })
       raf = requestAnimationFrame(tick)
     }
@@ -368,60 +324,64 @@ function useReveal(fieldRef, index, centre, size) {
     }
   }, [fieldRef, index, still])
 
-  return [still ? stillFrame : s, turn]
+  return still ? stillFrame : s
 }
 
-// ── the disc, and the light behind it ────────────────────────────────────────
-// A fixed layer, because for the length of the zoom the card is wherever your
+// ── the pair, and the light between them ─────────────────────────────────────
+// A fixed layer, because for the length of the zoom your card is wherever your
 // star hangs, which is not where the column reserved room for it.
 //
-// The two faces are one object: `preserve-3d`, and a back face turned 180°. What
-// keeps that from reading as a widget is that none of it is a rotation with
-// decoration on top — the shading, the foreshortening the perspective does for
-// free, and above all the corona are all functions of ONE angle, so the light
-// tells you where the disc is without the disc having to move quickly.
-function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, onTurn, open }) {
-  const S = s.size
+// Theirs is drawn FIRST, which is the whole trick: at rest it is at the same
+// point as yours and a little smaller, so it is completely hidden, and the only
+// evidence of it is its own light reaching past your limb. Nothing has to be
+// faded in and nothing has to arrive — the parting simply stops one thing
+// covering the other.
+function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open, across, size }) {
+  const S = size
   const half = S / 2
   const hueThem = tintOf(C, theirs && theirs.tone)
   const hueYou = tintOf(C, yours && yours.tone)
-  // Everything about the light comes off this one cosine, the way it does on any
-  // real surface.
-  const c = Math.cos((s.rot * Math.PI) / 180)
-  const facing = Math.abs(c)
-  const front = c >= 0
+
+  // Where each card ends up, given a sign: -1 is yours, +1 is theirs. Half the
+  // pitch each, in opposite directions, so the pair stays centred on the frame
+  // the column reserved for it however far through the parting it is — and half
+  // the offset each ACROSS that axis, which is the misalignment. Stacked, yours
+  // settles a little left and theirs a little right; side by side, yours a
+  // little high and theirs a little low. Same gesture, turned ninety degrees.
+  //
+  // Both are scaled by `part`, so the two are still exactly concentric while
+  // theirs is hidden behind yours. The offset arrives as they separate rather
+  // than being a place they were already sitting.
+  const reach = (S * (1 - OVERLAP)) / 2
+  const skew = S * SKEW
+  const seat = (sign) => {
+    const along = sign * reach * s.part
+    const off = sign * skew * s.part
+    return across ? { x: along, y: off } : { x: off, y: along }
+  }
 
   // ── the corona ──
-  // How much of the far side's light escapes past the limb: a floor that arrives
-  // with the bloom and never leaves, plus everything the disc stops blocking as
-  // it comes side-on.
-  const halo = clamp(
-    s.bloom * ((1 - s.turned) * CORONA_BLOOM + s.turned * CORONA_REST + CORONA_EDGE * (1 - facing)),
-    0, 1,
-  )
-  // Whose light it is. Theirs while you are looking at yours, yours once you
-  // have turned to theirs — and the handover happens on the SECOND half of the
-  // turn, and LATE in it. Anywhere near side-on the colour change lands on the
-  // brightest frame of the screen, and a half-and-half of amber and rose at full
-  // intensity is orange: the most important instant in the product came out the
-  // colour of a streetlight. Theirs now holds pure all the way through the peak
-  // and gives way only in the last quarter of the turn, where their face has
-  // taken the frame and the light has already fallen back to its resting level —
-  // so the two are never both loud at once. It is the true order of events too:
-  // the light stops being behind the disc when the disc it is behind becomes the
-  // one you are looking at.
-  const w = smoothstep(0.92, 0.5, c)
-  const R = S * CORONA_REACH
+  // Their light: a floor that arrives with the bloom and never leaves, plus the
+  // swell as the gap opens and stops holding it in. It is centred on THEIR card,
+  // which is what makes it read as their light rather than as a glow the screen
+  // is doing: while they are behind yours it escapes past your limb, and when
+  // they come out it comes with them.
+  const swell = CORONA_EDGE * Math.sin(Math.PI * s.part)
+  const haloThem = clamp(s.bloom * ((1 - s.part) * CORONA_BLOOM + s.part * CORONA_REST + swell), 0, 1)
+  // And yours, which only exists once there is something for it to be behind.
+  // Before the parting your card is the near body in an eclipse and a near body
+  // in an eclipse is dark; that is the entire image.
+  const haloYou = clamp(s.bloom * s.part * CORONA_REST, 0, 1)
+  const R = S * (CORONA_REACH + (CORONA_REACH_REST - CORONA_REACH) * s.part)
 
   // A corona is not a ring drawn on the sky. It is light from a body you cannot
   // see, so it is brightest just past the limb and falls away for a long time
   // after that — and the middle of it is filled, not hollow, which costs nothing
-  // while the disc is covering it and is the entire payoff at side-on, when the
-  // disc stops.
-  const corona = (hue, a, key) =>
+  // while the card is covering it and is the entire payoff at the moment the two
+  // separate, when it stops being covered.
+  const corona = (hue, a) =>
     a > 0.004 && (
       <span
-        key={key}
         aria-hidden
         style={{
           position: 'absolute', left: half - R / 2, top: half - R / 2, width: R, height: R,
@@ -433,120 +393,112 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, onTurn, open }) {
       />
     )
 
-  const face = (card, url, tint, label, back) => (
-    <span
-      style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-        transform: back ? 'rotateY(180deg)' : 'none',
-      }}
-    >
-      <Card C={C} card={card} url={url} size={S} tint={tint} label={label} glow={0.35 + facing * 0.55} />
-      {/* A surface turned away from the light is darker, and a printed disc
-          turning through side-on passes all the way through that. Without it the
-          turn is a picture being rotated; with it, it is an object. */}
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute', inset: 0, borderRadius: '50%',
-          background: rgba(C.ink, 0.6 * (1 - facing)),
-        }}
-      />
-    </span>
-  )
-
-  return (
-    <div
-      style={{
-        position: 'absolute', left: s.x - half, top: s.y - half, width: S, height: S,
-        filter: s.blur > 0.05 ? `blur(${s.blur}px)` : 'none',
-        opacity: s.opacity,
-        pointerEvents: open ? 'auto' : 'none',
-      }}
-    >
-      {/* Behind the disc in paint order, which is the whole trick: while the
-          card is facing you, all that shows of this is the part outside its
-          limb. */}
-      {corona(hueThem, halo * w, 'them')}
-      {corona(hueYou, halo * (1 - w), 'you')}
-
+  // One card, at its place in the pair. `lift` is the reading aid: the one you
+  // tapped comes forward and the other stands back. It is a CSS transition
+  // rather than another clock in the loop, because it answers a finger and has
+  // to feel like it, and because nothing else on this screen depends on it.
+  const one = ({ card, url, hue, label, at, scale, halo, mine, on }) => {
+    const lift = held ? (on ? 1.1 : 0.9) : 1
+    const fade = held && !on ? 0.42 : 1
+    return (
       <div
-        role={open ? 'button' : undefined}
-        tabIndex={open ? 0 : undefined}
-        aria-label={open ? 'turn the card over' : undefined}
-        onPointerUp={open ? onTurn : undefined}
-        onKeyDown={open ? (e) => ((e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onTurn())) : undefined}
         style={{
-          position: 'relative', width: '100%', height: '100%', borderRadius: '50%',
-          cursor: open ? 'pointer' : 'default',
-          // The same focal ratio the sky is photographed through (sky/camera.js
-          // FOCAL). One lens for the whole product: the disc foreshortens on its
-          // way round exactly as hard as a star does on its way past.
-          perspective: S * 2.35,
-          WebkitTapHighlightColor: 'transparent',
+          position: 'absolute', left: s.x - half + at.x, top: s.y - half + at.y, width: S, height: S,
+          filter: s.blur > 0.05 ? `blur(${s.blur}px)` : 'none',
+          opacity: s.opacity,
+          pointerEvents: open ? 'auto' : 'none',
+          // Now that they lap over each other, paint order is a thing a finger
+          // can change: the one you asked to read comes over the top of the
+          // other rather than growing behind it.
+          zIndex: on ? 2 : 1,
         }}
       >
+        {/* behind the card in paint order, which is what makes it light from
+            BEHIND rather than a glow painted on top */}
+        {corona(hue, halo)}
         <div
+          role={open ? 'button' : undefined}
+          tabIndex={open ? 0 : undefined}
+          aria-label={open ? (mine ? 'your card' : `@${them}’s card`) : undefined}
+          onPointerUp={open ? () => onHold(on ? null : (mine ? 'yours' : 'theirs')) : undefined}
+          onKeyDown={open ? (e) => ((e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onHold(on ? null : (mine ? 'yours' : 'theirs')))) : undefined}
           style={{
-            position: 'relative', width: '100%', height: '100%',
-            transformStyle: 'preserve-3d',
-            transform: `rotateY(${s.rot}deg) rotateX(${s.tip}deg)`,
+            position: 'relative', width: '100%', height: '100%', borderRadius: '50%',
+            cursor: open ? 'pointer' : 'default',
+            transform: `scale(${scale * lift})`,
+            opacity: fade,
+            transition: 'transform .5s cubic-bezier(.2,.7,.2,1), opacity .5s ease',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
-          {face(theirs, theirUrl, hueThem, `@${them}`, false)}
-          {face(yours, yourUrl, hueYou, 'yours', true)}
+          <Card C={C} card={card} url={url} size={S} tint={hue} label={label} glow={0.4 + s.part * 0.5} />
         </div>
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <>
+      {/* theirs, drawn first: behind yours, and a little further away, so that
+          until the two part there is nothing of it to see but its light — and
+          once they have parted, still the far one of the two, with yours lying
+          over its edge the way the photograph you set down second does */}
+      {one({
+        card: theirs, url: theirUrl, hue: hueThem, label: `@${them}`,
+        at: seat(1), scale: 0.88 + 0.12 * s.part, halo: haloThem,
+        mine: false, on: held === 'theirs',
+      })}
+      {one({
+        card: yours, url: yourUrl, hue: hueYou, label: 'yours',
+        at: seat(-1), scale: 1, halo: haloYou,
+        mine: true, on: held === 'yours',
+      })}
+    </>
   )
 }
 
 // ── the reveal ───────────────────────────────────────────────────────────────
 // `theirs` and `yours` are two cards. `index` is which of the ambient field's
 // sealed stars this ping is, so the zoom flies to the real one. `onSay` is the
-// exit, and it is the loudest thing on the screen from the moment the disc comes
+// exit, and it is the loudest thing on the screen from the moment the pair comes
 // to rest, because celestual ends at the handoff (§1.6): there is no chat here,
 // and the DM is not the product stopping short, it is the product working.
 export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fieldRef, onSay, onShare, onBack }) {
-  const [size, setSize] = React.useState(sizeOf)
   const stageEl = React.useRef(null)
-  const [centre, setCentre] = React.useState({ x: 0, y: 0 })
-
-  // The zoom lives inside this: it is the same held `focusStar` the status
-  // page's "see it in the sky" makes, and it is asked for from the loop, on the
-  // frame the sky exists to ask.
-  const [s, turn] = useReveal(fieldRef, index, centre, size)
-
-  // Measured, not computed. The disc is centred on whatever the column actually
+  // Measured, not computed. The pair is centred on whatever the column actually
   // left for it — which moves when the type wraps, when a font finishes loading,
   // or when a phone turns — and never on an assumption about how tall the line
-  // above it came out.
+  // above it came out. Both the axis and the size fall out of that same rect, so
+  // there is one source of truth for the whole layout.
+  const [box, setBox] = React.useState({ x: 0, y: 0, w: 0, h: 0 })
+  const [held, setHeld] = React.useState(null)
+
   React.useEffect(() => {
     const measure = () => {
       const el = stageEl.current
       if (!el) return
       const r = el.getBoundingClientRect()
-      setCentre({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
-    }
-    const onResize = () => {
-      setSize(sizeOf())
-      measure()
+      setBox({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height })
     }
     measure()
-    window.addEventListener('resize', onResize)
-    window.addEventListener('orientationchange', onResize)
-    // The disc is drawn in a FIXED layer off a rect in viewport coordinates, so
-    // a scroll moves the room without moving the thing that lives in it.
+    window.addEventListener('resize', measure)
+    window.addEventListener('orientationchange', measure)
+    // The pair is drawn in a FIXED layer off a rect in viewport coordinates, so
+    // a scroll moves the room without moving the things that live in it.
     window.addEventListener('scroll', measure, { passive: true })
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
     if (ro && stageEl.current) ro.observe(stageEl.current)
     return () => {
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('orientationchange', onResize)
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('orientationchange', measure)
       window.removeEventListener('scroll', measure)
       if (ro) ro.disconnect()
     }
   }, [])
+
+  const { across, size } = React.useMemo(() => pairOf(box.w && box.h ? box : { w: 320, h: 520 }), [box])
+  const centre = React.useMemo(() => ({ x: box.x, y: box.y }), [box.x, box.y])
+  const s = useReveal(fieldRef, index, centre, size)
 
   const named = !!(s && s.named)
   const told = !!(s && s.told)
@@ -557,15 +509,15 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
     <div
       style={{
         minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: `max(40px, env(safe-area-inset-top)) clamp(14px, 4vw, 40px) max(24px, env(safe-area-inset-bottom))`,
-        gap: SPACE.lg,
+        padding: `max(32px, env(safe-area-inset-top)) clamp(14px, 4vw, 40px) max(20px, env(safe-area-inset-bottom))`,
+        gap: SPACE.md,
       }}
     >
-      {/* The sky recedes as the card resolves, so the poster has something to be
+      {/* The sky recedes as the cards resolve, so the pair has something to be
           read against — the identical veil card/Resolve.jsx hangs on the
           identical variable, because it is the identical arrival. Never to
-          black: the point of getting here is that the card is IN the field, not
-          in front of it. */}
+          black: the point of getting here is that the cards are IN the field,
+          not in front of it. */}
       <div
         aria-hidden
         style={{
@@ -578,7 +530,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
       <div
         style={{
           position: 'relative', zIndex: 3, textAlign: 'center',
-          display: 'flex', flexDirection: 'column', gap: SPACE.md,
+          display: 'flex', flexDirection: 'column', gap: SPACE.sm,
         }}
       >
         {/* The headline arrives with YOUR card, at the end of the zoom: you have
@@ -587,7 +539,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
         <h1
           style={{
             margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
-            fontSize: SIZE.display, lineHeight: 1.05, color: C.cream,
+            fontSize: SIZE.title, lineHeight: 1.05, color: C.cream,
             opacity: named ? 1 : 0, transition: 'opacity .9s ease',
           }}
         >
@@ -599,7 +551,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
             happened. */}
         <p
           style={{
-            margin: '0 auto', maxWidth: 320, fontSize: SIZE.body, lineHeight: 1.7, color: C.muted,
+            margin: '0 auto', maxWidth: 320, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted,
             opacity: told ? 1 : 0, transition: 'opacity 1.1s ease',
           }}
         >
@@ -607,15 +559,22 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
         </p>
       </div>
 
-      {/* The room the disc is given, and it is empty: the disc is drawn in a
-          fixed layer, because for the length of the zoom it is wherever your
-          star happens to hang. What this reserves is the space it comes to rest
-          in, which is the only thing the column needs to know. The disc follows
-          it here in the DOM so a reader who is listening gets the screen in the
-          order it means: what happened, then what you each said, then where to
-          go. */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
-        <div ref={stageEl} aria-hidden style={{ flex: '0 1 auto', width: size, height: size, maxWidth: '100%' }} />
+      {/* The room the pair is given, and it is empty: they are drawn in a fixed
+          layer, because for the length of the zoom your card is wherever your
+          star happens to hang. What this reserves is the space they come to rest
+          in — and, since both the axis and the size are solved from this rect,
+          it is also the only thing that decides whether the pair sits side by
+          side or one above the other. The cards follow it here in the DOM so a
+          reader who is listening gets the screen in the order it means: what
+          happened, then what you each said, then where to go. */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center', minHeight: 0 }}>
+        {/* `alignSelf: stretch`, not `height: 100%`. The row above centres its
+            children, and a percentage height against a parent whose own height
+            came out of flex resolution measures as ZERO — which silently fed the
+            layout a box with no height, so the pair fell back to its stacked
+            default on every screen including the wide ones. Stretching asks for
+            the cross size directly and cannot round to nothing. */}
+        <div ref={stageEl} aria-hidden style={{ flex: 1, alignSelf: 'stretch', maxWidth: 900 }} />
       </div>
 
       {/* NOT aria-hidden, whatever it looks like. What is in here is the two
@@ -624,7 +583,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
         {s && (
           <Held
             C={C} s={s} theirs={theirs} yours={yours} theirUrl={theirUrl} yourUrl={yourUrl}
-            them={them} onTurn={turn} open={open}
+            them={them} held={held} onHold={setHeld} open={open} across={across} size={size}
           />
         )}
       </div>
@@ -632,23 +591,23 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
       <div
         style={{
           position: 'relative', zIndex: 3, width: '100%', maxWidth: 400,
-          display: 'flex', flexDirection: 'column', gap: SPACE.md,
+          display: 'flex', flexDirection: 'column', gap: SPACE.sm,
           opacity: open ? 1 : 0, transition: 'opacity 1s ease',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        {/* The one instruction on the screen, and it is needed: an object with a
-            second side is worth nothing if nobody knows it has one. It says the
-            gesture rather than the outcome, and it stops being shown the moment
-            it has been used. */}
+        {/* The one instruction on the screen. Two cards at half size are two
+            cards you can see and might not be able to read, so it says the
+            gesture that fixes that — and stops being shown the moment it has
+            been used. */}
         <div
           style={{
             fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro,
             textTransform: 'uppercase', textAlign: 'center', color: rgba(C.cream, 0.4),
-            opacity: s && s.tap ? 0 : 1, transition: 'opacity .6s ease',
+            opacity: held ? 0 : 1, transition: 'opacity .6s ease',
           }}
         >
-          turn it over
+          tap either one to read it closer
         </div>
         <PrimaryButton C={C} onClick={onSay}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
@@ -656,7 +615,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
           </span>
         </PrimaryButton>
         <Small C={C} align="center" color={C.muted}>the rest is yours.</Small>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.xl, marginTop: SPACE.sm }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.xl, marginTop: 2 }}>
           {/* Shares YOUR card and the mutual mark. Never theirs, at any tier, for
               any reason — their words were written to one person, and a share
               sheet that could carry them is a share sheet that will. */}
