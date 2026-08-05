@@ -148,6 +148,21 @@ const CORONA_REACH = 1.55
 // constant's own note warns about, arrived at from the other direction.
 const CORONA_REACH_REST = 1.15
 
+// ── how the two sit ──────────────────────────────────────────────────────────
+// Not in a row. Two photographs put down on a table do not line up: the second
+// lands a little short of the first and a little to one side, and the near one
+// covers a sliver of the far one. That small failure of alignment is most of
+// what separates "two things someone set down" from "two things a layout
+// placed", and it is the difference between a pair and a diagram.
+//
+// Both numbers are fractions of a card's diameter, and both are deliberately
+// small. The overlap has to stay under the disc's own type margin — nothing
+// either of them wrote may ever be behind the other card — and the offset has
+// to stay well inside the angle at which a pair reads as tumbled rather than
+// as placed.
+const OVERLAP = 0.09 // how far the near card laps over the far one
+const SKEW = 0.06 //    and how far each is set off the shared axis
+
 // ── the stage ────────────────────────────────────────────────────────────────
 // Two discs have to fit, both readable, and "readable" has a number:
 // model.js's TYPE_FLOOR is the diameter below which the card's own type stops
@@ -155,11 +170,16 @@ const CORONA_REACH_REST = 1.15
 // column actually left, along whichever axis fits them better — side by side on
 // anything wide, stacked on a phone held upright — and never goes under the
 // floor even if that means the pair overflows a little.
-const GAP = 16
+//
+// The overlap BUYS size: two discs that lap over each other need less room than
+// two that do not, and the room they give back goes into the diameter, which is
+// what the words are read at.
+const SPAN = 2 - OVERLAP //  diameters used along the pair's axis
+const CROSS = 1 + 2 * SKEW //           and across it
 function pairOf(box) {
   const cap = fullSize()
-  const row = Math.min(cap, (box.w - GAP) / 2, box.h)
-  const col = Math.min(cap, (box.h - GAP) / 2, box.w)
+  const row = Math.min(cap, box.w / SPAN, box.h / CROSS)
+  const col = Math.min(cap, box.h / SPAN, box.w / CROSS)
   const across = row >= col
   return {
     across,
@@ -322,12 +342,23 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
   const hueThem = tintOf(C, theirs && theirs.tone)
   const hueYou = tintOf(C, yours && yours.tone)
 
-  // How far each card has travelled from the point they shared. Half the pitch
-  // each, in opposite directions, so the pair stays centred on the frame the
-  // column reserved for it however far through the parting it is.
-  const reach = (S + GAP) / 2
-  const dx = across ? reach * s.part : 0
-  const dy = across ? 0 : reach * s.part
+  // Where each card ends up, given a sign: -1 is yours, +1 is theirs. Half the
+  // pitch each, in opposite directions, so the pair stays centred on the frame
+  // the column reserved for it however far through the parting it is — and half
+  // the offset each ACROSS that axis, which is the misalignment. Stacked, yours
+  // settles a little left and theirs a little right; side by side, yours a
+  // little high and theirs a little low. Same gesture, turned ninety degrees.
+  //
+  // Both are scaled by `part`, so the two are still exactly concentric while
+  // theirs is hidden behind yours. The offset arrives as they separate rather
+  // than being a place they were already sitting.
+  const reach = (S * (1 - OVERLAP)) / 2
+  const skew = S * SKEW
+  const seat = (sign) => {
+    const along = sign * reach * s.part
+    const off = sign * skew * s.part
+    return across ? { x: along, y: off } : { x: off, y: along }
+  }
 
   // ── the corona ──
   // Their light: a floor that arrives with the bloom and never leaves, plus the
@@ -366,16 +397,20 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
   // tapped comes forward and the other stands back. It is a CSS transition
   // rather than another clock in the loop, because it answers a finger and has
   // to feel like it, and because nothing else on this screen depends on it.
-  const one = ({ card, url, hue, label, x, y, scale, halo, mine, on }) => {
+  const one = ({ card, url, hue, label, at, scale, halo, mine, on }) => {
     const lift = held ? (on ? 1.1 : 0.9) : 1
     const fade = held && !on ? 0.42 : 1
     return (
       <div
         style={{
-          position: 'absolute', left: s.x - half + x, top: s.y - half + y, width: S, height: S,
+          position: 'absolute', left: s.x - half + at.x, top: s.y - half + at.y, width: S, height: S,
           filter: s.blur > 0.05 ? `blur(${s.blur}px)` : 'none',
           opacity: s.opacity,
           pointerEvents: open ? 'auto' : 'none',
+          // Now that they lap over each other, paint order is a thing a finger
+          // can change: the one you asked to read comes over the top of the
+          // other rather than growing behind it.
+          zIndex: on ? 2 : 1,
         }}
       >
         {/* behind the card in paint order, which is what makes it light from
@@ -405,15 +440,17 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
   return (
     <>
       {/* theirs, drawn first: behind yours, and a little further away, so that
-          until the two part there is nothing of it to see but its light */}
+          until the two part there is nothing of it to see but its light — and
+          once they have parted, still the far one of the two, with yours lying
+          over its edge the way the photograph you set down second does */}
       {one({
         card: theirs, url: theirUrl, hue: hueThem, label: `@${them}`,
-        x: dx, y: dy, scale: 0.88 + 0.12 * s.part, halo: haloThem,
+        at: seat(1), scale: 0.88 + 0.12 * s.part, halo: haloThem,
         mine: false, on: held === 'theirs',
       })}
       {one({
         card: yours, url: yourUrl, hue: hueYou, label: 'yours',
-        x: -dx, y: -dy, scale: 1, halo: haloYou,
+        at: seat(-1), scale: 1, halo: haloYou,
         mine: true, on: held === 'yours',
       })}
     </>
