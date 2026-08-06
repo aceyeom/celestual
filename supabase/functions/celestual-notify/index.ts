@@ -6,11 +6,18 @@
 // attempt, so it can be safely invoked by either a Supabase Database Webhook
 // (on insert to celestual_notifications) or pg_cron.
 //
-// The email is the reveal channel for the earlier entrant (framework Screen 8):
-// subject quiet and unmistakable, body in the product's own registers (serif
+// The email is a reveal channel for BOTH halves of a mutual (framework Screen
+// 8): subject quiet and unmistakable, body in the product's own registers (serif
 // italic for the feeling, small sans for the mechanics), single warm accent on
 // deep navy. Every sentence is literally true; nothing here ever implies
 // activity that didn't happen (the NGL line — see ULTIMATE-PRODUCT-FRAMEWORK §6.2).
+//
+// Since 0023 the queue can hold a row for each side rather than only the earlier
+// entrant, and each row says whether a card is waiting (`has_card`) — the same
+// boolean the Instagram DM carries, and the same seal: THAT there is a card,
+// never a word of it. The rule that decides who gets mail is unchanged and is in
+// celestual_submit: an address is only ever used by the person who stored it.
+// Nobody is emailed at an address that arrived on somebody else's request.
 //
 // Retry / dead-letter: a failing send is retried with exponential backoff up to
 // MAX_ATTEMPTS, after which the row is marked `failed_at` (dead-lettered) so a
@@ -41,7 +48,17 @@ const supabase = createClient(
 // The palette is docs/DESIGN.md's: deep navy field, cream text, slate for the
 // mechanical voice, one warm star. Georgia stands in for Instrument Serif in
 // mail clients; Arial for Space Grotesk.
-function emailHtml(other: string) {
+function emailHtml(other: string, hasCard: boolean) {
+  // The card line says THAT there is one, never a word of what it says. Those
+  // words are read once, in the product, by the person they were written to
+  // (migration 0022, docs/STAR-CARDS.md) — an email is forwarded, screenshotted
+  // and left open on a desk, and none of that is a thing we get to do to
+  // somebody else's message.
+  const card = hasCard
+    ? `<p style="color:#f2eee5;font-size:15px;line-height:1.7;margin:18px auto 0;max-width:380px;font-family:Arial,sans-serif">
+         they left a card for you. it opens when you do.
+       </p>`
+    : '';
   return `
   <div style="background:#070b14;padding:48px 24px;font-family:Georgia,serif;color:#f2eee5;text-align:center">
     <div style="font-size:13px;letter-spacing:6px;color:#8b94a8;font-family:Arial,sans-serif">CELESTUAL</div>
@@ -53,6 +70,7 @@ function emailHtml(other: string) {
       you entered @${other}. @${other} entered you.<br/>
       this only ever happens when it&rsquo;s real on both sides.
     </p>
+    ${card}
     <a href="${SITE}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
        padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:30px">go see it</a>
     <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:36px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
@@ -63,7 +81,7 @@ function emailHtml(other: string) {
   </div>`;
 }
 
-async function sendEmail(to: string, other: string) {
+async function sendEmail(to: string, other: string, hasCard: boolean) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -74,7 +92,7 @@ async function sendEmail(to: string, other: string) {
       from: FROM,
       to,
       subject: `celestual: it's mutual.`,
-      html: emailHtml(other),
+      html: emailHtml(other, hasCard),
     }),
   });
   if (!res.ok) throw new Error(`resend ${res.status}: ${await res.text()}`);
@@ -84,7 +102,7 @@ Deno.serve(async () => {
   const nowIso = new Date().toISOString();
   const { data: pending, error } = await supabase
     .from('celestual_notifications')
-    .select('id, to_email, self_handle, other_handle, attempts')
+    .select('id, to_email, self_handle, other_handle, has_card, attempts')
     .is('sent_at', null)
     .is('failed_at', null)
     .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
@@ -99,7 +117,7 @@ Deno.serve(async () => {
   const deadLettered: string[] = [];
   for (const n of pending ?? []) {
     try {
-      await sendEmail(n.to_email, n.other_handle);
+      await sendEmail(n.to_email, n.other_handle, n.has_card === true);
       await supabase.from('celestual_notifications').update({ sent_at: new Date().toISOString() }).eq('id', n.id);
       sent++;
     } catch (e) {

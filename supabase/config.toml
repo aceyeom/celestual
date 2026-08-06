@@ -29,6 +29,14 @@ verify_jwt = false
 [functions.celestual-manychat]
 verify_jwt = false
 
+# The push half of the mutual reveal (migration 0023, docs/MANYCHAT-MUTUAL-DM.md).
+# Invoked by pg_cron or a Database Webhook, neither of which carries a JWT. Same
+# posture as celestual-notify: it drains a queue only a real match can fill, and
+# answers with counts, so triggering it reveals nothing and sends nothing that
+# wasn't already owed to the person receiving it.
+[functions.celestual-mutual-dm]
+verify_jwt = false
+
 # School (.edu) email verification. Invoked by anonymous visitors (with the anon
 # key) from the join sheet, so JWT verification is off; the function enforces its
 # own domain check, per-address rate limit, and code-hash comparison instead.

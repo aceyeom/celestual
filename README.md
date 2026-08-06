@@ -22,7 +22,11 @@ The product direction is fixed by one document —
   way the ping is: the words ride on the ping row and the server will only ever
   release them to the other person once the pair is mutual; the photograph never
   leaves the phone that took it. At a match both cards unseal in the same
-  instant (**[docs/STAR-CARDS.md](./docs/STAR-CARDS.md)**).
+  instant (**[docs/STAR-CARDS.md](./docs/STAR-CARDS.md)**) — and the half of the
+  pair who wasn't looking at a screen is told: by email, and on Instagram
+  through the same ManyChat relay that verifies handles, saying that it's mutual
+  and that a card is waiting, never a word of what it says
+  (**[docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md)**).
 - **Loop A — the recruiter screen.** The moment a ping is placed you're told
   the truth: *standing* (they're reachable on celestual) or *waiting* (they
   aren't yet — and they'll never know you had anything to do with it), plus
@@ -90,13 +94,15 @@ celestual/
 │   │                 0015 the identity router · 0016 the recruitment program ·
 │   │                 0017 the First Light trial + the 20s grace + the admin dashboard ·
 │   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
-│   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card
+│   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card ·
+│   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides)
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
-│                     celestual-manychat · celestual-ig-webhook · celestual-edu-verify ·
-│                     celestual-relogin · celestual-recruit (retired) ·
-│                     celestual-trial · celestual-admin ·
-│                     celestual-stripe · celestual-stripe-webhook
+│                     celestual-manychat · celestual-mutual-dm · celestual-ig-webhook ·
+│                     celestual-edu-verify · celestual-relogin ·
+│                     celestual-recruit (retired) · celestual-trial · celestual-admin ·
+│                     celestual-stripe · celestual-stripe-webhook ·
+│                     _shared/mutual.ts (the one copy of the mutual line)
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)
@@ -170,6 +176,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
 | [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | **The star & card system**: the card every ping carries, why it is a circle, how a ping resolves into one, the mutual reveal, and the split that keeps the words on the server and the photograph on the phone |
 | [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
+| [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | **Telling someone on Instagram that it's mutual**: why Meta's 24-hour window means a match can't just ring a phone, the two legal carriers that reach them anyway (a push while the window is open, the relay's next reply when it isn't), the email that goes to both sides in parallel, and the step-by-step to get it live |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |
