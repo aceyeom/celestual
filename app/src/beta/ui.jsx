@@ -14,7 +14,7 @@
 //   back toward the leather. That is the entire hierarchy system.
 
 import { useEffect, useRef, useState } from 'react'
-import { C, TEXT, LINE, FONT, SIZE, LEAD, TRACK, R, S, FRAME, MEASURE, LIGHT, rgba, groundOf, faceOf, stamp, wordCount } from './tokens.js'
+import { C, TEXT, LINE, ONSKY, FONT, SIZE, LEAD, TRACK, R, S, FRAME, MEASURE, INDEX_W, LIGHT, rgba, groundOf, faceOf, stamp, wordCount } from './tokens.js'
 import { leatherSurface, paperSurface, groundSurface, stitching } from './texture.js'
 
 // One breakpoint in the whole product. Below it the case is a pocket edition:
@@ -71,27 +71,228 @@ export function Frame() {
   )
 }
 
+// ── the masthead ─────────────────────────────────────────────────────────────
+// One bar across the head of every page: the wordmark on the left, the way into
+// the index on the right, both on the same baseline. It is the same object on
+// every screen, which is the whole point — the index used to be a bookmark
+// ribbon hanging off the top-right corner, set vertically, on its own scrap of
+// leather with its own trim and its own shadow. Two problems with that, and
+// only one of them was decoration: it was the single element in the product
+// that was not aligned to anything else, and it read as a thing stuck ON the
+// page rather than as part of it.
+//
+// So it is set horizontally, in the masthead, in the same stamped label the
+// rest of the interface labels things with, and it has no plate under it at
+// all. The mark beside it is three ruled entries — an index, drawn as an index
+// is set — and it is the only thing that changes when the index is open.
+export function Masthead({ open, onToggle, hidden }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 'max(28px, calc(env(safe-area-inset-top) + 22px))',
+        left: `max(34px, calc(env(safe-area-inset-left) + 26px))`,
+        right: `max(34px, calc(env(safe-area-inset-right) + 26px))`,
+        zIndex: 30,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: S.lg,
+        // the bar itself is never a hit target: it spans the whole head of the
+        // page, and a transparent strip that eats clicks is worse than no bar
+        pointerEvents: 'none',
+        opacity: hidden ? 0 : 1,
+        transition: 'opacity .45s ease',
+      }}
+    >
+      <Wordmark size={13} />
+      <IndexTab open={open} onToggle={onToggle} hidden={hidden} />
+    </div>
+  )
+}
+
+function IndexTab({ open, onToggle, hidden }) {
+  const [hot, setHot] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={open ? 'close the index' : 'the index'}
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+      style={{
+        pointerEvents: hidden ? 'none' : 'auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: '8px 0',
+        color: open || hot ? TEXT.read : TEXT.quiet,
+        transition: 'color .2s linear',
+      }}
+    >
+      <span aria-hidden style={{ display: 'block', width: 18, flex: '0 0 auto' }}>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            style={{
+              display: 'block',
+              height: 1,
+              marginTop: i ? 4 : 0,
+              // closed, it is a stack of entries with one short line, the way a
+              // page of an index actually sets. Open, the short line moves — a
+              // finger keeping the place, and nothing else in the bar moves.
+              width: (open ? i === 1 : i !== 1) ? '100%' : '56%',
+              background: open ? C.caramel : 'currentColor',
+              transition: 'width .3s cubic-bezier(.16,.84,.28,1), background .2s linear',
+            }}
+          />
+        ))}
+      </span>
+      <span
+        style={{
+          fontFamily: FONT.sans,
+          fontWeight: 400,
+          fontSize: SIZE.label,
+          letterSpacing: TRACK.label,
+          textTransform: 'uppercase',
+        }}
+      >
+        index
+      </span>
+    </button>
+  )
+}
+
+// ── the index ────────────────────────────────────────────────────────────────
+// Not a menu that appears over the page: a COLUMN the page makes room for. It
+// takes its width out of the setting, the setting re-centres in what is left,
+// and the two move together — which is the difference between opening a drawer
+// and having something drop on top of your work.
+//
+// It has no panel, no fill and no trim. What separates it from the page is one
+// tooled channel down its left edge, exactly the rule the rest of the product
+// is divided with, and a wash of the ground itself deep enough to read type
+// over the chart. On a phone there is no width to give away, so the column is
+// the whole measure and the page steps aside for it.
+export function IndexColumn({ open, items, screen, go, narrow }) {
+  return (
+    <nav
+      aria-label="the index"
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: narrow ? '100%' : INDEX_W,
+        zIndex: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 'max(116px, calc(env(safe-area-inset-top) + 104px))',
+        paddingRight: `max(${S.xl}px, calc(env(safe-area-inset-right) + ${S.lg}px))`,
+        paddingBottom: `max(${S.xl}px, env(safe-area-inset-bottom))`,
+        paddingLeft: narrow ? `max(${S.xl}px, calc(env(safe-area-inset-left) + ${S.lg}px))` : S.xl,
+        background: narrow
+          ? `linear-gradient(90deg, ${rgba(C.void, 0.88)} 0%, ${rgba(C.void, 0.95)} 30%, ${rgba(C.void, 0.95)} 100%)`
+          : `linear-gradient(90deg, ${rgba(C.void, 0.3)} 0%, ${rgba(C.void, 0.88)} 20%, ${rgba(C.void, 0.95)} 100%)`,
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? 'auto' : 'none',
+        transition: 'transform .46s cubic-bezier(.16,.84,.28,1), opacity .3s ease',
+        overflowY: 'auto',
+      }}
+    >
+      {/* the tooled channel: the same two pixels every rule in here is made of,
+          stood on end */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 2,
+          background: `linear-gradient(90deg, ${LINE.tooledDark} 0 1px, ${LINE.tooledLight} 1px 2px)`,
+        }}
+      />
+
+      <Label style={{ marginBottom: S.sm }}>the index</Label>
+      <Rule style={{ marginBottom: S.xs }} />
+
+      {items.map((it, i) => {
+        const on = it.key === screen
+        return (
+          <button
+            key={it.key}
+            type="button"
+            onClick={() => go(it.key)}
+            aria-current={on ? 'page' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 14,
+              width: '100%',
+              textAlign: 'left',
+              padding: '14px 0',
+              borderBottom: `1px solid ${LINE.faint}`,
+              color: on ? TEXT.read : TEXT.quiet,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: FONT.mono,
+                fontSize: SIZE.tick,
+                letterSpacing: TRACK.tick,
+                color: on ? C.caramel : TEXT.faint,
+                flex: '0 0 auto',
+              }}
+            >
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <span style={{ flex: 1, fontFamily: FONT.sans, fontWeight: 300, fontSize: 15, letterSpacing: '0.02em' }}>{it.name}</span>
+            {on && (
+              <span
+                aria-hidden
+                className="lamp"
+                style={{ alignSelf: 'center', width: 5, height: 5, borderRadius: '50%', background: C.caramel, flex: '0 0 auto' }}
+              />
+            )}
+          </button>
+        )
+      })}
+
+      <div style={{ flex: 1, minHeight: S.xl }} />
+      <Tick>the bindery edition · beta</Tick>
+    </nav>
+  )
+}
+
 // ── the column ───────────────────────────────────────────────────────────────
-// Every screen hangs off a rule on the left instead of floating in the middle
-// of the viewport. This one structural decision does more to kill the "generic
-// product page" read than any colour ever could: centred stacks are what a
-// template gives you, and a hung column is what a person laying out a page
-// does. The rule is real, and it is the spine.
-// `paddingTop` clears the ribbon's tail and `paddingRight` keeps the measure
-// out from under it, so no page ever has to know the ribbon exists. The
-// colophon is the last thing in the column rather than pinned to the viewport:
-// a colophon belongs at the foot of the setting, and a fixed one sits on top of
-// whatever scrolls beneath it.
+// The measure is narrow and the type inside it is ranged left, hung off a real
+// rule — the spine. That much is unchanged, and it is still what keeps a page
+// from reading as a centred template stack.
+//
+// What changed is where the column SITS. It used to be pinned to the left edge
+// of the window, which on a phone is invisible (the measure is the screen) and
+// on a laptop leaves the entire page in the left third with a third of a metre
+// of empty case beside it — the same layout reading as two different products
+// depending on what you opened it on. The block is centred now, the setting
+// inside it is not, and the phone layout comes out byte for byte where it was.
+//
+// `paddingTop` clears the masthead. The colophon is the last thing in the
+// column rather than pinned to the viewport: a colophon belongs at the foot of
+// the setting, and a fixed one sits on top of whatever scrolls beneath it.
 export function Column({ children, spine = true, wide = false, colophon = true, style }) {
   return (
     <div
       style={{
         position: 'relative',
         minHeight: '100dvh',
-        padding: `max(132px, calc(env(safe-area-inset-top) + 118px)) max(${S.xxl}px, calc(env(safe-area-inset-right) + ${S.lg}px)) ${S.xxl}px max(${S.xl}px, calc(env(safe-area-inset-left) + ${S.lg}px))`,
+        padding: `max(116px, calc(env(safe-area-inset-top) + 104px)) max(${S.xl}px, calc(env(safe-area-inset-right) + ${S.lg}px)) ${S.xxl}px max(${S.xl}px, calc(env(safe-area-inset-left) + ${S.lg}px))`,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
+        alignItems: 'center',
         ...style,
       }}
     >
@@ -208,6 +409,7 @@ export const Label = ({ children, tone = 'quiet', style }) => (
       letterSpacing: TRACK.label,
       textTransform: 'uppercase',
       color: tone === 'lit' ? C.caramel : tone === 'read' ? TEXT.read : tone === 'ink' ? C.ink2 : TEXT.faint,
+      textShadow: tone === 'ink' ? undefined : ONSKY,
       ...style,
     }}
   >
@@ -223,6 +425,7 @@ export const Tick = ({ children, tone = 'faint', style }) => (
       fontSize: SIZE.tick,
       letterSpacing: TRACK.tick,
       color: tone === 'lit' ? C.caramel : tone === 'read' ? TEXT.read : tone === 'ink' ? C.ink3 : TEXT.faint,
+      textShadow: tone === 'ink' ? undefined : ONSKY,
       ...style,
     }}
   >
@@ -324,28 +527,26 @@ export function Panel({ children, stitched = true, raised = true, style }) {
   )
 }
 
-// An ivory leaf tipped into the case. Paper is thin, so its shadow is tight and
-// its edge is a real edge: a hairline of shadow on the underside, none on top.
-export function Leaf({ children, tone = 'ivory', style, className = '' }) {
-  const base = tone === 'chalk' ? C.chalk : tone === 'ivory2' ? C.ivory2 : C.ivory
-  return (
-    <div
-      className={className}
-      style={{
-        position: 'relative',
-        ...paperSurface(base),
-        color: C.ink,
-        borderRadius: R.press,
-        boxShadow: LIGHT.leaf,
-        padding: S.lg,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
+// ── the leaf, and why there isn't one ────────────────────────────────────────
+// There used to be a `Leaf` here: an ivory sheet of laid paper tipped into the
+// case, and every form in the product was written on one. It was the most
+// literal expression of the idea this brand is built on, and on the new ground
+// it was the worst thing on the page.
+//
+// A slab of #F1E7D3 on a near-black case is a contrast ratio somewhere north of
+// eighteen to one, held across a rectangle several hundred pixels wide. Nothing
+// else in the frame can survive next to that: the type on the leather beside it
+// goes grey, the galaxy behind it goes flat, and the eye reads the RECTANGLE
+// rather than anything written in it. It was legible in the way a lightbox is
+// legible.
+//
+// So paper is no longer a surface the interface is built out of. It is reserved
+// for the two objects that are genuinely made of it — the seal, which is the
+// card a ping carries, and the plate, which is the one struck label per screen
+// — and everything that used to sit on a leaf is now set directly on the case
+// in ivory. The ground got dark enough to hold it; that was the whole point of
+// the ground getting dark.
+//
 // ── the plates (buttons) ─────────────────────────────────────────────────────
 // A letterpress plate: ivory stock, the label struck into it, a keyline printed
 // inside the trim. Pressing it pushes it into the leather by one pixel and
@@ -371,7 +572,14 @@ export function Plate({ children, onClick, disabled, full, tone = 'ivory', style
   // ugly and a lie about the material. An unstruck plate is simply the OUTLINE
   // of one: the trim is scored into the leather, and nothing has been printed
   // on it yet.
-  const surface = disabled ? { background: 'transparent' } : dark ? leatherSurface(C.hide2) : paperSurface(C.ivory)
+  //
+  // It carries a little of the ground with it, though, which it did not have to
+  // when the ground was a flat brown. A scored recess with NOTHING in it lands
+  // wherever the chart happens to be — and the one time it lands on the
+  // galactic centre, the outline and its label both vanish into the light. The
+  // fill is the case's own colour, deepened the way a recess deepens; it reads
+  // as scored rather than as a slab, and it always reads.
+  const surface = disabled ? { background: rgba(C.void, 0.5) } : dark ? leatherSurface(C.hide2) : paperSurface(C.ivory)
   return (
     <button
       type="button"
@@ -388,8 +596,8 @@ export function Plate({ children, onClick, disabled, full, tone = 'ivory', style
         padding: '17px 30px',
         borderRadius: R.press,
         ...surface,
-        color: disabled ? rgba(C.ivory, 0.3) : dark ? C.ivory : C.ink,
-        border: disabled ? `1px solid ${rgba(C.ivory, 0.11)}` : '1px solid transparent',
+        color: disabled ? rgba(C.ivory, 0.42) : dark ? C.ivory : C.ink,
+        border: disabled ? `1px solid ${rgba(C.ivory, 0.16)}` : '1px solid transparent',
         boxShadow: disabled
           ? LIGHT.well
           : down
@@ -417,7 +625,7 @@ export function Plate({ children, onClick, disabled, full, tone = 'ivory', style
           fontSize: 11.5,
           letterSpacing: TRACK.label,
           textTransform: 'uppercase',
-          textShadow: disabled ? 'none' : dark ? '0 1px 0 rgba(0,0,0,.45)' : '0 1px 0 rgba(255,255,255,.5)',
+          textShadow: disabled ? ONSKY : dark ? '0 1px 0 rgba(0,0,0,.45)' : '0 1px 0 rgba(255,255,255,.5)',
         }}
       >
         {children}
@@ -463,11 +671,15 @@ export function Quiet({ children, onClick, style }) {
 }
 
 // ── the ruled line (the field) ───────────────────────────────────────────────
-// You do not type into a box in here. You write on a line, on a slip of paper,
-// under a printed caption, with the @ already set in front of it in the
-// typewriter face the rest of the metadata uses. A box with a 16px radius and a
-// focus glow is the single most generic object in software; a ruled line is a
-// form somebody printed.
+// You do not type into a box in here. You write on a line, under a printed
+// caption, with the @ already set in front of it in the typewriter face the
+// rest of the metadata uses. A box with a 16px radius and a focus glow is the
+// single most generic object in software; a ruled line is a form somebody
+// printed.
+//
+// `tone` is which side of the material it is printed on: `ink` on paper, and
+// `ivory` on the case, which is what every field in the product uses now that
+// the leaf is gone. Both are the same object — a caption, a rule, and a caret.
 export function Ruled({ label, prefix = '@', value, onChange, placeholder, autoFocus, onEnter, tone = 'ink', big }) {
   const ref = useRef(null)
   const [focus, setFocus] = useState(false)
@@ -485,6 +697,7 @@ export function Ruled({ label, prefix = '@', value, onChange, placeholder, autoF
             letterSpacing: TRACK.label,
             textTransform: 'uppercase',
             color: onPaper ? rgba(C.ink, 0.5) : TEXT.faint,
+            textShadow: onPaper ? undefined : ONSKY,
             marginBottom: S.sm,
           }}
         >
@@ -782,6 +995,7 @@ export function Swatches({ items, value, onChange, size = 46, round = true }) {
                 textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
                 color: on ? C.caramel : TEXT.faint,
+                textShadow: ONSKY,
               }}
             >
               {it.name}
