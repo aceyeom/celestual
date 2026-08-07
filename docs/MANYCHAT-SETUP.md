@@ -11,6 +11,16 @@ webhook goes live (platform risk is real — see `docs/SECURITY.md`, "Meta platf
 risk"). The direct-Meta alternative is documented in
 [DEBUG-IG-WEBHOOK.md](./DEBUG-IG-WEBHOOK.md).
 
+> **The same automation now also carries the reveal.** Since migration 0023 a
+> mutual match queues a DM (*"✦ You and @blah are mutual. They left a card for
+> you."*) and the reply this relay already sends carries it. Set the
+> verification relay up first with this guide, then
+> **[MANYCHAT-MUTUAL-DM.md](./MANYCHAT-MUTUAL-DM.md)** — which is also where the
+> honest answer to "can we just DM people when they match?" lives (Meta's
+> 24-hour window says no, and §1 there explains what works instead). One thing
+> changes on *this* page because of it: the `subscriber_id` field in §4 Step 2
+> is no longer optional.
+
 Written for a beginner — follow it top to bottom. ~30 minutes.
 
 > **Your specific values** (used throughout):
@@ -176,7 +186,10 @@ function's `reply` back.* Three nodes.
   }
   ```
 
-  `username` and `text` are required; `subscriber_id` is optional (audit trail).
+  All three matter now. `username` and `text` are what verification runs on;
+  `subscriber_id` used to be a nice-to-have audit trail and is, since 0023, the
+  only way we ever learn which ManyChat contact a handle is — which is what
+  lets a mutual match reach them (MANYCHAT-MUTUAL-DM.md §8.1).
 
 **Step 3 — map the response and send the feedback DM.** Still in the External
 Request node, open **Response Mapping**:
@@ -202,6 +215,10 @@ That message IS the verified-feedback DM: the function returns a human `reply` o
 
 Because the DM is an immediate reply to a message the person just sent, it sits
 inside **Meta's 24-hour standard messaging window** — fully ToS-compliant.
+
+Since 0023 this same reply also carries any mutual news waiting for that
+account, appended under whichever line above applies. Nothing to configure: it
+arrives in the same `$.reply` field you already mapped.
 
 **Step 4 — set the automation LIVE.** Drafts don't fire. Flip the toggle.
 
