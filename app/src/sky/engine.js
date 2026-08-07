@@ -75,8 +75,9 @@ export class SkyEngine {
   constructor(canvas, opts = {}) {
     this.canvas = canvas
     this.opts = opts
-    this.you = opts.you || '#FF9E6B'
-    this.them = opts.them || '#E6749E'
+    // the two lights, in the brand's one hue at two values (theme.js)
+    this.you = opts.you || '#B98A55'
+    this.them = opts.them || '#D6B78A'
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
@@ -174,7 +175,7 @@ export class SkyEngine {
   _initGL() {
     const gl = this.gl
     // `opts.ramp` swaps the Planck locus for another one-dimensional colour
-    // curve — the one hook a single-hue sky needs (blackbody.js, /beta).
+    // curve — the one hook a single-hue sky needs (blackbody.js, galaxy.js).
     // Absent, which it is everywhere in production, this is the real physics.
     this.bbTex = makeBlackbodyLUT(gl, this.opts.ramp)
     this.noiseTex = makeNoiseVolume(gl, { size: this.tier >= 2 ? 48 : 64, seed: this.opts.noiseSeed || 1337 })

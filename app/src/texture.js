@@ -1,4 +1,4 @@
-// beta/texture.js — the materials, drawn rather than downloaded.
+// texture.js — the materials, drawn rather than downloaded.
 //
 // Everything in this brand is a surface: pebbled leather, laid paper, chalk
 // card, and the fine tooth over the void. None of it is a stock image and none
@@ -282,7 +282,7 @@ export const chalkSurface = (base, { scale = 250 } = {}) => ({
   backgroundSize: `auto, ${scale}px ${scale}px`,
 })
 
-// Pick the surface for a card ground id (tokens.js GROUNDS).
+// Pick the surface for a card ground id (theme.js GROUNDS).
 export function groundSurface(g, opts) {
   if (g.texture === 'paper') return paperSurface(g.base, opts)
   if (g.texture === 'chalk') return chalkSurface(g.base, opts)

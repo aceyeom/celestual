@@ -3,7 +3,7 @@
 Every ping carries a card. It lives in `app/src/card/`, the composer is a step in
 the send flow, and the reveal is on the status page.
 
-This was `/beta` until 2026-08-02: a prototype mounted beside the real app so it
+This was a prototype route until 2026-08-02: mounted beside the real app so it
 could not touch anything. It is production now, which changed exactly two things
 about it and nothing else. The words a card carries **ride on the ping row**
 (migration 0022), sealed server-side until both sides exist. The **photograph
@@ -88,28 +88,43 @@ right up until the moment the person moves it; after that it is theirs.
 
 ### The ground
 
-A photograph, or one flat plate. `model.js` `PLATES` holds five, all dark and
-low-chroma:
+A photograph, or one MATERIAL. `theme.js` `GROUNDS` holds three, and the reason
+it is three is that these are materials rather than colours: you are choosing
+what the note is written on, and there are only so many things in a book to
+write on.
 
-| | |
-| --- | --- |
-| `ink` | `#08070D` |
-| `violet` | `#191327` |
-| `ember` | `#2B1710` |
-| `rose` | `#2B1220` |
-| `blue` | `#101A2E` |
+| id | what it is | `tone` |
+| --- | --- | --- |
+| `leaf` | ivory laid paper. the default. warm, fibrous, slightly mottled | 1 |
+| `chalk` | a chalky grey gesso card. cooler, drier, more matte | 0.55 |
+| `hide` | the leather itself, written in the pale ink the case is stamped with | 0.12 |
 
-Deliberately a short list rather than a picker. The sky has to keep reading as
-one work, and forty cards in forty saturated hues is exactly the collage the
-plan is trying to avoid; a photograph of a room at night already lands in this
-range on its own. These are **grounds, not accents** — `docs/DESIGN.md`'s
-two-accent law governs the interface, and nothing here is ever used as one.
+None of the three is an image or a CSS gradient pretending. `texture.js` renders
+each one pixel by pixel from wrapped value noise — the paper has the fibre the
+pulp settled with, the mottle where the sheet is thicker, and the fine wires and
+chain lines of the mould pressed into it — memoized as a data URL and seamless
+at any size. It is REAL at 1:1, which is the difference between a material and a
+filter.
 
-Under a photograph the type gets a flat, even scrim (`ink` at 0.32) so every
-card sets its words at one contrast. **Nothing inside the disc is a gradient.**
-The limb darkening and the warm rim that used to live here made the card read as
-a lens looking at a picture rather than a printed circle with a picture on it.
-What survives is the flat ground and the shared grain.
+Before 2026-08-07 this was five flat dark plates (`ink`, `violet`, `ember`,
+`rose`, `blue`). Every card placed under them keeps the id it was stored with;
+all five were dark, so all five map to the leather when one is drawn
+(`model.js` `LEGACY_PLATES`), and migration 0024 widened the server's validator
+to accept both sets rather than rewriting anybody's row. A card is somebody's
+words on a surface they chose, and handing back a different surface is a small
+lie.
+
+`tone` is the light that ping's star burns with, and it is measured off the
+ground exactly the way it is measured off a photograph: paper throws the palest
+light, leather the deepest. One number, no picker.
+
+Under a photograph the type gets a flat, even scrim (`ink` at 0.4) so every card
+sets its words at one contrast, and the ink comes off the GROUND rather than off
+the brand — type set ivory on ivory is the one thing this card may never do.
+**Nothing inside the disc is a gradient.** The limb darkening and the warm rim
+that used to live here made the card read as a lens looking at a picture rather
+than a struck seal with something printed on it. What survives is the material,
+the shared grain, and the double keyline printed inside the trim.
 
 **Nothing is drawn on the edge either.** A hairline ring and a bright
 chromosphere arc used to sit on the limb, and at the size a ping is actually
@@ -128,9 +143,9 @@ choosing one is choosing a register rather than downloading a font:
 
 | | Face | Scale | Leading | Tracking |
 | --- | --- | --- | --- | --- |
-| `serif` | Instrument Serif italic | 1.00 | 1.15 | 0 |
-| `sans` | Space Grotesk 500 | 0.84 | 1.34 | −0.012em |
-| `mono` | Space Mono, lowercase | 0.68 | 1.60 | +0.02em |
+| `serif` | Cormorant Garamond italic | 1.00 | 1.16 | +0.004em |
+| `sans` | Jost 300 | 0.78 | 1.46 | +0.006em |
+| `mono` | Courier Prime, lowercase | 0.62 | 1.62 | +0.02em |
 
 Each carries its own metrics. A face swap that keeps one size and one leading is
 not a design choice, it is a bug with a dropdown: mono needs air and a smaller
@@ -167,8 +182,9 @@ average over a night photograph is an average of mostly darkness, and a warm
 ceiling and a cold street through a window both come back at almost exactly
 neutral. For a plate it is the plate's own declared tone.
 
-Either way the result maps between the product's **existing two stars**: warm
-grounds burn amber, cold ones rose. No third hue, no category, nobody asked.
+Either way the result maps along the product's **one value ramp**: pale
+grounds burn wheat, deep ones saddle. One hue moved along its own value ramp.
+No second hue, no category, nobody asked.
 
 ---
 
@@ -282,7 +298,7 @@ and all of them come off one cosine — how square-on the disc is.
 - **Whose light it is hands over late.** Theirs holds pure all the way through
   the side-on peak and gives way only in the last quarter of the turn, where
   their face has taken the frame and the light has already fallen back. Crossed
-  over at side-on instead, a half-and-half of amber and rose at full intensity
+  over at side-on instead, a half-and-half of the two values at full intensity
   is orange, and the most important instant in the product came out the colour
   of a streetlight.
 - **One lens.** The disc is photographed through a perspective of 2.35 × its own

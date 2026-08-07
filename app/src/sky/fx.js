@@ -317,7 +317,7 @@ export class SpritePass {
 export function bakeTag(text, { own = false, bright = false, you = '#FF9E6B' } = {}) {
   const SCALE = 3
   const size = 11
-  const font = `700 ${size}px 'Space Mono', monospace`
+  const font = `400 ${size}px 'Courier Prime', 'Courier New', monospace`
   const meas = document.createElement('canvas').getContext('2d')
   meas.font = font
   const tw = meas.measureText(text).width

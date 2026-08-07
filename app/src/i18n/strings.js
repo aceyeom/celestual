@@ -132,16 +132,40 @@ const en = {
   'pings.revealAgain': 'see the two cards again',
   'pings.days': '{n} days left',
   'pings.today': 'lapses today',
+  // every standing row prints the date it lapses, because that date is also the
+  // date its slot comes back, and both facts were being kept from the reader
+  'pings.standsUntil': 'stands until {date}',
   'pings.elsewhere': 'placed on another device',
   'pings.elsewhereNote': 'the names live only on the device that placed them.',
+  // a slot the meter counts and this device cannot name yet. it is a real
+  // standing ping under your @, held somewhere else.
+  'pings.heldTitle': 'held on another device',
+  'pings.heldSub': 'a ping standing under your @. it keeps its own sixty days.',
+  'pings.heldRestore': 'bring my pings here',
+  'pings.heldRestoring': 'reading your pings…',
+  'pings.heldFailed': 'that read did not go through. try once more.',
   'pings.slotsUsed': '{used} of {cap} slots',
   'pings.slotEmpty': 'open slot',
   'pings.slotEmptySub': 'tap to place a ping',
   'pings.slotNext': 'a third slot',
   'pings.slotNextSub': 'from $2.99',
   'pings.expiringSoon': 'lapses in {n} days',
+  // ── renewing, said plainly ────────────────────────────────────────────────
+  // what it does, what it costs, and what it does not take. the whole confusion
+  // was that a renew button sitting between a slot meter and a paywall reads as
+  // something that might spend one of the two.
   'pings.renew': 'renew',
-  'pings.renewed': 'renewed. sixty more days.',
+  'pings.renewSub': 'sixty more days',
+  'pings.renewing': 'renewing…',
+  'pings.renewed': 'renewed. stands until {date}.',
+  'pings.renewNote': 'renewing is free, as often as you feel it. it restarts the sixty days and takes no slot.',
+  // ── when the next slot opens ──────────────────────────────────────────────
+  'pings.nextSlot': 'your next slot opens {date}',
+  'pings.nextSlotDays': 'in {n} days, when the ping on @{handle} lapses.',
+  'pings.nextSlotDaysAnon': 'in {n} days, when your soonest ping lapses.',
+  'pings.nextSlotToday': 'today, when the ping on @{handle} lapses.',
+  'pings.nextSlotTodayAnon': 'today, when your soonest ping lapses.',
+  'pings.nextSlotOr': 'or let one go now.',
   'pings.letgo': 'let go',
   'pings.letgoConfirm': 'remove this ping? the slot opens back up.',
   'pings.letgoYes': 'remove',
@@ -187,6 +211,10 @@ const en = {
   // ── screen 9 · the third slot (route key stays 'fourth') ────────────────
   'fourth.title': 'your slots are full.',
   'fourth.body': 'each one costs something. let one go, and the slot’s yours again.',
+  // the wall now carries its own clock. a slot you have to wait for is scarcity.
+  // a slot you cannot see the date of is just a locked door.
+  'fourth.opens': 'your next slot opens {date}.',
+  'fourth.opensSoon': 'your next slot opens today.',
   'fourth.cta': 'let one go',
   'fourth.back': 'not now',
 
@@ -310,6 +338,8 @@ const en = {
   'account.pingsLine': '{n} active',
   'account.pingsNone': 'no pings yet.',
   'account.pingsOpen': 'view',
+  'account.pingsElsewhere': '{n} held on another device',
+  'account.pingsRestore': 'bring them here',
   'account.sandboxNote': 'sandbox. nothing here reaches a server.',
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',
@@ -442,7 +472,7 @@ const en = {
   'privacy.h2': 'what anyone ever learns',
   'privacy.p2': 'one-sided pings are revealed to no one, ever. the only thing that surfaces is a mutual pair, shown to exactly those two people, at the same moment. there is no browsing, no profiles, no list.',
   'privacy.h3': 'the sixty days',
-  'privacy.p3': 'a ping stands for sixty days. renew it free, as often as you feel it, or let it lapse and the record is purged.',
+  'privacy.p3': 'a ping stands for sixty days. renewing restarts those sixty days, free and as often as you feel it, and it never uses a slot. let it lapse instead and the record is purged. the day a ping lapses is the day its slot opens back up, and your pings page says which day that is.',
   'privacy.h4': 'for adults',
   'privacy.p4': 'celestual is for people 18 and older.',
   'privacy.h5': 'the opt-out',

@@ -36,6 +36,7 @@ import {
 import { tempToU, blackbodyRGB } from './sky/blackbody.js'
 import { Gestures } from './sky/gestures.js'
 import { starTint, TOKENS, rgbUnit } from './theme.js'
+import { binderyRamp } from './galaxy.js'
 import { bakeTag } from './sky/fx.js'
 import { Community2D } from './sky/fallback2d.js'
 
@@ -66,8 +67,12 @@ const SURFACE_B = 1.34
 
 export class CommunityGalaxy extends SkyEngine {
   constructor(canvas, opts = {}) {
-    super(canvas, opts)
-    if (!this.ok) return new Community2D(canvas, opts)
+    // The one hue, handed in before the engine bakes its blackbody LUT — the
+    // same curve the ambient chart runs on (galaxy.js `binderyRamp`), because a
+    // community's sky printed in a second palette would read as a second
+    // product.
+    super(canvas, { ramp: binderyRamp, ...opts })
+    if (!this.ok) return new Community2D(canvas, { ramp: binderyRamp, ...opts })
 
     // ── the live population ──
     this.stars = [] // one per ping: { i, state, born, settleAt, mine, label, kind }
@@ -191,17 +196,23 @@ export class CommunityGalaxy extends SkyEngine {
     const g = this.gasPass
     g.arms = 2
     g.dust = 1.0
-    g.warm = linearOf('#F0A876', 1.0)
-    g.mid = linearOf(this.them, 0.88)
-    g.cool = linearOf('#7B7CB0', 0.82)
+    // dust caught in lamplight, going cold at the rim — galaxy.js `_tuneGas`
+    // carries the argument for why the rim goes cool by losing warmth rather
+    // than by gaining blue
+    g.warm = linearOf('#CE9645', 1.0)
+    g.mid = linearOf('#8F5F2C', 0.97)
+    g.cool = linearOf(TOKENS.chalk, 0.87)
   }
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.13
-    p.threshold = 1.9
-    p.knee = 0.5
-    p.vignette = 0.55
-    p.exposure = 0.92
+    p.bloomAmount = 0.2
+    p.threshold = 1.45
+    p.knee = 0.6
+    p.vignette = 0.36
+    p.exposure = 1.12
+    // no lateral chromatic spread: in a one-hue brand a green and magenta
+    // fringe on a bright star reads as a rendering fault, not as a lens
+    p.chroma = 0
     p.floor = rgbUnit(TOKENS.ink)
     p.sky = {
       top: [0.0062, 0.0046, 0.0034],
@@ -1029,8 +1040,9 @@ export class CommunityGalaxy extends SkyEngine {
     }
     const R = this.diskR || 0.55
     const white = [1, 0.97, 0.93]
-    const warm = linearOf('#FFC79A')
-    const cool = linearOf('#9FC0FF')
+    // the motes, in the one hue: a warm ember and a pale one, never a blue one
+    const warm = linearOf('#E8BA6E')
+    const cool = linearOf(TOKENS.cream2)
     for (const m of this._motes) {
       m.ang += dt * m.spd
       m.tw += dt * m.tws

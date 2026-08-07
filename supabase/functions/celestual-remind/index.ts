@@ -25,6 +25,7 @@
 //
 // Deploy:  supabase functions deploy celestual-remind
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as mail from '../_shared/mail.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
@@ -35,66 +36,59 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-// Shared frame: deep navy, cream, slate, the single warm star (docs/DESIGN.md).
-function frame(inner: string) {
-  return `
-  <div style="background:#070b14;padding:48px 24px;font-family:Georgia,serif;color:#f2eee5;text-align:center">
-    <div style="font-size:13px;letter-spacing:6px;color:#8b94a8;font-family:Arial,sans-serif">CELESTUAL</div>
-    <div style="font-size:22px;color:#ffa25c;margin:24px 0 0">&#10022;</div>
-    ${inner}
-  </div>`;
-}
+// The three notes this job sends. The frame, the mark, the rules and the plate
+// all come from _shared/mail.ts, so these functions own only their words.
 
+// ── the lapse note ───────────────────────────────────────────────────────────
+// The one email in the product whose whole job is a decision, so it names both
+// halves of it and prices them: renewing is free, restarts the sixty days, and
+// takes no slot; letting go frees the slot on the same day. That second fact is
+// the one the product used to keep to itself.
 function lapseHtml(lapseDate: string) {
-  return frame(`
-    <h1 style="font-weight:400;font-style:italic;font-size:30px;line-height:1.2;margin:16px 0 0;color:#f2eee5">
-      still feel it?
-    </h1>
-    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:22px auto 0;max-width:380px;font-family:Arial,sans-serif">
-      one of your pings lapses on ${lapseDate}. renewing is free and takes one tap —
-      or let it go, and it disappears completely. nothing was ever revealed either way.
-    </p>
-    <a href="${SITE}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
-       padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:28px">keep it standing</a>
-    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:34px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
-      this note is about your own ping only — we can't and don't tell you anything about
-      anyone else. celestual stores who you entered as a salted hash; even we can't read it.
-      opt out entirely at ${SITE}/optout.
-    </p>`);
+  return mail.frame({
+    kicker: 'one of your pings',
+    inner: `
+      ${mail.title('still feel it?')}
+      ${mail.body(
+        `it lapses on ${lapseDate}. renewing is one tap and free, as often as you feel it. ` +
+        `it restarts the sixty days from the day you tap it, and it never uses a slot.`,
+      )}
+      ${mail.body('or let it go, and it disappears completely. nothing was ever revealed either way, and the slot opens back up the same day.')}
+      ${mail.plate(SITE, 'keep it standing')}
+      ${mail.tick(`the slot opens ${lapseDate}`, mail.C.caramel)}
+      ${mail.colophon(
+        `this note is about your own ping only. we cannot and do not tell you anything about anyone else: ` +
+        `celestual stores who you entered as a salted hash, and even we cannot read it. opt out entirely at ${SITE}/optout.`,
+      )}`,
+  });
 }
 
 function openHtml(name: string, slug: string) {
-  return frame(`
-    <h1 style="font-weight:400;font-style:italic;font-size:32px;line-height:1.2;margin:16px 0 0;color:#f2eee5">
-      ${name} is open.
-    </h1>
-    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:22px auto 0;max-width:380px;font-family:Arial,sans-serif">
-      the threshold tripped. everyone who counted themselves in is finding out right now,
-      together. the first pings land into a room that's already full.
-    </p>
-    <a href="${SITE}/c/${slug}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
-       padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:28px">place your first ping</a>
-    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:34px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
-      you're reading this because you preregistered for this opening. one-sided pings are
-      never revealed to anyone. opt out entirely at ${SITE}/optout.
-    </p>`);
+  return mail.frame({
+    kicker: name,
+    inner: `
+      ${mail.title('it&rsquo;s open.')}
+      ${mail.body(
+        'the threshold tripped. everyone who counted themselves in is finding out right now, together. ' +
+        'the first pings land into a room that is already full.',
+      )}
+      ${mail.plate(`${SITE}/c/${slug}`, 'place your first ping')}
+      ${mail.colophon(
+        `you&rsquo;re reading this because you preregistered for this opening. one-sided pings are never ` +
+        `revealed to anyone. opt out entirely at ${SITE}/optout.`,
+      )}`,
+  });
 }
 
 function revealHtml(name: string, slug: string, pings: number, matches: number) {
-  return frame(`
-    <p style="font-size:11px;letter-spacing:3px;color:#8b94a8;font-family:Arial,sans-serif;margin:18px 0 0;text-transform:uppercase">${name} &middot; week one</p>
-    <h1 style="font-weight:400;font-style:italic;font-size:32px;line-height:1.25;margin:12px 0 0;color:#f2eee5">
-      ${pings.toLocaleString()} pings placed.<br/>${matches.toLocaleString()} mutual matches.
-    </h1>
-    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:22px auto 0;max-width:380px;font-family:Arial,sans-serif">
-      every one of them found out something true. no names, ever — numbers only,
-      and every number exact.
-    </p>
-    <a href="${SITE}/c/${slug}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
-       padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:28px">see the page</a>
-    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:34px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
-      you're reading this because you were part of this opening. opt out entirely at ${SITE}/optout.
-    </p>`);
+  return mail.frame({
+    kicker: `${name} &middot; week one`,
+    inner: `
+      ${mail.title(`${pings.toLocaleString()} pings placed.<br/>${matches.toLocaleString()} mutual matches.`)}
+      ${mail.body('every one of them found out something true. no names, ever. numbers only, and every number exact.')}
+      ${mail.plate(`${SITE}/c/${slug}`, 'see the page')}
+      ${mail.colophon(`you&rsquo;re reading this because you were part of this opening. opt out entirely at ${SITE}/optout.`)}`,
+  });
 }
 
 async function send(to: string, subject: string, html: string) {

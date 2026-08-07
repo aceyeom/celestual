@@ -336,6 +336,27 @@ export default function App() {
   }, [demo, homeCommunity])
   const ownPublic = publicStar && normHandle(me) ? normHandle(me) : null
 
+  // ── when the next slot opens ────────────────────────────────────────────────
+  // Scarcity is the sincerity mechanism, and a mechanism nobody can see the
+  // clock on is just a wall. Every standing ping has a lapse date; the soonest
+  // one IS the date a slot comes back, and it is a fact the product already
+  // knows and was not saying anywhere.
+  //
+  // A restored row with no name still counts — the clock is real even when the
+  // @ it belongs to lives only on the device that typed it.
+  const nextSlot = useMemo(() => {
+    const standing = pings.filter((p) => !p.mutual && p.expires_at)
+    if (!standing.length) return null
+    const soonest = standing.reduce((a, b) => (Date.parse(a.expires_at) <= Date.parse(b.expires_at) ? a : b))
+    const at = Date.parse(soonest.expires_at)
+    if (!Number.isFinite(at)) return null
+    return {
+      handle: soonest.handle ? normHandle(soonest.handle) : null,
+      at: soonest.expires_at,
+      days: Math.max(0, Math.ceil((at - Date.now()) / 864e5)),
+    }
+  }, [pings])
+
   // ── overlays ──
   const [accountOpen, setAccountOpen] = useState(false)
   // { handle, onDone } while the DM-verification overlay is up.
@@ -541,6 +562,22 @@ export default function App() {
   const slotsStanding = demo
     ? standingCount(pings)
     : Math.max(standingCount(pings), Number.isFinite(slots?.standing) ? slots.standing : 0)
+
+  // ── the gap, and why it is now a visible thing ──────────────────────────────
+  // A device that has never restored holds no ping rows, and the server still
+  // answers the meter honestly: two of two held. So the ledger said "your slots
+  // are full" over an empty list, and placing a ping failed with `no_slots` for
+  // a reason nothing on screen could account for. That is the product calling
+  // its own user a liar.
+  //
+  // Two things fix it, and both are needed. Below, `restoreLedger` runs on any
+  // proven session rather than only at the moment somebody presses "log in", so
+  // the list normally arrives on its own. And here, whatever is left over after
+  // that — a restore that has not landed yet, or the pre-0010 rows whose targets
+  // exist only as hashes and genuinely cannot be named — is counted, so the
+  // ledger can DRAW those slots as held-elsewhere rather than leave the meter
+  // asserting something the list does not show.
+  const unaccounted = Math.max(0, slotsStanding - standingCount(pings))
   useEffect(() => {
     if (demo) return
     let live = true
@@ -1088,57 +1125,109 @@ export default function App() {
     }
   }, [me])
 
-  const restorePings = useCallback(
+  // ── the ledger, restored ────────────────────────────────────────────────────
+  // The one merge, used by every path that can bring pings back: the explicit
+  // "log in", the magic link, and the quiet restore that runs on any proven
+  // session below. It used to exist only inside the login flow, which is the
+  // whole reason a second device could sit there holding two slots and showing
+  // none of them: nothing but pressing "log in" ever asked the server what this
+  // @ was holding.
+  //
+  // `ledger` is what the server said, already normalised by api/celestual.js.
+  const mergeLedger = useCallback((server) => {
+    setPings((local) => {
+      // Local plaintext wins. The server adds (a) mutual rows this device
+      // hasn't seen, (b) named standing rows it has not seen either, and (c)
+      // anonymous standing rows — pings placed before migration 0010, whose
+      // targets exist only as salted hashes and genuinely cannot be named on
+      // any device but the one that typed them. Any local unmatched named row
+      // already accounts for one server anonymous row, so only the surplus
+      // becomes an anonymous row here.
+      const localNamed = local.filter((p) => p.handle)
+      const names = new Set(localNamed.map((p) => normHandle(p.handle)))
+      // A restored row rebuilds its cards through the same clamps the composer
+      // writes under, and comes back SEALED: a match this device has never seen
+      // is still a match nobody has opened.
+      const restore = (srv) => {
+        const h = normHandle(srv.handle || '')
+        return {
+          ...srv,
+          card: srv.card ? fromWire(srv.card, { handle: h, placed: srv.time }) : null,
+          // the photograph stayed on the phone that took it, so this card
+          // stands on its own ground — the same thing that happens when
+          // somebody chooses not to add one
+          photoId: null,
+          theirCard: srv.theirCard ? fromWire(srv.theirCard, { handle: h }) : null,
+          revealed: false,
+        }
+      }
+      const merged = [...localNamed]
+      for (const srv of server) {
+        if (srv.handle && !names.has(normHandle(srv.handle))) merged.push({ ...restore(srv), reachable: true })
+      }
+      const serverAnon = server.filter((srv) => !srv.handle)
+      const localUnmatched = localNamed.filter((p) => !p.mutual).length
+      for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
+        merged.push({ ...restore(serverAnon[i]), reachable: false })
+      }
+      return merged
+    })
+  }, [])
+
+  // Ask the server what this @ is holding, and fold it in. Returns whether the
+  // read actually landed, so the ledger can tell "nothing to restore" apart from
+  // "we never got an answer" — the two look identical on screen and mean
+  // opposite things.
+  const [ledgerState, setLedgerState] = useState({ phase: 'idle' }) // idle | reading | read | failed
+  const readLedger = useCallback(
     async (proofOverride, meOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
       const handle = normHandle(meOverride) || normHandle(me)
+      if (demo || !handle || !proof) return false
+      setLedgerState({ phase: 'reading' })
       try {
         const server = await fetchMyPings({ handle, proof, demo })
-        if (server.length) {
-          setPings((local) => {
-            // Local plaintext wins. The server adds (a) mutual rows this device
-            // hasn't seen and (b) anonymous standing rows — unmatched pings it
-            // stores only as hashes, placed on some other device. Any local
-            // unmatched named row already accounts for one server anonymous
-            // row, so only the surplus becomes an anonymous row here.
-            const localNamed = local.filter((p) => p.handle)
-            const names = new Set(localNamed.map((p) => normHandle(p.handle)))
-            // A restored row rebuilds its cards through the same clamps the
-            // composer writes under, and comes back SEALED: a match this
-            // device has never seen is still a match nobody has opened.
-            const restore = (s) => {
-              const h = normHandle(s.handle || '')
-              return {
-                ...s,
-                card: s.card ? fromWire(s.card, { handle: h, placed: s.time }) : null,
-                // the photograph stayed on the phone that took it, so this
-                // card stands on its plate — the same thing that happens when
-                // somebody chooses not to add one
-                photoId: null,
-                theirCard: s.theirCard ? fromWire(s.theirCard, { handle: h }) : null,
-                revealed: false,
-              }
-            }
-            const merged = [...localNamed]
-            for (const s of server) {
-              if (s.handle && !names.has(normHandle(s.handle))) merged.push({ ...restore(s), reachable: true })
-            }
-            const serverAnon = server.filter((s) => !s.handle)
-            const localUnmatched = localNamed.filter((p) => !p.mutual).length
-            for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
-              merged.push({ ...restore(serverAnon[i]), reachable: false })
-            }
-            return merged
-          })
-        }
+        if (server.length) mergeLedger(server)
+        setLedgerState({ phase: 'read' })
+        return true
       } catch {
-        /* best-effort — land on whatever this device holds */
+        setLedgerState({ phase: 'failed' })
+        return false
       }
+    },
+    [me, demo, session, mergeLedger],
+  )
+
+  // ── the quiet restore ───────────────────────────────────────────────────────
+  // Any device with a proven session reads the ledger once, on its own, without
+  // anybody pressing anything. This is the actual fix for "my slots say two of
+  // two and my list is empty": the meter was reading the server and the list was
+  // reading the device, and only one of the two was ever asked.
+  //
+  // Keyed on the proven handle, so re-verifying as somebody else reads theirs.
+  const ledgerRead = useRef('')
+  useEffect(() => {
+    if (demo) return
+    const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+    const handle = normHandle(session?.handle) || normHandle(me)
+    if (!proof || !handle || ledgerRead.current === handle) return
+    ledgerRead.current = handle
+    readLedger(proof, handle).catch(() => {})
+  }, [demo, session, me, readLedger])
+
+  // The explicit door: read the ledger, then land on it. What "log in" does.
+  const restorePings = useCallback(
+    async (proofOverride, meOverride) => {
+      await readLedger(proofOverride, meOverride)
       setLoginMode(false)
       go('pings')
     },
-    [me, demo, session, go],
+    [readLedger, go],
   )
+
+  // The ledger's own "try that again", for the rows the meter counts and the
+  // list cannot name yet.
+  const restoreLedger = useCallback(() => readLedger(), [readLedger])
 
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
@@ -1221,6 +1310,15 @@ export default function App() {
   )
 
   // ── the status page's actions ──
+  // ── renewing ────────────────────────────────────────────────────────────────
+  // One tap puts sixty more days on the clock, counted from NOW rather than
+  // added to what is left. It is free, it is unlimited, and it does not spend a
+  // slot or a ping: it is the same row, standing longer. That last part is what
+  // was unclear, and the layout is why — the button sat between a slot meter and
+  // a paywall, so it read as something that might cost one of the two.
+  //
+  // It hands the new lapse date back so the row can PRINT it. "Renewed" on its
+  // own is a state; "stands until 14 oct" is an answer.
   const renew = useCallback(
     async (handle) => {
       const h = normHandle(handle)
@@ -1229,10 +1327,12 @@ export default function App() {
         const res = await renewPing({ me, them: h, proof, demo })
         if (res?.ok) {
           setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, expires_at: res.expires_at } : p)))
+          return res.expires_at || null
         }
       } catch (e) {
         console.error(e)
       }
+      return null
     },
     [me, demo, session],
   )
@@ -1549,7 +1649,7 @@ export default function App() {
 
   const ctx = {
     demo, me, them, email, error, verified, established, loginMode,
-    pings, slotsStanding, slotsCap: slotCap,
+    pings, slotsStanding, slotsCap: slotCap, unaccounted, ledgerState, restoreLedger, nextSlot,
     cardUrls, compose, openReveal, closeReveal, reveal, afterMutual, ambientGalaxyRef,
     communities, openCommunity, homeCommunity, homeGalaxyRef,
     viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity,

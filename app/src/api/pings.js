@@ -21,6 +21,26 @@ export function nearLapse(expiresAt) {
   return d != null && d <= 5
 }
 
+// The day a ping lapses, written out. Lowercase, never relative, and never
+// abbreviated to a number: "43 days left" is a countdown, "14 oct" is a date
+// somebody can put next to the rest of their week.
+//
+// This is the single most load-bearing string in the slot rule and it was not
+// printed anywhere. The day a ping lapses IS the day its slot comes back, so
+// hiding it turned a sixty-day clock everyone can plan around into a wall that
+// opens whenever it feels like it.
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+export function lapseDate(expiresAt) {
+  if (!expiresAt) return ''
+  const t = typeof expiresAt === 'number' ? expiresAt : Date.parse(expiresAt)
+  if (!Number.isFinite(t)) return ''
+  const d = new Date(t)
+  const now = new Date()
+  const year = d.getFullYear() === now.getFullYear() ? '' : ` ${d.getFullYear()}`
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}${year}`
+}
+
 // How many of the caller's pings are standing (unresolved, unlapsed) — the
 // local mirror of the server's slot count.
 export function standingCount(pings) {

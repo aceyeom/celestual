@@ -106,7 +106,7 @@ export function normalizeLum(rgb) {
 // one-dimensional colour curve, which is the single hook a monochrome sky needs:
 // every star in the field, every hero halo and every resolved surface reads its
 // colour from this one texture, so swapping the curve recolours the entire
-// universe without touching a shader. It is used by /beta (see beta/sky.js),
+// universe without touching a shader. galaxy.js hands it `binderyRamp`,
 // where the whole brand is one hue and the locus runs brown to ivory instead of
 // amber to blue. Passing nothing keeps the real physics, which is what every
 // production surface does.

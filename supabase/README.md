@@ -151,6 +151,18 @@ Idempotent migrations, applied in order:
   lets the mail say a card is waiting without saying what it says. Erasure, the
   opt-out and the admin delete all take the two new tables with them.
   **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)**
+- `migrations/0024_the_bindery.sql` — **the design transfer, on the one line the
+  server has an opinion about.** A card's ground stopped being one of five flat
+  dark plates and became one of three MATERIALS (`leaf`, `chalk`, `hide`), and
+  `celestual_card_clean` is the only thing that ever writes that column. Left
+  alone it would take a browser sending `leaf` and silently store `ink`, and the
+  card would come back on a surface that no longer exists — so the whitelist is
+  widened to accept both sets. **Nothing is rewritten.** The five old ids stay
+  stored exactly as they are and are mapped onto the three at read time in the
+  client (`card/model.js` `LEGACY_PLATES`), because a migration that rewrites the
+  column destroys the only record of what somebody actually chose and cannot be
+  undone. Re-runnable; the faces (`serif`/`sans`/`mono`) are untouched.
+  **See [../docs/DESIGN.md](../docs/DESIGN.md) §11 and ../docs/STAR-CARDS.md.**
 
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
@@ -193,6 +205,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |
+| `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../docs/DESIGN.md](../docs/DESIGN.md) §10**) | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 | `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 

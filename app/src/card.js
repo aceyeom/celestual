@@ -38,14 +38,19 @@ const DISK_CAP = 1200 // ping count that maps the disk to (nearly) full size
 const armAngle = (arm, r) => arm * Math.PI + (r / RMAX) * PITCH
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 
-// Stellar palette — identical to the live engines.
+// Stellar palette — identical to the live engines, which means one hue at six
+// values (galaxy.js `binderyRamp`): burnt umber at the cool end, paper white at
+// the hot one. The names are kept from the physical set they replace, because
+// what each one is FOR has not changed — `blue` is still the coolest-reading
+// light in the card, it is just no longer blue, and there is no blue anywhere
+// in this brand for it to be.
 const PAL = {
-  gold: '#F6DCA9',
-  cream: '#EFEAF2',
-  warm: '#F4C9A1',
-  blue: '#BFD3FA',
-  ice: '#A7C2FF',
-  red: '#F3A98A',
+  gold: '#D8A44E', //  sun-like, and the colour of the bulge
+  cream: '#F5E9CB', // the hot arms
+  warm: '#B0762A', //  struck bronze, the old inner disk
+  blue: '#EBD298', //  wheat: the palest light that still reads as a star
+  ice: '#FFFAF0', //   paper white, the hottest
+  red: '#7E4715', //   deep chocolate, the coolest dwarfs
 }
 
 function seededRand(a) {
@@ -80,8 +85,8 @@ function drawGlyph(ctx, x, y, r, alpha = 1) {
   ctx.quadraticCurveTo(x - r * 0.12, y - r * 0.12, x, y - r)
   ctx.closePath()
   const g = ctx.createRadialGradient(x, y - r * 0.1, 0, x, y, r)
-  g.addColorStop(0, '#FFFFFF')
-  g.addColorStop(0.45, '#FFE3C8')
+  g.addColorStop(0, '#FFFAF0')
+  g.addColorStop(0.45, '#F1E7D3')
   g.addColorStop(1, TOKENS.star)
   ctx.fillStyle = g
   ctx.fill()
@@ -101,17 +106,17 @@ function drawSeal(ctx, cx, cy, r, mono) {
   ctx.fillRect(cx - r * 2.2, cy - r * 2.2, r * 4.4, r * 4.4)
   // outer ring
   const ring = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r)
-  ring.addColorStop(0, rgba(TOKENS.star, 0.9))
-  ring.addColorStop(1, rgba(TOKENS.them, 0.75))
-  ctx.lineWidth = 3
+  ring.addColorStop(0, rgba(TOKENS.cream, 0.42))
+  ring.addColorStop(1, rgba(TOKENS.cream, 0.18))
+  ctx.lineWidth = 2
   ctx.strokeStyle = ring
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, TWO)
   ctx.stroke()
   // inner fill
   const fill = ctx.createRadialGradient(cx, cy - r * 0.3, 0, cx, cy, r)
-  fill.addColorStop(0, rgba(TOKENS.star, 0.16))
-  fill.addColorStop(1, rgba(TOKENS.ink, 0.5))
+  fill.addColorStop(0, rgba(TOKENS.ink3, 0.5))
+  fill.addColorStop(1, rgba(TOKENS.ink, 0.6))
   ctx.fillStyle = fill
   ctx.beginPath()
   ctx.arc(cx, cy, r - 2, 0, TWO)
@@ -120,8 +125,8 @@ function drawSeal(ctx, cx, cy, r, mono) {
   ctx.fillStyle = TOKENS.cream
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `italic 400 ${Math.round(r * 0.82)}px "Instrument Serif", Georgia, serif`
-  ctx.fillText(mono || '✦', cx, cy + r * 0.06)
+  ctx.font = `italic 400 ${Math.round(r * 0.86)}px "Cormorant Garamond", Georgia, serif`
+  ctx.fillText(mono || '·', cx, cy + r * 0.06)
   ctx.textBaseline = 'alphabetic'
   ctx.restore()
 }
@@ -144,7 +149,7 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
   const glows = {}
   const glowFor = (hex) => glows[hex] || (glows[hex] = makeGlow(hex, 64))
   const spikeFor = (hex) => makeSpikeSprite(hex, 128)
-  const spikeWhite = spikeFor('#FFFFFF')
+  const spikeWhite = spikeFor('#FFFAF0')
 
   const project = (px, py, pz) => {
     const cosY = Math.cos(YAW),
@@ -183,7 +188,7 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
     const ring = Math.sqrt(1 - v * v)
     const pr = project(rr * ring * Math.cos(u), rr * v * 0.85, rr * ring * Math.sin(u))
     if (!pr || pr.sx < -20 || pr.sx > W + 20 || pr.sy < -20 || pr.sy > H + 20) continue
-    const hue = rand() < 0.16 ? PAL.blue : rand() < 0.22 ? PAL.warm : '#FFFFFF'
+    const hue = rand() < 0.16 ? PAL.blue : rand() < 0.22 ? PAL.warm : '#FFFAF0'
     ctx.globalAlpha = Math.min(0.7, (0.14 + rand() * 0.5) * 0.8)
     const D = clamp((0.5 + rand() * 0.9) * pr.persp * 4, 1.6, 6)
     ctx.drawImage(dotFor(hue), pr.sx - D / 2, pr.sy - D / 2, D, D)
@@ -192,7 +197,9 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
   // arm-seated nebula gas — cool star-forming knots along the lanes, a warm
   // pair in the bulge (additive, behind the stars)
   ctx.globalCompositeOperation = 'lighter'
-  const NCOL = [PAL.blue, '#7E6BA8', '#C77E8A', '#5E7BB0']
+  // the nebula, as dust caught in lamplight going cold at the rim — never as
+  // ionised gas, which is two hues this brand does not have
+  const NCOL = [TOKENS.chalk, '#8F5F2C', '#CE9645', '#6B4A28']
   for (let i = 0; i < 10; i++) {
     const inCore = i < 2
     const r = inCore ? 0.08 + rand() * 0.14 : 0.28 + rand() * 0.62
@@ -352,7 +359,7 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
       ctx.globalAlpha = Math.min(1, 0.55 * la + 0.12)
       ctx.drawImage(spikeFor(you), ps.sx - ss / 2, ps.sy - ss / 2, ss, ss)
       ctx.globalAlpha = Math.min(1, 0.9 * la)
-      ctx.drawImage(dotFor('#FFFFFF'), ps.sx - 3.4, ps.sy - 3.4, 6.8, 6.8)
+      ctx.drawImage(dotFor('#FFFAF0'), ps.sx - 3.4, ps.sy - 3.4, 6.8, 6.8)
     }
     // the rose hub, a touch larger
     const gs = 12.5
@@ -362,7 +369,7 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
     ctx.globalAlpha = Math.min(1, 0.6 * clamp(ph.shade, 0.4, 1.1) + 0.12)
     ctx.drawImage(spikeFor(them), ph.sx - ss / 2, ph.sy - ss / 2, ss, ss)
     ctx.globalAlpha = 0.95
-    ctx.drawImage(dotFor('#FFFFFF'), ph.sx - 4, ph.sy - 4, 8, 8)
+    ctx.drawImage(dotFor('#FFFAF0'), ph.sx - 4, ph.sy - 4, 8, 8)
   }
   ctx.restore()
   ctx.globalAlpha = 1
@@ -372,7 +379,7 @@ function drawRealGalaxy(ctx, cx, cy, unit, count, matches) {
 // Draw a mono string with hand-rolled letterspacing (canvas has no tracking).
 function drawTracked(ctx, text, x, y, size, tracking, color, weight = 700) {
   ctx.save()
-  ctx.font = `${weight} ${size}px "Space Mono", monospace`
+  ctx.font = `${weight} ${size}px "Courier Prime", "Courier New", monospace`
   ctx.fillStyle = color
   ctx.textAlign = 'left'
   let total = 0
@@ -437,16 +444,16 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   try {
     await document.fonts.ready
     await Promise.all([
-      document.fonts.load('italic 400 96px "Instrument Serif"'),
-      document.fonts.load('700 28px "Space Mono"'),
-      document.fonts.load('500 30px "Space Grotesk"'),
+      document.fonts.load('italic 400 96px "Cormorant Garamond"'),
+      document.fonts.load('400 28px "Courier Prime"'),
+      document.fonts.load('300 30px "Jost"'),
     ])
   } catch {
     /* fonts degrade to system serif/mono — still a coherent card */
   }
 
   const short = (community && (community.short || community.name)) || 'your community'
-  const mono = (community && community.mono) || '✦'
+  const mono = (community && community.mono) || '·'
   const slug = (community && community.slug) || ''
   const members = Number(stats.members || 0)
   const matches = stats.matches != null ? Number(stats.matches) : null
@@ -459,9 +466,9 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
 
   // the night — a vertical wash from violet-navy into near-black
   const base = ctx.createLinearGradient(0, 0, 0, H)
-  base.addColorStop(0, '#0E0A1A')
+  base.addColorStop(0, TOKENS.ink2)
   base.addColorStop(0.5, TOKENS.ink)
-  base.addColorStop(1, '#050308')
+  base.addColorStop(1, '#060403')
   ctx.fillStyle = base
   ctx.fillRect(0, 0, W, H)
 
@@ -496,7 +503,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   const scrim = ctx.createLinearGradient(0, H * 0.52, 0, H)
   scrim.addColorStop(0, 'rgba(0,0,0,0)')
   scrim.addColorStop(0.35, rgba(TOKENS.ink, 0.55))
-  scrim.addColorStop(1, rgba('#050308', 0.9))
+  scrim.addColorStop(1, rgba('#060403', 0.92))
   ctx.fillStyle = scrim
   ctx.fillRect(0, H * 0.52, W, H * 0.48)
 
@@ -505,7 +512,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   ctx.fillStyle = TOKENS.cream
   const line1 = `${short}’s sky`
   const line2 = open ? 'is open.' : 'is gathering.'
-  ctx.font = 'italic 400 100px "Instrument Serif", Georgia, serif'
+  ctx.font = '300 104px "Cormorant Garamond", Georgia, serif'
   const hY = H * 0.638
   ctx.fillText(line1, W / 2, hY)
   ctx.fillStyle = open ? TOKENS.star : rgba(TOKENS.cream, 0.92)
@@ -515,7 +522,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   const until = untilLaunch()
   const deadpan = pickLine(slug || short, open, { short, pings, members, until })
   ctx.fillStyle = rgba(TOKENS.cream, 0.85)
-  ctx.font = 'italic 400 40px "Instrument Serif", Georgia, serif'
+  ctx.font = 'italic 400 40px "Cormorant Garamond", Georgia, serif'
   // naive two-line wrap so a long line never runs off the card
   const words = deadpan.split(' ')
   let l1 = ''
@@ -535,16 +542,16 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   if (!open) bits.push(`opens in ${until}`)
   const strip = bits.join(' · ')
   let stripSize = 26
-  ctx.font = `700 ${stripSize}px "Space Mono", monospace`
+  ctx.font = `400 ${stripSize}px "Courier Prime", "Courier New", monospace`
   while (stripSize > 18 && ctx.measureText(strip).width + strip.length * 1.5 > W - 140) {
     stripSize -= 1
-    ctx.font = `700 ${stripSize}px "Space Mono", monospace`
+    ctx.font = `400 ${stripSize}px "Courier Prime", "Courier New", monospace`
   }
   drawTracked(ctx, strip, W / 2, 1522, stripSize, 1.5, rgba(TOKENS.star, 0.92))
 
   // the social contract, spelled out — posting this exposes no one
   ctx.fillStyle = rgba(TOKENS.muted, 0.9)
-  ctx.font = '500 27px "Space Grotesk", Arial, sans-serif'
+  ctx.font = '300 27px "Jost", Arial, sans-serif'
   ctx.fillText('no names. no lists. nothing shows unless it’s mutual.', W / 2, 1578)
 
   // ── the invite pill — where the link sticker lands ──
@@ -565,7 +572,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   ctx.stroke()
   ctx.textAlign = 'center'
   ctx.fillStyle = TOKENS.cream
-  ctx.font = '600 40px "Space Grotesk", Arial, sans-serif'
+  ctx.font = '400 40px "Jost", Arial, sans-serif'
   ctx.fillText('join the sky', W / 2 - 22, bpY + bpH / 2 + 14)
   // the arrow
   ctx.strokeStyle = TOKENS.star
@@ -585,7 +592,7 @@ export async function renderSkyCard({ community, open = false, stats = {}, site 
   // ── the footer — the invite link, the metadata register ──
   ctx.textAlign = 'center'
   ctx.fillStyle = rgba(TOKENS.cream, 0.6)
-  ctx.font = '400 30px "Space Mono", monospace'
+  ctx.font = '400 30px "Courier Prime", "Courier New", monospace'
   ctx.fillText(`${site}/c/${slug}`, W / 2, H - 90)
 
   return canvas.toDataURL('image/png')

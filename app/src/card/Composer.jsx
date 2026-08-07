@@ -20,6 +20,7 @@ import {
   clampWords, wordCount, fitRatio, autoPos, clampPos, alignAt,
 } from './model.js'
 import { prepare } from './photo.js'
+import { groundSurface } from '../texture.js'
 
 // How far a pointer may travel before a tap on the text block becomes a drag of
 // it. Under this it is someone reaching for the caret; over it they are moving
@@ -79,7 +80,7 @@ function SourceSheet({ C, onPick, onClose }) {
       className="fade"
       style={{
         position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        background: rgba(C.ink, 0.62), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        background: rgba(C.ink, 0.62),
         padding: `0 clamp(12px, 4vw, 24px) max(18px, env(safe-area-inset-bottom))`,
       }}
     >
@@ -153,6 +154,9 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
       {asking && <SourceSheet C={C} onPick={open} onClose={() => setAsking(false)} />}
 
       <Row C={C} label="ground">
+        {/* the grounds are MATERIALS, so each swatch is the real surface at the
+            real texture (texture.js draws it per pixel). Choosing one is
+            looking at the thing rather than reading its name. */}
         {PLATES.map((p) => {
           const on = !hasPhoto && bg === p.id
           return (
@@ -160,14 +164,17 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
               key={p.id}
               type="button"
               onClick={() => onPlate(p.id)}
-              aria-label={p.id}
+              aria-label={p.name}
+              title={p.name}
               aria-pressed={on}
               style={{
-                width: 24, height: 24, flexShrink: 0, borderRadius: '50%', cursor: 'pointer', padding: 0,
-                background: p.hex,
-                border: `1px solid ${rgba(C.cream, on ? 0.55 : 0.16)}`,
-                boxShadow: on ? `0 0 0 2px ${C.ink2}, 0 0 0 3.5px ${rgba(C.cream, 0.75)}` : 'none',
-                transition: 'box-shadow .2s ease, border-color .2s ease',
+                width: 26, height: 26, flexShrink: 0, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                ...groundSurface(p, { scale: 90 }),
+                border: 0,
+                boxShadow: on
+                  ? `0 0 0 1px ${C.star}, 0 0 0 4px ${rgba(C.star, 0.16)}`
+                  : `0 0 0 1px ${rgba(C.cream, 0.14)}, 0 3px 9px rgba(0,0,0,.4)`,
+                transition: 'box-shadow .16s linear',
               }}
             />
           )
@@ -178,11 +185,12 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
           aria-pressed={hasPhoto}
           aria-haspopup="dialog"
           style={{
-            height: 24, padding: '0 11px', flexShrink: 0, borderRadius: RADIUS.chip, cursor: 'pointer', marginLeft: SPACE.xs,
-            fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase',
+            height: 26, padding: '0 11px', flexShrink: 0, borderRadius: RADIUS.chip, cursor: 'pointer', marginLeft: SPACE.xs,
+            fontFamily: FONT.sans, fontWeight: 400, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase',
             color: hasPhoto ? C.onStar : rgba(C.cream, 0.82),
             background: hasPhoto ? C.star : 'transparent',
-            border: `1px solid ${hasPhoto ? C.star : rgba(C.cream, 0.24)}`,
+            border: `1px solid ${hasPhoto ? 'transparent' : rgba(C.cream, 0.24)}`,
+            boxShadow: hasPhoto ? 'inset 0 -1px 0 rgba(0,0,0,.3)' : 'none',
             opacity: busy ? 0.5 : 1,
             transition: 'background .2s ease, color .2s ease, border-color .2s ease',
           }}
@@ -204,13 +212,15 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
               aria-label={f.id}
               aria-pressed={on}
               style={{
-                minWidth: 42, height: 30, flexShrink: 0, borderRadius: RADIUS.inner, cursor: 'pointer', padding: '0 10px',
+                minWidth: 44, height: 30, flexShrink: 0, borderRadius: RADIUS.inner, cursor: 'pointer', padding: '0 10px',
                 fontFamily: f.family, fontStyle: f.style, fontWeight: f.weight, fontSize: 16,
                 color: on ? C.star : rgba(C.cream, 0.7),
-                background: on ? rgba(C.star, 0.1) : 'transparent',
+                background: 'transparent',
                 border: `1px solid ${on ? rgba(C.star, 0.55) : rgba(C.cream, 0.16)}`,
-                transition: 'background .2s ease, color .2s ease, border-color .2s ease',
+                boxShadow: on ? `inset 0 1px 0 rgba(255,226,186,0.06), inset 0 -1px 0 rgba(0,0,0,0.34)` : 'none',
+                transition: 'color .2s linear, border-color .2s linear',
               }}
+              title={f.name}
             >
               Aa
             </button>
@@ -226,7 +236,13 @@ function Controls({ C, bg, face, hasPhoto, busy, onPlate, onFace, onFile }) {
 // words, in the face and at the ratio the finished card uses. The dashed
 // boundary is the composer's only addition and it exists to say the block is a
 // thing you can pick up.
-function Words({ C, value, face, align, size, onChange, dragging }) {
+// The live field, laid exactly where the finished poster sets its words, in the
+// same face and at the same ratio. `ground` is the material it is being written
+// on, and the ink comes off THAT rather than off the brand — the composer is the
+// one place in the product where you can watch a card being written, so type
+// set ivory on ivory here is not a subtle bug, it is the whole screen going
+// blank while somebody types into it.
+function Words({ C, value, face, align, size, onChange, dragging, ground, onDark }) {
   const ref = React.useRef(null)
   React.useEffect(() => {
     const el = ref.current
@@ -238,7 +254,7 @@ function Words({ C, value, face, align, size, onChange, dragging }) {
     <span
       style={{
         display: 'block', borderRadius: RADIUS.inner,
-        border: `1px dashed ${rgba(C.cream, dragging ? 0.4 : 0.16)}`,
+        border: `1px dashed ${onDark ? rgba(C.cream, dragging ? 0.4 : 0.16) : rgba(C.onPaper, dragging ? 0.42 : 0.18)}`,
         padding: `${size * 0.02}px ${size * 0.022}px`,
         margin: `-${size * 0.02}px -${size * 0.022}px`,
         transition: 'border-color .2s ease',
@@ -249,6 +265,7 @@ function Words({ C, value, face, align, size, onChange, dragging }) {
         value={value}
         onChange={(e) => onChange(clampWords(e.target.value))}
         placeholder={PROMPT}
+        className={onDark ? 'ph-ivory' : 'ph-ink'}
         rows={1}
         spellCheck
         aria-label={PROMPT}
@@ -261,7 +278,9 @@ function Words({ C, value, face, align, size, onChange, dragging }) {
           // thing, and a placeholder has to look like an absence
           fontSize: size * (value ? fitRatio(value) : 0.05) * face.scale,
           lineHeight: face.lead, letterSpacing: face.track, textTransform: face.transform,
-          color: C.cream, textShadow: '0 2px 16px rgba(0,0,0,.6)',
+          color: onDark ? C.cream : ground.ink,
+          textShadow: onDark ? '0 2px 16px rgba(0,0,0,.6)' : 'none',
+          caretColor: onDark ? C.cream : ground.ink,
           cursor: dragging ? 'grabbing' : 'text',
         }}
       />
@@ -274,7 +293,7 @@ function Words({ C, value, face, align, size, onChange, dragging }) {
 // server answers, and nothing on the card can be changed underneath it.
 export default function Composer({ C, handle, busy: locked, onPlace, onBack }) {
   const [text, setText] = React.useState('')
-  const [bg, setBg] = React.useState('ink')
+  const [bg, setBg] = React.useState('leaf')
   const [face, setFace] = React.useState('serif')
   const [pos, setPos] = React.useState(() => autoPos(''))
   const [moved, setMoved] = React.useState(false) // has the user placed it themselves
@@ -387,6 +406,8 @@ export default function Composer({ C, handle, busy: locked, onPlace, onBack }) {
               align={alignAt(pos)}
               size={size}
               dragging={dragging}
+              ground={plateOf(bg)}
+              onDark={!!photo || plateOf(bg).id === 'hide'}
             />
           </span>
         </Card>

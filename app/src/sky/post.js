@@ -178,7 +178,7 @@ void main(){
 
   // The floor the frame never goes below — a lifted black, the way a print on
   // paper has no true black in it because the paper is not black. Zero in
-  // production, where the void genuinely is the void; /beta lifts it to the
+  // a sky whose void genuinely is the void; celestual lifts it to the
   // colour of a closed leather case, which is the difference between a brown
   // galaxy on a black screen and a brown galaxy inside something.
   col = uFloor + col * (1.0 - uFloor);

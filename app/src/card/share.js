@@ -7,10 +7,9 @@
 // There is no argument that gets their words into this file, which is the only
 // way to be sure they never end up in the output.
 //
-// The frame is the product's own: the deep cosmic-violet void, and the card in
-// the middle of it, drawn at exactly the ratios the app draws it at. One small
-// ✦ underneath — the mark docs/DESIGN.md reserves for mutuality and nothing
-// else.
+// The frame is the product's own: the closed case, and the seal in the middle
+// of it, drawn at exactly the ratios the app draws it at. The brand's mark
+// underneath — reserved for mutuality and used once.
 import { TOKENS, rgba } from '../theme.js'
 import {
   tintOf, stamp, plateOf, faceOf, fitRatio, metaSize,
@@ -24,62 +23,72 @@ const H = 1920
 function night(ctx) {
   ctx.fillStyle = TOKENS.ink
   ctx.fillRect(0, 0, W, H)
-  // two soft rises of the two stars, the same lighting the landing carries
-  const a = ctx.createRadialGradient(W * 0.16, H * 0.96, 0, W * 0.16, H * 0.96, W * 1.1)
-  a.addColorStop(0, rgba(TOKENS.you, 0.11))
+  // one warm rise off the top-left shoulder — the way a book on a desk is lit.
+  // There is no second light, because there is no second hue.
+  const a = ctx.createRadialGradient(W * 0.24, 0, 0, W * 0.24, 0, W * 1.2)
+  a.addColorStop(0, rgba(TOKENS.you, 0.075))
   a.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = a
   ctx.fillRect(0, 0, W, H)
-  const b = ctx.createRadialGradient(W * 0.9, H * 0.06, 0, W * 0.9, H * 0.06, W * 0.9)
-  b.addColorStop(0, rgba(TOKENS.them, 0.09))
-  b.addColorStop(1, 'rgba(0,0,0,0)')
-  ctx.fillStyle = b
-  ctx.fillRect(0, 0, W, H)
 
-  // a scatter of real starlight, so the card is not a flat panel
+  // a scatter of real starlight, so the case is not a flat panel
   let s = 0x9e3779b9
   const rnd = () => (((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296))
   for (let i = 0; i < 260; i++) {
     const x = rnd() * W
     const y = rnd() * H
     const r = 0.6 + rnd() * 1.5
-    ctx.globalAlpha = 0.1 + rnd() * 0.45
-    ctx.fillStyle = rnd() > 0.82 ? TOKENS.you : '#EFEAF2'
+    ctx.globalAlpha = 0.08 + rnd() * 0.4
+    ctx.fillStyle = rnd() > 0.82 ? TOKENS.you : TOKENS.cream
     ctx.beginPath()
     ctx.arc(x, y, r, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.globalAlpha = 1
+
+  // the blind-tooled border the whole product hangs inside, at this canvas's
+  // scale: a heavy fillet and a light one, and nothing else
+  ctx.strokeStyle = rgba(TOKENS.cream, 0.075)
+  ctx.lineWidth = 2
+  ctx.strokeRect(46, 46, W - 92, H - 92)
+  ctx.strokeStyle = rgba(TOKENS.cream, 0.04)
+  ctx.lineWidth = 2
+  ctx.strokeRect(72, 72, W - 144, H - 144)
 }
 
-// ── the body ─────────────────────────────────────────────────────────────────
-// The same object the app draws, in canvas: a flat ground, one even scrim over
-// a photograph, the shared grain, and the corona — no drawn edge. No
-// gradients inside the disc, for the same reason there are none in Disc.jsx —
-// a vignette on a circle reads as a lens artefact rather than as a print.
+// ── the seal ─────────────────────────────────────────────────────────────────
+// The same object the app draws, in canvas: the material, one even scrim over a
+// photograph, the shared grain, and the double keyline struck inside the trim.
+//
+// What it does NOT draw is a corona. Three stacked radial glows used to end this
+// disc, and nothing in this brand emits: the seal is a physical object lying on
+// a leather case, so what ends it is the shadow it throws and one hairline of
+// its own light round the trim.
 function body(ctx, card, img, cx, cy, r, hue) {
-  // the corona, outside the limb
-  const cor = ctx.createRadialGradient(cx, cy, r * 0.9, cx, cy, r * 2.1)
-  cor.addColorStop(0, rgba(hue, 0.3))
-  cor.addColorStop(0.4, rgba(hue, 0.09))
-  cor.addColorStop(1, 'rgba(0,0,0,0)')
-  ctx.fillStyle = cor
+  // the shadow the seal throws on the case, offset DOWN — light comes from
+  // above-left in here, so a shadow that is even all round is not a shadow
+  ctx.save()
+  ctx.globalAlpha = 0.5
+  ctx.filter = `blur(${Math.round(r * 0.14)}px)`
+  ctx.fillStyle = '#000000'
   ctx.beginPath()
-  ctx.arc(cx, cy, r * 2.1, 0, Math.PI * 2)
+  ctx.arc(cx, cy + r * 0.075, r * 0.99, 0, Math.PI * 2)
   ctx.fill()
+  ctx.restore()
 
   ctx.save()
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.clip()
 
-  // the ground: one flat plate, or a photograph under the scrim that holds
-  // every card in the product at one contrast
-  ctx.fillStyle = plateOf(card && card.bg).hex
+  // the ground: one material, or a photograph under the scrim that holds every
+  // card in the product at one contrast
+  const g = plateOf(card && card.bg)
+  ctx.fillStyle = g.hex
   ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   if (img) {
     ctx.drawImage(img, cx - r, cy - r, r * 2, r * 2)
-    ctx.fillStyle = rgba(TOKENS.ink, 0.32)
+    ctx.fillStyle = rgba(TOKENS.ink, 0.4)
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
   }
 
@@ -103,18 +112,34 @@ function body(ctx, card, img, cx, cy, r, hue) {
 
   ctx.restore()
 
-  // and nothing is drawn on the limb. Disc.jsx carries the reasoning: a stroked
-  // circle is a badge, and what ends a real body is the light falling off it,
-  // which the corona above already did. This render has to be the same object
-  // the app draws or the share sheet is a different product.
+  // the trim: one hairline of the light this card's star burns with, measured
+  // off its own ground and never picked
+  ctx.strokeStyle = rgba(hue, 0.34)
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(cx, cy, r - 1, 0, Math.PI * 2)
+  ctx.stroke()
+
+  // and the double keyline struck inside it — the thing that separates a seal
+  // from a circular crop of a picture
+  const onDark = !!img || g.id === 'hide'
+  ctx.strokeStyle = onDark ? rgba(TOKENS.cream, 0.26) : rgba(TOKENS.onPaper, 0.24)
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(cx, cy, r * 0.962, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.strokeStyle = onDark ? rgba(TOKENS.cream, 0.11) : rgba(TOKENS.onPaper, 0.1)
+  ctx.beginPath()
+  ctx.arc(cx, cy, r * 0.912, 0, Math.PI * 2)
+  ctx.stroke()
 }
 
 // Tracked mono, the way canvas cannot do on its own.
-function tracked(ctx, text, x0, y, size, track, color, align = 'center') {
-  const s = String(text || '').toUpperCase()
+function tracked(ctx, text, x0, y, size, track, color, align = 'center', upper = true) {
+  const s = upper ? String(text || '').toUpperCase() : String(text || '')
   if (!s) return
   const prevAlign = ctx.textAlign
-  ctx.font = `700 ${size}px Space Mono, ui-monospace, monospace`
+  ctx.font = `400 ${size}px 'Courier Prime', 'Courier New', ui-monospace, monospace`
   ctx.fillStyle = color
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
@@ -129,19 +154,66 @@ function tracked(ctx, text, x0, y, size, track, color, align = 'center') {
   ctx.textAlign = prevAlign
 }
 
-// the four-point sparkle — reserved for mutuality, and used once
+// The mark — reserved for mutuality, and used once. It is the same drawing the
+// interface signs its name with (ui.jsx's Sigil): one four-point star, and the
+// same star turned half a turn about the body, with the cut between them
+// showing the ground through. The body is the only warm thing in it.
 function glyph(ctx, x, y, r) {
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r)
-  g.addColorStop(0, '#FFFFFF')
-  g.addColorStop(0.42, '#FFE3C8')
-  g.addColorStop(1, TOKENS.you)
+  const wing = (cx, cy, up, down, side, k) => {
+    const px = side * k
+    const u = up * k
+    const d = down * k
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - up)
+    ctx.quadraticCurveTo(cx + px, cy - u, cx + side, cy)
+    ctx.quadraticCurveTo(cx + px, cy + d, cx, cy + down)
+    ctx.quadraticCurveTo(cx - px, cy + d, cx - side, cy)
+    ctx.quadraticCurveTo(cx - px, cy - u, cx, cy - up)
+    ctx.closePath()
+  }
+  const s = r / 50 //          the artwork is a hundred units across
+  const bx = x
+  const by = y + 5 * s //      the body, and the point the second wing turns about
+  const sx = x + 0.9 * s
+  const sy = y + 5.6 * s
+  const up = 55.6 * s
+  const dn = 40 * s
+  const side = 49.1 * s
+  const cut = 1.6 * s
+  const br = 11.6 * s
+
+  const half = (left) => {
+    ctx.save()
+    ctx.beginPath()
+    if (left) ctx.rect(x - r * 2, y - r * 2, r * 2 - cut / 2, r * 4)
+    else ctx.rect(x + cut / 2, y - r * 2, r * 2, r * 4)
+    ctx.clip()
+    if (left) {
+      ctx.fillStyle = TOKENS.cream
+      wing(2 * bx - sx, 2 * by - sy, dn, up, side, 0.1)
+      ctx.fill()
+      // where the cut opens out around the body — a hole, not a painted ring
+      ctx.globalCompositeOperation = 'destination-out'
+      ctx.beginPath()
+      ctx.arc(bx, by, br + cut * 1.9, 0, Math.PI * 2)
+      ctx.fill()
+    } else {
+      ctx.fillStyle = TOKENS.them
+      wing(sx, sy, up, dn, side, 0.1)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+  half(true)
+  half(false)
+
+  const g = ctx.createLinearGradient(bx - br, by - br, bx + br, by + br)
+  g.addColorStop(0, TOKENS.cream2)
+  g.addColorStop(0.52, TOKENS.you)
+  g.addColorStop(1, TOKENS.saddle)
   ctx.fillStyle = g
   ctx.beginPath()
-  ctx.moveTo(x, y - r)
-  ctx.quadraticCurveTo(x + r * 0.1, y - r * 0.1, x + r, y)
-  ctx.quadraticCurveTo(x + r * 0.1, y + r * 0.1, x, y + r)
-  ctx.quadraticCurveTo(x - r * 0.1, y + r * 0.1, x - r, y)
-  ctx.quadraticCurveTo(x - r * 0.1, y - r * 0.1, x, y - r)
+  ctx.arc(bx, by, br, 0, Math.PI * 2)
   ctx.fill()
 }
 
@@ -221,10 +293,14 @@ export async function renderCard({ card, photoUrl, mutual = false }) {
   ctx.textAlign = align === 'left' ? 'left' : align === 'right' ? 'right' : 'center'
   const penX = (p) => (align === 'left' ? edge(p) : align === 'right' ? edge(p) + width : edge(p) + width / 2)
 
+  // the ink comes off the ground, not off the brand: type set ivory on ivory is
+  // the one thing this card may never do
+  const ground = plateOf(card && card.bg)
+  const onDark = !!img || ground.id === 'hide'
   ctx.font = `${face.style} ${face.weight} ${wsize}px ${face.family}`
   const rows = wrap(ctx, face.transform === 'lowercase' ? words.toLowerCase() : words, width)
   let y = cy - r + pos.y * d - ((rows.length - 1) * lead) / 2
-  ctx.fillStyle = TOKENS.cream
+  ctx.fillStyle = onDark ? TOKENS.cream : ground.ink
   for (const row of rows) {
     ctx.fillText(row, penX(pos), y)
     y += lead
@@ -234,17 +310,18 @@ export async function renderCard({ card, photoUrl, mutual = false }) {
   tracked(
     ctx,
     [`@${(card && card.handle) || ''}`, stamp(card && card.placed)].join('  ·  '),
-    penX(mp), cy - r + mp.y * d, ms, ms * 0.16, rgba(TOKENS.cream, 0.62), ctx.textAlign,
+    penX(mp), cy - r + mp.y * d, ms, ms * 0.14,
+    onDark ? rgba(TOKENS.cream, 0.62) : ground.quiet, ctx.textAlign, false,
   )
 
   // ── outside the disc ──────────────────────────────────────────────────────
   // The mark, and what it means, said once.
   ctx.textAlign = 'center'
   if (mutual) {
-    glyph(ctx, cx, cy + r + 150, 26)
-    tracked(ctx, 'it was mutual', cx, cy + r + 232, 26, 5, rgba(TOKENS.muted, 0.95))
+    glyph(ctx, cx, cy + r + 148, 30)
+    tracked(ctx, 'it was mutual', cx, cy + r + 244, 25, 6, rgba(TOKENS.cream, 0.8))
   }
-  tracked(ctx, 'celestual.us', cx, H - 118, 26, 5, rgba(TOKENS.muted, 0.8))
+  tracked(ctx, 'celestual.us', cx, H - 118, 25, 6, rgba(TOKENS.cream, 0.5))
 
   return new Promise((res) => c.toBlob(res, 'image/png'))
 }

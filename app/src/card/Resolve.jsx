@@ -38,7 +38,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 
 // The curve itself lives in card/zoom.js — pure arithmetic, no React and no
 // design system — because three things now fly the same dive: this, the reveal
-// (card/Spread.jsx) and the Bindery rebrand's zoom on /beta. Re-exported here
+// (card/Spread.jsx) and this one. Re-exported here
 // so every existing importer keeps working.
 export { resolveOf, fullSize }
 
@@ -159,7 +159,7 @@ export function CardResolve({ C, card, url, index, open, fieldRef, onClose }) {
               position: 'fixed', top: 'max(14px, env(safe-area-inset-top))', right: 'max(14px, env(safe-area-inset-right))',
               zIndex: 6, width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
               background: rgba(C.ink2, 0.8), border: `1px solid ${rgba(C.cream, 0.22)}`,
-              backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+              
               display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.92),
               boxShadow: '0 10px 34px rgba(0,0,0,.5)',
             }}
