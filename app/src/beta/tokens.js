@@ -35,16 +35,33 @@
 // The browns, darkest to lightest. Named after what they are, because a
 // designer picking one is picking a material and not a number on a ramp.
 export const C = {
-  // the void behind the chart. Not black: a black field with brown objects on
-  // it reads as a dark-mode website. This is the inside of a closed book.
-  void: '#150E09',
-  void2: '#1D1409',
+  // the void behind the chart. Still not black — a black field with brown
+  // objects on it reads as a dark-mode website — but far closer to it than it
+  // was, and that is the single change the rest of this palette is built
+  // around.
+  //
+  // The first cut sat at #150E09, which is a legible brown you can read type
+  // on. That turned out to be the problem: the chart is drawn on this, the
+  // engine's floor is set to it, and a lifted floor spends its lift on the
+  // FAINTEST light in the frame. Every outer arm star, every wisp of dust at
+  // the rim, was landing within a few values of the ground it stood on, so the
+  // galaxy read as a brown wash with a bright middle instead of as a galaxy.
+  //
+  // Dropped to near-black, the same stars have most of a value scale under
+  // them. The heart goes gold rather than tan, the arms come back, and the
+  // ground still measures warm — it is brown ink at 4% rather than a grey, so
+  // nothing in here has to fight a cold cast.
+  void: '#0B0705',
+  void2: '#130C07',
 
-  // the leather itself
-  cocoa: '#2E1E14', //  the case, the page ground
-  hide: '#3B2716', //   a raised panel, a pocket, the dock
-  hide2: '#4A3220', //  the lip of a raised panel, a pressed state
-  cognac: '#6B4526', //  tooled edges, the stitch channel, dividers on leather
+  // the leather itself. Pulled down with the ground so the steps between them
+  // survive: a raised panel is a raised panel because it is lighter than what
+  // it lies on, and on a near-black ground the old values stopped being leather
+  // and started being lit slabs floating over it.
+  cocoa: '#241710', //  the case, the page ground
+  hide: '#2F1E13', //   a raised panel, a pocket, the dock
+  hide2: '#3C2819', //  the lip of a raised panel, a pressed state
+  cognac: '#5C3A1F', //  tooled edges, the stitch channel, dividers on leather
   saddle: '#8A5C33', //  the light chocolate the brand is named for
   caramel: '#B98A55', //  the one light. what "lit", "yours", "now" looks like
   wheat: '#D6B78A', //  the palest brown. hairlines on ivory, spent states
@@ -74,6 +91,20 @@ export const TEXT = {
   onPaperQuiet: C.ink2,
   onPaperFaint: C.ink3,
 }
+
+// The smallest type in the product is a stamped label and a Courier tick, and
+// both of them are set at well under half strength directly on the chart. That
+// is right nine tenths of the time — they are meant to be quiet — and wrong the
+// moment one of them crosses the galactic centre, which is four orders of
+// magnitude brighter than the ground either side of it and turns a 10px line
+// into a smudge.
+//
+// So the two quietest registers carry the ground with them: a tight, soft halo
+// of the case's own colour, sitting under the glyphs. It is invisible where
+// there is nothing behind the type — a shadow the same colour as the ground is
+// no shadow at all — and it is the difference between legible and not over the
+// core. Anything set ON paper opts out; there is no sky behind it.
+export const ONSKY = '0 1px 2px rgba(11,7,5,0.9), 0 0 9px rgba(11,7,5,0.75)'
 
 // Hairlines. Three weights and no more: a rule is either structural, a divider,
 // or a whisper.
@@ -154,10 +185,25 @@ export const S = { xs: 6, sm: 12, md: 18, lg: 24, xl: 36, xxl: 54, xxxl: 78 }
 // the case. A real binder's margin, and every screen hangs inside it.
 export const FRAME = { inset: 14, inset2: 22 }
 
-// The measure. Text does not run wider than this, ever, and the column is hung
-// off a left rule rather than centred, which is the single biggest structural
-// difference from the production app.
+// The measure. Text does not run wider than this, ever.
+//
+// The column used to be pinned to the LEFT edge of the viewport as well, which
+// is a real typographic idea and was the wrong one here: on a phone the measure
+// is the whole screen and the setting looks composed, and on a wide screen the
+// identical page becomes a stripe of type in the left third with an acre of
+// empty case beside it. The two do not read as the same product. So the measure
+// is unchanged and the block that carries it is CENTRED — the phone layout is
+// untouched, and the desktop one finally agrees with it.
+//
+// The rule the column hangs off is still there, and still on the left of the
+// block. It is the spine, and a spine belongs to the setting rather than to
+// the window.
 export const MEASURE = 560
+
+// The index, when it is open. It is a COLUMN — it takes its width out of the
+// page and the page re-centres in what is left — so this number is a layout
+// dimension rather than the size of a floating panel.
+export const INDEX_W = 292
 
 // ── light ────────────────────────────────────────────────────────────────────
 // How a surface catches light in this brand. All of it is edge behaviour: a

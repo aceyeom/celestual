@@ -14,9 +14,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import './beta.css'
 import { SENDOFF_SECONDS } from '../galaxy.js'
-import { C, FONT, S, R, LIGHT, FONT_HREF, rgba, normHandle, groundOf, sealLight } from './tokens.js'
-import { Frame, Wordmark, Label, Rule, Seal } from './ui.jsx'
-import { stitching } from './texture.js'
+import { C, INDEX_W, FONT_HREF, normHandle, groundOf, sealLight } from './tokens.js'
+import { Frame, Masthead, IndexColumn, Seal, useNarrow } from './ui.jsx'
 import { Sky } from './Sky.jsx'
 import { SealResolve } from './Resolve.jsx'
 import { OpenScreen, SendScreen, WriteScreen, FlightScreen, PlacedScreen, PingsScreen, RevealScreen, PlateScreen } from './screens.jsx'
@@ -35,7 +34,12 @@ const SCREENS = {
 // Which pages let the field burn at full strength, and which pull it back so
 // the foreground reads. Production's CALM_SCREENS, same idea.
 const CALM = ['send', 'write', 'placed', 'pings', 'plate']
-const MASTHEAD = ['open', 'flight']
+
+// What the index lists: every screen that has a name, numbered in the order
+// they are declared above, which is the order you meet them.
+const INDEX = Object.entries(SCREENS)
+  .filter(([, v]) => v.name)
+  .map(([key, v]) => ({ key, name: v.name }))
 
 const days = (n) => new Date(Date.now() + n * 864e5).toISOString()
 
@@ -74,6 +78,7 @@ export default function BetaApp() {
   const [origin, setOrigin] = useState(null)
   const [liftoff, setLiftoff] = useState(null)
   const [indexOpen, setIndexOpen] = useState(false)
+  const narrow = useNarrow()
   const pending = useRef(null)
   const sky = useRef(null)
   const morphTimer = useRef(null)
@@ -152,6 +157,18 @@ export default function BetaApp() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [prepare, swap])
+
+  // The index is a column rather than a dialog — it does not trap focus and it
+  // does not scrim the page — but it is still a thing that is open, and escape
+  // is what closes an open thing.
+  useEffect(() => {
+    if (!indexOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIndexOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [indexOpen])
 
   useEffect(() => {
     if (!window.location.hash) {
@@ -333,7 +350,17 @@ export default function BetaApp() {
   }
 
   const Screen = (SCREENS[screen] || SCREENS.open).c
-  const dim = screen === 'reveal' || skyView ? 1 : CALM.includes(screen) ? 0.38 : 1
+  // The field burns at full strength on the pages that ARE the sky — the title
+  // page, a held dive, the reveal — and is pulled well back everywhere there is
+  // something to read.
+  //
+  // Further back than it used to be, for two compounding reasons: the ground
+  // went to near-black and the exposure came up to meet it, so the same disk at
+  // the old 0.38 is appreciably brighter than it was; and the setting is now
+  // centred, so a working page runs straight down the middle of the frame
+  // instead of clearing it to the left. The galaxy on a working page is a
+  // ground, and a ground is not something you read a form over.
+  const dim = screen === 'reveal' || skyView ? 1 : CALM.includes(screen) ? 0.2 : 1
 
   return (
     <div className="bindery">
@@ -348,37 +375,37 @@ export default function BetaApp() {
       />
       <Frame />
 
-      {MASTHEAD.includes(screen) && !skyView && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 'max(30px, calc(env(safe-area-inset-top) + 22px))',
-            left: 'max(34px, calc(env(safe-area-inset-left) + 26px))',
-            zIndex: 6,
-            pointerEvents: 'none',
-          }}
-        >
-          <Wordmark size={13} />
-        </div>
-      )}
+      {/* the masthead is on every page now, not only the two that used to carry
+          the wordmark: it is where the index lives, and an index you can only
+          reach from some of the book is not an index */}
+      <Masthead open={indexOpen} onToggle={() => setIndexOpen((v) => !v)} hidden={!!skyView} />
+      <IndexColumn open={indexOpen && !skyView} items={INDEX} screen={screen} go={go} narrow={narrow} />
 
-      {!skyView && <Ribbon open={indexOpen} onToggle={() => setIndexOpen((v) => !v)} screen={screen} go={go} />}
-
-      {/* during a flight the foreground melts away completely, so the sky is the
-          whole screen. The entrance animation has to be suppressed for the melt
-          or its fill-mode pins opacity at 1. */}
+      {/* The page makes room for the index rather than sitting under it. On a
+          wide screen that is a strip of padding the centred column re-solves
+          itself inside; on a phone there is no width to give away, so the page
+          steps aside instead. The transform is only ever SET when it is
+          non-zero — a transformed ancestor becomes the containing block for
+          every fixed child under it, and the reveal's held seal is fixed. */}
       <div
-        key={screen}
+        onPointerDownCapture={() => indexOpen && setIndexOpen(false)}
         style={{
           position: 'relative',
           zIndex: 4,
-          animation: skyView ? 'none' : undefined,
-          opacity: skyView ? 0 : 1,
-          transition: 'opacity .55s ease',
-          pointerEvents: skyView ? 'none' : 'auto',
+          paddingRight: indexOpen && !narrow && !skyView ? INDEX_W : 0,
+          transform: indexOpen && narrow && !skyView ? 'translateX(-24%)' : undefined,
+          opacity: skyView || (indexOpen && narrow) ? 0 : 1,
+          pointerEvents: skyView || (indexOpen && narrow) ? 'none' : 'auto',
+          transition:
+            'opacity .55s ease, padding-right .46s cubic-bezier(.16,.84,.28,1), transform .46s cubic-bezier(.16,.84,.28,1)',
         }}
       >
-        <Screen ctx={ctx} />
+        {/* during a flight the foreground melts away completely, so the sky is
+            the whole screen. The entrance animation has to be suppressed for
+            the melt or its fill-mode pins opacity at 1. */}
+        <div key={screen} style={{ animation: skyView ? 'none' : undefined }}>
+          <Screen ctx={ctx} />
+        </div>
       </div>
 
       {/* the star, resolving into the seal it was made of */}
@@ -416,101 +443,3 @@ function Liftoff({ card, cx, cy, size }) {
   )
 }
 
-// ── the ribbon ───────────────────────────────────────────────────────────────
-function Ribbon({ open, onToggle, screen, go }) {
-  const items = Object.entries(SCREENS).filter(([, v]) => v.name)
-  return (
-    <div style={{ position: 'fixed', top: 0, right: 'max(46px, calc(env(safe-area-inset-right) + 38px))', zIndex: 30 }}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-label="the index"
-        style={{
-          display: 'block',
-          width: 34,
-          height: open ? 112 : 96,
-          backgroundColor: C.hide2,
-          backgroundImage:
-            'repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 1px, rgba(255,226,186,0.05) 1px 3px), linear-gradient(90deg, rgba(0,0,0,0.5) 0 2px, transparent 2px calc(100% - 2px), rgba(0,0,0,0.5) calc(100% - 2px) 100%)',
-          clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%)',
-          boxShadow: '0 10px 22px rgba(0,0,0,.5)',
-          transition: 'height .28s cubic-bezier(.16,.84,.28,1)',
-          position: 'relative',
-        }}
-      >
-        <span
-          style={{
-            position: 'absolute',
-            left: '50%',
-            top: 16,
-            transform: 'translateX(-50%)',
-            writingMode: 'vertical-rl',
-            fontFamily: FONT.sans,
-            fontWeight: 400,
-            fontSize: 9.5,
-            letterSpacing: '0.24em',
-            textTransform: 'uppercase',
-            color: rgba(C.ivory, 0.8),
-            textShadow: '0 1px 0 rgba(0,0,0,.5)',
-          }}
-        >
-          index
-        </span>
-      </button>
-
-      {open && (
-        <div
-          className="rise-in"
-          style={{
-            position: 'absolute',
-            top: 116,
-            right: 0,
-            width: 232,
-            backgroundColor: C.hide,
-            borderRadius: R.panel,
-            boxShadow: LIGHT.rest,
-            padding: `${S.md}px ${S.md}px ${S.sm}px`,
-          }}
-        >
-          <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: R.panel, ...stitching({ inset: 6 }) }} />
-          <div style={{ position: 'relative' }}>
-            <Label style={{ marginBottom: S.sm }}>the index</Label>
-            <Rule style={{ marginBottom: S.sm }} />
-            {items.map(([key, v]) => {
-              const on = key === screen
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => go(key)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '9px 2px',
-                    color: on ? C.ivory : rgba(C.ivory, 0.7),
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      background: on ? C.caramel : 'transparent',
-                      border: on ? 'none' : `1px solid ${rgba(C.ivory, 0.24)}`,
-                      flex: '0 0 auto',
-                    }}
-                  />
-                  <span style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 13.5, letterSpacing: '0.02em' }}>{v.name}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}

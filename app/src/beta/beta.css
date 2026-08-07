@@ -23,7 +23,7 @@ html.beta body {
   color: #F1E7D3;
   /* the closed case — matches tokens.C.void so there is no flash of another
      colour before the chart canvas paints */
-  background: #150E09;
+  background: #0B0705;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -64,26 +64,30 @@ html.beta input, html.beta textarea { cursor: text; }
 
 /* ── the scrollbar, bound to match ─────────────────────────────────────────── */
 html.beta ::-webkit-scrollbar { width: 10px; height: 10px; }
-html.beta ::-webkit-scrollbar-track { background: #150E09; }
+html.beta ::-webkit-scrollbar-track { background: #0B0705; }
 html.beta ::-webkit-scrollbar-thumb {
-  background: #3B2716;
+  background: #2F1E13;
   border: 1px solid rgba(241, 231, 211, 0.14);
   border-radius: 0;
 }
-html.beta ::-webkit-scrollbar-thumb:hover { background: #4A3220; }
-html.beta * { scrollbar-width: thin; scrollbar-color: #3B2716 #150E09; }
+html.beta ::-webkit-scrollbar-thumb:hover { background: #3C2819; }
+html.beta * { scrollbar-width: thin; scrollbar-color: #2F1E13 #0B0705; }
 
 /* ── motion ───────────────────────────────────────────────────────────────────
    Five gestures, and the whole product is made of them. */
 
 /* a leaf laid down: it arrives from slightly above, at a hair of an angle, and
    settles flat. The rotation is half a degree, which you do not consciously see
-   and which is the entire reason it reads as paper rather than as a div. */
+   and which is the entire reason it reads as paper rather than as a div.
+
+   No element wears this directly any more — the ivory leaves came off the
+   screens (ui.jsx, "the leaf, and why there isn't one"). It is still the motion
+   of the whole product, because it is what a PAGE arrives with: the view
+   transition below plays it on every screen change. */
 @keyframes bLeafIn {
   from { opacity: 0; transform: translateY(14px) rotate(-0.5deg); }
   to   { opacity: 1; transform: translateY(0) rotate(0deg); }
 }
-.leaf-in { animation: bLeafIn 0.62s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
 
 /* the quieter version, for anything that follows a leaf in */
 @keyframes bRiseIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -144,7 +148,7 @@ html.beta::view-transition-new(root) { animation: 0.44s cubic-bezier(0.16, 0.84,
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .leaf-in, .rise-in, .seal-set, .strain { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .rise-in, .seal-set, .strain { animation: none !important; opacity: 1 !important; transform: none !important; }
   .tool-rule, .tool-spine { animation: none !important; transform: none !important; }
   html.beta::view-transition-old(root), html.beta::view-transition-new(root) { animation: none !important; }
 }

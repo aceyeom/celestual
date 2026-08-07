@@ -14,20 +14,20 @@
 // does, live, as you type.
 //
 // ── the structure rule ───────────────────────────────────────────────────────
-// Nothing is centred; every page hangs off the spine on the left. One object
-// per page: the send is a slip, the card is a seal, the status page is a
-// ledger. The page admits it was printed.
+// Type is ranged left and hung off the spine; the block that carries it sits in
+// the middle of the window. One object per page: the send is a ruled line, the
+// card is a seal, the status page is a ledger. The page admits it was printed.
 
 import { useEffect, useState } from 'react'
 import {
-  C, TEXT, LINE, FONT, SIZE, R, S, LIGHT, MEASURE,
+  C, TEXT, LINE, ONSKY, FONT, SIZE, R, S, LIGHT, MEASURE,
   GROUNDS, FACES, MAX_WORDS, wordCount, clampWords,
   rgba, normHandle, isValidHandle, stamp, daysLeft,
 } from './tokens.js'
 import { leatherSurface, paperSurface, chalkSurface, groundSurface, stitching } from './texture.js'
 import {
   Column, Title, Body, Small, Label, Tick, Rule, useNarrow,
-  Reticle, Wordmark, Panel, Leaf, Plate, Quiet, Ruled, Seal, Mark, Head, Slots, Swatches,
+  Reticle, Wordmark, Panel, Plate, Quiet, Ruled, Seal, Mark, Head, Slots, Swatches,
 } from './ui.jsx'
 import { Reveal } from './Reveal.jsx'
 
@@ -85,9 +85,12 @@ export function OpenScreen({ ctx }) {
 }
 
 // ── 2 · the send ─────────────────────────────────────────────────────────────
-// A slip of paper with a line on it. The plate mark in the corner stays,
-// because it is ornament rather than instruction: printed matter tells you it
-// was printed, and it is two words, not a sentence about privacy.
+// A ruled line on the case, and nothing else. It used to be a ruled line on a
+// slip of ivory paper, which was a nicer picture and a worse page: the slip was
+// a brilliant rectangle in a dark frame, and the eye read the rectangle. The
+// form mark stays, because it is ornament rather than instruction — printed
+// matter tells you it was printed, and it is two words, not a sentence about
+// privacy.
 export function SendScreen({ ctx }) {
   const [v, setV] = useState(ctx.them || '')
   const ok = isValidHandle(v) && normHandle(v) !== normHandle(ctx.me)
@@ -106,12 +109,10 @@ export function SendScreen({ ctx }) {
         <em style={{ fontStyle: 'italic', color: C.caramel }}>on your mind?</em>
       </Title>
 
-      <Leaf className="leaf-in" style={{ marginTop: S.xl, padding: `${S.lg}px ${S.lg}px ${S.lg}px`, transform: 'rotate(-0.45deg)' }}>
-        <Tick tone="ink" style={{ display: 'block', color: rgba(C.ink, 0.36), marginBottom: S.md }}>
-          form 01
-        </Tick>
-        <Ruled label="their instagram" value={v} onChange={setV} onEnter={submit} placeholder="handle" autoFocus big />
-      </Leaf>
+      <div className="rise-in" style={{ marginTop: S.xl }}>
+        <Tick style={{ display: 'block', marginBottom: S.md }}>form 01</Tick>
+        <Ruled label="their instagram" value={v} onChange={setV} onEnter={submit} placeholder="handle" autoFocus big tone="ivory" />
+      </div>
 
       <div style={{ marginTop: S.xl }}>
         <Plate onClick={submit} disabled={!ok}>
@@ -148,15 +149,19 @@ export function WriteScreen({ ctx }) {
         </div>
 
         <div style={{ flex: '1 1 300px', minWidth: 280, maxWidth: MEASURE }}>
-          <Leaf style={{ padding: S.lg }}>
+          <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: S.md }}>
-              <Label tone="ink" style={{ color: rgba(C.ink, 0.5) }}>message for them</Label>
-              <Tick tone="ink" style={{ color: n > MAX_WORDS ? '#8A2B12' : rgba(C.ink, 0.4) }}>
+              <Label>message for them</Label>
+              <Tick tone={n > MAX_WORDS ? 'lit' : 'faint'}>
                 {n}/{MAX_WORDS}
               </Tick>
             </div>
+            {/* The ruled lines are the paper now. They were the one thing on the
+                leaf actually doing work — you write ON a rule — so when the leaf
+                came off they stayed, drawn in the case's own light instead of in
+                ink. */}
             <textarea
-              className="ph-ink"
+              className="ph-ivory"
               value={words}
               onChange={(e) => setWords(e.target.value)}
               rows={4}
@@ -167,18 +172,18 @@ export function WriteScreen({ ctx }) {
                 border: 0,
                 outline: 'none',
                 resize: 'none',
-                background: `repeating-linear-gradient(180deg, transparent 0 27px, ${rgba(C.ink, 0.13)} 27px 28px)`,
+                background: `repeating-linear-gradient(180deg, transparent 0 27px, ${rgba(C.ivory, 0.16)} 27px 28px)`,
                 fontFamily: FONT.serif,
                 fontStyle: 'italic',
                 fontWeight: 400,
                 fontSize: 21,
                 lineHeight: '28px',
-                color: C.ink,
-                caretColor: C.ink,
+                color: C.ivory,
+                caretColor: C.caramel,
                 padding: 0,
               }}
             />
-          </Leaf>
+          </div>
 
           <div style={{ marginTop: S.xl }}>
             <Swatches items={GROUND_ITEMS} value={ground} onChange={setGround} size={52} />
@@ -417,10 +422,12 @@ export function PingsScreen({ ctx }) {
               padding: '8px 11px',
               borderRadius: R.press,
               border: `1px dashed ${rgba(C.ivory, 0.22)}`,
+              background: rgba(C.void, 0.5),
               color: TEXT.faint,
               fontFamily: FONT.mono,
               fontSize: 10.5,
               letterSpacing: '0.08em',
+              textShadow: ONSKY,
             }}
           >
             beta · they enter you back
@@ -556,9 +563,7 @@ export function PlateScreen({ ctx }) {
             <Quiet onClick={() => {}}>the quiet exit</Quiet>
           </div>
           <div style={{ width: 260 }}>
-            <Leaf>
-              <Ruled label="a ruled line" value="specimen" onChange={() => {}} />
-            </Leaf>
+            <Ruled label="a ruled line" value="specimen" onChange={() => {}} tone="ivory" />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: S.lg }}>
             {['standing', 'waiting', 'mutual'].map((s) => (
