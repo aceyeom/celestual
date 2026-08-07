@@ -13,7 +13,7 @@
 //   is the one closest to ivory, and the quiet thing is the one that has sunk
 //   back toward the leather. That is the entire hierarchy system.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { C, TEXT, LINE, ONSKY, FONT, SIZE, LEAD, TRACK, R, S, FRAME, MEASURE, INDEX_W, LIGHT, rgba, groundOf, faceOf, stamp, wordCount } from './tokens.js'
 import { leatherSurface, paperSurface, groundSurface, stitching } from './texture.js'
 
@@ -268,21 +268,28 @@ export function IndexColumn({ open, items, screen, go, narrow }) {
 }
 
 // ── the column ───────────────────────────────────────────────────────────────
-// The measure is narrow and the type inside it is ranged left, hung off a real
-// rule — the spine. That much is unchanged, and it is still what keeps a page
-// from reading as a centred template stack.
+// The measure is narrow, the type inside it is ranged left, and the block that
+// carries it sits in the middle of the window. On a phone the measure IS the
+// screen; on a laptop the same page comes out centred rather than stranded in
+// the left third, which is what makes the two read as one product.
 //
-// What changed is where the column SITS. It used to be pinned to the left edge
-// of the window, which on a phone is invisible (the measure is the screen) and
-// on a laptop leaves the entire page in the left third with a third of a metre
-// of empty case beside it — the same layout reading as two different products
-// depending on what you opened it on. The block is centred now, the setting
-// inside it is not, and the phone layout comes out byte for byte where it was.
+// ── the spine, and why there isn't one ───────────────────────────────────────
+// There used to be a hairline ruled down the left of every column — the spine,
+// the thing the setting was hung off. On paper that is a real idea. On screen it
+// was a pale vertical line standing an inch off the left of every page in the
+// product, attached to nothing, at the exact weight and colour of a rendering
+// artefact. It read as a seam in the window rather than as part of the book, and
+// once you had noticed it on one screen you could not stop seeing it on the rest
+// of them.
+//
+// The setting does not need it. Type ranged left against a consistent left
+// margin already has an axis; the rule was drawing a line the eye was drawing
+// anyway. It is gone, and the indent it needed went with it.
 //
 // `paddingTop` clears the masthead. The colophon is the last thing in the
 // column rather than pinned to the viewport: a colophon belongs at the foot of
 // the setting, and a fixed one sits on top of whatever scrolls beneath it.
-export function Column({ children, spine = true, wide = false, colophon = true, style }) {
+export function Column({ children, wide = false, colophon = true, style }) {
   return (
     <div
       style={{
@@ -296,21 +303,7 @@ export function Column({ children, spine = true, wide = false, colophon = true, 
         ...style,
       }}
     >
-      <div style={{ position: 'relative', width: '100%', maxWidth: wide ? 880 : MEASURE, paddingLeft: spine ? S.lg : 0 }}>
-        {spine && (
-          <div
-            aria-hidden
-            className="tool-spine"
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 4,
-              bottom: 4,
-              width: 1,
-              background: `linear-gradient(180deg, ${rgba(C.ivory, 0)} 0%, ${rgba(C.ivory, 0.18)} 14%, ${rgba(C.ivory, 0.18)} 86%, ${rgba(C.ivory, 0)} 100%)`,
-            }}
-          />
-        )}
+      <div style={{ position: 'relative', width: '100%', maxWidth: wide ? 880 : MEASURE }}>
         {children}
         {colophon && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: S.xxxl, opacity: 0.55 }}>
@@ -448,40 +441,165 @@ export const Rule = ({ width = '100%', style }) => (
 )
 
 // ── the mark ─────────────────────────────────────────────────────────────────
-// The brand, and it is the same object the chart draws: a struck star inside a
-// scribed ring. The identity and the sky are one drawing, which is what makes a
-// logo feel inevitable rather than applied.
-export function Reticle({ size = 26, stroke = C.ivory, a = 1 }) {
-  const c = size / 2
-  const r = size * 0.34
-  const sp = size * 0.46
+// A four-pointed star, cut down the middle, with a body sitting in the cut.
+//
+// It is ONE drawing, used twice. The right wing is the star. The left wing is
+// the SAME star turned a hundred and eighty degrees about the body — so the long
+// point that reaches up on one side reaches down on the other, and the short
+// point does the opposite. That is the whole construction, and it is why the
+// mark leans without ever having been drawn on a slant: the two halves are
+// identical, and neither one is level with the other.
+//
+// Two things about it are load-bearing and neither is decoration:
+//
+//   THE CUT IS THE GROUND. The hairline between the halves, and the crescent
+//   where it opens out around the body, are not painted white — they are holes,
+//   and what shows through them is whatever the mark is standing on. That is
+//   what let the artwork move to a near-black case without being redrawn: on
+//   ivory the cut is ivory, on the case the cut is the case.
+//
+//   THE BODY IS THE ONE LIGHT. The wings are the brand's ink; the disc in the
+//   middle is the only warm thing in the drawing, on the same value ramp every
+//   lit thing in this product sits on. Which is also the argument for the
+//   default: an ivory star with a single caramel body reads at fourteen pixels
+//   in the masthead and at four hundred on the specimen sheet, and it never
+//   competes with the type beside it.
+//
+// The geometry is a trace of the original artwork, normalised so the mark is one
+// hundred units across. Nothing in here is rounded to look tidy: the numbers are
+// where the points actually landed.
+const SIGIL = {
+  w: 100,
+  h: 121.2,
+  cut: 50, //             the axis the two halves are parted on
+  // the star: its centre, and how far each of the four points reaches
+  cx: 50.9,
+  cy: 55.6,
+  up: 55.6,
+  down: 40,
+  side: 49.1,
+  // the body, which is also the point the second wing is turned about
+  bx: 50,
+  by: 60.6,
+  br: 11.6,
+  // how far the concave edges are drawn in between two points. Small: this is a
+  // star that has been pulled thin, not a four-lobed flower.
+  pinch: 0.1,
+}
+
+// A four-pointed star with concave edges, as one closed path.
+const starPath = (cx, cy, up, down, side, k) => {
+  const x = side * k
+  const u = up * k
+  const d = down * k
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', opacity: a }} aria-hidden>
-      <circle cx={c} cy={c} r={r} fill="none" stroke={stroke} strokeOpacity="0.42" strokeWidth={size * 0.035} />
-      <path
-        d={`M${c} ${c - sp} Q${c + size * 0.055} ${c - size * 0.055} ${c + sp} ${c}
-            Q${c + size * 0.055} ${c + size * 0.055} ${c} ${c + sp}
-            Q${c - size * 0.055} ${c + size * 0.055} ${c - sp} ${c}
-            Q${c - size * 0.055} ${c - size * 0.055} ${c} ${c - sp} Z`}
-        fill={stroke}
-      />
-      {[0, 1, 2, 3].map((k) => {
-        const ang = (k * Math.PI) / 2
-        const x1 = c + Math.cos(ang) * (r + size * 0.06)
-        const y1 = c + Math.sin(ang) * (r + size * 0.06)
-        const x2 = c + Math.cos(ang) * (r + size * 0.15)
-        const y2 = c + Math.sin(ang) * (r + size * 0.15)
-        return <line key={k} x1={x1} y1={y1} x2={x2} y2={y2} stroke={stroke} strokeOpacity="0.34" strokeWidth={size * 0.035} />
-      })}
+    `M${cx} ${cy - up}` +
+    `Q${cx + x} ${cy - u} ${cx + side} ${cy}` +
+    `Q${cx + x} ${cy + d} ${cx} ${cy + down}` +
+    `Q${cx - x} ${cy + d} ${cx - side} ${cy}` +
+    `Q${cx - x} ${cy - u} ${cx} ${cy - up}Z`
+  )
+}
+
+// ── the iterations ───────────────────────────────────────────────────────────
+// The artwork came in on white, in two mauves and a rose gold, and not one of
+// the three survived the move: at this ground a mid-brown sits within a few
+// values of what it is standing on, and a mark you have to look for is not a
+// mark. So the drawing is untouched and the ink is not.
+//
+// What IS kept is the artwork's order — left wing lightest, right wing deepest,
+// and the body brighter than either, because that order is the drawing. Invert
+// it and the same geometry becomes a different mark: the long point that leads
+// the eye stops being the one that reaches up, and the body stops reading as
+// something lit and starts reading as a hole.
+//
+//   IVORY, LIT   the default, and the lightest of them. Ivory against wheat,
+//                with the body run from a bright warm highlight down through
+//                caramel to saddle — a piece of metal rather than a filled
+//                circle, and the only warm thing in the drawing.
+//   STRUCK IVORY the unified one. A single ink at two strengths for the wings
+//                and a third for the body: no warm anywhere. This is the cut to
+//                use anywhere the mark stands beside something else that is lit.
+//   THE WARM CUT the artwork's own two-tone relationship, moved up the ramp far
+//                enough to clear the case: wheat against saddle.
+//   ON PAPER     for ivory grounds — a share card, a favicon on white, print.
+export const CUTS = [
+  { id: 'lamp', name: 'ivory, lit', left: [C.ivory, 1], right: [C.wheat, 1], body: [C.ivory2, C.caramel, C.saddle] },
+  { id: 'ivory', name: 'struck ivory', left: [C.ivory, 0.96], right: [C.ivory, 0.5], body: [C.ivory, C.ivory2, C.wheat] },
+  { id: 'warm', name: 'the warm cut', left: [C.wheat, 1], right: [C.saddle, 1], body: [C.ivory2, C.wheat, C.caramel] },
+  { id: 'ink', name: 'on paper', left: [C.ink2, 1], right: [C.ink, 1], body: [C.wheat, C.caramel, C.saddle] },
+]
+
+const cutOf = (id) => CUTS.find((c) => c.id === id) || CUTS[0]
+
+// `size` is the WIDTH. The mark is taller than it is wide — 1.212:1, the
+// artwork's own proportion — and a caller that squares it off is cropping the
+// long points, so the height is derived here and never asked for.
+export function Sigil({ size = 26, cut = 'lamp', ground = C.void, a = 1, style }) {
+  const raw = useId()
+  const id = `sg${raw.replace(/[^a-zA-Z0-9]/g, '')}`
+  const k = cutOf(cut)
+  const g = SIGIL
+  // The cut is a hairline in viewBox units, which means it thins to nothing on a
+  // small mark. So it is floored in DEVICE pixels instead: about one, whatever
+  // the mark is set at, which is exactly how a cut in a plate behaves.
+  const w = Math.max(1.3, 110 / size)
+  const ring = w * 1.9
+
+  // the star, and the same star turned half a turn about the body
+  const right = starPath(g.cx, g.cy, g.up, g.down, g.side, g.pinch)
+  const left = starPath(2 * g.bx - g.cx, 2 * g.by - g.cy, g.down, g.up, g.side, g.pinch)
+
+  return (
+    <svg
+      width={size}
+      height={size * (g.h / g.w)}
+      viewBox={`0 0 ${g.w} ${g.h}`}
+      style={{ display: 'block', opacity: a, overflow: 'visible', ...style }}
+      aria-hidden
+    >
+      <defs>
+        <clipPath id={`${id}-l`}>
+          <rect x={-10} y={-10} width={g.cut - w / 2 + 10} height={g.h + 20} />
+        </clipPath>
+        <clipPath id={`${id}-r`}>
+          <rect x={g.cut + w / 2} y={-10} width={g.w + 10} height={g.h + 20} />
+        </clipPath>
+        {/* the body: light off the top-left shoulder, deepening across the face.
+            A metal disc, not a gradient swatch — the third stop lifts again at
+            the bottom edge, which is the light the surface it lies on throws
+            back up at it. */}
+        <linearGradient id={`${id}-b`} x1="0.12" y1="0.02" x2="0.86" y2="1">
+          <stop offset="0%" stopColor={k.body[0]} />
+          <stop offset="52%" stopColor={k.body[1]} />
+          <stop offset="100%" stopColor={k.body[2]} />
+        </linearGradient>
+      </defs>
+
+      {/* the left wing — the star, turned over — and then the right */}
+      <path d={left} fill={k.left[0]} fillOpacity={k.left[1]} clipPath={`url(#${id}-l)`} />
+      <path d={right} fill={k.right[0]} fillOpacity={k.right[1]} clipPath={`url(#${id}-r)`} />
+      {/* where the cut opens out around the body. It is only ever on the LEFT:
+          the right wing runs straight up to the body's limb, the way it does in
+          the original, and that single asymmetry is most of what stops the mark
+          reading as a diagram of a planet. */}
+      <circle cx={g.bx} cy={g.by} r={g.br + ring} fill={ground} clipPath={`url(#${id}-l)`} />
+      <circle cx={g.bx} cy={g.by} r={g.br} fill={`url(#${id}-b)`} />
     </svg>
   )
 }
 
-export function Wordmark({ size = 15, sub, tone = C.ivory }) {
+export function Wordmark({ size = 15, sub, tone, cut = 'lamp' }) {
+  const ink = tone || C.ivory
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
-      <Reticle size={size * 1.7} stroke={tone} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: size * 0.62 }}>
+      <Sigil size={size * 1.52} cut={cut} />
       <div>
+        {/* The name used to be tracked out to a third of an em, which is a
+            letterspace for a single word set alone on a title page and far too
+            much for a word standing next to a mark: at that setting "celestual"
+            stops being a word and becomes nine letters in a row. Pulled in to a
+            normal uppercase interval, it reads as one object again. */}
         <div
           style={{
             fontFamily: FONT.serif,
@@ -489,14 +607,14 @@ export function Wordmark({ size = 15, sub, tone = C.ivory }) {
             fontSize: size,
             letterSpacing: TRACK.wordmark,
             textTransform: 'uppercase',
-            color: tone,
+            color: ink,
             lineHeight: 1,
           }}
         >
           celestual
         </div>
         {sub && (
-          <div style={{ marginTop: 5, fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.16em', color: rgba(C.ivory, 0.34) }}>
+          <div style={{ marginTop: 5, fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.13em', color: rgba(C.ivory, 0.34) }}>
             {sub}
           </div>
         )}
@@ -754,29 +872,45 @@ export function Ruled({ label, prefix = '@', value, onChange, placeholder, autoF
 
 // ── the seal ─────────────────────────────────────────────────────────────────
 // The card a ping carries. It is a circle for the reason it has always been a
-// circle in this product: a ping is a star and this is the star's surface. What
-// is new is that it is now an OBJECT — a struck seal, with the rim text set
-// round its edge on a real curve the way it is on a coin, a double keyline
-// inside the trim, and one of three materials underneath.
+// circle in this product: a ping is a star and this is the star's surface. It is
+// a struck seal — a double keyline inside the trim, one of three materials
+// underneath, and three things printed on it in a fixed order.
 //
-// The rim text is SVG textPath, not a row of rotated spans, so it is genuinely
-// on the curve at every size and stays crisp when the seal is 88px in a list
-// and when it is 320px in a reveal.
+// ── why the legend came off the rim ──────────────────────────────────────────
+// The handle and the date used to run round the edge on a real curve, the way a
+// legend does on a coin. It was the most convincing thing in the file and it was
+// the wrong call, for a reason that only shows up once you try to READ one:
+//
+//   A curved line has no reading axis. Every glyph in "@raines" sat at a
+//   different angle, so the eye had to re-level itself letter by letter — fine
+//   for a legend nobody reads, which is what a legend on a coin is, and not fine
+//   at all for the single most important fact on the card. It is WHO IT IS FOR.
+//   That is not ornament round the edge, it is the first line.
+//
+//   And it fought its own container. Set on an arc inside a circle inside a
+//   round frame, the handle was the fourth concentric thing in a hundred pixels;
+//   nothing in the composition was square to anything, so nothing had a top.
+//
+// So it is set straight now, across the top, on the card's own vertical axis —
+// and the date straight across the foot, which gives the disc a head and a foot
+// and therefore an up. Three horizontal bands, ranged on one centre line: who it
+// is for, what was said, when it was written. The curve is gone and the object
+// reads as a card rather than as a token.
 export function Seal({ card, size = 220, className = '', style, elevated = true }) {
   const g = groundOf(card && card.ground)
   const f = faceOf(card && card.face)
   const text = (card && card.words) || ''
   const n = wordCount(text)
-  // Below about a hundred and twenty pixels the rim text stops being text and
-  // becomes a smudge round the edge, so the seal drops it and gives the space
-  // back to the words instead. A coin too small to read its own legend does not
-  // print the legend smaller; it stops being a coin and becomes a token.
-  const rim = size >= 120
-  const ratio = (n <= 7 ? 0.082 : n <= 13 ? 0.068 : 0.056) * (rim ? 1 : 1.34)
+  const dark = g.id === 'hide'
+  // Below about a hundred and twenty pixels the legend stops being type and
+  // becomes two grey smudges, so the seal drops it and gives the room back to
+  // the words. A card too small to print its own head does not print it smaller;
+  // it stops being a card and becomes a token, and a token in a list is right.
+  const legend = size >= 118
+  const ratio = (n <= 7 ? 0.082 : n <= 13 ? 0.068 : 0.056) * (legend ? 1 : 1.34)
   const fs = size * ratio * f.scale
-  const rimR = size * 0.5 - size * 0.052
-  const id = `rim-${(card && card.handle) || 'x'}-${Math.round(size)}`
-  const rimInk = g.id === 'hide' ? rgba(C.ivory, 0.72) : rgba(C.ink, 0.62)
+  const headInk = dark ? rgba(C.ivory, 0.82) : rgba(C.ink, 0.7)
+  const footInk = dark ? rgba(C.ivory, 0.42) : rgba(C.ink, 0.4)
 
   return (
     <div
@@ -789,48 +923,85 @@ export function Seal({ card, size = 220, className = '', style, elevated = true 
         overflow: 'hidden',
         ...groundSurface(g, { scale: Math.round(size * 0.9) }),
         boxShadow: elevated
-          ? `${LIGHT.seal}, inset 0 1px 0 ${rgba('#FFFFFF', g.id === 'hide' ? 0.05 : 0.4)}, inset 0 -2px 6px rgba(0,0,0,${g.id === 'hide' ? 0.42 : 0.14})`
+          ? `${LIGHT.seal}, inset 0 1px 0 ${rgba('#FFFFFF', dark ? 0.05 : 0.4)}, inset 0 -2px 6px rgba(0,0,0,${dark ? 0.42 : 0.14})`
           : 'none',
         ...style,
       }}
     >
       {/* the double keyline struck inside the trim */}
-      <div aria-hidden style={{ position: 'absolute', inset: size * 0.038, borderRadius: '50%', border: `1px solid ${g.id === 'hide' ? rgba(C.ivory, 0.26) : rgba(C.ink, 0.24)}` }} />
-      {rim && (
-        <div aria-hidden style={{ position: 'absolute', inset: size * 0.088, borderRadius: '50%', border: `1px solid ${g.id === 'hide' ? rgba(C.ivory, 0.11) : rgba(C.ink, 0.1)}` }} />
+      <div aria-hidden style={{ position: 'absolute', inset: size * 0.038, borderRadius: '50%', border: `1px solid ${dark ? rgba(C.ivory, 0.26) : rgba(C.ink, 0.24)}` }} />
+      {legend && (
+        <div aria-hidden style={{ position: 'absolute', inset: size * 0.088, borderRadius: '50%', border: `1px solid ${dark ? rgba(C.ivory, 0.11) : rgba(C.ink, 0.1)}` }} />
       )}
 
-      {/* the rim: who it is for, and when it was written */}
-      {rim && (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: 'absolute', inset: 0 }} aria-hidden>
-          <defs>
-            <path id={`${id}-t`} d={`M ${size / 2 - rimR} ${size / 2} A ${rimR} ${rimR} 0 0 1 ${size / 2 + rimR} ${size / 2}`} fill="none" />
-            <path id={`${id}-b`} d={`M ${size / 2 - rimR} ${size / 2} A ${rimR} ${rimR} 0 0 0 ${size / 2 + rimR} ${size / 2}`} fill="none" />
-          </defs>
-          <text
-            fill={rimInk}
-            style={{ fontFamily: FONT.mono, fontSize: size * 0.043, letterSpacing: `${size * 0.007}px` }}
+      {legend && (
+        <>
+          {/* who it is for. Ranged on the card's centre line, level, and clipped
+              rather than shrunk — a thirty-character handle is allowed to run
+              out of chord, and it is not allowed to set the type size for every
+              other card in the product. */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: size * 0.128,
+              padding: `0 ${size * 0.19}px`,
+              textAlign: 'center',
+              fontFamily: FONT.mono,
+              fontSize: size * 0.047,
+              letterSpacing: `${size * 0.008}px`,
+              lineHeight: 1,
+              color: headInk,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
           >
-            <textPath href={`#${id}-t`} startOffset="50%" textAnchor="middle">
-              {`@${(card && card.handle) || ''}`}
-            </textPath>
-          </text>
-          <text
-            fill={g.id === 'hide' ? rgba(C.ivory, 0.44) : rgba(C.ink, 0.42)}
-            style={{ fontFamily: FONT.mono, fontSize: size * 0.036, letterSpacing: `${size * 0.007}px` }}
+            @{(card && card.handle) || ''}
+          </div>
+          {/* the hairline under the head. It is what turns two lines of Courier
+              into a printed card rather than two lines of Courier. */}
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: size * 0.196,
+              width: size * 0.2,
+              height: 1,
+              transform: 'translateX(-50%)',
+              background: dark ? rgba(C.ivory, 0.22) : rgba(C.ink, 0.18),
+            }}
+          />
+          {/* and when it was written */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: size * 0.132,
+              textAlign: 'center',
+              fontFamily: FONT.mono,
+              fontSize: size * 0.039,
+              letterSpacing: `${size * 0.008}px`,
+              lineHeight: 1,
+              color: footInk,
+            }}
           >
-            <textPath href={`#${id}-b`} startOffset="50%" textAnchor="middle">
-              {stamp(card && card.placed)}
-            </textPath>
-          </text>
-        </svg>
+            {stamp(card && card.placed)}
+          </div>
+        </>
       )}
 
       {/* the words */}
       <div
         style={{
           position: 'absolute',
-          inset: size * (rim ? 0.155 : 0.1),
+          top: size * (legend ? 0.255 : 0.1),
+          bottom: size * (legend ? 0.225 : 0.1),
+          left: size * (legend ? 0.145 : 0.1),
+          right: size * (legend ? 0.145 : 0.1),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -892,6 +1063,12 @@ export function Mark({ state = 'waiting', size = 11 }) {
 // ── the head of a screen ─────────────────────────────────────────────────────
 // A kicker, a rule, and a way back. The same three objects on every screen, in
 // the same place, so the product has a masthead instead of a navbar.
+//
+// The kicker is OPTIONAL, and a screen should drop it whenever the headline
+// underneath already says the same thing. "THE SEND" stamped over "who is on
+// your mind?" is not a label, it is the page saying its own name out loud before
+// speaking — and a page that has to introduce itself has a headline that is not
+// working. Where the two overlap, the headline wins and the kicker goes.
 export function Head({ kicker, onBack, right }) {
   return (
     <div style={{ marginBottom: S.xl }}>
@@ -918,7 +1095,7 @@ export function Head({ kicker, onBack, right }) {
               back
             </button>
           )}
-          <Label>{kicker}</Label>
+          {kicker && <Label>{kicker}</Label>}
         </div>
         {right}
       </div>

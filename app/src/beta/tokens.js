@@ -153,6 +153,12 @@ export const FONT_HREF =
 // look like a book.
 export const SIZE = {
   colophon: 'clamp(46px, 13vw, 96px)', // the title page, once, on the landing
+  // The one question the product asks. It is a step up from an ordinary
+  // headline and a step down from the title page, and it gets its own rung
+  // because it is the only line in the interface that is a QUESTION — the page
+  // it sits on is nothing but that question and the line you answer it on, so it
+  // is allowed to be the size the page deserves.
+  ask: 'clamp(40px, 10vw, 70px)',
   title: 'clamp(30px, 7.4vw, 46px)', //   a screen's one headline
   chapter: 'clamp(21px, 5vw, 27px)', //   a section head, a sheet head
   lead: 19, //                            a spoken serif line
@@ -170,7 +176,11 @@ export const TRACK = {
   title: '-0.018em', //  a large garalde needs to be pulled in
   label: '0.22em', //    small-caps Jost: wide enough to read as a stamped label
   tick: '0.1em',
-  wordmark: '0.34em',
+  // The name, set beside the mark. A third of an em is a title-page letterspace
+  // — right for one word alone in the middle of a leaf, wrong for a word that
+  // has to hold together as one object next to a drawing. At that interval the
+  // eye reads nine letters; at this one it reads a name.
+  wordmark: '0.075em',
 }
 
 // ── geometry ─────────────────────────────────────────────────────────────────
@@ -195,9 +205,9 @@ export const FRAME = { inset: 14, inset2: 22 }
 // is unchanged and the block that carries it is CENTRED — the phone layout is
 // untouched, and the desktop one finally agrees with it.
 //
-// The rule the column hangs off is still there, and still on the left of the
-// block. It is the spine, and a spine belongs to the setting rather than to
-// the window.
+// The setting inside the block is still ranged left off one margin, which is
+// what stops a page reading as a centred template stack. It used to have a rule
+// drawn down that margin as well; ui.jsx has the argument for why it doesn't.
 export const MEASURE = 560
 
 // The index, when it is open. It is a COLUMN — it takes its width out of the
