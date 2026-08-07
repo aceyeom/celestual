@@ -97,10 +97,6 @@ html.beta * { scrollbar-width: thin; scrollbar-color: #2F1E13 #0B0705; }
 @keyframes bToolRule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .tool-rule { transform-origin: left center; animation: bToolRule 0.85s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
 
-/* the spine: the same tool, run down the page instead of across it */
-@keyframes bToolSpine { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-.tool-spine { transform-origin: center top; animation: bToolSpine 0.95s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
-
 /* the seal being set: the die comes down hard, then lifts */
 @keyframes bSealSet {
   0%   { opacity: 0; transform: scale(1.13); }
@@ -149,6 +145,6 @@ html.beta::view-transition-new(root) { animation: 0.44s cubic-bezier(0.16, 0.84,
     transition-duration: 0.001ms !important;
   }
   .rise-in, .seal-set, .strain { animation: none !important; opacity: 1 !important; transform: none !important; }
-  .tool-rule, .tool-spine { animation: none !important; transform: none !important; }
+  .tool-rule { animation: none !important; transform: none !important; }
   html.beta::view-transition-old(root), html.beta::view-transition-new(root) { animation: none !important; }
 }

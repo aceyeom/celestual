@@ -14,9 +14,9 @@
 // does, live, as you type.
 //
 // ── the structure rule ───────────────────────────────────────────────────────
-// Type is ranged left and hung off the spine; the block that carries it sits in
-// the middle of the window. One object per page: the send is a ruled line, the
-// card is a seal, the status page is a ledger. The page admits it was printed.
+// Type is ranged left against one margin; the block that carries it sits in the
+// middle of the window. One object per page: the send is a ruled line, the card
+// is a seal, the status page is a ledger. The page admits it was printed.
 
 import { useEffect, useState } from 'react'
 import {
@@ -27,7 +27,7 @@ import {
 import { leatherSurface, paperSurface, chalkSurface, groundSurface, stitching } from './texture.js'
 import {
   Column, Title, Body, Small, Label, Tick, Rule, useNarrow,
-  Reticle, Wordmark, Panel, Plate, Quiet, Ruled, Seal, Mark, Head, Slots, Swatches,
+  Sigil, CUTS, Wordmark, Panel, Plate, Quiet, Ruled, Seal, Mark, Head, Slots, Swatches,
 } from './ui.jsx'
 import { Reveal } from './Reveal.jsx'
 
@@ -85,12 +85,20 @@ export function OpenScreen({ ctx }) {
 }
 
 // ── 2 · the send ─────────────────────────────────────────────────────────────
-// A ruled line on the case, and nothing else. It used to be a ruled line on a
-// slip of ivory paper, which was a nicer picture and a worse page: the slip was
-// a brilliant rectangle in a dark frame, and the eye read the rectangle. The
-// form mark stays, because it is ornament rather than instruction — printed
-// matter tells you it was printed, and it is two words, not a sentence about
-// privacy.
+// The question, and a ruled line to answer it on. That is the entire page.
+//
+// It used to carry two more pieces of type, and both of them were the page
+// talking about itself rather than to you. "THE SEND" was stamped across the
+// head, directly above a headline that already says what this is — a screen
+// announcing its own title before it speaks. And "FORM 01" sat between the
+// headline and the field, which was ornament defended as ornament: printed
+// matter tells you it was printed. Fine, except it was sitting in the one gap on
+// the page the eye has to cross to get from the question to the place you answer
+// it, and a decoration in the middle of a sentence is not a decoration.
+//
+// Both gone. What is left is a question set as large as the title page sets its
+// own, because it IS the page — everything else here is the apparatus for
+// answering it, and the apparatus was competing with it at the old size.
 export function SendScreen({ ctx }) {
   const [v, setV] = useState(ctx.them || '')
   const ok = isValidHandle(v) && normHandle(v) !== normHandle(ctx.me)
@@ -101,16 +109,15 @@ export function SendScreen({ ctx }) {
   }
   return (
     <Column>
-      <Head kicker="the send" onBack={() => ctx.go('open')} right={<Slots used={ctx.standing} cap={3} />} />
+      <Head onBack={() => ctx.go('open')} right={<Slots used={ctx.standing} cap={3} />} />
 
-      <Title style={{ maxWidth: 420 }}>
+      <Title style={{ fontSize: SIZE.ask, lineHeight: 0.94, maxWidth: 620 }}>
         who is
         <br />
         <em style={{ fontStyle: 'italic', color: C.caramel }}>on your mind?</em>
       </Title>
 
       <div className="rise-in" style={{ marginTop: S.xl }}>
-        <Tick style={{ display: 'block', marginBottom: S.md }}>form 01</Tick>
         <Ruled label="their instagram" value={v} onChange={setV} onEnter={submit} placeholder="handle" autoFocus big tone="ivory" />
       </div>
 
@@ -382,7 +389,7 @@ function EmptySlot({ onClick }) {
           boxShadow: LIGHT.well,
         }}
       >
-        <Reticle size={24} a={0.34} />
+        <Sigil size={22} a={0.36} />
       </span>
       <Label>open slot</Label>
     </button>
@@ -488,7 +495,7 @@ const CHIPS = [
 export function PlateScreen({ ctx }) {
   const sample = { handle: 'specimen', words: 'you always took the window seat', ground: 'leaf', face: 'hand', placed: Date.now() }
   return (
-    <Column wide spine={false} style={{ justifyContent: 'flex-start' }}>
+    <Column wide style={{ justifyContent: 'flex-start' }}>
       <div style={{ marginBottom: S.xxl }}>
         <Wordmark size={17} sub="specimen sheet · the bindery edition" />
         <Body quiet style={{ marginTop: S.lg, maxWidth: 470 }}>
@@ -496,6 +503,69 @@ export function PlateScreen({ ctx }) {
           and texture. nothing in this brand glows.
         </Body>
       </div>
+
+      <Spec title="the mark" note="one star, drawn twice">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: S.xl, alignItems: 'flex-start' }}>
+          <div style={{ flex: '0 0 auto' }}>
+            <div
+              style={{
+                width: 218,
+                height: 218,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: R.panel,
+                background: rgba(C.void, 0.55),
+                border: `1px solid ${rgba(C.ivory, 0.07)}`,
+              }}
+            >
+              <Sigil size={116} />
+            </div>
+            <Small style={{ fontSize: 11.5, marginTop: 10, maxWidth: 218 }}>
+              the right wing is the star. the left is the same star turned half a
+              turn about the body, which is why it leans without being drawn on a
+              slant.
+            </Small>
+          </div>
+
+          {/* the iterations, on the ground each is cut for */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: S.lg }}>
+            {CUTS.map((k) => {
+              const onPaper = k.id === 'ink'
+              return (
+                <div key={k.id} style={{ width: 124 }}>
+                  <div
+                    style={{
+                      height: 124,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: R.press,
+                      ...(onPaper ? paperSurface(C.ivory) : { background: C.void }),
+                      border: `1px solid ${rgba(C.ivory, onPaper ? 0 : 0.09)}`,
+                      boxShadow: onPaper ? LIGHT.leaf : 'none',
+                    }}
+                  >
+                    <Sigil size={58} cut={k.id} ground={onPaper ? C.ivory : C.void} />
+                  </div>
+                  <Label tone="read" style={{ marginTop: 9 }}>{k.name}</Label>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* and at the two sizes it actually has to hold: the masthead, and a
+            favicon. A mark that only works on a specimen sheet is a drawing. */}
+        <div style={{ marginTop: S.xl, display: 'flex', gap: S.xxl, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {[13, 17, 26].map((n) => (
+            <div key={n} style={{ display: 'flex', flexDirection: 'column', gap: S.sm, alignItems: 'flex-start' }}>
+              <Wordmark size={n} />
+              <Tick>{n}px</Tick>
+            </div>
+          ))}
+        </div>
+      </Spec>
 
       <Spec title="the case" note="one hue, ten values">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: S.md }}>
