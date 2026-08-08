@@ -105,12 +105,32 @@ body::after {
    the same grain reads twice as loud on one. Quieter there, and quieter again
    for anyone who has asked the interface to stop moving — a stationary texture
    is not motion, but it is visual noise, and the preference is a request for
-   less of it. */
-@media (max-width: 540px) {
-  body::after { opacity: 0.36; }
+   less of it.
+
+   ── and on a phone it stops being a BLEND ──────────────────────────────────
+   `mix-blend-mode` is the most expensive property in this file, and it is
+   expensive for a structural reason rather than a tunable one: an element that
+   blends cannot be composited on its own: the browser has to keep it and
+   everything behind it in one group and re-blend the whole group whenever any
+   of it changes. What is behind this one is a WebGL galaxy that changes on
+   every frame, full-bleed, at up to twice device resolution — so a texture that
+   never moves was making the compositor re-blend the entire viewport sixty
+   times a second, and taking every animation on top of it off the fast path
+   while it did. That is the jank: not the sky, and not any one animation, but
+   a soft-light sheet over both of them.
+
+   Desktop keeps it, where there is a discrete GPU and a 1x display and it is
+   genuinely free. Anything held in a hand gets the same grain as an ordinary
+   layer at the opacity that reads the same over this near-black ground, which
+   the compositor can promote, cache once and never look at again. */
+@media (max-width: 540px), (hover: none) {
+  body::after {
+    opacity: 0.2;
+    mix-blend-mode: normal;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  body::after { opacity: 0.28; }
+  body::after { opacity: 0.16; mix-blend-mode: normal; }
 }
 
 /* ── the cursor: a printer's registration mark ────────────────────────────────

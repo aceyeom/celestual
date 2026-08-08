@@ -96,6 +96,8 @@ export class Camera {
     this.bank = 0 // eased 0..1 — how far through the turn
     this.bankAim = null // { yaw, tilt } computed once, at the dive's start
     this.bankDur = 0.85
+    this.runIn = RUN_IN // per-dive, so one caller can fly a shorter approach
+    this.bankScale = 1
     this.holdDur = 1.9 // mirrored from the engine each update; releaseDive reads it
     this._bankPrev = 0
     this._bankVel = 0
@@ -178,6 +180,16 @@ export class Camera {
   startDive(target, opts = {}) {
     this.diveTarget = target
     this.diveDist = 1
+    // How long the committed run into the star takes. Almost every dive wants
+    // RUN_IN, which is a flight you watch. The reveal does not: nothing about
+    // the approach is the point there, the two cards are, and every second
+    // spent arriving is a second somebody sits in front of the answer to the
+    // only question they came back to ask. `run` lets that one caller shorten
+    // its own flight without re-timing every zoom in the product.
+    this.runIn = opts.run != null ? Math.max(0.3, opts.run) : RUN_IN
+    // The bank breathes with distance; a caller that has shortened the run can
+    // pull the turn in with it, or the swing outlasts the flight it belongs to.
+    this.bankScale = opts.bankScale != null ? Math.max(0.1, opts.bankScale) : 1
     // Most dives arrive close enough that the star resolves into a body. A
     // match does not: it needs to arrive far enough out that BOTH stars are in
     // frame, because the whole point of it is that there are two.
@@ -193,10 +205,10 @@ export class Camera {
       const wrap = (v) => Math.atan2(Math.sin(v), Math.cos(v))
       const yawGoal = wrap(world - this.azimuth + Math.PI / 2)
       this.bankAim = { yaw: yawGoal, tilt: opts.tilt != null ? opts.tilt : BANK_TILT }
-      this.bankDur = BANK_MIN + (BANK_MAX - BANK_MIN) * (Math.abs(yawGoal) / Math.PI)
+      this.bankDur = (BANK_MIN + (BANK_MAX - BANK_MIN) * (Math.abs(yawGoal) / Math.PI)) * this.bankScale
     } else {
       this.bankAim = null
-      this.bankDur = 0.85
+      this.bankDur = 0.85 * this.bankScale
     }
     // a dive owns the camera — release any hand-held dolly first
     this.zoomTarget = 1
@@ -212,7 +224,7 @@ export class Camera {
   // a release belongs.
   releaseDive(delay = 0) {
     if (this.dive && this.dive.held) {
-      const inEnd = Math.max(this.bankDur, this.bankDur * OVERLAP + RUN_IN)
+      const inEnd = Math.max(this.bankDur, this.bankDur * OVERLAP + this.runIn)
       this.dive = { t: inEnd + this.holdDur + delay, held: false }
     }
   }
@@ -303,12 +315,12 @@ export class Camera {
     // completing together, then the hold, then the return as one unwind
     if (this.dive) {
       const runStart = this.bankDur * OVERLAP
-      const inEnd = Math.max(this.bankDur, runStart + RUN_IN)
+      const inEnd = Math.max(this.bankDur, runStart + this.runIn)
       this.dive.t = this.dive.held ? Math.min(this.dive.t + dt, inEnd) : this.dive.t + dt
       const t = this.dive.t
       if (t < inEnd) {
         this.bank = easeFlight(clamp(t / this.bankDur, 0, 1))
-        this.focus = easeFlight(clamp((t - runStart) / RUN_IN, 0, 1))
+        this.focus = easeFlight(clamp((t - runStart) / this.runIn, 0, 1))
       } else if (this.dive.held || t < inEnd + holdDur) {
         this.bank = 1
         this.focus = 1

@@ -116,9 +116,31 @@ function useResolve(fieldRef, index, open) {
 // object with a caption.
 export function CardResolve({ C, card, url, index, open, fieldRef, onClose }) {
   const r = useResolve(fieldRef, index, open)
+  // The card is BUILT at the size it ends up and SCALED on the way in.
+  //
+  // It used to be built at `r.size` — a number this loop changes every frame —
+  // which meant that for the length of every dive in the product the browser
+  // re-solved a font size, re-flowed a block of type inside a circle, re-scaled
+  // two background textures and re-rasterized four box-shadow radii, sixty
+  // times a second, to draw the same card slightly bigger. That is the dive
+  // everybody presses on the ledger, and it is the one that stuttered.
+  //
+  // A transform says the same thing to the eye and nothing at all to layout.
+  // Read live rather than memoized: `useResolve` calls the same function on
+  // every frame, so the two must agree or the scale is solved against a stale
+  // diameter the moment a phone turns. It is two Math.mins.
+  const full = fullSize()
   if (!r || !card) return null
   const hue = tintOf(C, card.tone)
-  const half = r.size / 2
+  const half = full / 2
+  const grow = full ? r.size / full : 0
+  // A filter is applied before the transform, so a blur authored in screen
+  // pixels has to be divided by the scale it is about to be shrunk by, or an
+  // unresolved body arrives sharp. Capped, because dividing by a scale that is
+  // approaching zero asks for a hundred-pixel blur on a disc that is at seven
+  // percent opacity and invisible either way — and quantized, since a blur is
+  // re-rasterized every time its radius changes.
+  const smear = r.blur > 0.05 ? Math.min(24, r.blur / Math.max(grow, 0.3)) : 0
 
   return (
     <>
@@ -136,13 +158,18 @@ export function CardResolve({ C, card, url, index, open, fieldRef, onClose }) {
 
       <div
         style={{
-          position: 'fixed', left: r.x - half, top: r.y - half, width: r.size, height: r.size,
+          position: 'fixed', left: 0, top: 0, width: full, height: full,
+          transform: `translate3d(${r.x - half}px, ${r.y - half}px, 0) scale(${grow})`,
+          transformOrigin: 'center center',
           zIndex: 3, pointerEvents: 'none',
-          filter: r.blur > 0.05 ? `blur(${r.blur}px)` : 'none',
+          filter: smear > 0 ? `blur(${Math.round(smear * 2) / 2}px)` : 'none',
           opacity: r.opacity,
+          willChange: 'transform, opacity',
         }}
       >
-        <Card C={C} card={card} url={url} size={r.size} tint={hue} glow={0.6 + r.focus} />
+        {/* `glow` drives four box-shadow radii; stepped, so the shadow is drawn
+            a dozen times over the dive instead of on every frame of it */}
+        <Card C={C} card={card} url={url} size={full} tint={hue} glow={0.6 + Math.round(r.focus * 8) / 8} />
       </div>
 
       {/* One way back, and it is the same gesture that got here: anywhere. The

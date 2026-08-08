@@ -396,8 +396,15 @@ export class SkyEngine {
   // ── the governor ──────────────────────────────────────────────────────────
   _govern(rawMs, ts) {
     if (rawMs > 0 && rawMs < 250) this._ftEma = this._ftEma * 0.94 + rawMs * 0.06
-    if (ts - this._qAt < 1800) return
-    if (this._ftEma > 33 && this.tier < 2) {
+    if (ts - this._qAt < 1200) return
+    // The step-down used to wait for 33ms — thirty frames a second — which is
+    // the point at which a sky is visibly stuttering, not the point at which it
+    // stopped being smooth. Everything between 45 and 30 was a device sitting
+    // in a tier it could not afford, forever, because nothing ever asked it to
+    // step back. 22ms is just under 45fps, and it is comfortably clear of the
+    // 16.7 a vsynced 60Hz display reports, so a machine that IS keeping up is
+    // never walked down for it.
+    if (this._ftEma > 22 && this.tier < 2) {
       this.tier++
       this._applyTier(ts)
     } else if (this._ftEma < 15 && this.tier > 0 && ts - this._qAt > 7000) {
@@ -407,7 +414,11 @@ export class SkyEngine {
   }
   _applyTier(ts) {
     this._qAt = ts || performance.now()
-    this._ftEma = 21 // re-centre the meter so one step gets a fair trial
+    // Re-centre the meter so one step gets a fair trial, and centre it BETWEEN
+    // the two thresholds (15 up, 22 down) rather than on the lip of one of
+    // them — a meter that starts a hair under the trigger it just fired trips
+    // it again on the first slow frame and the tier oscillates.
+    this._ftEma = 18
     this.budget = TIER[this.tier]
     this.dprEff = this.dpr * (this.tier === 0 ? 1 : this.tier === 1 ? 0.85 : 0.68)
     this._rebuild()
