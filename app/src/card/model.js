@@ -232,19 +232,24 @@ export function metaPos(pos) {
 }
 
 // ── the model ────────────────────────────────────────────────────────────────
-// One card per ping. `photoId` points into the local blob store (card/photos.js)
-// and never leaves this device; everything else is what rides on the ping row.
+// One card per ping. `photoId` is this device's key into the local blob cache
+// (card/photos.js); `hasPhoto` is what the SERVER says — whether there is a
+// photograph on the row waiting to be fetched onto a device that does not hold
+// it yet. The two are separate on purpose: the first is where the bytes are
+// now, the second is whether they exist at all.
 //
 // Nothing a user makes reaches the other person before both have chosen each
-// other (the plan, §1.1). The card is sealed the way the ping itself is: the
-// server holds it, and the only read that can ever return it belongs to the
-// counterpart of a row that is already matched (migration 0022).
-export function makeCard({ handle, words: w, photoId = null, bg = 'leaf', face = 'serif', pos, tone, placed }) {
+// other (the plan, §1.1). Both halves of the card are sealed the way the ping
+// itself is: the server holds them, and the only reads that can ever return
+// them belong to the counterpart of a row that is already matched (migration
+// 0022 for the words, 0025 for the photograph).
+export function makeCard({ handle, words: w, photoId = null, hasPhoto = false, bg = 'leaf', face = 'serif', pos, tone, placed }) {
   const text = clampWords(w || '')
   return {
     handle: String(handle || '').toLowerCase(),
     words: text,
     photoId,
+    hasPhoto: !!hasPhoto,
     bg,
     face,
     pos: clampPos(pos || autoPos(text)),
@@ -260,9 +265,12 @@ export function makeCard({ handle, words: w, photoId = null, bg = 'leaf', face =
 // (celestual_card_clean) and a nested `pos` would be two casts there for no
 // reason.
 //
-// The photograph is NOT in here and there is no argument that puts it here. It
-// stays in this browser (card/photos.js), which is the only version of "it never
-// left your phone" that is a fact rather than a policy.
+// The photograph is not in here, and that is now a matter of PLUMBING rather
+// than of principle: it travels too (migration 0025), on the same seal, but as
+// its own call — a third of a megabyte has no business inside the statement
+// that decides whether a pair is mutual, and a picture that fails to upload
+// must never be able to cost somebody their ping. api/celestual.js
+// `putCardPhoto` is the other half of this function.
 export function toWire(card) {
   if (!card || !cardReady(card)) return null
   const pos = clampPos(card.pos || autoPos(card.words))
@@ -291,6 +299,10 @@ export function fromWire(w, { handle, placed } = {}) {
     face: faceOf(w.face).id,
     pos: { x: num(w.x, 0.5), y: num(w.y, 0.5) },
     tone: Math.max(0, Math.min(1, num(w.tone, plateOf(w.bg).tone))),
+    // the server's one word about the other half: whether there is a
+    // photograph on this row at all. The bytes are a separate, deliberate fetch
+    // (card/photos.js `ensurePhoto`) made by the screen about to draw them.
+    hasPhoto: w.photo === true,
     placed,
   })
 }

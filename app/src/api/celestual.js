@@ -146,6 +146,51 @@ export async function fetchMyPings({ handle, proof, demo } = {}) {
   }
 }
 
+// ── the photograph (migration 0025) ──────────────────────────────────────────
+// The card's other half, on the card's own seal. It is a SECOND call rather
+// than a field on placePing deliberately: a third of a megabyte has no business
+// inside the statement that decides whether a pair is mutual, and a picture that
+// fails to upload must never be able to cost somebody their ping.
+//
+// `photo` is base64 of the treated, EXIF-stripped JPEG card/photo.js makes.
+// Passing null CLEARS it, and the app calls this on every place — with the
+// picture or with null — so a re-placed card can never come back wearing the
+// photograph the last version of it was written on.
+export async function putCardPhoto({ me, them, proof, photo, demo }) {
+  if (demo || !hasSupabase || !normHandle(me) || !normHandle(them)) return { ok: false, demo: true };
+  try {
+    const { data, error } = await supabase.rpc('celestual_card_photo_put', {
+      p_from: me,
+      p_to: them,
+      p_proof: proof || null,
+      p_photo: photo || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    return data || { ok: false };
+  } catch {
+    return { ok: false };
+  }
+}
+
+// And reading one back. `mine` false asks for THEIRS, which the server will only
+// ever answer off a row that is already matched (celestual_counterpart_photo) —
+// the same seal the words have carried since 0022. Returns base64, or null.
+export async function getCardPhoto({ me, them, proof, mine = true, demo }) {
+  if (demo || !hasSupabase || !normHandle(me) || !normHandle(them)) return null;
+  try {
+    const { data, error } = await supabase.rpc('celestual_card_photo', {
+      p_me: me,
+      p_them: them,
+      p_proof: proof || null,
+      p_mine: !!mine,
+    });
+    if (error || !data?.ok) return null;
+    return data.photo || null;
+  } catch {
+    return null;
+  }
+}
+
 // One tap keeps a ping standing another sixty days. Free, unlimited — this
 // function never changes. Production calls it straight from the status page;
 // the sandbox previews a $2.99 checkout in front of it first (screens.jsx's

@@ -118,6 +118,19 @@ unique-pending-code index means a code maps to at most one session at a time,
 and the browser shows a **"sign in as @X?" confirm** whenever the adopted @
 differs from the one typed, so an unexpected identity can never commit silently.
 
+**The twenty-second grace is closed (0026).** 0017 opened a temporary door
+because the relay was dropping DMs: a browser that had shown its code and waited
+twenty seconds could call `celestual_ig_verify_timeout` and be admitted **as the
+typed @**, with those rows stamped `verified_via = 'timeout'` so the desk could
+see whose identity had been assumed rather than proven. The relay works, so the
+door is shut — the function is revoked from every client role *and* emptied to a
+refusal, and the client's timer is gone with it. Existing `'timeout'` accounts
+stay verified and the desk still names them ("Assumed at 20s"); what cannot
+happen any more is a new one. Nothing but a Meta-authenticated DM verifies now,
+which is the only thing that ever proved anything here — and it matters more
+since 0025, because on the other side of that door is another person's sealed
+card *and their photograph*.
+
 Session lifetime (0009): a completed verification stands **30 days, sliding**
 — each successful proof use extends it another 30, so an active person never
 re-verifies while an abandoned proof still dies. The exposure profile is that
@@ -176,15 +189,29 @@ burns with. It lives in `celestual_entries.card`.
   its `where` clause carries `matched_at is not null` on the row *being read*.
   There is no argument to it, and no shape of call to anything else, that
   returns the words on an unanswered ping.
-- **The photograph is not on the server.** There is no column, no bucket and no
-  upload path. A card's picture is treated, EXIF-stripped and stored in
-  IndexedDB on the phone that took it (`app/src/card/photos.js`). At a mutual
-  you are shown their words, their ground and their light — never their room.
-  This is deliberate: for the words the seal is now a policy a `where` clause
-  keeps, and for the picture it stays a fact about the network.
+- **The photograph travels, on the card's own seal** (migration 0025). It used
+  not to: there was no column, no bucket and no upload path, and the picture's
+  safety was a *fact about the network* rather than a policy — the bytes could
+  not arrive anywhere because nothing sent them. That was the stronger
+  guarantee and it cost the product the thing it was for, because the half of
+  the card people spend the most care on was the half nobody would ever see and
+  the half a new phone could not get back. So it is a column on the ping now
+  (`celestual_entries.photo`, base64 of the treated, EXIF-stripped JPEG the
+  browser makes), written only through `celestual_card_photo_put` and released
+  by exactly one function, `celestual_counterpart_photo`, which is **not
+  granted to `anon` or `authenticated`** and carries the same
+  `matched_at is not null` clause the words' door carries. Below a mutual a
+  photograph is as unreadable as the words beside it.
+- **Nothing about where the picture was taken travels with it.** Every image is
+  decoded and re-encoded through a canvas before it is stored (`card/photo.js`),
+  which drops every EXIF block — the GPS fix, the capture timestamp, the device
+  serial, the orientation flag. There is no path in the repo by which the
+  original bytes survive, so the location leak the old design avoided by never
+  uploading is avoided here by never *having* it.
 - **Deleted by every path that deletes a ping.** The sixty-day purge, "let one
-  go", "delete everything" and the opt-out all work on whole rows. Letting a
-  ping go also drops its photograph from IndexedDB.
+  go", "delete everything" and the opt-out all work on whole rows, and the
+  photograph is a column on the row — so none of them needed a line of new
+  cleanup. Letting a ping go also drops both cached copies from IndexedDB.
 
 Two things follow that are worth stating rather than discovering. A card is
 plaintext at rest in `celestual_entries` — the target handle beside it is a

@@ -102,8 +102,10 @@ Idempotent migrations, applied in order:
   (service-role only, called by the `celestual-trial` function), trial columns
   on `celestual_recruits` (verified email, source, one email = one competitor)
   and CHOSEN four-letter codes at the site root. Plus the **20-second DM
-  grace** (`celestual_ig_verify_timeout`, proof-gated, temporary — admits the
-  typed @ as `verified_via='timeout'` so the admin dashboard can list what was assumed),
+  grace** (`celestual_ig_verify_timeout`, proof-gated, temporary — admitted the
+  typed @ as `verified_via='timeout'` so the admin dashboard could list what was
+  assumed; **closed by 0026** — revoked from every client role and emptied to a
+  refusal, so only a real DM verifies now),
   `celestual_complete_ig_verification` v6 (stamps `verified_via='dm'`, refuses
   banned handles), and the **admin dashboard RPCs** (`celestual_admin_overview` /
   `_delete_user` / `_ban_user` / `_delete_competitor`, service-role only,
@@ -251,8 +253,11 @@ them; each enforces its own checks. See
   optional `from_email`, the **`card`** the ping carries (migration 0022 — the
   words, the ground, the face, the block's position and the tone, rebuilt by
   `celestual_card_clean` on the way in and readable by the other person only
-  once `matched_at` is set; **no photograph is ever stored here or anywhere
-  else on the server**), the sixty-day `expires_at` clock, `matched_at` /
+  once `matched_at` is set), the **`photo`** it stands on (migration 0025 —
+  base64 of the treated, EXIF-stripped JPEG, written only through
+  `celestual_card_photo_put` and released by `celestual_counterpart_photo`
+  under the same matched-row seal the card carries), the sixty-day
+  `expires_at` clock, `matched_at` /
   `matched_handle` (plaintext only once mutual — both sides know by then),
   `renew_notified_at`. `intent` is a dead column kept for the pings placed
   before the card existed: nothing reads or writes it.

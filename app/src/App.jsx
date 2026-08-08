@@ -65,9 +65,11 @@ const STORE = 'celestual:v2'
 // ── the card, on a ping row ──────────────────────────────────────────────────
 // A ping's card lives with the ping: in `pings` (and therefore in localStorage,
 // beside the plaintext handle it already keeps) and on the server as the sealed
-// jsonb migration 0022 added. The PHOTOGRAPH does not — it is a blob in
-// IndexedDB under this key, on the phone that took it, and nothing uploads it.
-const photoKey = (handle) => (normHandle(handle) ? `card:${normHandle(handle)}` : null)
+// jsonb migration 0022 added. Since 0025 the PHOTOGRAPH rides the same row under
+// the same seal — these two keys are where this device CACHES it, one for the
+// picture you sent that @ and one for the picture they sent you.
+const photoKey = (handle) => photos.myKey(normHandle(handle))
+const theirPhotoKey = (handle) => photos.theirKey(normHandle(handle))
 
 // What light this ping's star burns with. A colour, straight off its card; the
 // four old category names still resolve for pings placed before the card
@@ -78,16 +80,36 @@ const starKind = (C, ping) =>
 // Every photograph the current ping list references, as object URLs, minted
 // once each (the store caches them) so a resolve running at sixty frames a
 // second is not minting sixty object URLs a second.
-function usePhotoUrls(pings) {
+//
+// Both sides now: the picture on the card you sent, and — on a matched row —
+// the one on the card they sent back. The second only ever exists because the
+// pair is mutual (migration 0025's celestual_counterpart_photo will answer for
+// nothing else), so a key appearing here is itself the seal already broken.
+//
+// It also FETCHES what this device does not hold. A key names the @ and the
+// side, so the key alone is enough to ask for the bytes (card/photos.js
+// `ensurePhoto`), and the ask is made once: the store keeps what comes back,
+// and a row the server has nothing for is not asked twice. This is how a
+// restored ping comes back with the whole card on a phone that has never seen
+// it, and how a mutual's other half arrives at all.
+function usePhotoUrls(pings, { me, proof, demo } = {}) {
   const [urls, setUrls] = useState({})
   const ids = useMemo(
-    () => [...new Set(pings.map((p) => p.photoId).filter(Boolean))].join('|'),
+    () => [...new Set(pings.flatMap((p) => [p.photoId, p.theirPhotoId]).filter(Boolean))].join('|'),
     [pings],
   )
   useEffect(() => {
     let live = true
     const want = ids ? ids.split('|') : []
-    Promise.all(want.map((id) => photos.photoUrl(id).then((u) => [id, u])))
+    Promise.all(
+      want.map((id) => {
+        const at = photos.parseKey(id)
+        return photos
+          .ensurePhoto({ key: id, me, them: at && at.handle, proof, mine: !at || at.mine, demo })
+          .then(() => photos.photoUrl(id))
+          .then((u) => [id, u])
+      }),
+    )
       .then((pairs) => {
         if (!live) return
         const next = {}
@@ -103,7 +125,11 @@ function usePhotoUrls(pings) {
     return () => {
       live = false
     }
-  }, [ids])
+    // `proof` is in here as well as `ids`: pings come back out of localStorage
+    // before a session is resumed, so the first pass can run with nothing to
+    // authenticate a fetch with. Both re-runs are free — `ensurePhoto` answers
+    // from the cache, or from "there isn't one", without touching the network.
+  }, [ids, me, proof, demo])
   useEffect(() => () => photos.releaseUrls(), [])
   return urls
 }
@@ -211,7 +237,11 @@ export default function App() {
   const [pings, setPings] = useState(() => (demo ? (route.seed ? DEMO_PINGS : []) : init.pings || []))
   const [them, setThem] = useState(route.poster || '')
   // the photographs this device holds for the cards above, as object URLs
-  const cardUrls = usePhotoUrls(pings)
+  const cardUrls = usePhotoUrls(pings, {
+    me: normHandle(me),
+    proof: session?.provider === 'instagram_dm' ? session.proof : undefined,
+    demo,
+  })
   const [error, setError] = useState('')
   const [lastPlaced, setLastPlaced] = useState(null) // { handle, reachable }
   const [match, setMatch] = useState(null) // { them } — what the mutual flash names
@@ -899,12 +929,26 @@ export default function App() {
           go('who')
           return
         }
-        // The photograph, if there is one: onto this device, under the key its
-        // ping row points at, and nowhere else. Written before the row so the
-        // disc never renders against a blob that has not landed yet.
+        // The photograph, if there is one. Onto this device first — written
+        // before the row so the disc never renders against a blob that has not
+        // landed yet — and then onto the ping itself, under the card's own seal
+        // (migration 0025), which is what lets the other half of a mutual ever
+        // see it and what brings it back to a phone this person has not used
+        // yet.
+        //
+        // The upload is NOT awaited, and that is the point: it is a third of a
+        // megabyte, this is the moment somebody finds out whether it was
+        // mutual, and a picture that is slow to land must never be able to hold
+        // that up or — if it fails outright — cost them the ping. It is called
+        // even with no picture, because null CLEARS the column, and a re-placed
+        // card must not come back wearing the last one's photograph.
         const photoId = draft && draft.blob ? photoKey(target) : null
         if (photoId) await photos.putPhoto(photoId, draft.blob)
-        if (card) card.photoId = photoId
+        if (card) {
+          card.photoId = photoId
+          card.hasPhoto = !!photoId
+        }
+        photos.uploadPhoto({ me: from, them: target, proof, blob: draft && draft.blob, demo }).catch(() => {})
         // Their half, and it can only exist if the pair is already mutual.
         const theirCard = res?.mutual && res.match_card ? fromWire(res.match_card, { handle: target }) : null
 
@@ -922,6 +966,11 @@ export default function App() {
               card,
               photoId,
               theirCard,
+              // If this landed mutual, their card may be standing on a
+              // photograph too. `celestual_submit` answers with the poster
+              // alone, so the flag is unknown here — the key is claimed anyway
+              // and the fetch below settles it, once, off the sealed read.
+              theirPhotoId: res?.mutual ? theirPhotoKey(target) : null,
               // sealed. The spread is opened by hand, from the status page.
               revealed: false,
             },
@@ -1042,7 +1091,8 @@ export default function App() {
 
   // Place — from the composer. `card` is what it composed:
   // { words, bg, face, pos, tone, blob } — the blob being the treated
-  // photograph, which is put on this device and never sent anywhere.
+  // photograph, which `placeCommit` writes to this device and then, since
+  // migration 0025, onto the ping row under the card's own seal.
   // Runs the identity gate first when needed.
   const place = useCallback(async (card) => {
     setError('')
@@ -1156,14 +1206,19 @@ export default function App() {
       // is still a match nobody has opened.
       const restore = (srv) => {
         const h = normHandle(srv.handle || '')
+        const card = srv.card ? fromWire(srv.card, { handle: h, placed: srv.time }) : null
+        const theirCard = srv.theirCard ? fromWire(srv.theirCard, { handle: h }) : null
         return {
           ...srv,
-          card: srv.card ? fromWire(srv.card, { handle: h, placed: srv.time }) : null,
-          // the photograph stayed on the phone that took it, so this card
-          // stands on its own ground — the same thing that happens when
-          // somebody chooses not to add one
-          photoId: null,
-          theirCard: srv.theirCard ? fromWire(srv.theirCard, { handle: h }) : null,
+          card,
+          theirCard,
+          // The photograph comes back too now (migration 0025). The server said
+          // whether there is one; these are the keys it will be cached under
+          // once the fetch below has run, and a row with no picture claims no
+          // key at all — that card stands on its own ground, the same as one
+          // nobody put a photograph on.
+          photoId: h && card && card.hasPhoto ? photoKey(h) : null,
+          theirPhotoId: h && theirCard && theirCard.hasPhoto ? theirPhotoKey(h) : null,
           revealed: false,
         }
       }
@@ -1374,10 +1429,13 @@ export default function App() {
     async (handle) => {
       const h = normHandle(handle)
       setPings((prev) => prev.filter((p) => normHandle(p.handle || '') !== h))
-      // the card goes with the ping, and so does its photograph. A blob left
-      // behind after the row that pointed at it is gone is a picture of
-      // somebody's night sitting in a browser store, unreachable and undeletable.
+      // the card goes with the ping, and so does its photograph — both of them.
+      // A blob left behind after the row that pointed at it is gone is a picture
+      // of somebody's night sitting in a browser store, unreachable and
+      // undeletable. The server's copies go with the row itself (the photograph
+      // is a column on the ping, so `celestual_withdraw` takes it).
       photos.dropPhoto(photoKey(h)).catch(() => {})
+      photos.dropPhoto(theirPhotoKey(h)).catch(() => {})
       try {
         await retirePing({ me, them: h, demo })
       } catch (e) {

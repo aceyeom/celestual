@@ -4,19 +4,29 @@ Every ping carries a card. It lives in `app/src/card/`, the composer is a step i
 the send flow, and the reveal is on the status page.
 
 This was a prototype route until 2026-08-02: mounted beside the real app so it
-could not touch anything. It is production now, which changed exactly two things
-about it and nothing else. The words a card carries **ride on the ping row**
-(migration 0022), sealed server-side until both sides exist. The **photograph
-does not** — it is treated, stripped and stored in IndexedDB on the phone that
-took it, and no code path in this repo uploads one.
+could not touch anything. It is production now, and **both halves of a card ride
+on the ping row** — the words since migration 0022, the photograph since 0025 —
+sealed server-side until both sides exist.
 
-That split is the whole security posture of the feature, so it is worth stating
-plainly. For the words, the seal stopped being a property of the network and
-became a property of a policy: a `matched_at is not null` clause in one SQL
-function (§5). That is a strictly weaker guarantee than the prototype had, and
-it is the price of both people actually being able to read each other. For the
-photograph the old guarantee is intact and unchanged: the bytes are physically
-incapable of arriving anywhere.
+That is the whole security posture of the feature, so it is worth stating
+plainly. The seal is not a property of the network: it is a property of a
+policy, a `matched_at is not null` clause in two SQL functions (§5). That is
+strictly weaker than the prototype had and it is the price of both people
+actually being able to read each other.
+
+The photograph held out longer, and for a real reason: while nothing uploaded
+it, its safety was a fact rather than a promise — the bytes could not arrive
+anywhere because nothing sent them. What that cost is the thing the feature is
+*for*. A person composes a card **on** a photograph of where they are, places
+it, matches, and their half of the pair is shown words on a bare plate; on a new
+phone it was not even their own picture any more. "It never left your phone" and
+"it was never saved" turn out to be one sentence read from two sides, and the
+second side is the one people met. So the picture travels now, under the words'
+own seal, and the guarantee that stayed intact is the one that was always doing
+the real work: **nothing about where it was taken travels with it** — every
+image is re-encoded through a canvas before it is stored, which drops every EXIF
+block, so there is no GPS fix, no capture time and no device serial to leak
+(§photo.js).
 
 ---
 
@@ -340,11 +350,11 @@ end up in the output (§4, content & safety).
 ### The seal
 
 `celestual_entries` has RLS on with **zero client read policies** — every read
-goes through a `SECURITY DEFINER` RPC — so adding a column added no reader. The
-one function that can return somebody else's card is
-`celestual_counterpart_card`, and it is not granted to `anon` or
-`authenticated` at all: it is called from inside the RPCs that have already
-spent a DM proof, and its `where` clause carries the seal —
+goes through a `SECURITY DEFINER` RPC — so adding a column adds no reader. The
+two functions that can return somebody else's half are
+`celestual_counterpart_card` and `celestual_counterpart_photo`, and neither is
+granted to `anon` or `authenticated` at all: both are called from inside RPCs
+that have already spent a DM proof, and both carry the same seal —
 
 ```sql
 and e.matched_at is not null
@@ -362,32 +372,52 @@ before it is stored — twenty words, a known plate, a known face, a position
 inside the disc, a tone in range — so an unknown key cannot ride along inside
 the jsonb and come back out at a reveal. A client is a suggestion.
 
-The card is deleted by every path that already deletes a ping: the sixty-day
-purge, "let one go", "delete everything", and the public opt-out. Nothing about
-it needed its own cleanup. Letting a ping go also drops its photograph from
-IndexedDB (`card/photos.js` `dropPhoto`) — a blob left behind after the row that
-pointed at it is gone is a picture of somebody's night sitting in a browser
-store, unreachable and undeletable.
+Both halves are deleted by every path that already deletes a ping: the sixty-day
+purge, "let one go", "delete everything", and the public opt-out. Neither needed
+its own cleanup, because both are columns on the row. Letting a ping go also
+drops the cached photographs from IndexedDB (`card/photos.js` `dropPhoto`, both
+keys) — a blob left behind after the row that pointed at it is gone is a picture
+of somebody's night sitting in a browser store, unreachable and undeletable.
 
-### Why the photograph stayed home
+### The photograph, and what it gave up in order to travel
 
 EXIF is stripped on the way in: every image is decoded and re-encoded through a
 canvas (`photo.js`), which drops every metadata block for free. There is no path
-in that file by which the original bytes survive.
+in that file by which the original bytes survive, so the GPS fix, the capture
+time and the device serial never exist to be leaked. That was true when nothing
+uploaded the picture, and it is the part that carries the weight now that
+something does.
 
-It could have been uploaded — a bucket, signed URLs released at a mutual — and
-it deliberately was not. The plan's first law is that nothing reaches the other
-person before both have chosen each other, and for the words that law is now a
-policy a `where` clause keeps. For the photograph it is still a fact about the
-network, which is a strictly stronger thing to be able to say and the reason the
-picture is the half that stayed on the phone.
+Until 0025 it did not travel at all, and the argument was a good one: the plan's
+first law is that nothing reaches the other person before both have chosen each
+other, and for a picture nobody sends, that law is a fact about the network
+rather than a policy a `where` clause keeps.
 
-So at a mutual you are shown their **words**, on their ground, in their light.
-You are not shown their room, and nobody's camera roll is on our servers.
+What it cost is the feature. The composer's whole gesture is *write on where you
+are, right now* — and the half of the card a person spends the most care on was
+the half their match would never see, and the half a new phone could not get
+back.
 
-A card restored onto a new device (`celestual_my_pings`) comes back with its
-words and none of its picture, so it stands on its plate — which is the same
-thing that happens when somebody chooses not to add one.
+So the picture rides the row now, under the words' own seal and behind its own
+locked door (`celestual_counterpart_photo`, matched rows only). Two details of
+the plumbing are deliberate:
+
+- **It is a second call, not a field on `celestual_submit`.** A third of a
+  megabyte has no business inside the statement that decides whether a pair is
+  mutual, and an upload that fails must never be able to cost somebody their
+  ping. `celestual_card_photo_put` is called after the ping is recorded — with
+  the picture, or with `null`, which CLEARS the column so a re-placed card can
+  never come back wearing the last one's photograph.
+- **The reads only say whether there is one.** Every card that comes back
+  carries a `photo` boolean and no bytes; the bytes are fetched once, by the one
+  screen about to draw them, and cached in IndexedDB
+  (`card/photos.js` `ensurePhoto`). A ledger of seals must not pull a megabyte
+  to draw four thumbnails.
+
+At a mutual you are now shown their card as they made it: their words, on their
+ground, in their light. A card restored onto a new device
+(`celestual_my_pings`) comes back whole. And a card with **no** photograph still
+stands on its plate — that was never a hole in the sky.
 
 ### The camera
 
@@ -438,7 +468,8 @@ Settled:
 3. **No relationship categories**, per §1.3. The category tabs and the sixteen
    "why them" lines are deleted, not hidden: a ping's light is measured off its
    card's ground now, and nobody is asked anything.
-4. **The words on the server, the photograph on the phone**, per §5.
+4. **Both halves on the server, both under one seal**, per §5 — released
+   only to the counterpart of a row that is already matched.
 5. **The reveal is opened by hand.** A match announces itself for two seconds
    and says nothing about what was written. The cards unseal when somebody
    decides to look at them, which is the one decision in this product that
@@ -451,7 +482,6 @@ Deliberately not built:
   reveal has to be right before the thing after the reveal is worth building.
 - **Face detection.** Excluded by direction. The plan's §1.4 still stands as a
   law; nothing here implements it.
-- **Uploading the photograph.** See §5. This one is a decision, not a gap.
 
 Still open, from the plan's §7:
 
@@ -474,7 +504,7 @@ app/src/card/
 ├── Spread.jsx    the fused spread, and the unseal
 ├── model.js      the card as data, the prompt, the seeds, the tint, the wire
 ├── photo.js      a photograph becomes a surface (strip, treat, measure)
-├── photos.js     the blob store — this device, and nowhere else
+├── photos.js     the blob cache, and the two doors to the sealed column
 └── share.js      the story render — your card and the mutual mark, never theirs
 ```
 

@@ -15,7 +15,7 @@ import { normHandle } from '../api/celestual.js'
 import { daysLeft, nearLapse } from '../api/pings.js'
 import {
   startVerification, pollVerification, igDeepLink, igWebLink, igUsername,
-  dmCode, savePending, loadPending, clearPending, genProof, graceVerify, GRACE_MS,
+  dmCode, savePending, loadPending, clearPending, genProof,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
 import { leatherSurface } from '../texture.js'
@@ -2718,12 +2718,17 @@ export function RevealScreen({ C, ctx }) {
   const yours = row.card || { handle, words: '', bg: 'leaf', tone: 1, placed: row.time }
   const theirs = row.theirCard || { handle, words: '', bg: 'hide', tone: 0.12, placed: row.time }
   const yourUrl = row.photoId ? ctx.cardUrls[row.photoId] : null
+  // Theirs, and this screen is the only place in the product it is ever drawn.
+  // It exists at all because the pair is mutual: the read that produced it
+  // (migration 0025) answers off a matched row and off nothing else.
+  const theirUrl = row.theirPhotoId ? ctx.cardUrls[row.theirPhotoId] : null
   return (
     <Spread
       C={C}
       yours={yours}
       theirs={theirs}
       yourUrl={yourUrl}
+      theirUrl={theirUrl}
       index={index}
       fieldRef={ctx.ambientGalaxyRef}
       onSay={() => ctx.openConversation(handle)}
@@ -3575,15 +3580,10 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
   // After a while stuck on "waiting", surface a self-serve way out (the DM can
   // be dropped by the relay; a fresh code re-runs the whole path).
   const [stuck, setStuck] = React.useState(false)
-  // TEMPORARY (0017): the relay has been dropping DMs, so past GRACE_MS the
-  // typed @ is admitted without the webhook. `assumed` keeps the success copy
-  // honest ("you're in", not "it's really you"); the admin desk lists these.
-  const [assumed, setAssumed] = React.useState(false)
   const proofRef = React.useRef(null)
   const hashRef = React.useRef(null)
   const expiryRef = React.useRef(0)
   const startedAtRef = React.useRef(0)
-  const graceBusyRef = React.useRef(false)
   const pollRef = React.useRef(null)
   const doneRef = React.useRef(null)
   // Guards the mount effect against double-invocation (StrictMode / rapid
@@ -3605,7 +3605,6 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     setErrCode('')
     setCopied(false)
     setStuck(false)
-    setAssumed(false)
     setToken('')
     // Demo: never touch the backend. Mint a local code + proof and let the
     // polling effect auto-confirm after a beat — the whole DM flow reads
@@ -3689,43 +3688,16 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
         stopPoll()
         clearPending()
         setPhase('expired')
-      } else if (Date.now() - (startedAtRef.current || 0) >= GRACE_MS && !graceBusyRef.current) {
-        // TEMPORARY (0017): the DM relay has been failing, so past the grace
-        // window the typed @ is admitted without the webhook. The server holds
-        // its own 20-second clock and the proof-hash gate; a DM that already
-        // landed wins (the poll above catches it first). An 'early' or
-        // transient answer just means the next tick tries again.
-        graceBusyRef.current = true
-        const g = await graceVerify(token, hashRef.current)
-        graceBusyRef.current = false
-        if (g.ok) {
-          stopPoll()
-          clearPending()
-          const proof = proofRef.current
-          setAssumed(true)
-          setPhase('verified')
-          doneRef.current = setTimeout(() => onVerified(proof, g.handle || handle), VERIFIED_HOLD_MS)
-        } else if (g.error === 'banned') {
-          // NOT a lapse. This @ is suppressed (its own "delete everything", the
-          // /privacy opt-out, or an admin ban), so neither the DM nor the grace
-          // can ever admit it. Mapping this onto the expired screen is what made
-          // a live code read as "that code lapsed" twenty seconds in, sending
-          // people round the get-a-new-code loop with no way to learn why.
-          stopPoll()
-          clearPending()
-          setErrCode('banned')
-          setPhase('error')
-        } else if (g.error === 'expired') {
-          stopPoll()
-          clearPending()
-          setPhase('expired')
-        }
       }
+      // There is no third branch any more. Until 0026 this is where the
+      // twenty-second grace sat: past it the typed @ was admitted with no DM at
+      // all, because the relay was dropping them. The relay works, so the only
+      // thing that can finish a verification is the webhook saying who actually
+      // sent the code — which is the only version of this that means anything.
+      // A DM that genuinely never lands runs out the code's own clock and the
+      // "get a fresh code" way out below, exactly like any other lapse.
     }
     pollRef.current = setInterval(tick, 2500)
-    // Fire a check right at the grace boundary too, so admission lands at
-    // ~20s instead of waiting out the tail of a poll interval.
-    const graceId = setTimeout(tick, Math.max(0, GRACE_MS - (Date.now() - (startedAtRef.current || Date.now()))) + 150)
     // Coming back from Instagram (tab regains focus/visibility) checks at once,
     // so the flip to "verified" is instant instead of up to a poll-beat late —
     // and a background-throttled interval can't strand the wait.
@@ -3740,7 +3712,6 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
     return () => {
       stopPoll()
       clearTimeout(stuckId)
-      clearTimeout(graceId)
       document.removeEventListener('visibilitychange', onReturn)
       window.removeEventListener('focus', onReturn)
     }
@@ -3828,7 +3799,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
-            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t(assumed ? 'verify.assumed' : 'verify.verified')}</div>
+            <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>{t('verify.verified')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '0.5px', color: rgba(C.star, 0.9) }}>
               <Sonar C={C} size={11} /> {t('verify.verifiedSub')}
             </div>

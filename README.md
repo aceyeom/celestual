@@ -20,11 +20,14 @@ The product direction is fixed by one document —
   unmatched pings are purged. Scarcity is the sincerity mechanism, not a paywall,
   and a mechanism nobody can see the clock on is just a wall.
 - **Every ping carries a card.** You write a short message on a ground (a
-  photograph you take there and then, or one of five dark plates) in one of the
-  product's three faces, and drag the block where you want it. It is sealed the
-  way the ping is: the words ride on the ping row and the server will only ever
-  release them to the other person once the pair is mutual; the photograph never
-  leaves the phone that took it. At a match both cards unseal in the same
+  photograph you take there and then, or one of three materials — laid paper,
+  chalk, leather) in one of the product's three faces, and drag the block where
+  you want it. Both halves are sealed the way the ping is: the words and the
+  photograph ride on the ping row, and the server will only ever release either
+  of them to the other person once the pair is mutual. Nothing about where the
+  picture was taken travels with it — every image is re-encoded before it is
+  stored, which drops the GPS fix, the capture time and the device serial. At a
+  match both cards unseal in the same
   instant (**[docs/STAR-CARDS.md](./docs/STAR-CARDS.md)**) — and the half of the
   pair who wasn't looking at a screen is told: by email, and on Instagram
   through the same ManyChat relay that verifies handles, saying that it's mutual
@@ -107,7 +110,9 @@ celestual/
 │   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
 │   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card ·
 │   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides) ·
-│   │                 0024 the bindery (the card's three materials)
+│   │                 0024 the bindery (the card's three materials) ·
+│   │                 0025 the photograph (the card's other half, on the card's
+│   │                 own seal) · 0026 closing the 20-second grace
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-mutual-dm · celestual-ig-webhook ·
@@ -185,8 +190,8 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
 | [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
-| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | **The star & card system**: the card every ping carries, why it is a circle, how a ping resolves into one, the mutual reveal, and the split that keeps the words on the server and the photograph on the phone |
-| [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace, the admin dashboard, and the launch runbook (migration + wipe order) |
+| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | **The star & card system**: the card every ping carries, why it is a circle, how a ping resolves into one, the mutual reveal, and the one seal both halves of a card ride under |
+| [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace (now closed), the admin dashboard, and the launch runbook (migration + wipe order) |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | **Telling someone on Instagram that it's mutual**: why Meta's 24-hour window means a match can't just ring a phone, the two legal carriers that reach them anyway (a push while the window is open, the relay's next reply when it isn't), the email that goes to both sides in parallel, and the step-by-step to get it live |
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
