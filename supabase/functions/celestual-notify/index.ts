@@ -31,6 +31,7 @@
 //
 // Deploy:  supabase functions deploy celestual-notify
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as mail from '../_shared/mail.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
@@ -45,9 +46,10 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-// The palette is docs/DESIGN.md's: deep navy field, cream text, slate for the
-// mechanical voice, one warm star. Georgia stands in for Instrument Serif in
-// mail clients; Arial for Space Grotesk.
+// The design is docs/DESIGN.md's, and it is the one every mail this product
+// sends now wears: _shared/mail.ts owns the case, the mark, the rules and the
+// plate, and this file owns only its words. It used to own both, which is why
+// there were five templates and no two agreed.
 function emailHtml(other: string, hasCard: boolean) {
   // The card line says THAT there is one, never a word of what it says. Those
   // words are read once, in the product, by the person they were written to
@@ -55,30 +57,19 @@ function emailHtml(other: string, hasCard: boolean) {
   // and left open on a desk, and none of that is a thing we get to do to
   // somebody else's message.
   const card = hasCard
-    ? `<p style="color:#f2eee5;font-size:15px;line-height:1.7;margin:18px auto 0;max-width:380px;font-family:Arial,sans-serif">
-         they left a card for you. it opens when you do.
-       </p>`
+    ? mail.body('they left a card for you. it opens when you do.')
     : '';
-  return `
-  <div style="background:#070b14;padding:48px 24px;font-family:Georgia,serif;color:#f2eee5;text-align:center">
-    <div style="font-size:13px;letter-spacing:6px;color:#8b94a8;font-family:Arial,sans-serif">CELESTUAL</div>
-    <div style="font-size:26px;color:#ffa25c;margin:26px 0 4px">&#10022;</div>
-    <h1 style="font-weight:400;font-style:italic;font-size:34px;line-height:1.15;margin:10px 0 0;color:#f2eee5">
-      it&rsquo;s mutual.
-    </h1>
-    <p style="color:#aeb6c6;font-size:15px;line-height:1.7;margin:24px auto 0;max-width:380px;font-family:Arial,sans-serif">
-      you entered @${other}. @${other} entered you.<br/>
-      this only ever happens when it&rsquo;s real on both sides.
-    </p>
-    ${card}
-    <a href="${SITE}" style="display:inline-block;background:#ffa25c;color:#1a0f06;text-decoration:none;
-       padding:14px 30px;border-radius:14px;font-family:Arial,sans-serif;font-size:15px;margin-top:30px">go see it</a>
-    <p style="color:#5b6377;font-size:11px;line-height:1.7;margin-top:36px;font-family:Arial,sans-serif;max-width:400px;margin-left:auto;margin-right:auto">
-      you're reading this because you placed a ping on celestual and it resolved mutual.
-      one-sided pings are never revealed to anyone. to opt out of celestual entirely,
-      visit ${SITE}/optout.
-    </p>
-  </div>`;
+  return mail.frame({
+    inner: `
+      ${mail.title('it&rsquo;s mutual.')}
+      ${mail.body(`you entered @${other}. @${other} entered you.<br/>this only ever happens when it&rsquo;s real on both sides.`)}
+      ${card}
+      ${mail.plate(SITE, 'go see it')}
+      ${mail.colophon(
+        `you&rsquo;re reading this because you placed a ping on celestual and it resolved mutual. ` +
+        `one-sided pings are never revealed to anyone. to opt out entirely, visit ${SITE}/optout.`,
+      )}`,
+  });
 }
 
 async function sendEmail(to: string, other: string, hasCard: boolean) {

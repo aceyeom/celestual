@@ -75,8 +75,9 @@ export class SkyEngine {
   constructor(canvas, opts = {}) {
     this.canvas = canvas
     this.opts = opts
-    this.you = opts.you || '#FF9E6B'
-    this.them = opts.them || '#E6749E'
+    // the two lights, in the brand's one hue at two values (theme.js)
+    this.you = opts.you || '#B98A55'
+    this.them = opts.them || '#D6B78A'
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
@@ -135,6 +136,11 @@ export class SkyEngine {
     // where a centred headline does, and every screen in the product then reads
     // over the one part of the galaxy that cannot be read over.
     this.centerY = 0.44
+    // …and where it sits ACROSS it. Almost always the middle, and it exists for
+    // the same reason `centerY` does: the galactic centre is the one part of
+    // the picture nothing can be read over, so a layout that puts type in a
+    // fixed column needs to be able to move the heart out from behind it.
+    this.centerX = 0.5
     this.insetT = 0
     this.insetB = 0
     this.bandShift = [0, 0]
@@ -174,7 +180,7 @@ export class SkyEngine {
   _initGL() {
     const gl = this.gl
     // `opts.ramp` swaps the Planck locus for another one-dimensional colour
-    // curve — the one hook a single-hue sky needs (blackbody.js, /beta).
+    // curve — the one hook a single-hue sky needs (blackbody.js, galaxy.js).
     // Absent, which it is everywhere in production, this is the real physics.
     this.bbTex = makeBlackbodyLUT(gl, this.opts.ramp)
     this.noiseTex = makeNoiseVolume(gl, { size: this.tier >= 2 ? 48 : 64, seed: this.opts.noiseSeed || 1337 })
@@ -299,7 +305,7 @@ export class SkyEngine {
   _layout() {
     const availTop = this.insetT
     const avail = Math.max(this.h * 0.42, this.h - this.insetT - this.insetB)
-    const cx = this.w / 2
+    const cx = this.w * this.centerX
     const cy = this.insetT || this.insetB ? clamp(availTop + avail * 0.44, this.h * 0.24, this.h * 0.62) : this.h * this.centerY
     const minDim = Math.min(this.w, avail)
     const P0 = FOCAL / CAM

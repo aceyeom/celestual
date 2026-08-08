@@ -13,9 +13,12 @@ The product direction is fixed by one document —
 **[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)**
 (the masterguide) — and the whole repo implements it:
 
-- **Three standing pings, sixty days each.** Renewal is free and one tap;
-  letting one go frees the slot; lapsed unmatched pings are purged. Scarcity
-  is the sincerity mechanism, not a paywall.
+- **Two standing pings, sixty days each.** Renewing is free, one tap, and
+  unlimited: it restarts the sixty days from the day you tap it and never uses a
+  slot. Letting one go frees the slot immediately, and a ping that lapses frees
+  it on the day it lapses — which the ledger names, along with the date. Lapsed
+  unmatched pings are purged. Scarcity is the sincerity mechanism, not a paywall,
+  and a mechanism nobody can see the clock on is just a wall.
 - **Every ping carries a card.** You write a short message on a ground (a
   photograph you take there and then, or one of five dark plates) in one of the
   product's three faces, and drag the block where you want it. It is sealed the
@@ -69,6 +72,13 @@ The product direction is fixed by one document —
 It's a Vite + React single-page app talking directly to **Supabase** (Postgres
 RPCs + edge functions); there is no separate app server.
 
+The whole product is one design system — **the bindery** (docs/DESIGN.md): a
+hand-bound almanac, one hue from chocolate to ivory, materials drawn per pixel
+rather than downloaded, two corners in the entire product, and nothing that
+glows. It was built at `/beta` to be judged beside the edition it replaced;
+that judgement was made on 2026-08-07, the route is gone, and one system now
+governs every screen, every email, every render and the back office.
+
 ---
 
 ## Repository layout
@@ -84,7 +94,8 @@ celestual/
 │   │   │             Resolve.jsx (the approach) · Spread.jsx · model.js · photos.js
 │   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
 │   │   ├── i18n/     the canonical copy (strings.js)
-│   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js · styles.css
+│   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js ·
+│   │   │             texture.js (leather, laid paper, chalk, the stitch) · styles.css
 │   │   └── main.jsx
 │   └── .env.example  front-end environment (Supabase URL + anon key, flags)
 ├── supabase/         the backend
@@ -95,14 +106,16 @@ celestual/
 │   │                 0017 the First Light trial + the 20s grace + the admin dashboard ·
 │   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
 │   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card ·
-│   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides)
+│   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides) ·
+│   │                 0024 the bindery (the card's three materials)
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
 │                     celestual-manychat · celestual-mutual-dm · celestual-ig-webhook ·
 │                     celestual-edu-verify · celestual-relogin ·
 │                     celestual-recruit (retired) · celestual-trial · celestual-admin ·
 │                     celestual-stripe · celestual-stripe-webhook ·
-│                     _shared/mutual.ts (the one copy of the mutual line)
+│                     _shared/mutual.ts (the one copy of the mutual line) ·
+│                     _shared/mail.ts (the one email design, five senders)
 ├── docs/             the guides (see below)
 ├── scripts/          voice-lint.mjs (the copy tripwire)
 ├── package.json      repo-root build (app → dist/)
@@ -122,7 +135,6 @@ celestual/
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
 | `/demo` | the sandbox (below) |
-| `/beta` | **the Bindery** — a complete second brand (chocolate + ivory, leather and paper, an engraved star chart) on seven pages plus a specimen sheet, for assessment beside the production look. Forked before mount, shares no token or component with production (**[docs/BETA-BINDERY.md](./docs/BETA-BINDERY.md)**) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
 ## Quick start (local dev)
@@ -167,8 +179,7 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | Doc | What it covers |
 | --- | --- |
 | **[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)** | **The masterguide.** The mechanism (Loops A/B/C), the screens, monetization posture, honest odds, failure modes. Everything else implements this. |
-| [docs/DESIGN.md](./docs/DESIGN.md) | The living design system — the night, the one warm star, the three type registers, the anti-generic checklist |
-| [docs/BETA-BINDERY.md](./docs/BETA-BINDERY.md) | **The `/beta` rebrand** — the chocolate-and-ivory second brand: one hue, three materials drawn per pixel, three new faces, the engraved chart, and why each decision is structural rather than a palette swap |
+| [docs/DESIGN.md](./docs/DESIGN.md) | **The living design system — the bindery.** The leather case, the one hue, the materials drawn per pixel, the three type registers, the engraved chart's ramp, and the anti-generic checklist every screen ships through |
 | [docs/VOICE.md](./docs/VOICE.md) | The living voice guide — vocabulary, registers, the four frames, the banned list |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |

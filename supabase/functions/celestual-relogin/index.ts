@@ -42,6 +42,7 @@
 //
 // Deploy:  supabase functions deploy celestual-relogin
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as mail from '../_shared/mail.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
@@ -78,47 +79,22 @@ function randomToken(): string {
 }
 
 
-// The sign-in email — the same galaxy the code email lives in (deep field, amber
-// and rose nebulae resting in the corners so the center stays dark behind the
-// words), one warm star for the logo. The magic link is the hero; the raw token
-// rides its URL fragment, never a query, so it never lands in a server log.
+// The sign-in email. The magic link is the hero, and the raw token rides its URL
+// FRAGMENT rather than a query, so it never lands in a server log. The frame is
+// _shared/mail.ts's, which is what makes this and the code email and the mutual
+// email finally look like three notes from one desk.
 function linkEmailHtml(handle: string, url: string) {
-  const stars = (op: number, size: number) =>
-    `color:rgba(243,236,246,${op});font-size:${size}px;letter-spacing:26px;line-height:1;font-family:Georgia,serif;`;
-  return `
-  <div style="background-color:#05040c;padding:26px 12px;margin:0">
-    <div style="max-width:480px;margin:0 auto;padding:42px 22px 36px;text-align:center;border-radius:20px;
-      border:1px solid rgba(243,236,246,0.08);
-      background-color:#070b14;
-      background-image:
-        radial-gradient(circle at 10% 6%, rgba(255,158,107,0.17), transparent 34%),
-        radial-gradient(circle at 92% 12%, rgba(230,116,158,0.13), transparent 36%),
-        radial-gradient(circle at 88% 92%, rgba(126,107,168,0.18), transparent 40%),
-        radial-gradient(circle at 6% 88%, rgba(167,194,255,0.11), transparent 38%);
-      font-family:Georgia,serif;color:#f2eee5;">
-      <div style="${stars(0.32, 12)}">&#10023; &#183; &#10022; &#183; &#10023;</div>
-      <div style="font-size:34px;color:#ffa25c;margin:22px 0 0;text-shadow:0 0 22px rgba(255,158,107,0.85)">&#10022;</div>
-      <h1 style="font-weight:400;font-style:italic;font-size:29px;line-height:1.25;margin:16px 0 0;color:#f2eee5">
-        welcome back.
-      </h1>
-      <p style="color:#aeb6c6;font-size:14.5px;line-height:1.7;margin:14px auto 0;max-width:340px;font-family:Arial,sans-serif">
-        tap below to sign back in as @${handle}. your pings come with you &mdash; no dm this time.
-      </p>
-      <div style="margin:26px 0 0">
-        <a href="${url}"
-          style="display:inline-block;background:#ffa25c;color:#1a0f0a;text-decoration:none;font-family:Arial,sans-serif;
-          font-weight:700;font-size:14.5px;letter-spacing:0.3px;padding:14px 36px;border-radius:14px">
-          sign back in
-        </a>
-      </div>
-      <p style="color:#8b94a8;font-size:12px;font-family:Arial,sans-serif;margin:16px 0 0">this link lasts ${LINK_TTL_MIN} minutes and works once.</p>
-      <div style="${stars(0.22, 11)};margin-top:30px">&#183; &#10023; &#183; &#183; &#10023;</div>
-      <p style="color:#5b6377;font-size:11px;line-height:1.7;margin:26px auto 0;font-family:Arial,sans-serif;max-width:380px">
-        you&rsquo;re reading this because someone asked to sign back in to celestual as @${handle}.
-        if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}
-      </p>
-    </div>
-  </div>`;
+  return mail.frame({
+    inner: `
+      ${mail.title('welcome back.')}
+      ${mail.body(`tap below to sign back in as @${handle}. your pings come with you, and there is no dm this time.`)}
+      ${mail.plate(url, 'sign back in')}
+      ${mail.tick(`this link lasts ${LINK_TTL_MIN} minutes and works once.`)}
+      ${mail.colophon(
+        `you&rsquo;re reading this because someone asked to sign back in to celestual as @${handle}. ` +
+        `if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}`,
+      )}`,
+  });
 }
 
 async function sendLinkEmail(to: string, handle: string, url: string) {

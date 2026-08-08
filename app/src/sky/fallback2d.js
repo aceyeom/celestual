@@ -33,8 +33,8 @@ class Field2D {
   constructor(canvas, opts = {}) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.you = opts.you || '#FF9E6B'
-    this.them = opts.them || '#E6749E'
+    this.you = opts.you || '#B98A55'
+    this.them = opts.them || '#D6B78A'
     // the LUT hook and the void, mirrored from the WebGL path so a machine
     // without a GPU still gets the same brand rather than a different one
     this.ramp = opts.ramp || null
@@ -42,8 +42,8 @@ class Field2D {
     // (theme.js `ink`, which galaxy.js hands to the post chain's floor) — a
     // machine without a GPU should get a quieter galaxy, never a different
     // colour of paper.
-    this.ground = opts.ground || ['#150F0C', '#100C09', '#0B0806']
-    this.core = opts.core || ['255,236,206', '255,214,176', '214,150,120']
+    this.ground = opts.ground || ['#130C07', '#0B0705', '#060403']
+    this.core = opts.core || ['255,240,214', '232,186,110', '150,96,44']
     this.dpr = Math.min(window.devicePixelRatio || 1, 2)
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     this.t = 0

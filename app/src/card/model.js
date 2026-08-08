@@ -18,7 +18,7 @@
 // Twenty words, hard. Not a character count: a character count teaches people to
 // write shorter sentences, and a word count teaches them to write one true
 // thing.
-import { FONT } from '../theme.js'
+import { FONT, TOKENS, GROUNDS, CARD_FACES } from '../theme.js'
 
 export const MAX_WORDS = 20
 
@@ -59,63 +59,77 @@ export function clampWords(s, max = MAX_WORDS) {
 export const cardReady = (card) => wordCount(card && card.words) > 0
 
 // ── the light a card is lit by ───────────────────────────────────────────────
-// The production app tints a person's star by which category they were filed
-// under — crush, ex, friend, complicated. This plan bans that outright: no
+// A star's colour used to be looked up from which category a person filed the
+// other one under — crush, ex, friend, complicated. That is banned outright: no
 // dropdown, no category, no relationship label, ever, because the ambiguity is
 // the product (§1.3). So the tint cannot come from a picker.
 //
-// It comes from the photograph. A star's colour is its temperature, and the
-// card IS the star's surface, so the surface decides: a warm frame (a lamp, a
-// dashboard at night) burns toward amber, a cool one (a window, a streetlight,
-// a screen) toward rose. Those are the product's own two stars and no third hue
-// enters, so the law in docs/DESIGN.md §2 holds while the label ban in the plan
-// also holds. Nobody is asked anything.
+// It comes from the GROUND. A star's colour is its temperature, and the card IS
+// the star's surface, so the surface decides. Paper throws the palest light,
+// chalk sits between, leather burns deepest; a photograph is measured the same
+// way, off its own warmth. One number, no picker, and it moves along the one
+// hue's own value ramp — wheat at the paper end, saddle at the leather end —
+// which is how a monochrome brand shows difference without cheating.
 //
-// A card with no photograph is amber, which is the product's primary light and
-// what every star in this sky already is.
+// A card with no ground at all is wheat, which is the palest light in the
+// product and what every unwritten star in this sky already is.
 export function tintOf(C, tone) {
   const t = typeof tone === 'number' ? Math.max(0, Math.min(1, tone)) : 1
   const hex = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16))
-  const a = hex(C.them) // cool end — rose
-  const b = hex(C.you) //  warm end — amber
+  const a = hex((C && C.saddle) || TOKENS.saddle) // the leather end
+  const b = hex((C && C.them) || TOKENS.them) //     the paper end
   const mix = a.map((v, i) => Math.round(v + (b[i] - v) * t))
   return `#${mix.map((v) => v.toString(16).padStart(2, '0')).join('')}`
 }
 
-// ── the plates ───────────────────────────────────────────────────────────────
-// A card's ground is a photograph or one flat colour. Both are grounds for the
+// ── the grounds ──────────────────────────────────────────────────────────────
+// A card's ground is a photograph or one MATERIAL. Both are grounds for the
 // same poster, and choosing between them is the only design decision the user
 // makes.
 //
-// The colours are deliberately a short, dark, low-chroma set rather than a
-// picker. Two reasons. The sky has to keep reading as one work, and forty cards
-// in forty saturated hues is the collage the whole plan is trying to avoid. And
-// a photograph of a room at night already lands in this range on its own, so a
-// flat plate and a photo sit together instead of looking like two different
-// products. These are grounds, not accents: docs/DESIGN.md's two-accent law
-// governs the interface, and nothing here is ever used as one.
-export const PLATES = [
-  { id: 'ink', hex: '#08070D', tone: 1 },
-  { id: 'violet', hex: '#191327', tone: 0.42 },
-  { id: 'ember', hex: '#2B1710', tone: 1 },
-  { id: 'rose', hex: '#2B1220', tone: 0 },
-  { id: 'blue', hex: '#101A2E', tone: 0.14 },
-]
+// It used to be five flat dark colours. It is three materials now, and that is
+// a different kind of choice: you are picking what the note is written on, and
+// there are only so many things in a book to write on. It also solves what the
+// five never could — the sky has to keep reading as one work, and a photograph
+// of a room at night sits beside laid paper the way it sits beside nothing
+// else.
+//
+//   LEAF   ivory laid paper. the default. warm, fibrous, slightly mottled.
+//   CHALK  a chalky grey gesso card. cooler, drier, more matte. the same note,
+//          in a different mood, without introducing a hue to say so.
+//   HIDE   the leather itself, written in the pale ink the case is stamped
+//          with. the only one where the type goes light-on-dark.
+//
+// The definitions live in theme.js beside every other material in the product,
+// so the composer's swatch, the seal in the ledger, the resolve at the end of a
+// dive and the 1080-wide Story render are all reading one row of one table.
+export const PLATES = GROUNDS.map((g) => ({ ...g, hex: g.base }))
 
-export const plateOf = (id) => PLATES.find((p) => p.id === id) || PLATES[0]
+// ── the five that came before ────────────────────────────────────────────────
+// Every card placed before the transfer holds one of five flat dark plate ids,
+// and the words on it are somebody's. All five were DARK, so all five resolve
+// to the leather: the card keeps the ground it was written on, in the one
+// material this product has that is the same colour it was. Nothing rewrites a
+// stored row — the map is applied on the way in, every time one is read.
+const LEGACY_PLATES = { ink: 'hide', violet: 'hide', ember: 'hide', rose: 'chalk', blue: 'hide' }
+
+export const plateOf = (id) => {
+  const key = LEGACY_PLATES[id] || id
+  return PLATES.find((p) => p.id === key) || PLATES[0]
+}
 
 // ── the type ─────────────────────────────────────────────────────────────────
-// Three faces, and they are the product's own three (docs/DESIGN.md §3), so
-// choosing one is choosing a register rather than downloading a font. Each
-// carries its own metrics, because a face swap that keeps one size and one
-// leading is not a design choice, it is a bug with a dropdown: mono needs air
-// and a smaller size to hold a line, sans needs tighter tracking and more
-// leading than a serif does.
-export const FACES = [
-  { id: 'serif', family: FONT.serif, style: 'italic', weight: 400, scale: 1, lead: 1.15, track: '0', transform: 'none' },
-  { id: 'sans', family: FONT.sans, style: 'normal', weight: 500, scale: 0.84, lead: 1.34, track: '-0.012em', transform: 'none' },
-  { id: 'mono', family: FONT.mono, style: 'normal', weight: 400, scale: 0.68, lead: 1.6, track: '0.02em', transform: 'lowercase' },
-]
+// Three faces, and they are the product's own three (docs/DESIGN.md §type), so
+// choosing one is choosing a register the reader has already seen used rather
+// than downloading a font. Each carries its own metrics, because a face swap
+// that keeps one size and one leading is not a design choice, it is a bug with
+// a dropdown: the stamp needs air and a smaller size to hold a line, the hand
+// needs tighter tracking and more leading than the voice does.
+//
+// The ids are unchanged (`serif`, `sans`, `mono`) because they are what the
+// server's validator whitelists and what every card already placed is stored
+// with. What is behind them is new.
+export const FACES = CARD_FACES
 
 export const faceOf = (id) => FACES.find((f) => f.id === id) || FACES[0]
 
@@ -134,7 +148,23 @@ export function fitRatio(text) {
 
 export const metaSize = (d) => Math.max(7, Math.min(11, d * 0.026))
 
+// ── two floors, not one ──────────────────────────────────────────────────────
+// `TYPE_FLOOR` is where the LEGEND comes off: below it the @ and the date stop
+// being type and become two grey smudges, so the seal drops them and gives the
+// room back to the words. A card too small to print its own head does not print
+// it smaller.
+//
+// The WORDS have a floor of their own, and it is much lower, because the words
+// are the card. At 88px — the size a seal is set at in the ledger — a short
+// line is entirely readable once it has the whole disc to itself, and a seal
+// with nothing written on it is not a seal, it is a button. Setting both floors
+// to the same number is what made every entry in the ledger a blank disc.
 export const TYPE_FLOOR = 118
+export const WORD_FLOOR = 54
+
+// How much bigger the words are set once the legend is off and they have the
+// whole disc. Same figure the seal has always used.
+export const LEGEND_OFF = 1.34
 
 // ── the composition ──────────────────────────────────────────────────────────
 // The text block is an object with a place, not a centered stack. Where it
@@ -209,7 +239,7 @@ export function metaPos(pos) {
 // other (the plan, §1.1). The card is sealed the way the ping itself is: the
 // server holds it, and the only read that can ever return it belongs to the
 // counterpart of a row that is already matched (migration 0022).
-export function makeCard({ handle, words: w, photoId = null, bg = 'ink', face = 'serif', pos, tone, placed }) {
+export function makeCard({ handle, words: w, photoId = null, bg = 'leaf', face = 'serif', pos, tone, placed }) {
   const text = clampWords(w || '')
   return {
     handle: String(handle || '').toLowerCase(),

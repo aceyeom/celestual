@@ -18,12 +18,14 @@ import {
   dmCode, savePending, loadPending, clearPending, genProof, graceVerify, GRACE_MS,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
+import { leatherSurface } from '../texture.js'
 import { renderSkyCard } from '../card.js'
 import {
-  Brandmark, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
-  PrimaryButton, GhostButton, OutlineButton, Field, HandleChip, HandleSearchField,
+  Brandmark, Sigil, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
+  PrimaryButton, GhostButton, OutlineButton, Plate, Field, HandleChip, HandleSearchField,
   Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
-  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, FONT, SIZE, TRACK, ICON,
+  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, Slots, TrialBanner, FONT, SIZE, LINE, TRACK, ICON,
+  TOKENS, TEXT, HAIR, ONSKY, LIGHT, MEASURE,
 } from './ui.jsx'
 import Card from '../card/Disc.jsx'
 import Composer from '../card/Composer.jsx'
@@ -34,9 +36,15 @@ import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
 
-// Shared centered column: at least one dynamic-viewport tall, capped to an
-// intimate measure on wide monitors. --nav-pad (set by App) reserves the foot
-// of the hub screens for the dock, so no action ever sits under it.
+// The shared column: at least one dynamic-viewport tall, ranged left inside a
+// measure that sits in the MIDDLE of the window. Both halves of that matter —
+// on a phone the measure is the whole screen and the setting looks composed,
+// and pinned to the left EDGE as well, the identical page becomes a stripe of
+// type in the left third of a laptop with an acre of empty case beside it. The
+// two stop reading as the same product.
+//
+// The top padding clears the masthead (App.jsx), which is fixed across the head
+// of every page and is the reason no screen carries its own wordmark any more.
 export function Shell({ children }) {
   return (
     <div
@@ -45,10 +53,10 @@ export function Shell({ children }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: 'max(40px, env(safe-area-inset-top)) clamp(20px, 5vw, 40px) calc(max(28px, env(safe-area-inset-bottom)) + var(--nav-pad, 0px))',
+        padding: 'max(104px, calc(env(safe-area-inset-top) + 92px)) clamp(20px, 5vw, 40px) max(32px, env(safe-area-inset-bottom))',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 460, flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
+      <div style={{ width: '100%', maxWidth: MEASURE, flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </div>
   )
 }
@@ -104,29 +112,18 @@ export function SandboxChip({ C }) {
 // instead (card/model.js tintOf), so nobody is asked anything and no third hue
 // enters.
 
-// The slot pips — one small star per slot: a held slot burns amber, an open
-// one waits as a faint outline star. The product's own ritual marks (✦ ✧),
-// never indicator dots. `cap` is whatever the caller is holding it to (two,
-// free; ten, sandbox-subscribed) — this component never assumes a number.
-// `subscribed` adds a small, subtle mono note alongside (sandbox only).
+// The slot meter — notches cut in a strip, one per slot: a held slot is struck
+// through, an open one is a scored outline. It is a physical counter (a punch
+// card, a ration book) rather than a row of indicator dots, and it is legible at
+// a glance without a number, which is what a meter is for. `cap` is whatever the
+// caller is holding it to (two, free; ten, sandbox-subscribed) — this component
+// never assumes a number. `subscribed` adds a quiet tick alongside (sandbox).
 export function SlotPips({ C, standing, cap, compact, subscribed }) {
   const { t } = useI18n()
   const free = Math.max(0, cap - standing)
   return (
     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: SPACE.sm }}>
-      {Array.from({ length: cap }).map((_, i) => (
-        <span
-          key={i}
-          aria-hidden
-          style={{
-            fontSize: SIZE.meta, lineHeight: 1,
-            color: i < standing ? C.star : rgba(C.cream, 0.3),
-            textShadow: i < standing ? `0 0 9px ${rgba(C.star, 0.65)}` : 'none',
-          }}
-        >
-          {i < standing ? '✦' : '✧'}
-        </span>
-      ))}
+      <Slots C={C} used={standing} cap={cap} />
       {!compact && (
         <span style={{ marginLeft: 4, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.3px', color: C.muted }}>
           {standing > 0 ? t('slots.holding', { n: standing, cap }) : t('slots.free', { n: free, cap })}
@@ -190,9 +187,9 @@ function HeroSequence({ C }) {
       className="enter"
       aria-label={`${l1} ${l2}`}
       style={{
-        animationDelay: '.16s', width: '100%', maxWidth: 420, padding: '0 6px', textAlign: 'center',
+        animationDelay: '.16s', width: '100%', maxWidth: 420, textAlign: 'left',
         fontFamily: FONT.serif, fontStyle: 'italic',
-        fontSize: SIZE.lead, color: rgba(C.cream, 0.94),
+        fontSize: SIZE.lead, color: rgba(C.cream, 0.94), textShadow: ONSKY,
       }}
     >
       <div style={line}>
@@ -212,55 +209,87 @@ export function LandingScreen({ C, ctx }) {
   const { t } = useI18n()
   return (
     <Shell>
-      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
-        <div className="floaty"><Brandmark C={C} size={34} /></div>
-      </div>
+      {/* ── the title page ───────────────────────────────────────────────────
+          Ranged left inside the centred measure, the way every page in this
+          book is set. The claim is one sentence broken over two registers: the
+          statement in ivory, the question in the one light, italic, because the
+          question is the part somebody actually feels.
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: SPACE.xxl }}>
-        <h1
-          className="enter"
-          style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
-        >
-          <div>{t('landing.head1')}</div>
-          <div style={{ color: C.star }}>{t('landing.head2')}</div>
-        </h1>
-        <HeroSequence C={C} />
-      </div>
-
-      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-        <PrimaryButton C={C} onClick={ctx.findOut}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
-            {t('landing.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
+          The mark that used to float above this is gone. The masthead carries
+          the wordmark on every screen now, and a second one here was the page
+          signing its own name twice. */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <h1 className="enter" style={{ margin: 0 }}>
+          <span style={{ display: 'block', fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.colophon, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.cream }}>
+            {t('landing.head1')}
           </span>
-        </PrimaryButton>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('landing.safety')}</p>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+          <span style={{ display: 'block', marginTop: 10, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 300, fontSize: SIZE.colophon, lineHeight: 0.94, letterSpacing: '-0.018em', color: C.star }}>
+            {t('landing.head2')}
+          </span>
+        </h1>
+
+        <Rule C={C} width={132} style={{ margin: `${SPACE.xl}px 0 ${SPACE.lg}px` }} />
+
+        <HeroSequence C={C} />
+
+        {/* ── the two ways in, on one baseline ──────────────────────────────
+            The plate is the act; "log in" is the quiet exit beside it. It used
+            to be a chip pinned to the top-left corner of the viewport, which
+            put the single most important thing a RETURNING person needs as far
+            from the thing they came to press as the screen allows, in the one
+            corner nothing else on the page is aligned to. Two doors, one row,
+            both obviously doors. */}
+        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', alignItems: 'center', gap: SPACE.xl, flexWrap: 'wrap', marginTop: SPACE.xl }}>
+          <Plate onClick={ctx.findOut} full={false}>{t('landing.cta')}</Plate>
+          <GhostButton C={C} onClick={ctx.startLogin} style={{ fontSize: SIZE.small }}>{t('landing.login')}</GhostButton>
+        </div>
+
+        <Mono C={C} style={{ display: 'block', marginTop: SPACE.xl, maxWidth: 400, lineHeight: 1.7 }}>
+          {t('landing.safety')}
+        </Mono>
+
+        {/* the one door off this page that is not the product: the first light
+            notice, set IN the setting rather than pinned to a corner of the
+            window where it collides with whatever else lives there */}
+        {ctx.trial && (
+          <div className="enter" style={{ animationDelay: '.3s', marginTop: SPACE.xl }}>
+            <TrialBanner C={C} line={ctx.trial.line} deadline={ctx.trial.deadline} />
+          </div>
+        )}
+      </div>
+
+      {/* the colophon: the small print at the foot of the setting, where small
+          print belongs */}
+      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start', paddingTop: SPACE.xl }}>
+        <Small C={C} style={{ maxWidth: 400 }}>
           {t('landing.age')}{' '}
-          <a href="/terms" target="_blank" rel="noopener" style={{ color: rgba(C.muted, 0.9), textDecoration: 'underline' }}>{t('landing.terms')}</a>.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.md, paddingTop: 2, flexWrap: 'wrap' }}>
+          <a href="/terms" target="_blank" rel="noopener" style={{ color: TEXT.quiet }}>{t('landing.terms')}</a>.
+        </Small>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
           {[
             ['/privacy', t('footer.privacy')],
             ['/terms', t('footer.terms')],
           ].map(([href, label], idx) => (
             <React.Fragment key={href}>
               {idx > 0 && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
-              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecoration: 'none' }}>
+              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: TEXT.faint, textDecoration: 'none', textShadow: ONSKY }}>
                 {label}
               </a>
             </React.Fragment>
           ))}
           <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
-          <GhostButton C={C} onClick={() => ctx.go('privacy')} style={{ padding: 0, fontSize: SIZE.meta, fontFamily: FONT.mono, letterSpacing: '.5px' }}>
+          <button
+            type="button"
+            onClick={() => ctx.go('privacy')}
+            style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: TEXT.faint, textShadow: ONSKY }}
+          >
             {t('footer.optout')}
-          </GhostButton>
+          </button>
         </div>
         {ctx.demo && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.md, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: SPACE.md, alignItems: 'center', flexWrap: 'wrap' }}>
             <SandboxChip C={C} />
-            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ padding: 0, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
-              {t('demo.worlds')} →
-            </GhostButton>
+            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ fontSize: SIZE.small }}>{t('demo.worlds')}</GhostButton>
           </div>
         )}
       </div>
@@ -282,7 +311,7 @@ export function OpenDoorScreen({ C, ctx }) {
           <HandleChip C={C} handle={poster} big />
           <Kicker C={C}>{t('open.reach')}</Kicker>
         </div>
-        <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.2, color: C.cream, maxWidth: 360, textWrap: 'balance' }}>
+        <h1 className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.2, color: C.cream, maxWidth: 360, textWrap: 'balance' }}>
           {t('open.line')}
         </h1>
         <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 320 }}>
@@ -334,13 +363,13 @@ export function WhoScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: SPACE.lg, textAlign: 'left' }}>
           {/* the header, as a full serif headline, left-aligned — the accent line
               in amber (the "you" star), one warm light with the landing page */}
-          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, lineHeight: 1.08, color: C.cream }}>
+          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.display, lineHeight: LINE.tight, letterSpacing: TRACK.title, color: C.cream }}>
             {t('who.title1')}<br />
             <span style={{ color: C.star }}>{t('who.title2')}</span>
           </h2>
@@ -357,7 +386,7 @@ export function WhoScreen({ C, ctx }) {
             <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onNext} />
           </div>
           {confirming && valid ? (
-            <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px' }}>
+            <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontFamily: FONT.sans, fontWeight: 300, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px', textShadow: ONSKY }}>
               <span>{t('who.confirm1')}</span>
               <HandleChip C={C} handle={normd} />
               <span>{t('who.confirm2')}</span>
@@ -365,7 +394,7 @@ export function WhoScreen({ C, ctx }) {
           ) : (
             <Note C={C}>{t('who.note')}</Note>
           )}
-          {ctx.error && <div style={{ color: rgba(C.star, 0.95), fontSize: SIZE.small, padding: '0 2px' }}>{ctx.error}</div>}
+          {ctx.error && <Note C={C} tone="accent">{ctx.error}</Note>}
           {ctx.demo && <Note C={C} tone="accent">{t('who.demoHint')}</Note>}
         </div>
 
@@ -463,7 +492,7 @@ export function YouScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(login ? 'landing' : 'who')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(login ? 'landing' : 'who')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <Display C={C} className="enter">
@@ -611,7 +640,7 @@ function LaunchClockCard({ C, community }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.sm }}>
         <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.md, fontVariantNumeric: 'tabular-nums' }}>
-          <span style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.cream, textShadow: `0 0 26px ${rgba(C.star, 0.22)}` }}>
+          <span style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.cream, textShadow: ONSKY }}>
             {c ? c.big : t('reveal.now')}
           </span>
           {c && c.small && (
@@ -647,7 +676,7 @@ function PlacedHandleHero({ C, handle, reachable }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center', width: '100%' }}>
       <div
         style={{
-          width: '100%', fontFamily: FONT.mono, fontWeight: 700,
+          width: '100%', fontFamily: FONT.mono, fontWeight: 500,
           fontSize: SIZE.hero, lineHeight: 1.02,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           // no glow shadow inside an overflow-hidden box — the clip edge turns
@@ -688,7 +717,7 @@ function PlacedReachable({ C, ctx, handle, community }) {
 
         {/* the question — the emotional peak */}
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, textAlign: 'center' }}>
-          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.24, color: C.cream, maxWidth: 390, textWrap: 'balance' }}>
+          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.24, color: C.cream, maxWidth: 390, textWrap: 'balance' }}>
             {g.question}
           </h1>
           <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{g.until}</p>
@@ -807,199 +836,314 @@ export function PlacedScreen({ C, ctx }) {
   return <PlacedQuiet C={C} ctx={ctx} handle={handle} reachable={reachable} needsCommunity={!community} />
 }
 
-// ── 4 · YOUR PINGS — the status page ──────────────────────────────────────────
-// A compact, clearly-labelled action button for a ping row. Real affordance —
-// a bordered pill that hovers — instead of the old bare underlined text.
-function RowBtn({ C, onClick, icon, children, tone = 'default' }) {
-  const [h, setH] = React.useState(false)
-  const accent = tone === 'accent'
-  const col = accent ? C.star : tone === 'danger' ? rgba(C.cream, 0.72) : C.cream
+// ── 4 · YOUR PINGS — the ledger ───────────────────────────────────────────────
+// The seal, at the size a seal is. Every entry in the ledger wears this
+// footprint whether or not there is anything in it, which is what makes the
+// column read as a set of SLOTS rather than as a list that happens to have some
+// pictures down one side.
+const SEAL = 88
+
+// One entry: an object, the writing beside it, and a rule under the pair. There
+// is no panel. A page in a ledger is entries divided by rules, and the leather
+// slab each ping used to sit on was five objects competing on one screen with
+// the actual object — the seal — shrunk to a chip inside them.
+function Row({ C, children, as = 'div', onClick, style }) {
+  const Tag = as
   return (
-    <button
-      onClick={(e) => {
-        // the whole card behind these buttons flies to the star — a row action
-        // must never fall through into that
-        e.stopPropagation()
-        if (onClick) onClick(e)
-      }}
-      onMouseEnter={() => setH(true)}
-      onMouseLeave={() => setH(false)}
+    <Tag
+      {...(as === 'button' ? { type: 'button', onClick } : { onClick })}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, padding: '8px 14px', borderRadius: RADIUS.chip,
-        cursor: 'pointer', fontFamily: FONT.sans, fontWeight: 500, fontSize: SIZE.small, color: col,
-        background: h ? rgba(accent ? C.star : C.cream, 0.1) : accent ? rgba(C.star, 0.08) : 'transparent',
-        border: `1px solid ${accent ? rgba(C.star, h ? 0.6 : 0.4) : rgba(C.cream, h ? 0.28 : 0.14)}`,
-        transition: 'all .18s',
+        display: 'flex',
+        alignItems: 'center',
+        gap: SPACE.md,
+        width: '100%',
+        padding: `${SPACE.md}px 0`,
+        borderBottom: `1px solid ${HAIR.faint}`,
+        textAlign: 'left',
+        ...style,
       }}
     >
-      {icon && <Icon name={icon} size={14} color="currentColor" stroke={1.9} />}
       {children}
+    </Tag>
+  )
+}
+
+// The seal on an entry, and the way to the star it is. It is the ONLY thing on
+// the row that flies the camera: the row used to be, which meant every quiet
+// action on it had to stop its own click from falling through into a camera
+// flight. The object you fly to is the object you press.
+function SealButton({ C, card, url, onClick, label, className }) {
+  const inner = (
+    <Card
+      C={C}
+      card={card || { words: '', bg: 'hide', tone: 0.12 }}
+      url={url}
+      size={SEAL}
+      glow={0.55}
+    />
+  )
+  if (!onClick) return <span style={{ flex: '0 0 auto', opacity: 0.72 }}>{inner}</span>
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={className}
+      style={{ flex: '0 0 auto', borderRadius: '50%', padding: 0 }}
+    >
+      {inner}
     </button>
   )
 }
 
-// One ping, as a frosted glass card lifted off the galaxy. The state reads in
-// plain words (active / not here yet / mutual) with a one-line explanation, and
-// the actions are real buttons.
+// A row action: a line of type with a hairline under it. Not a pill, not a
+// bordered chip — a footnote reference, which is exactly the weight an action
+// inside an entry deserves when the entry itself is the thing being read.
+// `sub` prints what the action DOES beside it, which is the whole reason the
+// renew action stopped being ambiguous.
+function RowLink({ C, children, sub, onClick, lit, quiet }) {
+  const [hot, setHot] = React.useState(false)
+  const col = lit ? C.star : quiet ? TEXT.faint : TEXT.quiet
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.sm }}>
+      <button
+        type="button"
+        onClick={onClick}
+        onPointerEnter={() => setHot(true)}
+        onPointerLeave={() => setHot(false)}
+        style={{
+          fontFamily: FONT.sans,
+          fontWeight: 300,
+          fontSize: 11.5,
+          letterSpacing: '0.04em',
+          color: hot ? TEXT.read : col,
+          borderBottom: `1px solid ${rgba(C.cream, hot ? 0.4 : quiet ? 0.12 : 0.2)}`,
+          paddingBottom: 1,
+          textShadow: ONSKY,
+          transition: 'color .18s linear, border-color .18s linear',
+        }}
+      >
+        {children}
+      </button>
+      {sub && <Mono C={C} size={SIZE.micro}>{sub}</Mono>}
+    </span>
+  )
+}
+
+// ── one entry in the ledger ──────────────────────────────────────────────────
+// A row, not a card. Every ping used to sit on its own slab of stitched leather,
+// and a list of them read as a stack of objects rather than as a page in a
+// ledger: five panels down a screen is five things competing to be looked at,
+// and the seal — the one object on the row that is genuinely an object — was
+// reduced to a 38px chip inside the panel that was shouting over it.
+//
+// So the leather comes off. The seal is set at the size it deserves, on the
+// case itself, with the entry ranged beside it and one hairline ruled under the
+// pair. That is what a ledger is: entries on a page, divided by rules.
+//
+// THE SEAL IS THE WAY TO THE SKY, and only the seal. It used to be the whole
+// panel, which meant every quiet text action on the row had to stop its own
+// click from falling through into a camera flight. The object you fly to is the
+// object you press.
 function PingCard({ C, ping, ctx }) {
   const { t } = useI18n()
   const [confirmGo, setConfirmGo] = React.useState(false)
-  const [renewed, setRenewed] = React.useState(false)
+  const [renewed, setRenewed] = React.useState(null)
+  const [renewing, setRenewing] = React.useState(false)
   const days = daysLeft(ping.expires_at)
   const soon = !ping.mutual && nearLapse(ping.expires_at)
   const state = ping.mutual ? 'mutual' : ping.reachable ? 'standing' : 'waiting'
-  const chipColor = ping.mutual ? C.star : ping.reachable ? rgba(C.star, 0.92) : C.muted
-  // Production renews outright, free, instantly (unchanged). The sandbox
-  // detours through the same checkout the third slot uses (SlotPaywall, extend
-  // mode) so the eventual $2.99 shape is visible; the actual renew only runs
-  // once that mock payment succeeds (App.jsx's finishExtend).
+  // Production renews outright, free, instantly. The sandbox detours through
+  // the same checkout the third slot uses (SlotPaywall, extend mode) so the
+  // eventual $2.99 shape is visible; the actual renew only runs once that mock
+  // payment succeeds (App.jsx's finishExtend).
   const renew = async () => {
     if (ctx.demo) {
       ctx.startExtend(ping.handle)
       return
     }
-    await ctx.renew(ping.handle)
-    setRenewed(true)
+    setRenewing(true)
+    const until = await ctx.renew(ping.handle)
+    setRenewing(false)
+    setRenewed(until || true)
   }
   return (
-    // the WHOLE card is the way to the sky: tap anywhere on it and the camera
-    // flies to this ping's own star (row buttons stop their own taps)
-    <GlassPanel
-      C={C}
-      onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
-      role={ping.handle ? 'button' : undefined}
-      tabIndex={ping.handle ? 0 : undefined}
-      onKeyDown={ping.handle ? (e) => { if (e.key === 'Enter') ctx.locatePing(ping.handle) } : undefined}
-      aria-label={ping.handle ? t('pings.locate') : undefined}
-      title={ping.handle ? t('pings.locate') : undefined}
-      style={{ padding: '15px 16px 13px', cursor: ping.handle ? 'pointer' : 'default' }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', textAlign: 'left' }}>
-        {/* the card this ping carries, at the size a star is. Below 118px the
-            disc sets no type at all (card/model.js TYPE_FLOOR) — there is no
-            legible size for a poster in a thumbnail, and type too small to read
-            is decoration pretending to be content. What it shows here is the
-            ground and the light, which is what makes one ping recognisable
-            from another at a glance. */}
-        {ping.card && (
-          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
-            <Card C={C} card={ping.card} url={ping.photoId ? ctx.cardUrls[ping.photoId] : null} size={38} glow={0.7} />
-          </span>
+    <Row C={C}>
+      <SealButton
+        C={C}
+        card={ping.card}
+        url={ping.photoId ? ctx.cardUrls[ping.photoId] : null}
+        onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
+        label={ping.handle ? t('pings.locate') : undefined}
+      />
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* the state, told by FORM rather than by hue: a filled mark that
+            breathes is standing, an open dashed one is waiting, a joined pair is
+            mutual. Somebody who cannot see colour reads this exactly as well as
+            somebody who can, which is what a one-hue brand buys you. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: 6 }}>
+          <StateDot C={C} state={state} size={9} />
+          <Kicker C={C} color={ping.mutual ? C.star : state === 'standing' ? rgba(C.star, 0.92) : TEXT.faint}>
+            {t(`pings.${state}`)}
+          </Kicker>
+        </div>
+
+        <div style={{ fontFamily: FONT.mono, fontSize: 15, letterSpacing: '0.02em', color: ping.handle ? C.cream : TEXT.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: ONSKY }}>
+          {ping.handle ? `@${ping.handle}` : t('pings.elsewhere')}
+        </div>
+
+        {/* what you wrote on it. Yours to re-read; sealed to them until it is
+            mutual, which is the only claim this row makes. */}
+        {ping.card && ping.card.words && (
+          <p style={{ margin: '6px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.62) }}>
+            “{ping.card.words}”
+          </p>
         )}
-        <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ping.handle ? (
-            <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
-          ) : (
-            <span style={{ fontStyle: 'italic', fontSize: SIZE.body }}>{t('pings.elsewhere')}</span>
-          )}
-        </span>
-        {/* the "its star" tag that used to sit here is gone: the whole card is
-            the way to the sky, and it already carries that label for a screen
-            reader. Printing a caption next to an affordance is not a design. */}
-        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.micro, textTransform: 'uppercase', color: chipColor, background: rgba(chipColor, 0.1), border: `1px solid ${rgba(chipColor, 0.32)}`, borderRadius: RADIUS.chip, padding: '3px 9px', flexShrink: 0 }}>
-          {t(`pings.${state}`)}
-        </span>
-      </div>
 
-      {ping.handle && t(`pings.${state}Sub`) && (
-        <p style={{ margin: '8px 0 0', fontSize: SIZE.small, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
-          {t(`pings.${state}Sub`)}
-        </p>
-      )}
-      {/* what you wrote on it. Yours to re-read; sealed to them until it is
-          mutual, which is the only claim this row makes. */}
-      {ping.card && ping.card.words && (
-        <p style={{ margin: '7px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.7) }}>
-          “{ping.card.words}”
-        </p>
-      )}
-
-      {(ping.handle || (!ping.mutual && days != null)) && (
-        <div style={{ marginTop: 12, paddingTop: 11, borderTop: `1px solid ${rgba(C.cream, 0.07)}` }}>
-          {confirmGo ? (
-            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-              <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('pings.letgoConfirm')}</span>
-              <div style={{ display: 'flex', gap: SPACE.md }}>
-                <RowBtn C={C} tone="danger" icon="x" onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowBtn>
-                <RowBtn C={C} onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowBtn>
-              </div>
+        {confirmGo ? (
+          <div className="fade" style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start' }}>
+            <Small C={C}>{t('pings.letgoConfirm')}</Small>
+            <div style={{ display: 'flex', gap: SPACE.md, alignItems: 'center' }}>
+              <RowLink C={C} onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowLink>
+              <RowLink C={C} quiet onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowLink>
             </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
-              {!ping.mutual && days != null && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.mono, fontSize: SIZE.meta, color: soon ? rgba(C.star, 0.92) : rgba(C.muted, 0.8) }}>
-                  {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
-                </span>
-              )}
-              <span style={{ flex: 1 }} />
+          </div>
+        ) : (
+          <>
+            {/* the clock, and the DATE it runs out on, on their own line. The
+                date is the part that was missing everywhere: it is also the day
+                this slot comes back, so a person holding two pings can see when
+                the next one opens without doing arithmetic on "43 days left".
+                It sits UNDER the countdown rather than beside it, so the row of
+                actions below stays one row at every width. */}
+            {/* the clock. Days left, and that is the whole readout — the date
+                it runs out on came off, because a countdown IS a date and
+                printing both is saying one number twice. */}
+            {!ping.mutual && days != null && (
+              <Mono C={C} color={soon ? rgba(C.star, 0.92) : TEXT.quiet} style={{ display: 'block', marginTop: 7 }}>
+                {days === 0 ? t('pings.today') : t('pings.days', { n: days })}
+              </Mono>
+            )}
+            <div style={{ marginTop: 9, display: 'flex', gap: SPACE.lg, alignItems: 'baseline', flexWrap: 'wrap' }}>
               {ping.mutual && ping.handle ? (
-                <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+                <RowLink C={C} lit onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowLink>
               ) : ping.handle ? (
                 <>
                   {renewed ? (
-                    <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontSize: SIZE.small, color: rgba(C.star, 0.9) }}>
-                      <Icon name="check" size={13} color={rgba(C.star, 0.9)} /> {t('pings.renewed')}
+                    <span className="fade" style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 11.5, letterSpacing: '0.04em', color: rgba(C.star, 0.92), textShadow: ONSKY }}>
+                      {t('pings.renewed')}
                     </span>
                   ) : (
-                    <RowBtn C={C} tone={soon ? 'accent' : 'default'} icon="refresh" onClick={renew}>{t('pings.renew')}</RowBtn>
+                    <RowLink C={C} lit={soon} onClick={renewing ? undefined : renew} sub={t('pings.renewSub')}>
+                      {renewing ? t('pings.renewing') : t('pings.renew')}
+                    </RowLink>
                   )}
-                  <RowBtn C={C} tone="danger" icon="x" onClick={() => setConfirmGo(true)}>{t('pings.letgo')}</RowBtn>
+                  <RowLink C={C} quiet onClick={() => setConfirmGo(true)}>{t('pings.letgo')}</RowLink>
                 </>
               ) : null}
             </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
 
-      {ctx.demo && !ping.mutual && ping.handle && (
-        <div style={{ marginTop: 10 }}>
-          <GhostButton
-            C={C}
-            onClick={(e) => {
-              e.stopPropagation()
-              ctx.simulateMutual(ping.handle)
-            }}
-            style={{ padding: 0, fontSize: SIZE.meta, letterSpacing: TRACK.meta, fontFamily: FONT.mono, color: rgba(C.star, 0.8) }}
-          >
-            ✦ {t('pings.sim')}
-          </GhostButton>
-        </div>
-      )}
-    </GlassPanel>
+        {ctx.demo && !ping.mutual && ping.handle && (
+          <div style={{ marginTop: 9 }}>
+            <RowLink C={C} quiet onClick={() => ctx.simulateMutual(ping.handle)}>{t('pings.sim')}</RowLink>
+          </div>
+        )}
+      </div>
+    </Row>
   )
 }
 
-// An empty slot — a dashed glass placeholder holding a faint star, so the number
-// of slots you have (and how many are open) is always visible at a glance. Once
-// both free slots are held, this same shape becomes the door to the third
-// (`paywall`): the dash warms to amber and the copy names what tapping it opens
-// — the checkout, not a free placement.
+// An open slot — the seal's own footprint, scored into the case and empty. It
+// is the same 88px circle every entry above it wears, so the ledger reads as a
+// column of slots with some of them filled rather than as a list with a button
+// stuck on the end. Once every free slot is held, this same shape becomes the
+// door to the next one (`paywall`) and names what tapping it opens: the
+// checkout, not a free placement.
 function EmptySlotCard({ C, onClick, paywall }) {
   const { t } = useI18n()
-  const [h, setH] = React.useState(false)
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setH(true)}
-      onMouseLeave={() => setH(false)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', padding: '15px 16px', textAlign: 'left', cursor: 'pointer',
-        borderRadius: RADIUS.card,
-        background: h ? rgba(C.ink2, 0.5) : rgba(C.ink2, 0.3),
-        border: `1.5px dashed ${paywall ? rgba(C.star, h ? 0.42 : 0.26) : rgba(C.cream, h ? 0.26 : 0.15)}`,
-        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', transition: 'all .2s',
-      }}
-    >
-      <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: '50%', flexShrink: 0, border: `1px solid ${paywall ? rgba(C.star, 0.3) : rgba(C.cream, 0.14)}`, opacity: h ? 1 : 0.7, transition: 'opacity .2s' }}>
-        <Brandmark C={C} size={15} />
+    <Row C={C} as="button" onClick={onClick}>
+      <span
+        style={{
+          flex: '0 0 auto', width: SEAL, height: SEAL, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px dashed ${paywall ? rgba(C.star, 0.34) : rgba(C.cream, 0.18)}`,
+          boxShadow: LIGHT.well,
+        }}
+      >
+        <Sigil size={22} cut={paywall ? 'lamp' : 'ivory'} a={paywall ? 1 : 0.4} />
       </span>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: rgba(C.cream, 0.82) }}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</span>
-        <span style={{ fontSize: SIZE.meta, color: C.muted }}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, textAlign: 'left' }}>
+        <Kicker C={C} color={paywall ? C.star : TEXT.quiet}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</Kicker>
+        {/* "tap to place a ping" used to sit here. A slot you can press, on a
+            page about placing pings, does not need to be told what pressing it
+            does. The price does, because that is a fact and not an
+            instruction. */}
+        {paywall && <Mono C={C}>{t('pings.slotNextSub')}</Mono>}
       </span>
-      <span style={{ flex: 1 }} />
-      
-    </button>
+    </Row>
+  )
+}
+
+// ── a slot the meter counts and this device cannot name ──────────────────────
+// The server knows how many pings are standing under your @; only the device
+// that typed one knows who it points at. A second phone therefore holds a real
+// standing ping it cannot name, and until now the ledger simply did not draw it:
+// the meter said two of two over an empty list, which is the product calling its
+// own user a liar.
+//
+// So the slot is drawn, as an entry like any other. It says what it is, it keeps
+// its own sixty days, and — because the usual cause is a restore that has not
+// landed rather than a pre-0010 row that genuinely cannot be named — it carries
+// the one action that can fill it in.
+function HeldElsewhereCard({ C, ctx }) {
+  const { t } = useI18n()
+  const phase = (ctx.ledgerState && ctx.ledgerState.phase) || 'idle'
+  return (
+    <Row C={C}>
+      <span
+        style={{
+          flex: '0 0 auto', width: SEAL, height: SEAL, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px solid ${rgba(C.cream, 0.14)}`, boxShadow: LIGHT.well,
+        }}
+      >
+        <StateDot C={C} state="standing" size={11} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Kicker C={C} style={{ display: 'block', marginBottom: 6 }}>{t('pings.heldTitle')}</Kicker>
+        <Small C={C}>{t('pings.heldSub')}</Small>
+        {phase === 'failed' && <Note C={C} tone="accent" style={{ marginTop: 6 }}>{t('pings.heldFailed')}</Note>}
+        <div style={{ marginTop: 8 }}>
+          <RowLink C={C} onClick={phase === 'reading' ? undefined : ctx.restoreLedger}>
+            {phase === 'reading' ? t('pings.heldRestoring') : t('pings.heldRestore')}
+          </RowLink>
+        </div>
+      </div>
+    </Row>
+  )
+}
+
+// ── when the next slot opens ─────────────────────────────────────────────────
+// Every slot is held, so the only two ways forward are waiting and letting one
+// go. Both are named, and the wait has a DATE on it rather than a shrug. The
+// date is not new information — it is the lapse date of the soonest-lapsing
+// ping, which the product has always known and never printed.
+function NextSlotLine({ C, ctx }) {
+  const { t } = useI18n()
+  const next = ctx.nextSlot
+  if (!next) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: `${SPACE.md}px 0 0` }}>
+      <Kicker C={C} color={C.star}>
+        {next.days === 0 ? t('pings.nextSlotToday') : t('pings.nextSlot', { n: next.days })}
+      </Kicker>
+      <Small C={C}>{t('pings.nextSlotOr')}</Small>
+    </div>
   )
 }
 
@@ -1040,40 +1184,31 @@ function SealedMutual({ C, ping, onOpen }) {
   }, [])
 
   return (
-    <button
-      onClick={onOpen}
-      aria-label={t('pings.revealOpen', { them: ping.handle })}
-      style={{
-        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', padding: '14px 16px', textAlign: 'left',
-        cursor: 'pointer', borderRadius: RADIUS.card,
-        background: rgba(C.star, 0.07), border: `1px solid ${rgba(C.star, 0.34)}`,
-        boxShadow: `0 0 34px ${rgba(C.star, 0.12)}`,
-        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-      }}
-    >
-      {/* the seal: a disc with the light of a card behind it and nothing of the
-          card visible through it. */}
+    <Row C={C} as="button" onClick={onOpen} style={{ cursor: 'pointer' }}>
+      {/* the seal, at the size every other entry wears: a disc with the light of
+          a card behind it and nothing of the card visible through it. It strains
+          against its lid every few seconds, because something is in there and
+          the product is not going to pretend otherwise. */}
       <span
-        className={shake ? 'rattle' : undefined}
+        className={shake ? 'strain' : undefined}
         aria-hidden
         style={{
-          position: 'relative', display: 'grid', placeItems: 'center', width: 46, height: 46, flexShrink: 0,
-          borderRadius: '50%', background: C.ink2, border: `1px solid ${rgba(C.star, 0.5)}`,
-          boxShadow: `0 0 20px ${rgba(C.star, 0.35)}, inset 0 0 18px ${rgba(C.star, 0.18)}`,
+          flex: '0 0 auto', display: 'grid', placeItems: 'center', width: SEAL, height: SEAL,
+          borderRadius: '50%', ...leatherSurface(C.ink3),
+          boxShadow: `0 0 0 1px ${rgba(C.star, 0.5)}, ${LIGHT.seal}`,
         }}
       >
-        <StarMark C={C} size={20} />
+        <Sigil size={26} cut="lamp" ground={C.ink3} />
       </span>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: 1 }}>
-        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, flex: 1 }}>
+        <Kicker C={C} color={C.star}>{t('pings.mutualKicker')}</Kicker>
+        <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, textShadow: ONSKY }}>
           {t('pings.sealedTitle')}
         </span>
-        <span style={{ fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
-          {t('pings.sealedSub', { them: ping.handle })}
-        </span>
+        <Small C={C}>{t('pings.sealedSub', { them: ping.handle })}</Small>
       </span>
-      <Icon name="arrow" size={16} color={rgba(C.star, 0.9)} stroke={2} />
-    </button>
+      <Icon name="arrow" size={16} color={rgba(C.star, 0.9)} stroke={1.2} />
+    </Row>
   )
 }
 
@@ -1087,38 +1222,44 @@ function OpenMutual({ C, ping, ctx }) {
   const yours = ping.card
   const url = ping.photoId ? ctx.cardUrls[ping.photoId] : null
   return (
-    <GlassPanel C={C} style={{ padding: '13px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
-        <button
-          onClick={() => ctx.openReveal(ping.handle)}
-          aria-label={t('pings.revealAgain')}
-          style={{
-            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: SPACE.md, padding: 0, textAlign: 'left',
-            background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer',
-          }}
-        >
-          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
-            {theirs && <Card C={C} card={theirs} size={44} tint={C.them} glow={0.8} />}
-            {yours && (
-              <span style={{ marginLeft: -12 }}>
-                <Card C={C} card={yours} url={url} size={44} tint={C.you} glow={0.8} />
-              </span>
-            )}
+    <Row C={C}>
+      {/* the pair, overlapped the way two things set down together overlap.
+          Theirs on top, because at a reveal the only thing anyone wants is the
+          half they could not see. Pressing them plays the spread again: nothing
+          is unsealed a second time, it is simply the size the cards can
+          actually be read at. */}
+      <button
+        type="button"
+        onClick={() => ctx.openReveal(ping.handle)}
+        aria-label={t('pings.revealAgain')}
+        style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', padding: 0 }}
+      >
+        {yours && <Card C={C} card={yours} url={url} size={SEAL * 0.72} tint={C.you} glow={0.5} />}
+        {theirs && (
+          <span style={{ marginLeft: -SEAL * 0.3 }}>
+            <Card C={C} card={theirs} size={SEAL * 0.72} tint={C.them} glow={0.7} />
           </span>
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
-            </span>
-            {theirs && theirs.words && (
-              <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.small, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                “{theirs.words}”
-              </span>
-            )}
-          </span>
-        </button>
-        <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+        )}
+      </button>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: 6 }}>
+          <StateDot C={C} state="mutual" size={9} />
+          <Kicker C={C} color={C.star}>{t('pings.mutual')}</Kicker>
+        </div>
+        <div style={{ fontFamily: FONT.mono, fontSize: 15, letterSpacing: '0.02em', color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: ONSKY }}>
+          @{ping.handle}
+        </div>
+        {theirs && theirs.words && (
+          <p style={{ margin: '6px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.62) }}>
+            “{theirs.words}”
+          </p>
+        )}
+        <div style={{ marginTop: 8, display: 'flex', gap: SPACE.md, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <RowLink C={C} lit onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowLink>
+          <RowLink C={C} quiet onClick={() => ctx.openReveal(ping.handle)}>{t('pings.revealAgain')}</RowLink>
+        </div>
       </div>
-    </GlassPanel>
+    </Row>
   )
 }
 
@@ -1199,69 +1340,93 @@ export function PingsScreen({ C, ctx }) {
   const cap = ctx.slotsCap
   const mutual = pings.filter((p) => p.mutual)
   const active = pings.filter((p) => !p.mutual)
-  const used = Math.min(active.length, cap)
-  const emptyCount = Math.max(0, cap - active.length)
-  const empty = pings.length === 0
-  // both slots held (or however many the sandbox has raised the cap to) — the
-  // last card in the list becomes the door to the next one, same shape, warmer.
-  const atCap = !empty && active.length >= cap
+  // ── the ledger accounts for every slot the meter counts ──────────────────
+  // `unaccounted` is the server's standing count minus the rows this device
+  // actually holds. It is normally zero, because App restores the ledger on any
+  // proven session. When it is not, those slots are DRAWN — a meter that says
+  // two of two over a list showing one is the bug this screen used to have, and
+  // it is worse than the missing row, because the number is the thing that
+  // stops you placing a ping.
+  const held = Math.max(0, Number(ctx.unaccounted) || 0)
+  const standing = active.length + held
+  const used = Math.min(standing, cap)
+  const emptyCount = Math.max(0, cap - standing)
+  const empty = pings.length === 0 && held === 0
+  // every slot held (or however many the sandbox has raised the cap to) — the
+  // last row becomes the door to the next one, same shape, lit.
+  const atCap = !empty && standing >= cap
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38, paddingTop: 6 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
-          <Brandmark C={C} size={16} />
-          <Kicker C={C}>{t('pings.kicker')}</Kicker>
-          {ctx.demo && <SandboxChip C={C} />}
-        </div>
-      </div>
+      <ScreenHeader
+        C={C}
+        label={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
+            <Kicker C={C}>{t('pings.kicker')}</Kicker>
+            {ctx.demo && <SandboxChip C={C} />}
+          </span>
+        }
+        right={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+            <Slots C={C} used={used} cap={cap} />
+            <Mono C={C}>{t('pings.slotsUsed', { used, cap })}</Mono>
+          </span>
+        }
+      />
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 18 }}>
-        {/* your community first — the place; the slots below are the pings */}
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: SPACE.sm }}>
+        {/* your community first — the place; the entries below are the pings */}
         <CommunityHome C={C} ctx={ctx} />
 
-        {/* the slot space, clearly its own section under its own rule — always
-            exactly `cap` rows: standing pings, then open slots. mutual matches
-            are resolved and never sit here. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, marginTop: 4, paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
+        {/* the ledger: entries, divided by rules. Always exactly `cap` slots —
+            standing pings, then open ones. A mutual is resolved and never sits
+            among them. */}
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: SPACE.sm }}>
           {empty ? (
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, margin: '6px 0 4px' }}>
-              <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>
-                {t('pings.emptyTitle')}
-              </h2>
-              <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, padding: `${SPACE.lg}px 0` }}>
+              <Title C={C}>{t('pings.emptyTitle')}</Title>
+              <Small C={C} style={{ maxWidth: 320 }}>{t('pings.emptyBody')}</Small>
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
-                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
-                <SlotPips C={C} standing={used} cap={cap} compact subscribed={ctx.demoSubscribed} />
-              </div>
               {active.map((p, i) => (
                 <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
+              ))}
+              {Array.from({ length: held }).map((_, i) => (
+                <HeldElsewhereCard key={'h' + i} C={C} ctx={ctx} />
               ))}
               {Array.from({ length: emptyCount }).map((_, i) => (
                 <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
               ))}
-              {atCap && <EmptySlotCard key="door" C={C} onClick={ctx.placeAnother} paywall />}
+              {atCap && (
+                <>
+                  <NextSlotLine C={C} ctx={ctx} />
+                  <EmptySlotCard key="door" C={C} onClick={ctx.placeAnother} paywall />
+                </>
+              )}
+              {/* said once, under the ledger, and not on every entry: renewing
+                  is free, it restarts the sixty days, and it does not spend a
+                  slot. All three were things the ledger let people guess at. */}
+              {active.some((p) => p.handle) && (
+                <Note C={C} tone="quiet" style={{ paddingTop: SPACE.md }}>{t('pings.renewNote')}</Note>
+              )}
             </>
           )}
 
-          {/* mutual — its own section, so a match never crowds the slots */}
+          {/* mutual — its own section under its own head, so a match never
+              crowds the slots */}
           {mutual.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: empty ? 0 : 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '0 4px' }}>
-                <Kicker C={C} color={rgba(C.star, 0.9)}>✦ {t('pings.mutualKicker')} · {mutual.length}</Kicker>
-                <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
+            <div style={{ display: 'flex', flexDirection: 'column', paddingTop: SPACE.xl }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.sm }}>
+                <StateDot C={C} state="mutual" size={9} />
+                <Kicker C={C} color={rgba(C.star, 0.9)}>{t('pings.mutualKicker')} · {mutual.length}</Kicker>
               </div>
+              <Rule C={C} />
               {mutual.map((p, i) => (
                 <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
               ))}
             </div>
           )}
 
-          {pings.some((p) => !p.handle) && (
-            <p style={{ margin: '4px 4px 0', fontSize: SIZE.meta, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
-          )}
         </div>
       </div>
 
@@ -1305,11 +1470,10 @@ function SkyStat({ C, value, label, onTap }) {
         pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
         padding: '9px 10px 8px', minWidth: 62, cursor: 'pointer',
         background: rgba(C.ink, 0.36), border: `1px solid ${rgba(C.star, 0.24)}`, borderRadius: RADIUS.inner,
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
         transform: press ? 'scale(0.94)' : 'scale(1)', transition: 'transform .15s ease',
       }}
     >
-      <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1, color: C.star, textShadow: `0 0 16px ${rgba(C.star, 0.4)}` }}>{value}</span>
+      <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, lineHeight: 1, color: C.star, textShadow: ONSKY }}>{value}</span>
       <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.meta, textTransform: 'uppercase', color: rgba(C.cream, 0.75), whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   )
@@ -1453,7 +1617,7 @@ export function SkyCardScreen({ C, ctx }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.lg, paddingTop: 12 }}>
         <div className="enter" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.1, color: C.cream }}>
+          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.1, color: C.cream }}>
             {t('sky.title1')} <span style={{ color: C.star }}>{t('sky.title2')}</span>
           </h2>
           <p style={{ margin: '0 auto', fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 340 }}>
@@ -1590,7 +1754,6 @@ function MeetOverlay({ C, label, onClose }) {
           style={{
             width: 42, height: 42, borderRadius: '50%', cursor: 'pointer',
             background: rgba(C.ink2, 0.8), border: `1px solid ${rgba(C.cream, 0.22)}`,
-            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             display: 'grid', placeItems: 'center', color: rgba(C.cream, 0.92),
             boxShadow: '0 10px 34px rgba(0,0,0,.5)',
           }}
@@ -1611,7 +1774,7 @@ function MeetOverlay({ C, label, onClose }) {
         <span aria-hidden style={{ width: 1, height: 24, background: `linear-gradient(180deg, transparent, ${rgba(C.star, 0.65)})` }} />
         <span
           style={{
-            fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.title,
+            fontFamily: FONT.mono, fontWeight: 500, fontSize: SIZE.title,
             letterSpacing: '.5px', color: C.star, textShadow: '0 2px 18px rgba(0,0,0,.85)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '86vw',
           }}
@@ -1627,9 +1790,8 @@ function MeetOverlay({ C, label, onClose }) {
             pointerEvents: 'auto', display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, maxWidth: '86vw',
             padding: '9px 16px', borderRadius: RADIUS.chip,
             background: rgba(C.ink2, 0.82), border: `1px solid ${rgba(C.star, 0.42)}`,
-            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             color: C.cream, textDecoration: 'none', fontFamily: FONT.sans,
-            fontSize: SIZE.small, fontWeight: 600, boxShadow: '0 10px 34px rgba(0,0,0,.45)',
+            fontSize: SIZE.small, fontWeight: 500, boxShadow: '0 10px 34px rgba(0,0,0,.45)',
           }}
         >
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('public.meet')}</span>
@@ -1791,7 +1953,7 @@ function RevealCountdown({ C, open }) {
   return (
     <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
       <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.xs, fontFamily: FONT.mono, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-        <span style={{ fontSize: SIZE.body, letterSpacing: '.5px', color: C.star, textShadow: `0 0 14px ${rgba(C.star, 0.35)}` }}>{c ? c.big : t('reveal.now')}</span>
+        <span style={{ fontSize: SIZE.body, letterSpacing: '.5px', color: C.star, textShadow: ONSKY }}>{c ? c.big : t('reveal.now')}</span>
         {c && c.small && <span style={{ fontSize: SIZE.meta, color: rgba(C.muted, 0.9) }}>{c.small}</span>}
       </span>
       <Kicker C={C} micro color={rgba(C.muted, 0.9)} style={{ whiteSpace: 'nowrap' }}>
@@ -1820,8 +1982,7 @@ function CommunityCard({ C, community, ctx }) {
       style={{
         display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', textAlign: 'left', cursor: 'pointer',
         padding: '14px 15px', borderRadius: RADIUS.card,
-        background: rgba(C.ink2, h ? 0.72 : 0.6), border: `1px solid ${rgba(C.cream, h ? 0.16 : 0.1)}`,
-        backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', transition: 'background .2s, border-color .2s',
+        background: rgba(C.ink2, h ? 0.72 : 0.6), border: `1px solid ${rgba(C.cream, h ? 0.16 : 0.1)}`, transition: 'background .2s, border-color .2s',
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={46} />
@@ -1882,7 +2043,7 @@ export function WorldsScreen({ C, ctx }) {
 }
 
 // The "you're in X" banner atop the communities list — amber-lit, tappable, so a
-// member's own sky is obvious and immediately reachable. A ✦ mark, the seal, the
+// member's own sky is obvious and immediately reachable. The mark, the seal, the
 // name, and a clear go-in arrow.
 function HomeCommunityBanner({ C, community, onOpen }) {
   const { t } = useI18n()
@@ -1897,7 +2058,7 @@ function HomeCommunityBanner({ C, community, onOpen }) {
         padding: '15px 16px', borderRadius: RADIUS.card,
         background: `linear-gradient(120deg, ${rgba(C.star, h ? 0.16 : 0.12)}, ${rgba(C.them, 0.06)})`,
         border: `1px solid ${rgba(C.star, h ? 0.5 : 0.36)}`,
-        boxShadow: `0 0 26px ${rgba(C.star, h ? 0.16 : 0.1)}`, transition: 'background .2s, border-color .2s, box-shadow .2s',
+        boxShadow: h ? LIGHT.rest : LIGHT.well, transition: 'background .2s, border-color .2s, box-shadow .2s',
       }}
     >
       <SchoolMark C={C} slug={community.slug} size={44} />
@@ -2069,7 +2230,7 @@ export function CommunityScreen({ C, ctx }) {
   if (!community) {
     return (
       <Shell>
-        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} label={<Brandmark C={C} size={18} />} />
+        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ fontSize: SIZE.small, color: C.muted }}>{t('communities.none')}</p>
         </div>
@@ -2109,8 +2270,8 @@ export function CommunityScreen({ C, ctx }) {
         }}
       >
         <span style={{ position: 'absolute', width: 126, height: 126, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink, 0.42)}, ${rgba(C.ink, 0.18)} 46%, transparent 68%)` }} />
-        <span style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.star, 0.1)}, ${rgba(C.them, 0.035)} 55%, transparent 72%)`, filter: 'blur(3px)' }} />
-        <span style={{ opacity: 0.92, filter: `drop-shadow(0 0 18px ${rgba(C.star, 0.38)})` }}>
+        <span style={{ position: 'absolute', width: 190, height: 190, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink2, 0.85)}, ${rgba(C.ink, 0.5)} 58%, transparent 74%)` }} />
+        <span style={{ opacity: 0.96 }}>
           <SchoolMark C={C} slug={community.slug} size={54} />
         </span>
       </div>
@@ -2136,7 +2297,6 @@ export function CommunityScreen({ C, ctx }) {
               display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, cursor: 'pointer',
               padding: '9px 18px', borderRadius: RADIUS.chip,
               background: rgba(C.ink2, 0.78), border: `1px solid ${rgba(C.cream, 0.22)}`,
-              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
               fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.meta, textTransform: 'uppercase',
               color: rgba(C.cream, 0.92), boxShadow: '0 12px 40px rgba(0,0,0,.5)',
             }}
@@ -2162,7 +2322,7 @@ export function CommunityScreen({ C, ctx }) {
             (topRef: this block's bottom edge is the chrome inset the engine
             centers the disk beneath.) */}
         <div ref={topRef} className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.sm, paddingTop: 8, ...melt }}>
-          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
+          <h1 style={{ margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.05, color: C.cream }}>{community.name}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHome && <MemberBadge C={C} />}
             <SkyStatus C={C} open={open} size={14.5} />
@@ -2230,7 +2390,7 @@ export function CommunityScreen({ C, ctx }) {
           {ctx.demo && (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <GhostButton C={C} onClick={pulse.fireWave} style={{ padding: 0, fontSize: SIZE.meta, letterSpacing: '.5px', fontFamily: FONT.mono, color: rgba(C.star, 0.8) }}>
-                ✦ {t(open ? 'communities.demoWave' : 'communities.demoGather')}
+                {t(open ? 'communities.demoWave' : 'communities.demoGather')}
               </GhostButton>
             </div>
           )}
@@ -2270,15 +2430,14 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
               position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, right: 0, zIndex: 6,
               padding: '14px 16px', borderRadius: RADIUS.card,
               background: rgba(C.ink2, 0.94), border: `1px solid ${rgba(C.star, 0.22)}`,
-              boxShadow: '0 24px 70px rgba(0,0,0,.55)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-              display: 'flex', flexDirection: 'column', gap: SPACE.md,
+              boxShadow: '0 24px 70px rgba(0,0,0,.55)',              display: 'flex', flexDirection: 'column', gap: SPACE.md,
             }}
           >
             {open ? (
               <>
                 {showMatches ? (
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.md, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <span key={matches} className="fade" style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.star, textShadow: `0 0 30px ${rgba(C.star, 0.3)}` }}>{matches.toLocaleString()}</span>
+                    <span key={matches} className="fade" style={{ fontFamily: FONT.serif, fontSize: SIZE.hero, lineHeight: 1, color: C.star, textShadow: ONSKY }}>{matches.toLocaleString()}</span>
                     <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.9) }}>{t('communities.matchedLabel')}</span>
                   </div>
                 ) : (
@@ -2311,7 +2470,6 @@ function SkyReadout({ C, open, matches, showMatches, pings, week }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.sm,
           padding: '8px 8px 8px 14px', borderRadius: RADIUS.field,
           background: rgba(C.ink2, 0.58), border: `1px solid ${rgba(C.cream, 0.08)}`,
-          backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         }}
       >
         <RevealCountdown C={C} open={open} />
@@ -2427,7 +2585,7 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
           style={{
             position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 25, padding: 6,
             borderRadius: RADIUS.card, background: rgba(C.ink2, 0.98), border: `1px solid ${rgba(C.star, 0.2)}`,
-            boxShadow: SHADOW.menu, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', maxHeight: 320, overflowY: 'auto',
+            boxShadow: SHADOW.menu, maxHeight: 320, overflowY: 'auto',
           }}
         >
           {results.length ? (
@@ -2486,7 +2644,7 @@ export function MutualScreen({ C, ctx }) {
       >
         {/* the one place the brand permits brightness — the star, larger than anywhere */}
         <div className="enter"><StarMark C={C} size={128} /></div>
-        <h1 className="enter" style={{ animationDelay: '.1s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.hero, lineHeight: 1.05, color: C.cream }}>
+        <h1 className="enter" style={{ animationDelay: '.1s', margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.hero, lineHeight: 1.05, color: C.cream }}>
           {t('match.title')}
         </h1>
         <p className="enter" style={{ animationDelay: '.18s', margin: 0, fontSize: SIZE.body, lineHeight: 1.7, color: C.muted, maxWidth: 320 }}>
@@ -2529,8 +2687,8 @@ export function RevealScreen({ C, ctx }) {
   }, [row, go])
   if (!row) return null
   const handle = normHandle(row.handle || '')
-  const yours = row.card || { handle, words: '', bg: 'ink', tone: 1, placed: row.time }
-  const theirs = row.theirCard || { handle, words: '', bg: 'rose', tone: 0, placed: row.time }
+  const yours = row.card || { handle, words: '', bg: 'leaf', tone: 1, placed: row.time }
+  const theirs = row.theirCard || { handle, words: '', bg: 'hide', tone: 0.12, placed: row.time }
   const yourUrl = row.photoId ? ctx.cardUrls[row.photoId] : null
   return (
     <Spread
@@ -2558,7 +2716,7 @@ export function SendoffScreen({ C, ctx }) {
     <Shell>
       <div style={{ flex: 1 }} />
       <div className="sendoff-line" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingBottom: 'clamp(24px, 12vh, 90px)' }}>
-        <div style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>{t('sendoff.title')}</div>
+        <div style={{ fontFamily: FONT.serif, fontSize: SIZE.title, color: C.cream }}>{t('sendoff.title')}</div>
         <div style={{ fontSize: SIZE.small, color: C.muted, fontFamily: FONT.mono, letterSpacing: '.5px' }}>
           {t('sendoff.sub')}
         </div>
@@ -2583,7 +2741,7 @@ function CardBrands({ C }) {
   const shell = { width: 26, height: 16, borderRadius: 3, border: `1px solid ${C.line}`, background: rgba(C.cream, 0.06), display: 'grid', placeItems: 'center', flexShrink: 0 }
   return (
     <span style={{ display: 'inline-flex', gap: SPACE.xs, alignItems: 'center' }} aria-hidden>
-      <span style={{ ...shell, fontFamily: FONT.mono, fontSize: SIZE.micro, fontWeight: 700, letterSpacing: '.5px', color: rgba(C.cream, 0.55) }}>VISA</span>
+      <span style={{ ...shell, fontFamily: FONT.mono, fontSize: SIZE.micro, fontWeight: 500, letterSpacing: '.5px', color: rgba(C.cream, 0.55) }}>VISA</span>
       <span style={shell}>
         <span style={{ display: 'inline-flex' }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: rgba(C.them, 0.85) }} />
@@ -2608,7 +2766,7 @@ function PayField({ C, value, onChange, placeholder, mono, trailing, inputMode }
         placeholder={placeholder}
         inputMode={inputMode || 'numeric'}
         spellCheck={false}
-        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: mono ? "'Space Mono', monospace" : "'Space Grotesk', sans-serif", fontSize: SIZE.body, letterSpacing: mono ? '.5px' : '.2px' }}
+        style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', color: C.cream, fontFamily: mono ? FONT.mono : FONT.sans, fontWeight: mono ? 400 : 300, fontSize: SIZE.body, letterSpacing: mono ? '.5px' : '.2px' }}
       />
       {trailing}
     </div>
@@ -2641,9 +2799,9 @@ function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
               border: `1.5px solid ${on ? C.star : rgba(C.cream, 0.32)}`,
             }}
           >
-            {on && <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.star, boxShadow: `0 0 7px ${rgba(C.star, 0.8)}` }} />}
+            {on && <span className="lamp" style={{ width: 6, height: 6, borderRadius: '50%', background: C.star }} />}
           </span>
-          <span style={{ fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: C.cream }}>{title}</span>
+          <span style={{ fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 500, color: C.cream }}>{title}</span>
         </span>
         {badge && (
           <span style={{ flexShrink: 0, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.5px', textTransform: 'uppercase', color: rgba(C.star, 0.9), border: `1px solid ${rgba(C.star, 0.4)}`, borderRadius: RADIUS.chip, padding: '2px 7px' }}>
@@ -2652,7 +2810,7 @@ function OfferOption({ C, on, onClick, title, price, unit, detail, badge }) {
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.sm, paddingLeft: 25 }}>
-        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.head, fontWeight: 700, color: C.cream }}>{price}</span>
+        <span style={{ fontFamily: FONT.mono, fontSize: SIZE.head, fontWeight: 500, color: C.cream }}>{price}</span>
         <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', textTransform: 'uppercase', color: C.muted }}>{unit}</span>
       </div>
       <p style={{ margin: 0, paddingLeft: 25, fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>{detail}</p>
@@ -2736,7 +2894,7 @@ function SlotPaywall({ C, ctx, mode }) {
 
       <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.lg, paddingTop: 10 }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
-          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, color: C.cream }}>
+          <h1 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, color: C.cream }}>
             {extend ? t('paywall.extendTitle') : t('paywall.title')}
           </h1>
           <p style={{ margin: '0 auto', fontSize: SIZE.small, lineHeight: 1.55, color: C.muted, maxWidth: 320 }}>
@@ -2853,16 +3011,24 @@ export function FourthSlotScreen({ C, ctx }) {
   if (ctx.demo && !ctx.demoSubscribed) return <SlotPaywall C={C} ctx={ctx} mode="slot" />
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go('pings')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go('pings')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         {/* the slots, all held */}
         <SlotPips C={C} standing={ctx.slotsCap} cap={ctx.slotsCap} subscribed={ctx.demoSubscribed} />
-        <h1 className="enter" style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.display, color: C.cream }}>
+        <h1 className="enter" style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.display, lineHeight: 0.98, letterSpacing: TRACK.title, color: C.cream }}>
           {t('fourth.title')}
         </h1>
-        <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontSize: SIZE.small, lineHeight: 1.65, color: C.muted, maxWidth: 300 }}>
+        <p className="enter" style={{ animationDelay: '.08s', margin: 0, fontFamily: FONT.sans, fontWeight: 300, fontSize: SIZE.small, lineHeight: 1.65, color: C.muted, maxWidth: 320 }}>
           {t('fourth.body')}
         </p>
+        {/* and the other way forward, with a date on it. A wall you can see the
+            opening time of is scarcity; one you cannot is just a locked door,
+            and this screen was the locked door. */}
+        {ctx.nextSlot && (
+          <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: rgba(C.star, 0.92), textShadow: ONSKY }}>
+            {ctx.nextSlot.days === 0 ? t('fourth.opensSoon') : t('fourth.opens', { n: ctx.nextSlot.days })}
+          </p>
+        )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
         <PrimaryButton C={C} onClick={() => ctx.go('pings')}>{t('fourth.cta')}</PrimaryButton>
@@ -2975,16 +3141,16 @@ export function PrivacyScreen({ C, ctx }) {
     }
   }
   const H = ({ children }) => (
-    <h3 style={{ margin: '20px 0 6px', fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 600, color: C.cream }}>{children}</h3>
+    <h3 style={{ margin: '20px 0 6px', fontFamily: FONT.sans, fontSize: SIZE.body, fontWeight: 500, color: C.cream }}>{children}</h3>
   )
   const P = ({ children }) => <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted }}>{children}</p>
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xs, paddingTop: 8 }}>
-        <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontStyle: 'italic', fontSize: SIZE.title, lineHeight: 1.16, color: C.cream }}>
+        <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.16, color: C.cream }}>
           {t('privacy.title')}
         </h2>
 
@@ -3154,7 +3320,7 @@ export function AccountSheet({ C, ctx }) {
       onClick={close}
       style={{ position: 'fixed', inset: 0, zIndex: 30, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
     >
-      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.72), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.72) }} />
       <div
         onClick={(e) => e.stopPropagation()}
         ref={dialogRef}
@@ -3205,16 +3371,31 @@ export function AccountSheet({ C, ctx }) {
 
         <Rule C={C} />
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, color: standing ? C.cream : C.muted, fontFamily: FONT.mono, fontSize: SIZE.small }}>
-            {standing > 0 && (
-              <span aria-hidden style={{ color: C.star, fontSize: SIZE.meta, textShadow: `0 0 8px ${rgba(C.star, 0.6)}` }}>✦</span>
-            )}{' '}
-            {standing > 0 ? t('account.pingsLine', { n: standing }) : t('account.pingsNone')}
-          </span>
-          <GhostButton C={C} onClick={() => { close(); ctx.go('pings') }} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
-            {t('account.pingsOpen')} →
-          </GhostButton>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, color: standing ? C.cream : C.muted, fontFamily: FONT.mono, fontSize: SIZE.small }}>
+              {standing > 0 && <Brandmark size={11} title="" />}{' '}
+              {standing > 0 ? t('account.pingsLine', { n: standing }) : t('account.pingsNone')}
+            </span>
+            <GhostButton C={C} onClick={() => { close(); ctx.go('pings') }} style={{ padding: 0, fontSize: SIZE.small, color: C.star }}>
+              {t('account.pingsOpen')}
+            </GhostButton>
+          </div>
+          {/* the same reconciliation the ledger does, said here too: this number
+              comes from the server, and if some of what it counts is not on this
+              device the sheet says so rather than quietly overstating. */}
+          {ctx.unaccounted > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.md }}>
+              <Mono C={C}>{t('account.pingsElsewhere', { n: ctx.unaccounted })}</Mono>
+              <GhostButton
+                C={C}
+                onClick={ctx.restoreLedger}
+                style={{ padding: 0, fontSize: SIZE.small }}
+              >
+                {ctx.ledgerState && ctx.ledgerState.phase === 'reading' ? t('pings.heldRestoring') : t('account.pingsRestore')}
+              </GhostButton>
+            </div>
+          )}
         </div>
 
         <Rule C={C} />
@@ -3577,7 +3758,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
     >
-      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74) }} />
       <div
         onClick={(e) => e.stopPropagation()}
         ref={dialogRef}
@@ -3615,7 +3796,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
-              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.star, 0.16), border: `1px solid ${rgba(C.star, 0.5)}`, boxShadow: `0 0 30px ${rgba(C.star, 0.45)}` }}>
+              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.ink3, 0.9), border: `1px solid ${rgba(C.star, 0.5)}`, boxShadow: LIGHT.spill(0.2) }}>
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
@@ -3650,7 +3831,7 @@ export function IgVerifySheet({ C, handle, demo, onVerified, onClose }) {
               ) : (
                 /* userSelect:'all' — one long-press/click selects the whole code,
                    so a blocked clipboard never strands anyone. */
-                <span style={{ fontFamily: FONT.mono, fontSize: 31, fontWeight: 700, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: `0 0 26px ${rgba(C.star, 0.4)}`, userSelect: 'all', WebkitUserSelect: 'all' }}>{dmCode(token)}</span>
+                <span style={{ fontFamily: FONT.mono, fontSize: 31, fontWeight: 500, letterSpacing: '4px', color: C.star, paddingLeft: 4, textShadow: ONSKY, userSelect: 'all', WebkitUserSelect: 'all' }}>{dmCode(token)}</span>
               )}
             </div>
 
@@ -3726,7 +3907,7 @@ export function PublicStarSheet({ C, community, handle, onConfirm, onClose }) {
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
     >
-      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74) }} />
       <div
         onClick={(e) => e.stopPropagation()}
         ref={dialogRef}
@@ -3791,8 +3972,8 @@ export function CopyCodeScreen({ C, ctx }) {
             <div
               className="enter"
               style={{
-                fontFamily: FONT.mono, fontWeight: 700, fontSize: 'clamp(44px, 15vw, 60px)',
-                letterSpacing: '14px', paddingLeft: 14, color: C.star, textShadow: `0 0 34px ${rgba(C.star, 0.4)}`,
+                fontFamily: FONT.mono, fontWeight: 500, fontSize: 'clamp(44px, 15vw, 60px)',
+                letterSpacing: '14px', paddingLeft: 14, color: C.star, textShadow: ONSKY,
               }}
             >
               {code}
@@ -3845,7 +4026,7 @@ export function SignInScreen({ C, ctx }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.lg }}>
         {phase === 'working' ? (
           <>
-            <div style={{ fontSize: 28, color: C.star, textShadow: `0 0 26px ${rgba(C.star, 0.5)}` }}>✦</div>
+            <Brandmark size={26} title="" />
             <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, color: C.muted, fontFamily: FONT.mono, fontSize: SIZE.small }}>
               <Sonar C={C} size={12} /> {t('signin.working')}
             </div>
@@ -3964,7 +4145,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
       onClick={dismiss}
       style={{ position: 'fixed', inset: 0, zIndex: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))', overflowY: 'auto' }}
     >
-      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74), backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
+      <div className="scrim-in" aria-hidden style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.74) }} />
       <div
         onClick={(e) => e.stopPropagation()}
         ref={dialogRef}
@@ -3990,7 +4171,7 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
             <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 66, height: 66 }}>
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}` }} />
               <span aria-hidden className="v-ring" style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: `1.5px solid ${rgba(C.star, 0.6)}`, animationDelay: '0.3s' }} />
-              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.star, 0.16), border: `1px solid ${rgba(C.star, 0.5)}`, boxShadow: `0 0 30px ${rgba(C.star, 0.45)}` }}>
+              <span className="v-pop" style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 60, height: 60, borderRadius: '50%', background: rgba(C.ink3, 0.9), border: `1px solid ${rgba(C.star, 0.5)}`, boxShadow: LIGHT.spill(0.2) }}>
                 <Icon name="check" size={30} color={C.star} stroke={2.4} />
               </span>
             </span>
@@ -4037,8 +4218,8 @@ export function EduVerifySheet({ C, slug, demo, onVerified, onClose }) {
                 style={{
                   width: '100%', height: 58, textAlign: 'center', borderRadius: RADIUS.field,
                   background: C.ink, border: `1.5px solid ${errMsg ? rgba(C.star, 0.6) : C.line}`, color: C.star,
-                  fontFamily: FONT.mono, fontSize: 32, fontWeight: 700, letterSpacing: '16px', paddingLeft: 16,
-                  outline: 'none', textShadow: `0 0 22px ${rgba(C.star, 0.35)}`,
+                  fontFamily: FONT.mono, fontSize: 32, fontWeight: 500, letterSpacing: '16px', paddingLeft: 16,
+                  outline: 'none', textShadow: ONSKY,
                 }}
               />
               {errMsg && <span style={{ fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.star, 0.95) }}>{errMsg}</span>}

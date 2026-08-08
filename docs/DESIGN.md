@@ -1,295 +1,536 @@
-# CELESTUAL — Design system (the galaxy edition · the living document)
+# CELESTUAL — Design system (the bindery · the living document)
 
 How celestual looks and moves, and how it stays looking like *itself* — never
-like template output, never like "generic AI product" (uniform gradients,
-glassmorphism cards, three-feature grids, confetti). This file is the design
-half of the pair; [VOICE.md](./VOICE.md) is the writing half. **Both are living
-documents: any visual change ships with an edit here, in the same commit.**
+like template output, never like "generic AI product" (uniform dark gradients, a
+glowing accent, 16px pills, centred hero stacks, three-feature rows). This file
+is the design half of the pair; [VOICE.md](./VOICE.md) is the writing half.
+**Both are living documents: any visual change ships with an edit here, in the
+same commit.**
 
 Enforced mechanically where possible: `app/src/theme.js` is the single source
-for color/geometry (nothing defines its own hex), and `npm run lint:voice`
-trips on the copy half.
+for colour, type and geometry (nothing defines its own hex), `app/src/texture.js`
+draws every material, and `npm run lint:voice` trips on the copy half.
 
 > ## ⛔ Design lock — read before touching anything visual
 >
-> **This galaxy edition is the canonical, intended look of Celestual.** The
-> deep cosmic-violet field, the living 3D galaxy backdrop, and the *two* warm
-> stars (starlight-amber + rose) are deliberate — not leftovers to be tidied.
+> **The bindery is the canonical, intended look of Celestual.** The near-black
+> leather case, the engraved star chart, the one hue from chocolate to ivory,
+> the pressed 2px corners, and the fact that **nothing glows** are deliberate.
+> They are not leftovers to be tidied.
 >
 > **Claude must NOT flatten, simplify, "clean up," or restyle this identity on
-> its own.** Do not collapse the two accents to one, do not swap the cosmic
-> violet for navy, do not retire the galaxy for a static field, and do not
-> delete the two-star / cosmos vocabulary — *unless a human explicitly asks for
-> that specific change in the current request.* A visual redesign is a decision
-> the human makes; it is never a refactor, a modernization, or a byproduct of
-> unrelated work. When in doubt, keep this look and ask.
+> its own.** Do not introduce a second accent, do not put a blue or a rose or a
+> green back, do not round a corner to 16px, do not add a halo to anything, do
+> not retire the chart for a static field, and do not swap a material for a flat
+> fill — *unless a human explicitly asks for that specific change in the current
+> request.* A visual redesign is a decision the human makes; it is never a
+> refactor, a modernization, or a byproduct of unrelated work. When in doubt,
+> keep this look and ask.
 >
-> Product **functionality and workflows may keep evolving** (the ping model,
-> the screens, the backend). That is expected. The *visual language* below is
-> what stays fixed until a human deliberately changes it.
+> Product **functionality and workflows may keep evolving** (the ping model, the
+> screens, the backend). That is expected. The *visual language* below is what
+> stays fixed until a human deliberately changes it.
 >
-> **One route is deliberately exempt: `/beta`.** A human asked for a full
-> rebrand to be built there and judged beside this one, so it lives in
-> `app/src/beta/` under its own design system
-> ([BETA-BINDERY.md](./BETA-BINDERY.md)) — chocolate and ivory, leather and
-> paper, three different typefaces.
->
-> It shares no design with this one: nothing under `beta/` imports from
-> `theme.js`, `styles.css` or `components/`, nothing in production imports from
-> `beta/`, and the route forks in `main.jsx` before the app mounts. It DOES
-> share the machine — the sky engine (`sky/`, `galaxy.js`) and the zoom curve
-> (`card/zoom.js`) — because its mechanics and animations are meant to be
-> identical to the demo's, and the only honest way to be identical to something
-> is to be the same code. Those files gained small, additive, default-preserving
-> hooks for it (`ramp`, `floor`, `shootHues`); production passes none of them
-> and renders exactly as it did.
->
-> Everything in this document still governs every other route, unchanged.
+> **There is no exempt route.** There used to be: the bindery was built at
+> `/beta` under its own sealed design system so it could be judged beside the
+> galaxy edition it replaced. That judgement was made on 2026-08-07 and the
+> route is gone. One system now governs every route, every email, every render
+> and the back office.
 
 ## §1 — The one-paragraph system
 
-The whole product lives inside **one deep cosmic-violet field** with a **living
-galaxy** slowly orbiting behind every screen. It is lit by **two warm stars**:
-**starlight-amber (`you`)** and **rose (`them`)** — the two stars of the core
-metaphor, you and the person you're thinking about. Serif italics carry feeling;
-a small quiet sans carries mechanics; letterspaced mono carries metadata. Every
-screen has **exactly one primary action**. The felt register everywhere is
-*quiet, adult, certain — the 2am message, never the carnival*. The cosmos moves,
-but it never performs for attention: it drifts, it breathes, it holds its seed
-between screens.
+The whole product is **a hand-bound almanac**: a leather case, blind-tooled; a
+star chart engraved into the cover; the writing set on the case itself. It lives
+in **one hue** — chocolate through ivory, and nothing else — where hierarchy is
+carried by **value and texture** rather than by a second colour, because a
+leather book has no second colour either. Light behaves the way it behaves on a
+physical surface: a hairline catch on a top edge, a shadow underneath, and grain
+that is genuinely there at 1:1. A garalde carries the voice; a geometric sans
+carries every mechanic; a typewriter face carries every piece of metadata. Every
+screen has **exactly one primary action** and **one lit thing**. The felt
+register everywhere is *quiet, adult, certain — the 2am message, never the
+carnival*. The chart moves, but it never performs for attention: it drifts, it
+breathes, it holds its seed between screens.
 
-## §2 — Color: the cosmos and the two stars
+### Why it looks like this
+
+The brief was that the product read as *generic AI output*: uniform dark
+gradients, a glowing accent, 16px pills, centred hero stacks, three-feature
+rows. Those are not colour problems, so a palette swap would not have fixed any
+of them. Six decisions do the work, and only the first is about colour:
+
+1. **One hue, ten values.** Chocolate through ivory. There is no second accent,
+   no state colour, no red, no green, no blue. A thing stands out by being
+   closer to ivory or by wearing a texture its neighbours do not.
+2. **Materials, not effects.** Nothing glows. A catch on a top edge, a shadow
+   underneath, and real grain.
+3. **Pressed, not rounded.** Two corners in the whole product: 2px and 3px. The
+   only circle is the seal, because a seal is a circle.
+4. **Ranged left, in a centred block.** Type inside the measure is ranged left;
+   the block that carries it sits in the middle of the window. Both halves
+   matter — pinned to the left EDGE as well, the same page reads as two
+   different products depending on what you open it on.
+5. **One object per page.** The send is a slip of paper. The card is a seal. The
+   status page is a ledger. Each page has a thing on it you could pick up.
+6. **The page admits it was made.** Form numbers, a plate mark, a colophon at
+   the foot, a printer's registration mark for a cursor.
+
+## §2 — Colour: the case, and the one light
 
 All tokens live in `app/src/theme.js` (`TOKENS`). Never a raw hex in a
 component.
 
 | Token | Value | Role |
 | --- | --- | --- |
-| `ink` | `#0B0814` | the cosmic-violet void — every backdrop and the galaxy field |
-| `ink2` | `#16111F` | panels, fields, sheets |
-| `ink3` | `#211934` | raised/disabled surfaces |
-| `cream` | `#F3ECF6` | text — the emotional and interface voices |
-| `muted` | `#9E92B6` | text — the mechanical voice (cool violet-grey) |
-| `line` | `rgba(243,236,246,0.10)` | hairlines only |
-| `you` | `#FF9E6B` | **starlight-amber — the primary star** (you / the primary action) |
-| `them` | `#E6749E` | **rose — the secondary star** (them / mutuality) |
-| `onYou` | `#1A0F0A` | ink on the amber CTA |
-| `star` | `#FF9E6B` | alias of `you`; every `C.star` in the UI lights up amber |
-| `onStar` | `#1A0F0A` | alias of `onYou` |
+| `ink` | `#0B0705` | the closed case: the ground behind the chart, and the chart's own floor |
+| `ink2` | `#241710` | cocoa — the case, a page ground, a panel lying on it |
+| `ink3` | `#2F1E13` | hide — a raised panel, a pocket, the dock |
+| `ink4` | `#3C2819` | the lip of a raised panel, a pressed state |
+| `cognac` | `#5C3A1F` | tooled edges, the stitch channel, dividers on leather |
+| `saddle` | `#8A5C33` | the light chocolate the brand is named for |
+| `you` / `star` | `#B98A55` | **caramel — the one light.** what "lit", "yours", "now" looks like |
+| `them` | `#D6B78A` | wheat — the palest brown; hairlines, spent states |
+| `cream` | `#F1E7D3` | ivory: paper, and the reading colour on leather |
+| `muted` | `#A2937E` | the mechanical voice |
+| `paper` / `chalk` | `#F1E7D3` / `#C9C2B4` | the two written-on materials |
+| `onPaper` | `#241811` | ink, for anything set ON ivory or chalk |
+| `onYou` / `onStar` | `#241811` | ink on a lit surface |
 
 Rules that follow:
 
-- **Two accents, and only two: amber and rose.** They are the two stars of the
-  metaphor, not decoration — amber is *you* / the primary action / the brand
-  glyph; rose is *them* / the counterpart / mutuality. A **third** hue anywhere
-  means a screen is doing too much. (Amber and rose are the ceiling, not an
-  invitation to add more.)
-- `star`/`onStar` are aliases of `you`/`onYou`, so components written against
-  the single-accent scheme still read correctly — they simply glow amber. The
-  primary action and the *you* star are the same light; never split them into a
-  third color.
-- "Waiting" and disabled states read in `muted`/`line` — cooler, never a
-  random hue. Errors are calm sentences in near-star warmth, not red (there is
-  no red in the product; nothing here is an emergency).
+- **One hue. There is no second accent.** `you` and `them` are the same colour
+  at two values, which is how a monochrome brand says "you" and "them" without
+  cheating. A third hue anywhere means a screen is doing too much.
+- **Caramel is used once per screen.** If two things on a page are lit, one of
+  them is wrong.
+- **The ground is nearly black, and that is load-bearing.** An earlier cut put
+  the case at a brown you can comfortably read type on. The chart is drawn on
+  this colour and the renderer's floor is set to it, and a lifted floor spends
+  its whole lift on the *faintest* light in the frame — so every outer-arm star
+  landed within a few values of the ground it stood on and the galaxy read as a
+  brown wash with a bright middle. At `#0B0705` the same stars have most of a
+  value scale underneath them. It still measures warm: it is brown ink at four
+  percent, not a grey.
+- **Because no hue carries meaning, the three ping states are told apart by
+  FORM**: standing is a filled mark that breathes, waiting is an open dashed
+  mark, mutual is a joined pair. Someone who cannot see colour reads this
+  exactly as well as someone who can.
+- Errors are calm sentences in ivory, not red. There is no red in the product;
+  nothing here is an emergency.
 
-## §3 — Type: three registers, strictly cast
+### `ONSKY` — the two quietest registers carry their own ground
+
+The smallest type in the product is a stamped label and a Courier tick, both set
+well under half strength directly on the chart. That is right nine tenths of the
+time and wrong the moment one crosses the galactic centre, which is orders of
+magnitude brighter than the ground either side of it. `TEXT`'s companion `ONSKY`
+is a tight, soft halo of the case's own colour sitting under those glyphs:
+invisible where there is nothing behind the type — a shadow the colour of the
+ground is no shadow — and the difference between legible and not over the core.
+Anything set on paper opts out; there is no sky behind it.
+
+## §3 — Type: three faces, strictly cast
 
 The type system *is* the tone system (VOICE.md §3). Breaking register is how
-screens start looking assembled-by-template. Fonts are loaded in
-`app/index.html` (Instrument Serif, Space Grotesk, Space Mono).
+screens start looking assembled-by-template. The three faces are loaded in
+`app/index.html`.
 
-- **Instrument Serif, italic** — the emotional register. Headlines, the states,
-  the intent lines, handles when they are the hero. Anything a person *means*.
-  The second hero line is set in a star color (amber).
-- **Space Grotesk** — the interface register. Buttons, body copy, mechanics,
-  hints.
-- **Space Mono, uppercase, letterspaced** — the metadata register. Kickers,
-  labels, counts, day-clocks, statuses, the @ prefix. Never feelings.
+- **Cormorant Garamond** — *the voice.* A real garalde: high stroke contrast,
+  small x-height, long extenders. Set **large and light with tight leading**,
+  which is why a headline reads as an engraved title page rather than a hero
+  section. Italic is for a *spoken* line, not for a headline.
+- **Jost** — *the hand.* A geometric sans with 1920s bones. Every mechanic:
+  buttons, labels, body copy.
+- **Courier Prime** — *the stamp.* Metadata only: dates, counts, day-clocks,
+  handles, the four-letter codes. It is never allowed to carry a feeling.
 
 ### The size ladder (`SIZE` in `theme.js`)
 
 Three faces is only half the system; the other half is that **nothing invents a
-size**. `theme.js` holds one ladder and every piece of text in the product is a
-step on it:
+size**. Fewer steps than the edition before it, spread further apart: the
+distance between the title page and the footnote is most of what makes a book
+look like a book.
 
 | Step | Use |
 | --- | --- |
 | `hero` | the match reveal, and nowhere else |
+| `colophon` | the title page, once |
 | `display` | the one headline a screen is allowed |
-| `title` | a sheet's or a section's headline |
+| `title` | a section head, a sheet head |
 | `figure` | a number that IS the point of its card |
-| `lead` | a spoken serif line inside a card |
-| `head` | a card title, a button |
-| `body` | the reading size |
-| `small` | secondary sans |
-| `meta` / `micro` | mono metadata, with `TRACK.meta` / `TRACK.micro` |
+| `lead` | a spoken serif line |
+| `head` / `body` | the reading size |
+| `small` | secondary |
+| `meta` / `micro` | the stamped label and the Courier tick |
 
 `ui.jsx` exports these as components — `Display`, `Title`, `Lead`, `Body`,
-`Small`, `Kicker`, `Mono`, `Note` — and screens use those rather than inline
-styles. Before 2026-07-26 they didn't: the app carried **26 distinct font
-sizes**, seven letterspacings and twelve different `clamp()` headline formulas,
-which is why the same idea looked like three different products on three
-different screens. A new size is a change to `theme.js`, argued for there, not a
-number typed into a style object.
+`Small`, `Kicker`/`Label`, `Mono`/`Tick`, `Note` — and screens use those rather
+than inline styles. A new size is a change to `theme.js`, argued for there, not
+a number typed into a style object.
 
-Hard rules: an intent line never renders in mono; a count never renders in
-serif; nothing anywhere gets an exclamation mark; `✦` is reserved for ritual
-moments (mutuality) — it is not a bullet point.
+Hard rules: a spoken line never renders in Courier; a count never renders in the
+garalde; nothing anywhere gets an exclamation mark; and there is **no
+typographic star glyph anywhere in the product** — `✦` and `✧` were retired with
+the galaxy edition. The mark is a drawing (§5).
 
-## §3b — Icons: five, and that is the whole set
+## §3b — Icons: six, and that is the whole set
 
-`Icon` in `ui.jsx` draws exactly **back, arrow, close, check, search**. Nothing
-else. There is no icon for mail, lock, eye, instagram, clock, info, message,
-share, planet, plus, copy, download or refresh, and adding one back is a design
-decision that belongs in this file first.
+A generic outline icon set is the fastest way to make a product look like every
+other product. What survives is only what a **hand** needs — back, forward,
+close, the check that confirms a thing is done, a search affordance for a real
+search field, and the returning arrow on the one mechanic that runs a clock
+backwards (renew). Everything else is said in words, or not said at all. The
+stroke is a hairline, because everything else in here is drawn with one. See
+`ui.jsx`'s `Icon`. **If a screen wants a seventh icon, it wants a word.**
 
-A generic outline icon set is the single fastest way to make a product look like
-every other product. This one carried twenty of them: an envelope on the email
-hint, a padlock beside the privacy line, an eyeball on "no alert", a camera on
-every mention of Instagram, a share node-graph. None of them said anything the
-sentence beside them did not already say, they came from the same free outline
-vocabulary everyone draws from, and because each call site picked its own size
-and stroke they did not even match each other.
+## §4 — The materials (`app/src/texture.js`)
 
-**What replaced them:** words, or nothing. The five that survive are the ones a
-*hand* needs — go back, go on, close, confirm — plus the affordance on a real
-search field. Meaning is carried by type, by light, and by the one star.
+Three surfaces, none of them a stock image and none of them a CSS gradient
+pretending. Each tile is rendered pixel by pixel from wrapped value noise,
+memoized as a data URL, and tiles seamlessly:
 
-## §4 — The galaxy field (the backdrop)
+- **pebbled hide** — two scales of ridged cells (the grain), a broad shallow
+  swell (the break), and a per-pixel pore.
+- **laid paper** — directional fibre, a shallow mottle, the mould's fine laid
+  lines and its chain lines, and a tooth.
+- **chalk card** — coarser, drier, dustier; cast rather than couched.
 
-One persistent backdrop for the whole product: **`GalaxyCanvas`** in
-`app/src/components/ui.jsx`, wrapping **`GalaxyField` in `app/src/galaxy.js`** —
-a real 3D galaxy rendered on a dependency-free **WebGL2** engine (`app/src/sky/`).
-The two skies (`galaxy.js`, the ambient field, and `communityGalaxy.js`, the
-countable community sky) are two *populations* on that one engine, so they can
-never drift apart.
+Plus **saddle stitching**: slanted, alternating, with the thread's own shadow,
+at a 22px pitch, drawn as an SVG tile repeated along each edge so it stays sharp
+at any panel size.
 
-The physics is the art direction, and everything below follows from it:
+Two mistakes worth not repeating, both commented at the site of the fix:
+scaling noise input coordinates by a non-integer to get a directional grain
+**breaks the tile's wrap** and prints a hard band every repeat (use two integer
+lattice periods); and a stitch every 15px at half opacity reads as engine
+turning, not thread.
 
-- **The arms are density waves, not drawings.** Every star travels its own
-  elliptical orbit; each orbit is rotated slightly further than the one inside
-  it, and where the ellipses crowd, density rises. That crowding *is* the arm.
-  It survives differential rotation (stars flow through the arms; the pattern
-  stays), which is why the field can be permanently, slowly alive.
-- **Colour is demographics.** A star's hue is its blackbody temperature on the
-  Planck locus. The bulge is gold because it is old, the arms are blue because
-  they are where gas is still collapsing into hot short-lived stars, and the
-  red giants are red because they are cool. No palette is picked.
-- **Brightness is luminosity over distance squared**, displayed through an
-  asinh stretch (the standard astronomical transform) so six orders of
-  magnitude fit in one frame without the supergiants erasing everything else.
-- **A star has two sizes**: the instrument's point-spread function, and its
-  true angular diameter. The larger wins. Far away it is a point of light;
-  close enough, it resolves into a **body** — a limb-darkened, granulating
-  photosphere. A dive goes all the way in.
-- **The nebula is a volume**, raymarched with real emission and extinction, so
-  dust genuinely occludes the disk behind it and the camera can fly *through*
-  the gas rather than having to dissolve it on approach.
-- **The frame ends in a sensor**: an unclamped half-float buffer, dual-Kawase
-  bloom, and an ACES tonemap. Brightness is spent as *light*, never as size.
+### Paper is an object, not a surface
 
-It is mounted **once**, in **idle mode**, as a fixed full-bleed layer beneath the
-content column. Under `prefers-reduced-motion` the sky keeps a slow, steady,
-non-accelerating drift at half frame rate rather than freezing — the preference
-is about vestibular safety, not about wanting a dead picture. Where WebGL2 is
-unavailable the same public API hands back a modest canvas-2D field
-(`sky/fallback2d.js`), so the product is never without a night sky.
+There is no ivory sheet under the interface, and that is a correction rather
+than a preference. A slab of `#F1E7D3` on a near-black case is a contrast ratio
+north of eighteen to one held across a rectangle several hundred pixels wide.
+Nothing else in the frame survives beside it: the type on the leather goes grey,
+the chart goes flat, and the eye reads the *rectangle* rather than anything
+written in it. Paper is reserved for the two things genuinely made of it — the
+**seal** (the card a ping carries) and the **plate** (the one struck label per
+screen, which is what a button is). Everything else is set directly on the case
+in ivory. The ground got dark enough to hold that type; that was the point of
+the ground getting dark.
 
-What it is *not*: not a flat 2D swirl, not a looping decorative gradient. It's a
-window into a real cosmos, calm at rest.
+## §5 — The chart, and the mark
 
-## §5 — The star (the mark)
+**The chart** (`galaxy.js`, `communityGalaxy.js`, `sky/`) is the real engine:
+a hundred and twenty thousand stars on real density-wave orbits, a real camera
+and lens, a real nebula volume. It is not a backdrop — it is the mechanism. A
+ping IS a star, you fly to it, and past a certain closeness it stops being a
+point of light and becomes the surface it was made of.
 
-`StarMark`: a white core breathing in **light, never in scale** (a scale pulse
-reads as a notification ping) inside a soft warm halo. The brand glyph
-(`Brandmark`, favicon, card) is the concave four-point sparkle — pinched arms,
-photographic glisten — white-hot center to warm (amber) edge. The custom cursor
-(`styles.css`) is that same four-point glisten with a soft amber edge.
+What is one hue is the **light**, and it changes in one place. Every star's
+colour comes from a 256-entry lookup indexed by temperature; `binderyRamp` in
+`galaxy.js` replaces the Planck locus with a curve that keeps the physics'
+*shape* and drops its hue — cool stars go deep chocolate, hot ones go ivory.
+That is the honest half of the truth: the cool end of the real locus genuinely
+is brown and the hot end genuinely is white. What it gives up is the blue. The
+consequence is why it works at all: **the bulge is old**, so it is full of
+3,000–5,000 K stars and comes out the colour of the leather; **the arms are
+young and hot**, so they come out ivory. The galaxy's structure still reads off
+demographics rather than off decoration.
 
-Sizing is meaning: the star is small on quiet screens and largest — the one
-place the brand permits real brightness — at the moment of mutuality. Nowhere
-else does anything glow harder.
+Four other places colour lives, all in `_tuneGas` / `_tunePost`: the nebula runs
+lit cocoa → saddle → chalk (dust in lamplight, going cold at the rim, never
+ionised gas); the **floor** is lifted to exactly `TOKENS.ink`, so the canvas and
+the page are one surface with no seam; the meteors carry no magnesium
+blue-white; and **chromatic aberration is off**, because a green and magenta
+fringe on a bright star reads as a rendering fault in a brand with one hue.
+Bloom is pulled back rather than switched off: nothing here glows, but a star
+with no bloom is a dot and the field loses its depth.
+
+**Where the heart sits** is a layout decision, not a rendering one, and it is
+made on both axes. The galactic centre is orders of magnitude brighter than the
+ground either side of it and no halo under a line of type wins against it, so it
+goes **where the words are not**: low down the frame on every screen
+(`centerY`), and — on a window wide enough that the 560px measure does not fill
+it — across to the right of that measure as well (`centerX`), where it lights
+the empty case beside the setting instead of sitting behind the one action on
+the page.
+
+**The mark** (`ui.jsx`'s `Sigil`, `app/public/star.svg`) is a four-pointed star
+cut down the middle with a body sitting in the cut. It is ONE drawing used
+twice: the right wing is the star, the left wing is the same star turned a
+hundred and eighty degrees about the body, which is why it leans without ever
+having been drawn on a slant. Three things about it are load-bearing:
+
+- **The cut is the ground.** The hairline between the halves and the crescent
+  around the body are HOLES, not white paint. What shows through is whatever the
+  mark is standing on, which is what lets one drawing serve the case, an ivory
+  seal, a browser tab and print without being redrawn.
+- **The body is the one light**, and it is warmer than either wing. The order —
+  left wing light, right wing deep, body brightest — *is* the drawing. Invert it
+  and the long point that leads the eye stops being the one that reaches up, and
+  the body stops reading as something lit and starts reading as a hole.
+- **It carries the name on its own.** There is no wordmark. CELESTUAL used to be
+  set beside it on one baseline on every screen, which is a business card
+  stapled to every page of a product somebody has already opened.
+
+It is drawn at exactly its own bounds — 1.212 times taller than wide, no margin,
+nothing trimmed off the long points. Where a square slot is required (the
+favicon, a home-screen icon) the *viewport* is squared around it rather than the
+drawing being moved, so every clip and mask coordinate stays in the artwork's
+own space.
+
+The custom cursor (`styles.css`) is a printer's **registration mark**: the small
+crosshair-in-a-circle a press operator lines two plates up with, which is what
+you are doing on every screen in here.
 
 ## §6 — Geometry, spacing, surfaces
 
-From `theme.js`: `RADIUS` (chip 999 for tiny pills only · field 16 shared by
-inputs AND buttons · card 20 · inner 12) and `SPACE` (4px rhythm). One shadow
-vocabulary (`makeShadow`): the focus glow, the resting halo, the CTA lift, the
-sheet drop. The content column is an intimate measure, phone and desktop alike.
-Hairlines (`Rule`) fade at both ends and grow from center.
+From `theme.js`: `RADIUS` — **2px and 3px, and the seal's circle. That is the
+whole set.** A 16px pill is the single fastest tell that nobody chose anything,
+and `chip: 999` is why the product used to have one on every small control.
+`SPACE` is a **6px** rhythm, not 4px: a bigger step, and it gives the layout the
+slower cadence of a printed page. `LIGHT` is the one shadow vocabulary and every
+entry in it is **edge behaviour** — a catch on the top, a shadow under the
+bottom, and the shadow an object casts on what it lies on. Nothing emits.
+`MEASURE` (560px) is the measure, ranged left inside a centred block. Rules
+(`Rule`) are **tooled**: a dark channel the tool cut and the light catching on
+its upper lip, two pixels doing the work of a border.
 
-## §7 — Screens: one action each
+## §6b — The ledger: entries, not cards
 
-Every screen sits over the same living galaxy, carries **exactly one** primary
-action (amber), casts its type by register (§3), and keeps its emptiness.
-Feeling is serif italic; the second hero line and the primary action are amber;
-mutuality is where rose appears and the star burns brightest. Product workflow
-(the ping model, the specific screens) evolves independently — but each screen
-must still pass §9 before it ships.
+A list of things in this product is a **page in a ledger**: an object, the
+writing beside it, and a hairline rule under the pair. It is not a stack of
+panels.
+
+Every ping used to sit on its own slab of stitched leather. Five of those down a
+screen is five objects competing to be looked at, and the one thing on the row
+that genuinely *is* an object — the seal — was shrunk to a 38px chip inside the
+panel shouting over it. The leather came off, the seal went up to **88px**, and
+the entry is set beside it directly on the case.
+
+Two rules follow, and they generalise past the ledger:
+
+- **Every slot wears the same footprint**, filled or not. An open slot is the
+  seal's own circle, scored and empty; a slot held on another device is the same
+  circle with a state mark in it. That is what makes the column read as a set of
+  *slots* rather than as a list that happens to have pictures down one side.
+- **The object is the affordance.** The seal is the only thing on the row that
+  flies the camera to its star. When the whole row was the button, every quiet
+  action inside it had to stop its own click from falling through.
+
+`WORD_FLOOR` (54px) and `TYPE_FLOOR` (118px) are two different floors on
+purpose: below the second, a seal drops its **legend** and gives the room to the
+words; below the first it stops setting type at all. Setting them to one number
+is what made every entry in the ledger a blank disc.
+
+## §7 — Screens: one action each, and one navigation
+
+Every screen sits over the same chart, carries **exactly one** primary action
+(the ivory plate), casts its type by register (§3), and keeps its emptiness.
+
+**The navigation is the masthead and the index, and there is nothing else.** One
+bar across the head of every page — the wordmark left, the index right, on one
+baseline. Opening the index takes `INDEX_W` out of the setting and the page
+re-centres in what is left; the two move together, which is the difference
+between opening a drawer and having something drop on top of your work. On a
+phone there is no width to give away, so the column is the whole measure and the
+page steps aside.
+
+It replaced four things: a two-station dock fixed to the foot of two screens, a
+profile chip pinned to the top-left corner on some screens, a "log in" chip in
+the same corner on others, and a scattering of ghost links at the bottom of
+whichever page needed one. None of them was aligned to anything else, they
+disagreed about where "back" lives, and between them they still could not reach
+half the product.
+
+**The index is four lines and nothing else**: pings, community, account, terms
+and privacy. No numbers, no notes under the entries, no heading over them, no
+colophon at their foot, and no caption on the glyph that opens them. All five
+were the same mistake — an index in a *book* is numbered because a book has
+chapters in a fixed order and the number is how you find one. A product has four
+places and you are already in one of them; numbering them claims the page is a
+chapter rather than helping anybody get around.
+
+Product workflow evolves independently — but each screen must still pass §9
+before it ships.
 
 ## §8 — Motion
 
-Motion states facts; it never begs. The inventory: the galaxy's slow idle orbit
-and whisper of pointer/tilt parallax, `fadeUp`/`fadeIn` entrances (≤600ms, one
-soft curve), the star's slow breath in light (4.5s/7s), the sonar for
-genuinely-waiting states, the meter's single fill, the verification pop, sheet
-scrims, and the View Transitions cross-fade (320ms) over the persistent galaxy.
-Anything looping faster than ~3s, bouncing, or spinning is off-brand. All of it
-collapses under `prefers-reduced-motion`.
+**Nothing springs, nothing bounces, nothing pulses for attention. Things
+settle.** Every easing in `styles.css` is decelerating or linear; there is not
+an overshoot in the file. The inventory: a leaf laid down (with half a degree of
+rotation you never consciously see), a rule tooled in, a seal set by a die, a
+lamp breathing in **luminosity and never in scale**, a sealed mutual straining
+against its lid, and the page turning (the old leaf falls away upward, the new
+one comes over it). Anything looping faster than ~3s, bouncing, spinning, or
+scaling to draw the eye is off-brand. All of it collapses under
+`prefers-reduced-motion`.
 
 ## §9 — The anti-generic checklist (review gate)
 
 Before any screen ships, check it against these — each one is a known tell of
 template/AI output:
 
-- [ ] Exactly one primary action? (Two bright buttons = redesign.)
-- [ ] Only the two stars — amber and rose — as accents? (A *third* hue
+- [ ] Exactly one primary action? (Two struck plates = redesign.)
+- [ ] **Exactly one lit thing?** (Caramel once per screen. Two = one is wrong.)
+- [ ] **One hue?** (A second accent, a state colour, a red, a green, a blue
       anywhere = send it back.)
-- [ ] Registers cast correctly? (Feelings in serif italic, metadata in mono?)
-- [ ] Emptiness preserved? (If it feels like it needs "more content," it
-      needs less.)
-- [ ] No cards-in-cards, no icon grids, no gradient buttons, no glassmorphism
-      panels, no emoji, no exclamation marks, no confetti.
-- [ ] **Any icon at all?** Five exist (§3b). If the screen wants a sixth, it
+- [ ] **Does anything glow?** (A halo, a drop-shadow in an accent colour, a
+      `filter: blur` used as light, a backdrop-filter. All banned.)
+- [ ] **Any corner that is not 2px, 3px, or the seal?** (A pill is a review
+      failure, not a detail.)
+- [ ] Registers cast correctly? (The voice in the garalde, mechanics in Jost,
+      metadata in Courier.)
+- [ ] Emptiness preserved? (If it feels like it needs "more content," it needs
+      less.)
+- [ ] No cards-in-cards, no icon grids, no gradient buttons, no glass panels, no
+      emoji, no exclamation marks, no confetti, **no typographic star glyphs**.
+- [ ] **Any icon at all?** Six exist (§3b). If the screen wants a seventh, it
       wants a word instead.
 - [ ] **Every size a step on the ladder?** (§3. A raw `fontSize: 12.5` is a
-      review failure, not a detail.)
+      review failure.)
 - [ ] **Does anything explain the interface?** A note under a field saying what
       the field is for means the field is wrong. Delete the note, fix the field.
+      "Tap to place a ping" under a slot you can press is this. (A note stating a
+      *product rule* — what renewing costs, when a slot opens — is not, and is
+      required. See §9b.)
+- [ ] **Is the same fact printed twice?** A countdown IS a date; a row carrying
+      "4 days left" and "stands until 12 aug" is one number said two ways.
+- [ ] **Does the product name itself on this screen?** It should not. The mark
+      signs the page and there is no wordmark, no colophon, and no line telling
+      the reader which edition they are looking at.
 - [ ] **Any em or en dash in the copy?** `npm run lint:voice` fails the build on
       one. A dash is a writer stalling; choose a thought and end the sentence.
-- [ ] **No status pills.** A bordered uppercase chip with a colored "live" dot
-      (the `● OPEN` badge) is a named tell of AI-template output and is banned
-      here permanently — it shipped once (the communities' amber "open" chip)
-      and was retired 2026-07-09. A state reads as quiet *words* in register:
-      serif italic when it's felt ("the sky is open."), mono when it's metadata.
-      Never a pill, never a pulsing dot beside a label.
-- [ ] Does the cosmos still read as one continuous field behind it? (No screen
-      swaps to a different background hue family.)
+- [ ] **Is a list a ledger?** (§6b. Entries divided by rules, not a stack of
+      panels. If every item is on its own slab, redesign it.)
+- [ ] **No status pills.** A bordered uppercase chip with a coloured "live" dot
+      is a named tell of AI-template output and is banned here permanently. A
+      state reads as a **mark** (§2) plus quiet words in register.
+- [ ] Does the case still read as one continuous surface behind it? (No screen
+      swaps to a different ground.)
 - [ ] Every number shown literally true, or not shown?
+- [ ] **Can the reader account for every number on screen?** A meter that counts
+      something the list does not show is the product calling its own user a
+      liar. (See §9b.)
 - [ ] Would the screen still feel certain with the copy removed? (The layout
       itself should carry the calm.)
 - [ ] Is the change reflected in this file?
 
+## §9b — Say the rule, never the widget
+
+"Nothing explains the UI" is a rule about *chrome*, and it was being read as a
+rule about *facts*. A note under a field saying "enter your handle here" is the
+field failing. A line saying **"renewing is free, restarts the sixty days, and
+takes no slot"** is a product rule that cannot be inferred from any arrangement
+of pixels, and leaving it out does not make the screen quieter — it makes it
+unanswerable.
+
+The test: **could a careful person work this out by looking?** If yes, delete
+the sentence. If no, and the fact changes what they would do, print it. Three
+things in this product failed that test and now pass it: what renewing costs,
+when the next slot opens, and why a slot can be held by a ping this device
+cannot name.
+
 ## §10 — Artifacts covered by this system
 
-The system extends beyond the app; these must all read as the same cosmos:
+The system extends beyond the app; these must all read as the same object:
 
-- **The open-door / share card** (`app/src/card.js`) — the most public pixel the
-  brand owns. Gorgeous is a requirement, not a preference.
-- **The card** (`app/src/card/Disc.jsx`) — the circular body a ping resolves
-  into, and its story render (`app/src/card/share.js`). One fixed layout at
-  every size it ever appears at; see the 2026-08-02 changelog entry.
-- **The OG share image** (`app/public/og.svg` → `og.png`) — the landing's hero
-  restated.
-- **Emails** (`supabase/functions/*`) — cosmic-violet field, mono-spaced kicker,
-  serif-italic feeling line, one amber button, muted small print.
-  Georgia/Arial stand in for the web fonts.
-- **The favicon** (`app/public/star.svg`) — the glyph on the cosmos.
-- **Posters/QR for campus windows** — school name in the label style, the
-  threshold line, the QR. Nearly empty.
+- **The open-door / community share card** (`app/src/card.js`) — the most public
+  pixel the brand owns. Gorgeous is a requirement, not a preference.
+- **The seal** (`app/src/card/Disc.jsx`) — the circular body a ping resolves
+  into, and its Story render (`app/src/card/share.js`). One fixed layout at
+  every size it ever appears at.
+- **The OG share image** (`app/public/og.svg` → `og.png`).
+- **Emails** (`supabase/functions/_shared/mail.ts`) — one frame, five senders.
+  The case blind-tooled, the mark, tooled rules, the ivory plate for the one
+  action, the code struck into a well, and a colophon at the foot. Georgia,
+  Arial and Courier stand in for the three faces, because mail clients do not
+  load web fonts and the design was never carried by the typefaces.
+- **The favicon** (`app/public/star.svg`) — the mark on the case.
+- **The static legal pages** (`app/public/*.html`) — the same case, the same
+  three faces, the same two corners.
+- **The back office** (`app/src/components/admin.jsx`) — deliberately a LIGHT
+  ground and dense tabular rows, because the job there is reading numbers
+  accurately under time pressure. It is the almanac's back office, not a
+  different product: laid paper, the case's own ink, the one caramel light, 2px
+  corners, the three faces. Its three state tints (banned / opted out / fine)
+  are the one sanctioned exception to §2, and they are pulled to a printed
+  register rather than SaaS chips.
 
 ## §11 — Changelog
+
+- **2026-08-07c** — **The mark, and everything the product stopped saying**
+  (human-directed: *"remove the celestual type... remove unnecessary text
+  throughout... stop using words like lapses or standing... minimal is best"*).
+  §5, §7 and §9 revised.
+  - **The mark stands alone.** The supplied artwork's own inks replaced the
+    re-inked ones (the two taupes and the rose-gold body clear the case without
+    help), the drawing is cropped to its own bounds, and the CELESTUAL wordmark
+    came off the masthead, the favicon, every email and the legal pages.
+  - **The index is four lines.** Numbers, notes, heading and colophon all gone,
+    and the glyph that opens it lost its caption. A glyph that has to be
+    captioned is the wrong glyph.
+  - **The clock is days left, and only days left.** The lapse date came off a
+    ping entry: a countdown is already a date arrived at by the only arithmetic
+    anybody does with one, and printing both said one number twice.
+  - **"Lapses" and "standing" are retired** from every user-facing string. They
+    are filing-cabinet words for a thing somebody feels.
+
+- **2026-08-07b** — **The ledger, the title page and the index** (human-directed,
+  in review of the transfer below: *"I don't like how the entire pingslot is
+  leather... have the log in button next to the find out... have stuff like
+  profiles and the different pages in the index"*). §6b and §7 are new; §5 gains
+  `centerX`.
+  - **The ledger stopped being a stack of cards** (§6b). The leather panel per
+    ping is gone, the seal is at 88px on the case, and the entries are divided
+    by hairline rules. The seal also *sets its words* now: one type floor was
+    doing two jobs, so every seal under 118px rendered blank.
+  - **The title page carries both doors.** The plate and the quiet exit sit on
+    one baseline, which is where a returning person's way in belongs. The
+    trial notice moved out of a viewport corner and into the setting, where it
+    stopped colliding with whatever else lived in that corner.
+  - **One navigation** (§7). The masthead and the index column replaced the
+    dock, both corner chips and the loose ghost links.
+  - **The heart moved sideways.** `centerX` joins `centerY`, so on a wide window
+    the galactic centre sits beside the measure rather than behind the one
+    action on the page. Same argument as `centerY`, other axis.
+
+- **2026-08-07** — **The bindery transfer** (human-directed: *"move all design
+  features in celestual/beta to production and delete /beta"*). §1–§10 are
+  rewritten; this is the one entry in this file that replaced the design system
+  rather than refining it.
+  - **The galaxy edition is retired.** The cosmic-violet void, the two warm
+    stars (amber + rose), Instrument Serif / Space Grotesk / Space Mono, the
+    16px pills, the glass panels and every halo in the product are gone. What
+    replaced them is what had been living at `/beta` since it was built to be
+    judged beside this: the leather case, the one hue, the pressed corners, the
+    three new faces, and the law that nothing glows.
+  - **`/beta` is deleted, not merged behind a flag.** `app/src/beta/` is gone,
+    `main.jsx` no longer forks before mount, and `beta.css` no longer exists to
+    be scoped against. There is nothing left to compare to, which was the point
+    of building it on a route: a second brand is only worth keeping while a
+    decision is open.
+  - **What moved, and where it landed.** `beta/tokens.js` → `theme.js` (keeping
+    every export name, so nothing had to be rewired). `beta/texture.js` →
+    `texture.js`. `beta/ui.jsx` → `components/ui.jsx` (the plate, the ruled
+    line, the tooled rule, the sigil, the marks, the slot meter). `beta/sky.js`
+    → `galaxy.js` (`binderyRamp`, the nebula, the lifted floor, the meteors, the
+    per-window framing) and `communityGalaxy.js`. `beta.css` → `styles.css`.
+  - **The card became the seal.** Five flat dark plates → three MATERIALS (laid
+    paper, chalk card, the leather), drawn per pixel, with a double keyline
+    struck inside the trim and the ink taken off the ground rather than off the
+    brand. Migration 0024 widens the server's validator to accept the three new
+    ids; the five old ones are still accepted and are mapped at read time, so no
+    stored card is ever rewritten or handed back on a surface nobody chose.
+  - **The emails became one design.** There were five templates and no two
+    agreed on a ground, an accent, a radius or whether to carry a wordmark.
+    `_shared/mail.ts` owns the frame now and each sender owns only its words.
+  - **The back office came along.** The desk keeps its light ground and its
+    density (that argument was always right), and stops being a white-and-indigo
+    fintech console belonging to no product.
+  - **Three product facts got printed** (§9b), all of which the design had been
+    quietly withholding: what renewing costs, when the next slot opens, and why
+    a slot can be held by a ping the device in your hand cannot name.
 
 - **2026-08-04** — **The mutual reveal, reworked around light instead of
   motion** (human-directed: *"too finicky and game-like — make it elegant and

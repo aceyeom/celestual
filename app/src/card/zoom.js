@@ -3,7 +3,7 @@
 // Lifted out of Resolve.jsx so that everything in the product which flies into
 // a star reads the SAME curve from the same place: the status page's zoom
 // (card/Resolve.jsx), the reveal (card/Spread.jsx), and the Bindery rebrand's
-// zoom on /beta (beta/Resolve.jsx). Two copies of these four numbers are two
+// zoom in the ledger (card/Resolve.jsx). Two copies of these four numbers are two
 // zooms that agree until somebody tunes one.
 //
 // Nothing in here knows what a card looks like, which is the point: it is the

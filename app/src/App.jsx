@@ -11,7 +11,10 @@ import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
 import { SENDOFF_SECONDS } from './galaxy.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner, rgba } from './components/ui.jsx'
+import {
+  GalaxyCanvas, CommunityGalaxyCanvas, Liftoff, Masthead, IndexColumn,
+  useNarrow, rgba, INDEX_W,
+} from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MutualScreen, FourthSlotScreen, PrivacyScreen,
@@ -336,15 +339,39 @@ export default function App() {
   }, [demo, homeCommunity])
   const ownPublic = publicStar && normHandle(me) ? normHandle(me) : null
 
+  // ── when the next slot opens ────────────────────────────────────────────────
+  // Scarcity is the sincerity mechanism, and a mechanism nobody can see the
+  // clock on is just a wall. Every standing ping has a lapse date; the soonest
+  // one IS the date a slot comes back, and it is a fact the product already
+  // knows and was not saying anywhere.
+  //
+  // A restored row with no name still counts — the clock is real even when the
+  // @ it belongs to lives only on the device that typed it.
+  const nextSlot = useMemo(() => {
+    const standing = pings.filter((p) => !p.mutual && p.expires_at)
+    if (!standing.length) return null
+    const soonest = standing.reduce((a, b) => (Date.parse(a.expires_at) <= Date.parse(b.expires_at) ? a : b))
+    const at = Date.parse(soonest.expires_at)
+    if (!Number.isFinite(at)) return null
+    return {
+      handle: soonest.handle ? normHandle(soonest.handle) : null,
+      at: soonest.expires_at,
+      days: Math.max(0, Math.ceil((at - Date.now()) / 864e5)),
+    }
+  }, [pings])
+
   // ── overlays ──
   const [accountOpen, setAccountOpen] = useState(false)
   // { handle, onDone } while the DM-verification overlay is up.
   const [verify, setVerify] = useState(null)
 
-  // ── the dock ──
-  // A screen can ask the dock to melt away while its sky takes the frame (the
-  // community page's held zoom / find-your-star flight sets this).
+  // ── the index ──
+  // The one navigation. A screen can ask it to melt away while its sky takes
+  // the frame (the community page's held zoom / find-your-star flight sets
+  // this).
   const [navHidden, setNavHidden] = useState(false)
+  const [indexOpen, setIndexOpen] = useState(false)
+  const narrow = useNarrow()
 
   // ── the send-off animation ──
   // When a ping is finalized the @ field collapses into a star (the Liftoff
@@ -541,6 +568,22 @@ export default function App() {
   const slotsStanding = demo
     ? standingCount(pings)
     : Math.max(standingCount(pings), Number.isFinite(slots?.standing) ? slots.standing : 0)
+
+  // ── the gap, and why it is now a visible thing ──────────────────────────────
+  // A device that has never restored holds no ping rows, and the server still
+  // answers the meter honestly: two of two held. So the ledger said "your slots
+  // are full" over an empty list, and placing a ping failed with `no_slots` for
+  // a reason nothing on screen could account for. That is the product calling
+  // its own user a liar.
+  //
+  // Two things fix it, and both are needed. Below, `restoreLedger` runs on any
+  // proven session rather than only at the moment somebody presses "log in", so
+  // the list normally arrives on its own. And here, whatever is left over after
+  // that — a restore that has not landed yet, or the pre-0010 rows whose targets
+  // exist only as hashes and genuinely cannot be named — is counted, so the
+  // ledger can DRAW those slots as held-elsewhere rather than leave the meter
+  // asserting something the list does not show.
+  const unaccounted = Math.max(0, slotsStanding - standingCount(pings))
   useEffect(() => {
     if (demo) return
     let live = true
@@ -1088,57 +1131,109 @@ export default function App() {
     }
   }, [me])
 
-  const restorePings = useCallback(
+  // ── the ledger, restored ────────────────────────────────────────────────────
+  // The one merge, used by every path that can bring pings back: the explicit
+  // "log in", the magic link, and the quiet restore that runs on any proven
+  // session below. It used to exist only inside the login flow, which is the
+  // whole reason a second device could sit there holding two slots and showing
+  // none of them: nothing but pressing "log in" ever asked the server what this
+  // @ was holding.
+  //
+  // `ledger` is what the server said, already normalised by api/celestual.js.
+  const mergeLedger = useCallback((server) => {
+    setPings((local) => {
+      // Local plaintext wins. The server adds (a) mutual rows this device
+      // hasn't seen, (b) named standing rows it has not seen either, and (c)
+      // anonymous standing rows — pings placed before migration 0010, whose
+      // targets exist only as salted hashes and genuinely cannot be named on
+      // any device but the one that typed them. Any local unmatched named row
+      // already accounts for one server anonymous row, so only the surplus
+      // becomes an anonymous row here.
+      const localNamed = local.filter((p) => p.handle)
+      const names = new Set(localNamed.map((p) => normHandle(p.handle)))
+      // A restored row rebuilds its cards through the same clamps the composer
+      // writes under, and comes back SEALED: a match this device has never seen
+      // is still a match nobody has opened.
+      const restore = (srv) => {
+        const h = normHandle(srv.handle || '')
+        return {
+          ...srv,
+          card: srv.card ? fromWire(srv.card, { handle: h, placed: srv.time }) : null,
+          // the photograph stayed on the phone that took it, so this card
+          // stands on its own ground — the same thing that happens when
+          // somebody chooses not to add one
+          photoId: null,
+          theirCard: srv.theirCard ? fromWire(srv.theirCard, { handle: h }) : null,
+          revealed: false,
+        }
+      }
+      const merged = [...localNamed]
+      for (const srv of server) {
+        if (srv.handle && !names.has(normHandle(srv.handle))) merged.push({ ...restore(srv), reachable: true })
+      }
+      const serverAnon = server.filter((srv) => !srv.handle)
+      const localUnmatched = localNamed.filter((p) => !p.mutual).length
+      for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
+        merged.push({ ...restore(serverAnon[i]), reachable: false })
+      }
+      return merged
+    })
+  }, [])
+
+  // Ask the server what this @ is holding, and fold it in. Returns whether the
+  // read actually landed, so the ledger can tell "nothing to restore" apart from
+  // "we never got an answer" — the two look identical on screen and mean
+  // opposite things.
+  const [ledgerState, setLedgerState] = useState({ phase: 'idle' }) // idle | reading | read | failed
+  const readLedger = useCallback(
     async (proofOverride, meOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
       const handle = normHandle(meOverride) || normHandle(me)
+      if (demo || !handle || !proof) return false
+      setLedgerState({ phase: 'reading' })
       try {
         const server = await fetchMyPings({ handle, proof, demo })
-        if (server.length) {
-          setPings((local) => {
-            // Local plaintext wins. The server adds (a) mutual rows this device
-            // hasn't seen and (b) anonymous standing rows — unmatched pings it
-            // stores only as hashes, placed on some other device. Any local
-            // unmatched named row already accounts for one server anonymous
-            // row, so only the surplus becomes an anonymous row here.
-            const localNamed = local.filter((p) => p.handle)
-            const names = new Set(localNamed.map((p) => normHandle(p.handle)))
-            // A restored row rebuilds its cards through the same clamps the
-            // composer writes under, and comes back SEALED: a match this
-            // device has never seen is still a match nobody has opened.
-            const restore = (s) => {
-              const h = normHandle(s.handle || '')
-              return {
-                ...s,
-                card: s.card ? fromWire(s.card, { handle: h, placed: s.time }) : null,
-                // the photograph stayed on the phone that took it, so this
-                // card stands on its plate — the same thing that happens when
-                // somebody chooses not to add one
-                photoId: null,
-                theirCard: s.theirCard ? fromWire(s.theirCard, { handle: h }) : null,
-                revealed: false,
-              }
-            }
-            const merged = [...localNamed]
-            for (const s of server) {
-              if (s.handle && !names.has(normHandle(s.handle))) merged.push({ ...restore(s), reachable: true })
-            }
-            const serverAnon = server.filter((s) => !s.handle)
-            const localUnmatched = localNamed.filter((p) => !p.mutual).length
-            for (let i = 0; i < Math.max(0, serverAnon.length - localUnmatched); i++) {
-              merged.push({ ...restore(serverAnon[i]), reachable: false })
-            }
-            return merged
-          })
-        }
+        if (server.length) mergeLedger(server)
+        setLedgerState({ phase: 'read' })
+        return true
       } catch {
-        /* best-effort — land on whatever this device holds */
+        setLedgerState({ phase: 'failed' })
+        return false
       }
+    },
+    [me, demo, session, mergeLedger],
+  )
+
+  // ── the quiet restore ───────────────────────────────────────────────────────
+  // Any device with a proven session reads the ledger once, on its own, without
+  // anybody pressing anything. This is the actual fix for "my slots say two of
+  // two and my list is empty": the meter was reading the server and the list was
+  // reading the device, and only one of the two was ever asked.
+  //
+  // Keyed on the proven handle, so re-verifying as somebody else reads theirs.
+  const ledgerRead = useRef('')
+  useEffect(() => {
+    if (demo) return
+    const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+    const handle = normHandle(session?.handle) || normHandle(me)
+    if (!proof || !handle || ledgerRead.current === handle) return
+    ledgerRead.current = handle
+    readLedger(proof, handle).catch(() => {})
+  }, [demo, session, me, readLedger])
+
+  // The explicit door: read the ledger, then land on it. What "log in" does.
+  const restorePings = useCallback(
+    async (proofOverride, meOverride) => {
+      await readLedger(proofOverride, meOverride)
       setLoginMode(false)
       go('pings')
     },
-    [me, demo, session, go],
+    [readLedger, go],
   )
+
+  // The ledger's own "try that again", for the rows the meter counts and the
+  // list cannot name yet.
+  const restoreLedger = useCallback(() => readLedger(), [readLedger])
 
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
@@ -1221,6 +1316,15 @@ export default function App() {
   )
 
   // ── the status page's actions ──
+  // ── renewing ────────────────────────────────────────────────────────────────
+  // One tap puts sixty more days on the clock, counted from NOW rather than
+  // added to what is left. It is free, it is unlimited, and it does not spend a
+  // slot or a ping: it is the same row, standing longer. That last part is what
+  // was unclear, and the layout is why — the button sat between a slot meter and
+  // a paywall, so it read as something that might cost one of the two.
+  //
+  // It hands the new lapse date back so the row can PRINT it. "Renewed" on its
+  // own is a state; "stands until 14 oct" is an answer.
   const renew = useCallback(
     async (handle) => {
       const h = normHandle(handle)
@@ -1229,10 +1333,12 @@ export default function App() {
         const res = await renewPing({ me, them: h, proof, demo })
         if (res?.ok) {
           setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, expires_at: res.expires_at } : p)))
+          return res.expires_at || null
         }
       } catch (e) {
         console.error(e)
       }
+      return null
     },
     [me, demo, session],
   )
@@ -1549,7 +1655,7 @@ export default function App() {
 
   const ctx = {
     demo, me, them, email, error, verified, established, loginMode,
-    pings, slotsStanding, slotsCap: slotCap,
+    pings, slotsStanding, slotsCap: slotCap, unaccounted, ledgerState, restoreLedger, nextSlot,
     cardUrls, compose, openReveal, closeReveal, reveal, afterMutual, ambientGalaxyRef,
     communities, openCommunity, homeCommunity, homeGalaxyRef,
     viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity,
@@ -1558,6 +1664,11 @@ export default function App() {
     lastPlaced, match,
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     billingOn, planOn, holdState, hold, paidReturn, confirmPaid,
+    // the first light notice, handed to the landing so it can set it in flow.
+    // It used to be pinned to a viewport corner, which is where it collided
+    // with whatever the page had at that corner — the login chip on one screen,
+    // the colophon on another. A notice belongs on the page it is about.
+    trial: !demo ? { line: TRIAL_BANNER, deadline: TRIAL_DEADLINE } : null,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
@@ -1575,14 +1686,10 @@ export default function App() {
 
   const Screen = SCREENS[screen] || SCREENS.landing
 
-  // The profile chip sits top-left on the quiet screens, once an account is
-  // established (never for a merely-typed @).
-  // Only on the screens with no back button of their own, so the chip never
-  // stacks under a back arrow (the community screens carry their own back nav).
-  const showProfile = established && !!me && ['pings', 'landing'].includes(screen)
-  // Its logged-out counterpart: a clear "log in" chip in the same corner, so a
-  // returning person always has an obvious way back to their pings.
-  const showLogin = !established && ['landing', 'open'].includes(screen)
+  // The profile chip and its logged-out twin are gone. Both were fixed to the
+  // top-left corner, both were the only thing on their screen aligned to
+  // nothing, and between them they said "your account" on two screens and "log
+  // in" on two others. The index carries both, on every screen, as entries.
 
   // Calm the living galaxy on the content screens so the foreground reads easily;
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
@@ -1606,19 +1713,76 @@ export default function App() {
   const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
   const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
 
-  // ── the dock (the app's three places, one tap apart) ──
-  // Lives on the resting hub screens only — the focused flows (the send, the
-  // identity step, the send-off, the match) stay single-purpose. It melts, not
-  // unmounts, during any cinematic (a star flight, a held zoom, the send-off),
-  // and the screens pad their foot by --nav-pad so nothing sits under it.
-  // The dock belongs to the two RESTING places only. `worlds` (the community
-  // picker) and `door` (the share card) are leaves you arrive at from one of
-  // them and leave with their own back button; giving them a dock too meant two
-  // competing ways back on one screen, and a fixed bar sitting over their
-  // actions.
-  const NAV_SCREENS = ['pings', 'community']
-  const navHere = NAV_SCREENS.includes(screen)
+  // ── the index (the one navigation) ──
+  // This used to be four things. A fixed dock of two stations at the foot of
+  // the two hub screens; a profile chip pinned to the top-left corner on some
+  // screens; a "log in" chip in the same corner on others; and a set of ghost
+  // links at the bottom of whichever page happened to need one. None of them
+  // was aligned to anything else, they disagreed about where "back" lives, and
+  // between them they still could not reach half the product.
+  //
+  // It is one bar now, across the head of every page, and behind it a COLUMN
+  // the page makes room for. The index lists every destination the product has,
+  // including the account — and it says what is on each page as well as where
+  // it is, which is what an index in a book does.
+  //
+  // Two screens deliberately carry no chrome at all: the send-off (the ping is
+  // in flight and there is nowhere to be but here) and the match announcement
+  // (two seconds, nothing to press). The desk and the trial page are their own
+  // documents and opt out too.
+  const BARE_CHROME = ['sendoff', 'mutual', 'reveal', 'trial', 'admin']
+  const chromeHere = !BARE_CHROME.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
+
+  // What the index lists, and it is four things. A product with four places
+  // does not need them numbered, captioned, headed or signed off: the entry IS
+  // the destination, and everything that used to sit around it was the index
+  // describing itself.
+  //
+  // "place a ping" is not in here on purpose — it is the one primary action on
+  // the ledger and on the landing, and a navigation that repeats the page's own
+  // button is a navigation padding itself out.
+  const indexItems = useMemo(
+    () => [
+      { key: 'pings', name: t('index.pings') },
+      {
+        key: 'community',
+        name: t('index.community'),
+        go: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
+      },
+      // The account is an entry like any other, and it is the only one that
+      // opens a sheet rather than a page. Logged out, the same line is the way
+      // back in, which is the thing somebody in that state is actually looking
+      // for.
+      established
+        ? { key: 'account', name: t('index.account'), go: () => openAccount() }
+        : { key: 'signin', name: t('index.login'), go: () => startLogin() },
+      { key: 'privacy', name: t('index.legal') },
+    ],
+    [t, established, homeCommunity, openCommunity, viewCommunity, openAccount, startLogin],
+  )
+
+  const goIndex = useCallback(
+    (item) => {
+      setIndexOpen(false)
+      if (item.go) item.go()
+      else go(item.key)
+    },
+    [go],
+  )
+
+  // The index is a column rather than a dialog — it does not trap focus and it
+  // does not scrim the page — but it is still a thing that is open, and escape
+  // is what closes an open thing.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!indexOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIndexOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [indexOpen])
 
   // ── /admin renders ALONE, above everything ──
   // The desk is a full-viewport white console with its own design; it is not one
@@ -1640,7 +1804,7 @@ export default function App() {
   const BARE = screen === 'trial'
 
   return (
-    <div className="celestual-app" style={{ '--nav-pad': navHere ? '84px' : '0px' }}>
+    <div className="celestual-app">
       {BARE ? (
         // A still field, not a dead one: one soft rise of colour off the
         // bottom-left so the page still feels like it belongs to us.
@@ -1679,65 +1843,57 @@ export default function App() {
         />
       )}
 
-      {(showProfile || showLogin) && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20, opacity: skyFlight ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyFlight ? 'none' : 'auto' }}>
-          {showProfile ? (
-            <ProfileButton C={C} handle={me} onClick={openAccount} />
-          ) : (
-            <LoginButton C={C} label={t('landing.login')} onClick={startLogin} />
-          )}
-        </div>
+      {/* ── the masthead and the index ──────────────────────────────────────
+          One bar, every page. The wordmark signs the page; the index opens the
+          column. Both melt away whenever the sky takes the whole frame. */}
+      {chromeHere && (
+        <>
+          <Masthead
+            C={C}
+            open={indexOpen}
+            onToggle={() => setIndexOpen((v) => !v)}
+            hidden={navMelt}
+          />
+          <IndexColumn
+            C={C}
+            open={indexOpen && !navMelt}
+            items={indexItems}
+            screen={screen}
+            go={goIndex}
+            narrow={narrow}
+          />
+        </>
       )}
 
-      {/* the first light banner — the landing's one door to the trial, resting
-          in the opposite corner from the login chip, its deadline ticking */}
-      {!demo && screen === 'landing' && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
-          <TrialBanner C={C} line={TRIAL_BANNER} deadline={TRIAL_DEADLINE} />
-        </div>
-      )}
-
-      {/* during a fly-to-a-star the foreground melts away COMPLETELY so the sky
+      {/* During a fly-to-a-star the foreground melts away COMPLETELY, so the sky
           is the whole screen — any residual opacity reads as a ghost of the
-          pings page floating over the star view. The entrance animation must be
-          suppressed for the melt — its fill-mode would otherwise pin opacity
-          at 1 and override the inline fade. */}
+          ledger floating over the star view. The entrance animation must be
+          suppressed for the melt: its fill-mode would otherwise pin opacity at
+          1 and override the inline fade.
+
+          The page also makes ROOM for the index rather than sitting under it.
+          On a wide screen that is a strip of padding the centred column
+          re-solves itself inside; on a phone there is no width to give away, so
+          the page steps aside instead. The transform is only ever SET when it
+          is non-zero — a transformed ancestor becomes the containing block for
+          every fixed child under it, and the held star view is fixed. */}
       <div
-        key={screen}
-        className="fade"
-        data-screen={screen}
+        onPointerDownCapture={() => indexOpen && setIndexOpen(false)}
         style={{
-          position: 'relative', zIndex: 4,
-          animation: skyFlight ? 'none' : undefined,
-          opacity: skyFlight ? 0 : 1,
-          transition: 'opacity .55s ease',
-          pointerEvents: skyFlight ? 'none' : 'auto',
+          position: 'relative',
+          zIndex: 4,
+          paddingRight: indexOpen && !narrow && !skyFlight ? INDEX_W : 0,
+          transform: indexOpen && narrow && !skyFlight ? 'translateX(-24%)' : undefined,
+          opacity: skyFlight || (indexOpen && narrow) ? 0 : 1,
+          pointerEvents: skyFlight || (indexOpen && narrow) ? 'none' : 'auto',
+          transition:
+            'opacity .55s ease, padding-right .46s cubic-bezier(.16,.84,.28,1), transform .46s cubic-bezier(.16,.84,.28,1)',
         }}
       >
-        <Screen C={C} ctx={ctx} />
+        <div key={screen} className="fade" data-screen={screen} style={{ animation: skyFlight ? 'none' : undefined }}>
+          <Screen C={C} ctx={ctx} />
+        </div>
       </div>
-
-      {/* the dock — TWO stations, because this product has two places.
-          It carried three, and two of them ("sky" and "communities") opened the
-          same thing: a community, and the list you pick a community from. A
-          picker is not a destination. The list now lives inside the sky page,
-          where switching actually happens, and the dock stops offering a choice
-          that wasn't one. */}
-      {navHere && (
-        <NavDock
-          C={C}
-          hidden={navMelt}
-          items={[
-            {
-              id: 'sky',
-              label: t('nav.sky'),
-              active: screen === 'community',
-              onClick: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
-            },
-            { id: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },
-          ]}
-        />
-      )}
 
       {/* the held star view: the star resolves into the card it was made of.
           The @ and the date are set INSIDE the poster, so what arrives at the

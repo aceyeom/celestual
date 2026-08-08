@@ -130,18 +130,38 @@ const en = {
   'pings.sealedSub': 'you and @{them} entered each other. open it.',
   'pings.revealOpen': 'open the reveal with @{them}',
   'pings.revealAgain': 'see the two cards again',
+  // ── the clock ─────────────────────────────────────────────────────────────
+  // Days left. That is the whole readout.
+  //
+  // A row used to carry the countdown AND the date it ran out on AND the word
+  // "lapses", which is three ways of saying one number and a word nobody uses
+  // about a person they are thinking about. The date came off; a countdown is
+  // already a date, arrived at by the only arithmetic anybody does with one.
   'pings.days': '{n} days left',
-  'pings.today': 'lapses today',
-  'pings.elsewhere': 'placed on another device',
-  'pings.elsewhereNote': 'the names live only on the device that placed them.',
-  'pings.slotsUsed': '{used} of {cap} slots',
+  'pings.today': 'last day',
+  'pings.elsewhere': 'on another device',
+  'pings.heldTitle': 'on another device',
+  'pings.heldSub': 'a ping under your @, placed somewhere else.',
+  'pings.heldRestore': 'bring it here',
+  'pings.heldRestoring': 'reading…',
+  'pings.heldFailed': 'that did not go through. try once more.',
+  'pings.slotsUsed': '{used} of {cap}',
   'pings.slotEmpty': 'open slot',
-  'pings.slotEmptySub': 'tap to place a ping',
   'pings.slotNext': 'a third slot',
   'pings.slotNextSub': 'from $2.99',
-  'pings.expiringSoon': 'lapses in {n} days',
+  'pings.expiringSoon': '{n} days left',
+  // ── renewing ──────────────────────────────────────────────────────────────
+  // What it does sits ON the action, in four words, and what it costs sits under
+  // the ledger in six. Both questions get answered and neither gets a paragraph.
   'pings.renew': 'renew',
+  'pings.renewSub': 'sixty more days',
+  'pings.renewing': 'renewing…',
   'pings.renewed': 'renewed. sixty more days.',
+  'pings.renewNote': 'renewing is free and takes no slot.',
+  // ── when the next slot opens ──────────────────────────────────────────────
+  'pings.nextSlot': 'your next slot opens in {n} days',
+  'pings.nextSlotToday': 'your next slot opens today',
+  'pings.nextSlotOr': 'or let one go now.',
   'pings.letgo': 'let go',
   'pings.letgoConfirm': 'remove this ping? the slot opens back up.',
   'pings.letgoYes': 'remove',
@@ -187,6 +207,10 @@ const en = {
   // ── screen 9 · the third slot (route key stays 'fourth') ────────────────
   'fourth.title': 'your slots are full.',
   'fourth.body': 'each one costs something. let one go, and the slot’s yours again.',
+  // the wall now carries its own clock. a slot you have to wait for is scarcity.
+  // a slot you cannot see the date of is just a locked door.
+  'fourth.opens': 'your next slot opens in {n} days.',
+  'fourth.opensSoon': 'your next slot opens today.',
   'fourth.cta': 'let one go',
   'fourth.back': 'not now',
 
@@ -195,14 +219,14 @@ const en = {
   'paywall.kicker': 'a third ping',
   'paywall.extendKicker': 'extend a ping',
   'paywall.title': 'hold a third.',
-  'paywall.extendTitle': 'keep it standing.',
+  'paywall.extendTitle': 'keep it going.',
   'paywall.sub': 'when a third person is really on your mind, hold them too.',
   'paywall.extendSub': 'give it another sixty days.',
   'paywall.onceLabel': 'one more ping',
-  'paywall.onceExtendLabel': 'keep it standing',
+  'paywall.onceExtendLabel': 'keep it going',
   'paywall.onceDetail': 'one time, never a subscription.',
   'paywall.subLabel': 'go steady',
-  'paywall.subDetail': 'ten pings a month. each stands six months.',
+  'paywall.subDetail': 'ten pings a month. six months each.',
   'paywall.subBadge': 'the better deal',
   'paywall.subscribedNote': 'subscribed · ten a month',
   'paywall.price': '$2.99',
@@ -222,8 +246,8 @@ const en = {
   'paywall.doneTitleOnce': 'one more, held.',
   'paywall.doneSubOnce': 'the slot is yours.',
   'paywall.doneTitleSub': 'you’re subscribed.',
-  'paywall.doneSubSub': 'ten pings a month, each standing six months.',
-  'paywall.doneTitleExtend': 'it’s standing.',
+  'paywall.doneSubSub': 'ten pings a month, six months each.',
+  'paywall.doneTitleExtend': 'it’s going.',
   'paywall.doneSubExtend': 'another sixty days, held.',
   'paywall.donePlace': 'place it',
   'paywall.doneBack': 'back to your pings',
@@ -250,7 +274,7 @@ const en = {
   'paid.title': 'one more, held.',
   'paid.sub': 'the slot is yours.',
   'paid.planTitle': 'ten, held.',
-  'paid.planSub': 'each one stands six months.',
+  'paid.planSub': 'six months each.',
   'paid.place': 'place it',
   'paid.back': 'back to your pings',
   'paid.cancelTitle': 'nothing was charged.',
@@ -310,6 +334,8 @@ const en = {
   'account.pingsLine': '{n} active',
   'account.pingsNone': 'no pings yet.',
   'account.pingsOpen': 'view',
+  'account.pingsElsewhere': '{n} on another device',
+  'account.pingsRestore': 'bring them here',
   'account.sandboxNote': 'sandbox. nothing here reaches a server.',
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',
@@ -389,12 +415,20 @@ const en = {
   // ── holding the sky (the community page's camera) ────────────────────────
   'sky.reset': 'pull back',
 
-  // ── the dock ─────────────────────────────────────────────────────────────
-  // TWO places, because this product has two. The old third station opened the
-  // community list, which is a picker, not a destination: it now lives inside
-  // the sky page where switching actually happens.
-  'nav.sky': 'sky',
-  'nav.pings': 'pings',
+  // ── the index ────────────────────────────────────────────────────────────
+  // Four routes. It replaced a two-station dock, a profile chip in one corner, a
+  // "log in" chip in the same corner on other screens, and a scattering of ghost
+  // links — four navigations, none of them aligned to anything, which between
+  // them still could not reach half the product.
+  //
+  // It is four LINES and nothing else: no numbers, no notes, no heading, no
+  // colophon. A product with four places does not need them numbered, and every
+  // word that used to sit around an entry was the index describing itself.
+  'index.pings': 'pings',
+  'index.community': 'community',
+  'index.account': 'account',
+  'index.login': 'log in',
+  'index.legal': 'terms & privacy',
 
   // ── the public @ (announce yourself in your community's sky) ─────────────────
   'public.announce': 'announce your @',
@@ -442,7 +476,7 @@ const en = {
   'privacy.h2': 'what anyone ever learns',
   'privacy.p2': 'one-sided pings are revealed to no one, ever. the only thing that surfaces is a mutual pair, shown to exactly those two people, at the same moment. there is no browsing, no profiles, no list.',
   'privacy.h3': 'the sixty days',
-  'privacy.p3': 'a ping stands for sixty days. renew it free, as often as you feel it, or let it lapse and the record is purged.',
+  'privacy.p3': 'a ping lasts sixty days. renewing restarts the sixty days, free, as often as you feel it, and it never uses a slot. leave it and the record is purged and the slot opens back up.',
   'privacy.h4': 'for adults',
   'privacy.p4': 'celestual is for people 18 and older.',
   'privacy.h5': 'the opt-out',

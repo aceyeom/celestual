@@ -32,7 +32,7 @@ ban on serving minors).
 > (the mechanism spec the code was built to) and governs it. The visual language
 > is locked separately in [`DESIGN.md`](./DESIGN.md) (the galaxy edition); where
 > this guide still uses the earlier "deep navy" vocabulary, DESIGN.md's
-> cosmic-violet galaxy is the canonical look and wins. Copy discipline is
+> bindery (docs/DESIGN.md) is the canonical look and wins. Copy discipline is
 > [`VOICE.md`](./VOICE.md). An [implementation record](#implementation-record)
 > at the end logs what the code actually does today.
 
@@ -527,7 +527,7 @@ checkout page.
 
 Global rules that govern every screen: deep field, generous empty space, the
 single warm star as the accent (the galaxy edition lights it with **two** stars —
-amber `you`, rose `them`; see DESIGN.md). Serif italics carry the emotional
+caramel `you`, wheat `them`; see DESIGN.md). The garalde carries the emotional
 voice; small quiet sans-serif carries the mechanical voice; letterspaced mono
 carries metadata. All product copy is lowercase except handles. Every screen has
 exactly one primary action. Every sentence shown to any user is literally true,
@@ -541,13 +541,13 @@ hero names the feeling ("you still think about them. what if they think about
 you?"). Below it, the mechanism is set as a **three-beat constellation**, not a
 flat stack of muted lines: three nodes down a warming rail —
 
-1. **the ping** — "put their @ in." (the `@` lit in the handle's own amber)
+1. **the ping** — "put their @ in." (the `@` set in the one light)
 2. **the silence** — "they never find out."
 3. **the reveal** — "unless they put you in too — *then you both find out, in the
    same second.*" (the lone lit line, serif italic, echoing the match screen)
 
-The nodes escalate: a sent-signal amber dot, a hollow ring of silence, then the
-✦ where the two stars meet. One primary action ("find out"), the safety line
+The nodes escalate: a filled mark that breathes, an open dashed one, then the
+joined pair where the two meet. One primary action ("find out"), the safety line
 ("no profiles. no browsing. nothing happens unless it's mutual."), the age line,
 and the quiet footer beneath.
 
@@ -561,7 +561,7 @@ payoff in serif italic), stays inside the locked galaxy vocabulary (DESIGN.md),
 and encodes the two-star metaphor in the reveal node. Rejected: a generic
 gradient/hero-card treatment. Cause of death: DESIGN.md §9 (no glassmorphism
 panels, no gradient buttons, no icon grids); the drama comes from layout and the
-two stars, never from decoration.
+one light, never from decoration.
 
 ### 4.2 Referred landing (celestual.us/@poster)
 
@@ -785,7 +785,8 @@ more data to hold for a company whose discipline is to hold less.
 
 The canonical look is the galaxy edition (DESIGN.md): one deep cosmic-violet
 field with a living galaxy behind every screen, lit by two warm stars —
-starlight-amber (`you`) and rose (`them`). Serif italic for the emotional voice,
+caramel (`you`) and wheat (`them`), one hue at two values. The garalde for the
+emotional voice,
 small quiet sans-serif for the mechanical voice, letterspaced mono for metadata,
 all lowercase except handles. Generous empty space; one primary action per
 screen. The brand at its brightest is the match screen; everywhere else it is a

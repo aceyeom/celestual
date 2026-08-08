@@ -91,11 +91,11 @@ export async function placePing({ me, them, email, proof, card, demo, days }) {
 // seeds teach: plain, specific, about a detail nobody would invent.
 export const DEMO_CARD = {
   words: 'i thought about messaging you a hundred times',
-  bg: 'rose',
+  bg: 'chalk',
   face: 'serif',
   x: 0.2,
   y: 0.4,
-  tone: 0,
+  tone: 0.55,
 };
 
 // The status page read (Screen 4). Sends the device-held plaintext list up and

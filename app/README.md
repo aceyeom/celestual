@@ -20,7 +20,7 @@ src/
 │                      be confused with card/ below: this one is the shareable
 │                      about the PLACE, and it names nobody
 ├── card/              the star & card system — the poster every ping carries
-│   ├── Disc.jsx       THE CARD: the ground, the type, the limb, the corona
+│   ├── Disc.jsx       THE SEAL: the material, the keylines, the type, the light
 │   ├── Composer.jsx   the composer, which IS the card being filled in
 │   ├── Resolve.jsx    a held star resolving into its card, off the camera
 │   ├── Spread.jsx     the mutual: two cards unsealing in the same instant
@@ -32,12 +32,18 @@ src/
 │   └── share.js       the story render — your card, never theirs
 ├── demoData.js        the sandbox's hardcoded world (sample pings, the Reed
 │                      campus window, world counters)
-├── theme.js           the single source of color/geometry (one warm star)
-├── styles.css         reset, fonts, grain, keyframes
+├── theme.js           the single source of colour, type and geometry — the
+│                      bindery: one hue, two corners, nothing that glows
+├── texture.js         the materials, drawn per pixel: pebbled hide, laid paper,
+│                      chalk card, the tooth over the void, and the saddle stitch
+├── styles.css         reset, the ground's grain, the registration-mark cursor,
+│                      and the motion law (things settle; nothing springs)
 ├── components/
 │   ├── screens.jsx    the nine screens + verify sheet + account sheet
-│   └── ui.jsx         primitives: NightField, StarMark, Meter, StateDot,
-│                      buttons, fields, dialog a11y
+│   └── ui.jsx         primitives: the chart canvases, the Sigil, the Masthead
+│                      and the Index column (the one navigation), the Plate (a
+│                      letterpress button), the Ruled field, the tooled Rule,
+│                      the state Mark, the Slots meter, dialog a11y
 ├── api/
 │   ├── celestual.js   the RPC calls (placePing, pingStatus, renewPing,
 │   │                  retirePing, fetchMyPings, campuses, worlds, opt-out)

@@ -105,7 +105,7 @@ function MakeCard({ C, n, kind, title, line }) {
         {n}
       </span>
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <span style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: SIZE.head, color: C.cream }}>{title}</span>
+        <span style={{ fontFamily: FONT.sans, fontWeight: 500, fontSize: SIZE.head, color: C.cream }}>{title}</span>
         <span style={{ fontSize: SIZE.small, lineHeight: 1.55, color: C.muted }}>{line}</span>
       </div>
     </div>
@@ -126,7 +126,7 @@ function StepRail({ C, steps }) {
             {i < steps.length - 1 && <span aria-hidden style={{ flex: 1, width: 1, background: rgba(C.star, 0.2) }} />}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: i < steps.length - 1 ? SPACE.lg : 0 }}>
-            <span style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: SIZE.body, color: C.cream }}>{s.head}</span>
+            <span style={{ fontFamily: FONT.sans, fontWeight: 500, fontSize: SIZE.body, color: C.cream }}>{s.head}</span>
             <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{s.body}</span>
           </div>
         </div>
@@ -161,7 +161,7 @@ function DeadlineCard({ C }) {
 function EntryStat({ C, value, label, lit }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: `${SPACE.md}px 0` }}>
-      <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.figure, color: lit ? C.star : C.cream }}>{value}</span>
+      <span style={{ fontFamily: FONT.mono, fontWeight: 500, fontSize: SIZE.figure, color: lit ? C.star : C.cream }}>{value}</span>
       <Kicker C={C} micro>{label}</Kicker>
     </div>
   )
@@ -206,13 +206,13 @@ function LinkPreview({ C, choice, state }) {
     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: `${SPACE.xs}px ${SPACE.md}px`, padding: '0 2px' }}>
       <span style={{ fontFamily: FONT.mono, fontSize: SIZE.small, color: bad ? rgba(C.them, 0.85) : rgba(C.cream, 0.85) }}>
         celestual.us/
-        <span style={{ fontWeight: 700, color: ghost ? rgba(C.cream, 0.3) : good ? C.star : 'inherit' }}>
+        <span style={{ fontWeight: 500, color: ghost ? rgba(C.cream, 0.3) : good ? C.star : 'inherit' }}>
           {code || 'abcd'}
         </span>
       </span>
       {mark && (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: FONT.mono, fontSize: SIZE.meta, color: mark.color }}>
-          {good && <span aria-hidden style={{ fontSize: 10 }}>✦</span>}
+          {good && <Icon name="check" size={11} color="currentColor" stroke={1.1} />}
           {mark.text}
         </span>
       )}
@@ -243,7 +243,7 @@ function DocSheet({ C, onClose }) {
       onClick={onClose}
       style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom))' }}
     >
-      <div aria-hidden className="scrim-in" style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.8), backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }} />
+      <div aria-hidden className="scrim-in" style={{ position: 'fixed', inset: 0, background: rgba(C.ink, 0.8) }} />
       <div
         onClick={(e) => e.stopPropagation()}
         ref={ref}
@@ -473,12 +473,12 @@ export function TrialScreen({ C, ctx }) {
           {welcomeBack && <Note C={C} tone="quiet">{t('trial.welcomeBack')}</Note>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <Kicker C={C} micro>{t('trial.linkLabel')}</Kicker>
-            <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 'clamp(16px, 5vw, 21px)', color: C.cream, wordBreak: 'break-all', userSelect: 'all', WebkitUserSelect: 'all' }}>
+            <span style={{ fontFamily: FONT.mono, fontWeight: 500, fontSize: 'clamp(16px, 5vw, 21px)', color: C.cream, wordBreak: 'break-all', userSelect: 'all', WebkitUserSelect: 'all' }}>
               {trialLink(account.code).replace(/^https?:\/\//, '')}
             </span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACE.sm }}>
               <Kicker C={C} micro>{t('trial.codeWord')}</Kicker>
-              <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: SIZE.lead, letterSpacing: '3px', color: C.star }}>{account.code}</span>
+              <span style={{ fontFamily: FONT.mono, fontWeight: 500, fontSize: SIZE.lead, letterSpacing: '3px', color: C.star }}>{account.code}</span>
             </div>
           </div>
           <PrimaryButton C={C} onClick={share}>{copied ? t('trial.copied') : t('trial.share')}</PrimaryButton>

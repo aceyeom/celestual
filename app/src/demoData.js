@@ -28,13 +28,13 @@ export const DEMO_PINGS = [
     card: {
       handle: 'sofia.reyes',
       words: 'you always took the window seat',
-      bg: 'ink', face: 'serif', pos: { x: 0.2, y: 0.68 }, tone: 1,
+      bg: 'leaf', face: 'serif', pos: { x: 0.2, y: 0.68 }, tone: 1,
       placed: Date.now() - 20 * day,
     },
     theirCard: {
       handle: 'sofia.reyes',
       words: 'i thought about messaging you a hundred times',
-      bg: 'rose', face: 'serif', pos: { x: 0.2, y: 0.4 }, tone: 0,
+      bg: 'chalk', face: 'serif', pos: { x: 0.2, y: 0.4 }, tone: 0.55,
       placed: Date.now() - 21 * day,
     },
   },
@@ -47,7 +47,7 @@ export const DEMO_PINGS = [
     card: {
       handle: 'aria.chen',
       words: 'you hated that song and sang it anyway',
-      bg: 'violet', face: 'sans', pos: { x: 0.2, y: 0.4 }, tone: 0.42,
+      bg: 'hide', face: 'sans', pos: { x: 0.2, y: 0.4 }, tone: 0.12,
       placed: Date.now() - 12 * day,
     },
   },
@@ -59,7 +59,7 @@ export const DEMO_PINGS = [
     card: {
       handle: 'jw.park',
       words: 'we said we would be roommates',
-      bg: 'ember', face: 'mono', pos: { x: 0.5, y: 0.62 }, tone: 1,
+      bg: 'leaf', face: 'mono', pos: { x: 0.5, y: 0.62 }, tone: 1,
       placed: Date.now() - 56 * day,
     },
   },

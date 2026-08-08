@@ -54,10 +54,10 @@ line.
 
 The type system is the tone system (DESIGN.md §3):
 
-- **Instrument Serif, italic** — feelings, states, the intent lines, the hero
+- **Cormorant Garamond** — feelings, states, the intent lines, the hero
   sentences. Anything a person *means*.
-- **Space Grotesk** — mechanics, explanations, buttons.
-- **Space Mono, uppercase, letterspaced** — kickers, labels, counts, clocks.
+- **Jost** — mechanics, explanations, buttons.
+- **Courier Prime** — kickers, labels, counts, clocks. Never a feeling.
   Never feelings.
 
 Rules that follow: an intent line may never render in mono; a count may never

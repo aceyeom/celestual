@@ -45,10 +45,145 @@ import {
 import { tempToU, blackbodyRGB, normalizeLum } from './sky/blackbody.js'
 import { CAM as LENS_CAM, FOCAL as LENS_FOCAL } from './sky/camera.js'
 import { Gestures } from './sky/gestures.js'
-import { starTint, TOKENS, rgbUnit } from './theme.js'
+import { starTint, TOKENS, rgbUnit, hexToRgb } from './theme.js'
 import { Galaxy2D } from './sky/fallback2d.js'
 
 const VANISH_DUR = 0.62 // the wink-out when a ping is withdrawn
+
+// ── the ramp ─────────────────────────────────────────────────────────────────
+// Every star's colour in this engine comes from a single 256-entry lookup
+// indexed by temperature: the Planck locus, running deep amber at 2,500 K
+// through white at 6,500 K to hard blue past 20,000 K. `sky/blackbody.js` takes
+// an optional replacement curve, so the whole universe is recoloured by handing
+// it a different one-dimensional ramp. There is no shader change and no second
+// code path.
+//
+// This curve keeps the physics' SHAPE and drops its hue: cool stars go deep
+// chocolate, hot ones go ivory. That is not a cheat, it is the honest half of
+// the truth — the cool end of the real locus genuinely is brown and the hot end
+// genuinely is white. What it gives up is the blue, which is exactly the thing
+// this brand has no room for.
+//
+// The consequence is why it works at all: the bulge is OLD, so it is full of
+// 3,000–5,000 K stars and comes out the colour of the leather; the arms are
+// young and hot, so they come out ivory. The galaxy's structure still reads —
+// an old brown heart, pale forming arms — off demographics rather than off
+// decoration, in one hue.
+//
+// The stops are on u, the LUT's log-temperature coordinate (u=0 is 1,200 K,
+// u=1 is 40,000 K). Luminance is normalised away downstream, so these are
+// chromaticities: pick them for hue and let brightness stay physics. The MIDDLE
+// is where the galaxy's mass actually is (the bulge and inner disk are
+// 3,000–7,000 K), so the middle is what the eye reads as "the colour of the
+// galaxy" — and it runs through struck bronze and gold rather than through the
+// leather's own browns, which is the difference between old brass and old
+// chocolate. On a ground this dark, tan would read as a smudge of the case.
+const RAMP_STOPS = [
+  [0.0, '#3E2009'], //  1,200 K   the coolest dwarfs: burnt umber
+  [0.22, '#7E4715'], // 2,600 K   deep chocolate
+  [0.36, '#B0762A'], // 4,000 K   the old bulge: struck bronze
+  [0.5, '#D8A44E'], //  6,900 K   sun-like: gold
+  [0.64, '#EBD298'], // 11,000 K  wheat
+  [0.8, '#F5E9CB'], //  20,000 K  near ivory
+  [1.0, '#FFFAF0'], //  40,000 K  the hottest: paper white
+]
+
+const RAMP_LUT = RAMP_STOPS.map(([u, hex]) => [u, hexToRgb(hex).map((v) => v / 255)])
+
+export function binderyRamp(u) {
+  const x = u < 0 ? 0 : u > 1 ? 1 : u
+  for (let i = 1; i < RAMP_LUT.length; i++) {
+    const [u1, c1] = RAMP_LUT[i]
+    if (x <= u1 || i === RAMP_LUT.length - 1) {
+      const [u0, c0] = RAMP_LUT[i - 1]
+      const t = u1 === u0 ? 0 : (x - u0) / (u1 - u0)
+      return [c0[0] + (c1[0] - c0[0]) * t, c0[1] + (c1[1] - c0[1]) * t, c0[2] + (c1[2] - c0[2]) * t]
+    }
+  }
+  return RAMP_LUT[RAMP_LUT.length - 1][1]
+}
+
+// What a canvas-2D fallback paints when there is no GPU: the same case and the
+// same warm heart, so a machine without WebGL2 still gets this brand.
+const FALLBACK_GROUND = [TOKENS.ink2, TOKENS.ink, '#060403']
+const FALLBACK_CORE = ['255,240,214', '232,186,110', '150,96,44']
+
+// The meteors, in this brand's one hue. The old set carried a magnesium
+// blue-white, which is a lovely real detail and the only blue that would ever
+// appear in a sky that has no blue in it.
+const SHOOT_HUES = ['#FFF6EC', '#F1E7D3', '#F1E7D3', '#E3C79A', '#D6B78A']
+
+// ── the framing, per window ──────────────────────────────────────────────────
+// The engine solves its framing off the SHORT side of the window and its star
+// size against a reference phone, which between them are why the same galaxy
+// used to be two different pictures on the two devices:
+//
+//   on a laptop the short side is 900px, so the disk is drawn across ~500px of
+//   radius and every star is scaled DOWN to about 0.45 of its reference size.
+//   Fine grain, wide galaxy.
+//
+//   on a phone the short side is 390px, so the disk gets ~225px of radius and
+//   the stars stay at 1.0. Half the picture, twice the grain — a tight bright
+//   knot of comparatively enormous points, rotating fastest exactly where it is
+//   densest. On a display that renders the sky below its native resolution and
+//   scales it up, that knot is also what shimmers.
+//
+// So a narrow window gets its own numbers, and a wide one gets a wider disk so
+// the chart is the field the page is printed on rather than an object with case
+// all round it. The engine itself is untouched: these are the two numbers it
+// already solves against, set per-window.
+const NARROW = 620
+// how much wider the disk is drawn (frameFit is a fraction of the short side)
+const NARROW_FIT = 0.74
+const WIDE_FIT = 0.6
+// and how much smaller each star is drawn against it. The engine spends the
+// difference on POPULATION — `_build` scales its count by 1/sizeScale — so the
+// field does not just get finer, it gets denser, which is the other half of why
+// a phone's sky read as a scatter of specks rather than as a galaxy.
+const NARROW_GRAIN = 0.74
+// the ambient rotation, slowed from 20. Per-star motion blur is drawn from
+// frame-to-frame screen delta, and the core's angular velocity is the highest
+// in the picture; at a phone's render scale that is a knot of short smears
+// changing direction every frame. A dive is unaffected — its smear comes from
+// camera travel, and the orbit clock is nearly stopped through one anyway.
+const NARROW_MOTION = 13
+// ── and the part of it that is only ever wrong on a phone ────────────────────
+// The camera takes a whisper of parallax off the pointer on a desktop and off
+// DEVICE ORIENTATION on a phone. On a desktop the pointer is still while you
+// read. A phone in a hand never is: it is a gyroscope taped to a wrist, and the
+// tilt handler's dead-zone opens at about two degrees of roll, which is less
+// than the tremor of holding something up to read it. So the camera is always
+// very slightly turning, and per-star motion blur is honest about camera
+// ROTATION — it smears the entire field along the swing. A whole sky of short
+// dashes changing direction several times a second does not read as parallax.
+// It reads as the page glitching, and it is the one artefact that cannot appear
+// on a desktop at all.
+const NARROW_PARALLAX = 0.11
+const NARROW_SMEAR = 0.5
+// ── where the heart sits down the frame ──────────────────────────────────────
+// The galactic centre is the one part of the picture nothing can be read over:
+// it is orders of magnitude brighter than the ground either side of it, and no
+// amount of halo under a line of type wins against it. So it goes where the
+// words are not.
+//
+// The words moved. Every page is a column ranged left inside a centred measure
+// now, running from the headline at the top to the actions two thirds down, so
+// the old 0.6 put the heart directly behind the primary action and the quiet
+// exit beside it. Pushed past that, it sits in the quiet under the setting,
+// with the arms carrying the frame the type actually sits in.
+const CENTRE_Y = 0.76
+const NARROW_CENTRE_Y = 0.82
+// ── and across it ───────────────────────────────────────────────────────────
+// On a phone the measure IS the screen, so there is nowhere sideways to put the
+// heart and it stays centred; dropping it low is the whole answer there.
+//
+// On a laptop the setting is a 560px column in the middle of a window three
+// times that wide, so there is somewhere for it to go: to the RIGHT of the
+// column, where it lights the empty case beside the type instead of sitting
+// behind the one action on the page. This is the same decision as `centerY`,
+// made on the other axis, and it is why the same galaxy no longer has to
+// choose between being visible and being readable over.
+const WIDE_CENTRE_X = 0.66
 
 // How brightly the nebula burns at rest. Down from 0.3: the cloud is the widest
 // thing in the frame, so it is the single biggest contributor to how hard the
@@ -154,14 +289,18 @@ const SURFACE_B = 1.34
 
 export class GalaxyField extends SkyEngine {
   constructor(canvas, opts = {}) {
-    super(canvas, opts)
+    // The one hue arrives HERE, before the engine builds anything, because the
+    // blackbody LUT is baked once in the engine's own constructor. A caller can
+    // still override it, which is what the community sky does when it wants a
+    // different framing off the same colour.
+    super(canvas, { ramp: binderyRamp, ground: FALLBACK_GROUND, core: FALLBACK_CORE, ...opts })
     // No WebGL2 at all (a very old in-app browser, a context the browser
     // refused, a driver blocklist): hand back a small canvas-2D field instead,
     // so the product still has a sky. Returning an object from a constructor
     // substitutes it for `this`, so every caller keeps its `new GalaxyField(...)`
     // and never has to know which one it got. Deliberately modest: the point is
     // that nothing is ever broken, not that the fallback competes.
-    if (!this.ok) return new Galaxy2D(canvas, opts)
+    if (!this.ok) return new Galaxy2D(canvas, { ramp: binderyRamp, ground: FALLBACK_GROUND, core: FALLBACK_CORE, ...opts })
 
     this.mode = 'idle'
     this.modeT = 0
@@ -189,7 +328,7 @@ export class GalaxyField extends SkyEngine {
 
     // ambient shooting stars — an occasional grace note in the deep sky, never
     // weather. Sodium yellow, magnesium blue-white, iron orange.
-    this.shootHues = opts.shootHues || ['#9FD8FF', '#FFE7B8', '#FFE7B8', '#FFF6EC', '#FFF6EC', '#FFF6EC']
+    this.shootHues = opts.shootHues || SHOOT_HUES
     this.shoots = []
     this._shootAt = 3 + Math.random() * 4
 
@@ -200,7 +339,7 @@ export class GalaxyField extends SkyEngine {
     // colour curve (opts.ramp — blackbody.js) has to take its surface off that
     // curve too, or the star you dive into is the one object in the sky still
     // wearing the old palette.
-    this.heroRGB = opts.ramp ? normalizeLum(opts.ramp(tempToU(HERO_TEMP), HERO_TEMP)) : HERO_RGB
+    this.heroRGB = this.opts.ramp ? normalizeLum(this.opts.ramp(tempToU(HERO_TEMP), HERO_TEMP)) : HERO_RGB
 
     this._build()
     this._bindHand()
@@ -299,13 +438,7 @@ export class GalaxyField extends SkyEngine {
     this.gHero.twinkle = 0.1
 
     this.frameRadius = 1.45
-    // Below the type, deliberately. Every screen in this product sets its
-    // headline in the upper-middle of the frame, and the galactic centre was
-    // landing inside it — so the busiest, brightest square inch of the picture
-    // was always directly behind the words. Dropped past the fold, the heart
-    // sits in the quiet between the sentence and the button, the arms carry the
-    // upper frame at a fraction of the density, and the type has a ground.
-    this.centerY = 0.6
+    // `_layout` owns this now, and sets it per window (CENTRE_Y above).
     this._layout()
     this._tuneGas()
     this._tunePost()
@@ -334,15 +467,19 @@ export class GalaxyField extends SkyEngine {
     g.dust = 1.0
     g.fill = 99
     g.forming = 0
-    // The ramp is physics that happens to be the brand: warm scattered
-    // starlight in the heart, H-alpha rose through the mid-disk (656 nm is why
-    // every emission nebula you have seen a photograph of is pink), and the
-    // cool violet-blue of reflection and doubly-ionised oxygen at the rim.
-    // Pulled toward the ground the whole picture now sits on: the rim keeps its
-    // cool, but a cold blue against warm leather is two pictures, not one.
-    g.warm = linearOf('#F0A876', 1.0)
-    g.mid = linearOf(this.them, 0.86)
-    g.cool = linearOf('#7B7CB0', 0.8)
+    // The nebula's own ramp. The physical one is warm scattered starlight in
+    // the heart, H-alpha rose through the mid-disk (656 nm is why every
+    // emission nebula you have seen a photograph of is pink), and the cool
+    // violet-blue of reflection and doubly-ionised oxygen at the rim. That is
+    // real physics and two hues this brand does not have.
+    //
+    // This one runs lit cocoa through saddle to chalk: the same structure, read
+    // as dust caught in lamplight going cold at the rim rather than as ionised
+    // gas. The rim still goes cool, because a cloud does; it goes cool by
+    // losing warmth rather than by gaining blue.
+    g.warm = linearOf('#CE9645', 1.0) //  the heart: lamplight in dust
+    g.mid = linearOf('#8F5F2C', 0.95) //  the mid-disk: saddle
+    g.cool = linearOf(TOKENS.chalk, 0.85) // the rim: chalk, going cold
   }
 
   // ── the ground, and the light on it ─────────────────────────────────────────
@@ -351,21 +488,32 @@ export class GalaxyField extends SkyEngine {
   // sky's job is to sit UNDER type on every screen in the product — so on the
   // landing it fought the headline it was behind, and lost the headline.
   //
-  // It is drawn now rather than photographed: the same physics, printed on a
-  // ground. The floor is lifted to the page's own colour (theme.js `ink` — a
-  // dark tobacco, the inside of an old leather case), so nothing in the frame
-  // is ever blacker than the paper it is on; the exposure comes down; the bloom
-  // is nearly off, because bloom is what turns stars into lamps; and the
-  // vignette closes in, which is what an illustration pressed into a cover
-  // actually looks like at its edges. Contrast, not brightness, is what was
-  // making it unreadable.
+  // It is drawn now rather than photographed: the same physics, engraved into a
+  // ground. The floor is lifted to the page's own colour (theme.js `ink` — the
+  // inside of a closed leather case), so nothing in the frame is ever blacker
+  // than the case it is printed on and the canvas and the DOM are one surface.
+  //
+  // These four numbers all moved together when the ground did, and they moved
+  // BECAUSE the ground moved. On a lifted floor the frame had perhaps two
+  // thirds of a value scale to work in, so the exposure was held under 1 and the
+  // vignette was pushed hard to keep the corners from washing out. With the case
+  // dropped to near-black there is a full scale underneath every star: the
+  // exposure can sit above 1 without the faint field turning to fog, the bloom
+  // can come up enough to give the heart a real core, and the vignette can come
+  // most of the way off — it was doing the darkening the ground now does for
+  // itself, and a heavy vignette over a dark ground is just a dirty lens.
   _tunePost() {
     const p = this.post
-    p.bloomAmount = 0.1
-    p.threshold = 2.1
-    p.knee = 0.5
-    p.vignette = 0.62
-    p.exposure = 0.86
+    p.bloomAmount = 0.17
+    p.threshold = 1.55
+    p.knee = 0.6
+    p.vignette = 0.4
+    p.exposure = 1.08
+    // No lateral chromatic spread. It is a lovely real lens artefact and it is
+    // the one thing in the pipeline that can put a green and a magenta fringe on
+    // a bright star, which in a brand with exactly one hue reads as a rendering
+    // fault rather than as a lens.
+    p.chroma = 0
     // exactly the page's background, so the canvas and the DOM are one surface
     p.floor = rgbUnit(TOKENS.ink)
     // the ground itself: a warm near-black that breathes vertically, sitting
@@ -377,6 +525,30 @@ export class GalaxyField extends SkyEngine {
     }
     // the far galaxy behind this one — kept, quietened, and warmed
     p.bandBright = 0.012
+  }
+
+  // ── the framing, per window ─────────────────────────────────────────────────
+  // Called from inside SkyEngine's own constructor (via the first resize), so it
+  // may not touch anything this class sets up later — `this.cam` is guarded for
+  // exactly that reason. `w`/`h` are written by resize() immediately before this
+  // runs, which is all it needs. `centerY` is not touched here: the constructor
+  // owns it, and its argument (the heart goes where the words are not) is the
+  // same on both widths because the column is the same on both widths.
+  _layout() {
+    const w = this.w || window.innerWidth || 390
+    const h = this.h || window.innerHeight || 844
+    const narrow = Math.min(w, h) < NARROW
+    this.frameFit = narrow ? NARROW_FIT : WIDE_FIT
+    this.motion = narrow ? NARROW_MOTION : 20
+    this.motionScale = narrow ? NARROW_SMEAR : 1
+    this.centerY = narrow ? NARROW_CENTRE_Y : CENTRE_Y
+    this.centerX = narrow ? 0.5 : WIDE_CENTRE_X
+    if (this.cam) this.cam.parallaxGain = narrow ? NARROW_PARALLAX : 0.3
+    super._layout()
+    // AFTER the engine has solved it: `frameFit` cancels out of the engine's
+    // reference framing, so a wider disk on its own leaves the grain exactly
+    // where it was. This is the part that makes the star smaller.
+    if (narrow) this.sizeScale *= NARROW_GRAIN
   }
 
   _paletteChanged() {
@@ -1160,7 +1332,7 @@ export class GalaxyField extends SkyEngine {
           t: 0,
           // a meteor's colour is the metal it is burning — sodium yellow,
           // magnesium blue-white, iron orange. A real detail, cheaply had.
-          // `shootHues` so a single-hue field (/beta) does not get one blue
+          // `shootHues`, so this single-hue field never draws a blue one
           // streak an hour through a sky that has no blue in it.
           hue: this.shootHues[Math.floor(Math.random() * this.shootHues.length)],
         })

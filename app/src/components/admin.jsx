@@ -1,17 +1,27 @@
 // admin.jsx — the desk at celestual.us/admin.
 //
-// DELIBERATELY NOT PART OF THE PRODUCT'S LOOK. Everything else in this app is
-// the dark sky: serif italics, a living galaxy, copy in lowercase. That is a
-// voice for the people we're for. It is the wrong voice for an operations
+// THE BACK OFFICE, NOT THE BOOK. Everything else in this product is the closed
+// case: the engraved chart, ivory on leather, one light per screen. That is the
+// register for the people we are for, and it is the wrong one for an operations
 // console, where the job is reading numbers accurately at a glance and pressing
-// destructive buttons without misreading which row you're on.
+// destructive buttons without misreading which row you are on. So the desk keeps
+// what it always kept: a LIGHT ground, dense tabular rows, tabular figures, and
+// no animation that is not feedback. It paints itself over the whole viewport
+// (position: fixed) so the chart behind it never shows through, and App.jsx
+// skips rendering that canvas here at all.
 //
-// So this file shares NOTHING with the rest of the app — not the palette, not
-// ui.jsx, not the type scale. It is a white, light-mode, dense, tabular
-// dashboard in the fintech register: system UI type, tabular figures, one
-// accent, generous borders, no animation that isn't feedback. It paints itself
-// over the whole viewport (position:fixed) so the galaxy canvas behind it never
-// shows through, and App.jsx skips rendering that canvas here at all.
+// What changed is what it is made of. It used to be a white-and-indigo fintech
+// dashboard in system UI — a perfectly good console belonging to no product at
+// all. It is the almanac's back office now: LAID PAPER rather than white, the
+// case's own ink rather than slate, the brand's one caramel light rather than an
+// indigo accent, 2px corners rather than 8px, and the product's three faces.
+// Same density, same legibility argument, same two-tap destructive buttons.
+//
+// The three state tints survive, and they are the one deliberate exception to
+// the product's one-hue law. They are not decoration: a person under time
+// pressure has to tell BANNED from OPTED OUT from fine, and form alone is not
+// fast enough on a table of four hundred rows. They are pulled to a printed
+// register — a ledger's red ink, a stamped green — rather than SaaS chips.
 //
 // The data is one call — celestual_admin_overview (migrations 0019 + 0020) —
 // returning counts, users (one row per member), unverified (ONE ROW PER HANDLE,
@@ -22,6 +32,7 @@
 // The password is checked only in the celestual-admin edge function; every data
 // RPC behind it is service-role only, so nothing here is readable without it.
 import * as React from 'react'
+import { Sigil } from './ui.jsx'
 import {
   adminOverview, adminDeleteUser, adminBanUser, adminUnbanUser,
   adminDeleteCompetitor, adminClearPending, adminVerifyUser, adminHandleStatus,
@@ -30,30 +41,34 @@ import {
 const PW_STORE = 'celestual:adminpw' // session-scoped; the server re-checks every call
 
 // ── the desk's own palette ───────────────────────────────────────────────────
-// Slate + a single indigo accent, plus semantic green/amber/red used ONLY for
-// state, never for decoration. If a colour appears here it means something.
+// The leaves, not the case: laid paper and the ink it is written in, the brand's
+// one light for anything active, and three state tints that mean something. If a
+// colour appears here it means something.
 const A = {
-  bg: '#f7f8fa',
-  surface: '#ffffff',
-  line: '#e4e7ec',
-  lineSoft: '#eef0f3',
-  ink: '#0d1321',
-  body: '#3f4756',
-  muted: '#79818f',
-  faint: '#9aa1ad',
-  accent: '#3557f6',
-  accentSoft: '#eef1fe',
-  good: '#0e9f6e',
-  goodSoft: '#e7f7f0',
-  warn: '#b45309',
-  warnSoft: '#fdf3e3',
-  bad: '#d33d3d',
-  badSoft: '#fdeceC',
+  bg: '#EFE6D4', //      the desk: a shade under the leaf, so a sheet reads as a sheet
+  surface: '#F7F1E3', // the leaf itself
+  line: 'rgba(36,24,17,0.16)',
+  lineSoft: 'rgba(36,24,17,0.08)',
+  ink: '#241811', //     what you are meant to read
+  body: '#4A3A2D', //    the quieter ink
+  muted: '#7A6A5B', //   a pencil note
+  faint: '#9C8F80',
+  accent: '#8A5C33', //  saddle: dark enough to read AS ink on paper, and the
+  accentSoft: '#E8DCC4', //  same light every lit thing in the product wears
+  good: '#3F6B45', //    a stamped green, the colour of a ledger's approval
+  goodSoft: '#E2E8DA',
+  warn: '#8A5C33',
+  warnSoft: '#EBDFC6',
+  bad: '#8E3B2E', //     a ledger's red ink, not a browser error
+  badSoft: '#EEDCD4',
 }
 
-const FONT =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif'
-const MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace'
+// The product's three faces (theme.js FONT). Jost carries the mechanics here
+// exactly as it does everywhere else; Courier carries every figure, which is
+// what a back office actually wants — a tabular typewriter face.
+const FONT = "'Jost', 'Futura', 'Century Gothic', system-ui, -apple-system, sans-serif"
+const MONO = "'Courier Prime', 'Courier New', ui-monospace, monospace"
+const SERIF = "'Cormorant Garamond', Georgia, serif"
 const NUM = { fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum"' }
 
 // ── small primitives ─────────────────────────────────────────────────────────
@@ -62,12 +77,12 @@ function Btn({ children, onClick, kind = 'default', size = 'md', disabled, type,
   const [h, setH] = React.useState(false)
   const pal =
     kind === 'primary'
-      ? { bg: A.accent, fg: '#fff', bd: A.accent, hov: '#2544d8' }
+      ? { bg: A.accent, fg: A.surface, bd: A.accent, hov: '#6F4826' }
       : kind === 'danger'
-        ? { bg: A.surface, fg: A.bad, bd: '#f0c9c9', hov: A.badSoft }
+        ? { bg: A.surface, fg: A.bad, bd: 'rgba(142,59,46,0.34)', hov: A.badSoft }
         : kind === 'good'
-          ? { bg: A.surface, fg: A.good, bd: '#bfe6d6', hov: A.goodSoft }
-          : { bg: A.surface, fg: A.body, bd: A.line, hov: '#f3f4f6' }
+          ? { bg: A.surface, fg: A.good, bd: 'rgba(63,107,69,0.34)', hov: A.goodSoft }
+          : { bg: A.surface, fg: A.body, bd: A.line, hov: A.accentSoft }
   return (
     <button
       type={type || 'button'}
@@ -77,13 +92,13 @@ function Btn({ children, onClick, kind = 'default', size = 'md', disabled, type,
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
         padding: size === 'sm' ? '5px 10px' : '9px 16px',
-        borderRadius: 8,
+        borderRadius: 2,
         border: `1px solid ${pal.bd}`,
-        background: disabled ? '#f3f4f6' : h ? pal.hov : pal.bg,
+        background: disabled ? A.bg : h ? pal.hov : pal.bg,
         color: disabled ? A.faint : pal.fg,
         fontFamily: FONT,
         fontSize: size === 'sm' ? 12.5 : 14,
-        fontWeight: 550,
+        fontWeight: 400,
         letterSpacing: '-0.01em',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'background .14s, border-color .14s, color .14s',
@@ -126,7 +141,7 @@ function Card({ children, style, pad = 20 }) {
       style={{
         background: A.surface,
         border: `1px solid ${A.line}`,
-        borderRadius: 14,
+        borderRadius: 3,
         padding: pad,
         boxShadow: '0 1px 2px rgba(13,19,33,.04)',
         ...style,
@@ -141,7 +156,7 @@ function Stat({ label, value, sub, tone }) {
   const col = tone === 'bad' ? A.bad : tone === 'good' ? A.good : tone === 'warn' ? A.warn : A.ink
   return (
     <Card pad={16} style={{ flex: '1 1 150px', minWidth: 140 }}>
-      <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: A.faint }}>
+      <div style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: '.06em', textTransform: 'uppercase', color: A.faint }}>
         {label}
       </div>
       <div style={{ marginTop: 7, fontSize: 27, fontWeight: 650, letterSpacing: '-0.025em', color: col, ...NUM }}>
@@ -154,18 +169,18 @@ function Stat({ label, value, sub, tone }) {
 
 function Pill({ children, tone }) {
   const map = {
-    good: [A.goodSoft, A.good, '#c7ead9'],
-    warn: [A.warnSoft, A.warn, '#f0dcb8'],
-    bad: [A.badSoft, A.bad, '#f2cccc'],
-    accent: [A.accentSoft, A.accent, '#d3dcfd'],
+    good: [A.goodSoft, A.good, 'rgba(63,107,69,0.3)'],
+    warn: [A.warnSoft, A.warn, 'rgba(138,92,51,0.3)'],
+    bad: [A.badSoft, A.bad, 'rgba(142,59,46,0.3)'],
+    accent: [A.accentSoft, A.accent, 'rgba(138,92,51,0.3)'],
   }
-  const [bg, fg, bd] = map[tone] || ['#f2f4f7', A.muted, A.line]
+  const [bg, fg, bd] = map[tone] || [A.bg, A.muted, A.line]
   return (
     <span
       style={{
-        display: 'inline-block', padding: '2px 8px', borderRadius: 999,
+        display: 'inline-block', padding: '2px 8px', borderRadius: 3,
         background: bg, color: fg, border: `1px solid ${bd}`,
-        fontSize: 11.5, fontWeight: 600, letterSpacing: '-.005em', whiteSpace: 'nowrap',
+        fontSize: 11.5, fontWeight: 500, letterSpacing: '-.005em', whiteSpace: 'nowrap',
       }}
     >
       {children}
@@ -190,7 +205,7 @@ function Table({ cols, children, empty }) {
                   textAlign: typeof c === 'object' && c.right ? 'right' : 'left',
                   padding: '0 12px 9px 0',
                   borderBottom: `1px solid ${A.line}`,
-                  fontSize: 11.5, fontWeight: 600, letterSpacing: '.05em',
+                  fontSize: 11.5, fontWeight: 500, letterSpacing: '.05em',
                   textTransform: 'uppercase', color: A.faint, whiteSpace: 'nowrap',
                 }}
               >
@@ -208,7 +223,7 @@ function Table({ cols, children, empty }) {
 function Row({ children }) {
   const [h, setH] = React.useState(false)
   return (
-    <tr onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ background: h ? '#fafbfc' : 'transparent' }}>
+    <tr onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} style={{ background: h ? A.bg : 'transparent' }}>
       {children}
     </tr>
   )
@@ -224,7 +239,7 @@ const cell = (extra = {}) => ({
 })
 
 function Handle({ children }) {
-  return <span style={{ fontFamily: MONO, fontSize: 13, color: A.ink, fontWeight: 550 }}>@{children}</span>
+  return <span style={{ fontFamily: MONO, fontSize: 13, color: A.ink, fontWeight: 400 }}>@{children}</span>
 }
 
 function Code({ children }) {
@@ -471,7 +486,9 @@ export function AdminScreen() {
       <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 20 }}>
         <Card style={{ width: '100%', maxWidth: 380 }} pad={28}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <span style={{ width: 26, height: 26, borderRadius: 7, background: A.ink, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 14 }}>✦</span>
+            <span style={{ width: 26, height: 26, borderRadius: 2, background: A.ink, display: 'grid', placeItems: 'center' }}>
+              <Sigil size={11} cut="warm" ground={A.ink} />
+            </span>
             <span style={{ fontSize: 15.5, fontWeight: 650, letterSpacing: '-0.02em' }}>Celestual</span>
             <span style={{ marginLeft: 'auto', fontSize: 12, color: A.faint }}>Operations</span>
           </div>
@@ -493,13 +510,13 @@ export function AdminScreen() {
               placeholder="Password"
               autoFocus
               style={{
-                width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: 9,
+                width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: 2,
                 border: `1px solid ${A.line}`, outline: 'none', background: '#fff',
                 fontFamily: FONT, fontSize: 15, color: A.ink,
               }}
             />
             {err && (
-              <div style={{ fontSize: 13, color: A.bad, background: A.badSoft, border: '1px solid #f2cccc', borderRadius: 8, padding: '8px 11px' }}>
+              <div style={{ fontSize: 13, color: A.bad, background: A.badSoft, border: `1px solid rgba(142,59,46,0.3)`, borderRadius: 2, padding: '8px 11px' }}>
                 {err}
               </div>
             )}
@@ -536,7 +553,9 @@ export function AdminScreen() {
     <div style={{ maxWidth: 1240, margin: '0 auto', padding: 'max(20px, env(safe-area-inset-top)) 20px 60px' }}>
       {/* ── masthead ── */}
       <header style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '4px 0 18px' }}>
-        <span style={{ width: 28, height: 28, borderRadius: 8, background: A.ink, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 15 }}>✦</span>
+        <span style={{ width: 28, height: 28, borderRadius: 2, background: A.ink, display: 'grid', placeItems: 'center' }}>
+          <Sigil size={12} cut="warm" ground={A.ink} />
+        </span>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: 15.5, fontWeight: 650, letterSpacing: '-0.02em' }}>Celestual Operations</span>
           <span style={{ fontSize: 12, color: A.faint, ...NUM }}>
@@ -553,9 +572,9 @@ export function AdminScreen() {
       {(err || flash) && (
         <div
           style={{
-            marginBottom: 16, fontSize: 13.5, borderRadius: 9, padding: '10px 13px',
+            marginBottom: 16, fontSize: 13.5, borderRadius: 2, padding: '10px 13px',
             background: err ? A.badSoft : A.goodSoft,
-            border: `1px solid ${err ? '#f2cccc' : '#c7ead9'}`,
+            border: `1px solid ${err ? 'rgba(142,59,46,0.3)' : 'rgba(63,107,69,0.3)'}`,
             color: err ? A.bad : A.good,
           }}
         >
@@ -565,17 +584,17 @@ export function AdminScreen() {
 
       {/* ── tabs + search ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-        <nav style={{ display: 'flex', gap: 3, background: '#eef0f3', padding: 3, borderRadius: 10, flexWrap: 'wrap' }}>
+        <nav style={{ display: 'flex', gap: 3, background: A.bg, padding: 3, borderRadius: 2, flexWrap: 'wrap' }}>
           {TABS.map((x) => (
             <button
               key={x.id}
               onClick={() => setTab(x.id)}
               style={{
-                padding: '7px 13px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                padding: '7px 13px', borderRadius: 2, border: 'none', cursor: 'pointer',
                 background: tab === x.id ? A.surface : 'transparent',
                 color: tab === x.id ? A.ink : A.muted,
                 boxShadow: tab === x.id ? '0 1px 2px rgba(13,19,33,.08)' : 'none',
-                fontFamily: FONT, fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.01em',
+                fontFamily: FONT, fontSize: 13.5, fontWeight: 500, letterSpacing: '-0.01em',
               }}
             >
               {x.label}
@@ -589,7 +608,7 @@ export function AdminScreen() {
             placeholder="Filter…"
             style={{
               flex: '1 1 180px', minWidth: 140, maxWidth: 320, boxSizing: 'border-box',
-              padding: '8px 12px', borderRadius: 9, border: `1px solid ${A.line}`,
+              padding: '8px 12px', borderRadius: 2, border: `1px solid ${A.line}`,
               outline: 'none', background: A.surface, fontFamily: FONT, fontSize: 13.5, color: A.ink,
             }}
           />
@@ -654,7 +673,7 @@ export function AdminScreen() {
                 placeholder="handle"
                 style={{
                   flex: '1 1 200px', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px',
-                  borderRadius: 9, border: `1px solid ${A.line}`, outline: 'none',
+                  borderRadius: 2, border: `1px solid ${A.line}`, outline: 'none',
                   background: '#fff', fontFamily: MONO, fontSize: 14, color: A.ink,
                 }}
               />
@@ -671,13 +690,13 @@ export function AdminScreen() {
                   {status.member_since && <span style={{ fontSize: 12.5, color: A.muted }}>since {fmtDate(status.member_since)}</span>}
                 </div>
                 {status.banned && (
-                  <div style={{ fontSize: 13, color: A.body, background: A.badSoft, border: '1px solid #f2cccc', borderRadius: 9, padding: '10px 12px', whiteSpace: 'normal' }}>
+                  <div style={{ fontSize: 13, color: A.body, background: A.badSoft, border: `1px solid rgba(142,59,46,0.3)`, borderRadius: 2, padding: '10px 12px', whiteSpace: 'normal' }}>
                     Banned. Every code this @ takes will be refused, by DM and by the 20-second grace alike. This is
                     what &ldquo;that code lapsed&rdquo; really means when the code was correct.
                   </div>
                 )}
                 {status.opted_out && (
-                  <div style={{ fontSize: 13, color: A.body, background: A.warnSoft, border: '1px solid #f0dcb8', borderRadius: 9, padding: '10px 12px', whiteSpace: 'normal' }}>
+                  <div style={{ fontSize: 13, color: A.body, background: A.warnSoft, border: `1px solid rgba(138,92,51,0.3)`, borderRadius: 2, padding: '10px 12px', whiteSpace: 'normal' }}>
                     Asked never to be entered. Nobody can place a ping on this @, but they can still sign up
                     themselves. This is not a ban and never blocks verification.
                   </div>
@@ -809,7 +828,7 @@ export function AdminScreen() {
           <Table cols={['Name', 'Handle', 'Email', 'Code', 'Opens', 'Signups', 'Signed', { label: 'Actions', right: true }]}>
             {fComp.map((c) => (
               <Row key={c.handle}>
-                <td style={cell({ color: A.ink, fontWeight: 550 })}>{c.name || '—'}</td>
+                <td style={cell({ color: A.ink, fontWeight: 400 })}>{c.name || '—'}</td>
                 <td style={cell()}><Handle>{c.handle}</Handle></td>
                 <td style={cell({ color: A.muted, fontSize: 12.5 })}>{c.email || '—'}</td>
                 <td style={cell()}>

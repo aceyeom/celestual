@@ -35,6 +35,7 @@
 //
 // Deploy:  supabase functions deploy celestual-edu-verify
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as mail from '../_shared/mail.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
@@ -102,57 +103,29 @@ function fourDigit(): string {
   return String(n).padStart(4, '0');
 }
 
-// The code email — a window into the product's own galaxy. Email can't run a
-// canvas, so the sky is painted with layered CSS radial-gradients (amber and
-// rose nebulae resting in the CORNERS — the center column stays deep and dark
-// so nothing ever sits behind the headline or the code) plus rows of the
-// product's ritual star marks drifting above and below the content. No
-// wordmark: the one warm star IS the logo. The code is the hero, and a clear
-// copy button opens the app's one-tap /copy page (an email can't reach the
-// clipboard itself; the code travels in the URL fragment, never a query).
+// The code email. It used to paint four coloured nebulae into the corners of a
+// rounded card and set the code glowing in amber inside a pill — a picture of a
+// galaxy, sent by a product whose galaxy is the real thing. The frame is
+// _shared/mail.ts's now: the case, blind-tooled, with the code struck into a
+// well pressed into the leather.
+//
+// The copy button stays and matters: an email cannot reach the clipboard, so it
+// opens the app's one-tap /copy page instead, and the code travels in the URL
+// FRAGMENT so it never appears in a request line or a server log.
 function codeEmailHtml(code: string, schoolName: string) {
-  const stars = (op: number, size: number) =>
-    `color:rgba(243,236,246,${op});font-size:${size}px;letter-spacing:26px;line-height:1;font-family:Georgia,serif;`;
-  return `
-  <div style="background-color:#05040c;padding:26px 12px;margin:0">
-    <div style="max-width:480px;margin:0 auto;padding:42px 22px 36px;text-align:center;border-radius:20px;
-      border:1px solid rgba(243,236,246,0.08);
-      background-color:#070b14;
-      background-image:
-        radial-gradient(circle at 10% 6%, rgba(255,158,107,0.17), transparent 34%),
-        radial-gradient(circle at 92% 12%, rgba(230,116,158,0.13), transparent 36%),
-        radial-gradient(circle at 88% 92%, rgba(126,107,168,0.18), transparent 40%),
-        radial-gradient(circle at 6% 88%, rgba(167,194,255,0.11), transparent 38%);
-      font-family:Georgia,serif;color:#f2eee5;">
-      <div style="${stars(0.32, 12)}">&#10023; &#183; &#10022; &#183; &#10023;</div>
-      <div style="font-size:34px;color:#ffa25c;margin:22px 0 0;text-shadow:0 0 22px rgba(255,158,107,0.85)">&#10022;</div>
-      <h1 style="font-weight:400;font-style:italic;font-size:29px;line-height:1.25;margin:16px 0 0;color:#f2eee5">
-        you&rsquo;re at ${schoolName}.
-      </h1>
-      <p style="color:#aeb6c6;font-size:14.5px;line-height:1.7;margin:14px auto 0;max-width:340px;font-family:Arial,sans-serif">
-        enter this code back in celestual to join your community&rsquo;s sky.
-      </p>
-      <div style="margin:26px auto 0;max-width:250px;padding:18px 10px 15px;border-radius:16px;
-        background:rgba(5,4,12,0.55);border:1px solid rgba(255,162,92,0.35);">
-        <div style="font-family:'Courier New',monospace;font-size:44px;letter-spacing:12px;padding-left:12px;color:#ffa25c;font-weight:700;line-height:1;white-space:nowrap">
-          ${code}
-        </div>
-      </div>
-      <div style="margin:18px 0 0">
-        <a href="${SITE}/copy#c=${code}"
-          style="display:inline-block;background:#ffa25c;color:#1a0f0a;text-decoration:none;font-family:Arial,sans-serif;
-          font-weight:700;font-size:14.5px;letter-spacing:0.3px;padding:13px 34px;border-radius:14px">
-          copy the code
-        </a>
-      </div>
-      <p style="color:#8b94a8;font-size:12px;font-family:Arial,sans-serif;margin:14px 0 0">it lasts ${CODE_TTL_MIN} minutes.</p>
-      <div style="${stars(0.22, 11)};margin-top:30px">&#183; &#10023; &#183; &#183; &#10023;</div>
-      <p style="color:#5b6377;font-size:11px;line-height:1.7;margin:26px auto 0;font-family:Arial,sans-serif;max-width:380px">
-        you&rsquo;re reading this because someone entered this address to join a community on celestual.
-        if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}
-      </p>
-    </div>
-  </div>`;
+  return mail.frame({
+    kicker: 'your code',
+    inner: `
+      ${mail.title(`you&rsquo;re at ${schoolName}.`)}
+      ${mail.body('enter this code back in celestual to join your community&rsquo;s sky.')}
+      ${mail.code(code)}
+      ${mail.plate(`${SITE}/copy#c=${code}`, 'copy the code')}
+      ${mail.tick(`it lasts ${CODE_TTL_MIN} minutes.`)}
+      ${mail.colophon(
+        `you&rsquo;re reading this because someone entered this address to join a community on celestual. ` +
+        `if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}`,
+      )}`,
+  });
 }
 
 async function sendCodeEmail(to: string, code: string, schoolName: string) {
