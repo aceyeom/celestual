@@ -46,8 +46,11 @@ const en = {
   'who.title1': 'who’s',
   'who.title2': 'on your mind?',
   'who.fromLabel': 'from',
-  'who.placeholder': 'their instagram handle',
-  'who.note': 'no alert. no trace. invisible until they enter you back.',
+  // Short, because the line it sits on is now set at the size of the question
+  // above it and "their instagram handle" ran off the end of a phone at that
+  // size. The @ is already printed in front of the field, so the word instagram
+  // was the field naming its own format twice.
+  'who.placeholder': 'their handle',
   'who.confirm1': 'placing a ping on',
   'who.confirm2': 'spelled right? tap again to place.',
   'who.cta': 'place it',
@@ -139,25 +142,28 @@ const en = {
   // already a date, arrived at by the only arithmetic anybody does with one.
   'pings.days': '{n} days left',
   'pings.today': 'last day',
-  'pings.elsewhere': 'on another device',
-  'pings.heldTitle': 'on another device',
-  'pings.heldSub': 'a ping under your @, placed somewhere else.',
-  'pings.heldRestore': 'bring it here',
+  // A ping the server counts and this device has not named yet. The restore
+  // runs on its own now (App.jsx readLedger), so this is the half second before
+  // the @ lands, and the pre-0010 rows whose target survives only as a hash.
+  // It says what the row IS. It never names a device, because which phone typed
+  // a ping is not a fact about the ping.
+  'pings.unnamed': 'a ping under your @',
   'pings.heldRestoring': 'reading…',
-  'pings.heldFailed': 'that did not go through. try once more.',
   'pings.slotsUsed': '{used} of {cap}',
   'pings.slotEmpty': 'open slot',
   'pings.slotNext': 'a third slot',
   'pings.slotNextSub': 'from $2.99',
   'pings.expiringSoon': '{n} days left',
   // ── renewing ──────────────────────────────────────────────────────────────
-  // What it does sits ON the action, in four words, and what it costs sits under
-  // the ledger in six. Both questions get answered and neither gets a paragraph.
+  // What it does sits ON the action, in three words, and that is the whole of
+  // it. The sentence that used to sit under the ledger saying renewing is free
+  // and takes no slot is gone: it was a paragraph at the foot of the page
+  // restating what the action already says, and everything below it — a match,
+  // most of all — was pushed under the fold to make room for it.
   'pings.renew': 'renew',
   'pings.renewSub': 'sixty more days',
   'pings.renewing': 'renewing…',
   'pings.renewed': 'renewed. sixty more days.',
-  'pings.renewNote': 'renewing is free and takes no slot.',
   // ── when the next slot opens ──────────────────────────────────────────────
   'pings.nextSlot': 'your next slot opens in {n} days',
   'pings.nextSlotToday': 'your next slot opens today',
@@ -334,8 +340,10 @@ const en = {
   'account.pingsLine': '{n} active',
   'account.pingsNone': 'no pings yet.',
   'account.pingsOpen': 'view',
-  'account.pingsElsewhere': '{n} on another device',
-  'account.pingsRestore': 'bring them here',
+  // The reconciliation line, and it no longer names a device. The restore runs
+  // on its own; what this counts is what is still unnamed after it has.
+  'account.pingsElsewhere': '{n} not named here yet',
+  'account.pingsRestore': 'read again',
   'account.sandboxNote': 'sandbox. nothing here reaches a server.',
   'account.signOut': 'sign out',
   'account.delete': 'delete everything',

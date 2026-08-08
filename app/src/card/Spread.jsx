@@ -59,7 +59,7 @@
 // ── what carries it, given that almost nothing moves ─────────────────────────
 // The light does. Every value on this screen is a lighting value: whose light is
 // escaping, how much of it, and from behind what. The only motion is one slide
-// of about a card's width, in a second and a half, and it does not overshoot,
+// of about a card's width, in well under a second, and it does not overshoot,
 // because a hand setting two photographs down side by side does not bounce.
 //
 // ── what it deliberately does NOT add ────────────────────────────────────────
@@ -85,24 +85,38 @@ const reduced = () =>
   typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // ── the beats ────────────────────────────────────────────────────────────────
-// Three numbers, and they are all slow. The old sequence packed eleven events
-// into the same span; this one spends it on three.
+// Three numbers, and they are unhurried without being slow. The old sequence
+// packed eleven events into the same span; this one spends it on three.
+//
+// They came down by about half. Not because the shape was wrong — it is the
+// same three beats in the same order — but because of WHERE this screen sits.
+// Nobody arrives at it by accident: they saw a sealed match on the ledger, they
+// decided to look, and they pressed it. Every beat after that decision is time
+// spent between a person and the one answer they came back for, and three and
+// three quarter seconds on top of a three second dive is not restraint, it is a
+// wait. A held breath is a beat; a held breath you notice holding is a delay.
 //
 // The zoom has no duration here on purpose: it is the camera's, it breathes with
 // how far your star happens to be, and this file asks `cam.focus` what it is
-// rather than guessing how long it took.
-const HOLD = 0.7 //   your card, alone, before the dark gives anything up
-const BLOOM = 1.5 //  their light coming up around the limb
-const PART = 1.5 //   the two drawing apart
+// rather than guessing how long it took. What it DOES do is ask for a shorter
+// one (RUN / BANK below), since on this screen the flight is not the event.
+const HOLD = 0.34 //  your card, alone, before the dark gives anything up
+const BLOOM = 0.78 // their light coming up around the limb
+const PART = 0.82 //  the two drawing apart
+
+// The approach, handed to the camera. Every other dive in the product runs 2.6
+// seconds and is a flight you watch; this one is a door opening.
+const RUN = 1.25
+const BANK = 0.62
 
 // How long the wall will wait for a camera that is not keeping up before it
 // starts the reveal anyway. The sky advances its own time per frame and clamps
 // dt for stability, so a device drawing at eight frames a second flies the same
 // dive at a fraction of wall speed — and this has to outlast that, because light
 // coming up around a card that is still resolving comes up around nothing. On
-// any device that can keep up the camera is home in about three seconds and this
-// never comes up. It is the floor under a bad day, not a schedule.
-const GRACE = 9
+// any device that can keep up the camera is home in about a second and a half
+// and this never comes up. It is the floor under a bad day, not a schedule.
+const GRACE = 5
 // And how long it will wait for a sky to exist at all. The reveal takes the
 // ambient field even from someone whose backdrop is normally their community's,
 // so on that path the canvas is mounting on the same frame this is, and for a
@@ -168,22 +182,43 @@ const SKEW = 0.06 //    and how far each is set off the shared axis
 // model.js's TYPE_FLOOR is the diameter below which the card's own type stops
 // being type. So the layout solves for the largest pair that fits the box the
 // column actually left, along whichever axis fits them better — side by side on
-// anything wide, stacked on a phone held upright — and never goes under the
-// floor even if that means the pair overflows a little.
+// anything wide, stacked on a phone held upright.
 //
 // The overlap BUYS size: two discs that lap over each other need less room than
 // two that do not, and the room they give back goes into the diameter, which is
 // what the words are read at.
+//
+// ── and it is clamped to the WINDOW, not only to the column ─────────────────
+// This used to end at `Math.max(TYPE_FLOOR, …)`, on the argument that a card
+// too small to set its own type is worse than a pair that overflows a little.
+// Both halves of that were wrong on a short screen. The pair is drawn in a
+// FIXED layer with `overflow: hidden` on it, so "overflows a little" is not a
+// pair spilling generously past its column — it is a card with its bottom
+// sliced off by the edge of the window, at the one moment in the product where
+// what is being cut off is a sentence somebody wrote to you.
+//
+// So the window has the final say. The floor still wins against the COLUMN (a
+// stage that measured short because the type above it wrapped should not shrink
+// the cards), and the viewport still wins against the floor, which is the one
+// bound that cannot be argued with: it is the glass.
 const SPAN = 2 - OVERLAP //  diameters used along the pair's axis
 const CROSS = 1 + 2 * SKEW //           and across it
+// how much of the window's short side the pair leaves as air, so a card ends
+// before the edge rather than at it
+const MARGIN = 12
 function pairOf(box) {
   const cap = fullSize()
   const row = Math.min(cap, box.w / SPAN, box.h / CROSS)
   const col = Math.min(cap, box.h / SPAN, box.w / CROSS)
   const across = row >= col
+  const vw = (typeof window !== 'undefined' ? window.innerWidth : 360) - MARGIN * 2
+  const vh = (typeof window !== 'undefined' ? window.innerHeight : 640) - MARGIN * 2
+  const roof = across
+    ? Math.min(vw / SPAN, vh / CROSS)
+    : Math.min(vh / SPAN, vw / CROSS)
   return {
     across,
-    size: Math.max(TYPE_FLOOR, Math.round(across ? row : col)),
+    size: Math.round(Math.min(Math.max(TYPE_FLOOR, across ? row : col), roof)),
   }
 }
 
@@ -243,7 +278,7 @@ function useReveal(fieldRef, index, centre, size) {
       const canFly = !!(f && f.cam && f.focusStar && index != null && index >= 0)
       if (canFly && !dove) {
         dove = true
-        f.focusStar(index, { hold: true, standoff: STANDOFF })
+        f.focusStar(index, { hold: true, standoff: STANDOFF, run: RUN, bankScale: BANK })
         // and the sky can still refuse, if the star it was handed is not there
         flew = f.focusIndex === index
       }
@@ -277,7 +312,7 @@ function useReveal(fieldRef, index, centre, size) {
       // dive, the light came up and the cards drew apart over a resolve that was
       // still at zero. The most important screen in the product played to an
       // empty frame.
-      if (now > GRACE) focus = Math.max(focus, smoothstep(GRACE, GRACE + 0.9, now))
+      if (now > GRACE) focus = Math.max(focus, smoothstep(GRACE, GRACE + 0.6, now))
       const scr = (index != null && index >= 0 && f && f.sealedScreen && f.sealedScreen[index]) || null
       const disc = resolveOf(focus, scr, q.centre, q.size)
       // and tell the sky how much of its star is left to draw. Your card is
@@ -379,13 +414,27 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
   // after that — and the middle of it is filled, not hollow, which costs nothing
   // while the card is covering it and is the entire payoff at the moment the two
   // separate, when it stops being covered.
+  //
+  // ── why it is drawn at its widest and SCALED down ──────────────────────────
+  // It used to be laid out at `R` — left, top, width and height all recomputed
+  // from a number this loop changes sixty times a second. Every one of those
+  // frames asked the browser to lay the element out again AND to rasterize a
+  // six-stop radial gradient across six hundred pixels again, twice over (there
+  // are two of these), for a picture that was the same picture at a slightly
+  // different size. That is most of what made the most important screen in the
+  // product the least smooth one in it.
+  // Drawn once at its widest and scaled, the gradient is rasterized a single
+  // time and everything after that is the compositor moving a texture around.
+  const RMAX = S * CORONA_REACH
   const corona = (hue, a) =>
     a > 0.004 && (
       <span
         aria-hidden
         style={{
-          position: 'absolute', left: half - R / 2, top: half - R / 2, width: R, height: R,
+          position: 'absolute', left: half - RMAX / 2, top: half - RMAX / 2, width: RMAX, height: RMAX,
           borderRadius: '50%', opacity: a,
+          transform: `scale(${R / RMAX})`,
+          willChange: 'transform, opacity',
           background:
             `radial-gradient(circle, ${rgba(hue, 0.24)} 0%, ${rgba(hue, 0.2)} 46%, ` +
             `${rgba(hue, 0.5)} 58%, ${rgba(hue, 0.15)} 65%, ${rgba(hue, 0.035)} 74%, transparent 86%)`,
@@ -397,15 +446,25 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
   // tapped comes forward and the other stands back. It is a CSS transition
   // rather than another clock in the loop, because it answers a finger and has
   // to feel like it, and because nothing else on this screen depends on it.
+  //
+  // The seat is a TRANSFORM, not a left/top. Both say the same thing about
+  // where the card is; only one of them says it without putting the whole
+  // fixed layer through layout on every frame of the parting.
   const one = ({ card, url, hue, label, at, scale, halo, mine, on }) => {
     const lift = held ? (on ? 1.1 : 0.9) : 1
     const fade = held && !on ? 0.42 : 1
     return (
       <div
         style={{
-          position: 'absolute', left: s.x - half + at.x, top: s.y - half + at.y, width: S, height: S,
-          filter: s.blur > 0.05 ? `blur(${s.blur}px)` : 'none',
+          position: 'absolute', left: 0, top: 0, width: S, height: S,
+          transform: `translate3d(${s.x - half + at.x}px, ${s.y - half + at.y}px, 0)`,
+          // Quantized to a third of a pixel. A blur is re-rasterized every time
+          // its radius changes and nobody alive can see the difference between
+          // 4.21px and 4.33px of it, so the approach spends a couple of dozen
+          // rasterizations instead of one per frame.
+          filter: s.blur > 0.05 ? `blur(${Math.round(s.blur * 3) / 3}px)` : 'none',
           opacity: s.opacity,
+          willChange: 'transform, opacity',
           pointerEvents: open ? 'auto' : 'none',
           // Now that they lap over each other, paint order is a thing a finger
           // can change: the one you asked to read comes over the top of the
@@ -431,7 +490,11 @@ function Held({ C, s, theirs, yours, theirUrl, yourUrl, them, held, onHold, open
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          <Card C={C} card={card} url={url} size={S} tint={hue} label={label} glow={0.4 + s.part * 0.5} />
+          {/* `glow` is quantized for the same reason the blur is: it drives four
+              box-shadow radii on a four-hundred-pixel disc, and a shadow whose
+              radius changes is a shadow drawn again. Eleven steps across the
+              parting is smooth and is not sixty. */}
+          <Card C={C} card={card} url={url} size={S} tint={hue} label={label} glow={0.4 + Math.round(s.part * 10) * 0.05} />
         </div>
       </div>
     )
@@ -478,7 +541,19 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
       const el = stageEl.current
       if (!el) return
       const r = el.getBoundingClientRect()
-      setBox({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height })
+      const next = { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }
+      // Rounded, and only set when it MOVED. This is wired to `scroll`, which
+      // on a phone fires on every frame the URL bar animates, and an unguarded
+      // setState there re-rendered the whole reveal (both cards, both coronas)
+      // for a rect that had not changed by a pixel.
+      setBox((prev) =>
+        Math.round(prev.x) === Math.round(next.x) &&
+        Math.round(prev.y) === Math.round(next.y) &&
+        Math.round(prev.w) === Math.round(next.w) &&
+        Math.round(prev.h) === Math.round(next.h)
+          ? prev
+          : next,
+      )
     }
     measure()
     window.addEventListener('resize', measure)
@@ -497,7 +572,24 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
   }, [])
 
   const { across, size } = React.useMemo(() => pairOf(box.w && box.h ? box : { w: 320, h: 520 }), [box])
-  const centre = React.useMemo(() => ({ x: box.x, y: box.y }), [box.x, box.y])
+  // The pair rests on the stage's centre — but never so far toward an edge that
+  // half of it is outside the glass. The stage is a flex child whose height came
+  // out of whatever the type above it did, so on a short screen with a long
+  // headline its centre can sit low enough that the lower card's words fall off
+  // the bottom. Both reaches are known here (half the pair along its axis, half
+  // its cross-section across), so the rest is arithmetic.
+  const centre = React.useMemo(() => {
+    const halfAlong = (size * SPAN) / 2 + MARGIN
+    const halfAcross = (size * CROSS) / 2 + MARGIN
+    const rx = across ? halfAlong : halfAcross
+    const ry = across ? halfAcross : halfAlong
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 360
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 640
+    // When the pair genuinely cannot fit (it is already clamped to the window,
+    // so this is the rounding), centring beats pinning it to one edge.
+    const fit = (v, r, extent) => (r * 2 >= extent ? extent / 2 : clamp(v, r, extent - r))
+    return { x: fit(box.x, rx, vw), y: fit(box.y, ry, vh) }
+  }, [box.x, box.y, size, across])
   const s = useReveal(fieldRef, index, centre, size)
 
   const named = !!(s && s.named)
@@ -540,7 +632,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
           style={{
             margin: 0, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400,
             fontSize: SIZE.title, lineHeight: 1.05, color: C.cream,
-            opacity: named ? 1 : 0, transition: 'opacity .9s ease',
+            opacity: named ? 1 : 0, transition: 'opacity .5s ease',
           }}
         >
           it’s mutual.
@@ -552,7 +644,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
         <p
           style={{
             margin: '0 auto', maxWidth: 320, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted,
-            opacity: told ? 1 : 0, transition: 'opacity 1.1s ease',
+            opacity: told ? 1 : 0, transition: 'opacity .6s ease',
           }}
         >
           you entered @{them}. @{them} entered you.
@@ -592,7 +684,7 @@ export default function Spread({ C, yours, theirs, yourUrl, theirUrl, index, fie
         style={{
           position: 'relative', zIndex: 3, width: '100%', maxWidth: 400,
           display: 'flex', flexDirection: 'column', gap: SPACE.sm,
-          opacity: open ? 1 : 0, transition: 'opacity 1s ease',
+          opacity: open ? 1 : 0, transition: 'opacity .5s ease',
           pointerEvents: open ? 'auto' : 'none',
         }}
       >

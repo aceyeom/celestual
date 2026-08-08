@@ -244,9 +244,12 @@ export function LandingScreen({ C, ctx }) {
           <GhostButton C={C} onClick={ctx.startLogin} style={{ fontSize: SIZE.small }}>{t('landing.login')}</GhostButton>
         </div>
 
-        <Mono C={C} style={{ display: 'block', marginTop: SPACE.xl, maxWidth: 400, lineHeight: 1.7 }}>
-          {t('landing.safety')}
-        </Mono>
+        {/* The safety line that used to sit here ("no profiles. no browsing.
+            nothing happens unless it's mutual.") is gone. The hero already says
+            the whole mechanism in two lines — enter their @, and if it is not
+            mutual it never happened — and a third line under the buttons
+            restating it in the metadata face was the page saying the same thing
+            twice and crowding the one act it is asking for. */}
 
         {/* the one door off this page that is not the product: the first light
             notice, set IN the setting rather than pinned to a corner of the
@@ -258,9 +261,29 @@ export function LandingScreen({ C, ctx }) {
         )}
       </div>
 
-      {/* the colophon: the small print at the foot of the setting, where small
-          print belongs */}
-      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start', paddingTop: SPACE.xl }}>
+      {/* ── the colophon ───────────────────────────────────────────────────
+          The small print at the foot of the setting, where small print belongs
+          — and it is the one block on this page set directly over the bright
+          half of the chart. The galactic centre comes up under the last third
+          of the window (engine.js centerY), which is orders of magnitude
+          brighter than the ground either side of it, and 10px tracked mono over
+          it was a smear rather than a line of type.
+          So the foot of the page has a GROUND: one long, slow wash of the
+          case's own colour rising out of the bottom edge, opaque enough at the
+          very bottom to read against and gone well before it reaches the
+          headline. It is fixed to the viewport rather than to this block, so
+          the gradient's falloff never lands mid-sentence at some window height
+          nobody tested. */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, height: '46dvh', zIndex: -1, pointerEvents: 'none',
+          background:
+            `linear-gradient(to bottom, transparent 0%, ${rgba(C.ink, 0.26)} 22%, ` +
+            `${rgba(C.ink, 0.66)} 44%, ${rgba(C.ink, 0.88)} 66%, ${rgba(C.ink, 0.96)} 100%)`,
+        }}
+      />
+      <div className="enter" style={{ position: 'relative', animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start', paddingTop: SPACE.xl }}>
         <Small C={C} style={{ maxWidth: 400 }}>
           {t('landing.age')}{' '}
           <a href="/terms" target="_blank" rel="noopener" style={{ color: TEXT.quiet }}>{t('landing.terms')}</a>.
@@ -368,8 +391,11 @@ export function WhoScreen({ C, ctx }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: SPACE.lg, textAlign: 'left' }}>
           {/* the header, as a full serif headline, left-aligned — the accent line
-              in amber (the "you" star), one warm light with the landing page */}
-          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.display, lineHeight: LINE.tight, letterSpacing: TRACK.title, color: C.cream }}>
+              in amber (the "you" star), one warm light with the landing page.
+              Set at the title-page step rather than the section step: this is
+              the question the whole product exists to ask, and it was being
+              asked at the same size as "share the open sky". */}
+          <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.colophon, lineHeight: 0.94, letterSpacing: TRACK.title, color: C.cream }}>
             {t('who.title1')}<br />
             <span style={{ color: C.star }}>{t('who.title2')}</span>
           </h2>
@@ -382,17 +408,24 @@ export function WhoScreen({ C, ctx }) {
           )}
         </div>
         <div className="enter" style={{ animationDelay: '.06s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
+          {/* The @ is written at the size the headline is asked at. This is the
+              one line of text a person types in the whole product, and it was
+              being taken at 22px under a question set at 46. */}
           <div data-sendoff-field>
-            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onNext} />
+            <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onNext} scale="hero" />
           </div>
-          {confirming && valid ? (
+          {/* The note that used to stand here when nothing was being confirmed
+              ("no alert. no trace. invisible until they enter you back.") is
+              gone. It was a paragraph under a field explaining what the field
+              does, which is the one thing the copy in this product is not
+              allowed to be, and it was set in the quietest grey on the screen
+              directly under the loudest thing on it. */}
+          {confirming && valid && (
             <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontFamily: FONT.sans, fontWeight: 300, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px', textShadow: ONSKY }}>
               <span>{t('who.confirm1')}</span>
               <HandleChip C={C} handle={normd} />
               <span>{t('who.confirm2')}</span>
             </div>
-          ) : (
-            <Note C={C}>{t('who.note')}</Note>
           )}
           {ctx.error && <Note C={C} tone="accent">{ctx.error}</Note>}
           {ctx.demo && <Note C={C} tone="accent">{t('who.demoHint')}</Note>}
@@ -991,7 +1024,7 @@ function PingCard({ C, ping, ctx }) {
         </div>
 
         <div style={{ fontFamily: FONT.mono, fontSize: 15, letterSpacing: '0.02em', color: ping.handle ? C.cream : TEXT.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: ONSKY }}>
-          {ping.handle ? `@${ping.handle}` : t('pings.elsewhere')}
+          {ping.handle ? `@${ping.handle}` : t('pings.unnamed')}
         </div>
 
         {/* what you wrote on it. Yours to re-read; sealed to them until it is
@@ -1089,44 +1122,23 @@ function EmptySlotCard({ C, onClick, paywall }) {
   )
 }
 
-// ── a slot the meter counts and this device cannot name ──────────────────────
-// The server knows how many pings are standing under your @; only the device
-// that typed one knows who it points at. A second phone therefore holds a real
-// standing ping it cannot name, and until now the ledger simply did not draw it:
-// the meter said two of two over an empty list, which is the product calling its
-// own user a liar.
+// ── a slot the meter counts and this device has not named YET ────────────────
+// The server knows how many pings are standing under your @, and since migration
+// 0010 it also knows the @ each one points at — so a ping placed on a phone you
+// no longer have is still YOUR ping, and it belongs in this list under its own
+// name like every other one.
 //
-// So the slot is drawn, as an entry like any other. It says what it is, it keeps
-// its own sixty days, and — because the usual cause is a restore that has not
-// landed rather than a pre-0010 row that genuinely cannot be named — it carries
-// the one action that can fill it in.
-function HeldElsewhereCard({ C, ctx }) {
-  const { t } = useI18n()
-  const phase = (ctx.ledgerState && ctx.ledgerState.phase) || 'idle'
-  return (
-    <Row C={C}>
-      <span
-        style={{
-          flex: '0 0 auto', width: SEAL, height: SEAL, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1px solid ${rgba(C.cream, 0.14)}`, boxShadow: LIGHT.well,
-        }}
-      >
-        <StateDot C={C} state="standing" size={11} />
-      </span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <Kicker C={C} style={{ display: 'block', marginBottom: 6 }}>{t('pings.heldTitle')}</Kicker>
-        <Small C={C}>{t('pings.heldSub')}</Small>
-        {phase === 'failed' && <Note C={C} tone="accent" style={{ marginTop: 6 }}>{t('pings.heldFailed')}</Note>}
-        <div style={{ marginTop: 8 }}>
-          <RowLink C={C} onClick={phase === 'reading' ? undefined : ctx.restoreLedger}>
-            {phase === 'reading' ? t('pings.heldRestoring') : t('pings.heldRestore')}
-          </RowLink>
-        </div>
-      </div>
-    </Row>
-  )
-}
+// It used to be drawn as a card that named a DEVICE and asked you to press
+// something ("on another device" / "bring it here"), which put a piece of our
+// storage model on a page about people and made restoring a chore. The restore
+// runs on its own now (App.jsx's readLedger, retried while anything is still
+// unaccounted for), so what is left here is the half second before the @ lands
+// and the pre-0010 rows whose target survives only as a salted hash and can be
+// named on no device but the one that typed it.
+//
+// Those get an ordinary standing entry. Same seal, same state, same clock. It
+// simply has no @ printed on it, which is the truth.
+const UNNAMED = { handle: null, reachable: true, card: null, mutual: false }
 
 // ── when the next slot opens ─────────────────────────────────────────────────
 // Every slot is held, so the only two ways forward are waiting and letting one
@@ -1228,16 +1240,25 @@ function OpenMutual({ C, ping, ctx }) {
           half they could not see. Pressing them plays the spread again: nothing
           is unsealed a second time, it is simply the size the cards can
           actually be read at. */}
+      {/* The pair keeps the footprint every other entry's seal has (SEAL wide),
+          rather than a card and a half of it. Two discs at 0.72 lapping by 0.3
+          measure 1.14 seals across, and on a narrow phone that extra sliver is
+          what pushed the row past the column and clipped the second card off
+          the page. `width: SEAL` with the overflow allowed to show keeps the
+          column honest and the pair whole. */}
       <button
         type="button"
         onClick={() => ctx.openReveal(ping.handle)}
         aria-label={t('pings.revealAgain')}
-        style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', padding: 0 }}
+        style={{
+          flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', padding: 0,
+          width: SEAL, maxWidth: SEAL,
+        }}
       >
-        {yours && <Card C={C} card={yours} url={url} size={SEAL * 0.72} tint={C.you} glow={0.5} />}
+        {yours && <Card C={C} card={yours} url={url} size={SEAL * 0.63} tint={C.you} glow={0.5} />}
         {theirs && (
-          <span style={{ marginLeft: -SEAL * 0.3 }}>
-            <Card C={C} card={theirs} size={SEAL * 0.72} tint={C.them} glow={0.7} />
+          <span style={{ marginLeft: -SEAL * 0.26, flex: '0 0 auto' }}>
+            <Card C={C} card={theirs} size={SEAL * 0.63} tint={C.them} glow={0.7} />
           </span>
         )}
       </button>
@@ -1374,7 +1395,31 @@ export function PingsScreen({ C, ctx }) {
       />
 
       <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: SPACE.sm }}>
-        {/* your community first — the place; the entries below are the pings */}
+        {/* ── the mutual, FIRST ─────────────────────────────────────────────
+            It used to sit at the FOOT of this page: under the community banner,
+            under the standing pings, under every open slot, under the door to
+            the next one and under a sentence about renewing being free. Which
+            meant the one thing in this entire product that a person comes back
+            to find was the one thing they had to scroll for, and on a phone it
+            was below the fold and cut in half by it.
+            A match is resolved and does not belong among the slots. That was
+            always the argument for giving it its own section; it was never an
+            argument for putting that section last. Nothing on this page
+            outranks it — not even the place. */}
+        {mutual.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.sm }}>
+              <StateDot C={C} state="mutual" size={9} />
+              <Kicker C={C} color={rgba(C.star, 0.9)}>{t('pings.mutualKicker')} · {mutual.length}</Kicker>
+            </div>
+            <Rule C={C} />
+            {mutual.map((p, i) => (
+              <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
+            ))}
+          </div>
+        )}
+
+        {/* your community — the place; the entries below are the pings */}
         <CommunityHome C={C} ctx={ctx} />
 
         {/* the ledger: entries, divided by rules. Always exactly `cap` slots —
@@ -1392,7 +1437,7 @@ export function PingsScreen({ C, ctx }) {
                 <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
               ))}
               {Array.from({ length: held }).map((_, i) => (
-                <HeldElsewhereCard key={'h' + i} C={C} ctx={ctx} />
+                <PingCard key={'h' + i} C={C} ping={UNNAMED} ctx={ctx} />
               ))}
               {Array.from({ length: emptyCount }).map((_, i) => (
                 <EmptySlotCard key={'e' + i} C={C} onClick={ctx.placeAnother} />
@@ -1403,30 +1448,8 @@ export function PingsScreen({ C, ctx }) {
                   <EmptySlotCard key="door" C={C} onClick={ctx.placeAnother} paywall />
                 </>
               )}
-              {/* said once, under the ledger, and not on every entry: renewing
-                  is free, it restarts the sixty days, and it does not spend a
-                  slot. All three were things the ledger let people guess at. */}
-              {active.some((p) => p.handle) && (
-                <Note C={C} tone="quiet" style={{ paddingTop: SPACE.md }}>{t('pings.renewNote')}</Note>
-              )}
             </>
           )}
-
-          {/* mutual — its own section under its own head, so a match never
-              crowds the slots */}
-          {mutual.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', paddingTop: SPACE.xl }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.sm }}>
-                <StateDot C={C} state="mutual" size={9} />
-                <Kicker C={C} color={rgba(C.star, 0.9)}>{t('pings.mutualKicker')} · {mutual.length}</Kicker>
-              </div>
-              <Rule C={C} />
-              {mutual.map((p, i) => (
-                <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
-              ))}
-            </div>
-          )}
-
         </div>
       </div>
 
@@ -2608,16 +2631,21 @@ function CommunityFinder({ C, ctx, onPick, autoFocus }) {
 // everywhere. Its JoinedBadge went with it.
 
 // ── 8 · THE MATCH, ANNOUNCED ──────────────────────────────────────────────────
-// Two seconds, one sentence, nothing to press. It says that it happened and it
-// does not say what was said: the cards are opened on the status page, by hand,
-// by someone who has decided to look. A match that unseals itself on the way
-// past takes that decision away, and it is the only one in the product that
-// belongs entirely to the person.
+// One sentence, nothing to press. It says that it happened and it does not say
+// what was said: the cards are opened on the status page, by hand, by someone
+// who has decided to look. A match that unseals itself on the way past takes
+// that decision away, and it is the only one in the product that belongs
+// entirely to the person.
+//
+// It used to hold for two full seconds. A screen with nothing to press on it is
+// measured in how long it stands between somebody and the next thing, and this
+// one stands between them and a match: long enough to read six words, and not a
+// beat longer.
 //
 // The fade is a real deadline and not a hope. It is the same reasoning the
 // send-off uses: a backgrounded tab stops rendering, so this leaves on a timer
 // rather than on the end of an animation.
-const FLASH_MS = 2000
+const FLASH_MS = 1350
 
 export function MutualScreen({ C, ctx }) {
   const { t } = useI18n()
@@ -2625,7 +2653,7 @@ export function MutualScreen({ C, ctx }) {
   const [going, setGoing] = React.useState(false)
   const done = ctx.afterMutual
   React.useEffect(() => {
-    const fade = setTimeout(() => setGoing(true), FLASH_MS - 450)
+    const fade = setTimeout(() => setGoing(true), FLASH_MS - 380)
     const leave = setTimeout(() => done(), FLASH_MS)
     return () => {
       clearTimeout(fade)

@@ -84,11 +84,25 @@ export function guessTier(caps) {
   const mem = navigator.deviceMemory || 4
   const cores = navigator.hardwareConcurrency || 4
   const small = Math.min(window.innerWidth, window.innerHeight) < 420
+  // A phone is a phone whatever its spec sheet says. `deviceMemory` on a recent
+  // Android reads 8 and `hardwareConcurrency` reads eight cores, which used to
+  // put a handset on the top tier — forty-six thousand stars and a thirty-two
+  // step volumetric march, at up to twice device resolution, on a chip that is
+  // also thermally throttled and drawing the rest of the interface. The
+  // governor walked it back down eventually, but "eventually" is several
+  // seconds of the first impression this product gets to make.
+  const handheld = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    : small
   // Anything clearly software-rendered goes straight to the floor.
   if (/swiftshader|llvmpipe|software|mesa offscreen/.test(r)) return 2
   if (mem <= 2 || cores <= 4) return small ? 2 : 1
   if (mem <= 4 && small) return 1
-  return 0
+  // The only change here: no handheld starts on the top tier. Everything below
+  // is left exactly where it was, because a phone that was already on tier 1
+  // was already being asked for something it can draw, and the governor still
+  // walks anything that cannot keep up down from here.
+  return handheld ? 1 : 0
 }
 
 // ── shaders ──────────────────────────────────────────────────────────────────

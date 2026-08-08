@@ -1205,7 +1205,7 @@ export default function App() {
   )
 
   // ── the quiet restore ───────────────────────────────────────────────────────
-  // Any device with a proven session reads the ledger once, on its own, without
+  // Any device with a proven session reads the ledger on its own, without
   // anybody pressing anything. This is the actual fix for "my slots say two of
   // two and my list is empty": the meter was reading the server and the list was
   // reading the device, and only one of the two was ever asked.
@@ -1220,6 +1220,33 @@ export default function App() {
     ledgerRead.current = handle
     readLedger(proof, handle).catch(() => {})
   }, [demo, session, me, readLedger])
+
+  // ── and it keeps trying ─────────────────────────────────────────────────────
+  // One read at mount is not enough to promise "every ping shows up, whichever
+  // phone placed it". The read can land before the session's proof does, it can
+  // lose a race with a flaky connection, and the server's own count can arrive
+  // after it. Any of those left a slot the meter counted and the list could not
+  // name — and the product's answer used to be a card blaming a device and a
+  // button asking the person to fix it by hand.
+  //
+  // So the gap is the trigger. While anything is unaccounted for, this re-reads
+  // on its own: quickly at first, then further apart, and never more than a few
+  // times, because past that the rows are genuinely pre-0010 (their target
+  // exists only as a salted hash) and no number of retries can name them.
+  const ledgerTries = useRef(0)
+  useEffect(() => {
+    if (demo) return undefined
+    const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
+    const handle = normHandle(session?.handle) || normHandle(me)
+    if (!proof || !handle || unaccounted <= 0) {
+      ledgerTries.current = 0
+      return undefined
+    }
+    if (ledgerState.phase === 'reading' || ledgerTries.current >= 4) return undefined
+    const n = ledgerTries.current++
+    const id = setTimeout(() => readLedger(proof, handle).catch(() => {}), 900 * Math.pow(2, n))
+    return () => clearTimeout(id)
+  }, [demo, session, me, unaccounted, ledgerState.phase, readLedger])
 
   // The explicit door: read the ledger, then land on it. What "log in" does.
   const restorePings = useCallback(

@@ -1135,7 +1135,7 @@ export function ExitRow({ C, children, style }) {
 //
 // `kind` is kept from the old field so nothing has to change at the call sites:
 // 'handle' prints the @, 'email' and 'text' do not.
-export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFocus, onEnter, emphasis, label, onPaper, ...rest }) {
+export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFocus, onEnter, emphasis, scale, label, onPaper, ...rest }) {
   const ref = React.useRef(null)
   const [focus, setFocus] = React.useState(false)
   const lit = (C && C.star) || TOKENS.star
@@ -1148,7 +1148,15 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFo
   }, [autoFocus])
   const clean = (v) =>
     kind === 'email' ? v.replace(/\s/g, '') : kind === 'handle' ? v.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase() : v
-  const fs = emphasis ? 22 : 17
+  // Three steps, and the third exists for exactly one field: the @ on the send
+  // screen. That line is the entire act — it is what the headline above it is
+  // asking for — and taking it at the same 22px as an email address made the
+  // most important thing on the screen the third-largest thing on it. It is
+  // fluid rather than fixed, because a handle can be thirty characters and a
+  // phone is 390px wide: it opens up to a display size on a laptop and settles
+  // back to something a long @ still fits on inside a small window.
+  const fs = scale === 'hero' ? 'clamp(26px, 7.6vw, 40px)' : emphasis ? 22 : 17
+  const nudge = scale === 'hero' ? -2 : -1
   return (
     <label style={{ display: 'block', width: '100%' }}>
       {label && (
@@ -1164,7 +1172,7 @@ export function Field({ C, kind = 'handle', value, onChange, placeholder, autoFo
         }}
       >
         {kind === 'handle' && (
-          <span style={{ fontFamily: FONT.mono, fontSize: fs, color: onPaper ? rgba(TOKENS.onPaper, 0.42) : rgba(lit, 0.85), transform: 'translateY(-1px)' }}>@</span>
+          <span style={{ fontFamily: FONT.mono, fontSize: fs, color: onPaper ? rgba(TOKENS.onPaper, 0.42) : rgba(lit, 0.85), transform: `translateY(${nudge}px)` }}>@</span>
         )}
         <input
           ref={ref}
@@ -1222,7 +1230,7 @@ export function HandleChip({ C, handle, big }) {
 // under it. Results come from the pluggable searchHandles() adapter — empty
 // until a server-side provider is wired. The list is a leaf of the index rather
 // than a floating menu: a wash of the ground, one tooled rule at its head.
-export function HandleSearchField({ C, value, onChange, placeholder, autoFocus, onEnter, label }) {
+export function HandleSearchField({ C, value, onChange, placeholder, autoFocus, onEnter, label, scale }) {
   const [results, setResults] = React.useState([])
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(-1)
@@ -1263,6 +1271,7 @@ export function HandleSearchField({ C, value, onChange, placeholder, autoFocus, 
         placeholder={placeholder}
         autoFocus={autoFocus}
         emphasis
+        scale={scale}
         onEnter={() => {
           if (show && active >= 0) pick(results[active].handle)
           else if (onEnter) onEnter()

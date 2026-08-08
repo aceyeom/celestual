@@ -78,6 +78,14 @@ const seedOf = (s) => {
 // The granulation stays over both, and it is the same job done twice: it is
 // convection cells on a photosphere, and it is the one grain every card in the
 // product shares.
+// Both the ground and the granulation are repeating background images, and a
+// background image is rasterized again every time its `background-size`
+// changes. Sized straight off a diameter that a dive animates, that is two
+// full re-rasters of a noisy tile per frame, per card. The tile is noise: it
+// has no scale anybody can name, so quantizing the size to a coarse step costs
+// nothing visible and turns sixty rasterizations into two or three.
+const step = (v, to) => Math.max(to, Math.round(v / to) * to)
+
 export function Surface({ C, card, url, size }) {
   const g = plateOf(card && card.bg)
   // The grain is seeded off the card's own content, so the same card grains the
@@ -91,7 +99,7 @@ export function Surface({ C, card, url, size }) {
         position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
         // OPAQUE. sky/body.js gives a resolved star a non-additive pass for one
         // reason — a body has a horizon and the field behind it has to stop.
-        ...groundSurface(g, { scale: Math.round(Math.max(120, size * 0.9)) }),
+        ...groundSurface(g, { scale: step(Math.max(120, size * 0.9), 64) }),
       }}
     >
       {url && (
@@ -107,7 +115,7 @@ export function Surface({ C, card, url, size }) {
       {url && <span style={{ position: 'absolute', inset: 0, background: rgba(TOKENS.ink, 0.4) }} />}
       <span
         style={{
-          position: 'absolute', inset: 0, backgroundImage: grain(seed), backgroundSize: `${Math.max(90, size * 0.34)}px`,
+          position: 'absolute', inset: 0, backgroundImage: grain(seed), backgroundSize: `${step(Math.max(90, size * 0.34), 32)}px`,
           mixBlendMode: 'overlay', opacity: url ? 0.12 : 0.14,
         }}
       />

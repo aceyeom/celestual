@@ -708,7 +708,13 @@ export class GalaxyField extends SkyEngine {
     // and on that screen a row of grey lens-dust discs across the one frame that
     // has to be legible. Stopping short leaves the field a field and leaves your
     // star the point of light the card is made of.
-    this.cam.startDive(() => this._sealedWorld(s), { hold: !!opts.hold, standoff: opts.standoff })
+    // `run` / `bankScale` are the reveal's, and nothing else passes them: on
+    // that one screen the flight is not the event, the two cards are, and the
+    // approach is shortened so the answer arrives while somebody is still
+    // holding their breath rather than after it.
+    this.cam.startDive(() => this._sealedWorld(s), {
+      hold: !!opts.hold, standoff: opts.standoff, run: opts.run, bankScale: opts.bankScale,
+    })
     // the overlay's name and intent line ride this, not a timer (engine.js)
     this._armArrival(opts.onArrive)
     this.start()
