@@ -160,6 +160,30 @@ const NARROW_MOTION = 13
 // on a desktop at all.
 const NARROW_PARALLAX = 0.11
 const NARROW_SMEAR = 0.5
+// ── where the heart sits down the frame ──────────────────────────────────────
+// The galactic centre is the one part of the picture nothing can be read over:
+// it is orders of magnitude brighter than the ground either side of it, and no
+// amount of halo under a line of type wins against it. So it goes where the
+// words are not.
+//
+// The words moved. Every page is a column ranged left inside a centred measure
+// now, running from the headline at the top to the actions two thirds down, so
+// the old 0.6 put the heart directly behind the primary action and the quiet
+// exit beside it. Pushed past that, it sits in the quiet under the setting,
+// with the arms carrying the frame the type actually sits in.
+const CENTRE_Y = 0.76
+const NARROW_CENTRE_Y = 0.82
+// ── and across it ───────────────────────────────────────────────────────────
+// On a phone the measure IS the screen, so there is nowhere sideways to put the
+// heart and it stays centred; dropping it low is the whole answer there.
+//
+// On a laptop the setting is a 560px column in the middle of a window three
+// times that wide, so there is somewhere for it to go: to the RIGHT of the
+// column, where it lights the empty case beside the type instead of sitting
+// behind the one action on the page. This is the same decision as `centerY`,
+// made on the other axis, and it is why the same galaxy no longer has to
+// choose between being visible and being readable over.
+const WIDE_CENTRE_X = 0.66
 
 // How brightly the nebula burns at rest. Down from 0.3: the cloud is the widest
 // thing in the frame, so it is the single biggest contributor to how hard the
@@ -414,13 +438,7 @@ export class GalaxyField extends SkyEngine {
     this.gHero.twinkle = 0.1
 
     this.frameRadius = 1.45
-    // Below the type, deliberately. Every screen in this product sets its
-    // headline in the upper-middle of the frame, and the galactic centre was
-    // landing inside it — so the busiest, brightest square inch of the picture
-    // was always directly behind the words. Dropped past the fold, the heart
-    // sits in the quiet between the sentence and the button, the arms carry the
-    // upper frame at a fraction of the density, and the type has a ground.
-    this.centerY = 0.6
+    // `_layout` owns this now, and sets it per window (CENTRE_Y above).
     this._layout()
     this._tuneGas()
     this._tunePost()
@@ -523,6 +541,8 @@ export class GalaxyField extends SkyEngine {
     this.frameFit = narrow ? NARROW_FIT : WIDE_FIT
     this.motion = narrow ? NARROW_MOTION : 20
     this.motionScale = narrow ? NARROW_SMEAR : 1
+    this.centerY = narrow ? NARROW_CENTRE_Y : CENTRE_Y
+    this.centerX = narrow ? 0.5 : WIDE_CENTRE_X
     if (this.cam) this.cam.parallaxGain = narrow ? NARROW_PARALLAX : 0.3
     super._layout()
     // AFTER the engine has solved it: `frameFit` cancels out of the engine's

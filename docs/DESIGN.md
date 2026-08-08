@@ -246,6 +246,15 @@ fringe on a bright star reads as a rendering fault in a brand with one hue.
 Bloom is pulled back rather than switched off: nothing here glows, but a star
 with no bloom is a dot and the field loses its depth.
 
+**Where the heart sits** is a layout decision, not a rendering one, and it is
+made on both axes. The galactic centre is orders of magnitude brighter than the
+ground either side of it and no halo under a line of type wins against it, so it
+goes **where the words are not**: low down the frame on every screen
+(`centerY`), and — on a window wide enough that the 560px measure does not fill
+it — across to the right of that measure as well (`centerX`), where it lights
+the empty case beside the setting instead of sitting behind the one action on
+the page.
+
 **The mark** (`ui.jsx`'s `Sigil`) is a four-pointed star cut down the middle
 with a body sitting in the cut. It is ONE drawing used twice: the right wing is
 the star, the left wing is the same star turned a hundred and eighty degrees
@@ -273,10 +282,57 @@ bottom, and the shadow an object casts on what it lies on. Nothing emits.
 (`Rule`) are **tooled**: a dark channel the tool cut and the light catching on
 its upper lip, two pixels doing the work of a border.
 
-## §7 — Screens: one action each
+## §6b — The ledger: entries, not cards
+
+A list of things in this product is a **page in a ledger**: an object, the
+writing beside it, and a hairline rule under the pair. It is not a stack of
+panels.
+
+Every ping used to sit on its own slab of stitched leather. Five of those down a
+screen is five objects competing to be looked at, and the one thing on the row
+that genuinely *is* an object — the seal — was shrunk to a 38px chip inside the
+panel shouting over it. The leather came off, the seal went up to **88px**, and
+the entry is set beside it directly on the case.
+
+Two rules follow, and they generalise past the ledger:
+
+- **Every slot wears the same footprint**, filled or not. An open slot is the
+  seal's own circle, scored and empty; a slot held on another device is the same
+  circle with a state mark in it. That is what makes the column read as a set of
+  *slots* rather than as a list that happens to have pictures down one side.
+- **The object is the affordance.** The seal is the only thing on the row that
+  flies the camera to its star. When the whole row was the button, every quiet
+  action inside it had to stop its own click from falling through.
+
+`WORD_FLOOR` (54px) and `TYPE_FLOOR` (118px) are two different floors on
+purpose: below the second, a seal drops its **legend** and gives the room to the
+words; below the first it stops setting type at all. Setting them to one number
+is what made every entry in the ledger a blank disc.
+
+## §7 — Screens: one action each, and one navigation
 
 Every screen sits over the same chart, carries **exactly one** primary action
 (the ivory plate), casts its type by register (§3), and keeps its emptiness.
+
+**The navigation is the masthead and the index, and there is nothing else.** One
+bar across the head of every page — the wordmark left, the index right, on one
+baseline. Opening the index takes `INDEX_W` out of the setting and the page
+re-centres in what is left; the two move together, which is the difference
+between opening a drawer and having something drop on top of your work. On a
+phone there is no width to give away, so the column is the whole measure and the
+page steps aside.
+
+It replaced four things: a two-station dock fixed to the foot of two screens, a
+profile chip pinned to the top-left corner on some screens, a "log in" chip in
+the same corner on others, and a scattering of ghost links at the bottom of
+whichever page needed one. None of them was aligned to anything else, they
+disagreed about where "back" lives, and between them they still could not reach
+half the product.
+
+Every entry in the index carries a **note** — the fact that page is holding
+right now: the @ you are signed in as, how many slots are held, which community
+you are in. An index that only names pages is a menu.
+
 Product workflow evolves independently — but each screen must still pass §9
 before it ships.
 
@@ -321,6 +377,8 @@ template/AI output:
       opens — is not this, and is required. See §9b.)
 - [ ] **Any em or en dash in the copy?** `npm run lint:voice` fails the build on
       one. A dash is a writer stalling; choose a thought and end the sentence.
+- [ ] **Is a list a ledger?** (§6b. Entries divided by rules, not a stack of
+      panels. If every item is on its own slab, redesign it.)
 - [ ] **No status pills.** A bordered uppercase chip with a coloured "live" dot
       is a named tell of AI-template output and is banned here permanently. A
       state reads as a **mark** (§2) plus quiet words in register.
@@ -376,6 +434,25 @@ The system extends beyond the app; these must all read as the same object:
   register rather than SaaS chips.
 
 ## §11 — Changelog
+
+- **2026-08-07b** — **The ledger, the title page and the index** (human-directed,
+  in review of the transfer below: *"I don't like how the entire pingslot is
+  leather... have the log in button next to the find out... have stuff like
+  profiles and the different pages in the index"*). §6b and §7 are new; §5 gains
+  `centerX`.
+  - **The ledger stopped being a stack of cards** (§6b). The leather panel per
+    ping is gone, the seal is at 88px on the case, and the entries are divided
+    by hairline rules. The seal also *sets its words* now: one type floor was
+    doing two jobs, so every seal under 118px rendered blank.
+  - **The title page carries both doors.** The plate and the quiet exit sit on
+    one baseline, which is where a returning person's way in belongs. The
+    trial notice moved out of a viewport corner and into the setting, where it
+    stopped colliding with whatever else lived in that corner.
+  - **One navigation** (§7). The masthead and the index column replaced the
+    dock, both corner chips and the loose ghost links.
+  - **The heart moved sideways.** `centerX` joins `centerY`, so on a wide window
+    the galactic centre sits beside the measure rather than behind the one
+    action on the page. Same argument as `centerY`, other axis.
 
 - **2026-08-07** — **The bindery transfer** (human-directed: *"move all design
   features in celestual/beta to production and delete /beta"*). §1–§10 are

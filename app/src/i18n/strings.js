@@ -419,12 +419,28 @@ const en = {
   // ── holding the sky (the community page's camera) ────────────────────────
   'sky.reset': 'pull back',
 
-  // ── the dock ─────────────────────────────────────────────────────────────
-  // TWO places, because this product has two. The old third station opened the
-  // community list, which is a picker, not a destination: it now lives inside
-  // the sky page where switching actually happens.
-  'nav.sky': 'sky',
-  'nav.pings': 'pings',
+  // ── the index ────────────────────────────────────────────────────────────
+  // The one navigation. It replaced a two-station dock at the foot, a profile
+  // chip in one corner, a "log in" chip in the same corner on other screens,
+  // and a scattering of ghost links — four navigations, none of them aligned to
+  // anything, which between them still could not reach half the product.
+  //
+  // Every entry carries a NOTE: the fact that page is holding right now. An
+  // index that only names pages is a menu.
+  'index.title': 'the index',
+  'index.place': 'place a ping',
+  'index.placeNew': 'two slots, sixty days each',
+  'index.pings': 'your pings',
+  'index.held': '{used} of {cap} held',
+  'index.sky': 'your sky',
+  'index.skyNone': 'not joined yet',
+  'index.worlds': 'the communities',
+  'index.door': 'share the open sky',
+  'index.account': 'your account',
+  'index.login': 'log in',
+  'index.loginNote': 'bring your pings back',
+  'index.privacy': 'privacy, and the opt out',
+  'index.colophon': 'celestual · the bindery edition',
 
   // ── the public @ (announce yourself in your community's sky) ─────────────────
   'public.announce': 'announce your @',

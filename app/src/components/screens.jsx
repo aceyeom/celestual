@@ -18,13 +18,14 @@ import {
   dmCode, savePending, loadPending, clearPending, genProof, graceVerify, GRACE_MS,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
+import { leatherSurface } from '../texture.js'
 import { renderSkyCard } from '../card.js'
 import {
   Brandmark, Sigil, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Plate, Field, HandleChip, HandleSearchField,
   Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
-  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, Slots, FONT, SIZE, LINE, TRACK, ICON,
-  TOKENS, TEXT, HAIR, ONSKY, LIGHT,
+  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, Slots, TrialBanner, FONT, SIZE, LINE, TRACK, ICON,
+  TOKENS, TEXT, HAIR, ONSKY, LIGHT, MEASURE,
 } from './ui.jsx'
 import Card from '../card/Disc.jsx'
 import Composer from '../card/Composer.jsx'
@@ -35,9 +36,15 @@ import { DEMO_PUBLIC } from '../demoData.js'
 import { placedReachable, placedWaiting } from '../growth.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled, localEmailCheck } from '../api/eduverify.js'
 
-// Shared centered column: at least one dynamic-viewport tall, capped to an
-// intimate measure on wide monitors. --nav-pad (set by App) reserves the foot
-// of the hub screens for the dock, so no action ever sits under it.
+// The shared column: at least one dynamic-viewport tall, ranged left inside a
+// measure that sits in the MIDDLE of the window. Both halves of that matter —
+// on a phone the measure is the whole screen and the setting looks composed,
+// and pinned to the left EDGE as well, the identical page becomes a stripe of
+// type in the left third of a laptop with an acre of empty case beside it. The
+// two stop reading as the same product.
+//
+// The top padding clears the masthead (App.jsx), which is fixed across the head
+// of every page and is the reason no screen carries its own wordmark any more.
 export function Shell({ children }) {
   return (
     <div
@@ -46,10 +53,10 @@ export function Shell({ children }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: 'max(40px, env(safe-area-inset-top)) clamp(20px, 5vw, 40px) calc(max(28px, env(safe-area-inset-bottom)) + var(--nav-pad, 0px))',
+        padding: 'max(104px, calc(env(safe-area-inset-top) + 92px)) clamp(20px, 5vw, 40px) max(32px, env(safe-area-inset-bottom))',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 460, flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
+      <div style={{ width: '100%', maxWidth: MEASURE, flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </div>
   )
 }
@@ -180,9 +187,9 @@ function HeroSequence({ C }) {
       className="enter"
       aria-label={`${l1} ${l2}`}
       style={{
-        animationDelay: '.16s', width: '100%', maxWidth: 420, padding: '0 6px', textAlign: 'center',
+        animationDelay: '.16s', width: '100%', maxWidth: 420, textAlign: 'left',
         fontFamily: FONT.serif, fontStyle: 'italic',
-        fontSize: SIZE.lead, color: rgba(C.cream, 0.94),
+        fontSize: SIZE.lead, color: rgba(C.cream, 0.94), textShadow: ONSKY,
       }}
     >
       <div style={line}>
@@ -202,55 +209,87 @@ export function LandingScreen({ C, ctx }) {
   const { t } = useI18n()
   return (
     <Shell>
-      <div className="enter" style={{ display: 'flex', justifyContent: 'center', paddingTop: 20 }}>
-        <div className="floaty"><Brandmark C={C} size={34} /></div>
-      </div>
+      {/* ── the title page ───────────────────────────────────────────────────
+          Ranged left inside the centred measure, the way every page in this
+          book is set. The claim is one sentence broken over two registers: the
+          statement in ivory, the question in the one light, italic, because the
+          question is the part somebody actually feels.
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: SPACE.xxl }}>
-        <h1
-          className="enter"
-          style={{ animationDelay: '.08s', margin: 0, textAlign: 'center', fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.display, lineHeight: 1.16, color: C.cream, textWrap: 'balance' }}
-        >
-          <div>{t('landing.head1')}</div>
-          <div style={{ color: C.star }}>{t('landing.head2')}</div>
-        </h1>
-        <HeroSequence C={C} />
-      </div>
-
-      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.lg }}>
-        <PrimaryButton C={C} onClick={ctx.findOut}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md, justifyContent: 'center' }}>
-            {t('landing.cta')} <Icon name="arrow" size={17} color={C.onStar} stroke={2.1} />
+          The mark that used to float above this is gone. The masthead carries
+          the wordmark on every screen now, and a second one here was the page
+          signing its own name twice. */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+        <h1 className="enter" style={{ margin: 0 }}>
+          <span style={{ display: 'block', fontFamily: FONT.serif, fontWeight: 300, fontSize: SIZE.colophon, lineHeight: 0.92, letterSpacing: '-0.02em', color: C.cream }}>
+            {t('landing.head1')}
           </span>
-        </PrimaryButton>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, color: C.muted }}>{t('landing.safety')}</p>
-        <p style={{ margin: 0, textAlign: 'center', fontSize: SIZE.meta, lineHeight: 1.5, color: rgba(C.muted, 0.8) }}>
+          <span style={{ display: 'block', marginTop: 10, fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 300, fontSize: SIZE.colophon, lineHeight: 0.94, letterSpacing: '-0.018em', color: C.star }}>
+            {t('landing.head2')}
+          </span>
+        </h1>
+
+        <Rule C={C} width={132} style={{ margin: `${SPACE.xl}px 0 ${SPACE.lg}px` }} />
+
+        <HeroSequence C={C} />
+
+        {/* ── the two ways in, on one baseline ──────────────────────────────
+            The plate is the act; "log in" is the quiet exit beside it. It used
+            to be a chip pinned to the top-left corner of the viewport, which
+            put the single most important thing a RETURNING person needs as far
+            from the thing they came to press as the screen allows, in the one
+            corner nothing else on the page is aligned to. Two doors, one row,
+            both obviously doors. */}
+        <div className="enter" style={{ animationDelay: '.16s', display: 'flex', alignItems: 'center', gap: SPACE.xl, flexWrap: 'wrap', marginTop: SPACE.xl }}>
+          <Plate onClick={ctx.findOut} full={false}>{t('landing.cta')}</Plate>
+          <GhostButton C={C} onClick={ctx.startLogin} style={{ fontSize: SIZE.small }}>{t('landing.login')}</GhostButton>
+        </div>
+
+        <Mono C={C} style={{ display: 'block', marginTop: SPACE.xl, maxWidth: 400, lineHeight: 1.7 }}>
+          {t('landing.safety')}
+        </Mono>
+
+        {/* the one door off this page that is not the product: the first light
+            notice, set IN the setting rather than pinned to a corner of the
+            window where it collides with whatever else lives there */}
+        {ctx.trial && (
+          <div className="enter" style={{ animationDelay: '.3s', marginTop: SPACE.xl }}>
+            <TrialBanner C={C} line={ctx.trial.line} deadline={ctx.trial.deadline} />
+          </div>
+        )}
+      </div>
+
+      {/* the colophon: the small print at the foot of the setting, where small
+          print belongs */}
+      <div className="enter" style={{ animationDelay: '.24s', display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start', paddingTop: SPACE.xl }}>
+        <Small C={C} style={{ maxWidth: 400 }}>
           {t('landing.age')}{' '}
-          <a href="/terms" target="_blank" rel="noopener" style={{ color: rgba(C.muted, 0.9), textDecoration: 'underline' }}>{t('landing.terms')}</a>.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: SPACE.md, paddingTop: 2, flexWrap: 'wrap' }}>
+          <a href="/terms" target="_blank" rel="noopener" style={{ color: TEXT.quiet }}>{t('landing.terms')}</a>.
+        </Small>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
           {[
             ['/privacy', t('footer.privacy')],
             ['/terms', t('footer.terms')],
           ].map(([href, label], idx) => (
             <React.Fragment key={href}>
               {idx > 0 && <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />}
-              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: '.5px', color: C.muted, textDecoration: 'none' }}>
+              <a href={href} target="_blank" rel="noopener" style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: TEXT.faint, textDecoration: 'none', textShadow: ONSKY }}>
                 {label}
               </a>
             </React.Fragment>
           ))}
           <span aria-hidden style={{ width: 2.5, height: 2.5, borderRadius: '50%', background: C.line }} />
-          <GhostButton C={C} onClick={() => ctx.go('privacy')} style={{ padding: 0, fontSize: SIZE.meta, fontFamily: FONT.mono, letterSpacing: '.5px' }}>
+          <button
+            type="button"
+            onClick={() => ctx.go('privacy')}
+            style={{ fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: TEXT.faint, textShadow: ONSKY }}
+          >
             {t('footer.optout')}
-          </GhostButton>
+          </button>
         </div>
         {ctx.demo && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: SPACE.md, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: SPACE.md, alignItems: 'center', flexWrap: 'wrap' }}>
             <SandboxChip C={C} />
-            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ padding: 0, fontSize: SIZE.meta, color: rgba(C.star, 0.85) }}>
-              {t('demo.worlds')} →
-            </GhostButton>
+            <GhostButton C={C} onClick={() => ctx.go('worlds')} style={{ fontSize: SIZE.small }}>{t('demo.worlds')}</GhostButton>
           </div>
         )}
       </div>
@@ -324,7 +363,7 @@ export function WhoScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <div className="enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: SPACE.lg, textAlign: 'left' }}>
@@ -453,7 +492,7 @@ export function YouScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(login ? 'landing' : 'who')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(login ? 'landing' : 'who')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: SPACE.xl }}>
         <Display C={C} className="enter">
@@ -798,56 +837,115 @@ export function PlacedScreen({ C, ctx }) {
 }
 
 // ── 4 · YOUR PINGS — the ledger ───────────────────────────────────────────────
-// A row action: a small plate scored into the leather, with the label struck
-// into it. Two lines are allowed — the action, and what it does — because the
-// one action in this product people could not read was the one that had to fit
-// a single word.
-function RowBtn({ C, onClick, icon, children, sub, tone = 'default', disabled }) {
-  const [down, setDown] = React.useState(false)
-  const accent = tone === 'accent'
-  const col = disabled ? TEXT.faint : accent ? C.star : TEXT.read
+// The seal, at the size a seal is. Every entry in the ledger wears this
+// footprint whether or not there is anything in it, which is what makes the
+// column read as a set of SLOTS rather than as a list that happens to have some
+// pictures down one side.
+const SEAL = 88
+
+// One entry: an object, the writing beside it, and a rule under the pair. There
+// is no panel. A page in a ledger is entries divided by rules, and the leather
+// slab each ping used to sit on was five objects competing on one screen with
+// the actual object — the seal — shrunk to a chip inside them.
+function Row({ C, children, as = 'div', onClick, style }) {
+  const Tag = as
+  return (
+    <Tag
+      {...(as === 'button' ? { type: 'button', onClick } : { onClick })}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: SPACE.md,
+        width: '100%',
+        padding: `${SPACE.md}px 0`,
+        borderBottom: `1px solid ${HAIR.faint}`,
+        textAlign: 'left',
+        ...style,
+      }}
+    >
+      {children}
+    </Tag>
+  )
+}
+
+// The seal on an entry, and the way to the star it is. It is the ONLY thing on
+// the row that flies the camera: the row used to be, which meant every quiet
+// action on it had to stop its own click from falling through into a camera
+// flight. The object you fly to is the object you press.
+function SealButton({ C, card, url, onClick, label, className }) {
+  const inner = (
+    <Card
+      C={C}
+      card={card || { words: '', bg: 'hide', tone: 0.12 }}
+      url={url}
+      size={SEAL}
+      glow={0.55}
+    />
+  )
+  if (!onClick) return <span style={{ flex: '0 0 auto', opacity: 0.72 }}>{inner}</span>
   return (
     <button
       type="button"
-      disabled={disabled}
-      onClick={(e) => {
-        // the whole row behind these actions flies to the star — a row action
-        // must never fall through into that
-        e.stopPropagation()
-        if (onClick && !disabled) onClick(e)
-      }}
-      onPointerDown={() => setDown(true)}
-      onPointerUp={() => setDown(false)}
-      onPointerLeave={() => setDown(false)}
-      onPointerCancel={() => setDown(false)}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, padding: '9px 13px',
-        borderRadius: RADIUS.chip, color: col, textAlign: 'left',
-        background: 'transparent',
-        border: `1px solid ${accent ? rgba(C.star, 0.42) : rgba(C.cream, 0.16)}`,
-        boxShadow: down ? LIGHT.pressed : 'inset 0 1px 0 rgba(255,226,186,0.05), inset 0 -1px 0 rgba(0,0,0,0.3)',
-        transform: down ? 'translateY(1px)' : 'none',
-        transition: 'transform .1s linear, box-shadow .12s linear, border-color .18s linear',
-      }}
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={className}
+      style={{ flex: '0 0 auto', borderRadius: '50%', padding: 0 }}
     >
-      {icon && <Icon name={icon} size={13} color="currentColor" stroke={1.1} />}
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-        <span style={{ fontFamily: FONT.sans, fontWeight: 400, fontSize: 11, letterSpacing: TRACK.meta, textTransform: 'uppercase' }}>
-          {children}
-        </span>
-        {sub && (
-          <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.tick, color: TEXT.faint, textTransform: 'none' }}>
-            {sub}
-          </span>
-        )}
-      </span>
+      {inner}
     </button>
   )
 }
 
-// One ping, as a frosted glass card lifted off the galaxy. The state reads in
-// plain words (active / not here yet / mutual) with a one-line explanation, and
-// the actions are real buttons.
+// A row action: a line of type with a hairline under it. Not a pill, not a
+// bordered chip — a footnote reference, which is exactly the weight an action
+// inside an entry deserves when the entry itself is the thing being read.
+// `sub` prints what the action DOES beside it, which is the whole reason the
+// renew action stopped being ambiguous.
+function RowLink({ C, children, sub, onClick, lit, quiet }) {
+  const [hot, setHot] = React.useState(false)
+  const col = lit ? C.star : quiet ? TEXT.faint : TEXT.quiet
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: SPACE.sm }}>
+      <button
+        type="button"
+        onClick={onClick}
+        onPointerEnter={() => setHot(true)}
+        onPointerLeave={() => setHot(false)}
+        style={{
+          fontFamily: FONT.sans,
+          fontWeight: 300,
+          fontSize: 11.5,
+          letterSpacing: '0.04em',
+          color: hot ? TEXT.read : col,
+          borderBottom: `1px solid ${rgba(C.cream, hot ? 0.4 : quiet ? 0.12 : 0.2)}`,
+          paddingBottom: 1,
+          textShadow: ONSKY,
+          transition: 'color .18s linear, border-color .18s linear',
+        }}
+      >
+        {children}
+      </button>
+      {sub && <Mono C={C} size={SIZE.micro}>{sub}</Mono>}
+    </span>
+  )
+}
+
+// ── one entry in the ledger ──────────────────────────────────────────────────
+// A row, not a card. Every ping used to sit on its own slab of stitched leather,
+// and a list of them read as a stack of objects rather than as a page in a
+// ledger: five panels down a screen is five things competing to be looked at,
+// and the seal — the one object on the row that is genuinely an object — was
+// reduced to a 38px chip inside the panel that was shouting over it.
+//
+// So the leather comes off. The seal is set at the size it deserves, on the
+// case itself, with the entry ranged beside it and one hairline ruled under the
+// pair. That is what a ledger is: entries on a page, divided by rules.
+//
+// THE SEAL IS THE WAY TO THE SKY, and only the seal. It used to be the whole
+// panel, which meant every quiet text action on the row had to stop its own
+// click from falling through into a camera flight. The object you fly to is the
+// object you press.
 function PingCard({ C, ping, ctx }) {
   const { t } = useI18n()
   const [confirmGo, setConfirmGo] = React.useState(false)
@@ -856,11 +954,10 @@ function PingCard({ C, ping, ctx }) {
   const days = daysLeft(ping.expires_at)
   const soon = !ping.mutual && nearLapse(ping.expires_at)
   const state = ping.mutual ? 'mutual' : ping.reachable ? 'standing' : 'waiting'
-  const chipColor = ping.mutual ? C.star : ping.reachable ? rgba(C.star, 0.92) : C.muted
-  // Production renews outright, free, instantly (unchanged). The sandbox
-  // detours through the same checkout the third slot uses (SlotPaywall, extend
-  // mode) so the eventual $2.99 shape is visible; the actual renew only runs
-  // once that mock payment succeeds (App.jsx's finishExtend).
+  // Production renews outright, free, instantly. The sandbox detours through
+  // the same checkout the third slot uses (SlotPaywall, extend mode) so the
+  // eventual $2.99 shape is visible; the actual renew only runs once that mock
+  // payment succeeds (App.jsx's finishExtend).
   const renew = async () => {
     if (ctx.demo) {
       ctx.startExtend(ping.handle)
@@ -872,165 +969,121 @@ function PingCard({ C, ping, ctx }) {
     setRenewed(until || true)
   }
   return (
-    // the WHOLE card is the way to the sky: tap anywhere on it and the camera
-    // flies to this ping's own star (row buttons stop their own taps)
-    <GlassPanel
-      C={C}
-      onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
-      role={ping.handle ? 'button' : undefined}
-      tabIndex={ping.handle ? 0 : undefined}
-      onKeyDown={ping.handle ? (e) => { if (e.key === 'Enter') ctx.locatePing(ping.handle) } : undefined}
-      aria-label={ping.handle ? t('pings.locate') : undefined}
-      title={ping.handle ? t('pings.locate') : undefined}
-      style={{ padding: '15px 16px 13px', cursor: ping.handle ? 'pointer' : 'default' }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', textAlign: 'left' }}>
-        {/* the card this ping carries, at the size a star is. Below 118px the
-            disc sets no type at all (card/model.js TYPE_FLOOR) — there is no
-            legible size for a poster in a thumbnail, and type too small to read
-            is decoration pretending to be content. What it shows here is the
-            ground and the light, which is what makes one ping recognisable
-            from another at a glance. */}
-        {ping.card && (
-          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
-            <Card C={C} card={ping.card} url={ping.photoId ? ctx.cardUrls[ping.photoId] : null} size={38} glow={0.7} />
-          </span>
-        )}
-        <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: ping.handle ? C.cream : C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ping.handle ? (
-            <><span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}</>
-          ) : (
-            <span style={{ fontStyle: 'italic', fontSize: SIZE.body }}>{t('pings.elsewhere')}</span>
-          )}
-        </span>
-        {/* the "its star" tag that used to sit here is gone: the whole card is
-            the way to the sky, and it already carries that label for a screen
-            reader. Printing a caption next to an affordance is not a design. */}
+    <Row C={C}>
+      <SealButton
+        C={C}
+        card={ping.card}
+        url={ping.photoId ? ctx.cardUrls[ping.photoId] : null}
+        onClick={ping.handle ? () => ctx.locatePing(ping.handle) : undefined}
+        label={ping.handle ? t('pings.locate') : undefined}
+      />
+
+      <div style={{ flex: 1, minWidth: 0 }}>
         {/* the state, told by FORM rather than by hue: a filled mark that
             breathes is standing, an open dashed one is waiting, a joined pair is
             mutual. Somebody who cannot see colour reads this exactly as well as
             somebody who can, which is what a one-hue brand buys you. */}
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: 6 }}>
           <StateDot C={C} state={state} size={9} />
-          <Kicker C={C} color={state === 'waiting' ? TEXT.faint : chipColor}>{t(`pings.${state}`)}</Kicker>
-        </span>
-      </div>
+          <Kicker C={C} color={ping.mutual ? C.star : state === 'standing' ? rgba(C.star, 0.92) : TEXT.faint}>
+            {t(`pings.${state}`)}
+          </Kicker>
+        </div>
 
-      {ping.handle && t(`pings.${state}Sub`) && (
-        <p style={{ margin: '8px 0 0', fontSize: SIZE.small, lineHeight: 1.5, color: rgba(C.muted, 0.92) }}>
-          {t(`pings.${state}Sub`)}
-        </p>
-      )}
-      {/* what you wrote on it. Yours to re-read; sealed to them until it is
-          mutual, which is the only claim this row makes. */}
-      {ping.card && ping.card.words && (
-        <p style={{ margin: '7px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, color: rgba(C.cream, 0.7) }}>
-          “{ping.card.words}”
-        </p>
-      )}
+        <div style={{ fontFamily: FONT.mono, fontSize: 15, letterSpacing: '0.02em', color: ping.handle ? C.cream : TEXT.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: ONSKY }}>
+          {ping.handle ? `@${ping.handle}` : t('pings.elsewhere')}
+        </div>
 
-      {(ping.handle || (!ping.mutual && days != null)) && (
-        <div style={{ marginTop: 12, paddingTop: 11, borderTop: `1px solid ${rgba(C.cream, 0.07)}` }}>
-          {confirmGo ? (
-            <div className="fade" style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
-              <span style={{ fontSize: SIZE.small, lineHeight: 1.5, color: C.muted }}>{t('pings.letgoConfirm')}</span>
-              <div style={{ display: 'flex', gap: SPACE.md }}>
-                <RowBtn C={C} tone="danger" icon="x" onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowBtn>
-                <RowBtn C={C} onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowBtn>
-              </div>
+        {/* what you wrote on it. Yours to re-read; sealed to them until it is
+            mutual, which is the only claim this row makes. */}
+        {ping.card && ping.card.words && (
+          <p style={{ margin: '6px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.62) }}>
+            “{ping.card.words}”
+          </p>
+        )}
+
+        {confirmGo ? (
+          <div className="fade" style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: SPACE.sm, alignItems: 'flex-start' }}>
+            <Small C={C}>{t('pings.letgoConfirm')}</Small>
+            <div style={{ display: 'flex', gap: SPACE.md, alignItems: 'center' }}>
+              <RowLink C={C} onClick={() => ctx.letGo(ping.handle)}>{t('pings.letgoYes')}</RowLink>
+              <RowLink C={C} quiet onClick={() => setConfirmGo(false)}>{t('pings.keep')}</RowLink>
             </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, flexWrap: 'wrap' }}>
-              {/* the clock, and the DATE it runs out on. The date is the part
-                  that was missing everywhere: it is also the day this slot comes
-                  back, so a person holding two pings can finally see when the
-                  next one opens without doing arithmetic on "43 days left". */}
-              {!ping.mutual && days != null && (
-                <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
-                  <Mono C={C} color={soon ? rgba(C.star, 0.92) : TEXT.quiet}>
-                    {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
-                  </Mono>
-                  {ping.expires_at && <Mono C={C} size={SIZE.micro}>{t('pings.standsUntil', { date: lapseDate(ping.expires_at) })}</Mono>}
-                </span>
-              )}
-              <span style={{ flex: 1 }} />
+          </div>
+        ) : (
+          <>
+            {/* the clock, and the DATE it runs out on, on their own line. The
+                date is the part that was missing everywhere: it is also the day
+                this slot comes back, so a person holding two pings can see when
+                the next one opens without doing arithmetic on "43 days left".
+                It sits UNDER the countdown rather than beside it, so the row of
+                actions below stays one row at every width. */}
+            {!ping.mutual && days != null && (
+              <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Mono C={C} color={soon ? rgba(C.star, 0.92) : TEXT.quiet}>
+                  {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
+                </Mono>
+                {ping.expires_at && (
+                  <Mono C={C} size={SIZE.micro}>{t('pings.standsUntil', { date: lapseDate(ping.expires_at) })}</Mono>
+                )}
+              </div>
+            )}
+            <div style={{ marginTop: 9, display: 'flex', gap: SPACE.lg, alignItems: 'baseline', flexWrap: 'wrap' }}>
               {ping.mutual && ping.handle ? (
-                <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+                <RowLink C={C} lit onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowLink>
               ) : ping.handle ? (
                 <>
                   {renewed ? (
-                    <span className="fade" style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm, fontFamily: FONT.sans, fontWeight: 300, fontSize: SIZE.small, color: rgba(C.star, 0.9) }}>
-                      <Icon name="check" size={13} color={rgba(C.star, 0.9)} stroke={1.1} />
+                    <span className="fade" style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 11.5, letterSpacing: '0.04em', color: rgba(C.star, 0.92), textShadow: ONSKY }}>
                       {t('pings.renewed', { date: lapseDate(typeof renewed === 'string' ? renewed : ping.expires_at) })}
                     </span>
                   ) : (
-                    <RowBtn
-                      C={C}
-                      tone={soon ? 'accent' : 'default'}
-                      icon="refresh"
-                      disabled={renewing}
-                      onClick={renew}
-                      sub={renewing ? undefined : t('pings.renewSub')}
-                    >
+                    <RowLink C={C} lit={soon} onClick={renewing ? undefined : renew} sub={t('pings.renewSub')}>
                       {renewing ? t('pings.renewing') : t('pings.renew')}
-                    </RowBtn>
+                    </RowLink>
                   )}
-                  <RowBtn C={C} tone="danger" icon="x" onClick={() => setConfirmGo(true)}>{t('pings.letgo')}</RowBtn>
+                  <RowLink C={C} quiet onClick={() => setConfirmGo(true)}>{t('pings.letgo')}</RowLink>
                 </>
               ) : null}
             </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
 
-      {ctx.demo && !ping.mutual && ping.handle && (
-        <div style={{ marginTop: 10 }}>
-          <GhostButton
-            C={C}
-            onClick={(e) => {
-              e.stopPropagation()
-              ctx.simulateMutual(ping.handle)
-            }}
-            style={{ padding: 0, fontSize: SIZE.meta, letterSpacing: TRACK.meta, fontFamily: FONT.mono, color: rgba(C.star, 0.8) }}
-          >
-            {t('pings.sim')}
-          </GhostButton>
-        </div>
-      )}
-    </GlassPanel>
+        {ctx.demo && !ping.mutual && ping.handle && (
+          <div style={{ marginTop: 9 }}>
+            <RowLink C={C} quiet onClick={() => ctx.simulateMutual(ping.handle)}>{t('pings.sim')}</RowLink>
+          </div>
+        )}
+      </div>
+    </Row>
   )
 }
 
-// An empty slot — a scored recess in the leather with the mark set in it, so the
-// number of slots you have (and how many are open) is always visible at a
-// glance. Once every free slot is held, this same shape becomes the door to the
-// next one (`paywall`) and names what tapping it opens: the checkout, not a free
-// placement.
+// An open slot — the seal's own footprint, scored into the case and empty. It
+// is the same 88px circle every entry above it wears, so the ledger reads as a
+// column of slots with some of them filled rather than as a list with a button
+// stuck on the end. Once every free slot is held, this same shape becomes the
+// door to the next one (`paywall`) and names what tapping it opens: the
+// checkout, not a free placement.
 function EmptySlotCard({ C, onClick, paywall }) {
   const { t } = useI18n()
-  const [down, setDown] = React.useState(false)
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      onPointerDown={() => setDown(true)}
-      onPointerUp={() => setDown(false)}
-      onPointerLeave={() => setDown(false)}
-      style={{
-        display: 'flex', alignItems: 'center', gap: SPACE.md, width: '100%', padding: '15px 16px', textAlign: 'left',
-        borderRadius: RADIUS.card,
-        background: rgba(C.ink, 0.45),
-        border: `1px dashed ${paywall ? rgba(C.star, 0.34) : rgba(C.cream, 0.18)}`,
-        boxShadow: down ? LIGHT.pressed : LIGHT.well,
-        transition: 'box-shadow .12s linear',
-      }}
-    >
-      <Sigil size={15} cut={paywall ? 'lamp' : 'ivory'} a={paywall ? 1 : 0.5} />
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+    <Row C={C} as="button" onClick={onClick}>
+      <span
+        style={{
+          flex: '0 0 auto', width: SEAL, height: SEAL, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px dashed ${paywall ? rgba(C.star, 0.34) : rgba(C.cream, 0.18)}`,
+          boxShadow: LIGHT.well,
+        }}
+      >
+        <Sigil size={22} cut={paywall ? 'lamp' : 'ivory'} a={paywall ? 1 : 0.4} />
+      </span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, textAlign: 'left' }}>
         <Kicker C={C} color={paywall ? C.star : TEXT.quiet}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</Kicker>
         <Mono C={C}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</Mono>
       </span>
-    </button>
+    </Row>
   )
 }
 
@@ -1041,37 +1094,43 @@ function EmptySlotCard({ C, onClick, paywall }) {
 // the meter said two of two over an empty list, which is the product calling its
 // own user a liar.
 //
-// So the slot is drawn. It says what it is, it keeps its own sixty days like
-// every other ping, and — because the usual cause is a restore that has not
+// So the slot is drawn, as an entry like any other. It says what it is, it keeps
+// its own sixty days, and — because the usual cause is a restore that has not
 // landed rather than a pre-0010 row that genuinely cannot be named — it carries
 // the one action that can fill it in.
 function HeldElsewhereCard({ C, ctx }) {
   const { t } = useI18n()
   const phase = (ctx.ledgerState && ctx.ledgerState.phase) || 'idle'
   return (
-    <GlassPanel C={C} inset style={{ padding: '15px 16px 13px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
-        <StateDot C={C} state="standing" size={9} />
-        <span style={{ flex: 1, minWidth: 0, fontFamily: FONT.serif, fontSize: SIZE.lead, color: TEXT.quiet }}>
-          {t('pings.heldTitle')}
-        </span>
+    <Row C={C}>
+      <span
+        style={{
+          flex: '0 0 auto', width: SEAL, height: SEAL, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1px solid ${rgba(C.cream, 0.14)}`, boxShadow: LIGHT.well,
+        }}
+      >
+        <StateDot C={C} state="standing" size={11} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Kicker C={C} style={{ display: 'block', marginBottom: 6 }}>{t('pings.heldTitle')}</Kicker>
+        <Small C={C}>{t('pings.heldSub')}</Small>
+        {phase === 'failed' && <Note C={C} tone="accent" style={{ marginTop: 6 }}>{t('pings.heldFailed')}</Note>}
+        <div style={{ marginTop: 8 }}>
+          <RowLink C={C} onClick={phase === 'reading' ? undefined : ctx.restoreLedger}>
+            {phase === 'reading' ? t('pings.heldRestoring') : t('pings.heldRestore')}
+          </RowLink>
+        </div>
       </div>
-      <Small C={C} style={{ marginTop: 7 }}>{t('pings.heldSub')}</Small>
-      {phase === 'failed' && <Note C={C} tone="accent" style={{ marginTop: 7 }}>{t('pings.heldFailed')}</Note>}
-      <div style={{ marginTop: 12, paddingTop: 11, borderTop: `1px solid ${HAIR.faint}` }}>
-        <RowBtn C={C} icon="refresh" disabled={phase === 'reading'} onClick={ctx.restoreLedger}>
-          {phase === 'reading' ? t('pings.heldRestoring') : t('pings.heldRestore')}
-        </RowBtn>
-      </div>
-    </GlassPanel>
+    </Row>
   )
 }
 
 // ── when the next slot opens ─────────────────────────────────────────────────
 // Every slot is held, so the only two ways forward are waiting and letting one
 // go. Both are named, and the wait has a DATE on it rather than a shrug. The
-// date is not new information — it is the lapse date of the soonest-lapsing ping,
-// which the product has always known and never printed.
+// date is not new information — it is the lapse date of the soonest-lapsing
+// ping, which the product has always known and never printed.
 function NextSlotLine({ C, ctx }) {
   const { t } = useI18n()
   const next = ctx.nextSlot
@@ -1082,7 +1141,7 @@ function NextSlotLine({ C, ctx }) {
       ? t(named ? 'pings.nextSlotToday' : 'pings.nextSlotTodayAnon', { handle: next.handle })
       : t(named ? 'pings.nextSlotDays' : 'pings.nextSlotDaysAnon', { n: next.days, handle: next.handle })
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '2px 4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: `${SPACE.md}px 0 0` }}>
       <Kicker C={C} color={C.star}>{t('pings.nextSlot', { date: lapseDate(next.at) })}</Kicker>
       <Small C={C}>
         {when} {t('pings.nextSlotOr')}
@@ -1128,39 +1187,31 @@ function SealedMutual({ C, ping, onOpen }) {
   }, [])
 
   return (
-    <button
-      onClick={onOpen}
-      aria-label={t('pings.revealOpen', { them: ping.handle })}
-      style={{
-        display: 'flex', alignItems: 'center', gap: SPACE.lg, width: '100%', padding: '14px 16px', textAlign: 'left',
-        cursor: 'pointer', borderRadius: RADIUS.card,
-        background: rgba(C.star, 0.07), border: `1px solid ${rgba(C.star, 0.34)}`,
-        boxShadow: LIGHT.rest,
-      }}
-    >
-      {/* the seal: a disc with the light of a card behind it and nothing of the
-          card visible through it. */}
+    <Row C={C} as="button" onClick={onOpen} style={{ cursor: 'pointer' }}>
+      {/* the seal, at the size every other entry wears: a disc with the light of
+          a card behind it and nothing of the card visible through it. It strains
+          against its lid every few seconds, because something is in there and
+          the product is not going to pretend otherwise. */}
       <span
-        className={shake ? 'rattle' : undefined}
+        className={shake ? 'strain' : undefined}
         aria-hidden
         style={{
-          position: 'relative', display: 'grid', placeItems: 'center', width: 46, height: 46, flexShrink: 0,
-          borderRadius: '50%', background: C.ink2, border: `1px solid ${rgba(C.star, 0.5)}`,
-          boxShadow: LIGHT.spill(0.18),
+          flex: '0 0 auto', display: 'grid', placeItems: 'center', width: SEAL, height: SEAL,
+          borderRadius: '50%', ...leatherSurface(C.ink3),
+          boxShadow: `0 0 0 1px ${rgba(C.star, 0.5)}, ${LIGHT.seal}`,
         }}
       >
-        <StarMark C={C} size={20} />
+        <Sigil size={26} cut="lamp" ground={C.ink3} />
       </span>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flex: 1 }}>
-        <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.lead, color: C.cream }}>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 0, flex: 1 }}>
+        <Kicker C={C} color={C.star}>{t('pings.mutualKicker')}</Kicker>
+        <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, textShadow: ONSKY }}>
           {t('pings.sealedTitle')}
         </span>
-        <span style={{ fontSize: SIZE.small, color: rgba(C.muted, 0.95) }}>
-          {t('pings.sealedSub', { them: ping.handle })}
-        </span>
+        <Small C={C}>{t('pings.sealedSub', { them: ping.handle })}</Small>
       </span>
-      <Icon name="arrow" size={16} color={rgba(C.star, 0.9)} stroke={2} />
-    </button>
+      <Icon name="arrow" size={16} color={rgba(C.star, 0.9)} stroke={1.2} />
+    </Row>
   )
 }
 
@@ -1174,38 +1225,44 @@ function OpenMutual({ C, ping, ctx }) {
   const yours = ping.card
   const url = ping.photoId ? ctx.cardUrls[ping.photoId] : null
   return (
-    <GlassPanel C={C} style={{ padding: '13px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md }}>
-        <button
-          onClick={() => ctx.openReveal(ping.handle)}
-          aria-label={t('pings.revealAgain')}
-          style={{
-            flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: SPACE.md, padding: 0, textAlign: 'left',
-            background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer',
-          }}
-        >
-          <span style={{ display: 'inline-flex', flexShrink: 0 }}>
-            {theirs && <Card C={C} card={theirs} size={44} tint={C.them} glow={0.8} />}
-            {yours && (
-              <span style={{ marginLeft: -12 }}>
-                <Card C={C} card={yours} url={url} size={44} tint={C.you} glow={0.8} />
-              </span>
-            )}
+    <Row C={C}>
+      {/* the pair, overlapped the way two things set down together overlap.
+          Theirs on top, because at a reveal the only thing anyone wants is the
+          half they could not see. Pressing them plays the spread again: nothing
+          is unsealed a second time, it is simply the size the cards can
+          actually be read at. */}
+      <button
+        type="button"
+        onClick={() => ctx.openReveal(ping.handle)}
+        aria-label={t('pings.revealAgain')}
+        style={{ flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', padding: 0 }}
+      >
+        {yours && <Card C={C} card={yours} url={url} size={SEAL * 0.72} tint={C.you} glow={0.5} />}
+        {theirs && (
+          <span style={{ marginLeft: -SEAL * 0.3 }}>
+            <Card C={C} card={theirs} size={SEAL * 0.72} tint={C.them} glow={0.7} />
           </span>
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontFamily: FONT.serif, fontSize: SIZE.lead, color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ color: rgba(C.star, 0.9) }}>@</span>{ping.handle}
-            </span>
-            {theirs && theirs.words && (
-              <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.small, color: rgba(C.cream, 0.62), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                “{theirs.words}”
-              </span>
-            )}
-          </span>
-        </button>
-        <RowBtn C={C} tone="accent" icon="message" onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowBtn>
+        )}
+      </button>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: 6 }}>
+          <StateDot C={C} state="mutual" size={9} />
+          <Kicker C={C} color={C.star}>{t('pings.mutual')}</Kicker>
+        </div>
+        <div style={{ fontFamily: FONT.mono, fontSize: 15, letterSpacing: '0.02em', color: C.cream, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: ONSKY }}>
+          @{ping.handle}
+        </div>
+        {theirs && theirs.words && (
+          <p style={{ margin: '6px 0 0', fontFamily: FONT.serif, fontStyle: 'italic', fontSize: SIZE.body, lineHeight: 1.35, color: rgba(C.cream, 0.62) }}>
+            “{theirs.words}”
+          </p>
+        )}
+        <div style={{ marginTop: 8, display: 'flex', gap: SPACE.md, alignItems: 'baseline', flexWrap: 'wrap' }}>
+          <RowLink C={C} lit onClick={() => ctx.openConversation(ping.handle)}>{t('pings.open')}</RowLink>
+          <RowLink C={C} quiet onClick={() => ctx.openReveal(ping.handle)}>{t('pings.revealAgain')}</RowLink>
+        </div>
       </div>
-    </GlassPanel>
+    </Row>
   )
 }
 
@@ -1303,35 +1360,37 @@ export function PingsScreen({ C, ctx }) {
   const atCap = !empty && standing >= cap
   return (
     <Shell>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38, paddingTop: 6 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
-          <Brandmark C={C} size={16} />
-          <Kicker C={C}>{t('pings.kicker')}</Kicker>
-          {ctx.demo && <SandboxChip C={C} />}
-        </div>
-      </div>
+      <ScreenHeader
+        C={C}
+        label={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.md }}>
+            <Kicker C={C}>{t('pings.kicker')}</Kicker>
+            {ctx.demo && <SandboxChip C={C} />}
+          </span>
+        }
+        right={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
+            <Slots C={C} used={used} cap={cap} />
+            <Mono C={C}>{t('pings.slotsUsed', { used, cap })}</Mono>
+          </span>
+        }
+      />
 
-      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: 18 }}>
-        {/* your community first — the place; the slots below are the pings */}
+      <div className="enter" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: SPACE.sm }}>
+        {/* your community first — the place; the entries below are the pings */}
         <CommunityHome C={C} ctx={ctx} />
 
-        {/* the slot space, clearly its own section under its own rule — always
-            exactly `cap` rows: standing pings, then open slots. mutual matches
-            are resolved and never sit here. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, marginTop: 4, paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
+        {/* the ledger: entries, divided by rules. Always exactly `cap` slots —
+            standing pings, then open ones. A mutual is resolved and never sits
+            among them. */}
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: SPACE.sm }}>
           {empty ? (
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE.md, margin: '6px 0 4px' }}>
-              <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, color: C.cream }}>
-                {t('pings.emptyTitle')}
-              </h2>
-              <p style={{ margin: 0, fontSize: SIZE.small, lineHeight: 1.6, color: C.muted, maxWidth: 300 }}>{t('pings.emptyBody')}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm, padding: `${SPACE.lg}px 0` }}>
+              <Title C={C}>{t('pings.emptyTitle')}</Title>
+              <Small C={C} style={{ maxWidth: 320 }}>{t('pings.emptyBody')}</Small>
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 2px' }}>
-                <Kicker C={C} style={{ fontSize: SIZE.micro }}>{t('pings.slotsUsed', { used, cap })}</Kicker>
-                <SlotPips C={C} standing={used} cap={cap} compact subscribed={ctx.demoSubscribed} />
-              </div>
               {active.map((p, i) => (
                 <PingCard key={(p.handle || 'anon') + i} C={C} ping={p} ctx={ctx} />
               ))}
@@ -1347,23 +1406,24 @@ export function PingsScreen({ C, ctx }) {
                   <EmptySlotCard key="door" C={C} onClick={ctx.placeAnother} paywall />
                 </>
               )}
-              {/* said once, under the slots, and not on every row: renewing is
-                  free, it restarts the sixty days, and it does not spend a slot.
-                  All three were things the ledger let people guess at. */}
-              {active.some((p) => p.handle) && <Note C={C} tone="quiet" style={{ padding: '2px 4px' }}>{t('pings.renewNote')}</Note>}
+              {/* said once, under the ledger, and not on every entry: renewing
+                  is free, it restarts the sixty days, and it does not spend a
+                  slot. All three were things the ledger let people guess at. */}
+              {active.some((p) => p.handle) && (
+                <Note C={C} tone="quiet" style={{ paddingTop: SPACE.md }}>{t('pings.renewNote')}</Note>
+              )}
             </>
           )}
 
-          {/* mutual — its own section, so a match never crowds the slots */}
+          {/* mutual — its own section under its own head, so a match never
+              crowds the slots */}
           {mutual.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.md, paddingTop: empty ? 0 : 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.md, padding: '0 4px' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: SPACE.sm }}>
-                  <StateDot C={C} state="mutual" size={9} />
-                  <Kicker C={C} color={rgba(C.star, 0.9)}>{t('pings.mutualKicker')} · {mutual.length}</Kicker>
-                </span>
-                <span aria-hidden style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${rgba(C.star, 0.22)}, transparent)` }} />
+            <div style={{ display: 'flex', flexDirection: 'column', paddingTop: SPACE.xl }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.sm }}>
+                <StateDot C={C} state="mutual" size={9} />
+                <Kicker C={C} color={rgba(C.star, 0.9)}>{t('pings.mutualKicker')} · {mutual.length}</Kicker>
               </div>
+              <Rule C={C} />
               {mutual.map((p, i) => (
                 <MutualCard key={'m' + (p.handle || i)} C={C} ping={p} ctx={ctx} />
               ))}
@@ -2176,7 +2236,7 @@ export function CommunityScreen({ C, ctx }) {
   if (!community) {
     return (
       <Shell>
-        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} label={<Brandmark C={C} size={18} />} />
+        <ScreenHeader C={C} onBack={() => ctx.go('worlds')} />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ fontSize: SIZE.small, color: C.muted }}>{t('communities.none')}</p>
         </div>
@@ -2957,7 +3017,7 @@ export function FourthSlotScreen({ C, ctx }) {
   if (ctx.demo && !ctx.demoSubscribed) return <SlotPaywall C={C} ctx={ctx} mode="slot" />
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go('pings')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go('pings')} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: SPACE.xl }}>
         {/* the slots, all held */}
         <SlotPips C={C} standing={ctx.slotsCap} cap={ctx.slotsCap} subscribed={ctx.demoSubscribed} />
@@ -3095,7 +3155,7 @@ export function PrivacyScreen({ C, ctx }) {
 
   return (
     <Shell>
-      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} label={<Brandmark C={C} size={18} />} />
+      <ScreenHeader C={C} onBack={() => ctx.go(ctx.pings.length ? 'pings' : 'landing')} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: SPACE.xs, paddingTop: 8 }}>
         <h2 style={{ margin: 0, fontFamily: FONT.serif, fontWeight: 400, fontSize: SIZE.title, lineHeight: 1.16, color: C.cream }}>

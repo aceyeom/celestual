@@ -136,6 +136,11 @@ export class SkyEngine {
     // where a centred headline does, and every screen in the product then reads
     // over the one part of the galaxy that cannot be read over.
     this.centerY = 0.44
+    // …and where it sits ACROSS it. Almost always the middle, and it exists for
+    // the same reason `centerY` does: the galactic centre is the one part of
+    // the picture nothing can be read over, so a layout that puts type in a
+    // fixed column needs to be able to move the heart out from behind it.
+    this.centerX = 0.5
     this.insetT = 0
     this.insetB = 0
     this.bandShift = [0, 0]
@@ -300,7 +305,7 @@ export class SkyEngine {
   _layout() {
     const availTop = this.insetT
     const avail = Math.max(this.h * 0.42, this.h - this.insetT - this.insetB)
-    const cx = this.w / 2
+    const cx = this.w * this.centerX
     const cy = this.insetT || this.insetB ? clamp(availTop + avail * 0.44, this.h * 0.24, this.h * 0.62) : this.h * this.centerY
     const minDim = Math.min(this.w, avail)
     const P0 = FOCAL / CAM

@@ -148,7 +148,23 @@ export function fitRatio(text) {
 
 export const metaSize = (d) => Math.max(7, Math.min(11, d * 0.026))
 
+// ── two floors, not one ──────────────────────────────────────────────────────
+// `TYPE_FLOOR` is where the LEGEND comes off: below it the @ and the date stop
+// being type and become two grey smudges, so the seal drops them and gives the
+// room back to the words. A card too small to print its own head does not print
+// it smaller.
+//
+// The WORDS have a floor of their own, and it is much lower, because the words
+// are the card. At 88px — the size a seal is set at in the ledger — a short
+// line is entirely readable once it has the whole disc to itself, and a seal
+// with nothing written on it is not a seal, it is a button. Setting both floors
+// to the same number is what made every entry in the ledger a blank disc.
 export const TYPE_FLOOR = 118
+export const WORD_FLOOR = 54
+
+// How much bigger the words are set once the legend is off and they have the
+// whole disc. Same figure the seal has always used.
+export const LEGEND_OFF = 1.34
 
 // ── the composition ──────────────────────────────────────────────────────────
 // The text block is an object with a place, not a centered stack. Where it

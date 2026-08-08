@@ -11,7 +11,10 @@ import { igVerifyEnabled, loadPending } from './api/igverify.js'
 import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from './api/relogin.js'
 import { makeColors } from './theme.js'
 import { SENDOFF_SECONDS } from './galaxy.js'
-import { GalaxyCanvas, CommunityGalaxyCanvas, ProfileButton, LoginButton, Liftoff, NavDock, TrialBanner, rgba } from './components/ui.jsx'
+import {
+  GalaxyCanvas, CommunityGalaxyCanvas, Liftoff, Masthead, IndexColumn,
+  Mono, useNarrow, rgba, INDEX_W,
+} from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
   SkyCardScreen, CommunityScreen, WorldsScreen, MutualScreen, FourthSlotScreen, PrivacyScreen,
@@ -362,10 +365,13 @@ export default function App() {
   // { handle, onDone } while the DM-verification overlay is up.
   const [verify, setVerify] = useState(null)
 
-  // ── the dock ──
-  // A screen can ask the dock to melt away while its sky takes the frame (the
-  // community page's held zoom / find-your-star flight sets this).
+  // ── the index ──
+  // The one navigation. A screen can ask it to melt away while its sky takes
+  // the frame (the community page's held zoom / find-your-star flight sets
+  // this).
   const [navHidden, setNavHidden] = useState(false)
+  const [indexOpen, setIndexOpen] = useState(false)
+  const narrow = useNarrow()
 
   // ── the send-off animation ──
   // When a ping is finalized the @ field collapses into a star (the Liftoff
@@ -1658,6 +1664,11 @@ export default function App() {
     lastPlaced, match,
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     billingOn, planOn, holdState, hold, paidReturn, confirmPaid,
+    // the first light notice, handed to the landing so it can set it in flow.
+    // It used to be pinned to a viewport corner, which is where it collided
+    // with whatever the page had at that corner — the login chip on one screen,
+    // the colophon on another. A notice belongs on the page it is about.
+    trial: !demo ? { line: TRIAL_BANNER, deadline: TRIAL_DEADLINE } : null,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
@@ -1675,14 +1686,10 @@ export default function App() {
 
   const Screen = SCREENS[screen] || SCREENS.landing
 
-  // The profile chip sits top-left on the quiet screens, once an account is
-  // established (never for a merely-typed @).
-  // Only on the screens with no back button of their own, so the chip never
-  // stacks under a back arrow (the community screens carry their own back nav).
-  const showProfile = established && !!me && ['pings', 'landing'].includes(screen)
-  // Its logged-out counterpart: a clear "log in" chip in the same corner, so a
-  // returning person always has an obvious way back to their pings.
-  const showLogin = !established && ['landing', 'open'].includes(screen)
+  // The profile chip and its logged-out twin are gone. Both were fixed to the
+  // top-left corner, both were the only thing on their screen aligned to
+  // nothing, and between them they said "your account" on two screens and "log
+  // in" on two others. The index carries both, on every screen, as entries.
 
   // Calm the living galaxy on the content screens so the foreground reads easily;
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
@@ -1706,19 +1713,77 @@ export default function App() {
   const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
   const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
 
-  // ── the dock (the app's three places, one tap apart) ──
-  // Lives on the resting hub screens only — the focused flows (the send, the
-  // identity step, the send-off, the match) stay single-purpose. It melts, not
-  // unmounts, during any cinematic (a star flight, a held zoom, the send-off),
-  // and the screens pad their foot by --nav-pad so nothing sits under it.
-  // The dock belongs to the two RESTING places only. `worlds` (the community
-  // picker) and `door` (the share card) are leaves you arrive at from one of
-  // them and leave with their own back button; giving them a dock too meant two
-  // competing ways back on one screen, and a fixed bar sitting over their
-  // actions.
-  const NAV_SCREENS = ['pings', 'community']
-  const navHere = NAV_SCREENS.includes(screen)
+  // ── the index (the one navigation) ──
+  // This used to be four things. A fixed dock of two stations at the foot of
+  // the two hub screens; a profile chip pinned to the top-left corner on some
+  // screens; a "log in" chip in the same corner on others; and a set of ghost
+  // links at the bottom of whichever page happened to need one. None of them
+  // was aligned to anything else, they disagreed about where "back" lives, and
+  // between them they still could not reach half the product.
+  //
+  // It is one bar now, across the head of every page, and behind it a COLUMN
+  // the page makes room for. The index lists every destination the product has,
+  // including the account — and it says what is on each page as well as where
+  // it is, which is what an index in a book does.
+  //
+  // Two screens deliberately carry no chrome at all: the send-off (the ping is
+  // in flight and there is nowhere to be but here) and the match announcement
+  // (two seconds, nothing to press). The desk and the trial page are their own
+  // documents and opt out too.
+  const BARE_CHROME = ['sendoff', 'mutual', 'reveal', 'trial', 'admin']
+  const chromeHere = !BARE_CHROME.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
+
+  // What the index lists, in the order you meet it. `note` is the fact that
+  // page is currently holding: the @ you are signed in as, how many slots are
+  // held, which community you are in. An index that only names pages is a menu.
+  const indexItems = useMemo(() => {
+    const held = t('index.held', { used: Math.min(slotsStanding, slotCap), cap: slotCap })
+    const items = [
+      { key: 'who', name: t('index.place'), note: established ? held : t('index.placeNew'), go: () => placeAnother() },
+      { key: 'pings', name: t('index.pings'), note: established ? held : null },
+      {
+        key: 'community',
+        name: t('index.sky'),
+        note: homeCommunity ? homeCommunity.name : t('index.skyNone'),
+        go: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
+      },
+      { key: 'worlds', name: t('index.worlds') },
+      { key: 'door', name: t('index.door') },
+    ]
+    // The account is an entry in the index rather than a chip in a corner. It
+    // is the only one that opens a sheet rather than a page, which is why its
+    // key can never match the current screen.
+    items.push(
+      established
+        ? { key: 'account', name: t('index.account'), note: normHandle(me) ? `@${normHandle(me)}` : null, go: () => openAccount() }
+        : { key: 'signin', name: t('index.login'), note: t('index.loginNote'), go: () => startLogin() },
+    )
+    items.push({ key: 'privacy', name: t('index.privacy') })
+    return items
+  }, [t, established, slotsStanding, slotCap, homeCommunity, openCommunity, me, placeAnother, viewCommunity, openAccount, startLogin])
+
+  const goIndex = useCallback(
+    (item) => {
+      setIndexOpen(false)
+      if (item.go) item.go()
+      else go(item.key)
+    },
+    [go],
+  )
+
+  // The index is a column rather than a dialog — it does not trap focus and it
+  // does not scrim the page — but it is still a thing that is open, and escape
+  // is what closes an open thing.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (!indexOpen) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setIndexOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [indexOpen])
 
   // ── /admin renders ALONE, above everything ──
   // The desk is a full-viewport white console with its own design; it is not one
@@ -1740,7 +1805,7 @@ export default function App() {
   const BARE = screen === 'trial'
 
   return (
-    <div className="celestual-app" style={{ '--nav-pad': navHere ? '84px' : '0px' }}>
+    <div className="celestual-app">
       {BARE ? (
         // A still field, not a dead one: one soft rise of colour off the
         // bottom-left so the page still feels like it belongs to us.
@@ -1779,65 +1844,59 @@ export default function App() {
         />
       )}
 
-      {(showProfile || showLogin) && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', left: 'max(12px, env(safe-area-inset-left))', zIndex: 20, opacity: skyFlight ? 0 : 1, transition: 'opacity .5s ease', pointerEvents: skyFlight ? 'none' : 'auto' }}>
-          {showProfile ? (
-            <ProfileButton C={C} handle={me} onClick={openAccount} />
-          ) : (
-            <LoginButton C={C} label={t('landing.login')} onClick={startLogin} />
-          )}
-        </div>
+      {/* ── the masthead and the index ──────────────────────────────────────
+          One bar, every page. The wordmark signs the page; the index opens the
+          column. Both melt away whenever the sky takes the whole frame. */}
+      {chromeHere && (
+        <>
+          <Masthead
+            C={C}
+            open={indexOpen}
+            onToggle={() => setIndexOpen((v) => !v)}
+            hidden={navMelt}
+            sub={demo ? 'sandbox' : undefined}
+          />
+          <IndexColumn
+            C={C}
+            open={indexOpen && !navMelt}
+            items={indexItems}
+            screen={screen}
+            go={goIndex}
+            narrow={narrow}
+            foot={<Mono C={C}>{t('index.colophon')}</Mono>}
+          />
+        </>
       )}
 
-      {/* the first light banner — the landing's one door to the trial, resting
-          in the opposite corner from the login chip, its deadline ticking */}
-      {!demo && screen === 'landing' && (
-        <div style={{ position: 'fixed', top: 'max(12px, env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 20 }}>
-          <TrialBanner C={C} line={TRIAL_BANNER} deadline={TRIAL_DEADLINE} />
-        </div>
-      )}
-
-      {/* during a fly-to-a-star the foreground melts away COMPLETELY so the sky
+      {/* During a fly-to-a-star the foreground melts away COMPLETELY, so the sky
           is the whole screen — any residual opacity reads as a ghost of the
-          pings page floating over the star view. The entrance animation must be
-          suppressed for the melt — its fill-mode would otherwise pin opacity
-          at 1 and override the inline fade. */}
+          ledger floating over the star view. The entrance animation must be
+          suppressed for the melt: its fill-mode would otherwise pin opacity at
+          1 and override the inline fade.
+
+          The page also makes ROOM for the index rather than sitting under it.
+          On a wide screen that is a strip of padding the centred column
+          re-solves itself inside; on a phone there is no width to give away, so
+          the page steps aside instead. The transform is only ever SET when it
+          is non-zero — a transformed ancestor becomes the containing block for
+          every fixed child under it, and the held star view is fixed. */}
       <div
-        key={screen}
-        className="fade"
-        data-screen={screen}
+        onPointerDownCapture={() => indexOpen && setIndexOpen(false)}
         style={{
-          position: 'relative', zIndex: 4,
-          animation: skyFlight ? 'none' : undefined,
-          opacity: skyFlight ? 0 : 1,
-          transition: 'opacity .55s ease',
-          pointerEvents: skyFlight ? 'none' : 'auto',
+          position: 'relative',
+          zIndex: 4,
+          paddingRight: indexOpen && !narrow && !skyFlight ? INDEX_W : 0,
+          transform: indexOpen && narrow && !skyFlight ? 'translateX(-24%)' : undefined,
+          opacity: skyFlight || (indexOpen && narrow) ? 0 : 1,
+          pointerEvents: skyFlight || (indexOpen && narrow) ? 'none' : 'auto',
+          transition:
+            'opacity .55s ease, padding-right .46s cubic-bezier(.16,.84,.28,1), transform .46s cubic-bezier(.16,.84,.28,1)',
         }}
       >
-        <Screen C={C} ctx={ctx} />
+        <div key={screen} className="fade" data-screen={screen} style={{ animation: skyFlight ? 'none' : undefined }}>
+          <Screen C={C} ctx={ctx} />
+        </div>
       </div>
-
-      {/* the dock — TWO stations, because this product has two places.
-          It carried three, and two of them ("sky" and "communities") opened the
-          same thing: a community, and the list you pick a community from. A
-          picker is not a destination. The list now lives inside the sky page,
-          where switching actually happens, and the dock stops offering a choice
-          that wasn't one. */}
-      {navHere && (
-        <NavDock
-          C={C}
-          hidden={navMelt}
-          items={[
-            {
-              id: 'sky',
-              label: t('nav.sky'),
-              active: screen === 'community',
-              onClick: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
-            },
-            { id: 'pings', label: t('nav.pings'), active: screen === 'pings', onClick: () => go('pings') },
-          ]}
-        />
-      )}
 
       {/* the held star view: the star resolves into the card it was made of.
           The @ and the date are set INSIDE the poster, so what arrives at the

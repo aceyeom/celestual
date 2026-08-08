@@ -40,7 +40,7 @@ import * as React from 'react'
 import { rgba, FONT, TOKENS, LIGHT } from '../components/ui.jsx'
 import { groundSurface } from '../texture.js'
 import {
-  stamp, tintOf, plateOf, faceOf, fitRatio, metaSize, TYPE_FLOOR,
+  stamp, tintOf, plateOf, faceOf, fitRatio, metaSize, TYPE_FLOOR, WORD_FLOOR, LEGEND_OFF,
   clampPos, autoPos, alignAt, measureAt, metaPos,
 } from './model.js'
 
@@ -160,11 +160,16 @@ function Block({ pos, align, width, size, children, style }) {
 // address on the envelope, and on the fused spread it is the author, because
 // the only question at a reveal is who wrote which half.
 export function Poster({ C, card, url, size, label, placeholder, children }) {
-  if (size < TYPE_FLOOR) return null
+  if (size < WORD_FLOOR) return null
+  // Below the legend's own floor the @ and the date come off and the words take
+  // the room back, set larger and centred on the disc. That is the difference
+  // between a seal at 88px in the ledger and a token: one of them still says
+  // what somebody wrote.
+  const legend = size >= TYPE_FLOOR
   const words = (card && card.words) || ''
-  const pos = clampPos((card && card.pos) || autoPos(words))
-  const align = alignAt(pos)
-  const width = measureAt(pos)
+  const pos = legend ? clampPos((card && card.pos) || autoPos(words)) : { x: 0.5, y: 0.5 }
+  const align = legend ? alignAt(pos) : 'center'
+  const width = legend ? measureAt(pos) : 0.74
   const mp = metaPos(pos)
   const face = faceOf(card && card.face)
   const g = plateOf(card && card.bg)
@@ -181,16 +186,18 @@ export function Poster({ C, card, url, size, label, placeholder, children }) {
 
   return (
     <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', pointerEvents: 'none' }}>
-      <Block pos={mp} align={align} width={width} size={size}>
-        <span
-          style={{
-            fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.14,
-            color: quiet, textShadow: cast, whiteSpace: 'nowrap',
-          }}
-        >
-          {credit}
-        </span>
-      </Block>
+      {legend && (
+        <Block pos={mp} align={align} width={width} size={size}>
+          <span
+            style={{
+              fontFamily: FONT.mono, fontSize: ms, letterSpacing: ms * 0.14,
+              color: quiet, textShadow: cast, whiteSpace: 'nowrap',
+            }}
+          >
+            {credit}
+          </span>
+        </Block>
+      )}
 
       {/* The words. When the composer hands in a live field it goes HERE,
           inside the same block, at the same measure and alignment — one block,
@@ -202,7 +209,7 @@ export function Poster({ C, card, url, size, label, placeholder, children }) {
             style={{
               display: 'block',
               fontFamily: face.family, fontStyle: face.style, fontWeight: face.weight,
-              fontSize: size * fitRatio(words) * face.scale,
+              fontSize: size * fitRatio(words) * face.scale * (legend ? 1 : LEGEND_OFF),
               lineHeight: face.lead, letterSpacing: face.track, textTransform: face.transform,
               color: words ? ink : quiet,
               textShadow: onDark ? '0 2px 16px rgba(0,0,0,.6)' : 'none',

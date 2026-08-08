@@ -40,8 +40,9 @@ src/
 │                      and the motion law (things settle; nothing springs)
 ├── components/
 │   ├── screens.jsx    the nine screens + verify sheet + account sheet
-│   └── ui.jsx         primitives: the chart canvases, the Sigil, the Plate
-│                      (a letterpress button), the Ruled field, the tooled Rule,
+│   └── ui.jsx         primitives: the chart canvases, the Sigil, the Masthead
+│                      and the Index column (the one navigation), the Plate (a
+│                      letterpress button), the Ruled field, the tooled Rule,
 │                      the state Mark, the Slots meter, dialog a11y
 ├── api/
 │   ├── celestual.js   the RPC calls (placePing, pingStatus, renewPing,

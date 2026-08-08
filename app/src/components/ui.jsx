@@ -486,6 +486,203 @@ export function Frame() {
   )
 }
 
+// ── the masthead ─────────────────────────────────────────────────────────────
+// One bar across the head of EVERY page: the wordmark on the left, the way into
+// the index on the right, both on the same baseline. It is the same object on
+// every screen, which is the whole point — before it, the wordmark appeared on
+// some screens and not others, the account sat in one floating corner chip and
+// "log in" in the same corner on a different screen, and the two places the
+// product has lived in a fixed bar at the foot. Four navigations, none of them
+// aligned to anything.
+//
+// The bar itself is never a hit target. It spans the whole head of the page, and
+// a transparent strip that eats clicks is worse than no bar.
+export function Masthead({ C, open, onToggle, hidden, sub }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 'max(24px, calc(env(safe-area-inset-top) + 18px))',
+        left: 'max(24px, calc(env(safe-area-inset-left) + 18px))',
+        right: 'max(24px, calc(env(safe-area-inset-right) + 18px))',
+        zIndex: 30,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: SPACE.lg,
+        pointerEvents: 'none',
+        opacity: hidden ? 0 : 1,
+        transition: 'opacity .45s ease',
+      }}
+    >
+      <Wordmark size={13} sub={sub} />
+      <IndexTab C={C} open={open} onToggle={onToggle} hidden={hidden} />
+    </div>
+  )
+}
+
+// The way in. The mark beside it is three ruled entries — an index, drawn the
+// way an index is set — and the short line moves when it opens, like a finger
+// keeping the place. It is the only thing in the bar that changes.
+function IndexTab({ C, open, onToggle, hidden }) {
+  const [hot, setHot] = React.useState(false)
+  const lit = (C && C.star) || TOKENS.star
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={open ? 'close the index' : 'the index'}
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+      style={{
+        pointerEvents: hidden ? 'none' : 'auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: '8px 0',
+        color: open || hot ? TEXT.read : TEXT.quiet,
+        textShadow: ONSKY,
+        transition: 'color .2s linear',
+      }}
+    >
+      <span aria-hidden style={{ display: 'block', width: 18, flex: '0 0 auto' }}>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            style={{
+              display: 'block',
+              height: 1,
+              marginTop: i ? 4 : 0,
+              width: (open ? i === 1 : i !== 1) ? '100%' : '56%',
+              background: open ? lit : 'currentColor',
+              transition: 'width .3s cubic-bezier(.16,.84,.28,1), background .2s linear',
+            }}
+          />
+        ))}
+      </span>
+      <span style={{ fontFamily: FONT.sans, fontWeight: 400, fontSize: SIZE.meta, letterSpacing: TRACK.meta, textTransform: 'uppercase' }}>
+        index
+      </span>
+    </button>
+  )
+}
+
+// ── the index ────────────────────────────────────────────────────────────────
+// Not a menu that appears over the page: a COLUMN the page makes room for. It
+// takes its width out of the setting, the setting re-centres in what is left,
+// and the two move together — which is the difference between opening a drawer
+// and having something drop on top of your work.
+//
+// It has no panel, no fill and no trim. What separates it from the page is one
+// tooled channel down its left edge, exactly the rule the rest of the product is
+// divided with, and a wash of the ground itself deep enough to read type over
+// the chart. On a phone there is no width to give away, so the column is the
+// whole measure and the page steps aside for it.
+//
+// `items` are the product's real destinations. An entry may carry a `note` —
+// the @ you are signed in as, how many slots are held — because an index in a
+// book tells you what is on the page as well as where it is.
+export function IndexColumn({ C, open, items, screen, go, narrow, foot }) {
+  const lit = (C && C.star) || TOKENS.star
+  return (
+    <nav
+      aria-label="the index"
+      // A closed column is off the page, not merely invisible: without this it
+      // stays in the accessibility tree and in the document's text, so a screen
+      // reader announces seven destinations nobody opened and the page reads as
+      // if the index were its first paragraph. `visibility` is what takes an
+      // element out of that tree while still letting it transition.
+      aria-hidden={open ? undefined : true}
+      inert={open ? undefined : ''}
+      style={{
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: narrow ? '100%' : INDEX_W,
+        zIndex: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 'max(104px, calc(env(safe-area-inset-top) + 92px))',
+        paddingRight: `max(${SPACE.lg}px, calc(env(safe-area-inset-right) + ${SPACE.md}px))`,
+        paddingBottom: `max(${SPACE.lg}px, env(safe-area-inset-bottom))`,
+        paddingLeft: narrow ? `max(${SPACE.lg}px, calc(env(safe-area-inset-left) + ${SPACE.md}px))` : SPACE.lg,
+        background: narrow
+          ? `linear-gradient(90deg, ${rgba(TOKENS.ink, 0.88)} 0%, ${rgba(TOKENS.ink, 0.96)} 30%, ${rgba(TOKENS.ink, 0.96)} 100%)`
+          : `linear-gradient(90deg, ${rgba(TOKENS.ink, 0.3)} 0%, ${rgba(TOKENS.ink, 0.88)} 20%, ${rgba(TOKENS.ink, 0.96)} 100%)`,
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        opacity: open ? 1 : 0,
+        visibility: open ? 'visible' : 'hidden',
+        pointerEvents: open ? 'auto' : 'none',
+        transition: open
+          ? 'transform .46s cubic-bezier(.16,.84,.28,1), opacity .3s ease'
+          : 'transform .46s cubic-bezier(.16,.84,.28,1), opacity .3s ease, visibility 0s linear .46s',
+        overflowY: 'auto',
+      }}
+    >
+      {/* the tooled channel: the same two pixels every rule in here is made of,
+          stood on end */}
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: 2,
+          background: `linear-gradient(90deg, ${HAIR.tooledDark} 0 1px, ${HAIR.tooledLight} 1px 2px)`,
+        }}
+      />
+
+      <Kicker C={C} style={{ display: 'block', marginBottom: SPACE.sm }}>the index</Kicker>
+      <Rule C={C} style={{ marginBottom: SPACE.xs }} />
+
+      {items.map((it, i) => {
+        const on = it.key === screen
+        return (
+          <button
+            key={it.key}
+            type="button"
+            onClick={() => go(it)}
+            aria-current={on ? 'page' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 14,
+              width: '100%',
+              textAlign: 'left',
+              padding: '13px 0',
+              borderBottom: `1px solid ${HAIR.faint}`,
+              color: on ? TEXT.read : TEXT.quiet,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: FONT.mono,
+                fontSize: SIZE.meta,
+                letterSpacing: TRACK.tick,
+                color: on ? lit : TEXT.faint,
+                flex: '0 0 auto',
+              }}
+            >
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontFamily: FONT.sans, fontWeight: 300, fontSize: 15, letterSpacing: '0.02em' }}>{it.name}</span>
+              {it.note && (
+                <span style={{ display: 'block', marginTop: 3, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.tick, color: TEXT.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {it.note}
+                </span>
+              )}
+            </span>
+            {on && <span aria-hidden className="lamp" style={{ alignSelf: 'center', width: 5, height: 5, borderRadius: '50%', background: lit, flex: '0 0 auto' }} />}
+          </button>
+        )
+      })}
+
+      <div style={{ flex: 1, minHeight: SPACE.lg }} />
+      {foot}
+    </nav>
+  )
+}
+
 // ── the curated community seal ────────────────────────────────────────────────
 // A small emblem for an official community: a tooled ring set with the brand's
 // one light at the crest, around the school's serif monogram. One hue, so no
@@ -1475,92 +1672,19 @@ export function TrialBanner({ C, line, deadline, href = '/trial' }) {
   )
 }
 
-// ── the dock ──────────────────────────────────────────────────────────────────
-// The product's TWO places — your sky and your pings — drawn in the product's
-// own vocabulary: a fragment of the engraved chart resting at the foot of the
-// page. One hairline meridian runs through the stations; where you are is the
-// brand's mark over its name set in the serif voice, and the rest sit as charted
-// points with their stamped ticks. No container and no blur slab: the chart
-// floats on the case itself over a breath of the ground so it stays legible, and
-// melts away whenever the sky takes the whole frame.
-export function NavDock({ C, items, hidden }) {
-  // The minor ticks charted between the stations, derived from however many
-  // there are, so the meridian stays even at two stations or at four.
-  const ticks = []
-  for (let i = 1; i < items.length; i++) {
-    const mid = (i / items.length) * 100
-    ticks.push(mid - 4, mid + 4)
-  }
-  return (
-    <nav
-      data-noripple
-      aria-label="celestual"
-      style={{
-        position: 'fixed', left: '50%', transform: 'translateX(-50%)',
-        bottom: 'max(10px, env(safe-area-inset-bottom))', zIndex: 22,
-        width: 'min(392px, calc(100vw - 40px))',
-        opacity: hidden ? 0 : 1, pointerEvents: hidden ? 'none' : 'auto',
-        transition: 'opacity .45s ease',
-      }}
-    >
-      {/* a breath of the ground beneath the chart — legibility without a slab */}
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute', left: '-10%', right: '-10%', top: -26, bottom: -14,
-          background: `radial-gradient(75% 150% at 50% 78%, ${rgba(TOKENS.ink, 0.86)}, ${rgba(TOKENS.ink, 0.4)} 60%, transparent 78%)`,
-          pointerEvents: 'none',
-        }}
-      />
-      {/* the meridian — a hairline through the stations, dissolving at its ends,
-          with faint minor ticks charted between them */}
-      <span aria-hidden style={{ position: 'absolute', left: 0, right: 0, top: 13, height: 1, background: `linear-gradient(90deg, transparent, ${rgba(TOKENS.cream, 0.24)} 14%, ${rgba(TOKENS.cream, 0.24)} 86%, transparent)`, pointerEvents: 'none' }} />
-      {ticks.map((left, i) => (
-        <span key={i} aria-hidden style={{ position: 'absolute', left: `${left}%`, top: 12.5, width: 2, height: 2, background: rgba(TOKENS.cream, 0.3), transform: 'translateX(-50%)', pointerEvents: 'none' }} />
-      ))}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch' }}>
-        {items.map((it) => (
-          <button
-            key={it.id}
-            type="button"
-            onClick={it.onClick}
-            aria-label={it.label}
-            aria-current={it.active ? 'page' : undefined}
-            style={{
-              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-              padding: '2px 8px 6px', background: 'none', border: 'none',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {/* the station: the mark where you are, a charted point elsewhere */}
-            <span style={{ position: 'relative', display: 'grid', placeItems: 'center', width: 24, height: 24 }}>
-              {it.active ? (
-                <Sigil size={15} cut="lamp" />
-              ) : (
-                <span
-                  aria-hidden
-                  style={{
-                    width: 6.5, height: 6.5, borderRadius: '50%',
-                    border: `1px solid ${rgba(TOKENS.cream, 0.5)}`, background: rgba(TOKENS.ink, 0.5),
-                  }}
-                />
-              )}
-            </span>
-            <span
-              style={
-                it.active
-                  ? { fontFamily: FONT.serif, fontWeight: 400, fontSize: 16, lineHeight: '16px', color: TOKENS.cream, letterSpacing: '0.02em', textShadow: ONSKY }
-                  : { fontFamily: FONT.sans, fontWeight: 400, fontSize: SIZE.micro, lineHeight: '16px', letterSpacing: TRACK.micro, textTransform: 'uppercase', color: TEXT.faint, textShadow: ONSKY }
-              }
-            >
-              {it.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  )
-}
+// ── the dock, and why there isn't one ────────────────────────────────────────
+// There used to be a NavDock here: a fragment of star chart at the foot of the
+// two hub screens, with a hairline meridian through two stations. It was a
+// genuinely nice object and it was one of FOUR navigations — the dock, a profile
+// chip in one corner, a "log in" chip in the same corner on other screens, and
+// loose ghost links at the bottom of whichever page needed one. None of them was
+// aligned to anything else, they disagreed about where "back" lives, and between
+// them they still could not reach half the product.
+//
+// The masthead and the index (above) are the whole navigation now. The index
+// reaches every destination the dock did and every one it did not, it carries
+// the account, and it says what each page is currently holding. See
+// docs/DESIGN.md §7.
 
 // ── the icon set ──────────────────────────────────────────────────────────────
 // SIX glyphs. That is the whole set, deliberately.
