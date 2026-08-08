@@ -9,13 +9,15 @@ The First Light launch replaces the ManyChat comment→DM recruitment loop
 | root tracking links | `celestual.us/<code>` | each competitor's personal link — exactly four letters, chosen by them. Opens and credited signups count exactly as 0016 did (`/r/<code>` still works as an alias) |
 | the admin dashboard | `celestual.us/admin` | password-gated operations console: users, unverified people, competitors, growth and an activity log, with delete / ban / unban / manual admit |
 
-It also ships the **20-second DM grace** (temporary): the Instagram DM
-verification flow is unchanged, but a browser that has waited 20+ seconds on
-"waiting for your dm…" is let in as the typed @, recorded
-`verified_via='timeout'`, and listed on the admin dashboard with the DM code it held so
-each can be checked by hand in the Instagram DMs. Remove
-`celestual_ig_verify_timeout` (0017) and the sheet's timer once the relay is
-fixed.
+It also shipped the **20-second DM grace** — temporary by design, and **now
+closed (migration 0026)**. While the relay was dropping DMs, a browser that had
+waited 20+ seconds on "waiting for your dm…" was let in as the typed @, recorded
+`verified_via='timeout'`, and listed on the admin dashboard with the DM code it
+held so each could be checked by hand. The relay works, so
+`celestual_ig_verify_timeout` is revoked from every client role and emptied to a
+refusal, and the sheet's timer is gone: nothing but a Meta-authenticated DM
+verifies now. Accounts admitted through the grace stay verified and the
+dashboard still names them; what cannot happen is a new one.
 
 ## Going live — the order of operations
 
@@ -56,9 +58,7 @@ fixed.
 5. **Deploy the app** (merge to main; Vercel builds `dist/`).
 
 Nothing breaks if the order slips: the trial page's email step just answers
-"the code didn't go out" until the function + migration exist, and the
-20-second grace silently keeps polling (the RPC returns `early`) until 0017 is
-applied.
+"the code didn't go out" until the function + migration exist.
 
 ## What the trial entry records
 
@@ -104,8 +104,9 @@ What changed:
   recorded later. **Do not remove that guard** — those rows are people who asked
   never to be entered, and honouring that is a published promise.
 - **Identity checks ask `celestual_is_banned()`**, which reads `kind = 'ban'`
-  only. One function, four callers (start, complete, the 20-second grace, the
-  trial claim), so they can never drift apart again.
+  only. One function, and it was four callers (start, complete, the 20-second
+  grace, the trial claim) — three since 0026 closed the grace — so they can
+  never drift apart again.
 - **Ping-blocking is unchanged** and still reads the whole table: both kinds
   mean "do not enter this @" (`celestual_is_member`, `celestual_submit`).
 - **`celestual_erase_account`** is new and client-callable: the same erasure
@@ -140,7 +141,8 @@ arm on the first tap and fire on the second.
 - **users** — every member and HOW they verified:
   - `dm confirmed` — the webhook really saw the DM (`verified_via='dm'`).
   - `assumed at 20s` — admitted by the grace, with the DM code they held, so
-    you can search the Instagram inbox for it and verify by hand.
+    you can search the Instagram inbox for it and verify by hand. **Historical
+    only**: 0026 closed that door, so this list can no longer grow.
   - `no dm record` — legacy/campus rows with no verification row.
   Plus delete (erase, may return) and ban (erase + suppress; the 0017 ban
   checks keep a banned @ from verifying back in).

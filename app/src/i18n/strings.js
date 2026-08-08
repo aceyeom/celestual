@@ -309,10 +309,12 @@ const en = {
   'verify.confirmBody': 'that code came from @{handle}. sign in as @{handle}?',
   'verify.confirmYes': 'yes, sign in as @{handle}',
   'verify.confirmNo': 'no, use another account',
-  // the 20-second grace (migration 0017): the DM path failed us, so past the
-  // window the person is let in as the @ they typed. the line stays honest.
-  // "you're in", never "it's really you".
-  'verify.assumed': 'you’re in.',
+  // `verify.assumed` — "you're in." — stood here for the twenty-second grace
+  // (0017), which admitted the typed @ with no DM when the relay was dropping
+  // them. It was the one line in the product that had to hedge, because the
+  // identity behind it was assumed rather than proven. The grace is gone (0026)
+  // and so is the hedge: the only way through is now the real one, so the only
+  // thing left to say is `verify.verified` — "it's really you."
   // the ban (0018 named it; 0020 made a ban the ONLY thing that reaches here).
   // this used to render as "that code lapsed" twenty seconds in: a live code,
   // described as a dead one, with a button that minted another dead one. no

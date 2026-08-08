@@ -27,8 +27,8 @@ src/
 │   ├── model.js       the card as data, the prompt, the seeds, the tint, and
 │   │                  the wire shape the server validates against
 │   ├── photo.js       a photograph becomes a surface (strip EXIF, treat, measure)
-│   ├── photos.js      the blob store. This device, and nowhere else: a card's
-│   │                  words ride on its ping row, its picture never leaves
+│   ├── photos.js      the blob cache, and the two doors to the sealed column:
+│   │                  both halves of a card ride on its ping row (0022, 0025)
 │   └── share.js       the story render — your card, never theirs
 ├── demoData.js        the sandbox's hardcoded world (sample pings, the Reed
 │                      campus window, world counters)

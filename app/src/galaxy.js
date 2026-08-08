@@ -190,6 +190,24 @@ const WIDE_CENTRE_X = 0.66
 // sky reads under a paragraph of type.
 const GAS_GAIN = 0.23
 
+// How brightly the two star populations that make up the GALAXY ITSELF burn at
+// rest — the heart, and the disk around it. They are named constants rather
+// than decimals typed into `_build` because the frame moves them now (see
+// `_frame`, "the sky, on a screen that is not about it"), and a number set in
+// two places has to be one number.
+const BULGE_GAIN = 0.05
+const DISK_GAIN = 0.068
+// How far the heart falls once the camera has committed to a dive. A bulge is
+// the densest light in the galaxy and the camera ends up a short way off it, so
+// this is the steepest of the three: most of the way on an ordinary flight, and
+// nearly all of it on the reveal.
+const HEART_DIP = 0.78
+const HEART_DIP_MATCH = 0.94
+// And how far the disk around it falls — on the REVEAL ONLY. Every other flight
+// keeps its field at full: a dive that does not stream past anything is a zoom,
+// and the streaming is most of what makes it read as travel.
+const FIELD_DIP_MATCH = 0.75
+
 // ── the send-off ─────────────────────────────────────────────────────────────
 // This used to be a streak drawn on the glass: a bright head and sixteen tail
 // puffs, sliding across a still picture of a galaxy from the @ field to wherever
@@ -389,14 +407,14 @@ export class GalaxyField extends SkyEngine {
     // that was too small. Over-correcting here is what turns the spiral into a
     // fuzzy ball with a suggestion of arms around it.
     this.gBulge = this.starPass.createGroup(genBulge(Math.floor(n * 0.23), { seed: 9011, radius: 0.36, concentration: 1.8 }), {
-      gain: 0.05, radiusScale: 0.0003, resolve: 0.15,
+      gain: BULGE_GAIN, radiusScale: 0.0003, resolve: 0.15,
     })
     // …and the disk meets it from the other side. A slightly wider arm lobe:
     // the ridges stay unmistakably arms, and the inter-arm disk keeps enough
     // population that the galaxy reads as one continuous body rather than as
     // two bright stripes with dark space between them.
     this.gDisk = this.starPass.createGroup(genDisk(Math.floor(n * 0.57), { seed: 9013, rDisk: 1.2, armFrac: 0.5, armSpread: 0.56 }), {
-      gain: 0.068, radiusScale: 0.00055,
+      gain: DISK_GAIN, radiusScale: 0.00055,
     })
     this.gHalo = this.starPass.createGroup(genHalo(Math.floor(n * 0.11), { seed: 9017, rMax: 2.8 }), {
       gain: 0.050, radiusScale: 0.0003, resolve: 0, pattern: 0,
@@ -787,6 +805,42 @@ export class GalaxyField extends SkyEngine {
     const wide = (this.mode === 'match' ? 0 : 1) * (1 - 0.92 * smooth(clamp(closing, 0, 1)))
     this.gDisk.resolve = wide
     this.gBulge.resolve = 0.3 * wide
+
+    // ── the sky, on a screen that is not about it ──
+    // The paragraph above stops a star that comes close from growing a FACE.
+    // This one stops it from being too bright to sit next to a sentence.
+    //
+    // The two are different failures with one cause. At rest this galaxy is
+    // read from outside: forty thousand suns at three world units, composited
+    // by distance into one grained body with a golden heart. A dive ends INSIDE
+    // the disk — a third of that distance from the middle of it — and the
+    // inverse-square law does the rest: the same population arrives an order of
+    // magnitude brighter, thrown apart across the whole glass, every star now
+    // far enough from its neighbours to earn a bloom halo of its own. What that
+    // composites into is not a galaxy. It is a spray of soft white discs, and
+    // on the reveal it lands directly beside the two cards — the one frame in
+    // the product whose whole job is to hold two people's words still enough to
+    // read, with what looks like dirt on the lens parked next to them.
+    //
+    // It is loudest exactly where it is least wanted, which is why it went
+    // unseen for so long: the tier a machine earns decides both how many stars
+    // are drawn and how wide the bloom is spread, so a phone gets a hint of it
+    // and a laptop gets the whole thing. The better the device, the worse the
+    // frame.
+    //
+    // So the light falls as the camera commits. The HEART falls on every
+    // flight, because a bulge is the densest light in the galaxy and no dive
+    // has ever been about it. The DISK falls on the reveal alone: everywhere
+    // else the field streaming past the glass is most of what makes a dive read
+    // as travel, and on the reveal there is nothing to say — the sky's entire
+    // job there is to be dark and hold still.
+    //
+    // Both are tied to the CAMERA rather than to the mode, so nothing snaps: at
+    // focus 0 this is exactly the galaxy it has always been, which is the one
+    // the reveal opens on.
+    const dived = smooth(clamp(closing, 0, 1))
+    this.gBulge.gain = BULGE_GAIN * (1 - (this.mode === 'match' ? HEART_DIP_MATCH : HEART_DIP) * dived)
+    this.gDisk.gain = DISK_GAIN * (1 - (this.mode === 'match' ? FIELD_DIP_MATCH : 0) * dived)
 
     // The resting set runs in EVERY mode now, the match included, because the
     // match is a dive into one of these stars. It used to be skipped there —

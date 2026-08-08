@@ -626,7 +626,7 @@ export function AdminScreen() {
           </div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Stat label="Stuck unverified" value={n(counts.unverified)} tone={Number(counts.unverified || 0) > 0 ? 'warn' : undefined} sub="people, not attempts" />
-            <Stat label="Assumed at 20s" value={n(counts.assumed)} tone={Number(counts.assumed || 0) > 0 ? 'warn' : undefined} sub="grace, not a DM" />
+            <Stat label="Assumed at 20s" value={n(counts.assumed)} tone={Number(counts.assumed || 0) > 0 ? 'warn' : undefined} sub="the closed grace — historical" />
             <Stat label="Manual admits" value={n(counts.manual)} sub="let in by hand" />
             {/* 0020 — two tiles, because they are two different facts. A ban
                 refuses an identity; an opt-out only means "nobody may enter
@@ -691,8 +691,8 @@ export function AdminScreen() {
                 </div>
                 {status.banned && (
                   <div style={{ fontSize: 13, color: A.body, background: A.badSoft, border: `1px solid rgba(142,59,46,0.3)`, borderRadius: 2, padding: '10px 12px', whiteSpace: 'normal' }}>
-                    Banned. Every code this @ takes will be refused, by DM and by the 20-second grace alike. This is
-                    what &ldquo;that code lapsed&rdquo; really means when the code was correct.
+                    Banned. Every code this @ takes will be refused at the DM, which since 0026 is the only way in
+                    at all. This is what &ldquo;that code lapsed&rdquo; really means when the code was correct.
                   </div>
                 )}
                 {status.opted_out && (

@@ -84,32 +84,22 @@ export async function startVerification(handle) {
   return { token: data.token, expiresAt: data.expires_at, proof, proofHash }
 }
 
-// ── The 20-second grace (TEMPORARY — migration 0017) ──────────────────────
-// The DM relay has been dropping verifications in production. The DM path
-// stays untouched and still wins when it lands; but once a code has been out
-// for GRACE_MS, the browser may ask to be let in as the TYPED @ (the server
-// enforces its own 20-second clock and the same proof-hash gate poll uses).
-// Such sessions are recorded verified_via='timeout' so the admin desk can list
-// exactly which accounts were assumed, with the code each held, for manual DM
-// checking. Remove this (and the sheet's timer) once the relay is fixed.
-export const GRACE_MS = 20000
-
-// Ask the server to admit this verification past the grace window.
-// Returns { ok:true, handle } or { ok:false, error:'early'|'none'|'expired'|'banned' }.
-// Never throws — a transient failure (including the RPC not existing yet)
-// reads as { ok:false, error:'early' } so the caller simply tries again.
-export async function graceVerify(token, proofHash) {
-  try {
-    const { data, error } = await supabase.rpc('celestual_ig_verify_timeout', {
-      p_token: token,
-      p_proof_hash: proofHash,
-    })
-    if (error) return { ok: false, error: 'early' }
-    return data?.ok ? { ok: true, handle: data.handle || null } : { ok: false, error: data?.error || 'early' }
-  } catch {
-    return { ok: false, error: 'early' }
-  }
-}
+// ── The 20-second grace is GONE (it was 0017's; 0026 closed it) ───────────
+// It existed for one reason: the DM relay was dropping verifications in
+// production, and a person who had done everything right was being told their
+// code had lapsed. So a browser that had waited twenty seconds could ask to be
+// let in as the TYPED @, and the row was stamped verified_via='timeout' so the
+// desk could see exactly whose identity had been assumed rather than proven.
+//
+// The relay works. Nothing about a working relay makes an assumed identity
+// safer than it was, and this product's entire claim rests on the @ you were
+// entered as being yours: a door that admits whoever types a handle and waits
+// is a door somebody walks through wearing somebody else's name. The RPC behind
+// it is revoked (migration 0026) as well as unused here — one of those alone is
+// not a closed door.
+//
+// What is left is the path that actually proves it: mint a code, DM it, and let
+// Meta's webhook say who really sent it.
 
 // Poll for the DM result. Returns { status, handle }:
 //   status: 'pending' | 'verified' | 'expired' | 'none'
