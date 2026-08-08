@@ -170,6 +170,22 @@ everything accounts produced, while keeping suppressions (opt-outs stay
 honored), settings (the salt!), and operator-created communities/campuses.
 Paste it into the SQL editor yourself, once, when you mean it.
 
+**The surgical reset:** `clear-account.sql` (same directory, same reason it is
+outside the migration chain) does the same thing to a named handful of handles —
+edit the `handles` array at the top and run it. It goes past both of the
+product's own erasures (`celestual_erase_account`, the account screen's; and
+`celestual_admin_delete_user`, the desk's) in the three places that follow a
+handle back when somebody re-verifies it: `celestual_placements` (the rolling
+30-day cadence log — a handle that has spent its six new pings is still spent
+after a delete, and the next placement comes back `rate_limited` with nothing on
+screen able to say why), `celestual_handle_links` (the identity group, which
+keeps a linked alt's pings counting against the cap), and the First Light trial
+row. Suppressions, the salt, and the de-identified Stripe ledger stand; a
+readback at the end prints what the product would now say about each handle. A
+`c_take_inbound` flag decides whether the pings *other* people placed at these
+handles go too (true matches the erasures; false is the kinder choice on a live
+database).
+
 **Which migrations are live vs. historical:** the schema is append-only — every
 file still applies cleanly in order, but 0002 (Supabase-Auth profiles) and 0005
 (`celestual_my_sky`) were dropped/superseded by 0006, the 0003 slot model was
