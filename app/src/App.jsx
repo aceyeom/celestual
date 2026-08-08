@@ -13,7 +13,7 @@ import { makeColors } from './theme.js'
 import { SENDOFF_SECONDS } from './galaxy.js'
 import {
   GalaxyCanvas, CommunityGalaxyCanvas, Liftoff, Masthead, IndexColumn,
-  Mono, useNarrow, rgba, INDEX_W,
+  useNarrow, rgba, INDEX_W,
 } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
@@ -1734,34 +1734,33 @@ export default function App() {
   const chromeHere = !BARE_CHROME.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
 
-  // What the index lists, in the order you meet it. `note` is the fact that
-  // page is currently holding: the @ you are signed in as, how many slots are
-  // held, which community you are in. An index that only names pages is a menu.
-  const indexItems = useMemo(() => {
-    const held = t('index.held', { used: Math.min(slotsStanding, slotCap), cap: slotCap })
-    const items = [
-      { key: 'who', name: t('index.place'), note: established ? held : t('index.placeNew'), go: () => placeAnother() },
-      { key: 'pings', name: t('index.pings'), note: established ? held : null },
+  // What the index lists, and it is four things. A product with four places
+  // does not need them numbered, captioned, headed or signed off: the entry IS
+  // the destination, and everything that used to sit around it was the index
+  // describing itself.
+  //
+  // "place a ping" is not in here on purpose — it is the one primary action on
+  // the ledger and on the landing, and a navigation that repeats the page's own
+  // button is a navigation padding itself out.
+  const indexItems = useMemo(
+    () => [
+      { key: 'pings', name: t('index.pings') },
       {
         key: 'community',
-        name: t('index.sky'),
-        note: homeCommunity ? homeCommunity.name : t('index.skyNone'),
+        name: t('index.community'),
         go: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
       },
-      { key: 'worlds', name: t('index.worlds') },
-      { key: 'door', name: t('index.door') },
-    ]
-    // The account is an entry in the index rather than a chip in a corner. It
-    // is the only one that opens a sheet rather than a page, which is why its
-    // key can never match the current screen.
-    items.push(
+      // The account is an entry like any other, and it is the only one that
+      // opens a sheet rather than a page. Logged out, the same line is the way
+      // back in, which is the thing somebody in that state is actually looking
+      // for.
       established
-        ? { key: 'account', name: t('index.account'), note: normHandle(me) ? `@${normHandle(me)}` : null, go: () => openAccount() }
-        : { key: 'signin', name: t('index.login'), note: t('index.loginNote'), go: () => startLogin() },
-    )
-    items.push({ key: 'privacy', name: t('index.privacy') })
-    return items
-  }, [t, established, slotsStanding, slotCap, homeCommunity, openCommunity, me, placeAnother, viewCommunity, openAccount, startLogin])
+        ? { key: 'account', name: t('index.account'), go: () => openAccount() }
+        : { key: 'signin', name: t('index.login'), go: () => startLogin() },
+      { key: 'privacy', name: t('index.legal') },
+    ],
+    [t, established, homeCommunity, openCommunity, viewCommunity, openAccount, startLogin],
+  )
 
   const goIndex = useCallback(
     (item) => {
@@ -1854,7 +1853,6 @@ export default function App() {
             open={indexOpen}
             onToggle={() => setIndexOpen((v) => !v)}
             hidden={navMelt}
-            sub={demo ? 'sandbox' : undefined}
           />
           <IndexColumn
             C={C}
@@ -1863,7 +1861,6 @@ export default function App() {
             screen={screen}
             go={goIndex}
             narrow={narrow}
-            foot={<Mono C={C}>{t('index.colophon')}</Mono>}
           />
         </>
       )}

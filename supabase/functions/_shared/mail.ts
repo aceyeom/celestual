@@ -75,15 +75,15 @@ function sigil(size = 30, ground = C.ink) {
     `<defs><clipPath id="l"><rect x="-10" y="-10" width="59" height="141"/></clipPath>` +
     `<clipPath id="r"><rect x="51" y="-10" width="59" height="141"/></clipPath>` +
     `<linearGradient id="b" x1="0.12" y1="0.02" x2="0.86" y2="1">` +
-    `<stop offset="0%" stop-color="#E4D6BB"/><stop offset="52%" stop-color="${C.caramel}"/>` +
-    `<stop offset="100%" stop-color="${C.saddle}"/></linearGradient></defs>` +
+    `<stop offset="0%" stop-color="#F2DCCC"/><stop offset="52%" stop-color="#DCB39A"/>` +
+    `<stop offset="100%" stop-color="#BE8C71"/></linearGradient></defs>` +
     // The left wing: the same star, turned a hundred and eighty degrees about
     // the body — so the long point that reaches up on one side reaches down on
     // the other. Both paths are the app's own geometry (ui.jsx SIGIL), traced
     // out here because an edge function cannot import a component.
-    `<path clip-path="url(#l)" fill="${C.cream}" d="M49.1 25.6Q54.01 61.6 98.2 65.6Q54.01 71.16 49.1 121.2Q44.19 71.16 0 65.6Q44.19 61.6 49.1 25.6Z"/>` +
+    `<path clip-path="url(#l)" fill="#BFAAA1" d="M49.1 25.6Q54.01 61.6 98.2 65.6Q54.01 71.16 49.1 121.2Q44.19 71.16 0 65.6Q44.19 61.6 49.1 25.6Z"/>` +
     // the right wing
-    `<path clip-path="url(#r)" fill="${C.wheat}" d="M50.9 0Q55.81 50.04 100 55.6Q55.81 59.6 50.9 95.6Q45.99 59.6 1.8 55.6Q45.99 50.04 50.9 0Z"/>` +
+    `<path clip-path="url(#r)" fill="#8D7169" d="M50.9 0Q55.81 50.04 100 55.6Q55.81 59.6 50.9 95.6Q45.99 59.6 1.8 55.6Q45.99 50.04 50.9 0Z"/>` +
     // where the cut opens out around the body, and the body itself
     `<circle clip-path="url(#l)" cx="50" cy="60.6" r="16" fill="${ground}"/>` +
     `<circle cx="50" cy="60.6" r="11.6" fill="url(#b)"/></svg>`
@@ -173,8 +173,7 @@ export function frame({ kicker, inner }: { kicker?: string; inner: string }) {
     <div style="max-width:480px;margin:0 auto;background:${C.ink2};border-radius:3px;padding:12px">
       <div style="border:1px solid rgba(241,231,211,0.075);border-radius:2px;padding:1px">
         <div style="border:1px solid rgba(241,231,211,0.04);padding:38px 22px 34px;text-align:center">
-          ${sigil(28, C.ink2)}
-          <div style="font-family:${SERIF};font-size:13px;letter-spacing:1px;text-transform:uppercase;color:${C.cream};margin:10px 0 0">celestual</div>
+          ${sigil(30, C.ink2)}
           ${kicker ? `<div style="margin:26px 0 0">${label(kicker)}</div>` : ''}
           ${inner}
         </div>

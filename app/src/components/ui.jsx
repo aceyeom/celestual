@@ -319,26 +319,31 @@ const starPath = (cx, cy, up, down, side, k) => {
 }
 
 // ── the cuts ─────────────────────────────────────────────────────────────────
-// What is kept from the artwork is its ORDER — left wing lightest, right wing
-// deepest, body brighter than either — because that order IS the drawing.
-// Invert it and the same geometry becomes a different mark: the long point that
-// leads the eye stops being the one that reaches up, and the body stops reading
-// as something lit and starts reading as a hole.
+// The artwork's own inks, kept. An earlier cut of this file re-inked the mark
+// into the interface's palette on the argument that a mid-brown sits within a
+// few values of the case it stands on. That is true of a mid-brown and it is
+// not true of THESE two: the light wing is nearly at the reading colour and the
+// dark one sits a full value scale above the ground, so the drawing reads at
+// fourteen pixels in the masthead and at four hundred on a specimen sheet
+// without being adjusted for the surface underneath it.
 //
-//   IVORY, LIT   the default, and the lightest. Ivory against wheat, with the
-//                body run from a bright warm highlight down through caramel to
-//                saddle — a piece of metal rather than a filled circle.
-//   STRUCK IVORY the unified one. One ink at two strengths for the wings and a
-//                third for the body: no warm anywhere. Use it wherever the mark
-//                stands beside something else that is lit.
-//   THE WARM CUT the artwork's own two-tone relationship, moved up the ramp far
-//                enough to clear the case: wheat against saddle.
-//   ON PAPER     for ivory grounds — a share card, a favicon on white, print.
+// What is load-bearing is the artwork's ORDER — left wing light, right wing
+// deep, and the body brighter and warmer than either. Invert it and the same
+// geometry becomes a different mark: the long point that leads the eye stops
+// being the one that reaches up, and the body stops reading as something lit
+// and starts reading as a hole.
+//
+//   THE MARK     the artwork, as drawn. The default, and the only one used
+//                anywhere the mark stands alone.
+//   STRUCK IVORY one ink at two strengths for the wings and a third for the
+//                body: no warm anywhere. For the rare place the mark has to sit
+//                beside something else that is lit.
+//   ON PAPER     for ivory grounds — the seal, a share card, print.
 export const CUTS = [
-  { id: 'lamp', name: 'ivory, lit', left: [TOKENS.cream, 1], right: [TOKENS.them, 1], body: [TOKENS.cream2, TOKENS.you, TOKENS.saddle] },
+  { id: 'lamp', name: 'the mark', left: ['#BFAAA1', 1], right: ['#8D7169', 1], body: ['#F2DCCC', '#DCB39A', '#BE8C71'] },
   { id: 'ivory', name: 'struck ivory', left: [TOKENS.cream, 0.96], right: [TOKENS.cream, 0.5], body: [TOKENS.cream, TOKENS.cream2, TOKENS.them] },
-  { id: 'warm', name: 'the warm cut', left: [TOKENS.them, 1], right: [TOKENS.saddle, 1], body: [TOKENS.cream2, TOKENS.them, TOKENS.you] },
-  { id: 'ink', name: 'on paper', left: [TOKENS.onPaper2, 1], right: [TOKENS.onPaper, 1], body: [TOKENS.them, TOKENS.you, TOKENS.saddle] },
+  { id: 'warm', name: 'the warm cut', left: [TOKENS.them, 1], right: [TOKENS.saddle, 1], body: ['#F2DCCC', '#DCB39A', '#BE8C71'] },
+  { id: 'ink', name: 'on paper', left: [TOKENS.onPaper2, 1], right: [TOKENS.onPaper, 1], body: ['#DCB39A', '#BE8C71', TOKENS.saddle] },
 ]
 
 const cutOf = (id) => CUTS.find((c) => c.id === id) || CUTS[0]
@@ -419,34 +424,18 @@ export function StarMark({ size = 88, cut = 'lamp' }) {
   )
 }
 
-// The wordmark: the mark, and the name set beside it on one baseline.
-export function Wordmark({ size = 15, sub, tone, cut = 'lamp' }) {
-  const ink = tone || TOKENS.cream
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: size * 0.62 }}>
-      <Sigil size={size * 1.52} cut={cut} />
-      <div>
-        <div
-          style={{
-            fontFamily: FONT.serif,
-            fontWeight: 400,
-            fontSize: size,
-            letterSpacing: TRACK.wordmark,
-            textTransform: 'uppercase',
-            color: ink,
-            lineHeight: 1,
-          }}
-        >
-          celestual
-        </div>
-        {sub && (
-          <div style={{ marginTop: 5, fontFamily: FONT.mono, fontSize: 9, letterSpacing: '0.13em', color: rgba(TOKENS.cream, 0.34) }}>
-            {sub}
-          </div>
-        )}
-      </div>
-    </div>
-  )
+// ── the wordmark, and why it is just the mark ────────────────────────────────
+// It used to be the mark with CELESTUAL set beside it in the garalde, on one
+// baseline. The name came off. A wordmark that repeats itself on every screen
+// of a product somebody has already opened is a business card stapled to every
+// page, and the mark carries the name for anyone who has seen it once — which,
+// by the second screen, is everyone.
+//
+// `sub` and `tone` are kept because callers pass them; both are ignored now,
+// and the component is deliberately not renamed, because it is still the thing
+// that signs the page.
+export function Wordmark({ size = 15, cut = 'lamp' }) {
+  return <Sigil size={size * 1.52} cut={cut} title="celestual" />
 }
 
 // ── the case ─────────────────────────────────────────────────────────────────
@@ -497,7 +486,7 @@ export function Frame() {
 //
 // The bar itself is never a hit target. It spans the whole head of the page, and
 // a transparent strip that eats clicks is worse than no bar.
-export function Masthead({ C, open, onToggle, hidden, sub }) {
+export function Masthead({ C, open, onToggle, hidden }) {
   return (
     <div
       style={{
@@ -515,7 +504,7 @@ export function Masthead({ C, open, onToggle, hidden, sub }) {
         transition: 'opacity .45s ease',
       }}
     >
-      <Wordmark size={13} sub={sub} />
+      <Sigil size={26} cut="lamp" title="celestual" />
       <IndexTab C={C} open={open} onToggle={onToggle} hidden={hidden} />
     </div>
   )
@@ -539,30 +528,29 @@ function IndexTab({ C, open, onToggle, hidden }) {
         pointerEvents: hidden ? 'none' : 'auto',
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 11,
-        padding: '8px 0',
+        padding: '10px 0 10px 14px',
         color: open || hot ? TEXT.read : TEXT.quiet,
-        textShadow: ONSKY,
         transition: 'color .2s linear',
       }}
     >
-      <span aria-hidden style={{ display: 'block', width: 18, flex: '0 0 auto' }}>
+      {/* three ruled entries — an index, drawn the way an index is set. The
+          short line moves when it opens, like a finger keeping the place. The
+          word "INDEX" used to sit beside it and has gone: a glyph that has to
+          be captioned is the wrong glyph, and this one is not. */}
+      <span aria-hidden style={{ display: 'block', width: 20, flex: '0 0 auto' }}>
         {[0, 1, 2].map((i) => (
           <span
             key={i}
             style={{
               display: 'block',
               height: 1,
-              marginTop: i ? 4 : 0,
+              marginTop: i ? 5 : 0,
               width: (open ? i === 1 : i !== 1) ? '100%' : '56%',
               background: open ? lit : 'currentColor',
               transition: 'width .3s cubic-bezier(.16,.84,.28,1), background .2s linear',
             }}
           />
         ))}
-      </span>
-      <span style={{ fontFamily: FONT.sans, fontWeight: 400, fontSize: SIZE.meta, letterSpacing: TRACK.meta, textTransform: 'uppercase' }}>
-        index
       </span>
     </button>
   )
@@ -572,27 +560,30 @@ function IndexTab({ C, open, onToggle, hidden }) {
 // Not a menu that appears over the page: a COLUMN the page makes room for. It
 // takes its width out of the setting, the setting re-centres in what is left,
 // and the two move together — which is the difference between opening a drawer
-// and having something drop on top of your work.
+// and having something drop on top of your work. On a phone there is no width
+// to give away, so the column is the whole measure and the page steps aside.
 //
 // It has no panel, no fill and no trim. What separates it from the page is one
 // tooled channel down its left edge, exactly the rule the rest of the product is
 // divided with, and a wash of the ground itself deep enough to read type over
-// the chart. On a phone there is no width to give away, so the column is the
-// whole measure and the page steps aside for it.
+// the chart.
 //
-// `items` are the product's real destinations. An entry may carry a `note` —
-// the @ you are signed in as, how many slots are held — because an index in a
-// book tells you what is on the page as well as where it is.
-export function IndexColumn({ C, open, items, screen, go, narrow, foot }) {
+// ── what came off it, and why ────────────────────────────────────────────────
+// A numbered entry, a note under every line, a heading over the list and a
+// colophon at its foot. All four were the same mistake: an index in a BOOK is
+// numbered because a book has chapters in a fixed order and the number is how
+// you find one. A product has four places and you are already in one of them.
+// Numbering them said "you are reading a chapter", which is a claim about the
+// thing rather than a way of getting around it, and the notes turned four words
+// into eight lines of small print nobody asked for.
+//
+// So: four lines, set at reading size, in the order somebody actually needs
+// them. That is the whole component.
+export function IndexColumn({ C, open, items, screen, go, narrow }) {
   const lit = (C && C.star) || TOKENS.star
   return (
     <nav
-      aria-label="the index"
-      // A closed column is off the page, not merely invisible: without this it
-      // stays in the accessibility tree and in the document's text, so a screen
-      // reader announces seven destinations nobody opened and the page reads as
-      // if the index were its first paragraph. `visibility` is what takes an
-      // element out of that tree while still letting it transition.
+      aria-label="menu"
       aria-hidden={open ? undefined : true}
       inert={open ? undefined : ''}
       style={{
@@ -604,10 +595,9 @@ export function IndexColumn({ C, open, items, screen, go, narrow, foot }) {
         zIndex: 20,
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 'max(104px, calc(env(safe-area-inset-top) + 92px))',
-        paddingRight: `max(${SPACE.lg}px, calc(env(safe-area-inset-right) + ${SPACE.md}px))`,
-        paddingBottom: `max(${SPACE.lg}px, env(safe-area-inset-bottom))`,
-        paddingLeft: narrow ? `max(${SPACE.lg}px, calc(env(safe-area-inset-left) + ${SPACE.md}px))` : SPACE.lg,
+        justifyContent: 'center',
+        paddingRight: `max(${SPACE.xl}px, calc(env(safe-area-inset-right) + ${SPACE.lg}px))`,
+        paddingLeft: narrow ? `max(${SPACE.xl}px, calc(env(safe-area-inset-left) + ${SPACE.lg}px))` : SPACE.xl,
         background: narrow
           ? `linear-gradient(90deg, ${rgba(TOKENS.ink, 0.88)} 0%, ${rgba(TOKENS.ink, 0.96)} 30%, ${rgba(TOKENS.ink, 0.96)} 100%)`
           : `linear-gradient(90deg, ${rgba(TOKENS.ink, 0.3)} 0%, ${rgba(TOKENS.ink, 0.88)} 20%, ${rgba(TOKENS.ink, 0.96)} 100%)`,
@@ -631,10 +621,7 @@ export function IndexColumn({ C, open, items, screen, go, narrow, foot }) {
         }}
       />
 
-      <Kicker C={C} style={{ display: 'block', marginBottom: SPACE.sm }}>the index</Kicker>
-      <Rule C={C} style={{ marginBottom: SPACE.xs }} />
-
-      {items.map((it, i) => {
+      {items.map((it) => {
         const on = it.key === screen
         return (
           <button
@@ -644,41 +631,25 @@ export function IndexColumn({ C, open, items, screen, go, narrow, foot }) {
             aria-current={on ? 'page' : undefined}
             style={{
               display: 'flex',
-              alignItems: 'baseline',
-              gap: 14,
+              alignItems: 'center',
+              gap: SPACE.sm,
               width: '100%',
               textAlign: 'left',
-              padding: '13px 0',
-              borderBottom: `1px solid ${HAIR.faint}`,
+              padding: '15px 0',
               color: on ? TEXT.read : TEXT.quiet,
+              fontFamily: FONT.serif,
+              fontWeight: 300,
+              fontSize: 26,
+              lineHeight: 1.1,
+              letterSpacing: '-0.01em',
+              transition: 'color .2s linear',
             }}
           >
-            <span
-              style={{
-                fontFamily: FONT.mono,
-                fontSize: SIZE.meta,
-                letterSpacing: TRACK.tick,
-                color: on ? lit : TEXT.faint,
-                flex: '0 0 auto',
-              }}
-            >
-              {String(i + 1).padStart(2, '0')}
-            </span>
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontFamily: FONT.sans, fontWeight: 300, fontSize: 15, letterSpacing: '0.02em' }}>{it.name}</span>
-              {it.note && (
-                <span style={{ display: 'block', marginTop: 3, fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: TRACK.tick, color: TEXT.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {it.note}
-                </span>
-              )}
-            </span>
-            {on && <span aria-hidden className="lamp" style={{ alignSelf: 'center', width: 5, height: 5, borderRadius: '50%', background: lit, flex: '0 0 auto' }} />}
+            {it.name}
+            {on && <span aria-hidden className="lamp" style={{ width: 5, height: 5, borderRadius: '50%', background: lit, flex: '0 0 auto' }} />}
           </button>
         )
       })}
-
-      <div style={{ flex: 1, minHeight: SPACE.lg }} />
-      {foot}
     </nav>
   )
 }

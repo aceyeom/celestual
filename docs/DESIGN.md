@@ -255,15 +255,29 @@ it — across to the right of that measure as well (`centerX`), where it lights
 the empty case beside the setting instead of sitting behind the one action on
 the page.
 
-**The mark** (`ui.jsx`'s `Sigil`) is a four-pointed star cut down the middle
-with a body sitting in the cut. It is ONE drawing used twice: the right wing is
-the star, the left wing is the same star turned a hundred and eighty degrees
-about the body, which is why it leans without ever having been drawn on a slant.
-Two things about it are load-bearing. **The cut is the ground** — the hairline
-between the halves is a hole, and what shows through is whatever the mark is
-standing on, which is what lets it sit on the case and on an ivory seal without
-being redrawn. **The body is the one light** — the wings are ink, the disc in
-the middle is the only warm thing in the drawing.
+**The mark** (`ui.jsx`'s `Sigil`, `app/public/star.svg`) is a four-pointed star
+cut down the middle with a body sitting in the cut. It is ONE drawing used
+twice: the right wing is the star, the left wing is the same star turned a
+hundred and eighty degrees about the body, which is why it leans without ever
+having been drawn on a slant. Three things about it are load-bearing:
+
+- **The cut is the ground.** The hairline between the halves and the crescent
+  around the body are HOLES, not white paint. What shows through is whatever the
+  mark is standing on, which is what lets one drawing serve the case, an ivory
+  seal, a browser tab and print without being redrawn.
+- **The body is the one light**, and it is warmer than either wing. The order —
+  left wing light, right wing deep, body brightest — *is* the drawing. Invert it
+  and the long point that leads the eye stops being the one that reaches up, and
+  the body stops reading as something lit and starts reading as a hole.
+- **It carries the name on its own.** There is no wordmark. CELESTUAL used to be
+  set beside it on one baseline on every screen, which is a business card
+  stapled to every page of a product somebody has already opened.
+
+It is drawn at exactly its own bounds — 1.212 times taller than wide, no margin,
+nothing trimmed off the long points. Where a square slot is required (the
+favicon, a home-screen icon) the *viewport* is squared around it rather than the
+drawing being moved, so every clip and mask coordinate stays in the artwork's
+own space.
 
 The custom cursor (`styles.css`) is a printer's **registration mark**: the small
 crosshair-in-a-circle a press operator lines two plates up with, which is what
@@ -329,9 +343,13 @@ whichever page needed one. None of them was aligned to anything else, they
 disagreed about where "back" lives, and between them they still could not reach
 half the product.
 
-Every entry in the index carries a **note** — the fact that page is holding
-right now: the @ you are signed in as, how many slots are held, which community
-you are in. An index that only names pages is a menu.
+**The index is four lines and nothing else**: pings, community, account, terms
+and privacy. No numbers, no notes under the entries, no heading over them, no
+colophon at their foot, and no caption on the glyph that opens them. All five
+were the same mistake — an index in a *book* is numbered because a book has
+chapters in a fixed order and the number is how you find one. A product has four
+places and you are already in one of them; numbering them claims the page is a
+chapter rather than helping anybody get around.
 
 Product workflow evolves independently — but each screen must still pass §9
 before it ships.
@@ -373,8 +391,14 @@ template/AI output:
       review failure.)
 - [ ] **Does anything explain the interface?** A note under a field saying what
       the field is for means the field is wrong. Delete the note, fix the field.
-      (A note explaining a *product rule* — what renewing costs, when a slot
-      opens — is not this, and is required. See §9b.)
+      "Tap to place a ping" under a slot you can press is this. (A note stating a
+      *product rule* — what renewing costs, when a slot opens — is not, and is
+      required. See §9b.)
+- [ ] **Is the same fact printed twice?** A countdown IS a date; a row carrying
+      "4 days left" and "stands until 12 aug" is one number said two ways.
+- [ ] **Does the product name itself on this screen?** It should not. The mark
+      signs the page and there is no wordmark, no colophon, and no line telling
+      the reader which edition they are looking at.
 - [ ] **Any em or en dash in the copy?** `npm run lint:voice` fails the build on
       one. A dash is a writer stalling; choose a thought and end the sentence.
 - [ ] **Is a list a ledger?** (§6b. Entries divided by rules, not a stack of
@@ -434,6 +458,23 @@ The system extends beyond the app; these must all read as the same object:
   register rather than SaaS chips.
 
 ## §11 — Changelog
+
+- **2026-08-07c** — **The mark, and everything the product stopped saying**
+  (human-directed: *"remove the celestual type... remove unnecessary text
+  throughout... stop using words like lapses or standing... minimal is best"*).
+  §5, §7 and §9 revised.
+  - **The mark stands alone.** The supplied artwork's own inks replaced the
+    re-inked ones (the two taupes and the rose-gold body clear the case without
+    help), the drawing is cropped to its own bounds, and the CELESTUAL wordmark
+    came off the masthead, the favicon, every email and the legal pages.
+  - **The index is four lines.** Numbers, notes, heading and colophon all gone,
+    and the glyph that opens it lost its caption. A glyph that has to be
+    captioned is the wrong glyph.
+  - **The clock is days left, and only days left.** The lapse date came off a
+    ping entry: a countdown is already a date arrived at by the only arithmetic
+    anybody does with one, and printing both said one number twice.
+  - **"Lapses" and "standing" are retired** from every user-facing string. They
+    are filing-cabinet words for a thing somebody feels.
 
 - **2026-08-07b** — **The ledger, the title page and the index** (human-directed,
   in review of the transfer below: *"I don't like how the entire pingslot is

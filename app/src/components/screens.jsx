@@ -12,7 +12,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { normHandle } from '../api/celestual.js'
-import { daysLeft, nearLapse, lapseDate } from '../api/pings.js'
+import { daysLeft, nearLapse } from '../api/pings.js'
 import {
   startVerification, pollVerification, igDeepLink, igWebLink, igUsername,
   dmCode, savePending, loadPending, clearPending, genProof, graceVerify, GRACE_MS,
@@ -1018,15 +1018,13 @@ function PingCard({ C, ping, ctx }) {
                 the next one opens without doing arithmetic on "43 days left".
                 It sits UNDER the countdown rather than beside it, so the row of
                 actions below stays one row at every width. */}
+            {/* the clock. Days left, and that is the whole readout — the date
+                it runs out on came off, because a countdown IS a date and
+                printing both is saying one number twice. */}
             {!ping.mutual && days != null && (
-              <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Mono C={C} color={soon ? rgba(C.star, 0.92) : TEXT.quiet}>
-                  {days === 0 ? t('pings.today') : soon ? t('pings.expiringSoon', { n: days }) : t('pings.days', { n: days })}
-                </Mono>
-                {ping.expires_at && (
-                  <Mono C={C} size={SIZE.micro}>{t('pings.standsUntil', { date: lapseDate(ping.expires_at) })}</Mono>
-                )}
-              </div>
+              <Mono C={C} color={soon ? rgba(C.star, 0.92) : TEXT.quiet} style={{ display: 'block', marginTop: 7 }}>
+                {days === 0 ? t('pings.today') : t('pings.days', { n: days })}
+              </Mono>
             )}
             <div style={{ marginTop: 9, display: 'flex', gap: SPACE.lg, alignItems: 'baseline', flexWrap: 'wrap' }}>
               {ping.mutual && ping.handle ? (
@@ -1035,7 +1033,7 @@ function PingCard({ C, ping, ctx }) {
                 <>
                   {renewed ? (
                     <span className="fade" style={{ fontFamily: FONT.sans, fontWeight: 300, fontSize: 11.5, letterSpacing: '0.04em', color: rgba(C.star, 0.92), textShadow: ONSKY }}>
-                      {t('pings.renewed', { date: lapseDate(typeof renewed === 'string' ? renewed : ping.expires_at) })}
+                      {t('pings.renewed')}
                     </span>
                   ) : (
                     <RowLink C={C} lit={soon} onClick={renewing ? undefined : renew} sub={t('pings.renewSub')}>
@@ -1081,7 +1079,11 @@ function EmptySlotCard({ C, onClick, paywall }) {
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, textAlign: 'left' }}>
         <Kicker C={C} color={paywall ? C.star : TEXT.quiet}>{paywall ? t('pings.slotNext') : t('pings.slotEmpty')}</Kicker>
-        <Mono C={C}>{paywall ? t('pings.slotNextSub') : t('pings.slotEmptySub')}</Mono>
+        {/* "tap to place a ping" used to sit here. A slot you can press, on a
+            page about placing pings, does not need to be told what pressing it
+            does. The price does, because that is a fact and not an
+            instruction. */}
+        {paywall && <Mono C={C}>{t('pings.slotNextSub')}</Mono>}
       </span>
     </Row>
   )
@@ -1135,17 +1137,12 @@ function NextSlotLine({ C, ctx }) {
   const { t } = useI18n()
   const next = ctx.nextSlot
   if (!next) return null
-  const named = !!next.handle
-  const when =
-    next.days === 0
-      ? t(named ? 'pings.nextSlotToday' : 'pings.nextSlotTodayAnon', { handle: next.handle })
-      : t(named ? 'pings.nextSlotDays' : 'pings.nextSlotDaysAnon', { n: next.days, handle: next.handle })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: `${SPACE.md}px 0 0` }}>
-      <Kicker C={C} color={C.star}>{t('pings.nextSlot', { date: lapseDate(next.at) })}</Kicker>
-      <Small C={C}>
-        {when} {t('pings.nextSlotOr')}
-      </Small>
+      <Kicker C={C} color={C.star}>
+        {next.days === 0 ? t('pings.nextSlotToday') : t('pings.nextSlot', { n: next.days })}
+      </Kicker>
+      <Small C={C}>{t('pings.nextSlotOr')}</Small>
     </div>
   )
 }
@@ -1430,9 +1427,6 @@ export function PingsScreen({ C, ctx }) {
             </div>
           )}
 
-          {pings.some((p) => !p.handle) && (
-            <p style={{ margin: '4px 4px 0', fontSize: SIZE.meta, lineHeight: 1.6, color: rgba(C.muted, 0.75) }}>{t('pings.elsewhereNote')}</p>
-          )}
         </div>
       </div>
 
@@ -3032,9 +3026,7 @@ export function FourthSlotScreen({ C, ctx }) {
             and this screen was the locked door. */}
         {ctx.nextSlot && (
           <p className="enter" style={{ animationDelay: '.14s', margin: 0, fontFamily: FONT.mono, fontSize: SIZE.meta, letterSpacing: TRACK.tick, color: rgba(C.star, 0.92), textShadow: ONSKY }}>
-            {ctx.nextSlot.days === 0
-              ? t('fourth.opensSoon')
-              : t('fourth.opens', { date: lapseDate(ctx.nextSlot.at) })}
+            {ctx.nextSlot.days === 0 ? t('fourth.opensSoon') : t('fourth.opens', { n: ctx.nextSlot.days })}
           </p>
         )}
       </div>

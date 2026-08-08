@@ -49,16 +49,11 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        font-weight: 600;
+        font-weight: 400;
         letter-spacing: 0.14em;
         text-transform: uppercase;
         font-size: 12px;
         color: var(--muted);
-      }
-      .brand .dot {
-        width: 7px; height: 7px; border-radius: 50%;
-        background: radial-gradient(circle at 35% 30%, #fff, var(--star));
-        box-shadow: 0 0 14px var(--star);
       }
       h1 {
         font-family: 'Cormorant Garamond', Georgia, serif;
@@ -94,7 +89,7 @@
   </head>
   <body>
     <main class="wrap">
-      <a class="brand" href="/"><span class="dot"></span> celestual</a>
+      <a class="brand" href="/" aria-label="celestual"><img src="/star.svg" alt="celestual" width="26" height="26" /></a>
 
       <h1>Terms of Service</h1>
       <p class="updated">Last updated 11 July 2026</p>

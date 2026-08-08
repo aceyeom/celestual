@@ -189,7 +189,7 @@ function glyph(ctx, x, y, r) {
     else ctx.rect(x + cut / 2, y - r * 2, r * 2, r * 4)
     ctx.clip()
     if (left) {
-      ctx.fillStyle = TOKENS.cream
+      ctx.fillStyle = '#BFAAA1'
       wing(2 * bx - sx, 2 * by - sy, dn, up, side, 0.1)
       ctx.fill()
       // where the cut opens out around the body — a hole, not a painted ring
@@ -198,7 +198,7 @@ function glyph(ctx, x, y, r) {
       ctx.arc(bx, by, br + cut * 1.9, 0, Math.PI * 2)
       ctx.fill()
     } else {
-      ctx.fillStyle = TOKENS.them
+      ctx.fillStyle = '#8D7169'
       wing(sx, sy, up, dn, side, 0.1)
       ctx.fill()
     }
@@ -208,9 +208,9 @@ function glyph(ctx, x, y, r) {
   half(false)
 
   const g = ctx.createLinearGradient(bx - br, by - br, bx + br, by + br)
-  g.addColorStop(0, TOKENS.cream2)
-  g.addColorStop(0.52, TOKENS.you)
-  g.addColorStop(1, TOKENS.saddle)
+  g.addColorStop(0, '#F2DCCC')
+  g.addColorStop(0.52, '#DCB39A')
+  g.addColorStop(1, '#BE8C71')
   ctx.fillStyle = g
   ctx.beginPath()
   ctx.arc(bx, by, br, 0, Math.PI * 2)
