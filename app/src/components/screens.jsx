@@ -23,8 +23,8 @@ import { renderSkyCard } from '../card.js'
 import {
   Brandmark, Sigil, StarMark, SchoolMark, Kicker, Mono, Rule, StateDot, Sonar, GlassPanel,
   PrimaryButton, GhostButton, OutlineButton, Plate, Field, HandleChip, HandleSearchField,
-  Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, CommunityGalaxyCanvas,
-  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, Slots, TrialBanner, FONT, SIZE, LINE, TRACK, ICON,
+  Icon, rgba, RADIUS, SPACE, makeShadow, useDialog, usePrefersReducedMotion, CommunityGalaxyCanvas,
+  Display, Title, Lead, Small, Note, ScreenHeader, ExitRow, Slots, FONT, SIZE, LINE, TRACK, ICON,
   TOKENS, TEXT, HAIR, ONSKY, LIGHT, MEASURE,
 } from './ui.jsx'
 import Card from '../card/Disc.jsx'
@@ -147,32 +147,73 @@ function HeroSequence({ C }) {
   const { t } = useI18n()
   const l1 = t('landing.hero1')
   const l2 = t('landing.hero2')
-  const reduce =
-    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduce = usePrefersReducedMotion()
   // one cursor across both lines; a pause (the breath) sits between them
   const total = l1.length + l2.length
   const [n, setN] = React.useState(reduce ? total : 0)
   const [erasing, setErasing] = React.useState(false)
+  // ── one clock, on the frame ────────────────────────────────────────────────
+  // This was a chain of setTimeouts, one per character, each re-arming from a
+  // state change. Two things were wrong with that on the one page in the
+  // product that has nothing else on it but a full-screen galaxy.
+  //
+  // The erase step is 14ms, which is SHORTER than a frame — so it asked React
+  // for up to seventy commits a second to produce sixty visible states, and a
+  // third of them landed between frames and were never seen at all. And a
+  // timeout chain does not stop when the page does: a backgrounded tab keeps
+  // typing on throttled timers and comes back mid-word.
+  //
+  // One requestAnimationFrame loop with its own clock does the same typing, at
+  // the same speeds, with a hard ceiling of one commit per frame and no work at
+  // all while the tab is hidden — because that is exactly what rAF already
+  // promises. The state machine below is the same four rules it always was.
   React.useEffect(() => {
-    if (reduce) return undefined
-    let delay
-    if (!erasing && n < total) {
-      delay = n === l1.length ? 620 : 30 + Math.random() * 22 // the breath after line one
-    } else if (!erasing) {
-      delay = 7000 // hold the finished promise
-    } else if (n > 0) {
-      delay = 14 // erase — quick, unceremonious
-    } else {
-      delay = 900 // a beat of empty sky before it types again
+    if (reduce) {
+      setN(total)
+      setErasing(false)
+      return undefined
     }
-    const id = setTimeout(() => {
-      if (!erasing && n < total) setN(n + 1)
-      else if (!erasing) setErasing(true)
-      else if (n > 0) setN(n - 1)
-      else setErasing(false)
-    }, delay)
-    return () => clearTimeout(id)
-  }, [n, erasing, total, l1.length, reduce])
+    const st = { n: 0, erasing: false }
+    const delayFor = () => {
+      if (!st.erasing && st.n < total) return st.n === l1.length ? 620 : 30 + Math.random() * 22 // the breath after line one
+      if (!st.erasing) return 7000 // hold the finished promise
+      if (st.n > 0) return 14 // erase — quick, unceremonious
+      return 900 // a beat of empty sky before it types again
+    }
+    setN(0)
+    setErasing(false)
+    let raf = 0
+    let last = 0
+    let wait = delayFor()
+    const step = (ts) => {
+      raf = requestAnimationFrame(step)
+      // the first frame only starts the clock; and a tab coming back from the
+      // background hands us one enormous delta, which must not fast-forward the
+      // whole line in a single commit
+      const dt = last ? Math.min(ts - last, 100) : 0
+      last = ts
+      wait -= dt
+      if (wait > 0) return
+      // Catch up WITHIN the frame rather than across frames: a screen running at
+      // thirty draws one frame per two erase steps, and stepping once per frame
+      // would quietly halve the typing speed on exactly the devices that can
+      // least afford to look wrong. Bounded, so a long stall can never turn into
+      // a burst of work, and it still commits once — the eye only ever sees the
+      // last state of a frame anyway.
+      for (let k = 0; k < 4 && wait <= 0; k++) {
+        if (!st.erasing && st.n < total) st.n++
+        else if (!st.erasing) st.erasing = true
+        else if (st.n > 0) st.n--
+        else st.erasing = false
+        wait += delayFor()
+      }
+      if (wait < 0) wait = 0
+      setN(st.n)
+      setErasing(st.erasing)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [total, l1.length, reduce])
   const s1 = l1.slice(0, Math.min(n, l1.length))
   const s2 = n > l1.length ? l2.slice(0, n - l1.length) : ''
   const caretOn2 = n >= l1.length && (erasing ? n > l1.length : true)
@@ -251,14 +292,12 @@ export function LandingScreen({ C, ctx }) {
             restating it in the metadata face was the page saying the same thing
             twice and crowding the one act it is asking for. */}
 
-        {/* the one door off this page that is not the product: the first light
-            notice, set IN the setting rather than pinned to a corner of the
-            window where it collides with whatever else lives there */}
-        {ctx.trial && (
-          <div className="enter" style={{ animationDelay: '.3s', marginTop: SPACE.xl }}>
-            <TrialBanner C={C} line={ctx.trial.line} deadline={ctx.trial.deadline} />
-          </div>
-        )}
+        {/* The first light notice — a hiring call for a head of marketing, with
+            its own countdown — used to sit here. It is off the title page now.
+            This page has exactly one job, which is the one act at the top of it,
+            and a recruitment banner under the two doors is the product asking a
+            stranger for something before it has told them what it is. The brief
+            still lives at /trial for anyone holding the link. */}
       </div>
 
       {/* ── the colophon ───────────────────────────────────────────────────
@@ -1763,7 +1802,7 @@ function SkyStatus({ C, open, size = 13.5 }) {
 // centered, everything ellipsized — nothing can ever overflow its box.
 function MeetOverlay({ C, label, onClose }) {
   const { t } = useI18n()
-  const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduced = usePrefersReducedMotion()
   // the name arrives WITH the camera: after the bank (≤1.1s) + the run
   const arrive = reduced ? '0.2s' : '2.1s'
   return (
@@ -2132,11 +2171,31 @@ export function CommunityScreen({ C, ctx }) {
   // and glides back. `finding` keeps the control lit for the flight's length so
   // it can't be double-fired mid-dive.
   const [finding, setFinding] = React.useState(false)
+  const findTimer = React.useRef(0)
+  React.useEffect(() => () => clearTimeout(findTimer.current), [])
   const findStar = () => {
     if (finding) return
-    const ok = galaxyRef.current && galaxyRef.current.locateMine()
-    // the full flight: the bank (≤1.1s) + the run in + the hold + the return
-    if (ok) { setFinding(true); setTimeout(() => setFinding(false), 5700) }
+    const g = galaxyRef.current
+    if (!g || !g.locateMine || !g.locateMine()) return
+    setFinding(true)
+    // `finding` melts every piece of chrome on this page, so what it is really
+    // holding is the whole interface off the screen — and it used to hold it for
+    // a flat 5.7 seconds, guessed against what the flight was thought to take.
+    // The flight does not take a fixed time: its bank breathes with how far the
+    // star is. Guess short and the chrome snaps back over a camera still moving;
+    // guess long and the page sits blank after the sky has settled. The engine
+    // knows the exact moment, so it says so.
+    const done = () => {
+      clearTimeout(findTimer.current)
+      setFinding(false)
+    }
+    g.onDiveEnd = done
+    // ...and a backstop, because a melted interface is the one state that must
+    // never be able to get stuck: if the dive is torn down by something other
+    // than its own ending (a reseed, a remount, a lost context) the chrome comes
+    // back on its own.
+    clearTimeout(findTimer.current)
+    findTimer.current = setTimeout(done, 12000)
   }
 
   // The hand-driven sky lives ONLY on this page: switch on the camera gestures
@@ -2176,6 +2235,11 @@ export function CommunityScreen({ C, ctx }) {
       if (g && g.setTagsEnabled) g.setTagsEnabled(false)
       if (g && g.onZoomState === setZoomed) g.onZoomState = null
       if (g && g.onTagTap) g.onTagTap = null
+      // and the flight's own "I have landed" hook, which is the one callback
+      // here that outlives its screen: the home galaxy is shared and keeps
+      // running, so a find-your-star left in the air would still be holding a
+      // closure over a page that has gone.
+      if (g) g.onDiveEnd = null
       setZoomed(false)
       setMeet(null)
     }
@@ -2283,13 +2347,25 @@ export function CommunityScreen({ C, ctx }) {
           core light (the engine centers the disk at ~42% of the viewport). A soft
           ink clearing sits under it so the dense bulge stars never fight the
           mark (no hard ring — the core's own light is the frame). It fades away
-          whenever a camera dive or a held zoom takes the sky over. */}
+          whenever a camera dive or a held zoom takes the sky over.
+
+          It follows the engine's own centre, and it travels there on a TRANSFORM
+          rather than on `top`. Both read identically; only one of them is free.
+          `top` is a layout property, so a 450ms glide of it is 450ms of layout,
+          paint and composite on a fixed element sitting over a canvas that is
+          already painting every frame — and the seal re-solves its position
+          whenever the chrome around it settles, which is exactly when the frame
+          budget is tightest. Moved into the transform it is the same motion on
+          the compositor, and the layout never runs at all. */}
       <div
         aria-hidden
         style={{
-          position: 'fixed', left: '50%', top: sealY != null ? sealY : '42%', transform: 'translate(-50%, -50%)', zIndex: 0,
+          position: 'fixed', left: '50%', top: 0, zIndex: 0,
+          transform: `translate(-50%, calc(-50% + ${sealY != null ? `${sealY}px` : '42vh'}))`,
           pointerEvents: 'none', display: 'grid', placeItems: 'center',
-          opacity: skyHeld || ctx.skyFlight ? 0 : 1, transition: 'opacity .8s ease, top .45s cubic-bezier(.2,.7,.2,1)',
+          opacity: skyHeld || ctx.skyFlight ? 0 : 1,
+          transition: 'opacity .8s ease, transform .45s cubic-bezier(.2,.7,.2,1)',
+          willChange: 'transform',
         }}
       >
         <span style={{ position: 'absolute', width: 126, height: 126, borderRadius: '50%', background: `radial-gradient(circle, ${rgba(C.ink, 0.42)}, ${rgba(C.ink, 0.18)} 46%, transparent 68%)` }} />

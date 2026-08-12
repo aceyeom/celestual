@@ -555,12 +555,23 @@ export class CommunityGalaxy extends SkyEngine {
     this._armArrival(null)
     this.start()
   }
+  // The flight is over and the camera is home. `onDiveEnd` is how a screen
+  // knows that without guessing: a dive's length breathes with how far the star
+  // has to travel (engine.js carries the long note on why every hard-coded
+  // duration in this product was wrong by up to nine hundred milliseconds), so
+  // anything a screen melts away for the length of a flight has to be told when
+  // the flight ended rather than counting down to it.
   _endDive() {
     this.dive = null
     this.diveSt = null
     this.diveLabel = null
     this._armArrival(null)
     if (this.cam.dive) this.cam.dive = null
+    const cb = this.onDiveEnd
+    if (cb) {
+      this.onDiveEnd = null
+      cb()
+    }
   }
   hasMine() {
     return this.mine.length > 0

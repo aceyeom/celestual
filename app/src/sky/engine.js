@@ -264,7 +264,17 @@ export class SkyEngine {
     if (t === this.insetT && b === this.insetB) return
     this.insetT = t
     this.insetB = b
-    this.resize(true)
+    // The insets move where the galaxy is FRAMED, and nothing else: same canvas,
+    // same buffers, same everything on the GPU. It used to call resize(true) for
+    // this, which is a different and much more expensive thing — it re-assigns
+    // canvas.width (which resets the WebGL drawing buffer to transparent black
+    // whatever you assign, even the value it already had, so the sky blinked)
+    // and it tears down and reallocates the bloom chain. The community screen
+    // pushes insets off a ResizeObserver on its own chrome, so every settling
+    // pixel of that layout was buying a full pipeline rebuild and a dropped
+    // frame. Re-solving the framing is arithmetic; do only that.
+    this._layout()
+    this._resized()
     this.start()
   }
 
@@ -282,8 +292,13 @@ export class SkyEngine {
     this.h = h
     this.width = Math.max(1, Math.round(w * this.dprEff))
     this.height = Math.max(1, Math.round(h * this.dprEff))
-    this.canvas.width = this.width
-    this.canvas.height = this.height
+    // Only when it genuinely changed. Assigning to canvas.width resets the
+    // drawing buffer even when the value is identical, which costs a
+    // reallocation and shows as a one-frame blink of the ground colour — and
+    // `force` is passed by callers that mean "re-solve the framing", not
+    // "throw the buffer away".
+    if (this.canvas.width !== this.width) this.canvas.width = this.width
+    if (this.canvas.height !== this.height) this.canvas.height = this.height
 
     const gl = this.gl
     if (!this.scene) this.scene = new Target(gl, this.caps, this.width, this.height)
