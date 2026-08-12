@@ -28,14 +28,9 @@ export const TRIAL_DOC = {
 // applications, end of day August 10 (US Pacific, the company's clock). Written
 // as an absolute instant WITH its offset so the countdown reads the same second
 // in every timezone — a competitor in London and one in LA see one deadline,
-// not two. When the date moves, move it here: the landing banner, the page's
-// countdown and the deadline line all read this.
+// not two. When the date moves, move it here: the page's countdown and its
+// deadline line both read this.
 export const TRIAL_DEADLINE = '2026-08-10T23:59:59-07:00'
-
-// The landing's banner — the one door to this page from the front of the
-// product. Deliberately the doc's voice, not the product's: it is a job ad
-// resting on a poster, and it is allowed to sound like one.
-export const TRIAL_BANNER = 'Head of Marketing Applications!'
 
 export const TRIAL = {
   kicker: 'the celestual challenge',

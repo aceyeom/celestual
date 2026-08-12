@@ -264,7 +264,17 @@ export class SkyEngine {
     if (t === this.insetT && b === this.insetB) return
     this.insetT = t
     this.insetB = b
-    this.resize(true)
+    // The insets move where the galaxy is FRAMED, and nothing else: same canvas,
+    // same buffers, same everything on the GPU. It used to call resize(true) for
+    // this, which is a different and much more expensive thing — it re-assigns
+    // canvas.width (which resets the WebGL drawing buffer to transparent black
+    // whatever you assign, even the value it already had, so the sky blinked)
+    // and it tears down and reallocates the bloom chain. The community screen
+    // pushes insets off a ResizeObserver on its own chrome, so every settling
+    // pixel of that layout was buying a full pipeline rebuild and a dropped
+    // frame. Re-solving the framing is arithmetic; do only that.
+    this._layout()
+    this._resized()
     this.start()
   }
 
@@ -282,8 +292,13 @@ export class SkyEngine {
     this.h = h
     this.width = Math.max(1, Math.round(w * this.dprEff))
     this.height = Math.max(1, Math.round(h * this.dprEff))
-    this.canvas.width = this.width
-    this.canvas.height = this.height
+    // Only when it genuinely changed. Assigning to canvas.width resets the
+    // drawing buffer even when the value is identical, which costs a
+    // reallocation and shows as a one-frame blink of the ground colour — and
+    // `force` is passed by callers that mean "re-solve the framing", not
+    // "throw the buffer away".
+    if (this.canvas.width !== this.width) this.canvas.width = this.width
+    if (this.canvas.height !== this.height) this.canvas.height = this.height
 
     const gl = this.gl
     if (!this.scene) this.scene = new Target(gl, this.caps, this.width, this.height)
@@ -439,7 +454,25 @@ export class SkyEngine {
       requestAnimationFrame(this._boundTick)
       return
     }
-    const dt = Math.min(0.05, raw / 1000)
+    // Clamped at BOTH ends, and the lower one is not paranoia. `start()` stamps
+    // lastTs with performance.now(), but a rAF callback is handed the time the
+    // frame BEGAN — so whenever the engine is started from inside work that the
+    // browser was already running for that frame (which is every mount: React's
+    // effect builds tens of thousands of stars and bakes a noise volume between
+    // the stamp and the first callback), the first tick arrives with a raw of
+    // minus half a second or worse. Measured here at -569ms on the first frame
+    // of an ordinary community sky.
+    //
+    // A negative dt does not merely skip a frame. Every eased quantity in this
+    // renderer is written as `v += (target - v) * min(1, dt * k)`, and a
+    // negative factor runs each of them BACKWARDS, past its own start, by an
+    // unbounded amount — so the gathering blend came up at -0.31 and took four
+    // seconds to climb back to zero, which is four seconds of a gathering sky
+    // rendering its cloud inside out (negative gas gain, the withheld countable
+    // stars faded IN) before it looked like itself. The clock ran backwards
+    // too. There is no frame this can be right for: a tick that has not
+    // advanced is a tick of zero.
+    const dt = Math.min(0.05, Math.max(0, raw) / 1000)
     this.lastTs = ts
     this._govern(raw, ts)
 
@@ -525,6 +558,44 @@ export class SkyEngine {
   // handed so its disc lands exactly where the point of light was
   bodyRadius(radius) {
     return radius * this.sizeScale
+  }
+
+  // ── a glow is a point of light, not a body ────────────────────────────────
+  // The stars in this sky are held to the instrument's own point-spread: a
+  // population that may not resolve has its core clamped to the psf, a bright
+  // one has its wings capped twice, and anything the camera is about to pass
+  // through dissolves rather than smearing (stars.js carries all three). The
+  // GLOWS drawn beside them — a gathering community's embers, the halo resting
+  // on one of your pings — had none of it. A billboard's world size is a WORLD
+  // size, so its width on the glass is size x unit x persp and persp grows
+  // without limit on approach: closing from the resting 2.7 world units to a
+  // fifth of that magnifies every one of them fifteenfold. That is what turned
+  // a gathering sky's sixty-eight small embers into a field of fat white
+  // out-of-focus saucers laid over the page the moment the camera came in —
+  // the exact "bokeh disc" failure the canvas engine spent its whole comment
+  // budget capping, arriving through the one pass that never got a cap.
+  //
+  // The one hand-rolled defence that did exist (galaxy.js's `near = 1 - f*0.94`
+  // on the sealed halo) is written against a DIVE's own progress, so it holds
+  // for the one gesture it was written for and does nothing for the community
+  // sky's free dolly, for a chase, or for a held star view.
+  //
+  // These two are that defence, once, for every glow in both skies:
+  //
+  //   glowRadius — the world radius that keeps a light inside `maxCss` pixels
+  //                on the glass however close the camera gets. Below the cap
+  //                nothing changes at all, so a glow still grows with approach
+  //                exactly as far as it is allowed to and then simply stops.
+  //   glowFade   — stars.js's near-plane dissolve, on the CPU: a light the
+  //                camera is about to pass through leaves instead of swelling.
+  //
+  // `persp` and `zc` are what cam.project() returned for the glow's own point.
+  glowRadius(worldR, persp, maxCss) {
+    const perPx = this.cam.unit * persp
+    return worldR * perPx > maxCss ? maxCss / Math.max(perPx, 1e-6) : worldR
+  }
+  glowFade(zc, near) {
+    return near > 0 ? sstep(near * 0.22, near, zc) : 1
   }
 
   get _ctx() {

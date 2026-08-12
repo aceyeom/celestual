@@ -281,11 +281,14 @@ input, textarea, select { cursor: text; }
 .tw-caret { display: inline-block; animation: caretBlink 1.05s step-end infinite; }
 
 /* ── the page turning ─────────────────────────────────────────────────────────
-   The old leaf falls away upward and the new one comes over it, which is the
-   direction a page goes when the book is flat on the desk. */
-::view-transition-old(root) { animation: 0.28s cubic-bezier(0.4, 0, 1, 1) both leafOut; }
-::view-transition-new(root) { animation: 0.44s cubic-bezier(0.16, 0.84, 0.28, 1) 0.06s both leafIn; }
-@keyframes leafOut { to { opacity: 0; transform: translateY(-10px); } }
+   A cross-document-style view transition used to live here, animating
+   ::view-transition-old(root) out and ::view-transition-new(root) in. It is
+   gone, and App.jsx `applyScreen` carries the reasoning: a view transition
+   captures the ENTIRE viewport as a still image, and the biggest thing in this
+   viewport is a galaxy painting every frame — so turning a page froze the sky
+   for half a second and slid it up and down with the type. The page still
+   turns; it is the `.fade` on the keyed screen wrapper, which animates the page
+   and leaves the sky alone. */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -300,5 +303,4 @@ input, textarea, select { cursor: text; }
   }
   .tool-rule { animation: none !important; transform: none !important; }
   .tw-caret { animation: none; opacity: 1; }
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
 }

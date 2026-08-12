@@ -223,8 +223,20 @@ export class PostChain {
     this.sky = { top: [0.0031, 0.0026, 0.0078], mid: [0.0017, 0.0014, 0.0046], bot: [0.0010, 0.0008, 0.0028] }
   }
 
+  // The bloom chain is the one thing here that cannot be resized in place — each
+  // level is half the one above it, so the COUNT changes with the frame — and
+  // rebuilding it means five half-float allocations and five frees. So it is
+  // rebuilt only when the frame it was solved for actually moved. Every caller
+  // above funnels through SkyEngine.resize, which is also reached by "re-solve
+  // the framing" paths where nothing about the buffer changed; without this
+  // guard each of those threw the whole chain away and built it again, which is
+  // a dropped frame you can see as a flicker in the glow around every star.
   resize(w, h, count) {
     const gl = this.gl
+    if (this.levels.length && this._w === w && this._h === h && this._count === count) return
+    this._w = w
+    this._h = h
+    this._count = count
     for (const l of this.levels) l.destroy()
     this.levels = []
     let lw = Math.max(1, Math.floor(w / 2))

@@ -50,6 +50,31 @@ export function useNarrow(px = 760) {
   return narrow
 }
 
+// ── the one motion preference ────────────────────────────────────────────────
+// Every animated thing in here has to ask the same question, and until now each
+// one asked it its own way: `window.matchMedia(...).matches`, read straight
+// through during render, in three different files. That is wrong twice. It is
+// read at render time with no subscription, so somebody who turns the setting
+// ON gets whatever the app happened to sample when the component first mounted
+// and keeps the animation until a reload; and it touches `window` during render,
+// which is the one place a component is not allowed to look at the outside
+// world. One hook, one listener, one answer — and it is the switch every timing
+// decision in the product now reads.
+export function usePrefersReducedMotion() {
+  const [reduce, setReduce] = React.useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const on = () => setReduce(mq.matches)
+    mq.addEventListener('change', on)
+    on()
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return reduce
+}
+
 // ── dialog accessibility ──────────────────────────────────────────────────────
 // One shared hook for every overlay: moves focus in, traps Tab inside, closes on
 // Escape, restores focus after. Attach the ref to the dialog element and give it
@@ -486,7 +511,7 @@ export function Frame() {
 //
 // The bar itself is never a hit target. It spans the whole head of the page, and
 // a transparent strip that eats clicks is worse than no bar.
-export function Masthead({ C, open, onToggle, hidden }) {
+export function Masthead({ C, open, onToggle, onHome, home, hidden }) {
   return (
     <div
       style={{
@@ -504,9 +529,60 @@ export function Masthead({ C, open, onToggle, hidden }) {
         transition: 'opacity .45s ease',
       }}
     >
-      <Sigil size={26} cut="lamp" title="celestual" />
+      <HomeMark onHome={onHome} here={home} hidden={hidden} />
       <IndexTab C={C} open={open} onToggle={onToggle} hidden={hidden} />
     </div>
+  )
+}
+
+// The mark, and it is a way home. It sat here as decoration for a long time —
+// the one thing on the page that looks exactly like the thing every other site
+// puts a link under, and did nothing when pressed. A mark in a masthead is a
+// door in every book anybody has read; leaving it shut is not restraint, it is
+// a dead control.
+//
+// It answers the way the rest of this product answers: nothing glows, nothing
+// bounces. The mark lifts a hair off the page under a hand and settles back
+// when it goes, which is what a pressed plate does, and it is `aria-current`
+// (not disabled) on the page it already leads to — still focusable, still says
+// where you are, and pressing it there is simply a no-op rather than a history
+// entry pointing at the screen you are on.
+function HomeMark({ onHome, here, hidden }) {
+  const [hot, setHot] = React.useState(false)
+  const reduce = usePrefersReducedMotion()
+  if (!onHome) return <Sigil size={26} cut="lamp" title="celestual" />
+  return (
+    <button
+      type="button"
+      onClick={() => !here && onHome()}
+      aria-label="celestual — the front page"
+      aria-current={here ? 'page' : undefined}
+      onPointerEnter={() => setHot(true)}
+      onPointerLeave={() => setHot(false)}
+      onBlur={() => setHot(false)}
+      style={{
+        pointerEvents: hidden ? 'none' : 'auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        // the hit target a thumb needs, hung off the mark's own top-left so the
+        // glyph stays exactly where the bar has always set it
+        margin: '-10px -12px -10px -10px',
+        padding: '10px 12px 10px 10px',
+        cursor: here ? 'default' : 'pointer',
+      }}
+    >
+      {/* no `title` here: the button carries the accessible name, and a labelled
+          image inside a labelled control is the same thing announced twice */}
+      <Sigil
+        size={26}
+        cut="lamp"
+        style={{
+          transform: hot && !here && !reduce ? 'translateY(-1px)' : 'none',
+          opacity: hot && !here ? 1 : 0.94,
+          transition: reduce ? 'opacity .2s linear' : 'transform .22s cubic-bezier(.16,.84,.28,1), opacity .2s linear',
+        }}
+      />
+    </button>
   )
 }
 
@@ -536,7 +612,15 @@ function IndexTab({ C, open, onToggle, hidden }) {
       {/* three ruled entries — an index, drawn the way an index is set. The
           short line moves when it opens, like a finger keeping the place. The
           word "INDEX" used to sit beside it and has gone: a glyph that has to
-          be captioned is the wrong glyph, and this one is not. */}
+          be captioned is the wrong glyph, and this one is not.
+
+          The line grows on a SCALE rather than on `width`. It is three one-pixel
+          bars and it would be easy to call the difference academic, except that
+          this control sits in the masthead of every screen, over a canvas that
+          repaints continuously — and a width transition is a layout on each of
+          its frames, which is the one kind of work that cannot be handed to the
+          compositor. Scaled from the left edge it is the same line arriving the
+          same way, for nothing. */}
       <span aria-hidden style={{ display: 'block', width: 20, flex: '0 0 auto' }}>
         {[0, 1, 2].map((i) => (
           <span
@@ -545,9 +629,11 @@ function IndexTab({ C, open, onToggle, hidden }) {
               display: 'block',
               height: 1,
               marginTop: i ? 5 : 0,
-              width: (open ? i === 1 : i !== 1) ? '100%' : '56%',
+              width: '100%',
+              transformOrigin: 'left center',
+              transform: `scaleX(${(open ? i === 1 : i !== 1) ? 1 : 0.56})`,
               background: open ? lit : 'currentColor',
-              transition: 'width .3s cubic-bezier(.16,.84,.28,1), background .2s linear',
+              transition: 'transform .3s cubic-bezier(.16,.84,.28,1), background .2s linear',
             }}
           />
         ))}
@@ -1611,46 +1697,14 @@ export function Countdown({ C, iso, compact, closedLabel = 'closed', color }) {
   )
 }
 
-// ── the first light banner ────────────────────────────────────────────────────
-// The landing's one door to the trial: a slip of paper tipped into the corner of
-// the case. A tooled channel down its leading edge, the call in the serif voice,
-// and the deadline ticking beneath it, second by second. The clock is the
-// banner's real argument: a job opening with a date on it is a notice, one that
-// is visibly running out is a decision.
-export function TrialBanner({ C, line, deadline, href = '/trial' }) {
-  const [hot, setHot] = React.useState(false)
-  return (
-    <a
-      href={href}
-      onPointerEnter={() => setHot(true)}
-      onPointerLeave={() => setHot(false)}
-      style={{
-        position: 'relative',
-        display: 'flex', flexDirection: 'column', gap: 4, padding: '10px 14px 9px 14px',
-        // capped so the line wraps rather than growing left into the login chip
-        // on a narrow phone, where the two corners are only a thumb apart
-        maxWidth: 'min(58vw, 290px)',
-        textDecoration: 'none',
-        ...leatherSurface(hot ? TOKENS.ink4 : TOKENS.ink3),
-        borderRadius: RADIUS.card,
-        boxShadow: hot ? LIGHT.rest : '0 1px 0 rgba(255,226,186,0.05) inset, 0 6px 18px rgba(0,0,0,0.4)',
-        transition: 'box-shadow .25s ease, background-color .25s ease',
-      }}
-    >
-      {/* the tooled channel: the same two pixels every rule in here is made of,
-          stood on end */}
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 2,
-          background: `linear-gradient(90deg, ${HAIR.tooledDark} 0 1px, ${rgba(TOKENS.you, hot ? 0.9 : 0.6)} 1px 2px)`,
-        }}
-      />
-      <span style={{ fontFamily: FONT.serif, fontStyle: 'italic', fontWeight: 400, fontSize: 15, lineHeight: 1.2, color: TOKENS.cream }}>{line}</span>
-      <Countdown C={C} iso={deadline} compact closedLabel="applications closed" color={rgba(TOKENS.you, 0.92)} />
-    </a>
-  )
-}
+// ── the first light banner, and why there isn't one ─────────────────────────
+// A slip of paper tipped into the title page — "Head of Marketing
+// Applications!" over a ticking deadline, linking to /trial. It is gone from
+// the front of the product. The landing has one job, the one act at the top of
+// it, and a recruitment notice set under the two doors was the page asking a
+// stranger for something before it had finished telling them what this is. The
+// brief itself still stands at /trial for anyone holding the link, and it
+// carries its own countdown.
 
 // ── the dock, and why there isn't one ────────────────────────────────────────
 // There used to be a NavDock here: a fragment of star chart at the foot of the

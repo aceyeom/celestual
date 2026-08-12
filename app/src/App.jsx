@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { flushSync } from 'react-dom'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
   suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
@@ -31,7 +30,6 @@ import { TrialScreen } from './components/trial.jsx'
 import { AdminScreen } from './components/admin.jsx'
 import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
 import { RESERVED_CODES } from './api/trial.js'
-import { TRIAL_BANNER, TRIAL_DEADLINE } from './trialContent.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -449,24 +447,32 @@ export default function App() {
     screenRef.current = screen
   }, [screen])
 
-  // Swap the visible screen — cross-fades with the View Transitions API where
-  // supported; instant swap otherwise.
+  // ── turning the page ──────────────────────────────────────────────────────
+  // This used to run every navigation through document.startViewTransition, and
+  // it is the wrong instrument for a product whose background is alive.
+  //
+  // A view transition SNAPSHOTS the viewport — the whole viewport, with no way
+  // to exclude anything from the capture — and then animates two still images
+  // over each other. The galaxy is a fixed, full-bleed canvas painting at sixty
+  // frames a second, so it was inside every one of those snapshots: on each
+  // navigation the sky froze for about half a second, slid ten pixels up and
+  // fourteen back down with the page, and then jumped to wherever it had
+  // actually got to. That is the whole animation budget of the product spent on
+  // making its most expensive object stutter.
+  //
+  // It was also the SECOND transition playing. The screen wrapper below is
+  // keyed on the screen name and carries `.fade`, so React already remounts and
+  // rises the incoming page — under the snapshot, where nobody could see it,
+  // and then again live once the transition finished. And flushSync inside the
+  // callback forced the whole re-render into one synchronous block, which on
+  // the heavier screens is a long task landing exactly on the frame the
+  // transition starts.
+  //
+  // One transition now, and it is the one that only ever touches the page: the
+  // sky underneath simply keeps running, which is what a sky does.
   const applyScreen = useCallback((s) => {
-    const apply = () => setScreen(s)
-    const afterScroll = () => requestAnimationFrame(() => window.scrollTo(0, 0))
-    const reduce =
-      typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!reduce && typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
-      try {
-        document.startViewTransition(() => flushSync(apply))
-        afterScroll()
-        return
-      } catch {
-        /* fall through to an instant swap */
-      }
-    }
-    apply()
-    afterScroll()
+    setScreen(s)
+    requestAnimationFrame(() => window.scrollTo(0, 0))
   }, [])
 
   // Navigate + record a history entry so the OS Back button walks the in-app
@@ -1749,11 +1755,6 @@ export default function App() {
     lastPlaced, match,
     demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     billingOn, planOn, holdState, hold, paidReturn, confirmPaid,
-    // the first light notice, handed to the landing so it can set it in flow.
-    // It used to be pinned to a viewport corner, which is where it collided
-    // with whatever the page had at that corner — the login chip on one screen,
-    // the colophon on another. A notice belongs on the page it is about.
-    trial: !demo ? { line: TRIAL_BANNER, deadline: TRIAL_DEADLINE } : null,
     posterHandle: route.poster || '',
     copyCode: route.copyCode || '',
     signinToken: route.signinToken || '',
@@ -1856,6 +1857,14 @@ export default function App() {
     [go],
   )
 
+  // The mark in the masthead, pressed: back to the title page. It is the one
+  // navigation in the product that is not in the index, because it is the one
+  // every reader already knows how to use without being told.
+  const goHome = useCallback(() => {
+    setIndexOpen(false)
+    go('landing')
+  }, [go])
+
   // The index is a column rather than a dialog — it does not trap focus and it
   // does not scrim the page — but it is still a thing that is open, and escape
   // is what closes an open thing.
@@ -1937,6 +1946,12 @@ export default function App() {
             C={C}
             open={indexOpen}
             onToggle={() => setIndexOpen((v) => !v)}
+            // the mark is the way back to the front page, on every screen that
+            // carries chrome. It closes the index on its way out, because
+            // leaving a column standing open over a page you just left is the
+            // navigation arguing with itself.
+            onHome={goHome}
+            home={screen === 'landing'}
             hidden={navMelt}
           />
           <IndexColumn
