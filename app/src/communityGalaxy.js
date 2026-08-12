@@ -55,6 +55,23 @@ const FRAME_PAD = 1.32
 // starts reading as grain over whatever is in front of it. It costs even less
 // here, where the pings are the content and the scenery only has to hold them.
 const DECOR = 0.75
+// How wide a glow is allowed to be drawn, in CSS pixels — the ceiling
+// engine.js `glowRadius` holds each of them under. Every point-light in both
+// skies rests at about three pixels by construction (the world size carries the
+// framing, and the framing carries the layout), so these are "as much as this
+// thing may swell on the approach and no further" rather than tuned numbers:
+// three times its own width for a resting light, and enough for the two events
+// that are meant to be seen from across the disk.
+const GLOW_PX = 10 // a halo resting on one of your pings
+const MOTE_PX = 9 // one ember of a gathering community
+const MOTE_FLARE_PX = 29 // ...and the breath one of them catches
+const SPARK_PX = 46 // the glisten a ping lands with
+// How close an ember may come to the lens before it dissolves, in world units.
+// Measured against the CAMERA (which sits at a fixed CAM = 2.7 however big the
+// disk gets — the framing moves the pixel scale, not the eye), never against
+// the disk: a grown community's radius can be most of that standoff, and a
+// dissolve solved from it would start eating the near half of a resting cloud.
+const MOTE_NEAR = 0.28
 
 // The star a ping is, in one place — so the CPU can size its disc exactly the
 // way stars.js's vertex shader does, which is what the opaque body pass needs
@@ -814,13 +831,20 @@ export class CommunityGalaxy extends SkyEngine {
         }
         const w = this._slotWorld(st)
         if (!w) continue
+        const scr = this.cam.project(w.x, w.y, w.z)
+        if (!scr) continue
         const bell = Math.sin(Math.PI * clamp(q, 0, 1))
         // A ping landing is a SPARK, not a flare. Sized against the disk it was
         // most of a screen-width of soft light, which reads as a blurred blob
         // drifting over the page rather than as a star arriving in its slot.
+        // …and against the CAMERA too, or a ping landing while the sky is
+        // dollied in is that same screen-width of light all over again.
         const R = Math.max(0.4, this.diskR || 1)
-        this.fx.world(w.x, w.y, w.z, (0.055 + bell * 0.14) * R * this.sizeScale, white, bell * 3.0 * this.dim, 2)
-        this.fx.world(w.x, w.y, w.z, (0.028 + bell * 0.07) * R * this.sizeScale, col, bell * 2.0 * this.dim, 0)
+        const S = this.sizeScale
+        const spark = this.glowRadius((0.055 + bell * 0.14) * R * S, scr.persp, SPARK_PX)
+        const heart = this.glowRadius((0.028 + bell * 0.07) * R * S, scr.persp, SPARK_PX * 0.5)
+        this.fx.world(w.x, w.y, w.z, spark, white, bell * 3.0 * this.dim, 2)
+        this.fx.world(w.x, w.y, w.z, heart, col, bell * 2.0 * this.dim, 0)
       }
     }
     // a meteor that landed is now an ordinary resident: put its light back into
@@ -876,7 +900,14 @@ export class CommunityGalaxy extends SkyEngine {
         // camera frames R * FRAME_PAD instead, so the world size has to carry
         // that ratio — and then one halo means one thing in both skies, at every
         // size of community.
-        this.fx.world(w.x, w.y, w.z, (0.019 + pulse * 0.003) * near * R * this.sizeScale, tcol, (0.34 + pulse * 0.1) * settle * fade * (1 - f * 0.9), 0)
+        // `near` answers the DIVE, and the dive is not the only thing that
+        // brings the camera in here: this sky has a free dolly. The pixel cap
+        // answers all of them at once.
+        const scr = this.cam.project(w.x, w.y, w.z)
+        if (scr) {
+          const halo = this.glowRadius((0.019 + pulse * 0.003) * near * R * this.sizeScale, scr.persp, GLOW_PX)
+          this.fx.world(w.x, w.y, w.z, halo, tcol, (0.34 + pulse * 0.1) * settle * fade * (1 - f * 0.9), 0)
+        }
       }
       if (hero.count >= hero.capacity) break
       const k = hero.count++
@@ -1056,12 +1087,29 @@ export class CommunityGalaxy extends SkyEngine {
       // them read as an out-of-focus photograph rather than as a sky. Now each
       // ember is a small halo with a hard bright heart inside it, which is what
       // a star at this distance actually looks like.
-      const halo = (0.017 + (m.hot ? 0.007 : 0)) * R * this.sizeScale
-      this.fx.world(x, m.y, z, halo, col, fb * tw * this.dim * 1.9, 0)
-      this.fx.world(x, m.y, z, halo * 0.3, white, fb * tw * this.dim * 6.5, 0)
+      //
+      // ...at the RESTING camera, which is the half of it this number could
+      // ever have fixed. A world size is a world size: the same three pixels
+      // become forty-five the moment anything brings the camera in — the
+      // community sky's own pinch-dolly, a double-tap dive, a held star view —
+      // and sixty-eight of them at once is not a sky with a mote field in it,
+      // it is a burst of soft white balls sitting on top of the page. So the
+      // ember is sized in PIXELS from here on (engine.js `glowRadius`): it may
+      // grow with the approach as far as a point of light is allowed to and
+      // then it stops, and the ones the camera is close enough to pass through
+      // dissolve rather than swelling across the glass.
+      const scr = this.cam.project(x, m.y, z, this._moteScr || (this._moteScr = {}))
+      if (!scr) continue
+      const near = this.glowFade(scr.zc, MOTE_NEAR)
+      const alive = fb * tw * this.dim * near
+      if (alive <= 0.002) continue
+      const halo = this.glowRadius((0.017 + (m.hot ? 0.007 : 0)) * R * this.sizeScale, scr.persp, MOTE_PX)
+      this.fx.world(x, m.y, z, halo, col, alive * 1.9, 0)
+      this.fx.world(x, m.y, z, halo * 0.3, white, alive * 6.5, 0)
       // the rare ember catching the light for a breath
       if (m.hot && Math.sin(m.tw * 0.5) > 0.985) {
-        this.fx.world(x, m.y, z, 0.055 * R * this.sizeScale, white, fb * 1.6, 2)
+        const flare = this.glowRadius(0.055 * R * this.sizeScale, scr.persp, MOTE_FLARE_PX)
+        this.fx.world(x, m.y, z, flare, white, fb * 1.6 * near, 2)
       }
     }
   }

@@ -197,6 +197,11 @@ const GAS_GAIN = 0.23
 // two places has to be one number.
 const BULGE_GAIN = 0.05
 const DISK_GAIN = 0.068
+// How wide the halo resting on one of your stars may be drawn, in CSS pixels —
+// the ceiling engine.js `glowRadius` holds it under, so a world-space sphere
+// can never be magnified into a wash of category colour over the frame. It
+// rests at about three pixels, so this is "three times itself and no more".
+const GLOW_PX = 10
 // How far the heart falls once the camera has committed to a dive. A bulge is
 // the densest light in the galaxy and the camera ends up a short way off it, so
 // this is the steepest of the three: most of the way on an ordinary flight, and
@@ -997,9 +1002,15 @@ export class GalaxyField extends SkyEngine {
       // …and it is a world-space sphere, so it grows with the framing exactly
       // the way a star's disc did. Scaled by the same compensation, so the mark
       // on a laptop is the mark on a phone rather than twice it.
-      if (fade > 0.05) {
+      // …and `near` is written against the DIVE's own progress, which is the one
+      // way in that this sky happens to have. It is not the only way a camera
+      // gets close to a world-space sphere — a chase, a held star, the sky's own
+      // navigation — so the width is held in PIXELS as well (engine.js
+      // `glowRadius`). Below the ceiling this changes nothing at all.
+      if (fade > 0.05 && scr) {
         const near = 1 - f * 0.94
-        this.fx.world(w.x, w.y, w.z, (0.020 + pulse * 0.003) * near * this.sizeScale, tcol, (0.34 + pulse * 0.10) * fade * (1 - f * 0.9), 0)
+        const halo = this.glowRadius((0.020 + pulse * 0.003) * near * this.sizeScale, scr.persp, GLOW_PX)
+        this.fx.world(w.x, w.y, w.z, halo, tcol, (0.34 + pulse * 0.10) * fade * (1 - f * 0.9), 0)
       }
     }
   }
