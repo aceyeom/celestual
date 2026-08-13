@@ -72,6 +72,12 @@ const SPARK_PX = 46 // the glisten a ping lands with
 // the disk: a grown community's radius can be most of that standoff, and a
 // dissolve solved from it would start eating the near half of a resting cloud.
 const MOTE_NEAR = 0.28
+// An ember's light, as a multiple of the sensor's clipping point (post.threshold
+// — where the bloom pass starts spreading light). The heart is over it, because
+// a star's core is a blown highlight and that is what earns it a glow; the halo
+// is under it, so the glow is the heart's and the ember never becomes a disc.
+const EMBER_HEART = 1.7
+const EMBER_HALO = 0.9
 
 // The star a ping is, in one place — so the CPU can size its disc exactly the
 // way stars.js's vertex shader does, which is what the opaque body pass needs
@@ -1115,8 +1121,27 @@ export class CommunityGalaxy extends SkyEngine {
       const alive = fb * tw * this.dim * near
       if (alive <= 0.002) continue
       const halo = this.glowRadius((0.017 + (m.hot ? 0.007 : 0)) * R * this.sizeScale, scr.persp, MOTE_PX)
-      this.fx.world(x, m.y, z, halo, col, alive * 1.9, 0)
-      this.fx.world(x, m.y, z, halo * 0.3, white, alive * 6.5, 0)
+      // ── and how bright an ember is allowed to be ────────────────────────────
+      // The size cap above is only half of what makes a point of light a point
+      // of light. These were written as flat numbers — 1.9 for the halo, 6.5 for
+      // the heart — and 6.5 is four and a half times the sensor's own clipping
+      // point (`post.threshold`, the brightness above which the bloom pass
+      // starts spreading light). A light that far over the clip does not read as
+      // a bright point at any size: every pixel within a wide radius of it is
+      // also over the clip, so it prints as a flat white disc, and then the
+      // bloom takes that disc and blooms it. Capping the sprite just makes a
+      // smaller thing that still does it — which is why sixty-eight of them
+      // still came out as a field of soft white balls on a wide screen.
+      //
+      // So the two are written against the clipping point instead of against
+      // nothing, and they say the thing that is actually true of a star: the
+      // HEART is a blown highlight (that is what a star's core is, and it is
+      // what earns the glow around it) and the halo is not. Tied to
+      // `post.threshold` rather than copied out of it, so the sensor and the
+      // things it photographs can never drift apart again.
+      const clip = this.post.threshold
+      this.fx.world(x, m.y, z, halo, col, alive * clip * EMBER_HALO, 0)
+      this.fx.world(x, m.y, z, halo * 0.3, white, alive * clip * EMBER_HEART, 0)
       // the rare ember catching the light for a breath
       if (m.hot && Math.sin(m.tw * 0.5) > 0.985) {
         const flare = this.glowRadius(0.055 * R * this.sizeScale, scr.persp, MOTE_FLARE_PX)

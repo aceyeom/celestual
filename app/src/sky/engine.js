@@ -39,6 +39,32 @@ export { CAM, FOCAL, TILT }
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 export const lerp = (a, b, t) => a + (b - a) * t
 
+// ── how far a blown highlight bleeds, in CSS pixels ──────────────────────────
+// The coarsest step the bloom chain samples at. The chain halves the frame per
+// level, so the widest level's texel is 2^levels DEVICE pixels — and the level
+// COUNT used to be a flat per-tier constant, which made the reach of the bloom
+// the one purely optical thing in this renderer still measured in the device's
+// pixels rather than the picture's. Measured on the four device classes this
+// product actually lands on, one isolated highlight and nothing else drawn:
+//
+//   desktop, tier 0, dpr 1     5 levels    32.0 css px
+//   desktop, tier 0, dpr 2     5 levels    27.0 css px
+//   phone,   tier 1, dpr 2     4 levels    22.4 css px
+//   weak,    tier 2, dpr 2     3 levels    19.1 css px
+//
+// So the same star wears a halo two-thirds wider on a laptop than on a phone,
+// and widest of all on the one configuration nobody tests — a Mac driving a
+// non-retina or scaled display, where dpr is 1 and the top tier still asks for
+// five levels. That is exactly the failure `sizeScale` exists to prevent for
+// stars ("one star, one size, on every screen"), arriving through the pass that
+// never got the rule: a field of bright points reads as a sky at 19 px of bleed
+// and as a row of soft white balls at 32.
+//
+// Solved from this number instead, so the bloom is one optical object
+// everywhere. Calibrated on the phone, which is the framing every other size in
+// here was tuned against and the one the design is judged on.
+const BLOOM_STEP_CSS = 9.4
+
 export function hexToRgb(hex) {
   const h = (hex || '#ffffff').replace('#', '')
   const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
@@ -306,7 +332,7 @@ export class SkyEngine {
     const gs = this.budget.gasScale
     if (!this.gasTarget) this.gasTarget = new Target(gl, this.caps, this.width * gs, this.height * gs)
     else this.gasTarget.resize(this.width * gs, this.height * gs)
-    this.post.resize(this.width, this.height, this.budget.bloomLevels)
+    this.post.resize(this.width, this.height, this._bloomLevels())
 
     this._layout()
     this._resized()
@@ -335,6 +361,15 @@ export class SkyEngine {
     // shrink them into invisibility.
     const pxRef = 390 * this.frameFit + 844 * 0.035
     this.sizeScale = clamp(pxRef / Math.max(px, 1e-3), 0.34, 1.08)
+  }
+
+  // How deep the bloom chain goes, solved from the reach it is supposed to have
+  // rather than declared per tier (see BLOOM_STEP_CSS). The tier still CAPS it,
+  // because a level is another pass over the frame and a device on the floor
+  // may not be able to afford the deepest one — but it can no longer widen it.
+  _bloomLevels() {
+    const want = Math.round(Math.log2(Math.max(2, BLOOM_STEP_CSS * this.dprEff)))
+    return clamp(want, 2, this.budget.bloomLevels)
   }
 
   // The galaxy grew (or shrank): re-solve the framing so it still fits, without
