@@ -1,0 +1,594 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CELESTUAL · /beta — THE WALL OF UNSENT LETTERS                          ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+
+   Every rule in this file is scoped under `.beta-root`. Nothing here may reach
+   production, and production's own stylesheet reaches in only where this file
+   deliberately overrides it (the cursor, the selection colour, the grain).
+
+   ── why it has to defend itself ────────────────────────────────────────────
+   app/src/styles.css paints a fixed, warm, soft-light grain over the whole
+   document at z-index 1, and puts a registration-mark cursor on html and body.
+   Both are correct for the Bindery and both are wrong here — this brand is
+   blue-black and its grain is neutral. So `.beta-root` takes z-index 2 with an
+   opaque ground: production's grain is then genuinely BEHIND the beta, not
+   blended into it, and no edit to the shared file was needed to get there.
+
+   ── the one departure from the reference sheets ────────────────────────────
+   The references carry a single warm accent. There is none here. A near-black
+   interface with one vermilion accent is the most recognisable machine-made
+   look on the web right now, and this brand cannot afford to look generated.
+   The accent is LUMINANCE instead: one soft radial bloom of warm white, at most
+   once per screen, on the object that matters most on that screen. Search this
+   file for a hex with a hue in it and you will find paper and bloom and nothing
+   else. That is the constraint. */
+
+.beta-root {
+  /* ── ground ── */
+  --void:        #07070A;   /* blue-black. never pure black: pure black is a
+                               screen that is off, and this is a room */
+  --void-raised: #0D0D12;   /* a sheet laid on the ground; sheets over sheets */
+  --hairline:    rgba(242, 240, 236, 0.08);
+
+  /* ── light ── */
+  --paper:       #E8E3D9;   /* THE only bright surface in the product */
+  --paper-edge:  #D6D0C4;
+  --paper-ink:   #16161A;
+  --paper-ink-2: #5A564E;
+
+  /* ── type on void ── */
+  --chalk:       #F2F0EC;   /* primary */
+  --ash:         #8C8C95;   /* secondary — meaningful text only */
+  --ash-dim:     #55555E;   /* decorative and disabled ONLY. never body copy */
+
+  /* ── the bloom: the entire accent system ── */
+  --bloom:       #FFF3E2;
+  --bloom-glow:  0 0 80px 24px rgba(255, 243, 226, 0.10);
+
+  /* ── structure ── */
+  --r-card: 4px;            /* paper has a knife edge, not a rounded one */
+  --r-field: 0px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── faces ──
+     Fallbacks are chosen for metric proximity, not for taste: the swap has to
+     be invisible, so the fallback for a Didone is another Didone and the
+     fallback for a Garamond is an old-style with the same x-height. */
+  --f-display:  'Bodoni Moda', 'Didot', 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --f-letter:   'EB Garamond', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --f-utility:  'Inter Tight', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-identity: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  position: relative;
+  z-index: 2;                       /* over production's grain, not under it */
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--void);
+  color: var(--chalk);
+  font-family: var(--f-utility);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/* production's cursor is a printer's registration mark. It belongs to the
+   Bindery; it is not this brand's hand. */
+.beta-root, .beta-root * { cursor: auto; }
+.beta-root a, .beta-root button, .beta-root [role='button'], .beta-root label { cursor: pointer; }
+.beta-root input, .beta-root textarea { cursor: text; }
+.beta-root ::selection { background: rgba(242, 240, 236, 0.16); color: var(--chalk); }
+
+/* ── the grain ───────────────────────────────────────────────────────────────
+   Load-bearing, not decoration. Without it the black is a dead screen; with it
+   the black is a room with the light off. Neutral — desaturated turbulence, no
+   warm gradient over it — because the warmth in this system is rationed to the
+   bloom and there is a limited amount of it.
+
+   No mix-blend-mode. styles.css spends three paragraphs explaining why a
+   blending sheet over a live canvas takes every animation off the compositor's
+   fast path; the same is true over a field of sixty drifting points, and this
+   build has a Lighthouse floor to clear. Plain opacity, one promoted layer, the
+   compositor caches it once and never looks at it again. */
+.beta-root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── the column ──────────────────────────────────────────────────────────────
+   440px, centred, and the void bleeds to the edges of the viewport on desktop.
+   This deliberately refuses to fill a desktop screen. A product encountered
+   almost entirely on a phone, after scanning a paper flyer in the dark, should
+   not stretch itself into a dashboard to prove it can. The empty field around
+   the column IS the design. */
+.beta-col {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 0 24px 56px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 359px) { .beta-col { padding-left: 18px; padding-right: 18px; } }
+
+/* content sits low. the top third is empty void on nearly every screen, and
+   the primary action anchors near the bottom. nothing is vertically centred
+   except the letter card. */
+.beta-lede   { flex: 0 0 auto; height: 34vh; min-height: 128px; }
+.beta-lede-s { flex: 0 0 auto; height: 24vh; min-height: 92px; }
+.beta-push   { flex: 1 1 auto; min-height: 24px; }
+
+/* ── type ────────────────────────────────────────────────────────────────────
+   Four roles, and the fourth one is structural rather than decorative: every
+   @handle, code and count is monospaced, because a handle is an IDENTIFIER and
+   monospace is how a person reads one. It is the only device in the build that
+   encodes something true about what it is setting. */
+/* Fluid rather than stepped. A Didone at 44px needs about 400px to hold
+   "Someone here wrote", and the column has 342px at 390 — so a fixed 44 with a
+   hard break in the markup produced a break INSIDE the intended line and left
+   "wrote" alone on a line of its own. clamp() keeps 44px wherever it fits and
+   gives the type back to the browser where it does not.
+
+   text-wrap: balance does the rest, and it is the reason there are no <br>s in
+   any headline in this build: a manual break is a guess about one viewport,
+   and this one is read at every width between a small phone and a desktop. */
+.beta-display {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(34px, 11.3vw, 44px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--chalk);
+}
+.beta-display.is-38 { font-size: clamp(30px, 9.8vw, 38px); }
+.beta-display.is-34 { font-size: clamp(28px, 8.7vw, 34px); }
+/* italic is reserved for the single most vulnerable line on a screen, and there
+   is never more than one of those */
+.beta-display.is-vulnerable { font-style: italic; }
+
+
+.beta-eyebrow {
+  font-family: var(--f-identity);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  /* --ash-dim, which the reference sheets put here, does not clear 4.5:1 on
+     this ground — it lands near 2.7:1. The token's own rule in this file is
+     "decorative and disabled only, never body copy", and an eyebrow is copy:
+     it says which campus and which year, which is the whole frame for what
+     the screen is asking. So eyebrows sit at --ash, and --ash-dim is left to
+     the things it was defined for: the arrow glyph, the painted '@', the
+     ornament strokes, and a disabled control. Hierarchy here is carried by
+     size and 0.18em of tracking, which is the more typographic answer anyway. */
+  color: var(--ash);
+}
+.beta-help {
+  font-family: var(--f-utility);
+  font-size: 15px;
+  line-height: 1.5;
+  /* pretty, not balance: these are sentences of two or three lines where the
+     job is only to keep a single word off the last line. balance would even
+     the measure and cost the reading rhythm. */
+  text-wrap: pretty;
+  color: var(--ash);
+}
+.beta-help.is-13 { font-size: 13px; }
+/* 'dim' is a step down in SIZE and in weight of attention, not out of
+   legibility — see the note on .beta-link.is-quiet. The token below --ash is
+   for glyphs, and this is a sentence. */
+.beta-help.is-dim { color: var(--ash); }
+.beta-mono { font-family: var(--f-identity); font-size: 14px; letter-spacing: 0; }
+.beta-letterbody { font-family: var(--f-letter); font-size: 17px; line-height: 1.65; }
+
+/* ── the arrow link ──────────────────────────────────────────────────────────
+   Navigation is typeset, not chromed: an arrow and a word, from the concert
+   poster. No fill, no pill, no border, no shadow. The arrow is its own span so
+   it can move without dragging the label with it. */
+.beta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--f-utility);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--chalk);
+  text-align: left;
+  text-decoration: none;
+  transition: color 300ms var(--ease), opacity 300ms var(--ease);
+}
+.beta-link .beta-arrow {
+  display: inline-block;
+  color: var(--ash-dim);
+  transition: transform 300ms var(--ease), color 300ms var(--ease);
+}
+.beta-link:hover, .beta-link:focus-visible { color: var(--chalk); }
+.beta-link:hover .beta-arrow,
+.beta-link:focus-visible .beta-arrow { transform: translateX(4px); color: var(--ash); }
+.beta-link.is-secondary { color: var(--ash); }
+.beta-link.is-secondary:hover, .beta-link.is-secondary:focus-visible { color: var(--chalk); }
+/* No opacity step here. --ash on --void is 5.99:1; the same colour at 0.82
+   composites to 4.34:1, which is under the floor — a "slightly quieter" that
+   costs legibility is not quieter, it is just worse. The step down to quiet is
+   carried by size and by the fact that it is the second link on the screen. */
+.beta-link.is-quiet { color: var(--ash); }
+.beta-link.is-quiet:hover, .beta-link.is-quiet:focus-visible { color: var(--chalk); }
+/* a link that brightens on a cue rather than on a pointer (see /beta/nothing).
+   It starts at --ash rather than --ash-dim: the lift to --chalk is still the
+   whole gesture, and a link nobody can read for two seconds is not a quieter
+   link, it is a broken one. */
+.beta-link.is-waking { color: var(--ash); transition: color 1400ms var(--ease); }
+.beta-link.is-waking.is-awake { color: var(--chalk); }
+.beta-link[disabled], .beta-link[aria-disabled='true'] { color: var(--ash-dim); pointer-events: none; }
+.beta-link.is-mono { font-family: var(--f-identity); font-size: 11px; letter-spacing: 0.1em; }
+
+/* ── focus ───────────────────────────────────────────────────────────────────
+   Never removed, never replaced with nothing. 1px chalk at 2px offset, on
+   everything, everywhere. */
+.beta-root :focus-visible {
+  outline: 1px solid var(--chalk);
+  outline-offset: 2px;
+}
+
+/* ── the bare baseline field ─────────────────────────────────────────────────
+   No box, no fill, no radius. A rule to write on, which is what a line on a
+   page is. The '@' is a prefix painted beside the field and is never part of
+   the value — a person should not be able to delete it, and the stored handle
+   should never contain it. */
+.beta-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 10px;
+  transition: border-color 400ms var(--ease);
+}
+.beta-field:focus-within { border-bottom-color: rgba(242, 240, 236, 0.28); }
+.beta-field .beta-at {
+  font-family: var(--f-identity);
+  font-size: 22px;
+  color: var(--ash-dim);
+  user-select: none;
+}
+.beta-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-field);
+  background: none;
+  font-family: var(--f-identity);
+  font-size: 22px;
+  color: var(--chalk);
+  caret-color: var(--chalk);
+}
+.beta-field input:focus { outline: none; }
+.beta-field input::placeholder { color: var(--ash); opacity: 1; }
+.beta-field.is-locked { opacity: 0.5; }
+.beta-field:focus-within { outline: none; }
+/* the field owns the focus ring on behalf of its input, so the ring frames the
+   whole rule instead of a bare text run */
+.beta-field:has(input:focus-visible) { outline: 1px solid var(--chalk); outline-offset: 6px; }
+
+.beta-area {
+  width: 100%;
+  min-height: 168px;
+  padding: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-field);
+  background: var(--void-raised);
+  font-family: var(--f-letter);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--chalk);
+  caret-color: var(--chalk);
+  resize: none;
+}
+.beta-area::placeholder { color: var(--ash); opacity: 1; }
+.beta-area:focus { outline: none; border-color: rgba(242, 240, 236, 0.2); }
+.beta-area:focus-visible { outline: 1px solid var(--chalk); outline-offset: 2px; }
+
+/* ── rules ───────────────────────────────────────────────────────────────────
+   Full-bleed or not at all. The only partial rule in the system is the active
+   nav underline from the reference, and this build has no nav. */
+.beta-rule { height: 1px; background: var(--hairline); border: 0; margin: 0; }
+
+/* the composer's progress: three segments, filled left to right */
+.beta-steps { display: flex; gap: 4px; height: 4px; }
+.beta-steps > i {
+  flex: 1 1 0;
+  background: var(--hairline);
+  transition: background 500ms var(--ease);
+}
+.beta-steps > i.is-done { background: var(--chalk); }
+
+/* ── the sky ─────────────────────────────────────────────────────────────────
+   The signature. A fixed field of faint points behind everything, where each
+   point is one live unsent letter — so a sparse sky is HONEST rather than
+   broken. That is the whole reason it is a star field and not a list: a sparse
+   list reads as a dead product, a sparse sky reads as a quiet night.
+
+   Everything animated here is a transform on a promoted layer. Nothing touches
+   top/left, nothing touches width/height, nothing repaints. */
+.beta-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 1400ms var(--ease);
+}
+.beta-sky .beta-field-inner {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0) scale(var(--pz, 1));
+  transition: transform 900ms var(--ease);
+  will-change: transform;
+}
+.beta-sky i {
+  position: absolute;
+  display: block;
+  width: var(--s, 1px);
+  height: var(--s, 1px);
+  border-radius: 50%;
+  background: var(--chalk);
+  opacity: var(--o, 0.3);
+  animation: betaDrift var(--dur, 120s) var(--delay, 0s) infinite alternate ease-in-out;
+  will-change: transform;
+}
+.beta-sky i.is-bright {
+  background: var(--bloom);
+  box-shadow: 0 0 2px 1px rgba(255, 243, 226, 0.5);
+}
+/* the point that is about to become a letter, and the one that came back from
+   being one — the only point in the field that is allowed to outshine the rest */
+.beta-sky i.is-yours {
+  background: var(--bloom);
+  opacity: 0.95;
+  box-shadow: 0 0 10px 3px rgba(255, 243, 226, 0.4);
+  animation: none;
+}
+
+@keyframes betaDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(var(--dx, 2px), var(--dy, -2px), 0); }
+}
+
+/* the four states the field moves through, and the emotional job of each */
+.beta-sky[data-mode='ambient'] { opacity: 1; }
+.beta-sky[data-mode='dim']     { opacity: 0.4; }        /* a letter has the light */
+.beta-sky[data-mode='forward'] { opacity: 1; }
+/* NOTHING YET. the field stops moving completely. that stillness IS the empty
+   state, and it does more work than any illustration would. */
+.beta-sky[data-mode='still'] i { animation-play-state: paused; }
+.beta-sky[data-mode='still']   { opacity: 0.75; }
+/* the search's held breath: drift decelerates to a stop over 900ms */
+.beta-sky[data-mode='slowing'] i { animation-duration: calc(var(--dur, 120s) * 9); }
+.beta-sky[data-mode='forward'] .beta-field-inner { --pz: 1.35; }
+
+/* ── the point becoming the letter ───────────────────────────────────────────
+   One point detaches from the field and travels to the centre, and the paper
+   card grows out of where it lands. The travel and the card entrance are two
+   animations on two elements with one continuous read, which is cheaper and
+   steadier than trying to morph one element into the other. */
+.beta-comet {
+  position: fixed;
+  z-index: 3;
+  left: 0; top: 0;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--bloom);
+  box-shadow: 0 0 12px 4px rgba(255, 243, 226, 0.35);
+  pointer-events: none;
+  animation: betaTravel 700ms var(--ease) both;
+}
+@keyframes betaTravel {
+  from { transform: translate3d(var(--fx), var(--fy), 0) scale(1); opacity: 0.9; }
+  to   { transform: translate3d(var(--tx), var(--ty), 0) scale(2.4); opacity: 0; }
+}
+
+/* ── paper ───────────────────────────────────────────────────────────────────
+   The only bright object on its screen, and on the screens where it appears it
+   is the ONLY bright object anywhere. Elevation is a lighter ground plus a
+   hairline edge on two sides — implied thickness — never a drop shadow. */
+.beta-paper {
+  position: relative;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-radius: var(--r-card);
+  padding: 22px 22px 18px;
+  border-right: 1px solid var(--paper-edge);
+  border-bottom: 1px solid var(--paper-edge);
+}
+.beta-paper .beta-for {
+  font-family: var(--f-identity);
+  font-size: 13px;
+  color: var(--paper-ink-2);
+}
+.beta-paper .beta-paper-rule { height: 1px; background: rgba(22, 22, 26, 0.14); margin: 12px 0 18px; }
+.beta-paper p {
+  font-family: var(--f-letter);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--paper-ink);
+}
+.beta-paper .beta-sealed-label {
+  font-family: var(--f-identity);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--paper-ink-2);
+}
+.beta-paper.is-entering { animation: betaCardIn 800ms var(--ease) both; }
+@keyframes betaCardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); filter: blur(10px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+/* ── the seal ────────────────────────────────────────────────────────────────
+   The one blurred element in the build that is not a scrim or an entrance.
+   The blur here is a RENDER of the seal, and the string under it is not the
+   real one: the real one is never sent to this client until the author says
+   yes. A blur you can lift in devtools is not a seal, it is a dare. */
+.beta-seal {
+  filter: blur(7px) saturate(0);
+  font-family: var(--f-letter);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--paper-ink);
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  margin-bottom: 14px;
+}
+.beta-seal.is-lifting { transition: filter 900ms var(--ease); filter: blur(0) saturate(1); }
+
+/* ── the bloom ───────────────────────────────────────────────────────────────
+   The entire accent system: one soft radial of warm white, at most once per
+   screen, behind the object that matters most on that screen. Candlelight, not
+   an LED, and never a hue. */
+.beta-bloom {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260px;
+  height: 260px;
+  margin: -130px 0 0 -130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 243, 226, 0.22) 0%, rgba(255, 243, 226, 0.07) 42%, transparent 70%);
+  pointer-events: none;
+  opacity: var(--bloom-o, 0.14);
+}
+.beta-bloom.is-breathing { animation: betaBreathe 2200ms ease-in-out infinite alternate; }
+@keyframes betaBreathe {
+  from { transform: scale(0.94); }
+  to   { transform: scale(1); }
+}
+
+/* ── the cut ─────────────────────────────────────────────────────────────────
+   Route transitions cut to black. 180ms down, 420ms up, no slide and no shared
+   element. This is a film company; the transition language is a cut. */
+.beta-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--void);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 420ms linear;
+}
+.beta-veil.is-down { opacity: 1; transition-duration: 180ms; }
+
+/* ── the load sequence ───────────────────────────────────────────────────────
+   Orchestrated once per session on the Threshold and never again. It is the
+   only long animation in the build, and it buys the atmosphere for every screen
+   after it. */
+@keyframes betaRise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes betaFade { from { opacity: 0; } to { opacity: 1; } }
+.beta-rise { animation: betaRise 900ms var(--ease) both; animation-delay: var(--in, 0ms); }
+.beta-in   { animation: betaFade 700ms linear both; animation-delay: var(--in, 0ms); }
+
+/* ── the code cells ──────────────────────────────────────────────────────────
+   Six characters, each on its own hairline. On success the hairlines brighten
+   in sequence at a 60ms stagger, which is the interface counting them for you. */
+.beta-code { display: flex; gap: 10px; }
+.beta-code input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 0;
+  background: none;
+  font-family: var(--f-identity);
+  font-size: 22px;
+  text-align: center;
+  color: var(--chalk);
+  caret-color: var(--chalk);
+  transition: border-color 260ms var(--ease);
+}
+.beta-code input:focus { outline: none; border-bottom-color: rgba(242, 240, 236, 0.3); }
+.beta-code input:focus-visible { outline: 1px solid var(--chalk); outline-offset: 2px; }
+.beta-code.is-ok input { border-bottom-color: var(--chalk); transition-delay: var(--stagger, 0ms); }
+
+/* ── ornament ────────────────────────────────────────────────────────────────
+   Four-point star: max one per screen, as a section mark, never a sprinkle.
+   Concentric orbits: once in the entire flow, on /beta/sky.
+   Halftone sphere: once, on the Threshold, small, low-right, at 25%. */
+.beta-ornament { color: var(--ash-dim); }
+.beta-halftone { position: absolute; right: 8px; opacity: 0.25; pointer-events: none; }
+.beta-orbits { animation: betaSpin 220s linear infinite; transform-origin: 50% 50%; }
+@keyframes betaSpin { to { transform: rotate(360deg); } }
+
+/* the searching readout: LOOKING → LOOKING. → LOOKING.. at 400ms. the wait is
+   doing emotional work; it is not a spinner and it is never optimised away */
+.beta-looking {
+  font-family: var(--f-identity);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+/* the counter appears only past 200 characters, because a counter visible from
+   the first keystroke is a word limit and this is a letter */
+.beta-count { font-family: var(--f-identity); font-size: 11px; color: var(--ash); }
+.beta-count.is-over { color: var(--chalk); }
+
+/* /beta/app — the ping composer's photograph frame. A frame, not an uploader:
+   the demo does not need the bytes to make the point. */
+.beta-frame {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 1px solid var(--hairline);
+  background: var(--void-raised);
+  display: grid;
+  place-items: center;
+}
+
+/* two cards turning face up at once */
+.beta-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.beta-pair .beta-paper { padding: 16px 14px 14px; }
+.beta-pair .beta-paper p { font-size: 14px; }
+.beta-turn { animation: betaFade 900ms linear both; }
+
+/* ── reduced motion ──────────────────────────────────────────────────────────
+   styles.css already flattens animation and transition durations globally, and
+   this build inherits that. What it cannot do is stop a field of points that is
+   animated by CSS from being animated at all, or stop the parallax that is
+   driven from JS — so the field is pinned static here and the parallax is
+   switched off at its source in Sky.jsx. Nothing drifts, nothing breathes,
+   nothing has parallax, and every transition collapses to a short opacity
+   fade. */
+@media (prefers-reduced-motion: reduce) {
+  .beta-root *, .beta-root *::before, .beta-root *::after {
+    animation: none !important;
+    transition-duration: 120ms !important;
+    transition-property: opacity !important;
+  }
+  .beta-root .beta-rise, .beta-root .beta-in { opacity: 1 !important; transform: none !important; }
+  .beta-sky i { animation: none !important; transform: none !important; }
+  .beta-sky .beta-field-inner { transform: none !important; }
+  .beta-paper.is-entering { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .beta-comet { display: none !important; }
+  .beta-bloom.is-breathing { transform: none !important; }
+}
