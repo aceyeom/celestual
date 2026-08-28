@@ -1,0 +1,977 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CELESTUAL · THE WALL — THE SYSTEM                                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+
+   Every rule in this file is scoped under `.wl-root`. Nothing here reaches
+   production, and production's stylesheet reaches in only where this file
+   deliberately overrides it (the cursor, the selection, the grain).
+
+   ── why it has to defend itself ────────────────────────────────────────────
+   app/src/styles.css paints a fixed, warm, soft-light grain over the whole
+   document at z-index 1 and puts a registration-mark cursor on html and body.
+   Both are correct for the Bindery and both are wrong here — this brand is
+   blue-black and its grain is neutral. So `.wl-root` takes z-index 2 over an
+   opaque ground: production's grain ends up genuinely BEHIND this tree rather
+   than blended into it, and no edit to the shared file was needed to get there.
+
+   ── the system, and where each part of it comes from ───────────────────────
+   Four reference sheets, and this file is the reading of them:
+
+     the poster       a Didone set enormous with a terminal period; a
+                      letterspaced monospace under it; nav as an arrow and a
+                      word; a four-point sparkle; a dotted sphere sunk in a
+                      corner; step dots along the bottom; grain over all of it
+     the journal      a cream card with a generous radius, a dateline across
+                      the top under a hairline, old-style serif beneath
+     the modal        one enormous soft blurred mass, a light capsule, and
+                      everything behind it dimmed rather than replaced
+     the journey      a ring system bleeding off both edges; the date set
+                      enormous; ONE saturated capsule; rows of face, name,
+                      meta and a capsule; sections; a gradient off the bottom
+
+   ── the accent, and the ration on it ───────────────────────────────────────
+   Two bright things exist and both are rationed to once per screen.
+
+   BLOOM is the first, and it is a luminance rather than a colour: warm white
+   pushed through a heavy blur. It goes on the single object that matters most
+   on the screen it is on and nowhere else.
+
+   EMBER is the second, and it is the one saturated colour in the build. The
+   journey sheet spends its entire colour budget on one capsule and the rest of
+   that screen is greyscale; this file holds to the same rule literally — search
+   it for --ember and there are four uses, one of which is a 4px dot. A
+   near-black interface with a warm accent everywhere is the most recognisable
+   machine-made look on the web, and this brand cannot afford to look generated.
+   Rationing it is the difference. */
+
+.wl-root {
+  /* ── ground ──
+     Never pure black. Pure black is a screen that is off; this is a room. */
+  --void:        #08070B;
+  --void-1:      #0D0C12;   /* a sheet laid on the ground */
+  --void-2:      #131219;   /* a sheet laid on that */
+  --void-3:      #1A1922;   /* a row, pressed */
+  --hair:        rgba(244, 241, 234, 0.09);
+  --hair-soft:   rgba(244, 241, 234, 0.05);
+
+  /* ── light ── */
+  --chalk:       #F4F1EA;   /* primary type */
+  --ash:         #9C978E;   /* secondary — meaningful text only */
+  --ash-dim:     #605C55;   /* decorative and disabled ONLY, never body copy */
+
+  /* ── the paper ──
+     THE only bright surface in the product. */
+  --paper:       #E9E4D8;
+  --paper-hi:    #F3EFE5;
+  --paper-edge:  #CFC7B6;
+  --paper-ink:   #17150F;
+  --paper-ink-2: #6A6357;
+
+  /* ── the two accents, both rationed ── */
+  --glow:        #FFF4E4;
+  --ember:       #F2661E;
+  --ember-soft:  rgba(242, 102, 30, 0.14);
+
+  /* ── structure ──
+     The journal's card is generously rounded and the poster has no boxes at
+     all, so there is exactly one radius family here and it is soft. */
+  --r-card:  18px;
+  --r-sheet: 26px;
+  --r-pill:  999px;
+  --r-field: 12px;
+
+  --ease:     cubic-bezier(0.16, 1, 0.30, 1);
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* ── the faces ──
+     Fallbacks are chosen for metric proximity, not for taste: the swap has to
+     be invisible, so a Didone falls back to a Didone and a Garamond falls back
+     to an old-style with the same x-height. */
+  --f-display:  'Bodoni Moda', Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --f-letter:   'EB Garamond', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --f-util:     'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-id:       'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--void);
+  color: var(--chalk);
+  font-family: var(--f-util);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/* production's cursor is a printer's registration mark. It belongs to the
+   Bindery; it is not this brand's hand. */
+.wl-root, .wl-root * { cursor: auto; }
+.wl-root a, .wl-root button, .wl-root [role='button'], .wl-root label { cursor: pointer; }
+.wl-root input, .wl-root textarea { cursor: text; }
+.wl-root button:disabled { cursor: default; }
+.wl-root ::selection { background: rgba(244, 241, 234, 0.17); color: var(--chalk); }
+.wl-root :focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
+.wl-root * { box-sizing: border-box; }
+.wl-root button { font: inherit; color: inherit; background: none; border: 0; }
+
+.wl-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ═══ THE GROUND ═══════════════════════════════════════════════════════════
+   Three fixed layers under everything, in this order and never reordered:
+   the halo, the field, the grain. */
+.wl-ground { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* The poster's light source: one enormous off-centre warm halo, low enough in
+   opacity that it is felt rather than seen. It is what stops the void reading
+   as #000 with things on it. */
+.wl-halo {
+  position: absolute; inset: -20% -30% auto -30%; height: 105%;
+  background:
+    radial-gradient(58% 44% at 62% 18%, rgba(255, 244, 228, 0.075) 0%, rgba(255, 244, 228, 0) 68%),
+    radial-gradient(46% 36% at 18% 76%, rgba(190, 205, 255, 0.045) 0%, rgba(190, 205, 255, 0) 70%);
+}
+
+.wl-field {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 1; transition: opacity 1600ms var(--ease);
+}
+.wl-field.is-hidden { opacity: 0; }
+
+/* Load-bearing, not decoration: without it the black is a dead screen, with it
+   the black is a room with the light off. Neutral, because the warmth in this
+   system is rationed and there is a limited amount of it.
+
+   No mix-blend-mode. A blending sheet over a live canvas takes every animation
+   off the compositor's fast path, and there is a canvas of ninety drifting
+   points directly underneath this one. Plain opacity, one promoted layer, the
+   compositor caches it once and never looks at it again. */
+.wl-grain {
+  position: absolute; inset: 0; opacity: 0.036;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.84' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 190px 190px;
+}
+
+/* ═══ THE COLUMN ═══════════════════════════════════════════════════════════
+   460px, centred, and the void bleeds to the edges of the viewport on a
+   desktop. This deliberately refuses to fill a large screen: a surface met
+   almost entirely on a phone, after picking a card up off a table, should not
+   stretch itself into a dashboard to prove that it can. The empty field around
+   the column IS the design. */
+.wl-main { position: relative; z-index: 4; transition: opacity 260ms var(--ease), filter 260ms var(--ease); }
+.wl-main.is-under { opacity: 0.30; filter: blur(2px) saturate(0.6); pointer-events: none; }
+
+.wl-page {
+  position: relative;
+  width: 100%; max-width: 460px; margin: 0 auto;
+  padding: 0 22px 40px;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+}
+@media (max-width: 359px) {
+  .wl-page { padding-left: 16px; padding-right: 16px; }
+  .wl-mast-ball { width: 74px; height: 74px; }
+}
+
+.wl-push   { flex: 1 1 auto; min-height: 20px; }
+.wl-gap    { height: 18px; flex: 0 0 auto; }
+.wl-gap-s  { height: 10px; flex: 0 0 auto; }
+
+/* the cut — down to the void, swap underneath, back up. no slide. */
+.wl-cut {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  background: var(--void); opacity: 0;
+  transition: opacity 380ms var(--ease);
+}
+.wl-cut.is-down { opacity: 1; transition-duration: 160ms; }
+
+/* ═══ TYPE ═════════════════════════════════════════════════════════════════
+   Four roles, and the fourth is structural rather than decorative: every
+   handle, count, date and code is monospaced, because those are IDENTIFIERS
+   and monospace is how a person reads one. It is the only device in the build
+   that encodes something true about what it is setting.
+
+   Sizes are fluid rather than stepped. A Didone at 46px needs about 400px to
+   hold "Someone here wrote", and the column has 350px at 390 — so a fixed size
+   with a hard break in the markup produced a break INSIDE the intended line.
+   clamp() keeps the large size wherever it fits and gives the type back to the
+   browser where it does not. */
+.wl-display {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  line-height: 1.03;
+  color: var(--chalk);
+  text-wrap: balance;
+}
+.wl-display.is-xl { font-size: clamp(34px, 10.4vw, 46px); }
+.wl-display.is-l  { font-size: clamp(30px, 8.8vw, 39px); }
+.wl-display.is-m  { font-size: clamp(26px, 7.4vw, 33px); }
+.wl-display.is-s  { font-size: clamp(21px, 5.8vw, 26px); line-height: 1.14; }
+
+.wl-label {
+  font-family: var(--f-id);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ash);
+  display: flex; align-items: center; gap: 6px;
+}
+.wl-label.is-dim { color: var(--ash-dim); letter-spacing: 0.13em; }
+/* a handle inside a label keeps its case. Handles are lower-case identifiers;
+   uppercasing one turns it into a different string from the one on the wall. */
+.wl-label .wl-h { text-transform: none; letter-spacing: 0.03em; }
+.wl-label.is-ink { color: var(--paper-ink-2); }
+
+.wl-prose {
+  margin: 0;
+  font-family: var(--f-letter);
+  font-size: 16.5px;
+  line-height: 1.52;
+  color: var(--paper-ink);
+  letter-spacing: 0.002em;
+}
+
+.wl-rule { height: 1px; background: var(--hair); margin: 22px 0; flex: 0 0 auto; }
+.wl-rule.is-soft { background: var(--hair-soft); }
+
+/* ═══ THE ARROW LINK ═══════════════════════════════════════════════════════
+   The poster's nav. The arrow travels on hover and the word does not, so the
+   word is what you read and the arrow is what you follow. */
+.wl-arrow {
+  display: inline-flex; align-items: baseline; gap: 11px;
+  font-family: var(--f-display);
+  font-size: 21px; line-height: 1.3;
+  color: var(--chalk);
+  padding: 5px 0;
+  transition: color 200ms var(--ease), opacity 200ms var(--ease);
+  text-decoration: none;
+}
+.wl-arrow.is-s { font-size: 16px; gap: 8px; }
+.wl-arrow.is-quiet { color: var(--ash); }
+.wl-arrow-g {
+  color: var(--ash-dim); font-family: var(--f-util);
+  transition: transform 280ms var(--ease), color 200ms var(--ease);
+  will-change: transform;
+}
+.wl-arrow-t { border-bottom: 1px solid transparent; transition: border-color 200ms var(--ease); }
+.wl-arrow:hover { color: var(--chalk); }
+.wl-arrow:hover .wl-arrow-g { transform: translateX(5px); color: var(--chalk); }
+.wl-arrow:hover .wl-arrow-t { border-bottom-color: var(--hair); }
+.wl-arrow:disabled { color: var(--ash-dim); }
+.wl-arrow:disabled .wl-arrow-g { color: var(--ash-dim); }
+
+/* ═══ THE PILL ═════════════════════════════════════════════════════════════
+   Three roles and no fourth. */
+.wl-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 0 20px;
+  border-radius: var(--r-pill);
+  font-family: var(--f-util);
+  font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  white-space: nowrap;
+  transition: transform 220ms var(--ease), background 220ms var(--ease),
+              border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+}
+.wl-pill:active:not(:disabled) { transform: scale(0.975); }
+
+.wl-pill.is-light { background: var(--chalk); color: #14131A; }
+.wl-pill.is-light:hover:not(:disabled) { background: #FFFDF8; }
+.wl-pill.is-light:disabled { background: rgba(244, 241, 234, 0.13); color: var(--ash-dim); }
+
+.wl-pill.is-ghost {
+  border: 1px solid var(--hair); color: var(--ash);
+  min-height: 32px; padding: 0 13px; font-size: 12px;
+}
+.wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
+
+/* the one saturated object */
+.wl-pill.is-ember {
+  background: var(--ember); color: #1A0B03;
+  min-height: 32px; padding: 0 16px; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* a size, declared after the roles so it wins over whatever min-height and
+   font-size the role set */
+.wl-pill.is-wide { width: 100%; min-height: 50px; padding: 0 22px; font-size: 15px; }
+
+/* the small solid triangle the reference puts inside its row capsules */
+.wl-play {
+  width: 0; height: 0; flex: 0 0 auto;
+  border-left: 6px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  opacity: 0.8;
+}
+
+/* ═══ ICONS ════════════════════════════════════════════════════════════════ */
+.wl-icon { display: block; }
+.wl-iconbtn {
+  display: grid; place-items: center; padding: 0;
+  width: 38px; height: 38px; border-radius: var(--r-pill);
+  color: var(--ash);
+  border: 1px solid transparent;
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease);
+}
+.wl-iconbtn:hover { color: var(--chalk); border-color: var(--hair); background: rgba(244,241,234,0.03); }
+
+/* ═══ THE PAPER ════════════════════════════════════════════════════════════
+   The journal's card. A knife edge would be the Bindery's; this reference's
+   card is generously rounded, so this one is too.
+
+   The grain on it is not the page's grain. Paper scatters light and a screen
+   does not, so this one is warmer, coarser and about four times stronger —
+   without it the card is a beige rectangle, and with it the card is a
+   material. */
+.wl-paper {
+  position: relative;
+  border-radius: var(--r-card);
+  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, #E2DCCE 100%);
+  color: var(--paper-ink);
+  padding: 20px 20px 18px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 26px 60px -22px rgba(0, 0, 0, 0.85),
+    0 4px 14px -6px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.wl-paper.is-empty { background: linear-gradient(168deg, #DED8CA 0%, #D6D0C1 100%); }
+.wl-paper.is-theirs { background: linear-gradient(168deg, var(--paper-hi) 0%, #E4DFD2 40%, #DAD3C3 100%); }
+
+.wl-paper-grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.16; border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.15'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  mix-blend-mode: multiply;
+}
+.wl-paper > *:not(.wl-paper-grain) { position: relative; }
+
+.wl-paper-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase;
+  color: var(--paper-ink-2);
+  padding-bottom: 11px; margin-bottom: 14px;
+  border-bottom: 1px solid rgba(23, 21, 15, 0.16);
+}
+.wl-paper-title {
+  margin: 0 0 11px;
+  font-family: var(--f-display); font-weight: 400; font-size: 22px; line-height: 1.1;
+  letter-spacing: -0.01em; color: var(--paper-ink);
+}
+.wl-paper-body { min-height: 20px; }
+.wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(23, 21, 15, 0.16); }
+
+/* the @handle set as a card's title, in the identity face */
+.wl-letter-to { font-family: var(--f-id); font-size: 18px; letter-spacing: -0.01em; }
+
+/* ═══ FIELDS ═══════════════════════════════════════════════════════════════
+   A bare baseline, not a box. The '@' is painted beside the input, is never in
+   the value, and cannot be backspaced away. */
+.wl-field { position: relative; display: flex; align-items: baseline; gap: 8px; padding-bottom: 11px; }
+.wl-at { font-family: var(--f-id); font-size: 22px; color: var(--ash-dim); line-height: 1; transition: color 240ms var(--ease); }
+.wl-field.is-lg .wl-at { font-size: 28px; }
+.wl-field input {
+  flex: 1 1 auto; min-width: 0;
+  background: none; border: 0; padding: 0;
+  font-family: var(--f-id); font-size: 22px; line-height: 1.18;
+  color: var(--chalk); letter-spacing: -0.012em;
+}
+.wl-field.is-lg input { font-size: 28px; }
+.wl-field input::placeholder { color: rgba(96, 92, 85, 0.62); }
+.wl-field input:focus { outline: none; }
+.wl-field-line {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--hair);
+}
+.wl-field-line::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, var(--chalk), rgba(244,241,234,0.25));
+  transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform 520ms var(--ease);
+}
+.wl-field:focus-within .wl-field-line::after { transform: scaleX(1); }
+.wl-field:focus-within .wl-at { color: var(--ash); }
+.wl-field.is-locked input { color: var(--ash); }
+
+/* the letter's own field, which lives on the paper */
+.wl-letterfield { position: relative; }
+.wl-letterfield textarea {
+  width: 100%; display: block;
+  background: none; border: 0; padding: 0; resize: none; overflow: hidden;
+  font-family: var(--f-letter); font-size: 16.5px; line-height: 1.52;
+  color: var(--paper-ink);
+}
+.wl-letterfield textarea:focus { outline: none; }
+.wl-letterfield textarea::placeholder { color: rgba(106, 99, 87, 0.5); }
+.wl-count {
+  position: absolute; right: 0; bottom: -18px;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.08em;
+  color: rgba(106, 99, 87, 0.6);
+  transition: color 240ms var(--ease);
+}
+.wl-count.is-near { color: var(--ember); }
+
+/* ═══ THE SHEET ════════════════════════════════════════════════════════════
+   Everything that is not the wall arrives as one of these. It rises off the
+   bottom edge over a wall that stays mounted, scrolled where it was, dimmed
+   and slightly out of focus behind it — which is the modal reference exactly,
+   and which is the difference between a surface with things on it and a stack
+   of pages. */
+.wl-sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
+
+.wl-scrim {
+  position: absolute; inset: 0; width: 100%; padding: 0;
+  background: radial-gradient(120% 80% at 50% 100%, rgba(8,7,11,0.72) 0%, rgba(8,7,11,0.90) 60%, rgba(8,7,11,0.94) 100%);
+  animation: wl-fade 320ms var(--ease) both;
+  border: 0;
+}
+
+.wl-sheet {
+  position: relative;
+  width: 100%; max-width: 470px; margin: 0 auto;
+  max-height: 92dvh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, var(--void-1) 0%, var(--void) 42%);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow: 0 -1px 0 var(--hair) inset, 0 -30px 70px -30px rgba(0,0,0,0.9);
+  animation: wl-rise-sheet 460ms var(--ease) both;
+  overflow: hidden;
+}
+.wl-sheet.is-tall { min-height: 62dvh; }
+.wl-sheet.is-dragging { animation: none; transition: none; }
+.wl-sheet-wrap.is-closing .wl-sheet { animation: wl-drop-sheet 240ms var(--ease-out) both; }
+.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-fade 240ms var(--ease) reverse both; }
+
+/* the grip — a drag target with a real 24px height around a 4px bar */
+.wl-grip { flex: 0 0 auto; height: 26px; display: grid; place-items: center; touch-action: none; }
+.wl-grip span { width: 34px; height: 3px; border-radius: 2px; background: rgba(244,241,234,0.18); display: block; }
+
+.wl-sheet-in {
+  flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 4px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column;
+}
+
+/* ═══ THE ROW ══════════════════════════════════════════════════════════════
+   The journey list, with the constellation standing where the reference puts
+   a photograph. */
+.wl-row {
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  padding: 12px 12px 12px 10px;
+  border-radius: 14px;
+  text-align: left;
+  border: 1px solid transparent;
+  transition: background 220ms var(--ease), border-color 220ms var(--ease);
+}
+.wl-row + .wl-row { margin-top: 2px; }
+.wl-row:hover { background: rgba(244,241,234,0.032); }
+.wl-row.is-lit { background: linear-gradient(100deg, rgba(255,244,228,0.055), rgba(255,244,228,0.012)); border-color: var(--hair); }
+.wl-row.is-lapsing .wl-row-meta { color: var(--ember); opacity: 0.85; }
+.wl-row-mark { flex: 0 0 auto; display: grid; place-items: center; }
+.wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wl-row-handle {
+  font-family: var(--f-id); font-size: 14px; color: var(--chalk); letter-spacing: -0.012em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-row-meta {
+  font-size: 11.5px; color: var(--ash-dim); letter-spacing: 0.004em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-row-action { flex: 0 0 auto; }
+
+/* ═══ THE ART ══════════════════════════════════════════════════════════════ */
+
+/* the four-point star */
+.wl-spark { display: block; flex: 0 0 auto; color: var(--chalk); }
+.wl-spark.is-twinkle { animation: wl-twinkle 3600ms var(--ease) infinite; animation-delay: var(--spark-delay, 0ms); }
+@keyframes wl-twinkle {
+  0%, 100% { opacity: 0.42; transform: scale(0.86) rotate(0deg); }
+  46%      { opacity: 1;    transform: scale(1.1) rotate(24deg); }
+}
+
+.wl-halftone { display: block; color: rgba(244, 241, 234, 0.62); }
+
+/* the constellation */
+.wl-mark { display: block; overflow: visible; }
+.wl-mark-ring { fill: rgba(244,241,234,0.028); stroke: var(--hair-soft); stroke-width: 1.4; }
+.wl-mark-line { fill: none; stroke: rgba(244,241,234,0.22); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.wl-mark-star { fill: rgba(244,241,234,0.55); }
+.wl-mark.is-lit .wl-mark-ring { fill: rgba(255,244,228,0.06); stroke: rgba(255,244,228,0.22); }
+.wl-mark.is-lit .wl-mark-line { stroke: rgba(255,244,228,0.5); }
+.wl-mark.is-lit .wl-mark-star { fill: var(--glow); filter: drop-shadow(0 0 4px rgba(255,244,228,0.55)); }
+
+/* the bloom — the whole accent system, spent once per screen */
+.wl-bloom {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  pointer-events: none;
+  transition: opacity 1200ms var(--ease);
+  will-change: opacity;
+}
+
+/* the ring system */
+.wl-orbit { display: block; overflow: visible; }
+.wl-ring { fill: none; stroke: rgba(244,241,234,0.10); stroke-width: 0.4; }
+.wl-ring.is-closed { stroke: rgba(255,244,228,0.34); stroke-width: 0.55; }
+.wl-ring.is-fading { stroke: rgba(244,241,234,0.16); stroke-dasharray: 1.4 2.6; }
+.wl-orbit-rim { fill: none; stroke: rgba(255,244,228,0.30); stroke-width: 0.7; stroke-linecap: round; }
+.wl-moon {
+  fill: rgba(244,241,234,0.42);
+  offset-rotate: 0deg;                 /* it orbits; it does not tumble */
+  animation-name: wl-orbit-run;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.wl-moon.is-lit { fill: var(--glow); filter: drop-shadow(0 0 3px rgba(255,244,228,0.8)); }
+.wl-orbit.is-still .wl-moon { animation: none; offset-distance: 24%; }
+@keyframes wl-orbit-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+
+/* the step dots */
+.wl-dots { display: flex; align-items: center; gap: 7px; }
+.wl-dot {
+  width: 6px; height: 6px; border-radius: 50%; padding: 0; border: 0;
+  background: rgba(244,241,234,0.22);
+  transition: background 300ms var(--ease), width 300ms var(--ease);
+}
+.wl-dot.is-done { background: rgba(244,241,234,0.42); }
+.wl-dot.is-on { width: 18px; border-radius: 3px; background: var(--chalk); }
+
+/* the wait */
+.wl-waiting { display: flex; align-items: center; gap: 9px; color: var(--ash); }
+
+/* ═══ THE TOP BAR ══════════════════════════════════════════════════════════ */
+.wl-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 0 10px;
+  flex: 0 0 auto;
+}
+.wl-top-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wl-top-acts { display: flex; align-items: center; gap: 2px; }
+
+/* the reference puts an unread dot on the avatar — the only other ember */
+.wl-me { position: relative; display: block; }
+.wl-me-dot {
+  position: absolute; top: -1px; right: -1px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ember); border: 2px solid var(--void);
+  animation: wl-pulse 2800ms var(--ease) infinite;
+}
+@keyframes wl-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.42; } }
+
+/* ═══ THE DOCK ═════════════════════════════════════════════════════════════
+   The gradient that rises off the bottom edge, on every screen that has a
+   standing offer. It is the reason the composer never has to be advertised:
+   it is already half on the screen, under everything, the whole time. */
+.wl-dock {
+  position: sticky; bottom: 0; z-index: 6;
+  margin: 0 -22px; padding: 0 22px;
+  flex: 0 0 auto;
+}
+.wl-dock-veil {
+  position: absolute; top: -78px; bottom: 0;
+  left: 50%; width: 100vw; transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(8,7,11,0) 0%, rgba(8,7,11,0.72) 38%, var(--void) 76%);
+}
+.wl-dock-in {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.wl-dock-in > .wl-pill { flex: 0 0 auto; }
+.wl-dock-in > .wl-arrow { min-width: 0; white-space: nowrap; }
+/* a docked page hands the bottom edge to the dock — the page's own padding
+   would otherwise leave a strip of void under a gradient that is supposed to
+   run off the screen */
+.wl-wallpage, .wl-core { padding-bottom: 0; }
+
+/* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
+.wl-mast { position: relative; padding: 26px 0 30px; flex: 0 0 auto; }
+.wl-mast-meta { margin-top: 16px; }
+.wl-mast-spark { position: absolute; top: 0; right: 0; color: var(--chalk); }
+.wl-mast-ball { position: absolute; right: -10px; bottom: 6px; opacity: 0.24; }
+
+/* the inscription. One run of names at three weights, wrapping — not a grid
+   of cards (a directory) and not a tag cloud (analytics). */
+.wl-wall {
+  display: block;
+  padding: 4px 0 20px;
+  line-height: 2.05;
+  word-spacing: 0.04em;
+}
+.wl-slot { display: inline; white-space: nowrap; }
+.wl-name {
+  font-family: var(--f-id);
+  color: rgba(244, 241, 234, 0.60);
+  letter-spacing: -0.014em;
+  white-space: nowrap;
+  transition: color 260ms var(--ease), text-shadow 460ms var(--ease);
+  padding: 2px 0;
+}
+.wl-name.is-w0 { font-size: 13px; }
+.wl-name.is-w1 { font-size: 16.5px; color: rgba(244, 241, 234, 0.76); }
+.wl-name.is-w2 { font-size: 21px; color: rgba(244, 241, 234, 0.92); }
+.wl-name:hover { color: var(--glow); text-shadow: 0 0 18px rgba(255,244,228,0.5); }
+.wl-name.is-ember { color: var(--glow); text-shadow: 0 0 22px rgba(255,244,228,0.55); }
+.wl-name-n {
+  font-size: 0.62em; vertical-align: super; margin-left: 2px;
+  color: var(--ash-dim); letter-spacing: 0;
+}
+.wl-sep { display: inline-block; vertical-align: middle; margin: 0 8px; color: rgba(244,241,234,0.14); }
+
+/* ── the opening ──
+   Plays once per session. The masthead rises, then the names arrive in a
+   stagger capped at forty — past that the cascade is longer than anybody's
+   patience and the tail may as well be there already. */
+.wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
+.wl-wallpage.is-opening .wl-mast-meta  { animation: wl-fade 900ms var(--ease) 900ms both; }
+.wl-wallpage.is-opening .wl-mast-spark { animation: wl-fade 900ms var(--ease) 700ms both; }
+.wl-wallpage.is-opening .wl-mast-ball  { animation: wl-fade 1200ms var(--ease) 1100ms both; }
+.wl-wallpage.is-opening .wl-name       { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
+.wl-wallpage.is-opening .wl-sep        { animation: wl-fade 700ms var(--ease) 1400ms both; }
+.wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
+.wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
+
+@keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
+@keyframes wl-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wl-rise-sheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes wl-drop-sheet { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
+
+/* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
+.wl-letter { padding-top: 8px; }
+
+/* the seal — redacted, then not. Two layers cross-fading in place, so the
+   line does not move when the real one arrives. */
+.wl-seal { position: relative; }
+.wl-seal-cap { margin-bottom: 8px; }
+.wl-seal-line { position: relative; min-height: 22px; }
+.wl-seal-decoy, .wl-seal-real {
+  font-family: var(--f-letter); font-size: 14.5px; line-height: 1.45;
+  color: var(--paper-ink-2); display: block;
+  transition: opacity 700ms var(--ease), filter 700ms var(--ease);
+}
+.wl-seal-decoy { letter-spacing: 0.04em; opacity: 0.34; }
+.wl-seal-real { position: absolute; inset: 0; opacity: 0; font-style: italic; color: var(--paper-ink); }
+.wl-seal.is-opening .wl-seal-decoy { animation: wl-scramble 900ms steps(6) both; }
+.wl-seal.is-open .wl-seal-decoy { opacity: 0; filter: blur(6px); }
+.wl-seal.is-open .wl-seal-real { opacity: 1; }
+.wl-seal.is-writing .wl-seal-decoy { display: none; }
+@keyframes wl-scramble {
+  0%   { opacity: 0.34; filter: blur(0); }
+  50%  { opacity: 0.55; filter: blur(1.5px); }
+  100% { opacity: 0.10; filter: blur(5px); }
+}
+.wl-seal-input {
+  width: 100%; background: none; border: 0; padding: 0;
+  font-family: var(--f-letter); font-style: italic; font-size: 14.5px; line-height: 1.45;
+  color: var(--paper-ink);
+}
+.wl-seal-input:focus { outline: none; }
+.wl-seal-input::placeholder { color: rgba(106,99,87,0.5); font-style: normal; }
+
+.wl-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+.wl-pager-b {
+  width: 32px; height: 32px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--hair); color: var(--ash);
+  font-family: var(--f-util); font-size: 14px;
+  transition: color 200ms var(--ease), border-color 200ms var(--ease);
+}
+.wl-pager-b:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244,241,234,0.24); }
+.wl-pager-b:disabled { opacity: 0.28; }
+
+.wl-letter-meta { display: flex; align-items: center; gap: 11px; margin-top: 20px; }
+.wl-letter-acts { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-bottom: 6px; }
+.wl-letter-acts > .wl-pill { margin-bottom: 8px; }
+.wl-letter-wait { padding: 14px 0; }
+
+.wl-revealed { position: relative; padding: 10px 0 14px; width: 100%; }
+.wl-revealed-bloom { top: 40%; }
+.wl-revealed-q {
+  position: relative; margin: 0 0 6px;
+  font-family: var(--f-display); font-size: 26px; line-height: 1.1; color: var(--chalk);
+  animation: wl-rise 800ms var(--ease) both;
+}
+.wl-revealed .wl-arrow { position: relative; animation: wl-fade 900ms var(--ease) 500ms both; }
+
+/* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
+.wl-find { padding-top: 8px; }
+.wl-find-field { margin: 20px 0 10px; }
+.wl-find-results { flex: 1 1 auto; min-height: 180px; padding: 8px 0 4px; }
+.wl-find-hint { padding: 2px 2px 12px; }
+.wl-find-results .wl-row { animation: wl-fade 320ms var(--ease) both; }
+
+.wl-find-empty { padding: 26px 2px 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.wl-find-echo {
+  margin: 0 0 8px;
+  font-family: var(--f-id); font-size: 26px; letter-spacing: -0.02em;
+  color: var(--chalk);
+}
+.wl-find-empty .wl-pill { margin-top: 4px; }
+.wl-find-foot { padding-top: 14px; border-top: 1px solid var(--hair-soft); }
+
+/* ═══ NOBODY WROTE TO YOU ══════════════════════════════════════════════════
+   The field is still under this screen and the composition is doing the rest:
+   a lot of empty void above the line, the handle set as the largest identifier
+   in the build, and one bloom. */
+.wl-none-air { height: 24vh; min-height: 92px; flex: 0 0 auto; }
+.wl-none-handle {
+  margin: 6px 0 0;
+  font-family: var(--f-id); font-size: clamp(26px, 8vw, 34px);
+  letter-spacing: -0.03em; color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis;
+  animation: wl-rise 800ms var(--ease) 120ms both;
+}
+.wl-none .wl-display { animation: wl-rise 800ms var(--ease) both; }
+.wl-none-sub { margin-top: 16px; animation: wl-fade 900ms var(--ease) 500ms both; }
+.wl-none-slot { margin-top: 40px; min-height: 128px; position: relative; }
+
+.wl-none-kept { position: relative; display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.wl-none-bloom { top: 46%; }
+.wl-none-mark { position: relative; animation: wl-fade 900ms var(--ease) both; }
+.wl-none-line {
+  position: relative; margin: 0;
+  font-family: var(--f-display); font-style: italic; font-size: 29px; line-height: 1.14;
+  color: var(--chalk);
+  animation: wl-rise 900ms var(--ease) 160ms both;
+}
+
+/* the turn: dark until the first offer is answered, then it wakes over 1400ms */
+.wl-none-turn { flex: 0 0 auto; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+.wl-none-turn.is-waking { opacity: 0.34; transition: opacity 1400ms var(--ease); }
+.wl-none-turn.is-waking.is-awake { opacity: 1; }
+
+/* ═══ THE COMPOSER ═════════════════════════════════════════════════════════ */
+.wl-write { padding-top: 6px; }
+.wl-write-top { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 20px; }
+.wl-write-h { margin-bottom: 22px; }
+.wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
+.wl-write-note { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; font-size: 12px; color: var(--ash-dim); }
+.wl-write-floor { margin-top: 26px; justify-content: flex-end; }
+.wl-write-who { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.wl-write-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  flex: 0 0 auto;
+}
+.wl-write-foot .wl-pill { margin-left: auto; }
+
+/* ═══ THE SEAL ═════════════════════════════════════════════════════════════
+   Four beats. Each stage is a class on the page and every element reads its
+   own visibility off it, so the whole sequence is one state machine rather
+   than nine overlapping transitions racing each other. */
+.wl-sealed-air { height: 12vh; min-height: 48px; flex: 0 0 auto; }
+.wl-sealed-stage { position: relative; min-height: 210px; display: grid; place-items: center; flex: 0 0 auto; }
+.wl-sealed-bloom { top: 48%; }
+
+.wl-sealed-card {
+  width: 100%; max-width: 340px;
+  transition: transform 900ms var(--ease), opacity 900ms var(--ease), filter 900ms var(--ease);
+}
+.wl-sealed.is-b1 .wl-sealed-card { transform: scale(0.82) translateY(-6px); opacity: 0.55; filter: blur(1px); }
+.wl-sealed.is-b2 .wl-sealed-card,
+.wl-sealed.is-b3 .wl-sealed-card { transform: scale(0.62) translateY(-30px); opacity: 0; filter: blur(6px); }
+
+/* the convergence — six sparkles falling in on the centre, once */
+.wl-converge { position: absolute; inset: 0; pointer-events: none; }
+.wl-conv {
+  position: absolute; left: 50%; top: 50%; opacity: 0; color: var(--glow);
+  --tx: 0px; --ty: 0px;
+}
+.wl-conv.c0 { --tx: -108px; --ty: -64px; }
+.wl-conv.c1 { --tx:  114px; --ty: -42px; }
+.wl-conv.c2 { --tx:  -84px; --ty:  70px; }
+.wl-conv.c3 { --tx:   96px; --ty:  78px; }
+.wl-conv.c4 { --tx:   -8px; --ty: -96px; }
+.wl-conv.c5 { --tx:   22px; --ty: 100px; }
+.wl-sealed.is-b1 .wl-conv,
+.wl-sealed.is-b2 .wl-conv,
+.wl-sealed.is-b3 .wl-conv { animation: wl-converge 1050ms var(--ease) both; }
+.wl-conv.c1 { animation-delay: 60ms; }
+.wl-conv.c2 { animation-delay: 120ms; }
+.wl-conv.c3 { animation-delay: 40ms; }
+.wl-conv.c4 { animation-delay: 160ms; }
+.wl-conv.c5 { animation-delay: 100ms; }
+@keyframes wl-converge {
+  0%   { opacity: 0; transform: translate3d(calc(var(--tx) - 50%), calc(var(--ty) - 50%), 0) scale(0.5); }
+  38%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.5); }
+}
+
+.wl-sealed-land { flex: 0 0 auto; opacity: 0; transform: translate3d(0, 16px, 0); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
+.wl-sealed.is-b2 .wl-sealed-land,
+.wl-sealed.is-b3 .wl-sealed-land { opacity: 1; transform: none; }
+.wl-sealed-count { margin-top: 14px; }
+
+/* the strip: your name, among the four nearest it on the wall */
+.wl-strip { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 22px; align-items: baseline; }
+.wl-strip-n { font-family: var(--f-id); font-size: 12.5px; color: rgba(244,241,234,0.24); letter-spacing: -0.012em; }
+.wl-strip-n.is-mine {
+  font-size: 16px; color: var(--glow); text-shadow: 0 0 20px rgba(255,244,228,0.55);
+  animation: wl-land 1000ms var(--ease) 200ms both;
+}
+@keyframes wl-land {
+  0%   { opacity: 0; transform: translate3d(0, -14px, 0) scale(1.3); }
+  100% { opacity: 1; transform: none; }
+}
+
+.wl-sealed-turn {
+  flex: 0 0 auto; opacity: 0; transform: translate3d(0, 12px, 0);
+  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.wl-sealed.is-b3 .wl-sealed-turn { opacity: 1; transform: none; }
+.wl-sealed-who { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.wl-sealed-q { margin: 0; font-family: var(--f-display); font-size: 21px; line-height: 1.16; color: var(--ash); }
+
+/* ═══ THE HAND-OFF ═════════════════════════════════════════════════════════ */
+.wl-blind-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
+.wl-blind-h { animation: wl-rise 900ms var(--ease) both; }
+.wl-blind-fig { position: relative; margin: 30px 0 22px; display: grid; place-items: center; min-height: 130px; }
+.wl-blind-bloom { top: 50%; }
+.wl-pair { position: relative; width: 100%; max-width: 300px; overflow: visible; }
+
+.wl-pair-node { fill: rgba(244,241,234,0.10); stroke: rgba(244,241,234,0.42); stroke-width: 1.2; }
+.wl-pair.is-at1 .wl-pair-node.is-a,
+.wl-pair.is-at2 .wl-pair-node.is-a,
+.wl-pair.is-at3 .wl-pair-node.is-a,
+.wl-pair.is-at4 .wl-pair-node.is-a { fill: rgba(255,244,228,0.35); stroke: var(--glow); }
+.wl-pair.is-at2 .wl-pair-node.is-b,
+.wl-pair.is-at3 .wl-pair-node.is-b,
+.wl-pair.is-at4 .wl-pair-node.is-b { fill: rgba(255,244,228,0.35); stroke: var(--glow); }
+.wl-pair-node { transition: fill 700ms var(--ease), stroke 700ms var(--ease); }
+
+/* the arcs are DRAWN, not faded in: a line that appears has been switched on,
+   a line that draws has been sent */
+.wl-pair-arc {
+  fill: none; stroke: rgba(255,244,228,0.45); stroke-width: 1.3; stroke-linecap: round;
+  stroke-dasharray: 190; stroke-dashoffset: 190;
+  transition: stroke-dashoffset 1100ms var(--ease);
+}
+.wl-pair.is-at1 .wl-pair-arc.is-a,
+.wl-pair.is-at2 .wl-pair-arc.is-a,
+.wl-pair.is-at3 .wl-pair-arc.is-a,
+.wl-pair.is-at4 .wl-pair-arc.is-a { stroke-dashoffset: 0; }
+.wl-pair.is-at2 .wl-pair-arc.is-b,
+.wl-pair.is-at3 .wl-pair-arc.is-b,
+.wl-pair.is-at4 .wl-pair-arc.is-b { stroke-dashoffset: 0; }
+
+/* nothing at the junction until both arcs exist — the product, in one ornament */
+.wl-pair-halo, .wl-pair-star { opacity: 0; transition: opacity 900ms var(--ease); }
+.wl-pair-star path { fill: var(--glow); }
+.wl-pair.is-at3 .wl-pair-halo, .wl-pair.is-at4 .wl-pair-halo { opacity: 1; }
+.wl-pair.is-at3 .wl-pair-star, .wl-pair.is-at4 .wl-pair-star { opacity: 1; animation: wl-twinkle 4200ms var(--ease) infinite; }
+
+/* the rule, in the poster's nav voice */
+.wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.wl-rule-line {
+  display: flex; align-items: baseline; gap: 12px;
+  font-family: var(--f-display); font-size: clamp(20px, 5.6vw, 25px); line-height: 1.24;
+  color: var(--chalk);
+  opacity: 0; transform: translate3d(-8px, 0, 0);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+}
+.wl-rule-line.is-in { opacity: 1; transform: none; }
+.wl-rule-line:last-child { color: var(--glow); }
+
+.wl-blind-foot {
+  flex: 0 0 auto; opacity: 0; transform: translate3d(0, 10px, 0);
+  transition: opacity 800ms var(--ease), transform 800ms var(--ease);
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.wl-blind-foot.is-in { opacity: 1; transform: none; }
+
+/* ═══ THE PRODUCT, STANDING ════════════════════════════════════════════════ */
+.wl-core-sky {
+  position: relative; height: 244px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  /* the reference lets its ring system run off both edges — that is what
+     stops it reading as clip art dropped into a card. The SIZE is then set so
+     the drawn content (the corona, at r=26 of 100) still lands inside the
+     band: 400px of viewBox is ~208px of actual ink, and the band is 236. */
+  margin: 2px -52px 0;
+}
+.wl-core-orbit { opacity: 0.95; animation: wl-fade 1400ms var(--ease) both; }
+.wl-core-ball { position: absolute; right: 52px; top: 0; opacity: 0.2; }
+
+.wl-core-date {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 14px;
+  padding: 6px 0 4px; flex: 0 0 auto;
+}
+.wl-core-date > div { min-width: 0; }
+.wl-core-date > .wl-pill { flex: 0 0 auto; }
+.wl-bignum {
+  margin: 0 0 6px;
+  font-family: var(--f-util); font-weight: 600;
+  font-size: clamp(26px, 7.6vw, 33px); letter-spacing: -0.035em; line-height: 1;
+  color: var(--chalk);
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-sect { flex: 0 0 auto; padding: 4px 0 18px; }
+.wl-sect-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 2px 10px;
+}
+.wl-sect-head .wl-label { gap: 8px; }
+.wl-sect-head .wl-label.is-dim { margin-left: auto; }
+
+/* the mutual reveal */
+.wl-reveal { padding-top: 8px; }
+.wl-reveal-head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 22px; }
+.wl-pairpaper { display: flex; flex-direction: column; gap: 0; }
+.wl-pairpaper > .wl-paper { animation: wl-rise 700ms var(--ease) both; }
+.wl-pairpaper > .wl-paper:nth-of-type(2) { animation-delay: 220ms; }
+.wl-pairpaper-join {
+  display: grid; place-items: center; padding: 14px 0;
+  position: relative;
+}
+.wl-pairpaper-join::before, .wl-pairpaper-join::after {
+  content: ''; position: absolute; left: 50%; width: 1px; height: 14px;
+  background: linear-gradient(var(--hair), transparent);
+}
+.wl-pairpaper-join::before { top: 0; background: linear-gradient(transparent, var(--hair)); }
+.wl-pairpaper-join::after  { bottom: 0; }
+.wl-pairpaper .wl-spark { color: var(--glow); filter: drop-shadow(0 0 8px rgba(255,244,228,0.6)); }
+.wl-reveal .wl-pill.is-wide { margin-top: 22px; }
+.wl-reveal-foot { display: flex; flex-direction: column; gap: 10px; padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px)); }
+
+/* ═══ REDUCED MOTION ═══════════════════════════════════════════════════════
+   Not a blanket `animation: none`. Two of the sequences in this build are the
+   only way a screen ever reaches its final state (the seal's four beats, the
+   hand-off's four), and switching those off would leave somebody looking at an
+   empty page. The JS honours the preference by jumping straight to the last
+   beat (`reduce` in index.jsx), and this block removes what is left: drift,
+   travel, blur and the twinkle. Everything ends up where it was going, it just
+   does not move to get there. */
+@media (prefers-reduced-motion: reduce) {
+  .wl-root *, .wl-root *::before, .wl-root *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .wl-root .wl-orbit-body { animation: none !important; }
+  .wl-root .wl-spark.is-twinkle { animation: none !important; opacity: 0.8; }
+  .wl-main.is-under { filter: none; opacity: 0.22; }
+}
+
+/* ═══ WIDE ═════════════════════════════════════════════════════════════════
+   The column does not grow. What grows is the air around it, and on a desktop
+   the wall gets two more lines of names per screen because the type does not
+   have to wrap as hard. */
+@media (min-width: 720px) {
+  .wl-page { padding-bottom: 56px; }
+  .wl-mast { padding: 40px 0 36px; }
+  .wl-core-sky { margin-left: -30px; margin-right: -30px; }
+}
+
+/* a row's capsule is an affordance, not a control — the row is the target */
+.wl-pill.is-tag { pointer-events: none; }
