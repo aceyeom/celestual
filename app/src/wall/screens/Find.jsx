@@ -11,13 +11,14 @@
 //     handle, or types the name without the dots, still lands somewhere. An
 //     exact hit is always sorted first, so a person who types their own handle
 //     precisely gets their own row and not a list of near-misses above it.
-//   · Finding nothing does not happen here. The rows go quiet and a single
-//     door appears, and stepping through it is a deliberate act — because the
-//     screen on the other side (screens/None.jsx) is the most important one in
-//     the build and it should not be somewhere you got dumped by a filter.
+//   · Finding nothing is not a dead end and it is not a sign-up. Nobody is
+//     asked to leave a handle, register an interest or wait for a
+//     notification: the wall has no accounts and cannot tell anybody anything
+//     later. What it offers instead is the only thing it can honestly offer —
+//     that name is free, be the first to put a letter under it.
 
 import { useEffect, useMemo, useState } from 'react'
-import { Sheet, HandleField, Label, Row, Pill, PillTag, ArrowLink, Display } from '../parts.jsx'
+import { Sheet, HandleField, Label, Row, Pill, PillTag, ArrowLink, Display, Icon } from '../parts.jsx'
 import { Mark, Sparkle } from '../art.jsx'
 import { search, wall, lettersFor, normHandle, validHandle, ago, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -35,19 +36,24 @@ export default function Find({ go, back }) {
 
   useEffect(() => { patch({ query: q }) }, [q])
 
+  // Enter opens the exact match if there is one, and otherwise starts a letter
+  // to whatever was typed. Both are one keystroke, and neither asks who anybody
+  // is.
   const commit = () => {
     if (!validHandle(q)) return
     if (exact) { go('letter', lettersFor(q)[0].id); return }
-    // Not on the wall. That is the interesting outcome, and it gets its own
-    // screen rather than an empty list with a sad face in it.
-    patch({ handle: q })
-    go('none')
+    go('write', q)
   }
 
   return (
     <Sheet onClose={back} tall labelledBy="wl-find-h">
       <div className="wl-sheet-in wl-find">
-        <Display size="s" as="h2" id="wl-find-h">Look for a name.</Display>
+        <div className="wl-find-top">
+          <Display size="s" as="h2" id="wl-find-h">Look for a name.</Display>
+          <button type="button" className="wl-iconbtn" onClick={back} aria-label="close" title="close">
+            <Icon name="close" size={18} />
+          </button>
+        </div>
 
         <div className="wl-find-field">
           <HandleField
@@ -80,15 +86,19 @@ export default function Find({ go, back }) {
 
           {q.length >= 2 && !hits.length && (
             <div className="wl-find-empty">
-              <Label tone="dim">nothing on the wall under</Label>
+              <Label tone="dim">nobody has written to</Label>
               <p className="wl-find-echo">{atHandle(q)}</p>
-              {validHandle(q) && <Pill tone="light" wide onClick={commit}>that one is mine</Pill>}
+              {validHandle(q) && (
+                <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={commit}>
+                  be the first
+                </Pill>
+              )}
             </div>
           )}
         </div>
 
         <div className="wl-find-foot">
-          <ArrowLink tone="quiet" onClick={() => go('write')}>write one instead</ArrowLink>
+          <ArrowLink tone="quiet" size="s" onClick={() => go('write')}>write one instead</ArrowLink>
         </div>
       </div>
     </Sheet>

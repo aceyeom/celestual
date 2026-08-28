@@ -41,10 +41,9 @@ import { liveCount } from './data.js'
 import Wall from './screens/Wall.jsx'
 import Letter from './screens/Letter.jsx'
 import Find from './screens/Find.jsx'
-import None from './screens/None.jsx'
 import Write from './screens/Write.jsx'
-import Sealed from './screens/Sealed.jsx'
-import Blind from './screens/Blind.jsx'
+import Posted from './screens/Posted.jsx'
+import Join from './screens/Join.jsx'
 import Core from './screens/Core.jsx'
 
 const FONTS = 'https://fonts.googleapis.com/css2'
@@ -61,10 +60,9 @@ const FIELD = {
   wall:   'drift',
   letter: 'slow',
   find:   'slow',
-  none:   'still',   // the room holding its breath — screens/None.jsx
   write:  'drift',
-  sealed: 'drift',
-  blind:  'slow',
+  posted: 'drift',
+  join:   'slow',
   orbit:  'drift',
 }
 
@@ -171,9 +169,8 @@ export default function WallApp() {
 
   let base = null
   switch (route.name) {
-    case 'none':   base = <None {...shared} />; break
-    case 'sealed': base = <Sealed {...shared} />; break
-    case 'blind':  base = <Blind {...shared} />; break
+    case 'posted': base = <Posted {...shared} />; break
+    case 'join':   base = <Join {...shared} />; break
     case 'orbit':  base = <Core id={route.id} {...shared} />; break
     default:       base = <Wall {...shared} />   // and everything a sheet sits on
   }

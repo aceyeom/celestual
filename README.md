@@ -82,11 +82,15 @@ glows. It was built at `/beta` to be judged beside the edition it replaced;
 that judgement was made on 2026-08-07, and one system now governs every screen,
 every email, every render and the back office.
 
-`/beta` is in use again, by **the wall** — the campaign surface for the
-handout event, and a visual prototype rather than a shipping route. It is a
-second brand on purpose (a blue-black void, four different faces, a cream card
-that is the only bright object in it), it reaches no server, and it is sealed
-off from production behind one lazy import in `main.jsx`. See
+`/beta` is in use again, by **the wall** — the campaign surface for the handout
+event, and a visual prototype rather than a shipping route. It is a second brand
+on purpose (a blue-black void, four different faces, a cream card that is the
+only bright object in it), it reaches no server, and it is sealed off from
+production behind one lazy import in `main.jsx`.
+
+It is also deliberately sealed off from the *product*: the wall has no accounts,
+no verification and no idea who is reading it, and the only route from it into
+the mutual blind is a tab that appears after somebody has put a letter up. See
 **[app/src/wall/README.md](./app/src/wall/README.md)**.
 
 ---
@@ -148,7 +152,7 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
-| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a browsable wall of unsent letters that hands off into the mutual blind. Populated, server-free (app/src/wall/README.md) |
+| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a browsable, fully anonymous wall of unsent letters. No account, no sign-in, nothing to prove. One door leads to the core service and it opens only after you have written. Populated, server-free (app/src/wall/README.md) |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 

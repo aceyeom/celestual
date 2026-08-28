@@ -82,12 +82,22 @@ export function PillTag({ children, tone = 'ghost', icon = null, className = '' 
 }
 
 // ── the icons ───────────────────────────────────────────────────────────────
-// Drawn here, on one 24-unit grid, at one stroke weight. Six of them is the
-// whole set the build needs, which is well under the point where reaching for
-// an icon library would save anybody anything.
+// Drawn here, on one 24-unit grid, at one stroke weight, and every one of them
+// says what it goes to rather than what it is:
+//
+//   wall   four lines of unequal length — the inscription itself, seen small
+//   find   a glass
+//   write  a nib
+//   join   two figures and the arc between them, which is the mark the core
+//          service's own diagram is built out of
+//
+// Seven glyphs is the whole set, which is well under the point where an icon
+// library would save anybody anything — and none of these exist in one.
 const PATHS = {
+  wall:  'M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
   find:  'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.2 16.2 21 21',
   write: 'M4 20h4l10-10a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6zM14.4 7.2l2.4 2.4',
+  join:  'M3.4 14.5a2.1 2.1 0 1 0 4.2 0 2.1 2.1 0 1 0-4.2 0M16.4 14.5a2.1 2.1 0 1 0 4.2 0 2.1 2.1 0 1 0-4.2 0M6.6 12.7Q12 5.2 17.4 12.7',
   close: 'M6 6l12 12M18 6L6 18',
   back:  'M14 5l-7 7 7 7',
   down:  'M5 10l7 7 7-7',
@@ -95,9 +105,10 @@ const PATHS = {
 }
 
 export function Icon({ name, size = 20, className = '' }) {
+  const solid = name === 'play'
   return (
     <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
-      fill={name === 'play' ? 'currentColor' : 'none'} stroke={name === 'play' ? 'none' : 'currentColor'}
+      fill={solid ? 'currentColor' : 'none'} stroke={solid ? 'none' : 'currentColor'}
       strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
       aria-hidden="true" focusable="false">
       <path d={PATHS[name]} />
@@ -105,12 +116,47 @@ export function Icon({ name, size = 20, className = '' }) {
   )
 }
 
-export function IconButton({ name, label, onClick, tone = '', className = '', ...rest }) {
+// Every icon carries a label. It is never drawn — on a pointer device it
+// arrives as a tooltip after a beat, and a screen reader reads it always — so
+// the bar is legible without a word on it and still navigable without sight.
+export function IconButton({ name, label, onClick, tone = '', on = false, className = '', ...rest }) {
   return (
-    <button type="button" className={`wl-iconbtn${tone ? ` is-${tone}` : ''} ${className}`}
-      onClick={onClick} aria-label={label} {...rest}>
+    <button
+      type="button"
+      className={`wl-iconbtn${tone ? ` is-${tone}` : ''}${on ? ' is-on' : ''} ${className}`}
+      onClick={onClick} aria-label={label} title={label}
+      aria-current={on ? 'page' : undefined}
+      {...rest}
+    >
       <Icon name={name} />
     </button>
+  )
+}
+
+// ── the bar ─────────────────────────────────────────────────────────────────
+// The same three targets, in the same two places, on every screen of the wall:
+// the mark goes home, and the two on the right are the only two things a
+// person can do here. Nothing in it is a word, and nothing in it moves between
+// screens — a nav that rearranges itself is a nav somebody has to re-read.
+export function TopBar({ go, at = 'wall', onMark }) {
+  return (
+    <header className="wl-top">
+      <button
+        type="button" className="wl-brand"
+        onClick={onMark || (() => go('wall'))}
+        aria-label={at === 'wall' ? 'celestual — back to the top' : 'back to the wall'}
+        title={at === 'wall' ? 'the top' : 'the wall'}
+      >
+        {at === 'wall'
+          ? <Sparkle size={17} />
+          : <><Icon name="back" size={17} /><Sparkle size={14} /></>}
+      </button>
+      <nav className="wl-top-acts" aria-label="the wall">
+        <IconButton name="wall" label="the wall" on={at === 'wall'} onClick={() => go('wall')} />
+        <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
+        <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => go('write')} />
+      </nav>
+    </header>
   )
 }
 
