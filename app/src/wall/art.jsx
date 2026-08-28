@@ -46,85 +46,142 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
 }
 
 // ── the mark ────────────────────────────────────────────────────────────────
-// The wall's logo: the sparkle above, with a ring around it, seen from just off
+// The wall's logo: a four-point star with a ring around it, seen from just off
 // the ring's own plane.
 //
-// The ring is NOT a stroke. It is the area between two ellipses, the inner one
-// pushed toward the far side, filled even-odd — so the band is widest along its
-// near edge and narrows toward the back, which is what a tilted ring in
-// perspective does. A stroke of even width has no near and no far, and reads as
-// a hoop laid on top of the star rather than a ring around it.
+// THE RING IS NOT A STROKE. It is the area between two ellipses filled even-odd
+// — an outer edge, and an inner one that is pushed toward the far side, turned
+// a few degrees off it, and given its own eccentricity. Push alone gives a band
+// that is simply thicker on one side; add the turn and the thick part walks
+// round the ring, add the eccentricity and it pinches at the ends and swells at
+// the sides. Three numbers, no extra nodes, and the ring stops being the
+// uniform hoop that made an earlier version of this read as an oval dropped on
+// a star.
 //
-// Depth is drawn, not implied: the far half of the ring is painted first and
-// the star covers it, the near half is painted last over a star that has been
-// notched to let it through. The notch is a HOLE, so the void shows in it — the
-// same move star.svg makes, and the reason one drawing serves the tab, the
-// void and an ivory print.
+// THE STAR IS SPARK. Same curve, same control points — `starPath` at equal arms
+// redraws it exactly — only narrowed on the horizontal and given four short
+// diagonal vertices the outline runs SMOOTHLY through. Those diagonals are not
+// spikes: at a sixth of the major radius they sit deep inside the body, and
+// treating them as corners (which an earlier pass did) puts a visible kink in
+// the middle of every concave sweep. They carry one tangent taken across the
+// vertex instead, so the sweep stays a single unbroken curve and the star keeps
+// its deep, needle-armed profile without the bumps.
 //
-// One rule governs every number below. A side arm must sit inside the ring's
-// hole or reach past its outer edge; an arm that ENDS inside the band gets
-// notched off and left behind as a floating tip. That is why the star is narrow
-// (SIDE 24 against UP 45) and why this ring is rounder than the 0.34 ellipses
-// Orbit draws — a flatter hole has no room to hold the arms.
+// DEPTH IS DRAWN, NOT IMPLIED. The whole ring goes down first, the star covers
+// it, and the near half is repeated on top of a star notched to let it through.
+// Clipping the ring into two complementary halves instead leaves a hairline
+// where they abut — two antialiased edges meeting on one line never quite add
+// back up to opaque — and that seam shows from about 200px up. The notch is a
+// HOLE, so the void shows in it, which is the same move star.svg makes and the
+// reason one drawing serves the tab, the void and an ivory print.
+//
+// ONE RULE OF CLEARANCE governs the numbers: a side arm must sit inside the
+// ring's hole or reach past its outer edge. An arm that ENDS inside the band is
+// notched off and left as a floating tip. That is why the star is narrow (SIDE
+// 26 against UP 47) and why this ring is rounder than the 0.34 ellipses Orbit
+// draws — a flatter hole has no room to hold the arms. The whole drawing also
+// fits inside the 100 box, so nothing needs overflow and it drops straight into
+// a favicon slot.
 const ECL = {
-  rx: 46,          // the ring, to the middle of its band
-  flat: 0.38,      // ry/rx — the viewing angle. Lower is nearer the ring's plane
+  rx: 44,          // the ring, to the middle of its band
+  flat: 0.52,      // ry/rx — the viewing angle
   tilt: -19,       // degrees off horizontal
-  w: 2.5,          // half-width of the band along its NEAR edge
-  taper: 0.58,     // the far edge, as a fraction of the near one. Real
-                   // foreshortening lands near here; run it to zero and the
-                   // ring stops reading as a ring and starts reading as a brush
-  gutter: 1.8,     // the void between the ring and the star it crosses
-  up: 45, down: 45, side: 24,
+  w: 2.0,          // half-width of the band along its NEAR edge
+  taper: 0.6,      // the far edge as a fraction of the near one. Real
+                   // foreshortening lands about here; run it toward zero and
+                   // the ring stops reading as a ring and starts reading as a
+                   // brushstroke
+  twist: 8,        // the inner edge, turned off the outer
+  squeeze: 0.8,    // and given its own eccentricity
+  gutter: 1.6,     // the void between the ring and the star it crosses
+  up: 47, down: 47, side: 26,
+  minor: 0.16,     // the diagonal vertices, as a fraction of their neighbours
+  ease: 0.30,      // how much of the gap their tangent spends. Past ~0.45 the
+                   // concave sweep flattens and the star turns into a diamond
+  profile: 0.84,   // where along an arm the curve carries its weight
 }
 
-// SPARK's own control points, as fractions of each arm. The generator below at
-// equal arms therefore redraws SPARK exactly: the mark's star is the same star,
-// only narrowed.
-const K = { a: 0.03, b: 0.42, c: 0.24, d: 0.19 }
+// SPARK's own control points, as fractions of each arm. `starPath` below at
+// equal arms and profile 1 therefore redraws SPARK exactly.
+const K = { along: 0.42, lean: 0.03, sideAlong: 0.24, sideLean: 0.19 }
+const f2 = (v) => Math.round(v * 100) / 100
+const rad = (d) => (d * Math.PI) / 180
 
-const f2 = (v) => (Math.round(v * 100) / 100)
-
-function starPath({ up, down, side }) {
-  const pts = [[0, -up], [side, 0], [0, down], [-side, 0]]
-  let d = `M0 ${-up}`
+// Each vertex owns the two controls the curve leaves and arrives on, and each
+// is built only from that vertex's own radius and its neighbour's DIRECTION.
+// Scaling the lean by the neighbour's radius instead makes a short vertex pull
+// far harder than a long one, which is its own source of lumpiness.
+function starPath(o) {
+  const P = o.profile
+  const ax = { along: K.along * P, lean: K.lean }
+  const sd = { along: K.sideAlong, lean: K.sideLean * P }
+  const V = []
+  const majors = [[-90, o.up, ax], [0, o.side, sd], [90, o.down, ax], [180, o.side, sd]]
   for (let i = 0; i < 4; i++) {
-    const from = pts[i], to = pts[(i + 1) % 4]
-    // leaving a point on the vertical axis, or arriving at one: the control
-    // pair is the same two offsets, in the other order
-    const vert = from[0] === 0
-    const sx = Math.sign(to[0]) || Math.sign(from[0])
-    const sy = Math.sign(from[1]) || Math.sign(to[1])
-    const arm = sy > 0 ? down : up
-    const near = [K.a * side * sx, K.b * arm * sy]
-    const far = [K.c * side * sx, K.d * arm * sy]
-    const [c1, c2] = vert ? [near, far] : [far, near]
-    d += `C${f2(c1[0])} ${f2(c1[1])} ${f2(c2[0])} ${f2(c2[1])} ${to[0]} ${to[1]}`
+    V.push({ a: majors[i][0], r: majors[i][1], k: majors[i][2], sharp: true })
+    if (o.minor > 0) {
+      V.push({ a: majors[i][0] + 45, sharp: false,
+               r: o.minor * (majors[i][1] + majors[(i + 1) % 4][1]) / 2 })
+    }
   }
-  return `${d}Z`
+  const n = V.length
+  const dir = (v) => [Math.cos(rad(v.a)), Math.sin(rad(v.a))]
+  const pos = (v) => { const d = dir(v); return [d[0] * v.r, d[1] * v.r] }
+
+  for (let i = 0; i < n; i++) {
+    const v = V[i], prev = V[(i - 1 + n) % n], next = V[(i + 1) % n]
+    v.p = pos(v)
+    if (v.sharp) {
+      const d = dir(v), dn = dir(next), dp = dir(prev)
+      v.out = [d[0] * v.r * v.k.along + dn[0] * v.r * v.k.lean,
+               d[1] * v.r * v.k.along + dn[1] * v.r * v.k.lean]
+      v.in = [d[0] * v.r * v.k.along + dp[0] * v.r * v.k.lean,
+              d[1] * v.r * v.k.along + dp[1] * v.r * v.k.lean]
+    } else {
+      // one tangent taken across the vertex, so both arcs leave it parallel and
+      // the concave sweep runs through without a corner
+      const pn = pos(next), pp = pos(prev)
+      const tx = pn[0] - pp[0], ty = pn[1] - pp[1]
+      const L = Math.hypot(tx, ty) || 1e-6
+      const ux = tx / L, uy = ty / L
+      const dn = Math.hypot(pn[0] - v.p[0], pn[1] - v.p[1])
+      const dp = Math.hypot(v.p[0] - pp[0], v.p[1] - pp[1])
+      v.out = [v.p[0] + ux * o.ease * dn, v.p[1] + uy * o.ease * dn]
+      v.in = [v.p[0] - ux * o.ease * dp, v.p[1] - uy * o.ease * dp]
+    }
+  }
+
+  let d = `M${f2(V[0].p[0])} ${f2(V[0].p[1])}`
+  for (let i = 0; i < n; i++) {
+    const A = V[i], B = V[(i + 1) % n]
+    d += `C${f2(A.out[0])} ${f2(A.out[1])} ${f2(B.in[0])} ${f2(B.in[1])} ${f2(B.p[0])} ${f2(B.p[1])}`
+  }
+  return d + 'Z'
 }
 
 function ellipse(cx, cy, a, b, tilt) {
-  const t = (tilt * Math.PI) / 180
-  const dx = a * Math.cos(t), dy = a * Math.sin(t)
-  const arc = `A${f2(a)} ${f2(b)} ${tilt} 0 1 `
+  const t = rad(tilt), dx = a * Math.cos(t), dy = a * Math.sin(t)
+  const arc = `A${f2(a)} ${f2(b)} ${f2(tilt)} 0 1 `
   return `M${f2(cx + dx)} ${f2(cy + dy)}${arc}${f2(cx - dx)} ${f2(cy - dy)}${arc}${f2(cx + dx)} ${f2(cy + dy)}Z`
 }
 
 // `grow` dilates the band, which is how the gutter that notches the star is cut
 // from the very same numbers rather than from a second set that could drift.
 function ringPath(grow = 0) {
-  const { rx, flat, tilt, w, taper } = ECL
+  const { rx, flat, tilt, w, taper, twist, squeeze } = ECL
   const ry = rx * flat
   const near = w + grow, far = Math.max(0.02, w * taper + grow)
   const mid = (near + far) / 2, push = (near - far) / 2
-  const t = (tilt * Math.PI) / 180
+  const t = rad(tilt)
   return ellipse(50, 50, rx + mid, ry + mid, tilt)
        + ellipse(50 + Math.sin(t) * push, 50 - Math.cos(t) * push,
-                 rx - mid, ry - mid, tilt)
+                 Math.max(0.4, rx - mid), Math.max(0.4, (ry - mid) * squeeze), tilt + twist)
 }
 
-const HALF = (tilt) => `rotate(${tilt} 50 50)`
+// The half-plane that keeps the near side of the ring. One object, so the
+// component below and the favicon string cannot drift apart.
+const NEAR = { x: -110, y: 50, width: 320, height: 160, transform: `rotate(${ECL.tilt} 50 50)` }
+const nearRect = `<rect x="${NEAR.x}" y="${NEAR.y}" width="${NEAR.width}" height="${NEAR.height}" transform="${NEAR.transform}"/>`
 
 export function Ecliptic({ size = 20, className = '', style, title }) {
   const id = useId().replace(/:/g, '')
@@ -137,17 +194,16 @@ export function Ecliptic({ size = 20, className = '', style, title }) {
       aria-hidden={title ? undefined : 'true'} focusable="false"
     >
       <defs>
-        {/* the near half of the ring, and the far half, split at the ends of
-            its long axis — which is where a ring actually passes behind the
+        {/* the half of the ring that passes in FRONT of the star, split at the
+            ends of its long axis — which is where a ring actually crosses the
             body it is going round */}
-        <clipPath id={`${id}n`}><rect x="-110" y="50" width="320" height="160" transform={HALF(ECL.tilt)} /></clipPath>
-        <clipPath id={`${id}f`}><rect x="-110" y="-110" width="320" height="160" transform={HALF(ECL.tilt)} /></clipPath>
+        <clipPath id={`${id}n`}><rect {...NEAR} /></clipPath>
         <mask id={`${id}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
           <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
           <path d={ringPath(ECL.gutter)} fill="#000" fillRule="evenodd" clipPath={`url(#${id}n)`} />
         </mask>
       </defs>
-      <path d={ring} fill="currentColor" fillRule="evenodd" clipPath={`url(#${id}f)`} />
+      <path d={ring} fill="currentColor" fillRule="evenodd" />
       <g mask={`url(#${id}m)`}>
         <path d={starPath(ECL)} transform="translate(50 50)" fill="currentColor" />
       </g>
@@ -156,24 +212,19 @@ export function Ecliptic({ size = 20, className = '', style, title }) {
   )
 }
 
-// The same drawing as one standalone file, for the browser tab.
-//
-// It is the SAME assembly, not a reduced one: an earlier pass notched the star
-// against the whole ring instead of splitting it, which is invisible at sixteen
-// pixels and leaves the top spire detached at a hundred and eighty — and this
-// file is what an apple-touch-icon would point at. One mark, one drawing.
-// currentColor is no use to a favicon, so this one is painted.
+// The same drawing as one standalone file, for the browser tab. Same assembly,
+// not a reduced one — this is what an apple-touch-icon would point at, and a
+// simplification that is invisible at sixteen pixels is not invisible at a
+// hundred and eighty. currentColor is no use to a favicon, so it is painted.
 export function eclipticFavicon(tone = '#F4F1EA') {
-  const half = `rotate(${ECL.tilt} 50 50)`
   const ring = ringPath()
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
-    + `<defs><clipPath id="n"><rect x="-110" y="50" width="320" height="160" transform="${half}"/></clipPath>`
-    + `<clipPath id="f"><rect x="-110" y="-110" width="320" height="160" transform="${half}"/></clipPath>`
+    + `<defs><clipPath id="n">${nearRect}</clipPath>`
     + '<mask id="m" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">'
     + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
     + `<path d="${ringPath(ECL.gutter)}" fill="#000" fill-rule="evenodd" clip-path="url(#n)"/></mask></defs>`
-    + `<path d="${ring}" fill="${tone}" fill-rule="evenodd" clip-path="url(#f)"/>`
-    // the mask is on the group, never on the transformed path itself: a
+    + `<path d="${ring}" fill="${tone}" fill-rule="evenodd"/>`
+    // the mask goes on the group, never on the transformed path itself: a
     // userSpaceOnUse mask resolves in the coordinate system the element it sits
     // on establishes, so a translate on the same node drags the notch with it
     + `<g mask="url(#m)"><path d="${starPath(ECL)}" transform="translate(50 50)" fill="${tone}"/></g>`
