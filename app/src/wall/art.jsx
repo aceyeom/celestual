@@ -309,7 +309,7 @@ export function Field({ count = 72, mode = 'drift', hidden = false }) {
     return () => { cancelAnimationFrame(state.current.raf); ro.disconnect() }
   }, [count])
 
-  return <canvas ref={ref} className={`wl-field${hidden ? ' is-hidden' : ''}`} aria-hidden="true" />
+  return <canvas ref={ref} className={`wl-starfield${hidden ? ' is-hidden' : ''}`} aria-hidden="true" />
 }
 
 // ── the step dots ───────────────────────────────────────────────────────────

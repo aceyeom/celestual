@@ -6,16 +6,19 @@
 // some second key produces a second walk-through that behaves differently
 // from the first — in front of the person you are showing it to.
 
-const KEY = 'celestual.wall.v2'
+const KEY = 'celestual.wall.v3'
 
+// There is no handle here, and there was one in v2. The wall does not ask who
+// anybody is, has nothing to tell them later, and cannot check anything on
+// their behalf — so it holds no identity, not even locally. What is left is
+// four facts about the last few minutes in this tab.
 const EMPTY = {
   source: 'direct',   // which printed surface produced this scan
-  handle: '',         // the handle this session says is theirs
   query: '',          // the last thing typed into the search
-  opened: {},         // letterId -> true, so the wall can dim what you have read
-  kept: false,        // they asked to be told when someone writes
+  opened: {},         // letterId -> true, so the wall can dim what has been read
   draft: null,        // the composer's in-flight letter
-  written: [],        // letters written in this session, newest first
+  written: [],        // letters put up in this session, newest first. This is
+                      // the ONLY thing that opens the tab to the core service.
   seen: false,        // the opening cascade has played once
 }
 

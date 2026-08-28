@@ -1,8 +1,17 @@
 // ── /beta/orbit — THE PRODUCT, STANDING ─────────────────────────────────────
 //
-// The service the wall exists to fill. This screen is the reference's journey
-// view rebuilt on the product's own meaning, component for component, and the
-// mapping is worth writing down because every one of them earns its place:
+// The service the wall exists to fill, and a DIFFERENT PLACE from the wall.
+// It is reached from exactly one control — the tab at the bottom of the wall,
+// which appears only once somebody has put a letter up — and it is the first
+// point in the whole prototype where anybody has an identity at all.
+//
+// So it does not share the wall's furniture. No wall nav, no search over the
+// names, no writing a letter from here: one control leaves, and everything
+// else on the screen is about pings, which the wall has never heard of.
+//
+// This screen is the reference's journey view rebuilt on the product's own
+// meaning, component for component, and the mapping is worth writing down
+// because every one of them earns its place:
 //
 //   reference                         here
 //   ─────────────────────────────────────────────────────────────────────────
@@ -29,11 +38,11 @@
 
 import { useMemo, useState } from 'react'
 import {
-  Display, Label, Pill, ArrowLink, Rule, IconButton,
+  Display, Label, Pill, ArrowLink, Rule, Icon,
   Row, Sheet, Paper, Prose, PillTag,
 } from '../parts.jsx'
 import { Orbit, Mark, Sparkle, Halftone } from '../art.jsx'
-import { LEDGER, TODAY } from '../seed.js'
+import { LEDGER, TODAY, ME } from '../seed.js'
 import { atHandle, dateline, hash, DAY } from '../data.js'
 import { getState } from '../store.js'
 
@@ -57,7 +66,7 @@ function ringsFor(pings) {
 }
 
 export default function Core({ id, go, reduce }) {
-  const me = getState().handle || 'you'
+  const me = ME
   const mine = getState().written
   const rings = useMemo(() => ringsFor(LEDGER), [])
   const open = LEDGER.find((p) => p.id === id) || null
@@ -68,20 +77,24 @@ export default function Core({ id, go, reduce }) {
   return (
     <>
       <div className="wl-page wl-core">
+        {/* The core service's own bar. One control leaves — back to the wall —
+            and the rest of it is this account, which is a thing the wall does
+            not have and will never ask for. */}
         <header className="wl-top">
           <div className="wl-top-mark">
             <span className="wl-me">
               <Mark handle={me} size={32} lit />
               {mutual.length > 0 && <i className="wl-me-dot" aria-hidden="true" />}
             </span>
-            <Label><span className="wl-h">{atHandle(me) || '@you'}</span></Label>
+            <Label><span className="wl-h">{atHandle(me)}</span></Label>
           </div>
-          <div className="wl-top-acts">
-            <IconButton name="find" label="find a handle" onClick={() => go('find')} />
-            <IconButton name="write" label="place a ping" onClick={() => go('write')} />
-          </div>
+          <button type="button" className="wl-iconbtn" onClick={() => go('wall')}
+            aria-label="back to the wall" title="the wall">
+            <Icon name="wall" />
+          </button>
         </header>
 
+        <div className="wl-core-left">
         {/* ── the hero ──
             It bleeds past both edges on purpose. The reference lets its ring
             system run off the screen, and that is what stops it reading as a
@@ -100,8 +113,9 @@ export default function Core({ id, go, reduce }) {
           <Pill tone="ember">today</Pill>
         </div>
 
-        <Rule />
+        </div>
 
+        <div className="wl-core-right">
         {/* ── mutual ── */}
         {mutual.length > 0 && (
           <section className="wl-sect">
@@ -140,23 +154,16 @@ export default function Core({ id, go, reduce }) {
           ))}
         </section>
 
-        {/* what this session put on the wall, if anything — the thread back */}
-        {mine.length > 0 && (
-          <section className="wl-sect">
-            <div className="wl-sect-head"><Label tone="dim">on the wall</Label></div>
-            <ArrowLink tone="quiet" onClick={() => go('wall')}>
-              {mine.length === 1 ? 'the letter you left' : `the ${mine.length} letters you left`}
-            </ArrowLink>
-          </section>
-        )}
+        </div>
 
         <div className="wl-push" />
 
         <div className="wl-dock">
           <div className="wl-dock-veil" aria-hidden="true" />
           <div className="wl-dock-in">
-            <ArrowLink tone="quiet" size="s" onClick={() => go('wall')}>the wall</ArrowLink>
-            <Pill tone="light" onClick={() => go('write')}>place a ping</Pill>
+            <Pill tone="light" wide icon={<Icon name="join" size={17} />} onClick={() => go('orbit')}>
+              place a ping
+            </Pill>
           </div>
         </div>
       </div>

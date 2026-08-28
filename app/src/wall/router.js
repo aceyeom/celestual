@@ -25,9 +25,8 @@ export function parse(pathname) {
     case 'letter': return { name: 'letter', id }   // a letter, raised over the wall
     case 'find':   return { name: 'find' }         // the search, raised over the wall
     case 'write':  return { name: 'write', id }    // the composer, raised over the wall
-    case 'none':   return { name: 'none' }         // nobody wrote to you — the hinge
-    case 'sealed': return { name: 'sealed' }       // the seal, and the wall taking it
-    case 'blind':  return { name: 'blind' }        // the hand-off into the mutual blind
+    case 'posted': return { name: 'posted' }       // it is up, and the wall took it
+    case 'join':   return { name: 'join' }         // the ONLY door to the core service
     case 'orbit':  return { name: 'orbit', id }    // the core service, standing
     default:       return { name: 'wall' }
   }
