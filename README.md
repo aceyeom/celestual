@@ -79,8 +79,15 @@ The whole product is one design system — **the bindery** (docs/DESIGN.md): a
 hand-bound almanac, one hue from chocolate to ivory, materials drawn per pixel
 rather than downloaded, two corners in the entire product, and nothing that
 glows. It was built at `/beta` to be judged beside the edition it replaced;
-that judgement was made on 2026-08-07, the route is gone, and one system now
-governs every screen, every email, every render and the back office.
+that judgement was made on 2026-08-07, and one system now governs every screen,
+every email, every render and the back office.
+
+`/beta` is in use again, by **the wall** — the campaign surface for the
+handout event, and a visual prototype rather than a shipping route. It is a
+second brand on purpose (a blue-black void, four different faces, a cream card
+that is the only bright object in it), it reaches no server, and it is sealed
+off from production behind one lazy import in `main.jsx`. See
+**[app/src/wall/README.md](./app/src/wall/README.md)**.
 
 ---
 
@@ -90,6 +97,8 @@ governs every screen, every email, every render and the back office.
 celestual/
 ├── app/              the Vite + React SPA (served at celestual.us/)
 │   ├── src/
+│   │   ├── wall/     THE WALL — the event surface at /beta, a populated visual
+│   │   │             prototype, sealed off from production (its own README)
 │   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
 │   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
 │   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
@@ -139,6 +148,7 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
+| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a browsable wall of unsent letters that hands off into the mutual blind. Populated, server-free (app/src/wall/README.md) |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
