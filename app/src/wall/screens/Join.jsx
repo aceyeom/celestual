@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from 'react'
 import { Display, Label, Pill, ArrowLink, Icon } from '../parts.jsx'
-import { Sparkle, Bloom } from '../art.jsx'
+import { Bloom, Ecliptic } from '../art.jsx'
 
 // Two nodes, two arcs, and a junction. The arcs are stroked with a dash offset
 // animated to zero, so each is DRAWN rather than faded in — a line that
@@ -69,7 +69,7 @@ export default function Join({ go, setField, reduce }) {
       <header className="wl-top">
         <button type="button" className="wl-brand" onClick={() => go('wall')}
           aria-label="back to the wall" title="the wall">
-          <Icon name="back" size={17} /><Sparkle size={14} />
+          <Icon name="back" size={17} /><Ecliptic size={18} />
         </button>
       </header>
 

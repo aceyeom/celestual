@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS, BASE } from './router.js'
-import { Field } from './art.jsx'
+import { eclipticFavicon, Field } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
@@ -87,7 +87,24 @@ export default function WallApp() {
     document.head.appendChild(link)
     const title = document.title
     document.title = 'celestual — someone here wrote something they never sent'
-    return () => { link.remove(); document.title = title }
+
+    // ── the tab ──
+    // index.html points every route at production's star. This is a second
+    // brand on a borrowed document, so it borrows the tab too — and puts it
+    // back on the way out, the same contract the faces and the title are on.
+    // Inlined rather than fetched: it is under a kilobyte, and a favicon that
+    // arrives on its own request is a favicon that arrives after the tab has
+    // already been read.
+    const icons = [...document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')]
+    const was = icons.map((el) => el.getAttribute('href'))
+    const href = `data:image/svg+xml,${encodeURIComponent(eclipticFavicon())}`
+    icons.forEach((el) => el.setAttribute('href', href))
+
+    return () => {
+      link.remove()
+      document.title = title
+      icons.forEach((el, i) => el.setAttribute('href', was[i]))
+    }
   }, [])
 
   // ── the scan ──

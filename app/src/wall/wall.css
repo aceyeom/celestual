@@ -496,6 +496,42 @@
 
 /* ═══ THE ART ══════════════════════════════════════════════════════════════ */
 
+/* ── the mark ──────────────────────────────────────────────────────────────
+   The logo. Everything about it is geometry in art.jsx; the only thing said
+   here is what colour it takes and that it is a block. */
+.wl-ecliptic { display: block; flex: 0 0 auto; }
+
+/* the name. The display face at the display face's own tracking — the same
+   two numbers .wl-display sets — so the wordmark and the masthead are set in
+   one voice rather than two that happen to share a family. */
+.wl-wordmark {
+  font-family: var(--f-display);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  line-height: 1;
+  color: var(--chalk);
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* mark and name together. The lockup carries the font-size, so every measure
+   below is in em and the whole thing scales off one number. */
+.wl-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38em;
+  color: var(--chalk);
+}
+.wl-lockup-w { display: flex; flex-direction: column; align-items: flex-start; }
+/* "celestual." has ascenders and no descenders, so centring it on its own box
+   sits it low against the ring. A hair up, and the two read level. */
+.wl-lockup .wl-wordmark { transform: translateY(-0.03em); }
+
+.wl-lockup.is-stack { flex-direction: column; gap: 0.55em; }
+.wl-lockup.is-stack .wl-lockup-w { align-items: center; }
+.wl-lockup.is-stack .wl-wordmark { transform: none; }
+.wl-lockup-l { margin-top: 0.9em; text-align: center; }
+
 /* the four-point star */
 .wl-spark { display: block; flex: 0 0 auto; color: var(--chalk); }
 .wl-spark.is-twinkle { animation: wl-twinkle 3600ms var(--ease) infinite; animation-delay: var(--spark-delay, 0ms); }

@@ -83,7 +83,7 @@ word among them:
 
 | | |
 | --- | --- |
-| ✦ | the mark, top left. On the wall it goes to the top; off it, it grows a chevron and goes back to the wall |
+| ✦ | the mark, top left — the four-point star with its ring. On the wall it goes to the top; off it, it grows a chevron and goes back to the wall |
 | ☰ | **the wall** — four lines of unequal length, the inscription seen small |
 | ⌕ | **look for a name** |
 | ✎ | **write a letter** |
@@ -99,15 +99,44 @@ a word drawn on it and still navigable without sight. The glyphs are in
 index.jsx    the shell — routing, the cut, the persistent star field, ?s=
 wall.css     every rule scoped under .wl-root
 router.js    seven routes, no dependency
-art.jsx      the ornaments, all drawn here: sparkle, halftone sphere, ring
-             system, bloom, per-handle constellation, the star field
-parts.jsx    display · label · prose · arrow link · pill · paper · fields ·
-             sheet · row · icons · the bar · step dots
+art.jsx      the mark, and the ornaments — all drawn here: ecliptic, sparkle,
+             halftone sphere, ring system, bloom, per-handle constellation,
+             the star field
+parts.jsx    display · label · wordmark · lockup · prose · arrow link · pill ·
+             paper · fields · sheet · row · icons · the bar · step dots
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write
 seed.js      the letters, the sources, the ledger
 screens/     one file per screen
 ```
+
+## The mark
+
+A four-point star with a ring around it, seen from near the ring's own plane.
+
+The star is the build's `SPARK` at its own control points, narrowed on the
+horizontal — not redrawn, not leaned, not given four different arm lengths. The
+ring is **not a stroke**: it is the area between two ellipses, the inner one
+pushed toward the far side and filled even-odd, so the band is widest along its
+near edge and narrows toward the back. That is what a tilted ring in perspective
+does, and it is the whole difference between a ring around the star and a hoop
+laid on top of it. Depth is drawn rather than implied — the far half is painted
+first and the star covers it, the near half last, over a star notched to let it
+through. The notch is a hole, so the void shows in it.
+
+One rule governs every number in `ECL`: **a side arm must sit inside the ring's
+hole or reach past its outer edge.** An arm that ends *inside* the band gets
+notched off and left as a floating tip. It is why the star is narrow (side 24
+against 45 vertical) and why this ring is rounder than the 0.34 ellipses `Orbit`
+draws — a flatter hole has no room to hold the arms.
+
+The wordmark is `celestual.` in the display face at the display face's own
+tracking, lower-case, with the terminal period the masthead already ends on. It
+does **not** go in the top bar: that nav is deliberately wordless, and a Didone
+at 16px is a Didone with its hairlines gone. `Lockup` sets the two together —
+`row` beside each other, `stack` for the splash — at proportions that are
+optical rather than arithmetic, because the mark's box is full but its ink is a
+band across the middle.
 
 ## The design, and where it comes from
 
@@ -148,10 +177,15 @@ The phone is the one this was designed for and it does not change.
 
 This tree, and one line elsewhere: `app/src/main.jsx` forks on `/beta` and
 lazy-imports it. Nothing in production imports from `src/wall/`; the wall is a
-separate chunk (~18 kB gzip of JS, ~8 kB of CSS) and the four Google faces it
+separate chunk (~19 kB gzip of JS, ~8 kB of CSS) and the four Google faces it
 needs are injected on mount and removed on unmount, so neither reaches anybody
 who did not scan a piece of paper. No shared component, no global token, no
 `vercel.json`, no `vite.config.js`.
+
+Three things on the shared document are borrowed rather than owned, and all
+three are handed back on unmount: the faces, the title, and the tab icon —
+`index.html` points every route at production's `star.svg`, and the wall swaps
+in its own mark while it is mounted.
 
 ## Known, and deliberately left
 

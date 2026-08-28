@@ -15,14 +15,15 @@
 //      Those five things are cheap to draw and impossible to buy without
 //      looking like everybody else who bought them.
 //
-// The five primitives, and where the reference puts each one:
+// The six primitives, and where the reference puts each one:
 //   Sparkle    the four-point star, top-right of the poster and beside the title
+//   Ecliptic   the brand mark — that same star with a ring around it
 //   Halftone   the dotted sphere in the poster's bottom corner
 //   Orbit      the ring system the journey screen opens on
 //   Bloom      the soft blurred mass the modal is built around
 //   Mark       the constellation that stands where the reference puts a face
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { hash, rand } from './data.js'
 
 // ── the four-point star ─────────────────────────────────────────────────────
@@ -42,6 +43,141 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
       <path d={SPARK} fill={tone === 'ember' ? 'var(--ember)' : tone === 'ink' ? 'var(--paper-ink)' : 'currentColor'} />
     </svg>
   )
+}
+
+// ── the mark ────────────────────────────────────────────────────────────────
+// The wall's logo: the sparkle above, with a ring around it, seen from just off
+// the ring's own plane.
+//
+// The ring is NOT a stroke. It is the area between two ellipses, the inner one
+// pushed toward the far side, filled even-odd — so the band is widest along its
+// near edge and narrows toward the back, which is what a tilted ring in
+// perspective does. A stroke of even width has no near and no far, and reads as
+// a hoop laid on top of the star rather than a ring around it.
+//
+// Depth is drawn, not implied: the far half of the ring is painted first and
+// the star covers it, the near half is painted last over a star that has been
+// notched to let it through. The notch is a HOLE, so the void shows in it — the
+// same move star.svg makes, and the reason one drawing serves the tab, the
+// void and an ivory print.
+//
+// One rule governs every number below. A side arm must sit inside the ring's
+// hole or reach past its outer edge; an arm that ENDS inside the band gets
+// notched off and left behind as a floating tip. That is why the star is narrow
+// (SIDE 24 against UP 45) and why this ring is rounder than the 0.34 ellipses
+// Orbit draws — a flatter hole has no room to hold the arms.
+const ECL = {
+  rx: 46,          // the ring, to the middle of its band
+  flat: 0.38,      // ry/rx — the viewing angle. Lower is nearer the ring's plane
+  tilt: -19,       // degrees off horizontal
+  w: 2.5,          // half-width of the band along its NEAR edge
+  taper: 0.58,     // the far edge, as a fraction of the near one. Real
+                   // foreshortening lands near here; run it to zero and the
+                   // ring stops reading as a ring and starts reading as a brush
+  gutter: 1.8,     // the void between the ring and the star it crosses
+  up: 45, down: 45, side: 24,
+}
+
+// SPARK's own control points, as fractions of each arm. The generator below at
+// equal arms therefore redraws SPARK exactly: the mark's star is the same star,
+// only narrowed.
+const K = { a: 0.03, b: 0.42, c: 0.24, d: 0.19 }
+
+const f2 = (v) => (Math.round(v * 100) / 100)
+
+function starPath({ up, down, side }) {
+  const pts = [[0, -up], [side, 0], [0, down], [-side, 0]]
+  let d = `M0 ${-up}`
+  for (let i = 0; i < 4; i++) {
+    const from = pts[i], to = pts[(i + 1) % 4]
+    // leaving a point on the vertical axis, or arriving at one: the control
+    // pair is the same two offsets, in the other order
+    const vert = from[0] === 0
+    const sx = Math.sign(to[0]) || Math.sign(from[0])
+    const sy = Math.sign(from[1]) || Math.sign(to[1])
+    const arm = sy > 0 ? down : up
+    const near = [K.a * side * sx, K.b * arm * sy]
+    const far = [K.c * side * sx, K.d * arm * sy]
+    const [c1, c2] = vert ? [near, far] : [far, near]
+    d += `C${f2(c1[0])} ${f2(c1[1])} ${f2(c2[0])} ${f2(c2[1])} ${to[0]} ${to[1]}`
+  }
+  return `${d}Z`
+}
+
+function ellipse(cx, cy, a, b, tilt) {
+  const t = (tilt * Math.PI) / 180
+  const dx = a * Math.cos(t), dy = a * Math.sin(t)
+  const arc = `A${f2(a)} ${f2(b)} ${tilt} 0 1 `
+  return `M${f2(cx + dx)} ${f2(cy + dy)}${arc}${f2(cx - dx)} ${f2(cy - dy)}${arc}${f2(cx + dx)} ${f2(cy + dy)}Z`
+}
+
+// `grow` dilates the band, which is how the gutter that notches the star is cut
+// from the very same numbers rather than from a second set that could drift.
+function ringPath(grow = 0) {
+  const { rx, flat, tilt, w, taper } = ECL
+  const ry = rx * flat
+  const near = w + grow, far = Math.max(0.02, w * taper + grow)
+  const mid = (near + far) / 2, push = (near - far) / 2
+  const t = (tilt * Math.PI) / 180
+  return ellipse(50, 50, rx + mid, ry + mid, tilt)
+       + ellipse(50 + Math.sin(t) * push, 50 - Math.cos(t) * push,
+                 rx - mid, ry - mid, tilt)
+}
+
+const HALF = (tilt) => `rotate(${tilt} 50 50)`
+
+export function Ecliptic({ size = 20, className = '', style, title }) {
+  const id = useId().replace(/:/g, '')
+  const ring = ringPath()
+  return (
+    <svg
+      className={`wl-ecliptic ${className}`} style={style}
+      width={size} height={size} viewBox="0 0 100 100"
+      role={title ? 'img' : undefined} aria-label={title}
+      aria-hidden={title ? undefined : 'true'} focusable="false"
+    >
+      <defs>
+        {/* the near half of the ring, and the far half, split at the ends of
+            its long axis — which is where a ring actually passes behind the
+            body it is going round */}
+        <clipPath id={`${id}n`}><rect x="-110" y="50" width="320" height="160" transform={HALF(ECL.tilt)} /></clipPath>
+        <clipPath id={`${id}f`}><rect x="-110" y="-110" width="320" height="160" transform={HALF(ECL.tilt)} /></clipPath>
+        <mask id={`${id}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
+          <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
+          <path d={ringPath(ECL.gutter)} fill="#000" fillRule="evenodd" clipPath={`url(#${id}n)`} />
+        </mask>
+      </defs>
+      <path d={ring} fill="currentColor" fillRule="evenodd" clipPath={`url(#${id}f)`} />
+      <g mask={`url(#${id}m)`}>
+        <path d={starPath(ECL)} transform="translate(50 50)" fill="currentColor" />
+      </g>
+      <path d={ring} fill="currentColor" fillRule="evenodd" clipPath={`url(#${id}n)`} />
+    </svg>
+  )
+}
+
+// The same drawing as one standalone file, for the browser tab.
+//
+// It is the SAME assembly, not a reduced one: an earlier pass notched the star
+// against the whole ring instead of splitting it, which is invisible at sixteen
+// pixels and leaves the top spire detached at a hundred and eighty — and this
+// file is what an apple-touch-icon would point at. One mark, one drawing.
+// currentColor is no use to a favicon, so this one is painted.
+export function eclipticFavicon(tone = '#F4F1EA') {
+  const half = `rotate(${ECL.tilt} 50 50)`
+  const ring = ringPath()
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+    + `<defs><clipPath id="n"><rect x="-110" y="50" width="320" height="160" transform="${half}"/></clipPath>`
+    + `<clipPath id="f"><rect x="-110" y="-110" width="320" height="160" transform="${half}"/></clipPath>`
+    + '<mask id="m" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">'
+    + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
+    + `<path d="${ringPath(ECL.gutter)}" fill="#000" fill-rule="evenodd" clip-path="url(#n)"/></mask></defs>`
+    + `<path d="${ring}" fill="${tone}" fill-rule="evenodd" clip-path="url(#f)"/>`
+    // the mask is on the group, never on the transformed path itself: a
+    // userSpaceOnUse mask resolves in the coordinate system the element it sits
+    // on establishes, so a translate on the same node drags the notch with it
+    + `<g mask="url(#m)"><path d="${starPath(ECL)}" transform="translate(50 50)" fill="${tone}"/></g>`
+    + `<path d="${ring}" fill="${tone}" fill-rule="evenodd" clip-path="url(#n)"/></svg>`
 }
 
 // ── the halftone sphere ─────────────────────────────────────────────────────

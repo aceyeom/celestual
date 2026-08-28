@@ -9,7 +9,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { atHandle } from './data.js'
-import { Sparkle } from './art.jsx'
+import { Ecliptic, Sparkle } from './art.jsx'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -81,6 +81,51 @@ export function PillTag({ children, tone = 'ghost', icon = null, className = '' 
   )
 }
 
+// ── the wordmark ────────────────────────────────────────────────────────────
+// The name, set in the display face at the display face's own tracking, with
+// the terminal period the masthead already ends every line on. That period is
+// not an ornament — it is the poster reference's, and the wall's title block
+// carries it, so the name that sits above the wall should be punctuated the
+// same way the wall punctuates itself.
+//
+// Lower case, because every other name on this surface is: the wall is a list
+// of handles, and a brand shouting its own name in caps above a column of
+// lower-case ones is the only word on the screen raising its voice.
+export function Wordmark({ size, className = '', style }) {
+  return (
+    <span className={`wl-wordmark ${className}`}
+      style={size ? { fontSize: `${size}px`, ...style } : style}>
+      celestual.
+    </span>
+  )
+}
+
+// ── the lockup ──────────────────────────────────────────────────────────────
+// Mark and name together, in the two arrangements a mark ever really needs.
+//
+//   row      the mark, then the name beside it
+//   stack    the mark over the name, centred — the splash, and the only place
+//            the two are ever set large
+//
+// The proportions are optical, not arithmetic. The mark's box is full top to
+// bottom, but its ink is the ring, which is a band across the middle — so it
+// carries at about 1.15x the type size rather than matching its cap height,
+// and the name is nudged up a hair because "celestual." has ascenders and no
+// descenders and would otherwise sit low against the ring.
+export function Lockup({ size = 22, stack = false, label = null, className = '' }) {
+  const mark = stack ? size * 2.2 : size * 1.15
+  return (
+    <span className={`wl-lockup${stack ? ' is-stack' : ''} ${className}`}
+      style={{ fontSize: `${size}px` }}>
+      <Ecliptic size={mark} title="celestual" />
+      <span className="wl-lockup-w">
+        <Wordmark />
+        {label ? <Label tone="dim" className="wl-lockup-l">{label}</Label> : null}
+      </span>
+    </span>
+  )
+}
+
 // ── the icons ───────────────────────────────────────────────────────────────
 // Drawn here, on one 24-unit grid, at one stroke weight, and every one of them
 // says what it goes to rather than what it is:
@@ -138,6 +183,11 @@ export function IconButton({ name, label, onClick, tone = '', on = false, classN
 // the mark goes home, and the two on the right are the only two things a
 // person can do here. Nothing in it is a word, and nothing in it moves between
 // screens — a nav that rearranges itself is a nav somebody has to re-read.
+//
+// The mark here is the mark alone. The wordmark belongs to the splash, where it
+// is read once; putting it in the bar would be the only word on a surface whose
+// whole nav is deliberately wordless, and it would sit at 16px, which is where
+// a Didone's hairlines go.
 export function TopBar({ go, at = 'wall', onMark }) {
   return (
     <header className="wl-top">
@@ -148,8 +198,8 @@ export function TopBar({ go, at = 'wall', onMark }) {
         title={at === 'wall' ? 'the top' : 'the wall'}
       >
         {at === 'wall'
-          ? <Sparkle size={17} />
-          : <><Icon name="back" size={17} /><Sparkle size={14} /></>}
+          ? <Ecliptic size={21} />
+          : <><Icon name="back" size={17} /><Ecliptic size={18} /></>}
       </button>
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="wall" label="the wall" on={at === 'wall'} onClick={() => go('wall')} />
