@@ -82,19 +82,16 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
 // fits inside the 100 box, so nothing needs overflow and it drops straight into
 // a favicon slot.
 const ECL = {
-  rx: 44,          // the ring, to the middle of its band
-  flat: 0.52,      // ry/rx — the viewing angle
+  rx: 42,          // the ring, to the middle of its band
+  flat: 0.5,       // ry/rx — the viewing angle, applied to BOTH edges
   tilt: -19,       // degrees off horizontal
-  w: 2.0,          // half-width of the band along its NEAR edge
-  taper: 0.6,      // the far edge as a fraction of the near one. Real
-                   // foreshortening lands about here; run it toward zero and
-                   // the ring stops reading as a ring and starts reading as a
-                   // brushstroke
-  twist: 8,        // the inner edge, turned off the outer
-  squeeze: 0.8,    // and given its own eccentricity
-  gutter: 1.6,     // the void between the ring and the star it crosses
-  up: 47, down: 47, side: 26,
-  thick: 1.15,     // how much body the arms carry. 1 is SPARK exactly; each
+  w: 3.2,          // half the band's width in the ring's own plane
+  bias: 1.2,       // the inner edge pushed toward the far side, so the near
+                   // half of the band runs wider than the far half
+  twist: 2,        // and turned a little, so the widest part walks round
+  gutter: 0.7,     // the void between the ring and the star it crosses
+  up: 47, down: 47, side: 24,
+  thick: 0.80,     // how much body the arms carry. 1 is SPARK exactly; each
                    // step up peels the curve off its axis sooner, and past
                    // about 1.4 the concave flattens and the star goes diamond
 }
@@ -139,17 +136,37 @@ function ellipse(cx, cy, a, b, tilt) {
   return `M${f2(cx + dx)} ${f2(cy + dy)}${arc}${f2(cx - dx)} ${f2(cy - dy)}${arc}${f2(cx + dx)} ${f2(cy + dy)}Z`
 }
 
+// The ring is a TRUE ANNULUS first, and modulated second.
+//
+// A flat ring tilted away from you projects BOTH of its edges by the same
+// cosine, so the band reads full width at the ends of the long axis and
+// foreshortened where it crosses the body. An earlier version added the band's
+// width to the short axis un-scaled, which made it four and a half times too
+// fat at exactly the point it passes over the star — and a band that is widest
+// where it crosses is a ribbon lying on the mark, not a ring going round it.
+// It also forced a fat gutter to keep the star readable underneath, and that
+// gap was what made the two read as separate objects.
+//
+// Drawn honestly the band already varies two to one round the ring. BIAS then
+// pushes the inner edge to the far side so the near half runs wider still, and
+// TWIST turns it so the widest part walks — together about three to one from
+// the far apex to the ends.
+//
+// Two limits, and both are geometry rather than taste. The inner edge must stay
+// inside the outer or the band breaks open: past roughly bias 2 or twist 10 it
+// does. And every arm must finish clear of the band — a side arm inside the
+// hole, a vertical arm out beyond the outer edge — because an arm that ENDS
+// inside the band gets notched off and left as a floating tip.
+//
 // `grow` dilates the band, which is how the gutter that notches the star is cut
 // from the very same numbers rather than from a second set that could drift.
 function ringPath(grow = 0) {
-  const { rx, flat, tilt, w, taper, twist, squeeze } = ECL
-  const ry = rx * flat
-  const near = w + grow, far = Math.max(0.02, w * taper + grow)
-  const mid = (near + far) / 2, push = (near - far) / 2
+  const { rx, flat, tilt, w, bias, twist } = ECL
+  const Ro = rx + w + grow
+  const Ri = Math.max(0.6, rx - w - grow)
   const t = rad(tilt)
-  return ellipse(50, 50, rx + mid, ry + mid, tilt)
-       + ellipse(50 + Math.sin(t) * push, 50 - Math.cos(t) * push,
-                 Math.max(0.4, rx - mid), Math.max(0.4, (ry - mid) * squeeze), tilt + twist)
+  return ellipse(50, 50, Ro, Ro * flat, tilt)
+       + ellipse(50 + Math.sin(t) * bias, 50 - Math.cos(t) * bias, Ri, Ri * flat, tilt + twist)
 }
 
 // The half-plane that keeps the near side of the ring. One object, so the
