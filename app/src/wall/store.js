@@ -6,13 +6,21 @@
 // some second key produces a second walk-through that behaves differently
 // from the first — in front of the person you are showing it to.
 
-const KEY = 'celestual.wall.v4'
+const KEY = 'celestual.wall.v5'
 
-// There is still no handle in here, and the address that arrived in v4 is not
-// one. The wall does not ask who is WRITING, has nothing to tell a writer
-// later, and cannot check anything on their behalf. What `member` buys is one
-// thing only: the letters come out of redaction. It is never attached to a
-// letter and the composer never reads it.
+// There is still no handle in here that belongs to a WRITER. The wall does not
+// ask who is writing, has nothing to tell a writer later, and cannot check
+// anything on their behalf.
+//
+// Two different identities live here and they are not the same key, because
+// they do not buy the same thing and they are not proven the same way:
+//
+//   member    a berkeley.edu address. It opens reading, writing and reporting
+//             — the three things a stranger off the street does not get — and
+//             it is never attached to a letter. The composer never reads it.
+//   verified  handles proven through the Instagram handoff. Not an account and
+//             not a login: it is the answer to one question, asked once, on the
+//             one action that is permanent — taking a whole name off the wall.
 const EMPTY = {
   source: 'direct',   // which printed surface produced this scan
   query: '',          // the last thing typed into the search
@@ -22,9 +30,13 @@ const EMPTY = {
                       // the ONLY thing that opens the tab to the core service.
   seen: false,        // the opening cascade has played once
   member: null,       // a berkeley.edu address, if one has been given. It gates
-                      // READING and nothing else.
+                      // reading, writing and reporting — and nothing else.
   removed: [],        // handles that have asked to come off the wall. Held
                       // beside everything else so the reset clears them too.
+  reported: [],       // letters a report took down. HELD, never deleted — the
+                      // wall cannot see them and a desk still can, which is the
+                      // whole difference between a takedown and a delete.
+  verified: [],       // handles proven through the Instagram handoff
 }
 
 let cache = null
@@ -51,6 +63,21 @@ function write(next) {
 
 export function getState() { return read() }
 export function patch(fields) { return write({ ...read(), ...fields }) }
+
+// Append to one of the list buckets, once. Written here rather than at four
+// call sites so `[...removed(), h]` cannot be spelled two different ways and
+// end up with a duplicate in one of them.
+export function push(bucket, value) {
+  const s = read()
+  const list = s[bucket] || []
+  return list.includes(value) ? s : write({ ...s, [bucket]: [...list, value] })
+}
+
+export function drop(bucket, value) {
+  const s = read()
+  const list = s[bucket] || []
+  return write({ ...s, [bucket]: list.filter((v) => v !== value) })
+}
 
 export function mark(bucket, id) {
   const s = read()

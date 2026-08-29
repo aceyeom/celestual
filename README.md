@@ -88,9 +88,14 @@ on purpose (a blue-black void, four different faces, a cream card that is the
 only bright object in it), it reaches no server, and it is sealed off from
 production behind one lazy import in `main.jsx`.
 
-It is also deliberately sealed off from the *product*: the wall has no accounts,
-no verification and no idea who is reading it, and the only route from it into
-the mutual blind is a tab that appears after somebody has put a letter up. See
+It is also deliberately sealed off from the *product*: the wall has no pings, no
+mutuals and no identity of its own, and the only route from it into the mutual
+blind is a tab that appears after somebody has put a letter up. Its index — the
+names and the counts — is open to anybody who scans the code; reading a letter,
+writing one and reporting one are behind a `berkeley.edu` address; every letter
+is screened before it is published; a reported letter is off the wall on the tap
+and held rather than deleted; and taking a whole name down, the one irreversible
+act on the surface, goes through the Instagram handoff. See
 **[app/src/wall/README.md](./app/src/wall/README.md)**.
 
 ---
@@ -152,7 +157,7 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
-| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a browsable, fully anonymous wall of unsent letters. No account, no sign-in, nothing to prove. One door leads to the core service and it opens only after you have written. Populated, server-free (app/src/wall/README.md) |
+| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a drifting wall of unsent letters, anonymous by shape. The names are public to everyone; reading, writing and reporting are behind a `berkeley.edu` address; a report takes a letter down on the tap; a whole name comes off only through the Instagram handoff. One door leads to the core service and it opens only after you have written. Populated, server-free (app/src/wall/README.md) |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 

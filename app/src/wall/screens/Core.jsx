@@ -39,7 +39,7 @@
 import { useMemo, useState } from 'react'
 import {
   Display, Label, Pill, Close, Icon,
-  Row, Sheet, Paper, Prose, PillTag,
+  Row, Sheet, SheetHead, Paper, Prose, PillTag,
 } from '../parts.jsx'
 import { Orbit, Mark, Sparkle, Halftone } from '../art.jsx'
 import { LEDGER, TODAY, ME } from '../seed.js'
@@ -190,7 +190,7 @@ function Reveal({ ping, me, back, reduce }) {
   return (
     <Sheet onClose={back} tall labelledBy="wl-reveal-h">
       <div className="wl-sheet-in wl-reveal">
-        <div className="wl-reveal-top"><Close onClick={back} /></div>
+        <SheetHead onClose={back} />
         <div className="wl-reveal-head">
           <Display size="s" as="h2" id="wl-reveal-h">
             {isMutual ? 'You were both looking.' : 'Still standing.'}

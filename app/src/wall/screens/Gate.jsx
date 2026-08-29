@@ -6,10 +6,11 @@
 // ── why the gate is here and not one screen earlier ─────────────────────────
 // A person who has just scanned a code off a card has given the wall about
 // four seconds, and a sign-in is not something anybody spends four seconds on
-// for a thing they have not seen yet. So the wall itself asks nothing: the
-// names, the counts, the search and the composer are all open, and the first
-// time anybody is asked for anything is the moment they try to read what
-// somebody actually wrote. By then the wall has already made its case.
+// for a thing they have not seen yet. So the INDEX asks nothing: the names,
+// the counts and the search are open to everybody and always will be, and the
+// first time anybody is asked for anything is the moment they reach for one of
+// the three things that touch what is on the wall — reading a letter, writing
+// one, taking one down. By then the wall has already made its case.
 //
 // ── two words for one thing ─────────────────────────────────────────────────
 // Registering and signing in are the same two steps and the same two fields,
@@ -18,14 +19,20 @@
 // — one heading, one line of copy, and the same address and code beneath.
 //
 // ── what a signed-in address buys, and what it does not ─────────────────────
-// It opens the letters. That is the entire list. It is never attached to
-// anything anybody writes, the composer never reads it, and no letter gains an
-// author because somebody is signed in — the wall is anonymous by shape, not
-// by policy, and there is no field in a letter for this to leak into.
+// Three things and no fourth: READING a letter, WRITING one, and REPORTING one.
+// They are the three acts that touch what is on the wall, and the index — the
+// names, the counts, the search — stays open to everybody, forever, because a
+// person who has just scanned a code off a card has to be able to see what this
+// is before answering anything.
+//
+// It is never attached to anything anybody writes. The composer never reads it,
+// no letter gains an author because somebody is signed in, and there is no
+// field in a letter for this to leak into — the wall is anonymous by SHAPE, not
+// by policy. Being let in and being known are two different things, and only
+// the first one happens here.
 
 import { useState } from 'react'
-import { Sheet, Display, Label, Pill, Close, Prose } from '../parts.jsx'
-import { Ecliptic } from '../art.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose } from '../parts.jsx'
 import { DOMAIN, emailFault, member, normEmail, signIn, signOut, validCode, validEmail } from '../auth.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
@@ -93,18 +100,16 @@ export default function Gate({ back }) {
     return (
       <Sheet onClose={back} labelledBy="wl-gate-h">
         <div className="wl-sheet-in wl-gate">
-          <div className="wl-gate-top">
-            <Ecliptic size={22} className="wl-gate-mark" />
-            <Close onClick={back} />
-          </div>
-          <Display size="s" as="h2" id="wl-gate-h">The letters are open.</Display>
+          <SheetHead onClose={back} label="back to the wall" />
+          <Display size="s" as="h2" id="wl-gate-h">The wall is open.</Display>
           <Label tone="dim" className="wl-gate-who"><span className="wl-h">{who}</span></Label>
           <Prose className="wl-gate-copy">
-            Nothing you write is signed with it. The composer has never asked who is
+            You can read the letters, write one, and take one down. Nothing you
+            write is signed with this — the composer has never asked who is
             writing and it does not start now.
           </Prose>
           <div className="wl-push" />
-          <div className="wl-gate-foot">
+          <SheetFoot>
             <Pill tone="light" wide onClick={back}>read the wall</Pill>
             <button
               type="button" className="wl-quiet"
@@ -112,7 +117,7 @@ export default function Gate({ back }) {
             >
               sign out on this device
             </button>
-          </div>
+          </SheetFoot>
         </div>
       </Sheet>
     )
@@ -123,21 +128,22 @@ export default function Gate({ back }) {
   return (
     <Sheet onClose={back} tall labelledBy="wl-gate-h">
       <div className="wl-sheet-in wl-gate">
-        <div className="wl-gate-top">
-          <Ecliptic size={22} className="wl-gate-mark" />
-          <Close onClick={back} />
-        </div>
+        <SheetHead onClose={back} label="back to the wall" />
 
         <Display size="s" as="h2" id="wl-gate-h">
           {step === 0
-            ? (registering ? <>Letters are for<br />Berkeley.</> : <>Come back in.</>)
+            ? (registering ? <>The wall is<br />for Berkeley.</> : <>Come back in.</>)
             : <>Six digits, and<br />you&rsquo;re in.</>}
         </Display>
 
         {step === 0 ? (
           <div className="wl-gate-step">
+            {/* The rule, in one line, said where somebody is deciding whether
+                to answer for it. It names both halves — what is open and what
+                is not — because a door that only describes what it is shutting
+                reads as a wall. */}
             <Label tone="dim" className="wl-gate-note">
-              the names are public. what was written is not
+              the names are public. reading, writing and reporting are not
             </Label>
             <AddressField value={local} onChange={setLocal} onSubmit={() => ok && setStep(1)} />
             <div className="wl-gate-fault" aria-live="polite">{fault}</div>
@@ -163,7 +169,7 @@ export default function Gate({ back }) {
 
         <div className="wl-push" />
 
-        <div className="wl-gate-foot">
+        <SheetFoot>
           {step === 0 ? (
             <>
               <Pill tone="light" wide disabled={!ok} onClick={() => setStep(1)}>
@@ -186,7 +192,7 @@ export default function Gate({ back }) {
               </button>
             </>
           )}
-        </div>
+        </SheetFoot>
       </div>
     </Sheet>
   )

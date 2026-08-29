@@ -186,7 +186,6 @@
 
 .wl-push   { flex: 1 1 auto; min-height: 20px; }
 .wl-gap    { height: 18px; flex: 0 0 auto; }
-.wl-gap-s  { height: 10px; flex: 0 0 auto; }
 
 /* the cut — down to the void, swap underneath, back up. no slide. */
 .wl-cut {
@@ -422,23 +421,61 @@
 }
 .wl-paper > *:not(.wl-paper-grain) { position: relative; }
 
+/* Two cells across the top rule, and each card decides what its two facts
+   are. On a LETTER they are how long it has been sitting there unsaid and
+   whether it is still shut — not a date and a weekday, which is two facts
+   nobody asked for about a letter that was never sent. */
 .wl-paper-head {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  min-height: 22px;
   font-family: var(--f-id); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase;
   color: var(--paper-ink-2);
-  padding-bottom: 11px; margin-bottom: 14px;
+  padding-bottom: 11px; margin-bottom: 15px;
   border-bottom: 1px solid rgba(23, 21, 15, 0.16);
 }
+/* the state of the card, stamped rather than typeset — so the eye reads it as
+   a mark somebody put on the document and not as the second half of a date */
+.wl-paper-stamp {
+  flex: 0 0 auto;
+  padding: 3px 9px 2px; border-radius: var(--r-pill);
+  border: 1px solid rgba(23, 21, 15, 0.20);
+  font-size: 8.5px; letter-spacing: 0.17em;
+  color: rgba(23, 21, 15, 0.5);
+}
+
+/* the letterhead: the constellation standing beside the name it belongs to.
+   It used to sit in a strip UNDER the card between a timestamp and a button,
+   where it was one of three unrelated objects at one weight and read as none
+   of them. */
+.wl-paper-crest {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 14px;
+}
+.wl-paper-crest > .wl-mark { flex: 0 0 auto; }
 .wl-paper-title {
-  margin: 0 0 11px;
+  margin: 0; min-width: 0;
   font-family: var(--f-display); font-weight: 400; font-size: 22px; line-height: 1.1;
   letter-spacing: -0.01em; color: var(--paper-ink);
+  overflow: hidden; text-overflow: ellipsis;
 }
+
+/* The constellation is drawn in chalk everywhere else in the build and would
+   be invisible on cream. On paper it is struck in the paper's own ink, at the
+   same three strengths, so it is the same object in a different material
+   rather than a second drawing. */
+.wl-paper .wl-mark-ring { fill: rgba(23,21,15,0.035); stroke: rgba(23,21,15,0.16); }
+.wl-paper .wl-mark-line { stroke: rgba(23,21,15,0.28); }
+.wl-paper .wl-mark-star { fill: rgba(23,21,15,0.58); }
+.wl-paper .wl-mark.is-lit .wl-mark-ring { fill: rgba(23,21,15,0.05); stroke: rgba(23,21,15,0.24); }
+.wl-paper .wl-mark.is-lit .wl-mark-line { stroke: rgba(23,21,15,0.42); }
+.wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(23, 21, 15, 0.16); }
 
-/* the @handle set as a card's title, in the identity face */
-.wl-letter-to { font-family: var(--f-id); font-size: 18px; letter-spacing: -0.01em; }
+/* the @handle set as a card's title, in the identity face. It is the SUBJECT
+   of the sheet and it is now set like one: bigger than the body it sits over,
+   on its own line, with the crest beside it and nothing else in the row. */
+.wl-letter-to { font-family: var(--f-id); font-size: 20px; letter-spacing: -0.012em; }
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
@@ -694,15 +731,72 @@
 .wl-mast-spark { position: absolute; top: 0; right: 0; color: var(--chalk); }
 .wl-mast-ball { position: absolute; right: -10px; bottom: 6px; opacity: 0.24; }
 
-/* the inscription. One run of names at three weights, wrapping — not a grid
-   of cards (a directory) and not a tag cloud (analytics). */
-.wl-wall {
+/* ═══ THE INSCRIPTION ══════════════════════════════════════════════════════
+   One run of names at three weights — not a grid of cards (a directory) and
+   not a tag cloud (analytics). It has two presentations and they are the same
+   content:
+
+   IS-DRIFTING   the default. The run is broken into lanes and each lane
+                 travels, alternating direction, at one constant speed. A
+                 static block of sixty-six names reads as a list that was
+                 printed once, and the one thing this surface has to say in
+                 its first second is that people are still doing this.
+   IS-STILL      under `prefers-reduced-motion`. The original wrapping run —
+                 not a frozen banner, which would strand the names in eight
+                 ragged rows, but the composition this was before it moved. */
+.wl-wall { padding: 4px 0 20px; }
+
+.wl-wall.is-still {
   display: block;
-  padding: 4px 0 20px;
   line-height: 2.05;
   word-spacing: 0.04em;
 }
-.wl-slot { display: inline; white-space: nowrap; }
+.wl-wall.is-still .wl-slot { display: inline; white-space: nowrap; }
+
+.wl-wall.is-drifting {
+  display: flex; flex-direction: column;
+  gap: 1px;
+  /* full bleed. The lanes run off both edges of the phone, because a banner
+     with a 22px margin either side is a widget on a page — the names have to
+     leave the screen rather than stop before it. */
+  margin: 0 -22px;
+  /* and they dissolve at the ends rather than being cut. A hard edge on a
+     moving name is a box; a fade is a room the name walked out of. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
+}
+
+.wl-lane {
+  /* `clip`, with `hidden` under it for anything that does not know the word.
+     `hidden` makes a scroll container, and a browser scrolling a lane to
+     reveal a focused name inside it would drag the track sideways under its
+     own animation. `clip` cannot be scrolled, so it cannot fight. */
+  overflow: hidden;
+  overflow: clip;
+  height: 40px;
+  display: flex; align-items: center;
+}
+.wl-lane-run {
+  display: flex; align-items: center; width: max-content;
+  animation: wl-drift var(--dur, 56s) linear infinite;
+  will-change: transform;
+}
+/* alternating direction is what makes it a wall rather than a ticker: every
+   lane going one way is a stock crawl, opposite ways is weather */
+.wl-lane.is-back .wl-lane-run { animation-direction: reverse; }
+/* the lane under the pointer stops, and the whole wall stops for a keyboard.
+   Motion that will not hold still for the person trying to use it has
+   forgotten what it is on top of. */
+.wl-lane:hover .wl-lane-run,
+.wl-wall.is-drifting:focus-within .wl-lane-run { animation-play-state: paused; }
+.wl-wall.is-drifting .wl-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
+
+@keyframes wl-drift {
+  from { transform: translate3d(0, 0, 0); }
+  /* exactly half the track, which is one copy of the run — so the tail is
+     already on screen when the head leaves and there is no seam to catch */
+  to   { transform: translate3d(-50%, 0, 0); }
+}
 .wl-name {
   font-family: var(--f-id);
   color: rgba(244, 241, 234, 0.60);
@@ -730,8 +824,12 @@
 .wl-wallpage.is-opening .wl-mast-meta  { animation: wl-fade 900ms var(--ease) 900ms both; }
 .wl-wallpage.is-opening .wl-mast-spark { animation: wl-fade 900ms var(--ease) 700ms both; }
 .wl-wallpage.is-opening .wl-mast-ball  { animation: wl-fade 1200ms var(--ease) 1100ms both; }
-.wl-wallpage.is-opening .wl-name       { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
-.wl-wallpage.is-opening .wl-sep        { animation: wl-fade 700ms var(--ease) 1400ms both; }
+/* the cascade arrives a LANE at a time rather than a name at a time. Eighty
+   staggered fades over a field that is also travelling is two animations
+   arguing; one fade per lane reads as the wall assembling in bands. */
+.wl-wallpage.is-opening .wl-lane       { animation: wl-fade 800ms var(--ease) both; animation-delay: var(--in, 900ms); }
+.wl-wallpage.is-opening .wl-wall.is-still .wl-name { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
+.wl-wallpage.is-opening .wl-wall.is-still .wl-sep  { animation: wl-fade 700ms var(--ease) 1400ms both; }
 .wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
 .wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
 
@@ -740,30 +838,64 @@
 @keyframes wl-rise-sheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
 @keyframes wl-drop-sheet { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
 
-/* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
-.wl-letter { padding-top: 8px; }
+/* ═══ THE SHEET'S HEADER AND FOOT ══════════════════════════════════════════
+   Six sheets used to own six different tops. One was a lone close mark on an
+   empty line — a 36px ring floating at the end of a row with nothing in it,
+   which is the single heaviest object on the screen sitting on the single
+   emptiest one. One set a 26px Didone and that same ring on one baseline, so
+   the title read as a label on the button. One was step dots. Three rhythms in
+   a stack of screens somebody walks in ninety seconds reads as three products.
 
-.wl-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
+   It is one row now and it holds two things: what the sheet is ABOUT on the
+   left, and the way out on the right. The lead is always optically lighter
+   than the close, because the close is the only control in the row. */
+.wl-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  min-height: 36px; padding: 2px 0 20px; flex: 0 0 auto;
+}
+.wl-head-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wl-head-mark, .wl-head-spark { color: var(--ash-dim); }
+
+/* One primary, then whatever is quieter than it, in one column with one
+   rhythm — instead of every sheet inventing its own arrangement of a pill and
+   a sentence. */
+.wl-foot {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
+  padding: 26px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.wl-foot > .wl-pill.is-wide { max-width: 100%; overflow: hidden; }
+.wl-foot > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
+
+/* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
+.wl-letter { padding-top: 4px; }
+
+/* the pager, in the header. It is the answer to "where am I", which is what a
+   header is for; under the card it was a third object competing with the two
+   controls beside it and pushing the only thing worth pressing further down. */
+.wl-pager { display: flex; align-items: center; gap: 9px; }
 .wl-pager-b {
-  width: 32px; height: 32px; border-radius: 50%; padding: 0;
+  width: 28px; height: 28px; border-radius: 50%; padding: 0;
   border: 1px solid var(--hair); color: var(--ash);
-  font-family: var(--f-util); font-size: 14px;
+  display: grid; place-items: center;
   transition: color 200ms var(--ease), border-color 200ms var(--ease);
 }
-.wl-pager-b { display: grid; place-items: center; }
 .wl-pager-b--next .wl-icon { transform: scaleX(-1); }
 .wl-pager-b:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244,241,234,0.24); }
 .wl-pager-b:disabled { opacity: 0.28; }
 
-.wl-letter-meta { display: flex; align-items: center; gap: 11px; margin-top: 20px; }
-.wl-letter-acts { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding-bottom: 6px; }
-.wl-letter-acts > .wl-pill { max-width: 100%; overflow: hidden; }
-.wl-letter-acts > .wl-pill span { overflow: hidden; text-overflow: ellipsis; }
+/* the two quiet ways out, under the one loud way on. Centred under a full
+   width pill so the block has an axis, and set at the same weight as each
+   other because between them they are the answer for one reader in twenty and
+   neither is more likely than the other. */
+.wl-letter-quiet {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 10px; padding-top: 12px;
+}
 
 /* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
-.wl-find { padding-top: 8px; }
-.wl-find-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.wl-find-field { margin: 20px 0 10px; }
+.wl-find { padding-top: 4px; }
+.wl-find-h { margin-bottom: 2px; }
+.wl-find-field { margin: 22px 0 10px; }
 .wl-find-results { flex: 1 1 auto; min-height: 180px; padding: 8px 0 4px; }
 .wl-find-hint { padding: 2px 2px 12px; }
 .wl-find-results .wl-row { animation: wl-fade 320ms var(--ease) both; }
@@ -778,14 +910,15 @@
 .wl-find-foot { padding-top: 14px; border-top: 1px solid var(--hair-soft); }
 
 /* ═══ THE COMPOSER ═════════════════════════════════════════════════════════ */
-.wl-write { padding-top: 6px; }
-.wl-write-top { display: flex; align-items: center; justify-content: space-between; padding: 4px 0 20px; }
+.wl-write { padding-top: 4px; }
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
 .wl-write-note .wl-spark { color: var(--ash-dim); }
-.wl-write-floor { margin-top: 26px; justify-content: flex-end; }
-.wl-write-who { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+/* one line under the card, whether the letter is too short or has tripped the
+   screen — to the person writing, both are the same fact */
+.wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
+.wl-write-caught { color: var(--ember); text-align: right; }
 .wl-write-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
   padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
@@ -806,8 +939,7 @@
   transition: transform 900ms var(--ease), opacity 900ms var(--ease), filter 900ms var(--ease);
 }
 .wl-posted.is-b1 .wl-posted-card { transform: scale(0.82) translateY(-6px); opacity: 0.55; filter: blur(1px); }
-.wl-posted.is-b2 .wl-posted-card,
-.wl-posted.is-b3 .wl-posted-card { transform: scale(0.62) translateY(-30px); opacity: 0; filter: blur(6px); }
+.wl-posted.is-b2 .wl-posted-card { transform: scale(0.62) translateY(-30px); opacity: 0; filter: blur(6px); }
 
 /* the convergence — six sparkles falling in on the centre, once */
 .wl-converge { position: absolute; inset: 0; pointer-events: none; }
@@ -822,8 +954,7 @@
 .wl-conv.c4 { --tx:   -8px; --ty: -96px; }
 .wl-conv.c5 { --tx:   22px; --ty: 100px; }
 .wl-posted.is-b1 .wl-conv,
-.wl-posted.is-b2 .wl-conv,
-.wl-posted.is-b3 .wl-conv { animation: wl-converge 1050ms var(--ease) both; }
+.wl-posted.is-b2 .wl-conv { animation: wl-converge 1050ms var(--ease) both; }
 .wl-conv.c1 { animation-delay: 60ms; }
 .wl-conv.c2 { animation-delay: 120ms; }
 .wl-conv.c3 { animation-delay: 40ms; }
@@ -836,9 +967,11 @@
 }
 
 .wl-posted-land { flex: 0 0 auto; opacity: 0; transform: translate3d(0, 16px, 0); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
-.wl-posted.is-b2 .wl-posted-land,
-.wl-posted.is-b3 .wl-posted-land { opacity: 1; transform: none; }
+.wl-posted.is-b2 .wl-posted-land { opacity: 1; transform: none; }
 .wl-posted-count { margin-top: 14px; }
+/* the one control that leaves, carrying the page's own bottom edge rather
+   than the .wl-page padding — this screen is not docked and never was */
+.wl-posted-foot { flex: 0 0 auto; padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px)); }
 
 /* the strip: your name, among the four nearest it on the wall */
 .wl-strip { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 22px; align-items: baseline; }
@@ -852,53 +985,112 @@
   100% { opacity: 1; transform: none; }
 }
 
-.wl-posted-turn {
-  flex: 0 0 auto; opacity: 0; transform: translate3d(0, 12px, 0);
-  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+/* ── beat 0, the reading ──
+   The one second a real build spends calling the classifier, drawn rather than
+   hidden. A wall that screens every letter before publishing it has made a
+   promise to the person the letter is about, and the second where that promise
+   is visibly kept is worth what it costs. It rides on the card because it is
+   about the card, and it leaves with the card. */
+.wl-posted-screen {
+  display: flex; align-items: center; justify-content: center; gap: 11px;
+  padding-top: 18px;
+  transition: opacity 500ms var(--ease);
 }
-.wl-posted.is-b3 .wl-posted-turn { opacity: 1; transform: none; }
-.wl-posted-who { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-.wl-posted-q { margin: 0; font-family: var(--f-display); font-size: 21px; line-height: 1.16; color: var(--ash); }
+.wl-posted.is-b1 .wl-posted-screen,
+.wl-posted.is-b2 .wl-posted-screen { opacity: 0; }
 
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
 .wl-join-h { animation: wl-rise 900ms var(--ease) both; }
-.wl-join-fig { position: relative; margin: 30px 0 22px; display: grid; place-items: center; min-height: 130px; }
+.wl-join-fig { position: relative; margin: 26px 0 24px; display: grid; place-items: center; min-height: 150px; }
 .wl-join-bloom { top: 50%; }
-.wl-pair { position: relative; width: 100%; max-width: 300px; overflow: visible; }
 
-.wl-pair-node { fill: rgba(244,241,234,0.10); stroke: rgba(244,241,234,0.42); stroke-width: 1.2; }
-.wl-pair.is-at1 .wl-pair-node.is-a,
-.wl-pair.is-at2 .wl-pair-node.is-a,
-.wl-pair.is-at3 .wl-pair-node.is-a,
-.wl-pair.is-at4 .wl-pair-node.is-a { fill: rgba(255,244,228,0.35); stroke: var(--glow); }
-.wl-pair.is-at2 .wl-pair-node.is-b,
-.wl-pair.is-at3 .wl-pair-node.is-b,
-.wl-pair.is-at4 .wl-pair-node.is-b { fill: rgba(255,244,228,0.35); stroke: var(--glow); }
-.wl-pair-node { transition: fill 700ms var(--ease), stroke 700ms var(--ease); }
+/* ── the circuit ──
+   Two circles and two quadratic curves became the two HALVES OF THE MARK'S OWN
+   RING, out of `eclipticHalves()` — the same radius, the same 0.5 flatten, the
+   same -19 degree tilt as the logo. Each half leaves one person and travels to
+   the other; the star ignites the instant both exist. What is standing on the
+   screen at the end is the mark, assembled by two people, and neither half of
+   it was a mark on its own. */
+.wl-circuit { position: relative; width: 100%; max-width: 330px; overflow: visible; }
 
-/* the arcs are DRAWN, not faded in: a line that appears has been switched on,
-   a line that draws has been sent */
-.wl-pair-arc {
-  fill: none; stroke: rgba(255,244,228,0.45); stroke-width: 1.3; stroke-linecap: round;
-  stroke-dasharray: 190; stroke-dashoffset: 190;
-  transition: stroke-dashoffset 1100ms var(--ease);
+/* the route, held at almost nothing, so each arc is drawn ONTO something
+   rather than into empty space */
+.wl-circuit-ghost { fill: none; stroke: rgba(244,241,234,0.06); stroke-width: 0.6; }
+
+/* a node is not a circle. It is the same four-point star the sparkle and the
+   mark are both built from, so the two people are drawn out of the same curve
+   as the thing they are about to make between them. */
+.wl-circuit-node { opacity: 0.3; transition: opacity 700ms var(--ease); }
+.wl-circuit-node-ring { fill: rgba(244,241,234,0.02); stroke: rgba(244,241,234,0.20); stroke-width: 0.7; }
+.wl-circuit-node-star { fill: rgba(244,241,234,0.5); transition: fill 700ms var(--ease); }
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-a,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-b { opacity: 1; }
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-a .wl-circuit-node-star,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-b .wl-circuit-node-star {
+  fill: var(--glow); filter: drop-shadow(0 0 5px rgba(255,244,228,0.6));
 }
-.wl-pair.is-at1 .wl-pair-arc.is-a,
-.wl-pair.is-at2 .wl-pair-arc.is-a,
-.wl-pair.is-at3 .wl-pair-arc.is-a,
-.wl-pair.is-at4 .wl-pair-arc.is-a { stroke-dashoffset: 0; }
-.wl-pair.is-at2 .wl-pair-arc.is-b,
-.wl-pair.is-at3 .wl-pair-arc.is-b,
-.wl-pair.is-at4 .wl-pair-arc.is-b { stroke-dashoffset: 0; }
 
-/* nothing at the junction until both arcs exist — the product, in one ornament */
-.wl-pair-halo, .wl-pair-star { opacity: 0; transition: opacity 900ms var(--ease); }
-.wl-pair-star { transform-box: fill-box; transform-origin: center; }
-.wl-pair-star path { fill: var(--glow); }
-.wl-pair.is-at3 .wl-pair-halo, .wl-pair.is-at4 .wl-pair-halo { opacity: 1; }
-.wl-pair.is-at3 .wl-pair-star, .wl-pair.is-at4 .wl-pair-star { opacity: 1; animation: wl-twinkle 4200ms var(--ease) infinite; }
+/* the halves. `pathLength=100` normalises the dash to a percentage, so the
+   number here is a share of the arc rather than a length that would have to be
+   recomputed if the mark's radius ever moved. */
+.wl-circuit-arc {
+  fill: none; stroke: var(--glow); stroke-width: 1.5; stroke-linecap: round;
+  stroke-dasharray: 100; stroke-dashoffset: 100;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px rgba(255,244,228,0.3));
+  transition: stroke-dashoffset 1200ms var(--ease-out);
+}
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-arc.is-a,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-arc.is-b { stroke-dashoffset: 0; }
+
+/* the third layer. It is not animated and it does not need to be: it only
+   exists once the star is there to be crossed, which is the same beat. */
+.wl-circuit-arc.is-over {
+  stroke-dasharray: none; stroke-dashoffset: 0;
+  opacity: 0; transition: opacity 460ms var(--ease);
+}
+.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-arc.is-over { opacity: 0.9; }
+
+/* the point of light that runs ahead of each half as it draws. A line that
+   DRAWS has been sent; a line that appears was switched on — and a light that
+   leads it is what makes the difference legible at a glance. It rides the same
+   path the arc is stroked along, on the same duration and the same curve, so
+   it cannot drift off its own line. */
+.wl-circuit-lead {
+  fill: var(--glow); opacity: 0;
+  offset-rotate: 0deg; offset-distance: 0%;
+  filter: drop-shadow(0 0 5px rgba(255,244,228,0.9));
+}
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-a,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-b {
+  animation: wl-lead 1200ms var(--ease-out) both;
+}
+@keyframes wl-lead {
+  0%   { opacity: 0; offset-distance: 0%; }
+  14%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; offset-distance: 100%; }
+}
+
+/* nothing at the centre until BOTH halves exist. The product, in one ornament,
+   with no caption under it. The star carries its own light rather than sitting
+   in a second radial: the Bloom behind this SVG is the one accent this screen
+   spends, and a glow drawn round the shape it belongs to is a source, where a
+   soft circle behind the whole figure is a grey cloud with an edge on it. */
+.wl-circuit-star {
+  opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  transform: scale(0.28) rotate(-26deg);
+  filter: drop-shadow(0 0 7px rgba(255, 244, 228, 0.55));
+  transition: opacity 420ms var(--ease), transform 780ms var(--ease);
+}
+.wl-circuit-star path { fill: var(--glow); }
+.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-star {
+  opacity: 1; transform: none;
+  animation: wl-breathe 5400ms var(--ease) 1100ms infinite;
+}
+@keyframes wl-breathe { 0%, 100% { opacity: 0.92; } 50% { opacity: 1; } }
 
 /* the rule, in the poster's nav voice */
 .wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -988,7 +1180,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
   }
-  .wl-root .wl-orbit-body { animation: none !important; }
   .wl-root .wl-spark.is-twinkle { animation: none !important; opacity: 0.8; }
   .wl-main.is-under { filter: none; opacity: 0.22; }
 }
@@ -1214,7 +1405,7 @@
 
   .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
-  .wl-join-fig .wl-pair { max-width: 240px; }
+  .wl-join-fig .wl-circuit { max-width: 250px; }
   .wl-core-sky { height: 168px; }
   .wl-posted-stage { min-height: 150px; }
 }
@@ -1331,7 +1522,7 @@
 /* the circuit. `pathLength=100` normalises the dash to a percentage, so the
    number here is a share of the orbit rather than a length that would have to
    be recomputed if the ring's radius ever moved. */
-.wl-ecl-sweep { transition: stroke-dashoffset 760ms cubic-bezier(0.33, 0.02, 0.15, 1); }
+.wl-ecl-sweep { transition: stroke-dashoffset 900ms cubic-bezier(0.33, 0.02, 0.15, 1); }
 .wl-ov.is-at1 .wl-ecl-sweep,
 .wl-ov.is-at2 .wl-ecl-sweep,
 .wl-ov.is-at3 .wl-ecl-sweep,
@@ -1361,7 +1552,10 @@
      the direction it would be written in. */
   clip-path: inset(0 100% 0 -0.1em);
   opacity: 0;
-  transition: clip-path 680ms var(--ease), opacity 180ms linear;
+  /* 560ms, not 680. The wipe has to LAND on beat 4 rather than finish after
+     it — the bloom reaching full and the word arriving whole are one event,
+     and everything after them is the hold. */
+  transition: clip-path 560ms var(--ease), opacity 180ms linear;
 }
 .wl-ov.is-at3 .wl-ov-word,
 .wl-ov.is-at4 .wl-ov-word,
@@ -1378,7 +1572,7 @@
   filter: blur(6px);
 }
 .wl-ov.is-at3 .wl-ov-sheen,
-.wl-ov.is-at4 .wl-ov-sheen { animation: wl-sheen 740ms var(--ease) both; }
+.wl-ov.is-at4 .wl-ov-sheen { animation: wl-sheen 620ms var(--ease) both; }
 @keyframes wl-sheen {
   0%   { opacity: 0;    transform: translateX(0); }
   22%  { opacity: 0.85; }
@@ -1424,11 +1618,21 @@
    letter and a whole one are not the same object with the words swapped. */
 .wl-paper.is-shut { background: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
 
-.wl-letter-top { display: flex; justify-content: flex-end; padding: 0 0 12px; flex: 0 0 auto; }
-.wl-reveal-top { display: flex; justify-content: flex-end; padding: 0 0 6px; flex: 0 0 auto; }
-
-.wl-shut { width: 100%; display: flex; flex-direction: column; gap: 12px; }
-.wl-shut .wl-label { padding-left: 2px; }
+/* ── the door, wherever it is met ──
+   Reading, writing and reporting are behind one address, and all three used to
+   say so in their own words in their own place. This is the one wording in the
+   one shape: the sentence that names what is shut, and the pill that opens it,
+   and nothing else. */
+.wl-locked {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 13px;
+  padding: 18px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.wl-locked-spark { color: var(--ash-dim); }
+.wl-locked-say {
+  margin: 0; max-width: 40ch;
+  font-family: var(--f-letter); font-size: 15.5px; line-height: 1.55; color: var(--ash);
+}
+.wl-locked .wl-pill { margin-top: 5px; }
 
 /* ═══ THE GATE ═════════════════════════════════════════════════════════════
    Two fields across two steps, and the second half of the address is painted
@@ -1436,12 +1640,6 @@
    holds to, for the same reason: the constant part of an identifier is not
    something a person should be able to get wrong. */
 .wl-gate { padding-top: 4px; }
-.wl-gate-top, .wl-remove-top {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 2px 0 22px; flex: 0 0 auto;
-}
-.wl-gate-mark { color: var(--ash); }
-.wl-remove-spark { color: var(--ash-dim); }
 .wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
 .wl-gate-note { padding-bottom: 16px; }
 .wl-gate-who { padding-top: 14px; }
@@ -1457,11 +1655,6 @@
   font-size: 12.5px; line-height: 1.5; color: var(--ash-dim);
   max-width: 42ch;
 }
-.wl-gate-foot {
-  flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
-  padding: 26px 0 calc(6px + env(safe-area-inset-bottom, 0px));
-}
-
 /* the address. One baseline carrying an editable half and a fixed half. */
 .wl-addr, .wl-code { position: relative; display: flex; align-items: baseline; gap: 2px; padding-bottom: 11px; }
 .wl-addr-in, .wl-code-in {
@@ -1503,7 +1696,85 @@
 /* the search foot carries two offers now, and they wrap on a narrow phone */
 .wl-find-foot { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* ═══ THE REPORT ═══════════════════════════════════════════════════════════
+   The tap takes the letter off the wall; everything after it happens to
+   something nobody can see. So this sheet has no dialogue, no category picker
+   and no severity: one pill, then a small box, then a sentence about where it
+   went. The order is the whole design and the styling says so — the quote sits
+   at reading weight and the controls sit under it, because somebody about to
+   take a letter off a public wall should be looking at the letter while they
+   do it and not at a confirmation describing one. */
+.wl-report { padding-top: 4px; }
+.wl-report-what { flex: 0 0 auto; display: flex; flex-direction: column; gap: 11px; padding: 18px 0 4px; }
+.wl-report-quote {
+  margin: 0; padding: 2px 0 2px 15px;
+  border-left: 2px solid var(--hair);
+  font-family: var(--f-letter); font-size: 15.5px; line-height: 1.5;
+  color: var(--ash);
+}
+.wl-report-done { padding-top: 14px; }
+.wl-report-read {
+  flex: 0 0 auto; min-height: 76px; padding-top: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.wl-report .wl-gate-beta { margin-top: 20px; }
+
+/* the small box. It counts nothing and it is three lines tall: a box the size
+   of the composer would say a case is being made, and nobody is making one. */
+.wl-reason { position: relative; margin-top: 22px; padding-bottom: 12px; flex: 0 0 auto; }
+.wl-reason textarea {
+  width: 100%; display: block; resize: none;
+  background: none; border: 0; padding: 0;
+  font-family: var(--f-letter); font-size: 16px; line-height: 1.5;
+  color: var(--chalk);
+}
+.wl-reason textarea:focus { outline: none; }
+.wl-reason textarea::placeholder { color: rgba(96, 92, 85, 0.62); }
+.wl-reason:focus-within .wl-field-line::after { transform: scaleX(1); }
+
+/* ═══ THE HANDOFF ══════════════════════════════════════════════════════════
+   Drawn as a destination, not as a security step: one button carrying the
+   provider's shape on the same 24-unit grid as every other glyph here, and one
+   line under it saying what is asked and what is kept. A verification screen
+   that explains itself in four bullet points has already told somebody they
+   are being processed. */
+.wl-remove-handoff { display: flex; flex-direction: column; gap: 11px; padding-top: 14px; }
+.wl-remove-handoff .wl-waiting { padding-bottom: 2px; }
+
+/* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* its own row in the masthead's column, under the title and over the dock */
   .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 30px 0 0; }
+
+  /* The bleed goes right, where there is a viewport edge to run off. The fade
+     stays on BOTH ends, and the left one is not optional: a lane's first name
+     starts mid-word by design, and without a dissolve it reads as text that
+     has been chopped rather than as a name walking in. It is shorter on the
+     left because there is a column gutter behind it doing half the work. */
+  .wl-wall.is-drifting {
+    /* a little into the gutter on the left as well, so the dissolve happens
+       over empty column rather than over the first name in every lane */
+    margin: 0 -40px 0 -30px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 88%, transparent 100%);
+    gap: 2px;
+    /* ── and it sits in the middle of its column ──
+       The lanes are a fixed block about 440px tall, and the grid row they are
+       in is the whole height of the page. Anchored to the top, the composition
+       was a banner with seven hundred pixels of nothing under it, which reads
+       as a list that ran out rather than as air. Centred, the masthead sits at
+       the top left, the names sit opposite it, the one control sits bottom
+       left, and the empty field around all three is the design — which is what
+       the rest of this file already says about the column on a wide screen. */
+    align-self: center;
+  }
+  .wl-lane { height: 52px; }
 }
+
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  /* 350px of height, eight lanes: the lane is the first thing to give its
+     space back, and the masking goes with the bleed. */
+  .wl-wall.is-drifting { margin: 0 -26px 0 0; gap: 0; }
+  .wl-lane { height: 32px; }
+}
+
