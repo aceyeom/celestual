@@ -13,8 +13,11 @@
 export const BASE = '/beta'
 
 // Which sheet, if any, is raised over the wall. The wall itself never
-// unmounts while one of these is up — that is what makes it a surface.
-export const SHEETS = new Set(['letter', 'find', 'write'])
+// unmounts while one of these is up — that is what makes it a surface. The
+// gate and the takedown are on this list too, and deliberately: neither is a
+// place you go, and a person sent away from the names to answer something is a
+// person who has to find their way back to them.
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove'])
 
 export function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
@@ -25,6 +28,8 @@ export function parse(pathname) {
     case 'letter': return { name: 'letter', id }   // a letter, raised over the wall
     case 'find':   return { name: 'find' }         // the search, raised over the wall
     case 'write':  return { name: 'write', id }    // the composer, raised over the wall
+    case 'gate':   return { name: 'gate' }         // the door on the LETTERS, not on the wall
+    case 'remove': return { name: 'remove', id }   // a name coming off, asking for nothing
     case 'posted': return { name: 'posted' }       // it is up, and the wall took it
     case 'join':   return { name: 'join' }         // the ONLY door to the core service
     case 'orbit':  return { name: 'orbit', id }    // the core service, standing

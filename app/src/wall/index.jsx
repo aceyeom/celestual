@@ -32,11 +32,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS, BASE } from './router.js'
-import { Field } from './art.jsx'
+import { Field, eclipticSVG } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { liveCount } from './data.js'
+import { liveCount, revision } from './data.js'
 
 import Wall from './screens/Wall.jsx'
 import Letter from './screens/Letter.jsx'
@@ -45,6 +45,9 @@ import Write from './screens/Write.jsx'
 import Posted from './screens/Posted.jsx'
 import Join from './screens/Join.jsx'
 import Core from './screens/Core.jsx'
+import Gate from './screens/Gate.jsx'
+import Remove from './screens/Remove.jsx'
+import Overture from './Overture.jsx'
 
 const FONTS = 'https://fonts.googleapis.com/css2'
   + '?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400'
@@ -64,10 +67,21 @@ const FIELD = {
   posted: 'drift',
   join:   'slow',
   orbit:  'drift',
+  gate:   'slow',
+  remove: 'still',   // the one screen where the room stops moving
 }
+
+// The overture plays once per tab and never again. It is held here rather than
+// in the store because it is about THIS load: a person who refreshes has
+// decided to start over and should get the whole thing, and a person walking
+// back from a letter should not sit through a logo to do it.
+let BOOTED = false
 
 export default function WallApp() {
   const [route, setRoute] = useState(() => parse(window.location.pathname))
+  // 0 the overture has the screen · 1 the wall is mounted and cascading under
+  // a black that is on its way out · 2 the overture is gone
+  const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
   const [lit, setLit] = useState(false)
@@ -85,9 +99,29 @@ export default function WallApp() {
     link.href = FONTS
     link.dataset.wall = 'faces'
     document.head.appendChild(link)
+
+    // ── the icon ──
+    // The mark, in the tab, drawn from the same constants the mark on the
+    // screen is drawn from. A second hand-drawn favicon would be a copy of a
+    // shape that is still being tuned, and it would be the copy that shipped
+    // wrong. Production's own icon is put back on the way out.
+    const was = [...document.querySelectorAll('link[rel~="icon"]')]
+    const icon = document.createElement('link')
+    icon.rel = 'icon'
+    icon.type = 'image/svg+xml'
+    icon.href = `data:image/svg+xml,${encodeURIComponent(eclipticSVG())}`
+    icon.dataset.wall = 'icon'
+    was.forEach((el) => el.remove())
+    document.head.appendChild(icon)
+
     const title = document.title
     document.title = 'celestual — someone here wrote something they never sent'
-    return () => { link.remove(); document.title = title }
+    return () => {
+      link.remove()
+      icon.remove()
+      was.forEach((el) => document.head.appendChild(el))
+      document.title = title
+    }
   }, [])
 
   // ── the scan ──
@@ -107,7 +141,11 @@ export default function WallApp() {
     }
   }, [])
 
-  // The field lights once, under the wall's opening cascade.
+  // The field lights once, under the wall's opening cascade — and it starts
+  // while the overture still has the screen, behind an opaque black, so its
+  // 1600ms fade is finished by the time that black lifts off it. A sky that
+  // fades up AFTER the reveal is a second animation competing with the reveal
+  // for the same frames.
   useEffect(() => {
     const t = setTimeout(() => setLit(true), reduce ? 0 : 60)
     return () => clearTimeout(t)
@@ -157,15 +195,23 @@ export default function WallApp() {
 
   const setField = useCallback((m) => setOverride(m), [])
   const back = useCallback(() => go('wall'), [go])
+  const handOff = useCallback(() => setBoot(1), [])
+  const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
   const mode = override || FIELD[route.name] || 'drift'
-  const shared = { go, back, setField, reduce }
+  // Read on every render, which for this component means on every route
+  // change — the only moment a screen under a sheet can come back into view.
+  // It is what makes a name taken down on a sheet actually be gone from the
+  // wall that sheet was raised over.
+  const shared = { go, back, setField, reduce, rev: revision() }
   const onSheet = SHEETS.has(route.name)
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />
   if (route.name === 'find') sheet = <Find {...shared} />
   if (route.name === 'write') sheet = <Write to={route.id} {...shared} />
+  if (route.name === 'gate') sheet = <Gate {...shared} />
+  if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
 
   let base = null
   switch (route.name) {
@@ -183,11 +229,26 @@ export default function WallApp() {
         <div className="wl-grain" />
       </div>
 
-      <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined}>
-        {base}
-      </main>
+      {/* Nothing is mounted under the overture until it starts to lift, and
+          then everything is: the wall's own cascade runs while the black is
+          still on its way out, so the two read as one movement rather than as
+          a logo followed by a page. */}
+      {boot > 0 && (
+        <>
+          <main className={`wl-main${onSheet ? ' is-under' : ''}`} aria-hidden={onSheet || undefined}>
+            {base}
+          </main>
+          {sheet}
+        </>
+      )}
 
-      {sheet}
+      {boot < 2 && (
+        <Overture
+          reduce={reduce}
+          onReveal={handOff}
+          onDone={settle}
+        />
+      )}
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>

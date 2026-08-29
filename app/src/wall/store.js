@@ -6,12 +6,13 @@
 // some second key produces a second walk-through that behaves differently
 // from the first — in front of the person you are showing it to.
 
-const KEY = 'celestual.wall.v3'
+const KEY = 'celestual.wall.v4'
 
-// There is no handle here, and there was one in v2. The wall does not ask who
-// anybody is, has nothing to tell them later, and cannot check anything on
-// their behalf — so it holds no identity, not even locally. What is left is
-// four facts about the last few minutes in this tab.
+// There is still no handle in here, and the address that arrived in v4 is not
+// one. The wall does not ask who is WRITING, has nothing to tell a writer
+// later, and cannot check anything on their behalf. What `member` buys is one
+// thing only: the letters come out of redaction. It is never attached to a
+// letter and the composer never reads it.
 const EMPTY = {
   source: 'direct',   // which printed surface produced this scan
   query: '',          // the last thing typed into the search
@@ -20,6 +21,10 @@ const EMPTY = {
   written: [],        // letters put up in this session, newest first. This is
                       // the ONLY thing that opens the tab to the core service.
   seen: false,        // the opening cascade has played once
+  member: null,       // a berkeley.edu address, if one has been given. It gates
+                      // READING and nothing else.
+  removed: [],        // handles that have asked to come off the wall. Held
+                      // beside everything else so the reset clears them too.
 }
 
 let cache = null

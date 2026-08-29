@@ -18,19 +18,19 @@
 //     that name is free, be the first to put a letter under it.
 
 import { useEffect, useMemo, useState } from 'react'
-import { Sheet, HandleField, Label, Row, Pill, PillTag, ArrowLink, Display, Icon } from '../parts.jsx'
+import { Sheet, HandleField, Label, Row, Pill, PillTag, Close, Display, Icon } from '../parts.jsx'
 import { Mark, Sparkle } from '../art.jsx'
 import { search, wall, lettersFor, normHandle, validHandle, ago, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
 
-export default function Find({ go, back }) {
+export default function Find({ go, back, rev }) {
   const [value, setValue] = useState(() => getState().query || '')
   const q = normHandle(value)
   // Empty is not blank. Before anybody has typed, the sheet shows the names
   // carrying the most letters — the wall's own heaviest rows. A search sheet
   // that opens onto a void teaches somebody that there is nothing to find,
   // which is the exact opposite of what this surface is for.
-  const top = useMemo(() => wall().slice().sort((a, b) => b.count - a.count || b.at - a.at).slice(0, 6), [])
+  const top = useMemo(() => wall().slice().sort((a, b) => b.count - a.count || b.at - a.at).slice(0, 6), [rev])
   const hits = useMemo(() => (q.length >= 2 ? search(q) : top), [q, top])
   const exact = q.length >= 2 && hits.length > 0 && hits[0].handle === q
 
@@ -50,9 +50,7 @@ export default function Find({ go, back }) {
       <div className="wl-sheet-in wl-find">
         <div className="wl-find-top">
           <Display size="s" as="h2" id="wl-find-h">Look for a name.</Display>
-          <button type="button" className="wl-iconbtn" onClick={back} aria-label="close" title="close">
-            <Icon name="close" size={18} />
-          </button>
+          <Close onClick={back} />
         </div>
 
         <div className="wl-find-field">
@@ -97,8 +95,16 @@ export default function Find({ go, back }) {
           )}
         </div>
 
+        {/* Two ways on from an empty search, and neither of them is a way
+            back: the X in the corner is the way back, on every sheet, and it
+            does not need a sentence underneath it saying so. */}
         <div className="wl-find-foot">
-          <ArrowLink tone="quiet" size="s" onClick={() => go('write')}>write one instead</ArrowLink>
+          <Pill tone="ghost" icon={<Icon name="write" size={15} />} onClick={() => go('write')}>
+            write one instead
+          </Pill>
+          <Pill tone="ghost" onClick={() => go('remove', q.length >= 2 ? q : '')}>
+            take a name off
+          </Pill>
         </div>
       </div>
     </Sheet>

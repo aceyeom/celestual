@@ -21,8 +21,8 @@
 // both sides do — the product in one ornament, with no caption.
 
 import { useEffect, useState } from 'react'
-import { Display, Label, Pill, ArrowLink, Icon } from '../parts.jsx'
-import { Sparkle, Bloom } from '../art.jsx'
+import { Display, Label, Pill, Close, Icon } from '../parts.jsx'
+import { Bloom, Ecliptic } from '../art.jsx'
 
 // Two nodes, two arcs, and a junction. The arcs are stroked with a dash offset
 // animated to zero, so each is DRAWN rather than faded in — a line that
@@ -67,10 +67,11 @@ export default function Join({ go, setField, reduce }) {
   return (
     <div className={`wl-page wl-join is-at${at}`}>
       <header className="wl-top">
-        <button type="button" className="wl-brand" onClick={() => go('wall')}
-          aria-label="back to the wall" title="the wall">
-          <Icon name="back" size={17} /><Sparkle size={14} />
-        </button>
+        {/* The mark stands, and the X leaves. On a screen that is not a sheet
+            the exit is still the same object it is on every sheet, rather than
+            a chevron welded to the logo. */}
+        <span className="wl-brand is-still"><Ecliptic size={21} className="wl-brand-mark" /></span>
+        <Close onClick={() => go('wall')} label="back to the wall" />
       </header>
 
       <div className="wl-join-air" />
@@ -101,8 +102,6 @@ export default function Join({ go, setField, reduce }) {
         <Pill tone="light" wide icon={<Icon name="join" size={17} />} onClick={() => go('orbit')}>
           register
         </Pill>
-        <div className="wl-gap-s" />
-        <ArrowLink tone="quiet" size="s" onClick={() => go('wall')}>back to the wall</ArrowLink>
       </div>
     </div>
   )

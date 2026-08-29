@@ -9,7 +9,8 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { atHandle } from './data.js'
-import { Sparkle } from './art.jsx'
+import { Ecliptic, Mark, Sparkle } from './art.jsx'
+import { member } from './auth.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,26 @@ export function Label({ children, tone = '', className = '', style, as: Tag = 'd
 // is bad at.
 export function Prose({ children, className = '', style }) {
   return <p className={`wl-prose ${className}`} style={style}>{children}</p>
+}
+
+// ── the redaction ───────────────────────────────────────────────────────────
+// What a letter looks like to somebody who is not from Berkeley: the real
+// letter, its real length, its real line breaks, with every word struck out.
+//
+// It is built out of the actual words rather than out of lorem or a grey block,
+// so the shape on the paper is the shape of the thing behind it — a long letter
+// looks long, a two-line one looks short, and nobody is being shown a fake
+// paragraph. Nothing readable is in the DOM: the bars carry a length and no
+// text, so the letter is not sitting in the page waiting to be read out of it.
+export function Redacted({ text }) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean)
+  return (
+    <p className="wl-redacted" role="img" aria-label={`a letter of ${words.length} words, redacted`}>
+      {words.map((w, i) => (
+        <span key={i} className="wl-redact-w" style={{ '--n': Math.min(14, w.length) }} />
+      ))}
+    </p>
+  )
 }
 
 export function Rule({ tone = '', className = '', style }) {
@@ -99,9 +120,34 @@ const PATHS = {
   write: 'M4 20h4l10-10a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6zM14.4 7.2l2.4 2.4',
   join:  'M3.4 14.5a2.1 2.1 0 1 0 4.2 0 2.1 2.1 0 1 0-4.2 0M16.4 14.5a2.1 2.1 0 1 0 4.2 0 2.1 2.1 0 1 0-4.2 0M6.6 12.7Q12 5.2 17.4 12.7',
   close: 'M6 6l12 12M18 6L6 18',
+  key:   'M12 4.4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7M10.7 11.2 9.9 19.6h4.2l-.8-8.4',
   back:  'M14 5l-7 7 7 7',
   down:  'M5 10l7 7 7-7',
   play:  'M9 6.5v11l9-5.5z',
+}
+
+// ── the close mark ──────────────────────────────────────────────────────────
+// Its own drawing on its own grid, not the 24-unit set above, because it is
+// the one glyph that appears on every sheet and it is the only thing standing
+// where a line of text used to. Two strokes through a hairline ring, finer
+// than the nav icons so it reads as a dismissal rather than as a fourth
+// destination, and it turns a quarter under the pointer.
+//
+// It replaced "back to the wall" set as a link. A sheet that closes is not a
+// place you navigate to, and typesetting the exit as a sentence made it the
+// loudest thing on three screens.
+export function Close({ onClick, label = 'close', className = '' }) {
+  return (
+    <button
+      type="button" className={`wl-close ${className}`}
+      onClick={onClick} aria-label={label} title={label}
+    >
+      <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"
+        fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round">
+        <path d="M5.1 5.1 14.9 14.9M14.9 5.1 5.1 14.9" />
+      </svg>
+    </button>
+  )
 }
 
 export function Icon({ name, size = 20, className = '' }) {
@@ -139,22 +185,37 @@ export function IconButton({ name, label, onClick, tone = '', on = false, classN
 // person can do here. Nothing in it is a word, and nothing in it moves between
 // screens — a nav that rearranges itself is a nav somebody has to re-read.
 export function TopBar({ go, at = 'wall', onMark }) {
+  const who = member()
   return (
     <header className="wl-top">
       <button
         type="button" className="wl-brand"
         onClick={onMark || (() => go('wall'))}
-        aria-label={at === 'wall' ? 'celestual — back to the top' : 'back to the wall'}
+        aria-label={at === 'wall' ? 'celestual, back to the top' : 'back to the wall'}
         title={at === 'wall' ? 'the top' : 'the wall'}
       >
-        {at === 'wall'
-          ? <Sparkle size={17} />
-          : <><Icon name="back" size={17} /><Sparkle size={14} /></>}
+        {at !== 'wall' && <Icon name="back" size={17} />}
+        <Ecliptic size={21} className="wl-brand-mark" />
       </button>
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="wall" label="the wall" on={at === 'wall'} onClick={() => go('wall')} />
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
         <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => go('write')} />
+        {/* The fourth target, and the only one that changes what it draws. A
+            keyhole while the letters are shut, and once they are open, the
+            constellation of the address that opened them — the same figure the
+            wall draws beside a handle, so a person's own mark is the same
+            object here as it is there. */}
+        <button
+          type="button"
+          className={`wl-iconbtn wl-memberbtn${at === 'gate' ? ' is-on' : ''}`}
+          onClick={() => go('gate')}
+          aria-label={who ? `signed in as ${who}` : 'sign in to read the letters'}
+          title={who ? who : 'sign in to read'}
+          aria-current={at === 'gate' ? 'page' : undefined}
+        >
+          {who ? <Mark handle={who} size={22} lit /> : <Icon name="key" />}
+        </button>
       </nav>
     </header>
   )
