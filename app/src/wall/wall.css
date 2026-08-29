@@ -114,7 +114,14 @@
 .wl-root ::selection { background: rgba(244, 241, 234, 0.17); color: var(--chalk); }
 .wl-root :focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
 .wl-root * { box-sizing: border-box; }
-.wl-root button { font: inherit; color: inherit; background: none; border: 0; }
+/* The button reset, in :where() so it carries NO specificity of its own.
+   Written as `.wl-root button` it is (0,1,1) and beats every single-class role
+   below it — `.wl-iconbtn`, `.wl-arrow.is-quiet`, `.wl-name.is-w0`, `.wl-close`
+   — so every button in the build rendered at full chalk with no border, and
+   the entire tonal hierarchy of the surface was flat. `:where()` drops it to
+   (0,1,0), which ties with the roles and hands the decision to source order:
+   the reset is here, and every role that wants a tone is below it. */
+.wl-root :where(button) { font: inherit; color: inherit; background: none; border: 0; }
 
 .wl-sr {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -329,6 +336,60 @@
 .wl-iconbtn { position: relative; }
 .wl-iconbtn.is-on { color: var(--chalk); background: rgba(244,241,234,0.09); border-color: var(--hair); }
 
+/* ═══ THE CLOSE MARK ═══════════════════════════════════════════════════════
+   The exit, and the same object on every screen that has one. It is set inside
+   a hairline ring so it has a target on a phone without being a filled button,
+   it is finer than the nav glyphs so it does not read as a fourth destination,
+   and it turns a quarter under the pointer — the one bit of play in the whole
+   system, spent on the control people reach for when they want out.
+
+   It stands where "back to the wall" used to be typeset as a sentence. */
+.wl-close {
+  flex: 0 0 auto;
+  display: grid; place-items: center; padding: 0;
+  width: 36px; height: 36px; border-radius: 50%;
+  color: var(--ash);
+  border: 1px solid var(--hair);
+  background: rgba(244, 241, 234, 0.014);
+  transition: color 240ms var(--ease), border-color 240ms var(--ease),
+              background 240ms var(--ease), transform 420ms var(--ease);
+}
+.wl-close svg { display: block; }
+.wl-close:hover {
+  color: var(--chalk);
+  border-color: rgba(244, 241, 234, 0.26);
+  background: rgba(244, 241, 234, 0.05);
+  transform: rotate(90deg);
+}
+.wl-close:active { transform: rotate(90deg) scale(0.94); }
+
+/* the quiet control — a sentence that is a control, set so it never competes
+   with the pill above it. Used for the second option under a primary action
+   and for nothing else. */
+.wl-quiet {
+  align-self: center; padding: 10px 4px;
+  font-family: var(--f-util); font-size: 12.5px; letter-spacing: 0.01em;
+  color: var(--ash-dim);
+  transition: color 200ms var(--ease);
+}
+.wl-quiet:hover { color: var(--ash); text-decoration: underline; text-underline-offset: 3px; }
+
+/* "this is me" — the way off the wall, wherever a name is standing. Set as a
+   hairline capsule rather than as a link, because it is a control with a
+   consequence and a link is what people skim past. */
+.wl-mine {
+  flex: 0 0 auto;
+  padding: 5px 12px; border-radius: var(--r-pill);
+  border: 1px solid var(--hair-soft);
+  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.012em;
+  color: var(--ash-dim);
+  transition: color 220ms var(--ease), border-color 220ms var(--ease);
+}
+.wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
+.wl-mine.is-wide { padding: 9px 16px; font-size: 12px; }
+
+.wl-wall-foot { padding: 6px 0 26px; display: flex; justify-content: center; flex: 0 0 auto; }
+
 /* ═══ THE PAPER ════════════════════════════════════════════════════════════
    The journal's card. A knife edge would be the Bindery's; this reference's
    card is generously rounded, so this one is too.
@@ -505,6 +566,22 @@
 }
 
 .wl-halftone { display: block; color: rgba(244, 241, 234, 0.62); }
+
+/* ── the mark ──
+   The one drawn object in the build that is not an ornament. It takes its
+   colour from whatever it is inside, which is what lets the same component be
+   the tab's brand, the gate's letterhead and the overture's hero without a
+   single tone prop anywhere. */
+.wl-ecl { display: block; flex: 0 0 auto; color: currentColor; }
+
+.wl-lockup { display: inline-flex; align-items: center; gap: 0.38em; line-height: 1; }
+.wl-lockup-word {
+  font-family: var(--f-display); font-weight: 400;
+  letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
+  /* the Didone's optical centre sits below its cap line, so the word is lifted
+     a hair to sit on the mark's axis rather than on its baseline */
+  transform: translateY(-0.03em);
+}
 
 /* the constellation */
 .wl-mark { display: block; overflow: visible; }
@@ -1008,10 +1085,13 @@
   .wl-page { max-width: 1080px; padding: 0 40px 40px; }
 
   /* ── the spread ── */
+  /* Four rows, and the third exists only for the takedown: the names span the
+     whole height of the right-hand column, so a foot placed in the row the
+     dock is in lands on top of them. */
   .wl-wallpage {
     display: grid;
     grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     column-gap: 64px;
     align-content: start;
   }
@@ -1024,12 +1104,12 @@
   .wl-mast-spark { top: -6px; right: 34px; }
   .wl-mast-ball { right: 18px; bottom: -46px; }
   .wl-wall {
-    grid-column: 2; grid-row: 2 / span 2;
+    grid-column: 2; grid-row: 2 / span 3;
     padding-top: 34px;
     line-height: 2.15;
   }
   .wl-wallpage .wl-dock {
-    grid-column: 1; grid-row: 3;
+    grid-column: 1; grid-row: 4;
     position: sticky; bottom: 0;
     align-self: end;
     margin: 0; padding: 0;
@@ -1108,14 +1188,15 @@
   .wl-wallpage {
     display: grid;
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     column-gap: 40px;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
   .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; }
   .wl-mast-ball { display: none; }
-  .wl-wall { grid-column: 2; grid-row: 2 / span 2; padding-top: 10px; line-height: 1.9; }
-  .wl-wallpage .wl-dock { grid-column: 1; grid-row: 3; align-self: end; margin: 0; padding: 0; max-width: 340px; }
+  .wl-wall { grid-column: 2; grid-row: 2 / span 3; padding-top: 10px; line-height: 1.9; }
+  .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 4px 0 10px; }
+  .wl-wallpage .wl-dock { grid-column: 1; grid-row: 4; align-self: end; margin: 0; padding: 0; max-width: 340px; }
   .wl-wallpage .wl-dock-veil { left: -22px; right: -16px; width: auto; transform: none; top: -70px; }
 
   /* 390px of height is the constraint here, and display type is what spends
@@ -1146,4 +1227,283 @@
   .wl-wallpage { column-gap: 88px; grid-template-columns: 380px minmax(0, 1fr); }
   .wl-mast { padding-top: 46px; }
   .wl-wall { padding-top: 52px; }
+}
+
+/* ═══ THE OVERTURE ═════════════════════════════════════════════════════════
+   The first second, on black, once per tab.
+
+   ── the ground ──
+   Pure black, and it is the only pure black in the build. Everywhere else
+   #000 is refused on principle — a screen that is off rather than a room with
+   the light down — but that is exactly what this is: there is nothing in this
+   room yet, and the void it dissolves into is three values up from here, so
+   the change of ground reads as the light coming on rather than as a cut.
+
+   ── the circuit ──
+   A 24-unit stroke runs along the band's own centreline inside a mask, with
+   the dash offset driven from 100 to 0. Two things follow from doing it that
+   way rather than by fading the ring up. The reveal travels the route the ring
+   ACTUALLY takes, because the mask path and the ring come out of the same
+   constants in art.jsx and cannot drift; and the band arrives with its own
+   varying width already on it, so what draws is the mark rather than a stroke
+   pretending to be one.
+
+   ── the slide ──
+   The mark starts alone on the optical centre. When the name comes, the whole
+   lockup slides left by exactly half the word — measured, in JS, after the
+   Didone has actually landed — so the composition is centred at the start, at
+   the end, and at every frame in between. It is the single most expensive
+   -looking move here and it is one transform on one element.
+
+   Everything that animates is transform, opacity or a dash offset. Nothing in
+   this sequence touches layout after the first frame. */
+.wl-ov {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  pointer-events: none;
+  padding: 24px;
+}
+.wl-ov-veil {
+  position: absolute; inset: 0;
+  background: #000;
+  opacity: 1;
+  transition: opacity 560ms var(--ease-out);
+}
+.wl-ov.is-at5 .wl-ov-veil { opacity: 0; }
+
+.wl-ov-stage {
+  position: relative;
+  display: grid; place-items: center;
+  transition: transform 560ms var(--ease-out), opacity 440ms var(--ease-out);
+  will-change: transform, opacity;
+}
+/* the lift — the lockup leaves upward and slightly toward the viewer while the
+   black goes with it, so the two are one movement and not a fade over a fade */
+.wl-ov.is-at5 .wl-ov-stage { transform: translate3d(0, -14px, 0) scale(1.055); opacity: 0; }
+
+/* the one bright thing on the screen, and it is a luminance rather than a
+   colour — the same rule the rest of the build holds to, spent here on the
+   only object there is */
+.wl-ov-bloom {
+  position: absolute; left: 50%; top: 50%;
+  width: 460px; height: 460px; max-width: 130vw; max-height: 130vw;
+  transform: translate3d(-50%, -50%, 0) scale(0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255, 244, 228, 0.16) 0%, rgba(255, 244, 228, 0.05) 34%, rgba(255, 244, 228, 0) 70%);
+  opacity: 0;
+  transition: opacity 900ms var(--ease), transform 1200ms var(--ease);
+}
+.wl-ov.is-at2 .wl-ov-bloom { opacity: 0.5; transform: translate3d(-50%, -50%, 0) scale(0.86); }
+.wl-ov.is-at3 .wl-ov-bloom,
+.wl-ov.is-at4 .wl-ov-bloom { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+.wl-ov.is-at5 .wl-ov-bloom { opacity: 0.34; transform: translate3d(-50%, -50%, 0) scale(1.14); }
+
+.wl-ov-lock {
+  position: relative;
+  display: flex; align-items: center;
+  column-gap: 0.34em;
+  font-size: clamp(34px, 11.4vw, 62px);
+  color: var(--chalk);
+  /* the mark alone, on the optical centre. --shift is half the word plus the
+     gap, measured once the real face has landed. */
+  transform: translate3d(var(--shift, 0px), 0, 0);
+  transition: transform 720ms var(--ease);
+  will-change: transform;
+}
+.wl-ov.is-at3 .wl-ov-lock,
+.wl-ov.is-at4 .wl-ov-lock,
+.wl-ov.is-at5 .wl-ov-lock { transform: none; }
+
+/* ── the mark ── */
+.wl-ov-mark {
+  width: 1.3em; height: 1.3em;
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 520ms var(--ease), transform 760ms var(--ease);
+}
+.wl-ov.is-at1 .wl-ov-mark { opacity: 1; transform: scale(1); }
+.wl-ov.is-at2 .wl-ov-mark,
+.wl-ov.is-at3 .wl-ov-mark,
+.wl-ov.is-at4 .wl-ov-mark,
+.wl-ov.is-at5 .wl-ov-mark { opacity: 1; transform: none; }
+
+/* the circuit. `pathLength=100` normalises the dash to a percentage, so the
+   number here is a share of the orbit rather than a length that would have to
+   be recomputed if the ring's radius ever moved. */
+.wl-ecl-sweep { transition: stroke-dashoffset 760ms cubic-bezier(0.33, 0.02, 0.15, 1); }
+.wl-ov.is-at1 .wl-ecl-sweep,
+.wl-ov.is-at2 .wl-ecl-sweep,
+.wl-ov.is-at3 .wl-ecl-sweep,
+.wl-ov.is-at4 .wl-ecl-sweep,
+.wl-ov.is-at5 .wl-ecl-sweep { stroke-dashoffset: 0; }
+
+/* the star arrives as the circuit closes behind it: up off nothing, with a few
+   degrees bleeding out. A shape that settles reads as an object; a shape that
+   fades in reads as an image of one. */
+.wl-ov-mark .wl-ecl-star {
+  transform-origin: 50px 50px;
+  opacity: 0; transform: scale(0.3) rotate(-26deg);
+  transition: opacity 380ms var(--ease), transform 640ms var(--ease);
+}
+.wl-ov.is-at2 .wl-ecl-star,
+.wl-ov.is-at3 .wl-ecl-star,
+.wl-ov.is-at4 .wl-ecl-star,
+.wl-ov.is-at5 .wl-ecl-star { opacity: 1; transform: none; }
+
+/* ── the name ── */
+.wl-ov-word {
+  position: relative;
+  font-family: var(--f-display); font-weight: 400;
+  letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
+  transform: translateY(-0.03em);
+  /* a wipe, not a fade. The word is uncovered from the mark outward, which is
+     the direction it would be written in. */
+  clip-path: inset(0 100% 0 -0.1em);
+  opacity: 0;
+  transition: clip-path 680ms var(--ease), opacity 180ms linear;
+}
+.wl-ov.is-at3 .wl-ov-word,
+.wl-ov.is-at4 .wl-ov-word,
+.wl-ov.is-at5 .wl-ov-word { clip-path: inset(0 -0.12em 0 -0.1em); opacity: 1; }
+
+/* the sheen rides the wipe's leading edge. It is what stops the reveal reading
+   as a rectangle sliding off the word: a light source travels, and the letters
+   are lit as it passes them. */
+.wl-ov-sheen {
+  position: absolute; top: -0.24em; bottom: -0.24em; left: -0.6em; width: 0.6em;
+  pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg,
+    rgba(255, 244, 228, 0) 0%, rgba(255, 244, 228, 0.85) 52%, rgba(255, 244, 228, 0) 100%);
+  filter: blur(6px);
+}
+.wl-ov.is-at3 .wl-ov-sheen,
+.wl-ov.is-at4 .wl-ov-sheen { animation: wl-sheen 740ms var(--ease) both; }
+@keyframes wl-sheen {
+  0%   { opacity: 0;    transform: translateX(0); }
+  22%  { opacity: 0.85; }
+  78%  { opacity: 0.5; }
+  100% { opacity: 0;    transform: translateX(calc(100% + 8em)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the sequence still ARRIVES — it simply does not travel to get there. The
+     JS starts it assembled and the veil is the only thing that moves. */
+  .wl-root ~ .wl-ov .wl-ov-stage, .wl-ov .wl-ov-stage { transform: none; }
+  .wl-ov .wl-ov-lock { transform: none; }
+  .wl-ov .wl-ov-sheen { display: none; }
+  .wl-ov .wl-ov-veil { transition-duration: 300ms; }
+}
+
+/* ═══ THE REDACTION ════════════════════════════════════════════════════════
+   What a letter looks like to somebody who is not from Berkeley.
+
+   Built out of the letter's own words: one bar per word, at that word's
+   length, so the paragraph keeps its real shape, its real line breaks and its
+   real length, and nobody is being shown a fake letter. Nothing readable is
+   in the document behind it — the bars carry a length and no text.
+
+   It is struck in the paper's own ink at three quarters, not in grey. A grey
+   block on cream is a loading state; ink on paper is a decision somebody made
+   about a document. */
+.wl-redacted {
+  margin: 0;
+  font-family: var(--f-letter); font-size: 16.5px; line-height: 1.52;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 10px 0.36em;
+}
+.wl-redact-w {
+  display: inline-block;
+  width: calc(var(--n) * 0.5em);
+  height: 0.68em;
+  border-radius: 2px;
+  background: var(--paper-ink);
+  opacity: 0.7;
+}
+/* the card, shut. A hair flatter and cooler than the open one, so a redacted
+   letter and a whole one are not the same object with the words swapped. */
+.wl-paper.is-shut { background: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
+
+.wl-letter-top { display: flex; justify-content: flex-end; padding: 0 0 12px; flex: 0 0 auto; }
+.wl-reveal-top { display: flex; justify-content: flex-end; padding: 0 0 6px; flex: 0 0 auto; }
+
+.wl-shut { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.wl-shut .wl-label { padding-left: 2px; }
+
+/* ═══ THE GATE ═════════════════════════════════════════════════════════════
+   Two fields across two steps, and the second half of the address is painted
+   beside the box rather than typed into it — the same rule the handle field
+   holds to, for the same reason: the constant part of an identifier is not
+   something a person should be able to get wrong. */
+.wl-gate { padding-top: 4px; }
+.wl-gate-top, .wl-remove-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 0 22px; flex: 0 0 auto;
+}
+.wl-gate-mark { color: var(--ash); }
+.wl-remove-spark { color: var(--ash-dim); }
+.wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
+.wl-gate-note { padding-bottom: 16px; }
+.wl-gate-who { padding-top: 14px; }
+.wl-gate-copy { color: var(--ash); font-size: 15px; line-height: 1.55; padding-top: 16px; max-width: 40ch; }
+.wl-gate-fault {
+  min-height: 20px; padding-top: 10px;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--ember);
+}
+.wl-gate-beta {
+  margin: 22px 0 0; padding: 13px 15px;
+  border: 1px dashed var(--hair); border-radius: var(--r-field);
+  font-size: 12.5px; line-height: 1.5; color: var(--ash-dim);
+  max-width: 42ch;
+}
+.wl-gate-foot {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
+  padding: 26px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+}
+
+/* the address. One baseline carrying an editable half and a fixed half. */
+.wl-addr, .wl-code { position: relative; display: flex; align-items: baseline; gap: 2px; padding-bottom: 11px; }
+.wl-addr-in, .wl-code-in {
+  min-width: 0; background: none; border: 0; padding: 0;
+  font-family: var(--f-id); font-size: 24px; line-height: 1.18;
+  color: var(--chalk); letter-spacing: -0.014em;
+}
+.wl-addr-in { flex: 0 0 auto; min-width: 3ch; max-width: 62vw; }
+.wl-addr-in::placeholder, .wl-code-in::placeholder { color: rgba(96, 92, 85, 0.62); }
+.wl-addr-in:focus, .wl-code-in:focus { outline: none; }
+.wl-addr-fix {
+  flex: 0 0 auto;
+  font-family: var(--f-id); font-size: 24px; line-height: 1.18;
+  color: var(--ash-dim); letter-spacing: -0.014em;
+}
+.wl-addr:focus-within .wl-field-line::after,
+.wl-code:focus-within .wl-field-line::after { transform: scaleX(1); }
+.wl-code-in { width: 100%; letter-spacing: 0.32em; font-size: 30px; }
+
+/* ═══ COMING OFF THE WALL ══════════════════════════════════════════════════
+   The one screen that asks for nothing. It is styled to look like the rest of
+   the build rather than like a legal page in a drawer: same sheet, same paper
+   voice, same one primary control. A takedown that looks like fine print is a
+   takedown that is hoping not to be used. */
+.wl-remove { padding-top: 4px; }
+.wl-remove-field { padding: 26px 0 0; }
+.wl-remove-what { min-height: 46px; padding-top: 18px; }
+.wl-remove-row { display: flex; align-items: center; gap: 12px; }
+.wl-remove-gone { padding-top: 18px; }
+
+/* the member button in the bar keeps the constellation on the same optical
+   size as the three glyphs beside it */
+.wl-memberbtn .wl-mark { width: 22px; height: 22px; }
+
+/* the brand, standing rather than travelling */
+.wl-brand.is-still { padding: 6px 8px 6px 0; color: var(--ash); }
+.wl-brand-mark { color: currentColor; }
+
+/* the search foot carries two offers now, and they wrap on a narrow phone */
+.wl-find-foot { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (min-width: 900px) {
+  /* its own row in the masthead's column, under the title and over the dock */
+  .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 30px 0 0; }
 }

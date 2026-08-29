@@ -36,8 +36,8 @@ import { getState, patch } from '../store.js'
 // from a letter should land on the wall, not on a title.
 let OPENED = false
 
-export default function Wall({ go, reduce }) {
-  const tiles = useMemo(() => wall(), [])
+export default function Wall({ go, reduce, rev }) {
+  const tiles = useMemo(() => wall(), [rev])
   const letters = liveCount()
   const written = getState().written
 
@@ -124,6 +124,23 @@ export default function Wall({ go, reduce }) {
           </span>
         ))}
       </nav>
+
+      {/* ── the way off ──
+          A public list of handles says, in public, that these people are being
+          written about, and not one of them asked to be. So the way back off
+          sits on the wall itself, in plain sight under the names, and it costs
+          one tap and nothing else: no account, no address, no code, no form.
+          Anything more than that is the wall asking the one person on it who
+          never chose to be there to give it something first.
+
+          It is set quiet rather than hidden. Quiet is right, because it is not
+          what the wall is for; hidden would be the tell that the wall would
+          rather not be asked. */}
+      <div className="wl-wall-foot">
+        <button type="button" className="wl-mine is-wide" onClick={() => go('remove')}>
+          your handle here? take it off the wall
+        </button>
+      </div>
 
       {/* ── the dock ──
           The gradient that rises off the bottom edge. It is the reason the

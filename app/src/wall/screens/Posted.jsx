@@ -39,7 +39,12 @@ export default function Posted({ go, reduce }) {
   // second copy of the same letter on the wall.
   const [row] = useState(() => {
     if (!draft || !draft.to || !draft.body) return null
+    // `write` refuses a name that has asked to come off the wall, which is the
+    // one way a draft can be valid when it is composed and refused when it is
+    // put up. The screen falls through to its empty state rather than
+    // celebrating a letter that is not there.
     const r = write(draft)
+    if (!r) { patch({ draft: null }); return null }
     patch({ draft: null, written: [r.id, ...getState().written].slice(0, 12) })
     return r
   })
@@ -108,8 +113,11 @@ export default function Posted({ go, reduce }) {
       <div className="wl-push" />
 
       <div className="wl-posted-foot">
+        {/* It says what you get, not where you came from. "Back to the wall"
+            describes a direction; the wall now has this letter on it, and that
+            is the thing worth naming on the one control that leaves here. */}
         <Pill tone="light" wide icon={<Icon name="wall" size={17} />} onClick={() => go('wall')}>
-          back to the wall
+          see it on the wall
         </Pill>
       </div>
     </div>

@@ -21,8 +21,12 @@
 //   Orbit      the ring system the journey screen opens on
 //   Bloom      the soft blurred mass the modal is built around
 //   Mark       the constellation that stands where the reference puts a face
+//
+// And one thing that is not an ornament at all: ECLIPTIC, the mark. It is built
+// out of the same SPARK curve as the sparkle above, which is asserted rather
+// than asserted-in-a-comment — see the check at the end of its section.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { hash, rand } from './data.js'
 
 // ── the four-point star ─────────────────────────────────────────────────────
@@ -42,6 +46,206 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
       <path d={SPARK} fill={tone === 'ember' ? 'var(--ember)' : tone === 'ink' ? 'var(--paper-ink)' : 'currentColor'} />
     </svg>
   )
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  ECLIPTIC — THE MARK                                                     ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+//
+// The four-point star of SPARK, drawn slim, inside a ring that passes behind it
+// at the top and in front of it at the bottom. One object rather than two, and
+// the only place in the build where anything crosses anything.
+//
+// ── the ring is a true annulus first, and modulated second ──────────────────
+// A flat ring tilted away from you projects BOTH of its edges by the same
+// cosine, so the band reads full width at the ends of the long axis and
+// foreshortened where it crosses the body. Adding the band's width to the short
+// axis un-scaled instead makes it four and a half times too fat at exactly the
+// point it passes over the star — and a band that is widest where it crosses is
+// a ribbon lying on the mark, not a ring going round it. It also forces a fat
+// gutter to keep the star readable underneath, and that gap is what makes the
+// two read as separate objects.
+//
+// Drawn honestly the band already varies two to one round the ring. BIAS then
+// pushes the inner edge to the far side so the near half runs wider still, and
+// TWIST turns it so the widest part walks. Together, about three to one.
+//
+// Two limits, and both are geometry rather than taste. The inner edge must stay
+// inside the outer or the band breaks open: past roughly bias 2 or twist 10 it
+// does. And every arm must finish clear of the band, because an arm that ENDS
+// inside the band gets notched off and left as a floating tip. On the shipped
+// constants the edges come closest at 0.075, the side arms sit at 0.55 of the
+// hole, and the vertical arms clear the outer edge by 3.86.
+export const ECL = {
+  rx: 42,          // the ring, to the middle of its band
+  flat: 0.5,       // ry/rx — the viewing angle, applied to BOTH edges
+  tilt: -19,       // degrees off horizontal
+  w: 3.2,          // half the band's width in the ring's own plane
+  bias: 1.2,       // the inner edge pushed toward the far side, so the near
+                   // half of the band runs wider than the far half
+  twist: 2,        // and turned a little, so the widest part walks round
+  gutter: 0.7,     // the void between the ring and the star it crosses
+  up: 47, down: 47, side: 24,
+  thick: 0.8,      // how much body the arms carry. 1 is SPARK exactly; each
+                   // step up peels the curve off its axis sooner, and past
+                   // about 1.4 the concave flattens and the star goes diamond
+}
+
+// SPARK's own control points, as fractions of each arm: `along` is how far back
+// along its own radius the control beside a vertex sits, `lean` is how far it
+// leans toward the neighbour it faces.
+const K = { along: 0.42, lean: 0.03, sideAlong: 0.24, sideLean: 0.19 }
+
+const f2 = (v) => Math.round(v * 100) / 100
+const rad = (d) => (d * Math.PI) / 180
+
+// Four vertices, four cubics, and no corner anywhere in it. Each control is
+// built only from its own vertex's radius and its neighbour's DIRECTION —
+// scaling the lean by the neighbour's radius instead makes a short vertex pull
+// harder than a long one, which is its own source of lumpiness on a star whose
+// arms are not equal.
+export function starPath(o) {
+  const ax = { along: K.along * o.thick, lean: K.lean }
+  const sd = { along: K.sideAlong * o.thick, lean: K.sideLean }
+  const V = [{ a: -90, r: o.up, k: ax }, { a: 0, r: o.side, k: sd },
+             { a: 90, r: o.down, k: ax }, { a: 180, r: o.side, k: sd }]
+  const dir = (v) => [Math.cos(rad(v.a)), Math.sin(rad(v.a))]
+  for (let i = 0; i < 4; i++) {
+    const v = V[i], prev = V[(i + 3) % 4], next = V[(i + 1) % 4]
+    const d = dir(v), dn = dir(next), dp = dir(prev)
+    v.p = [d[0] * v.r, d[1] * v.r]
+    v.out = [d[0] * v.r * v.k.along + dn[0] * v.r * v.k.lean,
+             d[1] * v.r * v.k.along + dn[1] * v.r * v.k.lean]
+    v.in = [d[0] * v.r * v.k.along + dp[0] * v.r * v.k.lean,
+            d[1] * v.r * v.k.along + dp[1] * v.r * v.k.lean]
+  }
+  let d = `M${f2(V[0].p[0])} ${f2(V[0].p[1])}`
+  for (let i = 0; i < 4; i++) {
+    const A = V[i], B = V[(i + 1) % 4]
+    d += `C${f2(A.out[0])} ${f2(A.out[1])} ${f2(B.in[0])} ${f2(B.in[1])} ${f2(B.p[0])} ${f2(B.p[1])}`
+  }
+  return d + 'Z'
+}
+
+function ellipse(cx, cy, a, b, tilt) {
+  const t = rad(tilt), dx = a * Math.cos(t), dy = a * Math.sin(t)
+  const arc = `A${f2(a)} ${f2(b)} ${f2(tilt)} 0 1 `
+  return `M${f2(cx + dx)} ${f2(cy + dy)}${arc}${f2(cx - dx)} ${f2(cy - dy)}${arc}${f2(cx + dx)} ${f2(cy + dy)}Z`
+}
+
+// `grow` dilates the band, which is how the gutter that notches the star is cut
+// from the very same numbers rather than from a second set that could drift.
+export function ringPath(grow = 0) {
+  const { rx, flat, tilt, w, bias, twist } = ECL
+  const Ro = rx + w + grow
+  const Ri = Math.max(0.6, rx - w - grow)
+  const t = rad(tilt)
+  return ellipse(50, 50, Ro, Ro * flat, tilt)
+       + ellipse(50 + Math.sin(t) * bias, 50 - Math.cos(t) * bias, Ri, Ri * flat, tilt + twist)
+}
+
+// The band's own centreline, which is what the overture sweeps a mask along.
+// Same numbers as the ring, so the reveal cannot travel a route the ring does
+// not actually take.
+export const ECL_SPINE = ellipse(50, 50, ECL.rx, ECL.rx * ECL.flat, ECL.tilt)
+
+// The half-plane that keeps the near side of the ring. One object, so the
+// component and the favicon string cannot drift apart.
+const NEAR = { x: -110, y: 50, width: 320, height: 160, transform: `rotate(${ECL.tilt} 50 50)` }
+const nearRect = `<rect x="${NEAR.x}" y="${NEAR.y}" width="${NEAR.width}" height="${NEAR.height}" transform="${NEAR.transform}"/>`
+
+// The same drawing as a bare string, for the one place React cannot reach: the
+// tab's icon. Built from the exports above rather than from a second copy, so
+// the drawing in the tab cannot drift from the drawing on the screen.
+//
+// It returns plain markup. Percent-encoding is the CALLER's job and has to be
+// done in one pass over the whole string: a `#` left raw in a data: URI starts
+// a fragment and silently truncates the document at the first `fill="#fff"`,
+// and a `#` pre-encoded here would be double-encoded by that pass and break
+// every `url(#…)` in it.
+export function eclipticSVG(color = '#F4F1EA') {
+  const ring = ringPath()
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+    + `<defs><clipPath id="n">${nearRect}</clipPath>`
+    + '<mask id="m" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">'
+    + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
+    + `<path d="${ringPath(ECL.gutter)}" fill="#000" fill-rule="evenodd" clip-path="url(#n)"/>`
+    + '</mask></defs>'
+    + `<g fill="${color}">`
+    + `<path d="${ring}" fill-rule="evenodd"/>`
+    + `<g mask="url(#m)"><path d="${starPath(ECL)}" transform="translate(50 50)"/></g>`
+    + `<path d="${ring}" fill-rule="evenodd" clip-path="url(#n)"/></g></svg>`
+}
+
+// The mark itself. Three layers in one paint, in this order and never
+// reordered: the whole ring, the star notched by the near band's gutter, then
+// the near band again over the top. That is what puts the ring behind the star
+// at the top of its circuit and in front of it at the bottom.
+//
+// `sweep` is for the overture only: it masks both ring layers with a stroke
+// running along the band's own centreline, so the ring can be DRAWN round its
+// circuit rather than faded up. Everything else in the build takes the mark
+// still, and pays for no mask it does not use.
+export function Ecliptic({ size = 22, sweep = false, className = '', style, title }) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const ring = ringPath()
+  return (
+    <svg
+      className={`wl-ecl ${className}`} style={style}
+      width={size} height={size} viewBox="0 0 100 100"
+      role={title ? 'img' : undefined} aria-label={title || undefined}
+      aria-hidden={title ? undefined : 'true'} focusable="false"
+    >
+      <defs>
+        <clipPath id={`${uid}n`}>
+          <rect x={NEAR.x} y={NEAR.y} width={NEAR.width} height={NEAR.height} transform={NEAR.transform} />
+        </clipPath>
+        <mask id={`${uid}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
+          <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
+          <path d={ringPath(ECL.gutter)} fill="#000" fillRule="evenodd" clipPath={`url(#${uid}n)`} />
+        </mask>
+        {sweep && (
+          <mask id={`${uid}s`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
+            <path
+              className="wl-ecl-sweep" d={ECL_SPINE} pathLength="100"
+              fill="none" stroke="#fff" strokeWidth="24"
+              strokeDasharray="100" strokeDashoffset="100"
+            />
+          </mask>
+        )}
+      </defs>
+      <g className="wl-ecl-ring" mask={sweep ? `url(#${uid}s)` : undefined}>
+        <path d={ring} fill="currentColor" fillRule="evenodd" />
+      </g>
+      <g className="wl-ecl-star" mask={`url(#${uid}m)`}>
+        <path d={starPath(ECL)} transform="translate(50 50)" fill="currentColor" />
+      </g>
+      <g className="wl-ecl-ring is-near" mask={sweep ? `url(#${uid}s)` : undefined}>
+        <path d={ring} fill="currentColor" fillRule="evenodd" clipPath={`url(#${uid}n)`} />
+      </g>
+    </svg>
+  )
+}
+
+// The mark and the name, locked. The gap and the mark's size are both set in
+// ems off the type size, so one number scales the whole lockup and the two
+// halves cannot drift out of proportion at a size nobody checked.
+export function Lockup({ size = 26, sweep = false, word = 'celestual.', className = '', style }) {
+  return (
+    <span className={`wl-lockup ${className}`} style={{ fontSize: `${size}px`, ...style }}>
+      <Ecliptic size={Math.round(size * 1.13)} sweep={sweep} className="wl-lockup-mark" />
+      <span className="wl-lockup-word">{word}</span>
+    </span>
+  )
+}
+
+// The star drawn slim is still SPARK. Equal arms at `thick` 1 must redraw the
+// constant above byte for byte, which is what makes the mark provably built on
+// the curve the rest of the wall already uses rather than on a lookalike.
+if (import.meta.env && import.meta.env.DEV) {
+  const same = starPath({ up: 50, down: 50, side: 50, thick: 1 })
+  const spark = SPARK.replace(/([\d.-]+) ([\d.-]+)/g, (m, x, y) => `${f2(x - 50)} ${f2(y - 50)}`)
+  if (same !== spark) console.warn('[wall] the ecliptic star has drifted off SPARK', same, spark)
 }
 
 // ── the halftone sphere ─────────────────────────────────────────────────────

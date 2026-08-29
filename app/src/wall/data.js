@@ -20,6 +20,7 @@
 // never wired to anything here.
 
 import { SEED } from './seed.js'
+import { getState, patch } from './store.js'
 
 const DAY = 86400000
 
@@ -90,7 +91,64 @@ const LETTERS = SEED.map((row, i) => {
 // walks away from is the wall their own letter is on.
 const WRITTEN = []
 
-function all() { return WRITTEN.concat(LETTERS) }
+// ── coming off the wall ─────────────────────────────────────────────────────
+//
+// Listing somebody's handle on a public wall says, in public, that they are
+// being written about. They did not ask for that and they never agreed to it,
+// so the way back off has to cost them less than being on it does.
+//
+// It costs one tap. No account, no address, no code, no form, no queue, and
+// nothing to prove — the handle goes, every letter under it goes with it, and
+// the name cannot be put back up. A takedown behind a sign-up is a takedown
+// that says "make an account first", which is the wall asking for MORE from
+// the one person on it who never chose to be there.
+//
+// The obvious objection is that anybody can take down anybody. It is the right
+// trade and it is not close: the cost of a wrong removal is one name off a
+// wall, and the cost of a slow one is a person who cannot get their own name
+// off a public page about them. The check that belongs here is a check that
+// the person is who they say — and every honest version of that is a login,
+// which is the thing that must not be in the way. A real build verifies the
+// Instagram account AFTERWARDS, to restore, and leaves the removal instant.
+//
+// It lives in the store rather than in this module so that it survives a
+// reload the way a real removal would, and so the reset clears it with
+// everything else.
+export function removed() { return getState().removed || [] }
+
+export function isRemoved(handle) {
+  return removed().includes(normHandle(handle))
+}
+
+// Returns how many letters went with the name, which is the one fact the
+// screen has to be able to state plainly before it happens and after.
+export function removeHandle(handle) {
+  const h = normHandle(handle)
+  if (!h || isRemoved(h)) return 0
+  const n = lettersFor(h).length
+  patch({ removed: [...removed(), h] })
+  REV += 1
+  return n
+}
+
+// ── the revision ────────────────────────────────────────────────────────────
+// The corpus changes in exactly two places — a letter goes up, a name comes
+// off — and both of them happen on a SHEET raised over a wall that never
+// unmounts. A wall that memoises its tiles on an empty dependency list is a
+// wall that is still showing the name somebody just took down, on the screen
+// they took it down from.
+//
+// A counter rather than a subscription: the shell already re-renders on every
+// route change, which is the only moment the wall can come back into view, so
+// reading a number at that moment is enough and there is nothing to unsubscribe.
+let REV = 0
+export function revision() { return REV }
+
+function all() {
+  const off = removed()
+  const live = WRITTEN.concat(LETTERS)
+  return off.length ? live.filter((l) => !off.includes(l.to)) : live
+}
 
 // ── the wall ────────────────────────────────────────────────────────────────
 // The wall is a wall of HANDLES, not of letters: one tile per recipient,
@@ -153,12 +211,17 @@ export function search(query) {
 
 export function write({ to, body }) {
   const h = normHandle(to)
+  // A name that has come off the wall stays off it. Otherwise the removal is a
+  // delete button rather than a decision, and the next person to type the
+  // handle undoes it without ever knowing it happened.
+  if (isRemoved(h)) return null
   const id = idFor(`${h}:${body}:${Date.now()}`)
   // `mine` is a flag for this tab and this session only. It is what lets the
   // wall light the name you just put up; it is not an author record, it never
   // leaves the browser, and clearing the tab clears it.
   const row = { id, to: h, body: String(body || '').trim(), at: Date.now(), mine: true }
   WRITTEN.unshift(row)
+  REV += 1
   return row
 }
 

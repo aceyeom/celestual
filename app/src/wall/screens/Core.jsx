@@ -38,7 +38,7 @@
 
 import { useMemo, useState } from 'react'
 import {
-  Display, Label, Pill, ArrowLink, Rule, Icon,
+  Display, Label, Pill, Close, Icon,
   Row, Sheet, Paper, Prose, PillTag,
 } from '../parts.jsx'
 import { Orbit, Mark, Sparkle, Halftone } from '../art.jsx'
@@ -88,10 +88,7 @@ export default function Core({ id, go, reduce }) {
             </span>
             <Label><span className="wl-h">{atHandle(me)}</span></Label>
           </div>
-          <button type="button" className="wl-iconbtn" onClick={() => go('wall')}
-            aria-label="back to the wall" title="the wall">
-            <Icon name="wall" />
-          </button>
+          <Close onClick={() => go('wall')} label="back to the wall" />
         </header>
 
         <div className="wl-core-left">
@@ -193,6 +190,7 @@ function Reveal({ ping, me, back, reduce }) {
   return (
     <Sheet onClose={back} tall labelledBy="wl-reveal-h">
       <div className="wl-sheet-in wl-reveal">
+        <div className="wl-reveal-top"><Close onClick={back} /></div>
         <div className="wl-reveal-head">
           <Display size="s" as="h2" id="wl-reveal-h">
             {isMutual ? 'You were both looking.' : 'Still standing.'}
@@ -227,7 +225,6 @@ function Reveal({ ping, me, back, reduce }) {
 
         <div className="wl-reveal-foot">
           {!isMutual && <Label tone="dim">{ping.days} days left · they have not written yours</Label>}
-          <ArrowLink tone="quiet" onClick={back}>close</ArrowLink>
         </div>
       </div>
     </Sheet>
