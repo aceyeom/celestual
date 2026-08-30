@@ -195,12 +195,20 @@ function's `reply` back.* Three nodes.
 Request node, open **Response Mapping**:
 
 - Map JSONPath **`$.reply`** → a new **custom field**, e.g. `celestual_reply`.
+- Map JSONPath **`$.send`** → a second custom field, e.g. `celestual_send`.
 
-Then add a **Send Message** node right after the request, containing just
-`{{celestual_reply}}`.
+Then add a **Condition** node — `celestual_send` **is** `true` — and hang a
+**Send Message** node containing just `{{celestual_reply}}` off its true branch.
+
+`send` is false only when `reply` is empty, which is the function saying *there
+is nothing to tell this person*. On a correctly-scoped `star-` trigger that
+almost never happens; the Condition is there so a broad trigger can never make
+the account answer a stranger with a form letter, and so an empty message is
+never sent. (The same guard, and the incident that produced it, are in
+[MANYCHAT-MUTUAL-DM.md §8.2](./MANYCHAT-MUTUAL-DM.md).)
 
 That message IS the verified-feedback DM: the function returns a human `reply` on
-**every** outcome —
+**every** verification outcome —
 
 | Outcome | The DM the person gets |
 | --- | --- |
@@ -211,7 +219,9 @@ That message IS the verified-feedback DM: the function returns a human `reply` o
 | username unreadable (0018) | `Something went sideways reading your account — get a fresh code in the app and send it again.` |
 | completion RPC threw (0018) | `Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.` |
 | unknown / typo'd / long-pruned code | `That code didn't match an active request — it may have lapsed. Get a fresh code in the app and send it here.` |
-| no code found in the text | `Send the code exactly as the app shows it — like star-1234.` |
+| no code found in the text, but it mentions "star" | `Send the code exactly as the app shows it — like star-1234.` |
+| no code and no mention of "star" (an ordinary sentence — this trigger should not have fired) | *nothing* — `reply` is empty, `send` is `false` |
+| digits that match nothing, in text with no "star" (e.g. "I have 2000 followers") | *nothing* — same guard. Every other failure above proves a real code was sent, so those all still answer. |
 
 Because the DM is an immediate reply to a message the person just sent, it sits
 inside **Meta's 24-hour standard messaging window** — fully ToS-compliant.

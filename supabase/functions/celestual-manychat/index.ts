@@ -26,10 +26,16 @@
 //       { "username": "{{instagram.username}}", "text": "{{last_text_input}}" }
 //   • Response Mapping: map JSONPath $.reply to a text field and send that field
 //     back as the next DM — that's the instant "you're verified ✦" feedback the
-//     sender sees. EVERY response carries a `reply`, so the automation can always
-//     answer (verified, wrong account, expired code) instead of going silent.
+//     sender sees. Every verification outcome carries a `reply` (verified, wrong
+//     account, expired code), so the automation never goes silent on somebody
+//     who was actually trying to verify.
 //     Replying immediately to a user-initiated DM sits inside Meta's 24-hour
 //     standard messaging window, so this is ToS-clean.
+//   • ALSO map JSONPath $.send to a field, and put a Condition on it before the
+//     Send Message node. `send` is false exactly when `reply` is empty, which is
+//     this function saying "there is nothing to tell this person — do not
+//     message them". An automation that sends unconditionally will interrupt
+//     strangers' conversations; see the check path below.
 //
 // THE MUTUAL DM (migration 0023, docs/MANYCHAT-MUTUAL-DM.md). This function is
 // also the delivery route for the one piece of news the product exists to
@@ -47,6 +53,10 @@
 //
 // A second, optional trigger can ask for the news explicitly by POSTing
 // { "action": "check", "username": … } — no code needed, nothing else changes.
+// That trigger fires on ORDINARY DMs, from anyone, including people who have
+// never heard of CELESTUAL and who are mid-conversation with a human. So it
+// answers ONLY when there is real news: no news, empty `reply`, `send:false`,
+// and the account says nothing at all.
 //
 // Required secret (Supabase → Edge Functions → Secrets):
 //   MANYCHAT_SHARED_SECRET — a long random string you also set in the ManyChat
@@ -100,6 +110,16 @@ function codeCandidates(text: string): string[] {
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+// Every answer also says, explicitly, whether ManyChat should send anything at
+// all. A blank `reply` is a DELIBERATE SILENCE, not a failure — see the check
+// path below for why that had to exist. ManyChat cannot reason about an empty
+// custom field on its own, so map `$.send` to a field and put a Condition on it
+// in front of the Send Message node (docs/MANYCHAT-MUTUAL-DM.md §8.2).
+function answer(body: Record<string, unknown> & { reply?: string }, status = 200) {
+  const text = typeof body.reply === 'string' ? body.reply : '';
+  return json({ ...body, reply: text, send: text !== '' }, status);
 }
 
 // Any mutual news waiting for this account, rendered and MARKED DELIVERED — the
@@ -159,7 +179,7 @@ Deno.serve(async (req) => {
   // the only way a match can be pushed to them. Map it.
   const subscriberId = body.subscriber_id != null ? String(body.subscriber_id) : '';
   if (!username) {
-    return json({ ok: false, status: 'no_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
+    return answer({ ok: false, status: 'no_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
   }
 
   // This person just messaged us, so their 24-hour window is open and we know
@@ -180,22 +200,42 @@ Deno.serve(async (req) => {
   // telling. Taken once, here, so every exit below can carry it.
   const news = await mutualFor(username);
 
-  // An automation can ask for nothing else: a keyword trigger ("mutual", "hi",
-  // or a Default Reply set to fire every time) that POSTs action:"check".
+  // An automation can ask for nothing else: a keyword trigger ("celestual",
+  // "mutual", or a Default Reply set to fire every time) that POSTs
+  // action:"check". Keep such a trigger's keyword narrow — ManyChat's "message
+  // contains" is a raw substring match, so `hi` fires on "everything".
   if (action === 'check') {
-    return json({
-      ok: true,
-      status: news ? 'mutual' : 'nothing_waiting',
-      reply: news || 'Nothing waiting yet. If someone you entered enters you back, this is where you’ll hear it.',
-    });
+    // NOTHING WAITING MEANS NOTHING TO SAY.
+    //
+    // This used to answer "Nothing waiting yet. If someone you entered enters
+    // you back, this is where you'll hear it." — written for a curious visitor,
+    // and wrong for everybody else. The check automation fires on ORDINARY
+    // MESSAGES, most of them from people who have never touched CELESTUAL and
+    // who are usually mid-conversation with a human. To them that sentence is a
+    // robot interrupting, about a thing they never signed up for; it landed
+    // under a real reply in a real recruiting thread, which is how this was
+    // found. It also cannot be right by construction: this path has no idea
+    // whether the sender is a member, so it cannot promise anybody anything.
+    //
+    // So the automation now speaks only when it has the one piece of news it
+    // exists to deliver. Silence is the correct answer to "hi".
+    if (!news) return answer({ ok: true, status: 'nothing_waiting', reply: '' });
+    return answer({ ok: true, status: 'mutual', reply: news });
   }
 
   const candidates = codeCandidates(text);
   if (candidates.length === 0) {
-    // No code, but we have something to say: say it. Anyone else gets the same
-    // instruction they always got.
-    if (news) return json({ ok: true, status: 'mutual', reply: news });
-    return json({ ok: false, status: 'no_code', reply: 'Send the code exactly as the app shows it — like star-1234.' });
+    // No code, but we have something to say: say it.
+    if (news) return answer({ ok: true, status: 'mutual', reply: news });
+    // Same rule as the check path, for the same reason: only answer somebody
+    // who was plainly TRYING to verify. The verification automation is supposed
+    // to fire on "message contains star-" and nothing else, but a broad keyword
+    // or a Default Reply pointed here would otherwise hand a stranger's ordinary
+    // sentence a form letter about a code they never asked for.
+    if (/star/i.test(text)) {
+      return answer({ ok: false, status: 'no_code', reply: 'Send the code exactly as the app shows it — like star-1234.' });
+    }
+    return answer({ ok: true, status: 'nothing_waiting', reply: '' });
   }
 
   let alreadyVerified: string | null = null;
@@ -226,7 +266,7 @@ Deno.serve(async (req) => {
       // ManyChat can map `reply` to a field and send it back as a DM (optional).
       // Someone verifying on a new phone may have had news waiting the whole
       // time; this is the first legal moment to hand it over.
-      return json({
+      return answer({
         ok: true, status: 'verified', handle: data.handle, mutual: news !== '',
         reply: withMutual(`✦ @${data.handle} is verified on CELESTUAL — head back to the app to finish.`, news),
       });
@@ -247,7 +287,7 @@ Deno.serve(async (req) => {
   // about their state instead of a dead-end: a re-sent code after a success
   // (or after the direct Meta webhook won the race) means they're already in.
   if (alreadyVerified) {
-    return json({ ok: true, status: 'already_verified', handle: alreadyVerified, mutual: news !== '', reply: withMutual(`✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.`, news) });
+    return answer({ ok: true, status: 'already_verified', handle: alreadyVerified, mutual: news !== '', reply: withMutual(`✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.`, news) });
   }
   // This sender is BANNED (since 0020 that is the only thing that reaches here —
   // an opt-out no longer blocks anyone from verifying). The code was fine, so
@@ -257,23 +297,35 @@ Deno.serve(async (req) => {
   // No news can reach this branch: a ban erases the matches it would have come
   // from, and the outbox cascades off them (0023 §10).
   if (banned) {
-    return json({ ok: false, status: 'banned', reply: 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
+    return answer({ ok: false, status: 'banned', reply: 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
   }
   if (codeExpired) {
-    return json({ ok: false, status: 'code_expired', mutual: news !== '', reply: withMutual('That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.', news) });
+    return answer({ ok: false, status: 'code_expired', mutual: news !== '', reply: withMutual('That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.', news) });
   }
   // The username ManyChat sent didn't survive normalisation (an unmapped or
   // mangled {{instagram.username}} field). The person can't fix this — say so
   // instead of blaming their code, and check the log line above.
   if (badInput) {
-    return json({ ok: false, status: 'bad_username', mutual: news !== '', reply: withMutual('Something went sideways reading your account — get a fresh code in the app and send it again.', news) });
+    return answer({ ok: false, status: 'bad_username', mutual: news !== '', reply: withMutual('Something went sideways reading your account — get a fresh code in the app and send it again.', news) });
   }
   if (rpcFailed) {
-    return json({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.', news) });
+    return answer({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.', news) });
   }
   // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
   // code_expired above for a full week, so landing HERE means a typo'd code or
   // a code older than that retention — every other failure now has its own
   // status above.)
-  return json({ ok: false, status: 'no_match', mutual: news !== '', reply: withMutual('That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.', news) });
+  //
+  // Unknown digits with no "star" anywhere are, most likely, not a code at all:
+  // a sentence with a year or a follower count in it, relayed by a trigger that
+  // is broader than it should be. Every other outcome above proves a real code
+  // was involved and still speaks; this one doesn't, so it stays quiet unless
+  // the sender wrote the prefix the app told them to. Verification is untouched
+  // — a bare-digit code sent through a Default Reply setup either matches
+  // (verified) or lands on one of the named failures, which all still answer.
+  if (!/star/i.test(text) && !news) {
+    console.log('silent', JSON.stringify({ username, status: 'no_match_no_prefix' }));
+    return answer({ ok: true, status: 'nothing_waiting', reply: '' });
+  }
+  return answer({ ok: false, status: 'no_match', mutual: news !== '', reply: withMutual('That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.', news) });
 });
