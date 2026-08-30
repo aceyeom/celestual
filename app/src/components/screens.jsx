@@ -18,6 +18,7 @@ import {
   dmCode, savePending, loadPending, clearPending, genProof,
 } from '../api/igverify.js'
 import { useI18n } from '../i18n/index.js'
+import { useHandleResolve, HandleReadout, ResolvedHandle } from './handle.jsx'
 import { leatherSurface } from '../texture.js'
 import { renderSkyCard } from '../card.js'
 import {
@@ -411,6 +412,12 @@ export function WhoScreen({ C, ctx }) {
   const valid = ctx.them.trim().length >= 2 && normHandle(ctx.them) !== normHandle(ctx.me)
   const [confirming, setConfirming] = React.useState(false)
   const normd = normHandle(ctx.them)
+  // The account behind the @, if there is one. It changes ONE thing about this
+  // screen and nothing else: which sentence the second tap is confirming. A
+  // handle we could not find is still placeable, because our lookup is not the
+  // registry and a person who knows their friend's @ is right.
+  const at = useHandleResolve(ctx.them)
+  const unfound = at.state === 'missing'
   const onNext = () => {
     if (!valid) return
     if (!confirming) {
@@ -453,6 +460,16 @@ export function WhoScreen({ C, ctx }) {
           <div data-sendoff-field>
             <HandleSearchField C={C} value={ctx.them} onChange={ctx.setThem} placeholder={t('who.placeholder')} autoFocus onEnter={onNext} scale="hero" />
           </div>
+          {/* the account, under the line. This is the only thing on the screen
+              that confirms the @ against a person rather than against the
+              typing, and it draws nothing at all until it has something true
+              to say.
+
+              It stands down for exactly one case: the second tap on a handle
+              we could not find, where the confirm line below is already saying
+              that and saying it better, because it also says what pressing
+              again will do. */}
+          {!(confirming && unfound) && <HandleReadout C={C} at={at} size={30} />}
           {/* The note that used to stand here when nothing was being confirmed
               ("no alert. no trace. invisible until they enter you back.") is
               gone. It was a paragraph under a field explaining what the field
@@ -463,7 +480,9 @@ export function WhoScreen({ C, ctx }) {
             <div key="confirm" className="fade" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 7px', color: C.muted, fontFamily: FONT.sans, fontWeight: 300, fontSize: SIZE.small, lineHeight: 1.5, padding: '0 2px', textShadow: ONSKY }}>
               <span>{t('who.confirm1')}</span>
               <HandleChip C={C} handle={normd} />
-              <span>{t('who.confirm2')}</span>
+              {/* one line, and which line depends on whether we found anybody.
+                  Stacked, the two would say the same thing twice. */}
+              <span>{unfound ? t('who.confirmUnknown') : t('who.confirm2')}</span>
             </div>
           )}
           {ctx.error && <Note C={C} tone="accent">{ctx.error}</Note>}
@@ -577,6 +596,10 @@ export function YouScreen({ C, ctx }) {
 
         <div className="enter" style={{ animationDelay: '.08s', display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
           <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder={t('you.handle')} autoFocus emphasis onEnter={submit} />
+          {/* your own account, read back to you. A typo in your OWN @ is worse
+              than a typo in theirs: it sends the ownership code to a stranger's
+              inbox and leaves your pings under a name that is not yours. */}
+          <ResolvedHandle C={C} value={ctx.me} />
           {/* the ONLY line that ever sits under this field, and only once the
               server has actually decided something */}
           {ctx.verified && <Note C={C} tone="accent">{t('verify.youDone')}</Note>}
@@ -3281,6 +3304,10 @@ export function PrivacyScreen({ C, ctx }) {
         <P>{t('privacy.p5b')}</P>
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: SPACE.md }}>
           <Field C={C} kind="handle" value={handle} onChange={setHandle} placeholder={t('privacy.removePlaceholder')} />
+          {/* This door is permanent by intent, and it is the one field in the
+              product where a typo shuts somebody ELSE out of it. The account is
+              shown before the button is pressed, not after. */}
+          <ResolvedHandle C={C} value={handle} />
           <PrimaryButton C={C} disabled={!ok || status === 'working'} onClick={submit}>
             {status === 'working' ? t('privacy.removing') : t('privacy.removeCta')}
           </PrimaryButton>
@@ -3359,6 +3386,7 @@ function AccountsEditor({ C, ctx }) {
           <OutlineButton C={C} onClick={add} style={{ flexShrink: 0 }}>{t('accounts.addBtn')}</OutlineButton>
         </div>
       )}
+      {canAdd && <ResolvedHandle C={C} value={draft} style={{ padding: '0 2px' }} />}
       <Note C={C}>{t('accounts.note')}</Note>
     </div>
   )
@@ -3465,6 +3493,7 @@ export function AccountSheet({ C, ctx }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <FieldLabel C={C}>{t('account.handleLabel')}</FieldLabel>
             <Field C={C} kind="handle" value={ctx.me} onChange={ctx.setMe} placeholder="your.handle" />
+            <ResolvedHandle C={C} value={ctx.me} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <FieldLabel C={C} optional={t('account.emailOptional')}>{t('account.emailLabel')}</FieldLabel>

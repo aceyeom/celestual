@@ -8,9 +8,10 @@
 // one edit in one file rather than nine inline objects that drifted apart.
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { atHandle } from './data.js'
+import { atHandle, normHandle } from './data.js'
 import { Ecliptic, Mark, Sparkle } from './art.jsx'
 import { member } from './auth.js'
+import { resolveHandle, peekHandle, resolveEnabled, IDLE } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -535,6 +536,79 @@ export function Waiting({ label = 'looking' }) {
       <Sparkle size={11} twinkle delay={240} />
       <Sparkle size={11} twinkle delay={480} />
       <span className="wl-sr">{label}</span>
+    </div>
+  )
+}
+
+// ── who that is ─────────────────────────────────────────────────────────────
+// The one thing on this build that leaves the tab, and it is worth being exact
+// about what it does and does not send.
+//
+// A letter is addressed to a handle typed from memory, and a mistyped one is a
+// letter about somebody, published under somebody else's name, that neither of
+// them can ever find. So the composer shows the account: a face, a name, the
+// badge if it has one, under the line, before the letter is written.
+//
+// WHAT GOES OUT is the handle being typed and nothing else. Not the writer's
+// address, not their session, not the letter, not a word of it. The wall has no
+// author field for any of that to come from (data.js), and the lookup is a
+// question about a public Instagram profile, asked by our server, not by this
+// browser. What comes back is a display name and a proxied picture.
+//
+// It is behind the same flag as everywhere else and OFF by default: with it
+// off, this component renders nothing and the composer is exactly what it was.
+export function HandleReadout({ handle }) {
+  const [at, setAt] = useState(IDLE)
+  const h = normHandle(handle)
+  useEffect(() => {
+    if (!resolveEnabled || h.length < 2) { setAt(IDLE); return undefined }
+    const known = peekHandle(h)
+    if (known) { setAt(known); return undefined }
+    let alive = true
+    const id = setTimeout(async () => {
+      if (alive) setAt({ state: 'looking', handle: h })
+      const r = await resolveHandle(h)
+      if (alive) setAt(r)
+    }, 300)
+    return () => { alive = false; clearTimeout(id) }
+  }, [h])
+
+  // Idle and unknown draw nothing. "Unknown" is our lookup failing, not an
+  // answer about the account, and a wall that reported the two the same way
+  // would be telling somebody their friend does not exist.
+  if (at.state === 'idle' || at.state === 'unknown') return null
+
+  if (at.state === 'looking') {
+    return (
+      <div className="wl-who is-looking" aria-live="polite">
+        <Waiting label="looking" />
+      </div>
+    )
+  }
+
+  if (at.state === 'missing') {
+    return (
+      <div className="wl-who is-missing" aria-live="polite">
+        <span className="wl-who-disc is-empty" aria-hidden="true">{h.slice(0, 1)}</span>
+        <span className="wl-who-line">no instagram account under that name. you can still write it.</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="wl-who" aria-live="polite">
+      <span className="wl-who-disc" aria-hidden="true">
+        {at.avatar
+          ? <img src={at.avatar} alt="" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          : h.slice(0, 1)}
+      </span>
+      <span className="wl-who-id">
+        <span className="wl-who-name">
+          {at.name || atHandle(h)}
+          {at.verified && <Sparkle size={9} />}
+        </span>
+        <span className="wl-who-at">{atHandle(h)}{at.private ? ' · private' : ''}</span>
+      </span>
     </div>
   )
 }

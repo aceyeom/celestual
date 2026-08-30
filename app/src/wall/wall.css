@@ -2104,6 +2104,50 @@
 .wl-remove-handoff { display: flex; flex-direction: column; gap: 11px; padding-top: 14px; }
 .wl-remove-handoff .wl-waiting { padding-bottom: 2px; }
 
+/* ═══ WHO THAT IS ══════════════════════════════════════════════════════════
+   The resolver's line, under the handle field in the composer. A LINE, not a
+   card: everything on this build that names somebody is a row on a baseline,
+   and a bordered tile with an avatar in it would be the one object here
+   borrowed from a settings screen.
+
+   It carries a face, a name, and the badge if the account has one. It carries
+   NO COUNTS. Not followers, not letters, not posts. The whole wall is built on
+   nobody being ranked, and a follower number under the field would have undone
+   that in one line of markup. */
+.wl-who {
+  display: flex; align-items: center; gap: 11px;
+  margin-top: 16px; min-height: 30px;
+  animation: wl-fade 320ms var(--ease) both;
+}
+.wl-who.is-looking { padding-left: 2px; }
+.wl-who-disc {
+  width: 30px; height: 30px; flex: 0 0 auto;
+  border-radius: 999px; overflow: hidden;
+  display: grid; place-items: center;
+  background: var(--void-2); border: 1px solid var(--hair);
+  font-family: var(--f-id); font-size: 13px; color: var(--ash-dim);
+}
+.wl-who-disc.is-empty { background: none; border-style: dashed; }
+.wl-who-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.wl-who-name {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
+  font-family: var(--f-util); font-size: 14px; line-height: 1.25; color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-who-name .wl-spark { color: var(--glow); flex: 0 0 auto; }
+.wl-who-at {
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.01em; color: var(--ash-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Not found, and the letter still goes up. The line is the colour of every
+   other quiet fact on this build, not the ember: this is not a fault, and
+   painting it as one would tell somebody they had done something wrong when
+   all that happened is that our lookup came back empty. */
+.wl-who-line {
+  font-family: var(--f-util); font-size: 13px; line-height: 1.45; color: var(--ash);
+}
+
 /* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* its own row in the masthead's column, under the title and over the dock */

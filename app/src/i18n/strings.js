@@ -63,6 +63,21 @@ const en = {
   'who.errUnverified': 'we couldn’t confirm the @ is yours. verify again and it’ll place.',
   'who.demoHint': 'sandbox: enter @demo and the match will find you.',
 
+  // ── the handle resolver (docs/HANDLE-RESOLVER.md) ──────────────────────
+  // The line under every field where an @ is typed. Three states, three lines,
+  // and the second one is the one that matters: NOT FOUND IS NOT A REFUSAL.
+  // Our lookup is imperfect, Instagram refuses us often enough to matter, and
+  // somebody who knows their friend's handle is right is right. So the copy is
+  // a fact about our own looking, never a verdict on a person, and the act
+  // goes through either way.
+  'resolve.looking': 'looking',
+  'resolve.missing': 'no instagram account under that name. you can still place it.',
+  'resolve.private': 'private',
+  // The send screen's second tap, when we found nobody. It replaces the
+  // spelling prompt rather than stacking under it: one line under a field, and
+  // it says what pressing again will do.
+  'who.confirmUnknown': 'we couldn’t find that account. tap again to place it anyway.',
+
   // ── the card (docs/STAR-CARDS.md) ──────────────────────────────────────
   // The category tabs and the sixteen "why them" lines are gone. A ping carries
   // a card the person wrote, and the composer's own copy lives with it (it is
