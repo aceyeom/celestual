@@ -326,11 +326,19 @@ window closed weeks ago. Goal: *any* DM that isn't a verification gets whatever
 is waiting.
 
 1. New Automation → Instagram trigger. Either:
-   - **Keyword**, `message contains` → `celestual` (and, if you like, `mutual`,
-     `hi`, `hey`), or
+   - **Keyword** → `celestual`, `mutual`, or
    - **Default Reply** — and if you use it, open its settings and set it to
      trigger **"Every time"**, not the default once-per-contact-per-24-hours.
      (Same trap as verification: MANYCHAT-SETUP.md §4 Step 1.)
+
+   > ⚠ **Never use `message contains` with a short word.** ManyChat's "contains"
+   > is a raw substring match, not a word match. `contains` → `hi` fires on
+   > *everyt**hi**ng*, *t**hi**s*, *w**hi**ch*, *not**hi**ng* — i.e. on most
+   > sentences in English. That is exactly how this automation once answered a
+   > stranger who wrote "good luck with everything in the future!". If you want
+   > short greetings, use **`message is`** (exact match) with `hi`, `hey`, or
+   > use Default Reply. Keep `contains` for strings nobody types by accident:
+   > `celestual`, `star-`.
 2. **Action → External Request:**
    - `POST` to `https://vwbsjwaqnycyghvwlxhd.functions.supabase.co/celestual-manychat`
    - Headers: `Content-Type: application/json`, `X-Celestual-Token: <MANYCHAT_SHARED_SECRET>`
@@ -344,18 +352,30 @@ is waiting.
      }
      ```
 
-3. **Response Mapping:** `$.reply` → a custom field (reuse `celestual_reply`),
-   then a **Send Message** node containing just `{{celestual_reply}}`.
-4. **Set it LIVE.** Drafts do not fire.
+3. **Response Mapping:** map **two** fields:
+   - `$.reply` → `celestual_reply` (the text)
+   - `$.send`  → `celestual_send`  (the permission)
+4. **Condition node — required.** Between the request and the Send Message node,
+   add a Condition: **`celestual_send` is `true`**. Only the true branch gets the
+   **Send Message** node containing `{{celestual_reply}}`. The false branch ends
+   the flow — no message, no typing indicator, nothing.
+5. **Set it LIVE.** Drafts do not fire.
 
-`action: "check"` skips code parsing entirely. Someone with nothing waiting
-gets:
+`action: "check"` skips code parsing entirely. Someone with news waiting gets
+it. **Someone with nothing waiting gets nothing at all** — `reply` is empty and
+`send` is `false`.
 
-> Nothing waiting yet. If someone you entered enters you back, this is where
-> you’ll hear it.
+That silence is the point. This automation fires on ordinary DMs from anyone
+who messages the account, and most of them have never used CELESTUAL: a
+collaborator pitching themselves, somebody answering a human reply, a bot. It
+used to answer all of them with "Nothing waiting yet. If someone you entered
+enters you back, this is where you'll hear it." — a sentence about a product
+they never signed up for, dropped into the middle of a real conversation. The
+function cannot tell a member from a stranger on this path, so it no longer
+tries to: it speaks when it has the news, and otherwise says nothing.
 
-Which is true, and is a decent thing for the account to say to somebody who
-messages it out of curiosity.
+Without the Condition in step 4 the flow will try to send an empty message, so
+do not skip it.
 
 ---
 
@@ -389,8 +409,11 @@ Expect:
 {"ok":true,"status":"mutual","reply":"✦ You and @handle_b are mutual. They left a card for you. Read it at https://celestual.us"}
 ```
 
-Run it a second time and you get `nothing_waiting` — delivered once, to one
-person, is the whole design.
+Run it a second time and you get
+`{"ok":true,"status":"nothing_waiting","reply":"","send":false}` — delivered
+once, to one person, is the whole design, and there is nothing to say the second
+time. Try it with a handle that has never used CELESTUAL and you get the same
+silence: that is the check path refusing to talk to strangers.
 
 **Step 3 — the push path.** The curl above just opened `handle_a`'s window (any
 relayed message does). Queue something and drain it:
@@ -426,6 +449,8 @@ messaged).
 | Nothing at all queues on a new match | `select value from celestual_settings where key='mutual_dm_enabled'` — if `false`, that is the kill switch (§11). |
 | `attempts` is above 0 on a row that was delivered fine | Normal. Attempts are counted when a drain *claims* a row, not when one fails, so a clean push leaves 1 behind. `last_error` is what tells you something actually went wrong. |
 | The DM arrives twice | It should be impossible from our side: a claim leases the row for five minutes, delivery is guarded by `sent_at`, and `(match_id, handle)` is unique. Two arrivals means two *rows* or two ManyChat sends — check whether both automations fired on the same message, and whether a Send Message node is in a loop. |
+| The account auto-replies to strangers / interrupts a human conversation | The check automation's trigger is too broad — almost always `message contains` with a short word (`hi` matches "everyt**hi**ng"). Fix the trigger per §8.2, and confirm the flow has the `celestual_send` Condition: with it, a message to somebody with no news waiting produces no send at all. |
+| The Send Message node errors, or an empty DM goes out | `$.send` is not mapped, or the Condition on `celestual_send` is missing (§8.2 step 4). `reply` is deliberately empty when there is nothing to say. |
 | A person gets the news but their card link shows nothing | They are being told the truth and the app is the problem, not the DM. Check `celestual_counterpart_card` and that they are signed in as the matched handle. |
 | Email now arrives for the person who placed the *second* ping | Working as designed since 0023 — both sides are told (§4). |
 
