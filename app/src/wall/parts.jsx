@@ -191,10 +191,20 @@ export function IconButton({ name, label, onClick, tone = '', on = false, classN
 }
 
 // ── the bar ─────────────────────────────────────────────────────────────────
-// The same three targets, in the same two places, on every screen of the wall:
-// the mark goes home, and the two on the right are the only two things a
-// person can do here. Nothing in it is a word, and nothing in it moves between
-// screens — a nav that rearranges itself is a nav somebody has to re-read.
+// The same targets, in the same two places, on every screen of the wall: the
+// mark goes home, and the ones on the right are the only things a person can
+// do here. Nothing in it is a word, and nothing in it moves between screens —
+// a nav that rearranges itself is a nav somebody has to re-read.
+//
+// ── the fourth glyph is gone ──
+// There used to be a `wall` icon at the head of the row, lit whenever you were
+// on the wall. On every other screen it was a way back; on the wall itself,
+// which is where almost everybody sees it, it was a control that pointed at the
+// page it was already on and did nothing when pressed. A lit target that
+// answers a tap with nothing teaches somebody that this bar is decorative, and
+// it teaches it on the first screen of the product. The way back to the wall is
+// the mark, on the left, on every screen, which is where a person reaches for
+// it anyway.
 export function TopBar({ go, at = 'wall', onMark }) {
   const who = member()
   return (
@@ -206,10 +216,9 @@ export function TopBar({ go, at = 'wall', onMark }) {
         title={at === 'wall' ? 'the top' : 'the wall'}
       >
         {at !== 'wall' && <Icon name="back" size={17} />}
-        <Ecliptic size={21} className="wl-brand-mark" />
+        <Ecliptic size={26} className="wl-brand-mark" />
       </button>
       <nav className="wl-top-acts" aria-label="the wall">
-        <IconButton name="wall" label="the wall" on={at === 'wall'} onClick={() => go('wall')} />
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
         <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => go('write')} />
         {/* The fourth target, and the only one that changes what it draws. A

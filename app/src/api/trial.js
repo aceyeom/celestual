@@ -25,10 +25,11 @@ export const RESERVED_CODES = [
   // 'paid' is where Stripe sends someone back (migration 0021). A competitor
   // holding it would swallow every return from a payment page.
   'paid',
-  // 'beta' stays reserved even though the route is gone (the bindery is
-  // production now, docs/DESIGN.md §11). Un-reserving a word does not un-issue
-  // the links already carrying it, and a competitor holding it would be first
-  // in line the day anything experimental wants that address again.
+  // 'beta' stays reserved. The wall moved off it to /berkeley and main.jsx
+  // rewrites the old prefix onto the new one, so /beta is still a live door on
+  // this site. Un-reserving a word does not un-issue the printed cards already
+  // carrying it, and a competitor holding it would swallow every one of those
+  // scans.
   'beta',
 ]
 

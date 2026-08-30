@@ -4,7 +4,7 @@
 //
 // A visual prototype of the event surface, and of the product it hands off
 // into. It reaches no server, stores nothing outside this tab, and is loaded
-// only when the path starts with /beta — production never imports anything
+// only when the path starts with /berkeley — production never imports anything
 // under src/wall, and nothing under src/wall is in the bundle somebody on the
 // hero page downloads.
 //
@@ -22,8 +22,8 @@
 //                    out of the URL
 //
 // ── the surface, and the sheets on it ───────────────────────────────────────
-// Six routes are not screens: /beta/letter, /beta/find, /beta/write,
-// /beta/gate, /beta/report and /beta/remove are sheets that rise over a wall
+// Six routes are not screens: /berkeley/letter, /berkeley/find, /berkeley/write,
+// /berkeley/gate, /berkeley/report and /berkeley/remove are sheets that rise over a wall
 // which stays mounted, scrolled where it was, and visible behind them. That is the whole reason the composer reads as part of
 // the wall rather than as a form the wall sent you away to fill in, and it is
 // the reason those three take no cut — a surface that blacks out to raise a
@@ -32,7 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS, BASE } from './router.js'
-import { Field, eclipticSVG } from './art.jsx'
+import { Field, eclipticSVG, INK, CHALK } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
@@ -107,17 +107,24 @@ export default function WallApp() {
     // screen is drawn from. A second hand-drawn favicon would be a copy of a
     // shape that is still being tuned, and it would be the copy that shipped
     // wrong. Production's own icon is put back on the way out.
+    //
+    // INK, not chalk. Every desktop browser paints its tab strip near-white by
+    // default, and the mark was being drawn in the one colour that is invisible
+    // there: the tab showed an empty square. Drawn in ink it reads on that
+    // strip, and the CHALK passed beside it is picked up by the icon's own
+    // `prefers-color-scheme` rule on a dark strip (art.jsx eclipticSVG), so one
+    // file covers both.
     const was = [...document.querySelectorAll('link[rel~="icon"]')]
     const icon = document.createElement('link')
     icon.rel = 'icon'
     icon.type = 'image/svg+xml'
-    icon.href = `data:image/svg+xml,${encodeURIComponent(eclipticSVG())}`
+    icon.href = `data:image/svg+xml,${encodeURIComponent(eclipticSVG(INK, CHALK))}`
     icon.dataset.wall = 'icon'
     was.forEach((el) => el.remove())
     document.head.appendChild(icon)
 
     const title = document.title
-    document.title = 'celestual — someone here wrote something they never sent'
+    document.title = 'celestual · berkeley · someone here wrote something they never sent'
     return () => {
       link.remove()
       icon.remove()
@@ -127,7 +134,7 @@ export default function WallApp() {
   }, [])
 
   // ── the scan ──
-  // /beta?s=flyer-a is how the flyer, the card, the chalk and the table become
+  // /berkeley?s=flyer-a is how the flyer, the card, the chalk and the table become
   // measurable against each other. Read once, attached to anything this
   // session creates, then scrubbed out of the URL — a source code riding along
   // into a link somebody pastes to a friend would attribute their scan to a

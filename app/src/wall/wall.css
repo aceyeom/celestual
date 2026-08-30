@@ -722,14 +722,28 @@
 
 /* the mark, which is also the way home. On the wall it is the star alone; off
    it, the star grows a chevron, so "back" and "home" are the same target in
-   the same place on every screen rather than two controls to tell apart. */
+   the same place on every screen rather than two controls to tell apart.
+
+   ── the mark does not take the bar's colour ──
+   The row it sits in is ash, because a nav is secondary to what it is on top
+   of. The MARK is not part of that argument: it is the one object on the
+   screen that says which product this is, and at ash on a blue-black ground it
+   was the faintest thing in the corner. So the button stays ash, the chevron
+   beside it stays ash, and the mark alone is chalk at all times, one step
+   larger than the glyphs it sits beside. */
 .wl-brand {
-  display: flex; align-items: center; gap: 5px; padding: 6px 8px 6px 0;
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 0;
   color: var(--ash);
   transition: color 200ms var(--ease);
 }
 .wl-brand:hover { color: var(--chalk); }
 .wl-brand .wl-spark { color: currentColor; }
+.wl-brand-mark {
+  color: var(--chalk);
+  /* a hair of lift off the ground, so 26px of flat white does not read as a
+     sticker sitting on the page */
+  filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18));
+}
 
 /* The reference puts an unread dot on its avatar, and this build had one: a
    pulsing ember on the account's own mark whenever a mutual existed. It is
@@ -795,8 +809,15 @@
 .wl-wall.is-still .wl-slot { display: inline; white-space: nowrap; }
 
 .wl-wall.is-drifting {
+  --lane-h: 40px;
   display: flex; flex-direction: column;
   gap: 1px;
+  /* The wall takes whatever height the masthead, the takedown and the dock did
+     not, and the lanes sit in the middle of it. That is what keeps two lanes
+     and seven lanes both looking placed: the air is shared above and below them
+     rather than dumped underneath the last one, which is what a wall of five
+     names looked like before the lanes were centred in their own room. */
+  flex: 1 1 auto; justify-content: center; min-height: 0;
   /* full bleed. The lanes run off both edges of the phone, because a banner
      with a 22px margin either side is a widget on a page — the names have to
      leave the screen rather than stop before it. */
@@ -805,39 +826,46 @@
      moving name is a box; a fade is a room the name walked out of. */
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
+
+  /* ── it is a thing you can pull ──
+     `pan-y` is the whole contract with the browser: a vertical gesture is the
+     page's and is never intercepted, a horizontal one is the wall's and is
+     never turned into a scroll. Without it a phone claims the drag before the
+     first pointermove arrives and the names simply do not move.
+
+     The selection and the tap highlight go for the same reason: dragging
+     across a run of type selects it on every platform, and a wall left
+     half-highlighted after a swipe reads as broken rather than as text. */
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.wl-wall.is-drifting.is-held { cursor: grabbing; }
 
 .wl-lane {
   /* `clip`, with `hidden` under it for anything that does not know the word.
      `hidden` makes a scroll container, and a browser scrolling a lane to
-     reveal a focused name inside it would drag the track sideways under its
-     own animation. `clip` cannot be scrolled, so it cannot fight. */
+     reveal a focused name inside it would drag the track sideways under the
+     transform the loop is writing. `clip` cannot be scrolled, so it cannot
+     fight. */
   overflow: hidden;
   overflow: clip;
-  height: 40px;
+  height: var(--lane-h, 40px);
   display: flex; align-items: center;
 }
+/* The track the loop moves. It carries no animation of its own: every frame
+   is written by one rAF in Wall.jsx, because the drift, the drag and the throw
+   have to be the same number or the wall tears in half the moment a finger
+   lands on it. */
 .wl-lane-run {
   display: flex; align-items: center; width: max-content;
-  animation: wl-drift var(--dur, 56s) linear infinite;
   will-change: transform;
 }
-/* alternating direction is what makes it a wall rather than a ticker: every
-   lane going one way is a stock crawl, opposite ways is weather */
-.wl-lane.is-back .wl-lane-run { animation-direction: reverse; }
-/* the lane under the pointer stops, and the whole wall stops for a keyboard.
-   Motion that will not hold still for the person trying to use it has
-   forgotten what it is on top of. */
-.wl-lane:hover .wl-lane-run,
-.wl-wall.is-drifting:focus-within .wl-lane-run { animation-play-state: paused; }
+.wl-lane-copy { display: flex; align-items: center; flex: 0 0 auto; }
 .wl-wall.is-drifting .wl-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.wl-wall.is-drifting .wl-name { -webkit-user-drag: none; }
 
-@keyframes wl-drift {
-  from { transform: translate3d(0, 0, 0); }
-  /* exactly half the track, which is one copy of the run — so the tail is
-     already on screen when the head leaves and there is no seam to catch */
-  to   { transform: translate3d(-50%, 0, 0); }
-}
 .wl-name {
   font-family: var(--f-id);
   color: rgba(244, 241, 234, 0.60);
@@ -1043,61 +1071,67 @@
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
 .wl-join-h { animation: wl-rise 900ms var(--ease) both; }
-.wl-join-fig { position: relative; margin: 26px 0 24px; display: grid; place-items: center; min-height: 150px; }
+.wl-join-fig { position: relative; margin: 18px 0 20px; display: grid; place-items: center; min-height: 150px; }
 .wl-join-bloom { top: 50%; }
 
 /* ── the circuit ──
-   Two circles and two quadratic curves became the two HALVES OF THE MARK'S OWN
-   RING, out of `eclipticHalves()` — the same radius, the same 0.5 flatten, the
-   same -19 degree tilt as the logo. Each half leaves one person and travels to
-   the other; the star ignites the instant both exist. What is standing on the
-   screen at the end is the mark, assembled by two people, and neither half of
-   it was a mark on its own. */
-.wl-circuit { position: relative; width: 100%; max-width: 330px; overflow: visible; }
+   Not a diagram of the mark any more. It IS the mark, taken apart into the
+   order it assembles in: the band itself (`ringPath()`, at its real varying
+   width) clipped into a far half and a near half, the star at full size cut by
+   the near band's gutter, and the near half drawn again over the top. The
+   finished frame is `Ecliptic` pixel for pixel, and it cannot drift from it
+   because both are built out of the same six constants in art.jsx.
 
-/* the route, held at almost nothing, so each arc is drawn ONTO something
+   Each half is drawn by a mask sweeping its own arc, which is the same
+   technique the overture uses on the whole ring. The two handles stand in gaps
+   cut out of the band rather than floating over it. */
+.wl-circuit { position: relative; width: 100%; max-width: 300px; overflow: visible; }
+
+/* the route, held at almost nothing, so each half is drawn ONTO something
    rather than into empty space */
-.wl-circuit-ghost { fill: none; stroke: rgba(244,241,234,0.06); stroke-width: 0.6; }
+.wl-circuit-ghost { fill: rgba(244, 241, 234, 0.055); }
 
-/* a node is not a circle. It is the same four-point star the sparkle and the
-   mark are both built from, so the two people are drawn out of the same curve
-   as the thing they are about to make between them. */
-.wl-circuit-node { opacity: 0.3; transition: opacity 700ms var(--ease); }
-.wl-circuit-node-ring { fill: rgba(244,241,234,0.02); stroke: rgba(244,241,234,0.20); stroke-width: 0.7; }
-.wl-circuit-node-star { fill: rgba(244,241,234,0.5); transition: fill 700ms var(--ease); }
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-a,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-b { opacity: 1; }
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-a .wl-circuit-node-star,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-node.is-b .wl-circuit-node-star {
-  fill: var(--glow); filter: drop-shadow(0 0 5px rgba(255,244,228,0.6));
+/* the band. One fill, one soft source of light, and no stroke anywhere in it:
+   a stroked outline round a shape whose whole character is a width that varies
+   round its circuit is a shape with its character painted over. */
+.wl-circuit-half {
+  fill: var(--glow);
+  filter: drop-shadow(0 0 4px rgba(255, 244, 228, 0.34));
 }
+/* the third layer only exists once there is a star to cross, which is the same
+   beat the star arrives on */
+.wl-circuit-half.is-over { opacity: 0; transition: opacity 460ms var(--ease); }
+.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-half.is-over { opacity: 1; }
 
-/* the halves. `pathLength=100` normalises the dash to a percentage, so the
+/* the sweeps. `pathLength=100` normalises the dash to a percentage, so the
    number here is a share of the arc rather than a length that would have to be
    recomputed if the mark's radius ever moved. */
-.wl-circuit-arc {
-  fill: none; stroke: var(--glow); stroke-width: 1.5; stroke-linecap: round;
-  stroke-dasharray: 100; stroke-dashoffset: 100;
-  opacity: 0.9;
-  filter: drop-shadow(0 0 3px rgba(255,244,228,0.3));
-  transition: stroke-dashoffset 1200ms var(--ease-out);
-}
-.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-arc.is-a,
-.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-arc.is-b { stroke-dashoffset: 0; }
+.wl-circuit-sweep { transition: stroke-dashoffset 1200ms cubic-bezier(0.33, 0.02, 0.15, 1); }
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-sweep.is-a,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-sweep.is-b { stroke-dashoffset: 0; }
 
-/* the third layer. It is not animated and it does not need to be: it only
-   exists once the star is there to be crossed, which is the same beat. */
-.wl-circuit-arc.is-over {
-  stroke-dasharray: none; stroke-dashoffset: 0;
-  opacity: 0; transition: opacity 460ms var(--ease);
+/* ── the two people ──
+   Set in the identifier face, the size given in the mark's own units so the
+   handle scales with the figure rather than against it. Each one lights on the
+   beat its half of the circuit leaves it, which is what makes the gap in the
+   band read as a door rather than as a break. */
+.wl-circuit-tag {
+  font-family: var(--f-id); font-weight: 500;
+  letter-spacing: -0.02em;
+  fill: var(--ash);
+  opacity: 0.55;
+  transition: fill 700ms var(--ease), opacity 700ms var(--ease);
 }
-.wl-circuit:is(.is-at3,.is-at4) .wl-circuit-arc.is-over { opacity: 0.9; }
+.wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-tag.is-a,
+.wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-tag.is-b {
+  fill: var(--glow); opacity: 1;
+}
 
 /* the point of light that runs ahead of each half as it draws. A line that
    DRAWS has been sent; a line that appears was switched on — and a light that
    leads it is what makes the difference legible at a glance. It rides the same
-   path the arc is stroked along, on the same duration and the same curve, so
-   it cannot drift off its own line. */
+   arc the mask sweeps along, on the same duration and the same curve, so it
+   cannot drift off its own route. */
 .wl-circuit-lead {
   fill: var(--glow); opacity: 0;
   offset-rotate: 0deg; offset-distance: 0%;
@@ -1105,7 +1139,7 @@
 }
 .wl-circuit:is(.is-at1,.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-a,
 .wl-circuit:is(.is-at2,.is-at3,.is-at4) .wl-circuit-lead.is-b {
-  animation: wl-lead 1200ms var(--ease-out) both;
+  animation: wl-lead 1200ms cubic-bezier(0.33, 0.02, 0.15, 1) both;
 }
 @keyframes wl-lead {
   0%   { opacity: 0; offset-distance: 0%; }
@@ -1121,7 +1155,7 @@
    soft circle behind the whole figure is a grey cloud with an edge on it. */
 .wl-circuit-star {
   opacity: 0;
-  transform-box: fill-box; transform-origin: center;
+  transform-origin: 50px 50px;
   transform: scale(0.28) rotate(-26deg);
   filter: drop-shadow(0 0 7px rgba(255, 244, 228, 0.55));
   transition: opacity 420ms var(--ease), transform 780ms var(--ease);
@@ -1611,6 +1645,12 @@
   .wl-page { max-width: none; padding: 0 26px 20px; min-height: auto; }
   .wl-dock-veil { display: none; }
   .wl-wallpage {
+    /* the one screen that keeps the full height here. Its grid hangs a `1fr`
+       row under the dock and centres the lanes in the column beside it, and
+       both of those distribute a height the page has to actually have — with
+       `min-height: auto` the whole spread collapsed to the top of a sideways
+       phone and left a third of the screen empty under it. */
+    min-height: 100dvh;
     display: grid;
     grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
     grid-template-rows: auto auto auto 1fr;
@@ -1620,6 +1660,10 @@
   .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; }
   .wl-mast-ball { display: none; }
   .wl-wall { grid-column: 2; grid-row: 2 / span 3; padding-top: 10px; line-height: 1.9; }
+  /* 350px of height is four lanes, and the ladder in Wall.jsx caps it there.
+     The lanes give back the air rather than the type: a 24px lane cannot set a
+     21px name, which is the whole point of the three weights. */
+  .wl-wall.is-drifting { --lane-h: 32px; margin: 0 -10px; }
   .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 4px 0 10px; }
   .wl-wallpage .wl-dock { grid-column: 1; grid-row: 4; align-self: end; margin: 0; padding: 0; max-width: 340px; }
   .wl-wallpage .wl-dock-veil { left: -22px; right: -16px; width: auto; transform: none; top: -70px; }
@@ -1639,7 +1683,7 @@
 
   .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
-  .wl-join-fig .wl-circuit { max-width: 250px; }
+  .wl-join-fig .wl-circuit { max-width: 190px; }
   /* the core service gets the spread early too, for the same reason the wall
      does: 350px of height cannot stack a hero, a date and a ledger. */
   .wl-core {
@@ -1901,7 +1945,43 @@
 .wl-gate { padding-top: 4px; }
 .wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
 .wl-gate-note { padding-bottom: 16px; }
-.wl-gate-who { padding-top: 14px; }
+
+/* ── the account ───────────────────────────────────────────────────────────
+   The address is the heading here, and it is set in the identifier face
+   rather than in the Didone: an email is a string somebody has to read
+   character by character to check it is theirs, which is the one job a
+   monospace is for and the one job a Didone is worst at.
+
+   Three blocks with one rhythm — who, what, and the way on — because the
+   sheet this replaced was a sentence about the software's state with the
+   address set small underneath it, and the address is the whole reason
+   anybody opens this. */
+.wl-acct-id { display: flex; align-items: center; gap: 16px; padding: 2px 0 22px; flex: 0 0 auto; }
+.wl-acct-name { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.wl-acct-addr {
+  margin: 0;
+  font-family: var(--f-id); font-size: clamp(15px, 4.4vw, 19px);
+  letter-spacing: -0.02em; color: var(--chalk);
+  overflow-wrap: anywhere;
+}
+.wl-acct-rule { flex: 0 0 auto; }
+.wl-acct-sect { padding: 20px 0 0; flex: 0 0 auto; }
+.wl-acct-wrote { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 14px; }
+/* a chip, not a row and not a link. This list is a record, and every one of
+   its entries is a name whose letter may have come down since — a tappable
+   row that lands on nothing is worse than a name that was never offered. */
+.wl-acct-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px 7px 9px;
+  border: 1px solid var(--hair); border-radius: var(--r-pill);
+  background: var(--void-1);
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: -0.01em;
+  color: var(--ash);
+}
+.wl-acct-none {
+  margin: 14px 0 0;
+  font-family: var(--f-id); font-size: 12.5px; color: var(--ash-dim);
+}
 .wl-gate-copy { color: var(--ash); font-size: 15px; line-height: 1.55; padding-top: 16px; max-width: 40ch; }
 .wl-gate-fault {
   min-height: 20px; padding-top: 10px;
@@ -1977,6 +2057,26 @@
   display: flex; flex-direction: column; gap: 12px;
 }
 .wl-report .wl-gate-beta { margin-top: 20px; }
+
+/* ── three facts, one line each ────────────────────────────────────────────
+   The report's "what happens now" was a forty-word paragraph on a screen
+   whose whole argument is that nothing here needs arguing about. Set as
+   three lines it is read at a glance, which on a takedown control is the
+   difference between somebody knowing what the button does and somebody
+   pressing it anyway. */
+.wl-facts {
+  list-style: none; margin: 18px 0 0; padding: 0; flex: 0 0 auto;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.wl-facts li {
+  position: relative; padding-left: 18px;
+  font-size: 15px; line-height: 1.4; color: var(--ash);
+}
+.wl-facts li::before {
+  content: ''; position: absolute; left: 2px; top: 0.62em;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(244, 241, 234, 0.34);
+}
 
 /* the small box. It counts nothing and it is three lines tall: a box the size
    of the composer would say a case is being made, and nobody is making one. */

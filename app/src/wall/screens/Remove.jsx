@@ -1,4 +1,4 @@
-// ── /beta/remove/:handle — OFF THE WALL ─────────────────────────────────────
+// ── /berkeley/remove/:handle — OFF THE WALL ─────────────────────────────────
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE ONE ACTION ON THIS SURFACE THAT NOBODY CAN UNDO.                    ║
@@ -127,10 +127,13 @@ export default function Remove({ handle: prefill, back }) {
           {proven ? <>It&rsquo;s yours.<br />Take it down.</> : <>Take your name<br />off the wall.</>}
         </Display>
 
+        {/* Two lines, not a paragraph. What it costs, and the cheaper door
+            beside it. The long version argued the policy at somebody who had
+            already decided to do the thing. */}
         <Prose className="wl-gate-copy">
           {proven
-            ? 'Every letter under it goes with it, and the name cannot be put back up.'
-            : 'This one is permanent, so it is the one thing the wall asks about. If you only want one letter gone, report it on the letter instead — that is instant and asks nothing.'}
+            ? 'Every letter under it goes too. This cannot be undone.'
+            : 'This is permanent. To take down one letter, report that letter instead.'}
         </Prose>
 
         <div className="wl-remove-field">
@@ -187,11 +190,11 @@ export default function Remove({ handle: prefill, back }) {
                 <Label tone="dim">one question · nothing is kept</Label>
               </div>
               {/* Said plainly, on the screen, the way the gate's own note is. A
-                  beta that mimes an OAuth round trip and does not say so is
-                  teaching the wrong thing about what this build does. */}
+                  screen that mimes a round trip to Instagram and does not say
+                  so is teaching the wrong thing about what this build does. It
+                  comes off the day the handoff is real. */}
               <p className="wl-gate-beta">
-                This is the beta. No provider is contacted — the handoff is drawn
-                on a timer and any handle will come back proven.
+                Instagram is not connected yet. Any handle proves here.
               </p>
             </>
           )}

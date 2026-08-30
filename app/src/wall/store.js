@@ -28,6 +28,14 @@ const EMPTY = {
   draft: null,        // the composer's in-flight letter
   written: [],        // letters put up in this session, newest first. This is
                       // the ONLY thing that opens the tab to the core service.
+  wroteTo: [],        // the HANDLES those letters were addressed to, newest
+                      // first. Held beside the ids rather than derived from
+                      // them because the letters themselves live in memory and
+                      // a reload loses them, while the account sheet still has
+                      // to be able to say who this device has written to. It is
+                      // a record of the READER, never of a writer: it is on
+                      // this device, it is cleared with everything else, and
+                      // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
   member: null,       // a berkeley.edu address, if one has been given. It gates
                       // reading, writing and reporting — and nothing else.

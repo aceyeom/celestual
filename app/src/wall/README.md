@@ -1,11 +1,16 @@
-# `/beta` — the wall
+# `/berkeley` — the wall
 
-The event surface, and a **visual prototype**. It reaches no server, it stores
-nothing outside the tab it is open in, and it ships populated — seventy-two
-letters across sixty-six handles — so the whole thing can be walked cold, on a
-phone, by somebody who has never seen it.
+The campus surface. It lived at `/beta` while it was one; `main.jsx` still
+rewrites that prefix onto this one at boot, because the cards already printed
+with it cannot be redeployed.
 
-Run it: nothing to configure. `npm run dev`, open `/beta`.
+**Its state is still in the browser.** It reaches no server, it stores nothing
+outside the tab it is open in, and it ships populated — seventy-two letters
+across sixty-six handles — so the whole thing can be walked cold, on a phone, by
+somebody who has never seen it. Everything that has to change before it holds
+real letters, in order, is **[../../../docs/WALL-LAUNCH.md](../../../docs/WALL-LAUNCH.md)**.
+
+Run it: nothing to configure. `npm run dev`, open `/berkeley`.
 
 ---
 
@@ -77,7 +82,7 @@ the same act:
 | | |
 | --- | --- |
 | **one letter** | `report it`, on the letter. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
-| **a whole name** | `/beta/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
+| **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 An earlier build made the second one instant too, and argued for it: a takedown
 behind a login says *make an account first* to the one person on the wall who
@@ -130,8 +135,8 @@ Cards and flyers go out with a QR code on them. The code lands on the wall.
 ```
 
 Two things called *register* live on this surface and they are not the same
-thing. `/beta/gate` opens the wall — its letters, its composer, its report
-control — and buys nothing else. `/beta/join` is the door into the product — accounts, pings, mutuals — and it
+thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
+control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
 is still gated on having put a letter up.
 
 The tab is the only route out of the wall, and it does not exist until
@@ -144,18 +149,18 @@ question they are now actually carrying.
 
 | Route | What it is |
 | --- | --- |
-| `/beta` | **the wall** — the inscription, sixty-six names at three weights, drifting in lanes |
-| `/beta/letter/:id` | a letter over the dimmed wall. Whole, or redacted |
-| `/beta/find` | the search. Opens on the names carrying the most letters |
-| `/beta/write` · `/beta/write/:handle` | the composer, two steps, written on the card itself |
-| `/beta/gate` | **the door on the wall** — an address and six digits, or the account |
-| `/beta/report/:id` | **one letter, down** — the tap, the small box, the reading |
-| `/beta/remove` · `/beta/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/beta/posted` | three beats — the screening, the paper going, the landing |
-| `/beta/join` | **the one door to the product** — three lines and one ornament |
-| `/beta/orbit` | **the core service** — the orrery, the date, and the ledger |
-| `/beta/orbit/place` | place a ping, or the door that says both slots are taken |
-| `/beta/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
+| `/berkeley` | **the wall** — the inscription, the names at three weights, drifting in lanes you can pull |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted |
+| `/berkeley/find` | the search. Opens on the names carrying the most letters |
+| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
+| `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
+| `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
+| `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
+| `/berkeley/posted` | three beats — the screening, the paper going, the landing |
+| `/berkeley/join` | **the one door to the product** — three lines and one ornament |
+| `/berkeley/orbit` | **the core service** — the orrery, the date, and the ledger |
+| `/berkeley/orbit/place` | place a ping, or the door that says both slots are taken |
+| `/berkeley/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
 
 Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
 `report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
@@ -178,16 +183,22 @@ line: the heaviest object on the screen, sitting on the emptiest row.
 
 ## Navigation
 
-Four targets, in the same two places, on every screen of the wall, and not one
+Three targets, in the same two places, on every screen of the wall, and not one
 word among them:
 
 | | |
 | --- | --- |
-| ✦ | **the mark**, top left. `Ecliptic`, at 21px. On the wall it goes to the top; off it, it grows a chevron and goes back |
-| ☰ | **the wall** — four lines of unequal length, the inscription seen small |
+| ✦ | **the mark**, top left. `Ecliptic`, at 26px and always chalk while the row around it is ash — it is the one object that says which product this is, and at the bar's own colour it was the faintest thing in the corner. On the wall it goes to the top; off it, it grows a chevron and goes back |
 | ⌕ | **look for a name** |
 | ✎ | **write a letter** |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
+
+There used to be a fourth, a `wall` glyph at the head of the row, lit whenever
+you were on the wall. On the wall itself, which is where almost everybody met
+it, it was a lit target pointing at the page it was already on that did nothing
+when pressed — and a control that answers a tap with nothing teaches somebody
+that the bar is decorative, on the first screen of the product. The way back to
+the wall is the mark.
 
 Where you are is said by the ground behind the glyph lighting, not by a label.
 Every icon carries a `title` and an `aria-label`, so the bar is legible without
@@ -235,28 +246,60 @@ tag cloud (analytics). Weight comes off how many letters a name carries, so a
 name written to three times is set larger than one written to once and the wall
 has a real topography rather than a decorative one.
 
-It **drifts**. A static block of sixty-six names is a screenshot: it reads as a
-list that was printed once, and the one thing this surface has to say in its
-first second is that people are still doing this. So the run is broken into
-lanes and each lane travels, at about the speed of a departures board:
+It **drifts**, and it can be **pulled**. A static block of names is a
+screenshot: it reads as a list that was printed once, and the one thing this
+surface has to say in its first second is that people are still doing this. So
+the run is broken into lanes, each lane travels at about the speed of a
+departures board, and a finger dragged across any of it takes the whole field
+with it and lets it coast to a stop.
 
+One `requestAnimationFrame` in `screens/Wall.jsx` writes every lane's transform.
+The drift, the drag and the throw are the same number, because a CSS animation
+and a pointer handler fighting over the same track is a wall that tears in half
+the moment somebody touches it.
+
+- **It never ends and it never starts.** Each lane wraps on the modulo of its
+  own **measured** cycle, so there is no first name, no last one, and no edge to
+  hit — pull far enough either way and you come back round to where you began.
+  The measurement is read back after layout and re-read when the faces land: an
+  estimate decides how many copies to render, and a real face is never the face
+  the arithmetic assumed.
+- **A pull moves everything.** Every lane takes the same delta while a drag is
+  live, so the wall reads as one surface being pushed rather than as lanes that
+  happen to be stacked. The alternating drift resumes the instant it ends.
+- **A pull is not a tap.** A press that travels more than 6px swallows the click
+  it would have ended in. Every name is a target, and nothing is worse than a
+  surface that opens a letter because you tried to look past it.
+- **`touch-action: pan-y`** is the whole contract with the browser: vertical is
+  the page's, horizontal is the wall's. A trackpad swiped sideways is taken too,
+  and only when `deltaX` is the larger component.
 - **Slow enough to read**, at one constant speed across every lane whatever it
-  is carrying. Lanes at visibly different speeds read as a bug, not as
-  parallax. About 25px a second, so a name moves ~2px in the length of a tap.
+  is carrying, with a few percent of jitter. Lanes at visibly different speeds
+  read as a bug, not as parallax.
 - **Alternating direction.** Every lane going one way is a stock crawl; lanes
   going opposite ways read as a field with weather in it.
-- **The lane under the pointer stops**, and the whole wall stops for a keyboard.
-  Motion that will not hold still for the person trying to use it has forgotten
-  what it is on top of.
+- **The lane under the pointer stops**, drift and throw both, and the whole wall
+  stops for a keyboard. Motion that will not hold still for the person trying to
+  use it has forgotten what it is on top of.
 - **The ends are masked, not cut.** A hard edge on a moving name is a box; a
   dissolve is a room the name walked out of.
 - **Round-robin, not sliced in blocks**, so the heaviest names end up one per
   lane instead of stacked in the first two.
-- Each lane holds its run **twice** and translates by exactly half the track, so
-  the tail is on screen before the head leaves and there is no seam.
+
+### It has to work at five names and at five hundred
+
+The corpus is a live thing: on the first morning of a campaign the wall might
+carry five handles and by the end of the week it carries hundreds. Both have to
+look deliberate.
+
+| | |
+| --- | --- |
+| **the lane count** | a ladder off the handle count (1 lane at ≤4, 2 at ≤10, 3 at ≤18, 4 at ≤30, 5 at ≤44, 6 at ≤60, 7 above), capped again by the room: a lane is 40px and the masthead, the takedown and the dock take about 430, so a short phone gets four and a tall one gets seven. A phone on its side is its own case and gets four |
+| **the run** | repeats itself in **whole passes** through its lane's own names until it is wider than the lane. This is what makes five names work at all: the lane is full, it is simply full of the same five names, which is the truth |
+| **the block** | is centred in whatever height is left over, so two lanes and seven lanes are both placed rather than one of them being dumped under the other |
 
 Under `prefers-reduced-motion` the original wrapping inscription is rendered
-instead.
+instead, and none of the above runs.
 
 ## The mark
 
@@ -292,7 +335,7 @@ tab cannot drift from the drawing on the screen.
 
 ## The core service
 
-`/beta/orbit` is the other side of the line the wall draws. The wall has no
+`/berkeley/orbit` is the other side of the line the wall draws. The wall has no
 accounts and never asks who anybody is; this is the first point in the whole
 prototype where somebody has an identity, and it is reached from exactly one
 control — the tab at the bottom of the wall, which does not exist until a
@@ -388,13 +431,13 @@ work at all.
    inside one of them. A handle is lower case and a sentence is sentence case;
    neither is a label. `.wl-say` is the one class for a quiet line here.
 4. **Nothing was built.** `place a ping` called `go('orbit')` from
-   `/beta/orbit`, which the router correctly refuses as a navigation to where
+   `/berkeley/orbit`, which the router correctly refuses as a navigation to where
    you already are — so the primary control on the core service did nothing.
    There was no way to place, renew or let go of anything.
 
 Point 4 has a second half worth keeping written down, because the same shape
 bit the rebuild: `let it go` on the slots-full sheet finishes at
-`/beta/orbit/place`, which is where it already is. The ledger lives in a blob
+`/berkeley/orbit/place`, which is where it already is. The ledger lives in a blob
 under a key and not in React, so freeing the slot changed nothing on screen and
 the sheet went on saying both slots were taken over a ledger that now had one.
 Every mutation on this surface is followed by one counter (`Core`'s `beat`),
@@ -505,7 +548,7 @@ The phone is the one this was designed for and it does not change.
 
 ## What it touches
 
-This tree, and one line elsewhere: `app/src/main.jsx` forks on `/beta` and
+This tree, and one line elsewhere: `app/src/main.jsx` forks on `/berkeley` and
 lazy-imports it. Nothing in production imports from `src/wall/`; the wall is a
 separate chunk (~28 kB gzip of JS, ~10 kB of CSS) and the four Google faces it
 needs are injected on mount and removed on unmount, so neither reaches anybody
@@ -516,13 +559,15 @@ who did not scan a piece of paper. No shared component, no global token, no
 
 - **`supabase/migrations/0027_beta_wall.sql` belongs to an older build.**
   Undeployed and inert, and it describes a wall queried one handle at a time
-  with a per-letter seal. It is **not** the schema for what is in this
-  directory and should be replaced rather than extended.
+  with a per-letter seal, an author column and a reveal request. It is **not**
+  the schema for what is in this directory — there is no author on a letter
+  here, no seal and no reveal — and it should be replaced rather than extended.
+  What the shipped wall actually needs is spelled out in docs/WALL-LAUNCH.md.
   `supabase/functions/celestual-beta-moderate/` is the opposite case: its
   three-layer pre-publication design is exactly what this build now draws, and
   `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
   keyboard rather than after the button. It is still undeployed.
-- **`/beta` downloads the production entry chunk** (~188 kB gzip) because
+- **`/berkeley` downloads the production entry chunk** (~188 kB gzip) because
   `main.jsx` is the single Vite entry and imports `App.jsx` statically. The
   real fix is a second Vite entry, which needs `vite.config.js` and
   `vercel.json`; lift that constraint and it is a `rollupOptions.input` key
@@ -542,20 +587,21 @@ who did not scan a piece of paper. No shared component, no global token, no
   would be the one thing on this surface it is least acceptable to fake.
 - **Three things are drawn on a timer and every one of them says so on the
   glass.** The gate's six digits (any six pass), the classifier beat on
-  `/beta/posted`, the report's reading, and the Instagram handoff (any handle
+  `/berkeley/posted`, the report's reading, and the Instagram handoff (any handle
   comes back proven). Each is the shape of the real thing with the round trip
-  left out, labelled rather than disguised — because a beta that mimes an OAuth
+  left out, labelled rather than disguised, because a screen that mimes an OAuth
   handshake without saying so is teaching the wrong thing about what this build
-  does with what it is given.
+  does with what it is given. Each label comes off the day its round trip is
+  real, and not one day before — the order is in docs/WALL-LAUNCH.md.
 - **The core service's ledger is real inside the tab and nowhere else.**
   Placing, renewing and letting go write through the same one key as
   everything else, so a ping placed at a demo table survives a reload and the
   ring for it is drawn at the front of its circuit. There is no server here.
 - **The paid third slot is deliberately not drawn.** Production carries one
   behind a flag (`VITE_STRIPE_ENABLED`, one slot, bought once). The slots-full
-  door here offers one thing, `let it go`, because a beta that shows somebody a
-  price before it has shown them a mutual has taught them the wrong thing about
-  what this is.
+  door here offers one thing, `let it go`, because a surface that shows somebody
+  a price before it has shown them a mutual has taught them the wrong thing
+  about what this is.
 - **The core service's clock is fixed, and it is not the wall's.** `orbit.js`
   derives one epoch from the printed date (`seed.js TODAY`) and every day,
   dateline and countdown on that surface comes off it. The wall keeps

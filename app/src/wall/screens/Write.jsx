@@ -1,4 +1,4 @@
-// ── /beta/write — THE COMPOSER ──────────────────────────────────────────────
+// ── /berkeley/write — THE COMPOSER ──────────────────────────────────────────
 //
 // Two steps, and they are one sentence broken across them:
 //
@@ -109,8 +109,7 @@ export default function Write({ to: prefill, go, back }) {
           <Display size="s" as="h2" id="wl-write-h">Letters are written<br />by Berkeley.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => go('gate')}>
-            The address is not attached to anything you write. It never has been:
-            there is no field on a letter for who wrote it.
+            Your information will stay anonymous.
           </Locked>
         </div>
       </Sheet>

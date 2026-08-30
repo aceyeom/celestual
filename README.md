@@ -82,11 +82,18 @@ glows. It was built at `/beta` to be judged beside the edition it replaced;
 that judgement was made on 2026-08-07, and one system now governs every screen,
 every email, every render and the back office.
 
-`/beta` is in use again, by **the wall** — the campaign surface for the handout
-event, and a visual prototype rather than a shipping route. It is a second brand
-on purpose (a blue-black void, four different faces, a cream card that is the
-only bright object in it), it reaches no server, and it is sealed off from
-production behind one lazy import in `main.jsx`.
+`/berkeley` is **the wall** — the campaign surface for the handout event, live
+on the campus it is named after. It is a second brand on purpose (a blue-black
+void, four different faces, a cream card that is the only bright object in it),
+and it is sealed off from production behind one lazy import in `main.jsx`. It
+lived at `/beta` while it was one; that prefix is still rewritten onto
+`/berkeley` at boot, because the cards already printed with it cannot be
+redeployed.
+
+**Its own state is still in the browser.** The wall keeps letters, membership
+and takedowns in `localStorage`, the `berkeley.edu` code is not mailed and any
+six digits pass, and the Instagram handoff is a timer. What is left to wire, in
+order, is **[docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md)**.
 
 It is also deliberately sealed off from the *product*: the wall has no pings, no
 mutuals and no identity of its own, and the only route from it into the mutual
@@ -106,8 +113,8 @@ act on the surface, goes through the Instagram handoff. See
 celestual/
 ├── app/              the Vite + React SPA (served at celestual.us/)
 │   ├── src/
-│   │   ├── wall/     THE WALL — the event surface at /beta, a populated visual
-│   │   │             prototype, sealed off from production (its own README)
+│   │   ├── wall/     THE WALL — the campus surface at /berkeley, sealed off
+│   │   │             from production (its own README)
 │   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
 │   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
 │   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
@@ -157,7 +164,8 @@ celestual/
 | `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
 | `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
 | `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
-| `/beta` | **the wall** — the event surface, reached by QR code off a card or a flyer, and a visual prototype: a drifting wall of unsent letters, anonymous by shape. The names are public to everyone; reading, writing and reporting are behind a `berkeley.edu` address; a report takes a letter down on the tap; a whole name comes off only through the Instagram handoff. One door leads to the core service and it opens only after you have written. Populated, server-free (app/src/wall/README.md) |
+| `/berkeley` | **the wall** — the campus surface, reached by QR code off a card or a flyer: a drifting wall of unsent letters, anonymous by shape, that can be pulled sideways and never ends. The names are public to everyone; reading, writing and reporting are behind a `berkeley.edu` address; a report takes a letter down on the tap; a whole name comes off only through the Instagram handoff. One door leads to the core service, and it opens only after you have written. **State is still browser-side** — see [docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md) (app/src/wall/README.md) |
+| `/beta` | the wall's old address. Rewritten onto `/berkeley` at boot so printed cards keep working |
 | `/demo` | the sandbox (below) |
 | `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
 
