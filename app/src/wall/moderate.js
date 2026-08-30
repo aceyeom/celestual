@@ -13,9 +13,10 @@
 //                      links, email. Mirrored from the Edge Function so a
 //                      writer is told at the keyboard rather than after they
 //                      have committed forty words and pressed the button.
-//   2  CLASSIFIER      one Haiku call per letter, against explicit categories.
+//   2  CLASSIFIER      one model call per letter, against explicit categories.
 //                      Not a vibe check: a decision against a list somebody
-//                      can be held to.
+//                      can be held to. The model is the Edge Function's
+//                      MODERATION_MODEL secret, defaulting to claude-sonnet-5.
 //   3  HUMAN           anything the classifier calls ambiguous waits for a
 //                      person. Nobody is told which.
 //
