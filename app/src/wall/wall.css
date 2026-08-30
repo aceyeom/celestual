@@ -2028,9 +2028,13 @@
    size as the three glyphs beside it */
 .wl-memberbtn .wl-mark { width: 22px; height: 22px; }
 
-/* the brand, standing rather than travelling */
+/* the brand, standing rather than travelling. The mark's own colour is set
+   once, up with `.wl-brand` itself, and is not restated here: this rule used to
+   carry a second `.wl-brand-mark { color: currentColor }` at the same
+   specificity and four hundred lines further down the file, which is how the
+   mark ended up drawn in the bar's ash on every screen no matter what the
+   rule above it said. */
 .wl-brand.is-still { padding: 6px 8px 6px 0; color: var(--ash); }
-.wl-brand-mark { color: currentColor; }
 
 /* the search foot carries two offers now, and they wrap on a narrow phone */
 .wl-find-foot { display: flex; flex-wrap: wrap; gap: 8px; }
