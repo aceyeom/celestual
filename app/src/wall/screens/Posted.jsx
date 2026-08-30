@@ -1,4 +1,4 @@
-// ── /beta/posted — IT IS UP ─────────────────────────────────────────────────
+// ── /berkeley/posted — IT IS UP ─────────────────────────────────────────────
 //
 // The one long animation in the build, and the only place it is worth the
 // spend. Somebody has just named a person they never said anything to; the
@@ -54,7 +54,14 @@ export default function Posted({ go, reduce }) {
     // celebrating a letter that is not there.
     const r = write(draft)
     if (!r) { patch({ draft: null }); return null }
-    patch({ draft: null, written: [r.id, ...getState().written].slice(0, 12) })
+    const was = getState()
+    patch({
+      draft: null,
+      written: [r.id, ...was.written].slice(0, 12),
+      // and the name, so the account sheet can still list it after a reload
+      // has taken the letter itself out of memory
+      wroteTo: [r.to, ...(was.wroteTo || []).filter((h) => h !== r.to)].slice(0, 12),
+    })
     return r
   })
 

@@ -1,4 +1,4 @@
-// ── /beta/report/:id — IT COMES DOWN ────────────────────────────────────────
+// ── /berkeley/report/:id — IT COMES DOWN ────────────────────────────────────
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE TAP TAKES IT OFF THE WALL. EVERYTHING ELSE HAPPENS TO A LETTER      ║
@@ -106,8 +106,7 @@ export default function Report({ id, go, back }) {
           <Display size="s" as="h2" id="wl-rep-h">Reports come<br />from Berkeley.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => go('gate')}>
-            A tap here takes a letter off a public wall. That control belongs to
-            the campus the wall is about, and to nobody else.
+            Sign in to take a letter down.
           </Locked>
         </div>
       </Sheet>
@@ -134,11 +133,14 @@ export default function Report({ id, go, back }) {
             </p>
           </div>
 
-          <Prose className="wl-gate-copy">
-            It leaves the wall, the search and the count immediately. Then a
-            person reads it. Nothing is deleted, and if there is nothing wrong
-            with it, it goes back up.
-          </Prose>
+          {/* Three facts, one line each, in the order they happen. It was one
+              forty word paragraph saying the same three things, on a screen
+              where the control is the point and nobody is reading. */}
+          <ul className="wl-facts">
+            <li>Off the wall now.</li>
+            <li>Someone reads it after.</li>
+            <li>If it is fine, it goes back up.</li>
+          </ul>
 
           <div className="wl-push" />
 
@@ -165,10 +167,7 @@ export default function Report({ id, go, back }) {
             off the wall · <span className="wl-h">{atHandle(one.to)}</span>
           </Label>
 
-          <Prose className="wl-gate-copy">
-            You do not have to say why. If you do, it is the only thing the
-            person reading it will know that the letter does not tell them.
-          </Prose>
+          <Prose className="wl-gate-copy">Saying why is optional.</Prose>
 
           <ReasonField
             value={why} onChange={setWhy} autoFocus
@@ -208,10 +207,7 @@ export default function Report({ id, go, back }) {
                   whichever way the reading went. A reporter who learns which
                   words get a faster result is a reporter who has been taught to
                   write them. */}
-              <Prose className="wl-gate-copy">
-                It stays off the wall until then. You will not hear back, and
-                neither will whoever wrote it.
-              </Prose>
+              <Prose className="wl-gate-copy">It stays off until then.</Prose>
             </>
           ) : (
             <Waiting label="reading it" />
@@ -219,8 +215,7 @@ export default function Report({ id, go, back }) {
         </div>
 
         <p className="wl-gate-beta">
-          This is the beta. Nothing is sent anywhere: the screening and this
-          reading are drawn on a timer, and the letter is held in this tab.
+          Nothing is sent anywhere yet. The letter is held on this device.
         </p>
 
         <div className="wl-push" />

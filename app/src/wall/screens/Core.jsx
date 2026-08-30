@@ -1,4 +1,4 @@
-// ── /beta/orbit — THE PRODUCT, STANDING ─────────────────────────────────────
+// ── /berkeley/orbit — THE PRODUCT, STANDING ─────────────────────────────────
 //
 // The service the wall exists to fill, and a DIFFERENT PLACE from the wall.
 // It is reached from exactly one control — the tab at the bottom of the wall,
@@ -28,7 +28,7 @@
 //      the same orange forty pixels lower. Two saturated objects, and the
 //      loud one was the decorative one.
 //
-//   3  NOTHING WAS BUILT. `place a ping` called go('orbit') from /beta/orbit,
+//   3  NOTHING WAS BUILT. `place a ping` called go('orbit') from /berkeley/orbit,
 //      which the router correctly refuses as a navigation to where you already
 //      are — so the primary control on the core service did nothing at all.
 //      There was no way to place, renew or let go of anything: three states
@@ -105,7 +105,7 @@ export default function Core({ id, go, reduce }) {
   //
   // Here it matters, and it is exactly the shape of the bug the old screen
   // shipped. `let it go` on the slots-full sheet finishes with go('orbit',
-  // 'place') from /beta/orbit/place, which the router correctly refuses as a
+  // 'place') from /berkeley/orbit/place, which the router correctly refuses as a
   // navigation to where you already are. The slot was freed, nothing
   // re-rendered, and the sheet went on saying both slots were taken over a
   // ledger that now had one.
@@ -546,7 +546,7 @@ function Full({ held, lapsing, bump, back }) {
               </span>
               {gone === p.id ? (
                 <span className="wl-full-ask">
-                  {/* No navigation: this sheet is already AT /beta/orbit/place.
+                  {/* No navigation: this sheet is already AT /berkeley/orbit/place.
                       Freeing a slot changes what that address renders, from
                       this door to the composer behind it, and `bump` is what
                       makes the surface notice. */}

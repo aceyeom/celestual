@@ -1,16 +1,27 @@
 // ── the route table ─────────────────────────────────────────────────────────
 //
 // The wall is one surface with sheets on top of it, not eight pages. But a
-// prototype whose whole job is to be walked through by other people has to be
-// deep-linkable — "open the sealing animation" cannot mean "scan the code,
+// surface whose whole job is to be walked through by other people has to be
+// deep-linkable: "open the sealing animation" cannot mean "scan the code,
 // search a handle, write forty words, wait". So every state of the surface
 // has an address, and the address is what the shell renders from.
 //
 // No routing library: the host app matches location.pathname by hand
 // (App.jsx parseRoute) and this build does the same, in forty lines, so the
-// prototype adds nothing to the dependency tree it is being judged from.
-
-export const BASE = '/beta'
+// wall adds nothing to the dependency tree the rest of the product is judged
+// from.
+//
+// ── the address ─────────────────────────────────────────────────────────────
+// It was /beta while this was one. It is not one any more: the wall is the
+// Berkeley campus surface, it is live, and the word "beta" was a phase rather
+// than a place. /berkeley is a place, it reads correctly on a printed card, and
+// it leaves room for the next campus to be a sibling rather than a rewrite.
+//
+// /beta still resolves. Cards and flyers are already out with it on them and
+// paper cannot be redeployed, so main.jsx rewrites the old prefix onto this one
+// before the shell ever mounts.
+export const BASE = '/berkeley'
+export const LEGACY_BASE = '/beta'
 
 // Which sheet, if any, is raised over the wall. The wall itself never
 // unmounts while one of these is up — that is what makes it a surface. The
@@ -48,9 +59,19 @@ export function href(name, id) {
 }
 
 // Only ever called with a path this build produced. It refuses anything else
-// rather than silently pushing a production URL into a history stack the
-// prototype then tries to render.
+// rather than silently pushing a production URL into a history stack the wall
+// then tries to render.
 export function isWallPath(pathname) {
   const p = String(pathname || '').replace(/\/+$/, '')
   return p === BASE || p.startsWith(BASE + '/')
+}
+
+// The old address, and only the old address. A visitor who scanned a card
+// printed before the rename lands on /berkeley/find; this is what turns that into
+// /berkeley/find without a round trip to a server that would only redirect it
+// back to the same single-page document anyway.
+export function legacyRewrite(pathname) {
+  const p = String(pathname || '/').replace(/\/+$/, '') || '/'
+  if (p !== LEGACY_BASE && !p.startsWith(LEGACY_BASE + '/')) return null
+  return BASE + p.slice(LEGACY_BASE.length)
 }

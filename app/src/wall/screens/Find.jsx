@@ -1,4 +1,4 @@
-// ── /beta/find — THE SEARCH ─────────────────────────────────────────────────
+// ── /berkeley/find — THE SEARCH ─────────────────────────────────────────────
 //
 // The corner button, for the one person in twenty who came here looking for
 // themselves rather than browsing. It is a sheet over the wall, not a screen

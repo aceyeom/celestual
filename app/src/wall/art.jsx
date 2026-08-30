@@ -155,16 +155,36 @@ export const ECL_SPINE = ellipse(50, 50, ECL.rx, ECL.rx * ECL.flat, ECL.tilt)
 const NEAR = { x: -110, y: 50, width: 320, height: 160, transform: `rotate(${ECL.tilt} 50 50)` }
 const nearRect = `<rect x="${NEAR.x}" y="${NEAR.y}" width="${NEAR.width}" height="${NEAR.height}" transform="${NEAR.transform}"/>`
 
+// The two grounds the mark is ever drawn on outside this app: a light tab strip
+// and a dark one. Named here rather than typed at the call site so the icon and
+// any future print of it cannot disagree about which black.
+export const INK = '#0A0A0C'
+export const CHALK = '#F4F1EA'
+
 // The same drawing as a bare string, for the one place React cannot reach: the
 // tab's icon. Built from the exports above rather than from a second copy, so
 // the drawing in the tab cannot drift from the drawing on the screen.
+//
+// ── the tab is not the void ─────────────────────────────────────────────────
+// It used to be drawn in chalk, which is the right colour for a mark standing
+// on a blue-black ground and the wrong colour for a mark standing on a browser
+// tab. Chrome, Safari and Firefox all paint their tab strip near-white by
+// default, and a near-white mark on it is not a subtle favicon: it is no
+// favicon. The tab showed a blank square.
+//
+// So it is drawn in INK, and the tab's own scheme picks the other one back up:
+// a browser in dark mode reports `prefers-color-scheme: dark` to the icon
+// document the same way it does to a page, and the one rule below hands the
+// mark back its chalk there. One drawing, two grounds, and it is visible on
+// both — which is the whole job of a favicon and the only reason it exists.
 //
 // It returns plain markup. Percent-encoding is the CALLER's job and has to be
 // done in one pass over the whole string: a `#` left raw in a data: URI starts
 // a fragment and silently truncates the document at the first `fill="#fff"`,
 // and a `#` pre-encoded here would be double-encoded by that pass and break
-// every `url(#…)` in it.
-export function eclipticSVG(color = '#F4F1EA') {
+// every `url(#…)` in it. That pass also carries the `{}` of the media query,
+// which decode on the other side like anything else.
+export function eclipticSVG(color = INK, onDark = '') {
   const ring = ringPath()
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
     + `<defs><clipPath id="n">${nearRect}</clipPath>`
@@ -172,11 +192,13 @@ export function eclipticSVG(color = '#F4F1EA') {
     + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
     + `<path d="${ringPath(ECL.gutter)}" fill="#000" fill-rule="evenodd" clip-path="url(#n)"/>`
     + '</mask></defs>'
-    + `<g fill="${color}">`
+    + (onDark ? `<style>@media (prefers-color-scheme:dark){#k{fill:${onDark}}}</style>` : '')
+    + `<g id="k" fill="${color}">`
     + `<path d="${ring}" fill-rule="evenodd"/>`
     + `<g mask="url(#m)"><path d="${starPath(ECL)}" transform="translate(50 50)"/></g>`
     + `<path d="${ring}" fill-rule="evenodd" clip-path="url(#n)"/></g></svg>`
 }
+
 
 // The mark itself. Three layers in one paint, in this order and never
 // reordered: the whole ring, the star notched by the near band's gutter, then
@@ -344,7 +366,7 @@ export function Halftone({ size = 96, grid = 20, className = '', style }) {
 //                    a period, not a number that looked good: `run` is
 //                    spent/60 and the moon is at exactly that fraction.
 //   a closed ring    a mutual, and it carries TWO moons, because the circuit
-//                    closed for the same reason the mark's does on /beta/join:
+//                    closed for the same reason the mark's does on /berkeley/join:
 //                    there were two of them.
 //
 // So a ping four days from lapsing has its ring drawn almost the whole way

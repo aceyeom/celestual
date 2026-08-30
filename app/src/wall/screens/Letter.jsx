@@ -1,4 +1,4 @@
-// ── /beta/letter/:id — THE LETTER ───────────────────────────────────────────
+// ── /berkeley/letter/:id — THE LETTER ───────────────────────────────────────
 //
 // A cream card rising off the bottom edge over a wall that stays visible and
 // dimmed behind it, and on a wide screen a card centred in the middle of it.

@@ -1,4 +1,4 @@
-// ── /beta/gate — THE DOOR ON THE LETTERS ────────────────────────────────────
+// ── /berkeley/gate — THE DOOR ON THE LETTERS ────────────────────────────────
 //
 // The index is public and the letters are not, and this is the whole of the
 // difference between those two facts.
@@ -32,7 +32,10 @@
 // the first one happens here.
 
 import { useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose } from '../parts.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon } from '../parts.jsx'
+import { Mark } from '../art.jsx'
+import { atHandle } from '../data.js'
+import { getState } from '../store.js'
 import { DOMAIN, emailFault, member, normEmail, signIn, signOut, validCode, validEmail } from '../auth.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
@@ -74,7 +77,7 @@ function CodeField({ value, onChange, onSubmit }) {
   )
 }
 
-export default function Gate({ back }) {
+export default function Gate({ go, back }) {
   // Held in state rather than read on every render: signing out has to repaint
   // this sheet, and the store is not something React is watching.
   const [who, setWho] = useState(() => member())
@@ -94,28 +97,66 @@ export default function Gate({ back }) {
   }
 
   // ── signed in ──
-  // Not a dashboard. It says which address is open, offers the one thing
-  // somebody comes back here for, and gets out of the way.
+  //
+  // Not a dashboard, and no longer a status message either. It used to open on
+  // "The wall is open." over the address set small underneath, which is a
+  // sentence about the software's state where the person tapping wants a
+  // sentence about themselves: they came here to check WHICH ADDRESS is signed
+  // in on this phone, and that fact was the smallest thing on the sheet.
+  //
+  // So the address is the heading now, set in the identifier face the way every
+  // other identifier in the build is, with the constellation of it beside it.
+  // Under it, the one thing this device actually knows about them: the names
+  // they have written to. Then the way on, and the way out.
   if (who) {
+    const wrote = getState().wroteTo || []
     return (
       <Sheet onClose={back} labelledBy="wl-gate-h">
-        <div className="wl-sheet-in wl-gate">
+        <div className="wl-sheet-in wl-gate wl-acct">
           <SheetHead onClose={back} label="back to the wall" />
-          <Display size="s" as="h2" id="wl-gate-h">The wall is open.</Display>
-          <Label tone="dim" className="wl-gate-who"><span className="wl-h">{who}</span></Label>
-          <Prose className="wl-gate-copy">
-            You can read the letters, write one, and take one down. Nothing you
-            write is signed with this — the composer has never asked who is
-            writing and it does not start now.
-          </Prose>
+
+          <div className="wl-acct-id">
+            <Mark handle={who} size={44} lit />
+            <div className="wl-acct-name">
+              <p className="wl-acct-addr" id="wl-gate-h">{who}</p>
+              <Label tone="dim">signed in on this device</Label>
+            </div>
+          </div>
+
+          <Rule className="wl-acct-rule" />
+
+          {/* ── who this device has written to ──
+              The letters are anonymous and stay anonymous: nothing on a letter
+              points back here, and this list is read out of this browser rather
+              than out of the wall. It is the one thing an account can honestly
+              show somebody without breaking the thing the account is for. */}
+          <div className="wl-acct-sect">
+            <Label tone="dim">you have written to</Label>
+            {wrote.length ? (
+              <div className="wl-acct-wrote">
+                {wrote.map((h) => (
+                  <span className="wl-acct-chip" key={h}>
+                    <Mark handle={h} size={20} />
+                    <span>{atHandle(h)}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="wl-acct-none">nobody yet</p>
+            )}
+          </div>
+
           <div className="wl-push" />
+
           <SheetFoot>
-            <Pill tone="light" wide onClick={back}>read the wall</Pill>
+            <Pill tone="light" wide icon={<Icon name="join" size={17} />} onClick={() => go('join')}>
+              try mutual matching
+            </Pill>
             <button
               type="button" className="wl-quiet"
               onClick={() => { signOut(); setWho(null); setMode('signin'); setStep(0) }}
             >
-              sign out on this device
+              sign out
             </button>
           </SheetFoot>
         </div>
@@ -139,11 +180,15 @@ export default function Gate({ back }) {
         {step === 0 ? (
           <div className="wl-gate-step">
             {/* The rule, in one line, said where somebody is deciding whether
-                to answer for it. It names both halves — what is open and what
-                is not — because a door that only describes what it is shutting
-                reads as a wall. */}
+                to answer for it.
+
+                It used to read "the names are public. reading, writing and
+                reporting are not", which is precise and is the wrong sentence.
+                It asks the reader to hold four nouns and one negation to work
+                out what it means for them, and what it means for them is one
+                short fact they are already worried about. So it says that. */}
             <Label tone="dim" className="wl-gate-note">
-              the names are public. reading, writing and reporting are not
+              your information will stay anonymous
             </Label>
             <AddressField value={local} onChange={setLocal} onSubmit={() => ok && setStep(1)} />
             <div className="wl-gate-fault" aria-live="polite">{fault}</div>
@@ -158,11 +203,12 @@ export default function Gate({ back }) {
             </Label>
             <CodeField value={code} onChange={setCode} onSubmit={finish} />
             {/* Said plainly, on the screen, where somebody about to type
-                something into it will read it. A beta that quietly accepts
+                something into it will read it. A door that quietly accepts
                 anything and does not say so is teaching the wrong thing about
-                what this build does with what it is given. */}
+                what this build does with what it is given. It comes off the
+                screen the day the code is mailed, and not one day before. */}
             <p className="wl-gate-beta">
-              This is the beta. No mail is sent yet, and any six digits will let you in.
+              No mail yet. Any six digits will let you in.
             </p>
           </div>
         )}
