@@ -18,7 +18,8 @@
 // The five primitives, and where the reference puts each one:
 //   Sparkle    the four-point star, top-right of the poster and beside the title
 //   Halftone   the dotted sphere in the poster's bottom corner
-//   Orbit      the ring system the journey screen opens on
+//   Orrery     the ring system the journey screen opens on, rebuilt as a
+//              readout: one ring per ping, and the moon is where the clock is
 //   Bloom      the soft blurred mass the modal is built around
 //   Mark       the constellation that stands where the reference puts a face
 //
@@ -325,21 +326,182 @@ export function Halftone({ size = 96, grid = 20, className = '', style }) {
   )
 }
 
-// ── the ring system ─────────────────────────────────────────────────────────
+// ── the orrery ──────────────────────────────────────────────────────────────
 // The journey screen opens on a body with rings around it and small bodies
-// riding them. Here it carries a meaning rather than a mood: the centre is
-// you, each ring is a ping you have standing, and the body on the ring is the
-// person it went to. A mutual ring closes — it is the only one drawn solid,
-// and the only one carrying a lit body.
+// riding them, and the first version of this took that literally: three rings
+// at arbitrary radii, three moons drifting on three arbitrary periods. It was
+// a picture of space. It said nothing, it could not be wrong, and a diagram
+// that cannot be wrong is a diagram nobody reads.
 //
-// The bodies move by CSS on an SVG <animateTransform>-free path: each is
-// wrapped in a <g> that rotates about the centre, so one transform per body
-// and nothing recomputes geometry per frame.
-export function Orbit({ size = 300, rings = [], still = false, className = '', style }) {
-  const cx = 50, cy = 50
+// This one is a READOUT, and every quantity in it is a quantity on the ledger
+// beside it:
+//
+//   the centre       you
+//   a ring           one ping you are carrying
+//   the drawn arc    how much of the sixty days it has already spent
+//   the dim arc      what is left
+//   the moon         where it is on that circuit, RIGHT NOW. Not a phase, not
+//                    a period, not a number that looked good: `run` is
+//                    spent/60 and the moon is at exactly that fraction.
+//   a closed ring    a mutual, and it carries TWO moons, because the circuit
+//                    closed for the same reason the mark's does on /beta/join:
+//                    there were two of them.
+//
+// So a ping four days from lapsing has its ring drawn almost the whole way
+// round with its moon nearly home, and one placed last week is a short bright
+// stroke off the left edge. Nothing has to be captioned. The countdown in the
+// row and the position of the moon are the same fact, which is the only reason
+// to have both on one screen.
+//
+// ── it crosses, the way the mark crosses ────────────────────────────────────
+// Each ring is split at its long axis and drawn twice: the far half BEHIND the
+// body, the near half IN FRONT of it. The old version stacked every ring
+// behind the sphere, which is a hoop propped up behind a ball. ECLIPTIC makes
+// exactly this point about itself (the band passes behind the star at the top
+// of its circuit and in front of it at the bottom) and it is the one gesture
+// this brand owns, so the orrery makes it too.
+//
+// The moon is placed on the same split: below half its run it is on the far
+// side and is drawn before the body, above it it is in front. One conditional,
+// no z-index, and a moon that genuinely goes round something.
+//
+// A ring is passed as { run, state, id } and nothing else. The geometry is
+// worked out here, so a caller cannot hand this an rx that disagrees with the
+// row it belongs to.
+// ── the numbers, and what each one is pinned to ─────────────────────────────
+// None of these is a taste decision. Every one is the answer to "where can a
+// moon be hidden", because a readout that occludes what it is reading out has
+// failed at the only job it has.
+//
+//   TILT   how far the system is leaned. It is not free: it sets `ry`, and
+//          `ry` is exactly how far a moon at twelve o'clock stands off the
+//          body. At the 0.34 this started on, the moon on the inner ring at
+//          twelve sat BEHIND the sphere — which is precisely where a ping
+//          four days from lapsing sits. The one thing this hero exists to
+//          show was the one thing it hid.
+//   BODY   the sphere, and CORONA the light around it.
+//   RMAX   the outermost ring, and RSTEP the gap inward to the next.
+//
+// ── the radii are assigned from the OUTSIDE IN, and that is a safety rule ───
+// Rings arrive innermost-first and the caller sorts mutual first, so the
+// inner rings always belong to pairs that have closed and the outer ones to
+// pings still waiting. Handing out radii from the outside means a ping that
+// is NOT mutual can never land nearer than RMAX - RSTEP, because the slot cap
+// is two and the two of them take the outer two rings whatever else is on the
+// ledger. That is what makes one number (34 x 0.42 = 14.3 against a body of
+// 9.5 and a moon of 1.8) enough to prove no countdown is ever occluded.
+//
+// A mutual can sit further in, and does. It is allowed to, because its moons
+// are placed on the diagonals rather than at twelve — see `moons` below.
+//
+// It also means the silhouette does not jump: the system is the same width
+// whether somebody is carrying one ping or four.
+//
+// ── on the bleed, and why it is the light and not the ring ──────────────────
+// The reference runs its ring system off both edges and this build wanted
+// that. It cannot have it and be a readout at the same time: a ring wider
+// than the screen has its long-axis ends off the screen, and a moon reaches
+// those ends at a quarter and three quarters of the sixty days. So the ring
+// is drawn to just past the edges (43 of 100 is 404px on a 470px drawing, on
+// a 390px phone) and the corona behind it is what actually runs off. Scale
+// off the light; the ring stays somewhere a moon can be seen.
+const TILT = 0.42
+const BODY = 9.5, CORONA = 21
+const RMAX = 43, RSTEP = 9
+
+// ── one ring, in three arcs ─────────────────────────────────────────────────
+// The split has to happen at the long axis, because that is where the ellipse
+// crosses the body: everything above it is behind the sphere and everything
+// below it is in front. But the CLOCK cannot start there.
+//
+// It did, and it put a freshly placed ping's moon exactly on the left vertex —
+// which on a ring drawn wider than the phone it is on is the one point that is
+// off the screen. The newest thing on the ledger was the one thing the hero
+// could not show.
+//
+// So the circuit starts at twelve o'clock, where a clock starts, and the ring
+// is cut into three: the quarter from the top round to the right vertex (far),
+// the half under the body from right back to left (near), and the last quarter
+// from the left vertex home to the top (far). Their lengths are declared as
+// 25/50/25 with `pathLength`, so laying the run across them is arithmetic on
+// one number rather than three different path measurements.
+function arcs(rx) {
+  const ry = +(rx * TILT).toFixed(2)
+  const l = +(50 - rx).toFixed(2), r = +(50 + rx).toFixed(2), t = +(50 - ry).toFixed(2)
+  const a = `A${rx} ${ry} 0 0 1 `
+  return {
+    ry,
+    lead: `M50 ${t}${a}${r} 50`,   // top -> right vertex, behind the body
+    near: `M${r} 50${a}${l} 50`,   // right -> bottom -> left, in front of it
+    tail: `M${l} 50${a}50 ${t}`,   // left vertex -> top, behind it again
+    full: `M50 ${t}${a}${r} 50${a}${l} 50${a}50 ${t}`,
+  }
+}
+
+// One moon, at a fixed fraction of its circuit measured from twelve. `offset-
+// path` moves a round body along an elliptical route and leaves it round,
+// which a rotation inside a squashed group does not: a moon that flattens into
+// a lens at three and nine o'clock is the tell of a fake orbit.
+function Moon({ at, path, r, cls }) {
+  return (
+    <circle
+      cx="0" cy="0" r={r} className={`wl-moon ${cls}`}
+      style={{ offsetPath: `path('${path}')`, offsetDistance: `${(at * 100).toFixed(2)}%` }}
+    />
+  )
+}
+
+// How much of each arc the run covers, in that arc's own pathLength units.
+const cut = (run, from, len) => Math.min(len, Math.max(0, run * 100 - from))
+
+export function Orrery({ size = 300, rings = [], lit = null, className = '', style }) {
+  // Innermost first. A ping that has been answered has come IN — the mutual
+  // sits closest to the centre and the ones still out there sit further off,
+  // ordered by how much room they have left. The caller hands them over
+  // already in that order (orbit.js `pings`), so the ring somebody is looking
+  // at is the row at the same index.
+  const drawn = rings.map((r, i) => {
+    const g = arcs(Math.max(13, RMAX - (rings.length - 1 - i) * RSTEP))
+    const closed = r.state === 'mutual'
+    // A mutual's circuit is complete. It is the only ring drawn the whole way
+    // round, and the run it would otherwise be showing has stopped mattering.
+    const run = closed ? 1 : Math.min(0.995, Math.max(0.012, r.run || 0))
+    const on = lit === r.id
+    return { ...r, ...g, closed, run, on, key: r.id || `r${i}` }
+  })
+
+  // Where a moon sits decides which side of the body it is drawn on: the first
+  // quarter and the last are above the long axis and behind the sphere, the
+  // half between them is under it and in front.
+  const far = (at) => at <= 0.25 || at >= 0.75
+  const cls = (r) => [
+    r.closed && 'is-closed',
+    r.state === 'lapsing' && 'is-near',
+    r.on && 'is-on',
+  ].filter(Boolean).join(' ')
+
+  const moons = (r, side) => {
+    // A mutual carries two, half a lap apart, and WHERE on the lap is the
+    // whole of the tuning. Quarter and three-quarters put one of them dead
+    // behind the body on the inner ring, where a leaned ellipse is narrower
+    // than the sphere it goes round: half of the one thing this ring exists to
+    // say, occluded. Nought and a half put them on the ends of the long axis,
+    // where they read as two ears on the planet and collect the round cap of
+    // the run's own stroke. An eighth off each keeps them clear of the body,
+    // clear of the seam, and diagonally opposite, which is the only
+    // arrangement that reads as two of something rather than as symmetry.
+    const set = r.closed ? [0.125, 0.625] : [r.run]
+    return set
+      .filter((at) => far(at) === (side === 'far'))
+      .map((at) => (
+        <Moon key={`${r.key}-${at}`} at={at} path={r.full}
+          r={r.closed ? 2.1 : 1.8} cls={cls(r)} />
+      ))
+  }
+
   return (
     <svg
-      className={`wl-orbit${still ? ' is-still' : ''} ${className}`}
+      className={`wl-orrery ${className}`}
       style={style} width={size} height={size} viewBox="0 0 100 100"
       aria-hidden="true" focusable="false"
     >
@@ -350,49 +512,54 @@ export function Orbit({ size = 300, rings = [], still = false, className = '', s
           <stop offset="100%" stopColor="#0A0910" />
         </radialGradient>
         <radialGradient id="wl-corona" cx="50%" cy="50%" r="50%">
-          <stop offset="55%" stopColor="rgba(255,244,228,0.16)" />
+          <stop offset="52%" stopColor="rgba(255,244,228,0.15)" />
           <stop offset="100%" stopColor="rgba(255,244,228,0)" />
         </radialGradient>
       </defs>
 
-      {/* the rings, outermost first so the near ones overlap them */}
-      {rings.map((r, i) => (
-        <ellipse
-          key={`r${i}`} cx={cx} cy={cy} rx={r.rx} ry={r.rx * 0.34}
-          className={`wl-ring${r.closed ? ' is-closed' : ''}${r.fading ? ' is-fading' : ''}`}
-        />
-      ))}
+      {/* ── behind the body ── the two far arcs of every track, the part of
+          every run that falls on them, and any moon currently up there */}
+      <g className="wl-orrery-far">
+        {drawn.map((r) => <path key={`tl${r.key}`} d={r.lead} className={`wl-track ${cls(r)}`} />)}
+        {drawn.map((r) => <path key={`tt${r.key}`} d={r.tail} className={`wl-track ${cls(r)}`} />)}
+        {drawn.map((r) => (
+          <path
+            key={`rl${r.key}`} d={r.lead} pathLength="25" className={`wl-run ${cls(r)}`}
+            strokeDasharray={`${cut(r.run, 0, 25).toFixed(2)} 30`}
+          />
+        ))}
+        {drawn.map((r) => (
+          <path
+            key={`rt${r.key}`} d={r.tail} pathLength="25" className={`wl-run ${cls(r)}`}
+            strokeDasharray={`${cut(r.run, 75, 25).toFixed(2)} 30`}
+          />
+        ))}
+        {drawn.map((r) => moons(r, 'far'))}
+      </g>
 
       {/* the corona, then the body. The corona is wider than the body and
           fades to nothing, so the centre has a presence without a glow ring
           around it — a hard-edged halo is the tell of a drawn sun. */}
-      <circle cx={cx} cy={cy} r="26" fill="url(#wl-corona)" />
-      <circle cx={cx} cy={cy} r="13.5" fill="url(#wl-core)" />
-      {/* the terminator: one thin arc of light down the lit side, no more */}
-      <path d="M50 36.5a13.5 13.5 0 0 1 0 27" className="wl-orbit-rim" />
+      <circle cx="50" cy="50" r={CORONA} fill="url(#wl-corona)" />
+      <circle cx="50" cy="50" r={BODY} fill="url(#wl-core)" />
+      {/* the terminator: one thin arc of light down the lit side, no more.
+          Drawn from BODY so it cannot be left behind by a change to it. */}
+      <path
+        d={`M50 ${50 - BODY}a${BODY} ${BODY} 0 0 1 0 ${BODY * 2}`}
+        className="wl-orrery-rim"
+      />
 
-      {/* the bodies. Each rides its own ring on its own period and its own
-          phase, so they never line up into a pattern the eye can lock onto.
-          They travel by CSS motion path rather than by a rotation inside a
-          squashed group: squashing the group to make the ring elliptical
-          squashes the moon on it too, and a planet that flattens into a lens
-          at three and nine o'clock is the tell of a fake orbit. offset-path
-          moves a round moon along an elliptical route and leaves it round. */}
-      {rings.map((r, i) => {
-        const ry = (r.rx * 0.34).toFixed(2)
-        const d = `M${(cx - r.rx).toFixed(2)} ${cy}a${r.rx} ${ry} 0 1 0 ${(r.rx * 2).toFixed(2)} 0a${r.rx} ${ry} 0 1 0 ${(-r.rx * 2).toFixed(2)} 0`
-        return (
-          <circle
-            key={`b${i}`} cx="0" cy="0" r={r.moon || 1.9}
-            className={`wl-moon${r.closed ? ' is-lit' : ''}`}
-            style={{
-              offsetPath: `path('${d}')`,
-              animationDuration: `${r.period || 30}s`,
-              animationDelay: `${-(r.phase || 0) * (r.period || 30)}s`,
-            }}
+      {/* ── in front of it ── */}
+      <g className="wl-orrery-near">
+        {drawn.map((r) => <path key={`nt${r.key}`} d={r.near} className={`wl-track ${cls(r)}`} />)}
+        {drawn.map((r) => (
+          <path
+            key={`nr${r.key}`} d={r.near} pathLength="50" className={`wl-run ${cls(r)}`}
+            strokeDasharray={`${cut(r.run, 25, 50).toFixed(2)} 60`}
           />
-        )
-      })}
+        ))}
+        {drawn.map((r) => moons(r, 'near'))}
+      </g>
     </svg>
   )
 }
@@ -452,7 +619,18 @@ export function Bloom({ size = 300, opacity = 0.5, className = '', style }) {
 //
 // Four to six stars, placed on a jittered ring so no figure collapses into a
 // line, joined in sequence by a hairline. The brightest star is the first one.
-export function Mark({ handle, size = 34, lit = false, className = '', style }) {
+//
+// ── the gauge ───────────────────────────────────────────────────────────────
+// On the core service a mark stands beside a ping, and a ping is a countdown.
+// `gauge` (0..1, how much of the sixty days is spent) draws that countdown on
+// the figure's own ring, starting at the top and going clockwise. So the thing
+// that identifies the person IS the thing that says how long is left, in one
+// object, in the place a list would otherwise need a second column for.
+//
+// It is opt-in and absent everywhere else: the same handle draws the same
+// figure on the wall, in the search and in the bar, and a progress arc on a
+// letter would be a countdown on something that is not counting.
+export function Mark({ handle, size = 34, lit = false, gauge = null, tone = '', className = '', style }) {
   const seed = hash(handle || 'celestual')
   const n = 4 + (seed % 3)
   const pts = []
@@ -462,10 +640,17 @@ export function Mark({ handle, size = 34, lit = false, className = '', style }) 
     pts.push([50 + Math.cos(a) * r, 50 + Math.sin(a) * r])
   }
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')
+  const g = gauge == null ? null : Math.min(1, Math.max(0, gauge))
   return (
-    <svg className={`wl-mark${lit ? ' is-lit' : ''} ${className}`} style={style}
+    <svg className={`wl-mark${lit ? ' is-lit' : ''}${tone ? ` is-${tone}` : ''} ${className}`} style={style}
       width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       <circle cx="50" cy="50" r="48" className="wl-mark-ring" />
+      {g != null && (
+        <circle
+          cx="50" cy="50" r="48" pathLength="100" className="wl-mark-gauge"
+          strokeDasharray={`${(g * 100).toFixed(1)} 100`} transform="rotate(-90 50 50)"
+        />
+      )}
       <path d={line} className="wl-mark-line" />
       {pts.map((p, i) => (
         <circle key={i} cx={p[0]} cy={p[1]} r={i === 0 ? 4.4 : 2.6} className="wl-mark-star" />

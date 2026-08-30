@@ -37,6 +37,13 @@ const EMPTY = {
                       // wall cannot see them and a desk still can, which is the
                       // whole difference between a takedown and a delete.
   verified: [],       // handles proven through the Instagram handoff
+  // The core service's ledger, held as a delta against the seeded one
+  // (orbit.js) rather than as a copy of it: what this session placed, what it
+  // renewed and what it let go. It lives under the same key as everything
+  // else so the one reset clears the account too — a demo that walks a second
+  // time with somebody's third ping still standing in it is a demo that
+  // behaves differently in front of the person you are showing it to.
+  orbit: null,
 }
 
 let cache = null

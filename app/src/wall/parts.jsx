@@ -75,10 +75,16 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 }
 
 // ── the pill ────────────────────────────────────────────────────────────────
-// Three roles and no fourth. `light` is the reference's white capsule and is
-// the primary action on any screen that has one; `ghost` is the outlined
-// capsule beside a list row; `ember` is the one saturated object in the entire
-// build and appears at most once on a screen, on the thing that is true NOW.
+// Two roles and no third. `light` is the reference's white capsule and is the
+// primary action on any screen that has one; `ghost` is the outlined capsule
+// beside a list row.
+//
+// There was a third, `ember`: a filled saturated capsule, described here as
+// the one saturated object in the build. It had exactly one caller — "today",
+// on the core service, beside a date that had just said so — and it spent the
+// whole colour ration on the least load-bearing word on that screen. Both are
+// gone. The accent still exists and is still rationed; it is now on the ping
+// that is running out, which is the thing anybody actually has to act on.
 export function Pill({ children, onClick, tone = 'ghost', wide = false, disabled = false, icon = null, className = '', ...rest }) {
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', className].filter(Boolean).join(' ')
   return (
@@ -113,8 +119,11 @@ export function PillTag({ children, tone = 'ghost', icon = null, className = '' 
 //          service's own diagram is built out of
 //   flag   a marker left on a thing, not a verdict about it
 //
-// Eight glyphs is the whole set, which is well under the point where an icon
-// library would save anybody anything — and none of these exist in one.
+// Nine glyphs is the whole set, which is well under the point where an icon
+// library would save anybody anything — and none of these exist in one. It was
+// ten: a solid play triangle sat inside the core service's row capsules, on a
+// ledger where nothing plays. It went with the redesign and its fill branch
+// went with it, so every glyph in the build is now one stroke weight.
 const PATHS = {
   wall:  'M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
   find:  'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.2 16.2 21 21',
@@ -124,7 +133,6 @@ const PATHS = {
   key:   'M12 4.4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7M10.7 11.2 9.9 19.6h4.2l-.8-8.4',
   back:  'M14 5l-7 7 7 7',
   down:  'M5 10l7 7 7-7',
-  play:  'M9 6.5v11l9-5.5z',
   /* a flag on a staff — a mark left on a thing, which is what a report is:
      it does not judge the letter, it points at it */
   flag:  'M6 21V4M6 5h11l-2.4 3.9L17 12.8H6',
@@ -155,10 +163,9 @@ export function Close({ onClick, label = 'close', className = '' }) {
 }
 
 export function Icon({ name, size = 20, className = '' }) {
-  const solid = name === 'play'
   return (
     <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
-      fill={solid ? 'currentColor' : 'none'} stroke={solid ? 'none' : 'currentColor'}
+      fill="none" stroke="currentColor"
       strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
       aria-hidden="true" focusable="false">
       <path d={PATHS[name]} />
@@ -484,9 +491,19 @@ export function ReasonField({ value, onChange, placeholder = '', max = 240, auto
 // The reference's journey list, with the constellation standing where it puts
 // a photograph. One row shape for the search results, the ledger and the
 // wall's overflow, so those three read as the same object in three places.
-export function Row({ mark, handle, meta, action, onClick, tone = '', lit = false }) {
+//
+// `onEnter`/`onLeave` are the ledger's tie to its own diagram: pointing at a
+// row lights the ring that row is on, and focusing it with a keyboard does the
+// same. It is opt-in, because on the search and on the wall's overflow there
+// is nothing for a row to light.
+export function Row({ mark, handle, meta, action, onClick, tone = '', lit = false, onEnter, onLeave }) {
   return (
-    <button type="button" className={`wl-row${tone ? ` is-${tone}` : ''}${lit ? ' is-lit' : ''}`} onClick={onClick}>
+    <button
+      type="button" className={`wl-row${tone ? ` is-${tone}` : ''}${lit ? ' is-lit' : ''}`}
+      onClick={onClick}
+      onMouseEnter={onEnter} onMouseLeave={onLeave}
+      onFocus={onEnter} onBlur={onLeave}
+    >
       <span className="wl-row-mark">{mark}</span>
       <span className="wl-row-text">
         <span className="wl-row-handle">{atHandle(handle)}</span>

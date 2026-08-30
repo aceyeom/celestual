@@ -182,6 +182,13 @@
 @media (max-width: 359px) {
   .wl-page { padding-left: 16px; padding-right: 16px; }
   .wl-mast-ball { width: 74px; height: 74px; }
+  /* The orrery is drawn a little wider than the phone it is on, which is the
+     one place a moon can be cut. At 470 on a 320px screen the overhang is
+     forty pixels a side and a ping a quarter of the way through its sixty
+     days would lose its moon off the edge. Scaling the drawing keeps the
+     overhang proportional to the screen rather than fixed against it. */
+  .wl-core-orrery { width: 396px; height: 396px; }
+  .wl-core-sky { height: 190px; }
 }
 
 .wl-push   { flex: 1 1 auto; min-height: 20px; }
@@ -300,25 +307,15 @@
 }
 .wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
 
-/* the one saturated object */
-.wl-pill.is-ember {
-  background: var(--ember); color: #1A0B03;
-  min-height: 32px; padding: 0 16px; font-size: 12px; font-weight: 600;
-  letter-spacing: 0.02em;
-}
+/* There was a third role here, `is-ember`: a filled saturated capsule. It had
+   exactly one caller in the whole build, the "today" pill on the core service,
+   which was spending the entire colour ration on a word beside a date that had
+   already said it. The role went with the caller. The accent is not gone, it
+   moved to what is actually running out. */
 
 /* a size, declared after the roles so it wins over whatever min-height and
    font-size the role set */
 .wl-pill.is-wide { width: 100%; min-height: 50px; padding: 0 22px; font-size: 15px; }
-
-/* the small solid triangle the reference puts inside its row capsules */
-.wl-play {
-  width: 0; height: 0; flex: 0 0 auto;
-  border-left: 6px solid currentColor;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  opacity: 0.8;
-}
 
 /* ═══ ICONS ════════════════════════════════════════════════════════════════ */
 .wl-icon { display: block; }
@@ -579,7 +576,6 @@
 .wl-row + .wl-row { margin-top: 2px; }
 .wl-row:hover { background: rgba(244,241,234,0.032); }
 .wl-row.is-lit { background: linear-gradient(100deg, rgba(255,244,228,0.055), rgba(255,244,228,0.012)); border-color: var(--hair); }
-.wl-row.is-lapsing .wl-row-meta { color: var(--ember); opacity: 0.85; }
 .wl-row-mark { flex: 0 0 auto; display: grid; place-items: center; }
 .wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .wl-row-handle {
@@ -629,6 +625,17 @@
 .wl-mark.is-lit .wl-mark-line { stroke: rgba(255,244,228,0.5); }
 .wl-mark.is-lit .wl-mark-star { fill: var(--glow); filter: drop-shadow(0 0 4px rgba(255,244,228,0.55)); }
 
+/* the countdown, drawn on the figure's own ring. Only the core service passes
+   a gauge, and only on a ping — see art.jsx `Mark`. It is set BELOW the
+   figure's stroke weight on purpose: it is the second thing you read off the
+   mark, after which person it is. */
+.wl-mark-gauge {
+  fill: none; stroke: rgba(244,241,234,0.26); stroke-width: 2.2; stroke-linecap: round;
+  transition: stroke 300ms var(--ease);
+}
+.wl-mark.is-near .wl-mark-gauge { stroke: var(--ember); opacity: 0.78; }
+.wl-mark.is-mutual .wl-mark-gauge { stroke: rgba(255,244,228,0.5); }
+
 /* the bloom — the whole accent system, spent once per screen */
 .wl-bloom {
   position: absolute; left: 50%; top: 50%;
@@ -638,22 +645,58 @@
   will-change: opacity;
 }
 
-/* the ring system */
-.wl-orbit { display: block; overflow: visible; }
-.wl-ring { fill: none; stroke: rgba(244,241,234,0.10); stroke-width: 0.4; }
-.wl-ring.is-closed { stroke: rgba(255,244,228,0.34); stroke-width: 0.55; }
-.wl-ring.is-fading { stroke: rgba(244,241,234,0.16); stroke-dasharray: 1.4 2.6; }
-.wl-orbit-rim { fill: none; stroke: rgba(255,244,228,0.30); stroke-width: 0.7; stroke-linecap: round; }
-.wl-moon {
-  fill: rgba(244,241,234,0.42);
-  offset-rotate: 0deg;                 /* it orbits; it does not tumble */
-  animation-name: wl-orbit-run;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+/* ── the orrery ────────────────────────────────────────────────────────────
+   Three weights and nothing else: the TRACK is the circuit a ping is on, the
+   RUN is how much of it has been spent, and the MOON is where it is now. The
+   track has to stay nearly invisible or the diagram reads as three concentric
+   hoops with something on them; what a person should see first is three
+   strokes of unequal length, which is the actual state of their account. */
+.wl-orrery { display: block; overflow: visible; }
+
+.wl-track {
+  fill: none; stroke: rgba(244,241,234,0.055); stroke-width: 0.34;
+  transition: stroke 320ms var(--ease);
 }
-.wl-moon.is-lit { fill: var(--glow); filter: drop-shadow(0 0 3px rgba(255,244,228,0.8)); }
-.wl-orbit.is-still .wl-moon { animation: none; offset-distance: 24%; }
-@keyframes wl-orbit-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.wl-run {
+  fill: none; stroke: rgba(244,241,234,0.34); stroke-width: 0.58;
+  stroke-linecap: round;
+  transition: stroke 320ms var(--ease), stroke-width 320ms var(--ease);
+}
+/* a closed circuit. The one ring drawn at full weight, and the only place on
+   this screen the warm light is spent. */
+.wl-run.is-closed {
+  stroke: rgba(255,244,228,0.56); stroke-width: 0.8;
+  filter: drop-shadow(0 0 2.4px rgba(255,244,228,0.45));
+}
+.wl-track.is-closed { stroke: rgba(255,244,228,0.10); }
+/* the last week. The stroke does not change colour, because a ring going
+   orange would put the accent on sixty days of history rather than on the
+   four that are left. The MOON carries it, and it is one point of light. */
+.wl-run.is-near { stroke: rgba(244,241,234,0.38); }
+/* the ring belonging to the row under the pointer */
+.wl-run.is-on { stroke: rgba(244,241,234,0.72); stroke-width: 0.9; }
+.wl-track.is-on { stroke: rgba(244,241,234,0.20); }
+
+.wl-orrery-rim { fill: none; stroke: rgba(255,244,228,0.26); stroke-width: 0.7; stroke-linecap: round; }
+
+.wl-moon {
+  fill: rgba(244,241,234,0.5);
+  offset-rotate: 0deg;                 /* it orbits; it does not tumble */
+  transition: fill 320ms var(--ease), r 320ms var(--ease);
+}
+.wl-moon.is-closed { fill: var(--glow); filter: drop-shadow(0 0 2.2px rgba(255,244,228,0.7)); }
+/* THE one saturated object on this screen, and it is a two-unit dot. It is on
+   the ping that is running out, which is the only thing here anybody has to
+   act on. The old screen spent the ration on a capsule reading "today" beside
+   a date that already said so. */
+.wl-moon.is-near { fill: var(--ember); filter: drop-shadow(0 0 2.2px rgba(242,102,30,0.6)); }
+.wl-moon.is-on { fill: var(--chalk); }
+
+/* Breathing, not orbiting. A moon that travels its ring in thirty seconds is
+   a decoration that contradicts the number beside it: these sit where the
+   sixty days actually put them and the light on them is what moves. */
+.wl-moon.is-closed, .wl-moon.is-near { animation: wl-moon-breathe 4200ms var(--ease) infinite; }
+@keyframes wl-moon-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
 
 /* the step dots */
 .wl-dots { display: flex; align-items: center; gap: 7px; }
@@ -688,15 +731,13 @@
 .wl-brand:hover { color: var(--chalk); }
 .wl-brand .wl-spark { color: currentColor; }
 
-/* the reference puts an unread dot on the avatar — the only other ember */
-.wl-me { position: relative; display: block; }
-.wl-me-dot {
-  position: absolute; top: -1px; right: -1px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--ember); border: 2px solid var(--void);
-  animation: wl-pulse 2800ms var(--ease) infinite;
-}
-@keyframes wl-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.42; } }
+/* The reference puts an unread dot on its avatar, and this build had one: a
+   pulsing ember on the account's own mark whenever a mutual existed. It is
+   gone, and what it was for is now done better by the thing it was pointing
+   at. A dot on an avatar says SOMETHING HAPPENED and makes you go looking;
+   the mutual is the first row on the screen, lit, with a closed ring on the
+   diagram above it. Nothing is being announced that is not already visible,
+   and the colour ration goes to the one ping that is running out instead. */
 
 /* ═══ THE DOCK ═════════════════════════════════════════════════════════════
    The gradient that rises off the bottom edge, on every screen that has a
@@ -1111,44 +1152,166 @@
 }
 .wl-join-foot.is-in { opacity: 1; transform: none; }
 
-/* ═══ THE PRODUCT, STANDING ════════════════════════════════════════════════ */
-.wl-core-sky {
-  position: relative; height: 244px; flex: 0 0 auto;
-  display: grid; place-items: center;
-  /* the reference lets its ring system run off both edges — that is what
-     stops it reading as clip art dropped into a card. The SIZE is then set so
-     the drawn content (the corona, at r=26 of 100) still lands inside the
-     band: 400px of viewBox is ~208px of actual ink, and the band is 236. */
-  margin: 2px -52px 0;
-}
-.wl-core-orbit { opacity: 0.95; animation: wl-fade 1400ms var(--ease) both; }
-.wl-core-ball { position: absolute; right: 52px; top: 0; opacity: 0.2; }
+/* ═══ THE PRODUCT, STANDING ════════════════════════════════════════════════
+   Three bands, in this order, and the order is the argument: WHERE THE
+   ACCOUNT IS (the orrery), WHEN IT IS (the date), and WHAT IS IN IT (the
+   ledger). The first two are one object on a phone — the diagram sits
+   directly on top of the number it is a picture of. */
 
+.wl-core-sky {
+  position: relative; flex: 0 0 auto;
+  /* The reference lets its ring system run off both edges, and that is what
+     stops it reading as clip art dropped into a card.
+
+     The BAND is much shorter than the drawing, deliberately. A leaned ring
+     system 340px wide is only about 165px of actual ink tall, so a 340px
+     square reserved for it left ~175px of nothing above and below, which was
+     most of the dead air on the old screen. The svg overflows the band into
+     space it was not using.
+
+     It is placed rather than aligned. `place-items: center` looks like the
+     right tool and is not: CSS alignment falls back to start when an item
+     overflows its container, so a 340px drawing in a 196px band top-aligned
+     and hung 144px of ring over the date underneath it. */
+  height: 222px;
+  margin: 0 -52px;
+  overflow: visible;
+}
+.wl-core-orrery {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  animation: wl-fade 1400ms var(--ease) both;
+  overflow: visible;
+}
+
+/* ── the date ──
+   The reference's composition kept exactly: the date set enormous with one
+   capsule beside it. What changed is the two things that made it read as a
+   metric on a dashboard.
+
+   THE FACE. It was the UI sans at weight 600, which is what every product on
+   the web sets a number in, on the one screen in this build that had no
+   Didone on it at all. It is now the same face, at the same weight, as the
+   sentence on the front of the wall.
+
+   THE CAPSULE. It was the accent, saying "today", beside a date that had just
+   said so. The ration went to the ping that is running out (see `wl-moon`),
+   and the capsule stayed as the shape it always was. */
 .wl-core-date {
   position: relative; z-index: 2;
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 14px;
-  padding: 6px 0 4px; flex: 0 0 auto;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 2px 0 20px; flex: 0 0 auto;
+  border-bottom: 1px solid var(--hair-soft);
+  margin-bottom: 20px;
 }
-.wl-core-date > div { min-width: 0; }
-.wl-core-date > .wl-pill { flex: 0 0 auto; }
-.wl-bignum {
-  margin: 0 0 6px;
-  font-family: var(--f-util); font-weight: 600;
-  font-size: clamp(26px, 7.6vw, 33px); letter-spacing: -0.035em; line-height: 1;
-  color: var(--chalk);
-  font-variant-numeric: tabular-nums;
+.wl-core-date-t { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+/* The date is set at the WALL'S HEADLINE SIZE — `Display size="xl"`, the same
+   ramp as "Someone here wrote something they never sent." — because on this
+   screen the date is the headline. Nothing here overrides the size: an earlier
+   pass tried to, at .wl-core-day, and lost to .wl-display.is-xl on
+   specificity in every breakpoint without anybody noticing, which is its own
+   argument for taking the role rather than redeclaring it. */
+.wl-core-day {
+  letter-spacing: -0.012em;
+  font-variant-numeric: lining-nums;
 }
+.wl-core-today { flex: 0 0 auto; align-self: baseline; }
 
-.wl-sect { flex: 0 0 auto; padding: 4px 0 18px; }
+.wl-sect { flex: 0 0 auto; padding: 0 0 18px; }
+.wl-sect + .wl-sect { padding-top: 6px; }
 .wl-sect-head {
   display: flex; align-items: center; gap: 10px;
   padding: 0 2px 10px;
 }
 .wl-sect-head .wl-label.is-dim { margin-left: auto; }
 
-/* the mutual reveal */
+/* how long is left, standing where the reference puts a capsule. It is set in
+   the mono because it is a count, and it is NOT a capsule because a capsule is
+   a control and this one would go nowhere the row does not already go. */
+.wl-days {
+  flex: 0 0 auto;
+  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em;
+  color: var(--ash); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.wl-row.is-lapsing .wl-days { color: var(--chalk); }
+
+/* A lapsing row's meta line used to be set in the accent, which put a whole
+   sentence of orange on a screen rationed to one saturated object. What is
+   running out is a QUANTITY, so the accent goes to the two places that
+   quantity is drawn — the moon on its ring, and the arc on its own mark — and
+   the words are words. */
+.wl-row.is-lapsing .wl-row-meta { color: var(--ash); }
+
+/* ── the open slot ──
+   Two standing pings is the whole of this product's scarcity, so an unused one
+   is drawn as a row rather than written as a number: a person who has to read
+   "1 of 2" to find out they have one left has been told about it instead of
+   shown it. Dashed, because it is an outline of a thing rather than a thing. */
+.wl-open {
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  padding: 12px 12px 12px 10px;
+  border-radius: 14px;
+  border: 1px dashed rgba(244,241,234,0.11);
+  text-align: left;
+  transition: border-color 220ms var(--ease), background 220ms var(--ease);
+}
+.wl-open + .wl-open, .wl-row + .wl-open { margin-top: 2px; }
+.wl-open:hover { border-color: rgba(244,241,234,0.24); background: rgba(244,241,234,0.022); }
+.wl-open-mark {
+  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px dashed rgba(244,241,234,0.16);
+}
+.wl-open-t {
+  flex: 1 1 auto;
+  font-family: var(--f-id); font-size: 13px; color: var(--ash-dim);
+  letter-spacing: -0.01em;
+}
+.wl-open-a {
+  flex: 0 0 auto;
+  font-family: var(--f-util); font-size: 12px; color: var(--ash);
+  transition: color 220ms var(--ease);
+}
+.wl-open:hover .wl-open-a { color: var(--chalk); }
+
+/* ── the quiet sentence ────────────────────────────────────────────────────
+   The build has four type roles and a sentence of plain explanation is none
+   of them: the Didone is for statements, the serif is for letters, and the
+   mono is for IDENTIFIERS. Three sentences on this surface were set in the
+   mono because it was the nearest thing to hand, which uppercased them,
+   letterspaced them, ran them to three ragged lines and uppercased a handle
+   inside one of them. A handle is lower case; a sentence is sentence case;
+   neither is a label.
+
+   So there is one class for it, here, and every quiet line on this surface
+   uses it. `is-lead` is the same voice one step up, for a sentence somebody
+   has to read before deciding something. */
+.wl-say {
+  margin: 0;
+  font-family: var(--f-util); font-size: 12.5px; line-height: 1.6;
+  color: var(--ash-dim); max-width: 42ch;
+}
+.wl-say.is-lead { font-size: 14px; line-height: 1.62; color: var(--ash); max-width: 38ch; }
+.wl-say .wl-h { font-family: var(--f-id); font-size: 0.95em; color: var(--ash); }
+
+.wl-core-note { margin-top: 2px; }
+
+/* the composer's foot: the terms left, whatever the letter still needs right */
+.wl-place-floor {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  min-height: 20px; margin-top: 22px; padding: 0 2px;
+}
+.wl-place-floor .wl-say { max-width: 30ch; }
+
+/* ═══ THE SHEETS OVER IT ═══════════════════════════════════════════════════ */
+
 .wl-reveal { padding-top: 8px; }
 .wl-reveal-head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 22px; }
+
+
+/* the pair. Both cards are in the document from the first frame and the second
+   one RISES 220ms behind the first: that stagger is the reveal, and a control
+   between them would be a page turn instead of a moment. */
 .wl-pairpaper { display: flex; flex-direction: column; gap: 0; }
 .wl-pairpaper > .wl-paper { animation: wl-rise 700ms var(--ease) both; }
 .wl-pairpaper > .wl-paper:nth-of-type(2) { animation-delay: 220ms; }
@@ -1163,8 +1326,44 @@
 .wl-pairpaper-join::before { top: 0; background: linear-gradient(transparent, var(--hair)); }
 .wl-pairpaper-join::after  { bottom: 0; }
 .wl-pairpaper .wl-spark { color: var(--glow); filter: drop-shadow(0 0 8px rgba(255,244,228,0.6)); }
-.wl-reveal .wl-pill.is-wide { margin-top: 22px; }
-.wl-reveal-foot { display: flex; flex-direction: column; gap: 10px; padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px)); }
+
+/* ── the clock, as a length ──
+   The row upstairs says the number in words. This says it as a distance, at
+   the width of the card it belongs to, which is the only way a person feels
+   what fifty-two days out of sixty is. */
+.wl-run-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding: 22px 2px 9px;
+}
+.wl-run-bar {
+  position: relative; height: 2px; border-radius: 2px;
+  background: var(--hair); margin: 0 2px 14px; overflow: hidden;
+}
+.wl-run-bar > span {
+  position: absolute; inset: 0 auto 0 0; display: block;
+  border-radius: 2px; background: rgba(244,241,234,0.45);
+  transition: width 600ms var(--ease), background 320ms var(--ease);
+}
+.wl-run-bar.is-near > span { background: var(--ember); }
+.wl-run-say { padding: 0 2px; }
+
+/* ── both slots taken ── */
+.wl-full { padding-top: 8px; }
+.wl-full-list {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 2px 0 6px;
+}
+.wl-full-row {
+  display: flex; align-items: center; gap: 13px;
+  padding: 11px 4px 11px 2px;
+  border-radius: 14px;
+  transition: background 220ms var(--ease);
+}
+.wl-full-row.is-asking { background: rgba(244,241,234,0.032); }
+.wl-full-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wl-full-ask { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
+.wl-full-ask .wl-quiet { padding: 10px 6px; }
+.wl-full-sub { margin-top: 2px; }
 
 /* ═══ REDUCED MOTION ═══════════════════════════════════════════════════════
    Not a blanket `animation: none`. Two of the sequences in this build are the
@@ -1191,11 +1390,14 @@
 @media (min-width: 720px) {
   .wl-page { padding-bottom: 56px; }
   .wl-mast { padding: 40px 0 36px; }
-  .wl-core-sky { margin-left: -30px; margin-right: -30px; }
+  .wl-core-sky { margin-left: -34px; margin-right: -34px; height: 234px; }
 }
 
-/* a row's capsule is an affordance, not a control — the row is the target */
-.wl-pill.is-tag { pointer-events: none; }
+/* A row's capsule is an affordance, not a control — the row is the target —
+   and it is always the small one. `is-light` is sized as a primary action
+   because that is what it is in a dock; the same tone standing in a 60px
+   ledger row is a 40px white slab with two rows of type beside it. */
+.wl-pill.is-tag { pointer-events: none; min-height: 30px; padding: 0 14px; font-size: 12px; }
 
 /* ═══ THE TAB ══════════════════════════════════════════════════════════════
    The one door out of the wall, and it does not exist until somebody has put
@@ -1332,23 +1534,55 @@
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
 
   /* ── the product, across the width ── */
-  /* the ledger column is short, so everything sits at the top and the air
-     goes underneath. Bottom-anchoring the dock the way the wall does would
-     leave 400px of nothing between the date and the only control. */
+  /* Both columns are short — a hero and a three-line ledger — and the old
+     version pinned them to the top of a 900px viewport, which left the bottom
+     half of a desktop screen completely empty under a date and two rows.
+
+     So the middle row takes the slack and BOTH columns centre in it. That is
+     the difference between air the design put there (the wall's spread, where
+     the right column is full to both edges) and a page that ran out. The dock
+     keeps the bottom of its own column, the way `write one` does on the wall,
+     and the gap above it is the field rather than the leftovers. */
   .wl-core {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    column-gap: 56px;
-    align-content: start;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.06fr);
+    /* Five rows, and the two flexible ones are empty. The bar keeps the top;
+       the hero, the ledger and the dock are one block in rows 3 and 4; and a
+       1fr above and a 1fr below centre that block in whatever is left.
+
+       Both earlier versions were worse in the same way. Pinned to the top,
+       the bottom half of a desktop screen was blank under a date and two
+       rows. Pinned to the bottom, the dock was stranded three hundred pixels
+       below the last thing on the screen with nothing beside it. The wall can
+       bottom-anchor its dock because its right-hand column runs the full
+       height; this one's ledger is four rows long and cannot. */
+    grid-template-rows: auto 1fr auto auto 1fr;
+    column-gap: 64px;
   }
   .wl-core .wl-top { grid-column: 1 / -1; }
-  .wl-core-left { grid-column: 1; grid-row: 2; align-self: start; }
-  .wl-core-right { grid-column: 2; grid-row: 2; padding-top: 26px; }
+  .wl-core-left  { grid-column: 1; grid-row: 3; }
+  .wl-core-right { grid-column: 2; grid-row: 3 / span 2; align-self: center; }
   .wl-core .wl-push { display: none; }
-  .wl-core .wl-dock { grid-column: 1; grid-row: 3; max-width: 380px; align-self: start; margin-top: 30px; position: static; }
-  .wl-core-sky { margin-left: -20px; margin-right: -20px; height: 300px; }
-  .wl-core-ball { display: none; }
+  .wl-core .wl-dock {
+    grid-column: 1; grid-row: 4;
+    max-width: 380px; align-self: start;
+    margin: 26px 0 0; padding: 0; position: static;
+  }
+  .wl-core-sky { margin: 0 -40px; height: 300px; }
+  .wl-core-orrery { width: 540px; height: 540px; }
+  /* The capsule sits BESIDE the date here, not at the far end of the column.
+     Pushed apart, a 400px column put three hundred pixels of void between a
+     number and the word that qualifies it, and two objects that far apart are
+     two objects. The rule under them still runs the full measure. */
+  .wl-core-date {
+    justify-content: flex-start; gap: 26px;
+    padding-bottom: 0; margin-bottom: 0;
+    /* the rule under the date separates the masthead from the ledger, and on
+       a spread the ledger is in the other column. A hairline with three
+       hundred pixels of nothing under it is a line about nothing. */
+    border-bottom: 0;
+  }
+  .wl-core-note { margin-top: 6px; }
 
   /* ── the standalone screens keep the column, and gain air ── */
   .wl-join, .wl-posted { max-width: 640px; }
@@ -1406,7 +1640,32 @@
   .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
   .wl-join-fig .wl-circuit { max-width: 250px; }
-  .wl-core-sky { height: 168px; }
+  /* the core service gets the spread early too, for the same reason the wall
+     does: 350px of height cannot stack a hero, a date and a ledger. */
+  .wl-core {
+    display: grid;
+    grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    column-gap: 40px;
+  }
+  .wl-core .wl-top { grid-column: 1 / -1; padding-top: 10px; }
+  .wl-core-left  { grid-column: 1; grid-row: 2; align-self: start; padding: 0; }
+  .wl-core-right { grid-column: 2; grid-row: 2; align-self: start; padding: 0; }
+  .wl-core .wl-push { display: none; }
+  .wl-core .wl-dock {
+    grid-column: 1; grid-row: 3; align-self: end;
+    margin: 0; padding: 0 0 4px; max-width: 330px; position: static;
+  }
+  .wl-core-sky { height: 148px; margin: 0 -18px; }
+  .wl-core-orrery { width: 320px; height: 320px; }
+  /* a spread too, so the rule under the date goes for the same reason it
+     goes at 900: the ledger it would be separating is in the other column */
+  .wl-core-date { padding: 0 0 12px; margin-bottom: 12px; border-bottom: 0; }
+  /* 350px of height and a four-row ledger: the rows give their padding back */
+  .wl-sect { padding-bottom: 8px; }
+  .wl-sect-head { padding-bottom: 6px; }
+  .wl-core .wl-row, .wl-core .wl-open { padding: 8px 10px; }
+  .wl-core .wl-say { font-size: 12px; }
   .wl-posted-stage { min-height: 150px; }
 }
 
