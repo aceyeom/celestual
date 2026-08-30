@@ -111,8 +111,9 @@ export function PillTag({ children, tone = 'ghost', icon = null, className = '' 
 //   write  a nib
 //   join   two figures and the arc between them, which is the mark the core
 //          service's own diagram is built out of
+//   flag   a marker left on a thing, not a verdict about it
 //
-// Seven glyphs is the whole set, which is well under the point where an icon
+// Eight glyphs is the whole set, which is well under the point where an icon
 // library would save anybody anything — and none of these exist in one.
 const PATHS = {
   wall:  'M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
@@ -124,6 +125,9 @@ const PATHS = {
   back:  'M14 5l-7 7 7 7',
   down:  'M5 10l7 7 7-7',
   play:  'M9 6.5v11l9-5.5z',
+  /* a flag on a staff — a mark left on a thing, which is what a report is:
+     it does not judge the letter, it points at it */
+  flag:  'M6 21V4M6 5h11l-2.4 3.9L17 12.8H6',
 }
 
 // ── the close mark ──────────────────────────────────────────────────────────
@@ -230,17 +234,34 @@ export function TopBar({ go, at = 'wall', onMark }) {
 // does not, so this one is warmer, coarser and about four times stronger than
 // the grain on the void — without it the card is a beige rectangle, and with
 // it the card is a material.
-export function Paper({ dateline, title, children, foot, tone = '', className = '', style, ...rest }) {
+// ── the title block ──
+// `dateline` is two cells across the top rule and each caller decides what its
+// two facts are (data.js `dateline` and `sinceline`). The right-hand one is
+// either a plain `trail` — the other half of a date — or a `stamp`, which is
+// the card's state and is set as a mark on the document rather than as type. `crest` is the letterhead
+// — the constellation, standing beside the name the way a monogram stands at
+// the head of a sheet of paper, which is where it belongs on a card ABOUT
+// somebody. It used to sit in a row underneath the card with a timestamp and a
+// button, where it was one of three unrelated objects competing at the same
+// weight and read as none of them.
+export function Paper({ dateline, title, crest, children, foot, tone = '', className = '', style, ...rest }) {
   return (
     <article className={`wl-paper${tone ? ` is-${tone}` : ''} ${className}`} style={style} {...rest}>
       <div className="wl-paper-grain" aria-hidden="true" />
       {dateline && (
         <header className="wl-paper-head">
-          <span>{dateline.date}</span>
-          <span>{dateline.day}</span>
+          <span>{dateline.lead}</span>
+          {dateline.stamp
+            ? <span className="wl-paper-stamp">{dateline.stamp}</span>
+            : dateline.trail ? <span>{dateline.trail}</span> : null}
         </header>
       )}
-      {title && <h2 className="wl-paper-title">{title}</h2>}
+      {title && (
+        <div className="wl-paper-crest">
+          {crest}
+          <h2 className="wl-paper-title">{title}</h2>
+        </div>
+      )}
       <div className="wl-paper-body">{children}</div>
       {foot && <footer className="wl-paper-foot">{foot}</footer>}
     </article>
@@ -379,6 +400,82 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
         ><span /></div>
         {children}
       </section>
+    </div>
+  )
+}
+
+// ── the sheet's header ──────────────────────────────────────────────────────
+//
+// Every sheet in the build now opens on this row, and that is a layout decision
+// rather than a tidy-up. Six sheets each owned a different top: one was a lone
+// close mark on an empty line, one was a heading and a close mark fighting for
+// the same baseline, one was step dots. Three different rhythms in a stack of
+// screens somebody walks through in ninety seconds reads as three different
+// products, and the lone close mark was the worst of them — an empty row with
+// one heavy object floating at the end of it, which is the shape you get when
+// nothing has been decided about what the top of a sheet is FOR.
+//
+// It is for two things: what this sheet is about, on the left, and the way out,
+// on the right. `lead` carries the first — the mark when there is nothing to
+// say, a pager when there is more than one letter, step dots in the composer —
+// and it is always optically lighter than the close, because the way out is the
+// only control in the row.
+export function SheetHead({ lead = null, onClose, label = 'close' }) {
+  return (
+    <div className="wl-head">
+      <div className="wl-head-lead">{lead || <Ecliptic size={20} className="wl-head-mark" />}</div>
+      <Close onClick={onClose} label={label} />
+    </div>
+  )
+}
+
+// ── the sheet's foot ────────────────────────────────────────────────────────
+// One primary, then whatever is quieter than it, in one column with one rhythm.
+// The alternative — every sheet inventing its own arrangement of a pill and a
+// sentence — is what put a 50px capsule and a 12px link at the same distance
+// from the content on one screen and 40px apart on the next.
+export function SheetFoot({ children, className = '' }) {
+  return <div className={`wl-foot ${className}`}>{children}</div>
+}
+
+// ── the door, stated where it stands ────────────────────────────────────────
+// Reading, writing and reporting are all behind the same berkeley.edu address
+// (auth.js), and all three used to say so in their own words in their own
+// place. This is the one wording, in the one shape, wherever somebody has
+// walked into that door: the sentence that names what is shut, and the pill
+// that opens it. Nothing else — no explanation of the policy, no second
+// argument for it. A person who has just tapped a control they cannot use wants
+// the key, not the reasoning.
+export function Locked({ children, onOpen, cta = 'sign in with berkeley' }) {
+  return (
+    <div className="wl-locked">
+      <Sparkle size={12} className="wl-locked-spark" />
+      <p className="wl-locked-say">{children}</p>
+      <Pill tone="light" wide icon={<Icon name="key" size={17} />} onClick={onOpen}>{cta}</Pill>
+    </div>
+  )
+}
+
+// ── the small box ───────────────────────────────────────────────────────────
+// A short reason, on the screen that has already taken the letter down. It is
+// small on purpose and it counts nothing: this box is not evidence and nobody
+// is being asked to make a case. Two lines of room says "a sentence is enough",
+// and a box the size of the composer would say the opposite.
+export function ReasonField({ value, onChange, placeholder = '', max = 240, autoFocus = false }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!autoFocus || !ref.current) return
+    const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (fine) ref.current.focus()
+  }, [autoFocus])
+  return (
+    <div className="wl-reason">
+      <textarea
+        ref={ref} rows={3} value={value} maxLength={max} placeholder={placeholder}
+        aria-label="why" spellCheck="true"
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <span className="wl-field-line" aria-hidden="true" />
     </div>
   )
 }

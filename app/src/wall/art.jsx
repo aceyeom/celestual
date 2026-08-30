@@ -227,6 +227,46 @@ export function Ecliptic({ size = 22, sweep = false, className = '', style, titl
   )
 }
 
+// ── the mark, taken apart ───────────────────────────────────────────────────
+// The two halves of the ecliptic's own circuit, and the two points where they
+// meet. Built from ECL rather than from a second set of numbers, so the figure
+// the join screen assembles is provably THE MARK and not a drawing of one: move
+// `rx` or `tilt` above and the arcs on that screen move with them.
+//
+// The endpoints are the extremes of the ring's long axis, which is what makes
+// each path an exact half. `high` leaves the left node and travels over the
+// top; `low` leaves the right node and travels under. Two people, one circuit,
+// and neither half is a ring on its own.
+export function eclipticHalves() {
+  const { rx, flat, tilt } = ECL
+  const ry = rx * flat
+  const t = rad(tilt)
+  const dx = rx * Math.cos(t), dy = rx * Math.sin(t)
+  const right = [50 + dx, 50 + dy]
+  const left = [50 - dx, 50 - dy]
+  const arc = (from, to) =>
+    `M${f2(from[0])} ${f2(from[1])}A${f2(rx)} ${f2(ry)} ${f2(tilt)} 0 1 ${f2(to[0])} ${f2(to[1])}`
+  return { left, right, high: arc(left, right), low: arc(right, left) }
+}
+
+// ── the provider's mark ─────────────────────────────────────────────────────
+// Drawn on the same 24-unit grid at the same stroke weight as the seven glyphs
+// in parts.jsx, because on this surface it is a destination and not a logo: the
+// button it sits in says where the next tap goes, and a pasted brand asset
+// would be the one object in the build at a different weight, a different
+// radius and a different optical size from everything around it.
+export function Provider({ size = 18, className = '' }) {
+  return (
+    <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true" focusable="false">
+      <rect x="3.3" y="3.3" width="17.4" height="17.4" rx="5.2" />
+      <circle cx="12" cy="12" r="4.05" />
+      <circle cx="17.05" cy="6.95" r="1.05" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 // The mark and the name, locked. The gap and the mark's size are both set in
 // ems off the type size, so one number scales the whole lockup and the two
 // halves cannot drift out of proportion at a size nobody checked.
@@ -373,18 +413,31 @@ export function Bloom({ size = 300, opacity = 0.5, className = '', style }) {
       width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       <defs>
         <filter id="wl-soft" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="9" />
+          <feGaussianBlur stdDeviation="6" />
         </filter>
+        {/* ── the falloff, and why it is this steep ──
+            Warm white at a low alpha over a near-black ground is GREY, and a
+            wide flat falloff spreads that grey across three hundred pixels —
+            which reads as smoke sitting on the screen rather than as a light
+            source in it. The core is now bright and short: full at the centre,
+            a quarter by a fifth of the radius, gone by half. What was a cloud
+            with a visible edge is a small hot centre that falls off before
+            anybody can find where it stops. */}
         <radialGradient id="wl-warm" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--glow)" stopOpacity="0.95" />
-          <stop offset="34%" stopColor="var(--glow)" stopOpacity="0.24" />
-          <stop offset="72%" stopColor="var(--glow)" stopOpacity="0.05" />
+          <stop offset="0%" stopColor="var(--glow)" stopOpacity="1" />
+          <stop offset="20%" stopColor="var(--glow)" stopOpacity="0.26" />
+          <stop offset="48%" stopColor="var(--glow)" stopOpacity="0.06" />
           <stop offset="100%" stopColor="var(--glow)" stopOpacity="0" />
         </radialGradient>
       </defs>
       <circle cx="50" cy="50" r="46" fill="url(#wl-warm)" />
-      <g filter="url(#wl-soft)" opacity="0.55">
-        <path d={SPARK} fill="var(--glow)" transform="translate(18 18) scale(0.64)" />
+      {/* The star inside the light, and it is small. At 0.64 of the field it
+          was a sixty-four unit shape under a nine unit blur — a soft mass the
+          width of the whole ornament, which over a near-black ground is grey,
+          and grey spread that wide is smoke. Forty units under a six unit blur
+          is a source: bright in the middle, finished before the edge. */}
+      <g filter="url(#wl-soft)" opacity="0.5">
+        <path d={SPARK} fill="var(--glow)" transform="translate(30 30) scale(0.4)" />
       </g>
     </svg>
   )

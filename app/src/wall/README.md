@@ -18,38 +18,80 @@ The wall carries two different things and they cannot have the same rule.
 | | |
 | --- | --- |
 | **the index** | sixty-six handles, the count against each one, and nothing else. **Open to everybody.** It is what somebody who has just scanned a code off a card has to be able to see in four seconds without answering anything, and it is how a person finds their own name in order to ask for it to come off. |
-| **the letters** | what was actually written. **Behind a `berkeley.edu` address.** A wall of things students wrote about each other, readable by the open internet, is a different object from one readable by the campus it is about. |
+| **the letters** | what was actually written, who may write one, and who may take one down. **Behind a `berkeley.edu` address.** |
 
 So a letter arrives at a stranger **redacted** — the real letter, at its real
 length, with every word struck out and nothing readable in the document — and
-an address lifts it. Nothing else on the surface moves: the names, the counts,
-the search and the composer are all still open, and the first time anybody is
-asked for anything is the moment they try to read what somebody wrote.
+an address lifts it. The index does not move: the names, the counts and the
+search stay open to everybody, forever, and the first time anybody is asked for
+anything is the moment they reach for one of the three acts that touch what is
+on the wall.
 
-The gate is on **reading**. Writing stays anonymous: the address is never
-attached to a letter, the composer never reads it, and a letter still has three
-fields with no fourth one to leak. Those two facts are independent on purpose.
+Those three are **reading**, **writing** and **reporting**. One door, opened
+once:
 
-### 2 · Anybody on the wall can take themselves off it, instantly, with no account.
+| | |
+| --- | --- |
+| **reading** | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by the campus it is about |
+| **writing** | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity — it is an open relay pointed at a person who never agreed to any of it |
+| **reporting** | a one-tap control over what is on a public page has to cost *something* to reach, or the wall's contents are decided by whoever is bored |
+
+**Being let in is not being known.** The address is never attached to a letter,
+the composer never reads it, and a letter still has three fields with no fourth
+one to leak. Reading is gated; authorship stays absent; those two facts are
+independent on purpose, and the second one is the product.
+
+### 1a · Every letter is read before it is published, and a reported letter comes down first.
+
+Publication is **pre-moderated** and takedown is **post-hoc**, and the same
+asymmetry drives both: the screenshot exists before the decision does.
+
+```
+  writing        layer 1  regex — slurs, links, phones, addresses, room numbers.
+                          Runs at the keyboard (moderate.js) and again on the
+                          server, because a client-side check is a courtesy to
+                          the writer, not a control on the writer.
+                 layer 2  one Haiku call, against explicit categories.
+                 layer 3  anything ambiguous waits for a person.
+                          -> and only then is it on the wall.
+
+  reporting      the tap  off the wall, the search and the count. Immediately.
+                 the box  optional, three lines. Why.
+                 the read Haiku decides only WHERE it lands — confirmed, or a
+                          person looks at it. Never whether it comes down.
+                          -> held, never deleted. A desk can put it back up.
+```
+
+A report queue that leaves the letter up while somebody decides whether the
+complaint was fair has protected the wrong person. And a takedown that destroys
+what it took down is one no review can ever be right about — which matters most
+for the writer, since any signed-in reader can report any letter.
+
+### 2 · Getting a letter down is free. Emptying a whole name is the one thing that asks.
 
 Listing a handle on a public wall says, in public, that this person is being
-written about, and not one of them agreed to it. So the way back off costs one
-tap: no account, no address, no code, no form, no reason to give, no queue. The
-name and every letter under it are gone before the sheet has finished
-animating, and the name cannot be put back up.
+written about, and not one of them agreed to it. So the way back off has to
+cost them less than being on it does. There are two ways off, and they are not
+the same act:
 
-A takedown behind a sign-up is a takedown that says *make an account first* to
-the one person on the wall who never chose to be there. The obvious objection —
-anybody can take down anybody — is the right trade and it is not close: a wrong
-removal costs one name off a wall and can be asked for again, and a slow one
-costs somebody the ability to get their own name off a public page about them.
-The check that would fix it is a check that a person is who they say, and every
-honest version of that is a login. The place for proof is **afterwards**, on
-the way back on.
+| | |
+| --- | --- |
+| **one letter** | `report it`, on the letter. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **a whole name** | `/beta/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
-It is reachable from three places, none of them a footer: beside the name on
-any letter (`this is me`), under the names on the wall itself, and from the
-search.
+An earlier build made the second one instant too, and argued for it: a takedown
+behind a login says *make an account first* to the one person on the wall who
+never chose to be there. That argument is right about the **cost** and wrong
+about the **asymmetry**. Reporting a letter is undoable in a minute. Emptying a
+name is undoable by nobody, ever, and what it destroys does not belong only to
+the person asking — it is forty letters written by people who are not in the
+room and cannot be asked. So the proof sits on the irreversible action and
+nowhere else, and the person who just wants a letter about them gone is never
+sent through it.
+
+They are reachable from four places, none of them a footer: `this is me` and
+`report it` beside the name on any letter, under the names on the wall itself,
+and from the search.
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -62,31 +104,34 @@ Cards and flyers go out with a QR code on them. The code lands on the wall.
 
 ```
                      ┌──▶ a letter ──┬─ from berkeley? ──▶ read it whole
+                     │               │                     └─▶ report it ──▶ off
+                     │               │                        the wall NOW, then
+                     │               │                        read by a person
                      │               └─ otherwise ───────▶ redacted, and one
                      │                                     offer: an address
    scan ──▶ THE WALL ┼──▶ look for a name
-     (no questions   │         └──▶ nobody has? be the first
-      asked, ever)   ├──▶ that's my name ──▶ ONE TAP ──▶ off the wall, for good
-                     │                                   (no account, no proof)
-                     └──▶ write one
-                                  │
-                                  ▼
-                             it's up ──▶ the wall, with it on
+     (the names ask  │         └──▶ nobody has? be the first
+      nothing, ever) ├──▶ that's my name ──▶ prove it (instagram) ──▶ the whole
+                     │                                        name off, for good
+                     └──▶ write one ── berkeley? ── screened ──┐
+                                  │                            │
+                                  ▼                            ▼
+                             it's up ──▶ the wall, with it on ◀┘
                                               │
                                     ┌─────────┴──────────┐
                                     │  and only NOW, a   │
                                     │  tab at the bottom │
                                     └─────────┬──────────┘
                                               ▼
-                            "Register to find out if they put you down too."
+                             "Get notified if they put you down too."
                                               │
                                               ▼
                                       THE CORE SERVICE
 ```
 
 Two things called *register* live on this surface and they are not the same
-thing. `/beta/gate` opens the wall's own letters and buys nothing else.
-`/beta/join` is the door into the product — accounts, pings, mutuals — and it
+thing. `/beta/gate` opens the wall — its letters, its composer, its report
+control — and buys nothing else. `/beta/join` is the door into the product — accounts, pings, mutuals — and it
 is still gated on having put a letter up.
 
 The tab is the only route out of the wall, and it does not exist until
@@ -99,25 +144,35 @@ question they are now actually carrying.
 
 | Route | What it is |
 | --- | --- |
-| `/beta` | **the wall** — one inscription, sixty-six names at three weights |
+| `/beta` | **the wall** — the inscription, sixty-six names at three weights, drifting in lanes |
 | `/beta/letter/:id` | a letter over the dimmed wall. Whole, or redacted |
 | `/beta/find` | the search. Opens on the names carrying the most letters |
 | `/beta/write` · `/beta/write/:handle` | the composer, two steps, written on the card itself |
-| `/beta/gate` | **the door on the letters** — an address and six digits, or the account |
-| `/beta/remove` · `/beta/remove/:handle` | **off the wall** — one tap, nothing asked |
-| `/beta/posted` | three beats, and the wall really does gain the letter |
+| `/beta/gate` | **the door on the wall** — an address and six digits, or the account |
+| `/beta/report/:id` | **one letter, down** — the tap, the small box, the reading |
+| `/beta/remove` · `/beta/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
+| `/beta/posted` | three beats — the screening, the paper going, the landing |
 | `/beta/join` | **the one door to the product** — three lines and one ornament |
 | `/beta/orbit` · `/beta/orbit/:id` | the core service: the ledger, and the mutual reveal |
 
-Five of those are **sheets, not pages**: `letter`, `find`, `write`, `gate` and
-`remove` rise off the bottom edge over a wall that stays mounted, scrolled
+Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
+`report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
 where it was, dimmed and slightly out of focus behind them — and on a wide
 screen they become centred dialogs instead, because a sheet dragged up from the
 bottom of a 1400px display is a phone gesture on furniture that is not a phone.
 
-Neither the gate nor the takedown is a place you go. A person sent away from
-the names to answer something is a person who then has to find their way back
-to them.
+None of the gate, the report or the takedown is a place you go. Each is a
+question about something on the screen behind it, and a person sent away from
+the names to answer one is a person who then has to find their way back to
+them. The report in particular has to stay a sheet: the letter it is about is a
+scroll position away, and a takedown screen that has replaced the thing it is
+taking down makes somebody trust their memory instead of their eyes.
+
+**Every sheet opens on the same header row** — what it is about on the left, the
+way out on the right (`parts.jsx SheetHead`) — and closes on the same footer:
+one primary, then whatever is quieter than it (`SheetFoot`). Six sheets used to
+own six different tops, one of which was a lone close mark on an otherwise empty
+line: the heaviest object on the screen, sitting on the emptiest row.
 
 ## Navigation
 
@@ -151,18 +206,52 @@ index.jsx    the shell — routing, the cut, the persistent star field, ?s=,
              the tab's icon, and the overture
 Overture.jsx the first second, on black. Once per tab, skippable on any key
 wall.css     every rule scoped under .wl-root
-router.js    nine routes, no dependency
+router.js    ten routes, no dependency
 art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
              ornaments: sparkle, halftone sphere, ring system, bloom,
              per-handle constellation, the star field
 parts.jsx    display · label · prose · redaction · pill · paper · fields ·
              sheet · row · icons · the close mark · the bar · step dots
-auth.js      the domain check, and what it does and does not buy
+auth.js      the domain check, what it does and does not buy, and the
+             Instagram handoff that stands on the one irreversible action
+moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
+             the report's own triage
 data.js      handles, the deterministic hash everything derives from, the
-             corpus, search, write, and the removals
+             corpus, search, write, the reports (held, never deleted) and the
+             removals
 seed.js      the letters, the sources, the ledger
 screens/     one file per screen
 ```
+
+## The inscription
+
+One run of names at three weights — not a grid of cards (a directory) and not a
+tag cloud (analytics). Weight comes off how many letters a name carries, so a
+name written to three times is set larger than one written to once and the wall
+has a real topography rather than a decorative one.
+
+It **drifts**. A static block of sixty-six names is a screenshot: it reads as a
+list that was printed once, and the one thing this surface has to say in its
+first second is that people are still doing this. So the run is broken into
+lanes and each lane travels, at about the speed of a departures board:
+
+- **Slow enough to read**, at one constant speed across every lane whatever it
+  is carrying. Lanes at visibly different speeds read as a bug, not as
+  parallax. About 25px a second, so a name moves ~2px in the length of a tap.
+- **Alternating direction.** Every lane going one way is a stock crawl; lanes
+  going opposite ways read as a field with weather in it.
+- **The lane under the pointer stops**, and the whole wall stops for a keyboard.
+  Motion that will not hold still for the person trying to use it has forgotten
+  what it is on top of.
+- **The ends are masked, not cut.** A hard edge on a moving name is a box; a
+  dissolve is a room the name walked out of.
+- **Round-robin, not sliced in blocks**, so the heaviest names end up one per
+  lane instead of stacked in the first two.
+- Each lane holds its run **twice** and translates by exactly half the track, so
+  the tail is on screen before the head leaves and there is no seam.
+
+Under `prefers-reduced-motion` the original wrapping inscription is rendered
+instead.
 
 ## The mark
 
@@ -205,11 +294,21 @@ behind it and it never claims to be.
 | | |
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land |
-| `140ms` | **the circuit.** A mask runs a 24-unit stroke along the band's own centreline with its dash offset driven to zero, so the ring is *drawn* round its orbit rather than faded up. It travels the route the ring actually takes, because the mask path and the ring come out of the same constants |
-| `440ms` | **the star**, arriving as the circuit closes behind it — up off nothing, with a few degrees bleeding out. A shape that settles reads as an object; a shape that fades in reads as an image of one |
-| `660ms` | **the name.** The word wipes out to the right of the mark under a travelling sheen, and the whole lockup slides left by exactly half the word as it comes, so the composition is centred at the start, at the end, and at every frame between. That slide is the most expensive-looking thing here and it costs one transform |
-| `1000ms` | assembled, and held. The hold is the point of the whole sequence |
-| `1200ms` | **the lift.** The lockup drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone. One movement, not two screens |
+| `200ms` | **the circuit.** A mask runs a 24-unit stroke along the band's own centreline with its dash offset driven to zero, so the ring is *drawn* round its orbit rather than faded up. It travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close |
+| `560ms` | **the star**, arriving while the circuit is still closing behind it — up off nothing, with a few degrees bleeding out. A shape that settles reads as an object; a shape that fades in reads as an image of one |
+| `820ms` | **the name.** The word wipes out to the right of the mark under a travelling sheen, and the whole lockup slides left by exactly half the word as it comes, so the composition is centred at the start, at the end, and at every frame between. That slide is the most expensive-looking thing here and it costs one transform |
+| `1380ms` | **assembled.** The wipe lands *on* this beat rather than after it, so the bloom reaching full and the word arriving whole are one event. Nothing moves again until the lift |
+| `1640ms` | **the lift**, after 260ms of stillness. The lockup drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone. One movement, not two screens |
+| `2200ms` | the black is gone |
+
+The whole cut is **2.2 seconds**, and 440ms of that is new. It used to run 1760
+and the lift began 140ms *before* the word had finished wiping in — so the one
+moment the mark was ever whole never existed on screen. That reads as fast
+rather than as brief, which are not the same quality: fast is something you
+missed, brief is something that was over. Almost none of the extra time went
+into slowing the assembly down (that moved by ~180ms). It went into the hold,
+which is the only frame in the sequence doing the actual job and the one the
+old timing did not have.
 
 Everything that animates is a transform, an opacity or a dash offset; nothing
 touches layout after the first frame. The name waits for the real Didone (up to
@@ -247,9 +346,11 @@ which an icon library cannot do because it does not know what it is next to.
 The phone is the one this was designed for and it does not change.
 
 - **≥ 900px** — the wall becomes a spread: the masthead takes its own sticky
-  column and the names run beside it, which is the shape the poster reference
-  actually is. Sheets become centred dialogs. The core service puts its ring
-  system beside its ledger.
+  column and the lanes run beside it, bleeding off the right edge and centred
+  vertically in their column — which is the shape the poster reference actually
+  is, and which is why the empty field around the three objects reads as air
+  rather than as a list that ran out. Sheets become centred dialogs. The core
+  service puts its ring system beside its ledger.
 - **landscape phone** (`max-height: 560px`, `min-width: 640px`) — the same
   spread, early, and every vertical measure that was buying atmosphere gives
   its space back. On 390px of height, atmosphere is just scrolling.
@@ -267,12 +368,14 @@ who did not scan a piece of paper. No shared component, no global token, no
 
 ## Known, and deliberately left
 
-- **`supabase/migrations/0027_beta_wall.sql` and
-  `supabase/functions/celestual-beta-moderate/` belong to an older build.**
-  Undeployed and inert, and they describe a workflow that no longer exists —
-  a wall queried one handle at a time, with a per-letter seal and a
-  pre-publication moderation queue. They are **not** the schema for what is in
-  this directory, and they should be replaced rather than extended.
+- **`supabase/migrations/0027_beta_wall.sql` belongs to an older build.**
+  Undeployed and inert, and it describes a wall queried one handle at a time
+  with a per-letter seal. It is **not** the schema for what is in this
+  directory and should be replaced rather than extended.
+  `supabase/functions/celestual-beta-moderate/` is the opposite case: its
+  three-layer pre-publication design is exactly what this build now draws, and
+  `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
+  keyboard rather than after the button. It is still undeployed.
 - **`/beta` downloads the production entry chunk** (~188 kB gzip) because
   `main.jsx` is the single Vite entry and imports `App.jsx` statically. The
   real fix is a second Vite entry, which needs `vite.config.js` and
@@ -281,13 +384,23 @@ who did not scan a piece of paper. No shared component, no global token, no
 - **Reduced motion is honoured by jumping, not by freezing.** Three sequences
   here (the overture's six beats, the posting's three, the door's four) are the
   only way those screens reach their final state, so the preference is read in
-  JS and the screen starts at the last beat.
-- **The takedown is real inside the tab and nowhere else.** It writes to the
-  same one key everything else does, which means it survives a reload the way a
-  real removal would and is cleared by the same reset. There is no server here
-  to tell, and a build that mimed the removal instead would be the one thing on
-  this surface it is least acceptable to fake.
+  JS and the screen starts at the last beat. The wall's drift is the one thing
+  that is *replaced* rather than jumped: under the preference it renders the
+  original wrapping inscription, because a frozen banner would strand the names
+  in eight ragged rows.
+- **The takedown and the report are real inside the tab and nowhere else.**
+  Both write to the same one key everything else does, so they survive a reload
+  the way a real removal would and are cleared by the same reset — and a
+  reported letter is genuinely gone from the wall, the search and the count a
+  frame later. There is no server here to tell, and a build that mimed either
+  would be the one thing on this surface it is least acceptable to fake.
+- **Three things are drawn on a timer and every one of them says so on the
+  glass.** The gate's six digits (any six pass), the classifier beat on
+  `/beta/posted`, the report's reading, and the Instagram handoff (any handle
+  comes back proven). Each is the shape of the real thing with the round trip
+  left out, labelled rather than disguised — because a beta that mimes an OAuth
+  handshake without saying so is teaching the wrong thing about what this build
+  does with what it is given.
 - **The gate checks a domain, not a person.** Any `berkeley.edu` address opens
-  the letters and any six digits pass, which the code step says on the screen.
-  It is the shape of the real thing with the sending left out, and it is
-  labelled rather than disguised.
+  the wall. The Instagram handoff is the only place a *person* is checked, and
+  it is asked once, about one handle, on the one action nobody can undo.

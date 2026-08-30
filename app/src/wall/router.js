@@ -14,10 +14,14 @@ export const BASE = '/beta'
 
 // Which sheet, if any, is raised over the wall. The wall itself never
 // unmounts while one of these is up — that is what makes it a surface. The
-// gate and the takedown are on this list too, and deliberately: neither is a
-// place you go, and a person sent away from the names to answer something is a
-// person who has to find their way back to them.
-export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove'])
+// gate, the report and the takedown are on this list too, and deliberately:
+// none of them is a place you GO. Each is a question asked about something on
+// the screen behind it, and a person sent away from the names to answer one is
+// a person who has to find their way back to them. The report in particular has
+// to stay a sheet: the letter it is about is a scroll position away, and a
+// takedown screen that has replaced the thing it is taking down makes somebody
+// trust their memory instead of their eyes.
+export const SHEETS = new Set(['letter', 'find', 'write', 'gate', 'remove', 'report'])
 
 export function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
@@ -29,7 +33,8 @@ export function parse(pathname) {
     case 'find':   return { name: 'find' }         // the search, raised over the wall
     case 'write':  return { name: 'write', id }    // the composer, raised over the wall
     case 'gate':   return { name: 'gate' }         // the door on the LETTERS, not on the wall
-    case 'remove': return { name: 'remove', id }   // a name coming off, asking for nothing
+    case 'remove': return { name: 'remove', id }   // a whole name coming off, once it is proven
+    case 'report': return { name: 'report', id }   // one letter coming down, now
     case 'posted': return { name: 'posted' }       // it is up, and the wall took it
     case 'join':   return { name: 'join' }         // the ONLY door to the core service
     case 'orbit':  return { name: 'orbit', id }    // the core service, standing

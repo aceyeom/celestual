@@ -6,11 +6,20 @@
 //
 // Three beats, and each one is a claim:
 //
-//   0 · 0ms     the paper is still there, and then it goes — the card
-//               contracts toward its own centre and the light leaves it
-//   1 · 900ms   the sparkles converge and one point of light leaves with it
-//   2 · 1950ms  the point lands: the name is on the wall, lit, among the
-//               others, and the count is one higher
+//   0 · 0ms      THE READING. The card is still on the screen and it is being
+//                looked at — this is the moment a real build spends calling the
+//                classifier, and it is drawn rather than hidden. A wall that
+//                screens every letter before publishing it has made a promise
+//                to the person the letter is about, and the one second where
+//                that promise is visibly kept is worth more than the second it
+//                costs. It is also the honest shape: the alternative is a
+//                progress bar that means nothing, or nothing at all and a
+//                letter that appears to have gone up unread.
+//   1 · 1100ms   IT PASSED, and the paper goes — the card contracts toward its
+//                own centre, the light leaves it, and the sparkles converge on
+//                one point that leaves with it
+//   2 · 2150ms   the point lands: the name is on the wall, lit, among the
+//                others, and the count is one higher
 //
 // Beat 2 matters more than it looks. The letter is genuinely written into the
 // corpus here (data.js `write`), not mimed — so the wall behind this screen,
@@ -24,11 +33,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, Paper, Prose, Icon } from '../parts.jsx'
-import { Sparkle, Bloom } from '../art.jsx'
+import { Sparkle, Bloom, Mark } from '../art.jsx'
 import { write, wall, liveCount, atHandle, dateline } from '../data.js'
 import { getState, patch } from '../store.js'
 
-const BEATS = [0, 900, 1950]
+const BEATS = [0, 1100, 2150]
 
 export default function Posted({ go, reduce }) {
   const draft = getState().draft
@@ -86,9 +95,25 @@ export default function Posted({ go, reduce }) {
       <div className="wl-posted-stage">
         <Bloom size={300} opacity={beat >= 1 ? 0.44 : 0.12} className="wl-posted-bloom" />
         <div className="wl-posted-card">
-          <Paper dateline={dateline(row.at)} title={<span className="wl-letter-to">{atHandle(row.to)}</span>}>
+          <Paper
+            dateline={dateline(row.at)}
+            crest={<Mark handle={row.to} size={26} />}
+            title={<span className="wl-letter-to">{atHandle(row.to)}</span>}
+          >
             <Prose>{row.body}</Prose>
           </Paper>
+          {/* The screen, said on the card it is reading. Three sparkles and a
+              sentence — a status, not a spinner: nothing is being computed for
+              the person waiting, and the pause belongs to the person the letter
+              is about. The words are visible rather than hidden in a live
+              region, because the whole reason to draw this beat is that it can
+              be seen. */}
+          <div className="wl-posted-screen" role="status">
+            <Sparkle size={9} twinkle={!reduce} delay={0} />
+            <Sparkle size={9} twinkle={!reduce} delay={240} />
+            <Sparkle size={9} twinkle={!reduce} delay={480} />
+            <Label tone="dim">read before it goes up</Label>
+          </div>
         </div>
         <div className="wl-converge" aria-hidden="true">
           {[0, 1, 2, 3, 4, 5].map((i) => (

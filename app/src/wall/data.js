@@ -20,7 +20,7 @@
 // never wired to anything here.
 
 import { SEED } from './seed.js'
-import { getState, patch } from './store.js'
+import { getState, patch, push } from './store.js'
 
 const DAY = 86400000
 
@@ -97,19 +97,27 @@ const WRITTEN = []
 // being written about. They did not ask for that and they never agreed to it,
 // so the way back off has to cost them less than being on it does.
 //
-// It costs one tap. No account, no address, no code, no form, no queue, and
-// nothing to prove — the handle goes, every letter under it goes with it, and
-// the name cannot be put back up. A takedown behind a sign-up is a takedown
-// that says "make an account first", which is the wall asking for MORE from
-// the one person on it who never chose to be there.
+// There are two doors back off, and they cost different things because they
+// are not the same act:
 //
-// The obvious objection is that anybody can take down anybody. It is the right
-// trade and it is not close: the cost of a wrong removal is one name off a
-// wall, and the cost of a slow one is a person who cannot get their own name
-// off a public page about them. The check that belongs here is a check that
-// the person is who they say — and every honest version of that is a login,
-// which is the thing that must not be in the way. A real build verifies the
-// Instagram account AFTERWARDS, to restore, and leaves the removal instant.
+//   ONE LETTER   any signed-in reader can report it, and it is off the wall on
+//                the tap. See `report` below. Nothing is proven, nothing is
+//                asked, and nothing is destroyed — because a wrong report costs
+//                one letter a day in a queue, and a slow one costs the subject
+//                the day it was up.
+//   A WHOLE NAME `removeHandle`, and it is the one action on this surface that
+//                cannot be undone. Every letter anybody ever wrote to that
+//                handle goes with it, and the name can never be put back up —
+//                so it is the one place the wall asks who is asking, through
+//                the Instagram handoff (auth.js `verifyHandle`) and nothing
+//                else. Not an account, not an address, not a form: one
+//                question, asked once, about the one handle in play.
+//
+// The proof is here and not on the report for the reason that decides every
+// other rule on this surface: it is the asymmetry, not the effort. Holding one
+// letter is reversible by a person at a desk in a minute. Emptying a name is
+// reversible by nobody, ever, and it takes with it forty letters written by
+// people who are not in the room.
 //
 // It lives in the store rather than in this module so that it survives a
 // reload the way a real removal would, and so the reset clears it with
@@ -126,9 +134,65 @@ export function removeHandle(handle) {
   const h = normHandle(handle)
   if (!h || isRemoved(h)) return 0
   const n = lettersFor(h).length
-  patch({ removed: [...removed(), h] })
+  push('removed', h)
   REV += 1
   return n
+}
+
+// ── a report ────────────────────────────────────────────────────────────────
+//
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  IT COMES DOWN FIRST. IT IS REASONED ABOUT SECOND. IT IS NEVER DELETED.  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+//
+// The order is the whole design. A queue that leaves the letter up while
+// somebody decides whether the report was fair has protected the wrong person:
+// the screenshot exists before the decision does, and the subject has already
+// had the day it gave them. So the tap takes it off the wall, out of the
+// search, out of the count, before a single word of reasoning happens.
+//
+// And it is HELD, not deleted. `reported` is a list of ids the wall filters
+// out — the row is still there, the words are still there, and a person at a
+// desk can read it and put it back up. A takedown that destroys the evidence
+// is a takedown nobody can be wrong about in the direction of the writer, and
+// on a wall where anybody signed in can report anything, being wrong in that
+// direction is the common case.
+export function reported() { return getState().reported || [] }
+
+export function isReported(id) { return reported().includes(id) }
+
+// The reasons live in memory for this session only. There is no server here to
+// send one to, and a reason kept in localStorage would be a private accusation
+// sitting in the tab of whoever borrows the phone next.
+const REASONS = new Map()
+
+export function report(id, reason) {
+  const one = all().find((l) => l.id === id)
+  if (!one) return null
+  push('reported', id)
+  if (reason) REASONS.set(id, String(reason).trim().slice(0, 240))
+  REV += 1
+  return one
+}
+
+// The way back up, which is the reason the row was kept. It is not reachable
+// from this surface and it should not be: restoring is a desk's decision made
+// against the letter and the report side by side, and the desk is the admin
+// dashboard in the production app, not a button on the wall.
+export function restore(id) {
+  const s = getState()
+  patch({ reported: (s.reported || []).filter((r) => r !== id) })
+  REASONS.delete(id)
+  REV += 1
+}
+
+// What a desk would be looking at. Exported so the review queue has something
+// real to read the day it is wired up, rather than a shape invented later.
+export function heldForReview() {
+  const off = reported()
+  return WRITTEN.concat(LETTERS)
+    .filter((l) => off.includes(l.id))
+    .map((l) => ({ ...l, reason: REASONS.get(l.id) || '' }))
 }
 
 // ── the revision ────────────────────────────────────────────────────────────
@@ -144,10 +208,17 @@ export function removeHandle(handle) {
 let REV = 0
 export function revision() { return REV }
 
+// The live corpus: everything that has not had its name taken off the wall and
+// has not been reported down. Both filters are here, in one function, so there
+// is no path through this module that can produce a letter the wall has
+// already decided is not on it.
 function all() {
   const off = removed()
-  const live = WRITTEN.concat(LETTERS)
-  return off.length ? live.filter((l) => !off.includes(l.to)) : live
+  const down = reported()
+  let live = WRITTEN.concat(LETTERS)
+  if (off.length) live = live.filter((l) => !off.includes(l.to))
+  if (down.length) live = live.filter((l) => !down.includes(l.id))
+  return live
 }
 
 // ── the wall ────────────────────────────────────────────────────────────────
@@ -244,11 +315,34 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-// The dateline on the paper card, set the way the reference sets it:
-// "14. March 2026" on the left, "Thursday" on the right.
+// ── the dateline ────────────────────────────────────────────────────────────
+// The paper card's top rule carries two cells, and every caller fills them with
+// the two facts that are actually load-bearing for the card it is on. Both are
+// named `lead` and `trail` rather than `date` and `day` because on half the
+// cards in this build neither of them is a date.
+//
+// A ping's card is dated absolutely — "14. March 2026 / Thursday" — because
+// that product is a sixty-day clock and the day it was placed is the number the
+// whole mechanism turns on.
 export function dateline(ts) {
   const d = new Date(ts)
-  return { date: `${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`, day: DAYS[d.getDay()] }
+  return { lead: `${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`, trail: DAYS[d.getDay()] }
+}
+
+// A LETTER's card is dated relatively, and this is the one that goes on the
+// wall. "7. August 2026 / Friday" is two facts nobody asked for: an unsent
+// letter has no anniversary and its weekday means nothing to the person
+// reading it. The only thing anybody wants off that line is how long it has
+// been sitting there unsaid — which the card was already printing, twice, in
+// two different voices, in two different places.
+//
+// The right-hand cell here is a STAMP rather than a second cell of type: it
+// carries the card's state — sealed, or nothing at all — and a state is a mark
+// somebody put on a document, not the other half of a date. Keeping the two
+// under different names is what stops a weekday from being set as a stamp on
+// the composer's card, which is exactly what happened when they shared one.
+export function sinceline(ts, stamp = '') {
+  return { lead: ago(ts), stamp }
 }
 
 export { DAY }

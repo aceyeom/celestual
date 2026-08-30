@@ -22,9 +22,9 @@
 //                    out of the URL
 //
 // ── the surface, and the sheets on it ───────────────────────────────────────
-// Three routes are not screens: /beta/letter, /beta/find and /beta/write are
-// sheets that rise over a wall which stays mounted, scrolled where it was, and
-// visible behind them. That is the whole reason the composer reads as part of
+// Six routes are not screens: /beta/letter, /beta/find, /beta/write,
+// /beta/gate, /beta/report and /beta/remove are sheets that rise over a wall
+// which stays mounted, scrolled where it was, and visible behind them. That is the whole reason the composer reads as part of
 // the wall rather than as a form the wall sent you away to fill in, and it is
 // the reason those three take no cut — a surface that blacks out to raise a
 // sheet is a surface that just navigated.
@@ -47,6 +47,7 @@ import Join from './screens/Join.jsx'
 import Core from './screens/Core.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
+import Report from './screens/Report.jsx'
 import Overture from './Overture.jsx'
 
 const FONTS = 'https://fonts.googleapis.com/css2'
@@ -68,7 +69,8 @@ const FIELD = {
   join:   'slow',
   orbit:  'drift',
   gate:   'slow',
-  remove: 'still',   // the one screen where the room stops moving
+  remove: 'still',   // the room stops moving where the act cannot be undone
+  report: 'still',   // and where something is coming down
 }
 
 // The overture plays once per tab and never again. It is held here rather than
@@ -212,6 +214,7 @@ export default function WallApp() {
   if (route.name === 'write') sheet = <Write to={route.id} {...shared} />
   if (route.name === 'gate') sheet = <Gate {...shared} />
   if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
+  if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
 
   let base = null
   switch (route.name) {

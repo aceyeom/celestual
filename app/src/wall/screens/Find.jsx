@@ -18,7 +18,7 @@
 //     that name is free, be the first to put a letter under it.
 
 import { useEffect, useMemo, useState } from 'react'
-import { Sheet, HandleField, Label, Row, Pill, PillTag, Close, Display, Icon } from '../parts.jsx'
+import { Sheet, SheetHead, HandleField, Label, Row, Pill, PillTag, Display, Icon } from '../parts.jsx'
 import { Mark, Sparkle } from '../art.jsx'
 import { search, wall, lettersFor, normHandle, validHandle, ago, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -48,10 +48,14 @@ export default function Find({ go, back, rev }) {
   return (
     <Sheet onClose={back} tall labelledBy="wl-find-h">
       <div className="wl-sheet-in wl-find">
-        <div className="wl-find-top">
-          <Display size="s" as="h2" id="wl-find-h">Look for a name.</Display>
-          <Close onClick={back} />
-        </div>
+        {/* The same header row every sheet opens on. It used to set the
+            heading and the close mark on one line, which put a 26px Didone and
+            a 36px circle on the same baseline and made the title read as a
+            label on the button. The title now stands under the row, at full
+            size, with nothing beside it. */}
+        <SheetHead onClose={back} label="back to the wall" />
+
+        <Display size="s" as="h2" id="wl-find-h" className="wl-find-h">Look for a name.</Display>
 
         <div className="wl-find-field">
           <HandleField

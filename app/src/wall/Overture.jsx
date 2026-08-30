@@ -8,32 +8,49 @@
 // place rather than a page, and the wall arrives out of the end of it rather
 // than after it.
 //
+// ── the budget: 2200ms, first frame to bare wall ────────────────────────────
+// The old cut ran 1760ms and the mark was gone before anybody had finished
+// looking at it — the lift began 140ms BEFORE the word had finished wiping in,
+// so the one moment the thing was ever whole never actually existed on screen.
+// It read as fast rather than as brief, which are not the same quality: fast is
+// something you missed, brief is something that was over.
+//
+// The extra 440ms is not spread evenly and none of it went into slowing the
+// assembly down. It is spent almost entirely on the HOLD — the beat where
+// nothing moves and the mark is simply standing there — because that is the
+// only frame in the sequence that is doing the actual job, and it is the one
+// frame the old timing did not have. The assembly itself moved by ~180ms; the
+// hold went from less than nothing to 260ms.
+//
 // ── the build, and why each beat is where it is ─────────────────────────────
 //
 //   0 ·    0ms   black. A held frame before anything moves is what makes the
 //                first thing that moves land. Two frames of nothing is a
-//                stutter; a seventh of a second is a breath.
-//   1 ·  140ms   THE CIRCUIT. A mask runs a 24-unit stroke along the band's
+//                stutter; a fifth of a second is a breath.
+//   1 ·  200ms   THE CIRCUIT. A mask runs a 24-unit stroke along the band's
 //                own centreline (`ECL_SPINE`) with the dash offset driven to
 //                zero, so the ring is DRAWN round its orbit rather than faded
 //                up. It travels the route the ring actually takes, because the
-//                mask path and the ring come out of the same constants.
-//   2 ·  440ms   THE STAR. It arrives at the moment the circuit closes behind
+//                mask path and the ring come out of the same constants. 900ms
+//                to close, so it is still drawing when the star lands on it.
+//   2 ·  560ms   THE STAR. It arrives while the circuit is still closing behind
 //                it, scaling up off nothing with a few degrees of rotation
 //                bleeding out — a shape that settles reads as an object, a
 //                shape that fades in reads as an image.
-//   3 ·  660ms   THE NAME. The word wipes out to the right of the mark under a
+//   3 ·  820ms   THE NAME. The word wipes out to the right of the mark under a
 //                travelling sheen, and the whole lockup slides left by half the
 //                word as it comes, so the composition stays centred THROUGHOUT
 //                rather than being centred, then jumping, then being centred
 //                again. That slide is the single most expensive-looking thing
 //                here and it costs one transform.
-//   4 · 1000ms   assembled, and held for a beat. The hold is the point of the
-//                whole sequence, and the second it lands on is the one the
-//                whole thing is budgeted for.
-//   5 · 1200ms   THE LIFT. The lockup drifts up and dissolves while the black
-//                goes with it, and the wall is already cascading underneath by
-//                the time the black is half gone. One motion, not two screens.
+//   4 · 1380ms   ASSEMBLED. The wipe lands on this beat rather than after it,
+//                so the bloom reaching full and the word arriving whole are one
+//                event. Nothing moves again until the lift.
+//   5 · 1640ms   THE LIFT, after 260ms of stillness. The lockup drifts up and
+//                dissolves while the black goes with it, and the wall is
+//                already cascading underneath by the time the black is half
+//                gone. One motion, not two screens.
+//     · 2200ms   the black is gone.
 //
 // ── what it refuses to do ───────────────────────────────────────────────────
 // It never plays twice in a tab, it is skippable on any tap or key, and under
@@ -44,9 +61,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Ecliptic } from './art.jsx'
 
 //                 0    1     2     3     4      5
-const BEATS = [0, 140, 440, 660, 1000, 1200]
+const BEATS = [0, 200, 560, 820, 1380, 1640]
 const LIFT = 5
-const OUT = 560          // how long the black takes to leave
+const OUT = 560          // how long the black takes to leave. 1640 + 560 = 2200
 const FONT_CAP = 900     // the name waits for its face, but not for ever
 
 export default function Overture({ reduce, onReveal, onDone }) {
@@ -89,9 +106,11 @@ export default function Overture({ reduce, onReveal, onDone }) {
     const start = performance.now()
     if (reduce) {
       // Assembled, a beat to read it, then gone. The preference is honoured by
-      // arriving rather than by freezing on an empty screen.
+      // arriving rather than by freezing on an empty screen — and the hold is
+      // kept, because the hold is the only part of this that was ever for the
+      // viewer rather than for the motion.
       setAt(4)
-      timers.current.push(setTimeout(() => setAt(LIFT), 420))
+      timers.current.push(setTimeout(() => setAt(LIFT), 520))
       return () => timers.current.forEach(clearTimeout)
     }
 
