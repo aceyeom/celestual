@@ -40,6 +40,10 @@ src/
 │                      and the motion law (things settle; nothing springs)
 ├── components/
 │   ├── screens.jsx    the nine screens + verify sheet + account sheet
+│   ├── handle.jsx     the resolver's readout: the display name, the badge and
+│   │                  the face behind a typed @, drawn under every field where
+│   │                  one is entered. Never blocks, never browses, shows no
+│   │                  counts — ../../docs/HANDLE-RESOLVER.md
 │   └── ui.jsx         primitives: the chart canvases, the Sigil, the Masthead
 │                      and the Index column (the one navigation), the Plate (a
 │                      letterpress button), the Ruled field, the tooled Rule,
@@ -50,6 +54,9 @@ src/
 │   ├── pings.js       day-clock helpers for the sixty-day lapse
 │   ├── igverify.js    Instagram-DM ownership proof (code + 256-bit proof)
 │   ├── auth.js        the local verified-session record
+│   ├── handles.js     the handle resolver's client half (OFF by default): one
+│   │                  handle out, a name and a proxied face back. Every key,
+│   │                  the cache and the caps live in the edge function
 │   ├── billing.js     the one paid door (OFF by default): a Stripe-hosted
 │   │                  checkout for one more standing ping. No card is read
 │   │                  here and no slot is granted here — see

@@ -166,6 +166,15 @@ Idempotent migrations, applied in order:
   undone. Re-runnable; the faces (`serif`/`sans`/`mono`) are untouched.
   **See [../docs/DESIGN.md](../docs/DESIGN.md) §11 and ../docs/STAR-CARDS.md.**
 
+- `migrations/0028_handle_resolver.sql` — **the handle resolver.** Strictly
+  additive: `celestual_handle_cache` (one row per lowercased handle — display
+  name, badge, private flag, the picture's URL and when it was fetched; 24h for
+  a hit, 1h for a miss) and `celestual_handle_lookups` (the caps' ledger). RLS
+  on and **no policy and no grant** on either, so `anon` can do nothing at all
+  with them and neither table can be enumerated: the only reader is the
+  `celestual-resolve` function's service role. `pic_url` is a URL and never an
+  image. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay
@@ -220,6 +229,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to each side of a match, at addresses they stored (retry + dead-letter). Says whether a card is waiting, never what it says | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
+| `functions/celestual-resolve` | **the handle resolver** (0028): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. Instagram's public web profile first, HikerAPI (`x-access-key`) as the fallback for everything else. Caches 24h/1h, caps 30 distinct handles per device per day plus a lenient per-IP window, and proxies the picture live on `?avatar=<handle>` because Instagram's CDN URLs are signed and expire. Never stores an image, never blocks a ping. Deploy with `--no-verify-jwt` (an `<img>` cannot send an apikey). **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `HIKER_API_KEY` (optional: `HIKER_API_BASE`, `IG_PUBLIC_LOOKUP`) |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |

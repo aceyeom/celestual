@@ -77,3 +77,11 @@ verify_jwt = false
 # with `--no-verify-jwt` too.
 [functions.celestual-stripe-webhook]
 verify_jwt = false
+
+# The handle resolver (migration 0028, docs/HANDLE-RESOLVER.md). Invoked by
+# anonymous visitors from every field where an @ is typed, and its avatar half
+# is fetched by an <img> tag, which cannot carry an apikey header at all. So JWT
+# verification is off; the function enforces its own per-device and per-IP caps
+# instead, and answers only about a handle somebody already typed in full.
+[functions.celestual-resolve]
+verify_jwt = false

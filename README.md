@@ -137,9 +137,12 @@ celestual/
 │   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides) ·
 │   │                 0024 the bindery (the card's three materials) ·
 │   │                 0025 the photograph (the card's other half, on the card's
-│   │                 own seal) · 0026 closing the 20-second grace
+│   │                 own seal) · 0026 closing the 20-second grace ·
+│   │                 0027 the wall (the beta letters) · 0028 the handle
+│   │                 resolver (the account behind a typed @)
 │   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
 │   └── functions/    celestual-notify · celestual-remind · celestual-search ·
+│                     celestual-resolve (the handle resolver) ·
 │                     celestual-manychat · celestual-mutual-dm · celestual-ig-webhook ·
 │                     celestual-edu-verify · celestual-relogin ·
 │                     celestual-recruit (retired) · celestual-trial · celestual-admin ·
@@ -223,5 +226,6 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |
+| [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | **The handle resolver**: showing the display name, badge and face behind a typed @ so a typo stops being a silent, permanent dead end. The providers, the cache, the caps, why the picture is proxied and never stored, and the four rules it is held to |
 | [app/README.md](./app/README.md) | Front-end architecture & flow |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, operator playbook |

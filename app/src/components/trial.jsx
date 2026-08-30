@@ -28,6 +28,7 @@ import {
   choiceProblem, loadTrialAccount, clearTrialAccount, trialEnabled,
 } from '../api/trial.js'
 import { useI18n } from '../i18n/index.js'
+import { ResolvedHandle } from './handle.jsx'
 import {
   Brandmark, Kicker, Mono, GlassPanel, PrimaryButton, GhostButton, OutlineButton,
   Field, Note, ExitRow, Display, Title, Small, Icon, Countdown, useCountdown, useDialog,
@@ -531,6 +532,9 @@ export function TrialScreen({ C, ctx }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <Kicker C={C} micro>{t('trial.handleLabel')}</Kicker>
             <Field C={C} kind="handle" value={handle} onChange={setHandle} placeholder={t('you.handle')} />
+            {/* the @ this entry will be judged under, read back before it is
+                claimed. Same line as everywhere else an @ is typed. */}
+            <ResolvedHandle C={C} value={handle} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
             <Kicker C={C} micro>{t('trial.emailLabel')}</Kicker>

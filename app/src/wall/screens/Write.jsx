@@ -43,7 +43,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
-  HandleField, LetterField,
+  HandleField, LetterField, HandleReadout,
 } from '../parts.jsx'
 import { Dots, Sparkle } from '../art.jsx'
 import { normHandle, validHandle, atHandle, dateline, isRemoved } from '../data.js'
@@ -132,6 +132,10 @@ export default function Write({ to: prefill, go, back }) {
               value={to} onChange={setTo} onSubmit={next}
               autoFocus size="lg" placeholder="theirhandle"
             />
+            {/* the account, under the line. A letter addressed to a mistyped
+                handle is a letter about somebody that nobody can ever find, and
+                this is the only step where that is still fixable. */}
+            <HandleReadout handle={to} />
             <Label tone="dim" className="wl-write-note">
               <Sparkle size={9} /> {off ? 'that name has asked to stay off the wall' : 'yours is never asked for'}
             </Label>
