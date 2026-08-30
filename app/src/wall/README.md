@@ -153,7 +153,9 @@ question they are now actually carrying.
 | `/beta/remove` · `/beta/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
 | `/beta/posted` | three beats — the screening, the paper going, the landing |
 | `/beta/join` | **the one door to the product** — three lines and one ornament |
-| `/beta/orbit` · `/beta/orbit/:id` | the core service: the ledger, and the mutual reveal |
+| `/beta/orbit` | **the core service** — the orrery, the date, and the ledger |
+| `/beta/orbit/place` | place a ping, or the door that says both slots are taken |
+| `/beta/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
 
 Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
 `report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
@@ -208,8 +210,8 @@ Overture.jsx the first second, on black. Once per tab, skippable on any key
 wall.css     every rule scoped under .wl-root
 router.js    ten routes, no dependency
 art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
-             ornaments: sparkle, halftone sphere, ring system, bloom,
-             per-handle constellation, the star field
+             ornaments: sparkle, halftone sphere, THE ORRERY, bloom,
+             per-handle constellation (with its countdown gauge), the field
 parts.jsx    display · label · prose · redaction · pill · paper · fields ·
              sheet · row · icons · the close mark · the bar · step dots
 auth.js      the domain check, what it does and does not buy, and the
@@ -219,7 +221,10 @@ moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write, the reports (held, never deleted) and the
              removals
-seed.js      the letters, the sources, the ledger
+seed.js      the letters, the sources, the seeded ledger
+orbit.js     the core service's own data: ONE clock off the printed date, the
+             ledger as a delta on the seed, the slots, and placing, renewing
+             and letting go for real inside the tab
 screens/     one file per screen
 ```
 
@@ -285,6 +290,132 @@ hole, vertical arms at 3.86 of the outer edge.
 The favicon is built from the same exported constants, so the drawing in the
 tab cannot drift from the drawing on the screen.
 
+## The core service
+
+`/beta/orbit` is the other side of the line the wall draws. The wall has no
+accounts and never asks who anybody is; this is the first point in the whole
+prototype where somebody has an identity, and it is reached from exactly one
+control — the tab at the bottom of the wall, which does not exist until a
+letter has gone up.
+
+So it shares none of the wall's furniture. No nav, no search over the names, no
+writing a letter from here: one control leaves, and everything else is about
+pings, which the wall has never heard of.
+
+### The mechanism, in one screen
+
+Two standing pings, sixty days each. Renewing is free and takes no slot.
+Letting one go is the only irreversible act on this surface and it opens the
+slot back up. A pair that closes is a **mutual**, and the two letters are
+readable to those two people and to nobody else. A mutual does **not** hold a
+slot: the slot rations pings nobody has answered yet, which is what makes
+placing one mean something, and a pair that has closed is not waiting on
+anybody.
+
+Every one of those is real inside the tab. Placing, renewing and letting go
+write through the same one key everything else does (`store.js`), so they
+survive a reload and are cleared by the same reset.
+
+### The orrery is a readout, not a picture of space
+
+The first version of this screen drew three rings at arbitrary radii with three
+moons drifting on three arbitrary periods. It was a picture. It said nothing,
+it could not be wrong, and a diagram that cannot be wrong is one nobody reads.
+
+Every quantity in it is now a quantity on the ledger beside it:
+
+| | |
+| --- | --- |
+| the centre | you |
+| a ring | one ping you are carrying |
+| the drawn arc | how much of the sixty days it has spent |
+| the dim arc | what is left |
+| the moon | where it is on that circuit **right now**. Not a phase and not a period: `run` is spent/60 and the moon is at exactly that fraction |
+| a closed ring | a mutual, carrying **two** moons, because that is what closed it |
+
+A ping four days from lapsing has its ring drawn almost the whole way round
+with its moon nearly home; one placed this morning is a short stroke at twelve
+o'clock. Pointing at a row lights its ring, and focusing it with a keyboard
+does the same, so the list and the diagram are one object.
+
+**Each ring crosses the body**, far half behind and near half in front, which
+is the gesture `ECLIPTIC` is built on and the only one this brand owns. The
+first version stacked every ring behind the sphere, which is a hoop propped up
+behind a ball.
+
+Three of the numbers are pinned rather than chosen, and all three answer the
+same question — *where can a moon be hidden*:
+
+- **The circuit starts at twelve o'clock.** It started at the left vertex,
+  which on a ring drawn wider than the phone is the one point off the screen —
+  so the newest thing on the ledger was the one thing the hero could not show.
+- **The lean is 0.42 and the body is 7.6 of 100.** At the 0.34 and 11.5 this
+  began with, the inner ring's short radius was smaller than the sphere and a
+  moon at twelve sat *behind* it. That is exactly where a ping four days from
+  lapsing sits: the one thing the hero exists to show, hidden.
+- **Radii are handed out from the outside in.** The slot cap is two, and the
+  caller sorts mutuals first, so a ping that is not mutual can never land
+  nearer than the second ring — which is what makes one clearance calculation
+  enough to prove no countdown is ever occluded. It also means the silhouette
+  does not jump when a ping is placed or let go.
+
+The reference runs its ring system off both edges and this cannot, quite: a
+ring wider than the screen has its long-axis ends off the screen, and a moon
+reaches those ends a quarter and three quarters of the way through the sixty
+days. So the ring is drawn to just past the edges and **the corona is what
+actually bleeds**. Scale off the light; the ring stays somewhere a moon can be
+seen.
+
+### What the redesign was fixing
+
+Three things made the first version read as a dashboard, and one made it not
+work at all.
+
+1. **The one enormous number was set in the UI sans**, at weight 600 — the face
+   every product on the web sets a metric in, on the only screen in the build
+   with no Didone on it. The date is now `Display size="xl"`: the same ramp,
+   the same face, as the sentence on the front of the wall, because on this
+   screen the date *is* the headline.
+2. **The colour ration was spent on a capsule reading "today"**, beside a date
+   that had just said so, while the one thing anybody had to act on — a ping
+   four days from lapsing — competed with it in the same orange forty pixels
+   below. The capsule stayed as composition and gave up the accent. The ember
+   now marks the lapsing ping and nothing else, in the two places that one
+   quantity is drawn: its moon, and the gauge on its own mark. When nothing is
+   lapsing there is no saturated colour on the screen at all.
+3. **Three sentences were set in the mono**, which uppercased them,
+   letterspaced them, ran them to three ragged lines and uppercased a handle
+   inside one of them. A handle is lower case and a sentence is sentence case;
+   neither is a label. `.wl-say` is the one class for a quiet line here.
+4. **Nothing was built.** `place a ping` called `go('orbit')` from
+   `/beta/orbit`, which the router correctly refuses as a navigation to where
+   you already are — so the primary control on the core service did nothing.
+   There was no way to place, renew or let go of anything.
+
+Point 4 has a second half worth keeping written down, because the same shape
+bit the rebuild: `let it go` on the slots-full sheet finishes at
+`/beta/orbit/place`, which is where it already is. The ledger lives in a blob
+under a key and not in React, so freeing the slot changed nothing on screen and
+the sheet went on saying both slots were taken over a ledger that now had one.
+Every mutation on this surface is followed by one counter (`Core`'s `beat`),
+and the ledger is read fresh on the render it causes.
+
+### Balance
+
+The empty slot is a **row**, not a number. Two slots is the whole of this
+product's scarcity, and somebody who has to read "1 of 2" to find out they have
+one left has been told about it rather than shown it.
+
+On a spread both columns centre in the middle row and the dock sits directly
+under the left one. Pinned to the top, the bottom half of a desktop screen was
+blank under a date and two rows; pinned to the bottom the way the wall does it,
+the dock was stranded three hundred pixels below the last thing on the screen
+with nothing beside it. The wall can bottom-anchor its dock because its
+right-hand column runs the full height. A four-row ledger cannot.
+
+The rule under the date separates the masthead from the ledger, so on a spread
+— where the ledger is in the other column — it goes.
+
 ## The overture
 
 The mark assembling itself on an empty black screen, once per tab, before
@@ -331,11 +462,23 @@ Four reference sheets, read literally:
 | the modal | one enormous soft blurred mass, a light capsule, and everything behind it dimmed rather than replaced |
 | the journey view | a ring system bleeding off both edges; the date set enormous; **one** saturated capsule; rows of mark, name, meta and capsule; sections; a gradient off the bottom |
 
+The journey view is the one that is read against the product rather than
+copied. Its ring system became a readout of the sixty-day clocks and stopped
+bleeding past its own long axis, because a moon off the edge is a countdown
+nobody can see (see `The core service`). Its saturated capsule became a
+hairline, and the accent it was spending went to the ping that is running out.
+
 Two things are bright and both are rationed to **once per screen**. The
 **bloom** is a luminance rather than a colour — warm white through a heavy blur
 — and goes on the one object that matters most. The **ember** is the single
-saturated colour in the build: search `wall.css` for `--ember` and there are
-four uses, one of which is a 4px dot.
+saturated colour in the build: search `wall.css` for `--ember` and every use is
+a warning that something is about to be refused or is about to run out. The
+largest of them is a two-unit moon.
+
+There used to be a filled ember capsule as well, and one thing in the build
+used it: a pill reading **today**, beside a date that had just said so. A
+screen with one unit of colour to spend was spending it on the least
+load-bearing word on it. The role went with the caller.
 
 Nothing is downloaded. No icon set, no illustration, no stock anything — every
 ornament in `art.jsx` is a path or a loop, and most are derived from a handle,
@@ -350,7 +493,10 @@ The phone is the one this was designed for and it does not change.
   vertically in their column — which is the shape the poster reference actually
   is, and which is why the empty field around the three objects reads as air
   rather than as a list that ran out. Sheets become centred dialogs. The core
-  service puts its ring system beside its ledger.
+  service puts its orrery beside its ledger, and centres both in the middle row
+  with the dock under the left one: it cannot bottom-anchor the way the wall
+  does, because the wall's right-hand column runs the full height and a
+  four-row ledger does not.
 - **landscape phone** (`max-height: 560px`, `min-width: 640px`) — the same
   spread, early, and every vertical measure that was buying atmosphere gives
   its space back. On 390px of height, atmosphere is just scrolling.
@@ -361,7 +507,7 @@ The phone is the one this was designed for and it does not change.
 
 This tree, and one line elsewhere: `app/src/main.jsx` forks on `/beta` and
 lazy-imports it. Nothing in production imports from `src/wall/`; the wall is a
-separate chunk (~18 kB gzip of JS, ~8 kB of CSS) and the four Google faces it
+separate chunk (~28 kB gzip of JS, ~10 kB of CSS) and the four Google faces it
 needs are injected on mount and removed on unmount, so neither reaches anybody
 who did not scan a piece of paper. No shared component, no global token, no
 `vercel.json`, no `vite.config.js`.
@@ -401,6 +547,25 @@ who did not scan a piece of paper. No shared component, no global token, no
   left out, labelled rather than disguised — because a beta that mimes an OAuth
   handshake without saying so is teaching the wrong thing about what this build
   does with what it is given.
+- **The core service's ledger is real inside the tab and nowhere else.**
+  Placing, renewing and letting go write through the same one key as
+  everything else, so a ping placed at a demo table survives a reload and the
+  ring for it is drawn at the front of its circuit. There is no server here.
+- **The paid third slot is deliberately not drawn.** Production carries one
+  behind a flag (`VITE_STRIPE_ENABLED`, one slot, bought once). The slots-full
+  door here offers one thing, `let it go`, because a beta that shows somebody a
+  price before it has shown them a mutual has taught them the wrong thing about
+  what this is.
+- **The core service's clock is fixed, and it is not the wall's.** `orbit.js`
+  derives one epoch from the printed date (`seed.js TODAY`) and every day,
+  dateline and countdown on that surface comes off it. The wall keeps
+  `Date.now()`, which is right for a stream of letters and wrong for a
+  sixty-day countdown that raises dated cards over the top of its own date.
+- **The orrery is still under `prefers-reduced-motion`, and it was already
+  still.** Every position in it is a quantity rather than an animation, so the
+  preference removes one four-second opacity breathe and nothing else changes.
+  That is the test a diagram should pass: if switching motion off loses
+  information, the information was in the motion.
 - **The gate checks a domain, not a person.** Any `berkeley.edu` address opens
   the wall. The Instagram handoff is the only place a *person* is checked, and
   it is asked once, about one handle, on the one action nobody can undo.
