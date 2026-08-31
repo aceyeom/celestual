@@ -1,381 +1,296 @@
 # /berkeley/orbit — the rebuild (the plan, before any of it is built)
 
-The core service screen, taken apart and specified again. Nothing in this file
-has been implemented; it exists so the argument can be had before the diff, and
-so that whoever writes the diff is not re-deciding anything at 2am.
+The core service screen, taken apart and specified again. Nothing here has been
+implemented; it exists so the argument can be had before the diff.
 
-The visual case, with every figure rendered live from `art.jsx`'s own
-constants, is published separately as an artifact. This file is the buildable
-half: what changes, in which file, with which numbers.
+The working prototype — real gestures, the real ledger shape, the real paper —
+is published as an artifact. This file is the buildable half.
 
 > **This is a visual redesign of a live route, and `DESIGN.md` carries a lock
-> against exactly that.** The lock exempts changes a human asks for explicitly
-> in the current request. This one was asked for explicitly — the brief was that
-> the screen "looks absolutely shit… amateur… generic", that the ring asset must
-> go or be rebuilt to match the mark, and that the whole surface is bound for
-> production. That is the exemption, and §7 below records what the lock's own
-> "ships with an edit here, in the same commit" rule then obliges.
+> against exactly that.** The lock exempts changes a human asks for explicitly in
+> the current request. This one was asked for explicitly: that the screen looks
+> cheap and generic, that the ring asset must go, that the design must be
+> interactive and intentional rather than a list, and that the whole surface is
+> bound for production. §7 records what the lock's own "ships with an edit here,
+> in the same commit" rule then obliges.
+
+> **Second pass.** The first version of this plan made every ping a copy of the
+> mark and left the page a list. Both were rejected on review and both rejections
+> are recorded in §2.4 rather than deleted.
 
 ---
 
 ## §0 — The one-paragraph plan
 
-The date comes off. The orrery comes off. Every ping on the ledger becomes **one
-object — the mark's own band, drawn from your node** — where *how much of the
-circuit is drawn* means *how many of the two of you have placed*, which is the
-meaning `/berkeley/join` already assigns to that gesture. A mutual is the circuit
-closed with the star lit inside it, which is the logo, whole, earned rather than
-printed. An open slot is the same circuit undrawn, and it is the control that
-places a ping. The page becomes one ranged-left measure: a sentence in the
-display face, the answer, the ledger, the capacity. The countdown stays in the
-mono column where a number belongs, because the object's job is state and type's
-job is time, and the current screen's worst structural fault is that both were
-doing both.
+The date comes off, the orrery comes off, and the page stops being a ledger.
+Two pings is not a list — it is a **hand**: a small stack of real letters you
+are carrying, drawn on `Paper`, which is already the best object in the build
+and is currently buried two taps deep. The front card is the one running out and
+is fully readable; the others peek above it by their datelines. The two actions
+that matter become gestures on the card itself — **pull down to renew**, **drag
+away to let go**, with an undo — instead of four taps through a sheet. An empty
+slot is a place, in flow, below the hand, and it is the only control that places
+a ping. The mark appears exactly once on the whole screen, in the bar.
 
 ---
 
 ## §1 — What is wrong, verified
 
-Not impressions. Each of these was read off the built page or the stylesheet.
+Read off the built page and the stylesheet, not inferred.
 
 ### 1.1 The date is in the headline slot, and `wall.css` says so
 
-`Core.jsx` renders `TODAY.label` through `<Display size="xl">`. The stylesheet
-comment at `.wl-core-day` states it outright:
-
-> The date is set at the WALL'S HEADLINE SIZE — `Display size="xl"`, the same
-> ramp as "Someone here wrote something they never sent." — because on this
-> screen the date is the headline.
-
-It is then restated as `TODAY.day` ("TUESDAY") and again as a `PillTag` reading
-"today". Three objects, one fact, and the fact is not why anybody opened the
-page. This is the "why is there a calendar" in the brief, and it is not a
-misreading — the screen genuinely gives its headline to a date.
+`Core.jsx` renders `TODAY.label` through `<Display size="xl">`. The comment at
+`.wl-core-day` states it outright: *"on this screen the date is the headline."*
+It is then restated as `TODAY.day` and again as a `PillTag` reading "today".
+Three objects, one fact, and it is the least useful fact on the page.
 
 ### 1.2 The orrery shares no constant with the mark
 
 | | the mark (`ECL`) | the orrery |
 | --- | --- | --- |
-| tilt | `-19°` | `0°` (axis-aligned ellipses) |
-| construction | filled annulus, two ellipses, `fill-rule=evenodd` | stroked arcs |
-| weight | `w: 3.2` half-width → 6.4 units, **varying ~3:1** round the circuit | `.wl-track` `0.34`, `.wl-run` `0.58`, **constant** |
-| crossing | band passes behind the star at the top, in front at the bottom | rings split at the long axis (this part is right) |
+| tilt | `-19°` | `0°` (axis-aligned) |
+| construction | filled annulus, `fill-rule=evenodd` | stroked arcs |
+| weight | 6.4 units, **varying ~3:1** round the circuit | `.wl-track` `0.34`, `.wl-run` `0.58`, constant |
 
-Only the last row is shared. Everything that makes the mark look drawn rather
-than diagrammed — the varying width, the lean, the fill — is absent. Three
-concentric ellipses with dots on them at uniform hairline weight is the most
-reproduced graphic on the web; that is the "one or two curves in a minute" read,
-and it is fair.
-
-The body compounds it: a `radialGradient` sphere with a hard silhouette and a
-rim arc is a 3D idiom sitting in a build that is otherwise flat, engraved and
-high-contrast.
+Only the crossing behaviour is shared. Everything that makes the mark look drawn
+rather than diagrammed is absent. The body compounds it: a `radialGradient`
+sphere with a hard silhouette is a 3D idiom in a build that is otherwise flat and
+engraved.
 
 ### 1.3 The ember ration is spent twice on this route
 
-`wall.css` opens by declaring ember rationed to once per screen. On
-`/berkeley/orbit` two rules fire simultaneously:
-
-- `.wl-moon.is-near` — the lapsing moon in the hero
-- `.wl-mark.is-near .wl-mark-gauge` — the gauge on the `@wren.p` row
-
-Two saturated objects, forty pixels apart, encoding the same fact.
+`wall.css` declares ember rationed to once per screen. Two rules fire together
+here: `.wl-moon.is-near` in the hero and `.wl-mark.is-near .wl-mark-gauge` on the
+`@wren.p` row.
 
 ### 1.4 The hero restates the list, less precisely
 
-`<Orrery rings={rows}>` encodes exactly one quantity per ping: `run`, the
-fraction of sixty days spent. The rows underneath already carry all of it, in
-words, exactly: `4 days`, `52 days`. The hero spends roughly a third of a phone
-screen to say the column beneath it again, worse.
+`<Orrery rings={rows}>` encodes one quantity per ping — `run`. The rows already
+carry all of it, exactly, in words.
 
 ### 1.5 Desktop is unresolved
 
-At 1280×900 the content ends near 60% height. `wl-core-left` is bottom-weighted
-(hero, then the date block), `wl-core-right` is top-weighted (sections), and
-they share no baseline, so an empty diagonal runs through the page. The primary
-action renders as a ~590px chalk lozenge floating mid-canvas.
+At 1280×900 content ends near 60% height; `wl-core-left` is bottom-weighted and
+`wl-core-right` top-weighted, so an empty diagonal runs through the page. The
+primary action is a ~590px chalk lozenge floating mid-canvas.
 
 ### 1.6 The primary control exists, a third of the time, to say no
 
-`place a ping` is drawn at full weight regardless of `slot.full`. When both
-slots are held it opens `<Full>`, whose entire content is "Both slots are
-taken." The loudest object on the page is, in that state, a door to a refusal.
+`place a ping` is drawn at full weight regardless of `slot.full`. With both slots
+held it opens `<Full>`, whose whole content is "Both slots are taken."
 
-### 1.7 What is NOT wrong, and must survive
+### 1.7 The two most important actions cost four steps each
 
-- **`Paper`** (the cream card, dateline, crest, EB Garamond prose). The strongest
-  object in the build. Untouched.
-- **`Reveal`** — two Papers, together, the second rising 220ms behind the first.
-  The best screen in the tree. Untouched.
-- **`Join`'s `Circuit`** — the mark taken apart into two halves with the two
-  people named in cuts in the band. This is the asset §2 extracts.
-- **`Mark`** (the handle's constellation). The identity system the whole build
-  runs on. Kept, and moved *inside* the circuit.
-- **The ledger model in `orbit.js`.** `pings()`, `slots()`, `nextOpen()`,
-  `place/renew/release`, the single `NOW` epoch, the derived-never-stored `days`.
-  All of it is correct and none of it changes.
+Renew and let-go are both: tap row → sheet → tap → (for let-go) confirm. Four
+interactions to change one date on an object that is right there on the screen.
+
+### 1.8 What is NOT wrong, and must survive
+
+`Paper`, `Reveal`, `Mark` (the constellation), and the whole of `orbit.js` —
+`pings()`, `slots()`, `nextOpen()`, `place/renew/release`, the single `NOW`
+epoch, the derived-never-stored `days`. None of the model changes.
 
 ---
 
-## §2 — The object
+## §2 — The object: a hand of letters
 
-### 2.1 What it is
+### 2.1 Why letters and not glyphs
 
-One component, `Circuit`, drawn entirely from constants that already exist in
-`app/src/wall/art.jsx`:
+The ledger currently shows metadata *about* letters — a constellation, a handle,
+a day count — while the actual content, the words somebody wrote to somebody
+they could not say it to, sits behind a tap. That is backwards. The letter is
+the only thing on this surface anybody has feelings about, and `Paper` already
+renders it beautifully.
 
-```
-ringPath()          the band, at its true varying width
-ringPath(gutter)    the dilated band, for the star's notch
-starPath(ECL)       the four-point star, at full size
-eclipticHalves()    the two halves of the circuit and the two nodes
-```
+So the ledger row **is** the letter: `Paper`, at reading size, on the page.
 
-Layer order is the mark's own and is never reordered: **the far half, then what
-stands at the centre, then the near half over the top of it.** That third layer
-is the whole reason the mark reads as one object rather than a starburst on a
-hoop, and it is why `Circuit` cannot be assembled out of two stroked arcs.
+### 2.2 The hand
 
-A partial circuit is produced the way `Ecliptic`'s `sweep` and `Join`'s figure
-already produce one: a 24-unit stroke along that half's own arc inside a mask,
-`pathLength="100"`, dash driven to 0 or 100. The band therefore arrives at its
-real varying width; it is never approximated by a stroke.
+- **Only held letters stack.** The front card is the one closest to lapsing and
+  is fully readable; the others sit above it, offset by `PEEK = 46px`, showing
+  their dateline strip — recipient's date on the left, days left on the right.
+- **The front card is in normal flow**; the peeked ones are absolutely positioned
+  above it, and the hand carries `padding-top: (n-1) × PEEK`. That is what gives
+  the stack a real height without measuring anything.
+- **z-order runs front-highest.** The prototype shipped this inverted first, and
+  the result put the calmest letter over the one running out.
+- **Tapping a peeked card promotes it.**
 
-### 2.2 The four states
+### 2.3 The places
 
-| state | drawn | at the centre | when |
+An **empty place** never joins the stack — it has nothing to peek with, and two
+overlapping dashed boxes is what the first prototype actually rendered. Places
+sit **below the hand, in flow**, with a gap. When nothing is held at all they
+take full card height and the cold headline returns above them, so a brand-new
+account is a composition rather than a hole.
+
+### 2.4 The countdown, and where the mark went
+
+- The **stamp** in the dateline: `52 DAYS LEFT`, or ember at `≤ NEAR`.
+- The **gauge** around the crest constellation — `Mark`'s existing `gauge`
+  prop, struck in the paper's own ink, ember when lapsing.
+- **The mark appears once**, in the bar, at 20px. A signature that appears eight
+  times is a watermark. The per-person work is done by the constellation, which
+  is what that system was built for.
+- Ember therefore lands on exactly one object per screen and genuinely is
+  rationed for the first time on this route.
+
+---
+
+## §3 — The gestures
+
+| intent | today | proposed | why that cost |
 | --- | --- | --- | --- |
-| `closed` | both halves | `starPath(ECL)`, lit, notched by the near band | a mutual |
-| `open` | your half only; theirs at 5.5% | the handle's constellation | standing |
-| `open` + `near` | as above, in ember | the constellation, in ember | ≤ `NEAR` days |
-| `empty` | neither half; the whole circuit at 5.5% | nothing | an open slot |
+| read what I wrote | tap → sheet | **already on screen** | it is the content |
+| how long is left | read `52 days` | the stamp, and the gauge on the crest | a number to check and a quantity to feel |
+| renew | 4 steps | **pull down ≥ 82px, release** | free and reversible → the cheapest gesture |
+| let it go | 4 steps | **drag sideways ≥ 120px**, then undo | irreversible → long travel, unused axis, a way back |
+| switch letter | scroll | tap the card behind | the whole hand is visible |
+| open a mutual | tap → sheet | tap the pair above the hand | it outranks everything in the hand |
+| place a ping | dock pill → sheet, or a refusal | tap the empty place | the control exists only when the action does |
 
-**They differ by form before they differ by colour.** `DESIGN.md` §2 requires
-this: someone who cannot see colour reads the four states exactly as well as
-someone who can, because *how much of the circuit is drawn* carries the state and
-ember only ever intensifies one of them.
+**Axis assignment is a safety decision, not a taste one.** Renew and let-go were
+first drawn as left/right mirrors, which puts the destructive act one slip from
+the safe one. They are now on different axes with different travel.
 
-### 2.3 Sizes, tested
+**Every gesture has a tap path behind it.** Tapping the front card opens the
+letter with `renew` and `let it go` as ordinary controls — the sheet that exists
+today. Keyboard focus moves through the hand, <kbd>Enter</kbd> opens, and the
+actions live in the sheet. Nothing on this surface is reachable only by dragging.
 
-| role | px | constellation inside |
-| --- | --- | --- |
-| hero (the mutual, or a promoted slot) | 132 phone / 176 desktop | n/a (the star is there) |
-| promoted open slot | 120 | none |
-| ledger row | **64** | yes |
-| the bar's brand mark | 22 | none, `flat` (no ghost, no bloom) |
+**Implementation notes the prototype forced:**
 
-64 is not a taste number. At 56 the constellation inside the band crowds against
-the near edge; at 64 it clears. If the row height cannot carry 64, drop the
-constellation from the row rather than shrinking it — see §8, decision 3.
-
-### 2.4 What was rejected, and why
-
-Four hero directions were drawn and screenshotted before this one was kept.
-Recorded so the ground is not walked twice.
-
-**A · nested bands.** Rebuild the orrery, every ring as `ringPath()` at its own
-radius. *Rejected:* `ECL`'s `w`, `bias` and `twist` are tuned for one ring at one
-size. Nested copies either hold `w` and go fat at small radii, or scale it and
-collapse back into hairlines. And three tilted bands is still "rings around a
-planet" — it fixes the drawing without fixing the idea.
-
-**B · one band, pings placed along it.** *Rejected because it lies.* Two pings at
-4 and 52 days would sit at very different points on one circuit, which asserts
-they share a clock. They do not: each ping carries its own sixty days. A diagram
-that misstates the mechanic is worse than no diagram — and it is the same class
-of error `Orrery`'s own header says was fixed once already.
-
-**C · arc length = days remaining.** Drawn: your half retreats toward your node
-as the sixty days run out. *Rejected on the render.* With no ghost half behind
-it a partial arc reads as a swoosh, not as half a circuit. And it overloads one
-gesture with two meanings — *who has placed* on `/berkeley/join`, *how long is
-left* here — which is exactly what makes a system feel arbitrary.
-
-**D · the slots as the permanent hero.** *Kept in part.* It is the right
-composition when there is no mutual, and it is what fills the empty state. It is
-not the always-on hero: when a mutual exists, nothing on this page outranks it.
+- The card needs `user-select: none` and `touch-action: none`. Without it the
+  browser starts a text selection and the drag never reaches its threshold — the
+  first prototype failed exactly this way.
+- Pull uses `dy × 0.6` resistance so the card feels held rather than flung.
+- Axis locks once at 8px of travel and does not switch mid-drag.
+- The leaving card fades only to `0.62`; at `0.35` it turned to mud over the card
+  behind it.
+- The toast needs a z-index above the stack, which carries `10 + n`.
 
 ---
 
-## §3 — The layout
+## §4 — What was weighed and dropped
 
-### 3.1 Reading order
+**The circuit ledger** *(the whole of the first pass)* — every ping drawn as the
+mark's own band, four states, at row scale. **Dropped:** six logos on one screen
+is not a system, it is a page scattered with one glyph. The band survives only at
+`/berkeley/join`, where two people assemble it once.
 
-What a person opens this page to find out, in order:
+**A carousel** — one letter at full size, swipe between, pips underneath.
+**Dropped:** it hides the count. Two is the entire scarcity of this product and a
+carousel makes you swipe to discover you have two.
 
-1. **did anyone answer** — the only thing that is news
-2. **what am I carrying** — the only thing that needs an action
-3. **can I place another** — the only thing that is an offer
+**Both actions on the horizontal axis** — left to let go, right to renew.
+**Dropped:** see §3.
 
-Nothing above (1). The date was above all three.
+**Hiding the letter text** — show only recipient and countdown, since the letters
+are private and this gets demoed on a table. **Partly kept:** the front card
+clamps to three lines. Enough to know which letter it is; not the whole thing
+broadcast to a room. Decision 2 in §8 asks whether that should be one line.
 
-### 3.2 Phone (390)
+**Arc length as the countdown** *(first pass)* — **dropped on the render:** a
+partial arc with no ghost behind it reads as a swoosh, and it double-books a
+gesture `/berkeley/join` had already given a meaning.
 
-```
-bar          ✦ @you                                    ✕
-             ↕ 36
-headline     One looked          Bodoni, 40px/1.02, ranged left, ≤3 lines
-             back.
-             ↕ 40
-THE ANSWER   [circuit 132]  @june.hh                   ranged left, gap 30
-                            you were both looking
-                            open →
-             ↕ 46
-section      STANDING                          2 of 2  mono 11, hairline under
-row          [circuit 64]  @wren.p             4 days  ember — the one accent
-                           renew it, or let it go
-row          [circuit 64]  @ezra.k.lin        52 days
-                           nothing shows until they do
-             ↕ 22
-foot         both slots are held · the next opens in 4 days, or the
-             moment you let one go
-```
-
-- **Ranged left, in a centred block** — `DESIGN.md` §1 rule 4, which this route
-  currently breaks by centring the answer block inside an otherwise left-ranged
-  page.
-- The page takes its **natural height**. It does not stretch the foot to the
-  bottom of the viewport; the current build's `wl-push` + fixed dock is what
-  produces the hole between the last row and the CTA.
-
-### 3.3 Desktop (≥ 900)
-
-**One measure, 660px, optically centred.** Not two columns.
-
-A two-column version was drawn (hero left, ledger right, vertically centred as
-one band) and dropped: the ledger column is always much shorter than the hero
-column, so the pair floats and the empty diagonal survives the redesign. One
-measure removes it at every width and needs no second layout to maintain.
-
-The only desktop deltas: headline to 60px, hero circuit to 176, row padding up
-one step. Same DOM, same order.
-
-### 3.4 The dock
-
-**The white lozenge goes.** When a slot is free, the last object on the page *is*
-the open circuit — tapping it places a ping, so the affordance and the offer are
-one object. When both are held there is no control at all, only the line saying
-when the next opens.
-
-Consequence, and it is the point: **the page can no longer offer an action it
-cannot perform.** `<Full>` stops being a door the UI pushes people through. The
-route `/berkeley/orbit/place` and the sheet stay — a deep link has to land
-somewhere — but nothing on the surface leads to it while slots are full.
-
-Cost: with a long ledger the primary action leaves the thumb arc. Mitigated by
-the open slot being pinned to the foot and being the only thing there. Flagged,
-not hidden.
+**One band with pings placed along it** *(first pass)* — **dropped because it
+lies:** two pings at 4 and 52 days on one circuit asserts they share a clock.
+Each carries its own sixty days.
 
 ---
 
-## §4 — Stress tests
+## §5 — Layout and states
 
-Every ledger state the prototype and production can produce. Anything needing a
-special case is a design that is not finished.
+### Phone (390)
 
-| ledger | headline | hero register | foot |
+```
+bar          ✦ @you                                   ✕      the mark, once
+state        ONE ANSWERED · 2 OF 2 HELD · ONE LAPSING        mono, one line
+answer       One looked back.                                only when there is one
+             ┌ the mutual, unsealed, 2-line clamp ┐
+             └ a sliver of their letter beneath ──┘
+             both letters →
+hand         ┌ @ezra.k.lin · 52 DAYS LEFT ────────┐          peeked, 46px
+             ┌ @wren.p · 4 DAYS LEFT ─────────────┐          front, readable
+             │ Fourth floor Moffitt, 3 a.m. …     │
+             └────────────────────────────────────┘
+places       ┌ an empty place · place one → ──────┐          in flow, if any
+```
+
+### Desktop (≥ 900)
+
+The hand is a phone object; a stack of overlapping cards in the middle of 1280px
+is a phone screenshot. Desktop **fans** instead: the letters lie side by side at
+full width in one centred measure of about 940px, all readable, nothing behind
+anything. Gestures become drag-down and drag-away on whichever card the pointer
+is over.
+
+### Every state
+
+| ledger | above the hand | the hand | the places |
 | --- | --- | --- | --- |
-| 0 / 0 | Two names. That is all you get. | two `empty` circuits at 120, promoted | both are the control |
-| 0 mutual, 1 held | One is standing. | the held circuit and the empty one, side by side | the empty circuit |
-| 0 mutual, 2 held | Two are standing. | slots promoted; no answer register | next slot opens in *n* days |
-| 1 mutual, 2 held | One looked back. | the closed circuit, ranged left with its name | next slot opens in *n* days |
-| 2+ mutual | Two looked back. | first at hero scale, the rest as rows beneath | unchanged |
-| lapsed to 0 | Nothing is standing. | two `empty` circuits — identical to a new account | both are the control |
-| long handle | — | row handle ellipsises (`wl-row-handle` already does); the circuit never resizes | — |
-| reduced motion | — | no breathe, no draw-on; the star is simply lit | — |
-| no colour vision | — | ember carries nothing colour alone carries; lapsing is also the only row whose count is chalk | — |
-| 320px phone | drops one step on the ramp | hero circuit 108; rows unchanged | — |
-
-**One rule covers the promotions:** when there is no mutual, the slot register
-takes the hero scale. That is what stops the empty state being a headline over a
-hole, and it is why 0/0 and lapsed-to-0 need no separate design.
+| 0 / 0 | the cold headline | — | two, full height |
+| 1 held | — | one letter | one |
+| 2 held | — | both, lapsing in front | — |
+| 1 mutual, 2 held | the pair, unsealed | both letters | — |
+| 2+ mutual | newest pair; rest fold to a line under it | unchanged | — |
+| 3rd slot bought | unchanged | a third card | — |
+| unaccounted slot | unchanged | a card with no name and no words, so the count never lies | — |
+| lapsed to 0 | the cold headline | — | two, full height |
+| reduced motion | — | cards move without easing; gestures still work | — |
+| keyboard only | — | tab through, <kbd>Enter</kbd> opens, actions in the sheet | — |
 
 ---
 
-## §5 — Files
+## §6 — Files
 
 | file | change |
 | --- | --- |
-| `app/src/wall/art.jsx` | **add** `Circuit`. **delete** `Orrery` (and its `TILT`/`BODY`/`CORONA`/`RMAX`/`RSTEP`, `arcs`, `Moon`, `cut`). `Halftone`, `Bloom`, `Sparkle`, `Mark`, `Field`, `Ecliptic` untouched. |
-| `app/src/wall/screens/Core.jsx` | rewrite the page body. The four sheets (`Reveal`, `Standing`, `Place`, `Full`) keep their content; `Standing`'s progress bar is restated as a `Circuit` + the mono line. |
-| `app/src/wall/wall.css` | **delete** `.wl-orrery*`, `.wl-track`, `.wl-run*`, `.wl-moon*`, `.wl-core-date*`, `.wl-core-sky`, `.wl-open*`. **add** `.wl-ci*`, the answer block, the row at 64, the foot. The `wl-core` grid at ≥900 collapses to one measure. |
-| `app/src/wall/seed.js` | `TODAY` stays — the sheets date their cards off it via `orbit.js NOW`. Only its render on the page goes. |
+| `app/src/wall/art.jsx` | **delete** `Orrery` and its constants (`TILT`, `BODY`, `CORONA`, `RMAX`, `RSTEP`, `arcs`, `Moon`, `cut`). `Mark`, `Ecliptic`, `Sparkle`, `Halftone`, `Bloom`, `Field` untouched. Nothing is added. |
+| `app/src/wall/parts.jsx` | `Paper` gains nothing. A new `Hand` owns the stack, the promotion and the pointer handling. |
+| `app/src/wall/screens/Core.jsx` | rewrite the page body. `Reveal`, `Standing`, `Place`, `Full` keep their content; `Standing` loses its progress bar to the card's own stamp and gauge. |
+| `app/src/wall/wall.css` | **delete** `.wl-orrery*`, `.wl-track`, `.wl-run*`, `.wl-moon*`, `.wl-core-date*`, `.wl-core-sky`, `.wl-open*`. **add** `.wl-hand`, `.wl-place`, `.wl-cue`, the cold state, the desktop fan. |
 | `app/src/wall/orbit.js` | **no change.** |
-| `docs/DESIGN.md` | required by the lock — see §7. |
-| `scripts/voice-lint.mjs` | add `app/src/wall/` to the scanned set — see §7. |
+| `docs/DESIGN.md` | required by the lock — §7. |
+| `scripts/voice-lint.mjs` | add `app/src/wall/` to the scanned set — §7. |
 
-Bundle: `Orbit`'s removal is roughly a wash against `Circuit`; no new dependency,
-no new asset, no new font. There is still not one downloaded image in the tree.
-
----
-
-## §6 — Copy
-
-Every headline below is **unverified against `VOICE.md`**, because
-`voice-lint.mjs` does not currently scan `src/wall/` (§7). They are drafts, and
-§8 decision 4 asks for a voice pass before implementation rather than per-string.
-
-| state | draft |
-| --- | --- |
-| 1 mutual | One looked back. |
-| 2+ mutual | Two looked back. |
-| 0 mutual, held | One is standing. / Two are standing. |
-| 0 / 0 | Two names. That is all you get. |
-| lapsed to 0 | Nothing is standing. |
-| sub, empty | sixty days each · renewing is free |
-| foot, full | both slots are held · the next opens in *n* days, or the moment you let one go |
-
-Note the register conflict this exposes: `VOICE.md` §3 mandates lowercase product
-copy and names Cormorant Garamond / Jost / Courier Prime, while the wall ships
-sentence-case `Display` headings ("You were both looking.") in Bodoni Moda / EB
-Garamond / Inter Tight / Geist Mono. The docs describe the Bindery; the wall is a
-second system. Settling that is §7's job, not a per-headline decision.
+Net: one component deleted, one added, no new dependency, no new asset, no new
+font. Still not one downloaded image in the tree.
 
 ---
 
 ## §7 — What a production merge actually costs
 
 The brief says this replaces production — "the auth, the email design,
-everything." That is a much larger piece of work than this page, and it is named
-here rather than absorbed silently. **None of it is in this plan.**
+everything". That is a much larger piece of work than this page, and **none of it
+is in this plan.**
 
 | found | state today | what it implies |
 | --- | --- | --- |
-| **Two marks ship** | the app signs with `Ecliptic` (ring + star); every email signs with a different sigil in `supabase/functions/_shared/mail.ts` — two four-point wings and a body | if this brand wins, the mail sigil is replaced by `eclipticSVG()`, which already returns client-safe markup with no host and no round trip |
-| **Two palettes ship** | mail and production are chocolate→ivory (`theme.js`); the wall is blue-black with one ember | every inline colour literal in the five templates is re-derived. There is deliberately no shared token file across that boundary (an edge function shares no bundle) |
-| **The design lock is stale** | `DESIGN.md` states the wall route "is gone" and that one system governs every route. It is not gone, and two systems govern | the lock's own rule is that a visual change ships with an edit to `DESIGN.md` in the same commit. That edit is larger than this page |
-| **The wall's copy is unlinted** | `voice-lint.mjs` scans `strings.js`, `growth.js`, `card/`, `public/` — not `src/wall/` | one line in the file list; then the wall's existing copy has to actually pass |
-| **Production carries more than the prototype** | `PingsScreen` has `unaccounted` slots, `CommunityHome`, the bought third slot (`EmptySlotCard paywall`), `SandboxChip`, `SealedMutual` vs `OpenMutual`, and i18n. `orbit.js` has none of these | six absorptions. The circuit system takes all of them cleanly — a third slot is a third circuit, an unaccounted slot is a circuit with no handle, a sealed mutual is a closed circuit whose star has not lit yet — but they are work, not free |
+| **Two marks ship** | the app signs with `Ecliptic`; every email signs with a different sigil in `supabase/functions/_shared/mail.ts` — two wings and a body | replace the mail sigil with `eclipticSVG()`, which already returns client-safe markup |
+| **Two palettes ship** | mail and production are chocolate→ivory (`theme.js`); the wall is blue-black with one ember | every inline colour literal in five templates is re-derived; an edge function shares no bundle, so there is deliberately no shared token file |
+| **The design lock is stale** | `DESIGN.md` states the wall route "is gone" and one system governs every route. Neither is true | the lock's own rule is that a visual change ships with a `DESIGN.md` edit in the same commit |
+| **The wall's copy is unlinted** | `voice-lint.mjs` scans `strings.js`, `growth.js`, `card/`, `public/` — not `src/wall/` | one line in the file list, then the existing copy has to pass |
+| **Production carries more** | `PingsScreen` has `unaccounted` slots, `CommunityHome`, the bought third slot, `SandboxChip`, `SealedMutual` vs `OpenMutual`, and i18n | six absorptions. The hand takes all of them — a third slot is a third card, an unaccounted slot is a card with no name, a sealed mutual is a card whose seal has not broken — but they are work, not free |
 
-**Recommendation: this page first, alone.** It is the proof the system holds. The
-mail templates and the auth screens are each their own plan, and each touches
-something a bad merge takes down for people who are not looking at a screen.
+**Recommendation: this page first, alone.**
 
 ---
 
 ## §8 — Decisions that are not mine
 
-Everything above will be built as specified. These five change the shape of the
-work.
-
-1. **Does the date come off entirely, or does a dateline survive somewhere
-   quiet?** *Recommend: entirely.* Every card in every sheet already carries its
-   own dateline off `orbit.js NOW`, which is where a date belongs. Nothing on the
-   ledger needs today's.
-
-2. **Is the chalk pill retired on this route only, or across the wall?**
-   *Recommend: this route only, for now.* The wall's `write one` is the same
-   component; changing it here alone is an inconsistency worth introducing
-   deliberately rather than pretending away. Say so and it comes off both.
-
-3. **Does the row circuit keep the handle's constellation inside it?**
-   *Recommend: yes, at 64px rows.* It is the identity system the build runs on.
-   Below ~60px it crowds, which is an argument for the row height, not against
-   the constellation.
-
-4. **Voice pass before or after implementation?** *Recommend: before.* The
-   headlines are the one part of this that is not geometry, and `VOICE.md` §3 and
-   the wall's sentence-case display are in open conflict (§6). Settle it once.
-
-5. **Is the production merge in scope for the next run, or is this page first?**
-   *Recommend: this page first* (§7).
+1. **Does the hand overlap, or lie flat?** *Recommend overlap on phone, flat on
+   desktop* — what the prototype does. Overlap is what makes it a hand rather
+   than a list; a wide screen has room not to need it.
+2. **How much of the letter shows on the front card — three lines, one, or
+   none?** *Recommend three.* One line reads as a preview row and we are back to
+   a list; none makes the page metadata again.
+3. **Is drag-to-let-go acceptable for a destructive act?** *Recommend yes, with
+   the undo up for eight seconds* and the tap path keeping its explicit confirm.
+4. **Does the mutual open in place or stay a sheet?** *Recommend it stays a
+   sheet.* `Reveal`'s whole effect is the second card rising 220ms behind the
+   first; inlining spends that for nothing.
+5. **This page first, or the production merge?** *Recommend this page first*
+   (§7).
