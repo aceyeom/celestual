@@ -294,3 +294,67 @@ is in this plan.**
    first; inlining spends that for nothing.
 5. **This page first, or the production merge?** *Recommend this page first*
    (§7).
+
+---
+
+## §9 — Third pass: the subtraction, and the accent
+
+Two passes were about what the screen should BE. This one is about what should
+come off it, plus the colour question the brief settled.
+
+### 9.1 Seven things cut, and the rule behind them
+
+Every one of these was a **second statement of a fact already on the screen**.
+That is the whole test, and it is worth keeping as a standing rule for this
+surface: *if the composition already says it, the caption is noise.*
+
+| cut | why |
+| --- | --- |
+| **the day rail** | Twelve ticks and "day 56 of sixty" over a card whose stamp reads `4 DAYS LEFT`. One number, drawn twice, and the drawn one was less precise. |
+| **the state line** | `one answered · 2 of 2 held · one lapsing` — all three are visible in the cards directly beneath it. |
+| **two kickers** | Handle and date under a headline, above a card carrying the same handle and the same date. Cut on the reveal and on the open letter. |
+| **the ghost preview** | Step two's card faded under step one's field. Made the composer read as a form with a disabled section rather than one question at a time. |
+| **"0 of 2 held"** | Over a headline reading *Two names. That is all you get.* and two visibly empty places. |
+| **the second privacy line** | The empty place already says what it is for. |
+| **the reveal's `close`** | A full-width button under a sheet whose bar already carries a ✕. Two controls, one job, and the big one was the less obvious. |
+
+### 9.2 The accent: ice, and no orange
+
+Ember is gone. The lit thing is now **ice** (`#A9C8DA` on glass, `#2E5468` struck
+into paper) — a tonal cousin of the blue-black ground rather than a second hue.
+
+**The state still reads without any colour at all.** A lapsing letter's stamp is
+*struck into* the paper (filled, reversed out) where every other stamp is
+outlined. That is form, not hue, so the "light only" setting is a genuine option
+and nobody loses the signal to colour blindness.
+
+### 9.3 Everything else is a control, not an opinion
+
+The published console exposes accent (ice / light / gold / custom picker), the
+letters' material, glass blur and fill, the ground's brightness and drift speed,
+corner radius, density, and the display face. State persists to `localStorage`.
+
+This is a review tool, not a shipping surface — but the tokens it drives are the
+tokens the implementation should use, which is why it is worth keeping: the
+argument about radius or blur is settled by moving a slider, not in a comment.
+
+### 9.4 Two findings from building it
+
+- **The hand needs opaque letters.** The all-glass fork ("smoke") was built and
+  looked good until the hand stacked: blur alone does not hide the card behind,
+  so the back letter's text ghosts through the front one. Glass letters would
+  force the hand to become a flat list. Paper stays.
+- **A page-wide light is what makes glass worth having.** Glass over a flat fill
+  is a translucency effect; glass over a moving light is a material. The ground
+  is one fullscreen fragment shader, hand-written — the CSP admits cdnjs and
+  jsdelivr, but neither is reachable from the build environment, so a library
+  would have shipped unverified.
+
+### 9.5 On external component libraries
+
+21st.dev cannot be used in this context: it is not an allowed script host for a
+published artifact, and its components are React + Tailwind + framer-motion. The
+interaction *patterns* are implemented directly instead — pointer-tracked
+spotlight, a magnetic primary control, a border that catches the light on hover,
+spring-weighted motion. The one external asset that genuinely loads is type, and
+the display face is a console control rather than a decision made quietly.
