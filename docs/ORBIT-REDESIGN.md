@@ -358,3 +358,79 @@ interaction *patterns* are implemented directly instead — pointer-tracked
 spotlight, a magnetic primary control, a border that catches the light on hover,
 spring-weighted motion. The one external asset that genuinely loads is type, and
 the display face is a console control rather than a decision made quietly.
+
+---
+
+## §10 — Fourth pass: composition
+
+Colour was settled in §9. This pass is layout only.
+
+### 10.1 A sealed letter is drawn sealed
+
+The home screen stacked **three full cream cards** — the answered pair and both
+unanswered letters, all open, all at the same weight. Three near-identical beige
+blocks down a phone screen, which is the "crowded page of just letters" the brief
+named.
+
+The fix is not smaller cards. It is that **a letter nobody has answered has not
+been read by anybody, including in a sense by you** — so it is not shown open:
+
+| state | drawn as |
+| --- | --- |
+| answered | one open card, deckled, full presence, its opening line set larger |
+| still sealed | a **spine** — a slim sheet edge-on carrying the constellation, the handle, and the days |
+| an empty place | a blank on a form (§10.2) |
+
+One thing to read per screen, two quiet objects beneath it. The label over them
+is `still sealed`, once, for the pair.
+
+### 10.2 The two places, rebuilt
+
+They were **two identical dashed rectangles carrying identical text** — *an empty
+place / someone you want to hear back from* — printed twice, which is the ugliest
+thing that was left on the surface.
+
+They are now **two numbered blanks on a form**: a pressed recess, a numeral
+(`one`, `two`), an `@`, and a hairline rule where the handle would be written.
+
+- **Only the first one speaks.** It carries `name someone` and the arrow. The
+  second is a blank, which is the honest thing for it to be, and the copy stops
+  being duplicated.
+- **Numbering is not decoration.** Two is the entire scarcity of this product, so
+  counting them is the fact.
+- A recess reads as *somewhere a thing goes*. A dashed rectangle reads as an
+  upload zone.
+
+### 10.3 The paper has an edge now
+
+`.card` split into a content layer and a `.sheet` background layer, and the sheet
+alone takes an SVG `feTurbulence` → `feDisplacementMap` filter. The edge wanders
+the way a deckle does; the type on top stays crisp because it is not inside the
+filtered element.
+
+This is the single change that stopped the letters reading as rounded `div`s.
+Console control: **paper edge · deckle / clean**.
+
+### 10.4 The letter's opening line
+
+The first sentence is set at 17px and separated; the rest runs at 14.5px. A
+letter is not a paragraph in a box — it has an opening. `card(p, { lede: true })`.
+
+### 10.5 The door loses the mark, and the account it never had
+
+The 92px ecliptic came off `/berkeley/join` — the screen is type, one field, two
+controls, and the ground's light behind it. The bar on that screen also stopped
+saying `@you`: **nobody has an account at the door.** It reads `celestual` until
+the address is proven.
+
+### 10.6 On importing assets
+
+Nothing external loads into a published artifact except type. cdnjs, jsdelivr and
+the Tailwind CDN are permitted by the CSP but unreachable from the build
+environment, and 21st.dev is not a permitted host at all. So every "asset" here
+is generated: the deckle, the grain, the constellations, the mark, the ground.
+
+**If real assets are wanted** — an illustration, a photograph, a texture scan —
+the only path is to hand over the file and have it embedded as a data URI. That
+is a real option and a good one for the paper stock in particular; a scanned
+sheet would beat a procedural grain. It needs the file, not a link.
