@@ -1,261 +1,158 @@
-// ── /berkeley/orbit — THE PRODUCT, STANDING ─────────────────────────────────
+// ── /berkeley/orbit — THE CORE SERVICE ──────────────────────────────────────
 //
 // The service the wall exists to fill, and a DIFFERENT PLACE from the wall.
 // It is reached from exactly one control — the tab at the bottom of the wall,
 // which appears only once somebody has put a letter up — and it is the first
 // point in the whole prototype where anybody has an identity at all.
 //
-// So it does not share the wall's furniture. No wall nav, no search over the
-// names, no writing a letter from here: one control leaves, and everything
-// else on the screen is about pings, which the wall has never heard of.
-//
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  WHAT WAS WRONG WITH THE FIRST ONE                                       ║
+// ║  THE COMPOSITION: ONE LETTER AT A TIME, LAID SIDEWAYS                    ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// It read as a dashboard, and three specific things made it one.
+// Three earlier versions of this screen are gone, and each was thrown out for
+// a reason worth keeping written down:
 //
-//   1  THE ONE ENORMOUS NUMBER WAS SET IN THE UI SANS. Every other screen in
-//      this build gives its largest object to the Didone and its identifiers
-//      to the mono. This screen gave its largest object to Inter Tight at
-//      weight 600, which is the face every product on the web sets a metric
-//      in. On a surface being judged for looking bought rather than made, it
-//      was the single most generic moment in the tree.
+//   1  A DATE SET AS THE HEADLINE. The old screen gave its largest, brightest
+//      object to 17.03.2026 and then restated it twice more. wall.css said so
+//      in its own comment — "on this screen the date is the headline" — which
+//      is the whole diagnosis. A ledger's headline is not a date.
+//   2  A RING DIAGRAM THAT SHARED NO GEOMETRY WITH THE MARK. Three axis-aligned
+//      ellipses in 0.34-unit hairlines, under a logo built out of a filled band
+//      at -19° whose width varies three to one. It encoded three numbers the
+//      rows underneath already carried, in words, more precisely.
+//   3  A STACK OF OPEN CREAM CARDS. Every letter drawn open, at one weight, so
+//      the page was three near-identical beige blocks — a crowded page of
+//      letters however good each card was.
 //
-//   2  THE COLOUR RATION WAS SPENT ON A CAPSULE READING "TODAY", beside a
-//      date that already said so, while the one thing on the screen anybody
-//      had to act on (a ping four days from lapsing) was competing with it in
-//      the same orange forty pixels lower. Two saturated objects, and the
-//      loud one was the decorative one.
+// What is here instead:
 //
-//   3  NOTHING WAS BUILT. `place a ping` called go('orbit') from /berkeley/orbit,
-//      which the router correctly refuses as a navigation to where you already
-//      are — so the primary control on the core service did nothing at all.
-//      There was no way to place, renew or let go of anything: three states
-//      were drawn and none of them could be reached or left.
+//   THE SHEET       One letter, centred, with air above and below. The writing
+//                   is the only thing set in a reading face and the only thing
+//                   ON the paper.
+//   THE SILL        Everything about the letter that is not the letter —
+//                   handle, state, days — sits UNDER the sheet in mono. It is
+//                   ground, not paper, and that separation is the composition.
+//   NO HEADLINE     Nothing on this surface editorialises. There is no Bodoni
+//                   sentence anywhere; the objects carry the state.
+//   THE PIPS        Where you are in what you hold. A held letter is a dash,
+//                   an answered one is lit, a free place is a hollow ring.
 //
-// And under all three, one structural problem: the hero and the ledger were
-// two objects saying the same thing badly. The rings knew nothing about the
-// rows, so the diagram was an illustration of space sitting on top of a list.
+// ── two, and the surface never says otherwise ───────────────────────────────
+// A free place is one more position in the spread, reached by moving to it.
+// When both places are held it DOES NOT EXIST — no slide, no pip, no sentence.
+// Nothing on this screen refers, in any state, to a place beyond these two.
 //
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  WHAT IT IS NOW                                                          ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
+// ── the gestures, and what each one costs ───────────────────────────────────
+//   sideways        move through what you are holding. The cheap one.
+//   down and off    let a letter go. The only irreversible act here, so it
+//                   takes the longest travel on an axis nothing else uses.
+//   tap the count   sixty more days. Renewing is free and reversible, so it
+//                   costs one tap on the very number it changes.
+//   tap the sheet   open it, with renew and let-go as ordinary controls.
 //
-// The reference's journey view, still, component for component — but every one
-// of them now carries a quantity off the ledger rather than a mood:
-//
-//   reference                         here
-//   ─────────────────────────────────────────────────────────────────────────
-//   a body with rings and moons       you, one ring per ping, and the moon at
-//                                     its TRUE position on the sixty days. A
-//                                     ring closes and carries two moons when
-//                                     the ping is mutual, because that is what
-//                                     closed it. art.jsx `Orrery`.
-//   the date, set enormous            the date, set enormous, IN THE DIDONE.
-//                                     This product is sixty-day clocks and the
-//                                     date is what they are counted from.
-//   an accent capsule beside it       kept as composition, spent as a
-//                                     hairline. The saturated object moved to
-//                                     the ping that is running out, which is
-//                                     the only thing here anybody has to do
-//                                     something about.
-//   rows: face, name, meta, capsule   rows: constellation WITH THE COUNTDOWN
-//                                     DRAWN ON ITS OWN RING, handle, what the
-//                                     ping is doing, and how long is left.
-//   sections by day                   sections by state, and the empty slot is
-//                                     a row rather than a sentence: two slots
-//                                     is the whole of the product's scarcity
-//                                     and it should be a thing you can see.
-//
-// Four sheets rise over it, and between them they are the entire core service:
-// a mutual (both cards, together), a standing ping (renew, or let it go),
-// the composer, and the slots-full door. All four are real inside the tab
-// (orbit.js), so a ping placed at a demo table is still there after a reload
-// and the ring for it is drawn at the front of its circuit.
+// Every one of those has a tap path behind it: the sheet opens on tap and
+// carries both actions, so nothing here is reachable only by dragging.
 
-import { useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
-  Display, Label, Pill, Close, Icon, PillTag,
-  Row, Sheet, SheetHead, SheetFoot, Paper, Prose, HandleField, LetterField,
+  Label, Pill, Close,
+  Sheet, SheetHead, SheetFoot, Paper, Prose, HandleField, LetterField,
 } from '../parts.jsx'
-import { Orrery, Mark, Sparkle, Dots } from '../art.jsx'
-import { TODAY, ME } from '../seed.js'
+import { Mark, Sparkle, Dots } from '../art.jsx'
+import { ME } from '../seed.js'
 import { atHandle, dateline, normHandle, validHandle } from '../data.js'
 import {
-  pings, ping, slots, nextOpen, place, renew, release,
-  since, left, NOW,
+  pings, ping, slots, place, renew, release,
+  since, left, NOW, SPAN,
 } from '../orbit.js'
 
-// What each state says under the handle. One line, and it is about the PING
-// rather than about the person: a ledger row that editorialises about somebody
-// you named is the wrong object entirely.
-const SAYS = {
-  mutual: () => 'you were both looking',
-  standing: () => 'nothing shows until they do',
-  lapsing: () => 'renew it, or let it go',
+// The opening sentence of a letter is set larger than the rest. A letter has
+// an opening; a paragraph in a box does not.
+function opened(text) {
+  const raw = String(text || '')
+  const i = raw.indexOf('. ')
+  if (i > 0 && i < 165) {
+    return <><span className="wl-open-line">{raw.slice(0, i + 1)}</span>{raw.slice(i + 2)}</>
+  }
+  return <span className="wl-open-line">{raw}</span>
 }
 
 export default function Core({ id, go, reduce }) {
   // ── why this counter exists ──
   // The ledger lives in store.js, which is a blob under a key and not a React
-  // anything, so nothing re-renders when a mutation lands. Everywhere else on
-  // this surface that did not matter: the wall's own writes are followed by a
-  // route change, and the shell re-reads on every one of those.
-  //
-  // Here it matters, and it is exactly the shape of the bug the old screen
-  // shipped. `let it go` on the slots-full sheet finishes with go('orbit',
-  // 'place') from /berkeley/orbit/place, which the router correctly refuses as a
-  // navigation to where you already are. The slot was freed, nothing
-  // re-rendered, and the sheet went on saying both slots were taken over a
-  // ledger that now had one.
-  //
-  // So every mutation on this surface is followed by `bump`, and the ledger is
-  // read fresh on the render it causes. It is one integer and it is the reason
-  // the four sheets can act on state without any of them owning it.
+  // anything, so nothing re-renders when a mutation lands. Every mutation on
+  // this surface is followed by `bump`, and the ledger is read fresh on the
+  // render it causes.
   const [beat, bump] = useReducer((n) => n + 1, 0)
-  const [lit, setLit] = useState(null)
-  // `beat` is a real dependency rather than a comment about one: the ledger is
-  // re-read on the render a mutation causes, and on a route change.
   const rows = useMemo(() => pings(), [beat, id])
   const slot = useMemo(() => slots(), [beat, id])
 
-  const mutual = rows.filter((p) => p.state === 'mutual')
-  const held = rows.filter((p) => p.state !== 'mutual')
-  const lapsing = held.find((p) => p.state === 'lapsing')
+  // The spread: what you hold, then one position per free place. `slot.open`
+  // is derived from the cap, so a held pair produces no vacant slide at all.
+  const spread = useMemo(() => ([
+    ...rows,
+    ...Array.from({ length: slot.open }, (_, i) => ({ vacant: true, id: `open-${i}` })),
+  ]), [rows, slot.open])
 
-  // Which sheet, if any. The second path segment is either a ping's id or the
-  // literal `place`, so every state of this surface has an address and none of
-  // them needs a route the wall does not already have.
+  // ── the position is a letter, not a number ──
+  // `pings()` sorts by what is closest to running out, so renewing a letter
+  // moves it in the order. If the position were an index, the letter you just
+  // acted on would vanish sideways and a different one would take its place
+  // under your finger. So the position is held as the row's ID: the letter you
+  // are on stays the letter you are on, and the track glides to wherever it
+  // went — which is the honest way to show that it is no longer the urgent one.
+  //
+  // When the ID disappears (you let the letter go) the index is the fallback,
+  // so whatever moves into that position is what you are looking at.
+  const [anchor, setAnchor] = useState(null)
+  const mark = useRef(0)
+  const here = useMemo(() => {
+    const i = spread.findIndex((p) => p.id === anchor)
+    const k = i >= 0 ? i : Math.max(0, Math.min(spread.length - 1, mark.current))
+    mark.current = k
+    return k
+  }, [spread, anchor])
+  const now = spread[here] || null
+  const setAt = useCallback((i) => {
+    const p = spread[Math.max(0, Math.min(spread.length - 1, i))]
+    mark.current = Math.max(0, Math.min(spread.length - 1, i))
+    setAnchor(p ? p.id : null)
+  }, [spread])
+
   const open = id && id !== 'place' ? ping(id) : null
-  const back = () => go('orbit')
+  const back = useCallback(() => go('orbit'), [go])
 
   return (
     <>
       <div className="wl-page wl-core">
-        {/* The core service's own bar. One control leaves — back to the wall —
-            and the rest of it is this account, which is a thing the wall does
-            not have and will never ask for. */}
         <header className="wl-top">
           <div className="wl-top-mark">
-            <Mark handle={ME} size={30} lit />
+            <Mark handle={ME} size={26} lit />
             <Label><span className="wl-h">{atHandle(ME)}</span></Label>
           </div>
           <Close onClick={() => go('wall')} label="back to the wall" />
         </header>
 
-        <div className="wl-core-left">
-          {/* ── the hero ──
-              It bleeds past both edges on purpose. The reference lets its ring
-              system run off the screen, and that is what stops it reading as a
-              piece of clip art dropped into a card.
+        <Spread
+          spread={spread} at={here} setAt={setAt}
+          onOpen={(p) => go('orbit', p.id)}
+          onPlace={() => go('orbit', 'place')}
+          onRelease={(p) => { release(p.id); bump() }}
+          reduce={reduce}
+        />
 
-              `rows` arrives innermost-first (orbit.js sorts mutual, then by
-              what is closest to running out), so ring N is row N and lighting
-              one from the list below is an id match rather than an index
-              somebody has to keep in sync. */}
-          <div className="wl-core-sky">
-            <Orrery size={470} rings={rows} lit={lit} className="wl-core-orrery" />
-          </div>
+        <Sill
+          row={now}
+          onRenew={(p) => { renew(p.id); bump() }}
+          onOpen={(p) => go('orbit', p.id)}
+          held={slot.held} cap={slot.cap}
+        />
 
-          {/* ── the date ──
-              The reference sets it enormous with one capsule beside it, and
-              both are kept. The capsule is a hairline rather than the accent:
-              "today" is not news, and the ration is spent forty pixels below
-              on the ping that is nearly out of days. */}
-          <div className="wl-core-date">
-            <div className="wl-core-date-t">
-              <Display size="xl" as="p" className="wl-core-day">{TODAY.label}</Display>
-              <Label tone="dim">{TODAY.day}</Label>
-            </div>
-            <PillTag tone="ghost" className="wl-core-today">today</PillTag>
-          </div>
-        </div>
-
-        <div className="wl-core-right">
-          {mutual.length > 0 && (
-            <section className="wl-sect">
-              <div className="wl-sect-head">
-                <Label><Sparkle size={11} twinkle={!reduce} /> mutual</Label>
-              </div>
-              {mutual.map((p) => (
-                <Row
-                  key={p.id} lit
-                  mark={<Mark handle={p.handle} size={36} lit tone="mutual" gauge={1} />}
-                  handle={p.handle}
-                  meta={SAYS.mutual()}
-                  action={<PillTag tone="light">open</PillTag>}
-                  onClick={() => go('orbit', p.id)}
-                  onEnter={() => setLit(p.id)} onLeave={() => setLit(null)}
-                />
-              ))}
-            </section>
-          )}
-
-          <section className="wl-sect">
-            <div className="wl-sect-head">
-              <Label>standing</Label>
-              <Label tone="dim">{slot.held} of {slot.cap}</Label>
-            </div>
-
-            {held.map((p) => (
-              <Row
-                key={p.id}
-                tone={p.state}
-                mark={<Mark handle={p.handle} size={36} gauge={p.run} tone={p.state === 'lapsing' ? 'near' : ''} />}
-                handle={p.handle}
-                meta={SAYS[p.state](p)}
-                action={<span className="wl-days">{left(p.days)}</span>}
-                onClick={() => go('orbit', p.id)}
-                onEnter={() => setLit(p.id)} onLeave={() => setLit(null)}
-              />
-            ))}
-
-            {/* An open slot is a row, not a sentence. Two slots is the entire
-                scarcity mechanism of this product, and a person who has to
-                read a number to find out they have one left has been told
-                about it rather than shown it. */}
-            {Array.from({ length: slot.open }).map((_, i) => (
-              <button
-                key={`open${i}`} type="button" className="wl-open"
-                onClick={() => go('orbit', 'place')}
-              >
-                <span className="wl-open-mark" aria-hidden="true" />
-                <span className="wl-open-t">open slot</span>
-                <span className="wl-open-a">place one</span>
-              </button>
-            ))}
-          </section>
-
-          {/* The one line of housekeeping on the screen, and it only appears
-              when it is load-bearing: a slot you are waiting on has a date,
-              and a locked door with no date on it is not scarcity. */}
-          {slot.full && (
-            <p className="wl-say wl-core-note">
-              {nextOpen() === 0
-                ? 'your next slot opens today.'
-                : `your next slot opens in ${nextOpen()} days, or the moment you let one go.`}
-            </p>
-          )}
-        </div>
-
-        <div className="wl-push" />
-
-        <div className="wl-dock">
-          <div className="wl-dock-veil" aria-hidden="true" />
-          <div className="wl-dock-in">
-            <Pill
-              tone="light" wide icon={<Icon name="join" size={17} />}
-              onClick={() => go('orbit', 'place')}
-            >
-              place a ping
-            </Pill>
-          </div>
-        </div>
+        <Pips spread={spread} at={here} setAt={setAt} />
       </div>
 
       {id === 'place' && (slot.full
-        ? <Full held={held} lapsing={lapsing} bump={bump} back={back} />
+        ? <Full held={rows.filter((p) => p.state !== 'mutual')} bump={bump} back={back} />
         : <Place bump={bump} go={go} back={back} />)}
       {open && open.state === 'mutual' && <Reveal ping={open} back={back} reduce={reduce} />}
       {open && open.state !== 'mutual' && <Standing ping={open} go={go} bump={bump} back={back} />}
@@ -263,46 +160,299 @@ export default function Core({ id, go, reduce }) {
   )
 }
 
+// ── the spread ──────────────────────────────────────────────────────────────
+// A track of full-width slides moved by transform. Sideways navigates; down and
+// off releases. The axis locks once at seven pixels of travel and does not
+// switch mid-drag, so the destructive gesture can never be entered by accident
+// on the way to the safe one.
+function Spread({ spread, at, setAt, onOpen, onPlace, onRelease, reduce }) {
+  const box = useRef(null)
+  const track = useRef(null)
+  const drag = useRef({ live: false, axis: '', dx: 0, dy: 0, sx: 0, sy: 0, t: 0 })
+  const [cue, setCue] = useState(0)
+
+  const DROP = 130           // how far a letter falls before it is gone
+  const put = useCallback((i, animate) => {
+    const t = track.current
+    if (!t) return
+    t.classList.toggle('is-grab', !animate)
+    t.style.transform = `translateX(${-i * 100}%)`
+    if (!animate) requestAnimationFrame(() => t.classList.remove('is-grab'))
+  }, [])
+
+  useEffect(() => { put(at, !reduce) }, [at, put, reduce])
+
+  const held = () => (track.current ? track.current.children[at] : null)
+  const sheetOf = () => { const s = held(); return s ? s.querySelector('.wl-slide-in') : null }
+
+  function down(e) {
+    if (e.target.closest('.wl-vacant')) return
+    const d = drag.current
+    d.live = true; d.axis = ''; d.dx = 0; d.dy = 0
+    d.sx = e.clientX; d.sy = e.clientY; d.t = performance.now()
+    track.current && track.current.classList.add('is-grab')
+    box.current && box.current.setPointerCapture(e.pointerId)
+  }
+  function move(e) {
+    const d = drag.current
+    if (!d.live) return
+    d.dx = e.clientX - d.sx; d.dy = e.clientY - d.sy
+    if (!d.axis && (Math.abs(d.dx) > 7 || Math.abs(d.dy) > 7)) {
+      d.axis = Math.abs(d.dx) > Math.abs(d.dy) ? 'x' : 'y'
+    }
+    if (d.axis === 'x') {
+      const w = box.current ? box.current.clientWidth || 1 : 1
+      track.current.style.transform = `translateX(${-at * 100 + (d.dx / w) * 100}%)`
+    } else if (d.axis === 'y' && d.dy > 0) {
+      const s = sheetOf()
+      if (!s) return
+      const k = d.dy * 0.6
+      s.style.transform = `translateY(${k}px) scale(${(1 - Math.min(0.06, k / 1600)).toFixed(4)})`
+      s.style.opacity = String(Math.max(0.45, 1 - k / 430))
+      setCue(Math.min(1, k / DROP))
+    }
+  }
+  function up() {
+    const d = drag.current
+    if (!d.live) return
+    d.live = false
+    const s = sheetOf()
+    if (s) { s.style.transform = ''; s.style.opacity = '' }
+    setCue(0)
+    track.current && track.current.classList.remove('is-grab')
+
+    if (d.axis === 'x') {
+      const w = box.current ? box.current.clientWidth || 1 : 1
+      const v = d.dx / Math.max(1, performance.now() - d.t)
+      const far = Math.abs(d.dx) > w * 0.26 || Math.abs(v) > 0.5
+      const next = !far ? at : Math.max(0, Math.min(spread.length - 1, at + (d.dx < 0 ? 1 : -1)))
+      if (next === at) put(at, true); else setAt(next)
+      return
+    }
+    if (d.axis === 'y' && d.dy * 0.6 >= DROP) {
+      const row = spread[at]
+      // A pair that has closed holds no slot and is not yours to let go of.
+      if (row && !row.vacant && row.state !== 'mutual') { onRelease(row); return }
+    }
+    if (d.axis === '') { const row = spread[at]; if (row && !row.vacant) onOpen(row) }
+    put(at, true)
+  }
+
+  // ── the same four moves without a pointer ──
+  // Every gesture here has a tap path, and a tap path is not a keyboard path.
+  // The slide you are on is the one tab stop: arrows move through the spread,
+  // Enter opens the letter, and Backspace lets it go — the destructive one is
+  // the only key that is not on the way to anything else. The free place is
+  // already a button and keeps its own.
+  function keys(e) {
+    const row = spread[at]
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const next = Math.max(0, Math.min(spread.length - 1, at + (e.key === 'ArrowRight' ? 1 : -1)))
+      if (next !== at) { e.preventDefault(); setAt(next) }
+      return
+    }
+    if (!row || row.vacant) return
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(row); return }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && row.state !== 'mutual') {
+      e.preventDefault(); onRelease(row)
+    }
+  }
+
+  return (
+    <div
+      className="wl-spread" ref={box}
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+      onKeyDown={keys}
+    >
+      <div className="wl-track" ref={track}>
+        {spread.map((p, i) => (
+          <div className="wl-slide" key={p.id}>
+            <div
+              className="wl-slide-in"
+              tabIndex={p.vacant ? undefined : (i === at ? 0 : -1)}
+              role={p.vacant ? undefined : 'button'}
+              aria-label={p.vacant ? undefined : `a letter to ${atHandle(p.handle)} — open it`}
+            >
+              {p.vacant ? <Vacant onClick={onPlace} /> : <Letter ping={p} />}
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="wl-drop-cue" style={{ opacity: cue }} aria-hidden="true">let it go</span>
+    </div>
+  )
+}
+
+// ── a letter ────────────────────────────────────────────────────────────────
+// The leaf carries the writing and nothing else. Its handle, its state and its
+// clock are on the sill beneath it — see `Sill`.
+//
+// It used to carry a crest as well: the recipient's mark, circled, with the
+// sixty days drawn round it as a gauge. Both halves of that were said again
+// forty pixels lower — the sill names the same handle and counts the same
+// days — so the card had a second, weaker copy of its own caption sitting in
+// the middle of it. The gauge was worth keeping and is now inside the count
+// itself, which is the control that changes it.
+function Letter({ ping: p }) {
+  return (
+    <Paper
+      className="wl-leaf"
+      tone={p.state === 'mutual' ? '' : 'shut'}
+      dateline={{ lead: dateline(p.placedAt).lead, stamp: p.state === 'mutual' ? 'unsealed' : 'sealed' }}
+    >
+      <Prose>{opened(p.yours)}</Prose>
+    </Paper>
+  )
+}
+
+// ── a place with nothing in it ──────────────────────────────────────────────
+// Two of the eight drawings this was tried as, composed: at rest it is a
+// letter's SHADOW with no letter above it — nothing on the surface but the
+// absence of one — and inside that absence, a BLANK: an @ and a rule where a
+// handle would be written. Approach it and paper falls into its own shadow.
+//
+// It is never a box on the home screen. It is one more position in the spread,
+// it only exists while a place is genuinely free, and it says nothing about
+// any place beyond the two.
+function Vacant({ onClick }) {
+  return (
+    <button type="button" className="wl-vacant" onClick={onClick}>
+      <span className="wl-vacant-shadow" aria-hidden="true" />
+      <span className="wl-vacant-paper" aria-hidden="true" />
+      <span className="wl-vacant-in">
+        <span className="wl-vacant-blank">
+          <span className="wl-vacant-at">@</span>
+          <span className="wl-vacant-ph">name someone</span>
+        </span>
+        <span className="wl-vacant-note">sixty days &middot; renewing is free</span>
+      </span>
+    </button>
+  )
+}
+
+// ── the sill ────────────────────────────────────────────────────────────────
+// Everything true about the letter that is not the letter. The count is a
+// control because the count is the thing renewing changes: one tap on the very
+// number, and it rolls rather than swapping, because sixty more days is the
+// nicest thing that happens on this screen.
+//
+// A pair that has closed has no clock — there is nothing left to run out — so
+// on that one row the control in the count's place opens the pair instead.
+function Sill({ row, onRenew, onOpen, held, cap }) {
+  const [roll, setRoll] = useState(null)
+  const raf = useRef(0)
+
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
+
+  if (!row) return <div className="wl-sill" />
+  if (row.vacant) {
+    return (
+      <div className="wl-sill">
+        <span className="wl-sill-h wl-sill-h-quiet">a free place</span>
+        <span className="wl-sill-s">{held} of {cap} held</span>
+      </div>
+    )
+  }
+
+  const mutual = row.state === 'mutual'
+  const near = row.state === 'lapsing'
+
+  function wind() {
+    if (mutual) return
+    const from = row.days
+    cancelAnimationFrame(raf.current)
+    const t0 = performance.now()
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / 620)
+      const eased = 1 - Math.pow(1 - k, 3)
+      setRoll(Math.round(from + (SPAN - from) * eased))
+      if (k < 1) raf.current = requestAnimationFrame(step)
+      else { setRoll(null); onRenew(row) }
+    }
+    raf.current = requestAnimationFrame(step)
+  }
+
+  return (
+    <div className="wl-sill">
+      <span className="wl-sill-h wl-h">{atHandle(row.handle)}</span>
+      <span className="wl-sill-s">{mutual ? 'answered' : 'sealed'}</span>
+      <button
+        type="button"
+        className={`wl-days${near && roll == null ? ' is-near' : ''}${mutual ? ' is-act' : ''}`}
+        style={mutual ? undefined : { '--left': Math.max(0, Math.min(1, (roll ?? row.days) / SPAN)) }}
+        onClick={mutual ? () => onOpen(row) : wind}
+        aria-label={mutual ? 'open the pair' : `renew — ${left(row.days)} left`}
+      >
+        <span className="wl-days-t">
+          {mutual ? 'open the pair' : roll != null ? `${roll} days` : left(row.days)}
+        </span>
+      </button>
+    </div>
+  )
+}
+
+// ── where you are in what you hold ──────────────────────────────────────────
+// A dash per letter, lit if it has been answered, and a hollow ring for a place
+// that is free.
+//
+// There was a count on the right — "2 of 2" — and it had to go: a pair that has
+// closed is a pip but not a slot, so the row could show three marks beside the
+// figure two and be telling the truth twice in two different units. The marks
+// alone say where you are, and the sill says how many places are held on the
+// one slide where that is the question.
+function Pips({ spread, at, setAt }) {
+  return (
+    <div className="wl-pips">
+      {spread.map((p, i) => (
+        <button
+          key={p.id} type="button"
+          className={`wl-pip${p.vacant ? ' is-free' : ''}${p.state === 'mutual' ? ' is-answered' : ''}${i === at ? ' is-on' : ''}`}
+          onClick={() => setAt(i)}
+          aria-label={p.vacant ? 'a free place' : atHandle(p.handle)}
+          aria-current={i === at ? 'true' : undefined}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ── the reveal ──────────────────────────────────────────────────────────────
 // A mutual is two cards, and the only moment in the entire product where both
-// of them are readable. So they are shown TOGETHER, one above the other, on
-// the same sheet — never one at a time behind a tab or a button, because the
-// simultaneity is the thing that happened and any control between them takes
-// it away. The second card rises 220ms behind the first (wall.css), which is
-// the reveal: two cards that were already there would be a page.
+// of them are readable. So they are shown TOGETHER, one above the other, on the
+// same sheet — never one at a time behind a tab or a button, because the
+// simultaneity is the thing that happened and any control between them takes it
+// away. The second card rises 220ms behind the first (wall.css), which is the
+// reveal: two cards that were already there would be a page.
 //
-// Both are dated off this surface's own clock (orbit.js NOW) and they are
-// dated DIFFERENTLY, because a sixty-day mechanism whose two halves carry the
-// same date is claiming the pair was written in one morning.
+// Both are dated off this surface's own clock (orbit.js NOW) and they are dated
+// DIFFERENTLY, because a sixty-day mechanism whose two halves carry the same
+// date is claiming the pair was written in one morning.
 function Reveal({ ping: p, back, reduce }) {
   return (
     <Sheet onClose={back} tall labelledBy="wl-reveal-h">
       <div className="wl-sheet-in wl-reveal">
         <SheetHead onClose={back} />
         <div className="wl-reveal-head">
-          <Display size="s" as="h2" id="wl-reveal-h">You were both looking.</Display>
-          <Label tone="dim">
-            <span className="wl-h">{atHandle(p.handle)}</span> · placed {since(p.placedAt)}
+          <Label tone="dim" as="h2" id="wl-reveal-h">
+            <span className="wl-h">{atHandle(p.handle)}</span> &middot; both wrote
           </Label>
         </div>
 
         <div className="wl-pairpaper is-open">
           <Paper
-            dateline={dateline(p.placedAt)}
-            crest={<Mark handle={p.handle} size={30} lit />}
-            title={<span className="wl-letter-to">{atHandle(p.handle)}</span>}
+            dateline={{ lead: dateline(p.placedAt).lead, stamp: 'yours' }}
+            crest={<Mark handle={p.handle} size={28} lit />}
           >
             <Prose>{p.yours}</Prose>
           </Paper>
 
           <div className="wl-pairpaper-join" aria-hidden="true">
-            <Sparkle size={16} twinkle={!reduce} />
+            <Sparkle size={14} twinkle={!reduce} />
           </div>
 
           <Paper
-            dateline={dateline(p.answeredAt)}
-            crest={<Mark handle={ME} size={30} lit />}
-            title={<span className="wl-letter-to">{atHandle(ME)}</span>}
+            dateline={{ lead: dateline(p.answeredAt).lead, stamp: 'theirs' }}
+            crest={<Mark handle={ME} size={28} lit />}
             tone="theirs"
           >
             <Prose>{p.theirs}</Prose>
@@ -312,7 +462,7 @@ function Reveal({ ping: p, back, reduce }) {
         <SheetFoot>
           <p className="wl-say">
             shown to the two of you and to nobody else. a pair that has closed
-            is not waiting on anybody, so it holds no slot.
+            is not waiting on anybody, so it holds no place.
           </p>
         </SheetFoot>
       </div>
@@ -320,21 +470,17 @@ function Reveal({ ping: p, back, reduce }) {
   )
 }
 
-// ── a ping, standing ───────────────────────────────────────────────────────
-// One card, yours, and the two things a person can actually do with it. They
-// are set at different weights on purpose: renewing is free, reversible and
-// the thing most people want, and letting go is the only irreversible act on
-// this surface. A pair of matched buttons would say those are the same size
-// of decision.
+// ── a letter, opened ────────────────────────────────────────────────────────
+// The tap path behind the two gestures. Renewing is free, reversible and the
+// thing most people want; letting go is the only irreversible act on this
+// surface. A pair of matched buttons would say those are the same size of
+// decision, so they are not matched.
 //
-// ── the confirmation does not replace the letter ───────────────────────────
-// `let it go` swaps the FOOT and nothing else. It first swapped the whole
-// sheet for a heading and two buttons, which took the card off the screen at
-// exactly the moment somebody was deciding whether to destroy it: the words
-// they wrote, to the person they wrote them to, are the entire content of the
-// decision, and asking "are you sure" over a blank sheet asks them to trust
-// their memory instead of their eyes. It is the same rule the report sheet on
-// the wall is built on, and this screen was breaking it.
+// ── the confirmation does not replace the letter ────────────────────────────
+// `let it go` swaps the FOOT and nothing else. It first swapped the whole sheet
+// for a heading and two buttons, which took the card off the screen at exactly
+// the moment somebody was deciding whether to destroy it: the words they wrote,
+// to the person they wrote them to, are the entire content of the decision.
 function Standing({ ping: p, go, bump, back }) {
   const [asking, setAsking] = useState(false)
   const [done, setDone] = useState(false)
@@ -345,50 +491,26 @@ function Standing({ ping: p, go, bump, back }) {
       <div className="wl-sheet-in wl-reveal">
         <SheetHead onClose={back} />
         <div className="wl-reveal-head">
-          <Display size="s" as="h2" id="wl-standing-h">
-            {asking ? 'Let it go?' : done ? 'Sixty more days.' : near ? 'Nearly out of days.' : 'Still standing.'}
-          </Display>
-          <Label tone="dim">
-            <span className="wl-h">{atHandle(p.handle)}</span> · placed {since(p.placedAt)}
+          <Label tone="dim" as="h2" id="wl-standing-h">
+            <span className="wl-h">{atHandle(p.handle)}</span> &middot; placed {since(p.placedAt)}
           </Label>
         </div>
 
         <div className="wl-pairpaper">
           <Paper
-            dateline={dateline(p.placedAt)}
-            crest={<Mark handle={p.handle} size={30} gauge={p.run} tone={near ? 'near' : ''} />}
-            title={<span className="wl-letter-to">{atHandle(p.handle)}</span>}
+            dateline={{ lead: dateline(p.placedAt).lead, stamp: done ? left(SPAN) : left(p.days) }}
+            crest={<Mark handle={p.handle} size={28} gauge={p.run} tone={near ? 'near' : ''} />}
           >
             <Prose>{p.yours}</Prose>
           </Paper>
         </div>
 
-        {/* The clock, drawn once, at the width of the card it belongs to. The
-            row upstairs says the number in words; this says it as a distance,
-            which is the only way a person feels what fifty-two days out of
-            sixty is.
-
-            Two short counts sit on the rule above it and the honest sentence
-            sits under it in prose. They were one line with a count at each
-            end, and the right-hand one was a whole sentence set in
-            letterspaced uppercase mono: eight words, running the width of the
-            sheet, shouting, in the face this build reserves for identifiers. */}
-        {/* Nothing here is derived from `done`. Renewing writes through
-            orbit.js and bumps the ledger, so the ping this sheet is handed on
-            the next render is the renewed one: the bar empties, the crest's
-            gauge resets, `near` goes false and the dateline moves to today,
-            all off the same read. `done` decides two words and a disabled
-            state, which is all it should ever have decided. */}
-        <div className="wl-run-head">
-          <Label tone="dim">{p.spent === 0 ? 'just placed' : `day ${p.spent} of sixty`}</Label>
-          <Label tone="dim">{left(p.days)} left</Label>
-        </div>
-        <div className={`wl-run-bar${near ? ' is-near' : ''}`} aria-hidden="true">
-          <span style={{ width: `${Math.min(100, p.run * 100).toFixed(1)}%` }} />
-        </div>
+        {/* The rail that used to sit here — twelve ticks and "day 56 of sixty"
+            — is gone. The stamp on the card above already carries that number,
+            and it carried it more precisely. */}
         <p className="wl-say wl-run-say">
           {asking
-            ? 'the line comes off the ledger and the slot opens back up. nothing is kept, and no desk can put it back.'
+            ? 'the letter comes off the ledger and the place opens back up. nothing is kept, and no desk can put it back.'
             : 'they have not placed one to you. nothing about this is shown to them, and nothing will be unless they do.'}
         </p>
 
@@ -406,7 +528,7 @@ function Standing({ ping: p, go, bump, back }) {
                 tone="light" wide disabled={done}
                 onClick={() => { renew(p.id); setDone(true); bump() }}
               >
-                {done ? 'renewed' : 'renew'}
+                {done ? 'renewed' : 'sixty more days'}
               </Pill>
               <button type="button" className="wl-quiet" onClick={() => setAsking(true)}>let it go</button>
             </>
@@ -418,15 +540,13 @@ function Standing({ ping: p, go, bump, back }) {
 }
 
 // ── placing one ─────────────────────────────────────────────────────────────
-// The same two steps as the wall's composer, and deliberately the same two:
-// a person who has just written a letter on the wall and registered has seen
-// this shape ninety seconds ago, and a core service that introduces a third
-// way of asking for a handle and a line is a second product.
+// The same two steps as the wall's composer, and deliberately the same two: a
+// person who has just written a letter on the wall and registered has seen this
+// shape ninety seconds ago, and a core service that introduces a third way of
+// asking for a handle and a line is a second product.
 //
-// What is different is what it says, and it is the whole difference between
-// the two surfaces. A letter goes up in public with nobody's name on it. A
-// ping goes nowhere: it is held, it is shown to no one, and it becomes visible
-// to exactly one person only if that person has already done the same thing.
+// One question at a time. The step-two card used to sit faded under step one's
+// field, which made the composer read as a form with a disabled section.
 const MIN_BODY = 30
 const MAX_BODY = 320
 
@@ -452,11 +572,9 @@ function Place({ bump, go, back }) {
       <div className="wl-sheet-in wl-write">
         <SheetHead onClose={back} lead={<Dots n={2} at={step} onGo={setStep} />} />
 
-        <Display size="s" as="h2" id="wl-place-h" className="wl-write-h">
-          {step === 0
-            ? <>Someone you want<br />to hear back from.</>
-            : <>And what you<br />would have said.</>}
-        </Display>
+        <Label tone="dim" as="h2" id="wl-place-h" className="wl-write-lab">
+          {step === 0 ? 'to' : 'and what you would have said'}
+        </Label>
 
         {step === 0 ? (
           <div className="wl-write-step">
@@ -464,19 +582,21 @@ function Place({ bump, go, back }) {
               value={to} onChange={setTo} onSubmit={next}
               autoFocus size="lg" placeholder="theirhandle"
             />
-            <Label tone="dim" className="wl-write-note">
-              <Sparkle size={9} />{' '}
+            {/* A sentence, not a label. Set as a Label it came out uppercase,
+                letterspaced and broken across two ragged mono lines under the
+                one field on the screen — the exact fault `.wl-say` exists to
+                stop. */}
+            <p className="wl-say wl-write-note">
               {already
-                ? 'you already have one standing to them'
-                : 'they are told nothing. not now, and not if they never ping you back'}
-            </Label>
+                ? 'you already have one standing to them.'
+                : 'they are told nothing. not now, and not if they never name you back.'}
+            </p>
           </div>
         ) : (
           <div className="wl-write-step">
             <Paper
-              dateline={dateline(NOW)}
-              crest={<Mark handle={h} size={30} />}
-              title={<span className="wl-letter-to">{atHandle(h)}</span>}
+              dateline={{ lead: dateline(NOW).lead, stamp: left(SPAN) }}
+              crest={<Mark handle={h} size={28} />}
               tone={body.trim() ? '' : 'empty'}
             >
               <LetterField
@@ -484,11 +604,6 @@ function Place({ bump, go, back }) {
                 placeholder="You said buses only come in pairs and I have been telling that joke for two years."
               />
             </Paper>
-            {/* The terms on the left, the count on the right. Both used to be
-                Labels, which put "sixty days. renewing is free and takes no
-                slot." on the wall's count row: a sentence, uppercased,
-                letterspaced, wrapped to two ragged lines and hard against the
-                right edge. */}
             <div className="wl-place-floor" aria-live="polite">
               <p className="wl-say">sixty days, and renewing is free.</p>
               {body.trim().length > 0 && body.trim().length < MIN_BODY && (
@@ -513,18 +628,15 @@ function Place({ bump, go, back }) {
   )
 }
 
-// ── both slots taken ────────────────────────────────────────────────────────
-// Not an error and not a wall. The slots are the product's one scarcity, and
-// this is the screen where that scarcity is felt — so it says what is in them,
-// and it puts the way out on each one rather than sending somebody back to the
-// ledger to work out which line to remove.
+// ── both places held ────────────────────────────────────────────────────────
+// Reached only by a deep link: nothing on the surface offers to place a letter
+// when there is nowhere to put one, because the free place IS the control and
+// it does not exist in this state.
 //
-// There is no second door here. Production carries one behind a flag (a third
-// slot, bought once) and this prototype deliberately does not draw it: the
-// free product is placing, matching, renewing and letting go, and a beta that
-// shows somebody a price before it has shown them a mutual has taught them the
-// wrong thing about what this is.
-function Full({ held, lapsing, bump, back }) {
+// There is no second door here and there is no mention of one. What the free
+// product is — placing, matching, renewing, letting go — is all this screen
+// has ever known about.
+function Full({ held, bump, back }) {
   const [gone, setGone] = useState(null)
 
   return (
@@ -532,24 +644,19 @@ function Full({ held, lapsing, bump, back }) {
       <div className="wl-sheet-in wl-full">
         <SheetHead onClose={back} />
         <div className="wl-reveal-head">
-          <Display size="s" as="h2" id="wl-full-h">Both slots are taken.</Display>
-          <p className="wl-say wl-full-sub">each one costs something. that is the point of two.</p>
+          <Label tone="dim" as="h2" id="wl-full-h">both places are held</Label>
         </div>
 
         <div className="wl-full-list">
           {held.map((p) => (
             <div key={p.id} className={`wl-full-row${gone === p.id ? ' is-asking' : ''}`}>
-              <Mark handle={p.handle} size={34} gauge={p.run} tone={p.state === 'lapsing' ? 'near' : ''} />
+              <Mark handle={p.handle} size={30} gauge={p.run} tone={p.state === 'lapsing' ? 'near' : ''} />
               <span className="wl-full-t">
                 <span className="wl-row-handle">{atHandle(p.handle)}</span>
                 <span className="wl-row-meta">{left(p.days)}</span>
               </span>
               {gone === p.id ? (
                 <span className="wl-full-ask">
-                  {/* No navigation: this sheet is already AT /berkeley/orbit/place.
-                      Freeing a slot changes what that address renders, from
-                      this door to the composer behind it, and `bump` is what
-                      makes the surface notice. */}
                   <button type="button" className="wl-mine" onClick={() => { release(p.id); bump() }}>
                     let it go
                   </button>
@@ -564,12 +671,7 @@ function Full({ held, lapsing, bump, back }) {
 
         <SheetFoot>
           <p className="wl-say">
-            {lapsing ? (
-              <>
-                <span className="wl-h">{atHandle(lapsing.handle)}</span> lapses on
-                its own in {lapsing.days} days, and the slot comes back then.
-              </>
-            ) : 'a ping lapses on its own after sixty days, and the slot comes back then.'}
+            a letter lapses on its own after sixty days, and the place comes back then.
           </p>
           <button type="button" className="wl-quiet" onClick={back}>not yet</button>
         </SheetFoot>
