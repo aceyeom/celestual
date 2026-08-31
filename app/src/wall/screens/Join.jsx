@@ -77,7 +77,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Display, Label, Pill, Close, Icon } from '../parts.jsx'
-import { Bloom, Ecliptic, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
+import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
 // this figure moves with it, because it is not a drawing of the logo: it is the
@@ -267,10 +267,13 @@ export default function Join({ go, setField, reduce }) {
   return (
     <div className={`wl-page wl-join is-at${at}`}>
       <header className="wl-top">
-        {/* The mark stands, and the X leaves. On a screen that is not a sheet
-            the exit is still the same object it is on every sheet, rather than
-            a chevron welded to the logo. */}
-        <span className="wl-brand is-still"><Ecliptic size={26} className="wl-brand-mark" /></span>
+        {/* The corner mark is GONE from this screen, and only from this one.
+            Everywhere else it is the thing that says which product you are in;
+            here it stood a hundred and eighty pixels above the same mark drawn
+            seventeen times larger, assembling itself, as the whole subject of
+            the page — so it was not identification, it was the logo twice. The
+            X keeps the right-hand slot it holds on every screen. */}
+        <span aria-hidden="true" />
         <Close onClick={() => go('wall')} label="back to the wall" />
       </header>
 

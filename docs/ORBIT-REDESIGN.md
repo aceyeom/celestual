@@ -1,10 +1,12 @@
-# /berkeley/orbit — the rebuild (the plan, before any of it is built)
+# /berkeley/orbit — the rebuild
 
-The core service screen, taken apart and specified again. Nothing here has been
-implemented; it exists so the argument can be had before the diff.
+The core service screen, taken apart and specified again.
 
-The working prototype — real gestures, the real ledger shape, the real paper —
-is published as an artifact. This file is the buildable half.
+**§0–§10 are the plan, written before any of it was built, and are left exactly
+as they were argued — including the parts that were then rejected or replaced.**
+§11 is the round of variations the plan was tested against. **§12 is what is
+actually in the app**, and where §12 disagrees with an earlier section, §12 is
+the build.
 
 > **This is a visual redesign of a live route, and `DESIGN.md` carries a lock
 > against exactly that.** The lock exempts changes a human asks for explicitly in
@@ -434,3 +436,182 @@ is generated: the deckle, the grain, the constellations, the mark, the ground.
 the only path is to hand over the file and have it embedded as a data URI. That
 is a real option and a good one for the paper stock in particular; a scanned
 sheet would beat a procedural grain. It needs the file, not a link.
+
+---
+
+## §11 — Fifth pass: six places, and the two that were kept
+
+The two places had been through three shapes and were still the weakest objects
+on the surface, so instead of a fourth guess the whole range was drawn at once —
+six of them, conservative to wild, in one artifact — and the pick was made by
+looking rather than by arguing.
+
+| # | the idea | what it actually was |
+| --- | --- | --- |
+| 01 | **the ruled blank** | no box at all: an `@`, a placeholder, and a hairline rule where the handle gets written |
+| 02 | the aperture | a ring that opens on approach, the mark's own geometry as a shutter |
+| 03 | **the shadow** | a letter's cast shadow with no letter above it; paper falls into it on approach |
+| 04 | the socket | a pressed recess with a numeral, the form-blank idea taken literally |
+| 05 | the constellation gap | a missing star in the field, drawn as the space between two that are there |
+| 06 | the drawn frame | a hairline rectangle that draws itself edge by edge on hover |
+
+**01 and 03 were chosen, and they are one object rather than two.** The shadow is
+the resting state — a place is the absence of a letter, so it is drawn as what a
+letter leaves behind. Approaching it drops paper into that shadow (03), and the
+ruled blank (01) is what is written on the paper once it lands.
+
+That composite is `Vacant` in `screens/Core.jsx` and `.wl-vacant*` in `wall.css`.
+
+What it costs to be one object rather than two: nothing on the surface is a box
+with dashes round it, the copy is not printed twice, and the interaction is a
+single continuous idea (absence → paper → a line to write on) instead of a hover
+state bolted to a static tile.
+
+**Discarded, and why:** 02 and 06 animate a frame that is not there yet, which
+draws attention to the container instead of the act; 04 numbers the places, and
+numbering two things is the surest way to make somebody ask what the third one
+costs; 05 was beautiful and unreadable — a gap in a starfield is not a control.
+
+---
+
+## §12 — What is actually in the app
+
+Everything below is in `app/src/wall/`, verified against the running route at
+390×844, 896×414, 1024×760 and 1280×900 with a driven browser: every gesture,
+every sheet, and the keyboard path.
+
+### 12.1 The composition
+
+```
+  the bar        @you, the mark once, and the way out
+  the sky        the starfield, and nothing else
+  the leaf       one letter, hanging off the sill
+  the sill       @handle · state · the count
+  the pips       where you are in what you hold
+```
+
+- **One letter at a time, laid sideways.** `Spread` is a track of full-width
+  slides moved by transform. Sideways navigates; **down and off** releases; a tap
+  opens; a tap on the count renews.
+- **No headline.** Nothing on the surface editorialises, and there is no rule
+  that would produce a Bodoni sentence here. The objects carry the state.
+- **The leaf carries the writing and nothing else.** Handle, state and clock are
+  on the sill *under* it, in mono. That separation is the composition.
+- **The card hangs from the bottom of the spread**, so it always sits the same
+  short distance above its own caption and the two read as one object. Cards
+  grow *upward* into the sky, which is the empty half anyway. Centred instead,
+  a short letter sat two hundred pixels from the sill that described it.
+- **The leaf is sized by what is written on it**, between a floor
+  (`min(44vh, 23rem)`) and the height of the screen — so the height of the card
+  is a readout of how much somebody said, and no two slides are the same shape.
+- **The writing is set like the subject it is**: 19px, opening line 23px. At the
+  build's body size, three sentences were a small grey block adrift on a large
+  cream card.
+
+### 12.2 Two places, and the surface never says otherwise
+
+A free place is one more position in the spread, reached by moving to it. When
+both places are held **it does not exist** — no slide, no pip, no sentence.
+`slot.open` is derived from the cap, so the vacant slide cannot be rendered in a
+state that does not have one. Nothing in `Core.jsx`, `wall.css` or the `Full`
+sheet refers, in any state, to a place beyond these two.
+
+> **For whoever does the production merge.** §5 and §7 note that production
+> carries a bought third slot and that the spread absorbs it — a slot is a slide,
+> however it was come by. That is a note about the data model. **The surface must
+> stay silent about it:** no count that implies a ceiling to raise, no locked
+> position, no sentence offering one. A slot that exists is a slide; a slot that
+> does not exist is nothing at all.
+
+### 12.3 The count is the only picture of time
+
+The gauge that used to ring a crest on the paper now lives **inside the count
+chip**, as a fill showing how much of the sixty is left. One object carries the
+figure, the proportion and the action that resets it. Tapping it winds the number
+up and runs the fill out to the edge on the same curve.
+
+When a letter is lapsing the fill is the accent — and it is a *sliver*, because
+what makes it urgent is how little of the chip is still filled. It is the one
+saturated object on the screen.
+
+A pair that has closed has no clock, so on that row the control in the count's
+place opens the pair instead.
+
+### 12.4 The seven things that came off
+
+| gone | why |
+| --- | --- |
+| the orrery (`art.jsx`, 237 lines) | three axis-aligned ellipses under a mark built from a filled band at −19°; it shared no constant with the logo and encoded three numbers the rows already carried, in words, more precisely |
+| the date as headline | `wall.css` said "on this screen the date is the headline" in its own comment; a ledger's headline is not a date |
+| the day-count rail | twelve ticks and "day 56 of sixty" under a card whose stamp already carried that number |
+| the crest on the letter | the sill names the same handle and counts the same days forty pixels lower |
+| `2 of 2` under the pips | a closed pair is a pip but not a slot, so the row could show three marks beside the figure two and be right twice in two different units |
+| the corner mark on `/berkeley/join` | it stood 180px above the same mark drawn 17× larger, assembling itself, as the subject of the page |
+| orange | `--ember` is now `var(--accent)`, and the accent is ice |
+
+### 12.5 The accent, and how to change it
+
+```css
+--accent:      #74C7DE;   /* ice */
+--accent-soft: rgba(116, 199, 222, 0.14);
+```
+
+Every coloured thing in the build reads `--accent`. No hue is named anywhere
+else, and `--ember`/`--ember-soft` are kept as aliases so nothing that already
+read them had to change. **Trying a different accent is editing those two lines.**
+
+### 12.6 Every gesture has a tap path, and every tap path has a key
+
+| | pointer | tap | key |
+| --- | --- | --- | --- |
+| move through what you hold | swipe sideways | a pip | `←` `→` |
+| open a letter | — | the leaf | `Enter` |
+| sixty more days | — | the count | in the sheet |
+| let one go | drag down and off | the sheet's `let it go` | `Backspace` |
+| name someone | — | the free place | `Enter` on it |
+
+The axis locks once at seven pixels and does not switch mid-drag, so the
+destructive gesture cannot be entered on the way to the safe one. The slide you
+are on is the single tab stop, and it takes the ring.
+
+### 12.7 The position is a letter, not a number
+
+`pings()` sorts by what is closest to running out, so renewing moves a letter in
+the order. Held as an index, the position made the letter you just acted on
+vanish sideways and put a different one under your finger — caught by the driven
+browser, not by reading. The position is now the row's **id**; the track glides
+to wherever the letter went, and falls back to the index only when the id is gone
+(you let it go), so whatever moves into that position is what you are looking at.
+
+### 12.8 Four breakpoints, one composition
+
+The screen is one flexible column at every size — the desktop grid that used to
+split it into two columns is deleted, not overridden.
+
+| | |
+| --- | --- |
+| phone | full-bleed slides, the leaf hanging off the sill |
+| ≥900px | the same column, capped at a 30rem measure and centred; the room goes *around* it |
+| sideways (≤560px tall) | keeps `100dvh` — under the shared `min-height: auto` the spread grew to nothing and the letter disappeared — and caps the measure at 40rem so a letter is not set to a ninety-character line |
+| ≤359px | the gutter narrows and everything follows it |
+
+`--pad` is now declared beside the padding that sets it, at every breakpoint, so
+the spread's full-bleed cancel is exact instead of a hard-coded 20px that was
+right on none of them.
+
+### 12.9 Faults found by driving the real route
+
+Four things that reading the diff would not have caught:
+
+1. **`.wl-ground` collided** with the full-viewport backdrop layer of the same
+   name, so the sill was `position: fixed; inset: 0` behind the top bar. Renamed
+   `.wl-sill`.
+2. **`.wl-sheet` collided** with the modal drawer, so every letter card inherited
+   a bottom-sheet's gradient, radius and rise animation. Renamed `.wl-leaf`.
+3. **`.wl-track`'s `height: 100%` silently did nothing** — the spread is a flex
+   item with an auto height, so the percentage had nothing to resolve against and
+   the track collapsed to one card, pinning the letter to the top of an empty
+   screen. The track is now laid over the spread with `inset: 0`.
+4. **`.wl-say` was collateral damage** from removing the old core block, taking
+   the quiet-sentence voice off four sentences across the product. Restored, with
+   its argument, as its own block.

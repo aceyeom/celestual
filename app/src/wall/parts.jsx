@@ -273,10 +273,15 @@ export function Paper({ dateline, title, crest, children, foot, tone = '', class
             : dateline.trail ? <span>{dateline.trail}</span> : null}
         </header>
       )}
-      {title && (
-        <div className="wl-paper-crest">
+      {/* The letterhead stands whether or not the card is titled. On the core
+          service every card is inside something that has already named the
+          handle — the sill under the leaf, or the sheet's own head line — so
+          the crest arrives WITHOUT a title and still belongs: the constellation
+          is a picture of who, and the line above it is the word for who. */}
+      {(title || crest) && (
+        <div className={`wl-paper-crest${title ? '' : ' is-bare'}`}>
           {crest}
-          <h2 className="wl-paper-title">{title}</h2>
+          {title && <h2 className="wl-paper-title">{title}</h2>}
         </div>
       )}
       <div className="wl-paper-body">{children}</div>

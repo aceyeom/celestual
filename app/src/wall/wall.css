@@ -36,13 +36,13 @@
    pushed through a heavy blur. It goes on the single object that matters most
    on the screen it is on and nowhere else.
 
-   EMBER is the second, and it is the one saturated colour in the build. The
-   journey sheet spends its entire colour budget on one capsule and the rest of
-   that screen is greyscale; this file holds to the same rule literally — search
-   it for --ember and there are four uses, one of which is a 4px dot. A
-   near-black interface with a warm accent everywhere is the most recognisable
-   machine-made look on the web, and this brand cannot afford to look generated.
-   Rationing it is the difference. */
+   THE ACCENT is the second, and it is the one saturated colour in the build.
+   The journey sheet spends its entire colour budget on one capsule and the rest
+   of that screen is greyscale; this file holds to the same rule literally —
+   search it for --accent and the uses are countable on one hand, one of which
+   is a 4px dot. An interface with a saturated accent everywhere is the most
+   recognisable machine-made look on the web, and this brand cannot afford to
+   look generated. Rationing it is the difference. */
 
 .wl-root {
   /* ── ground ──
@@ -69,8 +69,19 @@
 
   /* ── the two accents, both rationed ── */
   --glow:        #FFF4E4;
-  --ember:       #F2661E;
-  --ember-soft:  rgba(242, 102, 30, 0.14);
+
+  /* ── the one saturated colour, and the one line that changes it ──
+     Everything in the build that is allowed colour reads --accent. Nothing
+     names a hue anywhere else, so trying a different accent is editing these
+     two lines and nothing else. It is ice: a cold light on a blue-black
+     ground reads as the same night the mark is drawn in, where the warm
+     accent this started with read as a notification. */
+  --accent:      #74C7DE;
+  --accent-soft: rgba(116, 199, 222, 0.14);
+
+  /* kept as the old name so nothing that already reads it has to change */
+  --ember:       var(--accent);
+  --ember-soft:  var(--accent-soft);
 
   /* ── structure ──
      The journal's card is generously rounded and the poster has no boxes at
@@ -172,23 +183,27 @@
 .wl-main { position: relative; z-index: 4; transition: opacity 260ms var(--ease), filter 260ms var(--ease); }
 .wl-main.is-under { opacity: 0.30; filter: blur(2px) saturate(0.6); pointer-events: none; }
 
+/* `--pad` is the page's own gutter, declared beside the padding that sets it.
+   The spread on the core service cancels it to run its slides full-bleed, and
+   a hard-coded 20px there was right on exactly none of the four breakpoints —
+   it left a two-pixel margin on a phone and a six-pixel one sideways. Every
+   rule below that changes the page's horizontal padding changes this with it. */
 .wl-page {
+  --pad: 22px;
   position: relative;
   width: 100%; max-width: 460px; margin: 0 auto;
-  padding: 0 22px 40px;
+  padding: 0 var(--pad) 40px;
   min-height: 100dvh;
   display: flex; flex-direction: column;
 }
 @media (max-width: 359px) {
-  .wl-page { padding-left: 16px; padding-right: 16px; }
+  .wl-page { --pad: 16px; }
   .wl-mast-ball { width: 74px; height: 74px; }
   /* The orrery is drawn a little wider than the phone it is on, which is the
      one place a moon can be cut. At 470 on a 320px screen the overhang is
      forty pixels a side and a ping a quarter of the way through its sixty
      days would lose its moon off the edge. Scaling the drawing keeps the
      overhang proportional to the screen rather than fixed against it. */
-  .wl-core-orrery { width: 396px; height: 396px; }
-  .wl-core-sky { height: 190px; }
 }
 
 .wl-push   { flex: 1 1 auto; min-height: 20px; }
@@ -651,53 +666,6 @@
    track has to stay nearly invisible or the diagram reads as three concentric
    hoops with something on them; what a person should see first is three
    strokes of unequal length, which is the actual state of their account. */
-.wl-orrery { display: block; overflow: visible; }
-
-.wl-track {
-  fill: none; stroke: rgba(244,241,234,0.055); stroke-width: 0.34;
-  transition: stroke 320ms var(--ease);
-}
-.wl-run {
-  fill: none; stroke: rgba(244,241,234,0.34); stroke-width: 0.58;
-  stroke-linecap: round;
-  transition: stroke 320ms var(--ease), stroke-width 320ms var(--ease);
-}
-/* a closed circuit. The one ring drawn at full weight, and the only place on
-   this screen the warm light is spent. */
-.wl-run.is-closed {
-  stroke: rgba(255,244,228,0.56); stroke-width: 0.8;
-  filter: drop-shadow(0 0 2.4px rgba(255,244,228,0.45));
-}
-.wl-track.is-closed { stroke: rgba(255,244,228,0.10); }
-/* the last week. The stroke does not change colour, because a ring going
-   orange would put the accent on sixty days of history rather than on the
-   four that are left. The MOON carries it, and it is one point of light. */
-.wl-run.is-near { stroke: rgba(244,241,234,0.38); }
-/* the ring belonging to the row under the pointer */
-.wl-run.is-on { stroke: rgba(244,241,234,0.72); stroke-width: 0.9; }
-.wl-track.is-on { stroke: rgba(244,241,234,0.20); }
-
-.wl-orrery-rim { fill: none; stroke: rgba(255,244,228,0.26); stroke-width: 0.7; stroke-linecap: round; }
-
-.wl-moon {
-  fill: rgba(244,241,234,0.5);
-  offset-rotate: 0deg;                 /* it orbits; it does not tumble */
-  transition: fill 320ms var(--ease), r 320ms var(--ease);
-}
-.wl-moon.is-closed { fill: var(--glow); filter: drop-shadow(0 0 2.2px rgba(255,244,228,0.7)); }
-/* THE one saturated object on this screen, and it is a two-unit dot. It is on
-   the ping that is running out, which is the only thing here anybody has to
-   act on. The old screen spent the ration on a capsule reading "today" beside
-   a date that already said so. */
-.wl-moon.is-near { fill: var(--ember); filter: drop-shadow(0 0 2.2px rgba(242,102,30,0.6)); }
-.wl-moon.is-on { fill: var(--chalk); }
-
-/* Breathing, not orbiting. A moon that travels its ring in thirty seconds is
-   a decoration that contradicts the number beside it: these sit where the
-   sixty days actually put them and the light on them is what moves. */
-.wl-moon.is-closed, .wl-moon.is-near { animation: wl-moon-breathe 4200ms var(--ease) infinite; }
-@keyframes wl-moon-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
-
 /* the step dots */
 .wl-dots { display: flex; align-items: center; gap: 7px; }
 .wl-dot {
@@ -1186,140 +1154,17 @@
 }
 .wl-join-foot.is-in { opacity: 1; transform: none; }
 
-/* ═══ THE PRODUCT, STANDING ════════════════════════════════════════════════
-   Three bands, in this order, and the order is the argument: WHERE THE
-   ACCOUNT IS (the orrery), WHEN IT IS (the date), and WHAT IS IN IT (the
-   ledger). The first two are one object on a phone — the diagram sits
-   directly on top of the number it is a picture of. */
-
-.wl-core-sky {
-  position: relative; flex: 0 0 auto;
-  /* The reference lets its ring system run off both edges, and that is what
-     stops it reading as clip art dropped into a card.
-
-     The BAND is much shorter than the drawing, deliberately. A leaned ring
-     system 340px wide is only about 165px of actual ink tall, so a 340px
-     square reserved for it left ~175px of nothing above and below, which was
-     most of the dead air on the old screen. The svg overflows the band into
-     space it was not using.
-
-     It is placed rather than aligned. `place-items: center` looks like the
-     right tool and is not: CSS alignment falls back to start when an item
-     overflows its container, so a 340px drawing in a 196px band top-aligned
-     and hung 144px of ring over the date underneath it. */
-  height: 222px;
-  margin: 0 -52px;
-  overflow: visible;
-}
-.wl-core-orrery {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate3d(-50%, -50%, 0);
-  animation: wl-fade 1400ms var(--ease) both;
-  overflow: visible;
-}
-
-/* ── the date ──
-   The reference's composition kept exactly: the date set enormous with one
-   capsule beside it. What changed is the two things that made it read as a
-   metric on a dashboard.
-
-   THE FACE. It was the UI sans at weight 600, which is what every product on
-   the web sets a number in, on the one screen in this build that had no
-   Didone on it at all. It is now the same face, at the same weight, as the
-   sentence on the front of the wall.
-
-   THE CAPSULE. It was the accent, saying "today", beside a date that had just
-   said so. The ration went to the ping that is running out (see `wl-moon`),
-   and the capsule stayed as the shape it always was. */
-.wl-core-date {
-  position: relative; z-index: 2;
-  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-  padding: 2px 0 20px; flex: 0 0 auto;
-  border-bottom: 1px solid var(--hair-soft);
-  margin-bottom: 20px;
-}
-.wl-core-date-t { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
-/* The date is set at the WALL'S HEADLINE SIZE — `Display size="xl"`, the same
-   ramp as "Someone here wrote something they never sent." — because on this
-   screen the date is the headline. Nothing here overrides the size: an earlier
-   pass tried to, at .wl-core-day, and lost to .wl-display.is-xl on
-   specificity in every breakpoint without anybody noticing, which is its own
-   argument for taking the role rather than redeclaring it. */
-.wl-core-day {
-  letter-spacing: -0.012em;
-  font-variant-numeric: lining-nums;
-}
-.wl-core-today { flex: 0 0 auto; align-self: baseline; }
-
-.wl-sect { flex: 0 0 auto; padding: 0 0 18px; }
-.wl-sect + .wl-sect { padding-top: 6px; }
-.wl-sect-head {
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 2px 10px;
-}
-.wl-sect-head .wl-label.is-dim { margin-left: auto; }
-
-/* how long is left, standing where the reference puts a capsule. It is set in
-   the mono because it is a count, and it is NOT a capsule because a capsule is
-   a control and this one would go nowhere the row does not already go. */
-.wl-days {
-  flex: 0 0 auto;
-  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em;
-  color: var(--ash); white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.wl-row.is-lapsing .wl-days { color: var(--chalk); }
-
-/* A lapsing row's meta line used to be set in the accent, which put a whole
-   sentence of orange on a screen rationed to one saturated object. What is
-   running out is a QUANTITY, so the accent goes to the two places that
-   quantity is drawn — the moon on its ring, and the arc on its own mark — and
-   the words are words. */
-.wl-row.is-lapsing .wl-row-meta { color: var(--ash); }
-
-/* ── the open slot ──
-   Two standing pings is the whole of this product's scarcity, so an unused one
-   is drawn as a row rather than written as a number: a person who has to read
-   "1 of 2" to find out they have one left has been told about it instead of
-   shown it. Dashed, because it is an outline of a thing rather than a thing. */
-.wl-open {
-  display: flex; align-items: center; gap: 13px; width: 100%;
-  padding: 12px 12px 12px 10px;
-  border-radius: 14px;
-  border: 1px dashed rgba(244,241,234,0.11);
-  text-align: left;
-  transition: border-color 220ms var(--ease), background 220ms var(--ease);
-}
-.wl-open + .wl-open, .wl-row + .wl-open { margin-top: 2px; }
-.wl-open:hover { border-color: rgba(244,241,234,0.24); background: rgba(244,241,234,0.022); }
-.wl-open-mark {
-  flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
-  border: 1px dashed rgba(244,241,234,0.16);
-}
-.wl-open-t {
-  flex: 1 1 auto;
-  font-family: var(--f-id); font-size: 13px; color: var(--ash-dim);
-  letter-spacing: -0.01em;
-}
-.wl-open-a {
-  flex: 0 0 auto;
-  font-family: var(--f-util); font-size: 12px; color: var(--ash);
-  transition: color 220ms var(--ease);
-}
-.wl-open:hover .wl-open-a { color: var(--chalk); }
-
 /* ── the quiet sentence ────────────────────────────────────────────────────
    The build has four type roles and a sentence of plain explanation is none
    of them: the Didone is for statements, the serif is for letters, and the
-   mono is for IDENTIFIERS. Three sentences on this surface were set in the
-   mono because it was the nearest thing to hand, which uppercased them,
-   letterspaced them, ran them to three ragged lines and uppercased a handle
-   inside one of them. A handle is lower case; a sentence is sentence case;
-   neither is a label.
+   mono is for IDENTIFIERS. Sentences that were set in the mono because it was
+   the nearest thing to hand came out uppercased, letterspaced, run to three
+   ragged lines, with a handle uppercased inside one of them. A handle is lower
+   case; a sentence is sentence case; neither is a label.
 
-   So there is one class for it, here, and every quiet line on this surface
-   uses it. `is-lead` is the same voice one step up, for a sentence somebody
-   has to read before deciding something. */
+   So there is one class for it and every quiet line in the product uses it.
+   `is-lead` is the same voice one step up, for a sentence somebody has to read
+   before deciding something. */
 .wl-say {
   margin: 0;
   font-family: var(--f-util); font-size: 12.5px; line-height: 1.6;
@@ -1328,7 +1173,213 @@
 .wl-say.is-lead { font-size: 14px; line-height: 1.62; color: var(--ash); max-width: 38ch; }
 .wl-say .wl-h { font-family: var(--f-id); font-size: 0.95em; color: var(--ash); }
 
-.wl-core-note { margin-top: 2px; }
+/* ═══ THE CORE SERVICE ═════════════════════════════════════════════════════
+   One letter at a time, laid sideways, with everything about it that is NOT
+   the letter on the sill underneath.
+
+   There is no headline on this surface and no rule that would produce one.
+   The leaf carries the writing; the sill carries the handle, the state and
+   the clock. That separation is the whole composition.
+
+   Two places. Nothing below draws, counts or names a third. */
+
+.wl-core {
+  display: flex; flex-direction: column;
+  min-height: 100dvh; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── the spread ──
+   A track of full-width slides. `touch-action: pan-y` lets the page still
+   scroll under a vertical drag that does not become a release. */
+.wl-spread {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  margin: 14px calc(var(--pad, 20px) * -1) 0;
+  overflow: hidden; touch-action: pan-y;
+}
+/* The track is laid over the spread rather than sized by it. `height: 100%`
+   was the obvious way and it silently does nothing: the spread is a flex item
+   with an AUTO height, so the percentage has no definite figure to resolve
+   against and the track collapses to the height of one card — which is how the
+   letter ended up pinned to the top of a screen of empty ground. */
+.wl-track {
+  position: absolute; inset: 0;
+  display: flex; align-items: stretch;
+  will-change: transform;
+  transition: transform 620ms cubic-bezier(0.20, 1.24, 0.32, 1);
+}
+.wl-track.is-grab { transition: none; }
+/* The card hangs from the bottom of the spread rather than floating in the
+   middle of it, so it always sits the same short distance above the sill and
+   the two read as one object — paper, and the ground it stands on. Cards of
+   different heights grow UPWARD into the sky, which is the half of the screen
+   that is empty anyway. Centring them instead put two hundred pixels between a
+   short letter and its own caption. */
+.wl-slide {
+  flex: 0 0 100%; padding: 6px var(--pad, 20px) 0;
+  display: flex; align-items: flex-end;
+}
+.wl-slide-in {
+  position: relative; width: 100%; max-height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+  transition: transform 620ms cubic-bezier(0.20, 1.24, 0.32, 1), opacity 380ms var(--ease);
+}
+
+/* The leaf is sized by what is written on it, between a floor and the height
+   of the screen. Fixing it at one tall size gave three sentences a page with
+   two hundred pixels of empty cream under them; sizing it to the writing makes
+   the height of the card a readout of how much somebody said, which is content
+   rather than decoration, and it means no two slides in the spread are the
+   same shape. The floor stops a four-word note becoming a label. */
+.wl-leaf {
+  flex: 0 1 auto; min-height: min(44vh, 23rem); max-height: 100%;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+/* Writing starts under the rule, not floating in the middle of the page. What
+   is left over falls to the foot, which is where the blank on a short note
+   belongs. */
+.wl-leaf .wl-paper-body { flex: 1 1 auto; padding-top: 16px; }
+/* ── the writing is the subject, so it is set like it ──
+   Everywhere else in the build the prose is body copy inside a component. Here
+   the letter IS the screen, and at fifteen and a half pixels three sentences
+   made a small grey block adrift on a large cream card — which is the "crowded
+   page of letters" problem in miniature. Set at nineteen with the opening at
+   twenty-three, the same note fills its page, and the page is something you
+   read rather than something you scan. */
+.wl-leaf .wl-prose { font-size: 19px; line-height: 1.46; }
+.wl-open-line { display: block; font-size: 23px; line-height: 1.3; margin-bottom: 9px; }
+.wl-paper-crest.is-bare { margin-bottom: 12px; }
+
+/* The slide you are on is a tab stop, so it needs a ring — and the ring goes
+   round the leaf, not the box it is centred in, or it draws a rectangle in
+   the sky above a card. */
+.wl-slide-in:focus { outline: none; }
+.wl-slide-in:focus-visible > * {
+  outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-card);
+}
+
+/* what the drag is about to do, said once, only while it is happening */
+.wl-drop-cue {
+  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--chalk); pointer-events: none; transition: opacity 160ms linear;
+}
+
+/* ── a place with nothing in it ──
+   A letter's shadow with no letter above it, and a blank inside the absence.
+   Approach it and paper falls into its own shadow. It exists only while a
+   place is free, and it is never a box on a screen that has none. */
+.wl-vacant {
+  position: relative; width: 100%; flex: 0 1 auto; min-height: min(44vh, 23rem);
+  border-radius: var(--r-card); padding: 22px 20px;
+  display: flex; flex-direction: column; justify-content: center;
+  text-align: left; cursor: pointer; overflow: visible;
+}
+.wl-vacant-shadow {
+  position: absolute; left: 5%; right: 5%; top: 14%; bottom: -7%;
+  border-radius: var(--r-card); background: rgba(0, 0, 0, 0.62);
+  filter: blur(16px);
+  transition: opacity 420ms var(--ease), transform 520ms var(--ease);
+}
+.wl-vacant-paper {
+  position: absolute; inset: 0; border-radius: var(--r-card);
+  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, #E2DCCE 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 0 0 1px rgba(0,0,0,0.22),
+              0 26px 60px -22px rgba(0,0,0,0.85);
+  opacity: 0; transform: translateY(-14px) scale(0.98);
+  transition: opacity 420ms var(--ease), transform 560ms cubic-bezier(0.20, 1.24, 0.32, 1);
+}
+.wl-vacant-in { position: relative; display: flex; flex-direction: column; gap: 12px; }
+.wl-vacant-blank {
+  display: flex; align-items: baseline; gap: 7px;
+  padding-bottom: 9px; border-bottom: 1px solid rgba(244,241,234,0.18);
+  transition: border-color 380ms var(--ease);
+}
+.wl-vacant-at { font-family: var(--f-id); font-size: 17px; color: var(--ember); }
+.wl-vacant-ph { font-family: var(--f-id); font-size: 15px; color: var(--ash-dim); }
+.wl-vacant-note {
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ash-dim);
+}
+.wl-vacant:hover .wl-vacant-paper, .wl-vacant:focus-visible .wl-vacant-paper { opacity: 1; transform: none; }
+.wl-vacant:hover .wl-vacant-shadow, .wl-vacant:focus-visible .wl-vacant-shadow { opacity: 0; }
+.wl-vacant:hover .wl-vacant-blank, .wl-vacant:focus-visible .wl-vacant-blank { border-bottom-color: rgba(23,21,15,0.28); }
+.wl-vacant:hover .wl-vacant-at, .wl-vacant:focus-visible .wl-vacant-at { color: var(--paper-ink); }
+.wl-vacant:hover .wl-vacant-ph, .wl-vacant:focus-visible .wl-vacant-ph,
+.wl-vacant:hover .wl-vacant-note, .wl-vacant:focus-visible .wl-vacant-note { color: var(--paper-ink-2); }
+
+/* ── the sill ── */
+.wl-sill {
+  flex: 0 0 auto; display: flex; align-items: baseline; gap: 11px;
+  min-height: 46px; padding: 17px 2px 0;
+}
+.wl-sill-h { font-family: var(--f-id); font-size: 14.5px; color: var(--chalk); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wl-sill-h-quiet { color: var(--ash); }
+.wl-sill-s {
+  font-family: var(--f-id); font-size: 9.5px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ash-dim); flex: 0 0 auto;
+}
+.wl-days {
+  position: relative; overflow: hidden;
+  margin-left: auto; flex: 0 0 auto; cursor: pointer;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ash); background: none;
+  border: 1px solid var(--hair); border-radius: var(--r-pill);
+  padding: 6px 12px; font-variant-numeric: tabular-nums;
+  transition: color 240ms var(--ease), border-color 240ms var(--ease);
+}
+/* ── the only picture of time on the screen ──
+   How much of the sixty is still there, filled into the chip that carries the
+   number and tapped to reset it. One object says the figure, the proportion
+   and the action, which is three jobs a ring diagram beside it used to do
+   worse. Tapping winds the number up and the fill runs out to the edge with
+   it, on the same curve. */
+.wl-days::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: calc(var(--left, 1) * 100%);
+  background: rgba(244, 241, 234, 0.075);
+  transition: width 620ms cubic-bezier(0.20, 1.24, 0.32, 1), background 300ms var(--ease);
+}
+.wl-days-t { position: relative; }
+.wl-days:hover { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
+.wl-days:hover::before { background: rgba(244, 241, 234, 0.14); }
+/* the one saturated thing on the screen, and it is a sliver — because what
+   makes it urgent is how LITTLE of the chip is still filled */
+.wl-days.is-near { color: var(--chalk); border-color: var(--accent-soft); }
+.wl-days.is-near::before { background: var(--accent); }
+/* a pair that has closed has no clock, so its control has no fill */
+.wl-days.is-act { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
+.wl-days.is-act::before { display: none; }
+
+/* ── where you are in what you hold ── */
+.wl-pips { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; padding: 14px 2px 2px; }
+.wl-pip {
+  height: 2px; width: 16px; border-radius: 2px; padding: 0; border: 0;
+  background: rgba(244,241,234,0.2); cursor: pointer;
+  transition: width 420ms cubic-bezier(0.20, 1.24, 0.32, 1), background 300ms var(--ease);
+}
+.wl-pip.is-on { background: var(--chalk); width: 27px; }
+.wl-pip.is-answered { background: var(--glow); }
+/* a free place is a ring, not a dash: it is a position, not a thing you hold */
+.wl-pip.is-free {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: none; box-shadow: inset 0 0 0 1px rgba(244,241,234,0.32);
+}
+.wl-pip.is-free.is-on { box-shadow: inset 0 0 0 1px var(--chalk); }
+/* the composer asks one question at a time, and labels it rather than
+   announcing it */
+.wl-write-lab { margin: 22px 0 14px; }
+
+@media (min-width: 900px) {
+  /* One measure, centred. The spread is a phone object; on a wide screen it
+     keeps its width and the room goes around it rather than into it. */
+  .wl-core { align-items: stretch; }
+  .wl-spread { margin-left: 0; margin-right: 0; }
+  .wl-slide { padding: 0; }
+  .wl-slide-in { max-width: 30rem; margin: 0 auto; }
+  .wl-sill, .wl-pips { max-width: 30rem; width: 100%; margin-left: auto; margin-right: auto; }
+  .wl-leaf, .wl-vacant { min-height: 24rem; }
+}
 
 /* the composer's foot: the terms left, whatever the letter still needs right */
 .wl-place-floor {
@@ -1365,21 +1416,9 @@
    The row upstairs says the number in words. This says it as a distance, at
    the width of the card it belongs to, which is the only way a person feels
    what fifty-two days out of sixty is. */
-.wl-run-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
-  padding: 22px 2px 9px;
-}
-.wl-run-bar {
-  position: relative; height: 2px; border-radius: 2px;
-  background: var(--hair); margin: 0 2px 14px; overflow: hidden;
-}
-.wl-run-bar > span {
-  position: absolute; inset: 0 auto 0 0; display: block;
-  border-radius: 2px; background: rgba(244,241,234,0.45);
-  transition: width 600ms var(--ease), background 320ms var(--ease);
-}
-.wl-run-bar.is-near > span { background: var(--ember); }
-.wl-run-say { padding: 0 2px; }
+/* The rail that stood between the card and this line is gone with the day
+   bars, so the sentence carries its own air off the paper above it. */
+.wl-run-say { padding: 0 2px; margin-top: 22px; }
 
 /* ── both slots taken ── */
 .wl-full { padding-top: 8px; }
@@ -1424,7 +1463,6 @@
 @media (min-width: 720px) {
   .wl-page { padding-bottom: 56px; }
   .wl-mast { padding: 40px 0 36px; }
-  .wl-core-sky { margin-left: -34px; margin-right: -34px; height: 234px; }
 }
 
 /* A row's capsule is an affordance, not a control — the row is the target —
@@ -1509,7 +1547,7 @@
    phone), and the core service puts its ring system beside its ledger. */
 
 @media (min-width: 900px) {
-  .wl-page { max-width: 1080px; padding: 0 40px 40px; }
+  .wl-page { --pad: 40px; max-width: 1080px; padding: 0 var(--pad) 40px; }
 
   /* ── the spread ── */
   /* Four rows, and the third exists only for the takedown: the names span the
@@ -1567,57 +1605,6 @@
   .wl-sheet-in { padding: 26px 30px 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
 
-  /* ── the product, across the width ── */
-  /* Both columns are short — a hero and a three-line ledger — and the old
-     version pinned them to the top of a 900px viewport, which left the bottom
-     half of a desktop screen completely empty under a date and two rows.
-
-     So the middle row takes the slack and BOTH columns centre in it. That is
-     the difference between air the design put there (the wall's spread, where
-     the right column is full to both edges) and a page that ran out. The dock
-     keeps the bottom of its own column, the way `write one` does on the wall,
-     and the gap above it is the field rather than the leftovers. */
-  .wl-core {
-    display: grid;
-    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.06fr);
-    /* Five rows, and the two flexible ones are empty. The bar keeps the top;
-       the hero, the ledger and the dock are one block in rows 3 and 4; and a
-       1fr above and a 1fr below centre that block in whatever is left.
-
-       Both earlier versions were worse in the same way. Pinned to the top,
-       the bottom half of a desktop screen was blank under a date and two
-       rows. Pinned to the bottom, the dock was stranded three hundred pixels
-       below the last thing on the screen with nothing beside it. The wall can
-       bottom-anchor its dock because its right-hand column runs the full
-       height; this one's ledger is four rows long and cannot. */
-    grid-template-rows: auto 1fr auto auto 1fr;
-    column-gap: 64px;
-  }
-  .wl-core .wl-top { grid-column: 1 / -1; }
-  .wl-core-left  { grid-column: 1; grid-row: 3; }
-  .wl-core-right { grid-column: 2; grid-row: 3 / span 2; align-self: center; }
-  .wl-core .wl-push { display: none; }
-  .wl-core .wl-dock {
-    grid-column: 1; grid-row: 4;
-    max-width: 380px; align-self: start;
-    margin: 26px 0 0; padding: 0; position: static;
-  }
-  .wl-core-sky { margin: 0 -40px; height: 300px; }
-  .wl-core-orrery { width: 540px; height: 540px; }
-  /* The capsule sits BESIDE the date here, not at the far end of the column.
-     Pushed apart, a 400px column put three hundred pixels of void between a
-     number and the word that qualifies it, and two objects that far apart are
-     two objects. The rule under them still runs the full measure. */
-  .wl-core-date {
-    justify-content: flex-start; gap: 26px;
-    padding-bottom: 0; margin-bottom: 0;
-    /* the rule under the date separates the masthead from the ledger, and on
-       a spread the ledger is in the other column. A hairline with three
-       hundred pixels of nothing under it is a line about nothing. */
-    border-bottom: 0;
-  }
-  .wl-core-note { margin-top: 6px; }
-
   /* ── the standalone screens keep the column, and gain air ── */
   .wl-join, .wl-posted { max-width: 640px; }
   .wl-join-fig { margin: 40px 0 30px; }
@@ -1642,7 +1629,7 @@
   /* the base column is 460px and centred, which on a sideways phone leaves a
      spread squeezed into the middle third of the screen. The whole point of
      this breakpoint is the width, so the cap comes off. */
-  .wl-page { max-width: none; padding: 0 26px 20px; min-height: auto; }
+  .wl-page { --pad: 26px; max-width: none; padding: 0 var(--pad) 20px; min-height: auto; }
   .wl-dock-veil { display: none; }
   .wl-wallpage {
     /* the one screen that keeps the full height here. Its grid hangs a `1fr`
@@ -1684,31 +1671,28 @@
   .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
   .wl-join-fig .wl-circuit { max-width: 190px; }
-  /* the core service gets the spread early too, for the same reason the wall
-     does: 350px of height cannot stack a hero, a date and a ledger. */
-  .wl-core {
-    display: grid;
-    grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
-    grid-template-rows: auto 1fr auto;
-    column-gap: 40px;
-  }
-  .wl-core .wl-top { grid-column: 1 / -1; padding-top: 10px; }
-  .wl-core-left  { grid-column: 1; grid-row: 2; align-self: start; padding: 0; }
-  .wl-core-right { grid-column: 2; grid-row: 2; align-self: start; padding: 0; }
-  .wl-core .wl-push { display: none; }
-  .wl-core .wl-dock {
-    grid-column: 1; grid-row: 3; align-self: end;
-    margin: 0; padding: 0 0 4px; max-width: 330px; position: static;
-  }
-  .wl-core-sky { height: 148px; margin: 0 -18px; }
-  .wl-core-orrery { width: 320px; height: 320px; }
-  /* a spread too, so the rule under the date goes for the same reason it
-     goes at 900: the ledger it would be separating is in the other column */
-  .wl-core-date { padding: 0 0 12px; margin-bottom: 12px; border-bottom: 0; }
-  /* 350px of height and a four-row ledger: the rows give their padding back */
-  .wl-sect { padding-bottom: 8px; }
-  .wl-sect-head { padding-bottom: 6px; }
-  .wl-core .wl-row, .wl-core .wl-open { padding: 8px 10px; }
+  /* ── the core service, lying down ──
+     Three hundred and fifty pixels of height: the leaf gives back the floor it
+     cannot have, and the writing steps down one size with it. The composition
+     itself does not change — it is the same spread hanging off the same sill,
+     which is the point of building it out of one flexible column.
+
+     It keeps the full height for the same reason the wall does, and for a
+     sharper one: the spread is the flexible row of that column, so under the
+     `min-height: auto` above it grew to nothing, the track it holds is
+     absolute inside it, and the letter disappeared off a sideways phone with
+     the sill sitting under the top bar and two thirds of the screen empty. */
+  .wl-core { min-height: 100dvh; }
+  .wl-core .wl-leaf, .wl-core .wl-vacant { min-height: 0; }
+  /* Sideways, the page's own width cap comes off for the wall's sake. A letter
+     is not a wall: uncapped it set a ninety-character line, so the spread keeps
+     a measure and the sill and the pips keep the same one, or the caption stops
+     lining up with the thing it captions. */
+  .wl-core .wl-slide-in, .wl-sill, .wl-pips { max-width: 40rem; margin-left: auto; margin-right: auto; }
+  .wl-core .wl-leaf .wl-prose { font-size: 16px; line-height: 1.44; }
+  .wl-core .wl-open-line { font-size: 19px; margin-bottom: 6px; }
+  .wl-sill { min-height: 40px; padding-top: 12px; }
+  .wl-pips { padding-top: 11px; }
   .wl-core .wl-say { font-size: 12px; }
   .wl-posted-stage { min-height: 150px; }
 }

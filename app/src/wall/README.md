@@ -158,7 +158,7 @@ question they are now actually carrying.
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
 | `/berkeley/posted` | three beats — the screening, the paper going, the landing |
 | `/berkeley/join` | **the one door to the product** — three lines and one ornament |
-| `/berkeley/orbit` | **the core service** — the orrery, the date, and the ledger |
+| `/berkeley/orbit` | **the core service** — one letter at a time, laid sideways, on the sill that describes it |
 | `/berkeley/orbit/place` | place a ping, or the door that says both slots are taken |
 | `/berkeley/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
 
@@ -359,22 +359,20 @@ Every one of those is real inside the tab. Placing, renewing and letting go
 write through the same one key everything else does (`store.js`), so they
 survive a reload and are cleared by the same reset.
 
-### The orrery is a readout, not a picture of space
+### The orrery is gone, and where its one honest number went
 
-The first version of this screen drew three rings at arbitrary radii with three
-moons drifting on three arbitrary periods. It was a picture. It said nothing,
-it could not be wrong, and a diagram that cannot be wrong is one nobody reads.
+This screen used to open with a ring diagram: three ellipses, a moon on each at
+`spent/60`, over a date set at the wall's headline size. Two rounds of work went
+into making every quantity in it a quantity on the ledger beside it, and it was
+still the wrong object — three axis-aligned hairline ellipses under a mark built
+from a filled band at −19° whose width varies three to one. It shared no constant
+with the logo it sat beneath, and it drew, in a picture, three numbers the rows
+underneath already carried in words, more precisely.
 
-Every quantity in it is now a quantity on the ledger beside it:
-
-| | |
-| --- | --- |
-| the centre | you |
-| a ring | one ping you are carrying |
-| the drawn arc | how much of the sixty days it has spent |
-| the dim arc | what is left |
-| the moon | where it is on that circuit **right now**. Not a phase and not a period: `run` is spent/60 and the moon is at exactly that fraction |
-| a closed ring | a mutual, carrying **two** moons, because that is what closed it |
+The one thing in it worth keeping was the arc: a picture of how much of the sixty
+days is left. That now lives **inside the count chip on the sill** as a fill, so
+one object carries the figure, the proportion, and the tap that resets it. See
+`docs/ORBIT-REDESIGN.md` §12 for the whole composition that replaced it.
 
 A ping four days from lapsing has its ring drawn almost the whole way round
 with its moon nearly home; one placed this morning is a short stroke at twelve
@@ -536,10 +534,9 @@ The phone is the one this was designed for and it does not change.
   vertically in their column — which is the shape the poster reference actually
   is, and which is why the empty field around the three objects reads as air
   rather than as a list that ran out. Sheets become centred dialogs. The core
-  service puts its orrery beside its ledger, and centres both in the middle row
-  with the dock under the left one: it cannot bottom-anchor the way the wall
-  does, because the wall's right-hand column runs the full height and a
-  four-row ledger does not.
+  service does **not** become a spread: it keeps its one flexible column and
+  centres a 30rem measure in it, because a letter set to the width of a desktop
+  is not a letter. The room goes around it rather than into it.
 - **landscape phone** (`max-height: 560px`, `min-width: 640px`) — the same
   spread, early, and every vertical measure that was buying atmosphere gives
   its space back. On 390px of height, atmosphere is just scrolling.
@@ -607,11 +604,10 @@ who did not scan a piece of paper. No shared component, no global token, no
   dateline and countdown on that surface comes off it. The wall keeps
   `Date.now()`, which is right for a stream of letters and wrong for a
   sixty-day countdown that raises dated cards over the top of its own date.
-- **The orrery is still under `prefers-reduced-motion`, and it was already
-  still.** Every position in it is a quantity rather than an animation, so the
-  preference removes one four-second opacity breathe and nothing else changes.
-  That is the test a diagram should pass: if switching motion off loses
-  information, the information was in the motion.
+- **The core service under `prefers-reduced-motion` loses travel, not state.**
+  The spread stops sliding between letters and jumps; the count still rolls to
+  sixty, because that number IS the feedback that the tap worked. Nothing on the
+  surface is only knowable by watching something move.
 - **The gate checks a domain, not a person.** Any `berkeley.edu` address opens
   the wall. The Instagram handoff is the only place a *person* is checked, and
   it is asked once, about one handle, on the one action nobody can undo.
