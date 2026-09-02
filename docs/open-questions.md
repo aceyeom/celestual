@@ -12,7 +12,17 @@ Per spec section 0, I have not chosen and continued on any of these.
 
 ## Blocking now
 
-Q0, Q2 and Q3 are answered. Q21 is new and replaces Q0 as the design blocker.
+Nothing. Q0, Q1, Q2, Q3 and Q21 are answered, and Q22 below is answered with
+them. Q4, Q5 and Q6 block Phase 4a and 4b and are not needed before then.
+
+### Q22. ANSWERED. The second signature surface is the mutual reveal.
+
+Spec 7.1 names "the Main hero and the ping or reveal moment", which reads two
+ways. Your answer: the reveal. The moment a ping turns out to be mutual and both
+names land, which is the emotional peak of the product.
+
+Placing a ping is not a signature surface. It is built in Phase 6b with
+everything else.
 
 ### Q0. RESOLVED. `design/source/eclipse.html` received and committed.
 
@@ -68,7 +78,22 @@ yet subset.
 promoted is the Wall's, not the production "bindery". The artifact's own comment
 calls the palette "The wall's own tokens and faces".
 
-### Q1. There is no TypeScript in this project. What does "`tsc` passes" mean?
+### Q1. ANSWERED. Option A. Build plus eslint plus the voice lint.
+
+Your answer: A. The `tsc` criterion in spec section 15 is substituted by
+`npm run build`, `npm run lint` and `npm run lint:voice` for Phases 2 and 3.
+
+One correction to the original text below: the `lint` script existed in
+`app/package.json` but had no config and no eslint dependency, so it had never
+run. Phase 2 added `app/eslint.config.js` and the dependency, and recorded the
+17 pre-existing errors as the baseline in `docs/launchsteps.md` section 12. The
+gate for a phase is that the number does not go up.
+
+Option B, TypeScript in checkJS mode, is still the recommendation for Phase 4b.
+
+---
+
+### Q1 (original). There is no TypeScript in this project.
 
 Spec section 0 requires typecheck to pass before every commit. Section 15 makes
 `tsc` the first criterion for done.
@@ -319,7 +344,38 @@ write the launch steps.
 There is a Resend connector available in this session. I have not called it. Tell
 me if you want me to read the current domain and template state from it.
 
-### Q14. Does the WebGL sky survive?
+### Q14. ANSWERED BY PHASE 3. A new field was written. The old sky is still yours to decide.
+
+Recommendation reversed after building it: **B, rewritten**, and it is done.
+
+`app/src/signature/field.js` is 250 lines. It draws one buffer in one call, with
+depth as a per point attribute driving drift, parallax, size and brightness at
+once, plus a canvas 2D path for a browser without WebGL2 and a static frame
+under `prefers-reduced-motion`. It satisfies spec 7.2 in full.
+
+Adapting `app/src/sky/` would have meant carrying a galaxy renderer, its
+blackbody locus, its volumetric gas, its ACES tonemap and its dive camera into a
+surface that needs a field of drifting points on a blue black ground. The 60fps
+requirement is easier to hold with the smaller thing, not the tuned larger one.
+
+So `app/src/sky/` is now unreferenced by anything in the rebuild. It is still
+referenced by `galaxy.js` and `communityGalaxy.js`, which are the retired galaxy
+edition, and it stays in deletions group H with them until you approve that
+group. Nothing was deleted.
+
+One thing the loop caught that is worth recording, because it would have been
+invisible without it: the first field called `WEBGL_lose_context` in its cleanup.
+A canvas has one context per type for its whole life, so losing it does not free
+the canvas for a second one, it hands the same dead context to whoever asks
+next. Under React's development double mount that is the very next line of the
+module, and the surface came up with a context that accepted every call and drew
+nothing. The screenshot was a white page.
+
+The original question follows.
+
+---
+
+### Q14 (original). Does the WebGL sky survive?
 
 Spec 7.2 requires "Point field rendered in WebGL for the void and stars. Slow
 autonomous drift plus pointer parallax."
@@ -379,7 +435,19 @@ enforced automatically, and it needs one place to look.
 
 ---
 
-### Q21. NEW, and blocking Phase 2. The accent colour conflicts with the repo.
+### Q21. ANSWERED. Blue `#74C7DE`. The build wins.
+
+Your answer: A. The artifact is authoritative for the mark's geometry and for
+nothing else. `--accent` stays `#74C7DE`, and the two smaller conflicts follow
+the build with it: `--ash` is `#9C978E` and `--hair` is
+`rgba(244, 241, 234, 0.09)`.
+
+Recorded in `design/DESIGN.md` section 2.4. Blocker B4 is closed and Phases 2
+and 3 are unblocked. The original question is kept below.
+
+---
+
+### Q21 (original). The accent colour conflicts with the repo.
 
 The artifact and the build disagree on the one colour the product is allowed to
 use, and the disagreement looks deliberate on both sides.

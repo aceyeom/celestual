@@ -2,10 +2,17 @@
   "name": "celestual",
   "private": true,
   "version": "1.0.0",
-  "description": "CELESTUAL \u2014 the double-blind mutual-reveal site. Place a ping; you both find out only if it's mutual. A Vite + React SPA on Supabase.",
+  "description": "CELESTUAL — the double-blind mutual-reveal site. Place a ping; you both find out only if it's mutual. A Vite + React SPA on Supabase.",
   "scripts": {
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app install && npm --prefix app run build",
-    "lint:voice": "node scripts/voice-lint.mjs"
+    "lint": "npm --prefix app run lint",
+    "lint:voice": "node scripts/voice-lint.mjs",
+    "shots": "node scripts/shots.mjs",
+    "mark": "node scripts/export-mark.mjs",
+    "faces": "node scripts/fetch-faces.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }

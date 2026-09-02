@@ -75,12 +75,15 @@ The product direction is fixed by one document —
 It's a Vite + React single-page app talking directly to **Supabase** (Postgres
 RPCs + edge functions); there is no separate app server.
 
-The whole product is one design system — **the bindery** (docs/DESIGN.md): a
-hand-bound almanac, one hue from chocolate to ivory, materials drawn per pixel
-rather than downloaded, two corners in the entire product, and nothing that
-glows. It was built at `/beta` to be judged beside the edition it replaced;
-that judgement was made on 2026-08-07, and one system now governs every screen,
-every email, every render and the back office.
+The design system is **[design/DESIGN.md](./design/DESIGN.md)**: a blue-black
+room, one cream card as the only bright surface, one pale blue as the whole
+colour budget, four faces with four jobs, and every ornament drawn from a path
+rather than downloaded. `design/components.html` renders all of it on one page.
+
+That system is the wall's, and the rebuild is promoting it to production (see
+`docs/rebuild-spec.md` section 2). The old one, the bindery, still ships at the
+routes below until the rebuild reaches them, and it is described in git history
+rather than in this tree.
 
 `/berkeley` is **the wall** — the campaign surface for the handout event, live
 on the campus it is named after. It is a second brand on purpose (a blue-black
@@ -204,7 +207,11 @@ always-open access is now the default and no one waits behind a campus.
 
 ```bash
 npm run build        # from repo root → dist/
-npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
+npm run lint:voice   # the copy tripwire (design/VOICE.md section 6)
+npm run lint         # eslint over app/
+npm run shots        # the visual loop: design/components.html at both sizes
+npm run mark         # regenerate design/logo/ from app/src/wall/mark.js
+npm run faces        # refetch app/public/fonts/
 ```
 
 `vercel.json` serves `dist/` at the root.
@@ -214,8 +221,11 @@ npm run lint:voice   # the copy tripwire (docs/VOICE.md §6)
 | Doc | What it covers |
 | --- | --- |
 | **[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)** | **The masterguide.** The mechanism (Loops A/B/C), the screens, monetization posture, honest odds, failure modes. Everything else implements this. |
-| [docs/DESIGN.md](./docs/DESIGN.md) | **The living design system — the bindery.** The leather case, the one hue, the materials drawn per pixel, the three type registers, the engraved chart's ramp, and the anti-generic checklist every screen ships through |
-| [docs/VOICE.md](./docs/VOICE.md) | The living voice guide — vocabulary, registers, the four frames, the banned list |
+| **[design/DESIGN.md](./design/DESIGN.md)** | **The design system.** The tokens, the four faces, the mark, every component and state, the motion, and the gate every screen ships through |
+| [design/components.html](./design/components.html) | The system rendered. Every component, colour, type size and state on one page |
+| [design/VOICE.md](./design/VOICE.md) | The voice guide: vocabulary, registers, the four frames, the banned list |
+| [design/source/eclipse.html](./design/source/eclipse.html) | The mark's specimen sheet, and the branding artifact the system derives from |
+| [docs/rebuild-spec.md](./docs/rebuild-spec.md) | The production rebuild: the phases, the visual bar, and the definition of done |
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
