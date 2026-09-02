@@ -1,0 +1,298 @@
+/* ── MAIN ────────────────────────────────────────────────────────────────────
+   Phase 6b. Main's own layout, on the wall's system.
+
+   Nothing here declares a colour, a face, a radius or an easing curve. Every
+   one of those is a token in wall.css, which docs/plan.md finding 1.9 settled
+   as the design system being promoted, and a second set of values living in a
+   second stylesheet is how two surfaces of one product start disagreeing.
+
+   What IS here is layout: how Main's three screens stack, which is a different
+   question from the wall's (a surface with sheets over it) and from the hero's
+   (one composition with a great deal of room). ══════════════════════════════ */
+
+.mn-root { min-height: 100dvh; }
+
+/* ── the page ──
+   The same column and the same gutters as the hero, so walking from the front
+   door into the flow does not move the type. A flow's screens are top aligned
+   and bottom docked: one question in the middle, one control at the foot, and
+   the space between them is what tells somebody there is nothing else to do
+   here. */
+.mn-page {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 0 22px 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 359px) { .mn-page { padding: 0 16px; } }
+
+/* A row, and it has to be said here: `.sg-top` on the hero is a row because
+   `.wl-main`'s header rule makes it one, and Main's pages are not `.wl-main`.
+   Without this the right hand slot wraps under the mark and the bar reads as
+   two stacked labels. */
+.mn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 0 6px;
+}
+.mn-top-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--chalk);
+}
+.mn-top-mark .wl-label { color: var(--ash); }
+.mn-top-mark:hover .wl-label { color: var(--chalk); }
+
+/* The middle. It grows, and it holds the one question each screen asks.
+   Deliberately NOT centred: a flow screen centred in the viewport puts its
+   field halfway down the glass, which is where a phone keyboard covers it, and
+   leaves a void above the heading that reads as a page that has not loaded. A
+   proportional top inset puts the question in the upper third on every size and
+   keeps the field above the fold with a keyboard up. */
+.mn-mid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 18px;
+  padding: clamp(18px, 11vh, 96px) 0 12px;
+}
+
+.mn-h { margin: 0; }
+
+/* The UI face, not the letter face. `Prose` is EB Garamond because on the wall
+   it sets LETTERS, and a screen that explains the mechanic in the face reserved
+   for what people wrote to each other has borrowed the wrong voice. The hero
+   says this same sentence in `.sg-mech`, and these two have to match or the
+   product speaks in two registers between the front door and the next screen. */
+.mn-copy {
+  max-width: 34ch;
+  font-family: var(--f-util);
+  font-size: 14.5px;
+  line-height: 1.62;
+  letter-spacing: -0.004em;
+  color: var(--ash);
+}
+
+.mn-step { display: flex; flex-direction: column; gap: 14px; }
+
+/* The card sits under the field it is about, at the field's own width, so the
+   two read as one object rather than as a result panel beside a form. */
+.mn-card { margin-top: 2px; }
+
+.mn-note { display: flex; align-items: center; gap: 6px; }
+
+.mn-floor { min-height: 20px; }
+.mn-said {
+  min-height: 18px;
+  font-family: var(--f-util);
+  font-size: 12.5px;
+  color: var(--ash);
+}
+
+/* ── the foot ──
+   Docked, always, on every screen in the flow. A primary control that moves
+   between screens is a control somebody has to find twice. */
+.mn-foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 max(22px, env(safe-area-inset-bottom));
+}
+.mn-quiet-link {
+  font-family: var(--f-util);
+  font-size: 12.5px;
+  color: var(--ash);
+  text-decoration: none;
+}
+.mn-quiet-link:hover { color: var(--chalk); }
+
+/* ── the stack ──
+   The handles somebody already wrote to on the wall, offered as a row of
+   chips rather than as a list. It is a shortcut, not a menu: the field above it
+   is still the way in, and these are three taps saved for somebody who has one
+   name in mind and already typed it once today. */
+.mn-stack { display: flex; flex-direction: column; gap: 8px; }
+.mn-stack-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.mn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 6px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-pill);
+  font-family: var(--f-id);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--ash);
+  transition: color 200ms var(--ease-out), border-color 200ms var(--ease-out);
+}
+.mn-chip:hover { color: var(--chalk); border-color: rgba(244, 241, 234, 0.2); }
+
+/* ── the proof ──
+   The code, large enough to read off a screen while typing it into another
+   app, in the identifier face because that is what it is. */
+.mn-prove { align-items: stretch; }
+.mn-prove-what {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+}
+.mn-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0 14px;
+}
+.mn-code .wl-display {
+  font-family: var(--f-id);
+  letter-spacing: 0.08em;
+}
+.mn-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+/* ── it is out ── */
+.mn-placed-mark { display: flex; justify-content: center; padding: 10px 0 4px; }
+
+/* ── the sky ── */
+.mn-list { display: flex; flex-direction: column; gap: 2px; }
+
+/* The one row on this screen that is news. Set apart from the standing rows by
+   weight and by ground rather than by colour, because the accent is the whole
+   chromatic budget of the product and a list item is not where it goes. */
+.mn-mutual {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 15px 14px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-card);
+  background: rgba(244, 241, 234, 0.035);
+  text-align: left;
+  transition: border-color 240ms var(--ease-out), background 240ms var(--ease-out);
+}
+.mn-mutual:hover {
+  border-color: rgba(244, 241, 234, 0.2);
+  background: rgba(244, 241, 234, 0.055);
+}
+.mn-mutual-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.mn-mutual-l .wl-label { display: flex; align-items: center; gap: 5px; }
+.mn-mutual-l .wl-label .wl-spark { color: var(--accent); }
+.mn-mutual-h {
+  font-family: var(--f-id);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: var(--chalk);
+}
+.mn-mutual-m {
+  font-family: var(--f-util);
+  font-size: 12px;
+  color: var(--ash);
+}
+
+/* ── the ticker ────────────────────────────────────────────────────────────
+   docs/rebuild-spec.md section 8. Display name, handle and verification badge
+   only: no avatars, no counts. Two rows drifting in opposite directions at
+   different speeds, which is what stops a marquee reading as a marquee.
+
+   The mask at both ends is what makes it a window onto something continuing
+   rather than a strip that starts and stops. */
+/* The wrap holds the rails off the composition above them. Without it the first
+   rail runs under the mark's lower spike and the names read as printed on the
+   object rather than as a band beneath it. */
+.mn-ticker-wrap {
+  margin-top: 30px;
+  padding-top: 4px;
+}
+/* No rule of its own. The gate below already carries one, and two hairlines
+   forty pixels apart stop reading as separation and start reading as a box
+   somebody drew around the names. The space does the work. */
+
+/* ── one rail on a phone ──
+   The hero is one composition in one viewport: it does not scroll, so anything
+   added to it has to come out of something else. Two rails and their chrome are
+   66px, which is 36px more than a 390x844 screen had left, and the foot went
+   under the fold.
+
+   One rail says the same thing. It is a window onto a wall that has names on
+   it, and the second rail was a second helping of that rather than a second
+   fact. Two return at 900px of height, where there is room for them. */
+@media (max-height: 899px) {
+  .mn-ticker-wrap { margin-top: 18px; padding-top: 2px; }
+  .mn-ticker-wrap .mn-ticker + .mn-ticker { display: none; }
+}
+
+.mn-ticker {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 2px 0;
+  /* A longer fade than a mask usually wants, because the thing being masked is
+     type: at 12% a name is cut mid-letter at full contrast and reads as a
+     rendering fault. At 22% it has gone before it is unreadable. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+.mn-ticker-rail {
+  display: flex;
+  width: max-content;
+  gap: 26px;
+  padding: 5px 0;
+  will-change: transform;
+  animation: mn-tick var(--dur, 64s) linear infinite;
+}
+.mn-ticker-rail.is-back { animation-direction: reverse; }
+.mn-ticker:hover .mn-ticker-rail { animation-play-state: paused; }
+@keyframes mn-tick {
+  from { transform: translate3d(0, 0, 0); }
+  /* Half, because the list is rendered twice: the seam lands where the copy
+     begins and there is no jump to hide. */
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mn-ticker-rail { animation: none; }
+  /* Still a window onto more than fits, just not a moving one. */
+  .mn-ticker { overflow-x: auto; scrollbar-width: none; }
+  .mn-ticker::-webkit-scrollbar { display: none; }
+}
+
+.mn-tick-one {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.mn-tick-name {
+  font-family: var(--f-util);
+  font-size: 12px;
+  color: var(--ash-dim);
+}
+.mn-tick-at {
+  font-family: var(--f-id);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ash-dim);
+  opacity: 0.7;
+}
+.mn-tick-one .wl-spark { opacity: 0.8; }
+.mn-tick-one .wl-spark { color: var(--accent); align-self: center; }

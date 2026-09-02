@@ -50,34 +50,52 @@
 // decided by whoever is bored. It is the same door, opened once, and it is the
 // cheapest thing that is not nothing.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose,
-  ReasonField, Locked, Waiting, Icon,
+  ReasonField, Locked, Icon,
 } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { letter, report, atHandle, ago } from '../data.js'
-import { isMember } from '../auth.js'
-import { triage } from '../moderate.js'
+import { letter, loadLetter, report, atHandle, ago } from '../data.js'
 
 export default function Report({ id, go, back }) {
-  const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 the reading
+  const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 it is filed
   const [why, setWhy] = useState('')
-  const [said, setSaid] = useState(null)  // what the reading came back with
-  // Read once, on mount, and held: the letter is about to stop existing as far
-  // as the rest of this build is concerned, and the screen that took it down
-  // still has to be able to name it afterwards.
-  const [one] = useState(() => letter(id))
+  const [fault, setFault] = useState('')
+  // Held once it arrives: the letter is about to come off the wall, and the
+  // screen that took it down still has to be able to name it afterwards.
+  const held = useRef(null)
+  const live = letter(id)
+  if (live && !held.current) held.current = live
+  const one = held.current
 
-  useEffect(() => {
-    if (step !== 2) return
-    let alive = true
-    triage(why).then((r) => { if (alive) setSaid(r) })
-    return () => { alive = false }
-  }, [step, why])
+  useEffect(() => { loadLetter(id) }, [id])
+
+  // ── the tap ──
+  // It comes down here, in the same request that files the report, and step 1
+  // is only reached once the server has said so. Advancing the screen first and
+  // sending afterwards would be a screen that says "it's down" about a letter
+  // that might still be up.
+  const take = async (reason) => {
+    const out = await report(id, reason)
+    if (out?.ok) { setStep(reason ? 2 : 1); return }
+    setFault(out?.error === 'gate' ? 'gate' : 'network')
+  }
 
   const head = <SheetHead onClose={back} label="back to the wall"
     lead={<Sparkle size={13} className="wl-head-spark" />} />
+
+  if (live === undefined && !one) {
+    return (
+      <Sheet onClose={back} labelledBy="wl-rep-h">
+        <div className="wl-sheet-in wl-report">
+          {head}
+          <Display size="s" as="h2" id="wl-rep-h">Reading it.</Display>
+          <div className="wl-push" />
+        </div>
+      </Sheet>
+    )
+  }
 
   if (!one) {
     return (
@@ -98,7 +116,10 @@ export default function Report({ id, go, back }) {
   // said INSTEAD of the control rather than under a disabled one. A greyed-out
   // button with an explanation beside it makes somebody read a sentence to find
   // out they cannot do the thing; this makes the sentence the thing.
-  if (!isMember()) {
+  //
+  // The gate is the server's answer, not this tab's: a letter read from outside
+  // the campus arrives with no body, and wall_report refuses the same reader.
+  if (one.body === null || fault === 'gate') {
     return (
       <Sheet onClose={back} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
@@ -146,9 +167,12 @@ export default function Report({ id, go, back }) {
 
           <SheetFoot>
             <Pill tone="light" wide icon={<Icon name="flag" size={17} />}
-              onClick={() => { report(one.id, ''); setStep(1) }}>
+              onClick={() => take('')}>
               take it down
             </Pill>
+            {fault === 'network' ? (
+              <Label tone="dim">it did not go through</Label>
+            ) : null}
             <button type="button" className="wl-quiet" onClick={back}>leave it up</button>
           </SheetFoot>
         </div>
@@ -177,7 +201,10 @@ export default function Report({ id, go, back }) {
           <div className="wl-push" />
 
           <SheetFoot>
-            <Pill tone="light" wide onClick={() => { report(one.id, why); setStep(2) }}>
+            {/* The letter is already down; this only adds the words. A second
+                report on the same letter is a second row for the desk, which is
+                what a person adding a reason after the fact actually wants. */}
+            <Pill tone="light" wide onClick={() => (why.trim() ? take(why) : setStep(2))}>
               {why.trim() ? 'send it' : 'send it without a reason'}
             </Pill>
           </SheetFoot>
@@ -186,42 +213,32 @@ export default function Report({ id, go, back }) {
     )
   }
 
-  // ── 2 · the reading ──
-  // The one place in the build where a person is shown the screen thinking. It
-  // is worth drawing because it is the product's actual position — a machine
-  // routes, a person decides — and because this is the only screen where
-  // somebody is waiting on that distinction rather than reading about it.
+  // ── 2 · it is filed ──
+  // No machine is shown thinking here. The letter came off on the tap and the
+  // report is a row waiting for a person, which is the product's actual
+  // position: the screen routes, a person decides. Drawing a classifier
+  // deliberating over a report would be drawing something that does not happen.
+  //
+  // Every reporter is told the same two sentences, whichever way the reading
+  // eventually goes. A reporter who learns which words get a faster result is a
+  // reporter who has been taught to write them.
   return (
     <Sheet onClose={back} labelledBy="wl-rep-h">
       <div className="wl-sheet-in wl-report">
         {head}
-        <Display size="s" as="h2" id="wl-rep-h">
-          {said ? <>Someone will<br />look at it.</> : <>Reading it.</>}
-        </Display>
+        <Display size="s" as="h2" id="wl-rep-h">Someone will<br />look at it.</Display>
 
-        <div className="wl-report-read" aria-live="polite">
-          {said ? (
-            <>
-              <Prose className="wl-gate-copy">{said.say}</Prose>
-              {/* Every reporter is told the same sentence about the outcome,
-                  whichever way the reading went. A reporter who learns which
-                  words get a faster result is a reporter who has been taught to
-                  write them. */}
-              <Prose className="wl-gate-copy">It stays off until then.</Prose>
-            </>
-          ) : (
-            <Waiting label="reading it" />
-          )}
+        <div className="wl-report-read">
+          <Prose className="wl-gate-copy">
+            It is off the wall, and a person reads it from here.
+          </Prose>
+          <Prose className="wl-gate-copy">It stays off until then.</Prose>
         </div>
-
-        <p className="wl-gate-beta">
-          Nothing is sent anywhere yet. The letter is held on this device.
-        </p>
 
         <div className="wl-push" />
 
         <SheetFoot>
-          <Pill tone="light" wide disabled={!said} onClick={back}>back to the wall</Pill>
+          <Pill tone="light" wide onClick={back}>back to the wall</Pill>
         </SheetFoot>
       </div>
     </Sheet>

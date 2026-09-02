@@ -31,7 +31,23 @@ Everything else fills in as phases land.
 
 ---
 
-## 0c. What Phase 6b inherits from Phase 3
+## 0c. What Phase 6b inherited from Phase 3. DONE.
+
+All four are handled. Kept here because each one records a decision rather than
+a task:
+
+- **The two signature surfaces are promoted.** The hero is `/` and the reveal is
+  `/reveal/<handle>`, reached from the sky and from nowhere else.
+  `/signature` still resolves, unchanged, because it is where Phase 3 was
+  approved and it costs one dynamic import nobody loads by accident.
+- **The hero's primary capsule has a destination.** Main's own flow, at
+  `/place`, or `/sky` for somebody who already has pings out.
+- **`app/index.html` no longer fetches production's three faces on every
+  route.** `App.jsx` injects them, which is the shell that reads them.
+- **The wall's four faces come off `/fonts` rather than off Google.** It was the
+  wall's only third party request.
+
+The original note follows.
 
 Nothing to do now. Recorded here so it is not rediscovered later.
 
@@ -228,9 +244,14 @@ variable, no bucket, no DNS.
 
 - [ ] **Add `select wall_expire();` to the scheduled jobs.** Section 8.
 
-### 2e. Phase 6b and later
+### 2e. Phase 6b. No migration.
 
-`PENDING.` New migrations from Phase 6b onward are listed here in apply order as
+Phase 6b is UI. It adds no schema, so there is nothing here to apply. What it
+needs from you is in section 10, and it is one environment variable.
+
+### 2f. Phase 7 and later
+
+`PENDING.` New migrations from Phase 7 onward are listed here in apply order as
 each phase lands.
 
 ---
@@ -480,6 +501,21 @@ local fallback into real behaviour.
 | `VITE_HANDLE_SEARCH` | 0 | leave at 0. `celestual-search` is a different feature, never deployed, and no answered question authorised deleting it |
 | `VITE_HANDLE_RESOLVE` | 0 | must become 1 after the Phase 5 pilot passes |
 | `VITE_RESOLVE_ENDPOINT` | unset | **leave unset.** The default `/api/resolve` is the rewrite, and the rewrite is what makes the resolver's device cookie first party. Set it only on a preview that is not behind the rewrite |
+
+Phase 6b changes nothing in that table except which of them now matter. Three
+were flagged as being `0` in production and all three are load bearing now:
+
+- `VITE_IG_VERIFY_ENABLED` gates the DM code flow, which is the only thing that
+  proves a handle. With it at `0` the takedown, the reveal and placing a ping
+  are all unreachable.
+- `VITE_EDU_VERIFY_ENABLED` gates the campus code. With it at `0` nobody gets
+  through the wall's gate and every letter reads redacted.
+- `VITE_HANDLE_RESOLVE` gates the result card and the ticker. With it at `0`
+  both draw nothing, which is a designed state rather than a broken one: the
+  card is a confirmation and the product works without it.
+
+Turn the first two on with the rebuild. Turn the third on after the billing
+pilot in section 3b.
 | `VITE_EDU_VERIFY_ENABLED` | 0 | must become 1. Spec section 3 requires a verified `.edu` for the Wall. |
 | `VITE_STRIPE_ENABLED` | 0 | blocked on Q3 |
 | `VITE_STRIPE_PLAN` | 0 | blocked on Q3 |
@@ -487,6 +523,36 @@ local fallback into real behaviour.
 Three of these being `0` in production is worth flagging now: the Instagram DM
 verification, the `.edu` gate, and the handle resolver are all currently off.
 The rebuild depends on all three being on.
+
+---
+
+## 10b. The visual loop, and how to re-run it
+
+Not a launch step. Here because it is how the screenshots in `design/shots` were
+made and how the next person makes them again.
+
+```
+npm run dev                      in one terminal
+node scripts/preview.mjs         every route, both viewports
+node scripts/preview.mjs hero    one of them
+```
+
+`scripts/shots.mjs` shoots a route as the dev server serves it, which without a
+Supabase project behind it means every surface draws its empty state.
+`scripts/preview.mjs` intercepts the network instead and answers from fixtures
+carrying the shapes migrations 0030, 0031 and 0032 actually return, so what gets
+looked at is a populated wall rather than eleven empty ones.
+
+It expects `app/.env.local` (gitignored) pointing the integrations at a host
+that does not exist, so nothing escapes the interception:
+
+```
+VITE_SUPABASE_URL=http://127.0.0.1:9/fake
+VITE_SUPABASE_ANON_KEY=preview-anon-key
+VITE_HANDLE_RESOLVE=1
+VITE_EDU_VERIFY_ENABLED=1
+VITE_IG_VERIFY_ENABLED=1
+```
 
 ---
 

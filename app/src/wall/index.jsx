@@ -2,11 +2,15 @@
 // ║  CELESTUAL · THE WALL — THE SHELL                                        ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// A visual prototype of the event surface, and of the product it hands off
-// into. It reaches no server, stores nothing outside this tab, and is loaded
-// only when the path starts with /berkeley — production never imports anything
-// under src/wall, and nothing under src/wall is in the bundle somebody on the
-// hero page downloads.
+// The event surface, and the product it hands off into. As of Phase 6b it
+// reaches a server for everything it holds: the letters, the campus gate, the
+// handle proof, the reports and the takedowns are all in the schema. What is
+// still local is what should be, and only that: the draft in the composer, the
+// names this browser has written to, and which letters it has opened.
+//
+// It is loaded only when the path starts with /berkeley. Production never
+// imports anything under src/wall, and nothing under src/wall is in the bundle
+// somebody on the hero page downloads.
 //
 // This file owns the four things that are true on every screen:
 //
@@ -36,7 +40,9 @@ import { Field, eclipticSVG, INK, CHALK } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { liveCount, revision } from './data.js'
+import { liveCount, revision, subscribe, loadWall } from './data.js'
+import { logScan } from './api.js'
+import { refresh as refreshMember } from './auth.js'
 
 import Wall from './screens/Wall.jsx'
 import Letter from './screens/Letter.jsx'
@@ -50,12 +56,12 @@ import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
 import Overture from './Overture.jsx'
 
-const FONTS = 'https://fonts.googleapis.com/css2'
-  + '?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400'
-  + '&family=EB+Garamond:ital,wght@0,400;0,500;1,400'
-  + '&family=Geist+Mono:wght@400;500'
-  + '&family=Inter+Tight:wght@400;500;600'
-  + '&display=swap'
+// The four faces, from this origin. They were fetched from Google until Phase
+// 6b, which meant the wall's type depended on a third party being reachable and
+// was the only cross-origin request the surface made. scripts/fetch-faces.mjs
+// wrote them into app/public/fonts in Phase 2 and spec 7.2 wanted them self
+// hosted anyway.
+const FONTS = '/fonts/faces.css'
 
 // What the field is doing under each screen. A screen may override its own
 // transiently; the override is cleared by the next route change rather than by
@@ -89,6 +95,21 @@ export default function WallApp() {
   const [lit, setLit] = useState(false)
   const cut = useRef(0)
   const reduce = useRef(prefersReducedMotion()).current
+
+  // ── the corpus ──
+  // One subscription for the whole surface. data.js is a cache now: the getters
+  // answer instantly out of what has been fetched and this is what turns a
+  // fetch landing into a re-render. Ten screens read the wall during render and
+  // none of them has to know a network exists.
+  const [, setRev] = useState(0)
+  useEffect(() => subscribe(setRev), [])
+  useEffect(() => { loadWall() }, [])
+
+  // ── who this browser is ──
+  // Asked once, on mount. Somebody who verified their campus address on their
+  // phone last week comes back to the wall already through the gate, because
+  // the session is a row rather than a flag in this tab.
+  useEffect(() => { refreshMember() }, [])
 
   // ── the faces ──
   // app/index.html fetches the three production faces on every route, and this
@@ -142,8 +163,13 @@ export default function WallApp() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search || '')
     const s = q.get('s')
-    patch({ source: normSource(s || getState().source) })
+    const source = normSource(s || getState().source)
+    patch({ source })
     if (s) {
+      // Logged once, at the moment of the scan, and only when the code actually
+      // arrived in this URL. Logging it on every render of a session that
+      // already carried one would make one flyer read as a hundred.
+      if (source) logScan(source)
       q.delete('s')
       const rest = q.toString()
       window.history.replaceState(window.history.state, '', window.location.pathname + (rest ? `?${rest}` : ''))

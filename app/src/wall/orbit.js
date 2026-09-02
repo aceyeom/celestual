@@ -25,8 +25,12 @@
 // ── what is real inside the tab ─────────────────────────────────────────────
 // Placing, renewing and letting go all write through store.js, the same one
 // key everything else uses, so they survive a reload the way the real actions
-// would and are cleared by the same reset. They reach no server, because there
-// is no server here — and a build that mimed one would be lying about the one
+// would and are cleared by the same reset. They reach no server FROM HERE, and
+// that is deliberate rather than unfinished: pings already have a production
+// backend (celestual_submit, celestual_my_pings, celestual_ping_status), the
+// wall's copy of the model is a preview of it, and wiring this module to those
+// RPCs is the core service's own work rather than the wall's. A build that
+// mimed a second backend would be lying about the one
 // mechanism it exists to demonstrate.
 
 import { LEDGER, TODAY } from './seed.js'

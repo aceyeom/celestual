@@ -127,6 +127,11 @@ function shapeLetter(l) {
     // Null when the reader is outside the gate. Not an empty string: the screen
     // has to be able to tell "withheld" from "somebody wrote nothing".
     body: l.body ?? null,
+    // Sent whether or not the body is, so a redaction can be drawn at the right
+    // size. Two integers, and the individual word lengths are invented from the
+    // letter's id rather than sent, so no word-level shape leaks.
+    words: l.words ?? 0,
+    chars: l.chars ?? 0,
     hasSeal: !!l.has_seal,
     campus: l.campus,
     at: new Date(l.at).getTime(),

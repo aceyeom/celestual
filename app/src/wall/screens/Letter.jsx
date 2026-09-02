@@ -55,8 +55,7 @@ import {
   Pill, Icon, Label,
 } from '../parts.jsx'
 import { Mark } from '../art.jsx'
-import { letter, lettersFor, sinceline, atHandle } from '../data.js'
-import { isMember } from '../auth.js'
+import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle } from '../data.js'
 import { mark } from '../store.js'
 
 // The pager, and it lives in the header rather than under the card. It is the
@@ -79,10 +78,38 @@ function Pager({ at, of, go, siblings }) {
   )
 }
 
-export default function Letter({ id, go, back }) {
-  const one = letter(id)
-  const siblings = one ? lettersFor(one.to) : []
-  const at = siblings.findIndex((l) => l.id === id)
+// ── the address takes two shapes ────────────────────────────────────────────
+// /berkeley/letter/<uuid>    one letter, which is what a shared link points at
+// /berkeley/letter/<handle>  a name, which is what the wall and the search
+//                            send somebody to, because a tile is a name
+//
+// They are not ambiguous: a handle is at most 30 characters of [a-z0-9._] and
+// an id is a 36 character uuid with hyphens in it. Both land on the same
+// screen, and the pager below always moves by id so every letter under a name
+// still has its own address.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export default function Letter({ id: param, go, back }) {
+  const byId = UUID.test(String(param || ''))
+  const handle = byId ? null : normHandle(param)
+
+  // The letters under a name, when that is what the address named.
+  const forHandle = handle ? lettersFor(handle) : []
+  const id = byId ? param : (forHandle[0]?.id || null)
+
+  const one = byId
+    ? letter(id)
+    : (knowsHandle(handle) ? (forHandle[0] || null) : undefined)
+
+  const siblings = one ? lettersFor(one.to) : forHandle
+  const at = siblings.findIndex((l) => l.id === (one?.id || id))
+
+  // The letter, then the rest of its handle's letters for the pager. Two
+  // requests rather than one, because a person who opened a link off a card
+  // wants the letter on screen before the pager exists.
+  useEffect(() => { if (byId) loadLetter(param) }, [byId, param])
+  useEffect(() => { if (handle) loadHandle(handle) }, [handle])
+  useEffect(() => { if (one) loadHandle(one.to) }, [one])
 
   useEffect(() => { if (one) mark('opened', one.id) }, [one])
 
@@ -90,6 +117,22 @@ export default function Letter({ id, go, back }) {
   // it is not framed as one: a report takes a letter down on the tap, and the
   // most likely way somebody lands here is by walking back to one they or
   // somebody else just took off the wall.
+  //
+  // `undefined` is "not asked yet" and `null` is "asked, and it is gone". The
+  // card waits rather than announcing a removal that has not happened.
+  if (one === undefined) {
+    return (
+      <Sheet onClose={back} labelledBy="wl-letter-h">
+        <div className="wl-sheet-in wl-letter">
+          <SheetHead onClose={back} label="back to the wall" />
+          <Paper dateline={{ lead: 'reading' }} title={<span id="wl-letter-h" className="wl-letter-to">&nbsp;</span>} tone="shut">
+            <Redacted words={22} chars={110} seed={String(param)} />
+          </Paper>
+        </div>
+      </Sheet>
+    )
+  }
+
   if (!one) {
     return (
       <Sheet onClose={back} labelledBy="wl-letter-h">
@@ -109,7 +152,7 @@ export default function Letter({ id, go, back }) {
     )
   }
 
-  const open = isMember()
+  const open = one.body !== null
 
   return (
     /* Not `tall`. The floor exists so a bottom sheet does not read as a
@@ -139,7 +182,9 @@ export default function Letter({ id, go, back }) {
           title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
           tone={open ? '' : 'shut'}
         >
-          {open ? <Prose>{one.body}</Prose> : <Redacted text={one.body} />}
+          {open
+            ? <Prose>{one.body}</Prose>
+            : <Redacted words={one.words} chars={one.chars} seed={one.id} />}
         </Paper>
 
         {/* ── the foot ──

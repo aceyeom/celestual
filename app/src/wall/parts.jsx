@@ -11,7 +11,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { atHandle, normHandle } from './data.js'
 import { Ecliptic, Mark, Sparkle } from './art.jsx'
 import { member } from './auth.js'
-import { resolveHandle, peekHandle, resolveEnabled, IDLE } from '../api/handles.js'
+import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -47,13 +47,48 @@ export function Prose({ children, className = '', style }) {
 // looks long, a two-line one looks short, and nobody is being shown a fake
 // paragraph. Nothing readable is in the DOM: the bars carry a length and no
 // text, so the letter is not sitting in the page waiting to be read out of it.
-export function Redacted({ text }) {
-  const words = String(text || '').trim().split(/\s+/).filter(Boolean)
+// ── the redaction ───────────────────────────────────────────────────────────
+// A letter read from outside the campus gate never arrives with its words. The
+// database withholds the body and sends two integers instead: how many words
+// there are and how many characters. That is enough to draw a redaction at the
+// right size, and it is the least that is: a fixed-size grey box pretending to
+// be a letter tells somebody nothing about whether forty words were written or
+// four.
+//
+// The individual word lengths are INVENTED, deterministically, from the
+// letter's own id. So the shape is stable (the same letter redacts the same way
+// on every device and every reload, which is what stops it reading as a loading
+// state) and no word-level information leaves the server. The total is nudged
+// toward the real character count so the block ends up the right size overall.
+export function Redacted({ text, words = 0, chars = 0, seed = '' }) {
+  // A body we actually hold, which happens only where the words are already on
+  // screen. Kept because it is strictly more honest when it is available.
+  if (text) {
+    const w = String(text).trim().split(/\s+/).filter(Boolean)
+    return (
+      <p className="wl-redacted" role="img" aria-label={`a letter of ${w.length} words, redacted`}>
+        {w.map((x, i) => <span key={i} className="wl-redact-w" style={{ '--n': Math.min(14, x.length) }} />)}
+      </p>
+    )
+  }
+
+  const n = Math.max(0, Math.min(120, words | 0))
+  if (!n) return null
+  // The average word, rounded, is what the invented lengths vary around.
+  const mean = Math.max(2, Math.min(12, Math.round((chars || n * 5) / n)))
+  const key = String(seed || '')
+  const lens = []
+  for (let i = 0; i < n; i++) {
+    // A small stable hash per position. Not Math.random: a redaction that
+    // reshuffles on every render is an animation nobody asked for.
+    let h = 0x9e3779b9
+    const s = `${key}#${i}`
+    for (let j = 0; j < s.length; j++) h = Math.imul(h ^ s.charCodeAt(j), 0x27d4eb2d) >>> 0
+    lens.push(Math.max(2, Math.min(14, mean - 2 + (h % 5))))
+  }
   return (
-    <p className="wl-redacted" role="img" aria-label={`a letter of ${words.length} words, redacted`}>
-      {words.map((w, i) => (
-        <span key={i} className="wl-redact-w" style={{ '--n': Math.min(14, w.length) }} />
-      ))}
+    <p className="wl-redacted" role="img" aria-label={`a letter of ${n} words, redacted`}>
+      {lens.map((x, i) => <span key={i} className="wl-redact-w" style={{ '--n': x }} />)}
     </p>
   )
 }
@@ -545,31 +580,55 @@ export function Waiting({ label = 'looking' }) {
   )
 }
 
-// ── who that is ─────────────────────────────────────────────────────────────
-// The one thing on this build that leaves the tab, and it is worth being exact
-// about what it does and does not send.
+// ── THE RESULT CARD ─────────────────────────────────────────────────────────
 //
-// A letter is addressed to a handle typed from memory, and a mistyped one is a
-// letter about somebody, published under somebody else's name, that neither of
-// them can ever find. So the composer shows the account: a face, a name, the
-// badge if it has one, under the line, before the letter is written.
+// docs/rebuild-spec.md section 5 singles this out: "This card is the main
+// affordance that makes the product read as professional, so it gets real
+// design attention." It is the one place in the product where somebody else's
+// account is drawn, and it is drawn twice: under the composer on the wall, and
+// under the handle field on Main.
 //
-// WHAT GOES OUT is the handle being typed and nothing else. Not the writer's
-// address, not their session, not the letter, not a word of it. The wall has no
-// author field for any of that to come from (data.js), and the lookup is a
-// question about a public Instagram profile, asked by our server, not by this
-// browser. What comes back is a display name and a proxied picture.
+// ── what it is allowed to carry ─────────────────────────────────────────────
+// Four things, and the spec names all four: an avatar, a handle, a display
+// name, a verification badge. Nothing else. No follower count, no post count,
+// no bio, no link, no "last active". This product does not tell anybody how
+// popular anybody is, and a card carrying one number is a card somebody
+// optimises against.
 //
-// It is behind the same flag as everywhere else and OFF by default: with it
-// off, this component renders nothing and the composer is exactly what it was.
-export function HandleReadout({ handle }) {
+// ── the disc ────────────────────────────────────────────────────────────────
+// A Supabase Storage URL, ours, downloaded once and non-expiring (spec section
+// 5). When there is none, a monogram off the display name: initials for two
+// words, the first two letters for one, and the handle's first letter when
+// there is no name at all. A missing face must never block the card, so the
+// monogram is a designed state and not a fallback that looks broken.
+//
+// The disc carries a hairline rather than a shadow. Spec 7.1 bans box-shadow
+// used for depth, and on a blue-black ground a ring reads as an edge where a
+// shadow reads as nothing at all.
+//
+// ── the states ──────────────────────────────────────────────────────────────
+// Four, and three of them draw the frame:
+//
+//   idle     nothing typed yet. Nothing drawn.
+//   looking  asked. The frame at rest, disc empty, two bars where the name
+//            will be. Drawn rather than hidden so the layout does not jump
+//            when the answer lands, which is the most common way a readout
+//            like this comes to feel cheap.
+//   found    the account.
+//   missing  no account by that name, said in one line, and the act still goes
+//            through. Our provider is imperfect and somebody who knows their
+//            friend's handle is right.
+export function HandleCard({ handle, className = '' }) {
   const [at, setAt] = useState(IDLE)
   const h = normHandle(handle)
+
   useEffect(() => {
     if (!resolveEnabled || h.length < 2) { setAt(IDLE); return undefined }
     const known = peekHandle(h)
     if (known) { setAt(known); return undefined }
     let alive = true
+    // Debounced, because this sits under a field somebody is typing into and a
+    // request per keystroke is a request per keystroke.
     const id = setTimeout(async () => {
       if (alive) setAt({ state: 'looking', handle: h })
       const r = await resolveHandle(h)
@@ -579,40 +638,60 @@ export function HandleReadout({ handle }) {
   }, [h])
 
   // Idle and unknown draw nothing. "Unknown" is our lookup failing, not an
-  // answer about the account, and a wall that reported the two the same way
-  // would be telling somebody their friend does not exist.
+  // answer about the account, and reporting the two the same way would be
+  // telling somebody their friend does not exist.
   if (at.state === 'idle' || at.state === 'unknown') return null
+
+  const cls = ['wl-card', className].filter(Boolean).join(' ')
 
   if (at.state === 'looking') {
     return (
-      <div className="wl-who is-looking" aria-live="polite">
-        <Waiting label="looking" />
+      <div className={`${cls} is-looking`} aria-live="polite" aria-busy="true">
+        <span className="wl-card-disc" aria-hidden="true" />
+        <span className="wl-card-id">
+          <span className="wl-card-bar" aria-hidden="true" />
+          <span className="wl-card-bar is-short" aria-hidden="true" />
+        </span>
       </div>
     )
   }
 
   if (at.state === 'missing') {
     return (
-      <div className="wl-who is-missing" aria-live="polite">
-        <span className="wl-who-disc is-empty" aria-hidden="true">{h.slice(0, 1)}</span>
-        <span className="wl-who-line">no instagram account under that name. you can still write it.</span>
+      <div className={`${cls} is-missing`} aria-live="polite">
+        <span className="wl-card-disc is-empty" aria-hidden="true">
+          <span className="wl-card-mono">{h.slice(0, 1).toUpperCase()}</span>
+        </span>
+        <span className="wl-card-id">
+          <span className="wl-card-name">no account by that name</span>
+          <span className="wl-card-at">@{h}</span>
+        </span>
       </div>
     )
   }
 
   return (
-    <div className="wl-who" aria-live="polite">
-      <span className="wl-who-disc" aria-hidden="true">
-        {at.avatar
-          ? <img src={at.avatar} alt="" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-          : h.slice(0, 1)}
+    <div className={cls} aria-live="polite">
+      <span className="wl-card-disc" aria-hidden="true">
+        {at.avatar ? (
+          <img
+            src={at.avatar} alt="" loading="lazy" decoding="async"
+            /* A face that fails to load falls through to the monogram under it
+               rather than to a broken-image glyph in the middle of a field. */
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        ) : null}
+        <span className="wl-card-mono">{monogram(at)}</span>
       </span>
-      <span className="wl-who-id">
-        <span className="wl-who-name">
-          {at.name || atHandle(h)}
-          {at.verified && <Sparkle size={9} />}
+      <span className="wl-card-id">
+        <span className="wl-card-name">
+          {at.name || `@${at.handle}`}
+          {/* The badge is this product's own sparkle rather than a copy of
+              Instagram's tick. Redrawing somebody else's trust mark inside our
+              card would be claiming their verification is ours to issue. */}
+          {at.verified ? <Sparkle size={10} className="wl-card-badge" /> : null}
         </span>
-        <span className="wl-who-at">{atHandle(h)}</span>
+        {at.name ? <span className="wl-card-at">@{at.handle}</span> : null}
       </span>
     </div>
   )

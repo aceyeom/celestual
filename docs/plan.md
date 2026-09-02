@@ -742,7 +742,85 @@ Wire the real `.edu` gate to the deployed `celestual-edu-verify`.
 
 See Q10 and Q11 on table naming and on whether the `beta_` prefix survives.
 
-### Phase 6b. Wall and Main UI
+### Phase 6b. Wall and Main UI. COMPLETE.
+
+The Phase 3 hero is at `/`, the reveal is a state of the core service, the
+wall's ten screens read a server, and Main has the flow spec section 6
+describes.
+
+**What landed.**
+
+| Area | What |
+| --- | --- |
+| `app/src/main/` | Main's own surface: router, shell, hero, place, sky, reveal, bar, ticker, stylesheet |
+| `app/src/wall/data.js` | rewritten as a cache over `api.js` rather than a seeded corpus. Same synchronous shape, so ten screens did not each grow a loading state |
+| `app/src/wall/handoff.js` | the two proofs, both real: the campus code and the Instagram DM code |
+| `HandleCard` | spec section 5's result card. Four things on it and no fifth |
+| `Redacted` | rebuilt to draw a withheld letter from a word count rather than from the words |
+| ten wall screens | wired. The gate mails a code, the composer posts through the screen, the report takes a letter down, the takedown needs the DM proof |
+| `Ticker` | spec section 8. New. Display name, handle, badge. No avatars, no counts |
+| routing | Main claims `/`, `/place`, `/sky`, `/reveal` and `/@handle`. Everything else falls through to `App.jsx` untouched |
+| `scripts/preview.mjs` | the 7.3 loop with data in it |
+
+**How the wall's screens kept their shape.** `data.js` was the seam. It became a
+cache with the same synchronous getters it always had, plus loaders and a
+`subscribe()` the shell holds one of. Making the ten screens await would have
+meant ten loading states, ten error states and ten chances to disagree about
+what an empty wall looks like.
+
+**Three things the visual loop caught that nothing else would have.** Spec 7.3
+asks for screenshots that are actually looked at, and this is what looking
+found:
+
+1. **`/berkeley/posted` hung forever.** React's StrictMode mounts, unmounts and
+   remounts in development; the effect's `alive` flag was a closure variable, so
+   the first cleanup killed it, the `sent` guard stopped the second mount
+   starting anything, and the request came back to a screen that had decided it
+   was dead. It sat on "read before it goes up" and nothing in the console said
+   why.
+2. **The hero said "today ago".** `since()` returns a duration for most inputs
+   and two whole phrases, and the gate appended "ago" to all of them.
+3. **The ticker pushed the hero's foot below the fold** by 36px at 390x844. The
+   hero is one composition in one viewport, so anything added to it comes out of
+   something else: one rail on a phone, two where there is room.
+
+Also corrected by looking: `/sky` set its copy in the letter face, which is
+reserved for what people wrote to each other; Main's bar wrapped to two lines
+because `.sg-top` is a row only inside `.wl-main`; and the flow screens were
+centred in the viewport, which puts a field where a phone keyboard covers it.
+
+**One thing the reveal will not say.** Its eyebrow read "placed N apart, neither
+of you knowing", which is a fine sentence the product cannot support:
+`celestual_my_pings` hands each person their own timestamp and not the other's.
+It says "you both said it, and neither of you knew" instead. `apart()` stays in
+`main/data.js`, unused and documented as unused, for the day the RPC returns
+both.
+
+**The third party request is gone.** `app/index.html` fetched the old design's
+three Google faces on every route, including the two that use none of them, and
+it was the only cross-origin request either new surface made and the only
+console error they produced. `App.jsx` injects them now, which is the shell that
+reads them. The wall's four faces come off `/fonts` rather than off Google, per
+`docs/launchsteps.md` section 0c.
+
+**Screenshotted and viewed at 390x844 and 1440x900:** the hero, place, place
+with the card, the open door, the sky, the reveal, the wall, find, a letter, a
+sealed letter, the composer, the gate, report, remove, join and posted. Thirty
+files in `design/shots`, no console errors on any route, and nothing on the
+section 7.1 ban list.
+
+**What is deliberately not touched.** Every route in this section's table that
+this plan does not put in scope: `/optout` and `/copy` are kept as they are,
+`/signin` waits for Phase 8's routing pass, and `/trial`, `/recruit`, `/c`,
+`/demo` and `/paid` are all pending an answer to Q12, Q15 or Q16.
+`main/router.js` carries that list and the reason, because a fork that swallowed
+them would be deleting features by routing rather than by decision.
+
+`app/src/wall/orbit.js` also stands. Pings already have a production backend and
+the wall's copy of the model is a preview of it; wiring that screen belongs with
+the core service rather than with the wall.
+
+The original plan for this phase follows.
 
 Spec sections 6 and 8. Every page rebuilt in the Phase 2 system, wired to Phase
 6a and Phase 5.

@@ -44,26 +44,69 @@ export default function Posted({ go, reduce }) {
   const [beat, setBeat] = useState(reduce ? 2 : 0)
   const timers = useRef([])
 
-  // Written once, on mount, and held in state — a re-render must not put a
-  // second copy of the same letter on the wall.
-  const [row] = useState(() => {
-    if (!draft || !draft.to || !draft.body) return null
-    // `write` refuses a name that has asked to come off the wall, which is the
-    // one way a draft can be valid when it is composed and refused when it is
-    // put up. The screen falls through to its empty state rather than
-    // celebrating a letter that is not there.
-    const r = write(draft)
-    if (!r) { patch({ draft: null }); return null }
-    const was = getState()
-    patch({
-      draft: null,
-      written: [r.id, ...was.written].slice(0, 12),
-      // and the name, so the account sheet can still list it after a reload
-      // has taken the letter itself out of memory
-      wroteTo: [r.to, ...(was.wroteTo || []).filter((h) => h !== r.to)].slice(0, 12),
-    })
-    return r
-  })
+  // ── the screen, and it is real now ──
+  // Written once, on mount. The request goes to celestual-wall-moderate, which
+  // runs layer 1 again, calls the classifier, and writes the letter with the
+  // status that came back. That is a round trip rather than a function call, so
+  // the beats below are waiting on something now instead of performing a wait.
+  //
+  // Three outcomes, and two of them land here identically on purpose. A letter
+  // held for a person to look at reads as published, because a screen that
+  // distinguished them would be a way to find out what gets through by writing
+  // until something does.
+  const [row, setRow] = useState(undefined)   // undefined asking · null refused
+  const [refused, setRefused] = useState(null)
+  const sent = useRef(false)
+
+  // Set on the way IN as well as cleared on the way out, and it has to be a ref
+  // rather than a closure variable. React's StrictMode mounts, unmounts and
+  // remounts every component in development: a flag captured in the effect's
+  // closure is set false by the FIRST cleanup, the second mount takes the
+  // `sent` guard and starts nothing, and the request that is still in flight
+  // comes back to a screen that has decided it is dead. It sat on "read before
+  // it goes up" forever and nothing in the console said why.
+  //
+  // This is the same trap Remove.jsx documents, and it was worth writing down
+  // twice because it is invisible until somebody looks at the screen.
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false }
+  }, [])
+
+  useEffect(() => {
+    if (sent.current) return undefined
+    sent.current = true
+    if (!draft || !draft.to || !draft.body) { setRow(null); return undefined }
+
+    ;(async () => {
+      const out = await write(draft)
+      if (!alive.current) return
+      if (!out?.ok) {
+        setRefused(out?.error || 'network')
+        setRow(null)
+        patch({ draft: null })
+        return
+      }
+      if (out.status === 'rejected') {
+        setRefused('screened')
+        setRow(null)
+        patch({ draft: null })
+        return
+      }
+      const r = { id: out.id, to: draft.to, body: draft.body, at: Date.now() }
+      const was = getState()
+      patch({
+        draft: null,
+        written: [r.id, ...was.written].slice(0, 12),
+        // and the name, so the account sheet can still list it after a reload
+        // has taken the letter itself out of memory
+        wroteTo: [r.to, ...(was.wroteTo || []).filter((h) => h !== r.to)].slice(0, 12),
+      })
+      setRow(r)
+    })()
+    return undefined
+  }, [draft])
 
   useEffect(() => {
     if (reduce || !row) return
@@ -83,13 +126,51 @@ export default function Posted({ go, reduce }) {
     return tiles.slice(i, i + 5)
   }, [row])
 
+  // Still out. The card is not drawn yet because there is nothing to draw it
+  // from: the id comes back with the answer.
+  if (row === undefined) {
+    return (
+      <div className="wl-page wl-posted is-b0">
+        <div className="wl-posted-air" />
+        <div className="wl-posted-screen" role="status">
+          <Sparkle size={9} twinkle={!reduce} delay={0} />
+          <Sparkle size={9} twinkle={!reduce} delay={240} />
+          <Sparkle size={9} twinkle={!reduce} delay={480} />
+          <Label tone="dim">read before it goes up</Label>
+        </div>
+      </div>
+    )
+  }
+
   if (!row) {
     return (
       <div className="wl-page wl-posted">
         <div className="wl-posted-air" />
-        <Display size="m">Nothing to put up.</Display>
+        <Display size="m">
+          {refused === 'screened' ? <>It didn&rsquo;t go up.</>
+            : refused === 'removed' ? <>That name is off<br />the wall.</>
+            : refused === 'gate' ? <>Letters are written<br />by Berkeley.</>
+            : <>Nothing to put up.</>}
+        </Display>
+        {/* One sentence, and it names the thing rather than citing a policy.
+            A refusal that says "this violates our guidelines" teaches nobody
+            anything; the screen's own list is what somebody can act on, and
+            they have already read it under the composer. */}
+        {refused && refused !== 'network' ? (
+          <Label tone="dim" className="wl-posted-count">
+            {refused === 'screened' ? 'the screen held it back'
+              : refused === 'removed' ? 'nobody can write to it now'
+              : refused === 'gate' ? 'open the letters first'
+              : 'it did not go through'}
+          </Label>
+        ) : refused === 'network' ? (
+          <Label tone="dim" className="wl-posted-count">it did not go through</Label>
+        ) : null}
         <div className="wl-gap" />
-        <Pill tone="light" icon={<Icon name="write" size={17} />} onClick={() => go('write')}>write one</Pill>
+        <Pill tone="light" icon={<Icon name="write" size={17} />}
+          onClick={() => go(refused === 'gate' ? 'gate' : 'write')}>
+          {refused === 'gate' ? 'open them' : 'write one'}
+        </Pill>
       </div>
     )
   }

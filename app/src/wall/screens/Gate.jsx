@@ -14,7 +14,7 @@
 //
 // ── two words for one thing ─────────────────────────────────────────────────
 // Registering and signing in are the same two steps and the same two fields,
-// because in a build with no server they genuinely are. Rather than mime two
+// because until Phase 6b they genuinely were. Rather than mime two
 // different flows, this screen names the one it is on and changes nothing else
 // — one heading, one line of copy, and the same address and code beneath.
 //
@@ -36,7 +36,8 @@ import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon } from '.
 import { Mark } from '../art.jsx'
 import { atHandle } from '../data.js'
 import { getState } from '../store.js'
-import { DOMAIN, emailFault, member, normEmail, signIn, signOut, validCode, validEmail } from '../auth.js'
+import { DOMAIN, emailFault, member, normEmail, signOut, validCode, validEmail } from '../auth.js'
+import { sendCampusCode, checkCampusCode } from '../handoff.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
 // the string painted beside it rather than typed into it. The '@berkeley.edu'
@@ -85,14 +86,55 @@ export default function Gate({ go, back }) {
   const [step, setStep] = useState(0)            // 0 the address · 1 the code
   const [local, setLocal] = useState('')
   const [code, setCode] = useState('')
+  const [token, setToken] = useState(null)   // the correlation id for the code out
+  const [busy, setBusy] = useState(false)
+  const [said, setSaid] = useState('')       // what went wrong, in words
 
   const email = normEmail(`${local}@${DOMAIN}`)
   const fault = local.includes('@') ? emailFault(local) : ''
   const ok = validEmail(email)
 
-  const finish = () => {
-    if (!validCode(code)) return
-    signIn(email)
+  // ── the code goes out ──
+  // celestual-edu-verify checks the address is at this campus's domain, mints a
+  // six digit code, stores only its hash, and mails it. The code rides the
+  // subject line too, so the notification alone is enough to read it.
+  const send = async () => {
+    if (!ok || busy) return
+    setBusy(true)
+    setSaid('')
+    const out = await sendCampusCode(email)
+    setBusy(false)
+    if (!out.ok) {
+      setSaid(
+        out.error === 'rate' ? 'too many codes for that address. try again in an hour'
+          : out.error === 'domain' || out.error === 'email' ? `that is not a ${DOMAIN} address`
+          : 'the mail did not go out. try again',
+      )
+      return
+    }
+    setToken(out.token)
+    setStep(1)
+  }
+
+  // ── and comes back ──
+  // On a match the address is bound to this browser's identity row, which is
+  // what makes the campus outlast the tab and carry across to Main. The address
+  // signed in with is the one the SERVER verified.
+  const finish = async () => {
+    if (!validCode(code) || busy || !token) return
+    setBusy(true)
+    setSaid('')
+    const out = await checkCampusCode(token, code)
+    setBusy(false)
+    if (!out.ok) {
+      setSaid(
+        out.error === 'expired' ? 'that code has lapsed. ask for another'
+          : out.error === 'other_campus' ? 'this device is already at another campus'
+          : 'that code is not right',
+      )
+      return
+    }
+    setWho(out.email)
     back()
   }
 
@@ -190,26 +232,20 @@ export default function Gate({ go, back }) {
             <Label tone="dim" className="wl-gate-note">
               your information will stay anonymous
             </Label>
-            <AddressField value={local} onChange={setLocal} onSubmit={() => ok && setStep(1)} />
-            <div className="wl-gate-fault" aria-live="polite">{fault}</div>
+            <AddressField value={local} onChange={setLocal} onSubmit={send} />
+            <div className="wl-gate-fault" aria-live="polite">{fault || said}</div>
           </div>
         ) : (
           <div className="wl-gate-step">
-            {/* Not "sent to". Nothing has been sent, and a screen that says
-                it has, three lines above a note explaining that it has not, is
-                the kind of small lie that makes everything near it suspect. */}
+            {/* "Sent to" is true now. It was "for" while nothing was mailed,
+                because a screen that says it has sent something, three lines
+                above a note explaining that it has not, is the kind of small
+                lie that makes everything near it suspect. */}
             <Label tone="dim" className="wl-gate-note">
-              for <span className="wl-h">{email}</span>
+              sent to <span className="wl-h">{email}</span>
             </Label>
             <CodeField value={code} onChange={setCode} onSubmit={finish} />
-            {/* Said plainly, on the screen, where somebody about to type
-                something into it will read it. A door that quietly accepts
-                anything and does not say so is teaching the wrong thing about
-                what this build does with what it is given. It comes off the
-                screen the day the code is mailed, and not one day before. */}
-            <p className="wl-gate-beta">
-              No mail yet. Any six digits will let you in.
-            </p>
+            <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
         )}
 
@@ -218,8 +254,8 @@ export default function Gate({ go, back }) {
         <SheetFoot>
           {step === 0 ? (
             <>
-              <Pill tone="light" wide disabled={!ok} onClick={() => setStep(1)}>
-                {registering ? 'register' : 'send me a code'}
+              <Pill tone="light" wide disabled={!ok || busy} onClick={send}>
+                {busy ? 'sending…' : registering ? 'register' : 'send me a code'}
               </Pill>
               <button
                 type="button" className="wl-quiet"
@@ -230,10 +266,11 @@ export default function Gate({ go, back }) {
             </>
           ) : (
             <>
-              <Pill tone="light" wide disabled={!validCode(code)} onClick={finish}>
-                {registering ? 'finish' : 'sign in'}
+              <Pill tone="light" wide disabled={!validCode(code) || busy} onClick={finish}>
+                {busy ? 'checking…' : registering ? 'finish' : 'sign in'}
               </Pill>
-              <button type="button" className="wl-quiet" onClick={() => { setCode(''); setStep(0) }}>
+              <button type="button" className="wl-quiet"
+                onClick={() => { setCode(''); setToken(null); setSaid(''); setStep(0) }}>
                 use a different address
               </button>
             </>

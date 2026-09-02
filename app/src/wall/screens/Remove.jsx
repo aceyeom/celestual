@@ -16,8 +16,8 @@
 //                 and a desk can put it back. That is the fast door and it is
 //                 the one almost everybody wants — including, most of the time,
 //                 the person the letter is about.
-//   A WHOLE NAME  this screen. The handle goes, EVERY letter written to it goes
-//                 with it, the name can never be put back up, and no desk can
+//   YOUR NAME     this screen. Every letter written to the handle comes down,
+//                 the handle can never be written to again, and no desk can
 //                 reverse it. It is the only irreversible thing on the wall.
 //
 // ── why this one asks, when nothing else does ───────────────────────────────
@@ -31,10 +31,17 @@
 //
 // So the proof sits on the irreversible action and nowhere else, and it is
 // bought as cheaply as a proof can be: not an account, not an address, not a
-// form, not a queue. One question — is this handle yours — asked of the place
-// the handle actually lives, answered once, and thrown away (auth.js
-// `verifyHandle`). Nothing about the account is read and nothing is stored
-// beside the handle.
+// form, not a queue. One question, is this handle yours, asked of the place the
+// handle actually lives, answered once. It is the Instagram DM code flow
+// (wall/handoff.js), it is real as of Phase 6b, and it is the only thing in the
+// product that writes handle_verified_at.
+//
+// ── how it comes off, on a server ───────────────────────────────────────────
+// There is no operation that empties a name. 0032 removes letters one at a
+// time, and refuses a write to a handle any of whose letters were removed. So
+// this screen takes down every letter it can see and the schema holds the name
+// shut afterwards, which is the same outcome without a single statement that
+// can empty somebody.
 //
 // And the person who genuinely just wants a letter about them gone is never
 // sent here to get it: they tap `report it` on the letter, it is down, and this
@@ -43,27 +50,29 @@
 // ── what this screen still refuses ──────────────────────────────────────────
 // No reason to give. No category. No queue and no "we will look into this
 // within five days". No offer of an account on the way past, and no second
-// thing asked once the first is answered. The handoff is the whole of it, and
-// once it comes back the name comes off before the sheet has finished moving.
+// thing asked once the first is answered. The handoff is the whole of it.
 
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, Waiting,
 } from '../parts.jsx'
 import { Mark, Sparkle, Provider } from '../art.jsx'
-import { atHandle, isRemoved, lettersFor, normHandle, removeHandle, validHandle } from '../data.js'
-import { isVerified, verifyHandle } from '../auth.js'
+import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
+import { isVerified } from '../auth.js'
+import { startHandoff, pollHandoff, igDeepLink, igWebLink } from '../handoff.js'
 
 export default function Remove({ handle: prefill, back }) {
   const [value, setValue] = useState(() => prefill || '')
-  const [asking, setAsking] = useState(false)   // the handoff is out
+  const [dm, setDm] = useState(null)         // { code, token, proofHash, proof }
+  const [fault, setFault] = useState('')
+  const [taking, setTaking] = useState(false)
   const [gone, setGone] = useState(null)
+
   // Set on the way IN as well as cleared on the way out. React's StrictMode
   // mounts, unmounts and remounts every component in development: a flag that
   // is only ever cleared in the teardown is false for the whole life of the
   // second mount, and the handoff comes back to a screen that has decided it is
-  // gone. It sat on "asking instagram…" for ever and nothing in the console
-  // said why.
+  // gone.
   const alive = useRef(true)
   useEffect(() => {
     alive.current = true
@@ -71,23 +80,61 @@ export default function Remove({ handle: prefill, back }) {
   }, [])
 
   const h = normHandle(value)
-  const count = h ? lettersFor(h).length : 0
-  const named = validHandle(h) && !isRemoved(h)
-  // Proven once per handle and remembered, so somebody who came back for a
-  // second name is asked again and somebody who reloaded on the same one is
-  // not. A proof that has to be repeated inside one sitting is a proof that has
-  // become a password.
+  const named = validHandle(h)
+  const letters = h ? lettersFor(h) : []
+  const count = letters.length
+  // Proven once and remembered for the session, so somebody who reloaded is not
+  // asked again. A proof that has to be repeated inside one sitting is a proof
+  // that has become a password.
   const proven = named && isVerified(h)
 
-  const ask = () => {
-    if (!named || asking) return
-    setAsking(true)
-    verifyHandle(h).finally(() => { if (alive.current) setAsking(false) })
+  // What is about to go needs to be known before it goes, so the count on the
+  // screen is the real one rather than whatever the wall happened to have
+  // cached.
+  useEffect(() => { if (named) loadHandle(h) }, [h, named])
+
+  // ── the handoff ──
+  // Mint a code, show it, and watch. Meta tells the backend who actually sent
+  // it, and that account is the identity whatever was typed here first.
+  const ask = async () => {
+    if (!named || dm) return
+    setFault('')
+    const out = await startHandoff(h)
+    if (!alive.current) return
+    if (!out.ok) {
+      setFault(out.error === 'off' ? 'that door is not open yet' : 'that did not go through')
+      return
+    }
+    setDm(out)
   }
 
-  const take = () => {
-    if (!proven) return
-    setGone({ handle: h, n: removeHandle(h) })
+  useEffect(() => {
+    if (!dm) return
+    let stop = false
+    const tick = async () => {
+      const out = await pollHandoff(dm)
+      if (stop || !alive.current) return
+      if (out.ok) { setDm(null); setValue(out.handle); return }
+      if (out.error === 'expired') { setDm(null); setFault('that code has lapsed'); return }
+      if (out.error) { setDm(null); setFault('that did not go through'); return }
+      timer = setTimeout(tick, 2500)
+    }
+    let timer = setTimeout(tick, 2500)
+    return () => { stop = true; clearTimeout(timer) }
+  }, [dm])
+
+  const take = async () => {
+    if (!proven || taking) return
+    setTaking(true)
+    const mine = lettersFor(h)
+    let n = 0
+    for (const l of mine) {
+      const out = await removeLetter(l.id)
+      if (out?.ok) n += 1
+    }
+    if (!alive.current) return
+    setTaking(false)
+    setGone({ handle: h, n })
   }
 
   const head = <SheetHead onClose={back} label="back to the wall"
@@ -95,7 +142,7 @@ export default function Remove({ handle: prefill, back }) {
 
   // ── done ──
   // It has already happened. No confirmation to accept, nothing to check an
-  // inbox for, and no undo offered — an undo on this control would mean the
+  // inbox for, and no undo offered: an undo on this control would mean the
   // removal was never real.
   if (gone) {
     return (
@@ -107,8 +154,8 @@ export default function Remove({ handle: prefill, back }) {
             <Label tone="dim"><span className="wl-h">{atHandle(gone.handle)}</span></Label>
             <Prose className="wl-gate-copy">
               {gone.n === 0
-                ? 'The name is gone, and it cannot be put back up.'
-                : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be put back up.`}
+                ? 'The name is gone, and it cannot be written to again.'
+                : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
             </Prose>
           </div>
           <div className="wl-push" />
@@ -128,8 +175,7 @@ export default function Remove({ handle: prefill, back }) {
         </Display>
 
         {/* Two lines, not a paragraph. What it costs, and the cheaper door
-            beside it. The long version argued the policy at somebody who had
-            already decided to do the thing. */}
+            beside it. */}
         <Prose className="wl-gate-copy">
           {proven
             ? 'Every letter under it goes too. This cannot be undone.'
@@ -140,15 +186,15 @@ export default function Remove({ handle: prefill, back }) {
           <HandleField
             value={value} onChange={setValue} onSubmit={proven ? take : ask}
             autoFocus={!prefill} size="lg" placeholder="yourhandle"
-            locked={proven}
+            locked={proven || !!dm}
           />
         </div>
 
         {/* What is about to happen, said before it happens rather than in a
             dialogue afterwards. The count is the whole of it. */}
         <div className="wl-remove-what" aria-live="polite">
-          {isRemoved(h) ? (
-            <Label tone="dim">that name is already off the wall</Label>
+          {fault ? (
+            <Label tone="dim">{fault}</Label>
           ) : validHandle(h) ? (
             <div className="wl-remove-row">
               <Mark handle={h} size={28} lit={proven} />
@@ -165,37 +211,48 @@ export default function Remove({ handle: prefill, back }) {
 
         <SheetFoot>
           {proven ? (
-            <Pill tone="light" wide onClick={take}>take it down</Pill>
+            <Pill tone="light" wide disabled={taking} onClick={take}>
+              {taking ? 'taking it down…' : 'take it down'}
+            </Pill>
+          ) : dm ? (
+            /* ── the code ──
+               The whole of the proof, on one screen: a code, where to send it,
+               and the fact that we are watching. No form, no account, no queue.
+               Whoever sends it from Instagram is who this is, which is why the
+               field above is locked while it is out. */
+            <>
+              <div className="wl-remove-code">
+                <Display size="s" as="p">{dm.code}</Display>
+                <Label tone="dim">DM this to us on instagram</Label>
+              </div>
+              <Pill tone="light" wide href={igDeepLink()} target="_blank" rel="noreferrer">
+                open instagram
+              </Pill>
+              <div className="wl-remove-handoff">
+                <Waiting label="watching for it" />
+                <Label tone="dim">
+                  <a className="wl-a" href={igWebLink()} target="_blank" rel="noreferrer">
+                    or open it on the web
+                  </a>
+                </Label>
+              </div>
+            </>
           ) : (
             <>
               {/* ── the handoff ──
                   Drawn as a destination rather than as a security step: one
                   button, the provider's shape on the same 24-unit grid as every
                   other glyph here, and the sentence under it saying exactly
-                  what is asked and what is kept. A verification screen that
-                  explains itself in four bullet points has already told
-                  somebody they are being processed. */}
+                  what is asked and what is kept. */}
               <Pill
-                tone="light" wide disabled={!named || asking} onClick={ask}
-                icon={asking ? null : <Provider size={17} />}
+                tone="light" wide disabled={!named} onClick={ask}
+                icon={<Provider size={17} />}
               >
-                {asking ? 'asking instagram…' : 'prove it is yours'}
+                prove it is yours
               </Pill>
               <div className="wl-remove-handoff">
-                {asking ? <Waiting label="waiting on instagram" /> : null}
-                {/* Short enough to be set as a label. The monospace here is
-                    letterspaced and upper-cased, which is right for an
-                    identifier and wrong for a paragraph — a two-line sentence
-                    in it is a sentence nobody reads. */}
                 <Label tone="dim">one question · nothing is kept</Label>
               </div>
-              {/* Said plainly, on the screen, the way the gate's own note is. A
-                  screen that mimes a round trip to Instagram and does not say
-                  so is teaching the wrong thing about what this build does. It
-                  comes off the day the handoff is real. */}
-              <p className="wl-gate-beta">
-                Instagram is not connected yet. Any handle proves here.
-              </p>
             </>
           )}
         </SheetFoot>

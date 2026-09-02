@@ -306,10 +306,18 @@ begin
    where l.target_handle = nh and l.status = 'live' and l.expires_at > now();
   v_open := coalesce(v_open, false);
 
+  -- `words` and `chars` are sent whether or not the body is. A redaction has to
+  -- be drawn at the right size or it is a grey box pretending to be a letter, and
+  -- a person outside the gate should be able to see that somebody wrote forty
+  -- words rather than four. Two integers is the least that buys that: the client
+  -- invents the individual word lengths from the letter's own id, deterministically,
+  -- so the same letter always redacts the same way and no word-level shape leaks.
   select coalesce(jsonb_agg(jsonb_build_object(
            'id',       l.id,
            'handle',   l.target_handle,
            'body',     case when v_open then l.body end,
+           'words',    array_length(regexp_split_to_array(btrim(l.body), '\s+'), 1),
+           'chars',    char_length(l.body),
            'has_seal', l.sealed_line is not null,
            'campus',   l.campus,
            'at',       l.created_at,
@@ -352,6 +360,8 @@ begin
     'id',       l.id,
     'handle',   l.target_handle,
     'body',     case when v_open then l.body end,
+    'words',    array_length(regexp_split_to_array(btrim(l.body), '\s+'), 1),
+    'chars',    char_length(l.body),
     'has_seal', l.sealed_line is not null,
     'campus',   l.campus,
     'at',       l.created_at,
