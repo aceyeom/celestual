@@ -296,11 +296,11 @@ Ordering is otherwise the spec's, including Phase 3 before backend work.
 | --- | --- | --- | --- |
 | 1 | Audit | none | done |
 | 2 | Design system | 1 | done |
-| 3 | Signature surfaces | 2 | your approval to exit |
-| 4a | Migration reconciliation | 1 | Q4 |
-| 4b | Identity and session schema | 4a | Q5, Q6 |
-| 5 | Apify in, HikerAPI out | 4b | Q7, Q8, Q9 |
-| 6a | Wall backend | 4b, 5 | Q10, Q11 |
+| 3 | Signature surfaces | 2 | done, approved |
+| 4a | Migration reconciliation | 1 | done |
+| 4b | Identity and session schema | 4a | none, Q5 and Q6 answered |
+| 5 | Apify in, HikerAPI out | 4b | none, Q7 to Q9 answered |
+| 6a | Wall backend | 4b, 5 | none, Q10 and Q11 answered |
 | 6b | Wall and Main UI | 3, 6a | none |
 | 7 | Admin | 6a | Q12 |
 | 8 | Email, legal, routing | 6b | Q13 |
@@ -362,7 +362,7 @@ needs. Chromium is already present in this environment at
 Exit: the three files exist, the ban list in 7.1 is encoded as a reviewable
 checklist, and `components.html` has been screenshotted and viewed.
 
-### Phase 3. Signature surfaces. BUILT, AWAITING YOUR APPROVAL.
+### Phase 3. Signature surfaces. APPROVED.
 
 Two surfaces, at `/signature` and `/signature/reveal`:
 
@@ -393,9 +393,84 @@ Q14 before deleting any of it.
 
 Present and wait.
 
-### Phase 4a. Migration reconciliation
+### Phase 4a. Migration reconciliation. COMPLETE.
 
-New phase. Justification is finding 1.3.
+The method changed and two findings came out of it that this section did not
+anticipate. Both are recorded in `docs/launchsteps.md` section 2a.
+
+**Method.** There is no Docker in the rebuild container, so `supabase start` was
+not available. `scripts/verify-migrations.sh` stands up a bare PostgreSQL 16
+under a shim supplying what a hosted project provides before the first migration
+runs: the four roles, `extensions` with pgcrypto in it, an `auth` schema with the
+two objects our SQL references, and Supabase's default privileges on `public`.
+It applies every migration in order, then hashes the resulting schema object by
+object. The same query runs against production and the two hashes are compared.
+
+What that verifies: SQL validity, ordering, columns, constraints, indexes,
+policies, grants, RLS and function bodies. What it does not: anything depending
+on the real auth or storage services, or on PostgREST.
+
+**Result.** Nine of the ten object classes match byte for byte.
+
+| class | count | matches production |
+| --- | --- | --- |
+| columns | 239 | yes |
+| constraints | 66 | yes |
+| indexes | 85 | yes |
+| policies | 2 | yes |
+| views | 1 | yes |
+| execute grants | 83 | yes |
+| table grants and RLS | 37 | yes |
+| triggers | 0 vs 1 | no, see below |
+| function bodies | 83 | three differ, see below |
+
+**Finding: `lock_internal_helpers` needed no file.** This section assumed two
+migrations had to be written. Only one did. The revokes that migration performed
+are already carried by `0006_ping_model.sql` and `0009_verification_hardening.sql`,
+and the grant fingerprint proves it: all 83 execute grants and all 37 table grant
+states produced by the repo's set match production exactly.
+
+**Finding: `0024_the_bindery.sql` was never applied.** Production runs the
+`0022_the_card.sql` version of `celestual_card_clean`, which defaults a card
+ground to `ink` and rejects `leaf`, `chalk` and `hide`. This is the only real
+behavioural drift in the whole schema. 0024 does nothing else, so the file stays
+in the repo and applying it is a step in `launchsteps.md` rather than a decision
+taken here. Finding 1.9 retires the bindery design, so it may end up moot.
+
+**Finding: a Database Webhook that no migration can carry.** Production has a
+trigger `celestual_dm_outbox_push` on `celestual_dm_outbox` calling
+`supabase_functions.http_request` against the `celestual-mutual-dm` function URL.
+Dashboard-created, embeds the project ref, in no file. Recorded in
+`launchsteps.md` so a rebuild from this repo does not lose the mutual DM.
+
+**Finding: the migration history table is not a record of what ran.** Five rows
+against twenty-nine files, and 66 of 83 function bodies in production carry CRLF
+line endings that no file here has. Most of this schema was applied by hand
+through the dashboard SQL editor. The two `celestual_campus_*` functions in
+production are also missing two comment lines the repo has, which is the same
+cause and changes no behaviour.
+
+**What landed.**
+
+| Item | What |
+| --- | --- |
+| `supabase/migrations/0029_adopt_sender_and_email_login.sql` | the missing migration, transcribed from the live definitions of two tables and three functions |
+| `scripts/verify-migrations.sh` | the harness above, re-runnable by every later phase |
+| `supabase/migrations/0015_identity_start.sql` | deleted, per Q4 |
+| `supabase/functions/celestual-relogin/` | deleted, per Q4 |
+
+Deleting `celestual-relogin` orphans two live RPCs, `celestual_relogin_store` and
+`celestual_relogin_redeem`, which stay in the database because Q4 did not ask for
+their removal and no deletion manifest covers them. It also leaves
+`app/src/api/relogin.js` invoking a function that no longer has source here. That
+is deliberate and bounded: the function was never deployed, so `/signin` was
+already dark, and Phase 6b rebuilds that route on the shipped
+`celestual_login_lookup` and `celestual_redeem_login` path.
+
+No production writes. Nothing was applied. The output is files plus a verified
+diff.
+
+The original plan for this phase follows.
 
 Produce a migration set that, applied to an empty database, reproduces production
 exactly. Concretely:
@@ -406,8 +481,6 @@ exactly. Concretely:
    only consumer is an undeployed function. See Q4.
 3. Verify by applying the full set to a local Supabase instance and diffing
    against a production schema dump.
-
-No production writes. The output is files plus a verified diff.
 
 ### Phase 4b. Identity and session schema
 

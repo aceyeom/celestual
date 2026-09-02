@@ -76,12 +76,11 @@ Idempotent migrations, applied in order:
   its TTL from 24 h to 30 min (the durable re-login removed the repeat-DM pressure
   the long TTL guarded against). The relays parse `\d{4,6}` through the cutover.
 
-- `migrations/0015_identity_start.sql` — **the identity router.**
-  `celestual_handle_route(handle)` answers, read-only, which way in an @ takes:
-  unknown (sign up), known with no bound address (prove it by DM), or known with
-  one (mail the sign-in link, and hand back the address masked to
-  `j•••@gmail.com`). Service-role only. This is what let the sign-in screen stop
-  offering two doors and stop hedging in print about which one worked.
+- `migrations/0015_identity_start.sql` — **removed in the Phase 4a
+  reconciliation.** It defined `celestual_handle_route(handle)`, an identity
+  router that was never applied to production and whose only caller,
+  `functions/celestual-relogin`, was never deployed. The shipped answer to the
+  same problem is `0029` below. See `docs/open-questions.md` Q4.
 
 - `migrations/0016_recruit_program.sql` — **the recruitment program.**
   `celestual_recruits` (one row per person who commented under the recruitment
@@ -175,6 +174,19 @@ Idempotent migrations, applied in order:
   `celestual-resolve` function's service role. `pic_url` is a URL and never an
   image. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)**
 
+- `migrations/0029_adopt_sender_and_email_login.sql` — **the reconciliation.**
+  Creates nothing new. Every object in it already existed in production and had
+  since 2026-07-19, applied under the name `adopt_sender_and_email_login` with no
+  file behind it: `celestual_email_identities` (an address book, one row per
+  email and handle pair), `celestual_login_links` (hash-stored, single-use magic
+  link tokens), and `celestual_bind_login_email` / `celestual_login_lookup` /
+  `celestual_redeem_login`. An email becomes a second way to reach a handle you
+  already proved you own; the DM code flow is still the only thing that proves
+  ownership. Written entirely as `if not exists` and `create or replace`, so
+  against production it is a no-op. Transcribed from the live definitions with
+  `pg_get_functiondef`, deliberately without tidying.
+  **Verify with `scripts/verify-migrations.sh`.**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay
@@ -235,7 +247,6 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |
 | `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../design/DESIGN.md](../design/DESIGN.md)**) | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
-| `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 
 | `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |

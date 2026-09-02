@@ -12,8 +12,9 @@ Per spec section 0, I have not chosen and continued on any of these.
 
 ## Blocking now
 
-Nothing. Q0, Q1, Q2, Q3 and Q21 are answered, and Q22 below is answered with
-them. Q4, Q5 and Q6 block Phase 4a and 4b and are not needed before then.
+Nothing. Every question that gated Phases 4a through 6b is answered. Q4 through
+Q11 were all answered on their recommendations as written here. Q12 and Q13 gate
+Phases 7 and 8, which are out of the current scope.
 
 ### Q22. ANSWERED. The second signature surface is the mutual reveal.
 
@@ -165,7 +166,31 @@ One consequence to carry into Phase 4b: `celestual_submit` calls
 `celestual_submit` for the new identity model must keep that call chain intact
 rather than inlining a hardcoded cap.
 
-### Q4. `0015_identity_start.sql` was never applied. Keep it or drop it?
+### Q4. ANSWERED. Option A. Drop 0015 and `celestual-relogin`.
+
+Done in Phase 4a. `supabase/migrations/0015_identity_start.sql` and
+`supabase/functions/celestual-relogin/` are deleted, and
+`supabase/migrations/0029_adopt_sender_and_email_login.sql` is written from the
+live definitions of the five objects that actually shipped.
+
+Two things Phase 4a found that this question did not know:
+
+1. **`lock_internal_helpers` needed no file.** Its revokes are already carried by
+   `0006_ping_model.sql` and `0009_verification_hardening.sql`. Verified against
+   all 83 execute grants and 37 table grant states in production.
+2. **Deleting `celestual-relogin` orphans two live RPCs.**
+   `celestual_relogin_store` and `celestual_relogin_redeem` exist in production
+   and now have no caller anywhere. They stay in the database: this question did
+   not ask for their removal and no group in `docs/deletions.md` covers them.
+   `app/src/api/relogin.js` also still invokes the deleted function by name.
+   Phase 6b rebuilds `/signin` on the shipped `celestual_login_lookup` path,
+   which is where that gets tidied.
+
+The original question follows.
+
+---
+
+### Q4 (original). `0015_identity_start.sql` was never applied. Keep it or drop it?
 
 The repo has it. Production does not have `celestual_handle_route`, the function
 it defines. Its only caller is `celestual-relogin`, which is also not deployed.

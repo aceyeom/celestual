@@ -145,8 +145,8 @@ Nothing in this group is deleted until Q3 is answered.
 | `supabase/functions/celestual-search/` | CHECK | 85 lines. Instagram handle typeahead. Never deployed. Behind `VITE_HANDLE_SEARCH`, which is `0`. Superseded by Apify resolution in Phase 5. It is a generic pluggable proxy and contains no HikerAPI code, so it is a separate decision from Group A. Called via `functions.invoke('celestual-search')` in `app/src/api/handles.js`, which goes with it. |
 | `app/src/api/handles.js` | CHECK | 134 lines. Only consumer of the above. Verify no other importer before deleting. |
 | `supabase/functions/celestual-remind/` | CHECK | 180 lines. Never deployed. Its RPC `celestual_request_reminder` was dropped by `0006_ping_model.sql:207` and does not exist in production. Dead on both ends. |
-| `supabase/functions/celestual-relogin/` | HOLD | 192 lines. Never deployed. Its RPC `celestual_handle_route` does not exist in production either. But it is the sign back in flow, and spec section 3 requires a durable cross surface session. It may be the starting point rather than a deletion. See Q4. |
-| `supabase/migrations/0015_identity_start.sql` | HOLD | Never applied to production. Same question, Q4. |
+| `supabase/functions/celestual-relogin/` | DELETED in Phase 4a | 192 lines. Never deployed. Q4 answered A: the shipped `celestual_login_lookup` path replaces it. Removing it orphans two live RPCs, `celestual_relogin_store` and `celestual_relogin_redeem`, which stay in the database because nothing here covers them. |
+| `supabase/migrations/0015_identity_start.sql` | DELETED in Phase 4a | Never applied to production. Q4 answered A. Its only function, `celestual_handle_route`, existed nowhere but this file. |
 
 ---
 
@@ -298,7 +298,7 @@ Two rows in this group should survive any wipe on their own merits:
 | A. HikerAPI | Ready, spec mandated | none |
 | B. Trial and recruitment | Ready pending confirmation | Q12 |
 | C. Stripe | CLOSED, nothing deleted | answered |
-| D. Dead server code | Partly ready | Q4 for relogin and 0015 |
+| D. Dead server code | Q4 items deleted in Phase 4a; `celestual-search` still open | `celestual-search` is Phase 5's |
 | E. Communities and campuses | Ready pending confirmation | Q15 |
 | F. Old resolver tables | Ready pending confirmation | Q7 |
 | G. Documentation | Partly ready | Q17 |

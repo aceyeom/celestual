@@ -8,7 +8,7 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-Status: Phase 2 complete. Phase 3 is presented and waiting on your approval.
+Status: Phases 2 and 3 complete, Phase 3 approved. Phase 4a complete.
 Everything else fills in as phases land.
 
 ---
@@ -24,7 +24,8 @@ Everything else fills in as phases land.
       build wins. `--ash` and `--hair` follow the build too. Phase 2 unblocked.
 - [x] Answer Q1, the `tsc` gate. Done: the production build plus eslint plus
       `npm run lint:voice` stand in for it. See section 12 below.
-- [ ] Answer Q4 (migration 0015), Q5 and Q6 (the merge rule).
+- [x] Answer Q4 (migration 0015), Q5 and Q6 (the merge rule). Done: all eight
+      of Q4 through Q11 answered on their recommendations.
 - [ ] Approve the remaining groups in `docs/deletions.md`. Groups C and I are
       closed and need no approval.
 
@@ -92,21 +93,74 @@ Project ref: `vwbsjwaqnycyghvwlxhd`. Region `us-west-2`.
 
 ## 2. Migration apply order
 
-`PENDING Phase 4a and 4b.`
+### 2a. Phase 4a. Reconciliation. DONE IN THE REPO, TWO APPLIES FOR YOU.
 
-Phase 4a has to reconcile the repo's 28 migration files against production's five
-applied migrations before any new migration is written. See `docs/plan.md`
-section 1.3.
+Phase 4a compared the repo's migration set against production by applying every
+file to an empty PostgreSQL and hashing both schemas object by object. Re-run it
+any time with:
 
-Known now, ahead of that work:
+```
+scripts/verify-migrations.sh
+```
 
-- Two migrations exist in production with no file in this repo, and Phase 4a
-  writes them from the live definitions: `lock_internal_helpers` and
-  `adopt_sender_and_email_login`.
-- `0015_identity_start.sql` is in the repo and was never applied. Q4 decides
-  whether it is applied or dropped.
+**What matched, byte for byte:** 239 columns, 66 constraints, 85 indexes, 2
+policies, 1 view, 83 execute grants, 37 table grant and RLS states. The repo's
+migrations now produce production's schema.
 
-The applied set in production today, for reference:
+**What the audit expected and did not find.** `lock_internal_helpers` needs no
+file. Its revokes are already carried by `0006_ping_model.sql` and
+`0009_verification_hardening.sql`, and the grant fingerprint proves it: every one
+of the 83 execute grants and 37 table grants produced by the repo's set matches
+production exactly. `docs/plan.md` section 4a said two files had to be written.
+Only one did.
+
+**What was written.** `supabase/migrations/0029_adopt_sender_and_email_login.sql`,
+transcribed from the live definitions of five objects that existed in production
+with no file behind them: tables `celestual_email_identities` and
+`celestual_login_links`, functions `celestual_bind_login_email`,
+`celestual_login_lookup` and `celestual_redeem_login`.
+
+**What was removed,** per your answer to Q4: `0015_identity_start.sql` and
+`supabase/functions/celestual-relogin/`. Neither was ever applied or deployed.
+
+- [ ] **Apply `0029_adopt_sender_and_email_login.sql` to production.** It is
+      written entirely as `if not exists` and `create or replace`, so against
+      production it is a no-op that rewrites three function bodies to the text
+      they already hold. Applying it is what puts the row in
+      `supabase_migrations.schema_migrations` so the history stops lying.
+      Supabase dashboard, SQL editor.
+
+- [ ] **Apply `0024_the_bindery.sql` to production, or decide not to.** This is
+      the one real behavioural drift Phase 4a found. Production runs the
+      `0022_the_card.sql` version of `celestual_card_clean`, which defaults a
+      card ground to `ink` and rejects `leaf`, `chalk` and `hide`. The repo's
+      0024 version accepts all eight and defaults to `leaf`. 0024 was never
+      applied. It changes nothing else.
+      Note that `docs/plan.md` finding 1.9 retires the bindery design, so you may
+      prefer to leave production as it is and let Phase 6b settle it. Either way
+      it is your call, not mine, and until you make it the repo and production
+      disagree on this one function.
+
+**Two things about production that no migration can carry, recorded so a rebuild
+from this repo does not silently lose them:**
+
+1. **A Database Webhook on `celestual_dm_outbox`.** Production has a trigger
+   `celestual_dm_outbox_push`, AFTER INSERT FOR EACH ROW, calling
+   `supabase_functions.http_request` against
+   `https://<project-ref>.functions.supabase.co/celestual-mutual-dm`. It was
+   created through the dashboard, it embeds the project ref, and it is in no
+   migration file. `docs/MANYCHAT-MUTUAL-DM.md` section on delivery describes
+   setting it up. If you ever rebuild the database from this repo, recreate it by
+   hand or the mutual DM stops going out on match.
+
+2. **The migration history table is not a record of what ran.**
+   `supabase_migrations.schema_migrations` holds five rows against twenty-nine
+   files, and 66 of the 83 function bodies in production carry CRLF line endings
+   that no file in this repo has. Most of this schema was applied by hand through
+   the dashboard SQL editor. Treat that table as a hint and the schema itself as
+   the authority.
+
+The five rows it does hold, for reference:
 
 | version | name |
 | --- | --- |
@@ -115,6 +169,11 @@ The applied set in production today, for reference:
 | 20260717010302 | verification_hardening |
 | 20260719082701 | adopt_sender_and_email_login |
 | 20260830143432 | handle_resolver |
+
+### 2b. Phase 4b and later
+
+`PENDING.` New migrations from Phase 4b onward are listed here in apply order as
+each phase lands.
 
 ---
 
