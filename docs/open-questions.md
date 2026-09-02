@@ -251,7 +251,28 @@ into the surviving row. Confirm.
 
 ## Blocking Phase 5
 
-### Q7. Migrate the 40 cached profiles, or drop and re acquire?
+### Q7. ANSWERED and done in Phase 5. Migrate.
+
+`0031_apify_resolver.sql` carries `handle`, `display_name` and `is_verified` from
+`celestual_handle_cache` into `ig_profiles` with a null `avatar_path`, drops
+`pic_url` and `is_private`, and drops `celestual_handle_lookups`.
+
+Not carrying `is_private` costs nothing, which is worth recording. Every carried
+row arrives with a null `avatar_fetched_at`, which `ig_profile_get` reports as a
+stale picture, so the first person to resolve one of those handles triggers an
+Apify call that refreshes the private flag along with the face. Carrying a stale
+boolean forward to save a call that is going to happen anyway is the worse trade.
+
+`celestual_handle_cache` itself is left standing rather than dropped. This
+question authorised migrating out of it and did not ask for its removal, the free
+tier has no point in time recovery, and it is the source the migration reads.
+Dropping it is a step in `docs/launchsteps.md` section 4b.
+
+The original question follows.
+
+---
+
+### Q7 (original). Migrate the 40 cached profiles, or drop and re acquire?
 
 `celestual_handle_cache` holds 40 rows. Its `pic_url` column holds signed
 Instagram CDN URLs, which the spec bans and which are expired or expiring.
@@ -264,7 +285,30 @@ seed `ig_profiles` for free, saving 40 Apify calls.
 resolve. Drop `pic_url` and `is_private`. Drop `celestual_handle_lookups`
 entirely, since it is only counters.
 
-### Q8. `device_id` moves from a request body field to an httpOnly cookie.
+### Q8. ANSWERED and done in Phase 5. Option B, the first party proxy.
+
+`/api/resolve` is a rewrite in `vercel.json` onto the edge function, so the
+device cookie is set on `celestual.us` rather than on `*.supabase.co`. The
+client posts there with `credentials: 'include'` and no longer sends any device
+id of its own; the id is a UUID the function issues and the browser never reads.
+
+Two things this needed beyond the one line the question estimated:
+
+1. **A dev proxy too.** `app/vite.config.js` carries the same rewrite, so local
+   development exercises the path the browser actually takes instead of a second
+   code path that only works on a laptop.
+2. **The rewrite destination is a literal URL** carrying the project ref,
+   because a Vercel rewrite cannot read an environment variable. Recorded in
+   `launchsteps.md` as a line to change if the ref ever does.
+
+The function must be deployed `--no-verify-jwt`, because the rewrite forwards a
+plain browser POST with no Supabase key on it. Also in `launchsteps.md`.
+
+The original question follows.
+
+---
+
+### Q8 (original). `device_id` moves from a request body field to an httpOnly cookie.
 
 Spec section 5: "`device_id` is a UUID the edge function issues in an httpOnly,
 SameSite=Lax cookie on first request."
@@ -290,7 +334,19 @@ those users becomes the IP one.
 **Recommendation:** B. It is a few lines in `vercel.json`, it makes the cookie
 first party, and it also removes the direct `*.supabase.co` call from the browser.
 
-### Q9. The spec drops `is_private`. Intentional?
+### Q9. ANSWERED and done in Phase 5. Keep it.
+
+`ig_profiles.is_private` exists and is written on every resolve. It is not on the
+result card and is never sent to the browser, which is what spec section 5's
+field list actually constrains. Two screens that drew it from the old shape lost
+that branch, and the unused `resolve.private` string came out of
+`i18n/strings.js`.
+
+The original question follows.
+
+---
+
+### Q9 (original). The spec drops `is_private`. Intentional?
 
 Spec section 5 lists four captured fields: `handle`, `display_name`,
 `is_verified`, `avatar`. The existing resolver also captures `is_private`.

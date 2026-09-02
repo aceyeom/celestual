@@ -72,7 +72,6 @@ const en = {
   // goes through either way.
   'resolve.looking': 'looking',
   'resolve.missing': 'no instagram account under that name. you can still place it.',
-  'resolve.private': 'private',
   // The send screen's second tap, when we found nobody. It replaces the
   // spelling prompt rather than stacking under it: one line under a field, and
   // it says what pressing again will do.

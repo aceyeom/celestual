@@ -612,7 +612,7 @@ export function HandleReadout({ handle }) {
           {at.name || atHandle(h)}
           {at.verified && <Sparkle size={9} />}
         </span>
-        <span className="wl-who-at">{atHandle(h)}{at.private ? ' · private' : ''}</span>
+        <span className="wl-who-at">{atHandle(h)}</span>
       </span>
     </div>
   )

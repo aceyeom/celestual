@@ -1,4 +1,4 @@
-// CELESTUAL — celestual-resolve edge function (the Instagram handle resolver).
+// CELESTUAL: celestual-resolve edge function (the Instagram handle resolver).
 //
 // A person types an @ from memory and presses send. If they mistyped it, the
 // ping stands for sixty days against an account that does not exist and nothing
@@ -6,106 +6,138 @@
 // handle into a display name, a badge and a face, server-side, so the confirm
 // step confirms against a PERSON instead of against their own spelling.
 //
-// ── TWO ENDPOINTS, ONE FUNCTION ──────────────────────────────────────────────
+// ── ONE ENDPOINT ─────────────────────────────────────────────────────────────
 //
-//   POST { handle, device? }        → resolve
-//     { ok:true, found:true,  handle, display_name, is_verified, is_private,
-//       avatar, cached }
+//   POST { handle }
+//     { ok:true, found:true,  handle, display_name, is_verified, avatar, cached }
 //     { ok:true, found:false, handle }                  nobody by that name
-//     { ok:false, error:'rate' | 'bad_input' | 'off' }  say so, never guess
+//     { ok:false, error:'rate', retry_after }           429, with the seconds
+//     { ok:false, error:'bad_input' | 'off' }           say so, never guess
 //
-//   GET  ?avatar=<handle>           → the picture, proxied live
-//     image bytes, or 302 to nothing. See THE PICTURE below.
+// There is no avatar proxy any more. `avatar` is a public Supabase Storage URL
+// the browser fetches directly, and it does not expire. See THE FACE below.
 //
 // A `found:false` is NOT a refusal and the client must not treat it as one. The
 // product's rule is that a lookup never blocks the act: if we cannot find the
 // account, the app says so once and lets the ping go anyway. We are not
-// Instagram's registry, our providers are imperfect, and a person who knows
-// their friend's handle is right is right.
+// Instagram's registry, our provider is imperfect, and a person who knows their
+// friend's handle is right is right.
 //
-// ── THE PROVIDERS ────────────────────────────────────────────────────────────
-// Tried in order, first answer wins:
+// ── THE PROVIDER ─────────────────────────────────────────────────────────────
+// Apify, actor shu8hvrXbJbY3Eb9W, and nothing else. Spec section 5. One
+// synchronous run per cache miss, asking for profile details with the post
+// limit at zero: no posts, no comments, no reels, nothing that would turn a
+// name lookup into a scrape of somebody's account.
 //
-//   1. Instagram's own public web-profile endpoint. Free, no key, and the most
-//      accurate thing there is about Instagram. It is also the first thing to
-//      refuse a datacenter IP, which is why there is a second one.
-//   2. HikerAPI, authenticated with the `x-access-key` header. The paid
-//      fallback for everything the first one will not answer.
+// ── THE FACE ─────────────────────────────────────────────────────────────────
+// Instagram's CDN URLs are signed and expire within days. Storing one would
+// break every cached card by the weekend, which is why the previous version of
+// this function proxied the image live on every single view and kept nothing.
 //
-// Both are read-only lookups of a public profile by exact username. Neither is
-// ever reached from the browser: the keys are server-side secrets here and the
-// client never learns which provider answered.
+// Now: on a cache miss the image is downloaded here, once, put in our own
+// `avatars` bucket at `ig/<handle>.jpg`, and the browser is handed our own
+// public URL. No Instagram URL ever reaches a browser, no viewer's IP is ever
+// handed to Meta on behalf of somebody they typed, and a card drawn from cache
+// draws its face from cache too.
 //
-// ── THE PICTURE ──────────────────────────────────────────────────────────────
-// We never store the image. Instagram's CDN URLs are signed and expire within
-// hours, so a copied URL is a broken image by tomorrow and a copied FILE is us
-// hosting a stranger's face on our own disk, with everything that implies about
-// consent, takedowns and storage cost. What the cache holds is the URL; what
-// the browser gets is `?avatar=<handle>` on this function, which fetches the
-// live CDN URL at request time, streams the bytes through, and keeps none. If
-// the signed URL has expired, the proxy re-resolves once and tries again.
-//
-// The proxy is also what keeps the browser from talking to Instagram: an <img>
-// pointed straight at the CDN would put every viewer's IP in front of Meta on
-// behalf of somebody they typed.
+// A refresh happens only when the stored picture is older than thirty days and
+// that handle is resolved again. If the download fails, nothing is stored and
+// the client gets no avatar: the UI draws a monogram from the display name and
+// the card renders regardless. A missing face never blocks a card.
 //
 // ── THE CAPS ─────────────────────────────────────────────────────────────────
-// Per device: 30 DISTINCT handles per rolling day. Re-asking about a handle
-// this device already asked about is free, so backspacing and retyping never
-// costs anything. A person placing a ping looks up one or two accounts; thirty
-// is far past normal use and far short of a scrape.
+// Server side, three rolling 24 hour windows, enforced in the database by
+// handle_search_allow (migration 0031):
 //
-// Per IP: much more lenient, on purpose. One Berkeley address is a residence
-// hall behind one NAT, and a cap tight enough to stop a script there would lock
-// out a floor because somebody typed a lot. Two windows (hour and day) at a
-// height a building never reaches.
+//   user_id    20    signed in, counted on the person and not on the device
+//   device_id  20    anonymous, and anonymous is the majority case
+//   ip        200    the backstop, deliberately loose because one Berkeley
+//                    address is a residence hall behind one NAT
 //
-// Secrets (Supabase → Edge Functions → Secrets):
-//   HIKER_API_KEY     — HikerAPI access key, sent as `x-access-key`
-//   HIKER_API_BASE    — optional, defaults to https://api.hikerapi.com
-//   IG_PUBLIC_LOOKUP  — optional '0' to skip provider 1 (if it is being refused)
+// A CACHE HIT COSTS NOTHING. Only a call that actually reached Apify writes a
+// row, so re-asking about a handle somebody already looked up is always free
+// and the bill is bounded by the number of distinct handles, not by traffic.
+//
+// On a limit this answers 429 with the seconds until the oldest counted call
+// ages out, so the UI can say when rather than say no.
+//
+// ── THE DEVICE ID ────────────────────────────────────────────────────────────
+// A UUID this function issues in an httpOnly, SameSite=Lax cookie on first
+// request, per spec section 5. Not a fingerprint: not derived from anything
+// about the person, not joined to a handle or an account, and resettable by
+// clearing cookies.
+//
+// It is only first party if the browser reaches this function through
+// celestual.us rather than through *.supabase.co, which is what the
+// `/api/resolve` rewrite in vercel.json is for (open question Q8, answered B).
+// Called cross-origin the cookie is third party, Safari and Chrome will drop
+// it, and the IP counter carries those requests instead. That degradation is
+// designed for rather than assumed away.
+//
+// Secrets (Supabase, Edge Functions, Secrets):
+//   APIFY_TOKEN       Apify API token, scoped to the actor below
+//   APIFY_ACTOR_ID    optional, defaults to the actor in spec section 5
 // Provided by the platform: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
 // Deploy:  supabase functions deploy celestual-resolve --no-verify-jwt
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-const HIKER_KEY = Deno.env.get('HIKER_API_KEY') ?? '';
-const HIKER_BASE = (Deno.env.get('HIKER_API_BASE') ?? 'https://api.hikerapi.com').replace(/\/+$/, '');
-const IG_PUBLIC = Deno.env.get('IG_PUBLIC_LOOKUP') !== '0';
+const APIFY_TOKEN = Deno.env.get('APIFY_TOKEN') ?? '';
+const APIFY_ACTOR = Deno.env.get('APIFY_ACTOR_ID') ?? 'shu8hvrXbJbY3Eb9W';
 
-// The public web-profile endpoint wants the web app's id and a browser-shaped
-// UA. Neither is a secret (both ride on every instagram.com page load); they
-// are here because the endpoint answers 400 without them.
-const IG_APP_ID = '936619743392459';
-const IG_UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+const AVATAR_BUCKET = 'avatars';
 
-const HIT_TTL_MS = 24 * 3600_000; //  a found account is good for a day
-const MISS_TTL_MS = 3600_000; //      a missing one for an hour: that fact changes
-
-const PER_DEVICE_DAY = 30; //         distinct handles per device per rolling day
-const PER_IP_HOUR = 300; //           lookups per address per hour
-const PER_IP_DAY = 1500; //           and per rolling day
-
+// Apify runs are slower than a plain HTTP lookup because an actor has to start.
+// Twenty seconds is generous for a details-only run and still well short of the
+// platform's own function ceiling.
+const APIFY_TIMEOUT_MS = 20_000;
+const IMAGE_TIMEOUT_MS = 8_000;
 const MAX_IMAGE_BYTES = 3_000_000;
-const PROVIDER_TIMEOUT_MS = 6000;
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const DEVICE_COOKIE = 'cel_dev';
+const DEVICE_MAX_AGE = 400 * 86_400; // the longest a browser will keep one anyway
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
+// A handle nobody has is not cached in the database, because the cache is
+// permanent now and an account registered tomorrow would read as missing
+// forever. It is held here instead, for the life of this isolate, so somebody
+// backspacing over a typo does not pay for every keystroke and the fact expires
+// on its own.
+const MISS_TTL_MS = 10 * 60_000;
+const misses = new Map<string, number>();
+
+const CORS_HEADERS = 'authorization, x-client-info, apikey, content-type';
+
+// Credentialed requests cannot use a wildcard origin, and the device cookie is
+// a credential. The origin is echoed back only for the sites this product is
+// actually served from; anything else gets the wildcard and no cookie, which is
+// exactly the degradation described above.
+const ALLOWED_ORIGINS = [
+  'https://celestual.us',
+  'https://www.celestual.us',
+  'http://localhost:5173',
+  'http://localhost:4173',
+];
+
+function cors(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? '';
+  const allowed = ALLOWED_ORIGINS.includes(origin);
+  return {
+    'Access-Control-Allow-Origin': allowed ? origin : '*',
+    'Access-Control-Allow-Headers': CORS_HEADERS,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    ...(allowed ? { 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : { Vary: 'Origin' }),
+  };
+}
+
+function json(req: Request, body: unknown, status = 200, extra: Record<string, string> = {}) {
+  return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS },
+    headers: { 'Content-Type': 'application/json', ...cors(req), ...extra },
   });
+}
 
 // Mirror of celestual_norm() and the client's normHandle(): lowercase, drop a
 // leading @, keep only IG-legal characters. One shape of key everywhere.
@@ -131,6 +163,30 @@ function clientIp(req: Request): string | null {
   );
 }
 
+function readCookie(req: Request, name: string): string | null {
+  const raw = req.headers.get('cookie') ?? '';
+  for (const part of raw.split(';')) {
+    const [k, ...v] = part.trim().split('=');
+    if (k === name) return decodeURIComponent(v.join('=')).slice(0, 64) || null;
+  }
+  return null;
+}
+
+// httpOnly so no script can read it, SameSite=Lax so it rides an ordinary
+// navigation but not a cross-site form post, Secure because everything here is
+// https. Path is / rather than the function's own path, because the rewrite in
+// vercel.json means the browser knows this as /api/resolve.
+function deviceCookie(id: string): string {
+  return [
+    `${DEVICE_COOKIE}=${id}`,
+    'Path=/',
+    `Max-Age=${DEVICE_MAX_AGE}`,
+    'HttpOnly',
+    'Secure',
+    'SameSite=Lax',
+  ].join('; ');
+}
+
 function withTimeout(ms: number): { signal: AbortSignal; done: () => void } {
   const c = new AbortController();
   const id = setTimeout(() => c.abort(), ms);
@@ -143,326 +199,258 @@ type Account = {
   is_verified: boolean;
   is_private: boolean;
   pic_url: string;
-  source: string;
 };
 
-// ── provider 1 · Instagram's public web profile ──────────────────────────────
-async function fromInstagram(handle: string): Promise<Account | null> {
-  if (!IG_PUBLIC) return null;
-  const { signal, done } = withTimeout(PROVIDER_TIMEOUT_MS);
+// Apify's field names have varied across versions of this actor and across the
+// several Instagram actors that share its output shape, so every field is read
+// from each spelling it has been known by. This is the same defensive read the
+// previous provider used and it costs nothing.
+function pick(u: Record<string, unknown>, keys: string[]): unknown {
+  for (const k of keys) {
+    const v = u[k];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+
+// ── the provider ─────────────────────────────────────────────────────────────
+// One synchronous actor run, returning the dataset items directly.
+//
+// `resultsLimit: 0` is spec section 5's "set the post limit to zero". With
+// `resultsType: 'details'` the actor returns the profile and no media at all,
+// which is both what the product needs and the cheapest thing to ask for.
+async function fromApify(handle: string): Promise<Account | null> {
+  if (!APIFY_TOKEN) return null;
+  const { signal, done } = withTimeout(APIFY_TIMEOUT_MS);
   try {
     const res = await fetch(
-      `https://i.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`,
+      `https://api.apify.com/v2/acts/${encodeURIComponent(APIFY_ACTOR)}/run-sync-get-dataset-items`,
       {
+        method: 'POST',
         signal,
         headers: {
-          'x-ig-app-id': IG_APP_ID,
-          'User-Agent': IG_UA,
-          Accept: 'application/json',
-          'Accept-Language': 'en-US,en;q=0.9',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${APIFY_TOKEN}`,
         },
+        body: JSON.stringify({
+          directUrls: [`https://www.instagram.com/${handle}/`],
+          resultsType: 'details',
+          resultsLimit: 0,
+          addParentData: false,
+          searchLimit: 1,
+        }),
       },
     );
-    // Every non-200 falls through to the paid provider, 404 included. A 404
-    // here USUALLY means no such account, but Instagram also answers 404 to a
-    // request it has decided it does not like, and the two are indistinguishable
-    // from this side. Telling somebody their friend does not exist because a
-    // scraper-shy endpoint shrugged is the one failure worth paying to avoid;
-    // the one-hour miss cache keeps the bill for real typos small.
-    if (!res.ok) return null;
-    const body = await res.json();
-    const u = body?.data?.user ?? body?.user ?? null;
-    if (!u || !u.username) return null;
+    if (!res.ok) {
+      console.error('apify run failed', res.status);
+      return null;
+    }
+    const items = await res.json();
+    const u = Array.isArray(items) ? items[0] : items;
+    if (!u || typeof u !== 'object') return null;
+
+    const rec = u as Record<string, unknown>;
+    // An actor that could not reach the account still returns an item, with an
+    // error field and no username. That is a miss, not an answer.
+    if (rec.error && !rec.username) return null;
+
+    const username = norm(pick(rec, ['username', 'handle', 'ownerUsername']));
+    if (!username) return null;
+
     return {
-      handle: norm(u.username),
-      display_name: String(u.full_name ?? '').slice(0, 120),
-      is_verified: !!u.is_verified,
-      is_private: !!u.is_private,
-      pic_url: String(u.profile_pic_url_hd ?? u.profile_pic_url ?? '').slice(0, 2048),
-      source: 'instagram',
+      handle: username,
+      display_name: String(pick(rec, ['fullName', 'full_name', 'name']) ?? '').slice(0, 120),
+      is_verified: !!pick(rec, ['verified', 'isVerified', 'is_verified']),
+      is_private: !!pick(rec, ['private', 'isPrivate', 'is_private']),
+      pic_url: String(
+        pick(rec, ['profilePicUrlHD', 'profilePicUrl', 'profile_pic_url_hd', 'profile_pic_url']) ?? '',
+      ).slice(0, 2048),
     };
-  } catch {
+  } catch (e) {
+    console.error('apify call threw', String(e));
     return null;
   } finally {
     done();
   }
 }
 
-// ── provider 2 · HikerAPI (the fallback for everything else) ─────────────────
-// One header, `x-access-key`. The v1 endpoint answers with the user object;
-// some versions wrap it in `user` or `data`, so read all three.
-async function fromHiker(handle: string): Promise<Account | null> {
-  if (!HIKER_KEY) return null;
-  const { signal, done } = withTimeout(PROVIDER_TIMEOUT_MS);
+// ── the face, downloaded once ────────────────────────────────────────────────
+// Pull the bytes, check they are an image and small enough to be a profile
+// picture, and upsert them into the bucket. Returns whether it worked, and
+// nothing else: spec section 5 says a failure stores nothing and lets the card
+// fall back to a monogram, so there is no error for the caller to handle.
+async function storeAvatar(handle: string, url: string): Promise<boolean> {
+  if (!url) return false;
+  const { signal, done } = withTimeout(IMAGE_TIMEOUT_MS);
   try {
-    const res = await fetch(
-      `${HIKER_BASE}/v1/user/by/username?username=${encodeURIComponent(handle)}`,
-      { signal, headers: { 'x-access-key': HIKER_KEY, Accept: 'application/json' } },
-    );
-    if (!res.ok) return null;
-    const body = await res.json();
-    const u = body?.user ?? body?.data?.user ?? body?.data ?? body ?? null;
-    if (!u || !(u.username ?? u.handle)) return null;
-    return {
-      handle: norm(u.username ?? u.handle),
-      display_name: String(u.full_name ?? u.fullName ?? '').slice(0, 120),
-      is_verified: !!(u.is_verified ?? u.verified),
-      is_private: !!(u.is_private ?? u.private),
-      pic_url: String(u.profile_pic_url_hd ?? u.profile_pic_url ?? u.profilePicUrl ?? '').slice(0, 2048),
-      source: 'hiker',
-    };
+    const res = await fetch(url, { signal, headers: { Accept: 'image/*' } });
+    if (!res.ok) return false;
+
+    const type = res.headers.get('content-type') || '';
+    if (!type.startsWith('image/')) return false;
+    const declared = Number(res.headers.get('content-length') || 0);
+    if (declared > MAX_IMAGE_BYTES) return false;
+
+    // Read rather than stream, so the size guard is real even when the upstream
+    // declines to declare a length. A profile picture is tens of KB.
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength === 0 || buf.byteLength > MAX_IMAGE_BYTES) return false;
+
+    const { error } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(`ig/${handle}.jpg`, buf, { contentType: type, upsert: true, cacheControl: '2592000' });
+    if (error) {
+      console.error('avatar upload failed', error.message);
+      return false;
+    }
+    return true;
   } catch {
-    return null;
+    return false;
   } finally {
     done();
   }
 }
 
-// The chain. A provider that returns null did not answer; the next one is
-// asked. If none of them answered, the handle is recorded as not found, which
-// is a soft fact the client is free to place a ping against anyway.
-async function resolveLive(handle: string): Promise<Account | null> {
-  return (await fromInstagram(handle)) ?? (await fromHiker(handle));
+// Our own public URL, built rather than round-tripped. The bucket is public
+// read, so this is a plain object URL and the browser fetches it directly from
+// Supabase with no function in the path.
+function avatarUrl(path: string | null): string {
+  if (!path) return '';
+  return `${SUPABASE_URL}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`;
 }
 
-type CacheRow = {
+type Profile = {
   handle: string;
-  found: boolean;
-  display_name: string | null;
+  display_name: string;
   is_verified: boolean;
   is_private: boolean;
-  pic_url: string | null;
-  fetched_at: string;
+  avatar_path: string | null;
+  avatar_stale: boolean;
 };
 
-async function readCache(handle: string): Promise<CacheRow | null> {
-  const { data } = await supabase
-    .from('celestual_handle_cache')
-    .select('handle, found, display_name, is_verified, is_private, pic_url, fetched_at')
-    .eq('handle', handle)
-    .maybeSingle();
-  return (data as CacheRow) ?? null;
-}
-
-function fresh(row: CacheRow | null): boolean {
-  if (!row) return false;
-  const age = Date.now() - new Date(row.fetched_at).getTime();
-  return age < (row.found ? HIT_TTL_MS : MISS_TTL_MS);
-}
-
-async function writeCache(handle: string, acct: Account | null, source: string) {
-  await supabase.from('celestual_handle_cache').upsert(
-    {
-      handle,
-      found: !!acct,
-      display_name: acct?.display_name || null,
-      is_verified: !!acct?.is_verified,
-      is_private: !!acct?.is_private,
-      pic_url: acct?.pic_url || null,
-      source,
-      fetched_at: new Date().toISOString(),
-    },
-    { onConflict: 'handle' },
-  );
-}
-
-// Rows past every window are dead weight. Swept here rather than by a cron, on
-// a small fraction of requests, the way celestual-edu-verify sweeps its codes.
-async function sweep() {
-  if (Math.random() > 0.04) return;
-  const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
-  await supabase.from('celestual_handle_lookups').delete().lt('created_at', dayAgo);
-  await supabase
-    .from('celestual_handle_cache')
-    .delete()
-    .lt('fetched_at', new Date(Date.now() - 7 * 86_400_000).toISOString());
-}
-
-// ── the caps ─────────────────────────────────────────────────────────────────
-// Returns null when the request may proceed, or the error slug when it may not.
-// The device cap counts DISTINCT handles, so a handle this device has already
-// asked about in the window is always free: retyping never costs anything.
-async function overCap(device: string | null, ip: string | null, handle: string): Promise<string | null> {
-  const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
-  const hourAgo = new Date(Date.now() - 3600_000).toISOString();
-
-  if (device) {
-    // Only BILLED rows count: a handle answered out of the cache cost nobody
-    // anything, and charging a person's thirty for our own cache hit would
-    // lock them out for looking the same friend up twice on two screens.
-    const { data } = await supabase
-      .from('celestual_handle_lookups')
-      .select('handle')
-      .eq('device', device)
-      .eq('billed', true)
-      .gte('created_at', dayAgo)
-      .limit(400);
-    const seen = new Set((data ?? []).map((r: { handle: string }) => r.handle));
-    if (!seen.has(handle) && seen.size >= PER_DEVICE_DAY) return 'rate';
-  }
-
-  if (ip) {
-    const { count: hour } = await supabase
-      .from('celestual_handle_lookups')
-      .select('id', { count: 'exact', head: true })
-      .eq('ip', ip)
-      .gte('created_at', hourAgo);
-    if ((hour ?? 0) >= PER_IP_HOUR) return 'rate';
-    const { count: day } = await supabase
-      .from('celestual_handle_lookups')
-      .select('id', { count: 'exact', head: true })
-      .eq('ip', ip)
-      .gte('created_at', dayAgo);
-    if ((day ?? 0) >= PER_IP_DAY) return 'rate';
-  }
-
-  return null;
-}
-
-async function record(device: string | null, ip: string | null, handle: string, billed: boolean) {
-  await supabase.from('celestual_handle_lookups').insert({ device, ip, handle, billed });
-}
-
-// The URL the browser puts in an <img>. Same function, GET, one query param.
-// Never the CDN URL itself: it is signed, it expires, and pointing a browser at
-// it hands Meta the viewer's IP.
-function avatarHref(req: Request, handle: string): string {
-  const here = new URL(req.url);
-  return `${here.origin}${here.pathname}?avatar=${encodeURIComponent(handle)}`;
-}
-
-function shapeOut(req: Request, handle: string, row: CacheRow, cached: boolean) {
-  if (!row.found) return { ok: true, found: false, handle };
+// The shape the browser gets. `is_private` is deliberately not in it: it is
+// kept (Q9) because a letter to a private account may never arrive, but it is
+// not the card's business and the card is the only reader here.
+function shapeOut(p: Profile, cached: boolean) {
   return {
     ok: true,
     found: true,
-    handle,
-    display_name: row.display_name || '',
-    is_verified: !!row.is_verified,
-    is_private: !!row.is_private,
-    // present only when the account actually has a picture to serve
-    avatar: row.pic_url ? avatarHref(req, handle) : '',
+    handle: p.handle,
+    display_name: p.display_name || '',
+    is_verified: !!p.is_verified,
+    avatar: avatarUrl(p.avatar_path),
     cached,
   };
 }
 
-// ── GET ?avatar=<handle> · the picture, proxied and never kept ───────────────
-async function serveAvatar(req: Request, handle: string): Promise<Response> {
-  const imgHeaders = (extra: Record<string, string> = {}) => ({
-    ...CORS,
-    'Cache-Control': 'public, max-age=3600',
-    'Cross-Origin-Resource-Policy': 'cross-origin',
-    ...extra,
-  });
-  // A picture that cannot be served is not an error the UI should draw. The
-  // readout falls back to the drawn initial, so 204 with nothing in it says
-  // "no picture" without an alt-text-and-broken-glyph in the middle of a field.
-  const none = () => new Response(null, { status: 204, headers: imgHeaders() });
-
-  if (!handle) return none();
-
-  // The proxy carries the IP net but not the device cap: it is called by an
-  // <img>, which cannot send a body, and it can only ever fetch a picture for a
-  // handle the resolve endpoint already put in the cache.
-  const ip = clientIp(req);
-  if (ip && (await overCap(null, ip, handle))) return none();
-
-  let row = await readCache(handle);
-  // Only staleness sends us back to a provider. A FRESH row with no picture is
-  // a real answer (the account has none, or there is no account), and asking
-  // again would put a provider call behind every request for a picture that is
-  // not going to exist this hour either.
-  if (!fresh(row)) {
-    const acct = await resolveLive(handle);
-    await writeCache(handle, acct, acct?.source ?? 'none');
-    // A provider call is a provider call whichever door it came through. If
-    // this one did not land in the ledger, the IP window would never see the
-    // avatar endpoint at all and it would be the way around every cap here.
-    await record(null, ip, handle, true);
-    row = await readCache(handle);
-  }
-  if (!row?.found || !row.pic_url) return none();
-
-  const pull = async (url: string) => {
-    const { signal, done } = withTimeout(PROVIDER_TIMEOUT_MS);
-    try {
-      return await fetch(url, { signal, headers: { 'User-Agent': IG_UA, Accept: 'image/*' } });
-    } finally {
-      done();
-    }
-  };
-
-  try {
-    let res = await pull(row.pic_url);
-    // A signed CDN URL that has expired answers 403. That is not a missing
-    // picture, it is a stale key: resolve once more for a fresh one and retry.
-    if (!res.ok) {
-      const acct = await resolveLive(handle);
-      await record(null, ip, handle, true);
-      if (!acct?.pic_url) return none();
-      await writeCache(handle, acct, acct.source);
-      res = await pull(acct.pic_url);
-      if (!res.ok) return none();
-    }
-    const type = res.headers.get('content-type') || '';
-    if (!type.startsWith('image/')) return none();
-    const len = Number(res.headers.get('content-length') || 0);
-    if (len > MAX_IMAGE_BYTES) return none();
-    // Read it rather than streaming it so the size guard is real even when the
-    // upstream declines to declare a length. A profile picture is tens of KB.
-    const buf = await res.arrayBuffer();
-    if (buf.byteLength > MAX_IMAGE_BYTES) return none();
-    return new Response(buf, { status: 200, headers: imgHeaders({ 'Content-Type': type }) });
-  } catch {
-    return none();
-  }
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-
-  if (req.method === 'GET') {
-    const url = new URL(req.url);
-    const handle = norm(url.searchParams.get('avatar'));
-    return await serveAvatar(req, handle);
-  }
-
-  if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(req) });
+  if (req.method !== 'POST') return json(req, { ok: false, error: 'method' }, 405);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return json({ ok: false, error: 'bad_input' }, 400);
+    return json(req, { ok: false, error: 'bad_input' }, 400);
   }
 
   const handle = norm(body.handle);
   // Instagram's own floor is one character, but a one-character query is a
   // person mid-word rather than a person naming somebody. Two is where a
   // lookup starts being about an account.
-  if (handle.length < 2) return json({ ok: false, error: 'bad_input' }, 400);
+  if (handle.length < 2) return json(req, { ok: false, error: 'bad_input' }, 400);
 
-  const device = String(body.device ?? '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || null;
+  if (!APIFY_TOKEN) return json(req, { ok: false, error: 'off' });
+
+  // ── who is asking ──────────────────────────────────────────────────────────
+  // The session token, if the browser sent one, resolves to a user through the
+  // same function every other surface uses (migration 0030). A signed-in person
+  // is counted on their id and not on their device.
   const ip = clientIp(req);
-
-  await sweep();
-
-  const cached = await readCache(handle);
-  if (fresh(cached)) {
-    // Free, and recorded as such: a cache hit costs no provider call and does
-    // not eat into anybody's thirty.
-    await record(device, ip, handle, false);
-    return json(shapeOut(req, handle, cached!, true));
+  let userId: string | null = null;
+  const token = String(body.session ?? '');
+  if (token.length >= 16 && token.length <= 256) {
+    const { data } = await supabase.rpc('celestual_whoami', { p_token: token });
+    if (data?.signed_in && data.user?.id) userId = String(data.user.id);
   }
 
-  const capped = await overCap(device, ip, handle);
-  if (capped) return json({ ok: false, error: capped });
+  // The device id is ours, not the client's. A cookie we set, or a new one.
+  let device = readCookie(req, DEVICE_COOKIE);
+  let setCookie: string | null = null;
+  if (!device || !/^[0-9a-f-]{36}$/.test(device)) {
+    device = crypto.randomUUID();
+    setCookie = deviceCookie(device);
+  }
+  const cookieHeader = setCookie ? { 'Set-Cookie': setCookie } : {};
 
-  const acct = await resolveLive(handle);
-  await writeCache(handle, acct, acct?.source ?? 'none');
-  await record(device, ip, handle, true);
+  // ── the cache ──────────────────────────────────────────────────────────────
+  const { data: cachedRaw } = await supabase.rpc('ig_profile_get', { p_handle: handle });
+  const cached = cachedRaw as Profile | null;
 
-  const row = await readCache(handle);
-  if (!row) return json({ ok: true, found: false, handle });
-  return json(shapeOut(req, handle, row, false));
+  // A hit whose face is still good is the whole answer, and it is free: nothing
+  // is recorded, because nothing was spent.
+  if (cached && !cached.avatar_stale) {
+    return json(req, shapeOut(cached, true), 200, cookieHeader);
+  }
+
+  // A handle we failed to find a few minutes ago, held in this isolate only.
+  const missAt = misses.get(handle);
+  if (!cached && missAt && Date.now() - missAt < MISS_TTL_MS) {
+    return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+  }
+
+  // ── the caps ───────────────────────────────────────────────────────────────
+  // Checked only now, because everything above this line was free.
+  const { data: allow } = await supabase.rpc('handle_search_allow', {
+    p_user: userId,
+    p_device: device,
+    p_ip: ip,
+  });
+  if (allow && allow.ok === false) {
+    // Spec section 5: the seconds remaining, so the UI can say when. A cached
+    // row that only wanted a fresher face is still worth serving here rather
+    // than refusing outright; the face is thirty days old, not wrong.
+    if (cached) return json(req, shapeOut(cached, true), 200, cookieHeader);
+    return json(
+      req,
+      { ok: false, error: 'rate', retry_after: Number(allow.retry_after ?? 0) },
+      429,
+      { ...cookieHeader, 'Retry-After': String(allow.retry_after ?? 0) },
+    );
+  }
+
+  // ── the call ───────────────────────────────────────────────────────────────
+  const acct = await fromApify(handle);
+  await supabase.rpc('handle_search_record', {
+    p_user: userId,
+    p_device: device,
+    p_ip: ip,
+    p_handle: handle,
+  });
+
+  if (!acct) {
+    misses.set(handle, Date.now());
+    // A refresh that failed still has yesterday's row, and yesterday's row is a
+    // better answer than none.
+    if (cached) return json(req, shapeOut(cached, true), 200, cookieHeader);
+    return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+  }
+  misses.delete(handle);
+
+  // The account may answer under a different casing or a redirect; the row is
+  // keyed on what Apify actually returned.
+  const key = acct.handle || handle;
+  const stored = await storeAvatar(key, acct.pic_url);
+
+  const { data: rowRaw } = await supabase.rpc('ig_profile_put', {
+    p_handle: key,
+    p_display_name: acct.display_name,
+    p_is_verified: acct.is_verified,
+    p_is_private: acct.is_private,
+    p_avatar_ok: stored,
+  });
+  const row = rowRaw as Profile | null;
+  if (!row) return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+
+  return json(req, shapeOut(row, false), 200, cookieHeader);
 });

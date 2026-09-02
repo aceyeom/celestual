@@ -27,9 +27,16 @@ check against the live database's function and table lists.
 
 ---
 
-## Group A. HikerAPI. Required by spec section 5.
+## Group A. HikerAPI. DONE in Phase 5. Required by spec section 5.
 
 Total footprint: four files. There is no HikerAPI database object.
+
+All four are handled. `celestual-resolve/index.ts` was rewritten rather than
+edited, `app/.env.example` now documents `APIFY_TOKEN` and the resolver
+endpoint, `docs/HANDLE-RESOLVER.md` was rewritten around Apify, and the
+`supabase/README.md` row was rewritten. Nothing in the repository refers to the
+old provider except this manifest, the Phase 1 audit, `docs/rebuild-spec.md`,
+and `launchsteps.md` section 4, which spec section 5 requires by name.
 
 | Item | Mark | Why |
 | --- | --- | --- |
@@ -185,12 +192,8 @@ are what they replace.
 
 | Object | Rows | Mark | Why |
 | --- | --- | --- | --- |
-| table `celestual_handle_cache` | 40 | CHECK | Superseded by `ig_profiles`. Its `pic_url` column holds expiring Instagram CDN URLs, which the spec bans. The 40 rows are cached public profile metadata and carry no user data. Safe to drop rather than migrate. Confirm in Q7. |
-| table `celestual_handle_lookups` | 41 | CHECK | Superseded by `handle_search_events`. Rate limit counters only. |
-
-Recommend dropping both rather than migrating. The cached data is public
-metadata, cheap to re acquire, and the avatar URLs in it are already expired or
-expiring.
+| table `celestual_handle_cache` | 40 | MIGRATED, not dropped | Q7 answered: `handle`, `display_name` and `is_verified` are carried into `ig_profiles` by `0031`, with a null `avatar_path` so faces refill lazily. `pic_url` and `is_private` are not carried. The table itself is deliberately left standing: Q7 authorised migrating out of it and said nothing about dropping it, the free tier has no point in time recovery, and it is the source `0031` reads. Dropping it is `docs/launchsteps.md` section 4b, for once `ig_profiles` is answering. |
+| table `celestual_handle_lookups` | 41 | DROPPED in Phase 5 | Q7 answered: counters only, against a window that no longer exists. `drop table if exists` at the foot of `0031`. |
 
 ---
 

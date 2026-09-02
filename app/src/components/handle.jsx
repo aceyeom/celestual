@@ -171,7 +171,6 @@ export function HandleReadout({ C, at, size = 26, onPaper, style }) {
         </span>
         <span style={{ fontFamily: FONT.mono, fontSize: SIZE.micro, letterSpacing: '.4px', color: quiet, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           @{handle}
-          {at.private ? ` · ${t('resolve.private')}` : ''}
         </span>
       </span>
     </div>

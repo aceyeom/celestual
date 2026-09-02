@@ -561,7 +561,72 @@ kept, so the new `users` table is backfilled from them rather than created
 empty, and the merge rule runs against real data on day one. Q5 and Q6 gate
 this.
 
-### Phase 5. Apify in, HikerAPI out
+### Phase 5. Apify in, HikerAPI out. COMPLETE.
+
+`supabase/migrations/0031_apify_resolver.sql`, a rewritten
+`supabase/functions/celestual-resolve`, a rewritten `app/src/api/handles.js`,
+the `/api/resolve` rewrite in `vercel.json` and its dev-server twin, and
+`docs/HANDLE-RESOLVER.md` rewritten around the new provider.
+
+**What changed, against what this section planned.** The plan was to rework the
+function rather than replace it, keeping its billed-only rate limiting, IP
+header trust ordering, provider timeouts, image size guard and normalisation.
+All five of those survived. Four things went further than planned:
+
+1. **The avatar proxy is gone, not adapted.** The old `GET ?avatar=<handle>`
+   endpoint existed only because a stored CDN URL expires. With the bytes in our
+   own bucket there is nothing to proxy, so the second endpoint came out
+   entirely and the browser fetches the face from Supabase directly.
+2. **There is no negative cache.** 0028 cached a miss for an hour. With the
+   cache now permanent a stored miss would be permanent too, and the account
+   somebody registers tomorrow would read as missing until a human forced it.
+   Misses are held in the edge function's memory for ten minutes instead, which
+   keeps a person backspacing over a typo from paying per keystroke and lets the
+   fact expire on its own.
+3. **`billed` is gone as a column.** The old ledger flagged which rows counted.
+   The new one cannot contain a free lookup, because only a call that actually
+   reached Apify ever writes a row. The rule is the same and there is less of it.
+4. **The private flag came off two screens.** Spec section 5's card is avatar,
+   handle, display name, badge. `is_private` is kept in the database on Q9 and
+   is no longer sent to the browser, so `components/handle.jsx` and
+   `wall/parts.jsx` lost the branch that drew it and the unused `resolve.private`
+   string came out of `i18n/strings.js`.
+
+**Q8 answered B, and it needed two files not one.** `vercel.json` gets the
+`/api/resolve` rewrite; `app/vite.config.js` gets the same rewrite as a dev
+proxy, so local development exercises the path the browser actually takes rather
+than a second code path that only works on a laptop. The rewrite destination is
+a literal URL carrying the project ref, because a Vercel rewrite cannot read an
+environment variable. That is recorded in `launchsteps.md` as a thing to change
+if the ref ever does.
+
+**Tested.** `scripts/sql/test-resolver.sql`, 39 assertions: the three limits,
+the permanent cache, the thirty day picture boundary from both sides, a failed
+download keeping yesterday's face, the path constraint that stops one profile
+pointing at another's picture, all three counters including that signing in does
+not spend the device allowance and writes no device row, the rolling window, the
+48 hour prune, and that `anon` can reach none of it.
+
+**HikerAPI.** Gone from all code, config and runbooks. The name survives in
+three places on purpose: `docs/rebuild-spec.md`, which is not mine to edit;
+`launchsteps.md` section 4, because spec section 5 requires the secrets listed
+there by name; and the Phase 1 audit plus `docs/deletions.md`, which are the
+record of the removal. Spec section 15's criterion is read as no HikerAPI code,
+client, type, call site, or comment implying it is still wired in, which is
+satisfied. A literal zero-mention reading would contradict spec section 5's own
+instruction to list the secrets.
+
+**What is deliberately not done here.** The result card. Spec section 5 describes
+it and spec section 8 lists it under UI scope, and this plan puts UI in Phase 6b.
+Phase 5 delivers what the card renders from: a display name, a badge, and a
+Supabase URL for a face that does not expire, plus `monogram()` in
+`api/handles.js` for the fallback. The card itself is Phase 6b.
+
+`celestual-search` is untouched. It contains no HikerAPI code, so spec section 5
+does not reach it, and no answered question authorises deleting it. It stays
+behind its off flag and stays in `deletions.md` group D.
+
+The original plan for this phase follows.
 
 Spec section 5.
 

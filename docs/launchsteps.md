@@ -201,24 +201,54 @@ The five rows it does hold, for reference:
 Nothing else in Phase 4b needs anything from you. No secret, no environment
 variable, no bucket, no DNS.
 
-### 2c. Phase 5 and later
+### 2c. Phase 5. The resolver.
 
-`PENDING.` New migrations from Phase 5 onward are listed here in apply order as
+- [ ] **Apply `0031_apify_resolver.sql`,** after 0030. The rest of what Phase 5
+      needs from you is in section 3, in the order to do it.
+
+### 2d. Phase 6a and later
+
+`PENDING.` New migrations from Phase 6a onward are listed here in apply order as
 each phase lands.
 
 ---
 
 ## 3. Apify
 
-`PENDING Phase 5.` Actor is `shu8hvrXbJbY3Eb9W`, per spec section 5.
+Phase 5 is built. Actor is `shu8hvrXbJbY3Eb9W`, per spec section 5.
+
+**Do these in order.** The resolver is live in production today on the old
+provider, and it stays working until the last step, so nothing is dark in
+between.
+
+- [ ] Apply `0031_apify_resolver.sql`, after 0029 and 0030. It creates
+      `ig_profiles` and `handle_search_events`, carries the profiles across from
+      `celestual_handle_cache`, and drops `celestual_handle_lookups`.
+      It does **not** drop `celestual_handle_cache`. See section 4b below.
+- [ ] Create the `avatars` bucket first. Section 5. The function cannot store a
+      face without it, and every card will render as a monogram until it exists.
 
 - [ ] Create the Apify account and note the plan and its included event quota.
 - [ ] Create an API token scoped to that actor only.
-- [ ] Set it as a Supabase edge function secret. Name to be confirmed in Phase 5,
-      expected `APIFY_TOKEN`.
-      Supabase dashboard, Edge Functions, Secrets.
-- [ ] Confirm the actor input sets the post limit to zero. Profile metadata only,
-      no posts, comments, or reels.
+- [ ] Set it as a Supabase edge function secret named **`APIFY_TOKEN`**.
+      Supabase dashboard, Edge Functions, Secrets. The function answers
+      `{ ok:false, error:'off' }` without it, which the UI draws as nothing,
+      so a missing token is safe rather than broken.
+      Optionally `APIFY_ACTOR_ID` if you ever move off the actor above.
+- [x] The actor input sets the post limit to zero. Built in:
+      `resultsType: 'details'`, `resultsLimit: 0`, `addParentData: false`. Profile
+      metadata only, no posts, comments, or reels. Verify it in the pilot below.
+- [ ] Deploy the function:
+      `supabase functions deploy celestual-resolve --no-verify-jwt`
+      The `--no-verify-jwt` is not optional. The browser now reaches this
+      function through the `/api/resolve` rewrite as a plain POST with no
+      Supabase key on it, and without that flag the platform rejects it.
+- [ ] Confirm the `/api/resolve` rewrite in `vercel.json` points at **this**
+      project. Its destination is a literal URL carrying the project ref,
+      because a Vercel rewrite destination cannot read an environment variable.
+      If the project ref ever changes, this line has to change with it.
+- [ ] Set `VITE_HANDLE_RESOLVE=1` in Vercel and redeploy, **last**, after the
+      pilot below.
 
 ### 3b. The 10 handle billing pilot
 
@@ -231,6 +261,22 @@ Phase 5 deploys and before Phase 6b ships the search UI.
       than profile metadata. Stop and tell me before opening it to users.
 - [ ] Resolve the same 10 handles a second time. Confirm the billed count does
       not move, because cache hits must not reach Apify.
+- [ ] **Also confirm the fields actually landed.** This is new and it matters.
+      `select handle, display_name, is_verified, avatar_path from ig_profiles;`
+      after the first pass. Every row should have a `display_name`, and any
+      handle with a picture should have `avatar_path` set.
+
+      The reason to check: the actor's output field names are read defensively
+      (`fullName` or `full_name` or `name`, and four spellings for the picture),
+      because Apify's Instagram actors have not been consistent about them and
+      the actor's page is not reachable from the build environment. If a run
+      comes back with rows whose `display_name` is empty and whose
+      `avatar_path` is null, the actor is returning a spelling the function does
+      not know. Send me one raw dataset item from the Apify console and it is a
+      one line fix in `fromApify`.
+- [ ] Confirm a rate limit reads correctly. Resolve 21 distinct handles from one
+      anonymous browser; the 21st should return 429 and the UI should show a
+      wait time rather than an error.
 
 ---
 
@@ -252,21 +298,54 @@ endpoint only.
 
 - [ ] Cancel the HikerAPI subscription once Phase 5 is live and verified.
 
+Nothing in the repository refers to any of these any more. Phase 5 removed the
+provider, its keys, its types and its comments, and rewrote
+`docs/HANDLE-RESOLVER.md` around Apify. The name survives in exactly three
+places, all of them deliberate: `docs/rebuild-spec.md`, which is your document
+and which I do not edit; this section, because spec section 5 requires the
+secrets listed here by name; and the Phase 1 audit and `docs/deletions.md`,
+which are the record of the removal.
+
+### 4b. The old cache table, when you are ready
+
+- [ ] `drop table celestual_handle_cache;`
+
+Not in a migration, and not yet. `0031` reads it to carry the 40 profiles across
+and then nothing reads it again, but Q7 authorised migrating out of it rather
+than dropping it, the free tier has no point in time recovery, and keeping the
+source until the new path has answered in production is the cheap kind of
+caution. Run this once `ig_profiles` is serving and you are happy.
+
 ---
 
 ## 5. Supabase Storage
 
-`PENDING Phase 5.`
+Phase 5 needs this and cannot create it. Spec section 0 keeps me out of the
+project's configuration, and a bucket is configuration.
 
 This project has zero storage buckets today. `avatars` will be the first.
 
-- [ ] Create bucket `avatars`. Public read.
-- [ ] Confirm the path layout `ig/<handle>.jpg` per spec section 5.
-- [ ] Set the read policy. Public read, service role write only. The edge
-      function writes with the service role key, so no anon insert policy is
-      needed and none should exist.
+**Do this before deploying the function.** Without the bucket every download
+fails, which is not an outage (`ig_profile_put` stores nothing and the card
+draws a monogram) but it does mean every card is faceless and every miss costs
+an Apify call that produced no picture.
+
+- [ ] Create bucket `avatars`. **Public read.**
+      Supabase dashboard, Storage, New bucket, tick Public bucket.
+- [ ] Nothing else to configure. A public bucket already allows anonymous read,
+      and writes go through the service role key the edge function holds, so
+      there is no insert policy to add and none should exist.
+- [ ] The path layout is `ig/<handle>.jpg`, enforced by a check constraint on
+      `ig_profiles.avatar_path`, so a row can never point at another handle's
+      picture. Nothing for you to set up; it is here so the layout is written
+      down somewhere you will look.
 - [ ] No CSP change is needed. `vercel.json` already allows
-      `img-src 'self' data: blob: https://*.supabase.co`.
+      `img-src 'self' data: blob: https://*.supabase.co`, which is where the
+      faces are served from.
+- [ ] Optional, later: the bucket grows by one small JPEG per distinct handle
+      ever resolved and nothing prunes it. At tens of KB each that is a long way
+      from mattering, but if you ever want it swept, delete objects whose handle
+      has no row in `ig_profiles`.
 
 ---
 
@@ -285,16 +364,26 @@ This project has zero storage buckets today. `avatars` will be the first.
 
 ## 7. Edge function deploys
 
-`PENDING Phases 5, 6a, 7.`
+Two functions exist in the repo and are not deployed:
+`celestual-beta-moderate` and `celestual-remind`. `celestual-relogin` was
+deleted in Phase 4a per Q4. `celestual-search` is still there, still off, and
+still nobody's decision; see `docs/deletions.md` group D.
 
-Four functions exist in the repo and are not deployed:
-`celestual-beta-moderate`, `celestual-relogin`, `celestual-remind`,
-`celestual-search`.
+**Redeploys Phases 4b and 5 need:**
+
+- [ ] `supabase functions deploy celestual-edu-verify`
+      Phase 4b. Its `verify` action now binds the campus to an identity row.
+      Must happen after `0030_identity.sql` is applied.
+- [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`
+      Phase 5. Rewritten for Apify. Must happen after `0031` is applied and
+      after the `avatars` bucket exists. The `--no-verify-jwt` is required: the
+      browser reaches it through the `/api/resolve` rewrite with no Supabase key
+      on the request.
+
+**Still to come:**
 
 - [ ] `celestual-beta-moderate` gets deployed in Phase 6a. It is the server half
       of wall moderation and spec section 9 depends on it.
-- [ ] The other three are proposed for deletion or hold in `docs/deletions.md`
-      group D. Nothing to deploy unless Q4 says otherwise.
 
 Moderation needs an Anthropic key, per spec section 9, target model
 `claude-haiku-4-5-20251001`.
@@ -312,8 +401,10 @@ One cron job exists today: `celestual-mutual-dm`.
       sessions a day past their thirty day expiry. Nothing breaks if it never
       runs; the table just grows.
 
-- [ ] Add the prune for `handle_search_events`, rows older than 48 hours, per
-      spec section 5. `PENDING Phase 5.`
+- [ ] **`select handle_search_prune();`** daily. Added by Phase 5. Deletes
+      `handle_search_events` rows older than 48 hours, which is twice the
+      counting window. Spec section 5. Nothing breaks if it is late; the
+      counting query is bounded by its own 24 hour window either way.
 
 ---
 
@@ -333,7 +424,7 @@ One cron job exists today: `celestual-mutual-dm`.
 
 ## 10. Vercel environment variables
 
-`PENDING Phases 5 and 6b.`
+`PENDING Phase 6b.`
 
 Current flags in `app/.env.example`. Each turns a scaffolded integration from its
 local fallback into real behaviour.
@@ -344,8 +435,9 @@ local fallback into real behaviour.
 | `VITE_SUPABASE_ANON_KEY` | set | unchanged |
 | `VITE_IG_VERIFY_ENABLED` | 0 | must become 1. Spec section 4 makes the DM flow the only source of `handle_verified_at`. |
 | `VITE_IG_USERNAME` | celestual.us | unchanged |
-| `VITE_HANDLE_SEARCH` | 0 | removed with `celestual-search`, deletions group D |
+| `VITE_HANDLE_SEARCH` | 0 | leave at 0. `celestual-search` is a different feature, never deployed, and no answered question authorised deleting it |
 | `VITE_HANDLE_RESOLVE` | 0 | must become 1 after the Phase 5 pilot passes |
+| `VITE_RESOLVE_ENDPOINT` | unset | **leave unset.** The default `/api/resolve` is the rewrite, and the rewrite is what makes the resolver's device cookie first party. Set it only on a preview that is not behind the rewrite |
 | `VITE_EDU_VERIFY_ENABLED` | 0 | must become 1. Spec section 3 requires a verified `.edu` for the Wall. |
 | `VITE_STRIPE_ENABLED` | 0 | blocked on Q3 |
 | `VITE_STRIPE_PLAN` | 0 | blocked on Q3 |
