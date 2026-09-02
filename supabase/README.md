@@ -187,6 +187,24 @@ Idempotent migrations, applied in order:
   `pg_get_functiondef`, deliberately without tidying.
   **Verify with `scripts/verify-migrations.sh`.**
 
+- `migrations/0030_identity.sql`: **identity.** The handle is the identity and
+  the email is a convenience, and `celestual_users` is shaped so the schema says
+  that rather than treating them as equals: `instagram_handle` unique and
+  canonical, `handle_verified_at` written by `celestual_user_bind_handle` and by
+  nothing else, `edu_email` a separate field with a separate proof, `email` a
+  plain address nobody checked, and `edu_domain` generated as the campus key so
+  a second campus is a change to the gate rather than a migration.
+  `celestual_sessions` is one browser-minted token across both surfaces (only
+  its sha256 is stored), which the DM flow's handle-keyed proof could not be,
+  because a person who verified a `.edu` address and has no handle yet has no
+  row in a table keyed on handles. `celestual_user_merge` is the spec's merge
+  rule: older row survives, it refuses on two different verified handles or two
+  different verified campuses and writes the pair to
+  `celestual_merge_conflicts`, and content follows its identity by way of every
+  foreign key that points at `celestual_users(id)` in the catalogue rather than
+  a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
+  54 assertions, through `scripts/verify-migrations.sh --test`.**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay

@@ -482,7 +482,62 @@ exactly. Concretely:
 3. Verify by applying the full set to a local Supabase instance and diffing
    against a production schema dump.
 
-### Phase 4b. Identity and session schema
+### Phase 4b. Identity and session schema. COMPLETE.
+
+`supabase/migrations/0030_identity.sql`, plus the browser half and the one edge
+function change that makes the session real rather than a dead RPC.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `celestual_users` | the row. Handle unique and canonical, `edu_email` separate, `email` a note, `edu_domain` generated as the campus key |
+| `celestual_sessions` | one token across both surfaces, browser-minted, sha256 stored, thirty days |
+| `celestual_user_merges` | every merge, with both rows verbatim before anything moved |
+| `celestual_merge_conflicts` | the stop-and-ask, written where Phase 7 can show it |
+| `celestual_user_bind_handle` | the only writer of `handle_verified_at`, and only against a live DM proof |
+| `celestual_user_bind_edu` | service role only. The one caller entitled to take an address on trust |
+| `celestual_user_set_email` | attaches, never merges, never looks anybody up by address. Q5 |
+| `celestual_user_merge` | the rule. Older row survives. Refuses on two handles or two campuses |
+| `celestual_whoami` | client-callable. The null shape for a first visit rather than an error |
+| `app/src/api/identity.js` | the browser half: mint the token, hold it, and the two surface rules said once |
+| `celestual-edu-verify` | its `verify` action now binds the campus to an identity |
+
+**How content follows its identity.** Q6 says it does, and the merge finds every
+foreign key pointing at `celestual_users(id)` in the catalogue rather than from a
+list written here. Phase 6a's wall tables and Phase 7's reports are covered the
+moment they declare the reference. A hand-maintained list would be wrong the
+first day somebody forgot it and the failure would be silent. A composite
+reference raises rather than being skipped, for the same reason.
+
+**How a merge that cannot finish behaves.** The whole thing is one exception
+block. A unique violation while moving content abandons the merge entire, leaves
+both rows exactly as they were, and writes the pair to
+`celestual_merge_conflicts`. There is no partial merge state to recover from.
+
+**Tested, not reasoned about.** `scripts/sql/test-identity.sql` is 54
+assertions run by `scripts/verify-migrations.sh --test`: the backfill and its
+idempotency, both bind paths, the genuine two-row merge and the update that
+looks like one, session survival through a merge, Q5's no-merge-on-plain-email,
+Q6's two stop conditions in both their forms, content following through the
+catalogue, the tombstone, and every check constraint.
+
+**One place the spec is silent and the code assumed.** A session whose row
+already holds a verified handle, proving a second different one, is treated as a
+switch of account rather than a merge or a conflict. See Q23. It is one branch of
+one function if you want it the other way.
+
+**Reconciled against what already existed,** as this section planned. The DM code
+flow is untouched, per spec section 4: `celestual_start_ig_verification`,
+`celestual_complete_ig_verification`, `celestual_poll_ig_verification` and
+`celestual_consume_ig_proof` are not modified, wrapped or replaced.
+`celestual_members`, `celestual_ig_verifications`, `celestual_edu_verifications`,
+`celestual_email_identities`, `celestual_handle_links` and `celestual_recovery`
+all stand: the new table is layered over them and backfilled from them rather
+than replacing them, so nothing that works today stops working. Q3's billing call
+chain is untouched.
+
+The original plan for this phase follows.
 
 Spec sections 3 and 11.
 

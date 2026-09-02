@@ -520,6 +520,34 @@ whatever you decide on the accent:
 
 ## Process
 
+### Q23. NEW, raised by Phase 4b. Proving a second handle in one browser.
+
+Not blocking. Phase 4b implemented an answer and this records it so you can
+overturn it cheaply. It is one branch of one function.
+
+Spec section 3 says the merge rule stops and asks "if the merge would join two
+rows that each already have a different verified handle". It does not say what
+happens when a session whose row already carries a verified handle proves a
+second, different one. That is not a merge, so the rule does not reach it.
+
+What Phase 4b does: treats it as a **switch of account**. The session moves to
+the row that owns the newly proved handle, and the first row is not touched. It
+creates no duplicate and overwrites nothing, so both of the rule's absolutes
+hold, and signing into a second Instagram account from one browser keeps working.
+
+The alternative reading is that a second handle is a conflict, which would make
+that impossible. It seemed the less likely thing to have meant.
+
+- **A.** Switch, as built.
+- **B.** Refuse and record a conflict, the same as the merge case.
+
+**Recommendation:** A, which is what is in the code. Say so if you want B.
+
+The reverse case, a row that already holds a verified `.edu` meeting a second,
+different verified `.edu`, is **not** treated this way. That one refuses and
+writes a conflict, because Q6 named it explicitly and because a person has one
+campus in a way they do not have one Instagram account.
+
 ### Q19. Branch naming conflict.
 
 Spec section 0 says "Work on branch `rebuild/<phase-name>`."

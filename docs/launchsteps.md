@@ -170,9 +170,40 @@ The five rows it does hold, for reference:
 | 20260719082701 | adopt_sender_and_email_login |
 | 20260830143432 | handle_resolver |
 
-### 2b. Phase 4b and later
+### 2b. Phase 4b. Identity and session.
 
-`PENDING.` New migrations from Phase 4b onward are listed here in apply order as
+- [ ] **Apply `0030_identity.sql` to production.** Apply it after 0029.
+      It creates four tables (`celestual_users`, `celestual_sessions`,
+      `celestual_user_merges`, `celestual_merge_conflicts`), eight functions, and
+      backfills the users table from the people already here.
+
+      The backfill is the part to read before you run it. It reads
+      `celestual_members` (37 rows today) for the handles, takes the verification
+      date from `celestual_ig_verifications`, and gives every verified `.edu`
+      address in `celestual_edu_verifications` (1 row today) a row of its own with
+      no handle. It is `not exists`-guarded throughout, so running it twice adds
+      nobody. It creates 38 rows against production as it stands.
+
+      It does not join any `.edu` row to any handle row. Nothing in the old
+      schema links the two, so any join would be a guess. The merge rule makes
+      that link later, once, when the person authenticates both in one session.
+
+- [ ] **Redeploy `celestual-edu-verify`.** Its `verify` action now also calls
+      `celestual_user_bind_edu`, which is what makes a verified campus address an
+      identity rather than just a row in a verification table. The function is
+      already deployed, so this is a redeploy, and it must happen **after** 0030
+      is applied or the RPC will not exist.
+      `supabase functions deploy celestual-edu-verify`
+
+- [ ] **Add `celestual_sessions_prune()` to the scheduled sweep.** See section 8.
+      Expired sessions are dead weight; nothing breaks if this is late.
+
+Nothing else in Phase 4b needs anything from you. No secret, no environment
+variable, no bucket, no DNS.
+
+### 2c. Phase 5 and later
+
+`PENDING.` New migrations from Phase 5 onward are listed here in apply order as
 each phase lands.
 
 ---
@@ -275,12 +306,14 @@ Moderation needs an Anthropic key, per spec section 9, target model
 
 ## 8. Scheduled jobs
 
-`PENDING Phase 5.`
-
 One cron job exists today: `celestual-mutual-dm`.
 
+- [ ] **`select celestual_sessions_prune();`** daily. Added by Phase 4b. Deletes
+      sessions a day past their thirty day expiry. Nothing breaks if it never
+      runs; the table just grows.
+
 - [ ] Add the prune for `handle_search_events`, rows older than 48 hours, per
-      spec section 5.
+      spec section 5. `PENDING Phase 5.`
 
 ---
 

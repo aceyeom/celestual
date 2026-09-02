@@ -24,8 +24,10 @@
 # Usage:
 #   scripts/verify-migrations.sh              apply and print the fingerprint
 #   scripts/verify-migrations.sh --detail     also write the per-object detail
+#   scripts/verify-migrations.sh --test       also run scripts/sql/test-*.sql
 #
-# Exits non-zero if any migration fails to apply.
+# Exits non-zero if any migration fails to apply, or if --test is given and a
+# test raises. A test file asserts by raising, so a clean run is the result.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -36,7 +38,14 @@ WORK="${VERIFY_DIR:-/var/lib/postgresql/verify}"
 PGDATA="$WORK/pgdata"
 SOCK="$WORK/sock"
 DETAIL=0
-[ "${1:-}" = "--detail" ] && DETAIL=1
+TEST=0
+for arg in "$@"; do
+  case "$arg" in
+    --detail) DETAIL=1 ;;
+    --test)   TEST=1 ;;
+    *) echo "unknown option: $arg"; exit 2 ;;
+  esac
+done
 
 [ -x "$PGBIN/initdb" ] || { echo "no PostgreSQL server binaries at $PGBIN"; exit 1; }
 
@@ -96,6 +105,37 @@ for f in "$MIGRATIONS"/*.sql; do
   fi
 done
 [ "$fail" = 0 ] || { echo; echo "migration set does not apply cleanly"; exit 1; }
+
+if [ "$TEST" = 1 ]; then
+  echo
+  echo "── tests ────────────────────────────────────────────────────────────────"
+  shopt -s nullglob
+  tests=("$ROOT"/scripts/sql/test-*.sql)
+  if [ ${#tests[@]} -eq 0 ]; then
+    echo "  no test files under scripts/sql"
+  fi
+  for t in "${tests[@]}"; do
+    b="$(basename "$t")"
+    cp "$t" "$WORK/sql/$b"; chown postgres:postgres "$WORK/sql/$b"
+    echo "  $b"
+    # Run once. A test file is not idempotent, so its output and its exit code
+    # both come from the same run.
+    set +e
+    as_pg "$PGBIN/psql -h $SOCK -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f $WORK/sql/$b" \
+      > "$WORK/$b.out" 2>&1
+    rc=$?
+    set -e
+    sed -e 's/^psql:[^ ]*: //' -e 's/^NOTICE:  //' -e 's/^ERROR:  //' "$WORK/$b.out" \
+      | grep -E "^(PASS|FAIL)" | sed 's/^/    /' || true
+    if [ $rc -ne 0 ]; then
+      echo
+      echo "  $b FAILED:"
+      sed 's/^/    /' "$WORK/$b.out" | tail -20
+      exit 1
+    fi
+    echo "    $(grep -c 'NOTICE:  PASS' "$WORK/$b.out" || true) passed"
+  done
+fi
 
 # ── the fingerprint ──────────────────────────────────────────────────────────
 # One line per column, constraint, index, policy, trigger, view body and
