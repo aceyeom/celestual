@@ -83,7 +83,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon } from '../parts.jsx'
 import { Sparkle, Halftone } from '../art.jsx'
-import { wall, liveCount, lettersFor, atHandle, rand } from '../data.js'
+import { wall, liveCount, atHandle, rand } from '../data.js'
 import { getState, patch } from '../store.js'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -471,8 +471,10 @@ export default function Wall({ go, reduce, rev }) {
     // A pull is not a tap. The press that just ended travelled, so the name
     // under it is not being asked for.
     if (motion.current.moved > SLOP) return
-    const found = lettersFor(handle)
-    if (found.length) go('letter', found[0].id)
+    // The name, not a letter id. A tile is a person written to, the letter
+    // screen resolves a handle to the letters under it, and going by name means
+    // the tap does not wait on a request that has not happened yet.
+    go('letter', handle)
   }
 
   return (

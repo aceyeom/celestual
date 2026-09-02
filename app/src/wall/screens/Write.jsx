@@ -43,10 +43,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
-  HandleField, LetterField, HandleReadout,
+  HandleField, LetterField, HandleCard,
 } from '../parts.jsx'
 import { Dots, Sparkle } from '../art.jsx'
-import { normHandle, validHandle, atHandle, dateline, isRemoved } from '../data.js'
+import { normHandle, validHandle, atHandle, dateline } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch } from '../store.js'
@@ -65,22 +65,20 @@ export default function Write({ to: prefill, go, back }) {
   const [to, setTo] = useState(() => prefill || draft.to || '')
   const [body, setBody] = useState(() => draft.body || '')
   // Somebody who tapped "write one to @them" on a letter already answered the
-  // first question. Unless the name they arrived with has come off the wall,
-  // in which case they land on the name step and are told so, rather than on a
-  // blank card addressed to somebody who is not there.
-  const [step, setStep] = useState(() => (prefill && !isRemoved(prefill) ? 1 : 0))
+  // first question.
+  const [step, setStep] = useState(() => (prefill ? 1 : 0))
   const first = useRef(true)
 
   const h = normHandle(to)
-  // A name that has asked to come off the wall stays off it, and the composer
-  // says so where somebody is typing it rather than after they have written
-  // forty words to it.
-  const off = isRemoved(h)
   // The first thing layer 1 objects to, said in words. One at a time: a list of
   // five complaints under a text box is a wall, and the writer only has to fix
   // one of them to find out whether the next one is real.
+  //
+  // This is the courtesy to the writer, not the control on the writer. The same
+  // list runs again in celestual-wall-moderate, where it cannot be edited out
+  // with a devtools console, and the classifier runs after it.
   const caught = body.trim() ? fault(body) : ''
-  const ok = [validHandle(h) && !off, body.trim().length >= MIN_BODY && !caught]
+  const ok = [validHandle(h), body.trim().length >= MIN_BODY && !caught]
   const dl = useMemo(() => dateline(Date.now()), [])
 
   // One draft under one key, so backing out of the sheet and coming back does
@@ -135,9 +133,13 @@ export default function Write({ to: prefill, go, back }) {
             {/* the account, under the line. A letter addressed to a mistyped
                 handle is a letter about somebody that nobody can ever find, and
                 this is the only step where that is still fixable. */}
-            <HandleReadout handle={to} />
+            <HandleCard handle={to} />
             <Label tone="dim" className="wl-write-note">
-              <Sparkle size={9} /> {off ? 'that name has asked to stay off the wall' : 'yours is never asked for'}
+              {/* A name that has come off the wall is refused by the schema
+                  rather than by this screen: wall_write returns 'removed' and
+                  the posting step says so. Guessing here would mean asking the
+                  server about every handle anybody types. */}
+              <Sparkle size={9} /> yours is never asked for
             </Label>
           </div>
         ) : (

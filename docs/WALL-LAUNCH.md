@@ -43,7 +43,7 @@ Layer 1 (the regex: slurs, phone numbers, addresses, room numbers, links) runs
 in the browser. Layers 2 and 3 are an 1100ms timer. A check in the browser is a
 courtesy to the writer, never a control on the writer: devtools removes it.
 
-`supabase/functions/celestual-beta-moderate/` is written, reviewed, and **not
+`supabase/functions/celestual-wall-moderate/` is written, reviewed, and **not
 deployed**. Deploy it, set its two secrets, and call it before a letter goes
 live rather than after.
 
@@ -61,15 +61,15 @@ verifications through it), so the proof exists. It is simply not wired here.
 ### 4. There is no wall server at all
 
 No edge function writes a letter, reads the wall, reports one or removes a name.
-`celestual-beta-moderate` is a classifier and nothing else: it takes text and
+`celestual-wall-moderate` is a classifier and nothing else: it takes text and
 returns a verdict. Everything else has to be built.
 
 ---
 
 ## The schema on disk is the wrong schema
 
-`0027_beta_wall.sql` is applied and describes an **older product**. It has
-`author_handle`, `sealed_line`, `beta_claims` and `beta_reveal_requests`. The
+`0032_the_wall.sql` is applied and describes an **older product**. It has
+`author_handle`, `sealed_line`, `wall_claims` and `wall_reveal_requests`. The
 wall that shipped has none of those: a letter is three fields (the handle it is
 about, the body, the time), there is deliberately no author record anywhere, and
 there is no seal and no reveal request. Replace it rather than extend it.
@@ -95,8 +95,8 @@ column at all. Not nulled, not filtered, absent. That is what makes a forgotten
 1. **Write and apply `0028_the_wall.sql`** with the five tables above. One
    migration, additive, and drop the `beta_*` tables in the same file since
    they are empty.
-2. **Deploy `celestual-beta-moderate`.**
-   `supabase functions deploy celestual-beta-moderate`
+2. **Deploy `celestual-wall-moderate`.**
+   `supabase functions deploy celestual-wall-moderate`
    Secrets: `MODERATION_API_KEY`, `MODERATION_MODEL` (defaults to
    `claude-sonnet-5`).
 3. **Write one `celestual-wall` edge function**: write a letter, read the wall,

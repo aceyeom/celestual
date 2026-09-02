@@ -10,8 +10,9 @@
 //      address is at the school's domain, mints a 4-digit code, stores only its
 //      SHA-256 hash, emails the code (the code rides the subject line too, so
 //      the notification alone is enough), and returns a correlation `token`.
-//   2. verify(token, code) → the same function checks the code against the stored
-//      hash (never returning it) and, on a match, reports the email + slug back.
+//   2. verify(token, code, session) → the same function checks the code against
+//      the stored hash (never returning it) and, on a match, reports the email
+//      and slug back AND binds the address to this browser's identity row.
 //
 // The code is a SECRET: it is emailed, never returned to the browser, and only
 // its hash is stored.
@@ -71,12 +72,22 @@ export async function sendEduCode({ email, slug, demo }) {
   return { token: data.token, expiresAt: data.expires_at }
 }
 
-// Verify a code. Never throws — a transient failure reads as { ok:false, error }.
-// On success returns { ok:true, email, slug }.
-export async function verifyEduCode({ token, code }) {
+// Verify a code. Never throws: a transient failure reads as { ok:false, error }.
+// On success returns { ok:true, email, slug, signed_in, user, identity_error? }.
+//
+// `session` is this browser's identity token. The edge function passes it to
+// celestual_user_bind_edu (migration 0030), which is what turns a verified
+// address into an identity that survives the tab and carries across to Main.
+// Without one the address still verifies and `signed_in` comes back false.
+export async function verifyEduCode({ token, code, session }) {
   try {
     const { data, error } = await supabase.functions.invoke(FUNCTION, {
-      body: { action: 'verify', token, code: String(code).replace(/\D/g, '') },
+      body: {
+        action: 'verify',
+        token,
+        code: String(code).replace(/\D/g, ''),
+        ...(session ? { session } : {}),
+      },
     })
     if (error) return { ok: false, error: 'send' }
     return data || { ok: false, error: 'code' }

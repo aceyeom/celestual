@@ -28,11 +28,14 @@
 
     <link rel="icon" type="image/svg+xml" href="/star.svg" />
     <link rel="apple-touch-icon" href="/star.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- the three faces (theme.js FONT): Cormorant Garamond is the voice, Jost
-         is the hand, Courier Prime is the stamp. -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:ital,wght@0,300;0,400;0,500;1,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <!-- The three faces the old design uses (theme.js FONT) are NOT here any
+         more. They were fetched from Google on every route, including `/` and
+         `/berkeley`, which use none of them: three font files and two DNS
+         lookups in front of every visitor, to serve pages that do not want
+         them, and the only third party request either new surface made.
+
+         App.jsx injects them now, which is the shell that actually reads them,
+         the way the wall and Main each inject their own four. Phase 6b. -->
   </head>
   <body>
     <div id="root"></div>

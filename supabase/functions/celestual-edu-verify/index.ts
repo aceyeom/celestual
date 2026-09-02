@@ -19,9 +19,17 @@
 //        with CELESTUAL_SANDBOX_GMAIL=0, which makes even demo requests need a
 //        genuine school match.
 //        Response: { ok:true, token, expires_at } | { ok:false, error }
-//   { action:'verify', token, code }        → compare the code to the stored hash
-//        (never returning it); on a match mark the row verified and report back.
-//        Response: { ok:true, email, slug } | { ok:false, error }
+//   { action:'verify', token, code, session? } → compare the code to the stored
+//        hash (never returning it); on a match mark the row verified, bind the
+//        address to the caller's identity row through celestual_user_bind_edu
+//        (migration 0030) if a session token came with it, and report back.
+//        Response: { ok:true, email, slug, signed_in, user, identity_error? }
+//                | { ok:false, error }
+//
+//        `session` is a browser-minted opaque token, at least 16 characters.
+//        Only its sha256 reaches the database, the same trust model the DM
+//        flow's `proof` already uses. Without one the address still verifies
+//        and `signed_in` comes back false.
 //
 // The code is a secret: it is emailed, never returned to the browser, and only its
 // hash is ever stored. Errors are stable slugs the client localizes:
@@ -255,7 +263,50 @@ Deno.serve(async (req) => {
       .from('celestual_edu_verifications')
       .update({ status: 'verified', verified_at: new Date().toISOString() })
       .eq('id', row.id);
-    return json({ ok: true, email: row.email, slug: row.slug });
+
+    // ── the identity half ───────────────────────────────────────────────────
+    // The code checked out, so this browser is at this school. That is the only
+    // moment in the product where a .edu address may be believed, and
+    // celestual_user_bind_edu is service-role only for exactly that reason: it
+    // takes the address on trust, and this is the one caller entitled to hand
+    // it one. Migration 0030.
+    //
+    // `session` is a browser-minted token; only its sha256 is stored. A request
+    // without one still verifies, because the verification is a fact about the
+    // address either way, and answers `signed_in: false` so the caller knows no
+    // identity was bound rather than assuming one was.
+    const session = String(body.session || '');
+    let user: unknown = null;
+    let identityError: string | null = null;
+
+    if (session.length >= 16 && session.length <= 256) {
+      const { data: bound, error: bindErr } = await supabase.rpc('celestual_user_bind_edu', {
+        p_token: session,
+        p_email: row.email,
+      });
+      if (bindErr) {
+        // The address is verified whatever happens here, so a failure to bind is
+        // logged and reported, never allowed to un-verify what already checked out.
+        console.error('edu bind failed', bindErr.message);
+        identityError = 'identity';
+      } else if (bound && bound.ok === false) {
+        // The one case the schema refuses: this row already carries a different
+        // verified campus. Spec section 3 says stop and ask, and 0030 has already
+        // written the pair to celestual_merge_conflicts for the admin screen.
+        identityError = String(bound.error ?? 'identity');
+      } else if (bound) {
+        user = bound.user ?? null;
+      }
+    }
+
+    return json({
+      ok: true,
+      email: row.email,
+      slug: row.slug,
+      signed_in: user !== null,
+      user,
+      ...(identityError ? { identity_error: identityError } : {}),
+    });
   }
 
   return json({ ok: false, error: 'bad_input' }, 400);

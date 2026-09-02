@@ -4,7 +4,15 @@ The campus surface. It lived at `/beta` while it was one; `main.jsx` still
 rewrites that prefix onto this one at boot, because the cards already printed
 with it cannot be redeployed.
 
-**Its state is still in the browser.** It reaches no server, it stores nothing
+**As of Phase 6b of the rebuild it reaches a server.** The letters, the campus
+gate, the handle proof, the reports and the takedowns are in the schema
+(`supabase/migrations/0032_the_wall.sql`), reached through `wall/api.js`.
+`wall/data.js` is a cache with the shape it always had, so the screens still
+read it synchronously and none of them has to know a network exists. What is
+still local is what should be: the draft, the names this browser wrote to, and
+which letters it opened. The paragraph below describes the state before that.
+
+**Its state was in the browser.** It reached no server, it stored nothing
 outside the tab it is open in, and it ships populated — seventy-two letters
 across sixty-six handles — so the whole thing can be walked cold, on a phone, by
 somebody who has never seen it. Everything that has to change before it holds
@@ -560,7 +568,7 @@ who did not scan a piece of paper. No shared component, no global token, no
   the schema for what is in this directory — there is no author on a letter
   here, no seal and no reveal — and it should be replaced rather than extended.
   What the shipped wall actually needs is spelled out in docs/WALL-LAUNCH.md.
-  `supabase/functions/celestual-beta-moderate/` is the opposite case: its
+  `supabase/functions/celestual-wall-moderate/` is the opposite case: its
   three-layer pre-publication design is exactly what this build now draws, and
   `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
   keyboard rather than after the button. It is still undeployed.

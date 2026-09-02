@@ -296,11 +296,11 @@ Ordering is otherwise the spec's, including Phase 3 before backend work.
 | --- | --- | --- | --- |
 | 1 | Audit | none | done |
 | 2 | Design system | 1 | done |
-| 3 | Signature surfaces | 2 | your approval to exit |
-| 4a | Migration reconciliation | 1 | Q4 |
-| 4b | Identity and session schema | 4a | Q5, Q6 |
-| 5 | Apify in, HikerAPI out | 4b | Q7, Q8, Q9 |
-| 6a | Wall backend | 4b, 5 | Q10, Q11 |
+| 3 | Signature surfaces | 2 | done, approved |
+| 4a | Migration reconciliation | 1 | done |
+| 4b | Identity and session schema | 4a | none, Q5 and Q6 answered |
+| 5 | Apify in, HikerAPI out | 4b | none, Q7 to Q9 answered |
+| 6a | Wall backend | 4b, 5 | none, Q10 and Q11 answered |
 | 6b | Wall and Main UI | 3, 6a | none |
 | 7 | Admin | 6a | Q12 |
 | 8 | Email, legal, routing | 6b | Q13 |
@@ -362,7 +362,7 @@ needs. Chromium is already present in this environment at
 Exit: the three files exist, the ban list in 7.1 is encoded as a reviewable
 checklist, and `components.html` has been screenshotted and viewed.
 
-### Phase 3. Signature surfaces. BUILT, AWAITING YOUR APPROVAL.
+### Phase 3. Signature surfaces. APPROVED.
 
 Two surfaces, at `/signature` and `/signature/reveal`:
 
@@ -393,9 +393,84 @@ Q14 before deleting any of it.
 
 Present and wait.
 
-### Phase 4a. Migration reconciliation
+### Phase 4a. Migration reconciliation. COMPLETE.
 
-New phase. Justification is finding 1.3.
+The method changed and two findings came out of it that this section did not
+anticipate. Both are recorded in `docs/launchsteps.md` section 2a.
+
+**Method.** There is no Docker in the rebuild container, so `supabase start` was
+not available. `scripts/verify-migrations.sh` stands up a bare PostgreSQL 16
+under a shim supplying what a hosted project provides before the first migration
+runs: the four roles, `extensions` with pgcrypto in it, an `auth` schema with the
+two objects our SQL references, and Supabase's default privileges on `public`.
+It applies every migration in order, then hashes the resulting schema object by
+object. The same query runs against production and the two hashes are compared.
+
+What that verifies: SQL validity, ordering, columns, constraints, indexes,
+policies, grants, RLS and function bodies. What it does not: anything depending
+on the real auth or storage services, or on PostgREST.
+
+**Result.** Nine of the ten object classes match byte for byte.
+
+| class | count | matches production |
+| --- | --- | --- |
+| columns | 239 | yes |
+| constraints | 66 | yes |
+| indexes | 85 | yes |
+| policies | 2 | yes |
+| views | 1 | yes |
+| execute grants | 83 | yes |
+| table grants and RLS | 37 | yes |
+| triggers | 0 vs 1 | no, see below |
+| function bodies | 83 | three differ, see below |
+
+**Finding: `lock_internal_helpers` needed no file.** This section assumed two
+migrations had to be written. Only one did. The revokes that migration performed
+are already carried by `0006_ping_model.sql` and `0009_verification_hardening.sql`,
+and the grant fingerprint proves it: all 83 execute grants and all 37 table grant
+states produced by the repo's set match production exactly.
+
+**Finding: `0024_the_bindery.sql` was never applied.** Production runs the
+`0022_the_card.sql` version of `celestual_card_clean`, which defaults a card
+ground to `ink` and rejects `leaf`, `chalk` and `hide`. This is the only real
+behavioural drift in the whole schema. 0024 does nothing else, so the file stays
+in the repo and applying it is a step in `launchsteps.md` rather than a decision
+taken here. Finding 1.9 retires the bindery design, so it may end up moot.
+
+**Finding: a Database Webhook that no migration can carry.** Production has a
+trigger `celestual_dm_outbox_push` on `celestual_dm_outbox` calling
+`supabase_functions.http_request` against the `celestual-mutual-dm` function URL.
+Dashboard-created, embeds the project ref, in no file. Recorded in
+`launchsteps.md` so a rebuild from this repo does not lose the mutual DM.
+
+**Finding: the migration history table is not a record of what ran.** Five rows
+against twenty-nine files, and 66 of 83 function bodies in production carry CRLF
+line endings that no file here has. Most of this schema was applied by hand
+through the dashboard SQL editor. The two `celestual_campus_*` functions in
+production are also missing two comment lines the repo has, which is the same
+cause and changes no behaviour.
+
+**What landed.**
+
+| Item | What |
+| --- | --- |
+| `supabase/migrations/0029_adopt_sender_and_email_login.sql` | the missing migration, transcribed from the live definitions of two tables and three functions |
+| `scripts/verify-migrations.sh` | the harness above, re-runnable by every later phase |
+| `supabase/migrations/0015_identity_start.sql` | deleted, per Q4 |
+| `supabase/functions/celestual-relogin/` | deleted, per Q4 |
+
+Deleting `celestual-relogin` orphans two live RPCs, `celestual_relogin_store` and
+`celestual_relogin_redeem`, which stay in the database because Q4 did not ask for
+their removal and no deletion manifest covers them. It also leaves
+`app/src/api/relogin.js` invoking a function that no longer has source here. That
+is deliberate and bounded: the function was never deployed, so `/signin` was
+already dark, and Phase 6b rebuilds that route on the shipped
+`celestual_login_lookup` and `celestual_redeem_login` path.
+
+No production writes. Nothing was applied. The output is files plus a verified
+diff.
+
+The original plan for this phase follows.
 
 Produce a migration set that, applied to an empty database, reproduces production
 exactly. Concretely:
@@ -407,9 +482,62 @@ exactly. Concretely:
 3. Verify by applying the full set to a local Supabase instance and diffing
    against a production schema dump.
 
-No production writes. The output is files plus a verified diff.
+### Phase 4b. Identity and session schema. COMPLETE.
 
-### Phase 4b. Identity and session schema
+`supabase/migrations/0030_identity.sql`, plus the browser half and the one edge
+function change that makes the session real rather than a dead RPC.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `celestual_users` | the row. Handle unique and canonical, `edu_email` separate, `email` a note, `edu_domain` generated as the campus key |
+| `celestual_sessions` | one token across both surfaces, browser-minted, sha256 stored, thirty days |
+| `celestual_user_merges` | every merge, with both rows verbatim before anything moved |
+| `celestual_merge_conflicts` | the stop-and-ask, written where Phase 7 can show it |
+| `celestual_user_bind_handle` | the only writer of `handle_verified_at`, and only against a live DM proof |
+| `celestual_user_bind_edu` | service role only. The one caller entitled to take an address on trust |
+| `celestual_user_set_email` | attaches, never merges, never looks anybody up by address. Q5 |
+| `celestual_user_merge` | the rule. Older row survives. Refuses on two handles or two campuses |
+| `celestual_whoami` | client-callable. The null shape for a first visit rather than an error |
+| `app/src/api/identity.js` | the browser half: mint the token, hold it, and the two surface rules said once |
+| `celestual-edu-verify` | its `verify` action now binds the campus to an identity |
+
+**How content follows its identity.** Q6 says it does, and the merge finds every
+foreign key pointing at `celestual_users(id)` in the catalogue rather than from a
+list written here. Phase 6a's wall tables and Phase 7's reports are covered the
+moment they declare the reference. A hand-maintained list would be wrong the
+first day somebody forgot it and the failure would be silent. A composite
+reference raises rather than being skipped, for the same reason.
+
+**How a merge that cannot finish behaves.** The whole thing is one exception
+block. A unique violation while moving content abandons the merge entire, leaves
+both rows exactly as they were, and writes the pair to
+`celestual_merge_conflicts`. There is no partial merge state to recover from.
+
+**Tested, not reasoned about.** `scripts/sql/test-identity.sql` is 54
+assertions run by `scripts/verify-migrations.sh --test`: the backfill and its
+idempotency, both bind paths, the genuine two-row merge and the update that
+looks like one, session survival through a merge, Q5's no-merge-on-plain-email,
+Q6's two stop conditions in both their forms, content following through the
+catalogue, the tombstone, and every check constraint.
+
+**One place the spec is silent and the code assumed.** A session whose row
+already holds a verified handle, proving a second different one, is treated as a
+switch of account rather than a merge or a conflict. See Q23. It is one branch of
+one function if you want it the other way.
+
+**Reconciled against what already existed,** as this section planned. The DM code
+flow is untouched, per spec section 4: `celestual_start_ig_verification`,
+`celestual_complete_ig_verification`, `celestual_poll_ig_verification` and
+`celestual_consume_ig_proof` are not modified, wrapped or replaced.
+`celestual_members`, `celestual_ig_verifications`, `celestual_edu_verifications`,
+`celestual_email_identities`, `celestual_handle_links` and `celestual_recovery`
+all stand: the new table is layered over them and backfilled from them rather
+than replacing them, so nothing that works today stops working. Q3's billing call
+chain is untouched.
+
+The original plan for this phase follows.
 
 Spec sections 3 and 11.
 
@@ -433,7 +561,72 @@ kept, so the new `users` table is backfilled from them rather than created
 empty, and the merge rule runs against real data on day one. Q5 and Q6 gate
 this.
 
-### Phase 5. Apify in, HikerAPI out
+### Phase 5. Apify in, HikerAPI out. COMPLETE.
+
+`supabase/migrations/0031_apify_resolver.sql`, a rewritten
+`supabase/functions/celestual-resolve`, a rewritten `app/src/api/handles.js`,
+the `/api/resolve` rewrite in `vercel.json` and its dev-server twin, and
+`docs/HANDLE-RESOLVER.md` rewritten around the new provider.
+
+**What changed, against what this section planned.** The plan was to rework the
+function rather than replace it, keeping its billed-only rate limiting, IP
+header trust ordering, provider timeouts, image size guard and normalisation.
+All five of those survived. Four things went further than planned:
+
+1. **The avatar proxy is gone, not adapted.** The old `GET ?avatar=<handle>`
+   endpoint existed only because a stored CDN URL expires. With the bytes in our
+   own bucket there is nothing to proxy, so the second endpoint came out
+   entirely and the browser fetches the face from Supabase directly.
+2. **There is no negative cache.** 0028 cached a miss for an hour. With the
+   cache now permanent a stored miss would be permanent too, and the account
+   somebody registers tomorrow would read as missing until a human forced it.
+   Misses are held in the edge function's memory for ten minutes instead, which
+   keeps a person backspacing over a typo from paying per keystroke and lets the
+   fact expire on its own.
+3. **`billed` is gone as a column.** The old ledger flagged which rows counted.
+   The new one cannot contain a free lookup, because only a call that actually
+   reached Apify ever writes a row. The rule is the same and there is less of it.
+4. **The private flag came off two screens.** Spec section 5's card is avatar,
+   handle, display name, badge. `is_private` is kept in the database on Q9 and
+   is no longer sent to the browser, so `components/handle.jsx` and
+   `wall/parts.jsx` lost the branch that drew it and the unused `resolve.private`
+   string came out of `i18n/strings.js`.
+
+**Q8 answered B, and it needed two files not one.** `vercel.json` gets the
+`/api/resolve` rewrite; `app/vite.config.js` gets the same rewrite as a dev
+proxy, so local development exercises the path the browser actually takes rather
+than a second code path that only works on a laptop. The rewrite destination is
+a literal URL carrying the project ref, because a Vercel rewrite cannot read an
+environment variable. That is recorded in `launchsteps.md` as a thing to change
+if the ref ever does.
+
+**Tested.** `scripts/sql/test-resolver.sql`, 39 assertions: the three limits,
+the permanent cache, the thirty day picture boundary from both sides, a failed
+download keeping yesterday's face, the path constraint that stops one profile
+pointing at another's picture, all three counters including that signing in does
+not spend the device allowance and writes no device row, the rolling window, the
+48 hour prune, and that `anon` can reach none of it.
+
+**HikerAPI.** Gone from all code, config and runbooks. The name survives in
+three places on purpose: `docs/rebuild-spec.md`, which is not mine to edit;
+`launchsteps.md` section 4, because spec section 5 requires the secrets listed
+there by name; and the Phase 1 audit plus `docs/deletions.md`, which are the
+record of the removal. Spec section 15's criterion is read as no HikerAPI code,
+client, type, call site, or comment implying it is still wired in, which is
+satisfied. A literal zero-mention reading would contradict spec section 5's own
+instruction to list the secrets.
+
+**What is deliberately not done here.** The result card. Spec section 5 describes
+it and spec section 8 lists it under UI scope, and this plan puts UI in Phase 6b.
+Phase 5 delivers what the card renders from: a display name, a badge, and a
+Supabase URL for a face that does not expire, plus `monogram()` in
+`api/handles.js` for the fallback. The card itself is Phase 6b.
+
+`celestual-search` is untouched. It contains no HikerAPI code, so spec section 5
+does not reach it, and no answered question authorises deleting it. It stays
+behind its off flag and stays in `deletions.md` group D.
+
+The original plan for this phase follows.
 
 Spec section 5.
 
@@ -458,7 +651,77 @@ httpOnly cookie. See Q8.
 `celestual-search` is dead and proposed for deletion. It is a different feature,
 typeahead rather than resolution, never deployed, and behind a flag that is off.
 
-### Phase 6a. Wall backend
+### Phase 6a. Wall backend. COMPLETE.
+
+`supabase/migrations/0032_the_wall.sql`, `app/src/wall/api.js`, a rewritten
+`app/src/wall/auth.js`, and `supabase/functions/celestual-wall-moderate`.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `wall_campuses` | one row per wall. Q11's shape: the gate reads the domain out of here, so a second campus is an insert |
+| `wall_letters` | the letters. `author_id` references `celestual_users` rather than holding a handle string |
+| `wall_claims` | the act and the time. Whether it is worth anything is read live off the user |
+| `wall_reveal_requests` | one ask per letter, ever, enforced by a unique constraint |
+| `wall_waitlist` | the nineteen of twenty who looked and found nothing |
+| `wall_scans` | which flyer |
+| `wall_reports` | new. Spec section 10's report to removal path had no table |
+| `wall_index` | the public view. A handle and a count |
+| eleven functions | the read, the write, the ask, the answer, the seal, the waitlist, the scan, the report, the takedown, the search, the sweep |
+| `app/src/wall/api.js` | the browser half, replacing `data.js`'s in-memory corpus |
+| `celestual-wall-moderate` | renamed, retargeted at Haiku, and it now writes as well as screens |
+
+**Three things this section did not anticipate.**
+
+1. **0027's public view leaked every letter body.** Its `beta_letters_public`
+   carried `body` and had a select grant for `anon`, which means every letter on
+   the wall would have been readable by the open internet. `app/src/wall/auth.js`
+   says the opposite in its own header, at length: "THE INDEX IS PUBLIC. THE
+   LETTERS ARE NOT," with a letter arriving redacted to a stranger and whole to
+   somebody with a berkeley.edu address. The view and the design disagreed and
+   the design is right, so `wall_index` carries a handle and a count and the
+   bodies come through `wall_letters_for` behind the gate. 0027's central
+   property is preserved and extended rather than weakened: the client still has
+   no grant on the letters table, and the thing it can read still does not have
+   the columns that would hurt somebody.
+2. **`author_handle text not null` could not be filled.** A wall writer needs a
+   campus, not a handle, so a person who came in with a .edu address and no
+   Instagram could not have written a letter at all. It is `author_id`
+   referencing `celestual_users` now, which also means 0030's merge follows a
+   person's letters through the catalogue with nothing in 0032 to remember it.
+   That is tested rather than assumed.
+3. **The moderation function had a gap in it.** It returned a verdict and left
+   somebody else to act on it. It now screens and writes in one request, so a
+   rejected letter is stored with its reason (spec section 9) rather than
+   depending on a caller to store it, and there is no path to the wall that
+   skips the screen. It was also renamed from `celestual-beta-moderate`: never
+   deployed, and the word described nothing once Q10 renamed the tables.
+
+**The model is `claude-haiku-4-5-20251001`,** per spec section 9, as the default
+with `MODERATION_MODEL` able to override it. Without `MODERATION_API_KEY` every
+letter is held at pending and nothing publishes, which is the correct failure:
+failing open would put the one control standing between this wall and its worst
+day one missing environment variable away from being off.
+
+**Tested.** `scripts/sql/test-wall.sql`, 72 assertions. The ones worth naming:
+the index has no body, author or seal column at all; `anon` can reach none of
+the six tables; a stranger and an out-of-campus reader both get a null body from
+the database rather than from the client; no read of any kind returns
+`sealed_line` or `author_id`; the seal needs all three of the verified handle,
+the ask and the author's yes; a report removes the letter in the same statement
+that files it; a name that came off stays off; and letters follow their author
+through a merge with nothing in 0032 arranging it.
+
+**What is deliberately not here.** The wall's screens still read `data.js` and
+its seeded corpus. Wiring them to `api.js` is Phase 6b, which is where this plan
+puts UI, and doing it here would have meant rebuilding ten screens inside a
+backend phase. The ping model on the wall (`app/src/wall/orbit.js`) is also
+untouched: pings already have a production backend in `celestual_submit` and
+`celestual_my_pings`, so 6b wires that screen to what exists rather than
+building it twice.
+
+The original plan for this phase follows.
 
 New phase. Justification is finding 1.2.
 
@@ -479,7 +742,85 @@ Wire the real `.edu` gate to the deployed `celestual-edu-verify`.
 
 See Q10 and Q11 on table naming and on whether the `beta_` prefix survives.
 
-### Phase 6b. Wall and Main UI
+### Phase 6b. Wall and Main UI. COMPLETE.
+
+The Phase 3 hero is at `/`, the reveal is a state of the core service, the
+wall's ten screens read a server, and Main has the flow spec section 6
+describes.
+
+**What landed.**
+
+| Area | What |
+| --- | --- |
+| `app/src/main/` | Main's own surface: router, shell, hero, place, sky, reveal, bar, ticker, stylesheet |
+| `app/src/wall/data.js` | rewritten as a cache over `api.js` rather than a seeded corpus. Same synchronous shape, so ten screens did not each grow a loading state |
+| `app/src/wall/handoff.js` | the two proofs, both real: the campus code and the Instagram DM code |
+| `HandleCard` | spec section 5's result card. Four things on it and no fifth |
+| `Redacted` | rebuilt to draw a withheld letter from a word count rather than from the words |
+| ten wall screens | wired. The gate mails a code, the composer posts through the screen, the report takes a letter down, the takedown needs the DM proof |
+| `Ticker` | spec section 8. New. Display name, handle, badge. No avatars, no counts |
+| routing | Main claims `/`, `/place`, `/sky`, `/reveal` and `/@handle`. Everything else falls through to `App.jsx` untouched |
+| `scripts/preview.mjs` | the 7.3 loop with data in it |
+
+**How the wall's screens kept their shape.** `data.js` was the seam. It became a
+cache with the same synchronous getters it always had, plus loaders and a
+`subscribe()` the shell holds one of. Making the ten screens await would have
+meant ten loading states, ten error states and ten chances to disagree about
+what an empty wall looks like.
+
+**Three things the visual loop caught that nothing else would have.** Spec 7.3
+asks for screenshots that are actually looked at, and this is what looking
+found:
+
+1. **`/berkeley/posted` hung forever.** React's StrictMode mounts, unmounts and
+   remounts in development; the effect's `alive` flag was a closure variable, so
+   the first cleanup killed it, the `sent` guard stopped the second mount
+   starting anything, and the request came back to a screen that had decided it
+   was dead. It sat on "read before it goes up" and nothing in the console said
+   why.
+2. **The hero said "today ago".** `since()` returns a duration for most inputs
+   and two whole phrases, and the gate appended "ago" to all of them.
+3. **The ticker pushed the hero's foot below the fold** by 36px at 390x844. The
+   hero is one composition in one viewport, so anything added to it comes out of
+   something else: one rail on a phone, two where there is room.
+
+Also corrected by looking: `/sky` set its copy in the letter face, which is
+reserved for what people wrote to each other; Main's bar wrapped to two lines
+because `.sg-top` is a row only inside `.wl-main`; and the flow screens were
+centred in the viewport, which puts a field where a phone keyboard covers it.
+
+**One thing the reveal will not say.** Its eyebrow read "placed N apart, neither
+of you knowing", which is a fine sentence the product cannot support:
+`celestual_my_pings` hands each person their own timestamp and not the other's.
+It says "you both said it, and neither of you knew" instead. `apart()` stays in
+`main/data.js`, unused and documented as unused, for the day the RPC returns
+both.
+
+**The third party request is gone.** `app/index.html` fetched the old design's
+three Google faces on every route, including the two that use none of them, and
+it was the only cross-origin request either new surface made and the only
+console error they produced. `App.jsx` injects them now, which is the shell that
+reads them. The wall's four faces come off `/fonts` rather than off Google, per
+`docs/launchsteps.md` section 0c.
+
+**Screenshotted and viewed at 390x844 and 1440x900:** the hero, place, place
+with the card, the open door, the sky, the reveal, the wall, find, a letter, a
+sealed letter, the composer, the gate, report, remove, join and posted. Thirty
+files in `design/shots`, no console errors on any route, and nothing on the
+section 7.1 ban list.
+
+**What is deliberately not touched.** Every route in this section's table that
+this plan does not put in scope: `/optout` and `/copy` are kept as they are,
+`/signin` waits for Phase 8's routing pass, and `/trial`, `/recruit`, `/c`,
+`/demo` and `/paid` are all pending an answer to Q12, Q15 or Q16.
+`main/router.js` carries that list and the reason, because a fork that swallowed
+them would be deleting features by routing rather than by decision.
+
+`app/src/wall/orbit.js` also stands. Pings already have a production backend and
+the wall's copy of the model is a preview of it; wiring that screen belongs with
+the core service rather than with the wall.
+
+The original plan for this phase follows.
 
 Spec sections 6 and 8. Every page rebuilt in the Phase 2 system, wired to Phase
 6a and Phase 5.

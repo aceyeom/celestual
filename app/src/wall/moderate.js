@@ -6,7 +6,7 @@
 // wall. This module is the browser's half of them, and it is deliberately the
 // WEAKEST half: everything here is a courtesy to the writer, and the control
 // on the writer is the same three layers re-run on the server
-// (supabase/functions/celestual-beta-moderate) where they cannot be edited out
+// (supabase/functions/celestual-wall-moderate) where they cannot be edited out
 // with a devtools console.
 //
 //   1  DETERMINISTIC   regex — slurs, phone numbers, addresses, room numbers,
@@ -30,12 +30,14 @@
 // a letter nobody can see. A report queue that leaves the letter up while a
 // model thinks about it has understood the asymmetry backwards.
 //
-// ── this build ──────────────────────────────────────────────────────────────
-// Layer 1 is real and runs here. Layers 2 and 3 are drawn honestly and say so
-// on the screen: there is no server in this prototype to call Haiku from and no
-// desk to route a review to, so `screen` and `triage` return the shape the real
-// endpoints return, on a timer, and every screen that shows one of them prints
-// the beta note beside it.
+// ── where each layer actually is, as of Phase 6b ────────────────────────────
+// Layer 1 runs here AND in the edge function. Layers 2 and 3 are the edge
+// function's alone, and neither has a client half any more: `screen` and
+// `triage` used to return the real endpoints' shape on a timer, and the screens
+// that showed them printed a note saying so. Both stubs are gone. The composer
+// posts to celestual-wall-moderate, which screens and writes in one request,
+// and the report screen files a row for a person rather than drawing a model
+// deliberating over it.
 
 // ── layer 1 ─────────────────────────────────────────────────────────────────
 // Kept byte-identical in spirit to the Edge Function's list. A slur that is
@@ -91,52 +93,3 @@ export function clean(text) { return !fault(text) }
 // so on the glass, and it exists so the SEQUENCE is walkable at a demo table:
 // the beat where a letter is read before it is published is a product decision
 // somebody has to be able to see, not a paragraph in a doc.
-export const SCREEN_MS = 1100
-
-export function screen(body) {
-  const f = fault(body)
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(
-      f ? { verdict: 'reject', reasons: [f] } : { verdict: 'pass', reasons: [] },
-    ), SCREEN_MS)
-  })
-}
-
-// ── the report's own triage ─────────────────────────────────────────────────
-// The letter is already down by the time this runs. All this decides is which
-// desk it lands on:
-//
-//   clear      the report names something the list already covers. It stays
-//              down and a person confirms rather than adjudicates.
-//   ambiguous  anything else, INCLUDING an empty box. A report with no reason
-//              is not a weak report — the person who taps it is often the
-//              person it is about, and requiring them to argue for their own
-//              takedown is the same mistake as putting a login in front of it.
-//
-// Neither verdict deletes anything and neither is shown as a score. The person
-// who reported it is told the same sentence either way, because a reporter who
-// learns which words get a faster result is a reporter who has been taught to
-// write them.
-const NAMED = [
-  'sexual', 'sex', 'threat', 'threaten', 'scary', 'scared', 'follow', 'following',
-  'stalk', 'stalking', 'address', 'phone', 'number', 'where i live', 'where i work',
-  'schedule', 'racist', 'racism', 'slur', 'mocking', 'mock', 'making fun',
-  'joke', 'cruel', 'harass', 'minor', 'underage', 'not me', 'wrong person',
-  'my handle', 'my name', 'private', 'outed', 'outing',
-]
-
-export const TRIAGE_MS = 1400
-
-export function triage(reason) {
-  const t = String(reason || '').trim().toLowerCase()
-  const named = t.length > 0 && NAMED.some((w) => t.includes(w))
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({
-      verdict: named ? 'clear' : 'ambiguous',
-      // What the person is told. One sentence, the same weight either way.
-      say: named
-        ? 'A person confirms it and it stays down.'
-        : 'A person reads it and decides.',
-    }), TRIAGE_MS)
-  })
-}

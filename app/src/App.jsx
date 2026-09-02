@@ -200,9 +200,37 @@ const parseRoute = () => {
   return {}
 }
 
+// ── the three faces ─────────────────────────────────────────────────────────
+// Cormorant Garamond is the voice, Jost is the hand, Courier Prime is the
+// stamp. They were in app/index.html until Phase 6b, which meant every route in
+// the product fetched them, including the two that use none of them.
+//
+// Injected here instead, by the shell that reads them, which is what the wall
+// and Main already do with their own four. Nothing else changes: this component
+// is the only thing in the repository that renders in these faces.
+const OLD_FACES = 'https://fonts.googleapis.com/css2'
+  + '?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400'
+  + '&family=Jost:ital,wght@0,300;0,400;0,500;1,300'
+  + '&family=Courier+Prime:ital,wght@0,400;0,700;1,400'
+  + '&display=swap'
+
 export default function App() {
   const { t } = useI18n()
   const C = useMemo(() => makeColors(), [])
+
+  useEffect(() => {
+    if (document.querySelector('link[data-app="faces"]')) return undefined
+    const pre = document.createElement('link')
+    pre.rel = 'preconnect'
+    pre.href = 'https://fonts.gstatic.com'
+    pre.crossOrigin = 'anonymous'
+    const css = document.createElement('link')
+    css.rel = 'stylesheet'
+    css.href = OLD_FACES
+    css.dataset.app = 'faces'
+    document.head.append(pre, css)
+    return () => { pre.remove(); css.remove() }
+  }, [])
   const route = useMemo(parseRoute, [])
   const [demo] = useState(!!route.demo)
 

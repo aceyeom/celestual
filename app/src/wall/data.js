@@ -1,26 +1,37 @@
 // ── the wall's data layer ───────────────────────────────────────────────────
 //
-// Everything here is in memory. This build is a visual prototype: it reaches
-// no server, it stores nothing anybody typed anywhere but this tab, and it is
-// meant to be walked through on a phone with no project provisioned behind it.
+// Phase 6b. This module used to open by saying "everything here is in memory,
+// this build is a visual prototype, it reaches no server". That is no longer
+// true of anything below the pure functions: the corpus comes from
+// `wall_letters` through `api.js`, and the seeded one is gone.
+//
+// ── why the screens still call synchronous functions ────────────────────────
+// Ten screens read the wall during render. Making each of them await would have
+// meant ten loading states, ten error states and ten chances to disagree about
+// what an empty wall looks like. So this module is a CACHE with the shape it
+// always had: the getters answer instantly out of what has been fetched, the
+// loaders fill it, and `revision()` goes up when something lands.
+//
+// `subscribe()` is what turns that into a re-render. The shell holds one
+// subscription; nothing else needs to know a network exists.
 //
 // ── the wall is anonymous, and that is structural ───────────────────────────
-// There is no author field on a letter. Not hidden, not hashed, not withheld
-// pending something — absent. Nothing in this module records, derives or could
-// later reconstruct who wrote anything, because the wall has no accounts, no
-// sign-in, no handle of its own for the reader, and nothing to attach a writer
-// to even if it wanted one.
+// There is no author field on a letter here. Not hidden, not hashed, not
+// withheld pending something: absent. The server has one, because somebody has
+// to be able to answer a reveal request, but it is on a column with no grant
+// and it is in no shape any function returns. Nothing in this module records,
+// derives or could later reconstruct who wrote anything, because nothing it can
+// ask returns it.
 //
-// That is the guarantee the printed card makes, and it is cheap to keep as
-// long as the shape is right from the start: a letter is a handle it is about,
-// a body, and a time. Three fields. There is no fourth one to leak.
+// That is the guarantee the printed card makes.
 //
-// The core service is where identity lives, and it is somewhere else entirely
-// — reached only from the tab that appears once you have put a letter up, and
-// never wired to anything here.
+// ── body can be null, and null is not empty ─────────────────────────────────
+// A letter read from outside the campus gate comes back with `body: null`. That
+// is the redaction, it is performed by the database rather than here, and it is
+// deliberately distinct from `''`: the screen has to be able to tell "there are
+// words and you may not read them" from "somebody wrote nothing".
 
-import { SEED } from './seed.js'
-import { getState, patch, push } from './store.js'
+import * as api from './api.js'
 
 const DAY = 86400000
 
@@ -67,29 +78,110 @@ export function rand(key, channel = 0) {
   return (hash(`${key}#${channel}`) % 100000) / 100000
 }
 
-function idFor(str) {
-  const h = hash(str)
-  const g = hash(str + ':g')
-  return `l${h.toString(36)}${g.toString(36)}`.slice(0, 12)
+// ── the corpus, fetched ─────────────────────────────────────────────────────
+// Three caches, filled independently, because the three reads the wall does are
+// three different questions with three different costs:
+//
+//   TILES     the public index. One request, no session, and it is what the
+//             wall of names is drawn from.
+//   BY_HANDLE the letters for one handle, redacted or whole depending on the
+//             gate. Filled when somebody opens a name.
+//   BY_ID     one letter. Filled when somebody opens a letter directly, which
+//             is what a link off a card does.
+//
+// Nothing is ever evicted. A wall session is minutes long and the corpus is
+// small; a cache that forgot things would only mean a second spinner on a
+// screen somebody just walked back from.
+let TILES = []
+let TILES_AT = 0
+const BY_HANDLE = new Map()
+const BY_ID = new Map()
+
+// The gate's last answer, as the server gave it. `null` before anything has
+// been asked, which the screens read as "not yet" rather than as "no".
+let OPEN = null
+export function gateOpen() { return OPEN }
+
+// ── the revision, and who is listening ──────────────────────────────────────
+// The corpus changes when a fetch lands, when a letter goes up, and when
+// something comes down. All three used to happen on a sheet raised over a wall
+// that never unmounts, so a counter read at route changes was enough. A fetch
+// lands whenever it lands, so there is a subscription now.
+let REV = 0
+const LISTENERS = new Set()
+
+export function revision() { return REV }
+
+export function subscribe(fn) {
+  LISTENERS.add(fn)
+  return () => LISTENERS.delete(fn)
 }
 
-// ── the corpus, built once ──────────────────────────────────────────────────
-// Ages spread across a thirty-day window so the wall reads as something that
-// has been accumulating rather than something that was installed this morning,
-// and they are derived from the id so a letter is the same age on every reload.
-// A timestamp that moves when you refresh is a timestamp nobody believes.
+function bump() {
+  REV += 1
+  for (const fn of LISTENERS) {
+    try { fn(REV) } catch { /* a listener that throws is not the corpus's problem */ }
+  }
+}
 
-const NOW = Date.now()
+// ── the loaders ─────────────────────────────────────────────────────────────
+// Each one is idempotent and each one de-duplicates itself, so ten components
+// mounting at once produce one request. They resolve to nothing: what they do
+// is fill the cache and bump, and the caller re-renders off that.
+const inflight = new Map()
 
-const LETTERS = SEED.map((row, i) => {
-  const id = idFor(`${row.h}:${i}`)
-  const ageH = 2 + Math.floor(rand(id, 1) * 30 * 24)
-  return { id, to: row.h, body: row.b, at: NOW - ageH * 3600000 }
-}).sort((x, y) => y.at - x.at)
+function once(key, run) {
+  if (inflight.has(key)) return inflight.get(key)
+  const p = run().finally(() => inflight.delete(key))
+  inflight.set(key, p)
+  return p
+}
 
-// Anything written during a session is prepended here, so the wall a person
-// walks away from is the wall their own letter is on.
-const WRITTEN = []
+const FRESH_MS = 30_000
+
+export function loadWall(force = false) {
+  if (!force && TILES_AT && Date.now() - TILES_AT < FRESH_MS) return Promise.resolve()
+  return once('wall', async () => {
+    const out = await api.wallIndex()
+    if (out.ok) {
+      TILES = out.tiles
+      TILES_AT = Date.now()
+      bump()
+    }
+  })
+}
+
+export function loadHandle(raw, force = false) {
+  const h = normHandle(raw)
+  if (!h) return Promise.resolve()
+  if (!force && BY_HANDLE.has(h)) return Promise.resolve()
+  return once(`h:${h}`, async () => {
+    const out = await api.lettersFor(h)
+    if (!out.ok) return
+    OPEN = out.open
+    BY_HANDLE.set(h, out.letters)
+    for (const l of out.letters) BY_ID.set(l.id, l)
+    bump()
+  })
+}
+
+export function loadLetter(id, force = false) {
+  if (!id) return Promise.resolve()
+  if (!force && BY_ID.has(id)) return Promise.resolve()
+  return once(`l:${id}`, async () => {
+    const out = await api.letter(id)
+    if (!out.ok) {
+      // A letter that is gone is a fact worth caching, so a screen that keeps
+      // asking about a removed id does not keep asking.
+      BY_ID.set(id, null)
+      bump()
+      return
+    }
+    OPEN = out.open
+    BY_ID.set(id, out.letter)
+    bump()
+  })
+}
 
 // ── coming off the wall ─────────────────────────────────────────────────────
 //
@@ -97,203 +189,152 @@ const WRITTEN = []
 // being written about. They did not ask for that and they never agreed to it,
 // so the way back off has to cost them less than being on it does.
 //
-// There are two doors back off, and they cost different things because they
-// are not the same act:
+// Two doors, and they cost different things because they are not the same act:
 //
-//   ONE LETTER   any signed-in reader can report it, and it is off the wall on
-//                the tap. See `report` below. Nothing is proven, nothing is
-//                asked, and nothing is destroyed — because a wrong report costs
-//                one letter a day in a queue, and a slow one costs the subject
-//                the day it was up.
-//   A WHOLE NAME `removeHandle`, and it is the one action on this surface that
-//                cannot be undone. Every letter anybody ever wrote to that
-//                handle goes with it, and the name can never be put back up —
-//                so it is the one place the wall asks who is asking, through
-//                the Instagram handoff (auth.js `verifyHandle`) and nothing
-//                else. Not an account, not an address, not a form: one
-//                question, asked once, about the one handle in play.
+//   ONE LETTER   any reader through the campus gate can report it, and it is
+//                off the wall on the tap. `report` below. Nothing is proven,
+//                nothing is destroyed, and a person at the admin desk can put
+//                it back, because a wrong report costs one letter a day in a
+//                queue and a slow one costs the subject the day it was up.
+//   THE LETTER   `removeLetter`, by the person it is about, and it needs the
+//                verified handle. Instagram is where a handle lives, so the
+//                proof is the DM code flow and nothing else.
 //
-// The proof is here and not on the report for the reason that decides every
-// other rule on this surface: it is the asymmetry, not the effort. Holding one
-// letter is reversible by a person at a desk in a minute. Emptying a name is
-// reversible by nobody, ever, and it takes with it forty letters written by
-// people who are not in the room.
+// The asymmetry is the reason, not the effort. Holding one letter is reversible
+// by a person at a desk in a minute. What is irreversible belongs behind proof.
 //
-// It lives in the store rather than in this module so that it survives a
-// reload the way a real removal would, and so the reset clears it with
-// everything else.
-export function removed() { return getState().removed || [] }
+// ── what changed in Phase 6b ────────────────────────────────────────────────
+// Both of these used to be a list in localStorage that this module filtered
+// against. They are `wall_report` and `wall_remove_letter` now, which means a
+// removal survives the tab it happened in, applies to everybody rather than to
+// one browser, and cannot be undone by clearing site data.
+//
+// `removeHandle` is gone. It took every letter written to a handle off the wall
+// at once, and the server has no such operation: 0032 removes letters one at a
+// time and refuses a write to a handle any of whose letters were removed, which
+// gets the same outcome without a single statement that can empty a name.
 
-export function isRemoved(handle) {
-  return removed().includes(normHandle(handle))
+// Both return { ok } and both refresh what they touched, so the screen that
+// called one is looking at the truth immediately afterwards rather than at its
+// own optimistic guess.
+export async function report(id, reason) {
+  const out = await api.report(id, reason)
+  if (out?.ok) {
+    BY_ID.set(id, null)
+    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.filter((l) => l.id !== id))
+    TILES_AT = 0
+    await loadWall(true)
+    bump()
+  }
+  return out || { ok: false, error: 'network' }
 }
 
-// Returns how many letters went with the name, which is the one fact the
-// screen has to be able to state plainly before it happens and after.
-export function removeHandle(handle) {
-  const h = normHandle(handle)
-  if (!h || isRemoved(h)) return 0
-  const n = lettersFor(h).length
-  push('removed', h)
-  REV += 1
-  return n
-}
-
-// ── a report ────────────────────────────────────────────────────────────────
-//
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  IT COMES DOWN FIRST. IT IS REASONED ABOUT SECOND. IT IS NEVER DELETED.  ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-//
-// The order is the whole design. A queue that leaves the letter up while
-// somebody decides whether the report was fair has protected the wrong person:
-// the screenshot exists before the decision does, and the subject has already
-// had the day it gave them. So the tap takes it off the wall, out of the
-// search, out of the count, before a single word of reasoning happens.
-//
-// And it is HELD, not deleted. `reported` is a list of ids the wall filters
-// out — the row is still there, the words are still there, and a person at a
-// desk can read it and put it back up. A takedown that destroys the evidence
-// is a takedown nobody can be wrong about in the direction of the writer, and
-// on a wall where anybody signed in can report anything, being wrong in that
-// direction is the common case.
-export function reported() { return getState().reported || [] }
-
-export function isReported(id) { return reported().includes(id) }
-
-// The reasons live in memory for this session only. There is no server here to
-// send one to, and a reason kept in localStorage would be a private accusation
-// sitting in the tab of whoever borrows the phone next.
-const REASONS = new Map()
-
-export function report(id, reason) {
-  const one = all().find((l) => l.id === id)
-  if (!one) return null
-  push('reported', id)
-  if (reason) REASONS.set(id, String(reason).trim().slice(0, 240))
-  REV += 1
-  return one
-}
-
-// The way back up, which is the reason the row was kept. It is not reachable
-// from this surface and it should not be: restoring is a desk's decision made
-// against the letter and the report side by side, and the desk is the admin
-// dashboard in the production app, not a button on the wall.
-export function restore(id) {
-  const s = getState()
-  patch({ reported: (s.reported || []).filter((r) => r !== id) })
-  REASONS.delete(id)
-  REV += 1
-}
-
-// What a desk would be looking at. Exported so the review queue has something
-// real to read the day it is wired up, rather than a shape invented later.
-export function heldForReview() {
-  const off = reported()
-  return WRITTEN.concat(LETTERS)
-    .filter((l) => off.includes(l.id))
-    .map((l) => ({ ...l, reason: REASONS.get(l.id) || '' }))
-}
-
-// ── the revision ────────────────────────────────────────────────────────────
-// The corpus changes in exactly two places — a letter goes up, a name comes
-// off — and both of them happen on a SHEET raised over a wall that never
-// unmounts. A wall that memoises its tiles on an empty dependency list is a
-// wall that is still showing the name somebody just took down, on the screen
-// they took it down from.
-//
-// A counter rather than a subscription: the shell already re-renders on every
-// route change, which is the only moment the wall can come back into view, so
-// reading a number at that moment is enough and there is nothing to unsubscribe.
-let REV = 0
-export function revision() { return REV }
-
-// The live corpus: everything that has not had its name taken off the wall and
-// has not been reported down. Both filters are here, in one function, so there
-// is no path through this module that can produce a letter the wall has
-// already decided is not on it.
-function all() {
-  const off = removed()
-  const down = reported()
-  let live = WRITTEN.concat(LETTERS)
-  if (off.length) live = live.filter((l) => !off.includes(l.to))
-  if (down.length) live = live.filter((l) => !down.includes(l.id))
-  return live
+export async function removeLetter(id) {
+  const out = await api.removeLetter(id)
+  if (out?.ok) {
+    BY_ID.set(id, null)
+    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.filter((l) => l.id !== id))
+    TILES_AT = 0
+    await loadWall(true)
+    bump()
+  }
+  return out || { ok: false, error: 'network' }
 }
 
 // ── the wall ────────────────────────────────────────────────────────────────
-// The wall is a wall of HANDLES, not of letters: one tile per recipient,
-// carrying however many letters that recipient has. A handle written to three
-// times should read as heavier than one written to once, and it does — the
-// tile's weight and scale come off the count.
-
+// A wall of HANDLES, not of letters: one tile per recipient, carrying however
+// many letters that recipient has. A handle written to three times reads as
+// heavier than one written to once, and it does, because the tile's weight and
+// scale come off the count.
+//
+// The weight and the seed are still derived from the handle rather than sent by
+// the server. They are a drawing decision, they have to be identical on every
+// device so two people looking at the same wall see the same wall, and a hash
+// of the handle gives that for free.
 export function wall() {
-  const byHandle = new Map()
-  for (const l of all()) {
-    const cur = byHandle.get(l.to)
-    if (cur) { cur.count += 1; cur.mine = cur.mine || !!l.mine; if (l.at > cur.at) cur.at = l.at }
-    else byHandle.set(l.to, { handle: l.to, count: 1, at: l.at, mine: !!l.mine })
-  }
-  return [...byHandle.values()]
-    .map((t) => ({
-      ...t,
-      // Three weights, and the split is by count first and by luck second, so
-      // the field has texture without a run of equal-looking rows.
-      weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
-      seed: hash(t.handle),
-    }))
-    .sort((a, b) => b.at - a.at)
+  return TILES.map((t) => ({
+    ...t,
+    weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
+    seed: hash(t.handle),
+  }))
 }
 
-export function liveCount() { return all().length }
-export function handleCount() { return new Set(all().map((l) => l.to)).size }
+// The masthead's number. The sum off the index rather than a second count, so
+// it cannot disagree with the tiles under it.
+export function liveCount() {
+  return TILES.reduce((n, t) => n + t.count, 0)
+}
+
+export function handleCount() { return TILES.length }
 
 // ── reading ─────────────────────────────────────────────────────────────────
-
+// Both of these answer out of the cache. A caller that wants them filled calls
+// the matching loader first, or renders the empty state and lets the
+// subscription bring it back.
 export function lettersFor(handle) {
-  const h = normHandle(handle)
-  return all().filter((l) => l.to === h)
+  return BY_HANDLE.get(normHandle(handle)) || []
 }
 
+// Three states, and screens need all three:
+//
+//   undefined  nobody has asked about this id yet
+//   null       asked, and there is no live letter under it
+//   an object  here it is
+//
+// Collapsing the first two is how a screen ends up telling somebody their
+// letter has been taken down while the request for it is still open.
 export function letter(id) {
-  return all().find((l) => l.id === id) || null
+  return BY_ID.get(id)
 }
 
-// The search. Exact handle first, then anything containing what was typed —
-// so a person who half-remembers a handle still lands somewhere, and a person
-// who types their own exact handle lands on their own letter and not on a list
-// of near-misses.
-export function search(query) {
-  const q = normHandle(query)
-  if (q.length < 2) return []
-  const tiles = wall()
-  const exact = tiles.filter((t) => t.handle === q)
-  const near = tiles
-    .filter((t) => t.handle !== q && t.handle.includes(q))
-    .sort((a, b) => a.handle.indexOf(q) - b.handle.indexOf(q) || a.handle.length - b.handle.length)
-  return exact.concat(near).slice(0, 24)
+// Whether we have actually asked about a handle yet, which is not the same
+// question as whether it has letters. A screen that cannot tell those apart
+// draws "nobody wrote to you" while the request is still open.
+export function knowsHandle(handle) {
+  return BY_HANDLE.has(normHandle(handle))
+}
+
+// The search. The server orders it: exact handle first, then anything
+// containing what was typed, so a person who half-remembers a handle still
+// lands somewhere and a person who types their own exact handle lands on
+// themselves rather than on a list of near-misses.
+export async function search(query) {
+  const rows = await api.wallSearch(query)
+  return rows.map((t) => ({
+    ...t,
+    weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
+    seed: hash(t.handle),
+  }))
 }
 
 // ── writing ─────────────────────────────────────────────────────────────────
-// Nothing leaves the tab. The letter is prepended to the corpus so the wall it
-// goes back to is visibly one letter heavier, which is the entire payoff of
-// the posting screen and the reason the prototype bothers to keep a corpus in
-// memory rather than rendering a static list.
+// Not an insert. The letter goes to celestual-wall-moderate, which screens it
+// and writes it in one request, and comes back with one of three answers:
+//
+//   live      it is on the wall
+//   pending   a person will look at it, and this reads as 'live' to the writer
+//   rejected  it is not going up, and `reasons` says why
+//
+// Held and published read the same on purpose. A screen that distinguished
+// them would be a way to find out what gets through by writing until something
+// does.
+export async function write({ to, body, sealedLine, source }) {
+  const out = await api.write({ to, body, sealedLine, source })
+  if (out?.ok && out.status === 'live') {
+    const h = normHandle(to)
+    BY_HANDLE.delete(h)
+    TILES_AT = 0
+    await Promise.all([loadWall(true), loadHandle(h, true)])
+    bump()
+  }
+  return out || { ok: false, error: 'network' }
+}
 
-export function write({ to, body }) {
-  const h = normHandle(to)
-  // A name that has come off the wall stays off it. Otherwise the removal is a
-  // delete button rather than a decision, and the next person to type the
-  // handle undoes it without ever knowing it happened.
-  if (isRemoved(h)) return null
-  const id = idFor(`${h}:${body}:${Date.now()}`)
-  // `mine` is a flag for this tab and this session only. It is what lets the
-  // wall light the name you just put up; it is not an author record, it never
-  // leaves the browser, and clearing the tab clears it.
-  const row = { id, to: h, body: String(body || '').trim(), at: Date.now(), mine: true }
-  WRITTEN.unshift(row)
-  REV += 1
-  return row
+// ── the nineteen ────────────────────────────────────────────────────────────
+// Nineteen of twenty look and find nothing, which is the point of the surface
+// and the moment the product is actually sold. Nothing reads this back.
+export async function joinWaitlist(handle, source) {
+  return (await api.joinWaitlist(handle, source)) || { ok: false, error: 'network' }
 }
 
 // ── time, in words ──────────────────────────────────────────────────────────

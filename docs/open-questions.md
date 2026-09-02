@@ -12,8 +12,9 @@ Per spec section 0, I have not chosen and continued on any of these.
 
 ## Blocking now
 
-Nothing. Q0, Q1, Q2, Q3 and Q21 are answered, and Q22 below is answered with
-them. Q4, Q5 and Q6 block Phase 4a and 4b and are not needed before then.
+Nothing. Every question that gated Phases 4a through 6b is answered. Q4 through
+Q11 were all answered on their recommendations as written here. Q12 and Q13 gate
+Phases 7 and 8, which are out of the current scope.
 
 ### Q22. ANSWERED. The second signature surface is the mutual reveal.
 
@@ -165,7 +166,31 @@ One consequence to carry into Phase 4b: `celestual_submit` calls
 `celestual_submit` for the new identity model must keep that call chain intact
 rather than inlining a hardcoded cap.
 
-### Q4. `0015_identity_start.sql` was never applied. Keep it or drop it?
+### Q4. ANSWERED. Option A. Drop 0015 and `celestual-relogin`.
+
+Done in Phase 4a. `supabase/migrations/0015_identity_start.sql` and
+`supabase/functions/celestual-relogin/` are deleted, and
+`supabase/migrations/0029_adopt_sender_and_email_login.sql` is written from the
+live definitions of the five objects that actually shipped.
+
+Two things Phase 4a found that this question did not know:
+
+1. **`lock_internal_helpers` needed no file.** Its revokes are already carried by
+   `0006_ping_model.sql` and `0009_verification_hardening.sql`. Verified against
+   all 83 execute grants and 37 table grant states in production.
+2. **Deleting `celestual-relogin` orphans two live RPCs.**
+   `celestual_relogin_store` and `celestual_relogin_redeem` exist in production
+   and now have no caller anywhere. They stay in the database: this question did
+   not ask for their removal and no group in `docs/deletions.md` covers them.
+   `app/src/api/relogin.js` also still invokes the deleted function by name.
+   Phase 6b rebuilds `/signin` on the shipped `celestual_login_lookup` path,
+   which is where that gets tidied.
+
+The original question follows.
+
+---
+
+### Q4 (original). `0015_identity_start.sql` was never applied. Keep it or drop it?
 
 The repo has it. Production does not have `celestual_handle_route`, the function
 it defines. Its only caller is `celestual-relogin`, which is also not deployed.
@@ -226,7 +251,28 @@ into the surviving row. Confirm.
 
 ## Blocking Phase 5
 
-### Q7. Migrate the 40 cached profiles, or drop and re acquire?
+### Q7. ANSWERED and done in Phase 5. Migrate.
+
+`0031_apify_resolver.sql` carries `handle`, `display_name` and `is_verified` from
+`celestual_handle_cache` into `ig_profiles` with a null `avatar_path`, drops
+`pic_url` and `is_private`, and drops `celestual_handle_lookups`.
+
+Not carrying `is_private` costs nothing, which is worth recording. Every carried
+row arrives with a null `avatar_fetched_at`, which `ig_profile_get` reports as a
+stale picture, so the first person to resolve one of those handles triggers an
+Apify call that refreshes the private flag along with the face. Carrying a stale
+boolean forward to save a call that is going to happen anyway is the worse trade.
+
+`celestual_handle_cache` itself is left standing rather than dropped. This
+question authorised migrating out of it and did not ask for its removal, the free
+tier has no point in time recovery, and it is the source the migration reads.
+Dropping it is a step in `docs/launchsteps.md` section 4b.
+
+The original question follows.
+
+---
+
+### Q7 (original). Migrate the 40 cached profiles, or drop and re acquire?
 
 `celestual_handle_cache` holds 40 rows. Its `pic_url` column holds signed
 Instagram CDN URLs, which the spec bans and which are expired or expiring.
@@ -239,7 +285,30 @@ seed `ig_profiles` for free, saving 40 Apify calls.
 resolve. Drop `pic_url` and `is_private`. Drop `celestual_handle_lookups`
 entirely, since it is only counters.
 
-### Q8. `device_id` moves from a request body field to an httpOnly cookie.
+### Q8. ANSWERED and done in Phase 5. Option B, the first party proxy.
+
+`/api/resolve` is a rewrite in `vercel.json` onto the edge function, so the
+device cookie is set on `celestual.us` rather than on `*.supabase.co`. The
+client posts there with `credentials: 'include'` and no longer sends any device
+id of its own; the id is a UUID the function issues and the browser never reads.
+
+Two things this needed beyond the one line the question estimated:
+
+1. **A dev proxy too.** `app/vite.config.js` carries the same rewrite, so local
+   development exercises the path the browser actually takes instead of a second
+   code path that only works on a laptop.
+2. **The rewrite destination is a literal URL** carrying the project ref,
+   because a Vercel rewrite cannot read an environment variable. Recorded in
+   `launchsteps.md` as a line to change if the ref ever does.
+
+The function must be deployed `--no-verify-jwt`, because the rewrite forwards a
+plain browser POST with no Supabase key on it. Also in `launchsteps.md`.
+
+The original question follows.
+
+---
+
+### Q8 (original). `device_id` moves from a request body field to an httpOnly cookie.
 
 Spec section 5: "`device_id` is a UUID the edge function issues in an httpOnly,
 SameSite=Lax cookie on first request."
@@ -265,7 +334,19 @@ those users becomes the IP one.
 **Recommendation:** B. It is a few lines in `vercel.json`, it makes the cookie
 first party, and it also removes the direct `*.supabase.co` call from the browser.
 
-### Q9. The spec drops `is_private`. Intentional?
+### Q9. ANSWERED and done in Phase 5. Keep it.
+
+`ig_profiles.is_private` exists and is written on every resolve. It is not on the
+result card and is never sent to the browser, which is what spec section 5's
+field list actually constrains. Two screens that drew it from the old shape lost
+that branch, and the unused `resolve.private` string came out of
+`i18n/strings.js`.
+
+The original question follows.
+
+---
+
+### Q9 (original). The spec drops `is_private`. Intentional?
 
 Spec section 5 lists four captured fields: `handle`, `display_name`,
 `is_verified`, `avatar`. The existing resolver also captures `is_private`.
@@ -281,7 +362,31 @@ anyway. Confirm.
 
 ## Blocking Phase 6a
 
-### Q10. Do the `beta_*` tables keep their names?
+### Q10. ANSWERED and done in Phase 6a. Renamed to `wall_*`.
+
+`0032_the_wall.sql` drops the five `beta_*` tables, `beta_letters_public` and
+`beta_remove_letter`, and rebuilds them as `wall_letters`, `wall_claims`,
+`wall_reveal_requests`, `wall_waitlist`, `wall_scans`, `wall_index` and eleven
+`wall_*` functions.
+
+Dropped and rebuilt rather than renamed in place, because three of them change
+shape as well as name and an empty table is the one thing it is honest to drop.
+`launchsteps.md` section 2d carries the query to confirm they are still empty
+before you apply it.
+
+Two things went with the rename that this question did not ask about, both free
+and both recorded here so they are not a surprise:
+
+- `celestual-beta-moderate` became `celestual-wall-moderate`. Never deployed, and
+  the word described nothing once the tables changed.
+- `wall_reports` is new. Spec section 10 asks for a report to removal path and
+  there was no table for it.
+
+The original question follows.
+
+---
+
+### Q10 (original). Do the `beta_*` tables keep their names?
 
 `0027_beta_wall.sql` created five tables prefixed `beta_`, plus the
 `beta_letters_public` view and `beta_remove_letter`. All are empty and unused.
@@ -295,7 +400,24 @@ cheap again.
 `wall_reveal_requests`, `wall_waitlist`, `wall_scans`, `wall_letters_public`,
 `wall_remove_letter`. Confirm.
 
-### Q11. Does the Wall stay Berkeley only?
+### Q11. ANSWERED and done in Phase 6a. Option B, with C's shape.
+
+`wall_campuses` holds one row: `berkeley`, `UC Berkeley`, `berkeley.edu`, open.
+`wall_gate(user, campus)` reads the domain out of that table rather than
+carrying one, and every letter carries its campus, so opening a second campus is
+an insert rather than a migration.
+
+Nothing is hardcoded to Berkeley in the schema. `app/src/wall/auth.js` still
+carries `DOMAIN = 'berkeley.edu'` for the client-side fail-fast on the address
+field, which is a courtesy to the person typing and not a control: the control
+is `wall_gate`, and it would refuse a stanford.edu address today whatever the
+client believed.
+
+The original question follows.
+
+---
+
+### Q11 (original). Does the Wall stay Berkeley only?
 
 `app/src/wall/router.js:17` says `/berkeley` was chosen so "the next campus should
 be a sibling address rather than a second rewrite". The gate hardcodes
@@ -494,6 +616,34 @@ whatever you decide on the accent:
 ---
 
 ## Process
+
+### Q23. NEW, raised by Phase 4b. Proving a second handle in one browser.
+
+Not blocking. Phase 4b implemented an answer and this records it so you can
+overturn it cheaply. It is one branch of one function.
+
+Spec section 3 says the merge rule stops and asks "if the merge would join two
+rows that each already have a different verified handle". It does not say what
+happens when a session whose row already carries a verified handle proves a
+second, different one. That is not a merge, so the rule does not reach it.
+
+What Phase 4b does: treats it as a **switch of account**. The session moves to
+the row that owns the newly proved handle, and the first row is not touched. It
+creates no duplicate and overwrites nothing, so both of the rule's absolutes
+hold, and signing into a second Instagram account from one browser keeps working.
+
+The alternative reading is that a second handle is a conflict, which would make
+that impossible. It seemed the less likely thing to have meant.
+
+- **A.** Switch, as built.
+- **B.** Refuse and record a conflict, the same as the merge case.
+
+**Recommendation:** A, which is what is in the code. Say so if you want B.
+
+The reverse case, a row that already holds a verified `.edu` meeting a second,
+different verified `.edu`, is **not** treated this way. That one refuses and
+writes a conflict, because Q6 named it explicitly and because a person has one
+campus in a way they do not have one Instagram account.
 
 ### Q19. Branch naming conflict.
 

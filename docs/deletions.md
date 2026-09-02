@@ -27,9 +27,16 @@ check against the live database's function and table lists.
 
 ---
 
-## Group A. HikerAPI. Required by spec section 5.
+## Group A. HikerAPI. DONE in Phase 5. Required by spec section 5.
 
 Total footprint: four files. There is no HikerAPI database object.
+
+All four are handled. `celestual-resolve/index.ts` was rewritten rather than
+edited, `app/.env.example` now documents `APIFY_TOKEN` and the resolver
+endpoint, `docs/HANDLE-RESOLVER.md` was rewritten around Apify, and the
+`supabase/README.md` row was rewritten. Nothing in the repository refers to the
+old provider except this manifest, the Phase 1 audit, `docs/rebuild-spec.md`,
+and `launchsteps.md` section 4, which spec section 5 requires by name.
 
 | Item | Mark | Why |
 | --- | --- | --- |
@@ -145,8 +152,8 @@ Nothing in this group is deleted until Q3 is answered.
 | `supabase/functions/celestual-search/` | CHECK | 85 lines. Instagram handle typeahead. Never deployed. Behind `VITE_HANDLE_SEARCH`, which is `0`. Superseded by Apify resolution in Phase 5. It is a generic pluggable proxy and contains no HikerAPI code, so it is a separate decision from Group A. Called via `functions.invoke('celestual-search')` in `app/src/api/handles.js`, which goes with it. |
 | `app/src/api/handles.js` | CHECK | 134 lines. Only consumer of the above. Verify no other importer before deleting. |
 | `supabase/functions/celestual-remind/` | CHECK | 180 lines. Never deployed. Its RPC `celestual_request_reminder` was dropped by `0006_ping_model.sql:207` and does not exist in production. Dead on both ends. |
-| `supabase/functions/celestual-relogin/` | HOLD | 192 lines. Never deployed. Its RPC `celestual_handle_route` does not exist in production either. But it is the sign back in flow, and spec section 3 requires a durable cross surface session. It may be the starting point rather than a deletion. See Q4. |
-| `supabase/migrations/0015_identity_start.sql` | HOLD | Never applied to production. Same question, Q4. |
+| `supabase/functions/celestual-relogin/` | DELETED in Phase 4a | 192 lines. Never deployed. Q4 answered A: the shipped `celestual_login_lookup` path replaces it. Removing it orphans two live RPCs, `celestual_relogin_store` and `celestual_relogin_redeem`, which stay in the database because nothing here covers them. |
+| `supabase/migrations/0015_identity_start.sql` | DELETED in Phase 4a | Never applied to production. Q4 answered A. Its only function, `celestual_handle_route`, existed nowhere but this file. |
 
 ---
 
@@ -185,12 +192,8 @@ are what they replace.
 
 | Object | Rows | Mark | Why |
 | --- | --- | --- | --- |
-| table `celestual_handle_cache` | 40 | CHECK | Superseded by `ig_profiles`. Its `pic_url` column holds expiring Instagram CDN URLs, which the spec bans. The 40 rows are cached public profile metadata and carry no user data. Safe to drop rather than migrate. Confirm in Q7. |
-| table `celestual_handle_lookups` | 41 | CHECK | Superseded by `handle_search_events`. Rate limit counters only. |
-
-Recommend dropping both rather than migrating. The cached data is public
-metadata, cheap to re acquire, and the avatar URLs in it are already expired or
-expiring.
+| table `celestual_handle_cache` | 40 | MIGRATED, not dropped | Q7 answered: `handle`, `display_name` and `is_verified` are carried into `ig_profiles` by `0031`, with a null `avatar_path` so faces refill lazily. `pic_url` and `is_private` are not carried. The table itself is deliberately left standing: Q7 authorised migrating out of it and said nothing about dropping it, the free tier has no point in time recovery, and it is the source `0031` reads. Dropping it is `docs/launchsteps.md` section 4b, for once `ig_profiles` is answering. |
+| table `celestual_handle_lookups` | 41 | DROPPED in Phase 5 | Q7 answered: counters only, against a window that no longer exists. `drop table if exists` at the foot of `0031`. |
 
 ---
 
@@ -298,7 +301,7 @@ Two rows in this group should survive any wipe on their own merits:
 | A. HikerAPI | Ready, spec mandated | none |
 | B. Trial and recruitment | Ready pending confirmation | Q12 |
 | C. Stripe | CLOSED, nothing deleted | answered |
-| D. Dead server code | Partly ready | Q4 for relogin and 0015 |
+| D. Dead server code | Q4 items deleted in Phase 4a; `celestual-search` still open | `celestual-search` is Phase 5's |
 | E. Communities and campuses | Ready pending confirmation | Q15 |
 | F. Old resolver tables | Ready pending confirmation | Q7 |
 | G. Documentation | Partly ready | Q17 |

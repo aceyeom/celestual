@@ -4,6 +4,7 @@ import './styles.css'
 import App from './App.jsx'
 import { I18nProvider } from './i18n/index.js'
 import { BASE, legacyRewrite } from './wall/router.js'
+import { isMainPath } from './main/router.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
 // DM code entirely in-tab (see api/igverify.js), so the app just boots.
@@ -50,17 +51,32 @@ if (moved) {
 const path = moved || here
 const wallPath = path === BASE || path.startsWith(BASE + '/')
 
-// ── /signature ───────────────────────────────────────────────────────────────
-// The two signature surfaces from the rebuild's Phase 3: the Main hero and the
-// mutual reveal. They fork here for the same reason the wall does, and the fork
-// has to happen BEFORE App.jsx sees the path: App's route table ends with a
-// bare four letter matcher for a competitor's tracking link, and any short word
-// that is not on its reserved list is claimed by it.
+// ── Main ─────────────────────────────────────────────────────────────────────
+// Phase 6b. The Phase 3 signature surfaces were built at `/signature` and
+// `/signature/reveal`, which was always a preview address: the hero becomes `/`
+// and the reveal becomes a state of the core service once there is something
+// behind them. Both are true now, so Main claims `/`, `/place`, `/sky`,
+// `/reveal` and the open door at `/@handle`.
 //
-// This is a preview address. The hero becomes `/` and the reveal becomes a
-// state of the core service in Phase 6b, once there is something behind them.
+// The fork has to happen BEFORE App.jsx sees the path, for the reason the wall's
+// does: App's route table ends with a bare four letter matcher for a
+// competitor's tracking link, and any short word not on its reserved list is
+// claimed by it.
+//
+// ── what Main deliberately does not claim ────────────────────────────────────
+// Everything else. `main/router.js` carries the list and the reason: /optout
+// and /copy are kept as they are, /signin waits for Phase 8's routing pass, and
+// /trial, /recruit, /c, /demo and /paid are all pending an answer in
+// docs/open-questions.md. A fork that swallowed them would be deleting features
+// by routing rather than by decision, which is the one way to delete something
+// without anybody approving it.
+//
+// `/signature` still resolves, unchanged. It is where Phase 3 was approved, the
+// two surfaces there are static and take no backend, and keeping it costs one
+// dynamic import that nobody who does not type the address will ever load.
 const SIGNATURE = '/signature'
 const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
+const mainPath = !sigPath && !wallPath && isMainPath(path)
 
 const root = createRoot(document.getElementById('root'))
 
@@ -69,6 +85,14 @@ if (sigPath) {
     root.render(
       <StrictMode>
         <SignatureApp />
+      </StrictMode>,
+    )
+  })
+} else if (mainPath) {
+  import('./main/index.jsx').then(({ default: MainApp }) => {
+    root.render(
+      <StrictMode>
+        <MainApp />
       </StrictMode>,
     )
   })

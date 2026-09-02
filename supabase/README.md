@@ -76,12 +76,11 @@ Idempotent migrations, applied in order:
   its TTL from 24 h to 30 min (the durable re-login removed the repeat-DM pressure
   the long TTL guarded against). The relays parse `\d{4,6}` through the cutover.
 
-- `migrations/0015_identity_start.sql` — **the identity router.**
-  `celestual_handle_route(handle)` answers, read-only, which way in an @ takes:
-  unknown (sign up), known with no bound address (prove it by DM), or known with
-  one (mail the sign-in link, and hand back the address masked to
-  `j•••@gmail.com`). Service-role only. This is what let the sign-in screen stop
-  offering two doors and stop hedging in print about which one worked.
+- `migrations/0015_identity_start.sql` — **removed in the Phase 4a
+  reconciliation.** It defined `celestual_handle_route(handle)`, an identity
+  router that was never applied to production and whose only caller,
+  `functions/celestual-relogin`, was never deployed. The shipped answer to the
+  same problem is `0029` below. See `docs/open-questions.md` Q4.
 
 - `migrations/0016_recruit_program.sql` — **the recruitment program.**
   `celestual_recruits` (one row per person who commented under the recruitment
@@ -175,6 +174,61 @@ Idempotent migrations, applied in order:
   `celestual-resolve` function's service role. `pic_url` is a URL and never an
   image. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)**
 
+- `migrations/0029_adopt_sender_and_email_login.sql` — **the reconciliation.**
+  Creates nothing new. Every object in it already existed in production and had
+  since 2026-07-19, applied under the name `adopt_sender_and_email_login` with no
+  file behind it: `celestual_email_identities` (an address book, one row per
+  email and handle pair), `celestual_login_links` (hash-stored, single-use magic
+  link tokens), and `celestual_bind_login_email` / `celestual_login_lookup` /
+  `celestual_redeem_login`. An email becomes a second way to reach a handle you
+  already proved you own; the DM code flow is still the only thing that proves
+  ownership. Written entirely as `if not exists` and `create or replace`, so
+  against production it is a no-op. Transcribed from the live definitions with
+  `pg_get_functiondef`, deliberately without tidying.
+  **Verify with `scripts/verify-migrations.sh`.**
+
+- `migrations/0030_identity.sql`: **identity.** The handle is the identity and
+  the email is a convenience, and `celestual_users` is shaped so the schema says
+  that rather than treating them as equals: `instagram_handle` unique and
+  canonical, `handle_verified_at` written by `celestual_user_bind_handle` and by
+  nothing else, `edu_email` a separate field with a separate proof, `email` a
+  plain address nobody checked, and `edu_domain` generated as the campus key so
+  a second campus is a change to the gate rather than a migration.
+  `celestual_sessions` is one browser-minted token across both surfaces (only
+  its sha256 is stored), which the DM flow's handle-keyed proof could not be,
+  because a person who verified a `.edu` address and has no handle yet has no
+  row in a table keyed on handles. `celestual_user_merge` is the spec's merge
+  rule: older row survives, it refuses on two different verified handles or two
+  different verified campuses and writes the pair to
+  `celestual_merge_conflicts`, and content follows its identity by way of every
+  foreign key that points at `celestual_users(id)` in the catalogue rather than
+  a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
+  54 assertions, through `scripts/verify-migrations.sh --test`.**
+
+- `migrations/0032_the_wall.sql`: **the wall, on a server.** `app/src/wall/data.js`
+  had said since it was written that the wall "reaches no server, it stores
+  nothing anybody typed anywhere but this tab", and 0027 built five `beta_*`
+  tables that nothing ever wrote to. This is the first schema the wall will
+  actually use. The five tables are dropped and rebuilt as `wall_*` (Q10; they
+  were empty, so it was free exactly once), `author_handle` becomes `author_id`
+  referencing `celestual_users` so a wall writer needs a campus rather than an
+  Instagram account and so 0030's merge follows their letters through the
+  catalogue, `wall_campuses` holds the gate's domain so a second campus is an
+  insert (Q11), and `wall_reports` is new because spec section 10 asks for a
+  report to removal path that had no table.
+
+  **0027's central property is kept and extended.** The client still has no
+  grant on the letters table and the thing it can read still lacks the columns
+  that would hurt somebody. What changed is that 0027's public view carried
+  `body` with a select grant for `anon`, which would have made every letter on
+  the wall readable by the open internet, against what `app/src/wall/auth.js`
+  says at length in its own header. `wall_index` carries a handle and a count;
+  the bodies come through `wall_letters_for`, which returns a null body to
+  anybody outside the campus, because a redaction the client performs is not a
+  redaction. `wall_letter_seal` is the only function anywhere that returns
+  `sealed_line`, and it wants the verified handle, the ask and the author's yes.
+  **Tested by `scripts/sql/test-wall.sql`, 72 assertions.**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay
@@ -229,13 +283,12 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to each side of a match, at addresses they stored (retry + dead-letter). Says whether a card is waiting, never what it says | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
-| `functions/celestual-resolve` | **the handle resolver** (0028): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. Instagram's public web profile first, HikerAPI (`x-access-key`) as the fallback for everything else. Caches 24h/1h, caps 30 distinct handles per device per day plus a lenient per-IP window, and proxies the picture live on `?avatar=<handle>` because Instagram's CDN URLs are signed and expire. Never stores an image, never blocks a ping. Deploy with `--no-verify-jwt` (an `<img>` cannot send an apikey). **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `HIKER_API_KEY` (optional: `HIKER_API_BASE`, `IG_PUBLIC_LOOKUP`) |
+| `functions/celestual-resolve` | **the handle resolver** (0031): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. One Apify actor run per cache miss, profile details only with the post limit at zero. The face is downloaded once into the public `avatars` bucket at `ig/<handle>.jpg` and served to the browser from Supabase, so no Instagram CDN URL (signed, expires within days) ever reaches anybody and a cached card draws a cached face. The cache is permanent; the picture refreshes at thirty days. Caps are three rolling 24h windows enforced in the database (`handle_search_allow`): 20 per signed-in user, 20 per anonymous device, 200 per address, and a cache hit costs nothing because only a call that reached Apify writes a row. On a limit it answers 429 with the seconds remaining. The device id is a UUID this function issues in an httpOnly SameSite=Lax cookie, which is first party only because `/api/resolve` in `vercel.json` rewrites onto it. Never blocks a ping. Deploy with `--no-verify-jwt`. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `APIFY_TOKEN` (optional: `APIFY_ACTOR_ID`) |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
 | `functions/_shared/mutual.ts` | not a function — the one copy of the mutual line and the ManyChat sender, imported by both of the above so the two carriers can never say different things | — |
 | `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../design/DESIGN.md](../design/DESIGN.md)**) | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
-| `functions/celestual-relogin` | the way back in: `start` asks which door this @ takes (0015, read-only); `request` emails a one-time magic link to the bound recovery address; `redeem` mints a fresh 30-day proof from the link — the sign-back-in path that survives storage loss and works cross-device | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 
 | `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |

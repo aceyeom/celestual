@@ -6,6 +6,7 @@
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/data-deletion", "destination": "/data-deletion.html" },
+    { "source": "/api/resolve", "destination": "https://vwbsjwaqnycyghvwlxhd.supabase.co/functions/v1/celestual-resolve" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

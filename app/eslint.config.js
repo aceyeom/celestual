@@ -41,4 +41,11 @@ export default [
       'no-unused-vars': ['error', { args: 'none', varsIgnorePattern: '^_' }],
     },
   },
+  {
+    // The build's own config runs in Node, not in a browser. Without this
+    // `process` reads as an undefined global and the one file that configures
+    // the dev proxy fails the gate it exists to serve.
+    files: ['*.config.js', 'vite.config.js'],
+    languageOptions: { globals: { ...globals.node } },
+  },
 ]
