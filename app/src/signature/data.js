@@ -8,7 +8,7 @@
 //                and `avatar_fetched_at`, which are cache bookkeeping and never
 //                reach a screen
 //   a ping       matches the standing/mutual model the core service already has
-//   a letter     matches `beta_letters` in 0027_beta_wall.sql
+//   a letter     matches `wall_letters` in 0032_the_wall.sql
 //
 // `avatar` is deliberately null on both profiles. Spec section 5 says a failed
 // avatar download stores nothing and the UI falls back to a monogram built from

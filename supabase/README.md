@@ -205,6 +205,30 @@ Idempotent migrations, applied in order:
   a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
   54 assertions, through `scripts/verify-migrations.sh --test`.**
 
+- `migrations/0032_the_wall.sql`: **the wall, on a server.** `app/src/wall/data.js`
+  had said since it was written that the wall "reaches no server, it stores
+  nothing anybody typed anywhere but this tab", and 0027 built five `beta_*`
+  tables that nothing ever wrote to. This is the first schema the wall will
+  actually use. The five tables are dropped and rebuilt as `wall_*` (Q10; they
+  were empty, so it was free exactly once), `author_handle` becomes `author_id`
+  referencing `celestual_users` so a wall writer needs a campus rather than an
+  Instagram account and so 0030's merge follows their letters through the
+  catalogue, `wall_campuses` holds the gate's domain so a second campus is an
+  insert (Q11), and `wall_reports` is new because spec section 10 asks for a
+  report to removal path that had no table.
+
+  **0027's central property is kept and extended.** The client still has no
+  grant on the letters table and the thing it can read still lacks the columns
+  that would hurt somebody. What changed is that 0027's public view carried
+  `body` with a select grant for `anon`, which would have made every letter on
+  the wall readable by the open internet, against what `app/src/wall/auth.js`
+  says at length in its own header. `wall_index` carries a handle and a count;
+  the bodies come through `wall_letters_for`, which returns a null body to
+  anybody outside the campus, because a redaction the client performs is not a
+  redaction. `wall_letter_seal` is the only function anywhere that returns
+  `sealed_line`, and it wants the verified handle, the ask and the author's yes.
+  **Tested by `scripts/sql/test-wall.sql`, 72 assertions.**
+
 **The deliberate reset:** `wipe-all-user-data.sql` (this directory, OUTSIDE the
 migration chain so `db push` can never run it) erases every account and
 everything accounts produced, while keeping suppressions (opt-outs stay

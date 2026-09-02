@@ -651,7 +651,77 @@ httpOnly cookie. See Q8.
 `celestual-search` is dead and proposed for deletion. It is a different feature,
 typeahead rather than resolution, never deployed, and behind a flag that is off.
 
-### Phase 6a. Wall backend
+### Phase 6a. Wall backend. COMPLETE.
+
+`supabase/migrations/0032_the_wall.sql`, `app/src/wall/api.js`, a rewritten
+`app/src/wall/auth.js`, and `supabase/functions/celestual-wall-moderate`.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `wall_campuses` | one row per wall. Q11's shape: the gate reads the domain out of here, so a second campus is an insert |
+| `wall_letters` | the letters. `author_id` references `celestual_users` rather than holding a handle string |
+| `wall_claims` | the act and the time. Whether it is worth anything is read live off the user |
+| `wall_reveal_requests` | one ask per letter, ever, enforced by a unique constraint |
+| `wall_waitlist` | the nineteen of twenty who looked and found nothing |
+| `wall_scans` | which flyer |
+| `wall_reports` | new. Spec section 10's report to removal path had no table |
+| `wall_index` | the public view. A handle and a count |
+| eleven functions | the read, the write, the ask, the answer, the seal, the waitlist, the scan, the report, the takedown, the search, the sweep |
+| `app/src/wall/api.js` | the browser half, replacing `data.js`'s in-memory corpus |
+| `celestual-wall-moderate` | renamed, retargeted at Haiku, and it now writes as well as screens |
+
+**Three things this section did not anticipate.**
+
+1. **0027's public view leaked every letter body.** Its `beta_letters_public`
+   carried `body` and had a select grant for `anon`, which means every letter on
+   the wall would have been readable by the open internet. `app/src/wall/auth.js`
+   says the opposite in its own header, at length: "THE INDEX IS PUBLIC. THE
+   LETTERS ARE NOT," with a letter arriving redacted to a stranger and whole to
+   somebody with a berkeley.edu address. The view and the design disagreed and
+   the design is right, so `wall_index` carries a handle and a count and the
+   bodies come through `wall_letters_for` behind the gate. 0027's central
+   property is preserved and extended rather than weakened: the client still has
+   no grant on the letters table, and the thing it can read still does not have
+   the columns that would hurt somebody.
+2. **`author_handle text not null` could not be filled.** A wall writer needs a
+   campus, not a handle, so a person who came in with a .edu address and no
+   Instagram could not have written a letter at all. It is `author_id`
+   referencing `celestual_users` now, which also means 0030's merge follows a
+   person's letters through the catalogue with nothing in 0032 to remember it.
+   That is tested rather than assumed.
+3. **The moderation function had a gap in it.** It returned a verdict and left
+   somebody else to act on it. It now screens and writes in one request, so a
+   rejected letter is stored with its reason (spec section 9) rather than
+   depending on a caller to store it, and there is no path to the wall that
+   skips the screen. It was also renamed from `celestual-beta-moderate`: never
+   deployed, and the word described nothing once Q10 renamed the tables.
+
+**The model is `claude-haiku-4-5-20251001`,** per spec section 9, as the default
+with `MODERATION_MODEL` able to override it. Without `MODERATION_API_KEY` every
+letter is held at pending and nothing publishes, which is the correct failure:
+failing open would put the one control standing between this wall and its worst
+day one missing environment variable away from being off.
+
+**Tested.** `scripts/sql/test-wall.sql`, 72 assertions. The ones worth naming:
+the index has no body, author or seal column at all; `anon` can reach none of
+the six tables; a stranger and an out-of-campus reader both get a null body from
+the database rather than from the client; no read of any kind returns
+`sealed_line` or `author_id`; the seal needs all three of the verified handle,
+the ask and the author's yes; a report removes the letter in the same statement
+that files it; a name that came off stays off; and letters follow their author
+through a merge with nothing in 0032 arranging it.
+
+**What is deliberately not here.** The wall's screens still read `data.js` and
+its seeded corpus. Wiring them to `api.js` is Phase 6b, which is where this plan
+puts UI, and doing it here would have meant rebuilding ten screens inside a
+backend phase. The ping model on the wall (`app/src/wall/orbit.js`) is also
+untouched: pings already have a production backend in `celestual_submit` and
+`celestual_my_pings`, so 6b wires that screen to what exists rather than
+building it twice.
+
+The original plan for this phase follows.
 
 New phase. Justification is finding 1.2.
 

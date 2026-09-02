@@ -206,9 +206,31 @@ variable, no bucket, no DNS.
 - [ ] **Apply `0031_apify_resolver.sql`,** after 0030. The rest of what Phase 5
       needs from you is in section 3, in the order to do it.
 
-### 2d. Phase 6a and later
+### 2d. Phase 6a. The wall gets a server.
 
-`PENDING.` New migrations from Phase 6a onward are listed here in apply order as
+- [ ] **Apply `0032_the_wall.sql`,** after 0031.
+
+      **Read this one before you run it.** It DROPS the five `beta_*` tables,
+      the `beta_letters_public` view and `beta_remove_letter`, and rebuilds them
+      as `wall_*`. That is Q10's rename, and it is safe for one reason only:
+      all five tables hold zero rows and nothing has ever written to them. If
+      that has changed since this was written, stop and tell me. Confirm with:
+
+      ```sql
+      select 'beta_letters' t, count(*) from beta_letters
+      union all select 'beta_claims', count(*) from beta_claims
+      union all select 'beta_reveal_requests', count(*) from beta_reveal_requests
+      union all select 'beta_waitlist', count(*) from beta_waitlist
+      union all select 'beta_scans', count(*) from beta_scans;
+      ```
+
+      Every count must be zero.
+
+- [ ] **Add `select wall_expire();` to the scheduled jobs.** Section 8.
+
+### 2e. Phase 6b and later
+
+`PENDING.` New migrations from Phase 6b onward are listed here in apply order as
 each phase lands.
 
 ---
@@ -380,16 +402,31 @@ still nobody's decision; see `docs/deletions.md` group D.
       browser reaches it through the `/api/resolve` rewrite with no Supabase key
       on the request.
 
+**Deploys Phase 6a needs:**
+
+- [ ] `supabase functions deploy celestual-wall-moderate`
+      Renamed from `celestual-beta-moderate` in Phase 6a. It had never been
+      deployed and the word "beta" described nothing, so the rename was free.
+      Must happen after `0032` is applied.
+
+      This function is now the **only** path a letter reaches the wall by. It
+      screens and it writes, in one request, because a screen whose verdict
+      somebody else has to act on is a screen with a gap in it.
+
+- [ ] Set `MODERATION_API_KEY` as a Supabase edge function secret. An Anthropic
+      API key. **Without it every letter is held at pending and nothing is ever
+      published.** That is deliberate: failing open would mean the one control
+      standing between this wall and its worst day is a missing environment
+      variable away from being off.
+- [ ] `MODERATION_MODEL` is optional and defaults to
+      `claude-haiku-4-5-20251001`, which is what spec section 9 asks for.
+      Confirm the model id is still current when you deploy.
+
 **Still to come:**
 
-- [ ] `celestual-beta-moderate` gets deployed in Phase 6a. It is the server half
-      of wall moderation and spec section 9 depends on it.
+- [ ] Nothing until Phase 7.
 
-Moderation needs an Anthropic key, per spec section 9, target model
-`claude-haiku-4-5-20251001`.
 
-- [ ] Set `ANTHROPIC_API_KEY` as a Supabase edge function secret.
-- [ ] Confirm the model id is current at the time Phase 6a lands.
 
 ---
 
@@ -400,6 +437,11 @@ One cron job exists today: `celestual-mutual-dm`.
 - [ ] **`select celestual_sessions_prune();`** daily. Added by Phase 4b. Deletes
       sessions a day past their thirty day expiry. Nothing breaks if it never
       runs; the table just grows.
+
+- [ ] **`select wall_expire();`** daily. Added by Phase 6a. Closes out letters
+      that have sat at `pending` for more than seven days, which happens when
+      the classifier was unreachable the day they were written. Without it a
+      letter can sit in the queue forever and nobody is told.
 
 - [ ] **`select handle_search_prune();`** daily. Added by Phase 5. Deletes
       `handle_search_events` rows older than 48 hours, which is twice the

@@ -362,7 +362,31 @@ anyway. Confirm.
 
 ## Blocking Phase 6a
 
-### Q10. Do the `beta_*` tables keep their names?
+### Q10. ANSWERED and done in Phase 6a. Renamed to `wall_*`.
+
+`0032_the_wall.sql` drops the five `beta_*` tables, `beta_letters_public` and
+`beta_remove_letter`, and rebuilds them as `wall_letters`, `wall_claims`,
+`wall_reveal_requests`, `wall_waitlist`, `wall_scans`, `wall_index` and eleven
+`wall_*` functions.
+
+Dropped and rebuilt rather than renamed in place, because three of them change
+shape as well as name and an empty table is the one thing it is honest to drop.
+`launchsteps.md` section 2d carries the query to confirm they are still empty
+before you apply it.
+
+Two things went with the rename that this question did not ask about, both free
+and both recorded here so they are not a surprise:
+
+- `celestual-beta-moderate` became `celestual-wall-moderate`. Never deployed, and
+  the word described nothing once the tables changed.
+- `wall_reports` is new. Spec section 10 asks for a report to removal path and
+  there was no table for it.
+
+The original question follows.
+
+---
+
+### Q10 (original). Do the `beta_*` tables keep their names?
 
 `0027_beta_wall.sql` created five tables prefixed `beta_`, plus the
 `beta_letters_public` view and `beta_remove_letter`. All are empty and unused.
@@ -376,7 +400,24 @@ cheap again.
 `wall_reveal_requests`, `wall_waitlist`, `wall_scans`, `wall_letters_public`,
 `wall_remove_letter`. Confirm.
 
-### Q11. Does the Wall stay Berkeley only?
+### Q11. ANSWERED and done in Phase 6a. Option B, with C's shape.
+
+`wall_campuses` holds one row: `berkeley`, `UC Berkeley`, `berkeley.edu`, open.
+`wall_gate(user, campus)` reads the domain out of that table rather than
+carrying one, and every letter carries its campus, so opening a second campus is
+an insert rather than a migration.
+
+Nothing is hardcoded to Berkeley in the schema. `app/src/wall/auth.js` still
+carries `DOMAIN = 'berkeley.edu'` for the client-side fail-fast on the address
+field, which is a courtesy to the person typing and not a control: the control
+is `wall_gate`, and it would refuse a stanford.edu address today whatever the
+client believed.
+
+The original question follows.
+
+---
+
+### Q11 (original). Does the Wall stay Berkeley only?
 
 `app/src/wall/router.js:17` says `/berkeley` was chosen so "the next campus should
 be a sibling address rather than a second rewrite". The gate hardcodes

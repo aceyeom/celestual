@@ -42,13 +42,21 @@
 // (data.js). Reading is gated. Authorship stays absent. Those two facts are
 // independent on purpose, and the second one is the product.
 //
-// ── the beta ────────────────────────────────────────────────────────────────
-// Nothing is sent and no code is checked. There is no server in this build to
-// send one and no inbox to receive it, so the step is drawn honestly and says
-// so on the screen rather than pretending to have mailed something.
+// ── where it actually happens ───────────────────────────────────────────────
+// Phase 6a made this real. The code is minted, hashed and mailed by
+// celestual-edu-verify, checked there, and the verified address is bound to an
+// identity row by celestual_user_bind_edu (migration 0030). Nothing in this
+// module decides whether anybody is a member: it asks, and the server answers.
+//
+// The gate that matters is not here either. Every read of a letter body goes
+// through wall_letters_for, which checks the campus itself and returns a null
+// body to anybody outside it, so a person who edits `member` in devtools gets a
+// wall with no words on it. What this module holds is the copy of that answer
+// the interface draws from, not the answer.
 
 import { getState, patch, push } from './store.js'
 import { normHandle } from './data.js'
+import { whoami, bindHandle, forgetSession } from '../api/identity.js'
 
 export const DOMAIN = 'berkeley.edu'
 
@@ -73,16 +81,24 @@ export function emailFault(raw) {
   return validEmail(e) ? '' : `letters open for ${DOMAIN} addresses`
 }
 
-// Any number passes, and the screen says so. What is checked is the SHAPE —
-// six digits — because the field has to behave like the field it will be, and
-// a step that accepts an empty box teaches nothing about the real one.
+// The shape only: six digits. The code itself is checked by
+// celestual-edu-verify against a hash, and it is never returned to the browser,
+// so there is nothing here that could check it and nothing here that should
+// try. This is the fail-fast that keeps an obviously wrong entry from costing a
+// round trip.
 export function validCode(raw) {
   return /^\d{6}$/.test(String(raw || '').replace(/\s+/g, ''))
 }
 
+// The server's last answer about this browser, kept so a screen can draw
+// without waiting for a round trip. `refresh()` is what puts it there and
+// `celestual_whoami` is where it comes from. Never trusted for access: it is
+// what the interface draws, and wall_letters_for is what decides.
 export function member() { return getState().member || null }
 export function isMember() { return !!getState().member }
 
+// Called after celestual-edu-verify confirms a code. The address it takes is
+// the one the server just verified, not one the browser typed.
 export function signIn(email) {
   const e = normEmail(email)
   if (!validEmail(e)) return null
@@ -90,7 +106,26 @@ export function signIn(email) {
   return e
 }
 
-export function signOut() { patch({ member: null }) }
+export function signOut() {
+  patch({ member: null, verified: [] })
+  forgetSession()
+}
+
+// Ask the server who this browser is and cache the answer. Called on mount, so
+// a person who verified on their phone yesterday comes back signed in, and a
+// person whose session expired stops being drawn as a member.
+//
+// It never signs anybody OUT on a network failure. A flaky connection is not a
+// reason to tell somebody they are no longer at their own university.
+export async function refresh() {
+  const me = await whoami()
+  if (!me.signedIn) return member()
+  patch({
+    member: me.eduVerified ? (member() || `someone@${me.campus || DOMAIN}`) : null,
+    verified: me.handleVerified && me.handle ? [me.handle] : (getState().verified || []),
+  })
+  return member()
+}
 
 // The part before the @. What the account sheet shows, because the domain is
 // the same for everybody who can be here and repeating it says nothing.
@@ -122,12 +157,15 @@ export function shortName(email) {
 // out the one person most likely to reach for it — the subject, on a phone, in
 // the thirty seconds after they found their own name.
 //
-// ── this build ──────────────────────────────────────────────────────────────
-// There is no client id, no redirect and no provider to answer. The screen that
-// calls this draws the handoff honestly, says on the glass that nothing is
-// being asked of Instagram, and resolves after the time a real round trip
-// takes. The SHAPE is the part being judged: one question, about one handle,
-// answered once.
+// ── where it actually happens ───────────────────────────────────────────────
+// The Instagram DM code flow, which spec section 4 says is the only thing in
+// the product that proves a handle and which this rebuild did not touch. The
+// screen runs it (api/igverify.js), and what lands here is its result: the
+// proof goes to celestual_user_bind_handle, which is the only writer of
+// handle_verified_at anywhere.
+//
+// Resolving a handle through Apify is a different thing and proves nothing.
+// Nothing on that path reaches this function.
 export const HANDOFF_MS = 1500
 
 export function verified() { return getState().verified || [] }
@@ -137,10 +175,13 @@ export function isVerified(handle) {
   return !!h && verified().includes(h)
 }
 
-export function verifyHandle(handle) {
+// Turn a completed DM verification into an identity. `proof` is the browser
+// held secret the DM flow produced; the server checks it against a live
+// verification for that handle and will not write anything without one.
+export async function verifyHandle(handle, proof) {
   const h = normHandle(handle)
-  if (!h) return Promise.resolve(false)
-  return new Promise((resolve) => {
-    setTimeout(() => { push('verified', h); resolve(true) }, HANDOFF_MS)
-  })
+  if (!h || !proof) return { ok: false, error: 'invalid' }
+  const out = await bindHandle({ handle: h, proof })
+  if (out.ok) push('verified', h)
+  return out
 }

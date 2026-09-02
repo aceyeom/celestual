@@ -6,7 +6,7 @@
 // wall. This module is the browser's half of them, and it is deliberately the
 // WEAKEST half: everything here is a courtesy to the writer, and the control
 // on the writer is the same three layers re-run on the server
-// (supabase/functions/celestual-beta-moderate) where they cannot be edited out
+// (supabase/functions/celestual-wall-moderate) where they cannot be edited out
 // with a devtools console.
 //
 //   1  DETERMINISTIC   regex — slurs, phone numbers, addresses, room numbers,

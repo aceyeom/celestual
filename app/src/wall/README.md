@@ -560,7 +560,7 @@ who did not scan a piece of paper. No shared component, no global token, no
   the schema for what is in this directory — there is no author on a letter
   here, no seal and no reveal — and it should be replaced rather than extended.
   What the shipped wall actually needs is spelled out in docs/WALL-LAUNCH.md.
-  `supabase/functions/celestual-beta-moderate/` is the opposite case: its
+  `supabase/functions/celestual-wall-moderate/` is the opposite case: its
   three-layer pre-publication design is exactly what this build now draws, and
   `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
   keyboard rather than after the button. It is still undeployed.
