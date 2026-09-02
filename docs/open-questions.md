@@ -439,7 +439,29 @@ length.
 
 ## Blocking Phase 7 and 8
 
-### Q12. "Delete the old marketing launch data and its UI." Confirm scope.
+### Q12. ANSWERED and done in Phase 7. The whole group.
+
+Your answer: delete the whole group, including the four rows.
+
+`0034_retire_the_campaign.sql` drops four tables and eleven functions;
+`app/src/components/trial.jsx`, `api/trial.js`, `api/recruit.js`,
+`trialContent.js`, the three `celestual-challenge` files, two docs and the
+`celestual-trial` edge function are gone from the repo; and `/trial`,
+`/recruit`, `/r/<code>` and the bare four letter matcher are off the router.
+
+Two things came out of doing it. `growth.js` stays, because its consumer is the
+placed screen rather than the trial. And two live functions read the dropped
+tables and had to be redefined rather than only having their tables taken away.
+Both are in `docs/deletions.md` group B.
+
+The export of the four rows is a step in `docs/launchsteps.md` section 2f,
+before the drop, because the free tier has no point in time recovery.
+
+The original question follows.
+
+---
+
+### Q12 (original). "Delete the old marketing launch data and its UI." Confirm scope.
 
 Spec section 10. I read this as the First Light trial and the recruitment
 program: `/trial`, `/recruit`, `/r/:code`, the bare four letter `/:code` route,
@@ -454,7 +476,30 @@ Two consequences worth confirming:
 
 **Recommendation:** confirm the competition is over, then delete the whole group.
 
-### Q13. Resend. Which domain and which templates?
+### Q13. ANSWERED. `celestual <hello@celestual.us>`.
+
+I read the account, as this question offered. The domain is already done:
+`celestual.us`, verified, sending enabled, created 2026-07-10. There are no
+stored templates on it and there will not be, because every template is code in
+`supabase/functions/_shared/mail.ts`.
+
+So the whole of this question was the from address, and it is
+`celestual <hello@celestual.us>`: an address that invites a reply, which suits a
+transactional mail whose subject is somebody being thought about.
+
+What that leaves for you is one secret. `CELESTUAL_FROM_EMAIL` is unset today,
+which means every sender falls back to `celestual <onboarding@resend.dev>`,
+Resend's shared sandbox domain. `docs/launchsteps.md` section 6.
+
+Which senders survive is answered by Q12, Q15 and Q16 rather than here:
+`celestual-trial` went with the campaign, and `celestual-remind`'s two community
+mails point at a route Q15 retires.
+
+The original question follows.
+
+---
+
+### Q13 (original). Resend. Which domain and which templates?
 
 Spec section 8 lists "Resend transactional email templates and the share
 thumbnail". Section 14 lists "Resend domain and template setup".
@@ -513,14 +558,34 @@ gestures.
 is much easier to hit with an engine that has already been tuned than with a new
 one. Decided at Phase 3, after you see the surfaces.
 
-### Q15. Communities, campuses, and `/c/:slug`. Retired?
+### Q15. ANSWERED. Retire it. Phase 8.
+
+Your answer: the route, `CommunityScreen`, `WorldsScreen`, `communities.js`,
+`communityGalaxy.js`, the school logos, and the five empty tables with their
+functions. Group E in `docs/deletions.md`.
+
+The original question follows.
+
+---
+
+### Q15 (original). Communities, campuses, and `/c/:slug`. Retired?
 
 Every table is empty. The spec never mentions the feature. `App.jsx` carries
 roughly 200 lines of community state and `communityGalaxy.js` is 1,152 lines.
 
 **Recommendation:** retire it. The Wall is the campus surface now. Confirm.
 
-### Q16. Does `/demo` survive?
+### Q16. ANSWERED. Retire it. Phase 8.
+
+Your answer: the route, `demoData.js`, and the `demo` branches threaded through
+`App.jsx`, `api/celestual.js` and `card/photos.js`. The new Main hero is the
+demo.
+
+The original question follows.
+
+---
+
+### Q16 (original). Does `/demo` survive?
 
 The sandbox at `/demo` runs the whole production flow against hardcoded data with
 auto verification. It threads a `demo` boolean through `App.jsx`,

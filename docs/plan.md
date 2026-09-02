@@ -302,8 +302,8 @@ Ordering is otherwise the spec's, including Phase 3 before backend work.
 | 5 | Apify in, HikerAPI out | 4b | none, Q7 to Q9 answered |
 | 6a | Wall backend | 4b, 5 | none, Q10 and Q11 answered |
 | 6b | Wall and Main UI | 3, 6a | none |
-| 7 | Admin | 6a | Q12 |
-| 8 | Email, legal, routing | 6b | Q13 |
+| 7 | Admin | 6a | done, Q12 answered |
+| 8 | Email, legal, routing | 6b | none, Q13, Q15 and Q16 answered |
 
 ### Phase 1. Audit
 
@@ -856,7 +856,93 @@ Routes in scope, current addresses:
 
 The ticker wall in spec section 8 has no current implementation. It is new.
 
-### Phase 7. Admin
+### Phase 7. Admin. COMPLETE.
+
+`supabase/migrations/0033_the_desk.sql`, `0034_retire_the_campaign.sql`, a
+rewritten `celestual-admin` edge function, `app/src/admin/` in place of
+`components/admin.jsx`, and the campaign deleted per Q12.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `0033_the_desk.sql` | eleven `celestual_desk_*` functions, `service_role` only. No table, no column, no drop |
+| `0034_retire_the_campaign.sql` | the trial and the recruitment program, gone: four tables, eleven functions, and the two live functions that read them redefined without them |
+| `celestual-admin` | two halves, as data rather than as a switch: seven desk reads, four desk writes, six legacy handle actions |
+| `app/src/admin/` | ten files. The shell, the door, seven sections and their parts |
+| `/admin` | its own fork in `main.jsx`, so the desk no longer loads the whole old design before a password is typed |
+| `scripts/sql/test-desk.sql` | 76 assertions |
+| `scripts/preview.mjs` | desk fixtures and seven more routes for the 7.3 loop |
+
+**The desk has two halves because the product does.** Phase 4b layered
+`celestual_users` over `celestual_members` and `celestual_ig_verifications` and
+backfilled from them rather than replacing them, so the DM code flow still
+writes the old tables. Six sections read the rebuild's tables and a seventh
+reads the older ones, and the older half is still where an identity is refused.
+
+**What the desk deliberately cannot do.** Stamp `handle_verified_at`. Spec
+section 4 gives that column one writer and it demands a live DM proof, so an
+admin action that set it would make the proof optional. `test-desk.sql` asserts
+that no `celestual_desk_*` function so much as updates `celestual_users`, which
+is a check on the next person to add a function here as much as on this one.
+
+**Three things this section did not anticipate.**
+
+1. **The report queue is not asking what it looks like it is asking.** 0032's
+   `wall_report` sets the letter to `removed` in the same statement that files
+   the report, because the screenshot exists before you delete it. So the queue
+   is not "should this come down", it is "should this go back up", and the two
+   actions are uphold and dismiss rather than remove and ignore. Dismissing
+   restores a letter that is `removed` and deliberately does not resurrect one
+   the screen rejected: those are two decisions and only one is being made.
+   Every report on the same letter closes together, because three people
+   reporting one letter is one decision.
+2. **Dropping the campaign meant rewriting two live functions, not just
+   dropping tables.** `celestual_admin_overview` returns `competitors` and
+   counts visits and signups; `celestual_admin_delete_user` deletes a person's
+   recruit rows as part of erasing them. Both would have failed on the first
+   call after 0034. `celestual_erase_account` and `celestual_suppress` look like
+   they have the same problem and do not: 0023 rewrote both and dropped the
+   recruit deletes on the way past.
+3. **`growth.js` survives `deletions.md` group B.** The manifest marks it CHECK
+   with "verify its only consumer is the trial before deleting". Its consumer is
+   `components/screens.jsx`, which is the placed screen, so it stays.
+
+**What the visual loop caught.** Spec 7.3, three iterations, and each one found
+something the build could not:
+
+1. **The overview opened on a table with three empty columns.** A one digit
+   figure in a narrow column with its action twelve hundred pixels away at the
+   far edge of the row: the eye crossed the whole viewport to connect a number
+   to the button that acts on it. It is four sentences now, at a reading
+   measure, with the act at the end of the sentence it belongs to.
+2. **An absence was drawn as a state.** `none` rendered with the same dot as
+   `live` and `removed`, so an empty campus column read as a flag on four rows
+   out of four. And a thirty six character uuid under every handle outweighed
+   the handle it was labelling; the id moved into the drawer, where the question
+   is "what is its key" rather than "which one".
+3. **Ledgers ended on half empty rows** with the hairline stopping in the middle
+   of the page, which reads as a block that failed to load. `Ledger` pads the
+   last row with cells that draw nothing but their rule.
+
+Also corrected by looking: numeric column headers were left aligned over right
+aligned figures; nine red bordered `resolve again` buttons down one edge stopped
+meaning "careful" and started meaning "table"; two search placeholders were
+clipped by their own field; and on a phone the two global controls sat in a band
+of chrome of their own between the tabs and the page.
+
+**Screenshotted and viewed at 390x844 and 1440x900:** the door, the desk, people,
+the wall, reports, resolution, waiting and handles. Sixteen files in
+`design/shots`, no console errors on any of them, and nothing on the section 7.1
+ban list.
+
+**What is deliberately not here.** A button that performs a merge the database
+refused. 0030 writes a stopped merge to `celestual_merge_conflicts` and changes
+nothing, per spec section 3's "stop and ask"; the desk shows the pair and lets a
+person record that they looked, and a one click override would put the spec's
+stop behind a button.
+
+The original plan for this phase follows.
 
 Spec section 10. Rebuild `/admin` for a non developer, covering user records,
 the resolution cache, the moderation queue with rejection reasons, rate limit

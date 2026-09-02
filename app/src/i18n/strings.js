@@ -489,10 +489,6 @@ const en = {
   'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
   'edu.demoNote': 'sandbox. any address works, any four digits confirm.',
 
-  // the old /recruit screen (comment → DM → agreement, migration 0016) is
-  // gone: the program's front door is now the first light trial page, and its
-  // copy lives under trial.* below. the counting RPCs live on unchanged.
-
   // ── privacy & the opt-out ───────────────────────────────────────────────
   'privacy.title': 'privacy, plainly',
   'privacy.h1': 'what we store',
@@ -538,73 +534,6 @@ const en = {
   'signin.errBody': 'a sign-in link lasts twenty minutes and works once. start again and we’ll send a fresh one.',
   'signin.errCta': 'sign back in',
   'signin.missing': 'this link is missing its token. open the email again and tap the button there.',
-
-  // ── the first light trial (/trial, migration 0017) ──────────────────────
-  // the page's chrome only. the brief itself is quoted from the official doc
-  // and lives in trialContent.js, out of this linted file, like demoData.js.
-  'trial.stepsLabel': 'how it works',
-  'trial.closed': 'applications closed',
-  'trial.docView': 'read the official doc',
-  'trial.docPdf': 'pdf',
-  'trial.docDocx': '.docx',
-  'trial.docClose': 'close the doc',
-  'trial.docDownload': 'download to sign (.docx)',
-  'trial.registerKicker': 'register',
-  'trial.enterKicker': 'enter the trial',
-  'trial.enterTitle': 'claim your link.',
-  'trial.nameLabel': 'your full name',
-  'trial.namePlaceholder': 'your name',
-  'trial.handleLabel': 'your instagram',
-  'trial.emailLabel': 'your email',
-  'trial.emailPlaceholder': 'you@example.com',
-  'trial.choiceLabel': 'your four letters',
-  // no note under this field. the link preview beside it IS the explanation.
-  'trial.choiceFree': 'available',
-  'trial.choiceTaken': 'taken. pick another.',
-  'trial.choiceReserved': 'that one is ours. pick another.',
-  'trial.choiceFormat': 'four letters, a to z.',
-  'trial.agree': 'i agree to the content, ip and rights agreement in the official doc. signing records my name, my @, my email and the date.',
-  'trial.register': 'verify my email',
-  'trial.sending': 'sending…',
-  'trial.codeTitle': 'check your email.',
-  'trial.codeSent': 'a six-digit code went to {email}. it lasts fifteen minutes.',
-  'trial.codeLabel': 'the six-digit code',
-  'trial.confirm': 'confirm & claim my link',
-  'trial.confirming': 'confirming…',
-  'trial.resend': 'send a new code',
-  'trial.back': 'change my details',
-  'trial.errEmail': 'that doesn’t look like an email yet. check it.',
-  'trial.errRate': 'too many tries. give it a minute, then start again.',
-  'trial.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'trial.errCode': 'that code didn’t match. check it, or send a new one.',
-  'trial.errExpired': 'that code lapsed. send a fresh one.',
-  'trial.errName': 'we need your full name to record the signature.',
-  'trial.errHandle': 'not a real instagram handle yet. check the spelling.',
-  'trial.errHandleTaken': 'that @ already signed under another email.',
-  'trial.errCodeTaken': 'those four letters are taken. pick another.',
-  'trial.errBanned': 'that account can’t enter.',
-  'trial.errAgree': 'the agreement needs your yes.',
-  'trial.errUnknown': 'no entry under that email yet.',
-  'trial.errGeneric': 'that didn’t go through. try once more.',
-  'trial.welcomeBack': 'welcome back. your link stands.',
-  'trial.accountKicker': 'your entry',
-  'trial.accountTitle': 'your link is live.',
-  'trial.linkLabel': 'your link',
-  'trial.codeWord': 'your code',
-  'trial.share': 'share it',
-  'trial.copied': 'copied',
-  'trial.statVisits': 'opens',
-  'trial.statSignups': 'joined',
-  'trial.week': 'the last seven days',
-  'trial.sendReminder': 'send both videos to contact@celestual.app before the deadline.',
-  'trial.signout': 'not you? switch account',
-  'trial.loginKicker': 'already entered?',
-  'trial.login': 'open my entry',
-  'trial.toApp': 'go to celestual',
-
-  // The landing's banner door to the trial (top right) carries the job ad's own
-  // wording and its live countdown, both from trialContent.js. It is the doc's
-  // voice, not the product's, so it is not keyed here.
 
   // the triage tool (0018). "their codes are correct and nothing works" was
   // unanswerable from this desk — a suppressed @ looked identical to a relay

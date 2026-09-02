@@ -293,12 +293,9 @@ export function LandingScreen({ C, ctx }) {
             restating it in the metadata face was the page saying the same thing
             twice and crowding the one act it is asking for. */}
 
-        {/* The first light notice — a hiring call for a head of marketing, with
-            its own countdown — used to sit here. It is off the title page now.
-            This page has exactly one job, which is the one act at the top of it,
-            and a recruitment banner under the two doors is the product asking a
-            stranger for something before it has told them what it is. The brief
-            still lives at /trial for anyone holding the link. */}
+        {/* The first light notice, a hiring call with its own countdown, used
+            to sit here. It came off the title page, and then the campaign it
+            belonged to came off the product entirely in Phase 7. */}
       </div>
 
       {/* ── the colophon ───────────────────────────────────────────────────

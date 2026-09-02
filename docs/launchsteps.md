@@ -249,9 +249,59 @@ variable, no bucket, no DNS.
 Phase 6b is UI. It adds no schema, so there is nothing here to apply. What it
 needs from you is in section 10, and it is one environment variable.
 
-### 2f. Phase 7 and later
+### 2f. Phase 7. The desk, and the campaign comes down.
 
-`PENDING.` New migrations from Phase 7 onward are listed here in apply order as
+Two migrations, in this order, and **one of them is irreversible**.
+
+- [ ] **`0033_the_desk.sql`.** Adds eleven `celestual_desk_*` functions and
+      nothing else. No table, no column, no drop. Safe to apply at any time.
+      Every one of them is `service_role` only, so applying it changes nothing
+      a browser can reach.
+
+- [ ] **Before `0034`, export the four rows.** Q12 answered: the whole campaign
+      goes. Two of those rows are in `celestual_recruits` and three in
+      `celestual_trial_emails`, and they belong to real people who entered a
+      competition. The free tier has no point in time recovery, so once 0034
+      runs there is no copy anywhere unless you make one now.
+
+      In the SQL editor, run both and save the output somewhere off Supabase:
+
+      ```sql
+      select * from celestual_recruits;
+      select * from celestual_trial_emails;
+      select * from celestual_recruit_visits;
+      select * from celestual_recruit_signups;
+      ```
+
+- [ ] **Undeploy `celestual-trial` before applying 0034.** The function's source
+      is already deleted from the repo, and after 0034 the RPCs it calls do not
+      exist. Leaving it deployed leaves an endpoint that errors on every
+      request rather than one that is gone.
+
+      ```
+      supabase functions delete celestual-trial
+      ```
+
+- [ ] **`0034_retire_the_campaign.sql`.** Drops eleven trial and recruit
+      functions, `celestual_admin_delete_competitor`, and the four tables. It
+      also redefines `celestual_admin_overview` and
+      `celestual_admin_delete_user`, because both read the dropped tables and
+      would break the moment they went.
+
+      **This is the only irreversible step in the rebuild so far.**
+
+- [ ] `supabase functions deploy celestual-admin` (section 7). Do this after
+      0033 and 0034, not before: the new desk actions call functions 0033
+      creates, and the old `delete_competitor` action calls one 0034 drops.
+
+**What breaks on purpose.** Every competitor tracking link already printed or
+sent in a DM. The four letter `/abcd` matcher and `/r/<code>` are gone from the
+router, so those addresses fall through to the ordinary landing rather than
+crediting anybody. That was stated with Q12 and accepted with the answer.
+
+### 2g. Phase 8 and later
+
+`PENDING.` New migrations from Phase 8 onward are listed here in apply order as
 each phase lands.
 
 ---
@@ -394,12 +444,19 @@ an Apify call that produced no picture.
 
 ## 6. Resend
 
-`PENDING Phase 8.` Blocked on Q13.
+Q13 answered. The domain was read off the account and is already done:
+`celestual.us`, verified, sending enabled, created 2026-07-10. There are no
+stored templates on the account and there will not be: every template is code,
+in `supabase/functions/_shared/mail.ts`.
 
-- [ ] Confirm the sending domain and from address.
-- [ ] Verify the domain. DNS records, SPF and DKIM.
-- [ ] Confirm which of the five senders in
-      `supabase/functions/_shared/mail.ts` survive the rebuild.
+- [x] The sending domain is verified. Nothing to do.
+- [ ] **Set `CELESTUAL_FROM_EMAIL` to `celestual <hello@celestual.us>`** as a
+      Supabase edge function secret. It is unset today, which means every sender
+      falls back to `celestual <onboarding@resend.dev>`, Resend's shared sandbox
+      domain. That address is rate limited, is not yours, and reads as a test
+      harness in somebody's inbox.
+- [ ] Make sure `hello@celestual.us` actually receives mail. The address invites
+      a reply and the mail says so.
 - [ ] Set `RESEND_API_KEY` as a Supabase edge function secret if it is not
       already set.
 
@@ -443,9 +500,29 @@ still nobody's decision; see `docs/deletions.md` group D.
       `claude-haiku-4-5-20251001`, which is what spec section 9 asks for.
       Confirm the model id is still current when you deploy.
 
+**Deploys Phase 7 needs:**
+
+- [ ] `supabase functions deploy celestual-admin`
+      Rewritten for the desk. It gains eleven `desk_*` actions over the
+      rebuild's own tables and loses `delete_competitor` with the campaign.
+      **Must happen after `0033` and `0034` are both applied**, in that order:
+      the new actions call functions 0033 creates, and the removed one called a
+      function 0034 drops.
+
+- [ ] `supabase functions delete celestual-trial`
+      Its source is gone from the repo and after 0034 its RPCs do not exist.
+      Do this before applying 0034 (section 2f).
+
+- [ ] Consider setting `CELESTUAL_ADMIN_PASSWORD`. It is not new, and the
+      function still falls back to the launch password when the secret is
+      unset, which means the desk is reachable by anybody who reads a commit
+      from before this repository was private. The desk now shows every letter
+      body, every campus address and every report on the wall, so the fallback
+      is worth more than it used to be.
+
 **Still to come:**
 
-- [ ] Nothing until Phase 7.
+- [ ] Nothing until Phase 8.
 
 
 

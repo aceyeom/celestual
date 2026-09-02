@@ -54,7 +54,26 @@ them. Spec section 0.
 
 ---
 
-## Group B. The First Light trial and the recruitment program.
+## Group B. The First Light trial and the recruitment program. DONE in Phase 7.
+
+Q12 answered: the whole group. Everything below is deleted, with three
+corrections found on the way and recorded in place:
+
+- `app/src/growth.js` **stays.** It is marked CHECK with "verify its only
+  consumer is the trial", and its consumer is `components/screens.jsx`, the
+  placed screen. It was never the trial's.
+- Dropping the tables meant redefining two live functions, not only dropping
+  things. `celestual_admin_overview` returns `competitors` and counts visits and
+  signups; `celestual_admin_delete_user` deletes a person's recruit rows as part
+  of erasing them. `0034_retire_the_campaign.sql` rewrites both without them.
+  `celestual_erase_account` and `celestual_suppress` look like they have the
+  same problem and do not: 0023 already dropped their recruit deletes.
+- The `trial.*` block in `app/src/i18n/strings.js`, 58 keys, is not on the list
+  below and went with the screen that read them.
+
+The four rows are exported before the drop, as `docs/launchsteps.md` section 2f.
+Nothing here has been applied to production.
+
 
 Spec section 10: "Delete the old marketing launch data and its UI."
 

@@ -26,10 +26,6 @@ import { CardResolve } from './card/Resolve.jsx'
 import {
   billingEnabled, planOffered, startCheckout, confirmCheckout, returnFromCheckout, scrubReturnUrl,
 } from './api/billing.js'
-import { TrialScreen } from './components/trial.jsx'
-import { AdminScreen } from './components/admin.jsx'
-import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
-import { RESERVED_CODES } from './api/trial.js'
 import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
 import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
@@ -53,8 +49,6 @@ const SCREENS = {
   privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
   copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
   signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
-  trial: TrialScreen, //     /trial: the first light competition — the brief + entry
-  admin: AdminScreen, //     /admin: the password-gated desk
   paid: PaidScreen, //       /paid: coming back from Stripe (docs/STRIPE-SETUP.md)
 }
 
@@ -165,19 +159,8 @@ const parseRoute = () => {
   const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
   if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
   if (path === '/optout') return { optout: true }
-  // /r/<code> — an old-style tracking link (migration 0016), kept as an alias.
-  // It lands on the ordinary cold landing; the code is remembered so the signup
-  // it leads to is credited to its competitor.
-  const ref = path.match(/^\/r\/([a-z0-9]{4,16})$/i)
-  if (ref) return { ref: ref[1].toLowerCase() }
-  // /trial — the first light competition: the brief, the doc, the entry.
-  // /admin — the desk. /recruit (the retired 0016 flow) lands on the trial too,
-  // so any link still out in a DM keeps working.
-  if (path === '/trial' || path === '/recruit') return { trial: true }
-  if (path === '/admin') return { admin: true }
-  // /paid?s=<checkout session> — where Stripe sends someone back after the
-  // hosted payment page (?c=1 if they backed out). The word is reserved in
-  // api/trial.js so a competitor can never claim it as a four-letter code.
+  // /paid?s=<checkout session> — where Stripe sends somebody back after the
+  // hosted payment page (?c=1 if they backed out).
   if (path === '/paid') return { paid: true }
   // /copy#c=1234 — the verification email's copy button. The code rides the
   // FRAGMENT so it never appears in a request line or a server log.
@@ -192,11 +175,6 @@ const parseRoute = () => {
     const m = (window.location.hash || '').match(/t=([0-9a-fA-F]{16,128})/)
     return { signin: true, signinToken: m ? m[1] : '' }
   }
-  // /<code> — a trial competitor's ROOT-LEVEL tracking link (migration 0017):
-  // exactly four letters, chosen by them. Checked LAST so every named route
-  // above wins first, and never for the words the router reserves.
-  const four = path.match(/^\/([a-z]{4})$/i)
-  if (four && !RESERVED_CODES.includes(four[1].toLowerCase())) return { ref: four[1].toLowerCase() }
   return {}
 }
 
@@ -282,17 +260,6 @@ export default function App() {
   //          'resolved' → `route` is 'signup' | 'dm' | 'email'; `to` is the
   //                       masked inbox the link actually went to
   const [identity, setIdentity] = useState({ phase: 'idle', route: '', to: '', fresh: false })
-  // ── recruitment attribution (migration 0016) ──
-  // The tracking code this visitor arrived through, if any. Held until they
-  // finish verifying, at which point the signup is credited to that recruiter
-  // once and the code is dropped. Nothing about the visitor is ever sent with it.
-  const [ref, setRef] = useState(() => (demo ? '' : route.ref || init.ref || loadRef()))
-  useEffect(() => {
-    if (demo || !route.ref) return
-    rememberRef(route.ref)
-    countVisit(route.ref)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
   // sandbox only: the monetization preview state (docs/PRICING-REVENUE.md keeps
   // production dormant — the free two, one door, no money). `demoExtraSlots`
   // counts one-time $2.99 slots bought beyond the free two; `demoSubscribed` is
@@ -462,10 +429,8 @@ export default function App() {
     if (route.optout) return 'privacy'
     if (route.copy) return 'copy'
     if (route.signin) return 'signin'
-    if (route.trial) return 'trial'
-    if (route.admin) return 'admin'
     if (route.paid) return 'paid'
-    if (!demo && init.screen && SCREENS[init.screen] && !['mutual', 'reveal', 'placed', 'you', 'who', 'compose', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin', 'paid'].includes(init.screen)) return init.screen
+    if (!demo && init.screen && SCREENS[init.screen] && !['mutual', 'reveal', 'placed', 'you', 'who', 'compose', 'sendoff', 'signin', 'copy', 'agree', 'paid'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -553,12 +518,12 @@ export default function App() {
       const who = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...who, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, publicStar, ref }),
+        JSON.stringify({ screen, ...who, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, publicStar }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, publicStar, ref, established])
+  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, publicStar, established])
 
   // ── verification (Instagram DM — the /demo variant auto-verifies) ──
   const openVerify = useCallback((handle, onDone) => {
@@ -586,18 +551,11 @@ export default function App() {
       if (!demo && proof && recoveryEmail) {
         bindRecovery({ handle, proof, email: recoveryEmail }).catch(() => {})
       }
-      // If they arrived through a recruit's tracking link, this is the moment
-      // that counts: a verified handle, credited once to the code that sent
-      // them. Best-effort and off the critical path.
-      if (!demo && handle && ref) {
-        attributeSignup(handle).catch(() => {})
-        setRef('')
-      }
       const done = verify.onDone
       setVerify(null)
       if (done) done(proof, handle)
     },
-    [verify, demo, me, email, ref],
+    [verify, demo, me, email],
   )
 
   // Resume a verification interrupted by the Instagram hand-off (mobile can
@@ -1675,10 +1633,6 @@ export default function App() {
     setJoinedSlugs([])
     setSchoolCred(null)
     setPublicStar(false)
-    // a pending recruit attribution belongs to the person who arrived, so it
-    // goes with them on a sign-out or a delete
-    clearRef()
-    setRef('')
     setMatch(null)
     setReveal(null)
     setLastPlaced(null)
@@ -1809,7 +1763,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'compose', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin', 'paid']
+  const CALM_SCREENS = ['pings', 'who', 'compose', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'paid']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   // The reveal happens IN the field: the sky plays the inspiral, the merger and
@@ -1844,7 +1798,7 @@ export default function App() {
   // in flight and there is nowhere to be but here) and the match announcement
   // (two seconds, nothing to press). The desk and the trial page are their own
   // documents and opt out too.
-  const BARE_CHROME = ['sendoff', 'mutual', 'reveal', 'trial', 'admin']
+  const BARE_CHROME = ['sendoff', 'mutual', 'reveal']
   const chromeHere = !BARE_CHROME.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
 
@@ -1909,21 +1863,12 @@ export default function App() {
   // ── /admin renders ALONE, above everything ──
   // The desk is a full-viewport white console with its own design; it is not one
   // of the app's screens and must not sit inside the screen wrapper. That
-  // wrapper carries `.fade`, whose keyframes animate `transform` — and a
-  // transformed ancestor becomes the containing block for `position: fixed`
-  // descendants, so the desk's own fixed overlay was being laid out against a
-  // mid-page box instead of the viewport. Returning it here skips the wrapper,
-  // the galaxy, the dock and the chrome in one move, which is what it wants
-  // anyway. (Every hook above has already run, so this early return is safe.)
-  if (screen === 'admin') return <AdminScreen />
-
   // ── the page that gets no sky ──
-  // /trial is a long read someone makes a week-long decision from. A galaxy
-  // drifting behind it is motion competing with text that has to be understood,
-  // and it is the one page people arrive at from a link, on data, on a phone.
-  // Skipping the canvas outright (rather than dimming it) also means the page
-  // stops paying for a full-screen animation loop it never uses.
-  const BARE = screen === 'trial'
+  // Nothing left in this shell wants a bare ground. It was /trial's, and /trial
+  // came off with the campaign in Phase 7. The branch stays as one constant
+  // rather than being unpicked from the tree below it, because that tree is the
+  // old design and Phase 8's routing pass is where it is decided.
+  const BARE = false
 
   return (
     <div className="celestual-app">
