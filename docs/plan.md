@@ -204,7 +204,7 @@ point in time recovery, so a delete is final.
 
 Nothing is deleted until you answer Q2 and Q3 and approve `docs/deletions.md`.
 
-### 1.9 Two design systems already exist, and the spec names neither
+### 1.9 Two design systems already exist. RESOLVED: the Wall's is the one.
 
 `docs/DESIGN.md` is 68KB and mature. It documents the production system by name,
 "the bindery": a leather case, one hue, materials drawn per pixel in
@@ -221,8 +221,15 @@ production won: "That judgement was made and the Bindery won."
 Spec section 2 says the opposite, that the old design is retired and the new work
 is promoted.
 
-Spec section 7 says the real source of truth is `design/source/eclipse.html`,
-which is a third thing, and it is not in the repo. See section 2 below.
+Spec section 7 names `design/source/eclipse.html` as the real source of truth.
+That file has since been supplied and committed. Its own comment calls its
+palette "The wall's own tokens and faces", and its `--void` and `--chalk` values
+match `app/src/wall/wall.css` exactly.
+
+So the question is settled: the design system being promoted is the Wall's, and
+`docs/DESIGN.md` describes the system being retired. The two inputs to Phase 2
+are `design/source/eclipse.html` for the mark and `app/src/wall/wall.css` for
+the tokens, with the accent conflict in B4 to resolve first.
 
 ---
 
@@ -230,20 +237,30 @@ which is a third thing, and it is not in the repo. See section 2 below.
 
 Two of these stop work outright. The spec instructs a stop for the first.
 
-### B1. `design/source/eclipse.html` is missing. Blocks Phases 2 and 3.
+### B1. RESOLVED. `design/source/eclipse.html` is in the repo.
 
-There is no `design/` directory. There is no file matching `*eclipse*` anywhere
-in the repo or in git history at this commit.
+You supplied the "Ecliptic" artifact. It is committed at
+`design/source/eclipse.html`, runtime wrapper stripped, otherwise verbatim.
 
-Spec section 7 is explicit: "If this file is not present in the repo, stop and
-ask. Do not attempt to fetch it from a URL." Section 7.1 repeats it for the whole
-folder: "If it is empty or missing, stop and ask. Do not proceed from a verbal
-description of the aesthetic."
+It is a specimen sheet for the mark, generated from `app/src/wall/art.jsx`
+rather than traced from it. I verified the `ECL` constants match the build
+exactly. Full detail in `docs/open-questions.md` Q0.
 
-Phase 2 cannot start and Phase 3 cannot start. Both derive from this file.
+Superseded by B4 below, which came out of reading it.
 
-Needed from you: commit `design/source/eclipse.html` plus any reference images,
-or tell me to derive the system from `docs/DESIGN.md` instead.
+### B4. The accent colour conflicts with the repo. Blocks Phase 2.
+
+The artifact sets `--ember: #F2661E`, orange. The build sets
+`--ember: var(--accent)` where `--accent: #74C7DE`, pale blue
+(`app/src/wall/wall.css:79`).
+
+Commit `d0670bf` is titled "Seven things come off, and the accent stops being
+orange", so the repo moved off the artifact's orange deliberately.
+
+`wall.css:74` states that `--accent` is the whole chromatic budget of the
+product. Picking wrong repaints every coloured pixel.
+
+See `docs/open-questions.md` Q21.
 
 ### B2. The typecheck gate cannot run. Blocks the definition of done, not the work.
 
@@ -275,10 +292,10 @@ Ordering is otherwise the spec's, including Phase 3 before backend work.
 | Phase | Name | Depends on | Blocked by |
 | --- | --- | --- | --- |
 | 1 | Audit | none | done |
-| 2 | Design system | 1 | B1 |
-| 3 | Signature surfaces | 2 | B1, your approval to exit |
+| 2 | Design system | 1 | B4 |
+| 3 | Signature surfaces | 2 | B4, your approval to exit |
 | 4a | Migration reconciliation | 1 | Q4 |
-| 4b | Identity and session schema | 4a | Q2, Q3, Q5, Q6 |
+| 4b | Identity and session schema | 4a | Q5, Q6 |
 | 5 | Apify in, HikerAPI out | 4b | Q7, Q8, Q9 |
 | 6a | Wall backend | 4b, 5 | Q10, Q11 |
 | 6b | Wall and Main UI | 3, 6a | none |
@@ -294,7 +311,7 @@ Status: complete. No code, migration, config, or database object touched.
 
 ### Phase 2. Design system
 
-Gated on B1.
+Gated on B4, the accent conflict. `eclipse.html` is in place.
 
 Create `design/`. Move `docs/DESIGN.md` and `docs/VOICE.md` to `design/DESIGN.md`
 and `design/VOICE.md`, rewritten against `eclipse.html`. Both are currently
@@ -303,8 +320,11 @@ referenced by `README.md` and by `scripts/voice-lint.mjs`, so those update too.
 Build `design/components.html` as one standalone page: every component, color,
 type scale, and state.
 
-Export the logo as PNG plus vector. `app/public/star.svg` and `app/public/og.svg`
-are the only vector marks in the repo today.
+Export the logo as PNG plus vector. The mark is generated code, not a drawn
+asset: `ECL`, `starPath` and `ringPath` in `app/src/wall/art.jsx`, specimened in
+`design/source/eclipse.html`. So both exports are deterministic at any size,
+and there is no vector to hunt for. `app/public/star.svg` and `app/public/og.svg`
+are the older marks and are superseded.
 
 Install Playwright and add the screenshot script the visual loop in spec 7.3
 needs. Chromium is already present in this environment at
@@ -315,7 +335,7 @@ checklist, and `components.html` has been screenshotted and viewed.
 
 ### Phase 3. Signature surfaces
 
-Gated on B1. Exit condition is your approval of screenshots, not a passing build.
+Gated on B4. Exit condition is your approval of screenshots, not a passing build.
 
 Two surfaces only: the Main hero, and the ping or reveal moment. Static, real
 data shapes, no backend.
@@ -362,7 +382,11 @@ The DM code flow stays. Spec section 4 is explicit. It is
 `celestual-ig-webhook` and `celestual-manychat` functions. Do not touch them
 beyond pointing `handle_verified_at` at their result.
 
-Destructive half runs only after `docs/deletions.md` is approved.
+No destructive half. Q2 answered: only the `beta_*` tables, which are empty.
+The existing 36 `celestual_members` and 49 `celestual_ig_verifications` rows are
+kept, so the new `users` table is backfilled from them rather than created
+empty, and the merge rule runs against real data on day one. Q5 and Q6 gate
+this.
 
 ### Phase 5. Apify in, HikerAPI out
 

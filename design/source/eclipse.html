@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<title>Ecliptic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500&family=Geist+Mono:wght@400;500&family=Inter+Tight:wght@400;500&display=swap">
+<style>
+  /* The wall's own tokens and faces — a specimen sheet for this mark should be
+     set on the ground the mark actually lives on. Committed to the dark; every
+     colour is painted, so it holds on either host ground. */
+  :root{
+    --void:#08070B; --void-1:#0D0C12; --void-2:#131219;
+    --chalk:#F4F1EA; --ash:rgba(244,241,234,.62); --ash-dim:rgba(244,241,234,.40);
+    --hair:rgba(244,241,234,.13); --hair-soft:rgba(244,241,234,.07);
+    --ink:#14131A; --ink-dim:rgba(20,19,26,.55); --ink-hair:rgba(20,19,26,.14);
+    --ember:#F2661E;
+    --f-display:"Bodoni Moda",Didot,Georgia,serif;
+    --f-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --f-ui:"Inter Tight","Helvetica Neue",Arial,sans-serif;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  body{background:var(--void);color:var(--chalk);font-family:var(--f-ui);font-size:15px;line-height:1.6;
+       -webkit-font-smoothing:antialiased;padding:clamp(20px,4vw,56px) clamp(18px,4vw,44px) 80px}
+  .shell{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(30px,5vw,54px)}
+
+  .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ash-dim)}
+  h1{font-family:var(--f-display);font-weight:400;font-size:clamp(40px,8vw,74px);line-height:1;
+     letter-spacing:-.02em;margin:14px 0 0}
+  .lede{max-width:60ch;color:var(--ash);margin-top:16px}
+  .lede b{color:var(--chalk);font-weight:500}
+
+  h2{font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+     color:var(--ash-dim);font-weight:400;margin-bottom:16px}
+
+  /* ── the 2×2 ── */
+  .quad{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.quad{grid-template-columns:1fr}}
+  .cell{border-radius:16px;border:1px solid var(--hair-soft);display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:26px;padding:clamp(26px,4vw,46px);min-height:280px}
+  .cell.dark{background:var(--void-1);color:var(--chalk)}
+  .cell.light{background:var(--chalk);color:var(--ink);border-color:var(--ink-hair)}
+  .cell .tag{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase}
+  .cell.dark .tag{color:var(--ash-dim)}
+  .cell.light .tag{color:var(--ink-dim)}
+  .cell svg{display:block;color:currentColor}
+
+  .lockup{display:flex;align-items:center;gap:.38em;font-size:30px}
+  .lockup .w{font-family:var(--f-display);font-weight:400;letter-spacing:-.018em;line-height:1;
+             white-space:nowrap;transform:translateY(-.03em)}
+  .lockup svg{flex:0 0 auto}
+
+  .word{font-family:var(--f-display);font-weight:400;letter-spacing:-.018em;line-height:1;
+        font-size:clamp(34px,6vw,52px);white-space:nowrap}
+  .wordladder{display:flex;align-items:baseline;flex-wrap:wrap;gap:clamp(18px,3vw,34px);
+    margin-top:14px;padding:22px clamp(18px,3vw,28px);border:1px solid var(--hair-soft);
+    border-radius:16px;background:var(--void-1)}
+  .wordladder figure{display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+  .wordladder figcaption{font-family:var(--f-mono);font-size:9px;color:var(--ash-dim);font-variant-numeric:tabular-nums}
+  .wordladder .word{font-size:inherit}
+
+  /* ── sizes ── */
+  .sizes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.sizes{grid-template-columns:1fr}}
+  .ladder{border-radius:16px;border:1px solid var(--hair-soft);padding:clamp(22px,3vw,32px);
+          display:flex;align-items:flex-end;flex-wrap:wrap;gap:clamp(14px,2.4vw,26px)}
+  .ladder.dark{background:var(--void-1);color:var(--chalk)}
+  .ladder.light{background:var(--chalk);color:var(--ink);border-color:var(--ink-hair)}
+  .ladder figure{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px}
+  .ladder figcaption{font-family:var(--f-mono);font-size:9px;font-variant-numeric:tabular-nums}
+  .ladder.dark figcaption{color:var(--ash-dim)}
+  .ladder.light figcaption{color:var(--ink-dim)}
+
+  /* ── the scrubber ── */
+  .scrub{border:1px solid var(--hair);border-radius:14px;background:var(--void-1);padding:22px clamp(16px,3vw,26px);
+         display:flex;flex-direction:column;gap:18px}
+  .scrub-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .scrub-h output{font-family:var(--f-mono);font-size:12px;color:var(--chalk);font-variant-numeric:tabular-nums}
+  .scrub-stage{display:flex;align-items:center;gap:18px;min-height:150px}
+  .scrub-stage>div{flex:1;display:grid;place-items:center;border-radius:10px;min-height:150px}
+  .scrub-stage .d{background:var(--void);color:var(--chalk)}
+  .scrub-stage .l{background:var(--chalk);color:var(--ink)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--hair);border-radius:2px}
+  input[type=range]::-moz-range-track{height:2px;background:var(--hair);border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--chalk);margin-top:-6.5px;border:none}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--chalk);border:none}
+  input[type=range]:focus-visible{outline:2px solid var(--chalk);outline-offset:6px;border-radius:4px}
+
+  /* ── in place ── */
+  .bars{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.bars{grid-template-columns:1fr}}
+  .bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:12px;
+       border:1px solid var(--hair-soft)}
+  .bar.dark{background:var(--void-1);color:var(--chalk)}
+  .bar.light{background:var(--chalk);color:var(--ink);border-color:var(--ink-hair)}
+  .bar .l{display:flex;align-items:center;gap:8px}
+  .bar .acts{display:flex;gap:12px;opacity:.42}
+  .bar svg{display:block;color:currentColor}
+
+  .crossings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .crossings figure{display:flex;flex-direction:column;gap:9px}
+  .crossings .cz{aspect-ratio:1;border-radius:12px;background:#15120E;border:1px solid var(--hair-soft);overflow:hidden}
+  .crossings .cz svg{width:100%;height:100%;color:var(--chalk)}
+  .crossings figcaption{font-size:11.5px;color:var(--ash);line-height:1.45;text-align:center}
+
+  /* ── the fix ── */
+  .note{border-top:1px solid var(--hair);padding-top:32px;display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:28px}
+  .note h3{font-family:var(--f-display);font-size:21px;font-weight:400;margin-bottom:8px;letter-spacing:-.01em}
+  .note p{font-size:13.5px;color:var(--ash);line-height:1.65}
+  .note code{font-family:var(--f-mono);font-size:12px;color:var(--chalk)}
+  .before-after{display:flex;gap:10px;margin-bottom:16px}
+  .before-after figure{flex:1;display:flex;flex-direction:column;gap:8px}
+  .before-after .z{aspect-ratio:1;border-radius:10px;background:#15120E;overflow:hidden;border:1px solid var(--hair-soft)}
+  .before-after .z svg{width:100%;height:100%;color:var(--chalk)}
+  .before-after figcaption{font-family:var(--f-mono);font-size:9px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ash-dim);text-align:center}
+  @media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important}}
+</style>
+<div class="shell">
+  <header>
+    <div class="eyebrow">celestual · /beta · the mark</div>
+    <h1>Ecliptic</h1>
+    <p class="lede">The mark as it now stands in <code>art.jsx</code> — every drawing on this page is generated by the <b>same geometry the build ships</b>, not traced from it. A four-point star of <b>four curves and nothing else</b>, inside a ring whose band varies three to one round its circuit. Four-up in positive and negative, the name on its own, then down to twelve pixels on both grounds.</p>
+  </header>
+
+  <section>
+    <h2>Four-up · mark and lockup, positive and negative</h2>
+    <div class="quad">
+      <div class="cell dark"><span id="q1"></span><span class="tag">mark · on void</span></div>
+      <div class="cell light"><span id="q2"></span><span class="tag">mark · on chalk</span></div>
+      <div class="cell dark"><span class="lockup"><span id="q3"></span><span class="w">celestual.</span></span><span class="tag">lockup · on void</span></div>
+      <div class="cell light"><span class="lockup"><span id="q4"></span><span class="w">celestual.</span></span><span class="tag">lockup · on chalk</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The name, on its own</h2>
+    <div class="quad">
+      <div class="cell dark"><span class="word">celestual.</span><span class="tag">wordmark · on void</span></div>
+      <div class="cell light"><span class="word">celestual.</span><span class="tag">wordmark · on chalk</span></div>
+    </div>
+    <div class="wordladder" id="wordladder"></div>
+  </section>
+
+  <section>
+    <h2>The ladder · 128 down to 12</h2>
+    <div class="sizes">
+      <div class="ladder dark" id="ladderDark"></div>
+      <div class="ladder light" id="ladderLight"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>At an exact size</h2>
+    <div class="scrub">
+      <div class="scrub-h">
+        <span class="eyebrow">drag to land on a pixel value</span>
+        <output><span id="px">21</span> px</output>
+      </div>
+      <div class="scrub-stage">
+        <div class="d"><span id="sd"></span></div>
+        <div class="l"><span id="sl"></span></div>
+      </div>
+      <input type="range" id="size" min="10" max="200" value="21" aria-label="mark size in pixels">
+    </div>
+  </section>
+
+  <section>
+    <h2>In place · the bar it actually sits in, at 21px</h2>
+    <div class="bars">
+      <div class="bar dark"><span class="l" id="b1"></span><span class="acts" id="b1a"></span></div>
+      <div class="bar light"><span class="l" id="b2"></span><span class="acts" id="b2a"></span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The overlaps, up close</h2>
+    <div class="crossings" id="crossings"></div>
+  </section>
+
+  <section class="note">
+    <div>
+      <div class="before-after">
+        <figure><div class="z" id="zBefore"></div><figcaption>the band, before</figcaption></figure>
+        <figure><div class="z" id="zAfter"></div><figcaption>and now</figcaption></figure>
+      </div>
+      <h3>A band that varies, honestly</h3>
+      <p>A tilted ring projects <em>both</em> its edges by the same cosine, so the band is full width at the ends and foreshortened where it crosses the star. An earlier version added the width to the short axis un-scaled — <b>4.5× too fat at exactly the crossing</b> — which is what made the ring read as a ribbon lying on the mark.</p>
+      <p>Drawn honestly it already varies two to one. Pushing the inner edge to the far side and turning it a little takes it to <b>three to one</b>: 6.4 at the ends, 4.4 near, 2.0 far.</p>
+    </div>
+    <div>
+      <h3>Still the same star, drawn slim</h3>
+      <p><code>starPath</code> at equal arms and <code>thick 1</code> redraws <code>SPARK</code> byte for byte — asserted on every change, so the mark is provably built on the curve the rest of the wall already uses.</p>
+      <p>It ships at <b>0.80</b>, which draws the arms thinner without moving a single point. Four vertices, four cubics, one per concave sweep, and no corner anywhere in it.</p>
+    </div>
+    <div>
+      <h3>Two limits, both checked</h3>
+      <p>The inner edge must stay inside the outer or the band breaks open — past roughly <code>bias 2</code> or <code>twist 10</code> it does. And every arm must finish clear of the band: a side arm inside the hole, a vertical arm out past the outer edge. An arm that <em>ends</em> inside the band gets notched off and left as a floating tip.</p>
+      <p>On the shipped constants: edges closest at <b>0.075</b>, side arms at <b>0.55</b> of the hole, vertical arms at <b>3.86</b> of the outer edge.</p>
+    </div>
+  </section>
+</div>
+<script>
+(function () {
+'use strict';
+var ECL = {
+  rx: 42,          // the ring, to the middle of its band
+  flat: 0.5,       // ry/rx — the viewing angle, applied to BOTH edges
+  tilt: -19,       // degrees off horizontal
+  w: 3.2,          // half the band's width in the ring's own plane
+  bias: 1.2,       // the inner edge pushed toward the far side, so the near
+                   // half of the band runs wider than the far half
+  twist: 2,        // and turned a little, so the widest part walks round
+  gutter: 0.7,     // the void between the ring and the star it crosses
+  up: 47, down: 47, side: 24,
+  thick: 0.80,     // how much body the arms carry. 1 is SPARK exactly; each
+                   // step up peels the curve off its axis sooner, and past
+                   // about 1.4 the concave flattens and the star goes diamond
+}
+
+// SPARK's own control points, as fractions of each arm: `along` is how far back
+// along its own radius the control beside a vertex sits, `lean` is how far it
+// leans toward the neighbour it faces.
+var K = { along: 0.42, lean: 0.03, sideAlong: 0.24, sideLean: 0.19 }
+var f2 = (v) => Math.round(v * 100) / 100
+var rad = (d) => (d * Math.PI) / 180
+
+// Four vertices, four cubics. Each control is built only from its own vertex's
+// radius and its neighbour's DIRECTION — scaling the lean by the neighbour's
+// radius instead makes a short vertex pull far harder than a long one, which
+// is its own source of lumpiness on a star whose arms are not equal.
+function starPath(o) {
+  const ax = { along: K.along * o.thick, lean: K.lean }
+  const sd = { along: K.sideAlong * o.thick, lean: K.sideLean }
+  const V = [{ a: -90, r: o.up, k: ax }, { a: 0, r: o.side, k: sd },
+             { a: 90, r: o.down, k: ax }, { a: 180, r: o.side, k: sd }]
+  const dir = (v) => [Math.cos(rad(v.a)), Math.sin(rad(v.a))]
+  for (let i = 0; i < 4; i++) {
+    const v = V[i], prev = V[(i + 3) % 4], next = V[(i + 1) % 4]
+    const d = dir(v), dn = dir(next), dp = dir(prev)
+    v.p = [d[0] * v.r, d[1] * v.r]
+    v.out = [d[0] * v.r * v.k.along + dn[0] * v.r * v.k.lean,
+             d[1] * v.r * v.k.along + dn[1] * v.r * v.k.lean]
+    v.in = [d[0] * v.r * v.k.along + dp[0] * v.r * v.k.lean,
+            d[1] * v.r * v.k.along + dp[1] * v.r * v.k.lean]
+  }
+  let d = `M${f2(V[0].p[0])} ${f2(V[0].p[1])}`
+  for (let i = 0; i < 4; i++) {
+    const A = V[i], B = V[(i + 1) % 4]
+    d += `C${f2(A.out[0])} ${f2(A.out[1])} ${f2(B.in[0])} ${f2(B.in[1])} ${f2(B.p[0])} ${f2(B.p[1])}`
+  }
+  return d + 'Z'
+}
+
+function ellipse(cx, cy, a, b, tilt) {
+  const t = rad(tilt), dx = a * Math.cos(t), dy = a * Math.sin(t)
+  const arc = `A${f2(a)} ${f2(b)} ${f2(tilt)} 0 1 `
+  return `M${f2(cx + dx)} ${f2(cy + dy)}${arc}${f2(cx - dx)} ${f2(cy - dy)}${arc}${f2(cx + dx)} ${f2(cy + dy)}Z`
+}
+
+// The ring is a TRUE ANNULUS first, and modulated second.
+//
+// A flat ring tilted away from you projects BOTH of its edges by the same
+// cosine, so the band reads full width at the ends of the long axis and
+// foreshortened where it crosses the body. An earlier version added the band's
+// width to the short axis un-scaled, which made it four and a half times too
+// fat at exactly the point it passes over the star — and a band that is widest
+// where it crosses is a ribbon lying on the mark, not a ring going round it.
+// It also forced a fat gutter to keep the star readable underneath, and that
+// gap was what made the two read as separate objects.
+//
+// Drawn honestly the band already varies two to one round the ring. BIAS then
+// pushes the inner edge to the far side so the near half runs wider still, and
+// TWIST turns it so the widest part walks — together about three to one from
+// the far apex to the ends.
+//
+// Two limits, and both are geometry rather than taste. The inner edge must stay
+// inside the outer or the band breaks open: past roughly bias 2 or twist 10 it
+// does. And every arm must finish clear of the band — a side arm inside the
+// hole, a vertical arm out beyond the outer edge — because an arm that ENDS
+// inside the band gets notched off and left as a floating tip.
+//
+// `grow` dilates the band, which is how the gutter that notches the star is cut
+// from the very same numbers rather than from a second set that could drift.
+function ringPath(grow = 0) {
+  const { rx, flat, tilt, w, bias, twist } = ECL
+  const Ro = rx + w + grow
+  const Ri = Math.max(0.6, rx - w - grow)
+  const t = rad(tilt)
+  return ellipse(50, 50, Ro, Ro * flat, tilt)
+       + ellipse(50 + Math.sin(t) * bias, 50 - Math.cos(t) * bias, Ri, Ri * flat, tilt + twist)
+}
+
+// The half-plane that keeps the near side of the ring. One object, so the
+// component below and the favicon string cannot drift apart.
+var NEAR = { x: -110, y: 50, width: 320, height: 160, transform: `rotate(${ECL.tilt} 50 50)` }
+var nearRect = `<rect x="${NEAR.x}" y="${NEAR.y}" width="${NEAR.width}" height="${NEAR.height}" transform="${NEAR.transform}"/>`
+
+
+var uid = 0;
+function mark(px, opts) {
+  opts = opts || {};
+  var id = "m" + (uid++), ring = ringPath();
+  var vb = opts.viewBox || "0 0 100 100";
+  var sz = px ? ' width="' + px + '" height="' + px + '"' : "";
+  return '<svg' + sz + ' viewBox="' + vb + '" aria-hidden="true" focusable="false" style="display:block">'
+    + '<defs><clipPath id="' + id + 'n">' + nearRect + '</clipPath>'
+    + '<mask id="' + id + 'm" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">'
+    + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
+    + '<path d="' + ringPath(ECL.gutter) + '" fill="#000" fill-rule="evenodd" clip-path="url(#' + id + 'n)"/>'
+    + '</mask></defs>'
+    + '<path d="' + ring + '" fill="currentColor" fill-rule="evenodd"/>'
+    + '<g mask="url(#' + id + 'm)"><path d="' + starPath(ECL) + '" transform="translate(50 50)" fill="currentColor"/></g>'
+    + '<path d="' + ring + '" fill="currentColor" fill-rule="evenodd" clip-path="url(#' + id + 'n)"/></svg>';
+}
+
+// The band as it was drawn before, against the band now. Same star, same ring
+// radius — only the construction differs, which is the whole point.
+var BAND_ZOOM = '30 16 42 42';
+function ringWrong(grow) {
+  grow = grow || 0;
+  var ry = ECL.rx * ECL.flat;
+  var near = 2.0 + grow, far = Math.max(0.02, 2.0 * 0.6 + grow);
+  var mid = (near + far) / 2, push = (near - far) / 2, t = rad(ECL.tilt);
+  return ellipse(50, 50, ECL.rx + mid, ry + mid, ECL.tilt)
+       + ellipse(50 + Math.sin(t) * push, 50 - Math.cos(t) * push,
+                 Math.max(0.4, ECL.rx - mid), Math.max(0.4, (ry - mid) * 0.8), ECL.tilt + 8);
+}
+function markWith(ringFn, gutter) {
+  var id = 'x' + (uid++), ring = ringFn(0);
+  return '<svg viewBox="' + BAND_ZOOM + '" aria-hidden="true" style="display:block">'
+    + '<defs><clipPath id="' + id + 'n">' + nearRect + '</clipPath>'
+    + '<mask id="' + id + 'm" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">'
+    + '<rect x="-10" y="-10" width="120" height="120" fill="#fff"/>'
+    + '<path d="' + ringFn(gutter) + '" fill="#000" fill-rule="evenodd" clip-path="url(#' + id + 'n)"/>'
+    + '</mask></defs>'
+    + '<path d="' + ring + '" fill="currentColor" fill-rule="evenodd"/>'
+    + '<g mask="url(#' + id + 'm)"><path d="' + starPath(ECL) + '" transform="translate(50 50)" fill="currentColor"/></g>'
+    + '<path d="' + ring + '" fill="currentColor" fill-rule="evenodd" clip-path="url(#' + id + 'n)"/></svg>';
+}
+
+function $(id) { return document.getElementById(id); }
+
+$('q1').innerHTML = mark(132);
+$('q2').innerHTML = mark(132);
+$('q3').innerHTML = mark(34);
+$('q4').innerHTML = mark(34);
+
+[128, 96, 64, 48, 32, 24, 20, 16, 12].forEach(function (px) {
+  var fig = '<figure><div>' + mark(px) + '</div><figcaption>' + px + '</figcaption></figure>';
+  $('ladderDark').insertAdjacentHTML('beforeend', fig);
+  $('ladderLight').insertAdjacentHTML('beforeend', fig);
+});
+
+var ICONS = [
+  'M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
+  'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.2 16.2 21 21',
+  'M4 20h4l10-10a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6zM14.4 7.2l2.4 2.4'
+].map(function (d) {
+  return '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>';
+}).join('');
+$('b1').innerHTML = mark(21); $('b2').innerHTML = mark(21);
+$('b1a').innerHTML = ICONS; $('b2a').innerHTML = ICONS;
+
+$('zBefore').innerHTML = markWith(ringWrong, 1.6);
+$('zAfter').innerHTML = markWith(ringPath, ECL.gutter);
+
+[44, 32, 24, 18, 14, 11].forEach(function (px) {
+  $('wordladder').insertAdjacentHTML('beforeend',
+    '<figure><span class="word" style="font-size:' + px + 'px">celestual.</span>' +
+    '<figcaption>' + px + '</figcaption></figure>');
+});
+
+// The four places the ring and the star actually meet, at the scale a defect
+// would show. Same generator, different viewBox.
+document.getElementById('crossings').innerHTML = [
+  ['8 52 42 42', 'the near band crossing in front, left'],
+  ['52 52 42 42', 'and right'],
+  ['30 18 40 40', 'the far band, with the star over it'],
+  ['56 38 34 26', 'the side arm — attached, and clear of the band']
+].map(function (c) {
+  return '<figure><div class="cz">' + mark(0, { viewBox: c[0] }) + '</div><figcaption>' + c[1] + '</figcaption></figure>';
+}).join('');
+
+var slider = $('size'), px = $('px');
+function setSize(v) {
+  px.textContent = v;
+  $('sd').innerHTML = mark(v);
+  $('sl').innerHTML = mark(v);
+}
+slider.addEventListener('input', function () { setSize(+slider.value); });
+setSize(+slider.value);
+}());
+</script>
+
+</body></html>

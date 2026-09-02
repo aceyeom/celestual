@@ -15,18 +15,26 @@ Everything else fills in as phases land.
 
 ## 0. Before anything
 
-- [ ] Answer the blocking questions in `docs/open-questions.md`. Q0, Q1, Q2, Q3
-      and Q4 gate the most work.
-- [ ] Approve `docs/deletions.md`, by group. Nothing is deleted before you do.
-- [ ] Commit `design/source/eclipse.html` plus any reference images. Phases 2 and
-      3 cannot start without it. This is the single hard blocker.
+- [x] Supply `design/source/eclipse.html`. Done. Committed from the "Ecliptic"
+      artifact.
+- [x] Decide the beta data wipe. Done, Q2: only the `beta_*` tables, which are
+      empty, so nothing is deleted.
+- [x] Decide Stripe. Done, Q3: out of scope, nothing touched.
+- [ ] Answer Q21, the accent colour conflict. Orange `#F2661E` from the artifact
+      against blue `#74C7DE` in the build. This now blocks Phase 2.
+- [ ] Answer Q1 (the `tsc` gate), Q4 (migration 0015), Q5 and Q6 (the merge
+      rule).
+- [ ] Approve the remaining groups in `docs/deletions.md`. Groups C and I are
+      closed and need no approval.
 
 ---
 
 ## 1. Backup before any destructive step
 
-Supabase is on the free tier. There is no point in time recovery. Every delete
-below is final.
+Q2 and Q3 removed every planned data deletion, so no user data is destroyed by
+this rebuild. Migrations still alter schema, so the dump is still worth taking.
+
+Supabase is on the free tier. There is no point in time recovery.
 
 - [ ] Take a full database dump before the first migration is applied.
       Supabase dashboard, Database, Backups, or `pg_dump` against the connection

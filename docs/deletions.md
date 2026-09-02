@@ -104,7 +104,13 @@ over. Confirm in Q12.
 
 ---
 
-## Group C. Stripe and monetization. HOLD.
+## Group C. Stripe and monetization. CLOSED. Nothing deleted.
+
+Q3 answered: out of scope. Nothing in this group is touched, including the 2
+rows in `celestual_purchases`. The rest of this section is kept as the record
+of what was considered.
+
+Original note:
 
 The spec never mentions money. Not in the goal, not in the UI scope, not in the
 identity model, not in admin. Silence is not an instruction to delete.
@@ -242,7 +248,13 @@ size is visible.
 
 ---
 
-## Group I. User data. HOLD. Requires Q2.
+## Group I. User data. CLOSED. Nothing deleted.
+
+Q2 answered: only the `beta_*` tables, and all five hold zero rows. So no user
+data is deleted anywhere. The table below is kept as the inventory, not as a
+deletion list.
+
+Original note:
 
 Spec section 11 says "All existing beta user data is fake. Delete it."
 
@@ -285,10 +297,10 @@ Two rows in this group should survive any wipe on their own merits:
 | --- | --- | --- |
 | A. HikerAPI | Ready, spec mandated | none |
 | B. Trial and recruitment | Ready pending confirmation | Q12 |
-| C. Stripe | HOLD | Q3 |
+| C. Stripe | CLOSED, nothing deleted | answered |
 | D. Dead server code | Partly ready | Q4 for relogin and 0015 |
 | E. Communities and campuses | Ready pending confirmation | Q15 |
 | F. Old resolver tables | Ready pending confirmation | Q7 |
 | G. Documentation | Partly ready | Q17 |
 | H. Old design surfaces | HOLD until Phase 3 approved | Q14, Q16, Q18 |
-| I. User data | HOLD | Q2, Q3 |
+| I. User data | CLOSED, nothing deleted | answered |
