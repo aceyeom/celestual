@@ -50,9 +50,29 @@ if (moved) {
 const path = moved || here
 const wallPath = path === BASE || path.startsWith(BASE + '/')
 
+// ── /signature ───────────────────────────────────────────────────────────────
+// The two signature surfaces from the rebuild's Phase 3: the Main hero and the
+// mutual reveal. They fork here for the same reason the wall does, and the fork
+// has to happen BEFORE App.jsx sees the path: App's route table ends with a
+// bare four letter matcher for a competitor's tracking link, and any short word
+// that is not on its reserved list is claimed by it.
+//
+// This is a preview address. The hero becomes `/` and the reveal becomes a
+// state of the core service in Phase 6b, once there is something behind them.
+const SIGNATURE = '/signature'
+const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
+
 const root = createRoot(document.getElementById('root'))
 
-if (wallPath) {
+if (sigPath) {
+  import('./signature/index.jsx').then(({ default: SignatureApp }) => {
+    root.render(
+      <StrictMode>
+        <SignatureApp />
+      </StrictMode>,
+    )
+  })
+} else if (wallPath) {
   import('./wall/index.jsx').then(({ default: WallApp }) => {
     root.render(
       <StrictMode>

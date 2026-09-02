@@ -344,7 +344,38 @@ write the launch steps.
 There is a Resend connector available in this session. I have not called it. Tell
 me if you want me to read the current domain and template state from it.
 
-### Q14. Does the WebGL sky survive?
+### Q14. ANSWERED BY PHASE 3. A new field was written. The old sky is still yours to decide.
+
+Recommendation reversed after building it: **B, rewritten**, and it is done.
+
+`app/src/signature/field.js` is 250 lines. It draws one buffer in one call, with
+depth as a per point attribute driving drift, parallax, size and brightness at
+once, plus a canvas 2D path for a browser without WebGL2 and a static frame
+under `prefers-reduced-motion`. It satisfies spec 7.2 in full.
+
+Adapting `app/src/sky/` would have meant carrying a galaxy renderer, its
+blackbody locus, its volumetric gas, its ACES tonemap and its dive camera into a
+surface that needs a field of drifting points on a blue black ground. The 60fps
+requirement is easier to hold with the smaller thing, not the tuned larger one.
+
+So `app/src/sky/` is now unreferenced by anything in the rebuild. It is still
+referenced by `galaxy.js` and `communityGalaxy.js`, which are the retired galaxy
+edition, and it stays in deletions group H with them until you approve that
+group. Nothing was deleted.
+
+One thing the loop caught that is worth recording, because it would have been
+invisible without it: the first field called `WEBGL_lose_context` in its cleanup.
+A canvas has one context per type for its whole life, so losing it does not free
+the canvas for a second one, it hands the same dead context to whoever asks
+next. Under React's development double mount that is the very next line of the
+module, and the surface came up with a context that accepted every call and drew
+nothing. The screenshot was a white page.
+
+The original question follows.
+
+---
+
+### Q14 (original). Does the WebGL sky survive?
 
 Spec 7.2 requires "Point field rendered in WebGL for the void and stars. Slow
 autonomous drift plus pointer parallax."

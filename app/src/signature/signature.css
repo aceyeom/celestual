@@ -1,0 +1,278 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  THE SIGNATURE SURFACES, THE LAYOUT                                      ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+
+   Two surfaces, laid out with the system in app/src/wall/wall.css. Every value
+   below is either a token from that file or a length. Nothing here declares a
+   colour, a face, a radius or an easing curve of its own, which is the rule in
+   design/DESIGN.md section 5 and the reason two surfaces built in a different
+   week still look like the same product.
+
+   Scoped under .sg-root, which also carries .wl-root, so the tokens are in
+   scope and production's stylesheet is still behind an opaque ground. */
+
+.sg-root { --px: 0; --py: 0; }
+
+/* The field is a canvas rather than the wall's own one, so it takes the wall's
+   starfield rules for position and hands back the transition, which belongs to
+   a field that fades between screens and not to one that never leaves. */
+.sg-field { transition: none; }
+
+/* ── the page ──
+   The wall's column, and the wall's gutters. The hero is allowed more air at
+   the head and foot because it is the only screen in the product a person
+   arrives at without having decided anything yet. */
+.sg-page {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 0 22px 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 359px) { .sg-page { padding: 0 16px; } }
+
+/* ── the entrance ──
+   One class, one keyframe, and the delay is the only thing that varies. Every
+   stagger on these two surfaces is a --d on the element, so the whole sequence
+   of a screen can be read off its JSX in order rather than hunted for in here.
+
+   820ms on --ease: a hard start and a long settle. Slower than the wall's own
+   340ms entrance on purpose, because these two screens are the ones a person
+   is supposed to sit inside for a moment rather than pass through. */
+.sg-in {
+  animation: wl-rise 820ms var(--ease) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ═══ THE HERO ═════════════════════════════════════════════════════════════ */
+
+.sg-top { padding-bottom: 6px; }
+.sg-lockup { font-size: 22px; color: var(--chalk); }
+/* Not a link. There is one door to the wall on this page and it is the gate at
+   the foot; a second and a third in the bar and the dock were three ways to the
+   same room dressed as three destinations. This says where you are. */
+.sg-top-note { flex: 0 0 auto; }
+
+.sg-hero-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 0 8px;
+  min-height: 0;
+}
+
+.sg-say { display: flex; flex-direction: column; margin-top: 16px; }
+.sg-line { display: block; }
+
+/* The hand, on the type. Each line answers by its own --lean, so the three
+   separate in depth as the pointer crosses them. Six pixels at the extreme:
+   under a character's width, and over the threshold where a person notices the
+   page is aware of them.
+
+   translate3d, and no transition. The value is already eased in JS at frame
+   rate, and a transition on top of that is a second spring fighting the first. */
+.sg-lean {
+  display: inline-block;
+  transform: translate3d(
+    calc(var(--px, 0) * var(--lean, 1) * -4px),
+    calc(var(--py, 0) * var(--lean, 1) * -2.5px), 0);
+  will-change: transform;
+}
+
+.sg-mech {
+  margin: 20px 0 0;
+  max-width: 34ch;
+  font-family: var(--f-util);
+  font-size: 15px;
+  line-height: 1.62;
+  color: var(--ash);
+  letter-spacing: 0.004em;
+}
+
+/* The object sits off the right gutter rather than centred under the type. A
+   figure centred under a left aligned block is the composition every landing
+   page has; hung off the edge it reads as the poster it came from. */
+/* Sized off the viewport rather than off a number, so the object gives ground
+   to the type on a short screen instead of pushing the gate under the fold. */
+.sg-hero-stage {
+  align-self: flex-end;
+  margin: -6px -28px -26px 0;
+  pointer-events: auto;
+}
+.sg-hero-stage .sg-align { width: min(62vw, 34vh, 280px) !important; height: min(62vw, 34vh, 280px) !important; }
+.sg-hero-stage .sg-align svg { width: 100%; height: 100%; }
+
+.sg-align { position: relative; display: grid; place-items: center; }
+.sg-align svg { display: block; color: var(--chalk); position: relative; z-index: 1; }
+
+/* The bloom. One per screen, and this is the hero's one: a luminance rather
+   than a colour, sitting behind the object it belongs to and lit only at the
+   moment the two orbits arrive. */
+.sg-align-bloom {
+  position: absolute;
+  width: 200%; height: 200%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(255, 244, 228, 0.30) 0%,
+    rgba(255, 244, 228, 0.07) 46%,
+    rgba(255, 244, 228, 0) 72%);
+  pointer-events: none;
+}
+
+.sg-hero-foot { flex: 0 0 auto; }
+
+/* ── the door to the wall ──
+   A row, not a card and not a banner. It is the same object as a name on the
+   wall: a block of type with an arrow at the end of it, and the arrow travels. */
+.sg-gate {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 4px 16px 0;
+  border-top: 1px solid var(--hair);
+  text-decoration: none; color: inherit;
+}
+.sg-gate-l { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.sg-gate-h {
+  font-family: var(--f-display); font-size: 21px; line-height: 1.22;
+  letter-spacing: -0.012em; color: var(--chalk);
+}
+/* A sentence, so it is set in the sentence face. Only the handle inside it is
+   an identifier, and only the handle is monospaced, which is the same rule
+   wall.css applies to a handle sitting inside a label. */
+.sg-gate-m {
+  font-family: var(--f-util); font-size: 12px; letter-spacing: 0.004em;
+  line-height: 1.5; color: var(--ash-dim);
+}
+.sg-gate-m .sg-h { font-family: var(--f-id); font-size: 11.5px; letter-spacing: -0.008em; }
+.sg-gate-g {
+  flex: 0 0 auto; font-family: var(--f-util); font-size: 17px; color: var(--ash-dim);
+  transition: transform 280ms var(--ease), color 200ms var(--ease);
+}
+.sg-gate:hover .sg-gate-g { transform: translateX(5px); color: var(--chalk); }
+.sg-gate:hover .sg-gate-h { color: var(--chalk); }
+
+.sg-dock { margin: 0 -22px; padding: 0 22px; }
+@media (max-width: 359px) { .sg-dock { margin: 0 -16px; padding: 0 16px; } }
+
+/* ═══ THE REVEAL ═══════════════════════════════════════════════════════════ */
+
+.sg-reveal { padding-top: 0; justify-content: center; gap: 0; }
+
+/* Sized and padded off the viewport, because the whole moment has to land in
+   one frame on a phone. Nothing on this screen is worth reading if the one
+   action at the foot of it is under the fold. */
+.sg-reveal-stage {
+  flex: 0 0 auto;
+  display: grid; place-items: center;
+  padding: min(5vh, 34px) 0 12px;
+}
+.sg-reveal-stage .sg-align { width: min(46vw, 24vh, 190px) !important; height: min(46vw, 24vh, 190px) !important; }
+.sg-reveal-stage .sg-align svg { width: 100%; height: 100%; }
+/* The reveal's mark is drawn arrived and lit, always. It is not a control here
+   and it does not answer the hand: the alignment already happened, days ago,
+   and this screen is the notification of it.
+
+   And its bloom is held back to a little over half. design/DESIGN.md is explicit
+   that one bright thing carries a screen and that the paper and the bloom never
+   compete, and this is the one screen in the product that has both on it. The
+   paper is the bright surface here, because it is what the two of them actually
+   wrote; the mark is lit, not blazing. */
+.sg-reveal .sg-align-bloom { opacity: 0.55 !important; }
+
+.sg-reveal-eyebrow { text-align: center; }
+.sg-reveal-say { text-align: center; margin: 10px 0 0; }
+
+.sg-pair {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 22px 0 0;
+  flex: 0 0 auto;
+}
+.sg-card { flex: 0 0 auto; }
+
+/* The identity, as spec section 5 shapes it: the avatar, the display name, the
+   badge, the handle. It is the same block the search result card will be, and
+   it is drawn here first because this is where it has to survive having no
+   avatar at all. */
+.sg-who { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+.sg-disc {
+  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; overflow: hidden;
+  background: rgba(23, 21, 15, 0.06);
+  box-shadow: 0 0 0 1px rgba(23, 21, 15, 0.14) inset;
+}
+.sg-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sg-mono {
+  font-family: var(--f-id); font-size: 14px; letter-spacing: 0.02em;
+  color: var(--paper-ink-2);
+}
+.sg-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sg-who-name {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-family: var(--f-util); font-size: 15px; font-weight: 500;
+  color: var(--paper-ink); letter-spacing: 0.002em;
+}
+.sg-ver { flex: 0 0 auto; color: var(--paper-ink); }
+.sg-who-at {
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: -0.008em;
+  color: var(--paper-ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.sg-reveal-foot {
+  flex: 0 0 auto;
+  padding: 22px 0 calc(22px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.sg-reveal-foot .sg-mech { margin: 0; text-align: center; max-width: 42ch; }
+.sg-reveal-acts { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sg-reveal-acts .wl-pill { text-decoration: none; }
+
+/* ═══ WIDE ═════════════════════════════════════════════════════════════════
+   The same three changes the wall makes at 900: the column stops being a
+   column, the object moves beside the type instead of under it, and nothing
+   else moves at all. */
+@media (min-width: 900px) {
+  .sg-page { max-width: 1080px; padding: 0 40px; }
+
+  .sg-hero-body {
+    flex-direction: row; align-items: center; gap: 72px;
+    padding: 0 0 30px;
+  }
+  .sg-hero-say { flex: 1 1 0; min-width: 0; max-width: 560px; }
+  .sg-hero-stage { flex: 0 0 auto; align-self: center; margin: 0 -20px 0 0; }
+  .sg-hero-stage .sg-align { width: min(42vh, 400px) !important; height: min(42vh, 400px) !important; }
+  .sg-mech { font-size: 16px; max-width: 42ch; }
+
+  .sg-gate { padding: 20px 4px 20px 0; }
+  .sg-gate-h { font-size: 24px; }
+
+  .sg-dock { margin: 0 -40px; padding: 0 40px; }
+
+  /* Two cards, side by side, at the width the paper is actually comfortable
+     at. Beyond about 420 the reading face runs past a comfortable measure. */
+  .sg-reveal-stage { padding: min(8vh, 58px) 0 18px; }
+  .sg-reveal-stage .sg-align { width: 230px !important; height: 230px !important; }
+  .sg-pair { flex-direction: row; align-items: stretch; gap: 20px; max-width: 860px; margin: 0 auto; padding-top: 30px; }
+  .sg-reveal-foot { padding-top: 30px; gap: 16px; }
+  .sg-card { flex: 1 1 0; min-width: 0; }
+}
+
+/* ═══ REDUCED MOTION ═══════════════════════════════════════════════════════
+   wall.css already collapses every duration to a millisecond. What it does not
+   do is collapse a DELAY, and these two surfaces are built out of delays: left
+   alone, the reveal's last beat would still arrive one and a half seconds into
+   a blank screen. So the delays go too, and both surfaces resolve to their
+   final composed frame on the first paint.
+
+   The lean goes with them. It is driven by --px and --py, which the shell never
+   writes under this preference, so the transform resolves to zero on its own;
+   it is zeroed here as well so that stays true if the shell ever changes. */
+@media (prefers-reduced-motion: reduce) {
+  .sg-root .sg-in { animation-delay: 0ms !important; }
+  .sg-root .sg-lean { transform: none; }
+}

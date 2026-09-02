@@ -86,6 +86,15 @@ const url = isRoute ? base + target : `http://127.0.0.1:${server.address().port}
 const browser = await chromium.launch({ executablePath: chromiumPath() })
 const made = []
 
+// Two passes over a route, and the second one is not optional. rebuild-spec 7.2
+// requires a composed static fallback under prefers-reduced-motion, and a
+// fallback nobody has looked at is a fallback nobody knows is composed. A page
+// in the repository has no motion to reduce, so it gets one pass.
+const PASSES = isRoute
+  ? [{ suffix: '', motion: 'no-preference' }, { suffix: '-still', motion: 'reduce' }]
+  : [{ suffix: '', motion: 'no-preference' }]
+
+for (const pass of PASSES) {
 for (const v of VIEWPORTS) {
   // A route is shot at the viewport, at the device's own pixel ratio, because
   // a hairline and a 9px label are the two things a critique turns on. A whole
@@ -94,6 +103,7 @@ for (const v of VIEWPORTS) {
   const page = await browser.newPage({
     viewport: { width: v.width, height: v.height },
     deviceScaleFactor: isRoute ? v.scale : 1,
+    reducedMotion: pass.motion,
   })
   const problems = []
   page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })
@@ -101,19 +111,21 @@ for (const v of VIEWPORTS) {
 
   await page.goto(url, { waitUntil: 'networkidle' })
   await page.evaluate(() => document.fonts.ready)
-  // One second of settle. Entrances in this system run to 900ms and a shot
-  // taken before they land is a shot of a surface mid-flight.
-  await page.waitForTimeout(1100)
+  // Settle. The reveal's last beat lands at 1.6s and the hero's one moving
+  // object finishes arriving at 2.2s, so a shot taken any earlier is a shot of
+  // a surface mid flight. A page in the repository has no sequence to wait for.
+  await page.waitForTimeout(pass.motion === 'reduce' ? 700 : (isRoute ? 2900 : 1100))
 
-  const file = join(out, `${label}-${v.name}.png`)
+  const file = join(out, `${label}-${v.name}${pass.suffix}.png`)
   await page.screenshot({ path: file, fullPage: !isRoute })
-  made.push(`design/shots/${label}-${v.name}.png`)
+  made.push(`design/shots/${label}-${v.name}${pass.suffix}.png`)
 
   if (problems.length) {
-    console.error(`\n  ${v.name}: ${problems.length} console error${problems.length === 1 ? '' : 's'}`)
+    console.error(`\n  ${v.name}${pass.suffix}: ${problems.length} console error${problems.length === 1 ? '' : 's'}`)
     for (const p of problems.slice(0, 8)) console.error(`    ${p}`)
   }
   await page.close()
+}
 }
 
 await browser.close()

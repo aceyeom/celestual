@@ -30,6 +30,30 @@ Everything else fills in as phases land.
 
 ---
 
+## 0c. What Phase 6b inherits from Phase 3
+
+Nothing to do now. Recorded here so it is not rediscovered later.
+
+- **The two signature surfaces live at `/signature` and `/signature/reveal`.**
+      That is a preview address. Phase 6b promotes the hero to `/` and folds the
+      reveal into the core service. The fork is one block in `app/src/main.jsx`
+      and it happens before `App.jsx` sees the path, because App's route table
+      ends with a bare four letter matcher that would otherwise claim the word.
+- **The hero's primary capsule has no destination yet.** It is the door into
+      Main's own flow, which Phase 6b builds. The wall gate beside it is a real
+      link to `/berkeley` and works today.
+- **`app/index.html` still fetches production's three faces from Google on
+      every route,** including the two signature ones, which use none of them.
+      It is the only third party request the surfaces make and the only console
+      error they produce when that host is unreachable. Phase 6b or Phase 8
+      retires it with the bindery.
+- **The wall at `/berkeley` still injects the Google stylesheet at runtime.**
+      The same four faces are now files in `app/public/fonts/`. Switching it is
+      a two line change in `app/src/wall/index.jsx` and it belongs with the
+      Phase 6b rebuild of that surface, not before it.
+
+---
+
 ## 0b. Nothing to do for Phase 2 or Phase 3
 
 Neither phase touches Supabase, an environment variable, a secret, a migration

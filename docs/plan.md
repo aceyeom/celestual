@@ -362,9 +362,25 @@ needs. Chromium is already present in this environment at
 Exit: the three files exist, the ban list in 7.1 is encoded as a reviewable
 checklist, and `components.html` has been screenshotted and viewed.
 
-### Phase 3. Signature surfaces
+### Phase 3. Signature surfaces. BUILT, AWAITING YOUR APPROVAL.
 
-Gated on B4. Exit condition is your approval of screenshots, not a passing build.
+Two surfaces, at `/signature` and `/signature/reveal`:
+
+| Surface | What it is |
+| --- | --- |
+| the Main hero | one sentence, one moving object, two doors, a great deal of room |
+| the mutual reveal | the mark forming, the sentence, both cards together, the handle |
+
+The hero's object is the mark taken apart: two orbits, drawn from the same
+`ringPath()` the logo is drawn from, closing on one another until they coincide
+and the star between them comes up. It answers a fine pointer and runs on its
+own nine second clock where there is not one.
+
+Q14 is answered by what got built. See `docs/open-questions.md`.
+
+The original plan for this phase follows.
+
+Exit condition is your approval of screenshots, not a passing build.
 
 Two surfaces only: the Main hero, and the ping or reveal moment. Static, real
 data shapes, no backend.
