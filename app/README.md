@@ -5,8 +5,8 @@ The Vite + React SPA. No app server: every call goes straight to Supabase's
 The screens implement
 [../docs/ULTIMATE-PRODUCT-FRAMEWORK.md](../docs/ULTIMATE-PRODUCT-FRAMEWORK.md)
 Part 4 to the letter; the visual rules live in
-[../docs/DESIGN.md](../docs/DESIGN.md) and the copy rules in
-[../docs/VOICE.md](../docs/VOICE.md).
+[../design/DESIGN.md](../design/DESIGN.md) and the copy rules in
+[../design/VOICE.md](../design/VOICE.md).
 
 ## Architecture
 

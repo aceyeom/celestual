@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// voice-lint.mjs — the mechanical half of docs/VOICE.md (§5/§6).
+// voice-lint.mjs — the mechanical half of design/VOICE.md (section 6).
 //
 // A tripwire, not a critic: scans the canonical English copy and the static
 // legal pages for the banned-phrase list, emoji, and exclamation marks, and
@@ -29,7 +29,7 @@ const files = [
   join(root, 'app/src/growth.js'),
   // The card (the composer, the prompt, the seeds, the spread) writes its copy
   // inline rather than through i18n, since it is one locale and one surface. It
-  // is still copy, so it is still held to VOICE.md.
+  // is still copy, so it is still held to design/VOICE.md.
   ...readdirSync(join(root, 'app/src/card'))
     .filter((f) => f.endsWith('.js') || f.endsWith('.jsx'))
     .map((f) => join(root, 'app/src/card', f)),
@@ -47,7 +47,7 @@ function stripComments(text) {
     .replace(/(^|[^:])\/\/.*$/gm, (m, p1) => p1 + ' '.repeat(m.length - p1.length))
 }
 
-// VOICE.md §5 — the banned list. Case-insensitive substrings.
+// design/VOICE.md section 6 — the banned list. Case-insensitive substrings.
 const BANNED = [
   // generic-error voice
   'something went wrong',
@@ -126,7 +126,7 @@ for (const file of files) {
 }
 
 if (failures) {
-  console.error(`\nvoice-lint: ${failures} problem${failures === 1 ? '' : 's'} — see docs/VOICE.md §5`)
+  console.error(`\nvoice-lint: ${failures} problem${failures === 1 ? '' : 's'} — see design/VOICE.md section 6`)
   process.exit(1)
 }
 console.log(`voice-lint: ${files.length} files clean`)

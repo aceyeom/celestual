@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Celestual components</title>
+<link rel="icon" type="image/svg+xml" href="logo/mark-ink.svg">
+
+<!-- The two files the build itself renders from. Nothing on this page is a copy
+     of a value in either of them, so this sheet cannot fall behind the product.
+     wall.css scopes everything under .wl-root, which is why the body carries
+     that class. -->
+<link rel="stylesheet" href="../app/public/fonts/faces.css">
+<link rel="stylesheet" href="../app/src/wall/wall.css">
+
+<style>
+  /* The sheet's own chrome, and only its own chrome. Every colour below is a
+     token declared in wall.css. */
+  html { background: var(--void, #08070B); }
+  body { margin: 0; }
+  .sheet { padding: clamp(22px, 4vw, 56px) clamp(18px, 4vw, 44px) 120px; max-width: 1180px; margin: 0 auto; }
+
+  .sheet-head { display: flex; align-items: flex-start; gap: 22px; padding-bottom: 34px; }
+  .sheet-head .wl-ecl { color: var(--chalk); }
+  .sheet-title { font-family: var(--f-display); font-size: clamp(34px, 6vw, 54px); font-weight: 400;
+                 letter-spacing: -0.02em; line-height: 1; margin: 6px 0 0; }
+  .sheet-lede { max-width: 62ch; color: var(--ash); font-size: 14.5px; line-height: 1.6; margin: 14px 0 0; }
+  .sheet-lede code { font-family: var(--f-id); font-size: 12.5px; color: var(--chalk); }
+
+  section { padding: 40px 0 0; border-top: 1px solid var(--hair-soft); margin-top: 40px; }
+  section > h2 { font-family: var(--f-id); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+                 color: var(--ash-dim); font-weight: 400; margin: 0 0 6px; }
+  section > .why { color: var(--ash); font-size: 13.5px; line-height: 1.6; margin: 0 0 26px; max-width: 68ch; }
+
+  h3 { font-family: var(--f-id); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+       color: var(--ash-dim); font-weight: 400; margin: 30px 0 12px; }
+  h3:first-of-type { margin-top: 0; }
+
+  /* the specimen bed. Everything in this sheet stands on one of these. */
+  .bed { border: 1px solid var(--hair-soft); border-radius: 14px; background: var(--void-1);
+         padding: 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px 26px; }
+  .bed.is-col { flex-direction: column; align-items: stretch; }
+  .bed.is-chalk { background: var(--chalk); border-color: rgba(23,21,15,0.12); }
+  .bed.is-void { background: var(--void); }
+  .bed.is-tight { gap: 12px 16px; }
+
+  .spec { display: flex; flex-direction: column; gap: 9px; align-items: flex-start; min-width: 0; }
+  .spec > .cap { font-family: var(--f-id); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+                 color: var(--ash-dim); }
+  .statebar .spec > .cap { max-width: 26ch; }
+  /* two lines of caption, always, so a row of controls sits on one baseline
+     whether its label is two words or six */
+  .statebar .spec > .cap { min-height: 26px; }
+  .bed.is-chalk .spec > .cap { color: var(--paper-ink-2); }
+
+  .grid { display: grid; gap: 12px; }
+  .grid.is-sw { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
+  .grid.is-two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+
+  .sw { border: 1px solid var(--hair-soft); border-radius: 12px; overflow: hidden; min-width: 0; }
+  .sw .chip { height: 62px; display: block; }
+  .sw .meta { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 2px; }
+  .sw .tok { font-family: var(--f-id); font-size: 11px; color: var(--chalk); }
+  .sw .val { font-family: var(--f-id); font-size: 9.5px; color: var(--ash-dim); letter-spacing: 0.02em;
+             overflow-wrap: anywhere; }
+  .sw .use { font-size: 11px; color: var(--ash); line-height: 1.45; margin-top: 3px; }
+
+  table.spec-t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.spec-t th { text-align: left; font-family: var(--f-id); font-size: 9px; letter-spacing: 0.16em;
+                    text-transform: uppercase; color: var(--ash-dim); font-weight: 400;
+                    padding: 0 14px 9px 0; border-bottom: 1px solid var(--hair-soft); }
+  table.spec-t td { padding: 10px 14px 10px 0; border-bottom: 1px solid var(--hair-soft); color: var(--ash);
+                    vertical-align: baseline; }
+  table.spec-t td.k { font-family: var(--f-id); font-size: 11.5px; color: var(--chalk); white-space: nowrap; }
+
+  /* --ash on the note, not --ash-dim. The sheet's own gate forbids body copy in
+     the dim tone, and the first draft of this file set the sentence saying so in
+     exactly that tone. */
+  .note { font-size: 12px; color: var(--ash); line-height: 1.55; margin-top: 12px; max-width: 70ch; }
+  .note b { color: var(--chalk); font-weight: 400; }
+
+  .ban { list-style: none; margin: 0; padding: 0; display: grid;
+         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 4px 26px; }
+  .ban li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--ash);
+            line-height: 1.55; padding: 5px 0; }
+  .ban li::before { content: ''; flex: 0 0 auto; width: 11px; height: 11px; border-radius: 3px;
+                    border: 1px solid var(--hair); transform: translateY(1px); }
+
+  /* a still frame cannot hover. The states below are lifted off the live
+     stylesheet at load, so no value on this page is a second copy of one in
+     wall.css. Opened straight off disk the browser will not read its own rules
+     back, and the row says so instead of quietly showing a rest state. */
+  .statebar { display: flex; flex-wrap: wrap; gap: 22px 26px; align-items: flex-start; }
+  .nostate { font-size: 11.5px; color: var(--accent); font-family: var(--f-id); display: none; }
+  .no-cssom .nostate { display: block; }
+
+  .rulepair { display: flex; align-items: center; gap: 14px; }
+  .curve { border: 1px solid var(--hair-soft); border-radius: 10px; background: var(--void); display: block; }
+</style>
+</head>
+
+<body class="wl-root">
+<div class="sheet">
+
+  <header class="sheet-head">
+    <span id="head-mark"></span>
+    <div>
+      <div style="font-family:var(--f-id);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ash-dim)">celestual · the system</div>
+      <h1 class="sheet-title">Components</h1>
+      <p class="sheet-lede">
+        Every component, colour, type size and state in one place. Every token, class
+        and face here is loaded from <code>app/src/wall/wall.css</code> and
+        <code>app/public/fonts/faces.css</code> rather than restated, and the mark is
+        the exported file in <code>design/logo/</code>. The five ornaments are drawn on
+        this page from the same tokens, since their generators are React. The prose
+        account is <code>design/DESIGN.md</code>, and the mark's own sheet is
+        <code>design/source/eclipse.html</code>.
+      </p>
+    </div>
+  </header>
+
+  <!-- ── COLOUR ─────────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Colour</h2>
+    <p class="why">
+      Every colour in the product is one of these. Nothing names a hue anywhere else,
+      which is what makes the accent a two line change.
+    </p>
+
+    <h3>The ground</h3>
+    <div class="grid is-sw" id="sw-ground"></div>
+
+    <h3>The two hairlines, drawn as lines, on both grounds</h3>
+    <div class="grid is-two" id="sw-hair"></div>
+
+    <h3>The light</h3>
+    <div class="grid is-sw" id="sw-light"></div>
+    <p class="note">
+      <b>--ash-dim on --void is about 3.2:1.</b> Legible for a label, not for a sentence.
+      Body copy set in it is the fastest way to make this system look careless.
+    </p>
+
+    <h3>The paper</h3>
+    <div class="grid is-sw" id="sw-paper"></div>
+
+    <h3>The two bright things, both rationed to once per screen</h3>
+    <div class="grid is-sw" id="sw-bright"></div>
+    <p class="note">
+      <b>--glow</b> is a luminance rather than a colour: warm white pushed through a heavy blur.
+      <b>--accent</b> is the whole saturated budget of the product.
+    </p>
+  </section>
+
+  <!-- ── TYPE ───────────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Type</h2>
+    <p class="why">
+      Four faces, four jobs, and none of them does another's. The fourth is structural:
+      every handle, count, date and code is monospaced because those are identifiers,
+      and monospace is how a person reads one.
+    </p>
+
+    <h3>Display · Bodoni Moda · the emotional register</h3>
+    <div class="bed is-col">
+      <div class="spec" style="width:100%"><span class="cap">is-xl · clamp(34px, 10.4vw, 46px)</span>
+        <p class="wl-display is-xl">Someone here wrote about you.</p></div>
+      <div class="spec" style="width:100%"><span class="cap">is-l · clamp(30px, 8.8vw, 39px)</span>
+        <p class="wl-display is-l">Who's on your mind.</p></div>
+      <div class="spec" style="width:100%"><span class="cap">is-m · clamp(26px, 7.4vw, 33px)</span>
+        <p class="wl-display is-m">It's standing.</p></div>
+      <div class="spec" style="width:100%"><span class="cap">is-s · clamp(21px, 5.8vw, 26px)</span>
+        <p class="wl-display is-s">Nothing happens unless it's mutual.</p></div>
+    </div>
+
+    <h3>Label · Geist Mono · and the reading face</h3>
+    <div class="bed is-col is-tight">
+      <div class="spec"><span class="cap">wl-label · 10.5px · 0.15em</span>
+        <span class="wl-label">berkeley · 214 letters standing</span></div>
+      <div class="spec"><span class="cap">wl-label is-dim · decorative only</span>
+        <span class="wl-label is-dim">sealed until they answer</span></div>
+      <div class="spec"><span class="cap">a handle in a label keeps its case</span>
+        <span class="wl-label">written to <span class="wl-h">@ace03d</span></span></div>
+    </div>
+
+    <h3>Prose · EB Garamond · what a person actually wrote</h3>
+    <div class="wl-paper" style="max-width:460px">
+      <div class="wl-paper-grain"></div>
+      <p class="wl-prose">i never said any of this out loud. you sat two rows ahead of
+      me all term and i learned the back of your head better than the lecture. if
+      you ever wondered, it was you.</p>
+    </div>
+    <p class="note">The reading face is only ever used on paper. Setting it on the void is out of system.</p>
+  </section>
+
+  <!-- ── THE MARK ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>The mark</h2>
+    <p class="why">
+      Ecliptic. Nine constants and two path builders in <code style="font-family:var(--f-id);font-size:12px;color:var(--chalk)">app/src/wall/mark.js</code>,
+      so it is exact at any size and there is no asset to keep in sync. It takes
+      currentColor always, which is what lets one component be the bar's brand, a card's
+      letterhead and the overture's hero with no tone prop anywhere.
+    </p>
+
+    <div class="grid is-two">
+      <div class="bed is-void" style="justify-content:center" id="mark-void"></div>
+      <div class="bed is-chalk" style="justify-content:center" id="mark-chalk"></div>
+    </div>
+
+    <h3>The ladder · 96 down to 12</h3>
+    <div class="bed" style="align-items:flex-end" id="mark-ladder"></div>
+
+    <h3>The lockup · mark at 1.13 of the word, gap 0.38em</h3>
+    <div class="grid is-two">
+      <div class="bed is-void"><span class="wl-lockup" style="font-size:30px"><span id="lock-a"></span><span class="wl-lockup-word">celestual.</span></span></div>
+      <div class="bed is-chalk" style="color:var(--paper-ink)"><span class="wl-lockup" style="font-size:30px"><span id="lock-b"></span><span class="wl-lockup-word">celestual.</span></span></div>
+    </div>
+
+    <h3>The constellation · a different object, seeded from a handle</h3>
+    <div class="bed" id="constellations"></div>
+    <p class="note">
+      It stands where the design would otherwise put a photograph. It is never the logo,
+      and the logo never stands in for it. The three tones here are the build's own; the
+      point positions are seeded on this page rather than by <code>data.js</code>, so read
+      them as a specimen of the object rather than of any one handle.
+    </p>
+  </section>
+
+  <!-- ── CONTROLS ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Controls</h2>
+    <p class="why">
+      One primary capsule per screen, and no second filled tone. There used to be a
+      saturated one: it had a single caller, spending the whole colour ration on a word
+      beside a date that had already said it, and the role went with the caller.
+    </p>
+
+    <h3>The capsule</h3>
+    <div class="bed statebar">
+      <div class="spec"><span class="cap">is-light · rest</span><button class="wl-pill is-light">put it up</button></div>
+      <div class="spec"><span class="cap">is-light · hover</span><button class="wl-pill is-light" data-state=".wl-pill.is-light:hover:not(:disabled)">put it up</button><span class="nostate">needs a server</span></div>
+      <div class="spec"><span class="cap">is-light · active</span><button class="wl-pill is-light" data-state=".wl-pill:active:not(:disabled)">put it up</button><span class="nostate">needs a server</span></div>
+      <div class="spec"><span class="cap">is-light · disabled</span><button class="wl-pill is-light" disabled>put it up</button></div>
+      <div class="spec"><span class="cap">is-ghost · 32px</span><button class="wl-pill is-ghost">not now</button></div>
+      <div class="spec"><span class="cap">is-ghost · hover</span><button class="wl-pill is-ghost" data-state=".wl-pill.is-ghost:hover:not(:disabled)">not now</button></div>
+      <div class="spec"><span class="cap">is-tag · a size, always on a role</span><span class="wl-pill is-ghost is-tag">sealed</span></div>
+      <div class="spec"><span class="cap">is-light is-tag</span><span class="wl-pill is-light is-tag">open</span></div>
+    </div>
+    <div class="bed" style="margin-top:12px">
+      <div class="spec" style="width:100%"><span class="cap">is-wide · 50px · one per screen</span>
+        <button class="wl-pill is-light is-wide" style="max-width:420px">write to @jules.k</button></div>
+    </div>
+
+    <h3>The arrow link · the arrow travels on hover, the word does not</h3>
+    <div class="bed statebar">
+      <div class="spec"><span class="cap">rest · 21px display</span><a class="wl-arrow" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">read it</span></a></div>
+      <div class="spec"><span class="cap">hover</span><a class="wl-arrow" href="#" data-state=".wl-arrow:hover" data-child-state=".wl-arrow:hover .wl-arrow-g|.wl-arrow-g"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">read it</span></a></div>
+      <div class="spec"><span class="cap">is-s · 16px</span><a class="wl-arrow is-s" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">who wrote it</span></a></div>
+      <div class="spec"><span class="cap">is-quiet</span><a class="wl-arrow is-s is-quiet" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">back to the wall</span></a></div>
+      <div class="spec"><span class="cap">disabled</span><button class="wl-arrow is-s" disabled><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">read it</span></button></div>
+    </div>
+
+    <h3>The glyph controls</h3>
+    <div class="bed statebar">
+      <div class="spec"><span class="cap">iconbtn · rest</span><button class="wl-iconbtn" id="ib1"></button></div>
+      <div class="spec"><span class="cap">iconbtn · hover</span><button class="wl-iconbtn" id="ib2" data-state=".wl-iconbtn:hover"></button></div>
+      <div class="spec"><span class="cap">iconbtn · is-on</span><button class="wl-iconbtn is-on" id="ib3"></button></div>
+      <div class="spec"><span class="cap">close · 36px · turns a quarter</span><button class="wl-close" id="cl1"></button></div>
+      <div class="spec"><span class="cap">quiet · second option only</span><button class="wl-quiet">let it go instead</button></div>
+      <div class="spec"><span class="cap">mine · a control with a consequence</span><button class="wl-mine">this is me</button></div>
+      <div class="spec"><span class="cap">mine is-wide</span><button class="wl-mine is-wide">this is me</button></div>
+    </div>
+
+    <h3>Focus · never removed, on any of them</h3>
+    <div class="bed">
+      <div class="spec"><span class="cap">1px at 55% · offset 3px</span>
+        <button class="wl-pill is-light" style="outline:1px solid rgba(244,241,234,0.55);outline-offset:3px;border-radius:var(--r-pill)">put it up</button></div>
+      <div class="spec"><span class="cap">on a glyph</span>
+        <button class="wl-iconbtn" id="ib4" style="outline:1px solid rgba(244,241,234,0.55);outline-offset:3px"></button></div>
+    </div>
+  </section>
+
+  <!-- ── SURFACES ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Surfaces</h2>
+    <p class="why">
+      The paper is the only bright surface in the product and the only place a person's
+      own words are ever set. Everything that is not the wall arrives as a sheet, rising
+      off the bottom edge over a wall that stays mounted behind it.
+    </p>
+
+    <h3>The paper · three grounds</h3>
+    <div class="grid is-two">
+      <div class="wl-paper">
+        <div class="wl-paper-grain"></div>
+        <div class="wl-paper-head"><span>11 days standing</span><span class="wl-paper-stamp">SEALED</span></div>
+        <div class="wl-paper-crest"><span id="crest-a"></span><h4 class="wl-paper-title wl-letter-to">@jules.k</h4></div>
+        <div class="wl-paper-body">
+          <p class="wl-prose">there is a version of this term where i said something in
+          week two and we are somewhere else now. i keep thinking about that one.</p>
+        </div>
+        <div class="wl-paper-foot"><span class="wl-label is-ink">written 21 august</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div class="wl-paper is-theirs">
+          <div class="wl-paper-grain"></div>
+          <div class="wl-paper-head"><span>is-theirs</span><span class="wl-paper-stamp">OPEN</span></div>
+          <div class="wl-paper-body"><p class="wl-prose">a card that belongs to somebody else.</p></div>
+        </div>
+        <div class="wl-paper is-empty">
+          <div class="wl-paper-grain"></div>
+          <div class="wl-paper-head"><span>is-empty</span><span class="wl-paper-stamp">BLANK</span></div>
+          <div class="wl-paper-body"><p class="wl-prose" style="color:var(--paper-ink-2)">nothing here yet.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>The row · the constellation where a photograph would be</h3>
+    <div class="bed is-col is-tight">
+      <button class="wl-row">
+        <span class="wl-row-mark" id="row-a"></span>
+        <span class="wl-row-text"><span class="wl-row-handle">@jules.k</span><span class="wl-row-meta">standing · 11 days</span></span>
+        <span class="wl-row-action"><span class="wl-pill is-ghost is-tag">sealed</span></span>
+      </button>
+      <button class="wl-row is-lit">
+        <span class="wl-row-mark" id="row-b"></span>
+        <span class="wl-row-text"><span class="wl-row-handle">@mara.ln</span><span class="wl-row-meta">it's mutual</span></span>
+        <span class="wl-row-action"><span class="wl-pill is-light is-tag">open</span></span>
+      </button>
+      <button class="wl-row" data-state=".wl-row:hover">
+        <span class="wl-row-mark" id="row-c"></span>
+        <span class="wl-row-text"><span class="wl-row-handle">@theo.w</span><span class="wl-row-meta">hover</span></span>
+      </button>
+    </div>
+
+    <h3>The bar, and the dock</h3>
+    <div class="bed is-col" style="padding:0;overflow:hidden">
+      <div style="padding:0 22px">
+        <div class="wl-top">
+          <span class="wl-top-mark"><button class="wl-brand"><span id="brand-mark" class="wl-brand-mark"></span></button><span class="wl-label is-dim">berkeley</span></span>
+          <span class="wl-top-acts"><button class="wl-iconbtn" id="ib5"></button><button class="wl-iconbtn is-on" id="ib6"></button></span>
+        </div>
+      </div>
+      <div style="padding:0 22px">
+        <button class="wl-row"><span class="wl-row-mark" id="row-d"></span>
+          <span class="wl-row-text"><span class="wl-row-handle">@sam.riv</span><span class="wl-row-meta">standing · 3 days</span></span></button>
+        <button class="wl-row"><span class="wl-row-mark" id="row-e"></span>
+          <span class="wl-row-text"><span class="wl-row-handle">@ace03d</span><span class="wl-row-meta">standing · 9 days</span></span></button>
+      </div>
+      <div style="position:relative;padding:0 22px">
+        <div class="wl-dock" style="position:relative">
+          <div class="wl-dock-veil"></div>
+          <div class="wl-dock-in">
+            <button class="wl-pill is-light">write one</button>
+            <a class="wl-arrow is-s is-quiet" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">how this works</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>The sheet · a phone, and a desktop at 900px</h3>
+    <div class="grid is-two">
+      <div class="bed is-void" style="position:relative;padding:0;align-items:stretch;border-radius:14px;overflow:hidden;min-height:340px">
+        <div class="wl-main is-under" style="position:absolute;inset:0;padding:20px 20px 0">
+          <div class="wl-label is-dim" style="padding-bottom:12px">the wall, still mounted</div>
+          <div class="wl-display is-s">Someone here wrote about you.</div>
+        </div>
+        <div style="flex:1 1 auto;align-self:flex-end;background:var(--void-1);border-top-left-radius:var(--r-sheet);border-top-right-radius:var(--r-sheet);border-top:1px solid var(--hair);margin-top:34px;padding:0 20px 26px">
+          <div class="wl-grip"><span></span></div>
+          <div class="wl-head"><span class="wl-head-lead"><span id="sheet-mark" class="wl-head-mark"></span><span class="wl-label is-dim">the letter</span></span><button class="wl-close" id="cl2"></button></div>
+          <p class="wl-display is-s" style="padding:14px 0 4px">Somebody wrote to you.</p>
+          <p style="color:var(--ash);font-size:13.5px;line-height:1.6;margin:0 0 16px">it stays shut until you answer it.</p>
+          <button class="wl-pill is-light is-wide">open it</button>
+        </div>
+      </div>
+      <div>
+        <table class="spec-t">
+          <tr><th>token</th><th>value</th></tr>
+          <tr><td class="k">--r-sheet</td><td>26px, top corners only</td></tr>
+          <tr><td class="k">--r-card</td><td>18px, the paper</td></tr>
+          <tr><td class="k">--r-field</td><td>12px</td></tr>
+          <tr><td class="k">--r-pill</td><td>999px</td></tr>
+          <tr><td class="k">row</td><td>14px, the one exception</td></tr>
+          <tr><td class="k">column</td><td>460px, then 1080px at 900</td></tr>
+          <tr><td class="k">--pad</td><td>22px, 16 under 360, 40 at 900</td></tr>
+        </table>
+        <p class="note">
+          At 900px and up three things change and nothing else: the wall becomes a spread,
+          sheets become centred dialogs, and the core service puts its ring beside its ledger.
+          The column itself never grows past 1080.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FIELDS ─────────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Fields</h2>
+    <p class="why">
+      A bare baseline, not a box. The @ is painted beside the input, is never in the
+      value, and cannot be backspaced away. On focus a gradient draws across the rule in
+      520ms and the @ lifts one step.
+    </p>
+
+    <div class="grid is-two">
+      <div class="bed is-col">
+        <div class="spec" style="width:100%"><span class="cap">rest</span>
+          <div class="wl-field" style="width:100%"><span class="wl-at">@</span><input placeholder="who" value=""><span class="wl-field-line"></span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">filled</span>
+          <div class="wl-field" style="width:100%"><span class="wl-at">@</span><input value="jules.k"><span class="wl-field-line"></span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">focus · the line draws</span>
+          <div class="wl-field" style="width:100%" data-focus="1"><span class="wl-at">@</span><input value="jules.k"><span class="wl-field-line"></span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">is-lg · 28px</span>
+          <div class="wl-field is-lg" style="width:100%"><span class="wl-at">@</span><input placeholder="who"><span class="wl-field-line"></span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">is-locked</span>
+          <div class="wl-field is-locked" style="width:100%"><span class="wl-at">@</span><input value="jules.k" readonly><span class="wl-field-line"></span></div></div>
+      </div>
+
+      <div class="wl-paper">
+        <div class="wl-paper-grain"></div>
+        <div class="wl-paper-head"><span>the letter field</span><span class="wl-paper-stamp">DRAFT</span></div>
+        <div class="wl-letterfield">
+          <textarea rows="4" style="width:100%">i never said any of this out loud, and i am saying it here because here it costs nothing until it costs something.</textarea>
+          <span class="wl-count">118 / 400</span>
+        </div>
+        <div style="height:26px"></div>
+        <div class="wl-paper-head" style="margin-bottom:14px"><span>empty, and near the ceiling</span></div>
+        <div class="wl-letterfield">
+          <textarea rows="2" style="width:100%" placeholder="say it here"></textarea>
+          <span class="wl-count is-near">386 / 400</span>
+        </div>
+      </div>
+    </div>
+    <p class="note">
+      <b>--accent appears once here</b>, on the count that is running out. That is the whole
+      rule: the colour goes to the thing that is actually about to end.
+    </p>
+  </section>
+
+  <!-- ── DRAWN ──────────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Drawn things</h2>
+    <p class="why">
+      There is not one downloaded asset, icon set or stock illustration in the tree.
+      The constellation beside a name is that name's hash and nobody else's, which is a
+      thing an icon set cannot do because an icon set does not know what it is next to.
+    </p>
+
+    <div class="bed">
+      <div class="spec"><span class="cap">sparkle · 18</span><span id="art-spark"></span></div>
+      <div class="spec"><span class="cap">sparkle · twinkle</span><span id="art-spark-t"></span></div>
+      <div class="spec"><span class="cap">halftone</span><span id="art-half"></span></div>
+      <div class="spec"><span class="cap">mark · rest</span><span id="art-mark"></span></div>
+      <div class="spec"><span class="cap">mark · is-lit</span><span id="art-mark-lit"></span></div>
+      <div class="spec"><span class="cap">mark · gauge, is-near</span><span id="art-mark-near"></span></div>
+      <div class="spec"><span class="cap">dots · 3, at 2</span>
+        <span class="wl-dots"><span class="wl-dot is-done"></span><span class="wl-dot is-on"></span><span class="wl-dot"></span></span></div>
+      <div class="spec"><span class="cap">waiting · no spinner</span>
+        <span class="wl-waiting"><span id="art-wait"></span><span style="font-size:13px">listening for the code</span></span></div>
+    </div>
+
+    <h3>The bloom · one per screen, and it is a luminance</h3>
+    <div class="bed is-void" style="position:relative;min-height:190px;justify-content:center;overflow:hidden">
+      <span class="wl-bloom" id="art-bloom"></span>
+      <span id="art-bloom-mark" style="position:relative;color:var(--chalk)"></span>
+    </div>
+
+    <h3>The ground · halo, field, grain, in that order and never reordered</h3>
+    <div class="bed is-void" style="position:relative;min-height:180px;overflow:hidden;padding:0">
+      <span class="wl-halo" style="position:absolute;inset:0"></span>
+      <canvas id="art-field" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+      <span class="wl-grain" style="position:absolute;inset:0"></span>
+      <span class="wl-label is-dim" style="position:relative;padding:22px">the grain is load bearing. without it the black is a dead screen.</span>
+    </div>
+  </section>
+
+  <!-- ── MOTION ─────────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Motion</h2>
+    <p class="why">
+      Durations are chosen per element, never one default applied everywhere. Two objects
+      entering on the same frame read as one, so entrances stagger by 60 to 220ms.
+    </p>
+
+    <div class="grid is-two">
+      <div>
+        <div class="rulepair" style="margin-bottom:16px">
+          <canvas class="curve" id="c1" width="120" height="120"></canvas>
+          <div><div class="wl-label">--ease</div><div class="note" style="margin-top:5px">cubic-bezier(0.16, 1, 0.30, 1). A hard start and a long settle. Almost everything.</div></div>
+        </div>
+        <div class="rulepair">
+          <canvas class="curve" id="c2" width="120" height="120"></canvas>
+          <div><div class="wl-label">--ease-out</div><div class="note" style="margin-top:5px">cubic-bezier(0.22, 0.61, 0.36, 1). Travel that should not overshoot.</div></div>
+        </div>
+      </div>
+      <table class="spec-t">
+        <tr><th>duration</th><th>what</th></tr>
+        <tr><td class="k">200 to 240ms</td><td>a colour, a border, a hover</td></tr>
+        <tr><td class="k">220ms</td><td>a control's whole state change</td></tr>
+        <tr><td class="k">260 to 340ms</td><td>a dimming, an entrance</td></tr>
+        <tr><td class="k">380 to 420ms</td><td>a sheet arriving, the close mark's quarter turn</td></tr>
+        <tr><td class="k">520ms</td><td>the focus line drawing across a field</td></tr>
+        <tr><td class="k">620 to 900ms</td><td>the field changing speed, a rise, a sweep</td></tr>
+        <tr><td class="k">1200 to 1600ms</td><td>a bloom, a starfield fading out</td></tr>
+      </table>
+    </div>
+    <p class="note">
+      Under <b>prefers-reduced-motion</b> nothing is switched off blindly. Two sequences are
+      the only way a screen reaches its final state, so the code jumps to the last beat and
+      the stylesheet removes what is left: drift, travel, blur, twinkle. Every surface has to
+      be correct as a still frame.
+    </p>
+  </section>
+
+  <!-- ── THE GATE ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>The gate</h2>
+    <p class="why">
+      From the rebuild spec, section 7.1, plus the four ways this system specifically goes
+      wrong. Run it against every screenshot before a surface is presented.
+    </p>
+    <h3>The eleven from the spec</h3>
+    <ul class="ban">
+      <li>No centred hero with a headline, a subhead and two side by side buttons</li>
+      <li>No three or four column feature card grid</li>
+      <li>No icon plus title plus paragraph blocks</li>
+      <li>No gradient filled buttons</li>
+      <li>No box-shadow utility class used for depth</li>
+      <li>No emoji used as iconography</li>
+      <li>No stock vector illustration or generic 3D blob</li>
+      <li>No lorem ipsum or placeholder copy of any kind</li>
+      <li>No button reading "Get started" or "Learn more"</li>
+      <li>No Tailwind default palette value</li>
+      <li>No transition: all with a default duration</li>
+    </ul>
+
+    <h3>And four this system adds, because they are how it goes wrong</h3>
+    <ul class="ban">
+      <li>No second use of the accent on one screen</li>
+      <li>No screen with two bright objects competing, and none with neither</li>
+      <li>No body copy set in --ash-dim</li>
+      <li>No face doing another face's job</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+// The mark on this page is the exported file in design/logo/, drawn as an
+// image. Two reasons, and the second is the one that matters: it keeps this
+// sheet openable straight off disk, where a module import would be refused, and
+// it means a reviewer is looking at the artifact a printer would be handed
+// rather than at a second drawing of it. Everything else here is a loop.
+const $ = (id) => document.getElementById(id)
+const at = (px, tone) => `<img src="logo/mark-${tone}.svg" width="${px}" height="${px}" alt="" style="display:block">`
+
+$('head-mark').innerHTML = at(52, 'chalk')
+$('lock-a').innerHTML = at(34, 'chalk')
+$('lock-b').innerHTML = at(34, 'ink')
+$('brand-mark').innerHTML = at(26, 'chalk')
+$('sheet-mark').innerHTML = `<span style="display:block;opacity:.42">${at(17, 'chalk')}</span>`
+$('art-bloom-mark').innerHTML = at(66, 'chalk')
+
+$('mark-void').innerHTML = at(132, 'chalk')
+$('mark-chalk').innerHTML = at(132, 'ink')
+$('mark-ladder').innerHTML = [96, 64, 48, 32, 24, 20, 16, 12].map((px) =>
+  `<figure style="display:flex;flex-direction:column;align-items:center;gap:8px;margin:0">
+     ${at(px, 'chalk')}
+     <figcaption style="font-family:var(--f-id);font-size:9px;color:var(--ash-dim)">${px}</figcaption>
+   </figure>`).join('')
+
+// ── the swatches ──
+// Read back off the live stylesheet rather than typed here, so a token that
+// changes in wall.css changes on this page in the same commit.
+const css = getComputedStyle(document.body)
+const val = (t) => css.getPropertyValue(t).trim()
+function swatches(where, rows) {
+  $(where).innerHTML = rows.map(([tok, use]) =>
+    `<div class="sw"><span class="chip" style="background:var(${tok})"></span>
+       <span class="meta"><span class="tok">${tok}</span><span class="val">${val(tok) || 'inherited'}</span>
+       <span class="use">${use}</span></span></div>`).join('')
+}
+swatches('sw-ground', [
+  ['--void', 'the ground, everywhere'],
+  ['--void-1', 'a sheet laid on the ground'],
+  ['--void-2', 'a sheet laid on that'],
+  ['--void-3', 'a row, pressed'],
+])
+swatches('sw-light', [
+  ['--chalk', 'primary type, the mark, a filled control'],
+  ['--ash', 'secondary. meaningful text only'],
+  ['--ash-dim', 'decorative and disabled only'],
+])
+swatches('sw-paper', [
+  ['--paper', "the card's body"],
+  ['--paper-hi', 'its lit top edge'],
+  ['--paper-edge', 'its shadowed foot'],
+  ['--paper-ink', 'type on paper'],
+  ['--paper-ink-2', 'secondary type on paper'],
+])
+// A hairline shown as a filled chip is a chip of nothing. It is a line, so it is
+// drawn as one, on both of the grounds it actually divides.
+$('sw-hair').innerHTML = [['--void-1', 'on a sheet'], ['--void', 'on the ground']].map(([bg, where]) =>
+  `<div class="bed" style="background:var(${bg});flex-direction:column;align-items:stretch;gap:0">
+     <span class="cap" style="font-family:var(--f-id);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ash-dim)">${where}</span>
+     <div style="height:20px"></div>
+     <div style="height:1px;background:var(--hair)"></div>
+     <div style="display:flex;justify-content:space-between;padding:7px 0 20px">
+       <span class="val" style="font-family:var(--f-id);font-size:9.5px;color:var(--chalk)">--hair</span>
+       <span class="val" style="font-family:var(--f-id);font-size:9.5px;color:var(--ash-dim)">${val('--hair')}</span>
+     </div>
+     <div style="height:1px;background:var(--hair-soft)"></div>
+     <div style="display:flex;justify-content:space-between;padding:7px 0 0">
+       <span class="val" style="font-family:var(--f-id);font-size:9.5px;color:var(--chalk)">--hair-soft</span>
+       <span class="val" style="font-family:var(--f-id);font-size:9.5px;color:var(--ash-dim)">${val('--hair-soft')}</span>
+     </div>
+   </div>`).join('')
+
+swatches('sw-bright', [
+  ['--glow', 'the bloom. warm white through a heavy blur'],
+  ['--accent', 'the one saturated colour in the product'],
+  ['--accent-soft', 'its wash'],
+])
+
+// ── the drawn things ──
+const SPARK = 'M50 0C51.5 29 62 40.5 100 50C62 59.5 51.5 71 50 100C48.5 71 38 59.5 0 50C38 40.5 48.5 29 50 0Z'
+const spark = (px, cls = '') =>
+  `<svg class="wl-spark ${cls}" width="${px}" height="${px}" viewBox="0 0 100 100" aria-hidden="true"><path d="${SPARK}" fill="currentColor"/></svg>`
+$('art-spark').innerHTML = spark(18)
+$('art-spark-t').innerHTML = spark(18, 'is-twinkle')
+$('art-wait').innerHTML = spark(13, 'is-twinkle')
+
+// the halftone, and the constellation, both drawn from a seed the same way the
+// build draws them: a hash of the handle, and nothing else.
+function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) } return h >>> 0 }
+function rand(seed, n) { let h = hash(seed + ':' + n); h ^= h >>> 15; h = Math.imul(h, 2246822507); h ^= h >>> 13; return (h >>> 0) / 4294967296 }
+
+$('art-half').innerHTML = (() => {
+  const d = []
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    const x = -1 + (c / 8) * 2, y = -1 + (r / 8) * 2
+    const rr = Math.hypot(x, y); if (rr > 1) continue
+    const lit = Math.max(0, 1 - Math.hypot(x + 0.35, y + 0.35) / 1.5)
+    d.push(`<circle cx="${(x * 22 + 24).toFixed(1)}" cy="${(y * 22 + 24).toFixed(1)}" r="${(0.8 + lit * 1.5).toFixed(2)}" fill="currentColor"/>`)
+  }
+  return `<svg class="wl-halftone" width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">${d.join('')}</svg>`
+})()
+
+function constellation(handle, px, cls = '') {
+  const n = 5, pts = []
+  for (let i = 0; i < n; i++) {
+    const a = rand(handle, i) * Math.PI * 2, r = 9 + rand(handle, i + 40) * 13
+    pts.push([50 + Math.cos(a) * r * 1.6, 50 + Math.sin(a) * r * 1.6])
+  }
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('')
+  const stars = pts.map((p, i) => `<circle class="wl-mark-star" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${(1.5 + rand(handle, i + 80) * 1.6).toFixed(2)}"/>`).join('')
+  const gauge = cls.includes('is-near') || cls.includes('is-mutual')
+    ? '<circle class="wl-mark-gauge" cx="50" cy="50" r="44" pathLength="100" stroke-dasharray="100" stroke-dashoffset="72"/>' : ''
+  return `<svg class="wl-mark ${cls}" width="${px}" height="${px}" viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="wl-mark-ring" cx="50" cy="50" r="44"/>${gauge}
+    <path class="wl-mark-line" d="${line}"/>${stars}</svg>`
+}
+$('constellations').innerHTML = ['@jules.k', '@mara.ln', '@theo.w', '@ace03d', '@sam.riv'].map((h) =>
+  `<div class="spec"><span class="cap">${h}</span>${constellation(h, 54)}</div>`).join('')
+$('art-mark').innerHTML = constellation('@jules.k', 40)
+$('art-mark-lit').innerHTML = constellation('@mara.ln', 40, 'is-lit')
+$('art-mark-near').innerHTML = constellation('@theo.w', 40, 'is-near')
+$('crest-a').innerHTML = constellation('@jules.k', 34)
+$('row-a').innerHTML = constellation('@jules.k', 34)
+$('row-b').innerHTML = constellation('@mara.ln', 34, 'is-lit')
+$('row-c').innerHTML = constellation('@theo.w', 34)
+$('row-d').innerHTML = constellation('@sam.riv', 34)
+$('row-e').innerHTML = constellation('@ace03d', 34)
+
+$('art-bloom').innerHTML =
+  `<svg width="240" height="240" viewBox="0 0 240 240" aria-hidden="true">
+     <defs><radialGradient id="bl"><stop offset="0" stop-color="#FFF4E4" stop-opacity="0.30"/>
+     <stop offset="0.55" stop-color="#FFF4E4" stop-opacity="0.06"/>
+     <stop offset="1" stop-color="#FFF4E4" stop-opacity="0"/></radialGradient></defs>
+     <circle cx="120" cy="120" r="120" fill="url(#bl)"/></svg>`
+
+// the three glyphs the bar actually uses, at the stroke weight the build sets
+const ICONS = ['M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
+  'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M16.2 16.2 21 21',
+  'M4 20h4l10-10a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6zM14.4 7.2l2.4 2.4']
+const icon = (d, px = 18) => `<svg class="wl-icon" width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`
+;['ib1', 'ib2', 'ib4', 'ib5'].forEach((id, i) => { $(id).innerHTML = icon(ICONS[i % 3]) })
+$('ib3').innerHTML = icon(ICONS[1]); $('ib6').innerHTML = icon(ICONS[2])
+;['cl1', 'cl2'].forEach((id) => { $(id).innerHTML = icon('M6 6l12 12M18 6L6 18', 15) })
+
+// ── the field, at a size ──
+// The same loop the build runs, at ninety points, so the ground on this page
+// drifts the way the ground in the product drifts.
+;(() => {
+  const cv = $('art-field'); const ctx = cv.getContext('2d')
+  const dpr = Math.min(2, devicePixelRatio || 1)
+  const size = () => { cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0) }
+  size(); new ResizeObserver(size).observe(cv)
+  const stars = Array.from({ length: 72 }, (_, i) => ({
+    x: rand(`f${i}`, 1), y: rand(`f${i}`, 2), m: Math.pow(rand(`f${i}`, 3), 3),
+    sp: 0.25 + rand(`f${i}`, 4) * 0.75, ph: rand(`f${i}`, 5) * Math.PI * 2,
+  }))
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+  let t = 0, last = performance.now()
+  function frame(now) {
+    const dt = Math.min(48, now - last); last = now; if (!still) t += dt * 0.001
+    const w = cv.clientWidth, h = cv.clientHeight
+    ctx.clearRect(0, 0, w, h)
+    for (const s of stars) {
+      const x = ((s.x + t * 0.004 * s.sp) % 1) * w
+      const tw = 0.55 + 0.45 * Math.sin(t * 0.6 * s.sp + s.ph)
+      ctx.globalAlpha = (0.05 + s.m * 0.62) * (0.55 + tw * 0.45)
+      ctx.fillStyle = '#F4F1EA'
+      ctx.beginPath(); ctx.arc(x, s.y * h, 0.5 + s.m * 1.35, 0, 6.2832); ctx.fill()
+    }
+    ctx.globalAlpha = 1
+    if (!still) requestAnimationFrame(frame)
+  }
+  frame(performance.now())
+})()
+
+// ── the easing curves ──
+;[['c1', [0.16, 1, 0.30, 1]], ['c2', [0.22, 0.61, 0.36, 1]]].forEach(([id, k]) => {
+  const cv = $(id), ctx = cv.getContext('2d'), S = 120, P = 14
+  const bez = (t, a, b) => 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t
+  ctx.strokeStyle = 'rgba(244,241,234,0.09)'; ctx.lineWidth = 1
+  ctx.strokeRect(P + 0.5, P + 0.5, S - P * 2, S - P * 2)
+  ctx.strokeStyle = '#F4F1EA'; ctx.lineWidth = 1.6; ctx.beginPath()
+  for (let i = 0; i <= 60; i++) {
+    const t = i / 60, x = P + bez(t, k[0], k[2]) * (S - P * 2), y = S - P - bez(t, k[1], k[3]) * (S - P * 2)
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)
+  }
+  ctx.stroke()
+})
+
+// ── the states a still frame cannot show ──
+// Lifted off the live stylesheet, so nothing here is a second copy of a value
+// in wall.css. Opened straight off disk the browser refuses to read its own
+// rules back, and the page says so rather than showing a rest state twice.
+try {
+  const rules = []
+  for (const sheet of document.styleSheets) {
+    let list; try { list = sheet.cssRules } catch { continue }
+    for (const r of list) if (r.selectorText) rules.push(r)
+  }
+  if (!rules.length) throw new Error('no rules')
+  const apply = (el, selector) => {
+    for (const r of rules) {
+      if (!r.selectorText.split(',').some((s) => s.trim() === selector)) continue
+      for (const prop of r.style) el.style.setProperty(prop, r.style.getPropertyValue(prop))
+    }
+  }
+  for (const el of document.querySelectorAll('[data-state]')) apply(el, el.dataset.state)
+  for (const el of document.querySelectorAll('[data-child-state]')) {
+    const [sel, child] = el.dataset.childState.split('|')
+    const kid = el.querySelector(child); if (kid) apply(kid, sel)
+  }
+  // and the one state that is a transform on a child rather than a rule to copy
+  for (const el of document.querySelectorAll('[data-focus]')) {
+    const line = el.querySelector('.wl-field-line')
+    if (line) el.classList.add('is-forced-focus')
+  }
+} catch {
+  document.body.classList.add('no-cssom')
+}
+</script>
+
+<style>
+  /* the focus state of a field, forced. The rule it mirrors is one line in
+     wall.css and it is a transform on a pseudo element, which is the one thing
+     the lift above cannot reach. */
+  .wl-field.is-forced-focus .wl-field-line::after { transform: scaleX(1); }
+  .wl-field.is-forced-focus .wl-at { color: var(--ash); }
+</style>
+</body>
+</html>

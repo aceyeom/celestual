@@ -8,7 +8,7 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-Status: Phase 1 complete. Steps below are what Phase 1 already knows about.
+Status: Phase 2 complete. Phase 3 is presented and waiting on your approval.
 Everything else fills in as phases land.
 
 ---
@@ -20,12 +20,33 @@ Everything else fills in as phases land.
 - [x] Decide the beta data wipe. Done, Q2: only the `beta_*` tables, which are
       empty, so nothing is deleted.
 - [x] Decide Stripe. Done, Q3: out of scope, nothing touched.
-- [ ] Answer Q21, the accent colour conflict. Orange `#F2661E` from the artifact
-      against blue `#74C7DE` in the build. This now blocks Phase 2.
-- [ ] Answer Q1 (the `tsc` gate), Q4 (migration 0015), Q5 and Q6 (the merge
-      rule).
+- [x] Answer Q21, the accent colour conflict. Done: blue `#74C7DE` from the
+      build wins. `--ash` and `--hair` follow the build too. Phase 2 unblocked.
+- [x] Answer Q1, the `tsc` gate. Done: the production build plus eslint plus
+      `npm run lint:voice` stand in for it. See section 12 below.
+- [ ] Answer Q4 (migration 0015), Q5 and Q6 (the merge rule).
 - [ ] Approve the remaining groups in `docs/deletions.md`. Groups C and I are
       closed and need no approval.
+
+---
+
+## 0b. Nothing to do for Phase 2 or Phase 3
+
+Neither phase touches Supabase, an environment variable, a secret, a migration
+or production data. Both are files in this repository.
+
+Two things Phase 2 added that need no action from you, recorded so they are not
+a surprise later:
+
+- **The four faces are now files** in `app/public/fonts/`, fetched by
+  `node scripts/fetch-faces.mjs`. Nothing renders from fonts.googleapis.com in
+  the design system or in the Phase 3 surfaces. The wall at `/berkeley` still
+  injects the Google stylesheet at runtime, and Phase 6b is where that switches
+  over. No CSP change is needed either way: the fonts are served from this
+  origin now.
+- **Playwright and eslint are dev dependencies.** `npm run shots` needs a
+  Chromium. It uses Playwright's own, or one already on the machine if
+  `CHROMIUM_PATH` or `PLAYWRIGHT_BROWSERS_PATH` points at it.
 
 ---
 
@@ -222,3 +243,36 @@ The rebuild depends on all three being on.
 ## 11. Final launch checklist
 
 `PENDING Phase 8.`
+
+---
+
+## 12. The gates, and what they are today
+
+Spec section 15 opens with `tsc`. There is no TypeScript in the app and adding
+it is not in any phase, so Q1 substituted three commands. All three run from the
+repository root.
+
+| Command | What it checks |
+| --- | --- |
+| `npm run build` | the production build, which is the real compile gate |
+| `npm run lint` | eslint over `app/`, with the config added in Phase 2 |
+| `npm run lint:voice` | the copy tripwire, `design/VOICE.md` section 6 |
+
+`npm run lint` reports **17 errors in 12 files** as of Phase 2, every one of
+them pre-existing and every one in code the rebuild retires later:
+
+| File | Errors |
+| --- | --- |
+| `app/src/components/screens.jsx` | 3 |
+| `app/src/App.jsx` | 2 |
+| `app/src/card/Disc.jsx` | 2 |
+| `app/src/sky/gl.js` | 2 |
+| `app/src/api/recruit.js`, `api/relogin.js`, `card/model.js`, `communityGalaxy.js`, `components/admin.jsx`, `galaxy.js`, `sky/engine.js`, `wall/index.jsx` | 1 each |
+
+Sixteen are unused bindings. One is real and worth carrying forward: `App.jsx`
+lines 1544 and 1545 call `setIntent` and `setCategory`, neither of which is
+defined in that scope. It is in the old landing screen, which Phase 6b rebuilds,
+so it is recorded here rather than fixed out of phase.
+
+The gate for a phase is that this number does not go up. Phases 2 and 3 add
+none.
