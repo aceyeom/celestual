@@ -31,33 +31,22 @@
 //
 // ── where it is spent ───────────────────────────────────────────────────────
 // Rationed like the bloom. It stands in the intro, large, for the two seconds
-// the name is arriving, and it stands in the hero's scene where the mark lights
-// when the two cards open. It does not replace the mark in the bar, in the
+// before either surface exists, it stands in the hero's scene where the mark
+// lights when the two cards open, and it is the seal on a mutual. It does not replace the mark in the bar, in the
 // steps, or anywhere the mark is a glyph rather than an event.
 //
 // ── the fallback ────────────────────────────────────────────────────────────
-// A browser without WebGL gets the flat mark at the same size. The surface is
+// A browser without WebGL2 gets the flat mark at the same size. The surface is
 // correct as a still frame either way, which is the rule for every drawn thing
 // in the system.
 
 import { useMemo } from 'react'
 import { ShaderMount } from '@paper-design/shaders-react'
 import { liquidMetalFragmentShader, LiquidMetalShapes, ShaderFitOptions } from '@paper-design/shaders'
-import { Ecliptic } from '../wall/art.jsx'
+import { Ecliptic } from './art.jsx'
+import { hasWebGL2 } from './ground.jsx'
 
 export const LIQUID_MASK = '/liquid-mark.png'
-
-let webgl = null
-function hasWebGL() {
-  if (webgl !== null) return webgl
-  try {
-    const c = document.createElement('canvas')
-    webgl = !!(c.getContext('webgl2') || c.getContext('webgl'))
-  } catch {
-    webgl = false
-  }
-  return webgl
-}
 
 // The material. Chalk as the tint, so the highlights are the same near white as
 // the type; a transparent back, so the void shows through where the mark is not.
@@ -94,7 +83,7 @@ const UNIFORMS = {
 }
 
 export default function LiquidMark({ size = 64, speed = 0.7, still = false, className = '', style }) {
-  const ok = useMemo(hasWebGL, [])
+  const ok = useMemo(hasWebGL2, [])
   if (!ok) return <Ecliptic size={size} className={className} style={style} />
   return (
     <ShaderMount

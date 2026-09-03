@@ -13,11 +13,12 @@
 //   the faces     injected here from this origin, four files, and removed on
 //                 unmount so they are never fetched on a route that has no use
 //                 for them
-//   the ground    the halo, ONE field, and the grain, mounted once and living
-//                 across every route change rather than restarting on each
-//   the hand      one pointer listener. It feeds the field's parallax and
-//                 writes --px and --py on the root for anything leaning on the
-//                 hand in CSS
+//   the ground    wall/ground.jsx: the plasma, the halo, ONE field, and the
+//                 grain, mounted once and living across every route change
+//                 rather than restarting on each. The same component the wall
+//                 mounts, so the two surfaces are one room
+//   the intro     wall/Intro.jsx, once per tab, over the front door only. The
+//                 same two seconds the wall opens on
 //
 // The system is app/src/wall/wall.css. Nothing here invents a token, a radius,
 // a face or a duration.
@@ -30,7 +31,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import '../wall/wall.css'
 import '../signature/signature.css'
 import './main.css'
-import { mountField } from '../signature/field.js'
+import Ground from '../wall/ground.jsx'
+import Intro from '../wall/Intro.jsx'
 import { parse, href } from './router.js'
 import Hero from './Hero.jsx'
 import Place from './Place.jsx'
@@ -40,7 +42,6 @@ import Optout from './Optout.jsx'
 import Copy from './Copy.jsx'
 import Signin from './Signin.jsx'
 import NotFound from './NotFound.jsx'
-import Intro from './Intro.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
 
@@ -68,8 +69,6 @@ export default function MainApp() {
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
   const [who, setWho] = useState(ANON)
-  const root = useRef(null)
-  const canvas = useRef(null)
   const still = useRef(prefersReducedMotion()).current
 
   // ── the faces ──
@@ -109,33 +108,6 @@ export default function MainApp() {
     return () => { for (const el of added) el.remove() }
   }, [])   // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── the field ──
-  // One instance, mounted here, persisting across every route change. That is
-  // what makes it the room these screens are in rather than a background each
-  // of them owns a copy of.
-  useEffect(() => {
-    const cv = canvas.current
-    if (!cv) return
-    const field = mountField(cv)
-
-    function onMove(e) {
-      const x = (e.clientX / window.innerWidth) * 2 - 1
-      const y = (e.clientY / window.innerHeight) * 2 - 1
-      field.point && field.point(x, y)
-      const el = root.current
-      if (el && !still) {
-        el.style.setProperty('--px', x.toFixed(3))
-        el.style.setProperty('--py', y.toFixed(3))
-      }
-    }
-    if (!still) window.addEventListener('pointermove', onMove, { passive: true })
-
-    return () => {
-      window.removeEventListener('pointermove', onMove)
-      field.stop && field.stop()
-    }
-  }, [still])
-
   // ── who this is ──
   // Asked once. Somebody who proved their handle on the wall, or their campus
   // address there, arrives here already known: one row, one session, both
@@ -170,12 +142,8 @@ export default function MainApp() {
   const shared = { go, who, refreshWho, still }
 
   return (
-    <div className="wl-root sg-root mn-root" ref={root}>
-      <div className="wl-ground">
-        <div className="wl-halo" />
-        <canvas ref={canvas} className="wl-starfield sg-field" aria-hidden="true" />
-        <div className="wl-grain" />
-      </div>
+    <div className="wl-root sg-root mn-root">
+      <Ground still={still} />
 
       {/* Nothing is mounted under the intro until it starts to lift, and then
           the hero is: its own entrance runs while the black is still leaving,

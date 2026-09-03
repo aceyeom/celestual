@@ -144,6 +144,13 @@
    the halo, the field, the grain. */
 .wl-ground { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
+/* The plasma (ground.jsx). Two colours, both of them the void, a slow warp of
+   noise between them rendered through an ordered dither, so the dark has a
+   current in it rather than being a flat fill. It is the layer under the
+   halo: the halo is the light in the room and this is the room's own wall. */
+.wl-dither { position: absolute; inset: 0; }
+.wl-dither canvas { display: block; width: 100%; height: 100%; }
+
 /* The poster's light source: one enormous off-centre warm halo, low enough in
    opacity that it is felt rather than seen. It is what stops the void reading
    as #000 with things on it. */
@@ -349,6 +356,17 @@
 /* a size, declared after the roles so it wins over whatever min-height and
    font-size the role set */
 .wl-pill.is-wide { width: 100%; min-height: 50px; padding: 0 22px; font-size: 15px; }
+
+/* ── lit ──
+   The running light on the capsule (parts.jsx `Light`, and the rules under
+   `.wl-light` below). The fill moves onto the plate so the light can run
+   under it, and every state the fill had, the plate has. */
+.wl-pill.is-lit { position: relative; isolation: isolate; background: none; }
+.wl-pill.is-lit > :not(.wl-light) { position: relative; z-index: 2; }
+.wl-pill.is-light.is-lit:hover:not(:disabled) { background: none; }
+.wl-pill.is-light.is-lit:hover:not(:disabled) .wl-plate { background: #FFFDF8; }
+.wl-pill.is-light.is-lit:disabled { background: none; }
+.wl-pill.is-light.is-lit:disabled .wl-plate { background: rgba(244, 241, 234, 0.13); }
 
 /* ═══ ICONS ════════════════════════════════════════════════════════════════ */
 .wl-icon { display: block; }
@@ -720,18 +738,35 @@
    beside it stays ash, and the mark alone is chalk at all times, one step
    larger than the glyphs it sits beside. */
 .wl-brand {
-  display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 0;
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 0;
   color: var(--ash);
+  text-decoration: none;
   transition: color 200ms var(--ease);
 }
 .wl-brand:hover { color: var(--chalk); }
 .wl-brand .wl-spark { color: currentColor; }
+.wl-brand > .wl-icon { margin-right: -2px; }
 .wl-brand-mark {
   color: var(--chalk);
   /* a hair of lift off the ground, so 26px of flat white does not read as a
      sticker sitting on the page */
   filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18));
 }
+/* the name, beside the mark, on every bar. The lockup's own proportions: the
+   mark is 1.13 times the word's size and the word is lifted a hair, because a
+   serif's optical centre sits below its cap line. It is chalk like the mark
+   and unlike the row it sits in, because between them they are the one thing
+   on the screen that says which product this is. */
+.wl-brand-word {
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 22px; line-height: 1; letter-spacing: var(--track-display);
+  color: var(--chalk); white-space: nowrap;
+  transform: translateY(-0.03em);
+}
+/* the narrowest phones keep the mark and give the word back: three glyphs
+   and a chip on the right want the room */
+@media (max-width: 359px) { .wl-brand-word { display: none; } }
 
 /* The reference puts an unread dot on its avatar, and this build had one: a
    pulsing ember on the account's own mark whenever a mutual existed. It is
@@ -767,6 +802,10 @@
    would otherwise leave a strip of void under a gradient that is supposed to
    run off the screen */
 .wl-wallpage, .wl-core { padding-bottom: 0; }
+/* the foot of the site, under a docked page: the same column, no height of
+   its own to fill, and the dock above it stays with the page it belongs to */
+.wl-page.is-foot { min-height: 0; padding-top: 0; padding-bottom: 0; }
+.wl-page.is-foot .wl-colophon { border-top-color: var(--hair-soft); }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
 .wl-mast { position: relative; padding: 26px 0 30px; flex: 0 0 auto; }
@@ -1604,6 +1643,7 @@
     margin: 0; padding: 0;
     max-width: 380px;
   }
+
   /* the gradient exists to hide content scrolling under the dock, and on a
      spread the dock has its own column with nothing behind it — so it is a
      grey rectangle with a visible edge and nothing else. It goes. */
@@ -1731,174 +1771,51 @@
   .wl-wall { padding-top: 52px; }
 }
 
-/* ═══ THE OVERTURE ═════════════════════════════════════════════════════════
-   The first second, on black, once per tab.
-
-   ── the ground ──
-   Pure black, and it is the only pure black in the build. Everywhere else
-   #000 is refused on principle — a screen that is off rather than a room with
-   the light down — but that is exactly what this is: there is nothing in this
-   room yet, and the void it dissolves into is three values up from here, so
-   the change of ground reads as the light coming on rather than as a cut.
-
-   ── the circuit ──
-   A 24-unit stroke runs along the band's own centreline inside a mask, with
-   the dash offset driven from 100 to 0. Two things follow from doing it that
-   way rather than by fading the ring up. The reveal travels the route the ring
-   ACTUALLY takes, because the mask path and the ring come out of the same
-   constants in art.jsx and cannot drift; and the band arrives with its own
-   varying width already on it, so what draws is the mark rather than a stroke
-   pretending to be one.
-
-   ── the slide ──
-   The mark starts alone on the optical centre. When the name comes, the whole
-   lockup slides left by exactly half the word — measured, in JS, after the
-   Didone has actually landed — so the composition is centred at the start, at
-   the end, and at every frame in between. It is the single most expensive
-   -looking move here and it is one transform on one element.
-
-   Everything that animates is transform, opacity or a dash offset. Nothing in
-   this sequence touches layout after the first frame. */
-.wl-ov {
-  position: fixed; inset: 0; z-index: 90;
-  display: grid; place-items: center;
-  pointer-events: none;
-  padding: 24px;
+/* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
+   parts.jsx `SiteFoot`, under the front door and under the wall, and restated
+   in legal.css under the legal pages. The lockup and the sentence, three
+   short columns, and the company's line. It is set quiet: ash on the void, a
+   hairline over it, the labels in the identifier face, because a footer is
+   the one block on a page that is for the person who went looking for it. */
+.wl-colophon {
+  flex: 0 0 auto;
+  display: grid; grid-template-columns: 1fr; gap: 24px;
+  padding: 26px 0 calc(22px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--hair);
 }
-.wl-ov-veil {
-  position: absolute; inset: 0;
-  background: #000;
-  opacity: 1;
-  transition: opacity 560ms var(--ease-out);
+.wl-colophon-brand { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wl-colophon-brand .wl-brand { padding: 0; align-self: flex-start; }
+.wl-colophon-line {
+  margin: 0; max-width: 30ch;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 15px; line-height: 1.5; color: var(--ash);
 }
-.wl-ov.is-at5 .wl-ov-veil { opacity: 0; }
-
-.wl-ov-stage {
-  position: relative;
-  display: grid; place-items: center;
-  transition: transform 560ms var(--ease-out), opacity 440ms var(--ease-out);
-  will-change: transform, opacity;
+.wl-colophon-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 16px; }
+.wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.wl-colophon-col .wl-label { margin-bottom: 2px; }
+.wl-colophon-col a, .wl-colophon-col address {
+  font-family: var(--f-util); font-size: 13px; line-height: 1.45; font-style: normal;
+  color: var(--ash); text-decoration: none;
+  transition: color 200ms var(--ease);
 }
-/* the lift — the lockup leaves upward and slightly toward the viewer while the
-   black goes with it, so the two are one movement and not a fade over a fade */
-.wl-ov.is-at5 .wl-ov-stage { transform: translate3d(0, -14px, 0) scale(1.055); opacity: 0; }
-
-/* the one bright thing on the screen, and it is a luminance rather than a
-   colour — the same rule the rest of the build holds to, spent here on the
-   only object there is */
-.wl-ov-bloom {
-  position: absolute; left: 50%; top: 50%;
-  width: 460px; height: 460px; max-width: 130vw; max-height: 130vw;
-  transform: translate3d(-50%, -50%, 0) scale(0.6);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%,
-    rgba(255, 244, 228, 0.16) 0%, rgba(255, 244, 228, 0.05) 34%, rgba(255, 244, 228, 0) 70%);
-  opacity: 0;
-  transition: opacity 900ms var(--ease), transform 1200ms var(--ease);
+.wl-colophon-col a:hover { color: var(--chalk); }
+/* an address and a number are identifiers, so they keep the identifier face */
+.wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.01em; }
+.wl-colophon-foot {
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+  padding-top: 16px; border-top: 1px solid var(--hair-soft);
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.5;
+  color: var(--ash-dim);
 }
-.wl-ov.is-at2 .wl-ov-bloom { opacity: 0.5; transform: translate3d(-50%, -50%, 0) scale(0.86); }
-.wl-ov.is-at3 .wl-ov-bloom,
-.wl-ov.is-at4 .wl-ov-bloom { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
-.wl-ov.is-at5 .wl-ov-bloom { opacity: 0.34; transform: translate3d(-50%, -50%, 0) scale(1.14); }
-
-.wl-ov-lock {
-  position: relative;
-  display: flex; align-items: center;
-  column-gap: 0.34em;
-  font-size: clamp(34px, 11.4vw, 62px);
-  color: var(--chalk);
-  /* the mark alone, on the optical centre. --shift is half the word plus the
-     gap, measured once the real face has landed. */
-  transform: translate3d(var(--shift, 0px), 0, 0);
-  transition: transform 720ms var(--ease);
-  will-change: transform;
+/* a narrow phone runs the three columns as two, with the contact block under */
+@media (max-width: 479px) {
+  .wl-colophon-cols { grid-template-columns: 1fr 1fr; }
+  .wl-colophon-col.is-contact { grid-column: 1 / -1; }
 }
-.wl-ov.is-at3 .wl-ov-lock,
-.wl-ov.is-at4 .wl-ov-lock,
-.wl-ov.is-at5 .wl-ov-lock { transform: none; }
-
-/* ── the mark ── */
-.wl-ov-mark {
-  width: 1.3em; height: 1.3em;
-  opacity: 0;
-  transform: scale(0.72);
-  transition: opacity 520ms var(--ease), transform 760ms var(--ease);
-}
-.wl-ov.is-at1 .wl-ov-mark { opacity: 1; transform: scale(1); }
-.wl-ov.is-at2 .wl-ov-mark,
-.wl-ov.is-at3 .wl-ov-mark,
-.wl-ov.is-at4 .wl-ov-mark,
-.wl-ov.is-at5 .wl-ov-mark { opacity: 1; transform: none; }
-
-/* the circuit. `pathLength=100` normalises the dash to a percentage, so the
-   number here is a share of the orbit rather than a length that would have to
-   be recomputed if the ring's radius ever moved. */
-.wl-ecl-sweep { transition: stroke-dashoffset 900ms cubic-bezier(0.33, 0.02, 0.15, 1); }
-.wl-ov.is-at1 .wl-ecl-sweep,
-.wl-ov.is-at2 .wl-ecl-sweep,
-.wl-ov.is-at3 .wl-ecl-sweep,
-.wl-ov.is-at4 .wl-ecl-sweep,
-.wl-ov.is-at5 .wl-ecl-sweep { stroke-dashoffset: 0; }
-
-/* the star arrives as the circuit closes behind it: up off nothing, with a few
-   degrees bleeding out. A shape that settles reads as an object; a shape that
-   fades in reads as an image of one. */
-.wl-ov-mark .wl-ecl-star {
-  transform-origin: 50px 50px;
-  opacity: 0; transform: scale(0.3) rotate(-26deg);
-  transition: opacity 380ms var(--ease), transform 640ms var(--ease);
-}
-.wl-ov.is-at2 .wl-ecl-star,
-.wl-ov.is-at3 .wl-ecl-star,
-.wl-ov.is-at4 .wl-ecl-star,
-.wl-ov.is-at5 .wl-ecl-star { opacity: 1; transform: none; }
-
-/* ── the name ── */
-.wl-ov-word {
-  position: relative;
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  letter-spacing: var(--track-display); line-height: 1; white-space: nowrap;
-  transform: translateY(-0.03em);
-  /* a wipe, not a fade. The word is uncovered from the mark outward, which is
-     the direction it would be written in. */
-  clip-path: inset(0 100% 0 -0.1em);
-  opacity: 0;
-  /* 560ms, not 680. The wipe has to LAND on beat 4 rather than finish after
-     it — the bloom reaching full and the word arriving whole are one event,
-     and everything after them is the hold. */
-  transition: clip-path 560ms var(--ease), opacity 180ms linear;
-}
-.wl-ov.is-at3 .wl-ov-word,
-.wl-ov.is-at4 .wl-ov-word,
-.wl-ov.is-at5 .wl-ov-word { clip-path: inset(0 -0.12em 0 -0.1em); opacity: 1; }
-
-/* the sheen rides the wipe's leading edge. It is what stops the reveal reading
-   as a rectangle sliding off the word: a light source travels, and the letters
-   are lit as it passes them. */
-.wl-ov-sheen {
-  position: absolute; top: -0.24em; bottom: -0.24em; left: -0.6em; width: 0.6em;
-  pointer-events: none; opacity: 0;
-  background: linear-gradient(90deg,
-    rgba(255, 244, 228, 0) 0%, rgba(255, 244, 228, 0.85) 52%, rgba(255, 244, 228, 0) 100%);
-  filter: blur(6px);
-}
-.wl-ov.is-at3 .wl-ov-sheen,
-.wl-ov.is-at4 .wl-ov-sheen { animation: wl-sheen 620ms var(--ease) both; }
-@keyframes wl-sheen {
-  0%   { opacity: 0;    transform: translateX(0); }
-  22%  { opacity: 0.85; }
-  78%  { opacity: 0.5; }
-  100% { opacity: 0;    transform: translateX(calc(100% + 8em)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* the sequence still ARRIVES — it simply does not travel to get there. The
-     JS starts it assembled and the veil is the only thing that moves. */
-  .wl-root ~ .wl-ov .wl-ov-stage, .wl-ov .wl-ov-stage { transform: none; }
-  .wl-ov .wl-ov-lock { transform: none; }
-  .wl-ov .wl-ov-sheen { display: none; }
-  .wl-ov .wl-ov-veil { transition-duration: 300ms; }
+@media (min-width: 900px) {
+  .wl-colophon { grid-template-columns: minmax(240px, 1fr) auto; column-gap: 64px; align-items: start; padding-top: 30px; }
+  .wl-colophon-cols { gap: 20px 48px; }
+  .wl-colophon-foot { grid-column: 1 / -1; }
 }
 
 /* ═══ THE REDACTION ════════════════════════════════════════════════════════
@@ -2266,35 +2183,65 @@
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: none; }
 }
-.wl-card > * { position: relative; z-index: 2; }
+.wl-card > :not(.wl-light) { position: relative; z-index: 2; }
 
-/* the light, behind the plate, on its way round. `offset-path` is the card's
-   own edge, written by the component once it is measured. */
-.wl-card-light {
-  position: absolute; left: 0; top: 0; z-index: 0;
-  width: var(--light-w); height: var(--light-w); border-radius: 50%;
+/* ── the running light ──────────────────────────────────────────────────────
+   parts.jsx `Light`. A point of light running round the host's own edge, on
+   an `offset-path` the component writes from the host's measured size and
+   corner radius. The host is `position: relative; isolation: isolate` and its
+   other children sit above the light (`> :not(.wl-light)`), so the light is
+   the ground and the content is the content.
+
+   Two grounds. `is-star` is the card's: a dark plate with star shaped holes
+   under a hairline, clipped to the frame, with the light behind it twinkling
+   through. `is-chalk` is the pill's: an opaque chalk plate, so the light
+   shows AROUND the capsule as a soft warm halo and nothing else changes. */
+.wl-light {
+  position: absolute; inset: 0; z-index: 0;
+  border-radius: inherit; pointer-events: none;
+}
+.wl-light.is-star { overflow: hidden; }
+.wl-light-beam {
+  position: absolute; left: 0; top: 0;
+  width: var(--light-w, 132px); height: var(--light-w, 132px); border-radius: 50%;
   background: radial-gradient(circle at center,
-    var(--light) 0%, rgba(244, 241, 234, 0.32) 22%, rgba(244, 241, 234, 0) 54%);
+    var(--light, rgba(244, 241, 234, 0.95)) 0%, rgba(244, 241, 234, 0.32) 22%, rgba(244, 241, 234, 0) 54%);
   offset-path: var(--path, path('M 0 0 H 320 V 58 H 0 V 0'));
   offset-distance: 0%; offset-rotate: 0deg;
-  opacity: 0; pointer-events: none;
+  opacity: 0;
   transition: opacity 480ms var(--ease);
 }
-.wl-card.is-looking .wl-card-light { opacity: 1; animation: wl-card-run 2800ms linear infinite; }
-@keyframes wl-card-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.wl-light.is-on .wl-light-beam {
+  opacity: 1;
+  animation: wl-light-run var(--light-t, 2800ms) linear infinite;
+}
+@keyframes wl-light-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
 
-/* the plate: a hairline, and a dark ground with the holes cut in it */
-.wl-card-plate {
+/* the star plate: a hairline, and a dark ground with the holes cut in it */
+.wl-plate {
   position: absolute; inset: 0; z-index: 1;
   border-radius: inherit; overflow: hidden;
-  border: var(--bw) solid var(--hair);
   pointer-events: none;
-  transition: border-color 240ms var(--ease);
+  transition: border-color 240ms var(--ease), background 220ms var(--ease);
 }
-.wl-card-plate svg {
+.wl-plate.is-star { border: var(--bw, 1px) solid var(--hair); }
+.wl-plate.is-star svg {
   position: absolute; inset: 0; width: 100%; height: 100%; display: block;
   color: var(--void-1);
   transition: color 240ms var(--ease);
+}
+/* the chalk plate: the pill's fill, as a layer, so the light can pass under
+   it. The halo is warm and soft, at a third of the card light's strength,
+   because it sits beside the brightest object on the screen. */
+.wl-plate.is-chalk { background: var(--chalk); }
+.wl-light.is-chalk {
+  --light-w: 92px;
+  --light-t: 5200ms;
+}
+.wl-light.is-chalk .wl-light-beam {
+  background: radial-gradient(circle at center,
+    rgba(255, 244, 228, 0.42) 0%, rgba(255, 244, 228, 0.12) 32%, rgba(255, 244, 228, 0) 60%);
+  filter: blur(3px);
 }
 
 .wl-card-disc {
@@ -2352,8 +2299,8 @@
 .wl-card.is-looking .wl-card-go { opacity: 0; }
 .wl-card.is-pick { cursor: pointer; }
 .wl-card.is-pick:disabled { cursor: default; }
-.wl-card.is-pick:not(:disabled):hover .wl-card-plate { border-color: rgba(244, 241, 234, 0.24); }
-.wl-card.is-pick:not(:disabled):hover .wl-card-plate svg { color: var(--void-2); }
+.wl-card.is-pick:not(:disabled):hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); }
+.wl-card.is-pick:not(:disabled):hover .wl-plate svg { color: var(--void-2); }
 .wl-card.is-pick:not(:disabled):hover .wl-card-go { transform: translateX(4px); color: var(--chalk); }
 .wl-card.is-pick:active:not(:disabled) { transform: scale(0.99); }
 
@@ -2363,7 +2310,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wl-card { animation: none; }
-  .wl-card-light { animation: none !important; opacity: 0.35; offset-distance: 50%; }
+  .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }
 }
 

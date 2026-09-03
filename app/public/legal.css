@@ -25,6 +25,7 @@
   --hair: rgba(244, 241, 234, 0.09);
   --accent: #74C7DE;
   --f-display: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --f-letter: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --f-util: 'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-id: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 }
@@ -53,14 +54,18 @@ body {
 a { color: var(--chalk); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { color: var(--accent); }
 
+/* the brand: the same lockup every bar in the app carries (wall.css
+   `.wl-brand`), the mark at 26px and the name in the display face at 22px,
+   lifted a hair because a serif's optical centre sits below its cap line */
 .brand {
-  display: inline-flex; align-items: center; gap: 9px;
-  font-family: var(--f-util); font-size: 12px; font-weight: 500;
-  letter-spacing: 3.4px; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--f-display); font-weight: 500; font-size: 22px;
+  line-height: 1; letter-spacing: -0.022em;
   color: var(--chalk); text-decoration: none;
 }
-.brand img { display: block; width: 19px; height: 19px; }
-.brand:hover { color: var(--accent); }
+.brand img { display: block; width: 26px; height: 26px; filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18)); }
+.brand span { transform: translateY(-0.03em); }
+.brand:hover { color: var(--chalk); }
 
 .rule { height: 1px; background: var(--hair); margin: 26px 0 0; }
 
@@ -109,10 +114,35 @@ em { font-style: normal; color: var(--chalk); }
 .act p { margin: 0; color: var(--chalk); }
 .act p + p { margin-top: 10px; }
 
-footer {
-  margin: 56px 0 0; padding-top: 22px; border-top: 1px solid var(--hair);
-  font-family: var(--f-id); font-size: 11.5px; letter-spacing: 0.05em;
+/* ── the foot of the site ──
+   The same block the front door and the wall end on (wall.css
+   `.wl-colophon`), restated here because a static page cannot import it: the
+   lockup and the sentence, three short columns, and the company's line. */
+.colophon {
+  margin: 56px 0 0; padding: 26px 0 0; border-top: 1px solid var(--hair);
+  display: grid; grid-template-columns: 1fr; gap: 24px;
+}
+.colophon-brand { display: flex; flex-direction: column; gap: 10px; }
+.colophon-line {
+  margin: 0; max-width: 30ch;
+  font-family: var(--f-letter); font-size: 15px; line-height: 1.5; color: var(--ash);
+}
+.colophon-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 16px; }
+.colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.colophon-col h2 { margin: 0 0 2px; }
+.colophon-col a, .colophon-col address {
+  font-family: var(--f-util); font-size: 13px; line-height: 1.45; font-style: normal;
+  color: var(--ash); text-decoration: none;
+}
+.colophon-col a:hover { color: var(--chalk); }
+.colophon-col a.id { font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.01em; }
+.colophon-foot {
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+  padding-top: 16px; border-top: 1px solid rgba(244, 241, 234, 0.05);
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.5;
   color: var(--ash-dim);
 }
-footer a { color: var(--ash); }
-footer nav { margin: 0 0 10px; display: flex; gap: 16px; flex-wrap: wrap; }
+@media (max-width: 479px) {
+  .colophon-cols { grid-template-columns: 1fr 1fr; }
+  .colophon-col.is-contact { grid-column: 1 / -1; }
+}

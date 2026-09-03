@@ -81,7 +81,7 @@
 // names in ragged rows, but the composition this was before it moved.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, TopBar, Icon } from '../parts.jsx'
+import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
 import { Sparkle, Halftone } from '../art.jsx'
 import { wall, liveCount, atHandle, rand } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -478,6 +478,7 @@ export default function Wall({ go, reduce, rev }) {
   }
 
   return (
+    <>
     <div className={`wl-page wl-wallpage${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}`}>
       <TopBar go={go} at="wall" onMark={() => window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })} />
 
@@ -603,5 +604,14 @@ export default function Wall({ go, reduce, rev }) {
         </div>
       </div>
     </div>
+
+    {/* ── the foot of the site ──
+        Under the wall, in its own column, so the wall keeps the whole first
+        screen and the dock keeps the bottom of it. The same block the front
+        door ends on, with the company on it. */}
+    <div className="wl-page is-foot">
+      <SiteFoot />
+    </div>
+    </>
   )
 }

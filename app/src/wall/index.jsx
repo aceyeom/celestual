@@ -16,11 +16,14 @@
 //
 //   · the faces      injected here and removed on unmount, so four extra font
 //                    files are never fetched on a production route
-//   · the field      ONE instance, mounted here, persisting across every route
-//                    change. That is what makes it connective tissue instead
+//   · the ground     ONE instance, mounted here, persisting across every route
+//                    change (ground.jsx: the plasma, the halo, the field, the
+//                    grain). That is what makes it connective tissue instead
 //                    of a background image that eight screens each own a copy
-//                    of — and it is why it can decelerate to a stop between
-//                    two screens rather than restarting on each one.
+//                    of, and it is why the field can decelerate to a stop
+//                    between two screens rather than restarting on each one.
+//                    It is the same component Main mounts, so the wall and the
+//                    front door are one room.
 //   · the cut        160ms down, 380ms up, no slide and no crossfade
 //   · the scan       ?s= is read once, attached to the session, and scrubbed
 //                    out of the URL
@@ -36,11 +39,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS, BASE } from './router.js'
-import { Field, eclipticSVG, INK, CHALK } from './art.jsx'
+import { eclipticSVG, INK, CHALK } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
+import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { liveCount, revision, subscribe, loadWall } from './data.js'
+import { revision, subscribe, loadWall } from './data.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
 
@@ -54,7 +58,7 @@ import Core from './screens/Core.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
-import Overture from './Overture.jsx'
+import Intro from './Intro.jsx'
 
 // The four faces, from this origin. They were fetched from Google until Phase
 // 6b, which meant the wall's type depended on a third party being reachable and
@@ -79,7 +83,7 @@ const FIELD = {
   report: 'still',   // and where something is coming down
 }
 
-// The overture plays once per tab and never again. It is held here rather than
+// The intro plays once per tab and never again. It is held here rather than
 // in the store because it is about THIS load: a person who refreshes has
 // decided to start over and should get the whole thing, and a person walking
 // back from a letter should not sit through a logo to do it.
@@ -87,8 +91,8 @@ let BOOTED = false
 
 export default function WallApp() {
   const [route, setRoute] = useState(() => parse(window.location.pathname))
-  // 0 the overture has the screen · 1 the wall is mounted and cascading under
-  // a black that is on its way out · 2 the overture is gone
+  // 0 the intro has the screen · 1 the wall is mounted and cascading under
+  // a black that is on its way out · 2 the intro is gone
   const [boot, setBoot] = useState(() => (BOOTED ? 2 : 0))
   const [override, setOverride] = useState(null)
   const [veil, setVeil] = useState(false)
@@ -176,8 +180,8 @@ export default function WallApp() {
     }
   }, [])
 
-  // The field lights once, under the wall's opening cascade — and it starts
-  // while the overture still has the screen, behind an opaque black, so its
+  // The field lights once, under the wall's opening cascade, and it starts
+  // while the intro still has the screen, behind an opaque black, so its
   // 1600ms fade is finished by the time that black lifts off it. A sky that
   // fades up AFTER the reveal is a second animation competing with the reveal
   // for the same frames.
@@ -249,7 +253,7 @@ export default function WallApp() {
   if (route.name === 'remove') sheet = <Remove handle={route.id} {...shared} />
   if (route.name === 'report') sheet = <Report id={route.id} {...shared} />
 
-  let base = null
+  let base
   switch (route.name) {
     case 'posted': base = <Posted {...shared} />; break
     case 'join':   base = <Join {...shared} />; break
@@ -259,13 +263,9 @@ export default function WallApp() {
 
   return (
     <div className="wl-root" data-route={route.name}>
-      <div className="wl-ground" aria-hidden="true">
-        <div className="wl-halo" />
-        <Field count={Math.min(120, liveCount() + 24)} mode={mode} hidden={!lit} />
-        <div className="wl-grain" />
-      </div>
+      <Ground pace={mode} lit={lit} still={reduce} />
 
-      {/* Nothing is mounted under the overture until it starts to lift, and
+      {/* Nothing is mounted under the intro until it starts to lift, and
           then everything is: the wall's own cascade runs while the black is
           still on its way out, so the two read as one movement rather than as
           a logo followed by a page. */}
@@ -278,13 +278,7 @@ export default function WallApp() {
         </>
       )}
 
-      {boot < 2 && (
-        <Overture
-          reduce={reduce}
-          onReveal={handOff}
-          onDone={settle}
-        />
-      )}
+      {boot < 2 && <Intro reduce={reduce} onReveal={handOff} onDone={settle} />}
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>

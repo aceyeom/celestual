@@ -6,11 +6,12 @@
    token from app/src/wall/wall.css or a length. Nothing here names a colour, a
    face, a radius or a curve of its own, which is design/DESIGN.md section 5.
 
-   ── one viewport ──────────────────────────────────────────────────────────
-   The page is the height of the screen and it does not scroll. The bar at
-   the top, the foot at the bottom, and between them the type block and the
-   object, which give ground to each other rather than to a scrollbar: on a
-   short phone the object goes before the type does. ═══════════════════════ */
+   ── one viewport, and the foot under it ───────────────────────────────────
+   The page is at least the height of the screen. The bar at the top, and
+   between it and the foot the type block and the object, which give ground to
+   each other rather than to a scrollbar: on a short phone the object goes
+   before the type does. The foot of the site sits under all of it, and on a
+   phone that is under the fold, which is where a foot belongs. ═════════════ */
 
 .hm-page {
   position: relative;
@@ -19,11 +20,20 @@
   max-width: 460px;
   margin: 0 auto;
   padding: 0 22px 0;
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 @media (max-width: 359px) { .hm-page { padding: 0 16px; } }
+
+/* The fold: the bar and the hero, sharing exactly the height of the screen,
+   and the foot under it. On a phone that puts the foot under the fold, which
+   is where a foot belongs; on a desktop the fold gives back a little of the
+   screen so the foot's first line is in view and says there is one. */
+.hm-fold {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
 
 /* One entrance, one keyframe, and the delay is the only thing that varies, so
    the sequence of the screen can be read off its JSX in order. */
@@ -33,8 +43,9 @@
 }
 
 /* ═══ THE BAR ══════════════════════════════════════════════════════════════
-   The word on the left, because the front door is the one screen that has to
-   say the name. Two destinations on the right and the second is you. */
+   The brand on the left, the same lockup as every other bar in the product
+   (wall.css `.wl-brand`). Two destinations on the right and the second is
+   you. */
 .hm-top {
   flex: 0 0 auto;
   display: flex;
@@ -43,23 +54,7 @@
   gap: 14px;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 0 8px;
 }
-.hm-home {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 0;
-  color: var(--chalk);
-  text-decoration: none;
-}
-.hm-word {
-  font-family: var(--f-display);
-  font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: var(--track-display, -0.018em);
-  color: var(--chalk);
-  transform: translateY(-0.03em);
-}
+.hm-home { padding-left: 0; }
 .hm-nav { display: flex; align-items: center; gap: 2px; }
 .hm-navlink {
   padding: 8px 10px;
@@ -84,7 +79,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: clamp(12px, 3vh, 34px) 0 14px;
+  padding: clamp(12px, 3vh, 34px) 0 22px;
 }
 .hm-say { flex: 0 0 auto; display: flex; flex-direction: column; }
 .hm-title { text-wrap: initial; }
@@ -207,21 +202,9 @@
 /* A short screen keeps the type and lets the object go. */
 @media (max-width: 899px) and (max-height: 700px) { .hm-stage { display: none; } }
 
-/* ═══ THE FOOT ═════════════════════════════════════════════════════════════ */
-.hm-foot {
-  flex: 0 0 auto;
-  padding: 14px 0 calc(18px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--hair);
-}
-.hm-foot-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
-.hm-foot-links a {
-  font-family: var(--f-util);
-  font-size: 12.5px;
-  color: var(--ash);
-  text-decoration: none;
-  transition: color 200ms var(--ease);
-}
-.hm-foot-links a:hover { color: var(--chalk); }
+/* ═══ THE FOOT ═════════════════════════════════════════════════════════════
+   wall.css `.wl-colophon`. It enters last, after the object. */
+.hm-page > .wl-colophon { --d: 520ms; margin-top: 8px; }
 
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
    The column stops being a column and the object moves beside the type. */
@@ -233,7 +216,7 @@
     flex-direction: row;
     align-items: center;
     gap: 56px;
-    padding: 0 0 20px;
+    padding: 0 0 34px;
   }
   .hm-say { flex: 1 1 0; min-width: 0; max-width: 600px; }
   /* Two lines at the width the column actually has, which is the page less
@@ -246,7 +229,42 @@
   .hm-scene .wl-paper { min-height: 168px; padding: 17px 18px 18px; }
   .hm-scene .wl-prose { font-size: 15px; }
 
-  .hm-foot { padding-top: 18px; }
+  .hm-fold { min-height: calc(100dvh - 190px); }
+  .hm-page > .wl-colophon { margin-top: 0; }
+}
+
+/* ═══ SIDEWAYS ═════════════════════════════════════════════════════════════
+   A phone on its side has about 350px of height and plenty of width, which
+   is the wall's own case (wall.css, the same query) and it gets the same
+   answer: the spread, early, and every vertical measure that was buying
+   atmosphere gives its space back. The object comes back, beside the type
+   rather than under it, at the size the height allows. */
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .hm-page { max-width: none; padding: 0 26px; }
+  .hm-fold { min-height: 100dvh; }
+  .hm-top { padding: calc(10px + env(safe-area-inset-top, 0px)) 0 4px; }
+  .hm-hero {
+    flex-direction: row;
+    align-items: center;
+    gap: 36px;
+    padding: 4px 0 14px;
+  }
+  .hm-say { flex: 1 1 0; min-width: 0; max-width: 520px; }
+  .hm-title.wl-display.is-xl { font-size: clamp(24px, 3.6vw, 32px); }
+  .hm-mech { margin-top: 10px; font-size: 15px; max-width: 40ch; }
+  .hm-ask { margin-top: 12px; gap: 8px; }
+  .hm-ask .wl-field.is-lg input, .hm-ask .wl-field.is-lg .wl-at { font-size: 22px; }
+  .hm-ask-row .wl-pill.is-light { min-height: 40px; padding: 0 18px; font-size: 13.5px; }
+  .hm-facts { margin-top: 10px; }
+  .hm-stage {
+    display: flex; flex: 0 0 auto; width: min(38vw, 340px);
+    margin: 0; padding: 0; overflow: visible;
+  }
+  .hm-scene { padding: 42px 6px 14px; column-gap: 8px; }
+  .hm-scene .wl-paper { min-height: 112px; padding: 11px 12px 12px; }
+  .hm-scene .wl-prose { font-size: 12px; line-height: 1.4; }
+  .hm-scene-mark { transform: translate(-50%, -30%) scale(0.8); }
+  .hm-scene.is-shut .hm-scene-mark { transform: translate(-50%, -20%) scale(0.72); }
 }
 
 /* ═══ REDUCED MOTION ═══════════════════════════════════════════════════════
