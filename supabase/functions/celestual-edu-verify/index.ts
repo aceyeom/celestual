@@ -11,13 +11,10 @@
 //        school's domain, rate-limit (per address AND per IP), mint a 4-digit
 //        code, store ONLY its SHA-256 hash, email the code via Resend, and
 //        return a random correlation `token`.
-//        `demo: true` is the app's sandbox flag. The sandbox's @gmail.com
-//        carve-out is ON BY DEFAULT for demo requests — the product owner has
-//        no .edu inbox to test with — but it still requires `demo:true` on the
-//        request; a non-demo request NEVER accepts gmail, no matter the env
-//        var. An operator can explicitly turn the carve-out off server-side
-//        with CELESTUAL_SANDBOX_GMAIL=0, which makes even demo requests need a
-//        genuine school match.
+//        `demo: true` was the retired sandbox's flag. Its @gmail.com carve-out
+//        is OFF unless CELESTUAL_SANDBOX_GMAIL=1 is set on the function, and
+//        even then it needs `demo:true` on the request; a non-demo request
+//        NEVER accepts gmail. Nothing in the product sends `demo` any more.
 //        Response: { ok:true, token, expires_at } | { ok:false, error }
 //   { action:'verify', token, code, session? } → compare the code to the stored
 //        hash (never returning it); on a match mark the row verified, bind the
@@ -48,13 +45,13 @@ import * as mail from '../_shared/mail.ts';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const FROM = Deno.env.get('CELESTUAL_FROM_EMAIL') ?? 'celestual <onboarding@resend.dev>';
 const SITE = Deno.env.get('CELESTUAL_SITE_URL') ?? 'https://celestual.us';
-// Operator opt-OUT for the sandbox's @gmail.com carve-out. ON by default, so
-// demo requests work out of the box without an .edu inbox to test with; set
-// CELESTUAL_SANDBOX_GMAIL=0 to disable it. HONEST CAVEAT: `demo` is client
-// input, so while this default stands a crafted `demo:true` request could use
-// a gmail address against the real gate too — acceptable for the pre-launch
-// sandbox this serves, but set CELESTUAL_SANDBOX_GMAIL=0 before a real launch.
-const SANDBOX_GMAIL = Deno.env.get('CELESTUAL_SANDBOX_GMAIL') !== '0';
+// The sandbox's @gmail.com carve-out, OFF unless CELESTUAL_SANDBOX_GMAIL=1.
+// It defaulted to on, and `demo` is client input: one crafted POST with
+// `demo:true` and a gmail address verified as Berkeley against the real gate,
+// which is the whole gate. /demo is retired (Q16) and nothing in the product
+// sends `demo` any more, so the default is the safe one and a test rig that
+// needs the carve-out turns it on deliberately.
+const SANDBOX_GMAIL = Deno.env.get('CELESTUAL_SANDBOX_GMAIL') === '1';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,

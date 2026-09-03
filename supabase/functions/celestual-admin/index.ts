@@ -38,14 +38,18 @@
 // legacy verify_user still admits somebody by hand on the OLD layer, stamped
 // verified_via='manual', which is honest about what it is.
 //
-// The password: CELESTUAL_ADMIN_PASSWORD (Edge Function secret). It falls back
-// to the launch password so the desk works the moment this deploys; set the
-// secret to rotate it without a redeploy. Wrong tries are rate limited per IP.
+// The password: CELESTUAL_ADMIN_PASSWORD (Edge Function secret), and nothing
+// else. It used to fall back to a launch password written here in the source,
+// which meant the desk — every letter body, every campus address, every report
+// — opened to anybody who had read a commit of this repository. With the secret
+// unset the desk refuses everyone and says why in the log. Set the secret
+// BEFORE deploying this version. Wrong tries are rate limited per IP.
 //
 // Deploy:  supabase functions deploy celestual-admin
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const ADMIN_PASSWORD = Deno.env.get('CELESTUAL_ADMIN_PASSWORD') || 'acedavid123';
+const ADMIN_PASSWORD = Deno.env.get('CELESTUAL_ADMIN_PASSWORD') || '';
+if (!ADMIN_PASSWORD) console.error('CELESTUAL_ADMIN_PASSWORD is not set: the desk is closed to everybody until it is');
 const FAILS_PER_IP_HOUR = 20;
 
 const supabase = createClient(
@@ -167,7 +171,7 @@ Deno.serve(async (req) => {
   // time relative to the password's content.
   const given = String(body.password || '');
   const okPassword =
-    given.length > 0 && (await sha256Hex(given)) === (await sha256Hex(ADMIN_PASSWORD));
+    ADMIN_PASSWORD.length > 0 && given.length > 0 && (await sha256Hex(given)) === (await sha256Hex(ADMIN_PASSWORD));
   if (!okPassword) {
     if (ip) {
       const sinceIso = new Date(Date.now() - 3600_000).toISOString();

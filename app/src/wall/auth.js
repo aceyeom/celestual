@@ -87,8 +87,14 @@ export function emailFault(raw) {
 // so there is nothing here that could check it and nothing here that should
 // try. This is the fail-fast that keeps an obviously wrong entry from costing a
 // round trip.
+//
+// FOUR digits. celestual-edu-verify mints four (`fourDigit()`) and refuses
+// anything else at verify (`code.length !== 4`), and docs/EDU-VERIFICATION.md
+// has said four since it was written. This read six, the gate's field cut the
+// entry off at six and the button stayed dead until six were typed — so the
+// code in the inbox could never be entered and nobody got through the wall.
 export function validCode(raw) {
-  return /^\d{6}$/.test(String(raw || '').replace(/\s+/g, ''))
+  return /^\d{4}$/.test(String(raw || '').replace(/\s+/g, ''))
 }
 
 // The server's last answer about this browser, kept so a screen can draw
@@ -183,6 +189,15 @@ export async function verifyHandle(handle, proof) {
   const h = normHandle(handle)
   if (!h || !proof) return { ok: false, error: 'invalid' }
   const out = await bindHandle({ handle: h, proof })
+  // The identity row is 0030's, and 0030 is not applied everywhere this runs.
+  // The proof is 0004's and it is what celestual_submit and celestual_my_pings
+  // actually check, so a database with no identity layer still verified this
+  // person: keep the proof, say so, and let the row catch up when it exists.
+  if (out.error === 'no_identity_layer') {
+    push('verified', h)
+    markVerified(h, proof)
+    return { ok: true, legacy: true }
+  }
   if (out.ok) {
     push('verified', h)
     // ── AND THE PROOF IS KEPT ──

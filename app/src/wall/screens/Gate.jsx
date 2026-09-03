@@ -67,9 +67,9 @@ function CodeField({ value, onChange, onSubmit }) {
     <div className="wl-code">
       <input
         className="wl-code-in" value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
-        aria-label="the six digit code" placeholder="000000"
+        aria-label="the four digit code" placeholder="0000"
         type="text" inputMode="numeric" autoComplete="one-time-code"
         autoCorrect="off" spellCheck="false" enterKeyHint="go"
       />
@@ -96,7 +96,7 @@ export default function Gate({ go, back }) {
 
   // ── the code goes out ──
   // celestual-edu-verify checks the address is at this campus's domain, mints a
-  // six digit code, stores only its hash, and mails it. The code rides the
+  // four digit code, stores only its hash, and mails it. The code rides the
   // subject line too, so the notification alone is enough to read it.
   const send = async () => {
     if (!ok || busy) return
@@ -216,7 +216,7 @@ export default function Gate({ go, back }) {
         <Display size="s" as="h2" id="wl-gate-h">
           {step === 0
             ? (registering ? <>The wall is<br />for Berkeley.</> : <>Come back in.</>)
-            : <>Six digits, and<br />you&rsquo;re in.</>}
+            : <>Four digits, and<br />you&rsquo;re in.</>}
         </Display>
 
         {step === 0 ? (
