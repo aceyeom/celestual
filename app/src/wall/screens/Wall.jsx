@@ -561,7 +561,7 @@ export default function Wall({ go, reduce, rev }) {
           rather not be asked. */}
       <div className="wl-wall-foot">
         <button type="button" className="wl-mine is-wide" onClick={() => go('remove')}>
-          your handle here? take it off the wall
+          take your name off the wall
         </button>
       </div>
 

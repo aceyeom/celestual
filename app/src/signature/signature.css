@@ -278,3 +278,17 @@
   .sg-root .sg-in { animation-delay: 0ms !important; }
   .sg-root .sg-lean { transform: none; }
 }
+
+/* ── the reveal's seal ──
+   The mark as a material, standing where the two orbits used to arrive. It
+   is sized off the viewport for the same reason the orbits were: the whole
+   moment has to land in one frame on a phone. */
+.sg-reveal-seal {
+  display: block;
+  width: min(46vw, 24vh, 190px);
+  aspect-ratio: 1;
+}
+.sg-reveal-seal > canvas, .sg-reveal-seal > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
+@media (min-width: 900px) {
+  .sg-reveal-seal { width: 230px; }
+}

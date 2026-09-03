@@ -56,9 +56,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   Label, Pill, Close,
-  Sheet, SheetHead, SheetFoot, Paper, Prose, HandleField, LetterField,
+  Sheet, SheetHead, SheetFoot, Paper, Prose, HandleField, LetterField, Face,
 } from '../parts.jsx'
-import { Mark, Sparkle, Dots } from '../art.jsx'
+import { Sparkle, Dots } from '../art.jsx'
 import { ME } from '../seed.js'
 import { atHandle, dateline, normHandle, validHandle } from '../data.js'
 import {
@@ -127,7 +127,7 @@ export default function Core({ id, go, reduce }) {
       <div className="wl-page wl-core">
         <header className="wl-top">
           <div className="wl-top-mark">
-            <Mark handle={ME} size={26} lit />
+            <Face handle={ME} size={26} resolve={false} />
             <Label><span className="wl-h">{atHandle(ME)}</span></Label>
           </div>
           <Close onClick={() => go('wall')} label="back to the wall" />
@@ -441,7 +441,7 @@ function Reveal({ ping: p, back, reduce }) {
         <div className="wl-pairpaper is-open">
           <Paper
             dateline={{ lead: dateline(p.placedAt).lead, stamp: 'yours' }}
-            crest={<Mark handle={p.handle} size={28} lit />}
+            crest={<Face handle={p.handle} size={28} />}
           >
             <Prose>{p.yours}</Prose>
           </Paper>
@@ -452,7 +452,7 @@ function Reveal({ ping: p, back, reduce }) {
 
           <Paper
             dateline={{ lead: dateline(p.answeredAt).lead, stamp: 'theirs' }}
-            crest={<Mark handle={ME} size={28} lit />}
+            crest={<Face handle={ME} size={28} resolve={false} />}
             tone="theirs"
           >
             <Prose>{p.theirs}</Prose>
@@ -484,7 +484,6 @@ function Reveal({ ping: p, back, reduce }) {
 function Standing({ ping: p, go, bump, back }) {
   const [asking, setAsking] = useState(false)
   const [done, setDone] = useState(false)
-  const near = p.state === 'lapsing'
 
   return (
     <Sheet onClose={back} tall labelledBy="wl-standing-h">
@@ -499,7 +498,7 @@ function Standing({ ping: p, go, bump, back }) {
         <div className="wl-pairpaper">
           <Paper
             dateline={{ lead: dateline(p.placedAt).lead, stamp: done ? left(SPAN) : left(p.days) }}
-            crest={<Mark handle={p.handle} size={28} gauge={p.run} tone={near ? 'near' : ''} />}
+            crest={<Face handle={p.handle} size={28} />}
           >
             <Prose>{p.yours}</Prose>
           </Paper>
@@ -596,7 +595,7 @@ function Place({ bump, go, back }) {
           <div className="wl-write-step">
             <Paper
               dateline={{ lead: dateline(NOW).lead, stamp: left(SPAN) }}
-              crest={<Mark handle={h} size={28} />}
+              crest={<Face handle={h} size={28} />}
               tone={body.trim() ? '' : 'empty'}
             >
               <LetterField
@@ -650,7 +649,7 @@ function Full({ held, bump, back }) {
         <div className="wl-full-list">
           {held.map((p) => (
             <div key={p.id} className={`wl-full-row${gone === p.id ? ' is-asking' : ''}`}>
-              <Mark handle={p.handle} size={30} gauge={p.run} tone={p.state === 'lapsing' ? 'near' : ''} />
+              <Face handle={p.handle} size={30} />
               <span className="wl-full-t">
                 <span className="wl-row-handle">{atHandle(p.handle)}</span>
                 <span className="wl-row-meta">{left(p.days)}</span>

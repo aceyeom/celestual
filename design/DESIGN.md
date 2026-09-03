@@ -192,12 +192,31 @@ in ink so it survives a near white tab strip and handed its chalk back by its ow
   the bar's brand, a card's letterhead and the overture's hero with no tone prop
   anywhere.
 
-### 3.4 The constellation is a different object
+### 3.4 The face is a different object
 
-`Mark` in `art.jsx` draws a small ring with points in it, seeded from a handle's
-hash, and it stands wherever the design would otherwise put a photograph. It is
-not the logo and it never stands in for it. Three strengths: `--mark-ring`,
-`--mark-line`, `--mark-star`, plus `is-lit` for the one that matters on screen.
+`Face` in `parts.jsx` is the disc that stands beside a handle everywhere in the
+product: the account's own picture when the resolver has it
+(`docs/HANDLE-RESOLVER.md`), and a monogram in the identifier face until then
+and otherwise. It is the same object at every size, on the void and struck in
+ink on paper, so the person you confirmed against under the field is the person
+on your sky, in the wall's search and on the card. It is not the logo and it
+never stands in for it.
+
+It replaced the constellation. `Mark` in `art.jsx` still draws that small ring
+with points seeded from a handle's hash, and `components.html` still shows it,
+but nothing in the product draws it any more: it stood where a photograph would
+be while there was no photograph, and there is one now. A product that draws a
+person as a hash on one screen and as their own face on the next is two
+products.
+
+### 3.5 The mark as a material
+
+`LiquidMark` is the mark poured: a liquid metal shader cut to the mark's own
+silhouette. It is spent on exactly the moments that are the product's, and on
+nothing else: the intro, the seal on the hero's scene, the seal on a mutual row
+on the sky, and the reveal. Wherever the mark is a glyph rather than an event
+(the bar, a sheet's head, the favicon) it is `Ecliptic`, flat. Nothing glows
+behind the metal. The metal is the light.
 
 ---
 
@@ -371,7 +390,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-twinkle` | the sparkle, 3600ms, scale and rotation, staggered by `--spark-delay` |
 | `wl-converge`, `wl-land` | the letter going up and the card landing |
 | `wl-sheen`, `wl-lead`, `wl-breathe` | the overture, the circuit, the pulse |
-| the intro (`.hi`) | Main's overture, at `/`, once per tab. 2280ms: the liquid mark rises at 180, the name wipes in at 820, assembled at 1400, the lift at 1720. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
+| the intro (`.hi`) | Main's overture, at `/`, once per tab. 2120ms: the liquid mark, drawn in the wall's own order. The band is uncovered round its circuit at 180, the star opens at 520, assembled at 1180, the lift at 1560. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
 
@@ -432,7 +451,9 @@ had already said it. The role went with the caller.
 | --- | --- | --- |
 | Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px |
-| Row | `.wl-row` | the constellation where a photograph would be. `is-lit` for the one that matters |
+| Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters |
+| Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
+| You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
 | Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised |
 | Top bar | `.wl-top` | the mark is the way home, and it is chalk while everything beside it is ash |
 
@@ -445,6 +466,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | Component | Class |
 | --- | --- |
 | Handle field | `.wl-field`, `.wl-field.is-lg` |
+| The result card | `.wl-card`, under a handle field. The resolver's answer while somebody is still typing: the face, the name, the badge, the handle, and no fifth thing. While it is looking a point of light runs round the card's own edge and twinkles through the plate's star shaped holes; given a handler it is a button from the first frame, disabled while looking and live the moment the answer lands, one element throughout so the light going out and the arrow arriving are one transition |
 | Letter field | `.wl-letterfield`, on paper, with `.wl-count` under it |
 | Address and code | `.wl-addr`, `.wl-code` |
 | Reason | `.wl-reason` |
@@ -455,12 +477,13 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | --- | --- |
 | `Sparkle` | the four point star. `twinkle` and `delay` |
 | `Ecliptic` | the mark. `size`, `sweep` |
-| `Mark` | the constellation, seeded from a handle |
+| `Face` | the disc beside a handle. The picture, or a monogram. See 3.4 |
+| `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
 | `Halftone` | the dotted sphere |
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
-| `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent twice: the intro, and the seal on the hero's scene |
+| `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 
 ---
@@ -480,7 +503,8 @@ Every interactive thing has all five, and `components.html` shows them.
 Empty, loading and error states are part of a component, not an afterthought:
 
 - **Empty** says what would be here and offers the one action that fills it.
-- **Loading** is `.wl-waiting`, a sparkle and a line of ash. No spinner.
+- **Loading** is `.wl-waiting`, a sparkle and a line of ash, or under a handle
+  field the result card's light running its frame. No spinner.
 - **Error** is a plain sentence in `--accent`, in place, next to what failed. No
   banner, no dialog, no exclamation mark.
 

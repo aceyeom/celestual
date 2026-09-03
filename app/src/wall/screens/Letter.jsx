@@ -52,9 +52,8 @@
 import { useEffect } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label,
+  Pill, Icon, Label, Face,
 } from '../parts.jsx'
-import { Mark } from '../art.jsx'
 import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle } from '../data.js'
 import { mark } from '../store.js'
 
@@ -142,7 +141,7 @@ export default function Letter({ id: param, go, back }) {
             dateline={{ lead: 'not on the wall' }}
             title={<span id="wl-letter-h" className="wl-letter-to">gone</span>}
           >
-            <Prose>That letter has come down. Nothing is left here to read.</Prose>
+            <Prose>That letter has come down.</Prose>
           </Paper>
           <SheetFoot>
             <Pill tone="light" wide icon={<Icon name="wall" size={17} />} onClick={back}>back to the wall</Pill>
@@ -173,12 +172,11 @@ export default function Letter({ id: param, go, back }) {
         {/* ── the card ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, whose name it is under, and the
-            words. The crest is the same constellation the wall draws beside
-            that handle and the search puts in its rows, so a person who has
-            seen their own mark once recognises it here without reading. */}
+            words. The crest is the person's own face, the same disc the search
+            puts in its rows and the sky puts beside a ping. */}
         <Paper
           dateline={sinceline(one.at, open ? '' : 'sealed')}
-          crest={<Mark handle={one.to} size={30} lit={open} />}
+          crest={<Face handle={one.to} size={30} />}
           title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
           tone={open ? '' : 'shut'}
         >

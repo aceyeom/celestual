@@ -39,83 +39,56 @@ const faces = readFileSync(join(root, 'app/public/fonts/faces.css'), 'utf8')
 
 // wall.css, verbatim. Nothing here invents a value.
 const VOID = '#08070B'
-const ASH = '#9C978E'
-const HAIR = 'rgba(244, 241, 234, 0.09)'
 
-// The sentence is the hero's, with its own three line break. A share card that
-// says something the page does not say is a share card promising a different
-// product from the one behind the link.
+// ── the composition ──────────────────────────────────────────────────────────
+// The lockup, and nothing else. The card used to carry the hero's sentence, a
+// paragraph, a rule, a small lockup in the corner and the mark again at nine
+// hundred pixels behind all of it. A share preview is seen at the size of a
+// thumb, beside the description the page already sends, and at that size a
+// paragraph is texture and a sentence is a smear. The mark and the name, on
+// the ground, in the light the page stands in, is the whole of it.
+//
+// The lockup is set the way art.jsx `Lockup` sets it: the mark 1.13 times the
+// word's size, a 0.38em gap, the word lifted 0.03em onto the mark's axis.
+const WORD = 118
 const page = `<!doctype html><meta charset="utf-8"><style>
   ${faces}
   html, body { margin: 0; padding: 0; background: ${VOID}; }
   .card {
     position: relative; width: 1200px; height: 630px; overflow: hidden;
     background: ${VOID}; color: ${CHALK};
-    padding: 72px 80px; box-sizing: border-box;
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: grid; place-items: center;
     -webkit-font-smoothing: antialiased;
   }
-  /* The halo, the same one the hero stands in: one very large, very soft rise
-     of light off the upper right, drawn as a radial gradient rather than as a
-     blurred object, because a blur at this size is expensive and identical. */
+  /* the halo the hero stands in, felt rather than seen */
   .halo {
     position: absolute; inset: 0;
-    background: radial-gradient(760px 620px at 78% 18%, rgba(244,241,234,0.075) 0%, rgba(244,241,234,0) 62%);
+    background: radial-gradient(640px 420px at 50% 44%, rgba(244,241,234,0.055) 0%, rgba(244,241,234,0) 70%);
   }
-  /* The grain, generated in code, never a bitmap file (spec 7.2). */
+  /* the grain, generated in code, never a bitmap file (spec 7.2) */
   .grain { position: absolute; inset: 0; opacity: 0.5; mix-blend-mode: overlay; }
-  .top, .say, .foot { position: relative; }
-  .top { display: flex; align-items: center; gap: 14px; }
-  .top svg { display: block; }
+  .lockup {
+    position: relative;
+    display: inline-flex; align-items: center; gap: ${Math.round(WORD * 0.38)}px;
+    transform: translateY(-6px);
+  }
+  .lockup svg { display: block; width: ${Math.round(WORD * 1.13)}px; height: ${Math.round(WORD * 1.13)}px; }
   .word {
-    font-family: 'Inter Tight', Inter, system-ui, sans-serif;
-    font-size: 20px; font-weight: 500; letter-spacing: 5.4px; text-transform: uppercase;
-  }
-  .say {
     font-family: 'Newsreader', 'Iowan Old Style', Palatino, Georgia, serif;
-    font-weight: 400; font-size: 78px; line-height: 1.03; letter-spacing: -0.018em;
-    margin: 0; max-width: 780px;
+    font-weight: 500; font-size: ${WORD}px; line-height: 1; letter-spacing: -0.022em;
+    transform: translateY(-0.03em);
   }
-  /* Each half of the sentence is one line, and the break is chosen rather than
-     left to the box: the turn lands on "or neither", which is the half of the
-     mechanic people do not expect. */
-  .say b { font-weight: 400; display: block; white-space: nowrap; }
-  .foot {
-    font-family: 'Inter Tight', Inter, system-ui, sans-serif;
-    font-size: 22px; line-height: 1.5; letter-spacing: -0.004em;
-    color: ${ASH}; margin: 0; max-width: 46ch;
-  }
-  .rule { height: 1px; background: ${HAIR}; margin: 0 0 26px; }
-  /* The object, and it is the mark rather than a second drawing: one ring and
-     the star inside it, set enormous, bleeding off the right edge, at the
-     weight of something behind the type rather than beside it. The composition
-     was left heavy with 400px of empty ground on the right, and a share card is
-     the one image of this product most people will ever see. */
-  .object {
-    position: absolute; top: -150px; right: -400px;
-    width: 900px; height: 900px; opacity: 0.1; color: ${CHALK};
-  }
-  .object svg { display: block; width: 100%; height: 100%; }
 </style>
 <div class="card">
   <div class="halo"></div>
-  <div class="object">${eclipticSVG(CHALK)}</div>
   <svg class="grain" xmlns="http://www.w3.org/2000/svg">
     <filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
       <feColorMatrix type="saturate" values="0"/></filter>
     <rect width="100%" height="100%" filter="url(#n)" opacity="0.055"/>
   </svg>
-
-  <div class="top">
-    ${eclipticSVG(CHALK).replace('<svg ', '<svg width="34" height="34" ')}
-    <span class="word">celestual</span>
-  </div>
-
-  <h1 class="say"><b>you both find out,</b><b>or neither of you does.</b></h1>
-
-  <div>
-    <div class="rule"></div>
-    <p class="foot">place a ping on somebody. if they place one back, you are both told at once. if they do not, nobody is.</p>
+  <div class="lockup">
+    ${eclipticSVG(CHALK)}
+    <span class="word">celestual.</span>
   </div>
 </div>`
 

@@ -44,63 +44,28 @@
 // the one that has to survive the state.
 
 import { useEffect, useState } from 'react'
-import Alignment from '../signature/Alignment.jsx'
+import { Who, useProfile } from '../wall/parts.jsx'
 import { normHandle, atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
-import { resolveHandle } from '../api/handles.js'
-import { myPings, since } from './data.js'
+import { myPings, sinceAgo } from './data.js'
+import LiquidMark from './LiquidMark.jsx'
 import TopBar from './TopBar.jsx'
 
-// Initials off the display name, the first two letters when there is one word,
-// and the handle's first letter when there is no name at all. A card with an
-// empty disc on it looks broken rather than private.
-function monogram(p) {
-  const name = String(p?.display_name || '').trim()
-  if (name) {
-    const parts = name.split(/\s+/).filter(Boolean)
-    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : parts[0][1] || '')).toUpperCase()
-  }
-  return String(p?.handle || '?').slice(0, 1).toUpperCase()
-}
-
-// The verification badge, drawn. Every other product on the phone uses a
-// downloaded glyph for this; this one has a four point star already, so the
-// tick sits inside the mark's own vocabulary rather than beside it.
-function Verified({ title }) {
-  return (
-    <svg className="sg-ver" width="14" height="14" viewBox="0 0 24 24" role="img" aria-label={title}>
-      <circle cx="12" cy="12" r="10.2" fill="none" stroke="currentColor" strokeWidth="1.3" opacity="0.45" />
-      <path
-        d="M7.6 12.3 10.6 15.2 16.5 9.1" fill="none" stroke="currentColor"
-        strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function Card({ profile, ping, side, delay }) {
+// One side of it: the paper, the person, the line. The person is parts.jsx
+// `Who`, which is the same face and name the sky and the search draw, so the
+// two of you look here the way you looked to each other on the way in.
+function Card({ handle, ping, side, delay }) {
   return (
     <article className="wl-paper sg-card sg-in" style={{ '--d': delay }}>
       <div className="wl-paper-grain" />
 
       <div className="wl-paper-head">
         <span>{side}</span>
-        <span className="wl-paper-stamp">{since(ping.at)} ago</span>
+        <span className="wl-paper-stamp">{sinceAgo(ping.at)}</span>
       </div>
 
       <div className="sg-who">
-        <span className="sg-disc" aria-hidden="true">
-          {profile.avatar
-            ? <img src={profile.avatar} alt="" />
-            : <span className="sg-mono">{monogram(profile)}</span>}
-        </span>
-        <span className="sg-who-id">
-          <span className="sg-who-name">
-            {profile.display_name}
-            {profile.is_verified && <Verified title="verified on instagram" />}
-          </span>
-          <span className="sg-who-at">@{profile.handle}</span>
-        </span>
+        <Who handle={handle} size={42} />
       </div>
 
       <div className="wl-paper-body">
@@ -110,27 +75,7 @@ function Card({ profile, ping, side, delay }) {
   )
 }
 
-// A profile the resolver knows about, or the shape of one built from the
-// handle alone. The reveal must render whatever the resolver says, including
-// nothing: it is off by default and it can be rate limited, and neither is a
-// reason to withhold the one screen this product exists to reach.
-function useProfile(handle) {
-  const [p, setP] = useState(() => ({ handle: normHandle(handle), display_name: '', is_verified: false, avatar: null }))
-  useEffect(() => {
-    const h = normHandle(handle)
-    if (!h) return undefined
-    let alive = true
-    setP({ handle: h, display_name: '', is_verified: false, avatar: null })
-    resolveHandle(h).then((r) => {
-      if (!alive || r.state !== 'found') return
-      setP({ handle: r.handle, display_name: r.name, is_verified: r.verified, avatar: r.avatar || null })
-    })
-    return () => { alive = false }
-  }, [handle])
-  return p
-}
-
-export default function Reveal({ go, who, id }) {
+export default function Reveal({ go, who, id, still = false }) {
   const them = normHandle(id)
   const [mutual, setMutual] = useState(undefined)
 
@@ -147,11 +92,10 @@ export default function Reveal({ go, who, id }) {
     return () => { alive = false }
   }, [who.handle, who.handleVerified, them])
 
-  const mine = useProfile(who.handle)
   const theirs = useProfile(them)
 
   if (mutual === undefined) {
-    return <main className="wl-main sg-page sg-reveal"><TopBar go={go} /></main>
+    return <main className="wl-main sg-page sg-reveal"><TopBar go={go} who={who} /></main>
   }
 
   // Not a mutual, or not this person's to see. Said flatly and without a
@@ -160,10 +104,9 @@ export default function Reveal({ go, who, id }) {
   if (!mutual) {
     return (
       <main className="wl-main sg-page sg-reveal">
-        <TopBar go={go} />
+        <TopBar go={go} who={who} />
         <div className="mn-mid">
           <h1 className="wl-display is-l">Nothing here.</h1>
-          <p className="sg-mech">Nothing has opened under that name.</p>
         </div>
         <div className="mn-foot">
           <button className="wl-pill is-light" type="button" onClick={() => go('sky')}>your sky</button>
@@ -181,41 +124,39 @@ export default function Reveal({ go, who, id }) {
 
   return (
     <main className="wl-main sg-page sg-reveal">
+      {/* The seal: the mark as a material, the same object the sky's mutual
+          row wears and the front door lights. No bloom behind it. The paper is
+          the bright thing on this screen, because it is what the two of them
+          actually wrote, and the metal is the light of its own. */}
       <div className="sg-reveal-stage sg-in" style={{ '--d': '0ms' }}>
-        <Alignment size={220} still id="reveal" />
+        <span className="sg-reveal-seal" aria-hidden="true">
+          <LiquidMark size="100%" speed={0.6} still={still} />
+        </span>
       </div>
 
-      {/* What is actually known. celestual_my_pings returns each person their
-          OWN timestamp and not the other's, so "placed nine days apart" is a
-          sentence this screen cannot truthfully say however good it sounds. It
-          says the thing both people can check instead. */}
-      <p className="wl-label is-dim sg-in sg-reveal-eyebrow" style={{ '--d': '520ms' }}>
-        you both said it, and neither of you knew
-      </p>
-
-      <h1 className="wl-display is-xl sg-in sg-reveal-say" style={{ '--d': '640ms' }}>
+      <h1 className="wl-display is-xl sg-in sg-reveal-say" style={{ '--d': '520ms' }}>
         it&#8217;s mutual.
       </h1>
 
       {/* Together, not staggered. See the note at the top of this file. */}
       <div className="sg-pair">
-        <Card profile={mine} ping={mineSide} side="you" delay="980ms" />
-        <Card profile={theirs} ping={theirSide} side="them" delay="980ms" />
+        <Card handle={who.handle} ping={mineSide} side="you" delay="900ms" />
+        <Card handle={them} ping={theirSide} side="them" delay="900ms" />
       </div>
 
       <div className="sg-reveal-foot">
-        <p className="sg-mech sg-in" style={{ '--d': '1500ms' }}>
+        <p className="sg-mech sg-in" style={{ '--d': '1400ms' }}>
           the rest is yours. celestual&#8217;s part is done.
         </p>
 
-        <div className="sg-reveal-acts sg-in" style={{ '--d': '1620ms' }}>
+        <div className="sg-reveal-acts sg-in" style={{ '--d': '1520ms' }}>
           <a
             className="wl-pill is-light"
-            href={`https://instagram.com/${theirs.handle}`}
+            href={`https://instagram.com/${them}`}
             rel="noreferrer noopener"
             target="_blank"
           >
-            open {atHandle(theirs.handle)}
+            open {atHandle(them)}
           </a>
           <button className="wl-quiet" type="button" onClick={() => go('sky')}>
             keep this to yourself
@@ -227,9 +168,9 @@ export default function Reveal({ go, who, id }) {
           same four facts, in the order they matter, for a reader that never
           sees the composition above. */}
       <p className="wl-sr">
-        Mutual with {theirs.display_name || atHandle(theirs.handle)}, {atHandle(theirs.handle)}
-        {theirs.is_verified ? ', verified on Instagram' : ''}.
-        You placed yours {since(mineSide.at)} ago. They placed theirs {since(theirSide.at)} ago.
+        Mutual with {theirs?.name || atHandle(them)}, {atHandle(them)}
+        {theirs?.verified ? ', verified on Instagram' : ''}.
+        You placed yours {sinceAgo(mineSide.at)}.
       </p>
     </main>
   )

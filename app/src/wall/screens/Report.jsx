@@ -229,10 +229,7 @@ export default function Report({ id, go, back }) {
         <Display size="s" as="h2" id="wl-rep-h">Someone will<br />look at it.</Display>
 
         <div className="wl-report-read">
-          <Prose className="wl-gate-copy">
-            It is off the wall, and a person reads it from here.
-          </Prose>
-          <Prose className="wl-gate-copy">It stays off until then.</Prose>
+          <Prose className="wl-gate-copy">Off the wall, and a person reads it from here.</Prose>
         </div>
 
         <div className="wl-push" />

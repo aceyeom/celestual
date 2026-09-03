@@ -32,7 +32,6 @@
 
 import { useEffect, useState } from 'react'
 import { Paper, Prose, Redacted } from '../wall/parts.jsx'
-import { ECL, ringPath, starPath } from '../wall/art.jsx'
 import LiquidMark from './LiquidMark.jsx'
 
 const YOU = 'i have wanted to say this since the second week of term.'
@@ -88,41 +87,5 @@ export default function Scene({ still = false }) {
       <Card who="you" text={YOU} className="hm-scene-a" open={open} />
       <Card who="them" text={THEM} className="hm-scene-b" open={open} />
     </div>
-  )
-}
-
-// ── the mark's states, for the ledger ───────────────────────────────────────
-// Three drawings from the mark's own geometry, standing beside the three steps
-// of how it works. One ring with the star unlit: a ping placed. Two rings apart:
-// both placed, neither told. And the mark itself, which the third step draws
-// with `Ecliptic` directly, because at that point it is the logo and nothing
-// less.
-//
-// 46 degrees is the spread Alignment.jsx settled on: at that angle the two
-// bands cross near the ends of the long axis, where each is at its widest, so
-// they read as two objects rather than one thick one.
-const RING = ringPath()
-const STAR = starPath(ECL)
-
-export function Orbits({ state = 0, size = 52, className = '' }) {
-  return (
-    <svg
-      className={className} width={size} height={size} viewBox="0 0 100 100"
-      aria-hidden="true" focusable="false"
-    >
-      {state === 0 ? (
-        <>
-          <path d={RING} fill="currentColor" fillRule="evenodd" />
-          <path d={STAR} transform="translate(50 50)" fill="currentColor" opacity="0.22" />
-        </>
-      ) : (
-        <>
-          <g transform="rotate(46 50 50)" opacity="0.5">
-            <path d={RING} fill="currentColor" fillRule="evenodd" />
-          </g>
-          <path d={RING} fill="currentColor" fillRule="evenodd" />
-        </>
-      )}
-    </svg>
   )
 }

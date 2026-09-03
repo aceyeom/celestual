@@ -6,12 +6,8 @@
 // months. So this module is thin on purpose. It shapes what those RPCs return
 // into what these screens draw, and it does not reimplement any of it.
 //
-// The one thing it adds is the wall's numbers on the hero, which come off
-// `wall_index` (migration 0032). The hero's gate into Berkeley carries two real
-// counts, because a campus surface that will not say how many letters are on it
-// is a campus surface nobody believes.
-import { placePing, fetchMyPings, PING_DAYS } from '../api/celestual.js'
-import { wallIndex } from '../wall/api.js'
+import { placePing, fetchMyPings, renewPing, retirePing, PING_DAYS } from '../api/celestual.js'
+import { heldProof } from '../wall/auth.js'
 import { whoami, ANON } from '../api/identity.js'
 import { getSession } from '../api/auth.js'
 
@@ -43,23 +39,6 @@ export async function me() {
     handle: s.handle,
     handleVerified: true,
     email: s.email || null,
-  }
-}
-
-// ── the wall, from here ─────────────────────────────────────────────────────
-// Two numbers and the newest name. Read off the public index, so it needs no
-// session and works for somebody who has never answered anything.
-export async function wallSummary() {
-  const out = await wallIndex()
-  if (!out.ok || !out.tiles.length) return null
-  const letters = out.tiles.reduce((n, t) => n + t.count, 0)
-  const newest = out.tiles.reduce((a, b) => (b.at > a.at ? b : a))
-  return {
-    campus: 'berkeley',
-    letters,
-    handles: out.tiles.length,
-    newest: newest.handle,
-    newestAt: newest.at,
   }
 }
 
@@ -118,6 +97,28 @@ export async function place({ me: mine, them, email, proof, words }) {
     return { ok: true, ...out }
   } catch (e) {
     return { ok: false, error: e?.code || 'network' }
+  }
+}
+
+// ── keeping one, and letting one go ─────────────────────────────────────────
+// The two things a person can do to a ping they have out, off the same RPCs
+// the old design called (celestual_renew, celestual_withdraw), gated by the
+// same proof. Both answer a plain yes or no; the sky reloads on yes.
+export async function renew({ me: mine, them }) {
+  try {
+    const out = await renewPing({ me: mine, them, proof: heldProof(mine) })
+    return !!(out && (out.ok || out.expires_at))
+  } catch {
+    return false
+  }
+}
+
+export async function release({ me: mine, them }) {
+  try {
+    const out = await retirePing({ me: mine, them, proof: heldProof(mine) })
+    return !!(out && (out.withdrawn || out.ok))
+  } catch {
+    return false
   }
 }
 

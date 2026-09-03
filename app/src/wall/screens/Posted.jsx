@@ -32,8 +32,8 @@
 // is one tap away and does not chase anybody down here to make its case.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, Paper, Prose, Icon } from '../parts.jsx'
-import { Sparkle, Bloom, Mark } from '../art.jsx'
+import { Display, Label, Pill, Paper, Prose, Icon, Face } from '../parts.jsx'
+import { Sparkle, Bloom } from '../art.jsx'
 import { write, wall, liveCount, atHandle, dateline } from '../data.js'
 import { getState, patch } from '../store.js'
 
@@ -185,7 +185,7 @@ export default function Posted({ go, reduce }) {
         <div className="wl-posted-card">
           <Paper
             dateline={dateline(row.at)}
-            crest={<Mark handle={row.to} size={26} />}
+            crest={<Face handle={row.to} size={26} />}
             title={<span className="wl-letter-to">{atHandle(row.to)}</span>}
           >
             <Prose>{row.body}</Prose>
