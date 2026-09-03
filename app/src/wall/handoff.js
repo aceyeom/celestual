@@ -22,8 +22,9 @@
 // not connected yet. Any handle proves here." Both are real now, and both notes
 // have come off the screens that carried them.
 import {
-  igVerifyEnabled, igDeepLink, igWebLink, dmCode,
+  igVerifyEnabled, igDeepLink, igWebLink, igUsername, dmCode,
   startVerification, pollVerification,
+  savePending, loadPending, clearPending,
 } from '../api/igverify.js'
 import { sendEduCode, verifyEduCode, eduVerifyEnabled } from '../api/eduverify.js'
 import { sessionToken } from '../api/identity.js'
@@ -33,7 +34,8 @@ import { verifyHandle, signIn, DOMAIN } from './auth.js'
 // today; wall_campuses is what makes a second one a row rather than a rewrite.
 export const CAMPUS_SLUG = 'uc-berkeley'
 
-export { igDeepLink, igWebLink, dmCode, igVerifyEnabled, eduVerifyEnabled, DOMAIN }
+export { igDeepLink, igWebLink, igUsername, dmCode, igVerifyEnabled, eduVerifyEnabled, DOMAIN }
+export { savePending, loadPending, clearPending }
 
 // ── the campus ──────────────────────────────────────────────────────────────
 // Mint a code and mail it. Returns { ok, token } or { ok:false, error }, where
@@ -77,9 +79,23 @@ export async function startHandoff(handle) {
     // startVerification mints the proof itself and hands both halves back.
     const out = await startVerification(handle)
     if (!out?.token) return { ok: false, error: 'start' }
-    return { ok: true, token: out.token, code: dmCode(out.token), proof: out.proof, proofHash: out.proofHash }
-  } catch {
-    return { ok: false, error: 'start' }
+    // expiresAt rides along because the record is stashed in localStorage while
+    // the person is away in Instagram, and a stash with no clock on it is a
+    // stash that resumes a code that lapsed while they were gone.
+    return {
+      ok: true,
+      token: out.token,
+      code: dmCode(out.token),
+      proof: out.proof,
+      proofHash: out.proofHash,
+      expiresAt: out.expiresAt,
+    }
+  } catch (e) {
+    // The reason travels. startVerification throws with the RPC's own word on
+    // it — 'banned' (that @ opted out, 0018), 'rate_limited', 'busy' — and
+    // flattening all three to 'start' is what produced a screen that answered
+    // "it did not go through" to a door that is shut for a nameable reason.
+    return { ok: false, error: e?.code || 'start' }
   }
 }
 
@@ -104,5 +120,82 @@ export async function pollHandoff({ token, proofHash, proof }) {
     return { ok: true, handle }
   } catch {
     return { ok: false, pending: true }
+  }
+}
+
+// ── getting to the DM, and getting the code there with you ──────────────────
+//
+// Two things that were missing and that made this flow unusable, both of them
+// about the same forty seconds: the walk from a code on our screen to a message
+// box in somebody else's app.
+//
+// THE CODE TRAVELS. Instagram has no way to prefill the text of a DM — there is
+// no ?text= on ig.me and there is no scheme that carries one — so the closest
+// thing to "the code is already typed" is the code already being on the
+// clipboard when the thread opens. Everything that opens Instagram from this
+// product copies first and says so, and the code stays selectable on the glass
+// for the browsers that refuse a programmatic copy.
+export async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(String(text))
+      return true
+    }
+  } catch {
+    /* a denied permission, or an insecure origin — fall through */
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = String(text)
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+function inAppBrowser() {
+  if (typeof navigator === 'undefined') return false
+  return /Instagram|FBAN|FBAV|FB_IAB|Line\//i.test(navigator.userAgent || '')
+}
+
+function mobile() {
+  if (typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+}
+
+// AND THE RIGHT DOOR PER DEVICE. ig.me is a mobile universal link: on a phone it
+// opens the celestual thread in the app, and on a logged-out desktop browser its
+// redirect chain dead-ends on a browser error page. So the phone gets ig.me in
+// the same tab (a new tab a universal link never returns from is a tab the
+// person is left holding), and the desktop gets www.instagram.com/m/<us>, which
+// is the same thread and which redirects same-origin to a login when it has to.
+export function openInstagram() {
+  if (inAppBrowser() || mobile()) {
+    try { window.location.href = igDeepLink() } catch { /* ignore */ }
+    return
+  }
+  const url = igWebLink()
+  try {
+    const aw = window.screen?.availWidth || 1280
+    const ah = window.screen?.availHeight || 800
+    const w = Math.min(720, Math.max(560, aw - 80))
+    const h = Math.min(860, ah - 60)
+    const baseX = window.screenLeft ?? window.screenX ?? 0
+    const baseY = window.screenTop ?? window.screenY ?? 0
+    const vw = window.innerWidth || w
+    const vh = window.innerHeight || h
+    const left = Math.max(0, baseX + (vw - w) / 2)
+    const top = Math.max(0, baseY + (vh - h) / 2)
+    const win = window.open(url, 'celestual-dm', `popup,noopener,width=${w},height=${h},left=${left},top=${top}`)
+    if (!win) window.open(url, '_blank', 'noopener')
+  } catch {
+    try { window.location.href = url } catch { /* ignore */ }
   }
 }

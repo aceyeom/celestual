@@ -57,6 +57,7 @@
 import { getState, patch, push } from './store.js'
 import { normHandle } from './data.js'
 import { whoami, bindHandle, forgetSession } from '../api/identity.js'
+import { getSession, markVerified } from '../api/auth.js'
 
 export const DOMAIN = 'berkeley.edu'
 
@@ -182,6 +183,35 @@ export async function verifyHandle(handle, proof) {
   const h = normHandle(handle)
   if (!h || !proof) return { ok: false, error: 'invalid' }
   const out = await bindHandle({ handle: h, proof })
-  if (out.ok) push('verified', h)
+  if (out.ok) {
+    push('verified', h)
+    // ── AND THE PROOF IS KEPT ──
+    // This line is the difference between a verification that finishes and one
+    // that finishes and then cannot do anything. `proof` is not a receipt: it
+    // is the capability celestual_submit consumes at seal time (0023 —
+    // celestual_consume_ig_proof, which answers no to a null and returns
+    // 'unverified'), and celestual_my_pings demands it to say a word about a
+    // person's own sky. It was minted in the browser, spent once against
+    // celestual_user_bind_handle, and then dropped on the floor here — while
+    // three screens went on reading it out of `store.proof`, a key nothing has
+    // ever written. So the DM landed, the handle bound, the site said verified,
+    // and the ping that the whole flow existed to place came back unverified.
+    //
+    // api/auth.js is where this secret already lived (the /signin redemption
+    // writes it there, and App.jsx has always read it there), so it is written
+    // there and nowhere new: one secret, one key, one place to clear it.
+    markVerified(h, proof)
+  }
   return out
+}
+
+// The proof this device is holding, for the surfaces that have to spend it.
+// Scoped to the handle it was minted for: a stale proof under somebody else's
+// @ is not a proof, and sending it anyway spends a round trip to be told so.
+export function heldProof(handle) {
+  const s = getSession()
+  if (!s?.proof) return null
+  const want = normHandle(handle)
+  if (want && normHandle(s.handle) !== want) return null
+  return s.proof
 }

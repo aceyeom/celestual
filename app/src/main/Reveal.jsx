@@ -46,7 +46,7 @@
 import { useEffect, useState } from 'react'
 import Alignment from '../signature/Alignment.jsx'
 import { normHandle, atHandle } from '../wall/data.js'
-import { getState } from '../wall/store.js'
+import { heldProof } from '../wall/auth.js'
 import { resolveHandle } from '../api/handles.js'
 import { myPings, since } from './data.js'
 import TopBar from './TopBar.jsx'
@@ -140,7 +140,7 @@ export default function Reveal({ go, who, id }) {
   useEffect(() => {
     let alive = true
     if (!who.handleVerified || !them) { setMutual(null); return undefined }
-    myPings({ handle: who.handle, proof: getState().proof }).then((out) => {
+    myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
       if (!alive) return
       setMutual(out.mutuals.find((m) => normHandle(m.to) === them) || null)
     })

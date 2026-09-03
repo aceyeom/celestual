@@ -107,12 +107,14 @@ export default function Hero({ go, who, still = false }) {
 
   return (
     <main className="wl-main sg-page sg-hero">
+      {/* The mark alone, as on the wall's bar and on Main's. The lockup — the
+          mark with "celestual." set beside it — is the overture's, where the
+          name is the event being played; a bar is not that moment, and the
+          front door signing itself differently from every screen behind it is
+          the product changing shape as somebody walks through it. */}
       <header className="wl-top sg-top">
         <span className="wl-top-mark">
-          <span className="wl-lockup sg-lockup">
-            <span className="wl-brand-mark"><Mark size={25} /></span>
-            <span className="wl-lockup-word">celestual.</span>
-          </span>
+          <span className="wl-brand-mark"><Mark size={26} /></span>
         </span>
         <span className="wl-label is-dim sg-top-note">berkeley</span>
       </header>

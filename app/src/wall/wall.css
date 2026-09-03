@@ -2088,6 +2088,60 @@
 .wl-remove-handoff { display: flex; flex-direction: column; gap: 11px; padding-top: 14px; }
 .wl-remove-handoff .wl-waiting { padding-bottom: 2px; }
 
+/* ── the code, and the way out to it ──
+   One block, used by both surfaces that ask for a DM (Main's proof step and
+   the wall's takedown), so the two cannot drift.
+
+   The digits are a <button> because tapping them copies, and they are set in
+   the identity face at tabular width: this is a string somebody has to carry
+   from one app to another by eye if the clipboard refuses, and a proportional
+   face puts 1 and l a hair apart at exactly the moment that costs them the
+   attempt. `user-select: all` makes one tap or long press take the whole code.
+
+   And `.wl-a` finally has a rule. It had none anywhere in the sheet, so every
+   link written with it — all three of them, all in this flow — rendered as the
+   browser's default blue underline: the one object in the build that was not
+   ours, on the one screen where a person is being asked to trust where a link
+   goes. It is chalk on a hairline now, like every other link here. */
+.wl-dm { display: flex; flex-direction: column; gap: 13px; }
+.wl-dm-code {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 4px 0 6px;
+}
+.wl-dm-digits {
+  font-family: var(--f-id);
+  font-size: clamp(31px, 10vw, 40px);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  padding: 2px 0 2px 0.14em;
+  line-height: 1.1;
+  color: var(--chalk);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  background: none; border: 0; cursor: pointer;
+  user-select: all; -webkit-user-select: all;
+  text-shadow: 0 0 22px rgba(255, 244, 228, 0.16);
+}
+.wl-dm-foot { display: flex; flex-direction: column; align-items: center; gap: 9px; padding-top: 2px; }
+.wl-dm-alt { text-align: center; }
+.wl-dm-drop { align-self: center; margin-top: 4px; }
+.wl-dm-said {
+  margin: 0;
+  font-family: var(--f-util);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--ash-dim);
+  text-align: center;
+}
+.wl-a {
+  color: var(--chalk);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair);
+  padding-bottom: 1px;
+  transition: border-color 200ms var(--ease);
+}
+.wl-a:hover { border-bottom-color: var(--chalk); }
+
 /* ═══ WHO THAT IS ══════════════════════════════════════════════════════════
    The resolver's line, under the handle field in the composer. A LINE, not a
    card: everything on this build that names somebody is a row on a baseline,
