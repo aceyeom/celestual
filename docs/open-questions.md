@@ -476,7 +476,7 @@ Two consequences worth confirming:
 
 **Recommendation:** confirm the competition is over, then delete the whole group.
 
-### Q13. ANSWERED. `celestual <hello@celestual.us>`.
+### Q13. ANSWERED and done in Phase 8. `celestual <hello@celestual.us>`.
 
 I read the account, as this question offered. The domain is already done:
 `celestual.us`, verified, sending enabled, created 2026-07-10. There are no
@@ -558,7 +558,22 @@ gestures.
 is much easier to hit with an engine that has already been tuned than with a new
 one. Decided at Phase 3, after you see the surfaces.
 
-### Q15. ANSWERED. Retire it. Phase 8.
+### Q15. ANSWERED and done in Phase 8. Retired.
+
+Your answer: retire it. `0035_retire_the_communities.sql` drops five tables and
+six functions; the route, both screens, `communities.js`, `communityGalaxy.js`,
+`card.js`, the school logos and roughly 1,900 lines of client code are gone.
+
+Two things came out of doing it, both recorded in `docs/deletions.md` group E:
+`celestual_is_member` survives, because the scan the manifest asked for says
+`celestual_submit` and `celestual_my_pings` both call it; and three erasure
+paths had to be rewritten rather than merely having their tables taken away.
+
+The original question follows.
+
+---
+
+### Q15 (first answer). Retire it. Phase 8.
 
 Your answer: the route, `CommunityScreen`, `WorldsScreen`, `communities.js`,
 `communityGalaxy.js`, the school logos, and the five empty tables with their
@@ -575,7 +590,24 @@ roughly 200 lines of community state and `communityGalaxy.js` is 1,152 lines.
 
 **Recommendation:** retire it. The Wall is the campus surface now. Confirm.
 
-### Q16. ANSWERED. Retire it. Phase 8.
+### Q16. ANSWERED and done in Phase 8. Retired.
+
+Your answer: retire it. `/demo` and `demoData.js` are gone, and so is the `demo`
+boolean, which is the part worth naming: it was threaded through 108 sites in
+`App.jsx`, 58 in `screens.jsx` and 28 in `api/celestual.js`. It was not a
+screen. It was a second code path through every flow in the product, which is a
+second product that nobody tests.
+
+The sandbox's mock checkout went with it (`SlotPaywall` and its three helpers).
+The real Stripe layer is untouched, per Q3: the sandbox previewed the shape
+locally and never reached a payment processor, which is exactly what made it
+separable.
+
+The original question follows.
+
+---
+
+### Q16 (first answer). Retire it. Phase 8.
 
 Your answer: the route, `demoData.js`, and the `demo` branches threaded through
 `App.jsx`, `api/celestual.js` and `card/photos.js`. The new Main hero is the

@@ -1,241 +1,154 @@
 # CELESTUAL
 
-**celestual** — *"you still think about them. what if they think about you?"* —
-is a double-blind, mutual-reveal site. Live at **https://celestual.us/**.
+A double blind, mutual reveal product. Live at **https://celestual.us**.
 
-You enter someone's Instagram handle ("placing a ping"). They are never
-notified. If and only if they independently enter yours, you both learn of the
-match at the same instant. If it is never mutual, nothing is ever revealed to
-anyone — and since the server stores who you entered only as a salted hash,
-nothing ever *can* be.
-
-The product direction is fixed by one document —
-**[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)**
-(the masterguide) — and the whole repo implements it:
-
-- **Two standing pings, sixty days each.** Renewing is free, one tap, and
-  unlimited: it restarts the sixty days from the day you tap it and never uses a
-  slot. Letting one go frees the slot immediately, and a ping that lapses frees
-  it on the day it lapses — which the ledger names, along with the date. Lapsed
-  unmatched pings are purged. Scarcity is the sincerity mechanism, not a paywall,
-  and a mechanism nobody can see the clock on is just a wall.
-- **Every ping carries a card.** You write a short message on a ground (a
-  photograph you take there and then, or one of three materials — laid paper,
-  chalk, leather) in one of the product's three faces, and drag the block where
-  you want it. Both halves are sealed the way the ping is: the words and the
-  photograph ride on the ping row, and the server will only ever release either
-  of them to the other person once the pair is mutual. Nothing about where the
-  picture was taken travels with it — every image is re-encoded before it is
-  stored, which drops the GPS fix, the capture time and the device serial. At a
-  match both cards unseal in the same
-  instant (**[docs/STAR-CARDS.md](./docs/STAR-CARDS.md)**) — and the half of the
-  pair who wasn't looking at a screen is told: by email, and on Instagram
-  through the same ManyChat relay that verifies handles, saying that it's mutual
-  and that a card is waiting, never a word of what it says
-  (**[docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md)**).
-- **Loop A — the recruiter screen.** The moment a ping is placed you're told
-  the truth: *standing* (they're reachable on celestual) or *waiting* (they
-  aren't yet — and they'll never know you had anything to do with it), plus
-  the deniable playbook.
-- **Loop B — the open-door card.** Everyone gets a personal page
-  (`celestual.us/@handle`) and a Story card in the receiver's voice ("if
-  there's something you never said to me, it's safe here now"). A viewer taps
-  through and lands two taps from their own first ping.
-- **Communities — the fixed-100 stats.** Celestual is globally open: anyone
-  can place a ping the day they arrive. A person tags the real scenes they're
-  in, and at a fixed **100 members** that community's **weekly stats** open
-  (mutual matches this week, the most common reason, pings placed). Below 100
-  the count stays hidden and the stats sit behind a locked preview — a reward
-  that pulls more members in, never a gate that locks anyone out.
-- **Loop C — campus windows (optional).** A launch accelerant, not the access
-  gate: an ambassador *can* open a whole school at once by preregistering
-  toward a visible threshold (`/c/<campus>`) with an exact week-one reveal, but
-  no one waits behind it to use the product.
-- **Recruitment, run as a trial (First Light).** Candidates enter on
-  **`celestual.us/trial`**: the competition brief with the official doc to view
-  and download, email verification, an in-app signature, and a four-letter code
-  they choose that becomes their personal tracking link
-  (`celestual.us/<code>`). Every open and signup through it is counted against
-  them, so we can see who is really bringing people in — traffic, never people:
-  an open is one integer per day with no visitor identity, a signup is a handle
-  that actually verified, and none of it can see who anyone pinged. A
-  password-gated admin dashboard at `/admin` reads it all
-  (**[docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md)**).
-- **No monetization, and Stripe plumbed behind a flag.** Nothing is for sale in
-  production: the slots screen shows one door, "let one go", free and always
-  (docs/PRICING-REVENUE.md). The one thing that will ever be sold — **one more
-  standing ping, $2.99, once** — is now fully built and fully **off**
-  (`VITE_STRIPE_ENABLED=0`): the entitlement layer, the two edge functions and the
-  second door all exist, dormant until density is proven and the wake decision is
-  taken (**docs/STRIPE-SETUP.md**). `/demo` still previews the shape with an inert
-  checkout that reaches no server.
-- **Everything shown to anyone is literally true, always.** That truth is the
-  legal and ethical margin the entire design lives inside.
-
-It's a Vite + React single-page app talking directly to **Supabase** (Postgres
-RPCs + edge functions); there is no separate app server.
-
-The design system is **[design/DESIGN.md](./design/DESIGN.md)**: a blue-black
-room, one cream card as the only bright surface, one pale blue as the whole
-colour budget, four faces with four jobs, and every ornament drawn from a path
-rather than downloaded. `design/components.html` renders all of it on one page.
-
-That system is the wall's, and the rebuild is promoting it to production (see
-`docs/rebuild-spec.md` section 2). The old one, the bindery, still ships at the
-routes below until the rebuild reaches them, and it is described in git history
-rather than in this tree.
-
-`/berkeley` is **the wall** — the campaign surface for the handout event, live
-on the campus it is named after. It is a second brand on purpose (a blue-black
-void, four different faces, a cream card that is the only bright object in it),
-and it is sealed off from production behind one lazy import in `main.jsx`. It
-lived at `/beta` while it was one; that prefix is still rewritten onto
-`/berkeley` at boot, because the cards already printed with it cannot be
-redeployed.
-
-**Its own state is still in the browser.** The wall keeps letters, membership
-and takedowns in `localStorage`, the `berkeley.edu` code is not mailed and any
-six digits pass, and the Instagram handoff is a timer. What is left to wire, in
-order, is **[docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md)**.
-
-It is also deliberately sealed off from the *product*: the wall has no pings, no
-mutuals and no identity of its own, and the only route from it into the mutual
-blind is a tab that appears after somebody has put a letter up. Its index — the
-names and the counts — is open to anybody who scans the code; reading a letter,
-writing one and reporting one are behind a `berkeley.edu` address; every letter
-is screened before it is published; a reported letter is off the wall on the tap
-and held rather than deleted; and taking a whole name down, the one irreversible
-act on the surface, goes through the Instagram handoff. See
-**[app/src/wall/README.md](./app/src/wall/README.md)**.
+You place a ping on somebody's Instagram handle. They are never told. If and
+only if they independently place one on you, you both find out at the same
+moment. If it is never mutual, nothing is revealed to anybody, and because the
+server stores who you entered only as a salted one way hash, nothing ever can
+be.
 
 ---
 
-## Repository layout
+## The two surfaces
+
+**Main**, at `/`. The product above: place a ping, hold two at a time, sixty
+days each, and a reveal that happens to both people or to neither.
+
+**The wall**, at `/berkeley`. A campus surface reached by scanning a code off a
+flyer: short anonymous letters, each addressed to one handle. The list of
+handles is public; the letters need a verified `berkeley.edu` address. Every
+letter is screened before it appears, the person a letter is about can take it
+down from a verified handle, and the author is never disclosed unless they are
+asked and say yes.
+
+They are one session. Proving a campus address on the wall or a handle on Main
+signs you in to both.
+
+---
+
+## Where things are
 
 ```
-celestual/
-├── app/              the Vite + React SPA (served at celestual.us/)
-│   ├── src/
-│   │   ├── wall/     THE WALL — the campus surface at /berkeley, sealed off
-│   │   │             from production (its own README)
-│   │   ├── api/      celestual.js (RPCs) · pings.js · supabase.js · auth.js · igverify.js
-│   ├── sky/      the WebGL2 sky engine — engine.js · camera.js · model.js (density
-│   │             waves) · stars.js · gas.js · post.js · blackbody.js · fallback2d.js
-│   │   ├── card/     the star & card system — Disc.jsx (the card) · Composer.jsx ·
-│   │   │             Resolve.jsx (the approach) · Spread.jsx · model.js · photos.js
-│   ├── components/ screens.jsx (the nine screens) · ui.jsx (primitives)
-│   │   ├── i18n/     the canonical copy (strings.js)
-│   │   ├── App.jsx · card.js (the Story card) · demoData.js · theme.js ·
-│   │   │             texture.js (leather, laid paper, chalk, the stitch) · styles.css
-│   │   └── main.jsx
-│   └── .env.example  front-end environment (Supabase URL + anon key, flags)
-├── supabase/         the backend
-│   ├── migrations/   0001–0005 history · 0006 the ping model (current) ·
-│   │                 0007–0008 the .edu membership gate · 0009–0011 verification
-│   │                 hardening · 0012 code-as-correlation-id · 0013 durable re-login ·
-│   │                 0015 the identity router · 0016 the recruitment program ·
-│   │                 0017 the First Light trial + the 20s grace + the admin dashboard ·
-│   │                 0020 the two doors (erase ≠ opt out) · 0021 the Stripe
-│   │                 entitlement layer (per-person slot cap; dormant) · 0022 the card ·
-│   │                 0023 the mutual DM (the Instagram reveal, and mail to both sides) ·
-│   │                 0024 the bindery (the card's three materials) ·
-│   │                 0025 the photograph (the card's other half, on the card's
-│   │                 own seal) · 0026 closing the 20-second grace ·
-│   │                 0027 the wall (the beta letters) · 0028 the handle
-│   │                 resolver (the account behind a typed @)
-│   ├── wipe-all-user-data.sql   the deliberate, manual full reset (NOT a migration)
-│   └── functions/    celestual-notify · celestual-remind · celestual-search ·
-│                     celestual-resolve (the handle resolver) ·
-│                     celestual-manychat · celestual-mutual-dm · celestual-ig-webhook ·
-│                     celestual-edu-verify · celestual-relogin ·
-│                     celestual-recruit (retired) · celestual-trial · celestual-admin ·
-│                     celestual-stripe · celestual-stripe-webhook ·
-│                     _shared/mutual.ts (the one copy of the mutual line) ·
-│                     _shared/mail.ts (the one email design, five senders)
-├── docs/             the guides (see below)
-├── scripts/          voice-lint.mjs (the copy tripwire)
-├── package.json      repo-root build (app → dist/)
-└── vercel.json       SPA routing (/@handle, /c/*, /optout all resolve in-app)
+app/                the SPA. Vite + React, no router library
+  src/main.jsx      the fork. Which surface owns this address, decided before
+                    anything mounts, so a route is never rendered twice
+  src/main/         Main. hero, place, sky, reveal, optout, copy, signin
+  src/wall/         the wall. ten screens, its own art and its own store
+  src/signature/    where the two signature surfaces were approved. static
+  src/admin/        the desk at /admin
+  src/api/          every call to Supabase, one module per concern
+  src/card/         the card a ping carries: composer, disc, spread, photos
+  src/App.jsx       the retired design. It serves /paid and nothing else
+  public/           the legal pages, the faces, the mark, the share card
+
+supabase/
+  migrations/       0001 to 0035, in order. 0029 onward is the rebuild
+  functions/        the edge functions. celestual-resolve, -admin,
+                    -wall-moderate, -edu-verify, -ig-webhook, -manychat,
+                    -mutual-dm, -notify, -stripe, -stripe-webhook
+
+design/             the design system. DESIGN.md is the source of truth
+scripts/            the tooling: migrations, screenshots, the mark, the voice
+docs/               the rebuild's own record, and the runbooks
 ```
 
-## Routes
+Anything referenced by string is live even when it looks dead: route names,
+Supabase RPC names, edge function names and storage bucket names do not appear
+in an import graph.
 
-| Route | What it is |
-| --- | --- |
-| `/` | the cold landing → the send flow |
-| `/@handle` | someone's open door — ping field prefilled (Loop B) |
-| `/c/<campus>` | a campus window: the meter, then "it's open.", then week one (Loop C) |
-| `/optout` | the public opt-out — any handle owner, no account needed |
-| `/signin` | the sign-back-in magic link lands here — redeems a fresh proof, no DM (Fix B) |
-| `/trial` | **First Light** — the competition brief + doc, and self-serve entry (email verify → sign → choose a code). `/recruit` lands here too |
-| `/<code>` | a trial competitor's personal tracking link (exactly four letters, chosen by them) — lands on `/`, credits the signup it leads to. `/r/<code>` still works as an alias |
-| `/admin` | the admin dashboard: competitors, users (how each verified), delete/ban — password checked server-side |
-| `/berkeley` | **the wall** — the campus surface, reached by QR code off a card or a flyer: a drifting wall of unsent letters, anonymous by shape, that can be pulled sideways and never ends. The names are public to everyone; reading, writing and reporting are behind a `berkeley.edu` address; a report takes a letter down on the tap; a whole name comes off only through the Instagram handoff. One door leads to the core service, and it opens only after you have written. **State is still browser-side** — see [docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md) (app/src/wall/README.md) |
-| `/beta` | the wall's old address. Rewritten onto `/berkeley` at boot so printed cards keep working |
-| `/demo` | the sandbox (below) |
-| `/privacy` · `/terms` · `/data-deletion` | the static legal pages |
+---
 
-## Quick start (local dev)
+## Running it
 
-```bash
-cd app
+```
 npm install
-npm run dev
+npm run dev            the app on :5173
+npm run build          the production build
+npm run lint           eslint over app/
+npm run lint:voice     the copy tripwire (design/VOICE.md section 6)
 ```
 
-Without Supabase env vars the app runs with safe local fallbacks. To talk to a
-real backend, copy `app/.env.example` to `app/.env.local` and paste your
-Supabase URL + anon key.
+`app/.env.example` documents every environment variable. Nothing needs a
+backend to boot: with no Supabase configured the app runs on local fallbacks.
 
-**`/demo`** is the sandbox: it runs the full production workflow, but nothing
-reaches a server — every value is temporary and sample. It ships seeded to show
-what a live launch looks like: sample pings in every state (a *standing*, a
-*waiting* near its lapse, and a resolved *mutual* in its own section), and the
-**communities** view — **NYU Class of 2028** past 100 with live weekly stats (a
-"sandbox: new activity" control ticks the matches up in real time), plus scenes
-still *gathering* toward 100 with the locked-stats preview. Every non-mutual row
-carries **"sandbox: they enter you back"**, which plays the full match reveal.
-Run out of your three slots and the sandbox shows a **realistic Stripe-style
-checkout** for a one-time fourth slot (production shows only the free "let one
-go" door). Identity verification runs the real overlay but **auto-verifies
-locally**, and joining a curated community (the `.edu` gate) is faked the same
-way — **any address, any four digits, nothing sent**. The campus window (the optional launch tool) lives on in production
-at `/c/<campus>`; the sandbox headlines communities instead, since global,
-always-open access is now the default and no one waits behind a campus.
+### The tooling
 
-## Build
-
-```bash
-npm run build        # from repo root → dist/
-npm run lint:voice   # the copy tripwire (design/VOICE.md section 6)
-npm run lint         # eslint over app/
-npm run shots        # the visual loop: design/components.html at both sizes
-npm run mark         # regenerate design/logo/ from app/src/wall/mark.js
-npm run faces        # refetch app/public/fonts/
+```
+scripts/verify-migrations.sh --test    apply every migration to a bare
+                                       PostgreSQL, then run scripts/sql/test-*
+node scripts/preview.mjs               screenshot every route, with fixtures
+node scripts/mail-preview.mjs          screenshot every email template
+node scripts/shots.mjs /terms          screenshot one address or one file
+node scripts/export-mark.mjs           the logo, out of the code that draws it
+node scripts/export-og.mjs             the share card, from the same source
 ```
 
-`vercel.json` serves `dist/` at the root.
+---
 
-## Documentation
+## The rebuild
 
-| Doc | What it covers |
+The product was rebuilt in eight phases against
+**[docs/rebuild-spec.md](./docs/rebuild-spec.md)**, which is the source of truth
+for it. **[docs/plan.md](./docs/plan.md)** records what each phase actually did
+and what it found, **[docs/launchsteps.md](./docs/launchsteps.md)** is
+everything that has to happen outside the repo, and
+**[docs/open-questions.md](./docs/open-questions.md)** and
+**[docs/deletions.md](./docs/deletions.md)** carry the decisions and the
+deletions.
+
+Nothing in this repository has been applied to production. The migrations are
+written and verified, and `launchsteps.md` says in what order to apply them.
+
+---
+
+## The documents
+
+| | |
 | --- | --- |
-| **[docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md)** | **The masterguide.** The mechanism (Loops A/B/C), the screens, monetization posture, honest odds, failure modes. Everything else implements this. |
-| **[design/DESIGN.md](./design/DESIGN.md)** | **The design system.** The tokens, the four faces, the mark, every component and state, the motion, and the gate every screen ships through |
-| [design/components.html](./design/components.html) | The system rendered. Every component, colour, type size and state on one page |
-| [design/VOICE.md](./design/VOICE.md) | The voice guide: vocabulary, registers, the four frames, the banned list |
-| [design/source/eclipse.html](./design/source/eclipse.html) | The mark's specimen sheet, and the branding artifact the system derives from |
-| [docs/rebuild-spec.md](./docs/rebuild-spec.md) | The production rebuild: the phases, the visual bar, and the definition of done |
-| [docs/SECURITY.md](./docs/SECURITY.md) | The privacy/safety model: hashed shadow data, the three-slot rule, the sixty-day purge, verification, the opt-out |
-| [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
-| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately, until density — then a one-time fourth slot |
-| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | **Wiring Stripe live**: the two products and their exact prices, the secrets, the migration, the webhook, the test-card walkthrough, and how to turn it all back off |
-| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | **The star & card system**: the card every ping carries, why it is a circle, how a ping resolves into one, the mutual reveal, and the one seal both halves of a card ride under |
-| [docs/FIRST-LIGHT-TRIAL.md](./docs/FIRST-LIGHT-TRIAL.md) | **First Light**: the trial page, the four-letter tracking links, the 20-second DM grace (now closed), the admin dashboard, and the launch runbook (migration + wipe order) |
-| [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | **Telling someone on Instagram that it's mutual**: why Meta's 24-hour window means a match can't just ring a phone, the two legal carriers that reach them anyway (a push while the window is open, the relay's next reply when it isn't), the email that goes to both sides in parallel, and the step-by-step to get it live |
-| [docs/RECRUITMENT.md](./docs/RECRUITMENT.md) | RETIRED — the old comment → DM → agreement loop; ManyChat wiring kept for reference |
+| [docs/rebuild-spec.md](./docs/rebuild-spec.md) | The rebuild: the phases, the visual bar, the definition of done |
+| [docs/plan.md](./docs/plan.md) | What each phase did, and the nine things the audit found |
+| [docs/launchsteps.md](./docs/launchsteps.md) | Everything to do outside the repo, in order |
+| [docs/deletions.md](./docs/deletions.md) | Every file and database object proposed for deletion, and why |
+| [docs/open-questions.md](./docs/open-questions.md) | Every decision the spec did not answer, and how it was answered |
+| [design/DESIGN.md](./design/DESIGN.md) | The design system. Anything visual references this |
+| [design/VOICE.md](./design/VOICE.md) | The copy rules, and what the voice lint enforces |
+| [design/components.html](./design/components.html) | The system rendered: every component, colour, type size and state |
+| [docs/SECURITY.md](./docs/SECURITY.md) | The privacy model: hashed targets, the slot rule, the purge, the opt out |
+| [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | The resolver: Apify, the permanent cache, the three caps, the stored face |
+| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The campus email gate, wired live |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
-| [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | Wiring the `.edu` school-email gate live: Resend, secrets, deploy, operate |
-| [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | **The handle resolver**: showing the display name, badge and face behind a typed @ so a typo stops being a silent, permanent dead end. The providers, the cache, the caps, why the picture is proxied and never stored, and the four rules it is held to |
-| [app/README.md](./app/README.md) | Front-end architecture & flow |
-| [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, operator playbook |
+| [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
+| [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
+| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | The card a ping carries, and the seal both halves ride under |
+| [docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md) | The wall's own launch notes |
+| [docs/ORBIT-REDESIGN.md](./docs/ORBIT-REDESIGN.md) | The design record for the wall's core screen |
+| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live, and turning it back off. Dormant |
+| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately |
+| [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
+| [docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md) | The product direction |
+| [docs/MASTER-GUIDE.md](./docs/MASTER-GUIDE.md) | The older, longer version of the same. See open question Q17 |
+| [app/README.md](./app/README.md) | Front end architecture |
+| [app/src/wall/README.md](./app/src/wall/README.md) | The wall, in detail |
+| [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, the operator playbook |
+
+---
+
+## The addresses
+
+| | |
+| --- | --- |
+| `/` | Main. The hero |
+| `/place`, `/place/<handle>`, `/@handle` | placing one |
+| `/sky` | what you have out |
+| `/reveal/<handle>` | a mutual, opened |
+| `/berkeley` | the wall, and nine addresses under it |
+| `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
+| `/optout` | take a handle off, permanently, with no account |
+| `/copy`, `/signin` | the two links a mail sends somebody to |
+| `/admin` | the desk. Password checked server side |
+| `/signature`, `/signature/reveal` | where the two signature surfaces were approved |
+| `/terms`, `/privacy`, `/data-deletion` | static, served by a rewrite |
+| `/paid` | the Stripe return. Dormant, and the last address in the old design |
+
+Anything else draws a not found, in the current design.

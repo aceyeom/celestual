@@ -575,7 +575,10 @@ export function IndexColumn({ C, open, items, screen, go, narrow }) {
     <nav
       aria-label="menu"
       aria-hidden={open ? undefined : true}
-      inert={open ? undefined : ''}
+      // React 19 takes `inert` as a real boolean. The empty string that used to
+      // stand for "present" here now reads as false, so the closed column stayed
+      // reachable by keyboard AND logged a console error on every render of it.
+      inert={!open}
       style={{
         position: 'fixed',
         top: 0,

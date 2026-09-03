@@ -46,10 +46,10 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-// The design is docs/DESIGN.md's, and it is the one every mail this product
-// sends now wears: _shared/mail.ts owns the case, the mark, the rules and the
-// plate, and this file owns only its words. It used to own both, which is why
-// there were five templates and no two agreed.
+// The design is design/DESIGN.md's, and it is the one every mail this product
+// sends: _shared/mail.ts owns the case, the rules and the plate, and this file
+// owns only its words. It used to own both, which is why there were five
+// templates and no two agreed.
 function emailHtml(other: string, hasCard: boolean) {
   // The card line says THAT there is one, never a word of what it says. Those
   // words are read once, in the product, by the person they were written to
@@ -59,15 +59,23 @@ function emailHtml(other: string, hasCard: boolean) {
   const card = hasCard
     ? mail.body('they left a card for you. it opens when you do.')
     : '';
+  // This is the one mail that spends the accent, and it spends it ONCE. wall.css
+  // rations it to the single object that matters most on the screen it is on,
+  // and here that is the second half of the sentence: the first half is a thing
+  // this person already knows they did, and the second is the news.
   return mail.frame({
     inner: `
-      ${mail.title('it&rsquo;s mutual.')}
-      ${mail.body(`you entered @${other}. @${other} entered you.<br/>this only ever happens when it&rsquo;s real on both sides.`)}
+      ${mail.title('It is mutual.')}
+      ${mail.body(
+        `you entered @${other}. ` +
+        `<span style="color:${mail.C.accent}">@${other} entered you.</span><br/>` +
+        `this only ever happens when it is real on both sides.`,
+      )}
       ${card}
-      ${mail.plate(SITE, 'go see it')}
+      ${mail.plate(`${SITE}/sky`, 'go and see')}
       ${mail.colophon(
-        `you&rsquo;re reading this because you placed a ping on celestual and it resolved mutual. ` +
-        `one-sided pings are never revealed to anyone. to opt out entirely, visit ${SITE}/optout.`,
+        `you are reading this because you placed a ping on celestual and it resolved mutual. ` +
+        `one sided pings are never revealed to anybody. to take your @ off entirely, go to ${SITE}/optout.`,
       )}`,
   });
 }

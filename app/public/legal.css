@@ -1,0 +1,118 @@
+/* ── the legal pages ─────────────────────────────────────────────────────────
+   Terms, privacy, and how to delete your data. Three static HTML files served
+   by a rewrite in vercel.json, so they never touch the app bundle and never
+   pay for it: somebody who follows a legal link from an app store listing or
+   an email footer gets one document and one stylesheet.
+
+   That is also why this file exists rather than three copies of it inline.
+
+   ── the system, at document scale ──
+   app/src/wall/wall.css, and every value here is one of its tokens. It cannot
+   import them, because a static page is outside the bundle, so they are
+   restated once, here, and nowhere else in this folder.
+
+   A legal document is the one surface in the product with no art direction to
+   do. What it owes the reader is a measure they can hold, a clear hierarchy,
+   and nothing moving. So: one column at 68 characters, the display face for the
+   title only, and the reading face for everything under it. ══════════════ */
+
+:root {
+  --void: #08070B;
+  --void-1: #0D0C12;
+  --chalk: #F4F1EA;
+  --ash: #9C978E;
+  --ash-dim: #605C55;
+  --hair: rgba(244, 241, 234, 0.09);
+  --accent: #74C7DE;
+  --f-display: 'Bodoni Moda', Didot, 'Bodoni MT', Georgia, 'Times New Roman', serif;
+  --f-util: 'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-id: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ash);
+  font-family: var(--f-util);
+  font-size: 15.5px;
+  line-height: 1.68;
+  letter-spacing: -0.004em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wrap {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 34px 22px 96px;
+  padding-top: max(34px, env(safe-area-inset-top));
+}
+
+a { color: var(--chalk); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent); }
+
+.brand {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--f-util); font-size: 12px; font-weight: 500;
+  letter-spacing: 3.4px; text-transform: uppercase;
+  color: var(--chalk); text-decoration: none;
+}
+.brand img { display: block; width: 19px; height: 19px; }
+.brand:hover { color: var(--accent); }
+
+.rule { height: 1px; background: var(--hair); margin: 26px 0 0; }
+
+h1 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(32px, 8vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.018em;
+  color: var(--chalk);
+  margin: 34px 0 0;
+}
+.updated {
+  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.06em;
+  color: var(--ash-dim); margin: 12px 0 0;
+}
+.lead { color: var(--chalk); font-size: 17px; line-height: 1.6; margin: 26px 0 0; }
+
+h2 {
+  font-family: var(--f-id);
+  font-weight: 400; font-size: 11px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ash-dim);
+  margin: 44px 0 12px;
+}
+
+p { margin: 15px 0 0; }
+ul { margin: 15px 0 0; padding-left: 0; list-style: none; }
+li { margin: 11px 0 0; padding-left: 18px; position: relative; }
+/* A rule rather than a bullet: the product has one ornament and this is not the
+   place to introduce a second. */
+li::before {
+  content: ''; position: absolute; left: 0; top: 0.72em;
+  width: 8px; height: 1px; background: var(--ash-dim);
+}
+strong { color: var(--chalk); font-weight: 500; }
+em { font-style: normal; color: var(--chalk); }
+
+/* The one thing on a legal page worth pulling out of the flow: the sentence
+   somebody came here to act on. */
+.act {
+  margin: 24px 0 0; padding: 18px 20px;
+  border: 1px solid var(--hair); border-radius: 14px;
+  background: var(--void-1);
+}
+.act p { margin: 0; color: var(--chalk); }
+.act p + p { margin-top: 10px; }
+
+footer {
+  margin: 56px 0 0; padding-top: 22px; border-top: 1px solid var(--hair);
+  font-family: var(--f-id); font-size: 11.5px; letter-spacing: 0.05em;
+  color: var(--ash-dim);
+}
+footer a { color: var(--ash); }
+footer nav { margin: 0 0 10px; display: flex; gap: 16px; flex-wrap: wrap; }
