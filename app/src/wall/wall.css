@@ -98,8 +98,8 @@
      Fallbacks are chosen for metric proximity, not for taste: the swap has to
      be invisible, so a Didone falls back to a Didone and a Garamond falls back
      to an old-style with the same x-height. */
-  --f-display:  'Bodoni Moda', Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --f-letter:   'EB Garamond', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --f-display:  'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --f-letter:   'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --f-util:     'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-id:       'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
@@ -228,26 +228,28 @@
    with a hard break in the markup produced a break INSIDE the intended line.
    clamp() keeps the large size wherever it fits and gives the type back to the
    browser where it does not. */
-/* ── the weight, and why it is not 400 ──
-   A Didone is a thick stroke and a hairline, and on a blue black ground the
-   hairline is the half that goes. At 400 with the optical size left to the
-   browser, the hero line at 46px lost the thin side of every bowl and read as
-   a row of stems. The face is variable in both axes, so it is set at 600 and
-   its optical size is pinned to 24, the cut drawn for a subhead: the hairlines
-   come up to where they survive light on dark, and the contrast that makes it
-   a Didone is still there. The tokens below are the only two numbers anything
-   in the build sets the face at, and the lockup and the overture read them. */
+/* ── the display cut ──
+   The face is Newsreader, a transitional serif with an optical size axis, and
+   the display settings are three tokens so the lockup, the intro and every
+   surface that sets a headline agree on them. Weight 500: the 400 is a text
+   weight and reads thin light on dark, the 600 starts to clot at 48px. The
+   optical size is left to the browser, which hands a 48px line the 48 cut and
+   a 22px card title the 22 cut, each drawn for its size; pinning it was only
+   ever a correction for a face that had no good cut for the void. Tracking
+   tightens a little at display size, as a transitional serif expects. */
 .wl-root {
-  --w-display: 600;
-  --opsz-display: 'opsz' 24;
+  --w-display: 500;
+  --opsz-display: normal;
+  --track-display: -0.022em;
 }
 .wl-display {
   margin: 0;
   font-family: var(--f-display);
   font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  letter-spacing: -0.018em;
-  line-height: 1.03;
+  font-optical-sizing: auto;
+  letter-spacing: var(--track-display);
+  line-height: 1.06;
   color: var(--chalk);
   text-wrap: balance;
 }
@@ -277,10 +279,10 @@
 .wl-prose {
   margin: 0;
   font-family: var(--f-letter);
-  font-size: 16.5px;
-  line-height: 1.52;
+  font-size: 17px;
+  line-height: 1.5;
   color: var(--paper-ink);
-  letter-spacing: 0.002em;
+  letter-spacing: 0;
 }
 
 .wl-rule { height: 1px; background: var(--hair); margin: 22px 0; flex: 0 0 auto; }
@@ -643,7 +645,7 @@
 .wl-lockup-word {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
+  letter-spacing: var(--track-display); line-height: 1; white-space: nowrap;
   /* the Didone's optical centre sits below its cap line, so the word is lifted
      a hair to sit on the mark's axis rather than on its baseline */
   transform: translateY(-0.03em);
@@ -1856,7 +1858,7 @@
   position: relative;
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
+  letter-spacing: var(--track-display); line-height: 1; white-space: nowrap;
   transform: translateY(-0.03em);
   /* a wipe, not a fade. The word is uncovered from the mark outward, which is
      the direction it would be written in. */

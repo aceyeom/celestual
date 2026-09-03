@@ -203,50 +203,61 @@ not the logo and it never stands in for it. Three strengths: `--mark-ring`,
 
 ## 4. Type
 
-Four faces, four jobs, and none of them does another's. Files are in
+Three faces, and the first does two jobs at two ends of one axis. Files are in
 `app/public/fonts/`, fetched by `node scripts/fetch-faces.mjs` and served from
 this origin. Nothing renders from a CDN.
 
 | Token | Face | Job |
 | --- | --- | --- |
-| `--f-display` | Bodoni Moda | the emotional register. Anything a person means |
-| `--f-letter` | EB Garamond | the reading face. Letters, and only letters |
-| `--f-util` | Inter Tight | mechanics. Buttons, meta, explanation |
+| `--f-display` | Newsreader, display cut | the emotional register. Anything a person means |
+| `--f-letter` | Newsreader, text cut | reading. Letters, and the explanation of the mechanic |
+| `--f-util` | Inter Tight | mechanics. Buttons, meta, counts' captions |
 | `--f-id` | Geist Mono | identifiers. Handles, counts, dates, codes |
 
 The fourth is structural, not decorative. Every handle, count, date and code is
 monospaced because those are identifiers, and monospace is how a person reads
-one. It is the only device in the build that encodes something true about what
-it is setting.
+one.
 
-Fallbacks are chosen for metric proximity, so a swap is invisible: a Didone falls
-back to a Didone, a Garamond to an old style with the same x height.
+**Why one serif and not two.** The system shipped with Bodoni Moda for display
+and EB Garamond for letters, and neither survived the void. A Didone is a thick
+stroke and a hairline, and light on dark the hairline is the half that goes: at
+46px the hero line lost the thin side of every bowl. Weighting it to 600 fixed
+the legibility and left a face that was heavy without being pretty. The
+replacement was chosen off a pairing sheet of twenty candidates set as the
+actual hero block on the actual ground (`design/shots/type-pairings.png`).
+Newsreader won on three counts: it is a transitional serif, so the contrast is
+moderate and nothing vanishes on dark; it is drawn along an optical size axis
+from 6 to 72, so a 48px headline and a 17px paragraph are two cuts of one
+design rather than two designers' faces asked to agree; and set as reading copy
+it stops the secondary text reading as interface.
 
-All four are variable fonts and `faces.css` declares each as a weight range,
-`400 900` for the display face, so any weight a rule asks for is drawn from the
-axis rather than synthesised. Before this the files were clipped to 400 and 500
-and a rule asking for 600 quietly got 500.
+**Explanation is reading, not mechanics.** Inter Tight used to carry every
+paragraph that explained the product. It is a fine face for a capsule, a field's
+meta and a caption under a count, and at fifteen pixels in ash a paragraph set in
+it read as chrome: correct, plain and skipped. The paragraphs are in the reading
+face now, at 17px, on the front door and on the flow screens after it, so the
+explanation speaks in the product's own voice. Inter Tight keeps the controls.
 
-### 4.0 The display weight
+Fallbacks are chosen for metric proximity, so a swap is invisible: Newsreader
+falls back to an old style with a similar x height.
 
-`--w-display: 600` and `--opsz-display: 'opsz' 24`, declared on `.wl-root` and
-read by every rule that sets the display face. Both are a legibility ruling,
-not a taste.
+All three are variable fonts and `faces.css` declares each as a weight range,
+`200 800` for Newsreader, so any weight a rule asks for is drawn from the axis
+rather than synthesised.
 
-A Didone is a thick stroke and a hairline, and on a blue black ground the
-hairline is the half that goes: light on dark, a thin stroke loses luminance to
-the ground around it in a way the same stroke in ink on paper does not. At 400
-with the optical size left to the browser, the hero line at 46px lost the thin
-side of every bowl and read as a row of stems. Weight 600 brings the hairlines
-up to where they survive, and pinning the optical size to 24, the cut drawn for a
-subhead, keeps them there at 46px where the browser would otherwise pick the
-96 cut with the finest hairlines the face has. The contrast that makes it a
-Didone is still there; the strokes that carry the letterforms are no longer the
-first thing to disappear.
+### 4.0 The display tokens
 
-The same two tokens govern the lockup, the overture's word, a card's title, the
-arrow link, the ledger line and the tab, so the face has one weight across the
-product. `scripts/export-mark.mjs` sets the lockup exports at the same values.
+`--w-display: 500`, `--opsz-display: normal` and `--track-display: -0.022em`,
+declared on `.wl-root` and read by every rule that sets the display face: the
+scale below, the lockup, the intro and the overture, a card's title, the arrow
+link, the ledger line and the tab. The exporter sets the lockup PNGs at the
+same values.
+
+Weight 500 because the 400 is a text weight and reads thin light on dark, and
+the 600 starts to clot at 48px. The optical size is left to the browser, which
+hands a 48px line the 48 cut and a 22px card title the 22 cut, each drawn for
+its size. Tracking tightens a little at display size, as a transitional serif
+expects; the text cut is set with none.
 
 ### 4.1 The display scale
 
@@ -257,12 +268,12 @@ it fits and hands the type back to the browser where it does not.
 
 | Class | Size | Line |
 | --- | --- | --- |
-| `.wl-display.is-xl` | `clamp(34px, 10.4vw, 46px)` | 1.03 |
-| `.wl-display.is-l` | `clamp(30px, 8.8vw, 39px)` | 1.03 |
-| `.wl-display.is-m` | `clamp(26px, 7.4vw, 33px)` | 1.03 |
+| `.wl-display.is-xl` | `clamp(34px, 10.4vw, 46px)` | 1.06 |
+| `.wl-display.is-l` | `clamp(30px, 8.8vw, 39px)` | 1.06 |
+| `.wl-display.is-m` | `clamp(26px, 7.4vw, 33px)` | 1.06 |
 | `.wl-display.is-s` | `clamp(21px, 5.8vw, 26px)` | 1.14 |
 
-All four at `--w-display`, tracking `-0.018em`, `text-wrap: balance`.
+All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: balance`.
 
 ### 4.2 The rest
 
@@ -270,7 +281,7 @@ All four at `--w-display`, tracking `-0.018em`, `text-wrap: balance`.
 | --- | --- | --- | --- |
 | `.wl-label` | mono | 10.5px, uppercase | `0.15em` |
 | `.wl-label.is-dim` | mono | 10.5px, uppercase, `--ash-dim` | `0.13em` |
-| `.wl-prose` | letter | 16.5px / 1.52 | `0.002em` |
+| `.wl-prose` | letter | 17px / 1.5 | 0 |
 | `.wl-arrow` | display | 21px, or 16px at `is-s`, at `--w-display` | |
 | `.wl-pill` | util | 13.5px / 500 | `0.008em` |
 | `.wl-row-handle` | mono | 14px | `-0.012em` |
@@ -360,6 +371,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-twinkle` | the sparkle, 3600ms, scale and rotation, staggered by `--spark-delay` |
 | `wl-converge`, `wl-land` | the letter going up and the card landing |
 | `wl-sheen`, `wl-lead`, `wl-breathe` | the overture, the circuit, the pulse |
+| the intro (`.hi`) | Main's overture, at `/`, once per tab. 2280ms: the liquid mark rises at 180, the name wipes in at 820, assembled at 1400, the lift at 1720. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
 
@@ -448,6 +460,8 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
+| `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent twice: the intro, and the seal on the hero's scene |
+| `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 
 ---
 
@@ -529,8 +543,9 @@ viewed is not finished, whatever the build says.
 | `app/src/wall/wall.css` | the tokens and the components, in code |
 | `app/src/wall/mark.js` | the mark's geometry |
 | `app/src/wall/art.jsx` | every drawn ornament |
-| `app/public/fonts/` | the four faces, and the `faces.css` that declares them |
+| `app/public/fonts/` | the three faces, and the `faces.css` that declares them |
 | `scripts/export-mark.mjs` | writes `design/logo/` |
+| `scripts/export-liquid.mjs` | writes `app/public/liquid-mark.png`, the shader's mask, from the same geometry |
 | `scripts/fetch-faces.mjs` | writes `app/public/fonts/` |
 | `scripts/shots.mjs` | the screenshot loop |
 

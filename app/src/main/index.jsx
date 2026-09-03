@@ -40,6 +40,7 @@ import Optout from './Optout.jsx'
 import Copy from './Copy.jsx'
 import Signin from './Signin.jsx'
 import NotFound from './NotFound.jsx'
+import Intro from './Intro.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
 
@@ -47,15 +48,32 @@ export function prefersReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 }
 
+// The intro plays once per tab and never again, and only over the front door.
+// Held here rather than in storage because it is about THIS load: a refresh
+// starts over and gets the whole thing, and a person walking back to `/` from
+// their sky should not sit through a logo to do it.
+let BOOTED = false
+
+// `/?nointro=1`, in development only, for the screenshot loop: the page without
+// the two seconds in front of it. Nothing in production reads the query string.
+function skipIntro() {
+  return import.meta.env.DEV && new URLSearchParams(window.location.search).has('nointro')
+}
+
 export default function MainApp() {
   const [route, setRoute] = useState(() => parse(window.location.pathname) || { name: 'missing' })
+  // 0 the intro has the screen · 1 the page is mounted and rising under a black
+  // that is on its way out · 2 the intro is gone
+  const [boot, setBoot] = useState(() => (BOOTED || route.name !== 'hero' || skipIntro() ? 2 : 0))
+  const handOff = useCallback(() => setBoot(1), [])
+  const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
   const [who, setWho] = useState(ANON)
   const root = useRef(null)
   const canvas = useRef(null)
   const still = useRef(prefersReducedMotion()).current
 
   // ── the faces ──
-  // Local, and the display face preloaded rather than merely linked: a Didone
+  // Local, and the display face preloaded rather than merely linked: a serif
   // arriving two hundred milliseconds after the layout is a page that visibly
   // changes its mind, and this is the first thing a person sees of the product.
   useEffect(() => {
@@ -65,7 +83,7 @@ export default function MainApp() {
     pre.as = 'font'
     pre.type = 'font/woff2'
     pre.crossOrigin = 'anonymous'
-    pre.href = '/fonts/bodoni-moda-normal-400-latin.woff2'
+    pre.href = '/fonts/newsreader-normal-200-800-latin.woff2'
     document.head.appendChild(pre)
     added.push(pre)
 
@@ -76,8 +94,20 @@ export default function MainApp() {
     document.head.appendChild(css)
     added.push(css)
 
+    // The liquid mark's texture, for the intro, which has the mark on screen
+    // at 180ms. A hundred and forty kilobytes fetched with the face rather than
+    // after the shader mounts.
+    if (route.name === 'hero') {
+      const tex = document.createElement('link')
+      tex.rel = 'preload'
+      tex.as = 'image'
+      tex.href = '/liquid-mark.png'
+      document.head.appendChild(tex)
+      added.push(tex)
+    }
+
     return () => { for (const el of added) el.remove() }
-  }, [])
+  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── the field ──
   // One instance, mounted here, persisting across every route change. That is
@@ -147,14 +177,21 @@ export default function MainApp() {
         <div className="wl-grain" />
       </div>
 
-      {route.name === 'place' ? <Place {...shared} to={route.to} />
-        : route.name === 'sky' ? <Sky {...shared} />
-        : route.name === 'reveal' ? <Reveal {...shared} id={route.id} />
-        : route.name === 'optout' ? <Optout {...shared} />
-        : route.name === 'copy' ? <Copy {...shared} />
-        : route.name === 'signin' ? <Signin {...shared} />
-        : route.name === 'missing' ? <NotFound {...shared} />
-        : <Hero {...shared} />}
+      {/* Nothing is mounted under the intro until it starts to lift, and then
+          the hero is: its own entrance runs while the black is still leaving,
+          so the two read as one movement rather than a logo then a page. */}
+      {boot > 0 && (
+        route.name === 'place' ? <Place {...shared} to={route.to} />
+          : route.name === 'sky' ? <Sky {...shared} />
+          : route.name === 'reveal' ? <Reveal {...shared} id={route.id} />
+          : route.name === 'optout' ? <Optout {...shared} />
+          : route.name === 'copy' ? <Copy {...shared} />
+          : route.name === 'signin' ? <Signin {...shared} />
+          : route.name === 'missing' ? <NotFound {...shared} />
+          : <Hero {...shared} />
+      )}
+
+      {boot < 2 && <Intro reduce={still} onReveal={handOff} onDone={settle} />}
     </div>
   )
 }

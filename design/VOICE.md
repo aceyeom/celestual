@@ -51,8 +51,8 @@ The type system is the tone system. `design/DESIGN.md` section 4.
 
 | Face | Carries |
 | --- | --- |
-| Bodoni Moda | feeling. Hero lines, intents, anything a person means |
-| EB Garamond | what a person actually wrote. Letters, and only letters |
+| Newsreader, display cut | feeling. Hero lines, intents, anything a person means |
+| Newsreader, text cut | reading. Letters, and the explanation of the mechanic |
 | Inter Tight | mechanics. Buttons, explanation, meta |
 | Geist Mono | identifiers. Handles, counts, dates, codes. Never a feeling |
 

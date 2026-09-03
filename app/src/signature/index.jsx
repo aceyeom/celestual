@@ -68,7 +68,7 @@ export default function SignatureApp() {
     pre.as = 'font'
     pre.type = 'font/woff2'
     pre.crossOrigin = 'anonymous'
-    pre.href = '/fonts/bodoni-moda-normal-400-latin.woff2'
+    pre.href = '/fonts/newsreader-normal-200-800-latin.woff2'
     document.head.appendChild(pre)
     added.push(pre)
 

@@ -400,9 +400,12 @@ async function fulfil(route) {
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
+  // The intro, held on its assembled beat: the liquid mark and the name.
+  { label: 'intro',         path: '/?beat=3' },
   // The hero scrolls: it is a page with three sections rather than one
-  // composition, so it is shot whole as well as at the fold.
-  { label: 'hero',          path: '/', full: true },
+  // composition, so it is shot whole as well as at the fold. Without the intro
+  // in front of it, which has its own frame above.
+  { label: 'hero',          path: '/?nointro=1', full: true },
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },

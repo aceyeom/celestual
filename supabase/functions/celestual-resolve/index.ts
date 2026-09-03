@@ -421,12 +421,6 @@ Deno.serve(async (req) => {
 
   // ── the call ───────────────────────────────────────────────────────────────
   const acct = await fromApify(handle);
-  await supabase.rpc('handle_search_record', {
-    p_user: userId,
-    p_device: device,
-    p_ip: ip,
-    p_handle: handle,
-  });
 
   if (!acct) {
     misses.set(handle, Date.now());
@@ -435,6 +429,19 @@ Deno.serve(async (req) => {
     if (cached) return json(req, shapeOut(cached, true), 200, cookieHeader);
     return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
   }
+
+  // Recorded against the caps only now, on a call that came back with an
+  // account. It used to run before the check above, so an actor that answered
+  // 400, or a handle that does not exist, still spent one of the person's
+  // twenty: a miss costs nothing at Apify and it should cost nothing here. The
+  // in-isolate miss list above is what stops a missing handle being asked for
+  // twenty times in a row for free.
+  await supabase.rpc('handle_search_record', {
+    p_user: userId,
+    p_device: device,
+    p_ip: ip,
+    p_handle: handle,
+  });
   misses.delete(handle);
 
   // The account may answer under a different casing or a redirect; the row is

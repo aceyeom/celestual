@@ -72,7 +72,7 @@ const page = `<!doctype html><meta charset="utf-8"><style>
     font-size: 20px; font-weight: 500; letter-spacing: 5.4px; text-transform: uppercase;
   }
   .say {
-    font-family: 'Bodoni Moda', Didot, Georgia, serif;
+    font-family: 'Newsreader', 'Iowan Old Style', Palatino, Georgia, serif;
     font-weight: 400; font-size: 78px; line-height: 1.03; letter-spacing: -0.018em;
     margin: 0; max-width: 780px;
   }

@@ -76,7 +76,7 @@ function page(html, behind) {
        from. 106 and 120 is the same 1.13 at export scale. */
     .lock{display:inline-flex;align-items:center;gap:0.38em;line-height:1;font-size:106px}
     .lock svg{display:block;flex:0 0 auto}
-    .w{font-family:'Bodoni Moda',Didot,Georgia,serif;font-weight:600;font-variation-settings:'opsz' 24;letter-spacing:-0.018em;
+    .w{font-family:'Newsreader','Iowan Old Style',Palatino,Georgia,serif;font-weight:500;font-optical-sizing:auto;letter-spacing:-0.022em;
        line-height:1;white-space:nowrap;transform:translateY(-0.03em)}
     .m{display:block}
   </style>${html}`

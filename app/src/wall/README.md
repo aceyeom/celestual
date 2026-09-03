@@ -493,7 +493,7 @@ old timing did not have.
 Everything that animates is a transform, an opacity or a dash offset; nothing
 touches layout after the first frame. The name waits for the real Didone (up to
 a 900ms cap) before it starts, because a word that arrives as Georgia and swaps
-to Bodoni halfway through its own reveal gives the whole thing away. The slide
+to Newsreader halfway through its own reveal gives the whole thing away. The slide
 distance is measured rather than guessed, and re-measured once the face lands.
 
 It is skippable on any tap or key, it never plays twice in a tab, and under

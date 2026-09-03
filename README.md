@@ -81,6 +81,7 @@ node scripts/preview.mjs               screenshot every route, with fixtures
 node scripts/mail-preview.mjs          screenshot every email template
 node scripts/shots.mjs /terms          screenshot one address or one file
 node scripts/export-mark.mjs           the logo, out of the code that draws it
+node scripts/export-liquid.mjs         the liquid metal mask, from the same geometry
 node scripts/export-og.mjs             the share card, from the same source
 ```
 

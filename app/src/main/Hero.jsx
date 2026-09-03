@@ -94,7 +94,10 @@ export default function Hero({ go, who, still = false }) {
           lands. The capsule reads the handle once one is proved. */}
       <header className="hm-top hm-in" style={{ '--d': '0ms' }}>
         <Jump go={go} to="hero" className="hm-home" aria-label="celestual, the front">
-          <Lockup size={21} />
+          {/* The word alone. The mark has just filled the screen in the intro
+              and stands in the scene below; a third copy of it beside its own
+              name in the corner is the product signing every line. */}
+          <span className="hm-word">celestual.</span>
         </Jump>
         <nav className="hm-nav" aria-label="celestual">
           <a className="hm-navlink is-how" href="#how" onClick={toHow}>how it works</a>
@@ -118,7 +121,7 @@ export default function Hero({ go, who, still = false }) {
             <span className="hm-line">or neither of you does.</span>
           </h1>
 
-          <p className="hm-mech hm-in" style={{ '--d': '260ms' }}>
+          <p className="hm-read hm-mech hm-in" style={{ '--d': '260ms' }}>
             place a ping on somebody&rsquo;s instagram. <b>they are never told.</b> if they
             place one on you, you are both told at the same moment. if they do not, nobody
             is, and nobody ever knows there was anything to know.
@@ -131,7 +134,7 @@ export default function Hero({ go, who, still = false }) {
             />
             <div className="hm-ask-row">
               <Pill tone="light" onClick={submit}>place a ping</Pill>
-              <span className="hm-ask-note">
+              <span className="hm-read hm-ask-note">
                 free. one instagram message proves the @ is yours, and that is the whole account.
               </span>
             </div>
@@ -159,7 +162,7 @@ export default function Hero({ go, who, still = false }) {
         <div className="hm-sec-head">
           <Label>how it works</Label>
           <Display size="l" as="h2">nothing is said until it is said twice.</Display>
-          <p className="hm-sec-copy">
+          <p className="hm-read hm-sec-copy">
             a ping is a sealed card with a name on it. the only thing that can open it is
             the same card, placed back.
           </p>
@@ -172,7 +175,7 @@ export default function Hero({ go, who, still = false }) {
               <div className="hm-step-text">
                 <Label>01</Label>
                 <Display size="s" as="h3">place a ping on a handle.</Display>
-                <p className="hm-step-p">
+                <p className="hm-read hm-step-p">
                   type their instagram, write a line only they will ever read, and prove your
                   own handle once with one DM. they are not told.
                 </p>
@@ -183,7 +186,7 @@ export default function Hero({ go, who, still = false }) {
               <div className="hm-step-text">
                 <Label>02</Label>
                 <Display size="s" as="h3">it stands for sixty days.</Display>
-                <p className="hm-step-p">
+                <p className="hm-read hm-step-p">
                   you can hold two at a time. let one go whenever you like, and nobody is told
                   that either. when it lapses, it lapses quietly.
                 </p>
@@ -194,7 +197,7 @@ export default function Hero({ go, who, still = false }) {
               <div className="hm-step-text">
                 <Label>03</Label>
                 <Display size="s" as="h3">if they place one on you, it is mutual.</Display>
-                <p className="hm-step-p">
+                <p className="hm-read hm-step-p">
                   you are both told at the same moment, and each of you reads what the other
                   wrote. if they never do, neither of you ever hears a word.
                 </p>
@@ -205,21 +208,21 @@ export default function Hero({ go, who, still = false }) {
           <div className="hm-rules">
             <div className="hm-rule">
               <span className="hm-rule-k">a hash</span>
-              <span className="hm-rule-v">
+              <span className="hm-read hm-rule-v">
                 is all the server keeps of who you entered. salted, one way, and never shown
                 to anybody.
               </span>
             </div>
             <div className="hm-rule">
               <span className="hm-rule-k">your @</span>
-              <span className="hm-rule-v">
+              <span className="hm-read hm-rule-v">
                 is proved with one instagram message. there is no password and nothing to
                 install.
               </span>
             </div>
             <div className="hm-rule">
               <span className="hm-rule-k">for good</span>
-              <span className="hm-rule-v">
+              <span className="hm-read hm-rule-v">
                 is how a name comes off. <Jump go={go} to="optout">take your handle off</Jump> and
                 it can never be entered again.
               </span>
@@ -236,7 +239,7 @@ export default function Hero({ go, who, still = false }) {
         <div className="hm-sec-head">
           <Label>a campus surface</Label>
           <Display size="l" as="h2">the wall at berkeley.</Display>
-          <p className="hm-sec-copy">
+          <p className="hm-read hm-sec-copy">
             short anonymous letters from people who were there, each addressed to one
             handle. the names are public. the letters open with a berkeley.edu address,
             every one is screened before it appears, and the person it is about can take
@@ -249,19 +252,19 @@ export default function Hero({ go, who, still = false }) {
             <div className="hm-wall-facts">
               <div className="hm-wall-fact">
                 <span className="hm-wall-fact-k">{wall.letters}</span>
-                <span className="hm-wall-fact-v">{wall.letters === 1 ? 'letter on the wall' : 'letters on the wall'}</span>
+                <span className="hm-read hm-wall-fact-v">{wall.letters === 1 ? 'letter on the wall' : 'letters on the wall'}</span>
               </div>
               <div className="hm-wall-fact">
                 <span className="hm-wall-fact-k">{wall.handles}</span>
-                <span className="hm-wall-fact-v">{wall.handles === 1 ? 'name written to' : 'names written to'}</span>
+                <span className="hm-read hm-wall-fact-v">{wall.handles === 1 ? 'name written to' : 'names written to'}</span>
               </div>
               <div className="hm-wall-fact">
                 <span className="hm-wall-fact-k is-h">{atHandle(wall.newest)}</span>
-                <span className="hm-wall-fact-v">the newest, {sinceAgo(wall.newestAt)}</span>
+                <span className="hm-read hm-wall-fact-v">the newest, {sinceAgo(wall.newestAt)}</span>
               </div>
             </div>
           ) : (
-            <p className="hm-sec-copy">letters nobody sent, written about people who never saw them.</p>
+            <p className="hm-read hm-sec-copy">letters nobody sent, written about people who never saw them.</p>
           )}
           <ArrowLink href="/berkeley" className="hm-wall-go">open the wall</ArrowLink>
         </div>

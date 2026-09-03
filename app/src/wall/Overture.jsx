@@ -115,7 +115,7 @@ export default function Overture({ reduce, onReveal, onDone }) {
     }
 
     // The ring and the star are geometry and can start on the first frame. The
-    // name cannot: a Didone that arrives as Georgia and swaps to Bodoni halfway
+    // name cannot: a serif that arrives as Georgia and swaps to Newsreader halfway
     // through its own reveal is the one thing that would give the whole
     // sequence away. So beats 1 and 2 run immediately and the name waits for
     // its face, up to a cap, after which it goes with whatever is loaded.
@@ -127,7 +127,7 @@ export default function Overture({ reduce, onReveal, onDone }) {
     let alive = true
     const faceReady = document.fonts && document.fonts.load
       ? Promise.race([
-          document.fonts.load('400 48px "Bodoni Moda"').catch(() => {}),
+          document.fonts.load('500 48px "Newsreader"').catch(() => {}),
           new Promise((r) => setTimeout(r, FONT_CAP)),
         ])
       : Promise.resolve()

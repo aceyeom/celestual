@@ -32,7 +32,8 @@
 
 import { useEffect, useState } from 'react'
 import { Paper, Prose, Redacted } from '../wall/parts.jsx'
-import { Ecliptic, ECL, ringPath, starPath } from '../wall/art.jsx'
+import { ECL, ringPath, starPath } from '../wall/art.jsx'
+import LiquidMark from './LiquidMark.jsx'
 
 const YOU = 'i have wanted to say this since the second week of term.'
 const THEM = 'i kept nearly saying something after class and then not saying it.'
@@ -78,7 +79,12 @@ export default function Scene({ still = false }) {
       role="img"
       aria-label="two sealed cards, one from each of you. when both are placed they open at once and the mark lights."
     >
-      <Ecliptic size={54} className="hm-scene-mark" />
+      {/* The mark as a material. Sealed, the metal barely moves; mutual, the
+          current runs. The same object the intro poured, at the size of a
+          seal rather than a screen. */}
+      <div className="hm-scene-mark">
+        <LiquidMark size={66} speed={open ? 0.8 : 0.12} still={still} />
+      </div>
       <Card who="you" text={YOU} className="hm-scene-a" open={open} />
       <Card who="them" text={THEM} className="hm-scene-b" open={open} />
     </div>

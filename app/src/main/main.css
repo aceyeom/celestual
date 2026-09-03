@@ -66,17 +66,19 @@
 
 .mn-h { margin: 0; }
 
-/* The UI face, not the letter face. `Prose` is EB Garamond because on the wall
-   it sets LETTERS, and a screen that explains the mechanic in the face reserved
-   for what people wrote to each other has borrowed the wrong voice. The hero
-   says this same sentence in `.sg-mech`, and these two have to match or the
-   product speaks in two registers between the front door and the next screen. */
+/* The reading face, in ash. This used to be the UI face, on the argument that
+   the serif was reserved for what people wrote to each other. The front door
+   sets every explanation in the reading face now (hero.css `.hm-read`), because
+   a paragraph in the UI face at fifteen pixels read as chrome rather than as
+   something worth reading, and the screen after the front door has to speak in
+   the same voice or the product changes register on the way in. */
 .mn-copy {
-  max-width: 34ch;
-  font-family: var(--f-util);
-  font-size: 14.5px;
-  line-height: 1.62;
-  letter-spacing: -0.004em;
+  max-width: 36ch;
+  font-family: var(--f-letter);
+  font-optical-sizing: auto;
+  font-size: 16.5px;
+  line-height: 1.55;
+  letter-spacing: 0;
   color: var(--ash);
 }
 

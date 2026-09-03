@@ -56,7 +56,18 @@
   color: var(--chalk);
   text-decoration: none;
 }
-.hm-home .wl-lockup-mark { filter: drop-shadow(0 0 10px rgba(244, 241, 234, 0.18)); }
+/* The wordmark, set exactly as the intro sets it so the name that filled the
+   screen a second ago and the name in the corner are the same object. */
+.hm-word {
+  font-family: var(--f-display);
+  font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: var(--track-display, -0.018em);
+  color: var(--chalk);
+  transform: translateY(-0.03em);
+}
 .hm-nav { display: flex; align-items: center; gap: 2px; }
 .hm-navlink {
   padding: 8px 10px;
@@ -98,18 +109,27 @@
 .hm-title { margin-top: 14px; text-wrap: initial; }
 .hm-line { display: block; }
 
-/* The mechanic, in the mechanics face, at a size somebody reads rather than
-   skims. The one bold phrase is the half of the promise people do not expect. */
-.hm-mech {
-  margin: 20px 0 0;
-  max-width: 36ch;
-  font-family: var(--f-util);
-  font-size: 15.5px;
-  line-height: 1.6;
-  letter-spacing: 0.002em;
+/* ── the reading face, off the paper ──
+   Every paragraph on this page is set in the reading face, not the mechanics
+   face. Inter Tight is for what a person operates: a capsule, a field's meta, a
+   count. A paragraph explaining the mechanic is something a person READS, and
+   set in the UI face at fifteen pixels it read as interface chrome: correct,
+   plain, and not worth the eye's time. In the serif, at the size the letters
+   on the wall are set, the explanation has the same voice as the product. */
+.hm-read {
+  margin: 0;
+  font-family: var(--f-letter);
+  font-optical-sizing: auto;
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: 0;
   color: var(--ash);
 }
-.hm-mech b { font-weight: 500; color: var(--chalk); }
+.hm-read b, .hm-read strong { font-weight: 500; color: var(--chalk); }
+.hm-read a { color: var(--chalk); text-decoration: none; border-bottom: 1px solid var(--hair); }
+.hm-read a:hover { border-bottom-color: var(--chalk); }
+
+.hm-mech { margin-top: 22px; max-width: 38ch; font-size: 18px; }
 
 /* ── the ask ──
    The field IS the front door. Type a handle here and you are on /place with
@@ -120,12 +140,7 @@
 .hm-ask .wl-field input::placeholder { color: rgba(156, 151, 142, 0.5); }
 .hm-ask-row { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
 .hm-ask-row .wl-pill.is-light { min-height: 48px; padding: 0 24px; font-size: 14.5px; }
-.hm-ask-note {
-  font-family: var(--f-util);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ash);
-}
+.hm-ask-note { font-size: 15px; line-height: 1.5; max-width: 34ch; }
 @media (min-width: 480px) {
   .hm-ask-row { flex-direction: row; align-items: center; gap: 16px; }
   .hm-ask-note { flex: 1 1 200px; }
@@ -158,21 +173,23 @@
   grid-template-columns: 1fr 1fr;
   column-gap: 10px;
   align-items: start;
-  padding: 44px 4px 26px;
+  padding: 58px 4px 26px;
 }
+/* The seal, clear of the cards: a material needs its own ground to read as
+   one, and half over a cream corner it read as a smudge. */
 .hm-scene-mark {
   position: absolute;
   left: 50%;
   top: 0;
   z-index: 3;
   color: var(--chalk);
-  transform: translate(-50%, -8%) scale(1);
+  transform: translate(-50%, -22%) scale(1);
   filter: drop-shadow(0 0 12px rgba(255, 244, 228, 0.28));
   transition: opacity 900ms var(--ease), transform 900ms var(--ease), filter 900ms var(--ease);
 }
 .hm-scene.is-shut .hm-scene-mark {
-  opacity: 0.28;
-  transform: translate(-50%, 6%) scale(0.9);
+  opacity: 0.32;
+  transform: translate(-50%, -12%) scale(0.9);
   filter: none;
 }
 
@@ -225,14 +242,7 @@
 }
 .hm-sec-head { display: flex; flex-direction: column; gap: 12px; }
 .hm-sec-head .wl-label { color: var(--ash); }
-.hm-sec-copy {
-  margin: 0;
-  max-width: 40ch;
-  font-family: var(--f-util);
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--ash);
-}
+.hm-sec-copy { max-width: 40ch; }
 .hm-how-body { display: flex; flex-direction: column; gap: 26px; }
 
 .hm-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -247,14 +257,7 @@
 .hm-step-glyph { width: 52px; height: 52px; color: var(--chalk); margin-top: 2px; }
 .hm-step-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .hm-step-text .wl-label { color: var(--ash); }
-.hm-step-p {
-  margin: 0;
-  max-width: 46ch;
-  font-family: var(--f-util);
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: var(--ash);
-}
+.hm-step-p { max-width: 46ch; font-size: 16.5px; }
 
 /* The terms. A word in the feeling face and the fact beside it in the
    mechanics face. Not a stat row: none of these is a number. */
@@ -272,19 +275,13 @@
   font-family: var(--f-display);
   font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 22px;
+  font-optical-sizing: auto;
+  font-size: 23px;
   line-height: 1.1;
   letter-spacing: -0.012em;
   color: var(--chalk);
 }
-.hm-rule-v {
-  font-family: var(--f-util);
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--ash);
-}
-.hm-rule-v a { color: var(--chalk); text-decoration: none; border-bottom: 1px solid var(--hair); }
-.hm-rule-v a:hover { border-bottom-color: var(--chalk); }
+.hm-rule-v { font-size: 15.5px; line-height: 1.5; }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════
    Named, explained, counted, and given a door that says what it is. The
@@ -307,7 +304,7 @@
   white-space: nowrap;
 }
 .hm-wall-fact-k.is-h { font-size: 19px; letter-spacing: -0.01em; }
-.hm-wall-fact-v { font-family: var(--f-util); font-size: 12.5px; line-height: 1.4; color: var(--ash); }
+.hm-wall-fact-v { font-size: 14.5px; line-height: 1.4; }
 .hm-wall-go { align-self: flex-start; }
 .hm-wall-go .wl-arrow-g { color: var(--ash); }
 
@@ -361,9 +358,10 @@
      the scene and the gap: about 530px at 1440. "or neither of you does." is
      the line the break is chosen for, and it holds at 48px where 52 split it. */
   .hm-title.wl-display.is-xl { font-size: clamp(40px, 3.34vw, 48px); }
-  .hm-mech { font-size: 17px; max-width: 42ch; }
+  .hm-mech { font-size: 19px; max-width: 40ch; }
+  .hm-step-p { font-size: 17px; }
   .hm-stage { flex: 0 0 auto; width: 430px; }
-  .hm-scene { column-gap: 14px; padding: 50px 10px 30px; }
+  .hm-scene { column-gap: 14px; padding: 66px 10px 30px; }
   .hm-scene .wl-paper { min-height: 168px; padding: 17px 18px 18px; }
   .hm-scene .wl-prose { font-size: 15px; }
 
