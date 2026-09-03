@@ -58,29 +58,41 @@ const wallPath = path === BASE || path.startsWith(BASE + '/')
 // behind them. Both are true now, so Main claims `/`, `/place`, `/sky`,
 // `/reveal` and the open door at `/@handle`.
 //
-// The fork has to happen BEFORE App.jsx sees the path, for the reason the wall's
-// does: App's route table ends with a bare four letter matcher for a
-// competitor's tracking link, and any short word not on its reserved list is
-// claimed by it.
+// The fork happens BEFORE App.jsx sees the path, for the same reason the wall's
+// does: whichever shell mounts owns the address, and two shells reading the
+// same path is how a route ends up rendered twice in two designs.
 //
 // ── what Main deliberately does not claim ────────────────────────────────────
-// Everything else. `main/router.js` carries the list and the reason: /optout
-// and /copy are kept as they are, /signin waits for Phase 8's routing pass, and
-// /trial, /recruit, /c, /demo and /paid are all pending an answer in
-// docs/open-questions.md. A fork that swallowed them would be deleting features
-// by routing rather than by decision, which is the one way to delete something
-// without anybody approving it.
+// Everything else. `main/router.js` carries the list and the reason.
 //
 // `/signature` still resolves, unchanged. It is where Phase 3 was approved, the
 // two surfaces there are static and take no backend, and keeping it costs one
 // dynamic import that nobody who does not type the address will ever load.
 const SIGNATURE = '/signature'
 const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
-const mainPath = !sigPath && !wallPath && isMainPath(path)
+
+// ── the desk ─────────────────────────────────────────────────────────────────
+// Phase 7. /admin used to be a screen inside App.jsx, which meant the whole old
+// design, its three Google faces, the galaxy canvas and every screen in that
+// tree were loaded before a password had been typed. It is its own surface now,
+// forked here like the other three, so the desk's chunk is the only thing an
+// admin downloads and nobody else downloads it at all.
+const ADMIN = '/admin'
+const adminPath = path === ADMIN
+
+const mainPath = !sigPath && !wallPath && !adminPath && isMainPath(path)
 
 const root = createRoot(document.getElementById('root'))
 
-if (sigPath) {
+if (adminPath) {
+  import('./admin/index.jsx').then(({ default: AdminApp }) => {
+    root.render(
+      <StrictMode>
+        <AdminApp />
+      </StrictMode>,
+    )
+  })
+} else if (sigPath) {
   import('./signature/index.jsx').then(({ default: SignatureApp }) => {
     root.render(
       <StrictMode>

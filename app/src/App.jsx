@@ -1,8 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   placePing, pingStatus, fetchMyPings, renewPing, retirePing, fetchSlots,
-  suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, worldCounts, SLOT_CAP, FULL_SLOTS,
-  SUB_SLOT_CAP, SUB_PING_DAYS, DEMO_CARD,
+  suppressHandle, eraseAccount, normHandle, isValidHandle, linkHandles, SLOT_CAP, FULL_SLOTS,
 } from './api/celestual.js'
 import { standingCount } from './api/pings.js'
 import { getSession, signInStub, markVerified, signOut as clearAuthSession, resumeSession } from './api/auth.js'
@@ -11,14 +10,14 @@ import { bindRecovery, requestSignInLink, redeemSignInLink, beginSignIn } from '
 import { makeColors } from './theme.js'
 import { SENDOFF_SECONDS } from './galaxy.js'
 import {
-  GalaxyCanvas, CommunityGalaxyCanvas, Liftoff, Masthead, IndexColumn,
-  useNarrow, rgba, INDEX_W,
+  GalaxyCanvas, Liftoff, Masthead, IndexColumn,
+  useNarrow, INDEX_W,
 } from './components/ui.jsx'
 import {
   LandingScreen, OpenDoorScreen, WhoScreen, YouScreen, PlacedScreen, PingsScreen,
-  SkyCardScreen, CommunityScreen, WorldsScreen, MutualScreen, FourthSlotScreen, PrivacyScreen,
-  SendoffScreen, AccountSheet, IgVerifySheet, EduVerifySheet, PublicStarSheet,
-  ComposeScreen, RevealScreen, CopyCodeScreen, SignInScreen, PaidScreen,
+  MutualScreen, FourthSlotScreen,
+  SendoffScreen, AccountSheet, IgVerifySheet,
+  ComposeScreen, RevealScreen, PaidScreen,
 } from './components/screens.jsx'
 import { makeCard, toWire, fromWire, tintOf } from './card/model.js'
 import * as photos from './card/photos.js'
@@ -26,12 +25,6 @@ import { CardResolve } from './card/Resolve.jsx'
 import {
   billingEnabled, planOffered, startCheckout, confirmCheckout, returnFromCheckout, scrubReturnUrl,
 } from './api/billing.js'
-import { TrialScreen } from './components/trial.jsx'
-import { AdminScreen } from './components/admin.jsx'
-import { rememberRef, loadRef, clearRef, countVisit, attributeSignup } from './api/recruit.js'
-import { RESERVED_CODES } from './api/trial.js'
-import { CURATED, CURATED_SLUGS, isCurated, communityOpen } from './communities.js'
-import { DEMO_COMMUNITIES, DEMO_PUBLIC, DEMO_PINGS, DEMO_ME } from './demoData.js'
 import { useI18n } from './i18n/index.js'
 
 // The screens — docs/ULTIMATE-PRODUCT-FRAMEWORK.md Part 4, one component each.
@@ -44,17 +37,9 @@ const SCREENS = {
   sendoff: SendoffScreen, // the @ becomes a star and flies into the galaxy
   placed: PlacedScreen, //  3 · placed — the recruiter screen
   pings: PingsScreen, //    4 · your pings — the status page
-  door: SkyCardScreen, //   5 · the open-sky community share card
-  worlds: WorldsScreen, //  communities — the curated list
-  community: CommunityScreen, // a community page (/c/slug) — the ring + weekly readout
   mutual: MutualScreen, //  8 · the match, announced and then gone
   reveal: RevealScreen, //      the spread: two stars fusing, two cards unsealing
   fourth: FourthSlotScreen, // 9 · the third-slot checkout (route key kept as 'fourth' for old sessions)
-  privacy: PrivacyScreen, //    privacy + the public opt-out (/optout)
-  copy: CopyCodeScreen, //   /copy#c=…: the verification email's copy button lands here
-  signin: SignInScreen, //   /signin#t=…: the sign-back-in magic link redeems here
-  trial: TrialScreen, //     /trial: the first light competition — the brief + entry
-  admin: AdminScreen, //     /admin: the password-gated desk
   paid: PaidScreen, //       /paid: coming back from Stripe (docs/STRIPE-SETUP.md)
 }
 
@@ -90,7 +75,7 @@ const starKind = (C, ping) =>
 // and a row the server has nothing for is not asked twice. This is how a
 // restored ping comes back with the whole card on a phone that has never seen
 // it, and how a mutual's other half arrives at all.
-function usePhotoUrls(pings, { me, proof, demo } = {}) {
+function usePhotoUrls(pings, { me, proof } = {}) {
   const [urls, setUrls] = useState({})
   const ids = useMemo(
     () => [...new Set(pings.flatMap((p) => [p.photoId, p.theirPhotoId]).filter(Boolean))].join('|'),
@@ -103,7 +88,7 @@ function usePhotoUrls(pings, { me, proof, demo } = {}) {
       want.map((id) => {
         const at = photos.parseKey(id)
         return photos
-          .ensurePhoto({ key: id, me, them: at && at.handle, proof, mine: !at || at.mine, demo })
+          .ensurePhoto({ key: id, me, them: at && at.handle, proof, mine: !at || at.mine })
           .then(() => photos.photoUrl(id))
           .then((u) => [id, u])
       }),
@@ -127,76 +112,22 @@ function usePhotoUrls(pings, { me, proof, demo } = {}) {
     // before a session is resumed, so the first pass can run with nothing to
     // authenticate a fetch with. Both re-runs are free — `ensurePhoto` answers
     // from the cache, or from "there isn't one", without touching the network.
-  }, [ids, me, proof, demo])
+  }, [ids, me, proof])
   useEffect(() => () => photos.releaseUrls(), [])
   return urls
 }
 
-// Seed the sandbox's live community numbers (progress + weekly readout) from the
-// hardcoded demo overlay, keyed by curated slug. Ephemeral — never persisted, so
-// it resets the moment the tab closes.
-const seedDemoCommLive = () => {
-  const o = {}
-  for (const slug of CURATED_SLUGS) {
-    const d = DEMO_COMMUNITIES[slug] || {}
-    o[slug] = {
-      open: d.open != null ? !!d.open : undefined, // sandbox-forced sky state (production: the countdown decides)
-      members: Number(d.members || 0),
-      pings: d.pings != null ? Number(d.pings) : null, // galaxy stars (null = withheld while gathering)
-      matches: d.matches != null ? Number(d.matches) : null, // constellations
-      week: d.week || null,
-    }
-  }
-  return o
-}
-
 // ── routes ────────────────────────────────────────────────────────────────────
-// /demo         → the sandbox (auto-verify, hardcoded sample data)
-// /demo?seed    → the sandbox pre-seeded mid-story (pings placed, a community
-//                 joined) — for design review and quick previews
-// /@handle      → someone's open door, ping field prefilled (Loop B)
-// /c/<slug>     → a curated community page (the ring + weekly readout)
-// /optout       → the public opt-out page
+// Phase 8. What is left of this table after the routing pass, and it is short on
+// purpose. Main owns `/`, `/place`, `/sky`, `/reveal` and `/@handle`; the wall
+// owns `/berkeley`; the desk owns `/admin`. `/c/<slug>` and `/demo` are retired
+// (Q15 and Q16). What lands here is the Stripe return, which Q3 keeps out of
+// scope, and nothing else.
 const parseRoute = () => {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
-  if (/(^|\/)demo$/.test(path)) return { demo: true, seed: /(^|[?&])seed(=|&|$)/.test(window.location.search || '') }
-  const at = path.match(/^\/@([a-zA-Z0-9._]{1,30})$/)
-  if (at) return { poster: normHandle(at[1]) }
-  const community = path.match(/^\/c\/([a-z0-9-]{1,64})$/i)
-  if (community && isCurated(community[1].toLowerCase())) return { community: community[1].toLowerCase() }
-  if (path === '/optout') return { optout: true }
-  // /r/<code> — an old-style tracking link (migration 0016), kept as an alias.
-  // It lands on the ordinary cold landing; the code is remembered so the signup
-  // it leads to is credited to its competitor.
-  const ref = path.match(/^\/r\/([a-z0-9]{4,16})$/i)
-  if (ref) return { ref: ref[1].toLowerCase() }
-  // /trial — the first light competition: the brief, the doc, the entry.
-  // /admin — the desk. /recruit (the retired 0016 flow) lands on the trial too,
-  // so any link still out in a DM keeps working.
-  if (path === '/trial' || path === '/recruit') return { trial: true }
-  if (path === '/admin') return { admin: true }
-  // /paid?s=<checkout session> — where Stripe sends someone back after the
-  // hosted payment page (?c=1 if they backed out). The word is reserved in
-  // api/trial.js so a competitor can never claim it as a four-letter code.
+  // /paid?s=<checkout session> — where Stripe sends somebody back after the
+  // hosted payment page (?c=1 if they backed out).
   if (path === '/paid') return { paid: true }
-  // /copy#c=1234 — the verification email's copy button. The code rides the
-  // FRAGMENT so it never appears in a request line or a server log.
-  if (path === '/copy') {
-    const m = (window.location.hash || '').match(/c=(\d{4,8})/)
-    return { copy: true, copyCode: m ? m[1] : '' }
-  }
-  // /signin#t=<token> — the sign-back-in magic link (Fix B). The one-time token
-  // rides the FRAGMENT so it never reaches a server log; the SignInScreen redeems
-  // it for a fresh proof and restores the pings.
-  if (path === '/signin') {
-    const m = (window.location.hash || '').match(/t=([0-9a-fA-F]{16,128})/)
-    return { signin: true, signinToken: m ? m[1] : '' }
-  }
-  // /<code> — a trial competitor's ROOT-LEVEL tracking link (migration 0017):
-  // exactly four letters, chosen by them. Checked LAST so every named route
-  // above wins first, and never for the words the router reserves.
-  const four = path.match(/^\/([a-z]{4})$/i)
-  if (four && !RESERVED_CODES.includes(four[1].toLowerCase())) return { ref: four[1].toLowerCase() }
   return {}
 }
 
@@ -232,20 +163,18 @@ export default function App() {
     return () => { pre.remove(); css.remove() }
   }, [])
   const route = useMemo(parseRoute, [])
-  const [demo] = useState(!!route.demo)
 
   const init = useMemo(() => {
-    if (route.demo) return {}
     try {
       return JSON.parse(localStorage.getItem(STORE)) || {}
     } catch {
       return {}
     }
-  }, [route.demo])
+  }, [])
 
   // ── identity ──
-  const [session, setSession] = useState(() => (route.demo ? null : getSession()))
-  const [me, setMe] = useState(init.me || session?.handle || (route.seed ? DEMO_ME : ''))
+  const [session, setSession] = useState(() => getSession())
+  const [me, setMe] = useState(init.me || session?.handle || '')
   const [email, setEmail] = useState(init.email || '')
   const [altHandles, setAltHandles] = useState(init.altHandles || [])
   // Identity is proven for the CURRENT handle only — a DM session is bound to
@@ -260,13 +189,12 @@ export default function App() {
   // [{ handle|null, time, expires_at, mutual, reachable, intent }]
   // Plaintext handles live HERE (and in localStorage) only — the server stores
   // hashes. `handle: null` rows are pings restored from another device.
-  const [pings, setPings] = useState(() => (demo ? (route.seed ? DEMO_PINGS : []) : init.pings || []))
-  const [them, setThem] = useState(route.poster || '')
+  const [pings, setPings] = useState(() => init.pings || [])
+  const [them, setThem] = useState('')
   // the photographs this device holds for the cards above, as object URLs
   const cardUrls = usePhotoUrls(pings, {
     me: normHandle(me),
     proof: session?.provider === 'instagram_dm' ? session.proof : undefined,
-    demo,
   })
   const [error, setError] = useState('')
   const [lastPlaced, setLastPlaced] = useState(null) // { handle, reachable }
@@ -282,103 +210,25 @@ export default function App() {
   //          'resolved' → `route` is 'signup' | 'dm' | 'email'; `to` is the
   //                       masked inbox the link actually went to
   const [identity, setIdentity] = useState({ phase: 'idle', route: '', to: '', fresh: false })
-  // ── recruitment attribution (migration 0016) ──
-  // The tracking code this visitor arrived through, if any. Held until they
-  // finish verifying, at which point the signup is credited to that recruiter
-  // once and the code is dropped. Nothing about the visitor is ever sent with it.
-  const [ref, setRef] = useState(() => (demo ? '' : route.ref || init.ref || loadRef()))
-  useEffect(() => {
-    if (demo || !route.ref) return
-    rememberRef(route.ref)
-    countVisit(route.ref)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  // sandbox only: the monetization preview state (docs/PRICING-REVENUE.md keeps
-  // production dormant — the free two, one door, no money). `demoExtraSlots`
-  // counts one-time $2.99 slots bought beyond the free two; `demoSubscribed` is
-  // the $12.99/mo plan, which raises the cap to ten and (in placeCommit, below)
-  // makes newly placed demo pings stand six months instead of sixty days.
-  const [demoExtraSlots, setDemoExtraSlots] = useState(0)
-  const [demoSubscribed, setDemoSubscribed] = useState(false)
-  // In production the cap is the SERVER's answer (migration 0021: the free two
-  // plus whatever this person holds, and ten while a plan is live), never a
-  // client constant — a bought slot has to show up on every device the moment
-  // it's paid for. SLOT_CAP is the floor for the no-backend fallback.
-  const slotCap = demo
-    ? (demoSubscribed ? SUB_SLOT_CAP : SLOT_CAP + demoExtraSlots)
-    : Math.max(SLOT_CAP, Number(slots?.cap) || 0)
-  // sandbox only: which standing ping is mid-checkout for an extend ($2.99) —
-  // set by startExtend when the status page's renew is tapped, cleared once the
-  // checkout succeeds (finishExtend) or the moment the screen is left.
-  const [extendHandle, setExtendHandle] = useState(null)
+  // The cap is the SERVER's answer (migration 0021: the free two plus whatever
+  // this person holds, and ten while a plan is live), never a client constant,
+  // because a bought slot has to show up on every device the moment it is paid
+  // for. SLOT_CAP is the floor for the no-backend fallback.
+  //
+  // The sandbox's preview of all this went with /demo in Phase 8 (Q16). The
+  // billing layer itself is untouched, per Q3.
+  const slotCap = Math.max(SLOT_CAP, Number(slots?.cap) || 0)
 
-  // ── communities (the curated launch spaces) ──
-  // Membership (which curated slugs you've joined) persists like a light
-  // preference; the live numbers (progress, weekly readout) are ephemeral —
-  // seeded in the sandbox, best-effort fetched in production. The onboarding
-  // `openCommunity` is which one the
-  // community page is showing.
-  // Membership is SINGLE — you can be in exactly one community, the one you're
-  // really at, proven by a .edu code (schoolCred). What it scopes is the SKY,
-  // never the reach: your placed pings light up as stars in your community's
-  // galaxy and count toward its weekly numbers, while the ping itself reaches
-  // its person anywhere — same community, another one, or none (MASTER-GUIDE
-  // §2.6: placing a ping never depends on any of this). Older saves may hold
-  // several slugs; collapse to the first so the one-community rule holds
-  // retroactively.
-  const [joinedSlugs, setJoinedSlugs] = useState(() => (demo ? (route.seed ? [CURATED_SLUGS[0]] : []) : (init.memberships || []).slice(0, 1)))
-  // The verified school credential for the joined community: { slug, email }. Kept
-  // like a light preference (never the code — that lived only server-side).
-  const [schoolCred, setSchoolCred] = useState(() => (demo ? null : init.schoolCred || null))
-  const [commLive, setCommLive] = useState(() => (demo ? seedDemoCommLive() : {}))
-  const [openCommunity, setOpenCommunity] = useState(route.community || CURATED_SLUGS[0])
-  // The .edu gate overlay: { slug } while it's up. Verified → membership commits.
-  const [eduVerify, setEduVerify] = useState(null)
-  // The live engine of the app-wide backdrop when it's showing your community's
-  // galaxy — so a placed ping can launch your own star into it. The ambient
-  // field keeps its own handle for the same reason (the no-community sky).
-  const homeGalaxyRef = useRef(null)
+  // ── communities are retired ─────────────────────────────────────────────────
+  // Q15, Phase 8. The curated launch spaces, the school registry, the community
+  // galaxy, the .edu join gate and the public @ opt-in all came off with the
+  // route they were reached from. The Wall at /berkeley is the campus surface
+  // now, and its gate is its own.
+  //
+  // What survived is below, because it was never about a community: the labels
+  // and lights of your own stars in the ambient field.
   const ambientGalaxyRef = useRef(null)
 
-  // ── your @ in the sky (the public opt-in) ──
-  // Off by default: your star is anonymous. Flipping it public (one warning
-  // first — PublicStarSheet) rests your own @ above your star in your
-  // community's sky, visible to anyone watching it. It announces that you're
-  // HERE, never who you pinged — the double-blind is untouched. Reversible
-  // anytime, persisted like a light preference.
-  const [publicStar, setPublicStar] = useState(() => (demo ? false : !!init.publicStar))
-  const [publicAsk, setPublicAsk] = useState(false)
-
-  // The list handed to the UI: the curated registry, overlaid with live numbers
-  // and your membership.
-  const communities = useMemo(
-    () =>
-      CURATED.map((c) => {
-        const live = commLive[c.slug] || {}
-        return {
-          ...c,
-          open: live.open, // sandbox-only override; undefined in production, where the countdown decides
-          members: Number(live.members || 0),
-          pings: live.pings != null ? Number(live.pings) : null,
-          matches: live.matches != null ? Number(live.matches) : null,
-          week: live.week || null,
-          joined: joinedSlugs.includes(c.slug),
-        }
-      }),
-    [commLive, joinedSlugs],
-  )
-
-  // Your one community (the joined one), or null. Drives the app-wide backdrop
-  // galaxy, the "your community" surfaces, and the sky-share card.
-  const homeCommunity = useMemo(() => communities.find((c) => c.joined) || null, [communities])
-
-  // The @s this device's pings hold, in ping order — the labels of your own
-  // stars in whichever sky is behind the app, each carrying who that ping is to
-  // you (the category tint its star wears). Plaintext lives here only.
-  const mineLabels = useMemo(
-    () => pings.filter((p) => p.handle).map((p) => ({ label: normHandle(p.handle), kind: starKind(C, p) })),
-    [pings, C],
-  )
   // aligned by index with the ambient field's sealed stars (null = restored
   // from another device; that star stays unnamed)
   const sealLabels = useMemo(() => pings.map((p) => (p.handle ? normHandle(p.handle) : null)), [pings])
@@ -386,14 +236,6 @@ export default function App() {
   // the card that ping carries: measured off the photograph, or off the plate
   // it stands on. Nobody chose it from a list, which is the point.
   const sealKinds = useMemo(() => pings.map((p) => starKind(C, p)), [pings, C])
-  // The opted-in public @s resting in your community's sky. The sandbox seeds a
-  // handful per community; production fills this from the server when the
-  // opt-in ships its backend.
-  const publicHandles = useMemo(() => {
-    if (!homeCommunity) return []
-    return demo ? DEMO_PUBLIC[homeCommunity.slug] || [] : []
-  }, [demo, homeCommunity])
-  const ownPublic = publicStar && normHandle(me) ? normHandle(me) : null
 
   // ── when the next slot opens ────────────────────────────────────────────────
   // Scarcity is the sincerity mechanism, and a mechanism nobody can see the
@@ -453,19 +295,12 @@ export default function App() {
   const established = verified || pings.length > 0
   // Email recovery (and therefore the server-side identity router) is available
   // whenever the real backend is wired and we're not in the sandbox.
-  const recoveryEnabled = igVerifyEnabled() && !demo
+  const recoveryEnabled = igVerifyEnabled()
 
   // ── navigation ──
   const firstScreen = () => {
-    if (route.poster) return 'open'
-    if (route.community) return 'community'
-    if (route.optout) return 'privacy'
-    if (route.copy) return 'copy'
-    if (route.signin) return 'signin'
-    if (route.trial) return 'trial'
-    if (route.admin) return 'admin'
     if (route.paid) return 'paid'
-    if (!demo && init.screen && SCREENS[init.screen] && !['mutual', 'reveal', 'placed', 'you', 'who', 'compose', 'sendoff', 'signin', 'copy', 'agree', 'trial', 'admin', 'paid'].includes(init.screen)) return init.screen
+    if (init.screen && SCREENS[init.screen] && !['mutual', 'reveal', 'placed', 'you', 'who', 'compose', 'sendoff', 'signin', 'copy', 'agree', 'paid'].includes(init.screen)) return init.screen
     if (pings.length) return 'pings'
     return 'landing'
   }
@@ -535,32 +370,25 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [applyScreen])
 
-  // Leaving the checkout screen any other way (back button, "not now", "let one
-  // go") drops the pending extend — otherwise a later visit for an unrelated
-  // reason (a fresh slot purchase) would wrongly re-open in extend mode.
-  useEffect(() => {
-    if (screen !== 'fourth' && extendHandle) setExtendHandle(null)
-  }, [screen, extendHandle])
-
   // ── persistence (never in the sandbox) ──
   const persistReady = useRef(false)
   useEffect(() => {
     persistReady.current = true
   }, [])
   useEffect(() => {
-    if (demo || !persistReady.current) return
+    if (!persistReady.current) return
     try {
       const who = established ? { me, email, altHandles } : {}
       localStorage.setItem(
         STORE,
-        JSON.stringify({ screen, ...who, pings: established ? pings : [], memberships: joinedSlugs, schoolCred, publicStar, ref }),
+        JSON.stringify({ screen, ...who, pings: established ? pings : [] }),
       )
     } catch {
       /* private mode / quota — fine to skip */
     }
-  }, [demo, screen, me, email, altHandles, pings, joinedSlugs, schoolCred, publicStar, ref, established])
+  }, [screen, me, email, altHandles, pings, established])
 
-  // ── verification (Instagram DM — the /demo variant auto-verifies) ──
+  // ── verification (the Instagram DM code) ──
   const openVerify = useCallback((handle, onDone) => {
     setVerify({ handle: normHandle(handle), onDone })
   }, [])
@@ -568,14 +396,11 @@ export default function App() {
   const onVerified = useCallback(
     (proof, adoptedHandle) => {
       if (!verify) return
-      // Migration 0012: identity is the Meta-authenticated account that DM'd, not
-      // the typed hint. Adopt that @ (falling back to the typed one for the demo
-      // stub, which returns no adopted handle).
+      // Migration 0012: identity is the Meta-authenticated account that DM'd,
+      // not the typed hint. Adopt that @, falling back to the typed one for the
+      // local stub, which returns no adopted handle.
       const handle = normHandle(adoptedHandle) || verify.handle
-      const s = demo
-        ? { verified: true, provider: 'instagram_dm', handle, proof, email: '', name: '' }
-        : markVerified(handle, proof)
-      setSession(s)
+      setSession(markVerified(handle, proof))
       // Reconcile `me` to the adopted @ so `verified` (which compares
       // session.handle to me) holds and the ping's "from" is the real account.
       if (handle && normHandle(me) !== handle) setMe(handle)
@@ -583,27 +408,20 @@ export default function App() {
       // proof and only when an email exists to recover to. Best-effort, off the
       // critical path.
       const recoveryEmail = email && email.trim()
-      if (!demo && proof && recoveryEmail) {
+      if (proof && recoveryEmail) {
         bindRecovery({ handle, proof, email: recoveryEmail }).catch(() => {})
-      }
-      // If they arrived through a recruit's tracking link, this is the moment
-      // that counts: a verified handle, credited once to the code that sent
-      // them. Best-effort and off the critical path.
-      if (!demo && handle && ref) {
-        attributeSignup(handle).catch(() => {})
-        setRef('')
       }
       const done = verify.onDone
       setVerify(null)
       if (done) done(proof, handle)
     },
-    [verify, demo, me, email, ref],
+    [verify, me, email],
   )
 
   // Resume a verification interrupted by the Instagram hand-off (mobile can
   // reload this tab; the saved code keeps polling instead of stranding them).
   useEffect(() => {
-    if (demo || route.signin || session?.verified || !igVerifyEnabled()) return
+    if (session?.verified || !igVerifyEnabled()) return
     const saved = loadPending()
     if (!saved || !saved.handle) return
     setMe((m) => m || saved.handle)
@@ -612,7 +430,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (demo) return
     let live = true
     resumeSession().then((s) => {
       if (live && s) {
@@ -629,9 +446,7 @@ export default function App() {
   // ── slots ──
   // The local count is always live; the server snapshot (proof-gated) can only
   // ever raise it (e.g. pings placed on another device).
-  const slotsStanding = demo
-    ? standingCount(pings)
-    : Math.max(standingCount(pings), Number.isFinite(slots?.standing) ? slots.standing : 0)
+  const slotsStanding = Math.max(standingCount(pings), Number.isFinite(slots?.standing) ? slots.standing : 0)
 
   // ── the gap, and why it is now a visible thing ──────────────────────────────
   // A device that has never restored holds no ping rows, and the server still
@@ -649,10 +464,9 @@ export default function App() {
   // asserting something the list does not show.
   const unaccounted = Math.max(0, slotsStanding - standingCount(pings))
   useEffect(() => {
-    if (demo) return
     let live = true
     const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
-    fetchSlots(me, { proof, demo })
+    fetchSlots(me, { proof })
       .then((s) => {
         if (live && s) setSlots(s)
       })
@@ -660,19 +474,18 @@ export default function App() {
     return () => {
       live = false
     }
-  }, [me, demo, session])
+  }, [me, session])
 
   // ── status refresh (Screen 4 stays true) ──
   // Sends the device-held plaintext list up; gets live state back. The server
   // can't produce the list itself — it stores hashes.
   useEffect(() => {
-    if (demo) return
     const named = pings.filter((p) => p.handle).map((p) => p.handle)
     if (!named.length || !normHandle(me)) return
     let live = true
     const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
     const id = setTimeout(() => {
-      pingStatus({ me, handles: named, proof, demo })
+      pingStatus({ me, handles: named, proof })
         .then((rows) => {
           if (!live || !rows.length) return
           setPings((prev) =>
@@ -703,41 +516,17 @@ export default function App() {
       clearTimeout(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me, demo, pings.length, session])
+  }, [me, pings.length, session])
 
   // Register the user's own @s as one identity group (multi-account).
   useEffect(() => {
     const uniq = [...new Set([me, ...altHandles].map(normHandle).filter(Boolean))]
     if (uniq.length < 2) return
     const id = setTimeout(() => {
-      linkHandles(uniq, { demo }).catch(() => {})
+      linkHandles(uniq).catch(() => {})
     }, 700)
     return () => clearTimeout(id)
-  }, [me, altHandles, demo])
-
-  // ── community counts (production only; the sandbox seeds its own) ──
-  // Best-effort: fill each curated community's progress from the server. The demo
-  // owns its numbers locally, and everything degrades to "gathering" if the fetch
-  // is empty, so nothing here blocks the communities UI.
-  useEffect(() => {
-    if (demo) return
-    let live = true
-    worldCounts(CURATED_SLUGS)
-      .then((rows) => {
-        if (!live || !rows || !rows.length) return
-        setCommLive((prev) => {
-          const next = { ...prev }
-          for (const r of rows) {
-            if (r && r.slug) next[r.slug] = { ...(next[r.slug] || {}), current: Number(r.count || 0) }
-          }
-          return next
-        })
-      })
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [demo])
+  }, [me, altHandles])
 
   // ── the send-off animation ──
   // Collapse the @ field into a star (Liftoff) and hand off to the galaxy's drift
@@ -821,7 +610,6 @@ export default function App() {
   const [skyView, setSkyView] = useState(null) // { handle, index, arrived } while held
   const skyFlight = !!skyView
   const endSkyView = useCallback(() => {
-    if (homeGalaxyRef.current && homeGalaxyRef.current.releaseDive) homeGalaxyRef.current.releaseDive()
     if (ambientGalaxyRef.current) {
       ambientGalaxyRef.current.clearFocus()
       if (ambientGalaxyRef.current.setNavEnabled) ambientGalaxyRef.current.setNavEnabled(false)
@@ -838,9 +626,7 @@ export default function App() {
       // guess how long the flight takes. `onArrive` is only the moment the
       // close button is allowed to appear.
       const onArrive = () => setSkyView((v) => (v && v.handle === h ? { ...v, arrived: true } : v))
-      if (homeCommunity && homeGalaxyRef.current) {
-        ok = !!homeGalaxyRef.current.locateMine(h, { hold: true, onArrive })
-      } else if (ambientGalaxyRef.current) {
+      if (ambientGalaxyRef.current) {
         const i = pings.findIndex((p) => normHandle(p.handle || '') === h)
         if (i >= 0) {
           ambientGalaxyRef.current.focusStar(i, { hold: true, onArrive })
@@ -852,7 +638,7 @@ export default function App() {
       if (!ok) return
       setSkyView({ handle: h, index, arrived: false })
     },
-    [homeCommunity, pings, skyView],
+    [pings, skyView],
   )
 
   // What the held star turns out to be. A ping placed before the card existed
@@ -868,15 +654,6 @@ export default function App() {
       ? { ...row.card, handle: skyView.handle, photoId: row.photoId || null }
       : makeCard({ handle: skyView.handle, words: '', placed: row.time })
   }, [skyView, pings])
-
-  // ── the public @ (announce yourself in your community's sky) ──
-  // Turning it ON goes through the warning sheet; turning it OFF is one tap.
-  const askPublicStar = useCallback(() => setPublicAsk(true), [])
-  const confirmPublicStar = useCallback(() => {
-    setPublicStar(true)
-    setPublicAsk(false)
-  }, [])
-  const retractPublicStar = useCallback(() => setPublicStar(false), [])
 
   // ── the flow ──
   // The composed card, on its way from the composer to the server. A ref and
@@ -936,11 +713,8 @@ export default function App() {
       // re-render in the middle of that must not be able to lose the poster.
       const draft = draftCard.current
       const card = draft ? makeCard({ ...draft, handle: target }) : null
-      // The sandbox subscription stands its pings six months instead of sixty
-      // days (SUB_PING_DAYS) — production duration stays server-set.
-      const days = demo && demoSubscribed ? SUB_PING_DAYS : undefined
       try {
-        const res = await placePing({ me: from, them: target, email, proof, card: toWire(card), demo, days })
+        const res = await placePing({ me: from, them: target, email, proof, card: toWire(card) })
         if (res?.slots) setSlots(res.slots)
         if (res?.error === 'no_slots') {
           go('fourth')
@@ -982,7 +756,7 @@ export default function App() {
           card.photoId = photoId
           card.hasPhoto = !!photoId
         }
-        photos.uploadPhoto({ me: from, them: target, proof, blob: draft && draft.blob, demo }).catch(() => {})
+        photos.uploadPhoto({ me: from, them: target, proof, blob: draft && draft.blob }).catch(() => {})
         // Their half, and it can only exist if the pair is already mutual.
         const theirCard = res?.mutual && res.match_card ? fromWire(res.match_card, { handle: target }) : null
 
@@ -1020,21 +794,6 @@ export default function App() {
           go('mutual')
           return
         }
-        // If you're in a community, this ping also lands in its sky: your own star
-        // launches into the app-wide backdrop galaxy (marked as yours, carrying
-        // its @ so it stays findable in the crowd), and — in the sandbox — the
-        // community's live ping count ticks. The ping itself already reached its
-        // person above, community or not: the sky is a lens, never a boundary.
-        if (homeCommunity && homeGalaxyRef.current) {
-          homeGalaxyRef.current.launch(1, { mine: true, label: target, kind: card ? tintOf(C, card.tone) : '' })
-        }
-        if (demo && homeCommunity && communityOpen(homeCommunity)) {
-          setCommLive((prev) => {
-            const cur = prev[homeCommunity.slug] || {}
-            if (cur.pings == null) return prev
-            return { ...prev, [homeCommunity.slug]: { ...cur, pings: Number(cur.pings) + 1 } }
-          })
-        }
         setLastPlaced({ handle: target, reachable: !!res.reachable })
         // the @ collapses into a star and flies into the galaxy, then 'placed'.
         runSendoff(target, 'placed')
@@ -1044,83 +803,7 @@ export default function App() {
         go('who')
       }
     },
-    [me, them, email, demo, demoSubscribed, session, go, t, runSendoff, homeCommunity, C],
-  )
-
-  // ── communities (curated: join / leave, view, and the sandbox live feed) ──
-  // A live membership mirror, so join/leave can read the current set without
-  // depending on it (and re-creating the callback every join).
-  const joinedRef = useRef(joinedSlugs)
-  useEffect(() => {
-    joinedRef.current = joinedSlugs
-  }, [joinedSlugs])
-
-  // Commit membership once the .edu code is verified. SINGLE by construction: this
-  // replaces any prior membership, and stamps the verified credential. In the
-  // sandbox it also nudges the member count (you're now one of them).
-  const commitMembership = useCallback(
-    (slug, cred) => {
-      if (!isCurated(slug)) return
-      const already = joinedRef.current.includes(slug)
-      setJoinedSlugs([slug])
-      setSchoolCred(cred || { slug })
-      if (demo && !already) {
-        setCommLive((prev) => ({
-          ...prev,
-          [slug]: { ...(prev[slug] || {}), members: Number((prev[slug] && prev[slug].members) || 0) + 1 },
-        }))
-      }
-    },
-    [demo],
-  )
-
-  // Joining a community means proving you're at that school: open the .edu gate.
-  // Already in it → no-op. The gate's success (onEduVerified) commits membership.
-  const joinCommunity = useCallback(
-    (slug) => {
-      if (!isCurated(slug)) return
-      if (joinedRef.current.includes(slug)) return
-      setEduVerify({ slug })
-    },
-    [],
-  )
-  const onEduVerified = useCallback(
-    ({ slug, email: eduEmail }) => {
-      commitMembership(slug, { slug, email: eduEmail || '' })
-      setEduVerify(null)
-    },
-    [commitMembership],
-  )
-  const leaveCommunity = useCallback((slug) => {
-    setJoinedSlugs((prev) => prev.filter((s) => s !== slug))
-    setSchoolCred((prev) => (prev && prev.slug === slug ? null : prev))
-  }, [])
-  const viewCommunity = useCallback(
-    (slug) => {
-      setOpenCommunity(isCurated(slug) ? slug : CURATED_SLUGS[0])
-      go('community')
-    },
-    [go],
-  )
-
-  // Sandbox only: a live beat nudges the community it names, so the galaxy fills
-  // and the weekly readout ticks as you watch. A ping adds a star; a match lights
-  // a constellation; a join grows the membership. Counts only move on an OPEN
-  // community (matches/pings stay withheld — null — while it's still gathering).
-  const bumpCommunityActivity = useCallback(
-    (slug, kind) => {
-      if (!demo || !isCurated(slug)) return
-      setCommLive((prev) => {
-        const cur = prev[slug] || { members: 0, pings: null, matches: null, week: null }
-        const next = { ...cur }
-        if (kind === 'join') next.members = Number(cur.members || 0) + 1
-        if (kind === 'ping' && cur.pings != null) next.pings = Number(cur.pings) + 1
-        if (kind === 'match' && cur.matches != null) next.matches = Number(cur.matches) + 1
-        if (cur.week && kind === 'join') next.week = { ...cur.week, joined: Number(cur.week.joined || 0) + 1 }
-        return { ...prev, [slug]: next }
-      })
-    },
-    [demo],
+    [me, them, email, session, go, t, runSendoff],
   )
 
   // Place — from the composer. `card` is what it composed:
@@ -1154,13 +837,13 @@ export default function App() {
       go('you')
       return
     }
-    if (!verified && (demo || igVerifyEnabled())) {
+    if (!verified && igVerifyEnabled()) {
       openVerify(me, (proof, handle) => placeCommit(proof, handle))
       return
     }
-    if (!verified && !demo) setSession(signInStub())
+    if (!verified) setSession(signInStub())
     await placeCommit()
-  }, [me, them, pings, demo, verified, go, t, placeCommit, openVerify])
+  }, [me, them, pings, verified, go, t, placeCommit, openVerify])
 
   // From the identity step: prove the @, then resume whatever was waiting.
   //
@@ -1188,13 +871,13 @@ export default function App() {
       }
       placeCommit(proof, handle)
     }
-    if (!verified && (demo || igVerifyEnabled())) {
+    if (!verified && igVerifyEnabled()) {
       openVerify(me, resume)
       return
     }
-    if (!verified && !demo) setSession(signInStub())
+    if (!verified) setSession(signInStub())
     resume()
-  }, [me, them, demo, verified, openVerify, placeCommit, go])
+  }, [me, them, verified, openVerify, placeCommit, go])
 
   // ── sign back in (cross-device) ──
   const startLogin = useCallback(() => {
@@ -1278,10 +961,10 @@ export default function App() {
     async (proofOverride, meOverride) => {
       const proof = proofOverride ?? (session?.provider === 'instagram_dm' ? session.proof : undefined)
       const handle = normHandle(meOverride) || normHandle(me)
-      if (demo || !handle || !proof) return false
+      if (!handle || !proof) return false
       setLedgerState({ phase: 'reading' })
       try {
-        const server = await fetchMyPings({ handle, proof, demo })
+        const server = await fetchMyPings({ handle, proof })
         if (server.length) mergeLedger(server)
         setLedgerState({ phase: 'read' })
         return true
@@ -1290,7 +973,7 @@ export default function App() {
         return false
       }
     },
-    [me, demo, session, mergeLedger],
+    [me, session, mergeLedger],
   )
 
   // ── the quiet restore ───────────────────────────────────────────────────────
@@ -1302,13 +985,12 @@ export default function App() {
   // Keyed on the proven handle, so re-verifying as somebody else reads theirs.
   const ledgerRead = useRef('')
   useEffect(() => {
-    if (demo) return
     const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
     const handle = normHandle(session?.handle) || normHandle(me)
     if (!proof || !handle || ledgerRead.current === handle) return
     ledgerRead.current = handle
     readLedger(proof, handle).catch(() => {})
-  }, [demo, session, me, readLedger])
+  }, [session, me, readLedger])
 
   // ── and it keeps trying ─────────────────────────────────────────────────────
   // One read at mount is not enough to promise "every ping shows up, whichever
@@ -1324,7 +1006,6 @@ export default function App() {
   // exists only as a salted hash) and no number of retries can name them.
   const ledgerTries = useRef(0)
   useEffect(() => {
-    if (demo) return undefined
     const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
     const handle = normHandle(session?.handle) || normHandle(me)
     if (!proof || !handle || unaccounted <= 0) {
@@ -1335,7 +1016,7 @@ export default function App() {
     const n = ledgerTries.current++
     const id = setTimeout(() => readLedger(proof, handle).catch(() => {}), 900 * Math.pow(2, n))
     return () => clearTimeout(id)
-  }, [demo, session, me, unaccounted, ledgerState.phase, readLedger])
+  }, [session, me, unaccounted, ledgerState.phase, readLedger])
 
   // The explicit door: read the ledger, then land on it. What "log in" does.
   const restorePings = useCallback(
@@ -1353,13 +1034,13 @@ export default function App() {
 
   const login = useCallback(() => {
     if (!isValidHandle(me)) return
-    if (!verified && (demo || igVerifyEnabled())) {
+    if (!verified && igVerifyEnabled()) {
       openVerify(me, (proof, handle) => restorePings(proof, handle))
       return
     }
-    if (!verified && !demo) setSession(signInStub())
+    if (!verified) setSession(signInStub())
     restorePings()
-  }, [me, demo, verified, openVerify, restorePings])
+  }, [me, verified, openVerify, restorePings])
 
   // ── the identity router ──
   // One button on the identity screen calls this; the server answers which way
@@ -1385,7 +1066,7 @@ export default function App() {
     const wantsEmail = loginMode && !verified
     // Nothing to ask when there's no backend (the sandbox, local dev): a device
     // that already holds pings is returning, anyone else is new.
-    if (demo || !recoveryEnabled) {
+    if (!recoveryEnabled) {
       const route = established ? 'dm' : 'signup'
       setIdentity({ phase: 'resolved', route, to: '', fresh: loginMode && route === 'signup' })
       if (route === 'signup') setLoginMode(false)
@@ -1412,7 +1093,7 @@ export default function App() {
     setIdentity({ phase: 'resolved', route: 'dm', to: '' })
     ;(loginMode ? login : continueFromYou)()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me, demo, loginMode, verified, established, login, continueFromYou])
+  }, [me, loginMode, verified, established, login, continueFromYou])
 
   // Redeem a magic-link token (the SignInScreen calls this on mount): mint a fresh
   // proof, adopt the recovered handle, and restore the pings — no DM. Defined
@@ -1446,7 +1127,7 @@ export default function App() {
       const h = normHandle(handle)
       const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
       try {
-        const res = await renewPing({ me, them: h, proof, demo })
+        const res = await renewPing({ me, them: h, proof })
         if (res?.ok) {
           setPings((prev) => prev.map((p) => (normHandle(p.handle || '') === h ? { ...p, expires_at: res.expires_at } : p)))
           return res.expires_at || null
@@ -1456,7 +1137,7 @@ export default function App() {
       }
       return null
     },
-    [me, demo, session],
+    [me, session],
   )
 
   const letGo = useCallback(
@@ -1471,12 +1152,12 @@ export default function App() {
       photos.dropPhoto(photoKey(h)).catch(() => {})
       photos.dropPhoto(theirPhotoKey(h)).catch(() => {})
       try {
-        await retirePing({ me, them: h, demo })
+        await retirePing({ me, them: h })
       } catch (e) {
         console.error(e)
       }
     },
-    [me, demo],
+    [me],
   )
 
   const placeAnother = useCallback(() => {
@@ -1526,95 +1207,22 @@ export default function App() {
     go('pings')
   }, [go])
 
-  // ── sandbox: visualize a match ──
-  // Flips a sample ping to mutual, gives it the other half, and plays the real
-  // workflow from the announcement onward.
-  const simulateMutual = useCallback(
-    (handle) => {
-      if (!demo) return
-      const h = normHandle(handle)
-      setPings((prev) =>
-        prev.map((p) =>
-          normHandle(p.handle || '') === h
-            ? { ...p, mutual: true, revealed: false, theirCard: p.theirCard || fromWire(DEMO_CARD, { handle: h }) }
-            : p,
-        ),
-      )
-      setMatch({ them: h })
-      go('mutual')
-    },
-    [demo, go],
-  )
-
-  // ── sandbox: "buy" one more one-time slot, or subscribe ──
-  // Neither ever touches a server; production never reaches this (the checkout
-  // only renders in the sandbox — production keeps the single dormant "let one
-  // go" door). Re-enterable: each one-time purchase adds another slot; sub=true
-  // instead raises the cap straight to ten (SUB_SLOT_CAP).
-  const buySlot = useCallback(
-    (sub) => {
-      if (!demo) return
-      if (sub) setDemoSubscribed(true)
-      else setDemoExtraSlots((n) => n + 1)
-    },
-    [demo],
-  )
-
-  // After the sandbox checkout, go place the newly-bought slot. Granting it and
-  // navigating in one step avoids the paywall gate re-blocking on a stale cap
-  // (the cap check reads the freshly-mounted send screen instead).
-  const placeBoughtSlot = useCallback(
-    (sub) => {
-      if (!demo) return
-      if (sub) setDemoSubscribed(true)
-      else setDemoExtraSlots((n) => n + 1)
-      setThem('')
-      setIntent('')
-      setCategory('')
-      setError('')
-      go('who')
-    },
-    [demo, go],
-  )
-
-  // ── sandbox: extend a near-lapse ping through the same checkout ──
-  // Tapping renew on the status page lands here instead of renewing outright;
-  // `finishExtend` performs the actual (free, unlimited) renew once the mock
-  // payment succeeds. Production's renew is untouched — see PingCard in
-  // screens.jsx, which only detours through this in the sandbox.
-  const startExtend = useCallback(
-    (handle) => {
-      if (!demo) return
-      setExtendHandle(normHandle(handle))
-      go('fourth')
-    },
-    [demo, go],
-  )
-
-  const finishExtend = useCallback(async () => {
-    if (!demo || !extendHandle) return
-    await renew(extendHandle)
-    setExtendHandle(null)
-    go('pings')
-  }, [demo, extendHandle, renew, go])
-
   // ── the production paid door (docs/PRICING-REVENUE.md §3 · docs/STRIPE-SETUP.md) ──
-  // Dormant unless VITE_STRIPE_ENABLED=1, and never in the sandbox (which
-  // previews the shape locally and must not reach a payment processor). What
+  // Dormant unless VITE_STRIPE_ENABLED=1. What
   // `hold` does is small on purpose: ask the edge function for a Stripe-hosted
   // URL and follow it. No card is read here, no entitlement is written here, and
   // this browser is never the thing that decides a slot was paid for. That is
   // the webhook's job alone (migration 0021).
-  const billingOn = useMemo(() => billingEnabled() && !demo, [demo])
-  const planOn = useMemo(() => planOffered() && !demo, [demo])
+  const billingOn = useMemo(() => billingEnabled(), [])
+  const planOn = useMemo(() => planOffered(), [])
   const [holdState, setHoldState] = useState({ phase: 'idle', error: '' })
   const hold = useCallback(
     async (kind) => {
-      if (demo || !billingOn) return
+      if (!billingOn) return
       setHoldState({ phase: 'opening', error: '' })
       const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
       try {
-        const res = await startCheckout({ handle: me, proof, kind, demo })
+        const res = await startCheckout({ handle: me, proof, kind })
         if (res?.ok && res.url) {
           window.location.assign(res.url)
           return
@@ -1625,7 +1233,7 @@ export default function App() {
         setHoldState({ phase: 'error', error: 'network' })
       }
     },
-    [demo, billingOn, me, session],
+    [billingOn, me, session],
   )
 
   // What Stripe sent us home with, read once (the id is dropped from the address
@@ -1645,7 +1253,7 @@ export default function App() {
       if (res?.ok && res.paid) {
         const proof = session?.provider === 'instagram_dm' ? session.proof : undefined
         try {
-          const s = await fetchSlots(me, { proof, demo })
+          const s = await fetchSlots(me, { proof })
           if (s) setSlots(s)
         } catch {
           /* the meter refreshes on its own on the next mount */
@@ -1653,7 +1261,7 @@ export default function App() {
       }
       return res
     },
-    [me, demo, session],
+    [me, session],
   )
 
   // ── the exits ──
@@ -1672,13 +1280,6 @@ export default function App() {
     // the photographs are part of the device, so leaving the device takes them
     photos.wipePhotos().catch(() => {})
     setPings([])
-    setJoinedSlugs([])
-    setSchoolCred(null)
-    setPublicStar(false)
-    // a pending recruit attribution belongs to the person who arrived, so it
-    // goes with them on a sign-out or a delete
-    clearRef()
-    setRef('')
     setMatch(null)
     setReveal(null)
     setLastPlaced(null)
@@ -1706,7 +1307,7 @@ export default function App() {
   const deleteEverything = useCallback(async () => {
     persistReady.current = false
     try {
-      if (!demo && normHandle(me)) await eraseAccount(me)
+      if (normHandle(me)) await eraseAccount(me)
     } catch {
       /* clear locally regardless */
     }
@@ -1716,22 +1317,7 @@ export default function App() {
     setAccountOpen(false)
     go('landing')
     setTimeout(() => (persistReady.current = true), 1000)
-  }, [demo, me, go, wipeLocalState])
-
-  // The public opt-out, made demo-safe: the sandbox must never reach a server
-  // (§4.4 — "in the demo nothing gets saved to the db"). suppressHandle() itself
-  // only guards on `hasSupabase`, so the /demo opt-out page would otherwise write
-  // for real; here it resolves locally instead.
-  const suppress = useCallback(
-    async (handle) => {
-      if (demo) {
-        await new Promise((r) => setTimeout(r, 300))
-        return { suppressed: normHandle(handle), erased: 0 }
-      }
-      return suppressHandle(handle)
-    },
-    [demo],
-  )
+  }, [me, go, wipeLocalState])
 
   // ── outward ──
   // "go say it" — straight into the Instagram DM thread.
@@ -1773,27 +1359,20 @@ export default function App() {
   const closeAccount = useCallback(() => setAccountOpen(false), [])
 
   const ctx = {
-    demo, me, them, email, error, verified, established, loginMode,
+    me, them, email, error, verified, established, loginMode,
     pings, slotsStanding, slotsCap: slotCap, unaccounted, ledgerState, restoreLedger, nextSlot,
     cardUrls, compose, openReveal, closeReveal, reveal, afterMutual, ambientGalaxyRef,
-    communities, openCommunity, homeCommunity, homeGalaxyRef,
-    viewCommunity, joinCommunity, leaveCommunity, bumpCommunityActivity,
     locatePing, skyFlight,
-    publicStar, askPublicStar, retractPublicStar,
     lastPlaced, match,
-    demoSubscribed, buySlot, placeBoughtSlot, extendHandle, startExtend, finishExtend,
     billingOn, planOn, holdState, hold, paidReturn, confirmPaid,
-    posterHandle: route.poster || '',
-    copyCode: route.copyCode || '',
-    signinToken: route.signinToken || '',
-    verifyEnabled: igVerifyEnabled() || demo,
+    verifyEnabled: igVerifyEnabled(),
     recoveryEnabled,
     identity, resolveIdentity, resetIdentity,
     setMe, setEmail, setThem,
     altHandles, addAltHandle, removeAltHandle,
     go, findOut, startFromDoor, place, continueFromYou, placeAnother,
     startLogin, login, requestSignIn, redeemSignIn,
-    renew, letGo, simulateMutual, openConversation, suppressHandle: suppress,
+    renew, letGo, openConversation, suppressHandle,
     openAccount, closeAccount, signOut, deleteEverything,
     setNavHidden,
   }
@@ -1809,7 +1388,7 @@ export default function App() {
   // the sealed "your star" stays lit through it (it isn't scaled by dim), so a
   // soft glow keeps resting in the background behind the pings list. Landing keeps
   // the field bright; the send-off / match modes set their own dimming.
-  const CALM_SCREENS = ['pings', 'who', 'compose', 'you', 'placed', 'door', 'privacy', 'fourth', 'worlds', 'community', 'open', 'trial', 'admin', 'paid']
+  const CALM_SCREENS = ['pings', 'who', 'compose', 'you', 'placed', 'fourth', 'open', 'paid']
   const galaxyDim = CALM_SCREENS.includes(screen) ? 0.5 : 1
 
   // The reveal happens IN the field: the sky plays the inspiral, the merger and
@@ -1818,14 +1397,9 @@ export default function App() {
   // normally their community's, because the community sky has no match to play.
   const inReveal = screen === 'reveal'
 
-  // The backdrop: once you've joined a community, the app-wide field IS your
-  // community's living galaxy (the merge) — your pings land in it and your own
-  // star stays findable in it. Otherwise it's the ambient procedural sky, which
-  // still owns the send-off drift. On the community page your sky is the hero
-  // (full bright); elsewhere it's calmed so the foreground reads.
-  const homeOpen = homeCommunity ? communityOpen(homeCommunity) : false
-  const homePings = homeCommunity && homeCommunity.pings != null ? Number(homeCommunity.pings) : 0
-  const communityDim = skyFlight ? 1 : screen === 'community' ? 1 : CALM_SCREENS.includes(screen) ? 0.4 : 0.72
+  // The backdrop is the ambient procedural sky, and now it is the only one. The
+  // community galaxy that used to take the frame once somebody joined a school
+  // went with the communities feature in Phase 8 (Q15).
 
   // ── the index (the one navigation) ──
   // This used to be four things. A fixed dock of two stations at the foot of
@@ -1844,7 +1418,7 @@ export default function App() {
   // in flight and there is nowhere to be but here) and the match announcement
   // (two seconds, nothing to press). The desk and the trial page are their own
   // documents and opt out too.
-  const BARE_CHROME = ['sendoff', 'mutual', 'reveal', 'trial', 'admin']
+  const BARE_CHROME = ['sendoff', 'mutual', 'reveal']
   const chromeHere = !BARE_CHROME.includes(screen)
   const navMelt = skyFlight || navHidden || galaxyMode === 'sendoff' || !!morph
 
@@ -1859,11 +1433,6 @@ export default function App() {
   const indexItems = useMemo(
     () => [
       { key: 'pings', name: t('index.pings') },
-      {
-        key: 'community',
-        name: t('index.community'),
-        go: () => viewCommunity(homeCommunity ? homeCommunity.slug : openCommunity),
-      },
       // The account is an entry like any other, and it is the only one that
       // opens a sheet rather than a page. Logged out, the same line is the way
       // back in, which is the thing somebody in that state is actually looking
@@ -1871,9 +1440,9 @@ export default function App() {
       established
         ? { key: 'account', name: t('index.account'), go: () => openAccount() }
         : { key: 'signin', name: t('index.login'), go: () => startLogin() },
-      { key: 'privacy', name: t('index.legal') },
+      { key: 'privacy', name: t('index.legal'), go: () => window.location.assign('/optout') },
     ],
-    [t, established, homeCommunity, openCommunity, viewCommunity, openAccount, startLogin],
+    [t, established, openAccount, startLogin],
   )
 
   const goIndex = useCallback(
@@ -1906,64 +1475,20 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [indexOpen])
 
-  // ── /admin renders ALONE, above everything ──
-  // The desk is a full-viewport white console with its own design; it is not one
-  // of the app's screens and must not sit inside the screen wrapper. That
-  // wrapper carries `.fade`, whose keyframes animate `transform` — and a
-  // transformed ancestor becomes the containing block for `position: fixed`
-  // descendants, so the desk's own fixed overlay was being laid out against a
-  // mid-page box instead of the viewport. Returning it here skips the wrapper,
-  // the galaxy, the dock and the chrome in one move, which is what it wants
-  // anyway. (Every hook above has already run, so this early return is safe.)
-  if (screen === 'admin') return <AdminScreen />
-
-  // ── the page that gets no sky ──
-  // /trial is a long read someone makes a week-long decision from. A galaxy
-  // drifting behind it is motion competing with text that has to be understood,
-  // and it is the one page people arrive at from a link, on data, on a phone.
-  // Skipping the canvas outright (rather than dimming it) also means the page
-  // stops paying for a full-screen animation loop it never uses.
-  const BARE = screen === 'trial'
-
   return (
     <div className="celestual-app">
-      {BARE ? (
-        // A still field, not a dead one: one soft rise of colour off the
-        // bottom-left so the page still feels like it belongs to us.
-        <div
-          aria-hidden
-          style={{
-            position: 'fixed', inset: 0, zIndex: 0, background: C.ink,
-            backgroundImage: `radial-gradient(120% 80% at 12% 100%, ${rgba(C.star, 0.1)} 0%, transparent 58%), radial-gradient(90% 60% at 88% 0%, ${rgba(C.them, 0.07)} 0%, transparent 55%)`,
-          }}
-        />
-      ) : homeCommunity && !inReveal ? (
-        <CommunityGalaxyCanvas
-          key={homeCommunity.slug}
-          you={C.you}
-          them={C.them}
-          pings={homePings}
-          forming={!homeOpen}
-          dim={communityDim}
-          mine={mineLabels}
-          publicHandles={publicHandles}
-          ownPublic={ownPublic}
-          onReady={(f) => (homeGalaxyRef.current = f)}
-        />
-      ) : (
-        <GalaxyCanvas
-          mode={galaxyMode}
-          dim={skyFlight || inReveal ? 1 : galaxyDim}
-          origin={sendoffOrigin}
-          seals={pings.length}
-          sealLabels={sealLabels}
-          sealKinds={sealKinds}
-          you={C.you}
-          them={C.them}
-          onReady={(f) => (ambientGalaxyRef.current = f)}
-          style={{ zIndex: 0 }}
-        />
-      )}
+      <GalaxyCanvas
+        mode={galaxyMode}
+        dim={skyFlight || inReveal ? 1 : galaxyDim}
+        origin={sendoffOrigin}
+        seals={pings.length}
+        sealLabels={sealLabels}
+        sealKinds={sealKinds}
+        you={C.you}
+        them={C.them}
+        onReady={(f) => (ambientGalaxyRef.current = f)}
+        style={{ zIndex: 0 }}
+      />
 
       {/* ── the masthead and the index ──────────────────────────────────────
           One bar, every page. The wordmark signs the page; the index opens the
@@ -2034,7 +1559,7 @@ export default function App() {
           url={skyCard && cardUrls[skyCard.photoId]}
           index={skyView.index}
           open={!!skyView}
-          fieldRef={homeCommunity ? homeGalaxyRef : ambientGalaxyRef}
+          fieldRef={ambientGalaxyRef}
           onClose={endSkyView}
         />
       )}
@@ -2045,34 +1570,9 @@ export default function App() {
 
       {accountOpen && <AccountSheet C={C} ctx={ctx} />}
 
-      {/* Instagram DM verification — confirms the typed @ is really theirs,
-          in-tab, no OAuth. The sandbox runs the same overlay, auto-verifying
-          locally (real verification isn't wired there yet — it says so). */}
-      {verify && <IgVerifySheet C={C} handle={verify.handle} demo={demo} onVerified={onVerified} onClose={closeVerify} />}
-
-      {/* the public-@ warning — one honest stop before your handle goes up in
-          your community's sky. confirming flips it; it's reversible anytime. */}
-      {publicAsk && (
-        <PublicStarSheet
-          C={C}
-          community={homeCommunity}
-          handle={normHandle(me)}
-          onConfirm={confirmPublicStar}
-          onClose={() => setPublicAsk(false)}
-        />
-      )}
-
-      {/* the .edu gate — join a community by proving you're at that school. The
-          sandbox auto-confirms once a code is entered. */}
-      {eduVerify && (
-        <EduVerifySheet
-          C={C}
-          slug={eduVerify.slug}
-          demo={demo}
-          onVerified={onEduVerified}
-          onClose={() => setEduVerify(null)}
-        />
-      )}
+      {/* Instagram DM verification: it confirms the typed @ is really theirs,
+          in tab, with no OAuth. */}
+      {verify && <IgVerifySheet C={C} handle={verify.handle} onVerified={onVerified} onClose={closeVerify} />}
     </div>
   )
 }

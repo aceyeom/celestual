@@ -302,8 +302,8 @@ Ordering is otherwise the spec's, including Phase 3 before backend work.
 | 5 | Apify in, HikerAPI out | 4b | none, Q7 to Q9 answered |
 | 6a | Wall backend | 4b, 5 | none, Q10 and Q11 answered |
 | 6b | Wall and Main UI | 3, 6a | none |
-| 7 | Admin | 6a | Q12 |
-| 8 | Email, legal, routing | 6b | Q13 |
+| 7 | Admin | 6a | done, Q12 answered |
+| 8 | Email, legal, routing | 6b | done |
 
 ### Phase 1. Audit
 
@@ -856,7 +856,93 @@ Routes in scope, current addresses:
 
 The ticker wall in spec section 8 has no current implementation. It is new.
 
-### Phase 7. Admin
+### Phase 7. Admin. COMPLETE.
+
+`supabase/migrations/0033_the_desk.sql`, `0034_retire_the_campaign.sql`, a
+rewritten `celestual-admin` edge function, `app/src/admin/` in place of
+`components/admin.jsx`, and the campaign deleted per Q12.
+
+**What landed.**
+
+| Object | What |
+| --- | --- |
+| `0033_the_desk.sql` | eleven `celestual_desk_*` functions, `service_role` only. No table, no column, no drop |
+| `0034_retire_the_campaign.sql` | the trial and the recruitment program, gone: four tables, eleven functions, and the two live functions that read them redefined without them |
+| `celestual-admin` | two halves, as data rather than as a switch: seven desk reads, four desk writes, six legacy handle actions |
+| `app/src/admin/` | ten files. The shell, the door, seven sections and their parts |
+| `/admin` | its own fork in `main.jsx`, so the desk no longer loads the whole old design before a password is typed |
+| `scripts/sql/test-desk.sql` | 76 assertions |
+| `scripts/preview.mjs` | desk fixtures and seven more routes for the 7.3 loop |
+
+**The desk has two halves because the product does.** Phase 4b layered
+`celestual_users` over `celestual_members` and `celestual_ig_verifications` and
+backfilled from them rather than replacing them, so the DM code flow still
+writes the old tables. Six sections read the rebuild's tables and a seventh
+reads the older ones, and the older half is still where an identity is refused.
+
+**What the desk deliberately cannot do.** Stamp `handle_verified_at`. Spec
+section 4 gives that column one writer and it demands a live DM proof, so an
+admin action that set it would make the proof optional. `test-desk.sql` asserts
+that no `celestual_desk_*` function so much as updates `celestual_users`, which
+is a check on the next person to add a function here as much as on this one.
+
+**Three things this section did not anticipate.**
+
+1. **The report queue is not asking what it looks like it is asking.** 0032's
+   `wall_report` sets the letter to `removed` in the same statement that files
+   the report, because the screenshot exists before you delete it. So the queue
+   is not "should this come down", it is "should this go back up", and the two
+   actions are uphold and dismiss rather than remove and ignore. Dismissing
+   restores a letter that is `removed` and deliberately does not resurrect one
+   the screen rejected: those are two decisions and only one is being made.
+   Every report on the same letter closes together, because three people
+   reporting one letter is one decision.
+2. **Dropping the campaign meant rewriting two live functions, not just
+   dropping tables.** `celestual_admin_overview` returns `competitors` and
+   counts visits and signups; `celestual_admin_delete_user` deletes a person's
+   recruit rows as part of erasing them. Both would have failed on the first
+   call after 0034. `celestual_erase_account` and `celestual_suppress` look like
+   they have the same problem and do not: 0023 rewrote both and dropped the
+   recruit deletes on the way past.
+3. **`growth.js` survives `deletions.md` group B.** The manifest marks it CHECK
+   with "verify its only consumer is the trial before deleting". Its consumer is
+   `components/screens.jsx`, which is the placed screen, so it stays.
+
+**What the visual loop caught.** Spec 7.3, three iterations, and each one found
+something the build could not:
+
+1. **The overview opened on a table with three empty columns.** A one digit
+   figure in a narrow column with its action twelve hundred pixels away at the
+   far edge of the row: the eye crossed the whole viewport to connect a number
+   to the button that acts on it. It is four sentences now, at a reading
+   measure, with the act at the end of the sentence it belongs to.
+2. **An absence was drawn as a state.** `none` rendered with the same dot as
+   `live` and `removed`, so an empty campus column read as a flag on four rows
+   out of four. And a thirty six character uuid under every handle outweighed
+   the handle it was labelling; the id moved into the drawer, where the question
+   is "what is its key" rather than "which one".
+3. **Ledgers ended on half empty rows** with the hairline stopping in the middle
+   of the page, which reads as a block that failed to load. `Ledger` pads the
+   last row with cells that draw nothing but their rule.
+
+Also corrected by looking: numeric column headers were left aligned over right
+aligned figures; nine red bordered `resolve again` buttons down one edge stopped
+meaning "careful" and started meaning "table"; two search placeholders were
+clipped by their own field; and on a phone the two global controls sat in a band
+of chrome of their own between the tabs and the page.
+
+**Screenshotted and viewed at 390x844 and 1440x900:** the door, the desk, people,
+the wall, reports, resolution, waiting and handles. Sixteen files in
+`design/shots`, no console errors on any of them, and nothing on the section 7.1
+ban list.
+
+**What is deliberately not here.** A button that performs a merge the database
+refused. 0030 writes a stopped merge to `celestual_merge_conflicts` and changes
+nothing, per spec section 3's "stop and ask"; the desk shows the pair and lets a
+person record that they looked, and a one click override would put the spec's
+stop behind a button.
+
+The original plan for this phase follows.
 
 Spec section 10. Rebuild `/admin` for a non developer, covering user records,
 the resolution cache, the moderation queue with rejection reasons, rate limit
@@ -866,7 +952,92 @@ Current admin is `app/src/components/admin.jsx`, 907 lines, backed by the
 deployed `celestual-admin` function and nine `celestual_admin_*` RPCs. The
 reporting to removal path in the spec does not exist yet.
 
-### Phase 8. Email, legal, routing, final launchsteps
+### Phase 8. Email, legal, routing, final launchsteps. COMPLETE.
+
+Two commits. The routing pass, which is most of it, and then the mail, the
+share card, the legal pages and the runbook.
+
+**What landed.**
+
+| Area | What |
+| --- | --- |
+| `0035_retire_the_communities.sql` | five tables, six functions, and the three erasure paths that deleted from them rewritten |
+| the unpick | communities and `/demo` out of `App.jsx`, `screens.jsx`, `ui.jsx`, `api/celestual.js` and `card/photos.js`. Nine modules deleted |
+| `app/src/main/` | `/optout`, `/copy`, `/signin` and the not found, in the current system |
+| `api/relogin.js` | rebuilt on the RPCs that shipped, which Q4 deferred here |
+| `_shared/mail.ts` | rebuilt on the wall's tokens. Left aligned, and no image |
+| `app/public/og.png` | the share card, generated by `scripts/export-og.mjs` |
+| `app/public/*.html` | terms, privacy and deletion rewritten, on `legal.css` |
+| `app/index.html` | the head, and a static favicon that is right on first paint |
+| `vercel.json`, `vite.config.js` | the CSP fix, and the legal rewrites in dev |
+| `scripts/mail-preview.mjs` | the 7.3 loop, for an email |
+
+**The routing pass inverted the default.** `isMainPath` used to answer false for
+anything not on its table, which fell through to `App.jsx` and rendered the
+retired design for every typo in the product. Main claims everything that is not
+explicitly somebody else's now, and what is left on that list is six addresses,
+each of them a decision. `App.jsx` serves exactly one address, `/paid`, which Q3
+keeps out of scope.
+
+**Retiring `/demo` was not deleting a screen.** It was a boolean threaded
+through 108 sites in `App.jsx` and 58 in `screens.jsx`: a second code path
+through every flow in the product, which is a second product that nobody tests.
+Communities were 124 and 236 sites in the same two files. The whole unpick was
+mechanical and the build plus eslint drove it, which is why the lint error count
+falling from 17 to 8 is the useful evidence rather than the diff size.
+
+**Two things the deletions manifest had backwards, and the scans that showed
+it.** `celestual_is_member` is marked CHECK in group E with "verify with a
+pg_get_functiondef scan before deleting": the scan says `celestual_submit` and
+`celestual_my_pings` both call it, so it stays. `growth.js` is marked CHECK in
+group B against the trial: its consumer turned out to be the community half of
+the placed screen, so it went with communities instead. Both were caught because
+the manifest said to look rather than to assume.
+
+**Five things that were broken in production and are fixed here.** None of them
+was in this phase's brief; all five were found by running the phase's own gates.
+
+1. **The CSP blocked every self hosted face.** `font-src` named
+   `fonts.gstatic.com` and nothing else, and because it is set explicitly it
+   does not fall back to `default-src 'self'`. Phase 2 self hosted the four
+   faces at `/fonts`, so in production the wall, Main and the signature
+   surfaces all fell back to a system serif, which spec 7.2 forbids outright.
+2. **The favicon was the retired mark on every route but the wall**, because
+   the wall injected the right one at runtime and nothing else did. It is a
+   static file now, right on the first paint of every address.
+3. **`inert=""` had stopped meaning true.** React 19 takes the attribute as a
+   real boolean, so the closed navigation column stayed reachable by keyboard
+   and logged a console error on every render.
+4. **The dev server served the SPA for `/terms`, `/privacy` and
+   `/data-deletion`.** Only production had the rewrites, so a screenshot of
+   `/data-deletion` came back showing the landing page. `vite.config.js` mirrors
+   them now.
+5. **The email mark rendered in almost nothing.** It was an inline SVG data
+   URI, and Gmail renders neither SVG in an `<img>` nor a data URI at all, so
+   the sigil at the head of every mail this product has ever sent was a broken
+   image icon for most of its readers.
+
+**What the mail's own visual loop caught.** Nobody had ever looked at one of
+these, so `scripts/mail-preview.mjs` renders every template and shoots it. The
+first pass was a centred column with a centred pill in the middle of it: a
+perfectly good email belonging to no product at all. It is left aligned like the
+rest of the system now, which costs nothing in any client and is the cheapest
+signal that a person set the page. The second pass caught the accent being spent
+twice in one sentence, against the file's own stated rule of once per mail.
+
+**The legal pages say what the product does now.** The old terms described three
+standing pings (it is two), a community you join with a school address, a public
+star opt-in and campus openings toward a threshold. None of those exist. They
+describe the wall instead, including the four things somebody should be told
+before they write on it: the screen, the takedown, the report, and that the
+author is never disclosed.
+
+**Screenshotted and viewed:** the four new addresses at 390x844 and 1440x900,
+the three mail templates at both reading widths, the three legal pages, and the
+share card. Plus a full pass over all 29 routes to prove the unpick broke
+nothing: no console errors on any of them.
+
+The original plan for this phase follows.
 
 Resend templates and the share thumbnail. The one email design is
 `supabase/functions/_shared/mail.ts`, 184 lines, five senders.

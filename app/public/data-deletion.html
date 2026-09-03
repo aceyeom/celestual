@@ -3,207 +3,86 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0B0705" />
-    <title>Delete your data · celestual</title>
-    <meta name="description" content="How to delete your celestual data: the one-step opt-out for any handle owner, the in-app erase, or an email request." />
+    <meta name="theme-color" content="#08070B" />
+    <title>Deleting your data · celestual</title>
+    <meta name="description" content="How to delete everything celestual holds about a handle, in one step, with no account and nothing to ask for." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://celestual.us/data-deletion" />
-    <link rel="icon" type="image/svg+xml" href="/star.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --ink: #0b0705;
-        --ink2: #241710;
-        --cream: #f1e7d3;
-        --muted: #a2937e;
-        --line: rgba(241, 231, 211, 0.11);
-        --star: #b98a55;
-      }
-      * { box-sizing: border-box; }
-      html { -webkit-text-size-adjust: 100%; }
-      body {
-        margin: 0;
-        background:
-          radial-gradient(1200px 700px at 24% -10%, rgba(185, 138, 85, 0.075) 0%, transparent 58%),
-          var(--ink);
-        color: var(--cream);
-        font-family: 'Jost', 'Futura', system-ui, sans-serif;
-        font-weight: 300;
-        line-height: 1.65;
-        -webkit-font-smoothing: antialiased;
-      }
-      .wrap {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 48px 22px 96px;
-        padding-top: max(48px, env(safe-area-inset-top));
-      }
-      a { color: var(--star); text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 400;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        font-size: 12px;
-        color: var(--muted);
-      }
-      h1 {
-        font-family: 'Cormorant Garamond', Georgia, serif;
-        font-weight: 400;
-        font-size: clamp(34px, 9vw, 52px);
-        line-height: 1.08;
-        margin: 18px 0 6px;
-      }
-      .updated { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
-      h2 {
-        font-family: 'Jost', 'Futura', sans-serif;
-        font-weight: 600;
-        font-size: 17px;
-        margin: 38px 0 8px;
-        color: var(--cream);
-      }
-      p, li { color: #c9cdd6; font-size: 15px; }
-      ul, ol { padding-left: 20px; margin: 8px 0; }
-      li { margin: 6px 0; }
-      .lead { font-size: 16px; color: var(--cream); }
-      hr { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
-      .step {
-        margin-top: 18px;
-        padding: 18px 20px;
-        border: 1px solid var(--line);
-        border-radius: 3px;
-        background: var(--ink2);
-      }
-      .step h2 { margin: 0 0 8px; }
-      .num {
-        display: inline-grid;
-        place-items: center;
-        width: 24px; height: 24px;
-        border-radius: 50%;
-        background: rgba(255, 162, 92, 0.14);
-        font-size: 13px;
-        margin-right: 8px;
-        color: var(--star);
-      }
-      .recommended {
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--ink);
-        background: var(--star);
-        border-radius: 3px;
-        padding: 2px 9px;
-        margin-left: 8px;
-        vertical-align: middle;
-      }
-      .callout {
-        margin-top: 14px;
-        padding: 16px 18px;
-        border: 1px solid var(--line);
-        border-radius: 3px;
-        background: rgba(255, 162, 92, 0.05);
-      }
-      .callout p { margin: 0; color: var(--cream); }
-      footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
-      .back { display: inline-block; margin-top: 28px; }
-    </style>
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="stylesheet" href="/fonts/faces.css" />
+    <link rel="stylesheet" href="/legal.css" />
   </head>
   <body>
     <main class="wrap">
-      <a class="brand" href="/" aria-label="celestual"><img src="/star.svg" alt="celestual" width="26" height="26" /></a>
+      <a class="brand" href="/"><img src="/mark.svg" alt="" />celestual</a>
+      <div class="rule"></div>
 
-      <h1>Delete your data</h1>
-      <p class="updated">Last updated 11 July 2026</p>
+      <h1>Deleting your data</h1>
+      <p class="updated">last updated 3 september 2026</p>
 
       <p class="lead">
-        You're always in control of your celestual data, and so is anyone whose
-        handle was ever entered, whether or not they've used celestual. There are
-        three ways to delete it; the email option exists so you never have to
-        depend on the app to get your data erased. Two things also happen without
-        you asking: unmatched pings <strong>purge themselves after sixty days</strong>,
-        and who a ping points at is stored only as a salted hash we cannot read.
+        One page, one field, and it is done in a few seconds. You do not need an
+        account, a code, or anything from us.
       </p>
 
-      <div class="step">
-        <h2><span class="num">1</span> Opt a handle out yourself <span class="recommended">Fastest</span></h2>
-        <p>The one-step, self-service path. No account or sign-in needed:</p>
-        <ol>
-          <li>Open <a href="https://celestual.us/optout">celestual.us/optout</a> (also reachable from the "opt out" link on the landing screen).</li>
-          <li>Type the Instagram handle you want erased, including your own.</li>
-          <li>Tap <strong>"opt this handle out, permanently."</strong></li>
-        </ol>
-        <p>
-          This erases <em>everything</em> referencing that handle: pings in both
-          directions, matches, community and campus records. It also makes the handle
-          un-pingable, so nobody can enter it again. It is free, immediate, and always
-          will be. It does <em>not</em> stop you signing up yourself later. We will lift
-          it on request. Write to
-          <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>.
-        </p>
+      <div class="act">
+        <p>Go to <a href="/optout">celestual.us/optout</a> and type the handle.</p>
       </div>
 
-      <div class="step">
-        <h2><span class="num">2</span> Erase your whole account</h2>
-        <p>
-          If you've placed pings, open the <strong>account</strong> chip (top-left)
-          and choose <strong>"delete everything."</strong> This retires every ping
-          you've placed, erases your records, closes your door page, and wipes this
-          device.
-        </p>
-        <p>
-          It does <strong>not</strong> block your handle. Your @ stays yours and you
-          can verify again whenever you like. If you also want nobody ever to be able
-          to enter your @, that is the separate choice in step 1. Deleting your data and
-          refusing to be entered are different decisions, so we stopped making one of
-          them on your behalf.
-        </p>
-      </div>
-
-      <div class="step">
-        <h2><span class="num">3</span> Email us and we'll do it for you</h2>
-        <p>
-          Send a message to
-          <a href="mailto:privacy@celestual.us?subject=Data%20deletion%20request">privacy@celestual.us</a>
-          with the Instagram handle(s) you want removed. Please include the handle in
-          the request so we can act quickly. We'll confirm once it's done.
-        </p>
-      </div>
-
-      <h2>What gets deleted</h2>
+      <h2>what happens when you do</h2>
       <ul>
-        <li>Every ping referencing the handle (both directions of any pairing, matched or not).</li>
-        <li>Any match records and pending notifications involving the handle.</li>
-        <li>Membership, community ("worlds") and campus-preregistration records tied to the handle.</li>
-        <li>Your email address, if you provided one. School-verification code records delete themselves within minutes regardless, they are never kept.</li>
+        <li>The handle is <strong>barred permanently</strong>. Nobody can enter it again, and any attempt to is refused.</li>
+        <li>Every ping pointing at it is erased, on both sides.</li>
+        <li>Every mutual it was part of is erased.</li>
+        <li>Any membership, any pending verification, any recovery record and any sign in link it holds are erased.</li>
+        <li>Any card or letter it wrote is erased with it.</li>
+        <li>Nobody is told. Not the people who had pinged it, and not the people it had pinged.</li>
       </ul>
-
-      <h2>How long it takes</h2>
       <p>
-        Self-service removal (options 1 and 2) takes effect immediately. Email
-        requests are completed without undue delay, normally within a few days and
-        no later than 30 days. Independently of any request, an unmatched ping is
-        purged automatically sixty days after it was placed or last renewed.
+        It takes effect immediately and it does not need our involvement. It applies
+        whether or not the handle has ever been used on celestual, which is the point:
+        somebody who wants nothing to do with this product should not have to join it
+        to say so.
       </p>
 
-      <div class="callout">
-        <p>
-          Questions about your data or this process? Email
-          <a href="mailto:privacy@celestual.us">privacy@celestual.us</a>. See also our
-          <a href="/privacy">Privacy Policy</a>.
-        </p>
-      </div>
+      <h2>if you change your mind</h2>
+      <p>
+        The bar can be lifted, so the handle can be used again. What was erased stays
+        erased: there is no copy anywhere to restore. Write to
+        <a href="mailto:hello@celestual.us">hello@celestual.us</a> from an address we
+        can connect to the account, or send a direct message from the handle itself to
+        our Instagram account, which is the same proof the product uses everywhere
+        else.
+      </p>
 
-      <hr />
-      <a class="back" href="/">← back to celestual</a>
-      <footer>© 2026 Celestual LLC · celestual.us</footer>
+      <h2>what happens without you doing anything</h2>
+      <p>
+        A ping stands sixty days and then it is purged unless somebody renews it. A
+        letter on the wall expires after thirty days. Neither needs a request.
+      </p>
+
+      <h2>what we keep</h2>
+      <p>
+        The bar itself, as a salted hash of the handle, because a permanent refusal
+        that we forget is not permanent. It contains nothing else, and it cannot be
+        turned back into a handle.
+      </p>
+
+      <h2>anything else</h2>
+      <p>
+        <a href="mailto:hello@celestual.us">hello@celestual.us</a>. See also the
+        <a href="/privacy">privacy policy</a> for what is stored and why.
+      </p>
+
+      <footer>
+        <nav>
+          <a href="/terms">terms</a>
+          <a href="/privacy">privacy</a>
+          <a href="/data-deletion">deleting your data</a>
+          <a href="/optout">take your @ off</a>
+        </nav>
+        Celestual LLC · celestual.us
+      </footer>
     </main>
   </body>
 </html>

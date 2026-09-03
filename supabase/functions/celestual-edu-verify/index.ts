@@ -111,27 +111,28 @@ function fourDigit(): string {
   return String(n).padStart(4, '0');
 }
 
-// The code email. It used to paint four coloured nebulae into the corners of a
-// rounded card and set the code glowing in amber inside a pill — a picture of a
-// galaxy, sent by a product whose galaxy is the real thing. The frame is
-// _shared/mail.ts's now: the case, blind-tooled, with the code struck into a
-// well pressed into the leather.
+// The code email. The frame is _shared/mail.ts's: one sheet on the void, with
+// the code in the mono face at the size of a thing you read off one device and
+// type into another.
 //
-// The copy button stays and matters: an email cannot reach the clipboard, so it
-// opens the app's one-tap /copy page instead, and the code travels in the URL
+// The copy button stays and matters. An email cannot reach the clipboard, so it
+// opens the app's one tap /copy page instead, and the code travels in the URL
 // FRAGMENT so it never appears in a request line or a server log.
+//
+// Phase 8: what a campus address opens is the WALL now, not a community sky.
+// Communities are retired (Q15) and the .edu gate is the Berkeley Wall's.
 function codeEmailHtml(code: string, schoolName: string) {
   return mail.frame({
     kicker: 'your code',
     inner: `
-      ${mail.title(`you&rsquo;re at ${schoolName}.`)}
-      ${mail.body('enter this code back in celestual to join your community&rsquo;s sky.')}
+      ${mail.title(`You are at ${schoolName}.`)}
+      ${mail.body('type this back into celestual and the wall opens.')}
       ${mail.code(code)}
       ${mail.plate(`${SITE}/copy#c=${code}`, 'copy the code')}
       ${mail.tick(`it lasts ${CODE_TTL_MIN} minutes.`)}
       ${mail.colophon(
-        `you&rsquo;re reading this because someone entered this address to join a community on celestual. ` +
-        `if that wasn&rsquo;t you, ignore this and nothing happens. ${SITE}`,
+        `you are reading this because somebody entered this address on celestual. ` +
+        `if that was not you, ignore it and nothing happens. ${SITE}`,
       )}`,
   });
 }

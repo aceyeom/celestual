@@ -233,10 +233,10 @@ async function shrink(blob, side, quality) {
 // it, and the card simply has no photograph — the same thing that happens when
 // somebody chooses not to add one. Nothing about the most important moment in
 // the product is allowed to hinge on an upload.
-export async function uploadPhoto({ me, them, proof, blob, demo }) {
+export async function uploadPhoto({ me, them, proof, blob }) {
   if (!them) return false
   if (!blob) {
-    await putCardPhoto({ me, them, proof, photo: null, demo })
+    await putCardPhoto({ me, them, proof, photo: null })
     return false
   }
   let wire = blob
@@ -249,7 +249,7 @@ export async function uploadPhoto({ me, them, proof, blob, demo }) {
     }
   }
   if (!b64 || b64.length > WIRE_CEILING) return false
-  const r = await putCardPhoto({ me, them, proof, photo: b64, demo })
+  const r = await putCardPhoto({ me, them, proof, photo: b64 })
   return !!(r && r.ok)
 }
 
@@ -275,8 +275,8 @@ const pending = new Map()
 const missing = new Map()
 const MISSING_TTL = 60000
 
-export async function ensurePhoto({ key, me, them, proof, mine = true, demo }) {
-  if (!key || demo) return false
+export async function ensurePhoto({ key, me, them, proof, mine = true }) {
+  if (!key) return false
   const nope = missing.get(key)
   if (nope && Date.now() - nope < MISSING_TTL) return false
   const held = await getPhoto(key)
@@ -284,7 +284,7 @@ export async function ensurePhoto({ key, me, them, proof, mine = true, demo }) {
   if (pending.has(key)) return pending.get(key)
   const at = parseKey(key)
   const job = (async () => {
-    const b64 = await getCardPhoto({ me, them: them || (at && at.handle), proof, mine, demo })
+    const b64 = await getCardPhoto({ me, them: them || (at && at.handle), proof, mine })
     const blob = b64 ? fromBase64(b64) : null
     if (!blob) {
       missing.add(key)

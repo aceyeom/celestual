@@ -119,4 +119,25 @@ await browser.close()
 // The lockup as markup, for anywhere the face is available.
 writeFileSync(join(out, 'lockup.html'), page(lockup('currentColor', 120), 'transparent') + '\n')
 
+// ── the tab's icon ───────────────────────────────────────────────────────────
+// Phase 8. The wall injects this drawing as a data URI at runtime, which means
+// every route that is not the wall showed `star.svg`, the retired mark, and
+// showed it before any JavaScript ran on every route including the wall's.
+//
+// It is a static file now, linked from app/index.html, so the tab is right on
+// the first paint of every address and the injection is a no-op that agrees
+// with it. Ink with a prefers-color-scheme rule handing it chalk on a dark tab
+// strip: a browser reports the scheme to an icon document the same way it does
+// to a page, and one drawing has to be visible on both.
+writeFileSync(join(root, 'app/public/icon.svg'), eclipticSVG(INK, CHALK) + '\n')
+
+// And the same drawing in chalk, for use ON A PAGE rather than on a tab strip.
+// The two are not interchangeable and the screenshot pass is what showed it:
+// icon.svg is ink first, so used as an <img> on the void it rendered a mark
+// nobody could see. Its dark-mode rule does not save it there, because that
+// media query is evaluated against the IMAGE document's own scheme, not the
+// page's. The legal pages read this one.
+writeFileSync(join(root, 'app/public/mark.svg'), eclipticSVG(CHALK) + '\n')
+
 console.log(`design/logo/\n  ${['mark.svg', 'mark-chalk.svg', 'mark-ink.svg', 'lockup.html', ...made].join('\n  ')}`)
+console.log('app/public/icon.svg\napp/public/mark.svg')

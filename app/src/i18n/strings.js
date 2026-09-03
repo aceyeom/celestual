@@ -61,7 +61,6 @@ const en = {
   'who.errSuppressed': 'that person asked never to be entered. the door is closed.',
   'who.errGeneric': 'the night didn’t answer. give it a moment, then place it again.',
   'who.errUnverified': 'we couldn’t confirm the @ is yours. verify again and it’ll place.',
-  'who.demoHint': 'sandbox: enter @demo and the match will find you.',
 
   // ── the handle resolver (docs/HANDLE-RESOLVER.md) ──────────────────────
   // The line under every field where an @ is typed. Three states, three lines,
@@ -121,13 +120,8 @@ const en = {
   'placed.waitingHead': 'isn’t on celestual yet.',
   'placed.waitingSub': 'your ping is held, unseen, until they arrive. they’ll never know it was you.',
   'placed.reachableHead': 'is already on celestual.',
-  'placed.joinTitle': 'one more thing.',
-  'placed.joinReachable': 'now pick your community, so your ping has a sky to light when the countdown ends.',
-  'placed.joinWaiting': 'celestual works when your world is here. pick your community and bring it in.',
-  'placed.findComm': 'find your community',
   'placed.share': 'share your invite link',
   'placed.shared': 'link copied',
-  'placed.door': 'share the open sky',
   'placed.pings': 'your pings',
 
   // ── screen 4 · your pings (the status page) ────────────────────────────
@@ -390,40 +384,8 @@ const en = {
   // ── communities (official, curated launch spaces) ───────────────────────
   // NOTE: the sandbox live-feed copy is intentionally literal and lives in
   // demoData.js, out of this linted file.
-  'communities.kicker': 'communities',
-  'communities.intro': 'everyone can ping from day one. when the countdown ends, every sky opens at once.',
-  'communities.foot': 'curated by celestual. more schools soon.',
-  'communities.open': 'open',
-  'communities.gathering': 'gathering',
-  'communities.skyOpen': 'the sky is open.',
-  'communities.skyGathering': 'still gathering.',
-  'communities.view': 'view the community',
-  'communities.none': 'no community here.',
-  'communities.thisWeek': 'this week',
-  'communities.matchedLabel': 'matched this week',
-  'communities.matchFloor': 'matches show at ten and up, so no match can be guessed at.',
-  'communities.matchesSoon': 'matches show at ten',
-  'communities.pings': '{n} pings placed',
-  'communities.joinedWeek': '+{n} joined',
-  'communities.join': 'join {name}',
-  'communities.leave': 'leave',
-  'communities.place': 'place a ping',
-  'communities.matchedShort': 'matched',
-  'communities.gatheringHero': 'a sky still forming.',
-  'communities.gatheringBody2': 'everyone here can already ping. when the countdown ends, its stars come out.',
-  'communities.demoWave': 'sandbox: send a wave of pings',
-  'communities.demoGather': 'sandbox: bring people in',
-  'communities.label': 'your communities',
-  'communities.browse': 'browse',
-  'communities.summaryNone': 'you haven’t joined one yet.',
 
   // the community finder
-  'communities.searchPlaceholder': 'your school',
-  'communities.searchNone': 'no match yet. more schools are on the way.',
-  'communities.searchMore': 'switch',
-  'communities.findYours': 'find your community',
-  'communities.joinedTag': 'joined',
-  'communities.yourCommunity': 'your community',
 
   // the reveal countdown
   'reveal.week': 'until this week lights',
@@ -449,49 +411,13 @@ const en = {
   // colophon. A product with four places does not need them numbered, and every
   // word that used to sit around an entry was the index describing itself.
   'index.pings': 'pings',
-  'index.community': 'community',
   'index.account': 'account',
   'index.login': 'log in',
   'index.legal': 'terms & privacy',
 
   // ── the public @ (announce yourself in your community's sky) ─────────────────
-  'public.announce': 'announce your @',
-  'public.on': 'your @ is public here',
-  'public.title': 'show your @ in this sky?',
-  'public.body': 'your handle will rest above your star in {name}’s sky. it says you’re here, nothing more.',
-  'public.keeps': 'who you pinged stays sealed.',
-  'public.confirm': 'show my @',
-  'public.cancel': 'keep it anonymous',
-  'public.note': 'you can turn this off anytime.',
-  'public.meet': 'find them on instagram',
 
   // ── the .edu gate ────────────────────────────────────────────────────────
-  'edu.title': 'prove you’re at {name}.',
-  'edu.sub': 'a code goes to your {domain} address, so this sky only fills with people who are really here.',
-  'edu.emailLabel': 'your school email',
-  'edu.emailPlaceholder': 'you@{domain}',
-  'edu.send': 'send my code',
-  'edu.sending': 'sending…',
-  'edu.codeLabel': 'the four-digit code',
-  'edu.codeSent': 'sent to {email}. it lasts ten minutes.',
-  'edu.verify': 'verify & join',
-  'edu.verifying': 'verifying…',
-  'edu.resend': 'send a new code',
-  'edu.resent': 'a fresh code is on its way.',
-  'edu.verified': 'verified. you’re in {name}.',
-  'edu.change': 'use a different email',
-  'edu.cancel': 'cancel',
-  'edu.errDomain': 'use your {domain} address, so we can confirm you’re at {name}.',
-  'edu.errEmail': 'that doesn’t look like a school email yet. check it.',
-  'edu.errCode': 'that code didn’t match. check it, or send a new one.',
-  'edu.errExpired': 'that code lapsed. send a fresh one.',
-  'edu.errRate': 'too many tries. give it a minute, then start again.',
-  'edu.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'edu.demoNote': 'sandbox. any address works, any four digits confirm.',
-
-  // the old /recruit screen (comment → DM → agreement, migration 0016) is
-  // gone: the program's front door is now the first light trial page, and its
-  // copy lives under trial.* below. the counting RPCs live on unchanged.
 
   // ── privacy & the opt-out ───────────────────────────────────────────────
   'privacy.title': 'privacy, plainly',
@@ -539,80 +465,11 @@ const en = {
   'signin.errCta': 'sign back in',
   'signin.missing': 'this link is missing its token. open the email again and tap the button there.',
 
-  // ── the first light trial (/trial, migration 0017) ──────────────────────
-  // the page's chrome only. the brief itself is quoted from the official doc
-  // and lives in trialContent.js, out of this linted file, like demoData.js.
-  'trial.stepsLabel': 'how it works',
-  'trial.closed': 'applications closed',
-  'trial.docView': 'read the official doc',
-  'trial.docPdf': 'pdf',
-  'trial.docDocx': '.docx',
-  'trial.docClose': 'close the doc',
-  'trial.docDownload': 'download to sign (.docx)',
-  'trial.registerKicker': 'register',
-  'trial.enterKicker': 'enter the trial',
-  'trial.enterTitle': 'claim your link.',
-  'trial.nameLabel': 'your full name',
-  'trial.namePlaceholder': 'your name',
-  'trial.handleLabel': 'your instagram',
-  'trial.emailLabel': 'your email',
-  'trial.emailPlaceholder': 'you@example.com',
-  'trial.choiceLabel': 'your four letters',
-  // no note under this field. the link preview beside it IS the explanation.
-  'trial.choiceFree': 'available',
-  'trial.choiceTaken': 'taken. pick another.',
-  'trial.choiceReserved': 'that one is ours. pick another.',
-  'trial.choiceFormat': 'four letters, a to z.',
-  'trial.agree': 'i agree to the content, ip and rights agreement in the official doc. signing records my name, my @, my email and the date.',
-  'trial.register': 'verify my email',
-  'trial.sending': 'sending…',
-  'trial.codeTitle': 'check your email.',
-  'trial.codeSent': 'a six-digit code went to {email}. it lasts fifteen minutes.',
-  'trial.codeLabel': 'the six-digit code',
-  'trial.confirm': 'confirm & claim my link',
-  'trial.confirming': 'confirming…',
-  'trial.resend': 'send a new code',
-  'trial.back': 'change my details',
-  'trial.errEmail': 'that doesn’t look like an email yet. check it.',
-  'trial.errRate': 'too many tries. give it a minute, then start again.',
-  'trial.errSend': 'the code didn’t go out. check the address, then try once more.',
-  'trial.errCode': 'that code didn’t match. check it, or send a new one.',
-  'trial.errExpired': 'that code lapsed. send a fresh one.',
-  'trial.errName': 'we need your full name to record the signature.',
-  'trial.errHandle': 'not a real instagram handle yet. check the spelling.',
-  'trial.errHandleTaken': 'that @ already signed under another email.',
-  'trial.errCodeTaken': 'those four letters are taken. pick another.',
-  'trial.errBanned': 'that account can’t enter.',
-  'trial.errAgree': 'the agreement needs your yes.',
-  'trial.errUnknown': 'no entry under that email yet.',
-  'trial.errGeneric': 'that didn’t go through. try once more.',
-  'trial.welcomeBack': 'welcome back. your link stands.',
-  'trial.accountKicker': 'your entry',
-  'trial.accountTitle': 'your link is live.',
-  'trial.linkLabel': 'your link',
-  'trial.codeWord': 'your code',
-  'trial.share': 'share it',
-  'trial.copied': 'copied',
-  'trial.statVisits': 'opens',
-  'trial.statSignups': 'joined',
-  'trial.week': 'the last seven days',
-  'trial.sendReminder': 'send both videos to contact@celestual.app before the deadline.',
-  'trial.signout': 'not you? switch account',
-  'trial.loginKicker': 'already entered?',
-  'trial.login': 'open my entry',
-  'trial.toApp': 'go to celestual',
-
-  // The landing's banner door to the trial (top right) carries the job ad's own
-  // wording and its live countdown, both from trialContent.js. It is the doc's
-  // voice, not the product's, so it is not keyed here.
-
   // the triage tool (0018). "their codes are correct and nothing works" was
   // unanswerable from this desk — a suppressed @ looked identical to a relay
   // outage from every surface we had.
 
   // ── demo (the sandbox) ────────────────────────────────────────────────────
-  'demo.badge': 'sandbox',
-  'demo.worlds': 'your communities',
 }
 
 export const DICTS = { en }

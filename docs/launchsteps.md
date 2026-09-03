@@ -8,8 +8,13 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-Status: Phases 2 and 3 complete, Phase 3 approved. Phase 4a complete.
-Everything else fills in as phases land.
+**Status: every phase is complete.** Nothing in this repository has been
+applied to production. The migrations are written and verified against a bare
+PostgreSQL; section 2 says in what order to apply them, and section 11 is the
+checklist to work through on the day.
+
+Three steps in here are irreversible and are marked where they appear. The free
+tier has no point in time recovery.
 
 ---
 
@@ -249,10 +254,90 @@ variable, no bucket, no DNS.
 Phase 6b is UI. It adds no schema, so there is nothing here to apply. What it
 needs from you is in section 10, and it is one environment variable.
 
-### 2f. Phase 7 and later
+### 2f. Phase 7. The desk, and the campaign comes down.
 
-`PENDING.` New migrations from Phase 7 onward are listed here in apply order as
-each phase lands.
+Two migrations, in this order, and **one of them is irreversible**.
+
+- [ ] **`0033_the_desk.sql`.** Adds eleven `celestual_desk_*` functions and
+      nothing else. No table, no column, no drop. Safe to apply at any time.
+      Every one of them is `service_role` only, so applying it changes nothing
+      a browser can reach.
+
+- [ ] **Before `0034`, export the four rows.** Q12 answered: the whole campaign
+      goes. Two of those rows are in `celestual_recruits` and three in
+      `celestual_trial_emails`, and they belong to real people who entered a
+      competition. The free tier has no point in time recovery, so once 0034
+      runs there is no copy anywhere unless you make one now.
+
+      In the SQL editor, run both and save the output somewhere off Supabase:
+
+      ```sql
+      select * from celestual_recruits;
+      select * from celestual_trial_emails;
+      select * from celestual_recruit_visits;
+      select * from celestual_recruit_signups;
+      ```
+
+- [ ] **Undeploy `celestual-trial` before applying 0034.** The function's source
+      is already deleted from the repo, and after 0034 the RPCs it calls do not
+      exist. Leaving it deployed leaves an endpoint that errors on every
+      request rather than one that is gone.
+
+      ```
+      supabase functions delete celestual-trial
+      ```
+
+- [ ] **`0034_retire_the_campaign.sql`.** Drops eleven trial and recruit
+      functions, `celestual_admin_delete_competitor`, and the four tables. It
+      also redefines `celestual_admin_overview` and
+      `celestual_admin_delete_user`, because both read the dropped tables and
+      would break the moment they went.
+
+      **This is the only irreversible step in the rebuild so far.**
+
+- [ ] `supabase functions deploy celestual-admin` (section 7). Do this after
+      0033 and 0034, not before: the new desk actions call functions 0033
+      creates, and the old `delete_competitor` action calls one 0034 drops.
+
+**What breaks on purpose.** Every competitor tracking link already printed or
+sent in a DM. The four letter `/abcd` matcher and `/r/<code>` are gone from the
+router, so those addresses fall through to the ordinary landing rather than
+crediting anybody. That was stated with Q12 and accepted with the answer.
+
+### 2g. Phase 8. The communities come down.
+
+One migration, and it is the last one.
+
+- [ ] **`0035_retire_the_communities.sql`.** Q15 answered: retire it. Drops five
+      tables and six functions, and rewrites the three erasure paths that
+      deleted from those tables, because all three would fail on their first
+      call otherwise.
+
+      **All five tables are empty** and were empty at the Phase 1 audit, so
+      unlike 0034 there is nothing here to export first. It is still a drop, so
+      take the backup in section 1 before it.
+
+      `celestual_is_member` deliberately survives: `celestual_submit` and
+      `celestual_my_pings` both call it, and it reads no community table.
+
+- [ ] `supabase functions deploy celestual-edu-verify` and
+      `supabase functions deploy celestual-notify` (section 7). Both carry the
+      rebuilt mail.
+
+### 2h. The whole apply order, in one list
+
+Every migration this rebuild adds, in the order they go in. Steps that are
+irreversible are marked.
+
+```
+0029_adopt_sender_and_email_login.sql    section 2a. already live, see note
+0030_identity.sql                        section 2b
+0031_apify_resolver.sql                  section 2c
+0032_the_wall.sql                        section 2d
+0033_the_desk.sql                        section 2f
+0034_retire_the_campaign.sql             section 2f   IRREVERSIBLE, export first
+0035_retire_the_communities.sql          section 2g   IRREVERSIBLE, empty tables
+```
 
 ---
 
@@ -394,12 +479,19 @@ an Apify call that produced no picture.
 
 ## 6. Resend
 
-`PENDING Phase 8.` Blocked on Q13.
+Q13 answered. The domain was read off the account and is already done:
+`celestual.us`, verified, sending enabled, created 2026-07-10. There are no
+stored templates on the account and there will not be: every template is code,
+in `supabase/functions/_shared/mail.ts`.
 
-- [ ] Confirm the sending domain and from address.
-- [ ] Verify the domain. DNS records, SPF and DKIM.
-- [ ] Confirm which of the five senders in
-      `supabase/functions/_shared/mail.ts` survive the rebuild.
+- [x] The sending domain is verified. Nothing to do.
+- [ ] **Set `CELESTUAL_FROM_EMAIL` to `celestual <hello@celestual.us>`** as a
+      Supabase edge function secret. It is unset today, which means every sender
+      falls back to `celestual <onboarding@resend.dev>`, Resend's shared sandbox
+      domain. That address is rate limited, is not yours, and reads as a test
+      harness in somebody's inbox.
+- [ ] Make sure `hello@celestual.us` actually receives mail. The address invites
+      a reply and the mail says so.
 - [ ] Set `RESEND_API_KEY` as a Supabase edge function secret if it is not
       already set.
 
@@ -443,9 +535,29 @@ still nobody's decision; see `docs/deletions.md` group D.
       `claude-haiku-4-5-20251001`, which is what spec section 9 asks for.
       Confirm the model id is still current when you deploy.
 
+**Deploys Phase 7 needs:**
+
+- [ ] `supabase functions deploy celestual-admin`
+      Rewritten for the desk. It gains eleven `desk_*` actions over the
+      rebuild's own tables and loses `delete_competitor` with the campaign.
+      **Must happen after `0033` and `0034` are both applied**, in that order:
+      the new actions call functions 0033 creates, and the removed one called a
+      function 0034 drops.
+
+- [ ] `supabase functions delete celestual-trial`
+      Its source is gone from the repo and after 0034 its RPCs do not exist.
+      Do this before applying 0034 (section 2f).
+
+- [ ] Consider setting `CELESTUAL_ADMIN_PASSWORD`. It is not new, and the
+      function still falls back to the launch password when the secret is
+      unset, which means the desk is reachable by anybody who reads a commit
+      from before this repository was private. The desk now shows every letter
+      body, every campus address and every report on the wall, so the fallback
+      is worth more than it used to be.
+
 **Still to come:**
 
-- [ ] Nothing until Phase 7.
+- [ ] Nothing until Phase 8.
 
 
 
@@ -473,21 +585,47 @@ One cron job exists today: `celestual-mutual-dm`.
 
 ## 9. DNS and routing
 
-`PENDING Phase 8.`
+Nothing here needs DNS. What it needs is one deploy, because two of the four
+changes below are in `vercel.json` and take effect only when it ships.
 
-- [ ] If Q8 resolves to option B, add a Vercel rewrite so the resolver is reached
-      through `celestual.us` and its `device_id` cookie is first party.
-- [ ] Keep the `/beta` to `/berkeley` rewrite. Printed cards and flyers carry the
-      old address and cannot be redeployed. It is handled in `app/src/main.jsx`,
-      not in `vercel.json`, so it survives as long as that file does.
-- [ ] Confirm `/privacy`, `/terms`, and `/data-deletion` rewrites still point at
-      the rebuilt pages.
+- [x] The `/api/resolve` rewrite. Done in Phase 5, Q8 option B, so the
+      resolver's `device_id` cookie is first party rather than a cookie on
+      `*.supabase.co` that Safari and Chrome drop. Its destination is a literal
+      URL carrying the project ref, because a Vercel rewrite cannot read an
+      environment variable: **if the project ref ever changes, this is one of
+      the two places to change it** (the other is `app/vite.config.js`).
+- [x] **The CSP now allows the self hosted faces.** `font-src` read
+      `https://fonts.gstatic.com` and nothing else, and because `font-src` is
+      set explicitly it does not fall back to `default-src 'self'`. Phase 2 self
+      hosted the four faces at `/fonts`, so in production every one of them was
+      blocked and the wall, Main and the signature surfaces all fell back to a
+      system serif, which spec 7.2 forbids outright. It is
+      `font-src 'self' https://fonts.gstatic.com` now. **This shipped broken and
+      the fix needs a deploy to take effect.**
+- [x] The `/beta` to `/berkeley` rewrite stays. Printed cards and flyers carry
+      the old address and cannot be redeployed. It is handled in
+      `app/src/main.jsx` rather than in `vercel.json`, so it survives as long as
+      that file does.
+- [x] `/privacy`, `/terms` and `/data-deletion` still rewrite onto the rebuilt
+      static pages, and `app/vite.config.js` now mirrors those three rewrites in
+      development. Without that the dev server served the SPA for every legal
+      address, which is how a screenshot of `/data-deletion` came back showing
+      the landing page.
+
+**Addresses that stop resolving.** All of these fall through to the not found
+page now, which is deliberate and was accepted with Q12, Q15 and Q16:
+
+```
+/trial   /recruit   /r/<code>   /<four letters>   /c/<slug>   /demo
+```
+
+The four letter matcher is the one worth naming twice: every competitor
+tracking link already printed or sent in a DM stops crediting anybody. It still
+loads the site.
 
 ---
 
 ## 10. Vercel environment variables
-
-`PENDING Phase 6b.`
 
 Current flags in `app/.env.example`. Each turns a scaffolded integration from its
 local fallback into real behaviour.
@@ -558,7 +696,91 @@ VITE_IG_VERIFY_ENABLED=1
 
 ## 11. Final launch checklist
 
-`PENDING Phase 8.`
+Work down it. Every step is somewhere above with the detail; this is the order.
+
+### Before you touch anything
+
+- [ ] **Take the backup.** Section 1. Two of the steps below cannot be undone
+      and the free tier has no point in time recovery.
+- [ ] **Export the four campaign rows.** Section 2f. They belong to real people
+      who entered a competition and after 0034 there is no copy anywhere.
+- [ ] Approve the groups still open in `docs/deletions.md`. Groups D, G and H
+      are the ones nobody has answered.
+
+### The database, in order
+
+- [ ] `0033_the_desk.sql`. Additive, safe at any time.
+- [ ] `supabase functions delete celestual-trial`.
+- [ ] `0034_retire_the_campaign.sql`. **Irreversible.**
+- [ ] `0035_retire_the_communities.sql`. **Irreversible**, and every table it
+      drops is empty.
+- [ ] The three earlier ones if they are not applied yet: `0030`, `0031`,
+      `0032`, in that order, with the storage bucket from section 5 before
+      `0031` is exercised.
+
+### The functions
+
+- [ ] `supabase functions deploy celestual-admin`. After 0033 and 0034.
+- [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`.
+- [ ] `supabase functions deploy celestual-wall-moderate`.
+- [ ] `supabase functions deploy celestual-edu-verify`.
+- [ ] `supabase functions deploy celestual-notify`.
+
+### The secrets
+
+- [ ] `APIFY_TOKEN`. Section 3.
+- [ ] `MODERATION_API_KEY`. Section 7. **Without it every letter is held at
+      pending and nothing publishes**, which is the correct failure.
+- [ ] `CELESTUAL_FROM_EMAIL` = `celestual <hello@celestual.us>`. Section 6.
+- [ ] `RESEND_API_KEY`, if it is not already set.
+- [ ] `CELESTUAL_ADMIN_PASSWORD`. Section 7. It falls back to a password that is
+      in this repository's history, and the desk now shows every letter body and
+      every campus address on the wall.
+- [ ] Remove the HikerAPI secrets. Section 4.
+
+### The scheduled jobs
+
+- [ ] `celestual_sessions_prune()` daily.
+- [ ] `handle_search_prune()` daily.
+- [ ] `wall_expire()` daily.
+- [ ] Section 8 has the rest, and the one Database Webhook that no migration
+      can carry.
+
+### The storage
+
+- [ ] Create the public `avatars` bucket and its read policy. Section 5.
+
+### The deploy
+
+- [ ] Ship it. **The CSP fix in `vercel.json` only takes effect on a deploy**,
+      and until it does every self hosted face is blocked in production
+      (section 9).
+- [ ] Turn on `VITE_IG_VERIFY_ENABLED` and `VITE_EDU_VERIFY_ENABLED`. Section
+      10. Without the first, nothing can prove a handle; without the second,
+      nobody gets through the wall's gate.
+- [ ] Leave `VITE_HANDLE_RESOLVE` at `0` until the billing pilot passes.
+
+### Then, and only then
+
+- [ ] **The ten handle billing pilot.** Section 3b. Confirm the billed event
+      count matches the handle count before opening the resolver to anybody.
+- [ ] Turn on `VITE_HANDLE_RESOLVE`.
+- [ ] Walk the routes in section 11b once, on a phone.
+
+### 11b. The addresses to walk
+
+Every one of these should render, and none should show the retired design.
+
+```
+/                 the hero
+/place            placing one, and the result card under the field
+/sky              signed out, and signed in
+/berkeley         the wall, and /find, /write, /gate, /join
+/optout           type a handle you do not mind losing, on a staging project
+/terms  /privacy  /data-deletion
+/admin            the door, then the seven sections
+/nothing-here     the not found
+```
 
 ---
 
@@ -585,10 +807,12 @@ them pre-existing and every one in code the rebuild retires later:
 | `app/src/sky/gl.js` | 2 |
 | `app/src/api/recruit.js`, `api/relogin.js`, `card/model.js`, `communityGalaxy.js`, `components/admin.jsx`, `galaxy.js`, `sky/engine.js`, `wall/index.jsx` | 1 each |
 
-Sixteen are unused bindings. One is real and worth carrying forward: `App.jsx`
-lines 1544 and 1545 call `setIntent` and `setCategory`, neither of which is
-defined in that scope. It is in the old landing screen, which Phase 6b rebuilds,
-so it is recorded here rather than fixed out of phase.
+Sixteen were unused bindings. One is real and still open: `App.jsx` calls
+`setIntent` and `setCategory` in the old landing screen, and neither is defined
+in that scope. That screen is unreachable by address now, since Main owns `/`,
+so it is recorded here rather than fixed inside the retired design.
 
-The gate for a phase is that this number does not go up. Phases 2 and 3 add
-none.
+Phase 8 also put `app/src/wall`, `app/src/main` and `app/src/admin` into the
+voice lint, which reads **58 files** rather than 14. Those three surfaces write
+their copy inline, and between them they are now most of the product's words.
+It found two em dashes in aria-labels the first time it ran.

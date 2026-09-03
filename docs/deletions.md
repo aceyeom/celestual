@@ -54,7 +54,26 @@ them. Spec section 0.
 
 ---
 
-## Group B. The First Light trial and the recruitment program.
+## Group B. The First Light trial and the recruitment program. DONE in Phase 7.
+
+Q12 answered: the whole group. Everything below is deleted, with three
+corrections found on the way and recorded in place:
+
+- `app/src/growth.js` **stays.** It is marked CHECK with "verify its only
+  consumer is the trial", and its consumer is `components/screens.jsx`, the
+  placed screen. It was never the trial's.
+- Dropping the tables meant redefining two live functions, not only dropping
+  things. `celestual_admin_overview` returns `competitors` and counts visits and
+  signups; `celestual_admin_delete_user` deletes a person's recruit rows as part
+  of erasing them. `0034_retire_the_campaign.sql` rewrites both without them.
+  `celestual_erase_account` and `celestual_suppress` look like they have the
+  same problem and do not: 0023 already dropped their recruit deletes.
+- The `trial.*` block in `app/src/i18n/strings.js`, 58 keys, is not on the list
+  below and went with the screen that read them.
+
+The four rows are exported before the drop, as `docs/launchsteps.md` section 2f.
+Nothing here has been applied to production.
+
 
 Spec section 10: "Delete the old marketing launch data and its UI."
 
@@ -145,7 +164,25 @@ Nothing in this group is deleted until Q3 is answered.
 
 ---
 
-## Group D. Dead server code.
+## Group D. Dead server code. STILL NOBODY'S DECISION, and now smaller.
+
+Phase 8 changed two of these without deleting either, because no answer covers
+this group.
+
+`celestual-remind` lost its third job. It drained `celestual_campus_mail` and
+sent two campus mails, and Q15 retired the campuses, so 0035 drops the table it
+read and the two mails pointed at `/c/<slug>`, which no longer resolves. What is
+left is one useful note, the sixty day lapse warning, behind a cron that has
+never run. The case for deleting the function is stronger than it was; the
+decision is still not made, so it stays, brought up to the current mail design
+rather than left to rot in the retired one.
+
+`api/handles.js` did NOT go with `celestual-search`. Phase 5 rewrote it around
+the Apify resolver and it is now live code that Main and the wall both read, so
+the line below is stale in the one way worth saying out loud: it lists the file
+as the search function's only consumer, and it stopped being that.
+
+
 
 | Item | Mark | Why |
 | --- | --- | --- |
@@ -157,7 +194,34 @@ Nothing in this group is deleted until Q3 is answered.
 
 ---
 
-## Group E. Communities and campuses.
+## Group E. Communities and campuses. DONE in Phase 8.
+
+Q15 answered: retire it. Everything below is deleted, plus five things the list
+did not name and one thing it named that survives.
+
+**Also deleted, and not on this list.** `app/src/card.js`, the community sky
+share card renderer, whose only consumer was `SkyCardScreen`. `SkyCardScreen`
+itself, `PublicStarSheet` and `EduVerifySheet`, which are the community share
+card, the public star opt-in and the community join gate. `app/src/growth.js`,
+marked CHECK in group B against the trial, whose actual consumer was the
+community half of the placed screen. Roughly 1,700 lines of `screens.jsx` and
+230 sites in `App.jsx`.
+
+**NOT deleted: `celestual_is_member`.** This list marks it CHECK with "may be
+called from inside other functions. Verify with a pg_get_functiondef scan before
+deleting." The scan says `celestual_submit` and `celestual_my_pings` both call
+it, to answer whether a handle is reachable. It reads `celestual_members` and
+`celestual_suppressions` and touches no community table, so it is untouched.
+
+**Three functions rewritten rather than dropped.** `celestual_erase_account`,
+`celestual_suppress` and `celestual_admin_delete_user` each delete a person's
+community membership and campus preregistration as part of erasing them, and
+all three would fail on their first call after the tables went.
+`0035_retire_the_communities.sql` reproduces each one minus those two lines.
+
+Nothing here has been applied to production.
+
+
 
 Every table in this group is empty in production. The feature appears never to
 have launched.

@@ -1,0 +1,369 @@
+/* ── THE DESK ────────────────────────────────────────────────────────────────
+   Phase 7. Spec section 10: rebuild /admin for a non developer.
+
+   Nothing here declares a colour, a face, a radius or an easing curve. Every
+   one of those is a token in wall.css, which docs/plan.md finding 1.9 settled
+   as the design system being promoted. What is here is density, which is a
+   different question from anything else in the product asks.
+
+   ── WHY IT LOOKS DIFFERENT FROM THE WALL WITHOUT BEING A SECOND SYSTEM ──────
+   The wall is one thing per screen with a great deal of room around it, because
+   the person reading it is deciding whether to say something to somebody. The
+   desk is four hundred rows and a destructive button, and the person reading it
+   is trying not to press the wrong one. So the same tokens are spent
+   differently:
+
+     the ground     --void, and the sheets are --void-1 and --void-2 rather
+                    than paper. Paper is the wall's one bright surface and it
+                    means "somebody wrote this". Nothing on the desk did.
+     the figures    --f-id, tabular, every one of them. A back office wants a
+                    typewriter face for numbers and the system already has one.
+     the accent     --accent, rationed harder here than anywhere: the section
+                    you are in, and a cap that is spent. Two uses.
+     the motion     none that is not feedback. Spec 7.2's deliberate timing is
+                    for the two signature surfaces; a table that animates is a
+                    table you cannot read while it is moving.
+
+   ── AND THE ONE RULE THE OLD DESK HAD THAT SURVIVES ─────────────────────────
+   State has to be readable at a glance, on a table of four hundred rows, by
+   somebody under time pressure. Form alone is not fast enough for that, so
+   three states are allowed a tint and they are drawn as printed ink rather
+   than as chips: a held letter, a rejected one, a name that has come off.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ad-root {
+  min-height: 100dvh;
+  background: var(--void);
+}
+
+/* The three state tints. The only colours in this file, named here once so a
+   reader can see the whole exception in one place. */
+.ad-root {
+  --ad-hold:  #C8A96A;   /* held, waiting on a person */
+  --ad-stop:  #C8756A;   /* rejected, removed, over a cap */
+  --ad-go:    #7FB59B;   /* live, resolved, under a cap */
+  --ad-cell:  46px;
+}
+
+/* ── the frame ──
+   A fixed rail and a scrolling body on a desk; one column on a phone. The rail
+   does not scroll away, because the section you are in is the one piece of
+   state a person loses when a long table moves. */
+.ad-frame { display: flex; min-height: 100dvh; align-items: stretch; }
+
+.ad-rail {
+  flex: 0 0 218px;
+  border-right: 1px solid var(--hair);
+  padding: 20px 0 24px;
+  position: sticky; top: 0; align-self: flex-start;
+  height: 100dvh; overflow-y: auto;
+  background: var(--void);
+}
+.ad-rail-head { padding: 0 18px 18px; display: flex; align-items: center; gap: 9px; }
+.ad-rail-head .wl-label { color: var(--chalk); }
+
+.ad-nav { display: block; }
+.ad-nav button {
+  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  padding: 9px 18px;
+  font-family: var(--f-util); font-size: 13.5px; letter-spacing: 0.01em;
+  color: var(--ash); text-align: left;
+  border-left: 2px solid transparent;
+  transition: color 160ms var(--ease), border-color 160ms var(--ease),
+              background 160ms var(--ease);
+}
+.ad-nav button:hover { color: var(--chalk); background: var(--void-1); }
+.ad-nav button.is-on {
+  color: var(--chalk);
+  border-left-color: var(--accent);
+  background: var(--void-1);
+}
+.ad-nav-n {
+  margin-left: auto;
+  font-family: var(--f-id); font-size: 11px; font-variant-numeric: tabular-nums;
+  color: var(--ash-dim);
+}
+.ad-nav button.is-on .ad-nav-n { color: var(--ash); }
+.ad-nav-n.is-live { color: var(--accent); }
+
+.ad-rail-foot { padding: 20px 18px 0; margin-top: 14px; border-top: 1px solid var(--hair-soft); }
+
+/* A measure, even on a console. Without one the ledger's four columns stretch
+   to three hundred pixels each on a wide screen and every figure sits alone
+   with its rule running out across empty space, which reads as a page that has
+   not finished. Tables wider than this scroll inside .ad-scroll rather than
+   forcing the page to. */
+.ad-body { flex: 1 1 auto; min-width: 0; padding: 22px 24px 80px; max-width: 1140px; }
+@media (max-width: 900px) {
+  .ad-frame { display: block; }
+  .ad-rail {
+    position: static; height: auto; width: 100%; flex: none;
+    border-right: 0; border-bottom: 1px solid var(--hair);
+    padding: 14px 0 0; overflow: visible;
+  }
+  /* Head and foot share the first row, the sections take the second. The two
+     global controls used to sit in a band of their own between the tabs and the
+     page, which is a strip of chrome on the surface most likely to be read on a
+     phone at all. */
+  .ad-rail { display: flex; flex-wrap: wrap; align-items: center; }
+  .ad-rail-head { flex: 1 1 auto; padding: 0 4px 12px 16px; }
+  /* On a phone the rail becomes one scrolling row of words. A drawer would be
+     a tap in front of every section change on the surface most likely to be
+     read on a phone at all, which is the one somebody opens when a person has
+     just messaged them about a letter. */
+  .ad-nav { display: flex; overflow-x: auto; gap: 2px; padding: 0 10px 2px; scrollbar-width: none; }
+  .ad-nav::-webkit-scrollbar { display: none; }
+  .ad-nav button {
+    width: auto; white-space: nowrap; padding: 8px 10px 12px;
+    border-left: 0; border-bottom: 2px solid transparent;
+  }
+  .ad-nav button.is-on { border-left-color: transparent; border-bottom-color: var(--accent); background: none; }
+  .ad-rail-foot {
+    flex: 0 0 auto; order: 0;
+    padding: 0 16px 12px 4px; margin-top: 0; border-top: 0;
+  }
+  .ad-nav { flex: 1 1 100%; order: 1; }
+  .ad-body { padding: 18px 16px 72px; }
+}
+
+/* ── the head of a section ── */
+.ad-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 16px; }
+.ad-head h1 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 27px; letter-spacing: -0.015em; color: var(--chalk); }
+.ad-head-note { font-family: var(--f-util); font-size: 12.5px; color: var(--ash-dim); }
+.ad-head-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* ── a sub head ──
+   Same face, one step down, and it is an h2 because the page already has an h1.
+   It was an inline font size on a second h1, which is two headings claiming to
+   be the top of the same document. */
+.ad-head.is-sub { margin-top: 34px; }
+.ad-head.is-sub h2 {
+  margin: 0; font-family: var(--f-display); font-weight: 400;
+  font-size: 20px; letter-spacing: -0.01em; color: var(--chalk);
+}
+
+/* ── what is waiting ──
+   The first thing on the desk, and the only block that asks anything of
+   anybody. It was a table, which put a one digit figure in a narrow column and
+   its action twelve hundred pixels away at the far edge of the row: the eye had
+   to cross the whole viewport to connect a number to the button that acts on
+   it. It is a short stack of sentences now, held to a reading measure, with the
+   act at the end of the sentence it belongs to. */
+.ad-waiting { max-width: 560px; margin: 0 0 6px; border-top: 1px solid var(--hair); }
+.ad-wait {
+  display: flex; align-items: baseline; gap: 12px; width: 100%;
+  padding: 13px 2px; text-align: left;
+  border-bottom: 1px solid var(--hair-soft);
+  transition: background 160ms var(--ease);
+}
+button.ad-wait:hover { background: var(--void-1); }
+.ad-wait-n {
+  flex: none; min-width: 30px;
+  font-family: var(--f-display); font-size: 25px; line-height: 0.9;
+  color: var(--chalk); font-variant-numeric: tabular-nums;
+}
+.ad-wait-t { flex: 1 1 auto; font-family: var(--f-util); font-size: 13.5px; line-height: 1.45; color: var(--ash); }
+.ad-wait-t b { font-weight: 400; color: var(--chalk); }
+.ad-wait-go {
+  flex: none; font-family: var(--f-util); font-size: 12.5px; color: var(--accent);
+  transition: color 160ms var(--ease);
+}
+button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
+
+/* ── the ledger ──
+   The counts, and they are a ledger rather than a row of tiles: a figure, a
+   hairline, the thing it counts. A grid of bordered cards with one number in
+   each is the pattern spec 7.1 bans, and it is also worse at this job, because
+   a card puts a frame around every figure and a person scanning for one number
+   has to read past nine frames to find it. */
+/* Four columns, fixed, rather than as many as fit. Each group here holds a
+   multiple of four (eight, twelve, four), so the block closes as a rectangle
+   instead of ending on a half empty row with a rule running out to nothing,
+   which reads as a page that failed to finish loading. Two on a phone, for the
+   same reason. */
+.ad-ledger {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 26px;
+  margin: 0 0 4px;
+  max-width: 860px;
+  border-top: 1px solid var(--hair);
+}
+@media (max-width: 700px) { .ad-ledger { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; } }
+.ad-ledger-label { margin: 30px 0 9px; }
+.ad-fig {
+  display: flex; align-items: baseline; gap: 9px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hair-soft);
+}
+.ad-fig-n {
+  font-family: var(--f-id); font-size: 17px; font-variant-numeric: tabular-nums;
+  color: var(--chalk); line-height: 1;
+}
+.ad-fig-n.is-zero { color: var(--ash-dim); }
+.ad-fig-n.is-live { color: var(--accent); }
+/* A cell that closes the rectangle and says nothing. */
+.ad-fig.is-pad { min-height: 39px; }
+.ad-fig-t {
+  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.012em;
+  color: var(--ash); line-height: 1.25;
+}
+
+/* ── the table ──
+   A table element, because it is a table: a screen reader announces the row
+   and the column, a browser keeps the columns aligned across a body of four
+   hundred rows, and neither is true of a stack of divs pretending. */
+.ad-scroll { overflow-x: auto; margin: 0 -24px; padding: 0 24px; }
+@media (max-width: 900px) { .ad-scroll { margin: 0 -16px; padding: 0 16px; } }
+
+.ad-table { width: 100%; border-collapse: collapse; font-family: var(--f-util); font-size: 13px; }
+.ad-table th {
+  font-family: var(--f-id); font-size: 10px; font-weight: 400;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim);
+  text-align: left; padding: 0 14px 8px 0; white-space: nowrap;
+  border-bottom: 1px solid var(--hair);
+}
+.ad-table td {
+  padding: 11px 14px 11px 0; vertical-align: top;
+  color: var(--ash); border-bottom: 1px solid var(--hair-soft);
+}
+.ad-table tr:hover td { background: var(--void-1); }
+.ad-table td:last-child, .ad-table th:last-child { padding-right: 0; }
+.ad-table .is-num { font-family: var(--f-id); font-variant-numeric: tabular-nums; text-align: right; padding-right: 22px; }
+/* The header has to move with the column. A right aligned figure under a left
+   aligned word is two things claiming to be the same column. */
+.ad-table th.is-num { text-align: right; padding-right: 22px; }
+.ad-table .is-key { color: var(--chalk); }
+.ad-table .is-wide { min-width: 250px; width: 34%; }
+.ad-table .is-mid  { min-width: 190px; width: 24%; }
+.ad-table .is-act { text-align: right; white-space: nowrap; }
+.ad-table .is-act > * + * { margin-left: 8px; }
+.ad-table tr.is-open td { background: var(--void-1); }
+
+/* An identifier is a monospace string and it is never uppercased, because a
+   handle is a lower case identifier and uppercasing one makes it a different
+   string from the one on the wall. */
+.ad-id { font-family: var(--f-id); font-size: 12.5px; color: var(--chalk); letter-spacing: 0.01em; }
+/* A handle you can act on. It reads as the identifier it is until the pointer
+   is on it, rather than as a link scattered through a table of plain text. */
+button.ad-id { text-align: left; transition: color 160ms var(--ease); }
+button.ad-id:hover { color: var(--accent); }
+.ad-id.is-dim { color: var(--ash-dim); font-size: 11.5px; }
+.ad-uuid { font-family: var(--f-id); font-size: 10.5px; color: var(--ash-dim); letter-spacing: 0.02em; }
+.ad-when { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ad-body-text { color: var(--ash); line-height: 1.5; }
+.ad-body-text.is-quote { font-family: var(--f-letter); font-size: 15px; color: var(--chalk); line-height: 1.45; }
+/* A note under the thing it is about, rather than beside it. */
+.ad-meta { margin: 3px 0 0; line-height: 1.4; }
+
+/* ── state ──
+   Printed ink, not a chip: a dot and a word, the way a ledger marks a line. */
+.ad-state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); }
+.ad-state::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+.ad-state.is-live { color: var(--ad-go); }
+.ad-state.is-hold { color: var(--ad-hold); }
+.ad-state.is-stop { color: var(--ad-stop); }
+.ad-state.is-off  { color: var(--ash-dim); }
+
+/* An absence is not a state. It was drawn with the same dot as `live` and
+   `removed`, which made an empty column read as a flag on four rows out of
+   four. It is a quiet word now and it carries no mark. */
+.ad-none { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); }
+
+/* ── controls ──
+   Small, because a desk is dense, and never gradient filled. Destructive
+   actions take two taps: the first arms, the second acts, and the armed state
+   says what it is about to do rather than turning red and hoping. */
+.ad-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 30px; padding: 0 12px;
+  border: 1px solid var(--hair); border-radius: var(--r-field);
+  font-family: var(--f-util); font-size: 12px; letter-spacing: 0.012em;
+  color: var(--ash); background: var(--void-1);
+  transition: color 160ms var(--ease), border-color 160ms var(--ease), background 160ms var(--ease);
+}
+.ad-btn:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244, 241, 234, 0.2); }
+.ad-btn:disabled { color: var(--ash-dim); opacity: 0.55; }
+.ad-btn.is-key { color: var(--chalk); border-color: rgba(244, 241, 234, 0.24); }
+.ad-btn.is-stop { color: var(--ad-stop); border-color: rgba(200, 117, 106, 0.32); }
+.ad-btn.is-stop:hover:not(:disabled) { color: var(--ad-stop); border-color: rgba(200, 117, 106, 0.6); background: rgba(200, 117, 106, 0.08); }
+.ad-btn.is-go { color: var(--ad-go); border-color: rgba(127, 181, 155, 0.32); }
+.ad-btn.is-go:hover:not(:disabled) { border-color: rgba(127, 181, 155, 0.6); background: rgba(127, 181, 155, 0.08); }
+.ad-btn.is-armed { color: var(--void); background: var(--ad-stop); border-color: var(--ad-stop); }
+.ad-btn.is-armed.is-go { color: var(--void); background: var(--ad-go); border-color: var(--ad-go); }
+.ad-btns { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.ad-search {
+  display: flex; align-items: center; gap: 9px;
+  border: 1px solid var(--hair); border-radius: var(--r-field);
+  padding: 0 12px; min-height: 34px; background: var(--void-1);
+  min-width: 244px;
+}
+@media (max-width: 480px) { .ad-search { min-width: 0; flex: 1 1 100%; } }
+.ad-search input {
+  flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 0;
+  font-family: var(--f-id); font-size: 13px; color: var(--chalk);
+}
+.ad-search input:focus { outline: none; }
+.ad-search input::placeholder { color: var(--ash-dim); }
+.ad-search-k { font-family: var(--f-id); font-size: 12px; color: var(--ash-dim); }
+
+.ad-tabs { display: inline-flex; gap: 2px; border: 1px solid var(--hair); border-radius: var(--r-field); padding: 2px; }
+.ad-tabs button {
+  padding: 5px 11px; border-radius: 9px;
+  font-family: var(--f-util); font-size: 12px; color: var(--ash);
+  transition: color 160ms var(--ease), background 160ms var(--ease);
+}
+.ad-tabs button:hover { color: var(--chalk); }
+.ad-tabs button.is-on { color: var(--void); background: var(--chalk); }
+
+.ad-note {
+  width: 100%; background: var(--void-1); color: var(--chalk);
+  border: 1px solid var(--hair); border-radius: var(--r-field);
+  padding: 9px 11px; font-family: var(--f-util); font-size: 13px; line-height: 1.45;
+  resize: vertical; min-height: 62px;
+}
+.ad-note:focus { outline: none; border-color: rgba(244, 241, 234, 0.28); }
+
+/* ── the drawer ──
+   One row opened in place, under itself, rather than in a modal. A modal on a
+   console means losing your place in the table every time you check one thing,
+   and the thing being checked is almost always "what else did this person
+   write". */
+.ad-drawer td { background: var(--void-1); border-bottom: 1px solid var(--hair); }
+.ad-drawer-in { padding: 4px 0 16px; display: grid; gap: 16px; }
+.ad-def { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 12px 22px; }
+.ad-def div { min-width: 0; }
+.ad-def dt { font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim); margin: 0 0 3px; }
+.ad-def dd { margin: 0; font-family: var(--f-id); font-size: 12.5px; color: var(--chalk); word-break: break-word; }
+.ad-sub { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+.ad-sub li { border-left: 1px solid var(--hair); padding: 0 0 0 12px; }
+
+.ad-json {
+  margin: 0; font-family: var(--f-id); font-size: 11.5px; line-height: 1.55;
+  color: var(--ash); white-space: pre-wrap; word-break: break-word;
+  background: var(--void-2); border-radius: var(--r-field); padding: 10px 12px;
+  max-height: 220px; overflow: auto;
+}
+
+/* ── page states ── */
+.ad-empty { padding: 40px 0; text-align: center; }
+.ad-empty p { margin: 0; font-family: var(--f-util); font-size: 13.5px; color: var(--ash-dim); }
+.ad-paging { display: flex; align-items: center; gap: 12px; padding: 16px 0 0; }
+.ad-paging .ad-count { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); font-variant-numeric: tabular-nums; margin-right: auto; }
+
+/* ── the door ──
+   One field on an otherwise empty ground. Nothing about the desk is named on
+   this screen: somebody who reaches /admin without the password learns that a
+   door exists, which they already knew from the address they typed. */
+.ad-gate { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.ad-gate-in { width: 100%; max-width: 300px; }
+.ad-gate-mark { display: flex; justify-content: center; margin: 0 0 26px; }
+.ad-gate form { display: grid; gap: 14px; }
+.ad-gate input {
+  width: 100%; background: none; border: 0; border-bottom: 1px solid var(--hair);
+  padding: 0 0 10px; font-family: var(--f-id); font-size: 19px; color: var(--chalk);
+  letter-spacing: 0.14em;
+}
+.ad-gate input:focus { outline: none; border-bottom-color: rgba(244, 241, 234, 0.4); }
+.ad-gate-fault { font-family: var(--f-util); font-size: 12.5px; color: var(--ad-stop); margin: 0; }
