@@ -26,13 +26,23 @@ const out = join(root, 'app/public/fonts')
 // and truetype is roughly three times the bytes for the same glyphs.
 const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 
-// The four faces, and only the weights the system actually sets. A weight that
-// no token asks for is a file nobody downloads on purpose.
+// The four faces, each as a weight RANGE rather than as a list of instances.
+//
+// All four are variable fonts, and asking Google for `wght@400;500` used to
+// hand back one file clipped to that range, declared twice. The system then
+// set `font-weight: 600` on a pill and got 500, and set the display face at
+// 400 because 400 was all there was. On a blue black ground a Didone at 400
+// loses its hairlines, and the hero was the least legible screen in the
+// product for want of a heavier cut it could have had for free.
+//
+// So the range is the whole range each face is drawn at, and faces.css declares
+// it once per style as `font-weight: 400 900`. The browser picks the exact
+// weight off the axis; nothing is synthesised and nothing is faked.
 const FACES = [
-  { slug: 'bodoni-moda', query: 'Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400' },
-  { slug: 'eb-garamond', query: 'EB+Garamond:ital,wght@0,400;0,500;1,400' },
-  { slug: 'inter-tight', query: 'Inter+Tight:wght@400;500;600' },
-  { slug: 'geist-mono', query: 'Geist+Mono:wght@400;500' },
+  { slug: 'bodoni-moda', query: 'Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900' },
+  { slug: 'eb-garamond', query: 'EB+Garamond:ital,wght@0,400..800;1,400..800' },
+  { slug: 'inter-tight', query: 'Inter+Tight:wght@100..900' },
+  { slug: 'geist-mono', query: 'Geist+Mono:wght@100..900' },
 ]
 
 // Everything the product sets is latin. The other subsets Google returns are
@@ -71,9 +81,8 @@ function field(body, name) {
 mkdirSync(out, { recursive: true })
 
 const decls = []
-// Bodoni Moda and EB Garamond are variable, so Google returns the same file for
-// 400 and 500 and the weight only changes the axis the browser then sets. Keyed
-// on the bytes, one file serves both declarations instead of two identical ones.
+// Keyed on the bytes, so a file Google hands back twice under two declarations
+// is written once and both declarations point at it.
 const written = new Map()
 
 for (const face of FACES) {

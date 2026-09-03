@@ -228,10 +228,24 @@
    with a hard break in the markup produced a break INSIDE the intended line.
    clamp() keeps the large size wherever it fits and gives the type back to the
    browser where it does not. */
+/* ── the weight, and why it is not 400 ──
+   A Didone is a thick stroke and a hairline, and on a blue black ground the
+   hairline is the half that goes. At 400 with the optical size left to the
+   browser, the hero line at 46px lost the thin side of every bowl and read as
+   a row of stems. The face is variable in both axes, so it is set at 600 and
+   its optical size is pinned to 24, the cut drawn for a subhead: the hairlines
+   come up to where they survive light on dark, and the contrast that makes it
+   a Didone is still there. The tokens below are the only two numbers anything
+   in the build sets the face at, and the lockup and the overture read them. */
+.wl-root {
+  --w-display: 600;
+  --opsz-display: 'opsz' 24;
+}
 .wl-display {
   margin: 0;
   font-family: var(--f-display);
-  font-weight: 400;
+  font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
   letter-spacing: -0.018em;
   line-height: 1.03;
   color: var(--chalk);
@@ -278,6 +292,8 @@
 .wl-arrow {
   display: inline-flex; align-items: baseline; gap: 11px;
   font-family: var(--f-display);
+  font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
   font-size: 21px; line-height: 1.3;
   color: var(--chalk);
   padding: 5px 0;
@@ -466,7 +482,8 @@
 .wl-paper-crest > .wl-mark { flex: 0 0 auto; }
 .wl-paper-title {
   margin: 0; min-width: 0;
-  font-family: var(--f-display); font-weight: 400; font-size: 22px; line-height: 1.1;
+  font-family: var(--f-display); font-weight: var(--w-display); font-size: 22px; line-height: 1.1;
+  font-variation-settings: var(--opsz-display);
   letter-spacing: -0.01em; color: var(--paper-ink);
   overflow: hidden; text-overflow: ellipsis;
 }
@@ -624,7 +641,8 @@
 
 .wl-lockup { display: inline-flex; align-items: center; gap: 0.38em; line-height: 1; }
 .wl-lockup-word {
-  font-family: var(--f-display); font-weight: 400;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
   letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
   /* the Didone's optical centre sits below its cap line, so the word is lifted
      a hair to sit on the mark's axis rather than on its baseline */
@@ -1139,7 +1157,9 @@
 .wl-rule-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .wl-rule-line {
   display: flex; align-items: baseline; gap: 12px;
-  font-family: var(--f-display); font-size: clamp(20px, 5.6vw, 25px); line-height: 1.24;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: clamp(20px, 5.6vw, 25px); line-height: 1.24;
   color: var(--chalk);
   opacity: 0; transform: translate3d(-8px, 0, 0);
   transition: opacity 700ms var(--ease), transform 700ms var(--ease);
@@ -1509,7 +1529,9 @@
 .wl-tab-spark { color: var(--glow); flex: 0 0 auto; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
-  font-family: var(--f-display); font-size: 17px; line-height: 1.24;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 17px; line-height: 1.24;
   color: var(--chalk);
 }
 .wl-tab-go {
@@ -1832,7 +1854,8 @@
 /* ── the name ── */
 .wl-ov-word {
   position: relative;
-  font-family: var(--f-display); font-weight: 400;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
   letter-spacing: -0.018em; line-height: 1; white-space: nowrap;
   transform: translateY(-0.03em);
   /* a wipe, not a fade. The word is uncovered from the mark outward, which is

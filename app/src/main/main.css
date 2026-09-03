@@ -214,19 +214,10 @@
    forty pixels apart stop reading as separation and start reading as a box
    somebody drew around the names. The space does the work. */
 
-/* ── one rail on a phone ──
-   The hero is one composition in one viewport: it does not scroll, so anything
-   added to it has to come out of something else. Two rails and their chrome are
-   66px, which is 36px more than a 390x844 screen had left, and the foot went
-   under the fold.
-
-   One rail says the same thing. It is a window onto a wall that has names on
-   it, and the second rail was a second helping of that rather than a second
-   fact. Two return at 900px of height, where there is room for them. */
-@media (max-height: 899px) {
-  .mn-ticker-wrap { margin-top: 18px; padding-top: 2px; }
-  .mn-ticker-wrap .mn-ticker + .mn-ticker { display: none; }
-}
+/* There used to be a rule here that hid the second rail under 900px of
+   height, because the first hero was one composition in one viewport and the
+   rails were fighting the foot for it. The hero scrolls now and the ticker has
+   a section of its own, so both rails draw everywhere. */
 
 .mn-ticker {
   position: relative;
@@ -269,17 +260,20 @@
   flex: 0 0 auto;
   white-space: nowrap;
 }
+/* Ash, not ash-dim. These are names, and a name set in the decorative tone
+   on a moving strip was a strip of smudges: DESIGN.md 2.2 says ash-dim is for
+   labels and disabled states, and a name is neither. */
 .mn-tick-name {
   font-family: var(--f-util);
-  font-size: 12px;
-  color: var(--ash-dim);
+  font-size: 13px;
+  color: var(--ash);
 }
 .mn-tick-at {
   font-family: var(--f-id);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.03em;
-  color: var(--ash-dim);
-  opacity: 0.7;
+  color: var(--ash);
+  opacity: 0.72;
 }
 .mn-tick-one .wl-spark { opacity: 0.8; }
 .mn-tick-one .wl-spark { color: var(--accent); align-self: center; }

@@ -145,7 +145,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         out.error === 'cap' ? 'you have as many out as you can hold'
           : out.error === 'self' ? 'you cannot place one on yourself'
           : out.error === 'suppressed' ? 'that name has asked to be left alone'
-          : out.error === 'unverified' ? 'that proof has lapsed — prove the handle again'
+          : out.error === 'unverified' ? 'that proof has lapsed. prove the handle again'
           : out.error === 'rate_limited' ? 'that is a lot of pings in one hour'
           : 'it did not go through',
       )
@@ -173,7 +173,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       setSaid(
         out.error === 'off' ? 'that door is not open yet'
           : out.error === 'banned' ? 'that name has asked to be left alone'
-          : out.error === 'rate_limited' ? 'too many tries on that @ — give it an hour'
+          : out.error === 'rate_limited' ? 'too many tries on that @. give it an hour'
           : 'it did not go through',
       )
       return

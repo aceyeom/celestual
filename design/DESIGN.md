@@ -222,6 +222,32 @@ it is setting.
 Fallbacks are chosen for metric proximity, so a swap is invisible: a Didone falls
 back to a Didone, a Garamond to an old style with the same x height.
 
+All four are variable fonts and `faces.css` declares each as a weight range,
+`400 900` for the display face, so any weight a rule asks for is drawn from the
+axis rather than synthesised. Before this the files were clipped to 400 and 500
+and a rule asking for 600 quietly got 500.
+
+### 4.0 The display weight
+
+`--w-display: 600` and `--opsz-display: 'opsz' 24`, declared on `.wl-root` and
+read by every rule that sets the display face. Both are a legibility ruling,
+not a taste.
+
+A Didone is a thick stroke and a hairline, and on a blue black ground the
+hairline is the half that goes: light on dark, a thin stroke loses luminance to
+the ground around it in a way the same stroke in ink on paper does not. At 400
+with the optical size left to the browser, the hero line at 46px lost the thin
+side of every bowl and read as a row of stems. Weight 600 brings the hairlines
+up to where they survive, and pinning the optical size to 24, the cut drawn for a
+subhead, keeps them there at 46px where the browser would otherwise pick the
+96 cut with the finest hairlines the face has. The contrast that makes it a
+Didone is still there; the strokes that carry the letterforms are no longer the
+first thing to disappear.
+
+The same two tokens govern the lockup, the overture's word, a card's title, the
+arrow link, the ledger line and the tab, so the face has one weight across the
+product. `scripts/export-mark.mjs` sets the lockup exports at the same values.
+
 ### 4.1 The display scale
 
 Fluid, not stepped. A Didone at 46px needs about 400px to hold a five word line
@@ -236,7 +262,7 @@ it fits and hands the type back to the browser where it does not.
 | `.wl-display.is-m` | `clamp(26px, 7.4vw, 33px)` | 1.03 |
 | `.wl-display.is-s` | `clamp(21px, 5.8vw, 26px)` | 1.14 |
 
-All four at weight 400, tracking `-0.018em`, `text-wrap: balance`.
+All four at `--w-display`, tracking `-0.018em`, `text-wrap: balance`.
 
 ### 4.2 The rest
 
@@ -245,7 +271,7 @@ All four at weight 400, tracking `-0.018em`, `text-wrap: balance`.
 | `.wl-label` | mono | 10.5px, uppercase | `0.15em` |
 | `.wl-label.is-dim` | mono | 10.5px, uppercase, `--ash-dim` | `0.13em` |
 | `.wl-prose` | letter | 16.5px / 1.52 | `0.002em` |
-| `.wl-arrow` | display | 21px, or 16px at `is-s` | |
+| `.wl-arrow` | display | 21px, or 16px at `is-s`, at `--w-display` | |
 | `.wl-pill` | util | 13.5px / 500 | `0.008em` |
 | `.wl-row-handle` | mono | 14px | `-0.012em` |
 | `.wl-row-meta` | util | 11.5px | `0.004em` |
