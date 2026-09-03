@@ -55,9 +55,9 @@
 // somebody who never came to this site.
 import { useEffect, useRef, useState } from 'react'
 import {
-  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode,
+  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, Face,
 } from '../wall/parts.jsx'
-import { Provider, Sparkle, Mark } from '../wall/art.jsx'
+import { Provider, Sparkle } from '../wall/art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../wall/data.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../wall/handoff.js'
 import { heldProof } from '../wall/auth.js'
@@ -273,14 +273,14 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   if (done) {
     return (
       <main className="mn-page mn-placed">
-        <TopBar go={go} />
+        <TopBar go={go} who={who} />
         <div className="mn-mid">
           <Display size="m" as="h1">It&rsquo;s out.</Display>
           <Prose className="mn-copy">
-            it stands for sixty days on <span className="sg-h">{atHandle(done.to)}</span>. if
-            they place one back, you are both told at once. if they do not, nobody is.
+            sixty days on <span className="sg-h">{atHandle(done.to)}</span>. if they place
+            one back, you both find out.
           </Prose>
-          <div className="mn-placed-mark"><Mark handle={done.to} size={64} lit /></div>
+          <div className="mn-placed-mark"><Face handle={done.to} size={64} /></div>
         </div>
         <div className="mn-foot">
           <Pill tone="light" wide onClick={() => go('sky')}>your sky</Pill>
@@ -296,7 +296,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
 
   return (
     <main className="mn-page mn-place">
-      <TopBar go={go} />
+      <TopBar go={go} who={who} />
 
       <div className="mn-mid">
         <Display size="m" as="h1" className="mn-h">
@@ -315,7 +315,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                 somebody confirms against a person rather than against their own
                 spelling. A ping placed at a typo stands for sixty days against
                 nobody and nothing in the product can ever say so. */}
-            <HandleCard handle={to} className="mn-card" />
+            <HandleCard handle={to} onSelect={next} className="mn-card" />
 
             {/* ── the stack ──
                 Spec section 6: somebody who came from the wall having already
@@ -330,7 +330,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                   {wrote.slice(0, 6).map((x) => (
                     <button key={x} type="button" className="mn-chip"
                       onClick={() => { setTo(x); setStep(1) }}>
-                      <Mark handle={x} size={20} />
+                      <Face handle={x} size={20} />
                       <span>{atHandle(x)}</span>
                     </button>
                   ))}
@@ -338,7 +338,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
               </div>
             ) : (
               <Label tone="dim" className="mn-note">
-                <Sparkle size={9} /> they are never told unless you match
+                <Sparkle size={9} /> never told unless it&rsquo;s mutual
               </Label>
             )}
           </div>
@@ -364,7 +364,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                     : `${MIN_CHARS - line.trim().length} more characters`}
                 </Label>
               ) : (
-                <Label tone="dim">they read it only if you match</Label>
+                <Label tone="dim">read only if it&rsquo;s mutual</Label>
               )}
             </div>
           </div>
@@ -380,11 +380,11 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                  the part that still has a choice in it. */
               <>
                 <Prose className="mn-copy">
-                  the code arrived from <span className="sg-h">{atHandle(adopted.handle)}</span>, so
-                  that is the account instagram proved. place it under that name?
+                  the code came from <span className="sg-h">{atHandle(adopted.handle)}</span>. place
+                  it under that name?
                 </Prose>
                 <div className="mn-prove-what">
-                  <Mark handle={adopted.handle} size={40} lit />
+                  <Face handle={adopted.handle} size={40} />
                   <Label tone="dim">{atHandle(adopted.handle)} → {atHandle(h)}</Label>
                 </div>
               </>
@@ -406,19 +406,17 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                  answer to. */
               <>
                 <Prose className="mn-copy">
-                  your @ is already proved on this device. this goes out under it, and
-                  it stands for sixty days.
+                  goes out under your @. sixty days.
                 </Prose>
                 <div className="mn-prove-what">
-                  <Mark handle={who.handle} size={40} lit />
+                  <Face handle={who.handle} size={40} />
                   <Label tone="dim">{atHandle(who.handle)} → {atHandle(h)} · sixty days</Label>
                 </div>
               </>
             ) : (
               <>
                 <Prose className="mn-copy">
-                  a ping is placed by a handle, so the handle has to be yours. which @
-                  is it? you prove it by DMing us one code from that account, once.
+                  which @ is yours? one DM from it proves it.
                 </Prose>
                 {/* THE QUESTION THAT WAS MISSING. Everything above this step is
                     about somebody else; this is the only field on the screen
@@ -433,7 +431,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                       is empty it drew THE RECIPIENT'S mark under the words
                       "your @, not theirs", which is the same confusion this
                       step exists to undo. */}
-                  {me ? <Mark handle={me} size={40} lit={mineOk} /> : null}
+                  {me ? <Face handle={me} size={40} /> : null}
                   <Label tone="dim">
                     {mineOk
                       ? <>{atHandle(me)} → {atHandle(h)} · sixty days</>
@@ -483,7 +481,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
               {placing ? 'placing…'
                 : step === 0 ? 'next'
                 : step === 1 ? 'next'
-                : readyToPlace ? 'place it' : 'prove it is yours'}
+                : readyToPlace ? 'place it' : 'prove it'}
             </Pill>
           </>
         )}

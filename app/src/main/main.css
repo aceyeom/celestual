@@ -161,18 +161,23 @@
 /* ── it is out ── */
 .mn-placed-mark { display: flex; justify-content: center; padding: 10px 0 4px; }
 
-/* ── the sky ── */
+/* ── the sky ──
+   A person per row, and the row is the same object the wall's search draws
+   (wall.css `.wl-row.is-person`): the face, the name, the handle and the
+   days under it, and the way in at the end. Tapping one raises the card. */
 .mn-list { display: flex; flex-direction: column; gap: 2px; }
+.mn-list > .wl-label { padding: 6px 10px 8px; }
+.mn-list .wl-row { margin-left: -10px; margin-right: -10px; width: auto; }
 
-/* The one row on this screen that is news. Set apart from the standing rows by
-   weight and by ground rather than by colour, because the accent is the whole
-   chromatic budget of the product and a list item is not where it goes. */
+/* The one row on this screen that is news. Set apart from the standing rows
+   by ground rather than by colour, and it wears the seal: the mark as a
+   material, which is what a mutual is drawn as everywhere it is drawn. */
 .mn-mutual {
   display: flex;
   align-items: center;
   gap: 13px;
   width: 100%;
-  padding: 15px 14px;
+  padding: 13px 14px 13px 12px;
   border: 1px solid var(--hair);
   border-radius: var(--r-card);
   background: rgba(244, 241, 234, 0.035);
@@ -183,102 +188,16 @@
   border-color: rgba(244, 241, 234, 0.2);
   background: rgba(244, 241, 234, 0.055);
 }
-.mn-mutual-l { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
-.mn-mutual-l .wl-label { display: flex; align-items: center; gap: 5px; }
-.mn-mutual-l .wl-label .wl-spark { color: var(--accent); }
-.mn-mutual-h {
-  font-family: var(--f-id);
-  font-size: 14px;
-  letter-spacing: 0.01em;
-  color: var(--chalk);
-}
-.mn-mutual-m {
-  font-family: var(--f-util);
-  font-size: 12px;
-  color: var(--ash);
-}
+.mn-mutual > .wl-who { flex: 1 1 auto; min-width: 0; }
+.mn-mutual .wl-who-at { color: var(--chalk); }
+.mn-mutual-seal { flex: 0 0 auto; display: block; width: 44px; height: 44px; }
+.mn-mutual-seal > canvas, .mn-mutual-seal > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
 
-/* ── the ticker ────────────────────────────────────────────────────────────
-   docs/rebuild-spec.md section 8. Display name, handle and verification badge
-   only: no avatars, no counts. Two rows drifting in opposite directions at
-   different speeds, which is what stops a marquee reading as a marquee.
-
-   The mask at both ends is what makes it a window onto something continuing
-   rather than a strip that starts and stops. */
-/* The wrap holds the rails off the composition above them. Without it the first
-   rail runs under the mark's lower spike and the names read as printed on the
-   object rather than as a band beneath it. */
-.mn-ticker-wrap {
-  margin-top: 30px;
-  padding-top: 4px;
-}
-/* No rule of its own. The gate below already carries one, and two hairlines
-   forty pixels apart stop reading as separation and start reading as a box
-   somebody drew around the names. The space does the work. */
-
-/* There used to be a rule here that hid the second rail under 900px of
-   height, because the first hero was one composition in one viewport and the
-   rails were fighting the foot for it. The hero scrolls now and the ticker has
-   a section of its own, so both rails draw everywhere. */
-
-.mn-ticker {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  padding: 2px 0;
-  /* A longer fade than a mask usually wants, because the thing being masked is
-     type: at 12% a name is cut mid-letter at full contrast and reads as a
-     rendering fault. At 22% it has gone before it is unreadable. */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-}
-.mn-ticker-rail {
-  display: flex;
-  width: max-content;
-  gap: 26px;
-  padding: 5px 0;
-  will-change: transform;
-  animation: mn-tick var(--dur, 64s) linear infinite;
-}
-.mn-ticker-rail.is-back { animation-direction: reverse; }
-.mn-ticker:hover .mn-ticker-rail { animation-play-state: paused; }
-@keyframes mn-tick {
-  from { transform: translate3d(0, 0, 0); }
-  /* Half, because the list is rendered twice: the seam lands where the copy
-     begins and there is no jump to hide. */
-  to   { transform: translate3d(-50%, 0, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .mn-ticker-rail { animation: none; }
-  /* Still a window onto more than fits, just not a moving one. */
-  .mn-ticker { overflow-x: auto; scrollbar-width: none; }
-  .mn-ticker::-webkit-scrollbar { display: none; }
-}
-
-.mn-tick-one {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-/* Ash, not ash-dim. These are names, and a name set in the decorative tone
-   on a moving strip was a strip of smudges: DESIGN.md 2.2 says ash-dim is for
-   labels and disabled states, and a name is neither. */
-.mn-tick-name {
-  font-family: var(--f-util);
-  font-size: 13px;
-  color: var(--ash);
-}
-.mn-tick-at {
-  font-family: var(--f-id);
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
-  color: var(--ash);
-  opacity: 0.72;
-}
-.mn-tick-one .wl-spark { opacity: 0.8; }
-.mn-tick-one .wl-spark { color: var(--accent); align-self: center; }
+/* the card, raised. The same sheet the wall raises, over a sky that stays
+   where it was. */
+.mn-cardsheet { padding-top: 4px; }
+.mn-cardsheet .wl-paper { margin-top: 4px; }
+.mn-card-say { padding: 18px 2px 0; }
 
 /* ── Phase 8: the three addresses that arrive from outside ────────────────────
    /optout, /copy and /signin. Nothing here declares a token; what is here is

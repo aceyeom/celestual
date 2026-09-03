@@ -18,9 +18,9 @@
 //     that name is free, be the first to put a letter under it.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Sheet, SheetHead, HandleField, Label, Row, Pill, PillTag, Display, Icon } from '../parts.jsx'
-import { Mark, Sparkle } from '../art.jsx'
-import { search, wall, loadWall, normHandle, validHandle, ago, atHandle } from '../data.js'
+import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display, Icon } from '../parts.jsx'
+import { Sparkle } from '../art.jsx'
+import { search, wall, loadWall, normHandle, validHandle, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
 
 export default function Find({ go, back, rev }) {
@@ -97,13 +97,16 @@ export default function Find({ go, back, rev }) {
             </Label>
           )}
 
+          {/* A person per row: the face and the name the resolver has, the
+              handle under it with how many letters, and the way in. The same
+              row the sky draws, so a person looks the same on both surfaces. */}
           {hits.map((t) => (
-            <Row
+            <PersonRow
               key={t.handle}
               lit={t.handle === q}
-              mark={<Mark handle={t.handle} size={30} lit={t.handle === q} />}
               handle={t.handle}
-              meta={`${t.count === 1 ? 'one letter' : `${t.count} letters`} · ${ago(t.at)}`}
+              size={36}
+              meta={t.count === 1 ? 'one letter' : `${t.count} letters`}
               action={<PillTag tone="ghost">read</PillTag>}
               onClick={() => go('letter', t.handle)}
             />

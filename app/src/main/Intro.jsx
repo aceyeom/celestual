@@ -3,28 +3,37 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // The wall has an overture: the mark assembling itself on black, once per tab,
-// before the page exists. Main never had one, so a person arriving at the front
-// door got the page and a person arriving at the wall got an entrance. This is
-// Main's, and it is the same shape for the same reasons, with one difference:
-// the mark is not drawn here, it is poured. LiquidMark renders the same
-// silhouette as a metal surface with a current under it, and the two seconds
-// this runs are the one place in the product that material is spent at size.
+// before the page exists. This is Main's, and it is the same assembly with one
+// difference: the mark is not drawn here, it is poured. LiquidMark renders the
+// silhouette as a metal surface with a current under it, and this is the one
+// place in the product that material is spent at size.
 //
-// ── the beats: 2280ms, first frame to bare page ─────────────────────────────
+// Nothing else is on the screen. No name, because the name is in the corner of
+// the page underneath; no bloom, because a material with a current in it is
+// already the light. The logo, and the black it comes out of.
+//
+// ── how a shader is drawn in ────────────────────────────────────────────────
+// The overture reveals its ring with a mask sweeping the band's own centreline
+// and its star with a scale up off nothing. A fragment shader cannot be masked
+// that way, so the same two moves are made with a COVER: a black sheet over
+// the metal, on the black veil, cut away by one SVG mask that carries both
+// sweeps. The sweep runs the route the ring actually takes (ECL_SPINE, clipped
+// to the band) and the star opens as a hole the star's own shape, so the
+// metal arrives in the order the overture assembles in, and out of the same
+// nine constants.
+//
+// ── the beats: 2120ms, first frame to bare page ─────────────────────────────
 //
 //   0 ·    0ms   black. A held frame before anything moves.
-//   1 ·  180ms   THE MARK. It rises out of nothing, already flowing: scale and
-//                opacity over 760ms, and the liquid is running from the first
-//                frame it is visible, so it never reads as a still image that
-//                then starts.
-//   2 ·  820ms   THE NAME. The word wipes out to the right of the mark under a
-//                travelling sheen, and the whole lockup slides left by half the
-//                word so the composition stays centred throughout.
-//   3 · 1400ms   ASSEMBLED. The wipe lands here. Nothing moves but the metal.
-//   4 · 1720ms   THE LIFT, after 320ms of stillness. The lockup drifts up and
-//                dissolves while the black goes with it, and the hero is
-//                already rising underneath by the time the black is half gone.
-//     · 2280ms   the black is gone.
+//   1 ·  180ms   THE CIRCUIT. The band is uncovered round its orbit, 900ms,
+//                slow at both ends, and the metal under it is already flowing.
+//   2 ·  520ms   THE STAR. It opens while the circuit is still closing behind
+//                it, up off nothing with a few degrees bleeding out.
+//   3 · 1180ms   ASSEMBLED. Nothing moves but the metal.
+//   4 · 1560ms   THE LIFT, after a hold. The mark drifts up and dissolves
+//                while the black goes with it, and the hero is already rising
+//                underneath by the time the black is half gone.
+//     · 2120ms   the black is gone.
 //
 // ── what it refuses to do ───────────────────────────────────────────────────
 // It plays once per tab: walking back to `/` from the sky does not replay it,
@@ -32,24 +41,21 @@
 // motion it renders assembled, holds a beat, and lifts; the metal stands
 // still. And it never plays over any address but the front door.
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { ECL, ECL_SPINE, ringPath, starPath } from '../wall/mark.js'
 import LiquidMark from './LiquidMark.jsx'
 import './intro.css'
 
-//                 0    1     2     3     4
-const BEATS = [0, 180, 820, 1400, 1720]
+//                 0    1    2     3     4
+const BEATS = [0, 180, 520, 1180, 1560]
 const LIFT = 4
 const OUT = 560
-const FONT_CAP = 900
 
-// The display face, read off the token rather than named here, so the intro
-// waits for whichever face the system is set in.
-function displayFace(el) {
-  const stack = getComputedStyle(el).getPropertyValue('--f-display') || ''
-  const first = stack.split(',')[0].trim().replace(/^['"]|['"]$/g, '')
-  const weight = getComputedStyle(el).getPropertyValue('--w-display').trim() || '600'
-  return first ? `${weight} 48px "${first}"` : ''
-}
+// The band, dilated a hair, so the sweep's cut clears the metal's own edge.
+const BAND = ringPath(1.6)
+// The star, a little fuller than the mark's, for the same reason: the hole
+// has to be at least the shape it uncovers.
+const STAR = starPath({ up: ECL.up + 1.6, down: ECL.down + 1.6, side: ECL.side + 1.6, thick: 0.96 })
 
 // A beat to hold on, for the screenshot loop only. `/?beat=3` draws the intro
 // assembled and leaves it there; nothing in production reads the query string.
@@ -62,25 +68,9 @@ function heldBeat() {
 export default function Intro({ reduce, onReveal, onDone }) {
   const hold = useRef(heldBeat()).current
   const [at, setAt] = useState(hold ?? 0)
-  const [shift, setShift] = useState(0)
-  const root = useRef(null)
-  const word = useRef(null)
   const timers = useRef([])
   const done = useRef(false)
-
-  // Half the word plus the gap, measured: the mark starts on the optical centre
-  // alone and ends on the left of a lockup centred as a whole.
-  useLayoutEffect(() => {
-    const el = word.current
-    if (!el) return
-    const measure = () => {
-      const w = el.getBoundingClientRect().width
-      const gap = parseFloat(getComputedStyle(el.parentElement).columnGap) || 0
-      setShift((w + gap) / 2)
-    }
-    measure()
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {})
-  }, [])
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
 
   const skip = useRef(() => {})
   skip.current = () => {
@@ -92,35 +82,18 @@ export default function Intro({ reduce, onReveal, onDone }) {
 
   useEffect(() => {
     if (hold !== null) return undefined
-    const start = performance.now()
     if (reduce) {
       setAt(3)
       timers.current.push(setTimeout(() => setAt(LIFT), 560))
       return () => timers.current.forEach(clearTimeout)
     }
-
-    timers.current.push(setTimeout(() => setAt(1), BEATS[1]))
-
-    // The name waits for its face, up to a cap. A word that arrives in the
-    // fallback and swaps mid wipe is the one thing that would give it away.
-    let alive = true
-    const want = root.current ? displayFace(root.current) : ''
-    const faceReady = want && document.fonts && document.fonts.load
-      ? Promise.race([
-          document.fonts.load(want).catch(() => {}),
-          new Promise((r) => setTimeout(r, FONT_CAP)),
-        ])
-      : Promise.resolve()
-
-    faceReady.then(() => {
-      if (!alive) return
-      const late = Math.max(0, BEATS[2] - (performance.now() - start))
-      timers.current.push(setTimeout(() => setAt(2), late))
-      timers.current.push(setTimeout(() => setAt(3), late + (BEATS[3] - BEATS[2])))
-      timers.current.push(setTimeout(() => setAt(LIFT), late + (BEATS[LIFT] - BEATS[2])))
+    // Geometry only, so every beat can start on the first frame: there is no
+    // face to wait for any more.
+    BEATS.forEach((ms, i) => {
+      if (i === 0) return
+      timers.current.push(setTimeout(() => setAt(i), ms))
     })
-
-    return () => { alive = false; timers.current.forEach(clearTimeout) }
+    return () => timers.current.forEach(clearTimeout)
   }, [reduce, hold])
 
   useEffect(() => {
@@ -145,18 +118,33 @@ export default function Intro({ reduce, onReveal, onDone }) {
   }, [at, onReveal, onDone])
 
   return (
-    <div className={`hi is-at${at}`} aria-hidden="true" ref={root}>
+    <div className={`hi is-at${at}`} aria-hidden="true">
       <div className="hi-veil" />
       <div className="hi-stage">
-        <div className="hi-bloom" />
-        <div className="hi-lock" style={{ '--shift': `${shift}px` }}>
-          <div className="hi-mark">
-            <LiquidMark size="100%" speed={at >= LIFT ? 0.35 : 0.8} still={reduce} />
-          </div>
-          <span className="hi-word" ref={word}>
-            celestual.
-            <span className="hi-sheen" />
-          </span>
+        <div className="hi-mark">
+          <LiquidMark size="100%" speed={at >= LIFT ? 0.35 : 0.8} still={reduce} />
+          {/* the cover. Black on black, and the mask is where the sequence
+              lives: white keeps the cover, black cuts it away. */}
+          <svg className="hi-cover" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+            <defs>
+              <clipPath id={`${uid}b`}>
+                <path d={BAND} clipRule="evenodd" />
+              </clipPath>
+              <mask id={`${uid}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
+                <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
+                <path
+                  className="hi-sweep" d={ECL_SPINE} pathLength="100"
+                  fill="none" stroke="#000" strokeWidth="26"
+                  strokeDasharray="100" strokeDashoffset="100"
+                  clipPath={`url(#${uid}b)`}
+                />
+                <g className="hi-star">
+                  <path d={STAR} transform="translate(50 50)" fill="#000" />
+                </g>
+              </mask>
+            </defs>
+            <rect x="-10" y="-10" width="120" height="120" fill="#000" mask={`url(#${uid}m)`} />
+          </svg>
         </div>
       </div>
     </div>

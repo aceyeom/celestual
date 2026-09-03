@@ -88,6 +88,19 @@ function lettersFor(handle, open) {
 // verified handle. Both flip per route, below.
 let OPEN = true
 let VERIFIED = true
+// Whether the resolver answers at once or holds its answer for a while: the
+// card's looking state is drawn for a wait that can run ten seconds on a cold
+// handle, and it only exists on the screen for as long as the wait does.
+let SLOW = false
+
+// A face, for the two handles that have one in the fixture. A flat swatch
+// rather than a photograph, because a fixture face only has to prove the disc
+// draws an image over its monogram; the monogram state is the other half and
+// every other handle here is drawn in it.
+const swatch = (a, b) => `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><circle cx="40" cy="31" r="13" fill="rgba(255,255,255,0.55)"/><ellipse cx="40" cy="66" rx="22" ry="16" fill="rgba(255,255,255,0.5)"/></svg>`,
+)}`
+const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swatch('#8a6a5a', '#4a3028') }
 
 function whoami() {
   return {
@@ -356,16 +369,17 @@ async function fulfil(route) {
   if (url.includes('/api/resolve')) {
     const h = String(JSON.parse(req.postData() || '{}').handle || '').toLowerCase()
     const row = HANDLES.find(([x]) => x === h)
-    if (!row) return route.fulfill({ json: { ok: true, found: false, handle: h } })
-    return route.fulfill({
+    const answer = () => route.fulfill({
       json: {
         ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2],
-        // No avatar. Spec section 5: a failed download stores nothing and the
-        // card falls back to a monogram, and this is the state most worth
-        // looking at because it is the one that can look broken.
-        avatar: '', cached: true,
+        // Mostly no avatar. Spec section 5: a failed download stores nothing
+        // and the card falls back to a monogram, and this is the state most
+        // worth looking at because it is the one that can look broken.
+        avatar: FACES[row[0]] || '', cached: true,
       },
     })
+    if (SLOW) { setTimeout(answer, 15000); return undefined }
+    return answer()
   }
 
   // The public index, read straight off the view.
@@ -405,11 +419,18 @@ const ROUTES = [
   // The hero scrolls: it is a page with three sections rather than one
   // composition, so it is shot whole as well as at the fold. Without the intro
   // in front of it, which has its own frame above.
-  { label: 'hero',          path: '/?nointro=1', full: true },
+  { label: 'hero',          path: '/?nointro=1' },
+  // The front door with a handle in it: the card that pops up under the field,
+  // once with the answer and once while the resolver is still out, which is
+  // the state the light was drawn for.
+  { label: 'hero-card',     path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' } },
+  { label: 'hero-looking',  path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' }, slow: true },
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },
   { label: 'sky',           path: '/sky' },
+  // A standing ping, opened: the card, and the two things you can do to it.
+  { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },
   // The sky before a handle is proved on this device: where the front door's
   // "sign in" lands, and the screen that asks the question.
   { label: 'sky-prove',     path: '/sky', verified: false },
@@ -459,6 +480,7 @@ let bad = 0
 for (const r of list) {
   OPEN = r.open !== false
   VERIFIED = r.verified !== false
+  SLOW = r.slow === true
   for (const v of VIEWPORTS) {
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
@@ -533,6 +555,13 @@ for (const r of list) {
     // a section carrying a count renders that count inside the button, so its
     // accessible name is "the wall 1" and matching on "the wall" silently
     // clicks nothing. Every screenshot then shows the section it opened on.
+    // A control on the screen, pressed, for the states that only exist behind
+    // one: the sky's card is raised by tapping a row.
+    if (r.press) {
+      await page.waitForSelector(r.press, { timeout: 4000 }).catch(() => {})
+      await page.click(r.press, { timeout: 4000 }).catch(() => {})
+      await page.waitForTimeout(900)
+    }
     if (r.click) {
       await page.click(`.ad-nav button[data-sec="${r.click}"]`, { timeout: 4000 }).catch(() => {})
       await page.waitForTimeout(900)

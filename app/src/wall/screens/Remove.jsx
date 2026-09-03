@@ -54,9 +54,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode,
+  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, Face,
 } from '../parts.jsx'
-import { Mark, Sparkle, Provider } from '../art.jsx'
+import { Sparkle, Provider } from '../art.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
 import { isVerified } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
@@ -202,8 +202,8 @@ export default function Remove({ handle: prefill, back }) {
             beside it. */}
         <Prose className="wl-gate-copy">
           {proven
-            ? 'Every letter under it goes too. This cannot be undone.'
-            : 'This is permanent. To take down one letter, report that letter instead.'}
+            ? 'Every letter under it goes too.'
+            : 'Permanent. To take down one letter, report it instead.'}
         </Prose>
 
         <div className="wl-remove-field">
@@ -221,7 +221,7 @@ export default function Remove({ handle: prefill, back }) {
             <Label tone="dim">{fault}</Label>
           ) : validHandle(h) ? (
             <div className="wl-remove-row">
-              <Mark handle={h} size={28} lit={proven} />
+              <Face handle={h} size={28} lit={proven} />
               <Label tone="dim">
                 {count === 0 ? 'no letters · no way back on'
                   : count === 1 ? 'one letter goes with it · no way back'

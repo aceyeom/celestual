@@ -7,9 +7,9 @@
 // prop and no `size` in pixels — so changing what a ghost pill looks like is
 // one edit in one file rather than nine inline objects that drifted apart.
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { atHandle, normHandle } from './data.js'
-import { Ecliptic, Mark, Provider, Sparkle } from './art.jsx'
+import { Ecliptic, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
 import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
 import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE } from '../api/handles.js'
@@ -278,7 +278,7 @@ export function TopBar({ go, at = 'wall', onMark }) {
           title={who ? who : 'sign in to read'}
           aria-current={at === 'gate' ? 'page' : undefined}
         >
-          {who ? <Mark handle={who} size={22} lit /> : <Icon name="key" />}
+          {who ? <Face handle={who} size={22} resolve={false} /> : <Icon name="key" />}
         </button>
       </nav>
     </header>
@@ -666,47 +666,196 @@ export function DmCode({ code, note = null }) {
   )
 }
 
+// ── WHO THAT IS ─────────────────────────────────────────────────────────────
+//
+// Four objects, and a person looks the same in all of them: the FACE, which is
+// the account's own picture or a monogram; WHO, the face with the name and the
+// handle beside it; the ROW that is a person; and the CARD under a field, which
+// is the resolver's answer while somebody is still typing.
+//
+// The face replaced the constellation. design/DESIGN.md 3.4 put a star figure
+// seeded from the handle wherever a photograph would be, because there was no
+// photograph. There is one now (docs/HANDLE-RESOLVER.md), and a product that
+// draws a person as a hash on one screen and as their own face on the next is
+// two products. So: one disc, on the sky, on the wall, in the bar and on paper.
+
+// The resolver's answer for one handle, as a hook. `null` until there is one,
+// and null for good when the resolver is off or the account was not found: a
+// caller draws the monogram in both cases and never waits on this.
+export function useProfile(handle) {
+  const h = normHandle(handle)
+  const [p, setP] = useState(() => peekHandle(h))
+  useEffect(() => {
+    if (!resolveEnabled || h.length < 2) { setP(null); return undefined }
+    const known = peekHandle(h)
+    if (known) { setP(known); return undefined }
+    let alive = true
+    setP(null)
+    resolveHandle(h).then((r) => { if (alive) setP(r) })
+    return () => { alive = false }
+  }, [h])
+  return p && p.state === 'found' ? p : null
+}
+
+// ── the face ────────────────────────────────────────────────────────────────
+// A disc, sized by `size`, carrying the picture when the resolver has one and
+// a monogram until then and otherwise. The monogram is already in place under
+// the picture, so a face that never arrives is a designed state and a face
+// that fails to load is the same state. `resolve` off draws the monogram only,
+// for the one identity in the product that is not an Instagram handle.
+export function Face({ handle, size = 30, resolve = true, lit = false, className = '', style }) {
+  const p = useProfile(resolve ? handle : '')
+  const raw = String(handle || '').trim().replace(/^@+/, '')
+  const mono = p ? monogram(p) : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
+  const [shown, setShown] = useState(false)
+  const [broken, setBroken] = useState(false)
+  const src = p?.avatar || ''
+  useEffect(() => { setShown(false); setBroken(false) }, [src])
+  return (
+    <span
+      className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''} ${className}`}
+      style={{ '--s': `${size}px`, ...style }} aria-hidden="true"
+    >
+      <span className="wl-face-mono">{mono}</span>
+      {src && !broken ? (
+        <img
+          src={src} alt="" loading="lazy" decoding="async"
+          onLoad={() => setShown(true)} onError={() => setBroken(true)}
+        />
+      ) : null}
+    </span>
+  )
+}
+
+// The name beside the face, and the handle under it. When there is no name the
+// handle stands as the name, in its own face, and the line under it carries
+// whatever the caller had to say (`meta`). The badge is the product's own
+// sparkle: redrawing somebody else's trust mark would be claiming it is ours.
+export function Who({ handle, size = 40, meta = null, className = '' }) {
+  const p = useProfile(handle)
+  const name = p?.name || ''
+  const under = [name ? atHandle(handle) : '', meta].filter(Boolean).join(' · ')
+  return (
+    <span className={`wl-who ${className}`}>
+      <Face handle={handle} size={size} />
+      <span className="wl-who-id">
+        <span className={`wl-who-name${name ? '' : ' is-h'}`}>
+          {name || atHandle(handle)}
+          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+        </span>
+        {under ? <span className="wl-who-at">{under}</span> : null}
+      </span>
+    </span>
+  )
+}
+
+// A row that is a person: the face, the name, a line under it, and whatever
+// stands at the end. The sky's standing pings and the wall's search results
+// are both this, so a person looks the same in both.
+export function PersonRow({ handle, meta, action, onClick, lit = false, size = 40, className = '' }) {
+  return (
+    <button
+      type="button" className={`wl-row is-person${lit ? ' is-lit' : ''} ${className}`}
+      onClick={onClick}
+    >
+      <Who handle={handle} size={size} meta={meta} className="wl-row-who" />
+      {action ? <span className="wl-row-action">{action}</span> : null}
+    </button>
+  )
+}
+
+// ── you, in the bar ─────────────────────────────────────────────────────────
+// One chip on every bar in Main: the face and the handle once one is proved,
+// and the way in before that. The handle keeps its case, in the identifier
+// face, at one size. It used to be three things: a ghost capsule on the front
+// door, an uppercased label on the sky, and a constellation on the wall.
+export function Me({ who, onClick, className = '' }) {
+  const on = !!who?.handleVerified
+  return (
+    <button
+      type="button" className={`wl-pill is-ghost wl-me${on ? ' is-on' : ''} ${className}`}
+      onClick={onClick} aria-label={on ? `your sky, ${atHandle(who.handle)}` : 'sign in'}
+    >
+      {on ? <Face handle={who.handle} size={18} /> : null}
+      <span className={on ? 'wl-me-h' : undefined}>{on ? atHandle(who.handle) : 'sign in'}</span>
+    </button>
+  )
+}
+
+// ── the plate ───────────────────────────────────────────────────────────────
+// The card's ground: one dark plate with a scatter of tiny star shaped holes
+// in it, so the light that runs round the frame while the resolver is out
+// twinkles through as it passes. A fixed field, the same on every card.
+const HOLES = 'M56.1 3.96C56.4645 3.96 56.76 4.25519 56.76 4.62C56.76 4.98481 56.4645 5.28 56.1 5.28C55.9131 5.28 55.7443 5.20201 55.624 5.07762C55.5632 5.01446 55.5147 4.93904 55.4829 4.8559C55.4552 4.78243 55.44 4.70315 55.44 4.62C55.44 4.5549 55.4494 4.49174 55.4668 4.43244C55.4906 4.35188 55.5292 4.27775 55.5795 4.21329C55.7004 4.05926 55.8885 3.96 56.1 3.96ZM40.26 17.16C40.6245 17.16 40.92 17.4552 40.92 17.82C40.92 18.1848 40.6245 18.48 40.26 18.48C39.8955 18.48 39.6 18.1848 39.6 17.82C39.6 17.4552 39.8955 17.16 40.26 17.16ZM74.58 5.28C74.7701 5.28 74.9413 5.36057 75.0618 5.48882C75.073 5.50043 75.0837 5.51268 75.094 5.52557C75.1088 5.54426 75.1231 5.56359 75.1359 5.58357L75.1479 5.60291L75.1595 5.62353C75.1711 5.64481 75.1814 5.66672 75.1906 5.68928C75.2226 5.76662 75.24 5.85106 75.24 5.94C75.24 6.1585 75.1336 6.3525 74.9699 6.47238C74.9158 6.51234 74.8555 6.54393 74.7908 6.56584C74.7247 6.58775 74.6538 6.6 74.58 6.6C74.2156 6.6 73.92 6.30481 73.92 5.94C73.92 5.87684 73.929 5.8156 73.9455 5.7576C73.9596 5.70862 73.979 5.66221 74.0032 5.61903C74.0657 5.50688 74.1595 5.41471 74.2728 5.35541C74.3647 5.30707 74.4691 5.28 74.58 5.28ZM21.66 33.52C22.0245 33.52 22.32 33.8152 22.32 34.18C22.32 34.5448 22.0245 34.84 21.66 34.84C21.2955 34.84 21 34.5448 21 34.18C21 33.8152 21.2955 33.52 21.66 33.52ZM8.16 32.86C8.16 32.4952 7.8645 32.2 7.5 32.2C7.1355 32.2 6.84 32.4952 6.84 32.86C6.84 33.2248 7.1355 33.52 7.5 33.52C7.8645 33.52 8.16 33.2248 8.16 32.86ZM7.5 23.68C7.8645 23.68 8.16 23.9752 8.16 24.34C8.16 24.7048 7.8645 25 7.5 25C7.1355 25 6.84 24.7048 6.84 24.34C6.84 23.9752 7.1355 23.68 7.5 23.68ZM19.32 18.48C19.32 18.1152 19.0245 17.82 18.66 17.82C18.2955 17.82 18 18.1152 18 18.48C18 18.8448 18.2955 19.14 18.66 19.14C19.0245 19.14 19.32 18.8448 19.32 18.48ZM5.66 11.84C6.0245 11.84 6.32001 12.1352 6.32001 12.5C6.32001 12.8648 6.0245 13.16 5.66 13.16C5.2955 13.16 5 12.8648 5 12.5C5 12.1352 5.2955 11.84 5.66 11.84ZM35.16 35.5C35.16 35.1352 34.8645 34.84 34.5 34.84C34.1355 34.84 33.84 35.1352 33.84 35.5C33.84 35.8648 34.1355 36.16 34.5 36.16C34.8645 36.16 35.16 35.8648 35.16 35.5ZM53.5 36.18C53.8645 36.18 54.16 36.4752 54.16 36.84C54.16 37.2048 53.8645 37.5 53.5 37.5C53.1355 37.5 52.84 37.2048 52.84 36.84C52.84 36.4752 53.1355 36.18 53.5 36.18ZM48.5 28.66C48.5 28.2952 48.2045 28 47.84 28C47.4755 28 47.18 28.2952 47.18 28.66C47.18 29.0248 47.4755 29.32 47.84 29.32C48.2045 29.32 48.5 29.0248 48.5 28.66ZM60.34 27.34C60.7045 27.34 61 27.6352 61 28C61 28.3648 60.7045 28.66 60.34 28.66C59.9755 28.66 59.68 28.3648 59.68 28C59.68 27.6352 59.9755 27.34 60.34 27.34ZM56.284 16.5C56.284 16.1352 55.9885 15.84 55.624 15.84C55.2595 15.84 54.964 16.1352 54.964 16.5C54.964 16.8648 55.2595 17.16 55.624 17.16C55.9885 17.16 56.284 16.8648 56.284 16.5ZM46.2 7.26C46.2 6.89519 45.9045 6.6 45.54 6.6C45.5174 6.6 45.4953 6.60129 45.4733 6.60387L45.453 6.60579L45.4124 6.61225L45.3857 6.61804L45.3845 6.61836C45.3675 6.62277 45.3504 6.62721 45.3341 6.63287C45.2522 6.65929 45.1774 6.70184 45.1134 6.75597C45.0627 6.79916 45.0186 6.84943 44.9828 6.90551C44.9178 7.00799 44.88 7.12981 44.88 7.26C44.88 7.62481 45.1755 7.92 45.54 7.92C45.7372 7.92 45.9141 7.83363 46.0353 7.69635C46.0808 7.64478 46.1182 7.58613 46.1459 7.52232C46.1807 7.4424 46.2 7.35346 46.2 7.26ZM33 9.34C33 8.9752 32.7045 8.68 32.34 8.68C31.9755 8.68 31.68 8.9752 31.68 9.34C31.68 9.7048 31.9755 10 32.34 10C32.7045 10 33 9.7048 33 9.34ZM16 4.8559C16.3645 4.8559 16.66 5.1511 16.66 5.5159C16.66 5.8807 16.3645 6.1759 16 6.1759C15.6355 6.1759 15.34 5.8807 15.34 5.5159C15.34 5.1511 15.6355 4.8559 16 4.8559ZM69.66 21.16C69.66 20.7952 69.3645 20.5 69 20.5C68.6355 20.5 68.34 20.7952 68.34 21.16C68.34 21.5248 68.6355 21.82 69 21.82C69.3645 21.82 69.66 21.5248 69.66 21.16ZM80.52 15.18C80.52 14.8152 80.2245 14.52 79.86 14.52C79.4956 14.52 79.2 14.8152 79.2 15.18C79.2 15.5448 79.4956 15.84 79.86 15.84C80.2245 15.84 80.52 15.5448 80.52 15.18ZM78.16 34.84C78.16 34.4752 77.5 34.18 77.5 34.18C77.5 34.18 76.84 34.4752 76.84 34.84C76.84 35.2048 77.1355 35.5 77.5 35.5C77.8645 35.5 78.16 35.2048 78.16 34.84ZM85.66 24.34C86.0245 24.34 86.32 24.6352 86.32 25C86.32 25.3648 86.0245 25.66 85.66 25.66C85.2955 25.66 85 25.3648 85 25C85 24.6352 85.2955 24.34 85.66 24.34ZM91.32 10C91.32 9.6352 91.0245 9.34 90.66 9.34C90.2955 9.34 90 9.6352 90 10C90 10.3648 90.2955 10.66 90.66 10.66C91.0245 10.66 91.32 10.3648 91.32 10ZM138.6 0H0V46.2H138.6V0ZM92.64 34.84C92.64 34.4752 91.98 34.18 91.98 34.18C91.98 34.18 91.32 34.4752 91.32 34.84C91.32 35.2048 91.6155 35.5 91.98 35.5C92.3445 35.5 92.64 35.2048 92.64 34.84Z'
+
+function StarPlate() {
+  return (
+    <span className="wl-card-plate" aria-hidden="true">
+      <svg width="100%" height="100%" preserveAspectRatio="xMidYMid slice" viewBox="0 0 100 40" fill="none">
+        <path fillRule="evenodd" clipRule="evenodd" d={HOLES} fill="currentColor" />
+      </svg>
+    </span>
+  )
+}
+
+// The route the light runs: the card's own edge, measured, so the frame that
+// lights is the frame that is there and not a rectangle guessed at.
+function useFramePath(ref, on) {
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !on) return undefined
+    const set = () => {
+      el.style.setProperty('--path', `path('M 0 0 H ${el.offsetWidth} V ${el.offsetHeight} H 0 V 0')`)
+    }
+    set()
+    const ro = window.ResizeObserver ? new ResizeObserver(set) : null
+    if (ro) ro.observe(el)
+    return () => { if (ro) ro.disconnect() }
+  }, [ref, on])
+}
+
 // ── THE RESULT CARD ─────────────────────────────────────────────────────────
 //
 // docs/rebuild-spec.md section 5 singles this out: "This card is the main
 // affordance that makes the product read as professional, so it gets real
 // design attention." It is the one place in the product where somebody else's
-// account is drawn, and it is drawn twice: under the composer on the wall, and
-// under the handle field on Main.
+// account is drawn while they are still being typed, and it is drawn under the
+// composer on the wall, under the handle field on Main, and on the front door.
 //
 // ── what it is allowed to carry ─────────────────────────────────────────────
 // Four things, and the spec names all four: an avatar, a handle, a display
 // name, a verification badge. Nothing else. No follower count, no post count,
-// no bio, no link, no "last active". This product does not tell anybody how
-// popular anybody is, and a card carrying one number is a card somebody
-// optimises against.
+// no bio, no link. This product does not tell anybody how popular anybody is.
 //
-// ── the disc ────────────────────────────────────────────────────────────────
-// A Supabase Storage URL, ours, downloaded once and non-expiring (spec section
-// 5). When there is none, a monogram off the display name: initials for two
-// words, the first two letters for one, and the handle's first letter when
-// there is no name at all. A missing face must never block the card, so the
-// monogram is a designed state and not a fallback that looks broken.
+// ── it waits with a light ───────────────────────────────────────────────────
+// While the resolver is out, which on a cold handle is ten seconds, a point of
+// light runs round the card's own edge and twinkles through the plate's star
+// shaped holes as it passes. Not a spinner, which promises a computation, and
+// not a shimmer, which is a pattern from a different product: the frame the
+// answer will land in, lit round its border. The frame holds the exact height
+// the answer takes, so nothing under it moves when the answer lands.
 //
-// The disc carries a hairline rather than a shadow. Spec 7.1 bans box-shadow
-// used for depth, and on a blue-black ground a ring reads as an edge where a
-// shadow reads as nothing at all.
+// ── and it can be pressed ───────────────────────────────────────────────────
+// Given `onSelect` the card is a button from the first frame: disabled while it
+// is looking, live the moment the answer lands, and the same element throughout
+// so the light going out and the arrow arriving are one transition rather than
+// a swap. Pressing it is the same act as the pill beneath it. The answer that
+// popped up under the field is the thing to press.
 //
 // ── the states ──────────────────────────────────────────────────────────────
-// Four, and three of them draw the frame:
-//
 //   idle     nothing typed yet. Nothing drawn.
-//   looking  asked. The frame at rest, disc empty, two bars where the name
-//            will be. Drawn rather than hidden so the layout does not jump
-//            when the answer lands, which is the most common way a readout
-//            like this comes to feel cheap.
+//   looking  asked. The light is running.
 //   found    the account.
 //   missing  no account by that name, said in one line, and the act still goes
 //            through. Our provider is imperfect and somebody who knows their
 //            friend's handle is right.
-export function HandleCard({ handle, className = '' }) {
+export function HandleCard({ handle, onSelect = null, className = '' }) {
   const [at, setAt] = useState(IDLE)
   const h = normHandle(handle)
+  const box = useRef(null)
+  // Measured once the card exists: before anything is typed the component
+  // renders nothing and there is no frame to measure.
+  useFramePath(box, at.state !== 'idle' && at.state !== 'unknown')
 
   useEffect(() => {
     if (!resolveEnabled || h.length < 2) { setAt(IDLE); return undefined }
@@ -728,38 +877,24 @@ export function HandleCard({ handle, className = '' }) {
   // telling somebody their friend does not exist.
   if (at.state === 'idle' || at.state === 'unknown') return null
 
-  const cls = ['wl-card', className].filter(Boolean).join(' ')
-
-  if (at.state === 'looking') {
-    return (
-      <div className={`${cls} is-looking`} aria-live="polite" aria-busy="true">
-        <span className="wl-card-disc" aria-hidden="true" />
-        <span className="wl-card-id">
-          <span className="wl-card-bar" aria-hidden="true" />
-          <span className="wl-card-bar is-short" aria-hidden="true" />
-        </span>
-      </div>
-    )
-  }
-
-  if (at.state === 'missing') {
-    return (
-      <div className={`${cls} is-missing`} aria-live="polite">
-        <span className="wl-card-disc is-empty" aria-hidden="true">
-          <span className="wl-card-mono">{h.slice(0, 1).toUpperCase()}</span>
-        </span>
-        <span className="wl-card-id">
-          <span className="wl-card-name">no account by that name</span>
-          <span className="wl-card-at">@{h}</span>
-        </span>
-      </div>
-    )
-  }
+  const looking = at.state === 'looking'
+  const missing = at.state === 'missing'
+  const pick = typeof onSelect === 'function'
+  const Tag = pick ? 'button' : 'div'
+  const cls = ['wl-card', looking ? 'is-looking' : missing ? 'is-missing' : 'is-found', pick && 'is-pick', className]
+    .filter(Boolean).join(' ')
+  const mono = looking ? '' : missing ? h.slice(0, 1).toUpperCase() : monogram(at)
+  const name = looking ? '' : missing ? 'no account by that name' : (at.name || `@${at.handle}`)
+  const under = looking ? '' : missing ? `@${h}` : (at.name ? `@${at.handle}` : '')
+  const live = pick ? { type: 'button', onClick: looking ? undefined : onSelect, disabled: looking } : {}
 
   return (
-    <div className={cls} aria-live="polite">
+    <Tag ref={box} className={cls} aria-live="polite" aria-busy={looking || undefined} {...live}>
+      <span className="wl-card-light" aria-hidden="true" />
+      <StarPlate />
       <span className="wl-card-disc" aria-hidden="true">
-        {at.avatar ? (
+        <span className="wl-card-mono">{mono}</span>
+        {!looking && at.avatar ? (
           <img
             src={at.avatar} alt="" loading="lazy" decoding="async"
             /* A face that fails to load falls through to the monogram under it
@@ -767,19 +902,22 @@ export function HandleCard({ handle, className = '' }) {
             onError={(e) => { e.currentTarget.style.display = 'none' }}
           />
         ) : null}
-        <span className="wl-card-mono">{monogram(at)}</span>
       </span>
       <span className="wl-card-id">
-        <span className="wl-card-name">
-          {at.name || `@${at.handle}`}
-          {/* The badge is this product's own sparkle rather than a copy of
-              Instagram's tick. Redrawing somebody else's trust mark inside our
-              card would be claiming their verification is ours to issue. */}
-          {at.verified ? <Sparkle size={10} className="wl-card-badge" /> : null}
+        <span className="wl-card-skel" aria-hidden="true">
+          <span className="wl-card-bar" />
+          <span className="wl-card-bar is-short" />
         </span>
-        {at.name ? <span className="wl-card-at">@{at.handle}</span> : null}
+        <span className="wl-card-real">
+          <span className="wl-card-name">
+            {name}
+            {!looking && at.verified ? <Sparkle size={10} className="wl-card-badge" /> : null}
+          </span>
+          {under ? <span className="wl-card-at">{under}</span> : null}
+        </span>
       </span>
-    </div>
+      {pick ? <span className="wl-card-go" aria-hidden="true">&#8594;</span> : null}
+    </Tag>
   )
 }
 

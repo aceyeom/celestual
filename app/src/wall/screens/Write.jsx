@@ -132,8 +132,9 @@ export default function Write({ to: prefill, go, back }) {
             />
             {/* the account, under the line. A letter addressed to a mistyped
                 handle is a letter about somebody that nobody can ever find, and
-                this is the only step where that is still fixable. */}
-            <HandleCard handle={to} />
+                this is the only step where that is still fixable. Pressing the
+                person is the same act as the pill below. */}
+            <HandleCard handle={to} onSelect={next} />
             <Label tone="dim" className="wl-write-note">
               {/* A name that has come off the wall is refused by the schema
                   rather than by this screen: wall_write returns 'removed' and

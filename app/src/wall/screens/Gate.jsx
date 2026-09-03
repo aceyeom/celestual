@@ -32,8 +32,7 @@
 // the first one happens here.
 
 import { useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon } from '../parts.jsx'
-import { Mark } from '../art.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face } from '../parts.jsx'
 import { atHandle } from '../data.js'
 import { getState } from '../store.js'
 import { DOMAIN, emailFault, member, normEmail, signOut, validCode, validEmail } from '../auth.js'
@@ -147,7 +146,9 @@ export default function Gate({ go, back }) {
   // in on this phone, and that fact was the smallest thing on the sheet.
   //
   // So the address is the heading now, set in the identifier face the way every
-  // other identifier in the build is, with the constellation of it beside it.
+  // other identifier in the build is, with a disc beside it: the same object
+  // that carries a face everywhere else, wearing the address's initial here,
+  // because an address is not an Instagram handle and has no face to resolve.
   // Under it, the one thing this device actually knows about them: the names
   // they have written to. Then the way on, and the way out.
   if (who) {
@@ -158,7 +159,7 @@ export default function Gate({ go, back }) {
           <SheetHead onClose={back} label="back to the wall" />
 
           <div className="wl-acct-id">
-            <Mark handle={who} size={44} lit />
+            <Face handle={who} size={44} resolve={false} />
             <div className="wl-acct-name">
               <p className="wl-acct-addr" id="wl-gate-h">{who}</p>
               <Label tone="dim">signed in on this device</Label>
@@ -178,7 +179,7 @@ export default function Gate({ go, back }) {
               <div className="wl-acct-wrote">
                 {wrote.map((h) => (
                   <span className="wl-acct-chip" key={h}>
-                    <Mark handle={h} size={20} />
+                    <Face handle={h} size={20} />
                     <span>{atHandle(h)}</span>
                   </span>
                 ))}

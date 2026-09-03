@@ -25,7 +25,7 @@ import { suppressHandle } from '../api/celestual.js'
 import { normHandle } from '../api/celestual.js'
 import TopBar from './TopBar.jsx'
 
-export default function Optout({ go }) {
+export default function Optout({ go, who }) {
   const [handle, setHandle] = useState('')
   const [phase, setPhase] = useState('idle') // idle | working | done | failed
   const [done, setDone] = useState('')
@@ -48,13 +48,12 @@ export default function Optout({ go }) {
   if (phase === 'done') {
     return (
       <main className="mn-page">
-        <TopBar go={go} />
+        <TopBar go={go} who={who} />
         <div className="mn-mid">
           <Label><Sparkle size={11} />done</Label>
           <Display size="m" as="h1">@{done} is out.</Display>
           <Prose className="mn-copy">
-            nobody can enter that handle again, and everything that ever pointed at it
-            is gone. if you change your mind, write to hello@celestual.us.
+            nobody can enter it again. to undo this, write to hello@celestual.us.
           </Prose>
         </div>
         <div className="mn-foot">
@@ -66,12 +65,11 @@ export default function Optout({ go }) {
 
   return (
     <main className="mn-page">
-      <TopBar go={go} />
+      <TopBar go={go} who={who} />
       <div className="mn-mid">
         <Display size="m" as="h1">Take your @<br />off celestual.</Display>
         <Prose className="mn-copy">
-          type the handle. it can never be entered again, and anything already
-          pointing at it is erased. no account, no code, no questions.
+          it can never be entered again. anything pointing at it is erased.
         </Prose>
         <HandleField
           value={handle}
@@ -93,15 +91,9 @@ export default function Optout({ go }) {
         <Rule tone="soft" />
         <Label>what this product does</Label>
         <Prose className="mn-copy">
-          somebody enters a handle. the person it belongs to is never told, and never
-          can be. the only thing that ever surfaces is a pair who both entered each
-          other, shown to exactly those two people at the same moment. there is no
-          browsing, no profiles, and no list.
-        </Prose>
-        <Prose className="mn-copy">
-          a handle we are pointed at is stored as a salted one way hash, so an entry
-          cannot be read back into a name by us or by anybody who ever breaches us.
-          a ping stands sixty days and then it is gone.
+          the person a ping is on is never told. the only thing that ever surfaces is
+          a pair who both placed one, shown to those two at once. a handle is kept as
+          a salted one way hash, and a ping lapses after sixty days.
         </Prose>
         <Prose className="mn-copy mn-links">
           <a className="wl-quiet" href="/privacy">privacy</a>

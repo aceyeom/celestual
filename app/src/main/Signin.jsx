@@ -24,7 +24,7 @@ function fromHash() {
   return m ? m[1] : ''
 }
 
-export default function Signin({ go, refreshWho }) {
+export default function Signin({ go, who, refreshWho }) {
   const [token] = useState(fromHash)
   const [phase, setPhase] = useState(token ? 'working' : 'missing') // working | done | lapsed | missing
   const [handle, setHandle] = useState('')
@@ -56,7 +56,7 @@ export default function Signin({ go, refreshWho }) {
 
   return (
     <main className="mn-page">
-      <TopBar go={go} />
+      <TopBar go={go} who={who} />
       <div className="mn-mid">
         {phase === 'working' ? (
           <>
@@ -72,10 +72,7 @@ export default function Signin({ go, refreshWho }) {
         ) : phase === 'lapsed' ? (
           <>
             <Display size="m" as="h1">That link<br />has lapsed.</Display>
-            <Prose className="mn-copy">
-              a sign in link lasts twenty minutes and works once. proving your handle
-              again takes one instagram message.
-            </Prose>
+            <Prose className="mn-copy">it lasts twenty minutes and works once.</Prose>
           </>
         ) : (
           <>

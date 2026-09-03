@@ -2168,177 +2168,203 @@
 .wl-a:hover { border-bottom-color: var(--chalk); }
 
 /* ═══ WHO THAT IS ══════════════════════════════════════════════════════════
-   The resolver's line, under the handle field in the composer. A LINE, not a
-   card: everything on this build that names somebody is a row on a baseline,
-   and a bordered tile with an avatar in it would be the one object here
-   borrowed from a settings screen.
+   Four objects, and a person looks the same in all of them: the FACE, which
+   is the account's own picture or a monogram; WHO, the face with the name and
+   the handle beside it; the ROW that is a person; and the CARD under a field,
+   which is the resolver's answer while somebody is still typing.
 
-   It carries a face, a name, and the badge if the account has one. It carries
-   NO COUNTS. Not followers, not letters, not posts. The whole wall is built on
-   nobody being ranked, and a follower number under the field would have undone
-   that in one line of markup. */
+   The face replaced the constellation. The constellation stood where a
+   photograph would be while there was no photograph, and there is one now,
+   so the same disc stands on the sky, on the wall, in the bar and on paper.
+
+   It carries a hairline rather than a shadow. Spec 7.1 bans box-shadow used
+   for depth, and on a blue-black ground a ring reads as an edge where a
+   shadow reads as nothing at all. No counts, anywhere in any of the four. */
+.wl-face {
+  position: relative; flex: 0 0 auto;
+  display: inline-grid; place-items: center;
+  width: var(--s, 30px); height: var(--s, 30px);
+  border-radius: 999px; overflow: hidden;
+  background: rgba(244, 241, 234, 0.06);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  vertical-align: middle;
+}
+.wl-face-mono {
+  font-family: var(--f-id); font-size: calc(var(--s, 30px) * 0.36); letter-spacing: 0.04em;
+  line-height: 1; color: var(--ash); user-select: none;
+}
+/* under the picture, always: when the face loads it covers this, and when it
+   does not, or there never was one, the monogram is already in place */
+.wl-face img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  opacity: 0; transition: opacity 320ms var(--ease);
+}
+.wl-face.has-img img { opacity: 1; }
+.wl-face.is-lit { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.28); }
+/* on paper, struck in the paper's own ink */
+.wl-paper .wl-face { background: rgba(23, 21, 15, 0.06); box-shadow: inset 0 0 0 1px rgba(23, 21, 15, 0.16); }
+.wl-paper .wl-face-mono { color: var(--paper-ink-2); }
+
+.wl-who { display: inline-flex; align-items: center; gap: 11px; min-width: 0; }
+.wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.wl-who-name {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  font-family: var(--f-util); font-size: 14px; font-weight: 500; line-height: 1.25;
+  letter-spacing: -0.005em; color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* a handle standing as the name is still an identifier, so it keeps its face */
+.wl-who-name.is-h { font-family: var(--f-id); font-weight: 400; letter-spacing: -0.012em; }
+.wl-who-badge { color: var(--accent); flex: 0 0 auto; }
+.wl-who-at {
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.03em; color: var(--ash);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-paper .wl-who-name { color: var(--paper-ink); }
+.wl-paper .wl-who-at { color: var(--paper-ink-2); }
+
+/* the row that is a person */
+.wl-row.is-person { padding: 9px 12px 9px 9px; gap: 12px; }
+.wl-row.is-person .wl-row-who { flex: 1 1 auto; min-width: 0; }
+.wl-row.is-person .wl-row-action { display: inline-flex; align-items: center; }
+
+/* ── you, in the bar ──
+   The one control in Main's bar, and a lit one: the bar's ash would make it
+   read as a third link. Same chip on every screen. */
+.wl-me {
+  min-height: 34px; padding: 0 14px; gap: 8px;
+  font-size: 12.5px; color: var(--chalk);
+  border-color: rgba(244, 241, 234, 0.22);
+}
+.wl-me.is-on { padding: 0 12px 0 7px; }
+.wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+.wl-me-h { font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em; text-transform: none; }
+
 /* ── the result card ────────────────────────────────────────────────────────
    docs/rebuild-spec.md section 5: the main affordance that makes the product
    read as professional. Four things on it and no fifth.
 
-   Built on the paper's own geometry rather than as a floating panel: a hairline
-   frame at --hair, the card radius the whole system uses, and a ground one step
-   off the void. No box-shadow anywhere in it, per spec 7.1, and no gradient.
-   Depth here is an edge and a ground, which is what depth is on a night sky. */
+   It is one element in every state, so the light going out and the arrow
+   arriving are one transition rather than a swap: the LIGHT runs round the
+   frame while the resolver is out, the PLATE with its star shaped holes is the
+   ground it runs behind, and the answer fades in over the two bars that held
+   its place. Given a handler it is a button, and the arrow says so. */
 .wl-card {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-height: 58px;
+  --bw: 1px;
+  --light: rgba(244, 241, 234, 0.95);
+  --light-w: 132px;
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; min-height: 58px;
   padding: 9px 14px 9px 9px;
-  border: 1px solid var(--hair);
-  border-radius: var(--r-card);
-  background: rgba(244, 241, 234, 0.028);
-  /* Sized to the field above it rather than to the page, so it reads as part of
-     the same object. */
-  width: 100%;
+  border: 0; border-radius: var(--r-card);
+  background: none; color: var(--chalk); text-align: left;
   animation: wl-card-in 420ms var(--ease) both;
+  transition: transform 220ms var(--ease);
 }
 @keyframes wl-card-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .wl-card { animation: none; }
+.wl-card > * { position: relative; z-index: 2; }
+
+/* the light, behind the plate, on its way round. `offset-path` is the card's
+   own edge, written by the component once it is measured. */
+.wl-card-light {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  width: var(--light-w); height: var(--light-w); border-radius: 50%;
+  background: radial-gradient(circle at center,
+    var(--light) 0%, rgba(244, 241, 234, 0.32) 22%, rgba(244, 241, 234, 0) 54%);
+  offset-path: var(--path, path('M 0 0 H 320 V 58 H 0 V 0'));
+  offset-distance: 0%; offset-rotate: 0deg;
+  opacity: 0; pointer-events: none;
+  transition: opacity 480ms var(--ease);
+}
+.wl-card.is-looking .wl-card-light { opacity: 1; animation: wl-card-run 2800ms linear infinite; }
+@keyframes wl-card-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+
+/* the plate: a hairline, and a dark ground with the holes cut in it */
+.wl-card-plate {
+  position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit; overflow: hidden;
+  border: var(--bw) solid var(--hair);
+  pointer-events: none;
+  transition: border-color 240ms var(--ease);
+}
+.wl-card-plate svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  color: var(--void-1);
+  transition: color 240ms var(--ease);
 }
 
 .wl-card-disc {
   position: relative;
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  overflow: hidden;
+  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
   background: rgba(244, 241, 234, 0.05);
-  /* The ring, not a shadow. On this ground an edge is the only thing that
-     reads. */
   box-shadow: inset 0 0 0 1px var(--hair);
-  display: grid;
-  place-items: center;
+  display: grid; place-items: center;
+  transition: background 360ms var(--ease);
 }
-.wl-card-disc img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-/* Under the image, always. When the face loads it covers this; when it does
-   not, or when there was never one, the monogram is already in place and
-   nothing has to swap. */
+.wl-card-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .wl-card-mono {
-  font-family: var(--f-id);
-  font-size: 12.5px;
-  letter-spacing: 0.06em;
-  color: var(--ash);
-  user-select: none;
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.06em;
+  color: var(--ash); user-select: none;
 }
-.wl-card-disc.is-empty {
-  background: none;
-  box-shadow: inset 0 0 0 1px var(--hair);
-}
+.wl-card.is-looking .wl-card-disc { background: rgba(244, 241, 234, 0.035); }
 
-.wl-card-id {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* the two states of the text share one cell and cross fade. Nothing moves:
+   the words land where the bars were. */
+.wl-card-id { min-width: 0; flex: 1 1 auto; display: grid; }
+.wl-card-id > * {
+  grid-area: 1 / 1; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  transition: opacity 360ms var(--ease);
 }
+.wl-card-skel { gap: 7px; opacity: 0; }
+.wl-card.is-looking .wl-card-skel { opacity: 1; }
+.wl-card.is-looking .wl-card-real { opacity: 0; }
 .wl-card-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--f-util);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.005em;
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: -0.005em;
   color: var(--chalk);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-card-badge { color: var(--accent); flex: 0 0 auto; }
 .wl-card-at {
-  font-family: var(--f-id);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--ash);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.04em; color: var(--ash);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-
-/* ── looking ──
-   The frame at rest with two bars where the name will be. It holds the exact
-   height the answer will take, so nothing below it moves when the answer
-   lands. The pulse is on opacity alone: a shimmer sweeping across a placeholder
-   is a pattern from a different product. */
-.wl-card.is-looking .wl-card-disc { background: rgba(244, 241, 234, 0.04); }
 .wl-card-bar {
-  display: block;
-  height: 9px;
-  width: 128px;
-  max-width: 46vw;
-  border-radius: 3px;
+  display: block; height: 9px; width: 128px; max-width: 46vw; border-radius: 3px;
   background: rgba(244, 241, 234, 0.07);
   animation: wl-card-breathe 1600ms var(--ease-out) infinite;
 }
 .wl-card-bar.is-short { width: 74px; height: 8px; animation-delay: 180ms; }
-@keyframes wl-card-breathe {
-  0%, 100% { opacity: 0.45; }
-  50%      { opacity: 0.9; }
+@keyframes wl-card-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+
+/* the arrow, when the card is a control. It travels on hover, like every
+   other arrow in the build, and it is not there while the card is looking. */
+.wl-card-go {
+  flex: 0 0 auto; font-family: var(--f-util); font-size: 17px; color: var(--ash-dim);
+  transition: transform 280ms var(--ease), color 200ms var(--ease), opacity 360ms var(--ease);
 }
+.wl-card.is-looking .wl-card-go { opacity: 0; }
+.wl-card.is-pick { cursor: pointer; }
+.wl-card.is-pick:disabled { cursor: default; }
+.wl-card.is-pick:not(:disabled):hover .wl-card-plate { border-color: rgba(244, 241, 234, 0.24); }
+.wl-card.is-pick:not(:disabled):hover .wl-card-plate svg { color: var(--void-2); }
+.wl-card.is-pick:not(:disabled):hover .wl-card-go { transform: translateX(4px); color: var(--chalk); }
+.wl-card.is-pick:active:not(:disabled) { transform: scale(0.99); }
+
+/* missing: not an error and not drawn as one. The act still goes through, so
+   the card stays the same object at the same weight and only the words change. */
+.wl-card.is-missing .wl-card-name { font-weight: 400; color: var(--ash); }
+
 @media (prefers-reduced-motion: reduce) {
+  .wl-card { animation: none; }
+  .wl-card-light { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }
-}
-
-/* ── missing ──
-   Not an error and not drawn as one. The act still goes through, so the card
-   stays the same object at the same weight and only the words change. */
-.wl-card.is-missing .wl-card-name {
-  font-family: var(--f-util);
-  font-weight: 400;
-  color: var(--ash);
-}
-
-.wl-who {
-  display: flex; align-items: center; gap: 11px;
-  margin-top: 16px; min-height: 30px;
-  animation: wl-fade 320ms var(--ease) both;
-}
-.wl-who.is-looking { padding-left: 2px; }
-.wl-who-disc {
-  width: 30px; height: 30px; flex: 0 0 auto;
-  border-radius: 999px; overflow: hidden;
-  display: grid; place-items: center;
-  background: var(--void-2); border: 1px solid var(--hair);
-  font-family: var(--f-id); font-size: 13px; color: var(--ash-dim);
-}
-.wl-who-disc.is-empty { background: none; border-style: dashed; }
-.wl-who-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.wl-who-name {
-  display: flex; align-items: center; gap: 5px; min-width: 0;
-  font-family: var(--f-util); font-size: 14px; line-height: 1.25; color: var(--chalk);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.wl-who-name .wl-spark { color: var(--glow); flex: 0 0 auto; }
-.wl-who-at {
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.01em; color: var(--ash-dim);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-/* Not found, and the letter still goes up. The line is the colour of every
-   other quiet fact on this build, not the ember: this is not a fault, and
-   painting it as one would tell somebody they had done something wrong when
-   all that happened is that our lookup came back empty. */
-.wl-who-line {
-  font-family: var(--f-util); font-size: 13px; line-height: 1.45; color: var(--ash);
 }
 
 /* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */

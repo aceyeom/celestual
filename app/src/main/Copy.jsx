@@ -18,7 +18,7 @@ function fromHash() {
   return m ? m[1] : ''
 }
 
-export default function Copy({ go }) {
+export default function Copy({ go, who }) {
   const [code] = useState(fromHash)
   const [copied, setCopied] = useState(false)
 
@@ -42,7 +42,7 @@ export default function Copy({ go }) {
   if (!code) {
     return (
       <main className="mn-page">
-        <TopBar go={go} />
+        <TopBar go={go} who={who} />
         <div className="mn-mid">
           <Display size="m" as="h1">No code<br />in this link.</Display>
           <Prose className="mn-copy">open the email again and press the button there.</Prose>
@@ -53,13 +53,13 @@ export default function Copy({ go }) {
 
   return (
     <main className="mn-page">
-      <TopBar go={go} />
+      <TopBar go={go} who={who} />
       <div className="mn-mid mn-copyscreen">
         <Label><Sparkle size={11} />your code</Label>
         <div className="mn-code" aria-label={`your code is ${code.split('').join(' ')}`}>{code}</div>
         <Prose className="mn-copy">
           {copied ? 'copied. go back to the tab you came from and paste it in.'
-            : 'press it, then go back to the tab you came from.'}
+            : 'copy it, then go back to the tab you came from.'}
         </Prose>
       </div>
       <div className="mn-foot">
