@@ -19,14 +19,12 @@
 //   cannot see colour reads this product exactly as well as a person who can.
 import * as React from 'react'
 import { GalaxyField } from '../galaxy.js'
-import { CommunityGalaxy } from '../communityGalaxy.js'
 import {
   makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS, FONT, SIZE, LINE, TRACK, ICON,
   TEXT, HAIR, ONSKY, LIGHT, FRAME, MEASURE, INDEX_W, GROUNDS, CARD_FACES, groundOf, sealLight,
 } from '../theme.js'
 import { leatherSurface, paperSurface, stitching } from '../texture.js'
 import { searchHandles, normHandle } from '../api/celestual.js'
-import { bySlug } from '../communities.js'
 
 export {
   makeColors, rgba, RADIUS, SPACE, makeShadow, TOKENS, FONT, SIZE, LINE, TRACK, ICON,
@@ -188,100 +186,6 @@ export function GalaxyCanvas({ mode = 'idle', dim, you, them, motion = 20, origi
   )
 }
 
-// ── the community chart (a countable galaxy: one star per real ping) ──────────
-// The community page's own sky — distinct from the ambient backdrop above.
-// Every star is one ping; the field fills as pings arrive. Full-bleed at
-// z-index 0 so it sits UNDER the screen's content (which the screen wraps at
-// z-index 1) but OVER the ambient backdrop.
-// `onReady(field)` hands the live engine to the screen so it can launch() a
-// ping as the demo (or real data) ticks. Remount on a community change by
-// giving it key={slug}.
-// `inline` mounts the field inside its parent box (absolute, not fixed) — the
-// live share card uses this to carry a real, breathing chart inside a card.
-export function CommunityGalaxyCanvas({ you, them, pings = 0, forming = false, dim = 1, mine, publicHandles, ownPublic, onReady, inline = false }) {
-  const ref = React.useRef(null)
-  const field = React.useRef(null)
-  const readyRef = React.useRef(onReady)
-  readyRef.current = onReady
-  // the viewer's own placed @s — kept in a ref so the forming→open resolve can
-  // re-seat them after a reseed without re-running the mount effect
-  const mineRef = React.useRef(mine)
-  mineRef.current = mine
-  React.useEffect(() => {
-    const f = new CommunityGalaxy(ref.current, { you, them })
-    field.current = f
-    if (forming) {
-      f.setForming(true)
-    } else {
-      f.seed(pings)
-    }
-    f.syncMine(mineRef.current || [])
-    f.setPublicHandles(publicHandles || [], ownPublic || null)
-    f.start()
-    if (readyRef.current) readyRef.current(f)
-    if (import.meta.env.DEV) window.__communityGalaxy = f
-    let ro
-    let roRaf = 0
-    if (window.ResizeObserver && ref.current && ref.current.parentElement) {
-      ro = new ResizeObserver(() => {
-        if (roRaf) cancelAnimationFrame(roRaf)
-        roRaf = requestAnimationFrame(() => f.resize())
-      })
-      ro.observe(ref.current.parentElement)
-    }
-    const r1 = requestAnimationFrame(() => f.resize())
-    return () => {
-      if (ro) ro.disconnect()
-      if (roRaf) cancelAnimationFrame(roRaf)
-      cancelAnimationFrame(r1)
-      f.destroy()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  React.useEffect(() => {
-    if (field.current) field.current.setPalette(you, them)
-  }, [you, them])
-  // Live reconciliation: the sky tracks its community's numbers after mount too.
-  // A gathering community that crosses the floor RESOLVES — the forming gas gives
-  // way to its real, countable stars. Counts only ever reconcile upward here
-  // (screen-driven launch() already leads the props; a server refresh that
-  // jumps ahead settles the difference in without a meteor storm).
-  React.useEffect(() => {
-    const f = field.current
-    if (!f) return
-    if (forming) {
-      if (!f.forming) f.setForming(true)
-      return
-    }
-    if (f.forming) {
-      f.setForming(false)
-      f.seed(pings, [])
-      f.syncMine(mineRef.current || [])
-      return
-    }
-    if (pings > f.count) f.setCount(pings)
-  }, [forming, pings])
-  // the viewer's own stars follow the device-held ping list (adds rest in
-  // quietly; a released ping's star leaves the sky)
-  React.useEffect(() => {
-    if (field.current) field.current.syncMine(mine || [])
-  }, [mine])
-  // the opted-in public @s (and the viewer's own, once they flip public)
-  React.useEffect(() => {
-    if (field.current) field.current.setPublicHandles(publicHandles || [], ownPublic || null)
-  }, [publicHandles, ownPublic])
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden
-      style={{
-        position: inline ? 'absolute' : 'fixed', inset: 0, width: '100%', height: '100%', display: 'block', zIndex: 0,
-        background: TOKENS.ink, pointerEvents: 'none',
-        opacity: dim, transition: 'opacity .6s ease',
-      }}
-    />
-  )
-}
 
 // ── the mark ─────────────────────────────────────────────────────────────────
 // A four-pointed star, cut down the middle, with a body sitting in the cut.
@@ -740,49 +644,6 @@ export function IndexColumn({ C, open, items, screen, go, narrow }) {
   )
 }
 
-// ── the curated community seal ────────────────────────────────────────────────
-// A small emblem for an official community: a tooled ring set with the brand's
-// one light at the crest, around the school's serif monogram. One hue, so no
-// third colour enters through a logo. If a community carries an `asset` (a
-// black-on-transparent logo in app/public/schools/), it is rendered instead and
-// masked to a clean ivory silhouette, so a hand-swapped logo still reads as
-// something struck into this case.
-export function SchoolMark({ C, slug, size = 46 }) {
-  const c = bySlug(slug)
-  const tint = (C && C.cream) || TOKENS.cream
-  if (c && c.asset) {
-    return (
-      <span
-        role="img"
-        aria-label={c.name}
-        style={{
-          display: 'inline-block', width: size, height: size, flexShrink: 0, background: tint,
-          WebkitMaskImage: `url(${c.asset})`, maskImage: `url(${c.asset})`,
-          WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat',
-          WebkitMaskPosition: 'center', maskPosition: 'center',
-          WebkitMaskSize: 'contain', maskSize: 'contain',
-        }}
-      />
-    )
-  }
-  const mono = (c && c.mono) || (c && c.short ? c.short.slice(0, 3) : '·')
-  const fs = mono.length >= 3 ? 12.5 : mono.length === 2 ? 15.5 : 18
-  const lit = (C && C.star) || TOKENS.star
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" role="img" aria-label={(c && c.name) || slug} style={{ display: 'block', flexShrink: 0, overflow: 'visible' }}>
-      <circle cx="20" cy="20" r="18.2" fill="none" stroke={rgba(tint, 0.34)} strokeWidth="1" />
-      <circle cx="20" cy="20" r="16.4" fill="none" stroke={rgba(tint, 0.13)} strokeWidth="1" />
-      {/* the crest: every community wears the brand's one light, once */}
-      <circle cx="20" cy="1.8" r="2.2" fill={lit} />
-      <text
-        x="20" y="21" dominantBaseline="central" textAnchor="middle"
-        fontFamily={FONT.serif} fontStyle="italic" fontSize={fs} fill={tint}
-      >
-        {mono}
-      </text>
-    </svg>
-  )
-}
 
 // ── the send-off ─────────────────────────────────────────────────────────────
 // A fixed, pointer-transparent overlay pinned exactly over the @ field. The

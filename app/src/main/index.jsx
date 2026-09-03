@@ -36,6 +36,10 @@ import Hero from './Hero.jsx'
 import Place from './Place.jsx'
 import Sky from './Sky.jsx'
 import Reveal from './Reveal.jsx'
+import Optout from './Optout.jsx'
+import Copy from './Copy.jsx'
+import Signin from './Signin.jsx'
+import NotFound from './NotFound.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
 
@@ -44,7 +48,7 @@ export function prefersReducedMotion() {
 }
 
 export default function MainApp() {
-  const [route, setRoute] = useState(() => parse(window.location.pathname) || { name: 'hero' })
+  const [route, setRoute] = useState(() => parse(window.location.pathname) || { name: 'missing' })
   const [who, setWho] = useState(ANON)
   const root = useRef(null)
   const canvas = useRef(null)
@@ -123,12 +127,12 @@ export default function MainApp() {
     const to = href(name, id)
     if (to === window.location.pathname) return
     window.history.pushState({ main: name }, '', to)
-    setRoute(parse(to) || { name: 'hero' })
+    setRoute(parse(to) || { name: 'missing' })
     window.scrollTo(0, 0)
   }, [])
 
   useEffect(() => {
-    const onPop = () => setRoute(parse(window.location.pathname) || { name: 'hero' })
+    const onPop = () => setRoute(parse(window.location.pathname) || { name: 'missing' })
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
@@ -146,6 +150,10 @@ export default function MainApp() {
       {route.name === 'place' ? <Place {...shared} to={route.to} />
         : route.name === 'sky' ? <Sky {...shared} />
         : route.name === 'reveal' ? <Reveal {...shared} id={route.id} />
+        : route.name === 'optout' ? <Optout {...shared} />
+        : route.name === 'copy' ? <Copy {...shared} />
+        : route.name === 'signin' ? <Signin {...shared} />
+        : route.name === 'missing' ? <NotFound {...shared} />
         : <Hero {...shared} />}
     </div>
   )

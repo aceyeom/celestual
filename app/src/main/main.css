@@ -296,3 +296,39 @@
 }
 .mn-tick-one .wl-spark { opacity: 0.8; }
 .mn-tick-one .wl-spark { color: var(--accent); align-self: center; }
+
+/* ── Phase 8: the three addresses that arrive from outside ────────────────────
+   /optout, /copy and /signin. Nothing here declares a token; what is here is
+   the two shapes those screens need and the wall does not.
+
+   ── the opt out's foot ──
+   Every other flow screen's foot is one control, so `.mn-foot` centres its
+   children. This one carries reading matter under the control, and centred body
+   copy under a left aligned heading is two pages on one screen. The block is
+   left aligned to the same measure as everything above it, and it scrolls
+   rather than docking, because it is longer than a dock. */
+.mn-read { align-self: stretch; width: 100%; max-width: 34ch; text-align: left; }
+.mn-read .wl-label { margin: 26px 0 10px; }
+.mn-read .wl-rule { margin: 28px 0 0; }
+/* `Prose` carries no margin of its own, because every other place it is used
+   sits in a container with a gap. This one does not, and without this the two
+   paragraphs run into each other as one block. */
+.mn-read .wl-prose + .wl-prose { margin-top: 15px; }
+.mn-read .mn-links { margin-top: 22px; }
+.mn-fault { color: #C8756A; }
+
+/* The code from a mail, set at the size of a thing you are meant to read off a
+   screen and type into another one. Mono, because every glyph has to be
+   unambiguous: a proportional face puts 1 and l a hair apart at the exact
+   moment that costs somebody the attempt. */
+.mn-copyscreen { gap: 18px; align-items: flex-start; }
+.mn-code {
+  font-family: var(--f-id);
+  font-size: clamp(38px, 13vw, 54px);
+  letter-spacing: 0.16em;
+  padding-left: 0.16em;
+  line-height: 1;
+  color: var(--chalk);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

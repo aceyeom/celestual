@@ -41,7 +41,7 @@ export { igDeepLink, igWebLink, dmCode, igVerifyEnabled, eduVerifyEnabled, DOMAI
 // words to it.
 export async function sendCampusCode(email) {
   try {
-    const out = await sendEduCode({ email, slug: CAMPUS_SLUG, demo: false })
+    const out = await sendEduCode({ email, slug: CAMPUS_SLUG })
     return { ok: true, token: out.token, expiresAt: out.expiresAt }
   } catch (e) {
     return { ok: false, error: e?.code || 'send' }

@@ -1,0 +1,117 @@
+// ── /optout, the way out ────────────────────────────────────────────────────
+//
+// Phase 8. The public opt-out, rebuilt in the system the rest of the product is
+// in. It was the old design's PrivacyScreen, which carried the whole privacy
+// essay above the one control anybody arrives here to use.
+//
+// ── WHO ARRIVES HERE, AND WHAT THEY WANT ────────────────────────────────────
+// Somebody who has been told a stranger can type their @ into a website. They
+// are not here to read. They are here to make it stop, and the page has to let
+// them do that above the fold, on a phone, without an account.
+//
+// So the act is first and the reasoning is under it. The reasoning still has to
+// be there, because "we deleted everything, trust us" is not an answer, but it
+// is where somebody reads it AFTER they have pressed the thing.
+//
+// ── what it actually does ───────────────────────────────────────────────────
+// celestual_suppress: it bars the @ from ever being entered again, and erases
+// every row referencing it on either side. It needs no proof, and that is
+// deliberate. Requiring somebody to verify a handle before they can refuse the
+// product would mean requiring them to use it first.
+import { useState } from 'react'
+import { Display, Label, Pill, Prose, Rule, HandleField } from '../wall/parts.jsx'
+import { Sparkle } from '../wall/art.jsx'
+import { suppressHandle } from '../api/celestual.js'
+import { normHandle } from '../api/celestual.js'
+import TopBar from './TopBar.jsx'
+
+export default function Optout({ go }) {
+  const [handle, setHandle] = useState('')
+  const [phase, setPhase] = useState('idle') // idle | working | done | failed
+  const [done, setDone] = useState('')
+
+  const clean = normHandle(handle)
+  const ready = clean.length >= 1 && clean.length <= 30
+
+  async function submit() {
+    if (!ready || phase === 'working') return
+    setPhase('working')
+    try {
+      const r = await suppressHandle(clean)
+      setDone(r?.suppressed || clean)
+      setPhase('done')
+    } catch {
+      setPhase('failed')
+    }
+  }
+
+  if (phase === 'done') {
+    return (
+      <main className="mn-page">
+        <TopBar go={go} />
+        <div className="mn-mid">
+          <Label><Sparkle size={11} />done</Label>
+          <Display size="m" as="h1">@{done} is out.</Display>
+          <Prose className="mn-copy">
+            nobody can enter that handle again, and everything that ever pointed at it
+            is gone. if you change your mind, write to hello@celestual.us.
+          </Prose>
+        </div>
+        <div className="mn-foot">
+          <Pill tone="ghost" wide onClick={() => go('hero')}>close</Pill>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="mn-page">
+      <TopBar go={go} />
+      <div className="mn-mid">
+        <Display size="m" as="h1">Take your @<br />off celestual.</Display>
+        <Prose className="mn-copy">
+          type the handle. it can never be entered again, and anything already
+          pointing at it is erased. no account, no code, no questions.
+        </Prose>
+        <HandleField
+          value={handle}
+          onChange={setHandle}
+          onSubmit={submit}
+          placeholder="yourhandle"
+        />
+        {phase === 'failed' ? (
+          <Prose className="mn-copy mn-fault">that did not go through. try once more.</Prose>
+        ) : null}
+      </div>
+      <div className="mn-foot">
+        <Pill tone="light" wide disabled={!ready || phase === 'working'} onClick={submit}>
+          {phase === 'working' ? 'taking it off' : 'take it off'}
+        </Pill>
+
+        {/* The reasoning, under the act, and at the same measure. */}
+        <div className="mn-read">
+        <Rule tone="soft" />
+        <Label>what this product does</Label>
+        <Prose className="mn-copy">
+          somebody enters a handle. the person it belongs to is never told, and never
+          can be. the only thing that ever surfaces is a pair who both entered each
+          other, shown to exactly those two people at the same moment. there is no
+          browsing, no profiles, and no list.
+        </Prose>
+        <Prose className="mn-copy">
+          a handle we are pointed at is stored as a salted one way hash, so an entry
+          cannot be read back into a name by us or by anybody who ever breaches us.
+          a ping stands sixty days and then it is gone.
+        </Prose>
+        <Prose className="mn-copy mn-links">
+          <a className="wl-quiet" href="/privacy">privacy</a>
+          {' · '}
+          <a className="wl-quiet" href="/terms">terms</a>
+          {' · '}
+          <a className="wl-quiet" href="/data-deletion">deleting your data</a>
+        </Prose>
+        </div>
+      </div>
+    </main>
+  )
+}

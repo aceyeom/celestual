@@ -1,9 +1,8 @@
-// eduverify.js — school (.edu) email verification for community membership.
+// eduverify.js: campus (.edu) email verification.
 //
-// Your ping only ever reaches people from your own community, so membership is
-// real, not self-declared: to join a school you prove you're there by entering a
-// one-time code we email to an address at that school's domain. One person, one
-// community, one address.
+// A campus address is proved, not declared: you enter a one-time code mailed to
+// an address at that campus's domain. Spec section 3 makes a verified .edu the
+// requirement for the Berkeley Wall, and this is how it is met.
 //
 // The flow:
 //   1. send(email, slug)  → the celestual-edu-verify edge function checks the
@@ -17,14 +16,18 @@
 // The code is a SECRET: it is emailed, never returned to the browser, and only
 // its hash is stored.
 //
-// THE /demo SANDBOX FAKES THIS ENTIRELY. In the sandbox nothing reaches a
-// server: any address you type is accepted (whatever the domain), no email is
-// sent, and any four digits confirm — so the join shape is playable end to end
-// without a real .edu inbox. `eduVerifyEnabled()` is force-off in demo (see the
-// sheet), and `localEmailCheck` drops the domain rule for demo. Live (non-demo)
-// mode runs the real send/verify pipeline against the genuine school domain.
+// ── the client side pre-check came off in Phase 8 ────────────────────────────
+// `localEmailCheck` used to fail an address fast when its domain did not belong
+// to the campus. Its only caller was the community join sheet, which went with
+// the communities feature (Q15), and the campus list it read lived in
+// `communities.js`, which went with it.
+//
+// Nothing is weaker for it. The list the check consulted was a copy of the one
+// the edge function holds, and the edge function's copy is the gate: a second
+// copy in the browser could only ever agree with it or be wrong. The wall does
+// its own shaping check in `wall/auth.js` against its own campus domain, which
+// is the surface that has one.
 import { supabase, hasSupabase } from './supabase.js'
-import { emailMatchesSchool, isEduEmail } from '../communities.js'
 
 const FUNCTION = 'celestual-edu-verify'
 
@@ -33,31 +36,16 @@ const FUNCTION = 'celestual-edu-verify'
 export const eduVerifyEnabled = () =>
   import.meta.env.VITE_EDU_VERIFY_ENABLED === '1' && hasSupabase
 
-// Client-side domain pre-check, so we never fire a send for an address that can't
-// belong to the school (the server re-checks — this is only to fail fast +
-// kindly). The /demo sandbox fakes the whole workflow with NO server: any
-// plausibly-formatted address is accepted, whatever the domain, so the join
-// shape is playable end to end without a real .edu inbox. Live (non-demo) mode
-// still enforces the real school domain below.
-export function localEmailCheck(email, slug, demo) {
-  if (demo) return looksLikeEmail(email) ? { ok: true } : { ok: false, error: 'email' }
-  if (!isEduEmail(email)) return { ok: false, error: 'email' }
-  if (!emailMatchesSchool(email, slug)) return { ok: false, error: 'domain' }
-  return { ok: true }
-}
-
-// The loosest sanity check — is this shaped like an email at all? Used only for
-// the sandbox's any-address accept; the real gate is the school-domain match.
-function looksLikeEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())
-}
-
 // Send a code to `email` for `slug`. Returns { token, expiresAt }. Throws an Error
-// whose .code is one of 'domain' | 'email' | 'rate' | 'send' so the UI can localize.
-// `demo` rides along so the server can apply the same @gmail.com carve-out.
-export async function sendEduCode({ email, slug, demo }) {
+// whose .code is one of 'domain' | 'email' | 'rate' | 'send' so the UI can
+// localize it.
+//
+// The sandbox's @gmail.com carve-out is gone with /demo (Q16). The edge function
+// still accepts a `demo` flag and still gates it on its own SANDBOX_GMAIL
+// secret, and nothing in this repository sets either any more.
+export async function sendEduCode({ email, slug }) {
   const { data, error } = await supabase.functions.invoke(FUNCTION, {
-    body: { action: 'send', email: String(email).trim().toLowerCase(), slug, demo: !!demo },
+    body: { action: 'send', email: String(email).trim().toLowerCase(), slug },
   })
   if (error) {
     const e = new Error('send_failed')

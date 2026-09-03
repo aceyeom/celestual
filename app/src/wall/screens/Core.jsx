@@ -271,7 +271,7 @@ function Spread({ spread, at, setAt, onOpen, onPlace, onRelease, reduce }) {
               className="wl-slide-in"
               tabIndex={p.vacant ? undefined : (i === at ? 0 : -1)}
               role={p.vacant ? undefined : 'button'}
-              aria-label={p.vacant ? undefined : `a letter to ${atHandle(p.handle)} — open it`}
+              aria-label={p.vacant ? undefined : `open the letter to ${atHandle(p.handle)}`}
             >
               {p.vacant ? <Vacant onClick={onPlace} /> : <Letter ping={p} />}
             </div>
@@ -381,7 +381,7 @@ function Sill({ row, onRenew, onOpen, held, cap }) {
         className={`wl-days${near && roll == null ? ' is-near' : ''}${mutual ? ' is-act' : ''}`}
         style={mutual ? undefined : { '--left': Math.max(0, Math.min(1, (roll ?? row.days) / SPAN)) }}
         onClick={mutual ? () => onOpen(row) : wind}
-        aria-label={mutual ? 'open the pair' : `renew — ${left(row.days)} left`}
+        aria-label={mutual ? 'open the pair' : `renew it. ${left(row.days)} left`}
       >
         <span className="wl-days-t">
           {mutual ? 'open the pair' : roll != null ? `${roll} days` : left(row.days)}

@@ -12,16 +12,24 @@
 // No routing library. App.jsx matches location.pathname by hand and the wall
 // does the same, so this does too and adds nothing to a dependency tree the
 // rest of the product is judged from.
-export const ROUTES = ['hero', 'place', 'sky', 'reveal']
+export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin']
 
-// Everything Main does NOT claim. App.jsx still owns these, in the old design,
-// and Phase 6b does not touch them: /optout and /copy are kept, /signin waits
-// on Phase 8's routing pass, and /trial, /recruit, /c, /demo and /paid are all
-// pending an answer in docs/open-questions.md. A fork that swallowed them would
-// be deleting features by routing rather than by decision.
+// Everything Main does NOT claim, and after Phase 8's routing pass the list is
+// short and every entry on it is a decision rather than a deferral:
+//
+//   berkeley, beta   the wall's, and the old printed address that rewrites onto it
+//   signature        where Phase 3 was approved. Static, and it stays
+//   admin            the desk
+//   paid             the Stripe return. Q3 keeps the billing layer out of scope,
+//                    so this is the one address still served by App.jsx
+//   privacy, terms, data-deletion   static HTML, served by a Vercel rewrite and
+//                    never reaching this bundle at all
+//
+// /trial, /recruit, /r and the bare four letter matcher went with the campaign
+// in Phase 7 (Q12). /c and /demo went in Phase 8 (Q15, Q16). None of them is
+// claimed by anything now, so they fall through to the not found below.
 export const NOT_OURS = new Set([
-  'optout', 'copy', 'signin', 'trial', 'recruit', 'r', 'c', 'demo', 'paid',
-  'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
+  'paid', 'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
 ])
 
 export function parse(pathname) {
@@ -39,19 +47,29 @@ export function parse(pathname) {
     case 'place':  return { name: 'place', to: id }
     case 'sky':    return { name: 'sky' }
     case 'reveal': return { name: 'reveal', id }
+    // Phase 8. Three addresses that arrive from outside the product: an opt out
+    // somebody was pointed at, and two links out of a mail. All three used to
+    // render in the old design.
+    case 'optout': return { name: 'optout' }
+    case 'copy':   return { name: 'copy' }
+    case 'signin': return { name: 'signin' }
     default:       return null
   }
 }
 
-// Whether Main owns this address at all. main.jsx asks before mounting, and a
-// `false` falls through to App.jsx exactly as it did before Main existed.
+// Whether Main owns this address at all. main.jsx asks before mounting.
+//
+// Phase 8 inverted the default. It used to answer `false` for anything not on
+// the table, which fell through to App.jsx and rendered the retired design for
+// every typo in the product. Main claims everything that is not somebody else's
+// now, and an address matching nothing draws the not found IN THE SYSTEM the
+// rest of the product is in.
 export function isMainPath(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
   if (p === '/') return true
   const head = p.slice(1).split('/')[0]
   if (head.startsWith('@')) return true
-  if (NOT_OURS.has(head)) return false
-  return ROUTES.includes(head)
+  return !NOT_OURS.has(head)
 }
 
 export function href(name, id) {

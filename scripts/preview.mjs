@@ -428,6 +428,13 @@ const ROUTES = [
   { label: 'admin-cache',   path: '/admin', desk: true, click: 'cache' },
   { label: 'admin-handles', path: '/admin', desk: true, click: 'handles' },
   { label: 'admin-gate',    path: '/admin' },
+
+  // Phase 8. The three addresses that arrive from outside the product, and the
+  // one that arrives from a typo.
+  { label: 'optout',        path: '/optout' },
+  { label: 'copy',          path: '/copy#c=481920' },
+  { label: 'signin',        path: '/signin' },
+  { label: 'notfound',      path: '/nothing-here' },
 ]
 
 const want = process.argv[2]

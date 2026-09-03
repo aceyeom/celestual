@@ -13,8 +13,13 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // What gets scanned. strings.js is scanned whole (every locale should hold the
-// voice); growth.js carries the placed screen's growth copy; public/*.html are
-// the legal/trust pages.
+// voice); public/*.html are the legal and trust pages; and since Phase 8 the
+// three surfaces that write their copy inline rather than through i18n are
+// scanned too, because that is where most of the product's words now are: the
+// wall, Main and the desk.
+//
+// growth.js came off the list with the file, which went with the communities
+// feature in Phase 8 (Q15).
 //
 // EXEMPT: celestual-challenge.html is not our copy. It is a faithful reproduction
 // of the official competition document — the same words the .docx and .pdf carry,
@@ -22,17 +27,37 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 // person plural, exclamation marks and all), and linting it here would mean
 // editing a signed agreement to satisfy a style rule. If the doc changes, it
 // changes in the doc.
-const EXEMPT = new Set(['celestual-challenge.html'])
+const EXEMPT = new Set([
+  'celestual-challenge.html',
+  // seed.js is a corpus of INVENTED LETTERS: what a fictional student wrote to
+  // somebody, in their words. design/VOICE.md governs what the product says,
+  // not what a person in it says, and a rule that edited a letter to satisfy a
+  // house style would be editing the one kind of text on the wall that is not
+  // ours. It trips on "in a hurry" for exactly that reason.
+  'seed.js',
+])
+
+// Every .js/.jsx directly inside a directory, sorted, so the list is the
+// directory rather than a copy of it that somebody has to remember to update.
+const dir = (rel) =>
+  readdirSync(join(root, rel))
+    .filter((f) => (f.endsWith('.js') || f.endsWith('.jsx')) && !EXEMPT.has(f))
+    .sort()
+    .map((f) => join(root, rel, f))
 
 const files = [
   join(root, 'app/src/i18n/strings.js'),
-  join(root, 'app/src/growth.js'),
   // The card (the composer, the prompt, the seeds, the spread) writes its copy
   // inline rather than through i18n, since it is one locale and one surface. It
   // is still copy, so it is still held to design/VOICE.md.
-  ...readdirSync(join(root, 'app/src/card'))
-    .filter((f) => f.endsWith('.js') || f.endsWith('.jsx'))
-    .map((f) => join(root, 'app/src/card', f)),
+  ...dir('app/src/card'),
+  // The three surfaces the rebuild built. All three write inline for the same
+  // reason the card does, and between them they are now most of the product's
+  // words: the wall's ten screens, Main's four, and the desk's seven.
+  ...dir('app/src/wall'),
+  ...dir('app/src/wall/screens'),
+  ...dir('app/src/main'),
+  ...dir('app/src/admin'),
   ...readdirSync(join(root, 'app/public'))
     .filter((f) => f.endsWith('.html') && !EXEMPT.has(f))
     .map((f) => join(root, 'app/public', f)),

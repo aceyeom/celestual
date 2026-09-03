@@ -34,8 +34,8 @@ export function isValidHandle(h) {
 export const SLOT_CAP = 2;
 export const PING_DAYS = 60;
 
-// The sandbox-only $12.99/mo subscription tier (App.jsx's demoSubscribed):
-// ten standing pings, each held six months instead of sixty days.
+// The $12.99/mo plan: ten standing pings, each held six months instead of sixty
+// days. Dormant, per Q3, and read by celestual_cap_for on the server.
 export const SUB_SLOT_CAP = 10;
 export const SUB_PING_DAYS = 180;
 
@@ -51,29 +51,29 @@ const iso = (ms) => new Date(ms).toISOString();
 // `proof` is the Instagram-DM ownership secret (api/igverify.js); `card` is the
 // poster this ping carries (card/model.js toWire — the words, the ground, the
 // face, where the block sits, the tone), sealed server-side until both sides
-// exist. `demo` short-circuits to a local simulation so /demo never writes real
-// data — @demo is the guaranteed mutual. `days` overrides the standing period
-// (demo-only — App.jsx passes SUB_PING_DAYS while the sandbox subscription is
-// active; production duration is server-set).
+// exist.
+//
+// With no backend configured it answers locally so the flow stays walkable in
+// development. That path used to be shared with the /demo sandbox, which is
+// retired (Q16); what is left is the no-Supabase fallback every function in
+// this file has, and it is reached only when the env vars are absent.
 //
 // `match_card` is the ONLY way another person's words ever reach this browser,
 // and it is only ever populated when the pair is already mutual (migration
 // 0022's celestual_counterpart_card). There is no read that returns a card
 // belonging to a ping that has not been answered.
-export async function placePing({ me, them, email, proof, card, demo, days }) {
-  if (demo || !hasSupabase) {
+export async function placePing({ me, them, email, proof, card }) {
+  if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 600));
-    const mutual = normHandle(them) === 'demo';
     return {
       recorded: true,
-      mutual,
-      match: mutual ? normHandle(them) : null,
-      match_card: mutual ? DEMO_CARD : null,
-      // in the sandbox, roughly half the world is "already here"
-      reachable: mutual || normHandle(them).length % 2 === 0,
-      expires_at: iso(Date.now() + (days || PING_DAYS) * 864e5),
+      mutual: false,
+      match: null,
+      match_card: null,
+      reachable: normHandle(them).length % 2 === 0,
+      expires_at: iso(Date.now() + PING_DAYS * 864e5),
       slots: FULL_SLOTS,
-      demo: true,
+      local: true,
     };
   }
   const { data, error } = await supabase.rpc('celestual_submit', {
@@ -87,25 +87,14 @@ export async function placePing({ me, them, email, proof, card, demo, days }) {
   return data;
 }
 
-// The other half, in the sandbox. One card, in the register the composer's own
-// seeds teach: plain, specific, about a detail nobody would invent.
-export const DEMO_CARD = {
-  words: 'i thought about messaging you a hundred times',
-  bg: 'chalk',
-  face: 'serif',
-  x: 0.2,
-  y: 0.4,
-  tone: 0.55,
-};
-
 // The status page read (Screen 4). Sends the device-held plaintext list up and
 // gets each ping's live state back — the server can't produce the list itself
 // (it only stores hashes). Owner-gated by the same DM proof as placing.
 // Returns: [{ handle, placed, time, expires_at, mutual, card, reachable }]
 // `card` is THEIRS, and it is null on every row that is not already mutual.
-export async function pingStatus({ me, handles, proof, demo }) {
+export async function pingStatus({ me, handles, proof }) {
   const list = (handles || []).map(normHandle).filter(Boolean).slice(0, 10);
-  if (demo || !hasSupabase || !list.length || !normHandle(me)) return [];
+  if (!hasSupabase || !list.length || !normHandle(me)) return [];
   try {
     const { data, error } = await supabase.rpc('celestual_ping_status', {
       p_from: me,
@@ -128,8 +117,8 @@ export async function pingStatus({ me, handles, proof, demo }) {
 // `card` is the poster this device placed (restored so a card survives a lost
 // browser, minus its photograph, which never left the phone that took it);
 // `theirCard` is the other half, and only ever arrives on a matched row.
-export async function fetchMyPings({ handle, proof, demo } = {}) {
-  if (demo || !hasSupabase || !normHandle(handle) || !proof) return [];
+export async function fetchMyPings({ handle, proof } = {}) {
+  if (!hasSupabase || !normHandle(handle) || !proof) return [];
   try {
     const { data, error } = await supabase.rpc('celestual_my_pings', { p_handle: handle, p_proof: proof });
     if (error || !data?.ok || !Array.isArray(data.pings)) return [];
@@ -156,8 +145,8 @@ export async function fetchMyPings({ handle, proof, demo } = {}) {
 // Passing null CLEARS it, and the app calls this on every place — with the
 // picture or with null — so a re-placed card can never come back wearing the
 // photograph the last version of it was written on.
-export async function putCardPhoto({ me, them, proof, photo, demo }) {
-  if (demo || !hasSupabase || !normHandle(me) || !normHandle(them)) return { ok: false, demo: true };
+export async function putCardPhoto({ me, them, proof, photo }) {
+  if (!hasSupabase || !normHandle(me) || !normHandle(them)) return { ok: false, local: true };
   try {
     const { data, error } = await supabase.rpc('celestual_card_photo_put', {
       p_from: me,
@@ -175,8 +164,8 @@ export async function putCardPhoto({ me, them, proof, photo, demo }) {
 // And reading one back. `mine` false asks for THEIRS, which the server will only
 // ever answer off a row that is already matched (celestual_counterpart_photo) —
 // the same seal the words have carried since 0022. Returns base64, or null.
-export async function getCardPhoto({ me, them, proof, mine = true, demo }) {
-  if (demo || !hasSupabase || !normHandle(me) || !normHandle(them)) return null;
+export async function getCardPhoto({ me, them, proof, mine = true }) {
+  if (!hasSupabase || !normHandle(me) || !normHandle(them)) return null;
   try {
     const { data, error } = await supabase.rpc('celestual_card_photo', {
       p_me: me,
@@ -195,8 +184,8 @@ export async function getCardPhoto({ me, them, proof, mine = true, demo }) {
 // function never changes. Production calls it straight from the status page;
 // the sandbox previews a $2.99 checkout in front of it first (screens.jsx's
 // SlotPaywall, extend mode), then calls this exact same thing on success.
-export async function renewPing({ me, them, proof, demo }) {
-  if (demo || !hasSupabase) {
+export async function renewPing({ me, them, proof }) {
+  if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { ok: true, expires_at: iso(Date.now() + PING_DAYS * 864e5) };
   }
@@ -210,8 +199,8 @@ export async function renewPing({ me, them, proof, demo }) {
 }
 
 // "Let it go" — retire a ping. This frees the slot; nothing was ever revealed.
-export async function retirePing({ me, them, demo }) {
-  if (demo || !hasSupabase) {
+export async function retirePing({ me, them }) {
+  if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { withdrawn: true };
   }
@@ -222,8 +211,8 @@ export async function retirePing({ me, them, demo }) {
 
 // The live slot snapshot for the owner's meter (server is the authority at
 // placement; this just feeds the display).
-export async function fetchSlots(me, { proof, demo } = {}) {
-  if (demo || !hasSupabase || !normHandle(me)) return FULL_SLOTS;
+export async function fetchSlots(me, { proof } = {}) {
+  if (!hasSupabase || !normHandle(me)) return FULL_SLOTS;
   try {
     const { data, error } = await supabase.rpc('celestual_slots_for', { p_handle: me, p_proof: proof || null });
     if (error || !data) return FULL_SLOTS;
@@ -235,9 +224,9 @@ export async function fetchSlots(me, { proof, demo } = {}) {
 
 // Link up to 3 of your own @s into one identity group, so being pinged on ANY
 // of them counts as you. Best-effort; failures degrade to single-handle.
-export async function linkHandles(handles, { demo } = {}) {
+export async function linkHandles(handles) {
   const list = [...new Set((handles || []).map(normHandle).filter(Boolean))].slice(0, 3);
-  if (demo || !hasSupabase || list.length < 2) return { group: list };
+  if (!hasSupabase || list.length < 2) return { group: list };
   try {
     const { data, error } = await supabase.rpc('celestual_link', { p_handles: list });
     if (error || !data) return { group: list };
@@ -247,58 +236,16 @@ export async function linkHandles(handles, { demo } = {}) {
   }
 }
 
-export async function worldCounts(slugs) {
-  const list = (slugs || []).filter(Boolean).slice(0, 6);
-  if (!hasSupabase || !list.length) return [];
-  try {
-    const { data, error } = await supabase.rpc('celestual_world_counts', { p_slugs: list });
-    if (error || !Array.isArray(data?.worlds)) return [];
-    return data.worlds; // [{ slug, name, count|null }]
-  } catch {
-    return [];
-  }
-}
-
-// ── CAMPUS: the client half of a server feature nothing currently calls ───────
-// These two mirror live RPCs (celestual_campus, celestual_campus_preregister)
-// and the server side is fully built and still RUNNING: the celestual_campuses /
-// celestual_campus_prereg / celestual_campus_mail tables exist, and the
-// celestual-remind cron drains that mail queue every hour. But no screen imports
-// either function, so the feature has no way in.
+// ── communities and campuses are retired ─────────────────────────────────────
+// Q15, Phase 8. `worldCounts`, `fetchCampus` and `preregisterCampus` were the
+// client half of that feature. The first backed the curated community list; the
+// other two mirrored `celestual_campus` and `celestual_campus_preregister`, and
+// carried a comment saying the choice was to finish the entry point or retire
+// the whole thing, tables, RPCs and the hourly mail drain together.
 //
-// They are kept deliberately, and labelled, rather than deleted: cutting them
-// would leave an hourly cron draining a queue nothing can fill, with no trace in
-// the client of why those tables exist. Either finish the campus entry point or
-// retire the whole feature (tables, RPCs and the remind job together) — that is
-// a product decision, not a cleanup.
-
-// ── campus windows (assurance contracts — framework §2.3) ─────────────────
-export async function fetchCampus(slug) {
-  if (!hasSupabase || !slug) return null;
-  try {
-    const { data, error } = await supabase.rpc('celestual_campus', { p_slug: slug });
-    if (error || !data?.ok) return null;
-    return data; // { slug, name, threshold, count, status, opened_at, week_pings, week_matches }
-  } catch {
-    return null;
-  }
-}
-
-// "Count me in" — preregistration IS the full signup (verified handle).
-export async function preregisterCampus({ slug, me, email, proof, demo }) {
-  if (demo || !hasSupabase) {
-    await new Promise((r) => setTimeout(r, 400));
-    return { ok: true, demo: true };
-  }
-  const { data, error } = await supabase.rpc('celestual_campus_preregister', {
-    p_slug: slug,
-    p_handle: me,
-    p_email: email ? email.trim() : null,
-    p_proof: proof || null,
-  });
-  if (error) throw error;
-  return data; // { ok, count, threshold, status } | { ok:false, error }
-}
+// That choice is made. `0035_retire_the_communities.sql` drops the five tables
+// and their functions, and the drain had nothing to drain from the moment they
+// went.
 
 // ── @ SEARCH (typeahead adapter — server-side provider optional) ──────────
 const SEARCH_ENABLED = import.meta.env.VITE_HANDLE_SEARCH === '1'
