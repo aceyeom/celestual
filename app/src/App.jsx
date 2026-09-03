@@ -1152,12 +1152,12 @@ export default function App() {
       photos.dropPhoto(photoKey(h)).catch(() => {})
       photos.dropPhoto(theirPhotoKey(h)).catch(() => {})
       try {
-        await retirePing({ me, them: h })
+        await retirePing({ me, them: h, proof: session?.provider === 'instagram_dm' ? session.proof : undefined })
       } catch (e) {
         console.error(e)
       }
     },
-    [me],
+    [me, session],
   )
 
   const placeAnother = useCallback(() => {
@@ -1307,7 +1307,7 @@ export default function App() {
   const deleteEverything = useCallback(async () => {
     persistReady.current = false
     try {
-      if (normHandle(me)) await eraseAccount(me)
+      if (normHandle(me)) await eraseAccount(me, session?.provider === 'instagram_dm' ? session.proof : undefined)
     } catch {
       /* clear locally regardless */
     }

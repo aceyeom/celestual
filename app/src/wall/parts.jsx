@@ -9,8 +9,9 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { atHandle, normHandle } from './data.js'
-import { Ecliptic, Mark, Sparkle } from './art.jsx'
+import { Ecliptic, Mark, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
+import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
 import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
@@ -121,13 +122,20 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 // whole colour ration on the least load-bearing word on that screen. Both are
 // gone. The accent still exists and is still rationed; it is now on the ping
 // that is running out, which is the thing anybody actually has to act on.
-export function Pill({ children, onClick, tone = 'ghost', wide = false, disabled = false, icon = null, className = '', ...rest }) {
+//
+// ── it takes an href, and it has to ─────────────────────────────────────────
+// It used to render a <button> whatever it was given, and `...rest` spread an
+// `href` onto it — which is not an error anywhere, in any browser or in any
+// linter, and does nothing at all. Two of these were the ONLY way out of the
+// DM code flow ("open instagram", on Main's proof step and on the wall's
+// takedown), and both were dead capsules that answered a tap with nothing.
+// ArrowLink two blocks up has always switched on href; this now does the same.
+export function Pill({ children, onClick, href, tone = 'ghost', wide = false, disabled = false, icon = null, className = '', ...rest }) {
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', className].filter(Boolean).join(' ')
+  const body = <>{icon}<span>{children}</span></>
+  if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
   return (
-    <button type="button" className={cls} onClick={onClick} disabled={disabled} {...rest}>
-      {icon}
-      <span>{children}</span>
-    </button>
+    <button type="button" className={cls} onClick={onClick} disabled={disabled} {...rest}>{body}</button>
   )
 }
 
@@ -576,6 +584,84 @@ export function Waiting({ label = 'looking' }) {
       <Sparkle size={11} twinkle delay={240} />
       <Sparkle size={11} twinkle delay={480} />
       <span className="wl-sr">{label}</span>
+    </div>
+  )
+}
+
+// ── THE DM CODE ─────────────────────────────────────────────────────────────
+//
+// The one screen in the product that asks somebody to leave it, and the only
+// one whose success depends on what they do after they have gone. It is drawn
+// once, here, because it was drawn twice — on Main's proof step and on the
+// wall's takedown — and both copies had the same three faults:
+//
+//   THE BUTTON DID NOTHING.  `<Pill href=...>` rendered a <button> with an href
+//                            attribute on it, which is inert. The only way out
+//                            of the flow was the small web link underneath.
+//   THE CODE STAYED BEHIND.  Nothing put it on the clipboard, so the way the
+//                            flow actually ran was: read four digits, leave for
+//                            another app, try to still have them. Instagram
+//                            cannot be handed a prefilled message — there is no
+//                            ?text= on ig.me and no scheme that carries one —
+//                            so the clipboard IS the way the code travels, and
+//                            every door out of here copies before it opens.
+//   THE THREAD WAS A GUESS.  Both links pointed at the same URL for every
+//                            device. handoff.openInstagram picks per device now:
+//                            ig.me into the app on a phone, instagram.com/m/<us>
+//                            on a desktop, which is the celestual thread and not
+//                            Instagram's front page.
+//
+// The digits stay selectable (`user-select: all`) because a browser can refuse a
+// programmatic copy and a person who cannot select the code is a person who
+// cannot finish. `note` is whatever the calling screen has to say underneath.
+export function DmCode({ code, note = null }) {
+  const [copied, setCopied] = useState(false)
+  const ig = igUsername()
+
+  const copy = () => copyText(code).then((ok) => { setCopied(ok); return ok })
+
+  // AWAITED, and on the phone that is the whole difference. `location.href` on
+  // the mobile path leaves immediately, and a clipboard write started in the
+  // same tick has not landed when the page goes: the person arrives in the DM
+  // thread with an empty clipboard, which is the one thing this button exists
+  // to prevent. The write is still started inside the click, so the gesture
+  // that permits it is intact.
+  const openIt = async () => { await copy(); openInstagram() }
+
+  return (
+    <div className="wl-dm">
+      {/* Whatever the calling screen has to say about this code, said BEFORE
+          it: which handle is being proved is the context for the digits, not a
+          footnote to them. */}
+      {note}
+
+      <div className="wl-dm-code">
+        <button
+          type="button" className="wl-dm-digits" onClick={copy}
+          aria-label={`your code is ${String(code).split('').join(' ')}, copy it`}
+        >
+          {code}
+        </button>
+        <Label tone="dim">send this to <span className="wl-h">{atHandle(ig)}</span> on instagram</Label>
+      </div>
+
+      <Pill tone="light" wide onClick={openIt} icon={<Provider size={17} />}>
+        {copied ? `copied · open ${atHandle(ig)}` : `copy it and open ${atHandle(ig)}`}
+      </Pill>
+
+      <div className="wl-dm-foot">
+        <Waiting label="watching for it" />
+        <Label tone="dim" className="wl-dm-alt">
+          {/* The same thread, as an ordinary link, for the tap that wants a new
+              tab or a long press. It copies on the way out too. */}
+          <a className="wl-a" href={igWebLink()} target="_blank" rel="noreferrer" onClick={copy}>
+            or open the celestual thread on the web
+          </a>
+        </Label>
+        <p className="wl-dm-said" role="status" aria-live="polite">
+          {copied ? 'the code is on your clipboard — paste it into the DM' : 'paste it into the DM and come back'}
+        </p>
+      </div>
     </div>
   )
 }

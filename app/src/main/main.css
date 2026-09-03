@@ -42,14 +42,11 @@
   gap: 12px;
   padding: 18px 0 6px;
 }
-.mn-top-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--chalk);
-}
-.mn-top-mark .wl-label { color: var(--ash); }
-.mn-top-mark:hover .wl-label { color: var(--chalk); }
+/* The bar's mark. `.wl-brand` (wall.css) carries the shape and the hover, the
+   same rule the wall's own bar uses, so the two bars cannot drift; this only
+   takes the left padding off, because Main's bar sits on the page's own
+   measure rather than inside the wall's rail. */
+.mn-top-mark { padding-left: 0; }
 
 /* The middle. It grows, and it holds the one question each screen asks.
    Deliberately NOT centred: a flow screen centred in the viewport puts its
@@ -150,24 +147,14 @@
   gap: 12px;
   padding: 14px 0;
 }
-.mn-code {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 18px 0 14px;
-}
-.mn-code .wl-display {
-  font-family: var(--f-id);
-  letter-spacing: 0.08em;
-}
-.mn-wait {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding-top: 10px;
-}
+/* ── the DM code is drawn by parts.DmCode now (wall.css, `.wl-dm`) ──
+   What was here was a second copy of that block under a name /copy had already
+   taken: `.mn-code` is ALSO the six-digit code on the mail screen, 170 lines
+   further down this file, where it is set at 54px with `white-space: nowrap`.
+   Both rules matched both screens, the later one won, and the proof step's
+   code and its label were being drawn by a rule written for a different code
+   on a different page. One block, one name, one place. */
+.mn-prove-for { text-align: center; }
 
 /* ── it is out ── */
 .mn-placed-mark { display: flex; justify-content: center; padding: 10px 0 4px; }

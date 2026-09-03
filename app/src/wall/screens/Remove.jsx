@@ -54,16 +54,21 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, Waiting,
+  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode,
 } from '../parts.jsx'
 import { Mark, Sparkle, Provider } from '../art.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
 import { isVerified } from '../auth.js'
-import { startHandoff, pollHandoff, igDeepLink, igWebLink } from '../handoff.js'
+import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 
 export default function Remove({ handle: prefill, back }) {
-  const [value, setValue] = useState(() => prefill || '')
-  const [dm, setDm] = useState(null)         // { code, token, proofHash, proof }
+  const held = useRef(null)
+  if (held.current === null) {
+    const p = loadPending()
+    held.current = p && p.use === 'remove' ? p : false
+  }
+  const [value, setValue] = useState(() => held.current?.handle || prefill || '')
+  const [dm, setDm] = useState(() => held.current || null)   // { code, token, proofHash, proof }
   const [fault, setFault] = useState('')
   const [taking, setTaking] = useState(false)
   const [gone, setGone] = useState(null)
@@ -102,10 +107,19 @@ export default function Remove({ handle: prefill, back }) {
     const out = await startHandoff(h)
     if (!alive.current) return
     if (!out.ok) {
-      setFault(out.error === 'off' ? 'that door is not open yet' : 'that did not go through')
+      setFault(
+        out.error === 'off' ? 'that door is not open yet'
+          : out.error === 'rate_limited' ? 'too many tries on that @ — give it an hour'
+          : 'that did not go through',
+      )
       return
     }
-    setDm(out)
+    // Stashed while the person is away in Instagram: the app can reload this
+    // page out from under them, and a code minted for a wait nothing is
+    // watching any more can never complete. Cleared on every way out below.
+    const rec = { ...out, use: 'remove', handle: h }
+    savePending(rec)
+    setDm(rec)
   }
 
   useEffect(() => {
@@ -114,13 +128,23 @@ export default function Remove({ handle: prefill, back }) {
     const tick = async () => {
       const out = await pollHandoff(dm)
       if (stop || !alive.current) return
-      if (out.ok) { setDm(null); setValue(out.handle); return }
-      if (out.error === 'expired') { setDm(null); setFault('that code has lapsed'); return }
-      if (out.error) { setDm(null); setFault('that did not go through'); return }
+      if (out.ok) { clearPending(); setDm(null); setValue(out.handle); return }
+      if (out.error === 'expired') { clearPending(); setDm(null); setFault('that code has lapsed'); return }
+      if (out.error) { clearPending(); setDm(null); setFault('that did not go through'); return }
       timer = setTimeout(tick, 2500)
     }
     let timer = setTimeout(tick, 2500)
-    return () => { stop = true; clearTimeout(timer) }
+    // Back from Instagram: check at once rather than up to a beat late, and
+    // never leave the wait to an interval a backgrounded tab has throttled.
+    const onReturn = () => { if (document.visibilityState === 'visible') tick() }
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+    return () => {
+      stop = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+    }
   }, [dm])
 
   const take = async () => {
@@ -219,23 +243,18 @@ export default function Remove({ handle: prefill, back }) {
                The whole of the proof, on one screen: a code, where to send it,
                and the fact that we are watching. No form, no account, no queue.
                Whoever sends it from Instagram is who this is, which is why the
-               field above is locked while it is out. */
+               field above is locked while it is out.
+
+               Drawn by parts.DmCode, which is the same block Main's proof step
+               draws. It used to be a local copy whose "open instagram" pill
+               rendered a <button href>: inert, on the only way out of the only
+               irreversible action on the wall. */
             <>
-              <div className="wl-remove-code">
-                <Display size="s" as="p">{dm.code}</Display>
-                <Label tone="dim">DM this to us on instagram</Label>
-              </div>
-              <Pill tone="light" wide href={igDeepLink()} target="_blank" rel="noreferrer">
-                open instagram
-              </Pill>
-              <div className="wl-remove-handoff">
-                <Waiting label="watching for it" />
-                <Label tone="dim">
-                  <a className="wl-a" href={igWebLink()} target="_blank" rel="noreferrer">
-                    or open it on the web
-                  </a>
-                </Label>
-              </div>
+              <DmCode code={dm.code} />
+              <button type="button" className="wl-quiet wl-dm-drop"
+                onClick={() => { clearPending(); setDm(null) }}>
+                start this again
+              </button>
             </>
           ) : (
             <>

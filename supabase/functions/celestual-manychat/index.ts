@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
     return answer({ ok: false, status: 'bad_username', mutual: news !== '', reply: withMutual('Something went sideways reading your account — get a fresh code in the app and send it again.', news) });
   }
   if (rpcFailed) {
-    return answer({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.', news) });
+    return answer({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('Our end hiccuped reading that code. Send it once more, or get a fresh one in the app.', news) });
   }
   // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
   // code_expired above for a full week, so landing HERE means a typo'd code or

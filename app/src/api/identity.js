@@ -100,6 +100,12 @@ function shape(user) {
   }
 }
 
+// PostgREST answers a call to a function it does not have with PGRST202 and a
+// message naming it. Nothing else reads as "the schema is behind the client".
+function missingRpc(error) {
+  return error?.code === 'PGRST202' || /could not find the function/i.test(String(error?.message || ''))
+}
+
 // Who is this browser. Never throws: not being signed in is the ordinary state
 // of a first visit, and a network failure reads the same as not being signed in
 // because there is nothing else the caller could usefully do about it.
@@ -120,6 +126,12 @@ export async function whoami() {
 // screen are 'unverified' (the proof is not live for that @) and the two
 // conflict codes the merge rule raises, which mean the person has to be told
 // rather than retried at.
+//
+// One failure is named apart from the rest: the RPC not existing. That is what
+// a database without 0030 applied looks like, and it is what production looks
+// like until the runbook's section 2b is done. The DM proof is real either way
+// (it lives in the 0004 layer), so a caller that hears 'no_identity_layer' can
+// keep the proof and carry on without the row.
 export async function bindHandle({ handle, proof }) {
   if (!hasSupabase) return { ok: false, error: 'offline' }
   try {
@@ -128,7 +140,7 @@ export async function bindHandle({ handle, proof }) {
       p_handle: handle,
       p_proof: proof,
     })
-    if (error) return { ok: false, error: 'network' }
+    if (error) return { ok: false, error: missingRpc(error) ? 'no_identity_layer' : 'network' }
     if (!data?.ok) return { ok: false, error: data?.error || 'failed' }
     return { ok: true, user: shape(data.user) }
   } catch {

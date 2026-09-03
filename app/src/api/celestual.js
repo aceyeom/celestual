@@ -199,12 +199,18 @@ export async function renewPing({ me, them, proof }) {
 }
 
 // "Let it go" — retire a ping. This frees the slot; nothing was ever revealed.
-export async function retirePing({ me, them }) {
+// Owner-gated by the DM proof since 0036: the answer says whether a ping stood,
+// and that is a fact only its owner may be told.
+export async function retirePing({ me, them, proof }) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { withdrawn: true };
   }
-  const { data, error } = await supabase.rpc('celestual_withdraw', { p_from: me, p_to: them });
+  const { data, error } = await supabase.rpc('celestual_withdraw', {
+    p_from: me,
+    p_to: them,
+    p_proof: proof || null,
+  });
   if (error) throw error;
   return data;
 }
@@ -277,12 +283,16 @@ export async function searchHandles(query) {
 //                   unwelcome are different facts.
 
 // Erase everything about a handle and leave every door open.
-export async function eraseAccount(handle) {
+// Owner-gated by the DM proof since 0036.
+export async function eraseAccount(handle, proof) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { erased: 0, handle: normHandle(handle) }
   }
-  const { data, error } = await supabase.rpc('celestual_erase_account', { p_handle: handle });
+  const { data, error } = await supabase.rpc('celestual_erase_account', {
+    p_handle: handle,
+    p_proof: proof || null,
+  });
   if (error) throw error;
   return data; // { erased: number, handle: string }
 }
@@ -296,5 +306,5 @@ export async function suppressHandle(handle) {
   }
   const { data, error } = await supabase.rpc('celestual_suppress', { p_handle: handle });
   if (error) throw error;
-  return data; // { suppressed: string, erased: number }
+  return data; // { suppressed: string }
 }

@@ -57,6 +57,7 @@
 import { getState, patch, push } from './store.js'
 import { normHandle } from './data.js'
 import { whoami, bindHandle, forgetSession } from '../api/identity.js'
+import { getSession, markVerified } from '../api/auth.js'
 
 export const DOMAIN = 'berkeley.edu'
 
@@ -86,8 +87,14 @@ export function emailFault(raw) {
 // so there is nothing here that could check it and nothing here that should
 // try. This is the fail-fast that keeps an obviously wrong entry from costing a
 // round trip.
+//
+// FOUR digits. celestual-edu-verify mints four (`fourDigit()`) and refuses
+// anything else at verify (`code.length !== 4`), and docs/EDU-VERIFICATION.md
+// has said four since it was written. This read six, the gate's field cut the
+// entry off at six and the button stayed dead until six were typed — so the
+// code in the inbox could never be entered and nobody got through the wall.
 export function validCode(raw) {
-  return /^\d{6}$/.test(String(raw || '').replace(/\s+/g, ''))
+  return /^\d{4}$/.test(String(raw || '').replace(/\s+/g, ''))
 }
 
 // The server's last answer about this browser, kept so a screen can draw
@@ -182,6 +189,44 @@ export async function verifyHandle(handle, proof) {
   const h = normHandle(handle)
   if (!h || !proof) return { ok: false, error: 'invalid' }
   const out = await bindHandle({ handle: h, proof })
-  if (out.ok) push('verified', h)
+  // The identity row is 0030's, and 0030 is not applied everywhere this runs.
+  // The proof is 0004's and it is what celestual_submit and celestual_my_pings
+  // actually check, so a database with no identity layer still verified this
+  // person: keep the proof, say so, and let the row catch up when it exists.
+  if (out.error === 'no_identity_layer') {
+    push('verified', h)
+    markVerified(h, proof)
+    return { ok: true, legacy: true }
+  }
+  if (out.ok) {
+    push('verified', h)
+    // ── AND THE PROOF IS KEPT ──
+    // This line is the difference between a verification that finishes and one
+    // that finishes and then cannot do anything. `proof` is not a receipt: it
+    // is the capability celestual_submit consumes at seal time (0023 —
+    // celestual_consume_ig_proof, which answers no to a null and returns
+    // 'unverified'), and celestual_my_pings demands it to say a word about a
+    // person's own sky. It was minted in the browser, spent once against
+    // celestual_user_bind_handle, and then dropped on the floor here — while
+    // three screens went on reading it out of `store.proof`, a key nothing has
+    // ever written. So the DM landed, the handle bound, the site said verified,
+    // and the ping that the whole flow existed to place came back unverified.
+    //
+    // api/auth.js is where this secret already lived (the /signin redemption
+    // writes it there, and App.jsx has always read it there), so it is written
+    // there and nowhere new: one secret, one key, one place to clear it.
+    markVerified(h, proof)
+  }
   return out
+}
+
+// The proof this device is holding, for the surfaces that have to spend it.
+// Scoped to the handle it was minted for: a stale proof under somebody else's
+// @ is not a proof, and sending it anyway spends a round trip to be told so.
+export function heldProof(handle) {
+  const s = getSession()
+  if (!s?.proof) return null
+  const want = normHandle(handle)
+  if (want && normHandle(s.handle) !== want) return null
+  return s.proof
 }

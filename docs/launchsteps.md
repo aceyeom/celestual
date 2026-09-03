@@ -337,7 +337,65 @@ irreversible are marked.
 0033_the_desk.sql                        section 2f
 0034_retire_the_campaign.sql             section 2f   IRREVERSIBLE, export first
 0035_retire_the_communities.sql          section 2g   IRREVERSIBLE, empty tables
+0036_close_the_open_doors.sql            section 2i   apply FIRST, it needs nothing above
 ```
+
+### 2i. The audit. Four doors that were open, and one gate that was shut.
+
+Found by the publish-readiness audit after Phase 8. None of these wait on the
+rebuild: `0036` depends only on `0001`→`0026`, which production already runs,
+so it can and should go in **before** anything else in this section.
+
+- [ ] **Apply `0036_close_the_open_doors.sql`.** Four client-callable functions
+      from `0001`→`0006` are live in production today with no proof on them:
+      `celestual_withdraw` (an oracle: anybody can ask whether @a pinged @b,
+      be told, and delete it in the same call), `celestual_link` (anybody can
+      bind a stranger's @ into their own identity group and be matched with
+      whoever pinged that stranger), `celestual_erase_account` (anybody can
+      wipe anybody, ten an hour), and `celestual_suppress`, which answered with
+      a count of what it erased. After 0036: withdraw and erase demand the DM
+      proof, link is service role only, suppress says the handle and nothing
+      else. `scripts/sql/test-doors.sql` asserts all of it.
+
+      Rows already in `celestual_handle_links` are left as they are. There is
+      no way to tell which were made by their owners; the desk can look.
+
+- [ ] **`celestual_settings.require_ig_verification` must be `'true'`.**
+      `docs/SECURITY.md` has called this the release gate since 0004 and
+      `docs/WALL-LAUNCH.md` records it as `'false'`. While it is false the
+      server places a ping for any typed handle with no proof at all, whatever
+      the client sends. One statement, SQL editor:
+
+      ```sql
+      update celestual_settings set value = 'true' where key = 'require_ig_verification';
+      ```
+
+- [ ] **Redeploy `celestual-edu-verify`.** Two reasons now. The Phase 4b bind
+      (section 2b), and the sandbox's gmail carve-out, which defaulted ON and
+      let one crafted `demo:true` POST verify a gmail address as Berkeley
+      against the real gate. It is OFF unless `CELESTUAL_SANDBOX_GMAIL=1`.
+      The `CELESTUAL_SANDBOX_GMAIL=0` step in section 11 is no longer needed.
+
+- [ ] **Set `CELESTUAL_ADMIN_PASSWORD` BEFORE redeploying `celestual-admin`.**
+      The fallback password is gone from the source. With the secret unset the
+      desk refuses everybody and says so in the function log.
+
+- [ ] **Redeploy `celestual-manychat`.** One reply still promised the
+      twenty-second grace that 0026 closed.
+
+- [ ] **The wall's gate accepted six digits and the function mints four.**
+      Fixed in the client (`wall/auth.js`, `screens/Gate.jsx`); it ships with
+      the front end and needs nothing from you. Until it ships, nobody can
+      enter the code they were mailed.
+
+**What the client does about a database that is behind it.** Until 0030 is
+applied, `celestual_user_bind_handle` and `celestual_whoami` do not exist.
+The DM proof does (it is 0004's), and it is what `celestual_submit` and
+`celestual_my_pings` actually check. So the client now keeps the proof and
+carries on when the identity RPC is missing, and Main reads the device's own
+verified session when the server has no row. Placing a ping, the sky and the
+reveal work on the layer production runs today; the wall does not, because
+its tables are 0032's, and nothing client side can stand in for a table.
 
 ---
 
@@ -709,6 +767,9 @@ Work down it. Every step is somewhere above with the detail; this is the order.
 
 ### The database, in order
 
+- [ ] `0036_close_the_open_doors.sql`. Section 2i. Needs nothing else applied
+      first, and closes three doors that are open right now.
+- [ ] `update celestual_settings set value = 'true' where key = 'require_ig_verification';`
 - [ ] `0033_the_desk.sql`. Additive, safe at any time.
 - [ ] `supabase functions delete celestual-trial`.
 - [ ] `0034_retire_the_campaign.sql`. **Irreversible.**
@@ -720,11 +781,17 @@ Work down it. Every step is somewhere above with the detail; this is the order.
 
 ### The functions
 
-- [ ] `supabase functions deploy celestual-admin`. After 0033 and 0034.
+Every function deployed today predates the rebuild (deployed 30 July to 30
+August; every rebuild phase was committed 2 and 3 September), so all of these
+are real redeploys, not formalities.
+
+- [ ] `supabase functions deploy celestual-admin`. After 0033 and 0034, and
+      after `CELESTUAL_ADMIN_PASSWORD` is set (section 2i).
 - [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`.
 - [ ] `supabase functions deploy celestual-wall-moderate`.
 - [ ] `supabase functions deploy celestual-edu-verify`.
 - [ ] `supabase functions deploy celestual-notify`.
+- [ ] `supabase functions deploy celestual-manychat`.
 
 ### The secrets
 

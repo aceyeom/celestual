@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react'
 import { Display, Label, Pill, Prose, Row, PillTag } from '../wall/parts.jsx'
 import { Mark, Sparkle } from '../wall/art.jsx'
 import { atHandle } from '../wall/data.js'
-import { getState } from '../wall/store.js'
+import { heldProof } from '../wall/auth.js'
 import { myPings, daysLeft, since } from './data.js'
 import TopBar from './TopBar.jsx'
 
@@ -29,7 +29,7 @@ export default function Sky({ go, who }) {
   useEffect(() => {
     let alive = true
     if (!who.handleVerified) { setState({ loading: false, pings: [], mutuals: [] }); return undefined }
-    myPings({ handle: who.handle, proof: getState().proof }).then((out) => {
+    myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
       if (alive) setState({ loading: false, pings: out.pings, mutuals: out.mutuals })
     })
     return () => { alive = false }

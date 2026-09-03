@@ -21,6 +21,32 @@
 // The ping is not placed until the proof comes back. Nothing partial is
 // written, so backing out at the last step leaves no half a ping anywhere.
 //
+// ── THE THIRD STEP ASKS WHOSE HANDLE IT IS. It did not, and that was the bug ─
+// The flow read: type THEIR @, write the line, and then — with no third
+// question asked — a code appeared to be DM'd to us. Nobody had said whose
+// handle was being proved, because the screen never asked: it sent
+// `who.handle || h` to the handoff, and for the person this flow exists for,
+// the one who has never proved anything and so has no `who.handle`, that `h`
+// is THE RECIPIENT. So the proof was started against the handle of the person
+// being pinged.
+//
+// Three things came out of that, and only the first is cosmetic:
+//
+//   1  a person was asked to prove a handle they were never asked to name, on
+//      a screen showing somebody else's @ under "the handle has to be yours"
+//   2  the per-handle start limit (8/hour, 0018) and the suppression check ran
+//      against the RECIPIENT, so pinging an @ that had opted out answered "that
+//      door is not open yet" — which is that person's opt-out, told to a
+//      stranger who typed their name
+//   3  eight attempts at one popular @ locked everybody else out of pinging it
+//
+// So the third step asks, in one field, the same question it has always been
+// answering: which @ is yours. It is prefilled when the browser already knows,
+// and what is proved is still whatever account actually sends the DM — the
+// code is a correlation id and Meta's webhook is the authority (migration
+// 0012). When those differ, the screen says so and asks, rather than quietly
+// placing a ping under a name the person did not type.
+//
 // ── what this screen never does ─────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
 // they have pinged anybody. It does not say whether anybody has pinged them.
@@ -29,11 +55,12 @@
 // somebody who never came to this site.
 import { useEffect, useRef, useState } from 'react'
 import {
-  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, Waiting,
+  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode,
 } from '../wall/parts.jsx'
 import { Provider, Sparkle, Mark } from '../wall/art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../wall/data.js'
-import { startHandoff, pollHandoff, igDeepLink, igWebLink } from '../wall/handoff.js'
+import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../wall/handoff.js'
+import { heldProof } from '../wall/auth.js'
 import { getState, patch } from '../wall/store.js'
 import { place } from './data.js'
 import TopBar from './TopBar.jsx'
@@ -45,12 +72,38 @@ function words(s) {
   return String(s || '').trim().split(/\s+/).filter(Boolean)
 }
 
+// ── what is resumed, and why anything is ────────────────────────────────────
+// Opening Instagram leaves this page, and on a phone that often reloads or
+// evicts it. The code, the proof, the name and the line all live in React
+// memory, so without this the person comes back to an empty /place while the
+// DM they just sent is sitting against a verification nothing is watching any
+// more. The record self-expires with the code (thirty minutes, 0018) and is
+// cleared the moment it verifies, lapses or is abandoned.
+// A live code is resumed only for the ping it was minted for: somebody who
+// follows a fresh /@handle link while an old code is still out is starting a
+// different ping, and the address they arrived at wins.
+function resume(prefill) {
+  const p = loadPending()
+  if (!p || p.use !== 'place' || !p.to) return null
+  if (prefill && normHandle(prefill) !== normHandle(p.to)) return null
+  return p
+}
+
 export default function Place({ go, who, refreshWho, to: prefill }) {
   const wrote = getState().wroteTo || []
-  const [to, setTo] = useState(() => prefill || '')
-  const [line, setLine] = useState('')
-  const [step, setStep] = useState(() => (prefill ? 1 : 0))
-  const [dm, setDm] = useState(null)
+  const held = useRef(resume(prefill)).current
+  const [to, setTo] = useState(() => prefill || held?.to || '')
+  const [line, setLine] = useState(() => held?.line || '')
+  // The sender's own @ — the third question, and the one this screen never
+  // asked. Prefilled from the identity row when the browser already has one.
+  const [mine, setMine] = useState(() => held?.mine || who.handle || '')
+  const [step, setStep] = useState(() => (held ? 2 : prefill ? 1 : 0))
+  const [dm, setDm] = useState(() => held)
+  // Set when the DM came from an account other than the one typed above. The
+  // webhook's answer is the identity (0012), so the choice is not whether to
+  // believe it — it is whether to place THIS ping under a name the person did
+  // not type, and that is theirs to answer.
+  const [adopted, setAdopted] = useState(null)
   const [said, setSaid] = useState('')
   const [placing, setPlacing] = useState(false)
   const [done, setDone] = useState(null)
@@ -61,16 +114,30 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     return () => { alive.current = false }
   }, [])
 
+  // whoami lands after the first paint, so the field fills in when it does —
+  // and never over something already typed.
+  useEffect(() => {
+    if (who.handle) setMine((m) => m || who.handle)
+  }, [who.handle])
+
   const h = normHandle(to)
   const named = validHandle(h)
+  const me = normHandle(mine)
+  const mineOk = validHandle(me) && me !== h
   const w = words(line)
   const lineOk = line.trim().length >= MIN_CHARS && w.length <= MAX_WORDS
 
   // ── the last step, once the handle is proved ──
-  const send = async (mine) => {
+  // The proof is the DM flow's secret and celestual_submit consumes it
+  // (celestual_consume_ig_proof, 0023): without it the RPC answers 'unverified'
+  // and nothing is placed. It comes off the handoff that just finished, or off
+  // the one this device already holds.
+  const send = async (from, proof) => {
+    const mineNow = normHandle(from)
     setPlacing(true)
-    const proof = getState().proof || null
-    const out = await place({ me: mine, them: h, proof, words: line.trim() })
+    const out = await place({
+      me: mineNow, them: h, proof: proof || heldProof(mineNow), words: line.trim(),
+    })
     if (!alive.current) return
     setPlacing(false)
     if (!out.ok) {
@@ -78,51 +145,122 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         out.error === 'cap' ? 'you have as many out as you can hold'
           : out.error === 'self' ? 'you cannot place one on yourself'
           : out.error === 'suppressed' ? 'that name has asked to be left alone'
+          : out.error === 'unverified' ? 'that proof has lapsed — prove the handle again'
+          : out.error === 'rate_limited' ? 'that is a lot of pings in one hour'
           : 'it did not go through',
       )
       return
     }
     patch({ wroteTo: [h, ...wrote.filter((x) => x !== h)].slice(0, 12) })
+    clearPending()
     setDone({ to: h, mutual: !!out.mutual })
   }
 
   // ── the handoff ──
+  // Started against the SENDER's handle. It is the hint the code is filed
+  // under, it is what the per-handle limit counts, and it is what the screen
+  // has just been told — where it used to be whoever was being pinged.
   const ask = async () => {
     if (dm) return
     setSaid('')
-    const out = await startHandoff(who.handle || h)
+    if (!mineOk) {
+      setSaid(me && me === h ? 'that is the name you are placing it on' : 'that handle does not look right')
+      return
+    }
+    const out = await startHandoff(me)
     if (!alive.current) return
-    if (!out.ok) { setSaid('that door is not open yet'); return }
-    setDm(out)
+    if (!out.ok) {
+      setSaid(
+        out.error === 'off' ? 'that door is not open yet'
+          : out.error === 'banned' ? 'that name has asked to be left alone'
+          : out.error === 'rate_limited' ? 'too many tries on that @ — give it an hour'
+          : 'it did not go through',
+      )
+      return
+    }
+    const rec = { ...out, use: 'place', to: h, line: line.trim(), mine: me }
+    savePending(rec)
+    setDm(rec)
   }
+
+  const drop = () => { clearPending(); setDm(null); setAdopted(null) }
 
   useEffect(() => {
     if (!dm) return
     let stop = false
+    let busy = false
     let timer = 0
+    // `busy` because two things drive this: the beat, and coming back to the
+    // tab. Both firing at once asks the same question twice and can spend the
+    // same verification twice.
     const tick = async () => {
+      if (stop || busy) return
+      busy = true
       const out = await pollHandoff(dm)
+      busy = false
       if (stop || !alive.current) return
       if (out.ok) {
-        setDm(null)
+        // ── DO NOT setDm(null) AND THEN AWAIT ──
+        // This is what actually swallowed the ping, and it swallowed it at the
+        // last possible instant: the code was DM'd, the webhook answered, the
+        // handle bound — and then nothing was placed and the screen fell back
+        // to the field as though the person had never started.
+        //
+        // The old shape was `setDm(null); await refreshWho(); if (!stop) send()`.
+        // Clearing `dm` re-renders, the re-render tears this effect down, and
+        // the teardown sets `stop` — all of it during the await, because an
+        // await yields to React. So the guard on the far side of the await was
+        // always true and `send` was never reached. The one line that placed
+        // the ping was unreachable by construction, and everything before it
+        // worked, which is why it read as "verification does nothing".
+        //
+        // So: stop the polling with the local flag, do the awaiting, and let
+        // `alive` — which means THE SCREEN IS GONE, not "this effect was
+        // re-run" — be the only thing that can call it off.
+        stop = true
+        clearTimeout(timer)
+        clearPending()
+        const got = normHandle(out.handle)
+        const asked = normHandle(dm.mine)
         const u = await refreshWho()
-        if (!stop && alive.current) send(u.handle || out.handle)
+        if (!alive.current) return
+        setDm(null)
+        // The DM came from another account. Say so and ask, rather than
+        // placing a ping signed by a name nobody on this screen typed.
+        if (got && got !== asked) { setAdopted({ handle: got, proof: dm.proof }); return }
+        send(got || u?.handle || asked, dm.proof)
         return
       }
-      if (out.error === 'expired') { setDm(null); setSaid('that code has lapsed'); return }
-      if (out.error) { setDm(null); setSaid('that did not go through'); return }
+      if (out.error === 'expired') { drop(); setSaid('that code has lapsed'); return }
+      if (out.error) { drop(); setSaid('that did not go through'); return }
       timer = setTimeout(tick, 2500)
     }
     timer = setTimeout(tick, 2500)
-    return () => { stop = true; clearTimeout(timer) }
+    // Coming back from Instagram checks at once rather than up to a beat late,
+    // and a background-throttled interval cannot strand the wait.
+    const onReturn = () => { if (document.visibilityState === 'visible') tick() }
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+    return () => {
+      stop = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+    }
   }, [dm])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Proved on this device AND still holding the proof that says so. The second
+  // half matters: `handleVerified` is the server's memory of a verification,
+  // and the secret that spends it lives in this browser. A tab that has one
+  // without the other has to ask again, and asking is cheaper than a ping that
+  // comes back 'unverified' after the letter is written.
+  const readyToPlace = who.handleVerified && !!heldProof(who.handle)
 
   const next = () => {
     setSaid('')
     if (step === 0) { if (named) setStep(1); return }
     if (step === 1) { if (lineOk) setStep(2); return }
-    // Already proved on this device, so there is nothing to ask.
-    if (who.handleVerified) { send(who.handle); return }
+    if (readyToPlace) { send(who.handle); return }
     ask()
   }
 
@@ -235,33 +373,74 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             {/* The proof, and it is about ONE thing: that the handle placing
                 this ping is the handle it says. Nothing about the account is
                 read and nothing is kept beside the handle. */}
-            {dm ? (
+            {adopted ? (
+              /* ── it came from another account ──
+                 The webhook says who actually sent the code, and that account
+                 is now this browser's identity whatever was typed. The ping is
+                 the part that still has a choice in it. */
               <>
-                <div className="mn-code">
-                  <Display size="s" as="p">{dm.code}</Display>
-                  <Label tone="dim">DM this to us on instagram</Label>
+                <Prose className="mn-copy">
+                  the code arrived from <span className="sg-h">{atHandle(adopted.handle)}</span>, so
+                  that is the account instagram proved. place it under that name?
+                </Prose>
+                <div className="mn-prove-what">
+                  <Mark handle={adopted.handle} size={40} lit />
+                  <Label tone="dim">{atHandle(adopted.handle)} → {atHandle(h)}</Label>
                 </div>
-                <Pill tone="light" wide href={igDeepLink()} target="_blank" rel="noreferrer">
-                  open instagram
-                </Pill>
-                <div className="mn-wait">
-                  <Waiting label="watching for it" />
-                  <Label tone="dim">
-                    <a className="wl-a" href={igWebLink()} target="_blank" rel="noreferrer">
-                      or open it on the web
-                    </a>
-                  </Label>
+              </>
+            ) : dm ? (
+              <>
+                <DmCode
+                  code={dm.code}
+                  note={(
+                    <Label tone="dim" className="mn-prove-for">
+                      proving <span className="sg-h">{atHandle(dm.mine)}</span>
+                    </Label>
+                  )}
+                />
+              </>
+            ) : readyToPlace ? (
+              /* Already proved on this device and still holding the proof, so
+                 there is nothing to ask. The screen says whose name it is
+                 going out under rather than asking a question it knows the
+                 answer to. */
+              <>
+                <Prose className="mn-copy">
+                  your @ is already proved on this device. this goes out under it, and
+                  it stands for sixty days.
+                </Prose>
+                <div className="mn-prove-what">
+                  <Mark handle={who.handle} size={40} lit />
+                  <Label tone="dim">{atHandle(who.handle)} → {atHandle(h)} · sixty days</Label>
                 </div>
               </>
             ) : (
               <>
                 <Prose className="mn-copy">
-                  a ping is placed by a handle, so the handle has to be yours. one question,
-                  asked of instagram, answered once.
+                  a ping is placed by a handle, so the handle has to be yours. which @
+                  is it? you prove it by DMing us one code from that account, once.
                 </Prose>
+                {/* THE QUESTION THAT WAS MISSING. Everything above this step is
+                    about somebody else; this is the only field on the screen
+                    that is about the person filling it in. */}
+                <HandleField
+                  value={mine} onChange={setMine} onSubmit={next}
+                  autoFocus size="lg" placeholder="yourhandle" label="your Instagram handle"
+                />
                 <div className="mn-prove-what">
-                  <Mark handle={h} size={40} lit />
-                  <Label tone="dim">{atHandle(h)} · sixty days</Label>
+                  {/* The constellation is drawn off whatever is in the field,
+                      and only once something is. Seeded on `h` while the field
+                      is empty it drew THE RECIPIENT'S mark under the words
+                      "your @, not theirs", which is the same confusion this
+                      step exists to undo. */}
+                  {me ? <Mark handle={me} size={40} lit={mineOk} /> : null}
+                  <Label tone="dim">
+                    {mineOk
+                      ? <>{atHandle(me)} → {atHandle(h)} · sixty days</>
+                      : me === h && me
+                        ? 'that is the name you are placing it on'
+                        : 'your @, not theirs'}
+                  </Label>
                 </div>
               </>
             )}
@@ -272,24 +451,42 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       </div>
 
       <div className="mn-foot">
-        {step > 0 && !dm ? (
-          <button type="button" className="wl-quiet" onClick={() => setStep(step - 1)}>
-            {step === 1 ? 'a different name' : 'change what it says'}
+        {adopted ? (
+          <>
+            <Pill tone="light" wide disabled={placing}
+              onClick={() => send(adopted.handle, adopted.proof)}>
+              {placing ? 'placing…' : `place it as ${atHandle(adopted.handle)}`}
+            </Pill>
+            <button type="button" className="wl-quiet" onClick={() => setAdopted(null)}>
+              not that account
+            </button>
+          </>
+        ) : dm ? (
+          /* The one way out while a code is live. It clears the stashed record
+             too, so a code abandoned here is not resumed on the next visit. */
+          <button type="button" className="wl-quiet" onClick={drop}>
+            start this again
           </button>
-        ) : null}
-        {!dm ? (
-          <Pill
-            tone="light" wide
-            disabled={placing || (step === 0 ? !named : step === 1 ? !lineOk : false)}
-            onClick={next}
-            icon={step === 2 && !who.handleVerified ? <Provider size={17} /> : null}
-          >
-            {placing ? 'placing…'
-              : step === 0 ? 'next'
-              : step === 1 ? 'next'
-              : who.handleVerified ? 'place it' : 'prove it is yours'}
-          </Pill>
-        ) : null}
+        ) : (
+          <>
+            {step > 0 ? (
+              <button type="button" className="wl-quiet" onClick={() => setStep(step - 1)}>
+                {step === 1 ? 'a different name' : 'change what it says'}
+              </button>
+            ) : null}
+            <Pill
+              tone="light" wide
+              disabled={placing || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
+              onClick={next}
+              icon={step === 2 && !readyToPlace ? <Provider size={17} /> : null}
+            >
+              {placing ? 'placing…'
+                : step === 0 ? 'next'
+                : step === 1 ? 'next'
+                : readyToPlace ? 'place it' : 'prove it is yours'}
+            </Pill>
+          </>
+        )}
       </div>
     </main>
   )
