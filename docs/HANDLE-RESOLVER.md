@@ -122,10 +122,20 @@ windows, `handle_search_allow` in migration 0031:
 | `device_id` | 20 | anonymous, which is the majority case |
 | `ip` | 200 | the backstop. Deliberately loose: one Berkeley address is a residence hall behind one NAT |
 
-**A cache hit costs nothing.** `handle_search_events` only ever receives a row
-when a call actually reached Apify, so it cannot contain a free lookup. That is
-what keeps the bill bounded by the number of distinct handles rather than by
-traffic, and what lets the caps stay generous for normal use.
+**A cache hit costs nothing, and neither does a miss.** `handle_search_events`
+only ever receives a row when a call reached Apify and came back with an
+account. It used to be written before the result was looked at, so a handle that
+does not exist, or an actor that answered 400, still spent one of the twenty: a
+test against a handle with no account recorded two events, one of them the
+failed call. The record now sits inside the success branch. A miss is remembered
+in the isolate for a few minutes instead, which is what stops the same missing
+handle being asked for twenty times in a row. That is what keeps the bill
+bounded by the number of distinct handles rather than by traffic, and what lets
+the caps stay generous for normal use.
+
+**The first lookup is slow.** Measured at about 10.6 seconds cold and 1.5
+cached: actor startup dominates, and nothing in the function can shorten it. The
+card's looking state is drawn for that wait, not for a network round trip.
 
 On a limit the function answers **429** with `retry_after`, the seconds until the
 oldest counted call ages out. The UI shows a plain message built from that

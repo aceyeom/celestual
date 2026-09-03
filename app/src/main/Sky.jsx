@@ -22,8 +22,9 @@ import { atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
 import { myPings, daysLeft, since } from './data.js'
 import TopBar from './TopBar.jsx'
+import Prove from './Prove.jsx'
 
-export default function Sky({ go, who }) {
+export default function Sky({ go, who, refreshWho }) {
   const [state, setState] = useState({ loading: true, pings: [], mutuals: [] })
 
   useEffect(() => {
@@ -39,6 +40,12 @@ export default function Sky({ go, who }) {
   // Said instead of the list rather than over a greyed-out one. A screen that
   // shows somebody an empty version of their own sky and a sentence explaining
   // why has made them read to find out they are looking at nothing.
+  //
+  // And it asks the question right here. This is where the front door's "sign
+  // in" lands, and until now it landed on a sentence and a button into the
+  // composer: somebody with three pings out was sent to start a fourth to see
+  // the three. The proof is the same DM code /place asks for, and once it
+  // lands `who` changes under this screen and the list draws itself.
   if (!who.handleVerified) {
     return (
       <main className="mn-page mn-sky">
@@ -47,11 +54,14 @@ export default function Sky({ go, who }) {
           <Display size="m" as="h1">Your sky is<br />behind your @.</Display>
           <Prose className="mn-copy">
             a ping is placed by a handle, so seeing yours means proving the handle is
-            yours. one question, asked once.
+            yours. one instagram message, asked once.
           </Prose>
+          <Prove who={who} refreshWho={refreshWho} />
         </div>
         <div className="mn-foot">
-          <Pill tone="light" wide onClick={() => go('place')}>place one</Pill>
+          <button type="button" className="wl-quiet" onClick={() => go('place')}>
+            or place one first
+          </button>
         </div>
       </main>
     )

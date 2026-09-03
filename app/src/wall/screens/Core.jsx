@@ -32,7 +32,7 @@
 //   THE SILL        Everything about the letter that is not the letter —
 //                   handle, state, days — sits UNDER the sheet in mono. It is
 //                   ground, not paper, and that separation is the composition.
-//   NO HEADLINE     Nothing on this surface editorialises. There is no Bodoni
+//   NO HEADLINE     Nothing on this surface editorialises. There is no display face
 //                   sentence anywhere; the objects carry the state.
 //   THE PIPS        Where you are in what you hold. A held letter is a dash,
 //                   an answered one is lit, a free place is a hollow ring.

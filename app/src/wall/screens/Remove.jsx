@@ -109,7 +109,7 @@ export default function Remove({ handle: prefill, back }) {
     if (!out.ok) {
       setFault(
         out.error === 'off' ? 'that door is not open yet'
-          : out.error === 'rate_limited' ? 'too many tries on that @ — give it an hour'
+          : out.error === 'rate_limited' ? 'too many tries on that @. give it an hour'
           : 'that did not go through',
       )
       return

@@ -1,72 +1,64 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE MAIN HERO                                                           ║
+// ║  THE FRONT DOOR                                                          ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The front door, at `/`. One of the two surfaces docs/rebuild-spec.md 7.1 says
-// carries the artistry, and the one a person meets before they know what this
-// is.
+// Main's hero, at `/`. One of the two surfaces docs/rebuild-spec.md 7.1 gives
+// the artistry to, and the one a person meets before they know what this is.
 //
-// Promoted from /signature in Phase 6b, unchanged in everything that was
-// approved: the same sentence, the same two orbits closing on one another, the
-// same great deal of room. Two things are different and both are wiring rather
-// than design. The wall's numbers are real, read off wall_index, and they are
-// absent rather than invented when the wall has nothing on it yet. And the
-// primary capsule goes somewhere: it is the door into Main's own flow, which is
-// what docs/launchsteps.md section 0c said Phase 6b would give it.
+// ── what it has to do, in order ─────────────────────────────────────────────
 //
-// It has exactly three jobs and it is laid out in that order:
+//   1  say what this is, and let somebody do it right there
+//   2  show it, in the one object on the page that moves
+//   3  explain how it works, for the person who wants to know before they act
+//   4  name the wall, say what it is, and give it a door that reads as one
+//   5  give a returning person the way to their own sky
 //
-//   1  say the mechanic, flat, in the face that is allowed to feel
-//   2  show it, in the one object on this page that moves
-//   3  offer the two doors: Main's own flow, and the Berkeley wall
+// ── what came off, and why ──────────────────────────────────────────────────
+// The first hero was one composition in one viewport and it was approved as a
+// poster. As a door it failed in five ways, and each of them is a section here:
+// the mark, four hundred pixels of it, was the only object and it explained
+// nothing; the wall was the word "berkeley" in the corner and a row at the
+// foot; there was nowhere to sign in; nothing said how it worked; and the one
+// capsule sat at the bottom left of the screen after a ticker of names that
+// belonged to a different surface.
 //
-// ── what is deliberately not here ──────────────────────────────────────────
-// No feature grid, no three benefits, no testimonial, no second heading that
-// restates the first. A product whose whole promise is that nothing is
-// announced cannot have a front door that announces four things. The page is
-// one sentence, one object, two doors, and a great deal of empty room.
+// The mark still opens the page, at the size a mark should be, in the lockup.
+// The two orbits closing on one another are still the reveal's, where they
+// mean what they say. The ticker is still here, under the wall it comes from.
 //
-// The wall's masthead is the layout reference: the type block sits left, the
-// drawn object sits right of it on a wide screen and under it on a phone, and
-// the column never grows past what the system already allows.
+// ── what is deliberately still not here ─────────────────────────────────────
+// No testimonial, no count of people, no "as seen on", no second heading that
+// restates the first, no faces. Every number on this page is read off the wall's
+// public index or it is absent. The cards in the scene say "you" and "them" and
+// carry no handle, because a front door that fakes activity is the pattern this
+// product exists to not be.
 
-import { useEffect, useRef, useState } from 'react'
-import Alignment from '../signature/Alignment.jsx'
+import { useEffect, useState } from 'react'
+import { Lockup, Ecliptic, Sparkle } from '../wall/art.jsx'
+import { Display, Label, Pill, HandleField, ArrowLink } from '../wall/parts.jsx'
+import { normHandle, validHandle, atHandle } from '../wall/data.js'
 import { wallSummary, sinceAgo } from './data.js'
+import { href } from './router.js'
 import Ticker from './Ticker.jsx'
-import { ECL, ringPath, starPath } from '../wall/mark.js'
+import Scene, { Orbits } from './Scene.jsx'
+import './hero.css'
 
-const MARK = { ring: ringPath(), star: starPath(ECL) }
-
-// The mark, small, for the bar. Drawn here rather than imported from art.jsx
-// because that module carries the whole ornament set and this surface needs one
-// shape out of it.
-function Mark({ size = 24 }) {
-  return (
-    <svg className="wl-ecl" width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-      <defs>
-        <clipPath id="sg-bar-near">
-          <rect x="-110" y="50" width="320" height="160" transform={`rotate(${ECL.tilt} 50 50)`} />
-        </clipPath>
-        <mask id="sg-bar-notch" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
-          <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
-          <path d={ringPath(ECL.gutter)} fill="#000" fillRule="evenodd" clipPath="url(#sg-bar-near)" />
-        </mask>
-      </defs>
-      <path d={MARK.ring} fill="currentColor" fillRule="evenodd" />
-      <g mask="url(#sg-bar-notch)"><path d={MARK.star} transform="translate(50 50)" fill="currentColor" /></g>
-      <path d={MARK.ring} fill="currentColor" fillRule="evenodd" clipPath="url(#sg-bar-near)" />
-    </svg>
-  )
+// A link to one of Main's own addresses. It is a real anchor, so it opens in a
+// new tab, copies and reads out like one, and a plain click stays inside the
+// shell rather than reloading the app.
+function Jump({ go, to, id, children, ...rest }) {
+  const onClick = (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return
+    e.preventDefault()
+    go(to, id)
+  }
+  return <a href={href(to, id)} onClick={onClick} {...rest}>{children}</a>
 }
 
 export default function Hero({ go, who, still = false }) {
-  const stage = useRef(null)
-
-  // The wall's own two numbers. Asked once, and the gate below draws its quiet
-  // form until they land rather than a zero: "0 letters" on a front door is a
-  // worse sentence than no sentence, and it is the one a fetch that has not
-  // returned would put there.
+  // The wall's own two numbers. Asked once, and the section below draws its
+  // quiet form until they land rather than a zero: "0 letters" on a front door
+  // is a worse sentence than no sentence.
   const [wall, setWall] = useState(null)
   useEffect(() => {
     let alive = true
@@ -74,144 +66,227 @@ export default function Hero({ go, who, still = false }) {
     return () => { alive = false }
   }, [])
 
-  // The type leans on the hand. Each line answers by a different amount, so the
-  // three lines separate in depth as the pointer crosses them and close back up
-  // when it leaves: the same parallax the field is doing, in the one other
-  // place on the page big enough to show it. Six pixels at the extreme, which
-  // is under a character's width and over the threshold where the eye notices
-  // that the page is aware of it.
-  useEffect(() => {
-    if (still) return
-    const el = stage.current
-    if (!el) return
-    let raf = 0
-    let x = 0, y = 0, tx = 0, ty = 0
-    function onMove(e) {
-      tx = (e.clientX / window.innerWidth) * 2 - 1
-      ty = (e.clientY / window.innerHeight) * 2 - 1
-    }
-    function frame() {
-      x += (tx - x) * 0.05
-      y += (ty - y) * 0.05
-      el.style.setProperty('--lean-x', x.toFixed(3))
-      el.style.setProperty('--lean-y', y.toFixed(3))
-      raf = requestAnimationFrame(frame)
-    }
-    window.addEventListener('pointermove', onMove, { passive: true })
-    raf = requestAnimationFrame(frame)
-    return () => {
-      window.removeEventListener('pointermove', onMove)
-      cancelAnimationFrame(raf)
-    }
-  }, [still])
+  // ── the ask ──
+  // A handle typed here lands on /place with the name already in it. An empty
+  // field still opens the flow, which then asks; a handle that cannot be one
+  // is said so, in place, and nothing moves.
+  const [to, setTo] = useState('')
+  const [said, setSaid] = useState('')
+  const submit = () => {
+    const h = normHandle(to)
+    if (!h) { go('place'); return }
+    if (!validHandle(h)) { setSaid('that handle does not look right'); return }
+    go('place', h)
+  }
+
+  const toHow = (e) => {
+    e.preventDefault()
+    const el = document.getElementById('how')
+    if (el) el.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' })
+  }
 
   return (
-    <main className="wl-main sg-page sg-hero">
-      {/* The mark alone, as on the wall's bar and on Main's. The lockup — the
-          mark with "celestual." set beside it — is the overture's, where the
-          name is the event being played; a bar is not that moment, and the
-          front door signing itself differently from every screen behind it is
-          the product changing shape as somebody walks through it. */}
-      <header className="wl-top sg-top">
-        <span className="wl-top-mark">
-          <span className="wl-brand-mark"><Mark size={26} /></span>
-        </span>
-        <span className="wl-label is-dim sg-top-note">berkeley</span>
+    <main className="hm-page">
+      {/* ── the bar ──
+          The lockup, because this is the one screen that has to say the name.
+          Then the three ways off it: down the page, to the wall, and to your
+          own sky, which is where signing in happens and is also where it
+          lands. The capsule reads the handle once one is proved. */}
+      <header className="hm-top hm-in" style={{ '--d': '0ms' }}>
+        <Jump go={go} to="hero" className="hm-home" aria-label="celestual, the front">
+          {/* The word alone. The mark has just filled the screen in the intro
+              and stands in the scene below; a third copy of it beside its own
+              name in the corner is the product signing every line. */}
+          <span className="hm-word">celestual.</span>
+        </Jump>
+        <nav className="hm-nav" aria-label="celestual">
+          <a className="hm-navlink is-how" href="#how" onClick={toHow}>how it works</a>
+          <a className="hm-navlink" href="/berkeley">the wall</a>
+          <Pill tone="ghost" onClick={() => go('sky')}>
+            {who.handleVerified ? <span className="hm-me">{atHandle(who.handle)}</span> : 'sign in'}
+          </Pill>
+        </nav>
       </header>
 
-      <div className="sg-hero-body" ref={stage}>
-        <div className="sg-hero-say">
-          <p className="wl-label is-dim sg-in" style={{ '--d': '0ms' }}>
-            double blind, both ways
-          </p>
+      {/* ── the hero ── */}
+      <section className="hm-hero">
+        <div className="hm-say">
+          <Label className="hm-eyebrow hm-in" style={{ '--d': '60ms' }}>double blind, both ways</Label>
 
-          {/* One sentence, three lines, and the break points are chosen rather
-              than left to the browser: the turn lands on "or neither", which is
-              the half of the mechanic people do not expect. */}
-          <h1 className="wl-display is-xl sg-say">
-            <span className="sg-line sg-in" style={{ '--d': '90ms' }}>
-              <span className="sg-lean" style={{ '--lean': 0.6 }}>you both</span>
-            </span>
-            <span className="sg-line sg-in" style={{ '--d': '190ms' }}>
-              <span className="sg-lean" style={{ '--lean': 1 }}>find out,</span>
-            </span>
-            <span className="sg-line sg-in" style={{ '--d': '300ms' }}>
-              <span className="sg-lean" style={{ '--lean': 1.6 }}>or neither of you does.</span>
-            </span>
+          {/* One sentence, two lines, and the break is chosen rather than left
+              to the browser: the turn lands on "or neither", which is the half
+              of the mechanic people do not expect. */}
+          <h1 className="wl-display is-xl hm-title hm-in" style={{ '--d': '140ms' }}>
+            <span className="hm-line">you both find out,</span>
+            <span className="hm-line">or neither of you does.</span>
           </h1>
 
-          <p className="sg-mech sg-in" style={{ '--d': '480ms' }}>
-            place a ping on somebody. if they place one back, you are both told
-            at once. if they do not, nobody is, and nobody ever knows there was
-            anything to know.
+          <p className="hm-read hm-mech hm-in" style={{ '--d': '260ms' }}>
+            place a ping on somebody&rsquo;s instagram. <b>they are never told.</b> if they
+            place one on you, you are both told at the same moment. if they do not, nobody
+            is, and nobody ever knows there was anything to know.
+          </p>
+
+          <form className="hm-ask hm-in" style={{ '--d': '380ms' }} onSubmit={(e) => { e.preventDefault(); submit() }}>
+            <HandleField
+              value={to} onChange={(v) => { setTo(v); setSaid('') }} onSubmit={submit}
+              size="lg" placeholder="theirhandle" label="their instagram handle"
+            />
+            <div className="hm-ask-row">
+              <Pill tone="light" onClick={submit}>place a ping</Pill>
+              <span className="hm-read hm-ask-note">
+                free. one instagram message proves the @ is yours, and that is the whole account.
+              </span>
+            </div>
+            <p className="hm-said" role="status" aria-live="polite">{said}</p>
+          </form>
+
+          <div className="hm-facts hm-in" style={{ '--d': '460ms' }}>
+            <Label><Sparkle size={8} />two standing at a time</Label>
+            <Label><Sparkle size={8} />sixty days each</Label>
+            <Label><Sparkle size={8} />never told unless it is mutual</Label>
+          </div>
+        </div>
+
+        <div className="hm-stage hm-in" style={{ '--d': '320ms' }}>
+          <Scene still={still} />
+          <Label className="hm-stage-cap">what a mutual looks like. until then, both stay sealed.</Label>
+        </div>
+      </section>
+
+      {/* ── how it works ──
+          A ledger down the page, with the mark's own states beside the steps.
+          Not a card grid: three boxes with an icon each is the one layout the
+          spec bans by name, and it is banned because it reads as generated. */}
+      <section id="how" className="hm-how">
+        <div className="hm-sec-head">
+          <Label>how it works</Label>
+          <Display size="l" as="h2">nothing is said until it is said twice.</Display>
+          <p className="hm-read hm-sec-copy">
+            a ping is a sealed card with a name on it. the only thing that can open it is
+            the same card, placed back.
           </p>
         </div>
 
-        <div className="sg-hero-stage sg-in" style={{ '--d': '380ms' }}>
-          <Alignment size={340} still={still} id="hero" />
-        </div>
-      </div>
+        <div className="hm-how-body">
+          <ol className="hm-steps">
+            <li className="hm-step">
+              <Orbits state={0} className="hm-step-glyph" />
+              <div className="hm-step-text">
+                <Label>01</Label>
+                <Display size="s" as="h3">place a ping on a handle.</Display>
+                <p className="hm-read hm-step-p">
+                  type their instagram, write a line only they will ever read, and prove your
+                  own handle once with one DM. they are not told.
+                </p>
+              </div>
+            </li>
+            <li className="hm-step">
+              <Orbits state={1} className="hm-step-glyph" />
+              <div className="hm-step-text">
+                <Label>02</Label>
+                <Display size="s" as="h3">it stands for sixty days.</Display>
+                <p className="hm-read hm-step-p">
+                  you can hold two at a time. let one go whenever you like, and nobody is told
+                  that either. when it lapses, it lapses quietly.
+                </p>
+              </div>
+            </li>
+            <li className="hm-step">
+              <Ecliptic size={52} className="hm-step-glyph" />
+              <div className="hm-step-text">
+                <Label>03</Label>
+                <Display size="s" as="h3">if they place one on you, it is mutual.</Display>
+                <p className="hm-read hm-step-p">
+                  you are both told at the same moment, and each of you reads what the other
+                  wrote. if they never do, neither of you ever hears a word.
+                </p>
+              </div>
+            </li>
+          </ol>
 
-      {/* ── the ticker ──
-          Spec section 8. Names off the wall, drifting, with nothing on them but
-          a display name, a handle and a badge. It sits between the composition
-          and the doors because that is where it answers the question the
-          composition raises: this is a real place with real people written to
-          in it. It draws nothing at all when the wall is empty, which is the
-          correct state for a front page rather than an empty band. */}
-      <Ticker />
-
-      <div className="sg-hero-foot">
-        {/* The wall, as a door rather than as a mention. It carries its own two
-            real numbers, because a campus surface that will not say how many
-            letters are on it is a campus surface nobody believes. */}
-        <a className="sg-gate sg-in" href="/berkeley" style={{ '--d': '620ms' }}>
-          <span className="sg-gate-l">
-            <span className="wl-label is-dim">the wall at berkeley</span>
-            {wall ? (
-              <>
-                <span className="sg-gate-h">
-                  {wall.letters === 1 ? 'one letter' : `${wall.letters} letters`}
-                  {', to '}
-                  {wall.handles === 1 ? 'one name' : `${wall.handles} names`}
-                </span>
-                <span className="sg-gate-m">
-                  the newest is to <span className="sg-h">@{wall.newest}</span>,{' '}
-                  {sinceAgo(wall.newestAt)}
-                </span>
-              </>
-            ) : (
-              /* Nothing counted yet, or nothing there to count. The door still
-                 opens and it still says what is behind it; what it does not do
-                 is put a number on the front page that it had to invent. */
-              <>
-                <span className="sg-gate-h">letters nobody sent</span>
-                <span className="sg-gate-m">written about people who never saw them</span>
-              </>
-            )}
-          </span>
-          <span className="sg-gate-g" aria-hidden="true">&#8594;</span>
-        </a>
-
-        <div className="wl-dock sg-dock sg-in" style={{ '--d': '720ms' }}>
-          <div className="wl-dock-veil" />
-          <div className="wl-dock-in">
-            {/* Two words and they are the act, not an invitation to consider
-                the act. Spec 7.1 bans "get started" for the reason this button
-                exists: the thing you came to do is the thing on the button.
-
-                Somebody who already has pings out lands on their own sky
-                instead, because a front door that sends a returning person
-                through the sign-up is a front door that has not looked. */}
-            <button
-              className="wl-pill is-light" type="button"
-              onClick={() => go(who.handleVerified ? 'sky' : 'place')}
-            >
-              {who.handleVerified ? 'your sky' : 'place a ping'}
-            </button>
+          <div className="hm-rules">
+            <div className="hm-rule">
+              <span className="hm-rule-k">a hash</span>
+              <span className="hm-read hm-rule-v">
+                is all the server keeps of who you entered. salted, one way, and never shown
+                to anybody.
+              </span>
+            </div>
+            <div className="hm-rule">
+              <span className="hm-rule-k">your @</span>
+              <span className="hm-read hm-rule-v">
+                is proved with one instagram message. there is no password and nothing to
+                install.
+              </span>
+            </div>
+            <div className="hm-rule">
+              <span className="hm-rule-k">for good</span>
+              <span className="hm-read hm-rule-v">
+                is how a name comes off. <Jump go={go} to="optout">take your handle off</Jump> and
+                it can never be entered again.
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* ── the wall ──
+          Named, explained, counted, with a door that says what it is. The
+          numbers are the wall's own, off its public index, and they are absent
+          rather than invented when there is nothing to count. */}
+      <section className="hm-wall">
+        <div className="hm-sec-head">
+          <Label>a campus surface</Label>
+          <Display size="l" as="h2">the wall at berkeley.</Display>
+          <p className="hm-read hm-sec-copy">
+            short anonymous letters from people who were there, each addressed to one
+            handle. the names are public. the letters open with a berkeley.edu address,
+            every one is screened before it appears, and the person it is about can take
+            it down.
+          </p>
+        </div>
+
+        <div className="hm-wall-body">
+          {wall ? (
+            <div className="hm-wall-facts">
+              <div className="hm-wall-fact">
+                <span className="hm-wall-fact-k">{wall.letters}</span>
+                <span className="hm-read hm-wall-fact-v">{wall.letters === 1 ? 'letter on the wall' : 'letters on the wall'}</span>
+              </div>
+              <div className="hm-wall-fact">
+                <span className="hm-wall-fact-k">{wall.handles}</span>
+                <span className="hm-read hm-wall-fact-v">{wall.handles === 1 ? 'name written to' : 'names written to'}</span>
+              </div>
+              <div className="hm-wall-fact">
+                <span className="hm-wall-fact-k is-h">{atHandle(wall.newest)}</span>
+                <span className="hm-read hm-wall-fact-v">the newest, {sinceAgo(wall.newestAt)}</span>
+              </div>
+            </div>
+          ) : (
+            <p className="hm-read hm-sec-copy">letters nobody sent, written about people who never saw them.</p>
+          )}
+          <ArrowLink href="/berkeley" className="hm-wall-go">open the wall</ArrowLink>
+        </div>
+
+        <Ticker />
+      </section>
+
+      {/* ── the foot ── */}
+      <footer className="hm-foot">
+        <div className="hm-foot-row">
+          <Lockup size={15} className="hm-foot-lock" />
+          <nav className="hm-foot-links" aria-label="the rest of it">
+            <a href="/berkeley">the wall at berkeley</a>
+            <Jump go={go} to="sky">your sky</Jump>
+            <Jump go={go} to="optout">take your handle off</Jump>
+            <a href="/terms">terms</a>
+            <a href="/privacy">privacy</a>
+            <a href="/data-deletion">data deletion</a>
+          </nav>
+        </div>
+        <Label className="hm-foot-note">double blind, both ways</Label>
+      </footer>
     </main>
   )
 }

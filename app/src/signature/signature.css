@@ -138,7 +138,9 @@
 }
 .sg-gate-l { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .sg-gate-h {
-  font-family: var(--f-display); font-size: 21px; line-height: 1.22;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 21px; line-height: 1.22;
   letter-spacing: -0.012em; color: var(--chalk);
 }
 /* A sentence, so it is set in the sentence face. Only the handle inside it is

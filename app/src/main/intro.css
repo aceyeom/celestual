@@ -1,0 +1,102 @@
+/* ── THE INTRO ───────────────────────────────────────────────────────────────
+   Main's overture. The layout of the wall's (wall.css, `.wl-ov`) with the
+   mark's sweep replaced by the liquid mark, which draws itself. Everything
+   that animates is transform, opacity or clip-path; nothing touches layout
+   after the first frame. Every value is a token from wall.css or a length. */
+
+.hi {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center;
+  pointer-events: none;
+  padding: 24px;
+}
+.hi-veil {
+  position: absolute; inset: 0;
+  background: #000;
+  opacity: 1;
+  transition: opacity 560ms var(--ease-out);
+}
+.hi.is-at4 .hi-veil { opacity: 0; }
+
+.hi-stage {
+  position: relative;
+  display: grid; place-items: center;
+  transition: transform 560ms var(--ease-out), opacity 440ms var(--ease-out);
+  will-change: transform, opacity;
+}
+.hi.is-at4 .hi-stage { transform: translate3d(0, -14px, 0) scale(1.055); opacity: 0; }
+
+/* the one bright thing on the screen: a luminance, behind the metal */
+.hi-bloom {
+  position: absolute; left: 50%; top: 50%;
+  width: 520px; height: 520px; max-width: 130vw; max-height: 130vw;
+  transform: translate3d(-50%, -50%, 0) scale(0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255, 244, 228, 0.14) 0%, rgba(255, 244, 228, 0.045) 34%, rgba(255, 244, 228, 0) 70%);
+  opacity: 0;
+  transition: opacity 900ms var(--ease), transform 1200ms var(--ease);
+}
+.hi.is-at1 .hi-bloom { opacity: 0.55; transform: translate3d(-50%, -50%, 0) scale(0.86); }
+.hi.is-at2 .hi-bloom,
+.hi.is-at3 .hi-bloom { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+.hi.is-at4 .hi-bloom { opacity: 0.34; transform: translate3d(-50%, -50%, 0) scale(1.14); }
+
+.hi-lock {
+  position: relative;
+  display: flex; align-items: center;
+  column-gap: 0.24em;
+  font-size: clamp(38px, 12vw, 68px);
+  color: var(--chalk);
+  transform: translate3d(var(--shift, 0px), 0, 0);
+  transition: transform 720ms var(--ease);
+  will-change: transform;
+}
+.hi.is-at2 .hi-lock,
+.hi.is-at3 .hi-lock,
+.hi.is-at4 .hi-lock { transform: none; }
+
+/* ── the mark ──
+   Larger than the wall's, because it is a material now and a material needs
+   room to read as one. It rises from a smaller, dimmer version of itself. */
+.hi-mark {
+  width: 1.9em; height: 1.9em;
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 620ms var(--ease), transform 760ms var(--ease);
+}
+.hi.is-at1 .hi-mark,
+.hi.is-at2 .hi-mark,
+.hi.is-at3 .hi-mark,
+.hi.is-at4 .hi-mark { opacity: 1; transform: none; }
+
+/* ── the name ── */
+.hi-word {
+  position: relative;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  letter-spacing: var(--track-display, -0.018em); line-height: 1; white-space: nowrap;
+  transform: translateY(-0.03em);
+  clip-path: inset(0 100% 0 -0.1em);
+  opacity: 0;
+  transition: clip-path 560ms var(--ease), opacity 180ms linear;
+}
+.hi.is-at2 .hi-word,
+.hi.is-at3 .hi-word,
+.hi.is-at4 .hi-word { clip-path: inset(0 -0.12em 0 -0.1em); opacity: 1; }
+
+.hi-sheen {
+  position: absolute; top: -0.24em; bottom: -0.24em; left: -0.6em; width: 0.6em;
+  pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg,
+    rgba(255, 244, 228, 0) 0%, rgba(255, 244, 228, 0.85) 52%, rgba(255, 244, 228, 0) 100%);
+  filter: blur(6px);
+}
+.hi.is-at2 .hi-sheen,
+.hi.is-at3 .hi-sheen { animation: wl-sheen 620ms var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hi .hi-stage, .hi .hi-lock { transform: none; }
+  .hi .hi-sheen { display: none; }
+  .hi .hi-veil { transition-duration: 300ms; }
+}

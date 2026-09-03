@@ -659,7 +659,7 @@ export function DmCode({ code, note = null }) {
           </a>
         </Label>
         <p className="wl-dm-said" role="status" aria-live="polite">
-          {copied ? 'the code is on your clipboard — paste it into the DM' : 'paste it into the DM and come back'}
+          {copied ? 'the code is on your clipboard. paste it into the DM' : 'paste it into the DM and come back'}
         </p>
       </div>
     </div>

@@ -400,11 +400,19 @@ async function fulfil(route) {
 // Every route docs/plan.md puts in Phase 6b's scope, plus the states of them
 // that only exist behind a gate.
 const ROUTES = [
-  { label: 'hero',          path: '/' },
+  // The intro, held on its assembled beat: the liquid mark and the name.
+  { label: 'intro',         path: '/?beat=3' },
+  // The hero scrolls: it is a page with three sections rather than one
+  // composition, so it is shot whole as well as at the fold. Without the intro
+  // in front of it, which has its own frame above.
+  { label: 'hero',          path: '/?nointro=1', full: true },
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },
   { label: 'sky',           path: '/sky' },
+  // The sky before a handle is proved on this device: where the front door's
+  // "sign in" lands, and the screen that asks the question.
+  { label: 'sky-prove',     path: '/sky', verified: false },
   { label: 'reveal',        path: '/reveal/jules.k' },
   { label: 'berkeley',      path: '/berkeley' },
   { label: 'find',          path: '/berkeley/find' },
@@ -485,19 +493,31 @@ for (const r of list) {
       })
     }
 
-    await page.addInitScript((DRAFT) => {
+    await page.addInitScript(({ DRAFT, VERIFIED }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
           member: 'someone@berkeley.edu',
-          verified: ['ace03d'],
+          verified: VERIFIED ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: [],
           proof: 'a'.repeat(64),
           draft: DRAFT,
         }))
         localStorage.setItem('celestual.session.v1', 'b'.repeat(64))
+        // The DM flow's own session (api/auth.js), which is what `heldProof`
+        // reads on the sky and the reveal. Without it those two screens hold
+        // a verified handle with no proof to spend, `celestual_my_pings` is
+        // never asked, and the reveal draws "nothing here" over a fixture that
+        // has a mutual in it.
+        if (VERIFIED) {
+          localStorage.setItem('celestual:auth', JSON.stringify({
+            verified: true, handle: 'ace03d', proof: 'a'.repeat(64), at: Date.now(),
+          }))
+        } else {
+          localStorage.removeItem('celestual:auth')
+        }
       } catch { /* private mode */ }
-    }, DRAFT)
+    }, { DRAFT, VERIFIED })
 
     await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
@@ -522,6 +542,11 @@ for (const r of list) {
     const file = join(out, `${r.label}-${v.name}.png`)
     await page.screenshot({ path: file })
     made.push(`design/shots/${r.label}-${v.name}.png`)
+    if (r.full) {
+      const whole = join(out, `${r.label}-${v.name}-full.png`)
+      await page.screenshot({ path: whole, fullPage: true })
+      made.push(`design/shots/${r.label}-${v.name}-full.png`)
+    }
 
     if (problems.length) {
       bad += problems.length
