@@ -32,7 +32,7 @@
 
 import { useEffect, useState } from 'react'
 import { Paper, Prose, Redacted } from '../wall/parts.jsx'
-import LiquidMark from './LiquidMark.jsx'
+import LiquidMark from '../wall/LiquidMark.jsx'
 
 const YOU = 'i have wanted to say this since the second week of term.'
 const THEM = 'i kept nearly saying something after class and then not saying it.'

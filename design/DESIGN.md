@@ -213,10 +213,22 @@ products.
 
 `LiquidMark` is the mark poured: a liquid metal shader cut to the mark's own
 silhouette. It is spent on exactly the moments that are the product's, and on
-nothing else: the intro, the seal on the hero's scene, the seal on a mutual row
-on the sky, and the reveal. Wherever the mark is a glyph rather than an event
-(the bar, a sheet's head, the favicon) it is `Ecliptic`, flat. Nothing glows
-behind the metal. The metal is the light.
+nothing else: the intro (on both surfaces), the seal on the hero's scene, the
+seal on a mutual row on the sky, and the reveal. Wherever the mark is a glyph
+rather than an event (the bar, a sheet's head, the favicon) it is `Ecliptic`,
+flat. Nothing glows behind the metal. The metal is the light.
+
+### 3.6 The brand, on every bar
+
+`Brand` in `parts.jsx` is the lockup as a control: the mark at 26px and the
+name beside it in the display face at 22px, both chalk while the row around
+them is ash. It is the way home on every bar in the product, the front door's,
+Main's flow screens' and the wall's, and it stands again at the head of the
+site's foot. It used to be three things: the word alone on the front door, the
+mark alone on Main's other screens, and the mark alone on the wall, which is
+how one product came to sign itself three ways. Off the wall it grows the
+chevron the wall's sheets use, so "back" and "home" are the same target in the
+same place.
 
 ---
 
@@ -329,7 +341,12 @@ it can. The empty field around the column is the design.
 
 At 900px and up three things change and nothing else: the wall becomes a two
 column spread, sheets stop being bottom sheets and become centred dialogs, and
-the core service puts its ring system beside its ledger.
+the core service puts its ring system beside its ledger. Main makes the same
+move at the same width: the hero's object goes beside its type, and the flow
+screens keep their 460px question on the left under a bar that spans the hero's
+1080, with the control following the question rather than docked to the bottom
+of a screen nine hundred pixels tall. A phone on its side (`max-height: 560px`
+and `min-width: 640px`) gets the spread early on both surfaces.
 
 ### 5.2 Radii
 
@@ -389,8 +406,9 @@ Chosen per element, never a default applied everywhere.
 | `wl-rise-sheet`, `wl-drop-sheet` | a sheet off and back to the bottom edge |
 | `wl-twinkle` | the sparkle, 3600ms, scale and rotation, staggered by `--spark-delay` |
 | `wl-converge`, `wl-land` | the letter going up and the card landing |
-| `wl-sheen`, `wl-lead`, `wl-breathe` | the overture, the circuit, the pulse |
-| the intro (`.hi`) | Main's overture, at `/`, once per tab. 2120ms: the liquid mark, drawn in the wall's own order. The band is uncovered round its circuit at 180, the star opens at 520, assembled at 1180, the lift at 1560. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
+| `wl-lead`, `wl-breathe` | the circuit, the pulse |
+| `wl-light-run` | the running light, round the edge of the thing it is on |
+| the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
 
@@ -409,12 +427,17 @@ carrying meaning that the layout should have carried.
 
 ## 7. The ground
 
-Three fixed layers under everything, in this order, never reordered.
+Four fixed layers under everything, in this order, never reordered. They are
+one component, `wall/ground.jsx`, mounted once per shell, and both shells mount
+it: Main used to mount a WebGL field and the wall a 2D one, at a different
+count and a different drift, and the two surfaces of one product had two
+different skies.
 
 | Layer | What it is |
 | --- | --- |
+| `.wl-dither` | the plasma. A fragment shader, two colours and both of them the void (`--void` and `--void-1`), a slow warp of noise between them rendered through an 8x8 ordered dither at two pixels. The dark has a current in it, the way the mark's metal does, at a fraction of the contrast. It renders at one device pixel per CSS pixel, capped at 1.4 megapixels, and pauses when the tab is hidden. Without WebGL2 it is simply absent |
 | `.wl-halo` | one enormous off centre warm radial at 7.5 percent, plus a cold one at 4.5. It is what stops the void reading as `#000` with things on it |
-| `.wl-starfield` | the point field. A canvas today, WebGL on the signature surfaces |
+| `.wl-starfield` | the point field, on the GPU (`wall/field.js`): depth per point, parallax off the hand, and a count that is a density, about 0.9 points per thousand CSS pixels on every screen, so a desktop is as dense as a phone. It used to be a floor of 320 points that only a phone ever hit, and the desktop sky was three times sparser |
 | `.wl-grain` | `feTurbulence` at `baseFrequency 0.84`, three octaves, desaturated, 3.6 percent, tiled at 190px |
 
 The grain is load bearing rather than decoration. Without it the black is a dead
@@ -432,7 +455,7 @@ Every one of these is on `design/components.html` in each of its states.
 
 | Component | Class | Notes |
 | --- | --- | --- |
-| Primary capsule | `.wl-pill.is-light` | chalk fill, ink type, 40px, 50px at `is-wide`. One per screen |
+| Primary capsule | `.wl-pill.is-light` | chalk fill, ink type, 40px, 50px at `is-wide`. One per screen. `is-lit` puts the running light on it |
 | Ghost capsule | `.wl-pill.is-ghost` | hairline, ash type, 32px |
 | Tag capsule | `.wl-pill.is-tag` | not a control. `pointer-events: none` |
 | Arrow link | `.wl-arrow` | display face. The arrow travels on hover, the word does not |
@@ -455,7 +478,9 @@ had already said it. The role went with the caller.
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
 | You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
 | Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised |
-| Top bar | `.wl-top` | the mark is the way home, and it is chalk while everything beside it is ash |
+| Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash |
+| Foot | `.wl-colophon`, `SiteFoot` | the foot of the site, under the front door, under the wall, and restated in `legal.css` under the legal pages: the lockup and the sentence, the product's addresses, the legal pages, and the company (`COMPANY` in `parts.jsx`: the name, the address, the telephone and the street). The one place the company is written as a company |
+| Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Two grounds: `star`, the dark plate with star shaped holes the result card waits on, and `chalk`, the pill's own fill, so the light shows around the capsule as a halo. Spent on the result card while it is looking, on the pill that places a ping (`Pill lit`), and on the mutual row on the sky |
 
 ### 8.3 Fields
 

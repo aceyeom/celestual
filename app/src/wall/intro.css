@@ -1,8 +1,8 @@
 /* ── THE INTRO ───────────────────────────────────────────────────────────────
-   Main's overture: the liquid mark, drawn in the order the wall's overture
-   assembles in, and nothing else on the screen. Everything that animates is
-   transform, opacity or a dash offset; nothing touches layout after the
-   first frame. Every value is a token from wall.css or a length. */
+   The liquid mark, drawn in the order the mark assembles in, and nothing else
+   on the screen. Over the front door and over the wall, the same. Everything
+   that animates is transform, opacity or a dash offset; nothing touches layout
+   after the first frame. Every value is a token from wall.css or a length. */
 
 .hi {
   position: fixed; inset: 0; z-index: 90;
@@ -11,24 +11,31 @@
   padding: 24px;
 }
 /* pure black, and the only pure black in the build: there is nothing in this
-   room yet, and the void it dissolves into is three values up from here */
+   room yet, and the void it dissolves into is three values up from here.
+
+   The fade is a little longer than the stage's: the black goes as the page's
+   own entrance is already running under it, so the two read as one movement.
+   `--ease-out`, because a fade that decelerates into the page is a light
+   coming on, and one on `--ease` snaps. */
 .hi-veil {
   position: absolute; inset: 0;
   background: #000;
   opacity: 1;
-  transition: opacity 560ms var(--ease-out);
+  transition: opacity 720ms var(--ease-out);
+  will-change: opacity;
 }
 .hi.is-at4 .hi-veil { opacity: 0; }
 
 .hi-stage {
   position: relative;
   display: grid; place-items: center;
-  transition: transform 560ms var(--ease-out), opacity 440ms var(--ease-out);
+  transition: transform 900ms var(--ease), opacity 560ms var(--ease-out);
   will-change: transform, opacity;
 }
-/* the lift: up and slightly toward the viewer while the black goes with it,
-   so the two are one movement and not a fade over a fade */
-.hi.is-at4 .hi-stage { transform: translate3d(0, -14px, 0) scale(1.055); opacity: 0; }
+/* the lift: up and slightly toward the viewer while the black goes with it.
+   The travel runs longer than the dissolve, so the mark is still rising as it
+   goes rather than stopping and then vanishing. */
+.hi.is-at4 .hi-stage { transform: translate3d(0, -22px, 0) scale(1.06); opacity: 0; }
 
 /* ── the mark ──
    Alone on the screen, so it stands larger than the lockup's mark did: a
@@ -40,12 +47,17 @@
 }
 .hi-mark > canvas, .hi-mark > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
 
-/* the cover, and the two cuts in it */
+/* the cover, and the two cuts in it. It is gone before the lift: see Intro.jsx
+   on the square it would otherwise draw over the page. */
 .hi-cover {
   position: absolute; inset: 0;
   width: 100%; height: 100%; display: block;
   overflow: visible;
+  transition: opacity 320ms var(--ease-out);
 }
+.hi.is-at3 .hi-cover,
+.hi.is-at4 .hi-cover { opacity: 0; }
+
 /* the circuit. `pathLength=100` normalises the dash to a percentage, so the
    number here is a share of the orbit rather than a length that would have to
    be recomputed if the ring's radius ever moved. Slow at both ends. */

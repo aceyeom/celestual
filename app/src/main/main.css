@@ -170,24 +170,33 @@
 .mn-list .wl-row { margin-left: -10px; margin-right: -10px; width: auto; }
 
 /* The one row on this screen that is news. Set apart from the standing rows
-   by ground rather than by colour, and it wears the seal: the mark as a
-   material, which is what a mutual is drawn as everywhere it is drawn. */
+   by ground rather than by colour: it stands on the result card's plate, the
+   dark one with the star shaped holes, with the running light behind it
+   (wall.css `.wl-light`), and it wears the seal: the mark as a material,
+   which is what a mutual is drawn as everywhere it is drawn. The light runs
+   slower here than on the card, because nothing is being waited for. */
 .mn-mutual {
+  --light-w: 150px;
+  --light-t: 4400ms;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 13px;
   width: 100%;
   padding: 13px 14px 13px 12px;
-  border: 1px solid var(--hair);
+  border: 0;
   border-radius: var(--r-card);
-  background: rgba(244, 241, 234, 0.035);
+  background: none;
+  color: var(--chalk);
   text-align: left;
-  transition: border-color 240ms var(--ease-out), background 240ms var(--ease-out);
+  transition: transform 220ms var(--ease);
 }
-.mn-mutual:hover {
-  border-color: rgba(244, 241, 234, 0.2);
-  background: rgba(244, 241, 234, 0.055);
-}
+.mn-mutual > :not(.wl-light) { position: relative; z-index: 2; }
+.mn-mutual:hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); }
+.mn-mutual:hover .wl-plate svg { color: var(--void-2); }
+.mn-mutual:active { transform: scale(0.99); }
 .mn-mutual > .wl-who { flex: 1 1 auto; min-width: 0; }
 .mn-mutual .wl-who-at { color: var(--chalk); }
 .mn-mutual-seal { flex: 0 0 auto; display: block; width: 44px; height: 44px; }
@@ -198,6 +207,32 @@
 .mn-cardsheet { padding-top: 4px; }
 .mn-cardsheet .wl-paper { margin-top: 4px; }
 .mn-card-say { padding: 18px 2px 0; }
+
+/* ── wide ──
+   The same three changes the hero makes at 900, on the flow screens: the bar
+   spans the hero's width, so walking from the front door into the flow does
+   not move the brand; the question keeps the column it was designed for, on
+   the left, where the hero's type block is; and the foot stops docking to the
+   bottom of a screen that is nine hundred pixels tall and follows the question
+   instead. A control docked five hundred pixels under the thing it acts on is
+   a control somebody has to go and find. */
+@media (min-width: 900px) {
+  .mn-page { max-width: 1080px; padding: 0 40px; }
+  .mn-top { padding-top: calc(22px + env(safe-area-inset-top, 0px)); }
+  .mn-mid {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 460px;
+    padding: clamp(40px, 9vh, 90px) 0 12px;
+  }
+  .mn-foot {
+    width: 100%;
+    max-width: 460px;
+    padding-top: 26px;
+  }
+  /* the flow's sheet is a dialog at this width (wall.css), and nothing here
+     has to change for it */
+}
 
 /* ── Phase 8: the three addresses that arrive from outside ────────────────────
    /optout, /copy and /signin. Nothing here declares a token; what is here is

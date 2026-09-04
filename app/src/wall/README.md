@@ -191,12 +191,12 @@ line: the heaviest object on the screen, sitting on the emptiest row.
 
 ## Navigation
 
-Three targets, in the same two places, on every screen of the wall, and not one
-word among them:
+Three targets, in the same two places, on every screen of the wall, and the only
+word among them is the name:
 
 | | |
 | --- | --- |
-| ✦ | **the mark**, top left. `Ecliptic`, at 26px and always chalk while the row around it is ash — it is the one object that says which product this is, and at the bar's own colour it was the faintest thing in the corner. On the wall it goes to the top; off it, it grows a chevron and goes back |
+| ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it goes to the top; off it, it grows a chevron and goes back |
 | ⌕ | **look for a name** |
 | ✎ | **write a letter** |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
@@ -223,9 +223,12 @@ on each of them.
 ## The layout
 
 ```
-index.jsx    the shell — routing, the cut, the persistent star field, ?s=,
-             the tab's icon, and the overture
-Overture.jsx the first second, on black. Once per tab, skippable on any key
+index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
+             and the intro
+Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
+             skippable on any key, and the same intro Main plays at `/`
+ground.jsx   the room: the plasma, the halo, the field (field.js) and the
+             grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
 router.js    ten routes, no dependency
 art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
@@ -465,40 +468,32 @@ right-hand column runs the full height. A four-row ledger cannot.
 The rule under the date separates the masthead from the ledger, so on a spread
 — where the ledger is in the other column — it goes.
 
-## The overture
+## The intro
 
-The mark assembling itself on an empty black screen, once per tab, before
-anything else exists. Not a spinner and not a splash — nothing is loading
-behind it and it never claims to be.
+The mark, poured, on an empty black screen, once per tab, before anything else
+exists. Not a spinner and not a splash: nothing is loading behind it and it
+never claims to be. It is `Intro.jsx`, and it is the same two seconds Main
+plays at `/`: the wall used to open on an overture of its own, a flat mark
+assembling beside the name with a bloom behind it, and the two surfaces of one
+product opened on two different logos.
 
 | | |
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land |
-| `200ms` | **the circuit.** A mask runs a 24-unit stroke along the band's own centreline with its dash offset driven to zero, so the ring is *drawn* round its orbit rather than faded up. It travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close |
-| `560ms` | **the star**, arriving while the circuit is still closing behind it — up off nothing, with a few degrees bleeding out. A shape that settles reads as an object; a shape that fades in reads as an image of one |
-| `820ms` | **the name.** The word wipes out to the right of the mark under a travelling sheen, and the whole lockup slides left by exactly half the word as it comes, so the composition is centred at the start, at the end, and at every frame between. That slide is the most expensive-looking thing here and it costs one transform |
-| `1380ms` | **assembled.** The wipe lands *on* this beat rather than after it, so the bloom reaching full and the word arriving whole are one event. Nothing moves again until the lift |
-| `1640ms` | **the lift**, after 260ms of stillness. The lockup drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone. One movement, not two screens |
-| `2200ms` | the black is gone |
+| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close |
+| `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out |
+| `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
+| `1560ms` | **the lift**, after a hold. The mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone. One movement, not two screens |
+| `2280ms` | the black is gone |
 
-The whole cut is **2.2 seconds**, and 440ms of that is new. It used to run 1760
-and the lift began 140ms *before* the word had finished wiping in — so the one
-moment the mark was ever whole never existed on screen. That reads as fast
-rather than as brief, which are not the same quality: fast is something you
-missed, brief is something that was over. Almost none of the extra time went
-into slowing the assembly down (that moved by ~180ms). It went into the hold,
-which is the only frame in the sequence doing the actual job and the one the
-old timing did not have.
+No name, because the name is in the bar of the page underneath; no bloom,
+because a material with a current in it is already the light.
 
 Everything that animates is a transform, an opacity or a dash offset; nothing
-touches layout after the first frame. The name waits for the real Didone (up to
-a 900ms cap) before it starts, because a word that arrives as Georgia and swaps
-to Newsreader halfway through its own reveal gives the whole thing away. The slide
-distance is measured rather than guessed, and re-measured once the face lands.
-
-It is skippable on any tap or key, it never plays twice in a tab, and under
-`prefers-reduced-motion` it renders assembled and lifts almost at once. A brand
-animation that cannot be got out of is a toll gate.
+touches layout after the first frame. It is skippable on any tap or key, it
+never plays twice in a tab, and under `prefers-reduced-motion` it renders
+assembled and lifts almost at once. A brand animation that cannot be got out of
+is a toll gate.
 
 ## The design, and where it comes from
 
@@ -554,11 +549,10 @@ The phone is the one this was designed for and it does not change.
 ## What it touches
 
 This tree, and one line elsewhere: `app/src/main.jsx` forks on `/berkeley` and
-lazy-imports it. Nothing in production imports from `src/wall/`; the wall is a
-separate chunk (~28 kB gzip of JS, ~10 kB of CSS) and the four Google faces it
-needs are injected on mount and removed on unmount, so neither reaches anybody
-who did not scan a piece of paper. No shared component, no global token, no
-`vercel.json`, no `vite.config.js`.
+lazy-imports it. The wall is a separate chunk and the four faces it needs are
+injected on mount and removed on unmount. Since the rebuild this tree is also
+THE SYSTEM: Main imports its parts, its ground, its intro and its stylesheet,
+which is what keeps the two surfaces one product.
 
 ## Known, and deliberately left
 

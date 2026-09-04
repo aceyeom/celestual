@@ -29,12 +29,12 @@
 // door, because the thing to do is the thing to do.
 import { useEffect, useState } from 'react'
 import {
-  Display, Label, Pill, Prose, PersonRow, Who, Face, Sheet, SheetHead, SheetFoot, Paper,
+  Display, Label, Pill, Prose, PersonRow, Who, Face, Sheet, SheetHead, SheetFoot, Paper, Light,
 } from '../wall/parts.jsx'
 import { atHandle, dateline } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
 import { myPings, renew, release, daysLeft } from './data.js'
-import LiquidMark from './LiquidMark.jsx'
+import LiquidMark from '../wall/LiquidMark.jsx'
 import TopBar from './TopBar.jsx'
 import Prove from './Prove.jsx'
 
@@ -94,10 +94,13 @@ export default function Sky({ go, who, refreshWho, still = false }) {
 
           {/* ── the mutuals ──
               First, and set apart, because it is the only thing on this
-              screen that is news. The seal at the end is the mark poured, the
-              same object the front door lights when its two cards open. */}
+              screen that is news: it wears the running light, the one the
+              result card waits with, on the plate with the star shaped holes.
+              The seal at the end is the mark poured, the same object the
+              front door lights when its two cards open. */}
           {mutuals.map((p) => (
             <button key={p.id} type="button" className="mn-mutual" onClick={() => go('reveal', p.to)}>
+              <Light on={!still} />
               <Who handle={p.to} size={40} meta="both of you" />
               <span className="mn-mutual-seal" aria-hidden="true">
                 <LiquidMark size="100%" speed={0.5} still={still} />
@@ -130,7 +133,7 @@ export default function Sky({ go, who, refreshWho, still = false }) {
         </div>
 
         <div className="mn-foot">
-          <Pill tone="light" wide onClick={() => go('place')}>place a ping</Pill>
+          <Pill tone="light" wide lit onClick={() => go('place')}>place a ping</Pill>
         </div>
       </main>
 

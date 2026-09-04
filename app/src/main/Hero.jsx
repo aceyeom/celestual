@@ -5,12 +5,14 @@
 // Main's hero, at `/`. One of the two surfaces docs/rebuild-spec.md 7.1 gives
 // the artistry to, and the one a person meets before they know what this is.
 //
-// ── one screen ──────────────────────────────────────────────────────────────
-// It does not scroll. It was a page: a hero, a ledger of how it works, a
-// section on the wall with its counts and a ticker, and a foot, and it said
-// everything three times on the way down. A front door has one thing to say
-// and one thing to do, so this is: the sentence, one line under it, the field
-// and the act, three facts, the object, and the way to the rest.
+// ── one screen, and the foot under it ───────────────────────────────────────
+// It was a page: a hero, a ledger of how it works, a section on the wall with
+// its counts and a ticker, and a foot, and it said everything three times on
+// the way down. A front door has one thing to say and one thing to do, so the
+// first screen is: the sentence, one line under it, the field and the act,
+// three facts, the object. Under that, and only under it, the foot of the
+// site: the same block the wall and the legal pages end on, with the company
+// on it. A person who scrolls is a person looking for it.
 //
 // ── what is deliberately not here ───────────────────────────────────────────
 // No testimonial, no count of people, no "as seen on", no second heading that
@@ -20,23 +22,10 @@
 
 import { useState } from 'react'
 import { Sparkle } from '../wall/art.jsx'
-import { Label, Pill, HandleField, HandleCard, Me } from '../wall/parts.jsx'
+import { Label, Pill, HandleField, HandleCard, Me, Brand, SiteFoot } from '../wall/parts.jsx'
 import { normHandle, validHandle } from '../wall/data.js'
-import { href } from './router.js'
 import Scene from './Scene.jsx'
 import './hero.css'
-
-// A link to one of Main's own addresses. It is a real anchor, so it opens in a
-// new tab, copies and reads out like one, and a plain click stays inside the
-// shell rather than reloading the app.
-function Jump({ go, to, id, children, ...rest }) {
-  const onClick = (e) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return
-    e.preventDefault()
-    go(to, id)
-  }
-  return <a href={href(to, id)} onClick={onClick} {...rest}>{children}</a>
-}
 
 export default function Hero({ go, who, still = false }) {
   // ── the ask ──
@@ -53,15 +42,26 @@ export default function Hero({ go, who, still = false }) {
     go('place', h)
   }
 
+  // The brand is a real anchor to `/`, so it opens in a new tab and copies like
+  // one, and a plain click stays inside the shell rather than reloading the app.
+  const home = (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return
+    e.preventDefault()
+    go('hero')
+  }
+
   return (
     <main className="hm-page">
+      {/* ── the fold ──
+          The first screen: the bar, the type block, the act and the object,
+          sharing the height of the viewport between them. The foot of the site
+          is under it, not in it, so the object keeps the room it was given. */}
+      <div className="hm-fold">
       {/* ── the bar ──
-          The word, because this is the one screen that has to say the name.
-          Then the wall, and you. */}
+          The brand, which is the same lockup every bar in the product
+          carries. Then the wall, and you. */}
       <header className="hm-top hm-in" style={{ '--d': '0ms' }}>
-        <Jump go={go} to="hero" className="hm-home" aria-label="celestual, the front">
-          <span className="hm-word">celestual.</span>
-        </Jump>
+        <Brand href="/" onClick={home} className="hm-home" />
         <nav className="hm-nav" aria-label="celestual">
           <a className="hm-navlink" href="/berkeley">the wall</a>
           <Me who={who} onClick={() => go('sky')} />
@@ -91,7 +91,9 @@ export default function Hero({ go, who, still = false }) {
             />
             <HandleCard handle={to} onSelect={submit} />
             <div className="hm-ask-row">
-              <Pill tone="light" onClick={submit}>place a ping</Pill>
+              {/* Lit: the running light, the one the result card waits with,
+                  on the one act on the screen. */}
+              <Pill tone="light" lit onClick={submit}>place a ping</Pill>
               <p className="hm-said" role="status" aria-live="polite">{said}</p>
             </div>
           </form>
@@ -109,17 +111,12 @@ export default function Hero({ go, who, still = false }) {
           <Scene still={still} />
         </div>
       </section>
+      </div>
 
-      {/* ── the foot ── */}
-      <footer className="hm-foot hm-in" style={{ '--d': '480ms' }}>
-        <nav className="hm-foot-links" aria-label="the rest of it">
-          <a href="/berkeley">the wall at berkeley</a>
-          <Jump go={go} to="sky">your sky</Jump>
-          <Jump go={go} to="optout">take your @ off</Jump>
-          <a href="/terms">terms</a>
-          <a href="/privacy">privacy</a>
-        </nav>
-      </footer>
+      {/* ── the foot ──
+          The site's, shared with the wall and the legal pages. Plain clicks on
+          Main's own addresses stay in the shell. */}
+      <SiteFoot go={go} className="hm-in" />
     </main>
   )
 }

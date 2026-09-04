@@ -1,55 +1,70 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE INTRO, the first two seconds of the front door                      ║
+// ║  THE INTRO, the first two seconds of either surface                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The wall has an overture: the mark assembling itself on black, once per tab,
-// before the page exists. This is Main's, and it is the same assembly with one
-// difference: the mark is not drawn here, it is poured. LiquidMark renders the
-// silhouette as a metal surface with a current under it, and this is the one
-// place in the product that material is spent at size.
+// The mark, poured, on black, once per tab, before the page exists. It plays
+// over the front door at `/` and over the wall at `/berkeley`, and it is the
+// same sequence on both: the wall used to have an overture of its own, a flat
+// mark assembling beside the name with a bloom behind it, and Main had this,
+// and the two surfaces of one product opened on two different logos. Now they
+// open on one. LiquidMark renders the silhouette as a metal surface with a
+// current under it, and this is the one place in the product that material is
+// spent at size.
 //
-// Nothing else is on the screen. No name, because the name is in the corner of
-// the page underneath; no bloom, because a material with a current in it is
-// already the light. The logo, and the black it comes out of.
+// Nothing else is on the screen. No name, because the name is in the bar of
+// the page underneath on both surfaces now; no bloom, because a material with
+// a current in it is already the light. The logo, and the black it comes out
+// of.
 //
 // ── how a shader is drawn in ────────────────────────────────────────────────
-// The overture reveals its ring with a mask sweeping the band's own centreline
-// and its star with a scale up off nothing. A fragment shader cannot be masked
-// that way, so the same two moves are made with a COVER: a black sheet over
-// the metal, on the black veil, cut away by one SVG mask that carries both
-// sweeps. The sweep runs the route the ring actually takes (ECL_SPINE, clipped
-// to the band) and the star opens as a hole the star's own shape, so the
-// metal arrives in the order the overture assembles in, and out of the same
-// nine constants.
+// The old overture revealed its ring with a mask sweeping the band's own
+// centreline and its star with a scale up off nothing. A fragment shader
+// cannot be masked that way, so the same two moves are made with a COVER: a
+// black sheet over the metal, on the black veil, cut away by one SVG mask that
+// carries both sweeps. The sweep runs the route the ring actually takes
+// (ECL_SPINE, clipped to the band) and the star opens as a hole the star's own
+// shape, so the metal arrives in the order the mark assembles in, and out of
+// the same nine constants.
 //
-// ── the beats: 2120ms, first frame to bare page ─────────────────────────────
+// ── the cover leaves before the lift does ───────────────────────────────────
+// The cover is a black square a fifth wider than the mark, and once the mark
+// is assembled every cut in it is open, so the square is doing nothing but
+// being black on black. It used to lift WITH the stage, and for the half
+// second the black veil and the stage were both on their way out at different
+// rates the square was visible as a darker square over the page, with its
+// edge, around the mark. So it fades out on the assembled beat, while the veil
+// is still opaque and nothing can be seen changing, and what lifts is the
+// metal alone.
+//
+// ── the beats: 2280ms, first frame to bare page ─────────────────────────────
 //
 //   0 ·    0ms   black. A held frame before anything moves.
 //   1 ·  180ms   THE CIRCUIT. The band is uncovered round its orbit, 900ms,
 //                slow at both ends, and the metal under it is already flowing.
 //   2 ·  520ms   THE STAR. It opens while the circuit is still closing behind
 //                it, up off nothing with a few degrees bleeding out.
-//   3 · 1180ms   ASSEMBLED. Nothing moves but the metal.
+//   3 · 1180ms   ASSEMBLED. Nothing moves but the metal, and the cover goes.
 //   4 · 1560ms   THE LIFT, after a hold. The mark drifts up and dissolves
-//                while the black goes with it, and the hero is already rising
+//                while the black goes with it, and the page is already rising
 //                underneath by the time the black is half gone.
-//     · 2120ms   the black is gone.
+//     · 2280ms   the black is gone.
 //
 // ── what it refuses to do ───────────────────────────────────────────────────
-// It plays once per tab: walking back to `/` from the sky does not replay it,
-// a refresh does. It is skippable on any tap or key. Under prefers-reduced-
-// motion it renders assembled, holds a beat, and lifts; the metal stands
-// still. And it never plays over any address but the front door.
+// It plays once per tab: walking back to the front from the sky, or back to
+// the wall from a letter, does not replay it; a refresh does. It is skippable
+// on any tap or key. Under prefers-reduced-motion it renders assembled, holds
+// a beat, and lifts; the metal stands still.
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { ECL, ECL_SPINE, ringPath, starPath } from '../wall/mark.js'
+import { ECL, ECL_SPINE, ringPath, starPath } from './mark.js'
 import LiquidMark from './LiquidMark.jsx'
 import './intro.css'
 
 //                 0    1    2     3     4
 const BEATS = [0, 180, 520, 1180, 1560]
 const LIFT = 4
-const OUT = 560
+// How long the black takes to leave. 1560 + 720 = 2280.
+const OUT = 720
 
 // The band, dilated a hair, so the sweep's cut clears the metal's own edge.
 const BAND = ringPath(1.6)
@@ -88,7 +103,7 @@ export default function Intro({ reduce, onReveal, onDone }) {
       return () => timers.current.forEach(clearTimeout)
     }
     // Geometry only, so every beat can start on the first frame: there is no
-    // face to wait for any more.
+    // face to wait for.
     BEATS.forEach((ms, i) => {
       if (i === 0) return
       timers.current.push(setTimeout(() => setAt(i), ms))

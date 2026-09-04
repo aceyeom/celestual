@@ -48,7 +48,7 @@ import { Who, useProfile } from '../wall/parts.jsx'
 import { normHandle, atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
 import { myPings, sinceAgo } from './data.js'
-import LiquidMark from './LiquidMark.jsx'
+import LiquidMark from '../wall/LiquidMark.jsx'
 import TopBar from './TopBar.jsx'
 
 // One side of it: the paper, the person, the line. The person is parts.jsx

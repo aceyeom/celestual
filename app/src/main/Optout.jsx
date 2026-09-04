@@ -19,7 +19,7 @@
 // deliberate. Requiring somebody to verify a handle before they can refuse the
 // product would mean requiring them to use it first.
 import { useState } from 'react'
-import { Display, Label, Pill, Prose, Rule, HandleField } from '../wall/parts.jsx'
+import { Display, Label, Pill, Prose, Rule, HandleField, COMPANY } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
 import { suppressHandle } from '../api/celestual.js'
 import { normHandle } from '../api/celestual.js'
@@ -53,7 +53,7 @@ export default function Optout({ go, who }) {
           <Label><Sparkle size={11} />done</Label>
           <Display size="m" as="h1">@{done} is out.</Display>
           <Prose className="mn-copy">
-            nobody can enter it again. to undo this, write to hello@celestual.us.
+            nobody can enter it again. to undo this, write to {COMPANY.email}.
           </Prose>
         </div>
         <div className="mn-foot">
