@@ -40,6 +40,15 @@ find still places. The app says so once, in one line, and the button still works
 It answers about a handle already typed **in full**, which is the difference
 between confirming a name and shopping for one.
 
+**It asks on commit.** Nothing that fires on a pause in the typing may reach
+Apify. While a person types, the field only peeks the cache, which is free and
+instant for any handle anybody has committed before. The lookup that costs
+happens when they press: Enter, the button, or the card. That press draws the
+card in its looking state; the next press, on the card or the button, is the
+act. Two taps, and the second one is against a person. Faces drawn elsewhere
+in the product (`useProfile`) peek too, and a handle that was never committed
+draws its monogram.
+
 **It shows no numbers.** A display name, a badge, a face. No followers, no post
 count, no engagement. This product does not tell anybody how popular anybody is.
 
@@ -169,11 +178,13 @@ run is given 30 seconds on Apify's side (`timeout=30` on the run) so a run we
 stop waiting for is killed rather than left to finish and bill; `maxItems=1`
 caps a run at one billed result whatever the actor decides to return.
 
-**A field waits a second before asking.** At 300ms the ledger showed `david`,
-`david_`, `david_j`, `david_jh` and `david_jhmun` billed one after another on
-the way to a single typed name, because nearly every short prefix is somebody's
-real account. `RESOLVE_DEBOUNCE_MS` in `api/handles.js` is one second now, and
-a cache hit still lands inside two.
+**Nothing is asked while somebody types.** The ledger showed `dav`, `davi`,
+`david`, `david_`, `david_j`, `david_jh` and `david_jhmun` each run through the
+actor on the way to a single typed name, because a debounce fires on every
+pause for breath and nearly every short prefix is somebody's real account. A
+debounce, at any length, cannot tell a pause from an end. So the field peeks
+the cache while typing (`peek: true`, free, never Apify) and asks only on the
+person's own press. See section 2, "It asks on commit".
 
 On a limit the function answers **429** with `retry_after`, the seconds until the
 oldest counted call ages out. The UI shows a plain message built from that

@@ -8,10 +8,12 @@
 //
 // ── ONE ENDPOINT ─────────────────────────────────────────────────────────────
 //
-//   POST { handle }
+//   POST { handle, peek? }
 //     { ok:true, found:true,  handle, display_name, is_verified, avatar,
 //                             cached, provider }
 //     { ok:true, found:false, handle, provider }        nobody by that name
+//     { ok:true, found:null,  handle, provider:false }  a peek, and the cache
+//                                                       had nothing. Not a miss.
 //     { ok:false, error:'rate', retry_after }           429, with the seconds
 //     { ok:false, error:'provider' }                    Apify timed out or
 //                                                       failed. NOT a miss.
@@ -26,6 +28,13 @@
 //
 // There is no avatar proxy any more. `avatar` is a public Supabase Storage URL
 // the browser fetches directly, and it does not expire. See THE FACE below.
+//
+// `peek:true` asks only what the cache already holds. It never reaches Apify,
+// never counts against a cap, and answers found:null when there is nothing,
+// which the client draws as nothing. The field sends it while a person is
+// still typing; the real lookup is sent when they commit. That is the rule
+// that stops `dav`, `davi` and `david_j` each running the actor on the way to
+// one typed name (see app/src/api/handles.js).
 //
 // A `found:false` is NOT a refusal and the client must not treat it as one. The
 // product's rule is that a lookup never blocks the act: if we cannot find the
@@ -543,6 +552,13 @@ Deno.serve(async (req) => {
   // is a hit like any other.
   if (cached && !cached.avatar_stale) {
     return json(req, shapeOut(cached, true, false), 200, cookieHeader);
+  }
+
+  // A peek ends here whatever happened above: a row wanting a fresher face is
+  // still a row, and no row is "nothing yet", never "nobody".
+  if (body.peek === true) {
+    if (cached) return json(req, shapeOut(cached, true, false), 200, cookieHeader);
+    return json(req, { ok: true, found: null, handle, provider: false }, 200, cookieHeader);
   }
 
   // A handle we failed to find a few minutes ago, held in this isolate only.

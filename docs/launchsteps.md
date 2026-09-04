@@ -459,7 +459,8 @@ running on production traffic.
       abandoned run is killed rather than billed, sends `maxItems=1`, refuses
       to cache an empty item, reports `provider` beside `cached`, and reads the
       proxy secret.
-- [ ] **Deploy the app.** Brings `api/resolve.js` and the one second debounce.
+- [ ] **Deploy the app.** Brings `api/resolve.js`, and the rule that a field
+      asks Apify only when a person presses: typing only peeks the cache.
 - [ ] **Set `RESOLVE_PROXY_SECRET`** on both sides, above.
 - [ ] Then read the `ip` rows in `handle_search_events` after a lookup from a
       phone: they should be the phone's address, not an AWS one.

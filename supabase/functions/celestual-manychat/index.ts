@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       // time; this is the first legal moment to hand it over.
       return answer({
         ok: true, status: 'verified', handle: data.handle, mutual: news !== '',
-        reply: withMutual(`✦ @${data.handle} is verified on CELESTUAL — head back to the app to finish.`, news),
+        reply: withMutual(`✦ @${data.handle} is verified on Celestual.`, news),
       });
     }
     if (data?.already_verified) alreadyVerified = typeof data.handle === 'string' ? data.handle : username;

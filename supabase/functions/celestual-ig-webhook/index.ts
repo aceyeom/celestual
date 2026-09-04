@@ -113,7 +113,7 @@ async function sendDm(igsid: string, text: string) {
 }
 
 const sendConfirm = (igsid: string, handle: string) =>
-  sendDm(igsid, `✦ @${handle} is verified on CELESTUAL. You can close this and finish sealing your star.`);
+  sendDm(igsid, `✦ @${handle} is verified on Celestual.`);
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);

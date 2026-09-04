@@ -14,6 +14,8 @@
 //                   metal does, and at a fraction of the contrast.
 //   the halo        one enormous off centre warm radial and a cold one, felt
 //                   more than seen
+//   the nebula      the galaxy's pink, very faded, sliding with the far stars
+//                   at the field's own pace (wall.css `.wl-nebula`)
 //   the field       the stars, on the GPU (field.js), with depth and parallax
 //   the grain       feTurbulence at three and a half percent, so the black is
 //                   a room rather than a screen that is off
@@ -39,7 +41,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Dithering } from '@paper-design/shaders-react'
-import { mountField } from './field.js'
+import { mountField, PACE } from './field.js'
 
 let gl2 = null
 export function hasWebGL2() {
@@ -60,12 +62,45 @@ export function hasWebGL2() {
 // the scale, and it read as marble: a plasma that can be SEEN is a
 // background, and this is meant to be the room's own wall, felt.
 const BACK = '#08070B'
-const FRONT = '#0E0D13'
+// The front carries a breath of the nebula's pink, one or two counts of red
+// over the blue black, so the current in the plasma is the same colour as
+// the haze drifting over it rather than a colder thing under it.
+const FRONT = '#110D15'
+
+// The nebula crosses one viewport in this long. The far end of the field's
+// drift crosses one in 250 seconds (field.js, 0.004 widths a second); the
+// nebula sits behind the farthest star and goes a little slower still.
+const NEBULA_LOOP_MS = 330_000
 
 export default function Ground({ pace = 'drift', lit = true, still = false, className = '' }) {
   const canvas = useRef(null)
   const field = useRef(null)
+  const nebula = useRef(null)
+  const drift = useRef(null)
   const gl = hasWebGL2()
+
+  // ── the nebula ──
+  // One slide to the right by a viewport width, looping, driven by the Web
+  // Animations API so its rate can follow the field's pace without a restart.
+  // Under reduced motion (`still`) it does not move, like the field.
+  useEffect(() => {
+    const el = nebula.current
+    if (!el || still || typeof el.animate !== 'function') return undefined
+    const a = el.animate(
+      [{ transform: 'translate3d(-50%, 0, 0)' }, { transform: 'translate3d(0, 0, 0)' }],
+      { duration: NEBULA_LOOP_MS, iterations: Infinity, easing: 'linear' },
+    )
+    drift.current = a
+    return () => { a.cancel(); drift.current = null }
+  }, [still])
+
+  useEffect(() => {
+    const a = drift.current
+    if (!a) return
+    const rate = PACE[pace] ?? 1
+    if (rate === 0) a.pause()
+    else { a.playbackRate = rate; a.play() }
+  }, [pace])
 
   // ── the field ──
   // One instance, for the life of the shell. That is what makes it the room
@@ -115,6 +150,7 @@ export default function Ground({ pace = 'drift', lit = true, still = false, clas
         />
       )}
       <div className="wl-halo" />
+      <div ref={nebula} className="wl-nebula" />
       <canvas ref={canvas} className={`wl-starfield${lit ? '' : ' is-hidden'}`} />
       <div className="wl-grain" />
     </div>

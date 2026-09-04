@@ -140,8 +140,8 @@
 }
 
 /* ═══ THE GROUND ═══════════════════════════════════════════════════════════
-   Three fixed layers under everything, in this order and never reordered:
-   the halo, the field, the grain. */
+   Fixed layers under everything, in this order and never reordered: the
+   plasma, the halo, the nebula, the field, the grain. */
 .wl-ground { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
 /* The plasma (ground.jsx). Two colours, both of them the void, a slow warp of
@@ -159,6 +159,25 @@
   background:
     radial-gradient(58% 44% at 62% 18%, rgba(255, 244, 228, 0.075) 0%, rgba(255, 244, 228, 0) 68%),
     radial-gradient(46% 36% at 18% 76%, rgba(190, 205, 255, 0.045) 0%, rgba(190, 205, 255, 0) 70%);
+}
+
+/* The nebula (ground.jsx): the galaxy's pink, very faded, drifting with the
+   stars. Two soft patches of it are drawn once per viewport width in a layer
+   twice the viewport wide, and ground.jsx slides the layer one viewport to
+   the right on a loop that takes as long as the farthest stars take to cross
+   the screen (field.js: the far end of the drift is 0.004 widths a second,
+   and this goes at 0.003, behind them). The tile repeats, so the slide is
+   seamless, and it takes the field's pace: slowed under a sheet, held still
+   where the act cannot be undone. Felt more than seen, like the halo: it is
+   a colour in the room, not a thing in it. */
+.wl-nebula {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 200%;
+  background-image:
+    radial-gradient(36% 28% at 24% 38%, rgba(255, 150, 200, 0.062) 0%, rgba(255, 150, 200, 0) 70%),
+    radial-gradient(22% 20% at 44% 70%, rgba(208, 128, 220, 0.046) 0%, rgba(208, 128, 220, 0) 72%),
+    radial-gradient(14% 12% at 9% 78%, rgba(255, 170, 200, 0.035) 0%, rgba(255, 170, 200, 0) 70%);
+  background-size: 50% 100%; background-repeat: repeat-x;
+  will-change: transform;
 }
 
 .wl-starfield {
@@ -2230,18 +2249,25 @@
   color: var(--void-1);
   transition: color 240ms var(--ease);
 }
-/* the chalk plate: the pill's fill, as a layer, so the light can pass under
-   it. The halo is warm and soft, at a third of the card light's strength,
-   because it sits beside the brightest object on the screen. */
+/* the chalk plate: the pill's fill, as a layer, with the light running ON it
+   and the whole thing clipped to the capsule. The light used to orbit the
+   pill as a halo, a ring circling the button, and that read as a second
+   object beside it. Now it is the card's own glow, inside the capsule: the
+   plate stays chalk and opaque, and the warm point rides over it under the
+   word, as a soft rose bloom travelling round the inside of the button's edge.
+   Nothing shows outside the edge. Same light, same path, and the same clock
+   as the card it waits beside. */
+.wl-light.is-chalk { overflow: hidden; }
 .wl-plate.is-chalk { background: var(--chalk); }
 .wl-light.is-chalk {
-  --light-w: 92px;
-  --light-t: 5200ms;
+  --light-w: 150px;
+  --light-t: 4200ms;
 }
 .wl-light.is-chalk .wl-light-beam {
+  z-index: 2;
   background: radial-gradient(circle at center,
-    rgba(255, 244, 228, 0.42) 0%, rgba(255, 244, 228, 0.12) 32%, rgba(255, 244, 228, 0) 60%);
-  filter: blur(3px);
+    rgba(255, 168, 204, 0.55) 0%, rgba(255, 196, 200, 0.26) 26%, rgba(255, 196, 200, 0) 56%);
+  filter: blur(5px);
 }
 
 .wl-card-disc {

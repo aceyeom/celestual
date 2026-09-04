@@ -17,6 +17,17 @@
 //   answers about a handle already typed in full, which is the difference
 //   between confirming a name and shopping for one.
 //
+//   IT ASKS ON COMMIT. A lookup that misses the cache is an Apify run, and a
+//   run costs money whether the handle was finished or not. The ledger showed
+//   `dav`, `davi`, `david`, `david_`, `david_j` and `david_jh` each run on the
+//   way to one typed name, because a person pauses inside a handle and nearly
+//   every short prefix is somebody's real account. So nothing is asked while
+//   somebody is typing. The field peeks the cache, which is free, and a handle
+//   already known lands as a card at once. The real lookup happens when the
+//   person commits: Enter, the button, or the card. That press draws the card
+//   in its looking state; the next press, on the card or the button, is the
+//   act. Two taps, and the second one is against a person.
+//
 //   IT SHOWS NO NUMBERS. A display name, a badge, a face. No followers, no
 //   posts, no counts. This product does not tell anybody how popular anybody is.
 //
@@ -64,12 +75,10 @@ const ENDPOINT = import.meta.env.VITE_RESOLVE_ENDPOINT || '/api/resolve';
 //            same as idle to the user: silence, never a false negative.
 export const IDLE = { state: 'idle', handle: '' };
 
-// How long a field waits after the last keystroke before asking. Every ask
-// that misses the cache is an Apify run, and at 300ms the ledger showed five
-// runs on the way to one typed name, because `david`, `david_` and `david_j`
-// are all somebody. A second is a thumb that has stopped, not one that is
-// thinking, and a cache hit still lands inside two.
-export const RESOLVE_DEBOUNCE_MS = 1000;
+// How long a field waits after the last keystroke before peeking the cache.
+// A peek never reaches Apify, so this is only about not hammering our own
+// function while somebody types.
+export const PEEK_DEBOUNCE_MS = 300;
 
 // One entry per handle, for the life of the tab. A handle already answered is
 // never asked about twice: it makes backspacing free, and it keeps a person
@@ -106,7 +115,45 @@ function shape(handle, data) {
   };
 }
 
-// Resolve one handle. Never throws, never blocks: every failure path answers
+// One request to the function. `peek` asks only what the cache already holds
+// and never reaches Apify; without it, this is the lookup that costs.
+async function post(handle, peek) {
+  return fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // The cookie the device cap counts against. Without this the request is
+    // anonymous to the server every single time.
+    credentials: 'include',
+    // The session token, so a signed-in person is counted against their own
+    // allowance rather than their browser's. Absent for a first visit,
+    // which is the ordinary case and costs nothing.
+    body: JSON.stringify({ handle, session: sessionToken(), ...(peek ? { peek: true } : {}) }),
+  });
+}
+
+// What the cache already knows about a handle, from the server, for free.
+// A found account is memoized like any answer; anything else is null, which
+// is "nothing to draw yet" and never "no account by that name". Called while
+// somebody is typing, so a known handle lands as a card before they commit.
+export async function peekServer(raw) {
+  const handle = normHandle(raw);
+  if (handle.length < 2 || !resolveEnabled) return null;
+  if (memo.has(handle)) return memo.get(handle);
+  try {
+    const res = await post(handle, true);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.ok === false || !data.found) return null;
+    const out = shape(handle, data);
+    memo.set(handle, out);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve one handle: the lookup that may reach Apify. Called on commit and
+// nowhere else. Never throws, never blocks: every failure path answers
 // 'unknown', which the UI draws as nothing at all.
 export async function resolveHandle(raw) {
   const handle = normHandle(raw);
@@ -118,17 +165,7 @@ export async function resolveHandle(raw) {
 
   const call = (async () => {
     try {
-      const res = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // The cookie the device cap counts against. Without this the request is
-        // anonymous to the server every single time.
-        credentials: 'include',
-        // The session token, so a signed-in person is counted against their own
-        // allowance rather than their browser's. Absent for a first visit,
-        // which is the ordinary case and costs nothing.
-        body: JSON.stringify({ handle, session: sessionToken() }),
-      });
+      const res = await post(handle, false);
 
       if (res.status === 429) {
         const data = await res.json().catch(() => null);

@@ -120,11 +120,6 @@
   color: var(--accent);
 }
 
-/* The three terms, as labels, under the act. */
-.hm-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; }
-.hm-facts .wl-label { color: var(--ash); display: inline-flex; align-items: center; gap: 8px; }
-.hm-facts .wl-label .wl-spark { margin: 0; color: var(--ash); }
-
 /* ── the object ──
    Two cards, and the mark above them. See Scene.jsx for why it is this and
    not the logo. It takes the height the type left it, centred in that room,
@@ -255,7 +250,6 @@
   .hm-ask { margin-top: 12px; gap: 8px; }
   .hm-ask .wl-field.is-lg input, .hm-ask .wl-field.is-lg .wl-at { font-size: 22px; }
   .hm-ask-row .wl-pill.is-light { min-height: 40px; padding: 0 18px; font-size: 13.5px; }
-  .hm-facts { margin-top: 10px; }
   .hm-stage {
     display: flex; flex: 0 0 auto; width: min(38vw, 340px);
     margin: 0; padding: 0; overflow: visible;

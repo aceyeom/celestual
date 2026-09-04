@@ -7,12 +7,12 @@
 // prop and no `size` in pixels — so changing what a ghost pill looks like is
 // one edit in one file rather than nine inline objects that drifted apart.
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { atHandle, normHandle } from './data.js'
 import { Ecliptic, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
 import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
-import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE, RESOLVE_DEBOUNCE_MS } from '../api/handles.js'
+import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -133,8 +133,10 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 //
 // ── lit ─────────────────────────────────────────────────────────────────────
 // `lit` puts the running light on it (see `Light` below): the same point of
-// light that runs the result card's frame, orbiting the capsule as a soft
-// halo. For the one act on a screen that is the product, and nothing else.
+// light that runs the result card's frame, riding round the inside of the
+// capsule as a soft rose bloom under the word. Never a halo round the outside;
+// that read as a second object circling the button. For the one act on a
+// screen that is the product, and nothing else.
 export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = false, disabled = false, icon = null, className = '', ...rest }) {
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', lit && 'is-lit', className].filter(Boolean).join(' ')
   const body = <>{lit ? <Light plate="chalk" /> : null}{icon}<span>{children}</span></>
@@ -711,6 +713,13 @@ export function DmCode({ code, note = null }) {
 // The resolver's answer for one handle, as a hook. `null` until there is one,
 // and null for good when the resolver is off or the account was not found: a
 // caller draws the monogram in both cases and never waits on this.
+//
+// It PEEKS. A face is drawn for every handle on the sky, on the wall's index,
+// on a letter, in the bar, and a lookup that reached Apify for each of those
+// would be a run per row on every screen anybody opens. Every handle that was
+// ever committed through a field is in the server's cache, so a peek finds
+// it for free; a handle that never was draws its monogram, and that is a
+// designed state.
 export function useProfile(handle) {
   const h = normHandle(handle)
   const [p, setP] = useState(() => peekHandle(h))
@@ -720,10 +729,67 @@ export function useProfile(handle) {
     if (known) { setP(known); return undefined }
     let alive = true
     setP(null)
-    resolveHandle(h).then((r) => { if (alive) setP(r) })
+    peekServer(h).then((r) => { if (alive) setP(r) })
     return () => { alive = false }
   }, [h])
   return p && p.state === 'found' ? p : null
+}
+
+// ── THE RESOLVER, UNDER A FIELD ─────────────────────────────────────────────
+// What a field knows about the handle in it, and the one way to ask for more.
+//
+//   at        the four-state answer (api/handles.js), plus 'looking' while a
+//             lookup is out. Draw it with HandleCard.
+//   ask()     commit: the lookup that may reach Apify. Called from Enter, the
+//             button, or the card, and from nowhere that fires on its own.
+//   settled   whether pressing the act should go through now. True when the
+//             handle has been answered, or asked and could not be answered,
+//             or the resolver is off. False means: ask first, and the card
+//             will show the person to press.
+//
+// While somebody types, this only peeks the cache (free, and instant for a
+// handle anybody has committed before). Nothing here runs the actor on a
+// pause for breath, which is what `dav`, `davi` and `david_j` in the ledger
+// were. See IT ASKS ON COMMIT in api/handles.js.
+export function useResolver(handle) {
+  const h = normHandle(handle)
+  const [at, setAt] = useState(() => peekHandle(h) || { state: 'idle', handle: h })
+  const cur = useRef(h)
+  cur.current = h
+  // The handle a commit has already been made for, answer or no answer. A
+  // provider that could not tell us is not asked again on the next press:
+  // "unknown" never blocks the act.
+  const asked = useRef('')
+
+  useEffect(() => {
+    if (!resolveEnabled || h.length < 2) { setAt({ state: 'idle', handle: h }); return undefined }
+    const known = peekHandle(h)
+    if (known) { setAt(known); return undefined }
+    setAt({ state: 'idle', handle: h })
+    let alive = true
+    const id = setTimeout(async () => {
+      const r = await peekServer(h)
+      if (alive && r) setAt(r)
+    }, PEEK_DEBOUNCE_MS)
+    return () => { alive = false; clearTimeout(id) }
+  }, [h])
+
+  const ask = useCallback(async () => {
+    if (!resolveEnabled || h.length < 2) return { state: 'unknown', handle: h }
+    const known = peekHandle(h)
+    if (known) { setAt(known); return known }
+    setAt({ state: 'looking', handle: h })
+    const r = await resolveHandle(h)
+    if (cur.current === h) {
+      asked.current = h
+      setAt(r)
+    }
+    return r
+  }, [h])
+
+  const settled = !resolveEnabled || h.length < 2
+    || at.state === 'found' || at.state === 'missing' || asked.current === h
+  return { at, ask, settled }
 }
 
 // ── the face ────────────────────────────────────────────────────────────────
@@ -824,9 +890,10 @@ export function Me({ who, onClick, className = '' }) {
 //   star    a dark plate with a scatter of star shaped holes in it, under a
 //           hairline. The light runs behind the plate and twinkles through
 //           the holes as it passes. The card, and the mutual row.
-//   chalk   an opaque chalk plate, which is the pill's own fill. Nothing shows
-//           through it, so the light shows AROUND it, as a soft warm halo
-//           orbiting the capsule.
+//   chalk   an opaque chalk plate, which is the pill's own fill, with the
+//           light riding over it and clipped to the capsule: a soft rose bloom
+//           travelling round the inside of the button's edge, and nothing
+//           outside it.
 //
 // `on` is whether it is running. Off, the light fades and holds still, and
 // the plate stays: the plate is the element's ground in every state.
@@ -906,37 +973,27 @@ export function Light({ on = true, plate = 'star', className = '' }) {
 // a swap. Pressing it is the same act as the pill beneath it. The answer that
 // popped up under the field is the thing to press.
 //
+// ── it draws, it does not ask ───────────────────────────────────────────────
+// The card is handed `at` by `useResolver` and asks for nothing itself. It
+// used to resolve on a pause in the typing, and the ledger showed what that
+// cost: every prefix of a name that happens to be somebody's account, run
+// through the actor one after another. Now the field peeks the cache while a
+// person types, and the person's own press is what asks.
+//
 // ── the states ──────────────────────────────────────────────────────────────
-//   idle     nothing typed yet. Nothing drawn.
+//   idle     nothing typed yet, or nothing known yet. Nothing drawn.
 //   looking  asked. The light is running.
 //   found    the account.
 //   missing  no account by that name, said in one line, and the act still goes
 //            through. Our provider is imperfect and somebody who knows their
 //            friend's handle is right.
-export function HandleCard({ handle, onSelect = null, className = '' }) {
-  const [at, setAt] = useState(IDLE)
-  const h = normHandle(handle)
-
-  useEffect(() => {
-    if (!resolveEnabled || h.length < 2) { setAt(IDLE); return undefined }
-    const known = peekHandle(h)
-    if (known) { setAt(known); return undefined }
-    let alive = true
-    // Debounced, because this sits under a field somebody is typing into and a
-    // request per keystroke is an Apify run per keystroke: nearly every short
-    // prefix is somebody's real account. One number, kept in api/handles.js.
-    const id = setTimeout(async () => {
-      if (alive) setAt({ state: 'looking', handle: h })
-      const r = await resolveHandle(h)
-      if (alive) setAt(r)
-    }, RESOLVE_DEBOUNCE_MS)
-    return () => { alive = false; clearTimeout(id) }
-  }, [h])
+export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
+  const h = normHandle(at.handle)
 
   // Idle and unknown draw nothing. "Unknown" is our lookup failing, not an
   // answer about the account, and reporting the two the same way would be
   // telling somebody their friend does not exist.
-  if (at.state === 'idle' || at.state === 'unknown') return null
+  if (!at || at.state === 'idle' || at.state === 'unknown') return null
 
   const looking = at.state === 'looking'
   const missing = at.state === 'missing'

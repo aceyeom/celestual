@@ -24,7 +24,7 @@
 // profile page the whole thing exists to avoid.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { resolveHandle, peekHandle, resolveEnabled, IDLE, RESOLVE_DEBOUNCE_MS } from '../api/handles.js'
+import { peekServer, peekHandle, resolveEnabled, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 import { useI18n } from '../i18n/index.js'
 import {
   Icon, Sonar, rgba, SPACE, TOKENS, TEXT, HAIR, FONT, SIZE, TRACK,
@@ -33,6 +33,10 @@ import {
 // The ask: debounced, deduped, and safe to abandon. Returns the four-state
 // answer from api/handles.js and nothing else, so a caller that wants to know
 // whether to warn reads `state === 'missing'` and needs to know nothing more.
+//
+// This is the retired flow's hook, and it only PEEKS the cache now: nothing
+// that fires on a pause in the typing may reach Apify (api/handles.js, IT
+// ASKS ON COMMIT). The live surfaces use wall/parts.jsx `useResolver`.
 export function useHandleResolve(value, { enabled = true } = {}) {
   const [out, setOut] = React.useState(IDLE)
   const seq = React.useRef(0)
@@ -51,17 +55,10 @@ export function useHandleResolve(value, { enabled = true } = {}) {
       return undefined
     }
     const mine = ++seq.current
-    // Long enough that typing a handle is one lookup rather than one per pause
-    // for breath. At 300ms the ledger showed `david`, `david_`, `david_j`,
-    // `david_jh` and `david_jhmun` each billed on the way to one name, because
-    // nearly every short prefix is somebody's real account. A second is where
-    // a thumb has stopped rather than hesitated, and on a cache hit the answer
-    // is still on screen inside two.
     const id = setTimeout(async () => {
-      if (mine === seq.current) setOut({ state: 'looking', handle: h })
-      const r = await resolveHandle(h)
-      if (mine === seq.current) setOut(r)
-    }, RESOLVE_DEBOUNCE_MS)
+      const r = await peekServer(h)
+      if (mine === seq.current && r) setOut(r)
+    }, PEEK_DEBOUNCE_MS)
     return () => clearTimeout(id)
   }, [value, enabled])
   return out

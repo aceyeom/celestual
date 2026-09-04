@@ -21,8 +21,7 @@
 // this product exists to not be.
 
 import { useState } from 'react'
-import { Sparkle } from '../wall/art.jsx'
-import { Label, Pill, HandleField, HandleCard, Me, Brand, SiteFoot } from '../wall/parts.jsx'
+import { Pill, HandleField, HandleCard, Me, Brand, SiteFoot, useResolver } from '../wall/parts.jsx'
 import { normHandle, validHandle } from '../wall/data.js'
 import Scene from './Scene.jsx'
 import './hero.css'
@@ -35,10 +34,15 @@ export default function Hero({ go, who, still = false }) {
   // field is the same act: press the person, place the ping.
   const [to, setTo] = useState('')
   const [said, setSaid] = useState('')
+  // The card under the field. It peeks while the person types and asks only
+  // when they press: the first press on a handle nobody has looked up draws
+  // the card looking, and the next press, on the card or the pill, is the act.
+  const them = useResolver(to)
   const submit = () => {
     const h = normHandle(to)
     if (!h) { go('place'); return }
     if (!validHandle(h)) { setSaid('that handle does not look right'); return }
+    if (!them.settled) { them.ask(); return }
     go('place', h)
   }
 
@@ -89,22 +93,14 @@ export default function Hero({ go, who, still = false }) {
               value={to} onChange={(v) => { setTo(v); setSaid('') }} onSubmit={submit}
               size="lg" placeholder="theirhandle" label="their instagram handle"
             />
-            <HandleCard handle={to} onSelect={submit} />
+            <HandleCard at={them.at} onSelect={submit} />
             <div className="hm-ask-row">
-              {/* Lit: the running light, the one the result card waits with,
-                  on the one act on the screen. */}
+              {/* Lit: the glow the result card waits with, seen through the
+                  capsule, on the one act on the screen. */}
               <Pill tone="light" lit onClick={submit}>place a ping</Pill>
               <p className="hm-said" role="status" aria-live="polite">{said}</p>
             </div>
           </form>
-
-          {/* The three terms, as labels. They are the rules of the object
-              beside them and they are read once. */}
-          <div className="hm-facts hm-in" style={{ '--d': '420ms' }}>
-            <Label><Sparkle size={8} />two at a time</Label>
-            <Label><Sparkle size={8} />sixty days</Label>
-            <Label><Sparkle size={8} />free</Label>
-          </div>
         </div>
 
         <div className="hm-stage hm-in" style={{ '--d': '300ms' }}>
