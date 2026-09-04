@@ -447,19 +447,19 @@ between.
 `VITE_HANDLE_RESOLVE` has been `1` since 30 August, so everything below is
 running on production traffic.
 
-- [ ] **Apply `0037_resolver_cache_and_ceiling.sql`.** It stops the leak: a row
+- [x] **Apply `0037_resolver_cache_and_ceiling.sql`.** Applied 4 September, 03:35 UTC. It stops the leak: a row
       whose picture never downloaded was stale from birth and re-ran the actor
       on every lookup. 30 of the 50 rows were in that state; `supabase` had
       been billed 8 times, `david` 6, `ace` 4. After 0037 a face-less row is a
       cache hit and retries its picture weekly at most. It also adds the
       `global` key, 1000 calls a day across everybody, the first thing that
       bounds the bill rather than one actor.
-- [ ] **Redeploy `celestual-resolve`.** Counts misses, distinguishes a timeout
+- [x] **Redeploy `celestual-resolve`.** Version 9, 4 September. Counts misses, distinguishes a timeout
       from a miss, gives the run a 30 second timeout on Apify's side so an
       abandoned run is killed rather than billed, sends `maxItems=1`, refuses
       to cache an empty item, reports `provider` beside `cached`, and reads the
       proxy secret.
-- [ ] **Deploy the app.** Brings `api/resolve.js`, and the rule that a field
+- [ ] **Deploy the app.** Merges with PR #98. Brings `api/resolve.js`, and the rule that a field
       asks Apify only when a person presses: typing only peeks the cache.
 - [ ] **Set `RESOLVE_PROXY_SECRET`** on both sides, above.
 - [ ] Then read the `ip` rows in `handle_search_events` after a lookup from a
@@ -824,8 +824,10 @@ are real redeploys, not formalities.
 
 - [ ] `supabase functions deploy celestual-admin`. After 0033 and 0034, and
       after `CELESTUAL_ADMIN_PASSWORD` is set (section 2i).
-- [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`. After
-      0037. Section 3a.
+- [x] `supabase functions deploy celestual-resolve --no-verify-jwt`. After
+      0037. Section 3a. Deployed 4 September (version 9), with
+      `celestual-manychat` (19) and `celestual-ig-webhook` (17) for the
+      verified DM's new wording.
 - [ ] `supabase functions deploy celestual-wall-moderate`.
 - [ ] `supabase functions deploy celestual-edu-verify`.
 - [ ] `supabase functions deploy celestual-notify`.
