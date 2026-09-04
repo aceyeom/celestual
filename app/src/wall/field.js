@@ -48,6 +48,30 @@
 // Two fallbacks, in this order:
 //   · prefers-reduced-motion  one static frame, no clock, no pointer
 //   · no WebGL2               the same model drawn in canvas 2D at half count
+//
+// ── THE SKY BEHIND THE STARS ────────────────────────────────────────────────
+// The nebula is drawn here too, on a second canvas under the points, by the
+// same loop, off the same clock, answering the same hand. It used to be two
+// other things: a plasma from a shader package that warped in place, and a
+// CSS layer of pink that slid on a timer of its own, and with the stars that
+// was three motions on one screen, which the eye reads as three things laid
+// on top of each other. Now there is one: the clouds are the farthest layer
+// of the same field, drifting the way the deepest star drifts, a little
+// slower, and shifting to the hand the way the deepest star shifts, a little
+// less. Near stars pass in front of them; that is the depth.
+//
+// The clouds themselves are a domain warped noise (fbm of fbm), which is what
+// gives them a current, and they carry the room's two accents at a whisper:
+// a violet body and a pink vein along the warp, over the void. The added
+// light is posterised through an 8x8 ordered dither at two pixels, so it
+// arrives as texture rather than as a gradient, the way the plasma did, and
+// the empty void between the clouds stays flat. Under the hand the cloud
+// lights by a few counts, so the sky answers a person and not only the eye.
+//
+// It renders at one pixel per CSS pixel, capped under a megapixel, because
+// there is nothing sharp in it. Without WebGL2 the canvas keeps a still CSS
+// gradient of the same two colours, which is the room with the current
+// stopped.
 
 const VERT = `#version 300 es
 in vec4 a;              // x, y, depth, magnitude
@@ -104,6 +128,156 @@ void main() {
   // of every falloff rather than being punched out by it.
   o = vec4(vec3(0.957, 0.945, 0.918) * a, a);
 }`
+
+// A full screen triangle. Three vertices cover the clip square and the rest
+// is the fragment shader's.
+const SKY_VERT = `#version 300 es
+in vec2 a;
+void main() { gl_Position = vec4(a, 0.0, 1.0); }`
+
+const SKY_FRAG = `#version 300 es
+precision highp float;
+
+uniform float uT;      // seconds, the field's own clock
+uniform vec2  uPtr;    // the hand, -1..1, eased, the same values the stars get
+uniform float uHand;   // 0 until a pointer has moved, then 1: touch has no hand
+uniform vec2  uRes;    // this canvas, in pixels
+out vec4 o;
+
+// The room's colours. The void is wall.css --void; the two accents are the
+// galaxy's, and they are added at a few counts, never painted.
+const vec3 VOID   = vec3(0.031, 0.027, 0.043);
+const vec3 VIOLET = vec3(0.42, 0.30, 0.72);
+const vec3 PINK   = vec3(0.98, 0.58, 0.76);
+
+float hash(vec2 p) {
+  vec3 q = fract(vec3(p.xyx) * 0.1031);
+  q += dot(q, q.yzx + 33.33);
+  return fract((q.x + q.y) * q.z);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+const mat2 ROT = mat2(0.80, 0.60, -0.60, 0.80);
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * vnoise(p); p = ROT * p * 2.02 + vec2(1.7, 9.2); a *= 0.5; }
+  return v;
+}
+// The 8x8 ordered dither threshold, 0..1, from its bit reversed form.
+float bayer(ivec2 c) {
+  int x = c.x & 7, y = c.y & 7, z = x ^ y;
+  int v = ((z & 1) << 5) | ((y & 1) << 4) | ((z & 2) << 2) | ((y & 2) << 1) | ((z & 4) >> 1) | ((y & 4) >> 2);
+  return (float(v) + 0.5) / 64.0;
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float aspect = uRes.x / uRes.y;
+
+  // The farthest layer of the field. The deepest star drifts at 0.004 widths
+  // a second and answers the hand by 0.004 of the width; the clouds sit
+  // behind it, at 0.003 of each. Sampled at uv minus the shift, so the cloud
+  // moves the way the star moves.
+  vec2 p = uv - vec2(uT * 0.003, 0.0) - uPtr * 0.003;
+  p.x *= aspect;
+  vec2 s = p * 1.35;
+
+  // The current: the warp's own phase moves, slowly, so the clouds churn in
+  // place while the whole sheet of them drifts.
+  float t = uT * 0.012;
+  vec2 q = vec2(fbm(s + t * 0.40), fbm(s + vec2(5.2, 1.3) - t * 0.30));
+  vec2 r = vec2(fbm(s + 2.4 * q + vec2(1.7, 9.2) + t * 0.15),
+                fbm(s + 2.4 * q + vec2(8.3, 2.8) - t * 0.126));
+  float n = fbm(s + 2.0 * r);
+
+  float dust = smoothstep(0.38, 0.78, n);           // where there is cloud
+  float body = smoothstep(0.30, 0.80, q.y) * dust;  // the violet of it
+  float vein = smoothstep(0.55, 0.90, r.x) * dust;  // the pink along the warp
+
+  // The hand: a soft light in the cloud where the pointer is, a few counts
+  // at most, and only where there is cloud to light.
+  vec2 hand = vec2((uPtr.x * 0.5 + 0.5) * aspect, uPtr.y * 0.5 + 0.5);
+  vec2 d = vec2(uv.x * aspect, uv.y) - hand;
+  float lamp = exp(-dot(d, d) / 0.16) * uHand;
+
+  vec3 add = VIOLET * body * 0.08
+           + PINK * vein * 0.10
+           + mix(PINK, VIOLET, 0.35) * lamp * (0.02 + 0.06 * dust);
+
+  // Posterised through the dither at two pixel cells: texture, not gradient.
+  // Only the light is quantised, so the void between the clouds stays flat.
+  float th = bayer(ivec2(gl_FragCoord.xy) / 2);
+  add = floor(add * 40.0 + th) / 40.0;
+
+  o = vec4(VOID + add, 1.0);
+}`
+
+// The sky renders at one pixel per CSS pixel and no more than this many of
+// them. There is nothing sharp in a cloud.
+const SKY_MAX_PX = 900_000
+
+// The sky's own program on its own canvas. Returns null when WebGL2 is not
+// there, in which case the canvas keeps its CSS gradient (wall.css .wl-sky).
+function mountSky(canvas) {
+  if (!canvas) return null
+  const gl = canvas.getContext('webgl2', {
+    alpha: false, antialias: false, depth: false, stencil: false,
+    powerPreference: 'low-power',
+  })
+  if (!gl) return null
+  const vs = compile(gl, gl.VERTEX_SHADER, SKY_VERT)
+  const fs = compile(gl, gl.FRAGMENT_SHADER, SKY_FRAG)
+  if (!vs || !fs) return null
+  const prog = gl.createProgram()
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs)
+  gl.linkProgram(prog)
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
+  gl.useProgram(prog)
+
+  const buf = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
+  const loc = gl.getAttribLocation(prog, 'a')
+  gl.enableVertexAttribArray(loc)
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+
+  const uT = gl.getUniformLocation(prog, 'uT')
+  const uPtr = gl.getUniformLocation(prog, 'uPtr')
+  const uHand = gl.getUniformLocation(prog, 'uHand')
+  const uRes = gl.getUniformLocation(prog, 'uRes')
+
+  function size() {
+    const cw = Math.max(1, canvas.clientWidth), ch = Math.max(1, canvas.clientHeight)
+    const k = Math.min(1, Math.sqrt(SKY_MAX_PX / (cw * ch)))
+    const w = Math.max(1, Math.round(cw * k)), h = Math.max(1, Math.round(ch * k))
+    if (w === canvas.width && h === canvas.height) return false
+    canvas.width = w; canvas.height = h
+    gl.viewport(0, 0, w, h)
+    gl.uniform2f(uRes, w, h)
+    return true
+  }
+  size()
+
+  return {
+    size,
+    draw(t, ptr, hand) {
+      gl.uniform1f(uT, t)
+      gl.uniform2f(uPtr, ptr.x, ptr.y)
+      gl.uniform1f(uHand, hand)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    },
+    stop() {
+      gl.deleteBuffer(buf)
+      gl.deleteProgram(prog)
+      gl.deleteShader(vs)
+      gl.deleteShader(fs)
+    },
+  }
+}
 
 // One hash, so a field is the same field on every load and every device. A
 // starfield that reshuffles on refresh is a starfield nobody recognises.
@@ -220,7 +394,9 @@ function twoD(canvas, count, still, pace0) {
 // Mount a field on a canvas. Returns { point, pace, stop }: `point` takes a
 // pointer in -1..1 and the field eases toward it, `pace` takes 'drift', 'slow'
 // or 'still' and the field decelerates to it, `stop` releases everything.
-export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) {
+// `sky` is a second canvas, under the first, for the clouds (THE SKY BEHIND
+// THE STARS, above); without it, or without WebGL2, there are only stars.
+export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: skyCanvas = null } = {}) {
   const still = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -241,6 +417,8 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) 
   gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return twoD(canvas, count, still, pace0)
   gl.useProgram(prog)
+
+  const sky = mountSky(skyCanvas)
 
   const buf = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, buf)
@@ -274,11 +452,23 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) 
   ro.observe(canvas)
 
   const ptr = { x: 0, y: 0, tx: 0, ty: 0 }
+  // The hand's presence, eased in once a pointer has moved. A touch screen
+  // never sets it, so the lamp in the clouds never lights under nothing.
+  let handT = 0, hand = 0
   let raf = 0
   let last = performance.now()
   let target = PACE[pace0] ?? 1
   let ease = target
   let t = 0
+
+  // The sky follows the star canvas's size, and under reduced motion it is
+  // drawn once here and again on each resize, since the loop below stops.
+  let skyRo = null
+  if (sky) {
+    const resky = () => { if (sky.size() && still) sky.draw(0, ptr, 0) }
+    skyRo = new ResizeObserver(resky)
+    skyRo.observe(skyCanvas)
+  }
 
   // Seconds to cover most of the distance to the pointer. In seconds and not in
   // frames: a per frame coefficient is a different spring on a phone holding 30
@@ -295,10 +485,15 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) 
     const k = 1 - Math.exp(-dt / TAU)
     ptr.x += (ptr.tx - ptr.x) * k
     ptr.y += (ptr.ty - ptr.y) * k
+    hand += (handT - hand) * (1 - Math.exp(-dt / 0.9))
     if (!still) {
       ease += (target - ease) * (1 - Math.exp(-dt / PACE_TAU))
       t += dt * ease
     }
+
+    // The clouds first, on their own canvas, off the same clock and the same
+    // eased hand, so the two layers can never disagree about where they are.
+    if (sky) sky.draw(still ? 0 : t, ptr, hand)
 
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.uniform1f(uT, still ? 0 : t)
@@ -311,6 +506,7 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) 
   return {
     point(x, y) {
       if (still) return
+      handT = 1
       ptr.tx = Math.max(-1, Math.min(1, x))
       ptr.ty = Math.max(-1, Math.min(1, y))
     },
@@ -318,6 +514,8 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift' } = {}) 
     stop() {
       cancelAnimationFrame(raf)
       ro.disconnect()
+      if (skyRo) skyRo.disconnect()
+      if (sky) sky.stop()
       gl.deleteBuffer(buf)
       gl.deleteProgram(prog)
       gl.deleteShader(vs)

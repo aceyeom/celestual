@@ -435,7 +435,7 @@ different skies.
 
 | Layer | What it is |
 | --- | --- |
-| `.wl-dither` | the plasma. A fragment shader, two colours and both of them the void (`--void` and `--void-1`), a slow warp of noise between them rendered through an 8x8 ordered dither at two pixels. The dark has a current in it, the way the mark's metal does, at a fraction of the contrast. It renders at one device pixel per CSS pixel, capped at 1.4 megapixels, and pauses when the tab is hidden. Without WebGL2 it is simply absent |
+| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with the galaxy's violet and pink in it at a whisper: a domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is the deepest layer of the one field, drifting the way the farthest star drifts and shifting to the hand the way the farthest star shifts, and it lights by a few counts under the pointer. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
 | `.wl-halo` | one enormous off centre warm radial at 7.5 percent, plus a cold one at 4.5. It is what stops the void reading as `#000` with things on it |
 | `.wl-starfield` | the point field, on the GPU (`wall/field.js`): depth per point, parallax off the hand, and a count that is a density, about 0.9 points per thousand CSS pixels on every screen, so a desktop is as dense as a phone. It used to be a floor of 320 points that only a phone ever hit, and the desktop sky was three times sparser |
 | `.wl-grain` | `feTurbulence` at `baseFrequency 0.84`, three octaves, desaturated, 3.6 percent, tiled at 190px |

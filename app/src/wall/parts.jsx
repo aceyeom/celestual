@@ -135,11 +135,16 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 // `lit` puts the running light on it (see `Light` below): the same point of
 // light that runs the result card's frame, riding round the inside of the
 // capsule as a soft rose bloom under the word. Never a halo round the outside;
-// that read as a second object circling the button. For the one act on a
-// screen that is the product, and nothing else.
-export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = false, disabled = false, icon = null, className = '', ...rest }) {
+// that read as a second object circling the button.
+//
+// It is on by default for the light capsule, which is the primary act on
+// every screen that has one: the front door had it and the wall's sheets did
+// not, and the same product answered a press with two different buttons. A
+// ghost pill never carries it. Disabled, the light goes out and the plate
+// stays, so a button that cannot be pressed is not one that is glowing.
+export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = tone === 'light', disabled = false, icon = null, className = '', ...rest }) {
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', lit && 'is-lit', className].filter(Boolean).join(' ')
-  const body = <>{lit ? <Light plate="chalk" /> : null}{icon}<span>{children}</span></>
+  const body = <>{lit ? <Light plate="chalk" on={!disabled} /> : null}{icon}<span>{children}</span></>
   if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
   return (
     <button type="button" className={cls} onClick={onClick} disabled={disabled} {...rest}>{body}</button>
