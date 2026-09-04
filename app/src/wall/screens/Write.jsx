@@ -43,7 +43,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
-  HandleField, LetterField, HandleCard,
+  HandleField, LetterField, HandleCard, useResolver,
 } from '../parts.jsx'
 import { Dots, Sparkle } from '../art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../data.js'
@@ -88,9 +88,15 @@ export default function Write({ to: prefill, go, back }) {
     patch({ draft: { to: h, body } })
   }, [h, body])
 
+  // The card under the handle field: peeks while typing, asks on the press.
+  const them = useResolver(to)
   function next() {
     if (!ok[step]) return
-    if (step === 0) { setStep(1); return }
+    if (step === 0) {
+      if (!them.settled) { them.ask(); return }
+      setStep(1)
+      return
+    }
     patch({ draft: { to: h, body: body.trim() } })
     go('posted')
   }
@@ -134,7 +140,7 @@ export default function Write({ to: prefill, go, back }) {
                 handle is a letter about somebody that nobody can ever find, and
                 this is the only step where that is still fixable. Pressing the
                 person is the same act as the pill below. */}
-            <HandleCard handle={to} onSelect={next} />
+            <HandleCard at={them.at} onSelect={next} />
             <Label tone="dim" className="wl-write-note">
               {/* A name that has come off the wall is refused by the schema
                   rather than by this screen: wall_write returns 'removed' and

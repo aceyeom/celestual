@@ -6,12 +6,17 @@ import react from '@vitejs/plugin-react'
 // this app to ../dist, served at celestual.us/.
 //
 // ── THE TWO PLACES PRODUCTION IS NOT A PURE SPA ──────────────────────────────
-// `vercel.json` carries four rewrites, and a dev server that does not carry
-// them is a dev server testing a different product. Both are mirrored below.
+// Production has three rewrites in `vercel.json` and one function in `api/`,
+// and a dev server that does not carry them is a dev server testing a
+// different product. Both are mirrored below.
 //
-//   /api/resolve      onto the celestual-resolve edge function, so the device
-//                     cookie it sets is first party rather than a cookie on
-//                     *.supabase.co that Safari and Chrome would drop (Q8).
+//   /api/resolve      in production, api/resolve.js: a Vercel function that
+//                     forwards to the celestual-resolve edge function with the
+//                     visitor's address and a shared secret, so the device
+//                     cookie is first party (Q8) and the IP backstop counts
+//                     the visitor rather than Vercel. In development it is a
+//                     plain proxy straight to the function: no secret, so the
+//                     function counts the address it sees, which is yours.
 //
 //   /terms, /privacy, /data-deletion
 //                     onto static HTML in public/. Without this they fall

@@ -141,8 +141,9 @@ function compile(gl, type, src) {
   return s
 }
 
-// What each pace is worth, as a multiplier on the clock.
-const PACE = { drift: 1, slow: 0.18, still: 0 }
+// What each pace is worth, as a multiplier on the clock. Exported so the
+// nebula layer in ground.jsx can keep the same pace without a second table.
+export const PACE = { drift: 1, slow: 0.18, still: 0 }
 // Seconds to cover most of the distance to a new pace. The 2D field this
 // replaced took about 620ms to come to rest, and it was right.
 const PACE_TAU = 0.62

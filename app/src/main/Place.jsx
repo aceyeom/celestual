@@ -55,7 +55,7 @@
 // somebody who never came to this site.
 import { useEffect, useRef, useState } from 'react'
 import {
-  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, Face,
+  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, Face, useResolver,
 } from '../wall/parts.jsx'
 import { Provider, Sparkle } from '../wall/art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../wall/data.js'
@@ -256,9 +256,18 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // comes back 'unverified' after the letter is written.
   const readyToPlace = who.handleVerified && !!heldProof(who.handle)
 
+  // The card under the handle field: peeks while typing, asks on the press.
+  // The first press on a handle nobody has looked up draws the card looking;
+  // the next, on the card or the pill, moves on.
+  const them = useResolver(to)
   const next = () => {
     setSaid('')
-    if (step === 0) { if (named) setStep(1); return }
+    if (step === 0) {
+      if (!named) return
+      if (!them.settled) { them.ask(); return }
+      setStep(1)
+      return
+    }
     if (step === 1) { if (lineOk) setStep(2); return }
     if (readyToPlace) { send(who.handle); return }
     ask()
@@ -315,7 +324,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                 somebody confirms against a person rather than against their own
                 spelling. A ping placed at a typo stands for sixty days against
                 nobody and nothing in the product can ever say so. */}
-            <HandleCard handle={to} onSelect={next} className="mn-card" />
+            <HandleCard at={them.at} onSelect={next} className="mn-card" />
 
             {/* ── the stack ──
                 Spec section 6: somebody who came from the wall having already

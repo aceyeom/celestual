@@ -40,6 +40,15 @@ find still places. The app says so once, in one line, and the button still works
 It answers about a handle already typed **in full**, which is the difference
 between confirming a name and shopping for one.
 
+**It asks on commit.** Nothing that fires on a pause in the typing may reach
+Apify. While a person types, the field only peeks the cache, which is free and
+instant for any handle anybody has committed before. The lookup that costs
+happens when they press: Enter, the button, or the card. That press draws the
+card in its looking state; the next press, on the card or the button, is the
+act. Two taps, and the second one is against a person. Faces drawn elsewhere
+in the product (`useProfile`) peek too, and a handle that was never committed
+draws its monogram.
+
 **It shows no numbers.** A display name, a badge, a face. No followers, no post
 count, no engagement. This product does not tell anybody how popular anybody is.
 
@@ -61,28 +70,34 @@ typed in full.
   browser
     │  POST /api/resolve   { handle, session? }        credentials: include
     ▼
-  vercel.json rewrite ──────────────────────────────────────────────┐
+  api/resolve.js, a Vercel function ────────────────────────────────┐
     │  same origin, so the device cookie below is FIRST PARTY        │
+    │  forwards the visitor's address + the shared secret            │
     ▼                                                               │
   supabase/functions/celestual-resolve                              │
     │                                                               │
     ├─ ig_profile_get(handle)        the cache. permanent.          │
-    │    hit, face under 30 days  ──▶ answer. costs nothing.        │
+    │    hit  ──▶ answer. costs nothing. a missing face is a hit.   │
     │                                                               │
-    ├─ handle_search_allow(user, device, ip)   three 24h windows    │
+    ├─ handle_search_allow(user, device, ip)   four 24h windows     │
     │    over  ──▶ 429 { retry_after }                              │
     │                                                               │
     ├─ Apify actor shu8hvrXbJbY3Eb9W                                │
     │    resultsType: details, resultsLimit: 0                      │
+    │    ?timeout=30&maxItems=1   killed on Apify's side, 1 result  │
+    │                                                               │
+    ├─ handle_search_record(user, device, ip, handle)  found or not │
     │                                                               │
     ├─ download the picture once, upload to Storage                 │
     │    bucket `avatars`, path `ig/<handle>.jpg`                   │
     │                                                               │
-    ├─ ig_profile_put(...)                                          │
-    └─ handle_search_record(user, device, ip, handle)               │
+    └─ ig_profile_put(...)                                          │
                                                                     │
-  browser ◀── { handle, display_name, is_verified, avatar } ────────┘
+  browser ◀── { handle, display_name, is_verified, avatar,          │
+                cached, provider } ─────────────────────────────────┘
               avatar is a Supabase Storage URL. It does not expire.
+              provider says whether Apify was reached. cached says
+              where the answer came from. They differ on one path.
 ```
 
 ## 4. The face
@@ -111,6 +126,18 @@ resolved again. If the download fails, nothing is stored, the client gets an
 empty `avatar`, and the card draws a monogram from the display name. **A missing
 face never blocks a card.**
 
+**And a missing face never empties the cache.** This was the leak the 4
+September audit found. Under 0031 a row whose picture never downloaded was
+reported stale from the moment it was written, the function treats stale as a
+miss, and so every lookup of that handle ran the actor again, forever: 30 of
+the 50 rows in production were in that state and `supabase` had been billed
+eight times. Migration 0037 separates the two questions. A row with no face is
+a fresh profile and a cache hit; the face is retried on the next lookup after
+**7 days**, at most. A row with a face refreshes it at 30 days, as before. The
+function also no longer caches an actor item that has neither a name nor a
+picture URL, which is what the actor returns when Instagram turned it away
+mid-run and is how those nameless rows got written in the first place.
+
 ## 5. The caps
 
 Server side, in the database, never on the client. Three rolling 24 hour
@@ -121,21 +148,43 @@ windows, `handle_search_allow` in migration 0031:
 | `user_id` | 20 | signed in. Counted here and **not** on the device, so signing in never halves an allowance |
 | `device_id` | 20 | anonymous, which is the majority case |
 | `ip` | 200 | the backstop. Deliberately loose: one Berkeley address is a residence hall behind one NAT |
+| `global` | 1000 | the ceiling on the day, counted on every call whoever made it. Migration 0037 |
 
-**A cache hit costs nothing, and neither does a miss.** `handle_search_events`
-only ever receives a row when a call reached Apify and came back with an
-account. It used to be written before the result was looked at, so a handle that
-does not exist, or an actor that answered 400, still spent one of the twenty: a
-test against a handle with no account recorded two events, one of them the
-failed call. The record now sits inside the success branch. A miss is remembered
-in the isolate for a few minutes instead, which is what stops the same missing
-handle being asked for twenty times in a row. That is what keeps the bill
-bounded by the number of distinct handles rather than by traffic, and what lets
-the caps stay generous for normal use.
+**A cache hit costs nothing.** `handle_search_events` only ever receives a row
+when a call reached Apify, so re-asking about a handle already in the cache is
+free, and the bill is bounded by the number of distinct handles rather than by
+traffic.
 
-**The first lookup is slow.** Measured at about 10.6 seconds cold and 1.5
-cached: actor startup dominates, and nothing in the function can shorten it. The
-card's looking state is drawn for that wait, not for a network round trip.
+**A miss is counted.** It ran the actor. It used to be free here, which made it
+unlimited: a stream of handles nobody has would run the actor once each and
+never touch a cap. A miss is also remembered in the isolate for ten minutes so
+the same missing handle is not asked for twice, and only a true miss is
+remembered: a timeout or a refusal from Apify says nothing about the account and
+is answered as `{ ok:false, error:'provider' }`, which the card draws as
+nothing. Before that distinction, a run that blew the timeout read to a person
+as "no account by that name". The pilot's `vercel` did exactly that.
+
+**The day has a ceiling.** The three per-key caps keep one actor honest; none of
+them bounds the bill, because a device cap is beaten by not sending the cookie
+and an address cap by having more than one address. `global` is written on
+every call and is the most the meter can run in 24 hours. Past it, cache hits
+still answer, new handles draw nothing, and the act still goes through. The
+number lives in `handle_search_limit` and nowhere else.
+
+**The first lookup is slow.** The pilot measured 6 to 21 seconds on a cache
+miss and under a second on a hit: actor startup dominates, and nothing in the
+function can shorten it. The card's looking state is drawn for that wait. The
+run is given 30 seconds on Apify's side (`timeout=30` on the run) so a run we
+stop waiting for is killed rather than left to finish and bill; `maxItems=1`
+caps a run at one billed result whatever the actor decides to return.
+
+**Nothing is asked while somebody types.** The ledger showed `dav`, `davi`,
+`david`, `david_`, `david_j`, `david_jh` and `david_jhmun` each run through the
+actor on the way to a single typed name, because a debounce fires on every
+pause for breath and nearly every short prefix is somebody's real account. A
+debounce, at any length, cannot tell a pause from an end. So the field peeks
+the cache while typing (`peek: true`, free, never Apify) and asks only on the
+person's own press. See section 2, "It asks on commit".
 
 On a limit the function answers **429** with `retry_after`, the seconds until the
 oldest counted call ages out. The UI shows a plain message built from that
@@ -151,16 +200,40 @@ A UUID **the edge function issues**, in an httpOnly, SameSite=Lax, Secure
 cookie. Not a fingerprint: not derived from anything about the person, not
 joined to a handle or an account or a ping, and reset by clearing cookies.
 
-It is first party **only because of the rewrite**. A cookie set by
-`*.supabase.co` on a page served from `celestual.us` is a third party cookie,
-and Safari's ITP and Chrome's phase-out both drop it. That is why the browser
-calls `/api/resolve` on our own origin and `vercel.json` rewrites it onto the
-function. Open question Q8, answered B.
+It is first party **only because `/api/resolve` is on our origin**. A cookie
+set by `*.supabase.co` on a page served from `celestual.us` is a third party
+cookie, and Safari's ITP and Chrome's phase-out both drop it. That is why the
+browser calls `/api/resolve` and `api/resolve.js`, a Vercel function, forwards
+the request to the edge function. Open question Q8, answered B.
 
-If you deploy somewhere that is not behind the rewrite, the cookie goes third
-party, most anonymous users get a fresh device id per request, and they fall
-through to the IP counter. That degradation is designed for rather than assumed
-away, but it is a real reduction in protection. Keep the rewrite.
+If you deploy somewhere that is not behind it, the cookie goes third party,
+most anonymous users get a fresh device id per request, and they fall through
+to the IP counter. That degradation is designed for rather than assumed away,
+but it is a real reduction in protection. Keep the function.
+
+## 6b. The proxy, and whose address is counted
+
+`/api/resolve` was a bare `vercel.json` rewrite until the 4 September audit,
+and the rewrite had a cost the cookie did not show: **the edge function saw
+Vercel's egress as the connecting address.** The ledger had one device's ten
+handles counted across four AWS addresses and the visitor's own address in
+none of them. So the 200 a day backstop was shared by every visitor on the
+same Vercel edge, and a visitor with no cookie was capped on Vercel rather
+than on themselves.
+
+The function fixes that. Vercel writes `x-forwarded-for` itself and does not
+let a client forge it, so the first hop is the visitor. `api/resolve.js`
+forwards it, and proves it is the proxy with a shared secret in
+`x-resolve-proxy`. The edge function counts the forwarded address **only when
+the secret matches**; otherwise it counts the connecting address, exactly as
+before. A request straight to `*.supabase.co` is therefore counted on the
+address it came from and cannot name a different one, and a proxy without the
+secret can only make the caps as loose as the rewrite already was, never
+looser.
+
+The secret is `RESOLVE_PROXY_SECRET`, set in **both** places: a Vercel
+environment variable (all environments) and a Supabase edge function secret.
+Any long random string. Until both are set, the backstop counts Vercel.
 
 ## 7. Turning it on
 
@@ -175,10 +248,13 @@ In order. Every step is also in `docs/launchsteps.md`.
    Optionally `APIFY_ACTOR_ID` if you ever move off `shu8hvrXbJbY3Eb9W`.
 4. **Deploy the function.**
    `supabase functions deploy celestual-resolve --no-verify-jwt`
-   The `--no-verify-jwt` matters: the rewrite forwards a plain browser POST with
+   The `--no-verify-jwt` matters: the proxy forwards a plain browser POST with
    no Supabase key on it.
-5. **Check the rewrite.** `vercel.json` must contain the `/api/resolve` rule and
-   its destination must be the current project's function URL.
+5. **Set the proxy secret.** `RESOLVE_PROXY_SECRET`, the same value in Vercel
+   (all environments) and in Supabase edge function secrets. Section 6b.
+   `api/resolve.js` reads the project from `VITE_SUPABASE_URL`, which Vercel
+   already has; if that is ever unset it falls back to the ref written in the
+   file.
 6. **Run the billing pilot.** Ten handles, then confirm the billed event count in
    Apify matches. See `docs/launchsteps.md` section 3b. Do this before opening it
    to users.
@@ -190,8 +266,9 @@ In order. Every step is also in `docs/launchsteps.md`.
 | --- | --- | --- | --- |
 | `APIFY_TOKEN` | Supabase secret | yes | Apify API token. Without it the function answers `{ ok:false, error:'off' }` and the UI renders nothing |
 | `APIFY_ACTOR_ID` | Supabase secret | no | Defaults to `shu8hvrXbJbY3Eb9W` |
+| `RESOLVE_PROXY_SECRET` | Supabase secret **and** Vercel env | yes | The same value in both. Proves a request came through `api/resolve.js`, so the visitor's address is the one counted. Without it the backstop counts Vercel's egress |
 | `VITE_HANDLE_RESOLVE` | Vercel env | yes | `1` to render the card. `0` and nothing about the product changes |
-| `VITE_RESOLVE_ENDPOINT` | Vercel env | no | Leave unset. Defaults to `/api/resolve`, which is the rewrite. Only set it on a preview that is not behind the rewrite |
+| `VITE_RESOLVE_ENDPOINT` | Vercel env | no | Leave unset. Defaults to `/api/resolve`, which is the function. Only set it on a preview that is not behind it |
 
 ## 9. When it misbehaves
 
@@ -208,11 +285,28 @@ render anyway, so this is a degradation and not an outage.
 CSP is blocking it. `img-src` must allow `https://*.supabase.co`, which
 `vercel.json` already does.
 
-**Everyone on campus gets rate limited at once.** The device cookie is not
-arriving, so everybody is being counted on one shared address. Check that the
-request goes to `/api/resolve` and not straight to `*.supabase.co`, and that the
-client sends `credentials: 'include'`.
+**Everyone on campus gets rate limited at once.** Either the device cookie is
+not arriving, so everybody is being counted on one shared address, or the
+proxy secret is not set and the edge function is counting Vercel's egress.
+Check that the request goes to `/api/resolve` and not straight to
+`*.supabase.co`, that the client sends `credentials: 'include'`, and that
+`RESOLVE_PROXY_SECRET` is set on both sides. The `ip` rows in
+`handle_search_events` should be visitors' addresses, not AWS ranges.
+
+**Nothing resolves and the ledger has 1000 `global` rows in the last day.** The
+ceiling. Somebody ran the meter to the top; the `ip` and `device_id` rows say
+who. Cache hits still answer. It clears on its own as the oldest calls age out.
 
 **The bill is higher than the number of distinct handles.** Something is writing
 to `handle_search_events` on a cache hit, or the cache is not being read. A row
 in that table is supposed to be a call that reached Apify and nothing else.
+Check `provider` on the response: it is `true` only when Apify was reached, and
+it is the field the billing pilot counts. `cached: true` with `provider: true`
+is a refresh that failed and served yesterday's row.
+
+**A handle that exists reads as "no account by that name".** It should not any
+more: a timeout or an Apify refusal answers `{ ok:false, error:'provider' }`
+and the card draws nothing. If it still happens, the actor returned an item
+with an `error` field and no `username` for a real account, which is a miss as
+far as the function can tell. The logs carry the status and the first 300
+bytes of the body for every failed run.
