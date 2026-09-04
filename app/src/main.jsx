@@ -1,8 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
-import App from './App.jsx'
-import { I18nProvider } from './i18n/index.js'
 import { BASE, legacyRewrite } from './wall/router.js'
 import { isMainPath } from './main/router.js'
 
@@ -117,11 +115,17 @@ if (adminPath) {
     )
   })
 } else {
-  root.render(
-    <StrictMode>
-      <I18nProvider>
-        <App />
-      </I18nProvider>
-    </StrictMode>,
-  )
+  // The retired design, which serves /paid and nothing else. A dynamic import
+  // like the other four: it was the one static import in this file, which put
+  // its whole tree (the galaxy, the three Google faces, every retired screen,
+  // 470 kB before gzip) in the entry chunk of every address in the product.
+  Promise.all([import('./App.jsx'), import('./i18n/index.js')]).then(([{ default: App }, { I18nProvider }]) => {
+    root.render(
+      <StrictMode>
+        <I18nProvider>
+          <App />
+        </I18nProvider>
+      </StrictMode>,
+    )
+  })
 }

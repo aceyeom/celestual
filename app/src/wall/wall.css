@@ -2381,3 +2381,11 @@
   .wl-lane { height: 32px; }
 }
 
+
+/* ── the audit of 4 September ────────────────────────────────────────────────
+   A thirty character handle, which the schema allows, is wider than the paper
+   on a phone. It wraps inside the card and the search echo rather than
+   running off them. */
+.wl-letter-to,
+.wl-find-echo,
+.wl-report-quote { overflow-wrap: anywhere; }

@@ -148,7 +148,13 @@ async function classify(body: string, sealedLine: string | null) {
   // variable away from being off.
   if (!key) return { verdict: 'review', reasons: ['unconfigured'] }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // Bounded. A classifier that hangs used to hang the request until the
+  // platform killed it, and the letter was never written, not even as pending.
+  // A timeout is a verdict of review: a person looks at it.
+  let res: Response
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+    signal: AbortSignal.timeout(20_000),
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -164,7 +170,10 @@ async function classify(body: string, sealedLine: string | null) {
         content: `<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
       }],
     }),
-  })
+    })
+  } catch {
+    return { verdict: 'review', reasons: ['classifier_timeout'] }
+  }
   if (!res.ok) return { verdict: 'review', reasons: ['classifier_error'] }
 
   const data = await res.json()

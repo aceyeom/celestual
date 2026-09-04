@@ -27,19 +27,31 @@
 // Most people arriving here have nothing out yet, and the screen they meet is
 // not an error and not an onboarding checklist. It is one sentence and one
 // door, because the thing to do is the thing to do.
+//
+// ── and it is only said when it is true ─────────────────────────────────────
+// "Nothing out yet." used to be drawn for three different facts: an empty sky,
+// a proof this browser holds that the server no longer honours (thirty idle
+// days; the row still says verified, so nothing else ever asked again), and a
+// read that failed. The second is the expensive one: a person with a mutual on
+// their row was told they had nothing out, and had no control on the screen
+// to prove the handle again. The three are three screens now.
 import { useEffect, useState } from 'react'
 import {
   Display, Label, Pill, Prose, PersonRow, Who, Face, Sheet, SheetHead, SheetFoot, Paper, Light,
 } from '../wall/parts.jsx'
 import { atHandle, dateline } from '../wall/data.js'
-import { heldProof } from '../wall/auth.js'
-import { myPings, renew, release, daysLeft } from './data.js'
+import { heldProof, signOut as leaveWall } from '../wall/auth.js'
+import { signOut as dropProof } from '../api/auth.js'
+import { clearPending } from '../wall/handoff.js'
+import { myPings, renew, release, daysLeft, daysLeftWords } from './data.js'
 import LiquidMark from '../wall/LiquidMark.jsx'
 import TopBar from './TopBar.jsx'
 import Prove from './Prove.jsx'
 
-export default function Sky({ go, who, refreshWho, still = false }) {
-  const [state, setState] = useState({ loading: true, pings: [] })
+export default function Sky({ go, who, known = true, refreshWho, still = false }) {
+  // loading · pings · error, where error is 'unverified' (prove it again) or
+  // 'network' (could not read it) or null.
+  const [state, setState] = useState({ loading: true, pings: [], error: null })
   // The row whose card is up, by the ping's id, so a reload underneath it
   // keeps the same card open with the new number on it.
   const [open, setOpen] = useState(null)
@@ -47,29 +59,78 @@ export default function Sky({ go, who, refreshWho, still = false }) {
 
   useEffect(() => {
     let alive = true
-    if (!who.handleVerified) { setState({ loading: false, pings: [] }); return undefined }
+    if (!known) return undefined
+    if (!who.handleVerified) { setState({ loading: false, pings: [], error: null }); return undefined }
+    setState((s) => ({ ...s, loading: true }))
     myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
-      if (alive) setState({ loading: false, pings: out.pings })
+      if (alive) setState({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
     })
     return () => { alive = false }
-  }, [who.handle, who.handleVerified, rev])
+  }, [who.handle, who.handleVerified, known, rev])
 
-  // ── not proved on this device ──
+  // The way out of this device. Both halves of the one session: the identity
+  // token and the wall's copy of it, and the DM proof, which is a bearer
+  // secret and was staying in localStorage on a library computer with no
+  // control anywhere in Main to remove it.
+  const leave = async () => {
+    dropProof()
+    clearPending()
+    leaveWall()
+    await refreshWho()
+    go('hero')
+  }
+
+  // ── whoami has not answered ──
+  // Nothing said yet. Drawing the sign in over somebody who is signed in, for
+  // the half second before the row arrives, is a screen changing its mind.
+  if (!known) {
+    return (
+      <main className="mn-page mn-sky">
+        <TopBar go={go} who={who} />
+      </main>
+    )
+  }
+
+  // ── not proved on this device, or the proof has lapsed ──
   // Said instead of the list rather than over a greyed-out one, and it asks
-  // the question right here. This is where the front door's "sign in" lands.
-  if (!who.handleVerified) {
+  // the question right here. This is where the front door's "sign in" lands,
+  // and where a lapsed proof lands too: same block, one different sentence.
+  if (!who.handleVerified || state.error === 'unverified') {
+    const lapsed = state.error === 'unverified'
     return (
       <main className="mn-page mn-sky">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1">Your sky is<br />behind your @.</Display>
-          <Prose className="mn-copy">one instagram message proves it.</Prose>
-          <Prove who={who} refreshWho={refreshWho} />
+          <Display size="m" as="h1">
+            {lapsed ? <>One message,<br />and it is back.</> : <>Your sky is<br />behind your @.</>}
+          </Display>
+          <Prose className="mn-copy">
+            {lapsed
+              ? 'the proof this device held has lapsed. one instagram message proves it again, and everything you have out is still there.'
+              : 'one instagram message proves it.'}
+          </Prose>
+          <Prove who={who} refreshWho={refreshWho} onProved={() => setRev((n) => n + 1)} />
         </div>
         <div className="mn-foot">
           <button type="button" className="wl-quiet" onClick={() => go('place')}>
             or place one first
           </button>
+        </div>
+      </main>
+    )
+  }
+
+  // ── it could not be read ──
+  if (state.error) {
+    return (
+      <main className="mn-page mn-sky">
+        <TopBar go={go} who={who} />
+        <div className="mn-mid">
+          <Display size="m" as="h1">Your sky did<br />not load.</Display>
+          <Prose className="mn-copy">nothing about it has changed. check the connection and try again.</Prose>
+        </div>
+        <div className="mn-foot">
+          <Pill tone="light" wide onClick={() => setRev((n) => n + 1)}>try again</Pill>
         </div>
       </main>
     )
@@ -119,7 +180,7 @@ export default function Sky({ go, who, refreshWho, still = false }) {
                 <PersonRow
                   key={p.id}
                   handle={p.to}
-                  meta={days(p.expires)}
+                  meta={daysLeftWords(p.expires)}
                   action={<span className="sg-gate-g" aria-hidden="true">&#8594;</span>}
                   onClick={() => setOpen(p.id)}
                 />
@@ -134,6 +195,9 @@ export default function Sky({ go, who, refreshWho, still = false }) {
 
         <div className="mn-foot">
           <Pill tone="light" wide lit onClick={() => go('place')}>place a ping</Pill>
+          <button type="button" className="wl-quiet" onClick={leave}>
+            not you? sign out of this device
+          </button>
         </div>
       </main>
 
@@ -146,11 +210,6 @@ export default function Sky({ go, who, refreshWho, still = false }) {
       )}
     </>
   )
-}
-
-function days(expires) {
-  const n = daysLeft(expires)
-  return n === 1 ? 'one day left' : `${n} days left`
 }
 
 // ── the card ────────────────────────────────────────────────────────────────
@@ -190,7 +249,7 @@ function CardSheet({ ping: p, who, onClose, onChange }) {
       <div className="wl-sheet-in mn-cardsheet">
         <SheetHead onClose={onClose} />
         <Paper
-          dateline={{ lead: dateline(p.at).lead, stamp: renewed ? 'sixty days' : days(p.expires) }}
+          dateline={{ lead: dateline(p.at).lead, stamp: renewed ? 'sixty days' : daysLeftWords(p.expires) }}
           crest={<Face handle={p.to} size={30} />}
           title={<span id="mn-card-h" className="wl-letter-to">{atHandle(p.to)}</span>}
           tone={p.line ? '' : 'empty'}

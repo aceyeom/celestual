@@ -43,7 +43,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0035, in order. 0029 onward is the rebuild
+  migrations/       0001 to 0038, in order. 0029 onward is the rebuild; 0038 is the audit
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook
@@ -143,7 +143,7 @@ written and verified, and `launchsteps.md` says in what order to apply them.
 | `/place`, `/place/<handle>`, `/@handle` | placing one |
 | `/sky` | what you have out |
 | `/reveal/<handle>` | a mutual, opened |
-| `/berkeley` | the wall, and nine addresses under it |
+| `/berkeley` | the wall, and eight addresses under it |
 | `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
 | `/optout` | take a handle off, permanently, with no account |
 | `/copy`, `/signin` | the two links a mail sends somebody to |

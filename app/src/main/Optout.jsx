@@ -22,23 +22,34 @@ import { useState } from 'react'
 import { Display, Label, Pill, Prose, Rule, HandleField, COMPANY } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
 import { suppressHandle } from '../api/celestual.js'
-import { normHandle } from '../api/celestual.js'
+// The same normaliser every other field in the product uses: it strips a
+// pasted instagram.com/ prefix and refuses a one character handle, where the
+// old API module's did neither and took a whole profile URL off the wall as
+// "httpsinstagram.comfoo".
+import { normHandle, validHandle } from '../wall/data.js'
 import TopBar from './TopBar.jsx'
 
 export default function Optout({ go, who }) {
   const [handle, setHandle] = useState('')
-  const [phase, setPhase] = useState('idle') // idle | working | done | failed
+  const [phase, setPhase] = useState('idle') // idle | working | done | failed | rate
   const [done, setDone] = useState('')
 
   const clean = normHandle(handle)
-  const ready = clean.length >= 1 && clean.length <= 30
+  const ready = validHandle(clean)
 
   async function submit() {
     if (!ready || phase === 'working') return
     setPhase('working')
     try {
       const r = await suppressHandle(clean)
-      setDone(r?.suppressed || clean)
+      // celestual_suppress answers { suppressed:null, error:'rate_limited' }
+      // past ten an hour from one address. Reading `suppressed || clean` told
+      // the eleventh person in a dorm their handle was off when it was not.
+      if (!r?.suppressed) {
+        setPhase(r?.error === 'rate_limited' ? 'rate' : 'failed')
+        return
+      }
+      setDone(r.suppressed)
       setPhase('done')
     } catch {
       setPhase('failed')
@@ -79,6 +90,8 @@ export default function Optout({ go, who }) {
         />
         {phase === 'failed' ? (
           <Prose className="mn-copy mn-fault">that did not go through. try once more.</Prose>
+        ) : phase === 'rate' ? (
+          <Prose className="mn-copy mn-fault">too many from this connection in one hour. try again later, or write to {COMPANY.email}.</Prose>
         ) : null}
       </div>
       <div className="mn-foot">

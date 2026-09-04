@@ -75,22 +75,25 @@ function Card({ handle, ping, side, delay }) {
   )
 }
 
-export default function Reveal({ go, who, id, still = false }) {
+export default function Reveal({ go, who, known = true, id, still = false }) {
   const them = normHandle(id)
   const [mutual, setMutual] = useState(undefined)
 
   // The mutual itself, off the same RPC the sky reads. Asked here as well as
   // there so a shared or reloaded address lands on the screen rather than on an
-  // empty one.
+  // empty one. Not asked, and nothing said, until whoami has answered: this
+  // screen used to say "Nothing here." for the second before it did.
   useEffect(() => {
     let alive = true
+    if (!known) { setMutual(undefined); return undefined }
     if (!who.handleVerified || !them) { setMutual(null); return undefined }
+    setMutual(undefined)
     myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
       if (!alive) return
       setMutual(out.mutuals.find((m) => normHandle(m.to) === them) || null)
     })
     return () => { alive = false }
-  }, [who.handle, who.handleVerified, them])
+  }, [who.handle, who.handleVerified, them, known])
 
   const theirs = useProfile(them)
 
@@ -115,12 +118,12 @@ export default function Reveal({ go, who, id, still = false }) {
     )
   }
 
-  // Each side carries its own timestamp and nothing carries the pair's. The
-  // eyebrow below says how far apart they were placed, which is the fact both
-  // people actually have, and neither card claims to know when the other one
-  // found out.
+  // Each side carries its own timestamp and nothing carries the pair's.
+  // celestual_my_pings hands this person their own, so their card is dated and
+  // the other card is not: it used to wear this person's date under "them",
+  // which was the one thing on the screen that was not true.
   const mineSide = { at: mutual.at, line: mutual.line }
-  const theirSide = { at: mutual.at, line: mutual.theirLine }
+  const theirSide = { at: 0, line: mutual.theirLine }
 
   return (
     <main className="wl-main sg-page sg-reveal">

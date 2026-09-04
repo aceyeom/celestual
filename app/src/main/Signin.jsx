@@ -1,17 +1,26 @@
 // ── /signin, the link from the mail ─────────────────────────────────────────
 //
 // Phase 8. A one time token in the FRAGMENT, redeemed once, for a device that
-// no longer holds a proof. `celestual_redeem_login` is the shipped path
+// no longer holds a proof. `celestual_redeem_login` is the shipped RPC
 // (migration 0029); `celestual-relogin` was the other half of a feature that
 // never deployed and Q4 deleted it in Phase 4a.
 //
 // ── WHAT THIS SCREEN IS NOT ─────────────────────────────────────────────────
 // It is not a sign in form. There is nothing to type here and nothing to
 // decide: a person got here by pressing a button in their own inbox, and the
-// only three things that can happen are that it works, that it has lapsed, or
-// that the address they opened is missing its token.
+// only four things that can happen are that it works, that it has lapsed, that
+// the address they opened is missing its token, or that nothing answered.
 //
-// So it says which of the three, and offers exactly one way forward.
+// So it says which of the four, and offers exactly one way forward.
+//
+// ── the two flags ───────────────────────────────────────────────────────────
+// `started` keeps the single use token from being spent twice, and `alive`
+// says whether the screen is still mounted. They used to be one closure
+// variable, and React's development StrictMode, which mounts, unmounts and
+// remounts every component, set it false on the first pass and skipped the
+// second, so the answer landed on a screen that had decided it was dead and
+// the person sat on "signing you back in" for ever. Same trap Posted.jsx and
+// Remove.jsx document on the wall.
 import { useEffect, useRef, useState } from 'react'
 import { Display, Label, Pill, Prose, Waiting } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
@@ -26,17 +35,22 @@ function fromHash() {
 
 export default function Signin({ go, who, refreshWho }) {
   const [token] = useState(fromHash)
-  const [phase, setPhase] = useState(token ? 'working' : 'missing') // working | done | lapsed | missing
+  const [phase, setPhase] = useState(token ? 'working' : 'missing') // working | done | lapsed | offline | missing
   const [handle, setHandle] = useState('')
   const started = useRef(false)
+  const alive = useRef(true)
+
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false }
+  }, [])
 
   useEffect(() => {
     if (!token || started.current) return
     started.current = true
-    let alive = true
     redeemSignInLink(token)
       .then(async (r) => {
-        if (!alive) return
+        if (!alive.current) return
         if (r && r.ok && r.handle && r.proof) {
           markVerified(r.handle, r.proof)
           setHandle(r.handle)
@@ -45,13 +59,13 @@ export default function Signin({ go, who, refreshWho }) {
           // else can press.
           window.history.replaceState(window.history.state, '', window.location.pathname)
           await refreshWho()
+          if (!alive.current) return
           setPhase('done')
           return
         }
-        setPhase('lapsed')
+        setPhase(r?.error === 'network' ? 'offline' : 'lapsed')
       })
-      .catch(() => { if (alive) setPhase('lapsed') })
-    return () => { alive = false }
+      .catch(() => { if (alive.current) setPhase('offline') })
   }, [token, refreshWho])
 
   return (
@@ -74,6 +88,11 @@ export default function Signin({ go, who, refreshWho }) {
             <Display size="m" as="h1">That link<br />has lapsed.</Display>
             <Prose className="mn-copy">it lasts twenty minutes and works once.</Prose>
           </>
+        ) : phase === 'offline' ? (
+          <>
+            <Display size="m" as="h1">Nothing<br />answered.</Display>
+            <Prose className="mn-copy">check the connection, then press the button in the mail again.</Prose>
+          </>
         ) : (
           <>
             <Display size="m" as="h1">This link is<br />missing its token.</Display>
@@ -81,7 +100,7 @@ export default function Signin({ go, who, refreshWho }) {
           </>
         )}
       </div>
-      {phase !== 'working' ? (
+      {phase !== 'working' && phase !== 'offline' ? (
         <div className="mn-foot">
           <Pill tone="light" wide onClick={() => go(phase === 'done' ? 'sky' : 'place')}>
             {phase === 'done' ? 'see your sky' : 'prove it again'}

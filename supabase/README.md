@@ -205,6 +205,24 @@ Idempotent migrations, applied in order:
   a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
   54 assertions, through `scripts/verify-migrations.sh --test`.**
 
+- `migrations/0038_the_audit.sql`: **the audit of 4 September.** Thirteen
+  things found by reading the schema against the client and proving each on a
+  migrated database: the public `wall_index` was a `security_invoker` view over
+  tables `anon` cannot read, so the wall drew zero names for everybody; the one
+  tap report sent an empty reason into a `1..400` check and always failed; one
+  open report shut a handle for good; upholding a report did not take the letter
+  down; erasure left the identity row, its sessions and its letters (and the
+  next person to prove a recycled handle inherited them); withdrawing a mutual
+  left the other side matched to nobody; four reads were proof gated only while
+  the release flag was on; a departmental `berkeley.edu` address verified and
+  was then locked out; the resolver's ledger kept `(user id, typed handle)` in
+  plain text for ever; two mails went out for one mutual under a concurrent
+  drain; the desk counted ledger rows as Apify calls; two tables kept the
+  platform's default grants; and the four sweeps had no caller (scheduled with
+  pg_cron where it exists). Each block in the file says what was wrong, how it
+  was shown and what changed. **Tested by the additions to `test-wall.sql` and
+  `test-doors.sql`.**
+
 - `migrations/0032_the_wall.sql`: **the wall, on a server.** `app/src/wall/data.js`
   had said since it was written that the wall "reaches no server, it stores
   nothing anybody typed anywhere but this tab", and 0027 built five `beta_*`
@@ -290,8 +308,9 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../design/DESIGN.md](../design/DESIGN.md)**) | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
-| `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033: people, the wall, reports, the resolution cache, the waitlist, merge conflicts) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand) | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 

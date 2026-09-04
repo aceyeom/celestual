@@ -29,7 +29,7 @@
 // place: the celestual-admin edge function, against a server-held secret. Every
 // data function behind it is service_role only, so nothing here is readable
 // without it and nothing in this bundle would help anybody who did not have it.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import '../wall/wall.css'
 import './desk.css'
 import { Ecliptic } from '../wall/art.jsx'
@@ -65,22 +65,36 @@ export default function AdminApp() {
   const [section, setSection] = useState('overview')
   const [arg, setArg] = useState('')
   const [overview, setOverview] = useState(null)
+  // The password the overview last accepted, so the door's own successful
+  // check is not followed by a second identical call from the effect below.
+  const validated = useRef('')
+
+  // The one way out, and every tab has it: the server said the password is
+  // wrong. That happens when the secret is rotated under an open desk, and it
+  // used to leave every tab drawing "nobody has a row yet" over a full table.
+  const lock = useCallback(() => {
+    try { sessionStorage.removeItem(PW_STORE) } catch { /* private mode */ }
+    validated.current = ''
+    setPassword(''); setOk(false); setOverview(null)
+  }, [])
 
   // The overview doubles as the door: if it comes back ok the password is
   // right, and the numbers in the rail are already loaded. A separate "check
   // the password" call would be a second round trip to learn the same thing.
   const refresh = useCallback(async (pw) => {
-    const r = await deskOverview(pw || password)
-    if (r && r.ok) { setOverview(r); setOk(true); return r }
+    const use = pw || password
+    const r = await deskOverview(use)
+    if (r && r.ok) { validated.current = use; setOverview(r); setOk(true); return r }
+    if (r?.error === 'password') lock()
     return r
-  }, [password])
+  }, [password, lock])
 
   useEffect(() => {
-    if (!password) return
+    if (!password || validated.current === password) return
     let alive = true
     deskOverview(password).then((r) => {
       if (!alive) return
-      if (r && r.ok) { setOverview(r); setOk(true) }
+      if (r && r.ok) { validated.current = password; setOverview(r); setOk(true) }
       else { setOk(false); try { sessionStorage.removeItem(PW_STORE) } catch { /* private mode */ } }
     })
     return () => { alive = false }
@@ -88,10 +102,13 @@ export default function AdminApp() {
 
   const go = useCallback((id, a = '') => { setSection(id); setArg(a); window.scrollTo(0, 0) }, [])
 
-  const onConflictResolve = useCallback(async (id) => {
-    await deskConflictResolve(password, id)
+  const [said, setSaid] = useState('')
+  const onConflictResolve = useCallback(async (id, note) => {
+    const r = await deskConflictResolve(password, id, note)
+    if (!r?.ok) { setSaid(r?.error === 'password' ? 'the password has changed. open the desk again' : 'that did not go through'); if (r?.error === 'password') lock(); return }
+    setSaid('')
     await refresh()
-  }, [password, refresh])
+  }, [password, refresh, lock])
 
   if (!ok) return <Gate onIn={(pw) => { setPassword(pw); }} refresh={refresh} />
 
@@ -137,13 +154,14 @@ export default function AdminApp() {
         </nav>
 
         <main className="ad-body">
+          {said ? <p className="ad-head-note" style={{ margin: '0 0 12px' }}>{said}</p> : null}
           {section === 'overview' ? <Overview data={overview} go={go} onConflictResolve={onConflictResolve} />
-            : section === 'people' ? <People password={password} go={go} />
-              : section === 'wall' ? <Letters password={password} initialStatus={arg || 'pending'} onChanged={refresh} />
-                : section === 'reports' ? <Reports password={password} onChanged={refresh} />
-                  : section === 'cache' ? <Cache password={password} />
-                    : section === 'waitlist' ? <Waitlist password={password} />
-                      : <Handles password={password} initialHandle={arg} />}
+            : section === 'people' ? <People password={password} go={go} onLock={lock} />
+              : section === 'wall' ? <Letters password={password} initialStatus={arg || 'pending'} onChanged={refresh} onLock={lock} />
+                : section === 'reports' ? <Reports password={password} onChanged={refresh} onLock={lock} />
+                  : section === 'cache' ? <Cache password={password} onChanged={refresh} onLock={lock} />
+                    : section === 'waitlist' ? <Waitlist password={password} onLock={lock} />
+                      : <Handles password={password} initialHandle={arg} onLock={lock} />}
         </main>
       </div>
     </div>
@@ -174,7 +192,8 @@ function Gate({ onIn, refresh }) {
     setFault(
       r?.error === 'rate' ? 'too many tries from here. wait an hour.'
         : r?.error === 'network' ? 'no answer. check the connection.'
-          : 'not that.',
+          : r?.error === 'server' ? 'the desk answered, but the database did not. the migrations may be behind.'
+            : 'not that.',
     )
     setValue('')
   }

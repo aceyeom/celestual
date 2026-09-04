@@ -15,9 +15,9 @@
 // appears in admin, not silently dropped. Being unable to read what the screen
 // caught is being unable to tell whether the screen works, and a screen nobody
 // can check is a screen that quietly starts refusing everything.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskLetters, deskLetterSet } from '../api/admin.js'
-import { Search, useDebounced, Tabs, Paging, Empty, When, State, Btn, Arm, Json } from './parts.jsx'
+import { Search, useDebounced, Tabs, Paging, Empty, Fault, When, State, Btn, Arm, Json, clampOffset, failWord } from './parts.jsx'
 
 const LIMIT = 50
 const TABS = [
@@ -28,7 +28,7 @@ const TABS = [
   { value: '', label: 'all' },
 ]
 
-export default function Letters({ password, initialStatus = 'pending', onChanged }) {
+export default function Letters({ password, initialStatus = 'pending', onChanged, onLock }) {
   const [status, setStatus] = useState(initialStatus)
   const [query, setQuery] = useState('')
   const q = useDebounced(query)
@@ -37,25 +37,51 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
   const [busy, setBusy] = useState(true)
   const [open, setOpen] = useState(null)
   const [note, setNote] = useState('')
+  const [said, setSaid] = useState('')
+  const [acting, setActing] = useState(false)
+  // The latest request wins. A filter change and a page reset land in the
+  // same commit and fire two loads; whichever answered last used to draw.
+  const seq = useRef(0)
 
   useEffect(() => { setOffset(0) }, [q, status])
 
   const load = useCallback(async () => {
+    const mine = ++seq.current
     setBusy(true)
     const r = await deskLetters(password, { status, query: q, limit: LIMIT, offset })
-    setPage(r && r.ok ? r : { rows: [], total: 0 })
+    if (mine !== seq.current) return
+    if (r?.error === 'password') { onLock && onLock(); return }
+    if (r && r.ok) {
+      const at = clampOffset(offset, r.total || 0, LIMIT)
+      if (at !== offset) { setOffset(at); return }
+      setPage(r)
+    } else {
+      setPage({ rows: [], total: 0, error: r?.error || 'network' })
+    }
     setBusy(false)
-  }, [password, status, q, offset])
+  }, [password, status, q, offset, onLock])
 
   useEffect(() => { load() }, [load])
 
+  // The answer is read. It used to be dropped, so a failed write closed the
+  // drawer, wiped the note and reloaded an unchanged list, which is what
+  // "done" looks like.
   const decide = useCallback(async (id, to) => {
-    await deskLetterSet(password, id, to, note)
+    if (acting) return
+    setActing(true)
+    setSaid('')
+    const r = await deskLetterSet(password, id, to, note)
+    setActing(false)
+    if (!r?.ok) {
+      setSaid(failWord(r))
+      if (r?.error === 'password') onLock && onLock()
+      return
+    }
     setNote('')
     setOpen(null)
     await load()
     onChanged && onChanged()
-  }, [password, note, load, onChanged])
+  }, [password, note, load, onChanged, onLock, acting])
 
   const rows = page?.rows || []
 
@@ -72,7 +98,9 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
         </div>
       </div>
 
-      {busy && !page ? <Empty>reading</Empty> : rows.length === 0 ? (
+      {said ? <p className="ad-head-note" style={{ margin: '0 0 12px', color: 'var(--ad-stop)' }}>{said}</p> : null}
+
+      {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>
           {status === 'pending' ? 'nothing is waiting to be read.'
             : q ? 'nothing matches that.'
@@ -100,8 +128,9 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
                   open={open === l.id}
                   note={note}
                   setNote={setNote}
-                  onOpen={() => { setOpen(open === l.id ? null : l.id); setNote('') }}
+                  onOpen={() => { setOpen(open === l.id ? null : l.id); setNote(''); setSaid('') }}
                   onDecide={decide}
+                  acting={acting}
                 />
               ))}
             </tbody>
@@ -114,7 +143,7 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
   )
 }
 
-function LetterRow({ l, open, note, setNote, onOpen, onDecide }) {
+function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
   const reasons = l.moderation?.reasons || []
   return (
     <>
@@ -163,30 +192,42 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide }) {
                 />
               </div>
 
+              {l.reports_open ? (
+                <div className="ad-head-note" style={{ color: 'var(--ad-stop)' }}>
+                  a report on this one is still open. decide it on the reports page: putting
+                  the letter up from here and upholding the report there would be two
+                  answers to one question.
+                </div>
+              ) : null}
+
               <div className="ad-btns" style={{ justifyContent: 'flex-start' }}>
-                {l.status !== 'live' ? (
-                  <Arm tone="go" armed="publish it" onAct={() => onDecide(l.id, 'live')}>
+                {l.status !== 'live' && !l.reports_open ? (
+                  <Arm tone="go" armed="publish it" busy={acting} onAct={() => onDecide(l.id, 'live')}>
                     put it on the wall
                   </Arm>
                 ) : null}
                 {l.status !== 'removed' ? (
-                  <Arm armed="take it down" onAct={() => onDecide(l.id, 'removed')}>
+                  <Arm armed="take it down" busy={acting} onAct={() => onDecide(l.id, 'removed')}>
                     take it down
                   </Arm>
                 ) : null}
                 {l.status !== 'rejected' ? (
-                  <Arm armed="reject it" onAct={() => onDecide(l.id, 'rejected')}>
+                  <Arm armed="reject it" busy={acting} onAct={() => onDecide(l.id, 'rejected')}>
                     reject it
                   </Arm>
                 ) : null}
                 {l.status !== 'pending' ? (
-                  <Btn onClick={() => onDecide(l.id, 'pending')}>hold it back</Btn>
+                  /* Armed like the others: it takes a live letter off the wall on the
+                     press, and used to do that on one click. */
+                  <Arm tone="quiet" armed="hold it back" busy={acting} onAct={() => onDecide(l.id, 'pending')}>
+                    hold it back
+                  </Arm>
                 ) : null}
               </div>
 
               <div className="ad-head-note">
-                a name that has come off stays off: the wall refuses a new letter to a handle
-                with a removed one on it, so taking this down closes that address.
+                taking a letter down from here does not shut the name: only the subject's own
+                takedown, or a report upheld on the reports page, refuses new letters to it.
               </div>
             </div>
           </td>

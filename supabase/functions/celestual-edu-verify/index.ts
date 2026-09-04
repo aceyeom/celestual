@@ -103,9 +103,16 @@ async function sha256Hex(str: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function fourDigit(): string {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 10_000;
-  return String(n).padStart(4, '0');
+// Six digits since the audit of 4 September. This code is a secret in a way
+// the DM code is not: a guess binds the guesser's browser to the victim's
+// identity row (celestual_user_bind_edu), which opens their letters, their
+// claims and their reveal requests. Four digits under six tries was a real
+// hole. The client and this function have disagreed about the length before
+// and locked everybody out of the wall, so verify() below takes four or six
+// while the two halves deploy in either order.
+function sixDigit(): string {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
+  return String(n).padStart(6, '0');
 }
 
 // The code email. The frame is _shared/mail.ts's: one sheet on the void, with
@@ -138,6 +145,8 @@ async function sendCodeEmail(to: string, code: string, schoolName: string) {
   if (!RESEND_API_KEY) throw new Error('no_email_provider');
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
+    // A mail API that hangs must not hang the person at the gate.
+    signal: AbortSignal.timeout(15_000),
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: FROM,
@@ -203,7 +212,7 @@ Deno.serve(async (req) => {
       await supabase.from('celestual_edu_verifications').delete().lt('expires_at', new Date(Date.now() - 60_000).toISOString());
     }
 
-    const code = fourDigit();
+    const code = sixDigit();
     const codeHash = await sha256Hex(code);
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + CODE_TTL_MIN * 60_000).toISOString();
@@ -236,7 +245,7 @@ Deno.serve(async (req) => {
   if (action === 'verify') {
     const token = String(body.token || '');
     const code = String(body.code || '').replace(/\D/g, '');
-    if (!token || code.length !== 4) return json({ ok: false, error: 'code' });
+    if (!token || (code.length !== 4 && code.length !== 6)) return json({ ok: false, error: 'code' });
 
     const { data: row, error } = await supabase
       .from('celestual_edu_verifications')
@@ -248,19 +257,33 @@ Deno.serve(async (req) => {
     if (new Date(row.expires_at).getTime() < Date.now()) return json({ ok: false, error: 'expired' });
     if ((row.attempts ?? 0) >= MAX_ATTEMPTS) return json({ ok: false, error: 'expired' });
 
-    const codeHash = await sha256Hex(code);
-    if (codeHash !== row.code_hash) {
-      await supabase
-        .from('celestual_edu_verifications')
-        .update({ attempts: (row.attempts ?? 0) + 1 })
-        .eq('id', row.id);
-      return json({ ok: false, error: 'code' });
-    }
+    // ── the try is spent BEFORE the code is looked at ───────────────────────
+    // A compare and swap on the counter: the update only lands if nobody else
+    // has moved it since this request read it, and only while the row is still
+    // pending. Of a thousand concurrent guesses that all read attempts = 0,
+    // exactly one gets to compare; the rest are refused. It used to read, then
+    // compare, then write, which let every guess in a burst compare against the
+    // same counter and turned six tries into as many as fit in one second.
+    const { data: taken } = await supabase
+      .from('celestual_edu_verifications')
+      .update({ attempts: (row.attempts ?? 0) + 1 })
+      .eq('id', row.id)
+      .eq('attempts', row.attempts ?? 0)
+      .eq('status', 'pending')
+      .select('id');
+    if (!taken || taken.length === 0) return json({ ok: false, error: 'code' });
 
-    await supabase
+    const codeHash = await sha256Hex(code);
+    if (codeHash !== row.code_hash) return json({ ok: false, error: 'code' });
+
+    // And the flip is guarded the same way: a code is verified once.
+    const { data: flipped } = await supabase
       .from('celestual_edu_verifications')
       .update({ status: 'verified', verified_at: new Date().toISOString() })
-      .eq('id', row.id);
+      .eq('id', row.id)
+      .eq('status', 'pending')
+      .select('id');
+    if (!flipped || flipped.length === 0) return json({ ok: false, error: 'code' });
 
     // ── the identity half ───────────────────────────────────────────────────
     // The code checked out, so this browser is at this school. That is the only

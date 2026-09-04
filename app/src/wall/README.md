@@ -165,10 +165,15 @@ question they are now actually carrying.
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
 | `/berkeley/posted` | three beats — the screening, the paper going, the landing |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament |
-| `/berkeley/orbit` | **the core service** — one letter at a time, laid sideways, on the sill that describes it |
-| `/berkeley/orbit/place` | place a ping, or the door that says both slots are taken |
-| `/berkeley/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
+| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `register` leaves for Main at `/` |
+
+`/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
+(the audit of 4 September). They were a drawn stand-in for the core service
+with a seeded ledger in it, still reachable by typing the address after the
+wall went live; the core service is Main, and `/berkeley/join` sends people
+there. Anything below that describes the orbit, `orbit.js`, `Core.jsx`, the
+seeded ledger or the printed date is a record of what was built, not of what
+runs.
 
 Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
 `report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
@@ -243,10 +248,8 @@ moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write, the reports (held, never deleted) and the
              removals
-seed.js      the letters, the sources, the seeded ledger
-orbit.js     the core service's own data: ONE clock off the printed date, the
-             ledger as a delta on the seed, the slots, and placing, renewing
-             and letting go for real inside the tab
+seed.js      the printed sources and nothing else now: the corpus and the
+             seeded ledger went with the orbit stand-in
 screens/     one file per screen
 ```
 

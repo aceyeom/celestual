@@ -117,21 +117,30 @@ export async function pingStatus({ me, handles, proof }) {
 // `card` is the poster this device placed (restored so a card survives a lost
 // browser, minus its photograph, which never left the phone that took it);
 // `theirCard` is the other half, and only ever arrives on a matched row.
+// Returns { ok:true, pings:[...] }, or { ok:false, error } where error is
+// 'unverified' (the RPC refused the proof: it has lapsed, or it is not this
+// handle's) or 'network'. It used to answer a bare [] for all of those, which
+// left every caller drawing an empty sky over a full one.
 export async function fetchMyPings({ handle, proof } = {}) {
-  if (!hasSupabase || !normHandle(handle) || !proof) return [];
+  if (!hasSupabase) return { ok: true, pings: [] };
+  if (!normHandle(handle) || !proof) return { ok: false, error: 'unverified', pings: [] };
   try {
     const { data, error } = await supabase.rpc('celestual_my_pings', { p_handle: handle, p_proof: proof });
-    if (error || !data?.ok || !Array.isArray(data.pings)) return [];
-    return data.pings.map((p) => ({
-      handle: p.handle ? normHandle(p.handle) : null,
-      time: Number(p.time) || Date.now(),
-      expires_at: p.expires_at || null,
-      mutual: !!p.mutual,
-      card: p.card || null,
-      theirCard: p.their_card || null,
-    }));
+    if (error) return { ok: false, error: 'network', pings: [] };
+    if (!data?.ok || !Array.isArray(data.pings)) return { ok: false, error: 'unverified', pings: [] };
+    return {
+      ok: true,
+      pings: data.pings.map((p) => ({
+        handle: p.handle ? normHandle(p.handle) : null,
+        time: Number(p.time) || Date.now(),
+        expires_at: p.expires_at || null,
+        mutual: !!p.mutual,
+        card: p.card || null,
+        theirCard: p.their_card || null,
+      })),
+    };
   } catch {
-    return [];
+    return { ok: false, error: 'network', pings: [] };
   }
 }
 

@@ -48,7 +48,7 @@ export function createGL(canvas) {
   let gl = null
   try {
     gl = canvas.getContext('webgl2', attrs)
-  } catch (e) {
+  } catch {
     gl = null
   }
   if (!gl) return null
@@ -69,7 +69,7 @@ export function createGL(canvas) {
       const dbg = gl.getExtension('WEBGL_debug_renderer_info')
       try {
         return dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '') : ''
-      } catch (e) {
+      } catch {
         return ''
       }
     })(),

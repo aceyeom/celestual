@@ -1,110 +1,83 @@
 # CELESTUAL — front-end
 
 The Vite + React SPA. No app server: every call goes straight to Supabase's
-`SECURITY DEFINER` RPCs (see [../supabase/README.md](../supabase/README.md)).
-The screens implement
-[../docs/ULTIMATE-PRODUCT-FRAMEWORK.md](../docs/ULTIMATE-PRODUCT-FRAMEWORK.md)
-Part 4 to the letter; the visual rules live in
+`SECURITY DEFINER` RPCs and a handful of edge functions (see
+[../supabase/README.md](../supabase/README.md)). The visual rules live in
 [../design/DESIGN.md](../design/DESIGN.md) and the copy rules in
 [../design/VOICE.md](../design/VOICE.md).
+
+This file described a different app until the audit of 4 September: a state
+machine in `App.jsx`, a `card.js`, a `demoData.js` and a `/demo` sandbox, none
+of which exist. What follows is the tree as it is.
 
 ## Architecture
 
 ```
 src/
-├── App.jsx            state machine + routing (/@handle, /c/*, /optout, /demo),
-│                      placement/renew/retire flows, verification gating,
-│                      localStorage persistence (the ONLY place plaintext
-│                      targets live — the server stores hashes)
-├── card.js            the open-door Story card renderer (1080×1920 PNG). Not to
-│                      be confused with card/ below: this one is the shareable
-│                      about the PLACE, and it names nobody
-├── card/              the star & card system — the poster every ping carries
-│   ├── Disc.jsx       THE SEAL: the material, the keylines, the type, the light
-│   ├── Composer.jsx   the composer, which IS the card being filled in
-│   ├── Resolve.jsx    a held star resolving into its card, off the camera
-│   ├── Spread.jsx     the mutual: two cards unsealing in the same instant
-│   ├── model.js       the card as data, the prompt, the seeds, the tint, and
-│   │                  the wire shape the server validates against
-│   ├── photo.js       a photograph becomes a surface (strip EXIF, treat, measure)
-│   ├── photos.js      the blob cache, and the two doors to the sealed column:
-│   │                  both halves of a card ride on its ping row (0022, 0025)
-│   └── share.js       the story render — your card, never theirs
-├── demoData.js        the sandbox's hardcoded world (sample pings, the Reed
-│                      campus window, world counters)
-├── theme.js           the single source of colour, type and geometry — the
-│                      bindery: one hue, two corners, nothing that glows
-├── texture.js         the materials, drawn per pixel: pebbled hide, laid paper,
-│                      chalk card, the tooth over the void, and the saddle stitch
-├── styles.css         reset, the ground's grain, the registration-mark cursor,
-│                      and the motion law (things settle; nothing springs)
-├── components/
-│   ├── screens.jsx    the nine screens + verify sheet + account sheet
-│   ├── handle.jsx     the resolver's readout: the display name, the badge and
-│   │                  the face behind a typed @, drawn under every field where
-│   │                  one is entered. Never blocks, never browses, shows no
-│   │                  counts — ../../docs/HANDLE-RESOLVER.md
-│   └── ui.jsx         primitives: the chart canvases, the Sigil, the Masthead
-│                      and the Index column (the one navigation), the Plate (a
-│                      letterpress button), the Ruled field, the tooled Rule,
-│                      the state Mark, the Slots meter, dialog a11y
-├── api/
-│   ├── celestual.js   the RPC calls (placePing, pingStatus, renewPing,
-│   │                  retirePing, fetchMyPings, campuses, worlds, opt-out)
-│   ├── pings.js       day-clock helpers for the sixty-day lapse
-│   ├── igverify.js    Instagram-DM ownership proof (code + 256-bit proof)
-│   ├── auth.js        the local verified-session record
-│   ├── handles.js     the handle resolver's client half (OFF by default): one
-│   │                  handle out, a name and a proxied face back. Every key,
-│   │                  the cache and the caps live in the edge function
-│   ├── billing.js     the one paid door (OFF by default): a Stripe-hosted
-│   │                  checkout for one more standing ping. No card is read
-│   │                  here and no slot is granted here — see
-│   │                  ../../docs/STRIPE-SETUP.md
-│   └── supabase.js    the client (safe no-backend fallback)
-└── i18n/              the canonical copy (English; key-by-key fallback kept
-                       so future locales can land as partial objects)
+├── main.jsx           the fork. Which surface owns this address is decided
+│                      before anything mounts, so a route is never rendered
+│                      twice in two designs. Every surface is a dynamic import,
+│                      the retired one included, so the entry chunk is small
+├── main/              MAIN, at `/`. The product: hero, place, sky, reveal,
+│                      optout, copy, signin, the not found. router.js is the
+│                      route table; data.js shapes the ping RPCs for the screens
+├── wall/              THE WALL, at `/berkeley`. Its own shell, router, store,
+│                      data cache, api module and ten screens. parts.jsx is the
+│                      shared component set BOTH surfaces draw from, and
+│                      wall.css is the one system (README.md in there says more)
+├── admin/             THE DESK, at `/admin`. Password checked server side,
+│                      seven sections, its own stylesheet
+├── signature/         where the two signature surfaces were approved. Static
+├── api/               every call to Supabase, one module per concern:
+│   ├── supabase.js    the client, and the no-backend fallback flag
+│   ├── identity.js    one session token across both surfaces (0030)
+│   ├── celestual.js   the ping RPCs (submit, my_pings, renew, withdraw, opt out)
+│   ├── igverify.js    the Instagram DM proof: mint, poll, the pending record
+│   ├── auth.js        the device's copy of a proven handle and its proof
+│   ├── eduverify.js   the campus code, through celestual-edu-verify
+│   ├── handles.js     the handle resolver's client half, through /api/resolve
+│   ├── relogin.js     the sign in link (redeem only; nothing mints one yet)
+│   ├── admin.js       the desk's calls, every one carrying the password
+│   └── billing.js     the paid door. Dormant
+├── App.jsx            the retired design. It serves /paid and nothing else,
+│                      and it is the only thing that still imports card/,
+│                      components/, sky/, galaxy.js, texture.js, theme.js and
+│                      i18n/. Delete /paid and all of that goes with it
+└── styles.css         the reset, and the retired design's ground
 ```
+
+Anything referenced by string is live even when it looks dead: route names,
+RPC names, edge function names and storage bucket names do not appear in an
+import graph.
 
 ## The flow
 
-`landing → who (the send: the handle, confirmed) → compose (the card the ping
-carries — see ../docs/STAR-CARDS.md) → you (identity + optional email; the DM
-verify overlay gates placement) → placed (standing/waiting — the recruiter
-screen) → pings (the quiet status page)`.
+`/` (the hero: their handle) → `/place/<handle>` (the line, then which @ is
+yours, proved by one Instagram DM) → "It's out." → `/sky` (what you have out).
+A mutual appears on the sky first and opens onto `/reveal/<handle>`.
 
-A mutual leaves that line: a two-second announcement, then the status page with
-a **sealed** mutual slot on it. Tapping the slot plays the sky's match and
-unseals both cards together; after that it stays open.
-
-Side doors: `/@poster` prefills the send field (Loop B); `/c/slug` runs the
-campus window (Loop C: count me in → verified preregistration; "it's open.";
-the week-one numbers); the slots screen appears only when a placement is
-attempted with every slot held (and carries the paid door under the free one
-when `VITE_STRIPE_ENABLED=1`); `/paid` is where Stripe returns a buyer;
-`/optout` is the public escape hatch.
+Side doors: `/@handle` is `/place/<handle>` with the name already in it;
+`/berkeley/join` on the wall lands on `/`; `/optout` is the public escape hatch
+and needs no account; `/copy#c=…` and `/signin#t=…` are the two links a mail
+sends somebody to.
 
 ## Privacy invariants the front-end holds
 
-- The plaintext of who you entered lives in this device's localStorage and
-  React state only. Status reads send the list up per call
-  (`celestual_ping_status`); cross-device restore brings back mutual pings by
-  name and unmatched ones as anonymous rows — by design.
-- The in-flight target (`them`) is memory-only until placed.
+- The plaintext of who you entered lives on this device and in React state.
+  The server keeps a salted hash for the mechanism and the normalised handle
+  on your own row for your own restore (`celestual_my_pings`, 0010).
 - Nothing in the app can display information about any other person's
   activity, and no copy implies it (the linter helps: `npm run lint:voice`).
-
-## The sandbox (`/demo`)
-
-Sandboxed end to end — nothing reaches a server. Hardcoded sample data shows
-the school-launch story: sample pings in every state, the Reed campus meter at
-214/300 with a state-cycling control (window → open → reveal), sample world
-counters, and per-row "sandbox: they enter you back" to visualize the full
-match reveal. The verify overlay runs in auto-verify mode (its stand-in until
-real DM verification is wired for the demo) and never leaves the page.
+- The proof (`celestual:auth`) is a bearer secret. Signing out of either
+  surface removes it; so does clearing site data.
 
 ## Environment
 
-See [.env.example](./.env.example). With no env vars the app runs on safe
-local fallbacks; `VITE_IG_VERIFY_ENABLED=1` + a Supabase backend turns on real
-DM verification.
+See [.env.example](./.env.example). With no env vars the app boots on local
+fallbacks: the wall shows an empty index, and Main's third step says the DM
+door is not open, because there is no local stand-in for a proof.
+
+## Gates
+
+`npm run build`, `npm run lint` and `npm run lint:voice`, all from the
+repository root. All three are green as of 4 September.

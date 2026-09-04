@@ -24,7 +24,7 @@
 //   6  the @ layer                                           (alpha)
 //   7  bloom, ACES, dither                                   (the sensor)
 
-import { createGL, guessTier, TIER, Target, makeFullscreen, FULLSCREEN_VS } from './gl.js'
+import { createGL, guessTier, TIER, Target, makeFullscreen } from './gl.js'
 import { makeBlackbodyLUT } from './blackbody.js'
 import { makeNoiseVolume, makeBlueNoise } from './volume.js'
 import { Camera, CAM, FOCAL, TILT } from './camera.js'

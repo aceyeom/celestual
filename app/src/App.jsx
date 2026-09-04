@@ -964,7 +964,8 @@ export default function App() {
       if (!handle || !proof) return false
       setLedgerState({ phase: 'reading' })
       try {
-        const server = await fetchMyPings({ handle, proof })
+        const restored = await fetchMyPings({ handle, proof })
+        const server = restored?.ok ? restored.pings : []
         if (server.length) mergeLedger(server)
         setLedgerState({ phase: 'read' })
         return true

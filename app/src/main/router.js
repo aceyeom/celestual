@@ -32,11 +32,21 @@ export const NOT_OURS = new Set([
   'paid', 'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
 ])
 
+// location.pathname is percent encoded. A link somebody's messaging app has
+// escaped arrives as /%40john.doe or /place/john%2Edoe, and read raw the first
+// is nobody's address and the second is a ping placed on "john2edoe" for sixty
+// days. Decoded once, here; a malformed escape is left as it came.
+function decode(s) {
+  try { return decodeURIComponent(s) } catch { return s }
+}
+
 export function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
   if (p === '/') return { name: 'hero' }
 
-  const [head, id = ''] = p.slice(1).split('/')
+  const [rawHead, rawId = ''] = p.slice(1).split('/')
+  const head = decode(rawHead)
+  const id = decode(rawId)
 
   // The open door: /@handle, which is what a shared link looks like. It is the
   // same act as /place with a name already in it, so it resolves to one screen
@@ -67,7 +77,7 @@ export function parse(pathname) {
 export function isMainPath(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
   if (p === '/') return true
-  const head = p.slice(1).split('/')[0]
+  const head = decode(p.slice(1).split('/')[0])
   if (head.startsWith('@')) return true
   return !NOT_OURS.has(head)
 }

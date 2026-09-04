@@ -80,12 +80,18 @@ export default function Posted({ go, reduce }) {
     if (!draft || !draft.to || !draft.body) { setRow(null); return undefined }
 
     ;(async () => {
-      const out = await write(draft)
+      // The flyer code this session arrived with rides along, so the desk can
+      // say which piece of paper a letter came off. It was never sent, and
+      // the column was null on every row.
+      const out = await write({ ...draft, source: getState().source || null })
       if (!alive.current) return
       if (!out?.ok) {
         setRefused(out?.error || 'network')
         setRow(null)
-        patch({ draft: null })
+        // A refusal the server made is final and the draft goes. A network
+        // that never answered is not a refusal, and three hundred characters
+        // somebody just wrote are not thrown away over it.
+        if (out?.error !== 'network') patch({ draft: null })
         return
       }
       if (out.status === 'rejected') {
@@ -122,7 +128,10 @@ export default function Posted({ go, reduce }) {
   const strip = useMemo(() => {
     if (!row) return []
     const tiles = wall()
-    const i = Math.max(0, tiles.findIndex((t) => t.handle === row.to))
+    const i = tiles.findIndex((t) => t.handle === row.to)
+    // A letter held for a person is not on the index yet. Five other names
+    // with none of them lit is not "yours is the newest"; nothing is.
+    if (i < 0) return []
     return tiles.slice(i, i + 5)
   }, [row])
 
@@ -149,7 +158,8 @@ export default function Posted({ go, reduce }) {
         <Display size="m">
           {refused === 'screened' ? <>It didn&rsquo;t go up.</>
             : refused === 'removed' ? <>That name is off<br />the wall.</>
-            : refused === 'gate' ? <>Letters are written<br />by Berkeley.</>
+            : refused === 'gate' || refused === 'no_session' ? <>Letters are written<br />by Berkeley.</>
+            : refused === 'network' ? <>It did not<br />go through.</>
             : <>Nothing to put up.</>}
         </Display>
         {/* One sentence, and it names the thing rather than citing a policy.
@@ -161,15 +171,16 @@ export default function Posted({ go, reduce }) {
             {refused === 'screened' ? 'the screen held it back'
               : refused === 'removed' ? 'nobody can write to it now'
               : refused === 'gate' ? 'open the letters first'
+              : refused === 'no_session' ? 'this device is no longer signed in. sign in again and it is still here'
               : 'it did not go through'}
           </Label>
         ) : refused === 'network' ? (
-          <Label tone="dim" className="wl-posted-count">it did not go through</Label>
+          <Label tone="dim" className="wl-posted-count">your letter is still here. try again</Label>
         ) : null}
         <div className="wl-gap" />
         <Pill tone="light" icon={<Icon name="write" size={17} />}
-          onClick={() => go(refused === 'gate' ? 'gate' : 'write')}>
-          {refused === 'gate' ? 'open them' : 'write one'}
+          onClick={() => go(refused === 'gate' || refused === 'no_session' ? 'gate' : 'write')}>
+          {refused === 'gate' || refused === 'no_session' ? 'open them' : refused === 'network' ? 'try again' : 'write one'}
         </Pill>
       </div>
     )

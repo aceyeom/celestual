@@ -86,6 +86,14 @@ export const PEEK_DEBOUNCE_MS = 300;
 const memo = new Map();
 const inflight = new Map();
 
+// A peek that found nothing is remembered for a minute. It is not memoised
+// like an answer, because the cache can fill in behind it, but without this
+// every Face on a sky, a search row or a reveal re-asked the function about
+// the same unknown handle on every mount, and a list of eight rows was eight
+// requests each time the list drew.
+const missed = new Map();
+const MISS_MS = 60_000;
+
 // When the server says we are over a cap it also says for how long. Held here
 // so every field in the app goes quiet together rather than each one
 // discovering the limit on its own.
@@ -139,11 +147,19 @@ export async function peekServer(raw) {
   const handle = normHandle(raw);
   if (handle.length < 2 || !resolveEnabled) return null;
   if (memo.has(handle)) return memo.get(handle);
+  if ((missed.get(handle) || 0) > Date.now()) return null;
+  if (inflight.has(handle)) {
+    const r = await inflight.get(handle);
+    return r && r.state === 'found' ? r : null;
+  }
   try {
     const res = await post(handle, true);
     if (!res.ok) return null;
     const data = await res.json();
-    if (!data || data.ok === false || !data.found) return null;
+    if (!data || data.ok === false || !data.found) {
+      missed.set(handle, Date.now() + MISS_MS);
+      return null;
+    }
     const out = shape(handle, data);
     memo.set(handle, out);
     return out;
@@ -179,7 +195,7 @@ export async function resolveHandle(raw) {
       const out = shape(handle, data);
       // An 'unknown' is a transient fact about us, not a fact about the handle,
       // so it is never memoized: the next keystroke gets to try again.
-      if (out.state !== 'unknown') memo.set(handle, out);
+      if (out.state !== 'unknown') { memo.set(handle, out); missed.delete(handle); }
       return out;
     } catch {
       return { state: 'unknown', handle };

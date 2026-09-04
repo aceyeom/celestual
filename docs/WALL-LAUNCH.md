@@ -1,5 +1,13 @@
 # `/berkeley`: what is live, and what you still have to do
 
+> **Superseded.** This audit predates Phase 6b, which put the wall on a server
+> (migration 0032, `celestual-wall-moderate`, `celestual-edu-verify`), and the
+> audit of 4 September (migration 0038), which found that the public index was
+> unreadable by the browser and that the one tap report always failed, and
+> fixed both. Everything below that says the wall reaches no server, calls 0032
+> the wrong schema, or proposes a `0028_the_wall.sql`, is history. The
+> operational checklist that matters now is `docs/launchsteps.md`.
+
 Audited **30 August 2026** against the running systems, not against this
 repository: Supabase project `celestual` (`vwbsjwaqnycyghvwlxhd`, ACTIVE_HEALTHY)
 and Vercel project `celestual` (celestual.us, www.celestual.us, production

@@ -110,13 +110,23 @@ function missingRpc(error) {
 // of a first visit, and a network failure reads the same as not being signed in
 // because there is nothing else the caller could usefully do about it.
 export async function whoami() {
+  const u = await whoamiStrict()
+  return u || ANON
+}
+
+// The same question, keeping two answers apart that whoami folds together: the
+// server said "nobody" (ANON) and nothing answered at all (null). The wall's
+// gate wants the difference, because a session that has actually ended should
+// stop being drawn as signed in, and a flaky connection should not.
+export async function whoamiStrict() {
   if (!hasSupabase) return ANON
   try {
     const { data, error } = await supabase.rpc('celestual_whoami', { p_token: sessionToken() })
-    if (error || !data?.ok || !data.signed_in) return ANON
+    if (error || !data?.ok) return null
+    if (!data.signed_in) return ANON
     return shape(data.user)
   } catch {
-    return ANON
+    return null
   }
 }
 

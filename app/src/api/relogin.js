@@ -95,8 +95,19 @@ export async function requestSignInLink() {
 // Redeem a link token: mint a fresh proof here, send only its hash, and get back
 // the handle it re-verified. On success returns { ok:true, handle, proof }; the
 // caller stores the session. Never throws.
+//
+// Returns { ok:true, handle, proof }, or { ok:false, error } where error is
+// 'invalid' (the server answered and said no: spent, lapsed, or never minted)
+// or 'network' (nothing answered). The screen says different things for those
+// two, and it used to say "lapsed" for both.
+//
+// Honest note on the state of this door: 0029 grants celestual_redeem_login
+// to service_role only, and nothing in the repository mints a row in
+// celestual_login_links or mails one. Until docs/launchsteps.md section 9 is
+// done, every token arriving here is refused, and the screen says so as
+// "lapsed". That is a gap in the product, not in this file.
 export async function redeemSignInLink(token) {
-  if (!hasSupabase || !token) return { ok: false }
+  if (!hasSupabase || !token) return { ok: false, error: 'invalid' }
   try {
     const proof = genProof()
     const proofHash = await sha256Hex(proof)
@@ -108,9 +119,10 @@ export async function redeemSignInLink(token) {
       p_token_hash: tokenHash,
       p_proof_hash: proofHash,
     })
-    if (error || !data?.ok || !data.handle) return { ok: false }
+    if (error) return { ok: false, error: /fetch|network/i.test(String(error.message || '')) ? 'network' : 'invalid' }
+    if (!data?.ok || !data.handle) return { ok: false, error: 'invalid' }
     return { ok: true, handle: data.handle, proof }
   } catch {
-    return { ok: false }
+    return { ok: false, error: 'network' }
   }
 }

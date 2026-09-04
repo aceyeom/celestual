@@ -866,7 +866,6 @@ export class GalaxyField extends SkyEngine {
     this.sealedScreen.length = this.sealed.length
     const flying = this.mode === 'sendoff' && this.modeT < COAL_DUR + RUN_DUR + LAND_DUR
     const n = this.sealed.length
-    const you = linearOf(this.sealHue || this.you)
     const pr = {}
     // A chase drives `focus` too — it is the same solver — but it means
     // something completely different there. In a dive, focus is PROXIMITY: the

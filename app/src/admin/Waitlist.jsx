@@ -6,23 +6,33 @@
 //
 // `letters now` is the column worth having: it says whether the thing they were
 // looking for has since arrived, which is the whole reason to keep the row.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskWaitlist } from '../api/admin.js'
-import { Paging, Empty, When, None } from './parts.jsx'
+import { Paging, Empty, Fault, When, None, clampOffset } from './parts.jsx'
 
 const LIMIT = 100
 
-export default function Waitlist({ password }) {
+export default function Waitlist({ password, onLock }) {
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
   const [busy, setBusy] = useState(true)
+  const seq = useRef(0)
 
   const load = useCallback(async () => {
+    const mine = ++seq.current
     setBusy(true)
     const r = await deskWaitlist(password, { limit: LIMIT, offset })
-    setPage(r && r.ok ? r : { rows: [], total: 0 })
+    if (mine !== seq.current) return
+    if (r?.error === 'password') { onLock && onLock(); return }
+    if (r && r.ok) {
+      const at = clampOffset(offset, r.total || 0, LIMIT)
+      if (at !== offset) { setOffset(at); return }
+      setPage(r)
+    } else {
+      setPage({ rows: [], total: 0, error: r?.error || 'network' })
+    }
     setBusy(false)
-  }, [password, offset])
+  }, [password, offset, onLock])
 
   useEffect(() => { load() }, [load])
 
@@ -35,7 +45,7 @@ export default function Waitlist({ password }) {
         <span className="ad-head-note">names somebody looked for and did not find.</span>
       </div>
 
-      {busy && !page ? <Empty>reading</Empty> : rows.length === 0 ? (
+      {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>everybody who looked found something.</Empty>
       ) : (
         <div className="ad-scroll">

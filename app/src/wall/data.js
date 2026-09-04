@@ -94,6 +94,11 @@ export function rand(key, channel = 0) {
 // screen somebody just walked back from.
 let TILES = []
 let TILES_AT = 0
+// Set when the last read of the index failed and nothing has been drawn from
+// it yet. The masthead used to print "0 letters" over a wall that had not
+// loaded, which is the one number on the surface and was a lie.
+let TILES_ERROR = null
+export function wallError() { return TILES.length ? null : TILES_ERROR }
 const BY_HANDLE = new Map()
 const BY_ID = new Map()
 
@@ -101,6 +106,17 @@ const BY_ID = new Map()
 // been asked, which the screens read as "not yet" rather than as "no".
 let OPEN = null
 export function gateOpen() { return OPEN }
+
+// Everything read about the letters, dropped. Called when the gate opens or
+// closes, because every cached letter was read with the gate the way it was:
+// signing in over a cache of redacted bodies is a wall that stays shut, and
+// signing out over a cache of open ones is a wall that stays open.
+export function forgetLetters() {
+  BY_HANDLE.clear()
+  BY_ID.clear()
+  OPEN = null
+  bump()
+}
 
 // ── the revision, and who is listening ──────────────────────────────────────
 // The corpus changes when a fetch lands, when a letter goes up, and when
@@ -146,8 +162,11 @@ export function loadWall(force = false) {
     if (out.ok) {
       TILES = out.tiles
       TILES_AT = Date.now()
-      bump()
+      TILES_ERROR = null
+    } else {
+      TILES_ERROR = out.error || 'network'
     }
+    bump()
   })
 }
 
@@ -172,9 +191,10 @@ export function loadLetter(id, force = false) {
     const out = await api.letter(id)
     if (!out.ok) {
       // A letter that is gone is a fact worth caching, so a screen that keeps
-      // asking about a removed id does not keep asking.
-      BY_ID.set(id, null)
-      bump()
+      // asking about a removed id does not keep asking. A network that did not
+      // answer is not that fact, and caching it drew "That letter has come
+      // down." over a letter that was up, for the rest of the session.
+      if (out.error === 'gone') { BY_ID.set(id, null); bump() }
       return
     }
     OPEN = out.open

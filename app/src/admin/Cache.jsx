@@ -8,34 +8,57 @@
 // miss taking the ordinary path: one Apify call, one avatar download, one row
 // written. It is the only destructive act on this screen and it costs one
 // billed call, which is why it arms before it fires.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskProfiles, deskProfileForget } from '../api/admin.js'
-import { Search, useDebounced, Paging, Empty, When, State, None, Arm } from './parts.jsx'
+import { Search, useDebounced, Paging, Empty, Fault, When, State, None, Arm, clampOffset, failWord } from './parts.jsx'
 
 const LIMIT = 50
 
-export default function Cache({ password }) {
+export default function Cache({ password, onChanged, onLock }) {
   const [query, setQuery] = useState('')
   const q = useDebounced(query)
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
   const [busy, setBusy] = useState(true)
+  const [said, setSaid] = useState('')
+  const [acting, setActing] = useState(false)
+  const seq = useRef(0)
 
   useEffect(() => { setOffset(0) }, [q])
 
   const load = useCallback(async () => {
+    const mine = ++seq.current
     setBusy(true)
     const r = await deskProfiles(password, { query: q, limit: LIMIT, offset })
-    setPage(r && r.ok ? r : { rows: [], total: 0 })
+    if (mine !== seq.current) return
+    if (r?.error === 'password') { onLock && onLock(); return }
+    if (r && r.ok) {
+      const at = clampOffset(offset, r.total || 0, LIMIT)
+      if (at !== offset) { setOffset(at); return }
+      setPage(r)
+    } else {
+      setPage({ rows: [], total: 0, error: r?.error || 'network' })
+    }
     setBusy(false)
-  }, [password, q, offset])
+  }, [password, q, offset, onLock])
 
   useEffect(() => { load() }, [load])
 
   const forget = useCallback(async (handle) => {
-    await deskProfileForget(password, handle)
+    if (acting) return
+    setActing(true)
+    setSaid('')
+    const r = await deskProfileForget(password, handle)
+    setActing(false)
+    if (!r?.ok) {
+      setSaid(failWord(r))
+      if (r?.error === 'password') onLock && onLock()
+      return
+    }
     await load()
-  }, [password, load])
+    // the rail's count of resolved profiles is one lower now
+    onChanged && onChanged()
+  }, [password, load, onChanged, onLock, acting])
 
   const rows = page?.rows || []
 
@@ -51,7 +74,9 @@ export default function Cache({ password }) {
         </div>
       </div>
 
-      {busy && !page ? <Empty>reading</Empty> : rows.length === 0 ? (
+      {said ? <p className="ad-head-note" style={{ margin: '0 0 12px', color: 'var(--ad-stop)' }}>{said}</p> : null}
+
+      {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>{q ? 'nothing matches that.' : 'nothing has been resolved yet.'}</Empty>
       ) : (
         <div className="ad-scroll">
@@ -63,7 +88,7 @@ export default function Cache({ password }) {
                 <th>name</th>
                 <th>badge</th>
                 <th>face</th>
-                <th className="is-num">looked up</th>
+                <th className="is-num">looked up, two days</th>
                 <th>resolved</th>
                 <th />
               </tr>
@@ -86,7 +111,7 @@ export default function Cache({ password }) {
                   <td className="is-num">{p.searches}</td>
                   <td><When at={p.resolved_at} /></td>
                   <td className="is-act">
-                    <Arm tone="quiet" armed="spend a call" onAct={() => forget(p.handle)} title="deletes the row so the next lookup resolves it again">
+                    <Arm tone="quiet" armed="spend a call" busy={acting} onAct={() => forget(p.handle)} title="deletes the row so the next lookup resolves it again">
                       resolve again
                     </Arm>
                   </td>

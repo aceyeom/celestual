@@ -924,3 +924,52 @@ Phase 8 also put `app/src/wall`, `app/src/main` and `app/src/admin` into the
 voice lint, which reads **58 files** rather than 14. Those three surfaces write
 their copy inline, and between them they are now most of the product's words.
 It found two em dashes in aria-labels the first time it ran.
+
+
+---
+
+## The audit of 4 September (migration 0038)
+
+Everything the audit found in the repository is fixed in the repository; three
+things have to happen outside it.
+
+1. **Apply `0038_the_audit.sql`.** `supabase db push`, or paste it into the SQL
+   editor. It is `create or replace`, `alter` and guarded blocks only; it creates
+   no table. Until it is applied, the wall at `/berkeley` draws **zero names for
+   every visitor** (the `wall_index` view was `security_invoker` over tables
+   `anon` cannot read), and every one tap report fails. Those two alone make
+   this the first thing to do.
+2. **Redeploy three functions**, after the migration:
+   `celestual-notify` (it claims rows through `celestual_notify_take` now and
+   answers 500 without it), `celestual-edu-verify` (six digit codes, the try
+   spent before the code is compared) and `celestual-wall-moderate` (the
+   classifier call is bounded; a timeout is a review). The client accepts a four
+   or six digit campus code, so the order of the client deploy and the function
+   deploy does not matter.
+3. **Check the release flag.** `require_ig_verification` is what makes
+   `celestual_submit` demand the DM proof. This audit made the proof
+   unconditional in `celestual_renew`, `celestual_ping_status`,
+   `celestual_card_photo` and `celestual_card_photo_put` (0038 §7), but
+   `celestual_submit` still reads the flag, and this document has said since
+   section 2 that it must be `true` before any real launch:
+
+   ```sql
+   select value from celestual_settings where key = 'require_ig_verification';
+   -- if it is not 'true', anybody can place a ping as anybody:
+   update celestual_settings set value = 'true' where key = 'require_ig_verification';
+   ```
+
+The sweeps (`celestual_purge_expired`, `wall_expire`, `celestual_sessions_prune`,
+`handle_search_prune`) are scheduled by 0038 itself where `pg_cron` is installed;
+on Supabase that is `create extension pg_cron` under Database → Extensions,
+before the migration runs, or run the migration's last block again after.
+
+Still open, and not in the repository's power to close:
+
+- **The sign in link is dead.** `/signin` redeems `celestual_redeem_login`, which
+  0029 grants to `service_role` only, and nothing mints a row in
+  `celestual_login_links` or mails one. Every link says "lapsed". Section 9 above
+  is what closing it needs; until then the page is honest about the four things
+  that can happen and the comment in `api/relogin.js` says why.
+- **`npm run lint` is green** for the first time since Phase 2. Keep it that way:
+  it is the typecheck substitute Q1 agreed to.

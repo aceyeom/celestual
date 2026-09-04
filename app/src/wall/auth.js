@@ -55,9 +55,10 @@
 // the interface draws from, not the answer.
 
 import { getState, patch, push } from './store.js'
-import { normHandle } from './data.js'
-import { whoami, bindHandle, forgetSession } from '../api/identity.js'
-import { getSession, markVerified } from '../api/auth.js'
+import { normHandle, forgetLetters } from './data.js'
+import { whoamiStrict, bindHandle, forgetSession } from '../api/identity.js'
+import { getSession, markVerified, signOut as dropProof } from '../api/auth.js'
+import { clearPending } from '../api/igverify.js'
 
 export const DOMAIN = 'berkeley.edu'
 
@@ -82,19 +83,21 @@ export function emailFault(raw) {
   return validEmail(e) ? '' : `letters open for ${DOMAIN} addresses`
 }
 
-// The shape only: six digits. The code itself is checked by
-// celestual-edu-verify against a hash, and it is never returned to the browser,
-// so there is nothing here that could check it and nothing here that should
-// try. This is the fail-fast that keeps an obviously wrong entry from costing a
-// round trip.
+// The shape only. The code itself is checked by celestual-edu-verify against
+// a hash, and it is never returned to the browser, so there is nothing here
+// that could check it and nothing here that should try. This is the fail-fast
+// that keeps an obviously wrong entry from costing a round trip.
 //
-// FOUR digits. celestual-edu-verify mints four (`fourDigit()`) and refuses
-// anything else at verify (`code.length !== 4`), and docs/EDU-VERIFICATION.md
-// has said four since it was written. This read six, the gate's field cut the
-// entry off at six and the button stayed dead until six were typed — so the
-// code in the inbox could never be entered and nobody got through the wall.
+// SIX digits since the audit of 4 September, because this code is a secret in
+// a way the DM code is not: guessing it binds a stranger's browser to the
+// victim's identity row. Four digits under six tries was a real hole, and the
+// function now spends a try before it looks at the code, so a burst of guesses
+// cannot all read the same counter. The client and the function have disagreed
+// about this length before and locked everybody out of the wall, so BOTH
+// accept four or six while the two halves deploy in either order: the function
+// mints six and checks a hash, the field takes up to six and lights at four.
 export function validCode(raw) {
-  return /^\d{4}$/.test(String(raw || '').replace(/\s+/g, ''))
+  return /^\d{4,6}$/.test(String(raw || '').replace(/\s+/g, ''))
 }
 
 // The server's last answer about this browser, kept so a screen can draw
@@ -106,16 +109,34 @@ export function isMember() { return !!getState().member }
 
 // Called after celestual-edu-verify confirms a code. The address it takes is
 // the one the server just verified, not one the browser typed.
+//
+// Every letter read before this moment was read from outside the gate and is
+// cached with its body withheld. The cache is dropped here, or "read it" lands
+// on the same redacted card it left and the gate says "signed in".
 export function signIn(email) {
   const e = normEmail(email)
   if (!validEmail(e)) return null
   patch({ member: e })
+  forgetLetters()
   return e
 }
 
+// The whole session, not the wall's half of it. It used to clear the identity
+// token and the wall's store and leave the DM proof in api/auth.js, so a
+// person who signed out here on a shared laptop was still signed in to their
+// sky on Main, one tap away. One session, one sign out.
 export function signOut() {
   patch({ member: null, verified: [] })
   forgetSession()
+  dropProof()
+  clearPending()
+  forgetLetters()
+}
+
+// A handle this device believed was proven and the server has just refused.
+export function forgetVerified(handle) {
+  const h = normHandle(handle)
+  patch({ verified: (getState().verified || []).filter((x) => x !== h) })
 }
 
 // Ask the server who this browser is and cache the answer. Called on mount, so
@@ -123,15 +144,31 @@ export function signOut() {
 // person whose session expired stops being drawn as a member.
 //
 // It never signs anybody OUT on a network failure. A flaky connection is not a
-// reason to tell somebody they are no longer at their own university.
+// reason to tell somebody they are no longer at their own university. A server
+// that answered and said "nobody" is a different thing, and that is the one
+// case a device stops drawing itself as through the gate.
 export async function refresh() {
-  const me = await whoami()
-  if (!me.signedIn) return member()
-  patch({
-    member: me.eduVerified ? (member() || `someone@${me.campus || DOMAIN}`) : null,
-    verified: me.handleVerified && me.handle ? [me.handle] : (getState().verified || []),
-  })
+  const me = await whoamiStrict()
+  if (me === null) return member()
+  const verified = me.handleVerified && me.handle ? [me.handle] : (getState().verified || [])
+  if (!me.signedIn || !me.eduVerified) {
+    if (member()) forgetLetters()
+    patch({ member: null, verified })
+    return null
+  }
+  // The row does not carry the address (0030 keeps it server side on
+  // purpose), so a device that lost its own copy is signed in as the campus
+  // rather than as an invented someone@ at it.
+  patch({ member: member() || (me.campus || DOMAIN), verified })
   return member()
+}
+
+// What the account sheet shows for `member()`: the address when this device
+// still holds it, and the campus when it does not.
+export function memberLabel(m) {
+  const s = String(m || '')
+  if (!s) return ''
+  return s.includes('@') ? s : `a ${s} address`
 }
 
 // The part before the @. What the account sheet shows, because the domain is

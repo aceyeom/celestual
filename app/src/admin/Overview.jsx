@@ -9,7 +9,7 @@
 //   4  which flyer            scan attribution, which is the cheapest question
 //                             in the campaign and the only one that cannot be
 //                             answered later
-import { Ledger, Figure, State, When, Btn, Empty, Json } from './parts.jsx'
+import { Ledger, Figure, State, When, Arm, Empty, Json } from './parts.jsx'
 
 export default function Overview({ data, go, onConflictResolve }) {
   const c = data?.counts || {}
@@ -177,7 +177,7 @@ export default function Overview({ data, go, onConflictResolve }) {
                     </td>
                     <td><When at={x.created_at} /></td>
                     <td className="is-act">
-                      <Btn tone="key" onClick={() => onConflictResolve(x.id)}>looked at it</Btn>
+                      <Arm tone="go" armed="yes, close it" onAct={() => onConflictResolve(x.id, 'looked at from the desk')}>looked at it</Arm>
                     </td>
                   </tr>
                 ))}

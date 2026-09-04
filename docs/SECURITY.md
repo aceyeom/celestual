@@ -55,7 +55,7 @@ hash-to-hash, group-aware. Consequences, by design:
 - The opt-out registry (`celestual_suppressions`) is itself hashed.
 - The renewal email can name no handle — the server doesn't know one.
 
-### §3 — The three-slot rule + the sixty-day lapse
+### §3 — The two-slot rule + the sixty-day lapse
 A person holds at most **3 standing (unresolved, unlapsed) pings**, counted
 across their identity group. Each ping stands **60 days**, then lapses;
 `celestual_purge_expired` (run hourly by celestual-remind) deletes lapsed

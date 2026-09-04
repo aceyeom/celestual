@@ -66,6 +66,11 @@ export async function checkCampusCode(token, code) {
     // it. The screen says so in a sentence rather than showing a slug.
     return { ok: false, error: 'other_campus' }
   }
+  // The address checked out and the session was NOT bound to it: the bind
+  // failed, or the code was one already spent. Signing the device in on the
+  // client anyway drew a member whose every read came back redacted and
+  // whose every write answered 'gate', with nothing on the screen to explain.
+  if (!out.signed_in) return { ok: false, error: 'identity' }
   signIn(out.email)
   return { ok: true, email: out.email }
 }

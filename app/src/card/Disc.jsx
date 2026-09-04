@@ -36,8 +36,7 @@
 // The user chooses the words, the ground, the face and the place. Not the size,
 // not the crop, not the colour, not the alignment: those are derived, which is
 // what keeps forty of these looking like one series.
-import * as React from 'react'
-import { rgba, FONT, TOKENS, LIGHT } from '../components/ui.jsx'
+import { rgba, FONT, TOKENS } from '../components/ui.jsx'
 import { groundSurface } from '../texture.js'
 import {
   stamp, tintOf, plateOf, faceOf, fitRatio, metaSize, TYPE_FLOOR, WORD_FLOOR, LEGEND_OFF,

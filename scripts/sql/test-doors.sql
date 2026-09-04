@@ -57,6 +57,23 @@ select d_ok('the two-argument withdraw no longer exists',
                where n.nspname = 'public' and p.proname = 'celestual_withdraw'
                  and pg_get_function_identity_arguments(p.oid) = 'p_from text, p_to text'));
 
+-- ── 1b. withdrawing a mutual frees the other side ──────────────────────────
+-- 0038. The other person's row used to stay stamped matched_at and
+-- matched_handle, with nobody on the far end of it.
+select d_proof('cy', 'proof-cy');
+insert into celestual_entries (from_handle, to_hash, to_handle, expires_at, matched_at, matched_handle)
+values ('cy', celestual_hash_handle('di'), 'di', now() + interval '60 days', now(), 'di');
+insert into celestual_entries (from_handle, to_hash, to_handle, expires_at, matched_at, matched_handle)
+values ('di', celestual_hash_handle('cy'), 'cy', now() - interval '1 day', now(), 'cy');
+insert into celestual_matches (handle_a, handle_b) values ('cy', 'di');
+select d_ok('the owner withdraws their half of a mutual',
+  (celestual_withdraw('cy', 'di', 'proof-cy')->>'withdrawn') = 'true');
+select d_ok('and the other half is standing again, with a fresh window',
+  (select matched_at is null and matched_handle is null and expires_at > now()
+     from celestual_entries where from_handle = 'di' and to_handle = 'cy'));
+select d_ok('and the match row is gone',
+  not exists (select 1 from celestual_matches where handle_a = 'cy' and handle_b = 'di'));
+
 -- ── 2. link ─────────────────────────────────────────────────────────────────
 select d_ok('anon cannot link handles',
   not has_function_privilege('anon', 'celestual_link(text[])', 'execute'));
@@ -78,6 +95,20 @@ select d_ok('the owner erases with the proof',
   (celestual_erase_account('ana', 'proof-ana')->>'erased')::int >= 1);
 select d_ok('and the rows are gone',
   not exists (select 1 from celestual_entries where from_handle = 'ana'));
+-- 0038. The identity row goes with the account, and its sessions with it.
+insert into celestual_users (instagram_handle, handle_verified_at) values ('erased', now());
+insert into celestual_sessions (token_hash, user_id, expires_at)
+select encode(extensions.digest('token-erased-0000000000', 'sha256'), 'hex'), id, now() + interval '30 days'
+  from celestual_users where instagram_handle = 'erased';
+select d_proof('erased', 'proof-erased');
+-- Two statements: a subquery in the same statement as the call sees the
+-- snapshot from before the call, and the row is still there in it.
+select d_ok('the erase itself answers',
+  (celestual_erase_account('erased', 'proof-erased')->>'handle') = 'erased');
+select d_ok('erasing the account forgets the identity row',
+  not exists (select 1 from celestual_users where instagram_handle = 'erased'));
+select d_ok('and the browser that held it is signed out',
+  (celestual_whoami('token-erased-0000000000')->>'signed_in') = 'false');
 select d_ok('the one-argument erase no longer exists',
   not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                where n.nspname = 'public' and p.proname = 'celestual_erase_account'

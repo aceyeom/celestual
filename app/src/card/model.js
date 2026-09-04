@@ -18,7 +18,7 @@
 // Twenty words, hard. Not a character count: a character count teaches people to
 // write shorter sentences, and a word count teaches them to write one true
 // thing.
-import { FONT, TOKENS, GROUNDS, CARD_FACES } from '../theme.js'
+import { TOKENS, GROUNDS, CARD_FACES } from '../theme.js'
 
 export const MAX_WORDS = 20
 
