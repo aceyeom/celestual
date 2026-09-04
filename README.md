@@ -38,8 +38,6 @@ app/                the SPA. Vite + React, no router library
   src/signature/    where the two signature surfaces were approved. static
   src/admin/        the desk at /admin
   src/api/          every call to Supabase, one module per concern
-  src/card/         the card a ping carries: composer, disc, spread, photos
-  src/App.jsx       the retired design. It serves /paid and nothing else
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
@@ -121,14 +119,10 @@ written and verified, and `launchsteps.md` says in what order to apply them.
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
-| [docs/STAR-CARDS.md](./docs/STAR-CARDS.md) | The card a ping carries, and the seal both halves ride under |
-| [docs/WALL-LAUNCH.md](./docs/WALL-LAUNCH.md) | The wall's own launch notes |
-| [docs/ORBIT-REDESIGN.md](./docs/ORBIT-REDESIGN.md) | The design record for the wall's core screen |
 | [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live, and turning it back off. Dormant |
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md) | The product direction |
-| [docs/MASTER-GUIDE.md](./docs/MASTER-GUIDE.md) | The older, longer version of the same. See open question Q17 |
 | [app/README.md](./app/README.md) | Front end architecture |
 | [app/src/wall/README.md](./app/src/wall/README.md) | The wall, in detail |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, the operator playbook |
@@ -150,6 +144,5 @@ written and verified, and `launchsteps.md` says in what order to apply them.
 | `/admin` | the desk. Password checked server side |
 | `/signature`, `/signature/reveal` | where the two signature surfaces were approved |
 | `/terms`, `/privacy`, `/data-deletion` | static, served by a rewrite |
-| `/paid` | the Stripe return. Dormant, and the last address in the old design |
 
 Anything else draws a not found, in the current design.

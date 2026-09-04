@@ -363,7 +363,8 @@ so it can and should go in **before** anything else in this section.
 
 - [ ] **`celestual_settings.require_ig_verification` must be `'true'`.**
       `docs/SECURITY.md` has called this the release gate since 0004 and
-      `docs/WALL-LAUNCH.md` records it as `'false'`. While it is false the
+      the wall audit of 30 August recorded it as `'false'`, and it was still
+      `'false'` on 4 September. While it is false the
       server places a ping for any typed handle with no proof at all, whatever
       the client sends. One statement, SQL editor:
 
@@ -958,6 +959,18 @@ things have to happen outside it.
    -- if it is not 'true', anybody can place a ping as anybody:
    update celestual_settings set value = 'true' where key = 'require_ig_verification';
    ```
+
+4. **Set the secrets the wall and the mail depend on.** Under Edge Functions →
+   Secrets (or `supabase secrets set`). Without `MODERATION_API_KEY` (an
+   Anthropic Console key) `celestual-wall-moderate` answers `review` for every
+   letter, so every letter lands as `pending` and nothing reaches the wall
+   until somebody publishes it at `/admin`; that is by design, and it is also
+   why a wall with no key on it looks empty. Without `RESEND_API_KEY` and
+   `CELESTUAL_FROM_EMAIL` (a sender on a verified Resend domain) no campus code
+   is mailed, so nobody passes the gate, and no mutual mail goes out. As of
+   this audit, production has sent one campus code ever and verified none, so
+   check those two first. `MODERATION_MODEL` is optional and defaults to the
+   cheapest current model.
 
 The sweeps (`celestual_purge_expired`, `wall_expire`, `celestual_sessions_prune`,
 `handle_search_prune`) are scheduled by 0038 itself where `pg_cron` is installed;

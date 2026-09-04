@@ -16,7 +16,7 @@ which letters it opened. The paragraph below describes the state before that.
 outside the tab it is open in, and it ships populated — seventy-two letters
 across sixty-six handles — so the whole thing can be walked cold, on a phone, by
 somebody who has never seen it. Everything that has to change before it holds
-real letters, in order, is **[../../../docs/WALL-LAUNCH.md](../../../docs/WALL-LAUNCH.md)**.
+real letters, in order, is **[../../../docs/launchsteps.md](../../../docs/launchsteps.md)**.
 
 Run it: nothing to configure. `npm run dev`, open `/berkeley`.
 
@@ -386,7 +386,7 @@ underneath already carried in words, more precisely.
 The one thing in it worth keeping was the arc: a picture of how much of the sixty
 days is left. That now lives **inside the count chip on the sill** as a fill, so
 one object carries the figure, the proportion, and the tap that resets it. See
-`docs/ORBIT-REDESIGN.md` §12 for the whole composition that replaced it.
+the orbit's design record, which went with the orbit on 4 September.
 
 A ping four days from lapsing has its ring drawn almost the whole way round
 with its moon nearly home; one placed this morning is a short stroke at twelve
@@ -564,7 +564,7 @@ which is what keeps the two surfaces one product.
   with a per-letter seal, an author column and a reveal request. It is **not**
   the schema for what is in this directory — there is no author on a letter
   here, no seal and no reveal — and it should be replaced rather than extended.
-  What the shipped wall actually needs is spelled out in docs/WALL-LAUNCH.md.
+  What the shipped wall actually needs is spelled out in docs/launchsteps.md.
   `supabase/functions/celestual-wall-moderate/` is the opposite case: its
   three-layer pre-publication design is exactly what this build now draws, and
   `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
@@ -594,7 +594,7 @@ which is what keeps the two surfaces one product.
   left out, labelled rather than disguised, because a screen that mimes an OAuth
   handshake without saying so is teaching the wrong thing about what this build
   does with what it is given. Each label comes off the day its round trip is
-  real, and not one day before — the order is in docs/WALL-LAUNCH.md.
+  real, and not one day before — the order is in docs/launchsteps.md.
 - **The core service's ledger is real inside the tab and nowhere else.**
   Placing, renewing and letting go write through the same one key as
   everything else, so a ping placed at a demo table survives a reload and the

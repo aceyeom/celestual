@@ -1,5 +1,12 @@
 # STRIPE — connecting it, end to end
 
+> **4 September 2026.** The client half this guide describes (`app/src/api/billing.js`,
+> the `hold.*` and `paid.*` copy in `i18n/strings.js`, the `/paid` return) was
+> deleted with the retired design; see `docs/deletions.md`. The two edge
+> functions (`celestual-stripe`, `celestual-stripe-webhook`) and the SQL are
+> still in the tree. Turning money on again means rebuilding the client side in
+> `app/src/main/`, not restoring this one.
+
 Everything needed to take celestual from "no money anywhere" to "a person can
 hold one more ping for $2.99," with the exact products, the exact prices, the
 exact secrets, and the exact commands. Follow it top to bottom and nothing is

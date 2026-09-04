@@ -6,9 +6,10 @@ The Vite + React SPA. No app server: every call goes straight to Supabase's
 [../design/DESIGN.md](../design/DESIGN.md) and the copy rules in
 [../design/VOICE.md](../design/VOICE.md).
 
-This file described a different app until the audit of 4 September: a state
-machine in `App.jsx`, a `card.js`, a `demoData.js` and a `/demo` sandbox, none
-of which exist. What follows is the tree as it is.
+The retired design (`App.jsx` and the seventeen thousand lines under it: the
+card system, the galaxy, the sky renderer, the old screens, the i18n layer) was
+deleted on 4 September. It served `/paid`, a Stripe return that was never
+turned on, and nothing else. What follows is the tree as it is.
 
 ## Architecture
 
@@ -17,7 +18,7 @@ src/
 ├── main.jsx           the fork. Which surface owns this address is decided
 │                      before anything mounts, so a route is never rendered
 │                      twice in two designs. Every surface is a dynamic import,
-│                      the retired one included, so the entry chunk is small
+│                      so the entry chunk is small
 ├── main/              MAIN, at `/`. The product: hero, place, sky, reveal,
 │                      optout, copy, signin, the not found. router.js is the
 │                      route table; data.js shapes the ping RPCs for the screens
@@ -37,13 +38,8 @@ src/
 │   ├── eduverify.js   the campus code, through celestual-edu-verify
 │   ├── handles.js     the handle resolver's client half, through /api/resolve
 │   ├── relogin.js     the sign in link (redeem only; nothing mints one yet)
-│   ├── admin.js       the desk's calls, every one carrying the password
-│   └── billing.js     the paid door. Dormant
-├── App.jsx            the retired design. It serves /paid and nothing else,
-│                      and it is the only thing that still imports card/,
-│                      components/, sky/, galaxy.js, texture.js, theme.js and
-│                      i18n/. Delete /paid and all of that goes with it
-└── styles.css         the reset, and the retired design's ground
+│   └── admin.js       the desk's calls, every one carrying the password
+└── styles.css         the reset, the ground, the cursor and the motion law
 ```
 
 Anything referenced by string is live even when it looks dead: route names,

@@ -638,6 +638,9 @@ second.
 `MASTER-GUIDE.md`. Confirm, since 86KB of product thinking is not something to
 delete on my reading of a README table.
 
+**Answered 4 September:** deleted, with the other three records of surfaces
+that no longer exist (`STAR-CARDS.md`, `ORBIT-REDESIGN.md`, `WALL-LAUNCH.md`).
+
 ### Q18. Is the i18n layer kept?
 
 `app/src/i18n/strings.js` is 619 lines and holds the canonical copy for the whole

@@ -46,14 +46,10 @@ const dir = (rel) =>
     .map((f) => join(root, rel, f))
 
 const files = [
-  join(root, 'app/src/i18n/strings.js'),
-  // The card (the composer, the prompt, the seeds, the spread) writes its copy
-  // inline rather than through i18n, since it is one locale and one surface. It
-  // is still copy, so it is still held to design/VOICE.md.
-  ...dir('app/src/card'),
-  // The three surfaces the rebuild built. All three write inline for the same
-  // reason the card does, and between them they are now most of the product's
-  // words: the wall's ten screens, Main's four, and the desk's seven.
+  // The three surfaces the rebuild built. All three write their copy inline
+  // (one locale, one surface each), and between them they are all of the
+  // product's words now that the retired design, its i18n layer and the card
+  // went on 4 September: the wall's ten screens, Main's seven, the desk's seven.
   ...dir('app/src/wall'),
   ...dir('app/src/wall/screens'),
   ...dir('app/src/main'),

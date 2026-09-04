@@ -137,7 +137,7 @@ Idempotent migrations, applied in order:
   `match_card`), `celestual_ping_status` and `celestual_my_pings`. The old
   five-argument `celestual_submit` is DROPPED, not kept alongside — PostgREST
   resolves overloads by argument name and two candidates satisfying the same
-  call is an ambiguity error. See ../docs/STAR-CARDS.md §5.
+  call is an ambiguity error. The card system's design record went with the retired design on 4 September; the RPCs stay.
 - `migrations/0023_the_mutual_dm.sql` — **the reveal reaches the person who
   isn't looking.** `celestual_dm_contacts` (handle ⇄ ManyChat contact id, and the
   last time they messaged us — the only thing that decides whether a push is
@@ -163,7 +163,7 @@ Idempotent migrations, applied in order:
   client (`card/model.js` `LEGACY_PLATES`), because a migration that rewrites the
   column destroys the only record of what somebody actually chose and cannot be
   undone. Re-runnable; the faces (`serif`/`sans`/`mono`) are untouched.
-  **See [../design/DESIGN.md](../design/DESIGN.md) and ../docs/STAR-CARDS.md.**
+  **See [../design/DESIGN.md](../design/DESIGN.md).**
 
 - `migrations/0028_handle_resolver.sql` — **the handle resolver.** Strictly
   additive: `celestual_handle_cache` (one row per lowercased handle — display
@@ -300,7 +300,6 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | --- | --- | --- |
 | `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to each side of a match, at addresses they stored (retry + dead-letter). Says whether a card is waiting, never what it says | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-resolve` | **the handle resolver** (0031): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. One Apify actor run per cache miss, profile details only with the post limit at zero. The face is downloaded once into the public `avatars` bucket at `ig/<handle>.jpg` and served to the browser from Supabase, so no Instagram CDN URL (signed, expires within days) ever reaches anybody and a cached card draws a cached face. The cache is permanent; the picture refreshes at thirty days. Caps are three rolling 24h windows enforced in the database (`handle_search_allow`): 20 per signed-in user, 20 per anonymous device, 200 per address, and a cache hit costs nothing because only a call that reached Apify writes a row. On a limit it answers 429 with the seconds remaining. The device id is a UUID this function issues in an httpOnly SameSite=Lax cookie, which is first party only because `/api/resolve` in `vercel.json` rewrites onto it. Never blocks a ping. Deploy with `--no-verify-jwt`. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `APIFY_TOKEN` (optional: `APIFY_ACTOR_ID`) |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |

@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { BASE, legacyRewrite } from './wall/router.js'
-import { isMainPath } from './main/router.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
 // DM code entirely in-tab (see api/igverify.js), so the app just boots.
@@ -60,8 +59,11 @@ const wallPath = path === BASE || path.startsWith(BASE + '/')
 // does: whichever shell mounts owns the address, and two shells reading the
 // same path is how a route ends up rendered twice in two designs.
 //
-// ── what Main deliberately does not claim ────────────────────────────────────
-// Everything else. `main/router.js` carries the list and the reason.
+// ── what Main claims ─────────────────────────────────────────────────────────
+// Everything the other three do not. The retired design used to sit behind
+// that, serving /paid (a Stripe return that was never turned on) and drawing a
+// cold landing for every typo; it went on 4 September, and an address that
+// matches nothing draws Main's own not found.
 //
 // `/signature` still resolves, unchanged. It is where Phase 3 was approved, the
 // two surfaces there are static and take no backend, and keeping it costs one
@@ -77,8 +79,6 @@ const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
 // admin downloads and nobody else downloads it at all.
 const ADMIN = '/admin'
 const adminPath = path === ADMIN
-
-const mainPath = !sigPath && !wallPath && !adminPath && isMainPath(path)
 
 const root = createRoot(document.getElementById('root'))
 
@@ -98,14 +98,6 @@ if (adminPath) {
       </StrictMode>,
     )
   })
-} else if (mainPath) {
-  import('./main/index.jsx').then(({ default: MainApp }) => {
-    root.render(
-      <StrictMode>
-        <MainApp />
-      </StrictMode>,
-    )
-  })
 } else if (wallPath) {
   import('./wall/index.jsx').then(({ default: WallApp }) => {
     root.render(
@@ -115,16 +107,10 @@ if (adminPath) {
     )
   })
 } else {
-  // The retired design, which serves /paid and nothing else. A dynamic import
-  // like the other four: it was the one static import in this file, which put
-  // its whole tree (the galaxy, the three Google faces, every retired screen,
-  // 470 kB before gzip) in the entry chunk of every address in the product.
-  Promise.all([import('./App.jsx'), import('./i18n/index.js')]).then(([{ default: App }, { I18nProvider }]) => {
+  import('./main/index.jsx').then(({ default: MainApp }) => {
     root.render(
       <StrictMode>
-        <I18nProvider>
-          <App />
-        </I18nProvider>
+        <MainApp />
       </StrictMode>,
     )
   })

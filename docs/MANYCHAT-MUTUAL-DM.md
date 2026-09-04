@@ -499,5 +499,5 @@ kill switch that stops all of it in one statement.
 ---
 
 Back to: [MANYCHAT-SETUP.md](./MANYCHAT-SETUP.md) (the verification relay this
-extends) · [STAR-CARDS.md](./STAR-CARDS.md) (why the words stay in the product) ·
+extends) ·
 [SECURITY.md](./SECURITY.md) · [../supabase/README.md](../supabase/README.md)
