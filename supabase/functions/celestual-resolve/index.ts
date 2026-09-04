@@ -9,10 +9,20 @@
 // ── ONE ENDPOINT ─────────────────────────────────────────────────────────────
 //
 //   POST { handle }
-//     { ok:true, found:true,  handle, display_name, is_verified, avatar, cached }
-//     { ok:true, found:false, handle }                  nobody by that name
+//     { ok:true, found:true,  handle, display_name, is_verified, avatar,
+//                             cached, provider }
+//     { ok:true, found:false, handle, provider }        nobody by that name
 //     { ok:false, error:'rate', retry_after }           429, with the seconds
+//     { ok:false, error:'provider' }                    Apify timed out or
+//                                                       failed. NOT a miss.
 //     { ok:false, error:'bad_input' | 'off' }           say so, never guess
+//
+// `cached` says where the ANSWER came from. `provider` says whether this
+// request reached Apify at all, which is the only thing that costs money, and
+// the two are different on one path: a refresh that failed serves yesterday's
+// row (cached:true) after a billed call (provider:true). The billing pilot
+// counts `provider`, not `cached`, and until this field existed it could not
+// tell the two apart.
 //
 // There is no avatar proxy any more. `avatar` is a public Supabase Storage URL
 // the browser fetches directly, and it does not expire. See THE FACE below.
@@ -53,10 +63,15 @@
 //   device_id  20    anonymous, and anonymous is the majority case
 //   ip        200    the backstop, deliberately loose because one Berkeley
 //                    address is a residence hall behind one NAT
+//   global   1000    the ceiling on the day, counted on every call. The other
+//                    three keep one actor honest; this one is what the worst
+//                    day can cost (migration 0037).
 //
 // A CACHE HIT COSTS NOTHING. Only a call that actually reached Apify writes a
-// row, so re-asking about a handle somebody already looked up is always free
-// and the bill is bounded by the number of distinct handles, not by traffic.
+// row, found or not, so re-asking about a handle somebody already looked up is
+// always free and the bill is bounded by the number of distinct handles, not
+// by traffic. A row with no face is still a hit: the face is retried weekly at
+// most, and never at the price of a fresh profile (0037, the leak).
 //
 // On a limit this answers 429 with the seconds until the oldest counted call
 // ages out, so the UI can say when rather than say no.
@@ -68,15 +83,33 @@
 // clearing cookies.
 //
 // It is only first party if the browser reaches this function through
-// celestual.us rather than through *.supabase.co, which is what the
-// `/api/resolve` rewrite in vercel.json is for (open question Q8, answered B).
-// Called cross-origin the cookie is third party, Safari and Chrome will drop
-// it, and the IP counter carries those requests instead. That degradation is
-// designed for rather than assumed away.
+// celestual.us rather than through *.supabase.co, which is what `/api/resolve`
+// is for (open question Q8, answered B). Called cross-origin the cookie is
+// third party, Safari and Chrome will drop it, and the IP counter carries
+// those requests instead. That degradation is designed for rather than assumed
+// away.
+//
+// ── THE PROXY, AND WHOSE ADDRESS THIS IS ─────────────────────────────────────
+// `/api/resolve` is a small Vercel function (api/resolve.js) that forwards the
+// browser's request here. It used to be a bare rewrite, and the audit found
+// what that cost: the address this function saw was Vercel's egress, so the
+// 200 a day backstop was shared by everybody on the same Vercel edge and a
+// visitor's real address was never counted at all. Every anonymous user in a
+// region was one "IP".
+//
+// The proxy sends the visitor's address in x-forwarded-for, which Vercel
+// itself overwrites and does not let a client forge, and proves it is the
+// proxy with x-resolve-proxy, a shared secret. When the secret matches, that
+// address is the one counted. When it does not, or is not configured, the
+// connecting address is used, exactly as before: a request that comes straight
+// to *.supabase.co is counted on the address it came from and cannot name a
+// different one.
 //
 // Secrets (Supabase, Edge Functions, Secrets):
-//   APIFY_TOKEN       Apify API token, scoped to the actor below
-//   APIFY_ACTOR_ID    optional, defaults to the actor in spec section 5
+//   APIFY_TOKEN           Apify API token, scoped to the actor below
+//   APIFY_ACTOR_ID        optional, defaults to the actor in spec section 5
+//   RESOLVE_PROXY_SECRET  the same value as the Vercel env var of that name.
+//                         Without it the backstop counts Vercel, not visitors.
 // Provided by the platform: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
 // Deploy:  supabase functions deploy celestual-resolve --no-verify-jwt
@@ -87,13 +120,20 @@ const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_
 
 const APIFY_TOKEN = Deno.env.get('APIFY_TOKEN') ?? '';
 const APIFY_ACTOR = Deno.env.get('APIFY_ACTOR_ID') ?? 'shu8hvrXbJbY3Eb9W';
+const PROXY_SECRET = Deno.env.get('RESOLVE_PROXY_SECRET') ?? '';
+const PROXY_HEADER = 'x-resolve-proxy';
 
 const AVATAR_BUCKET = 'avatars';
 
 // Apify runs are slower than a plain HTTP lookup because an actor has to start.
-// Twenty seconds is generous for a details-only run and still well short of the
-// platform's own function ceiling.
-const APIFY_TIMEOUT_MS = 20_000;
+// The pilot measured 6 to 21 seconds on a cache miss, and at a 20 second
+// ceiling one of ten blew it. The run is given thirty seconds ON APIFY'S SIDE
+// (`timeout=` on the run): a run this function hangs up on would otherwise
+// keep going, finish, and bill for a result nobody received, which is exactly
+// what happened to `vercel` in the pilot. Our own abort sits just past it so
+// Apify's answer, not our silence, is what ends the wait.
+const APIFY_RUN_TIMEOUT_S = 30;
+const APIFY_TIMEOUT_MS = APIFY_RUN_TIMEOUT_S * 1000 + 3_000;
 const IMAGE_TIMEOUT_MS = 8_000;
 const MAX_IMAGE_BYTES = 3_000_000;
 
@@ -106,7 +146,19 @@ const DEVICE_MAX_AGE = 400 * 86_400; // the longest a browser will keep one anyw
 // backspacing over a typo does not pay for every keystroke and the fact expires
 // on its own.
 const MISS_TTL_MS = 10 * 60_000;
+const MISS_MAX = 2_000;
 const misses = new Map<string, number>();
+
+function rememberMiss(handle: string) {
+  if (misses.size >= MISS_MAX) {
+    const cutoff = Date.now() - MISS_TTL_MS;
+    for (const [k, at] of misses) if (at < cutoff) misses.delete(k);
+    // Still full means two thousand distinct misses inside ten minutes, which
+    // is nobody typing. Forgetting the oldest is the cheap, bounded answer.
+    if (misses.size >= MISS_MAX) misses.delete(misses.keys().next().value!);
+  }
+  misses.set(handle, Date.now());
+}
 
 const CORS_HEADERS = 'authorization, x-client-info, apikey, content-type';
 
@@ -151,15 +203,39 @@ function norm(raw: unknown): string {
     .slice(0, 30);
 }
 
-// Prefer the proxy-set headers a client cannot forge (cf-connecting-ip is
-// written by Cloudflare itself); the first x-forwarded-for hop, which a client
-// CAN prepend, is the last resort only. Same posture as celestual-edu-verify.
+// Constant time, so the proxy secret cannot be guessed a byte at a time off
+// the response clock. Lengths differing is itself a mismatch.
+function sameSecret(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  if (ea.length !== eb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < ea.length; i++) diff |= ea[i] ^ eb[i];
+  return diff === 0;
+}
+
+function firstHop(v: string | null): string | null {
+  return (v || '').split(',')[0].trim() || null;
+}
+
+// Whose address to count. See THE PROXY above.
+//
+// Through our proxy, proven by the secret: the address the proxy forwards,
+// which Vercel wrote and a client cannot forge. Any other way in: the address
+// that actually connected, which Cloudflare writes and a client cannot forge
+// either. The one thing never done is to believe a client-supplied
+// x-forwarded-for on a request that did not prove where it came from.
 function clientIp(req: Request): string | null {
+  const viaProxy = PROXY_SECRET && sameSecret(req.headers.get(PROXY_HEADER) ?? '', PROXY_SECRET);
+  if (viaProxy) {
+    const fwd = firstHop(req.headers.get('x-forwarded-for'));
+    if (fwd) return fwd;
+  }
   return (
     req.headers.get('cf-connecting-ip')?.trim() ||
     req.headers.get('x-real-ip')?.trim() ||
-    (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
-    null
+    firstHop(req.headers.get('x-forwarded-for'))
   );
 }
 
@@ -167,7 +243,14 @@ function readCookie(req: Request, name: string): string | null {
   const raw = req.headers.get('cookie') ?? '';
   for (const part of raw.split(';')) {
     const [k, ...v] = part.trim().split('=');
-    if (k === name) return decodeURIComponent(v.join('=')).slice(0, 64) || null;
+    if (k !== name) continue;
+    // A bare `%` in a cookie throws from decodeURIComponent, and an uncaught
+    // throw here is a 500 for a request that only needed a new cookie.
+    try {
+      return decodeURIComponent(v.join('=')).slice(0, 64) || null;
+    } catch {
+      return null;
+    }
   }
   return null;
 }
@@ -219,56 +302,106 @@ function pick(u: Record<string, unknown>, keys: string[]): unknown {
 // `resultsLimit: 0` is spec section 5's "set the post limit to zero". With
 // `resultsType: 'details'` the actor returns the profile and no media at all,
 // which is both what the product needs and the cheapest thing to ask for.
-async function fromApify(handle: string): Promise<Account | null> {
-  if (!APIFY_TOKEN) return null;
+//
+// On the URL, two guards that live on Apify's side rather than ours:
+//   timeout   the run is killed at thirty seconds. A run we stopped waiting for
+//             used to finish anyway and bill for a result nobody received.
+//   maxItems  one billed result per run, whatever the actor decides to return.
+//
+// The answer is one of four things, and the caller treats each differently:
+//   found     an account. Cached, recorded, answered.
+//   missing   the actor ran and there is no such account. Recorded, held in the
+//             isolate for ten minutes, answered as found:false.
+//   timeout   the run was killed. Recorded (it ran), NOT held as a miss, and
+//             answered as a provider failure: the account may well exist.
+//   error     Apify refused the request (ran:false, nothing recorded), or
+//             the actor ran and returned an item with nothing in it
+//             (ran:true, recorded). Neither is held as a miss, and both are
+//             answered as a provider failure. Before this distinction
+//             existed, all three of the last cases read to a person as "no
+//             account by that name".
+type Lookup =
+  | { kind: 'found'; acct: Account }
+  | { kind: 'missing' }
+  | { kind: 'timeout' }
+  | { kind: 'error'; ran: boolean };
+
+async function fromApify(handle: string): Promise<Lookup> {
+  if (!APIFY_TOKEN) return { kind: 'error', ran: false };
   const { signal, done } = withTimeout(APIFY_TIMEOUT_MS);
   try {
-    const res = await fetch(
+    const url = new URL(
       `https://api.apify.com/v2/acts/${encodeURIComponent(APIFY_ACTOR)}/run-sync-get-dataset-items`,
-      {
-        method: 'POST',
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${APIFY_TOKEN}`,
-        },
-        body: JSON.stringify({
-          directUrls: [`https://www.instagram.com/${handle}/`],
-          resultsType: 'details',
-          resultsLimit: 0,
-          addParentData: false,
-          searchLimit: 1,
-        }),
-      },
     );
+    url.searchParams.set('timeout', String(APIFY_RUN_TIMEOUT_S));
+    url.searchParams.set('maxItems', '1');
+    const res = await fetch(url, {
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${APIFY_TOKEN}`,
+      },
+      body: JSON.stringify({
+        directUrls: [`https://www.instagram.com/${handle}/`],
+        resultsType: 'details',
+        resultsLimit: 0,
+        addParentData: false,
+        searchLimit: 1,
+      }),
+    });
     if (!res.ok) {
-      console.error('apify run failed', res.status);
-      return null;
+      // The body names the reason, and the log used to carry only the status:
+      // four days of "apify run failed 400" said nothing about why. A run that
+      // ran and was killed at the timeout above comes back as a 408, or as a
+      // run-failed error naming TIMED-OUT, and either is a timeout, not a
+      // refusal: it ran, it is recorded, and it is not a miss.
+      const text = (await res.text().catch(() => '')).slice(0, 300);
+      console.error('apify run failed', res.status, text);
+      const timedOut = res.status === 408 || /TIMED.?OUT/i.test(text);
+      return timedOut ? { kind: 'timeout' } : { kind: 'error', ran: false };
     }
     const items = await res.json();
     const u = Array.isArray(items) ? items[0] : items;
-    if (!u || typeof u !== 'object') return null;
+    if (!u || typeof u !== 'object') return { kind: 'missing' };
 
     const rec = u as Record<string, unknown>;
     // An actor that could not reach the account still returns an item, with an
     // error field and no username. That is a miss, not an answer.
-    if (rec.error && !rec.username) return null;
+    if (rec.error && !rec.username) return { kind: 'missing' };
 
     const username = norm(pick(rec, ['username', 'handle', 'ownerUsername']));
-    if (!username) return null;
+    if (!username) return { kind: 'missing' };
+
+    const display_name = String(pick(rec, ['fullName', 'full_name', 'name']) ?? '').slice(0, 120);
+    const pic_url = String(
+      pick(rec, ['profilePicUrlHD', 'profilePicUrl', 'profile_pic_url_hd', 'profile_pic_url']) ?? '',
+    ).slice(0, 2048);
+
+    // A username with no name and no picture at all is not what a profile
+    // looks like: every Instagram account has a picture URL, even the default
+    // grey one. It is what the actor returns when Instagram turned it away
+    // mid-run. The pilot's `supabase` was one of these, and caching it wrote a
+    // faceless, nameless row that every later lookup then paid to refresh.
+    if (!display_name && !pic_url) {
+      console.error('apify item was empty', username);
+      return { kind: 'error', ran: true };
+    }
 
     return {
-      handle: username,
-      display_name: String(pick(rec, ['fullName', 'full_name', 'name']) ?? '').slice(0, 120),
-      is_verified: !!pick(rec, ['verified', 'isVerified', 'is_verified']),
-      is_private: !!pick(rec, ['private', 'isPrivate', 'is_private']),
-      pic_url: String(
-        pick(rec, ['profilePicUrlHD', 'profilePicUrl', 'profile_pic_url_hd', 'profile_pic_url']) ?? '',
-      ).slice(0, 2048),
+      kind: 'found',
+      acct: {
+        handle: username,
+        display_name,
+        is_verified: !!pick(rec, ['verified', 'isVerified', 'is_verified']),
+        is_private: !!pick(rec, ['private', 'isPrivate', 'is_private']),
+        pic_url,
+      },
     };
   } catch (e) {
-    console.error('apify call threw', String(e));
-    return null;
+    const aborted = e instanceof DOMException && e.name === 'AbortError';
+    console.error(aborted ? 'apify call timed out' : 'apify call threw', String(e));
+    return aborted ? { kind: 'timeout' } : { kind: 'error', ran: false };
   } finally {
     done();
   }
@@ -284,17 +417,31 @@ async function storeAvatar(handle: string, url: string): Promise<boolean> {
   const { signal, done } = withTimeout(IMAGE_TIMEOUT_MS);
   try {
     const res = await fetch(url, { signal, headers: { Accept: 'image/*' } });
-    if (!res.ok) return false;
+    // Each refusal is logged with its reason. The audit found thirty faceless
+    // rows and not one line saying why, because every branch here was silent.
+    if (!res.ok) {
+      console.warn('avatar fetch refused', handle, res.status);
+      return false;
+    }
 
     const type = res.headers.get('content-type') || '';
-    if (!type.startsWith('image/')) return false;
+    if (!type.startsWith('image/')) {
+      console.warn('avatar not an image', handle, type);
+      return false;
+    }
     const declared = Number(res.headers.get('content-length') || 0);
-    if (declared > MAX_IMAGE_BYTES) return false;
+    if (declared > MAX_IMAGE_BYTES) {
+      console.warn('avatar too large', handle, declared);
+      return false;
+    }
 
     // Read rather than stream, so the size guard is real even when the upstream
     // declines to declare a length. A profile picture is tens of KB.
     const buf = await res.arrayBuffer();
-    if (buf.byteLength === 0 || buf.byteLength > MAX_IMAGE_BYTES) return false;
+    if (buf.byteLength === 0 || buf.byteLength > MAX_IMAGE_BYTES) {
+      console.warn('avatar wrong size', handle, buf.byteLength);
+      return false;
+    }
 
     const { error } = await supabase.storage
       .from(AVATAR_BUCKET)
@@ -304,7 +451,8 @@ async function storeAvatar(handle: string, url: string): Promise<boolean> {
       return false;
     }
     return true;
-  } catch {
+  } catch (e) {
+    console.warn('avatar fetch threw', handle, String(e));
     return false;
   } finally {
     done();
@@ -331,7 +479,7 @@ type Profile = {
 // The shape the browser gets. `is_private` is deliberately not in it: it is
 // kept (Q9) because a letter to a private account may never arrive, but it is
 // not the card's business and the card is the only reader here.
-function shapeOut(p: Profile, cached: boolean) {
+function shapeOut(p: Profile, cached: boolean, provider: boolean) {
   return {
     ok: true,
     found: true,
@@ -340,6 +488,7 @@ function shapeOut(p: Profile, cached: boolean) {
     is_verified: !!p.is_verified,
     avatar: avatarUrl(p.avatar_path),
     cached,
+    provider,
   };
 }
 
@@ -387,16 +536,19 @@ Deno.serve(async (req) => {
   const { data: cachedRaw } = await supabase.rpc('ig_profile_get', { p_handle: handle });
   const cached = cachedRaw as Profile | null;
 
-  // A hit whose face is still good is the whole answer, and it is free: nothing
-  // is recorded, because nothing was spent.
+  // A hit is the whole answer, and it is free: nothing is recorded, because
+  // nothing was spent. `avatar_stale` is the database's word for "this lookup
+  // may spend a call trying for a better face": thirty days for a face we
+  // have, seven for one we never got (0037). A face-less row inside that week
+  // is a hit like any other.
   if (cached && !cached.avatar_stale) {
-    return json(req, shapeOut(cached, true), 200, cookieHeader);
+    return json(req, shapeOut(cached, true, false), 200, cookieHeader);
   }
 
   // A handle we failed to find a few minutes ago, held in this isolate only.
   const missAt = misses.get(handle);
   if (!cached && missAt && Date.now() - missAt < MISS_TTL_MS) {
-    return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+    return json(req, { ok: true, found: false, handle, provider: false }, 200, cookieHeader);
   }
 
   // ── the caps ───────────────────────────────────────────────────────────────
@@ -410,7 +562,7 @@ Deno.serve(async (req) => {
     // Spec section 5: the seconds remaining, so the UI can say when. A cached
     // row that only wanted a fresher face is still worth serving here rather
     // than refusing outright; the face is thirty days old, not wrong.
-    if (cached) return json(req, shapeOut(cached, true), 200, cookieHeader);
+    if (cached) return json(req, shapeOut(cached, true, false), 200, cookieHeader);
     return json(
       req,
       { ok: false, error: 'rate', retry_after: Number(allow.retry_after ?? 0) },
@@ -420,28 +572,39 @@ Deno.serve(async (req) => {
   }
 
   // ── the call ───────────────────────────────────────────────────────────────
-  const acct = await fromApify(handle);
+  const got = await fromApify(handle);
 
-  if (!acct) {
-    misses.set(handle, Date.now());
-    // A refresh that failed still has yesterday's row, and yesterday's row is a
-    // better answer than none.
-    if (cached) return json(req, shapeOut(cached, true), 200, cookieHeader);
-    return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+  // Recorded against the caps for every call that reached the actor, found or
+  // not, which is what the ledger's own comment says a row is. It used to be
+  // recorded only on a found account, so a handle nobody has ran the actor
+  // and cost nothing here: free, and therefore unlimited. A request Apify
+  // refused outright never ran and is not recorded.
+  const ran = got.kind !== 'error' || got.ran;
+  if (ran) {
+    await supabase.rpc('handle_search_record', {
+      p_user: userId,
+      p_device: device,
+      p_ip: ip,
+      p_handle: handle,
+    });
   }
 
-  // Recorded against the caps only now, on a call that came back with an
-  // account. It used to run before the check above, so an actor that answered
-  // 400, or a handle that does not exist, still spent one of the person's
-  // twenty: a miss costs nothing at Apify and it should cost nothing here. The
-  // in-isolate miss list above is what stops a missing handle being asked for
-  // twenty times in a row for free.
-  await supabase.rpc('handle_search_record', {
-    p_user: userId,
-    p_device: device,
-    p_ip: ip,
-    p_handle: handle,
-  });
+  if (got.kind !== 'found') {
+    // Only a true miss is remembered as one. A timeout or a refusal says
+    // nothing about the account, and remembering it as a miss would tell the
+    // next ten minutes of people that their friend does not exist.
+    if (got.kind === 'missing') rememberMiss(handle);
+    // A refresh that failed still has yesterday's row, and yesterday's row is a
+    // better answer than none. It is cached, and it did cost a call: both true.
+    if (cached) return json(req, shapeOut(cached, true, ran), 200, cookieHeader);
+    if (got.kind === 'missing') {
+      return json(req, { ok: true, found: false, handle, provider: true }, 200, cookieHeader);
+    }
+    // Not a miss. The client draws nothing, exactly as for a rate limit.
+    return json(req, { ok: false, error: 'provider' }, 200, cookieHeader);
+  }
+
+  const acct = got.acct;
   misses.delete(handle);
 
   // The account may answer under a different casing or a redirect; the row is
@@ -457,7 +620,7 @@ Deno.serve(async (req) => {
     p_avatar_ok: stored,
   });
   const row = rowRaw as Profile | null;
-  if (!row) return json(req, { ok: true, found: false, handle }, 200, cookieHeader);
+  if (!row) return json(req, { ok: false, error: 'provider' }, 200, cookieHeader);
 
-  return json(req, shapeOut(row, false), 200, cookieHeader);
+  return json(req, shapeOut(row, false, true), 200, cookieHeader);
 });

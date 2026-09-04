@@ -28,7 +28,16 @@ select r_ok('put normalises the handle', (ig_profile_get('ada')->>'handle') = 'a
 select r_ok('the name is kept',      (ig_profile_get('ada')->>'display_name') = 'Ada Lovelace');
 select r_ok('the badge is kept',     (ig_profile_get('ada')->>'is_verified')::boolean);
 select r_ok('a failed download stores no path', (ig_profile_get('ada')->>'avatar_path') is null);
-select r_ok('a picture we never had is stale', (ig_profile_get('ada')->>'avatar_stale')::boolean);
+-- 0037, the leak: a fresh profile with no face is a cache hit, not a stale row.
+-- Under 0031 it was stale forever, and every lookup of it paid Apify again.
+select r_ok('a face we never got does not make a fresh row stale',
+  (ig_profile_get('ada')->>'avatar_stale')::boolean = false);
+update ig_profiles set resolved_at = now() - interval '8 days' where handle = 'ada';
+select r_ok('a face-less row is retried after a week',
+  (ig_profile_get('ada')->>'avatar_stale')::boolean);
+update ig_profiles set resolved_at = now() - interval '6 days' where handle = 'ada';
+select r_ok('and not before',
+  (ig_profile_get('ada')->>'avatar_stale')::boolean = false);
 
 select ig_profile_put('ada', 'Ada Lovelace', true, false, true);
 select r_ok('a good download stores the path',
@@ -49,6 +58,10 @@ select r_ok('a picture is stale at thirty days',
 update ig_profiles set avatar_fetched_at = now() - interval '29 days' where handle = 'ada';
 select r_ok('and not at twenty nine',
   (ig_profile_get('ada')->>'avatar_stale')::boolean = false);
+-- A row with a picture is judged on the picture alone, however old the profile.
+update ig_profiles set resolved_at = now() - interval '90 days' where handle = 'ada';
+select r_ok('an old profile with a fresh picture is not stale',
+  (ig_profile_get('ada')->>'avatar_stale')::boolean = false);
 
 -- The path is constrained to the handle it belongs to, so one profile can never
 -- point at another profile's picture.
@@ -66,8 +79,15 @@ do $$ begin
 end $$;
 
 -- ── 3. the caps ─────────────────────────────────────────────────────────────
+select r_ok('the day has a ceiling', handle_search_limit('global') = 1000);
 select r_ok('a fresh device may ask',
   (handle_search_allow(null, 'dev-1', '10.0.0.1')->>'ok')::boolean);
+
+-- Every call writes the global row too, whoever made it.
+select handle_search_record(null, 'dev-0', '10.0.0.0', 'first');
+select r_ok('a call is counted on the day',
+  (select count(*) = 1 from handle_search_events where key_type = 'global' and key_value = 'all'));
+delete from handle_search_events where key_value = 'dev-0' or key_value = '10.0.0.0' or handle = 'first';
 
 -- Nineteen calls. Still under.
 do $$ begin
@@ -131,6 +151,31 @@ select r_ok('the address caps at 200',
   (handle_search_allow(null, 'dev-fresh', '10.0.0.9')->>'ok')::boolean = false);
 select r_ok('and the refusal names the address',
   (handle_search_allow(null, 'dev-fresh', '10.0.0.9')->>'key') = 'ip');
+
+-- ── 5b. the ceiling ─────────────────────────────────────────────────────────
+-- Fill the day from many devices on many addresses, none of them near their
+-- own cap, and the next one is refused on the day and not on the person.
+do $$ begin
+  delete from handle_search_events;
+  for i in 1..1000 loop
+    perform handle_search_record(null, 'g-' || i, '10.1.' || (i / 250) || '.' || (i % 250), 'z' || i);
+  end loop;
+end $$;
+select r_ok('the day caps at a thousand calls',
+  (handle_search_allow(null, 'g-fresh', '10.2.0.1')->>'ok')::boolean = false);
+select r_ok('and the refusal names the day',
+  (handle_search_allow(null, 'g-fresh', '10.2.0.1')->>'key') = 'global');
+select r_ok('a signed in person is refused on the day too',
+  (handle_search_allow(gen_random_uuid(), null, null)->>'ok')::boolean = false);
+update handle_search_events set created_at = now() - interval '25 hours' where key_type = 'global';
+select r_ok('the day rolls',
+  (handle_search_allow(null, 'g-fresh', '10.2.0.1')->>'ok')::boolean);
+do $$ begin
+  delete from handle_search_events;
+  for i in 1..200 loop
+    perform handle_search_record(null, 'dev-' || i, '10.0.0.9', 'y' || i);
+  end loop;
+end $$;
 
 -- ── 6. the prune ────────────────────────────────────────────────────────────
 select r_ok('rows inside 48 hours survive the prune',

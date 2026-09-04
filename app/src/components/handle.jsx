@@ -24,7 +24,7 @@
 // profile page the whole thing exists to avoid.
 import * as React from 'react'
 import { normHandle } from '../api/celestual.js'
-import { resolveHandle, peekHandle, resolveEnabled, IDLE } from '../api/handles.js'
+import { resolveHandle, peekHandle, resolveEnabled, IDLE, RESOLVE_DEBOUNCE_MS } from '../api/handles.js'
 import { useI18n } from '../i18n/index.js'
 import {
   Icon, Sonar, rgba, SPACE, TOKENS, TEXT, HAIR, FONT, SIZE, TRACK,
@@ -51,14 +51,17 @@ export function useHandleResolve(value, { enabled = true } = {}) {
       return undefined
     }
     const mine = ++seq.current
-    // Long enough that typing a thirty-character handle is one lookup rather
-    // than thirty; short enough that the answer is on screen before the thumb
-    // gets to the button.
+    // Long enough that typing a handle is one lookup rather than one per pause
+    // for breath. At 300ms the ledger showed `david`, `david_`, `david_j`,
+    // `david_jh` and `david_jhmun` each billed on the way to one name, because
+    // nearly every short prefix is somebody's real account. A second is where
+    // a thumb has stopped rather than hesitated, and on a cache hit the answer
+    // is still on screen inside two.
     const id = setTimeout(async () => {
       if (mine === seq.current) setOut({ state: 'looking', handle: h })
       const r = await resolveHandle(h)
       if (mine === seq.current) setOut(r)
-    }, 300)
+    }, RESOLVE_DEBOUNCE_MS)
     return () => clearTimeout(id)
   }, [value, enabled])
   return out

@@ -64,6 +64,13 @@ const ENDPOINT = import.meta.env.VITE_RESOLVE_ENDPOINT || '/api/resolve';
 //            same as idle to the user: silence, never a false negative.
 export const IDLE = { state: 'idle', handle: '' };
 
+// How long a field waits after the last keystroke before asking. Every ask
+// that misses the cache is an Apify run, and at 300ms the ledger showed five
+// runs on the way to one typed name, because `david`, `david_` and `david_j`
+// are all somebody. A second is a thumb that has stopped, not one that is
+// thinking, and a cache hit still lands inside two.
+export const RESOLVE_DEBOUNCE_MS = 1000;
+
 // One entry per handle, for the life of the tab. A handle already answered is
 // never asked about twice: it makes backspacing free, and it keeps a person
 // walking between screens with the same @ in the field down to one request.
@@ -83,6 +90,8 @@ export function rateLimitedFor() {
 }
 
 function shape(handle, data) {
+  // ok:false covers 'off', 'rate' and 'provider' alike: the resolver could not
+  // tell us, which is never the same as "no account by that name".
   if (!data || data.ok === false) return { state: 'unknown', handle };
   if (!data.found) return { state: 'missing', handle };
   return {

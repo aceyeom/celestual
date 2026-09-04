@@ -12,7 +12,7 @@ import { atHandle, normHandle } from './data.js'
 import { Ecliptic, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
 import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
-import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE } from '../api/handles.js'
+import { resolveHandle, peekHandle, resolveEnabled, monogram, IDLE, RESOLVE_DEBOUNCE_MS } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -923,12 +923,13 @@ export function HandleCard({ handle, onSelect = null, className = '' }) {
     if (known) { setAt(known); return undefined }
     let alive = true
     // Debounced, because this sits under a field somebody is typing into and a
-    // request per keystroke is a request per keystroke.
+    // request per keystroke is an Apify run per keystroke: nearly every short
+    // prefix is somebody's real account. One number, kept in api/handles.js.
     const id = setTimeout(async () => {
       if (alive) setAt({ state: 'looking', handle: h })
       const r = await resolveHandle(h)
       if (alive) setAt(r)
-    }, 300)
+    }, RESOLVE_DEBOUNCE_MS)
     return () => { alive = false; clearTimeout(id) }
   }, [h])
 

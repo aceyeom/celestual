@@ -338,6 +338,7 @@ irreversible are marked.
 0034_retire_the_campaign.sql             section 2f   IRREVERSIBLE, export first
 0035_retire_the_communities.sql          section 2g   IRREVERSIBLE, empty tables
 0036_close_the_open_doors.sql            section 2i   apply FIRST, it needs nothing above
+0037_resolver_cache_and_ceiling.sql      section 3a   after 0031. STOPS A LIVE BILLING LEAK
 ```
 
 ### 2i. The audit. Four doors that were open, and one gate that was shut.
@@ -429,12 +430,39 @@ between.
       The `--no-verify-jwt` is not optional. The browser now reaches this
       function through the `/api/resolve` rewrite as a plain POST with no
       Supabase key on it, and without that flag the platform rejects it.
-- [ ] Confirm the `/api/resolve` rewrite in `vercel.json` points at **this**
-      project. Its destination is a literal URL carrying the project ref,
-      because a Vercel rewrite destination cannot read an environment variable.
-      If the project ref ever changes, this line has to change with it.
+- [ ] `/api/resolve` is now `api/resolve.js`, a Vercel function, not a
+      rewrite. It reads the project from `VITE_SUPABASE_URL`, which Vercel
+      already has, and falls back to the ref written in the file. Nothing to
+      set for that. It ships with the next deploy.
+- [ ] **Set `RESOLVE_PROXY_SECRET`, the same value in two places:** a Vercel
+      environment variable (all environments) and a Supabase edge function
+      secret. Any long random string. Until both are set the edge function
+      counts Vercel's egress as every visitor's address, which is what the
+      audit found it had been doing all along: `docs/HANDLE-RESOLVER.md` 6b.
 - [ ] Set `VITE_HANDLE_RESOLVE=1` in Vercel and redeploy, **last**, after the
       pilot below.
+
+### 3a. The 4 September audit. Apply these now; the resolver is live.
+
+`VITE_HANDLE_RESOLVE` has been `1` since 30 August, so everything below is
+running on production traffic.
+
+- [ ] **Apply `0037_resolver_cache_and_ceiling.sql`.** It stops the leak: a row
+      whose picture never downloaded was stale from birth and re-ran the actor
+      on every lookup. 30 of the 50 rows were in that state; `supabase` had
+      been billed 8 times, `david` 6, `ace` 4. After 0037 a face-less row is a
+      cache hit and retries its picture weekly at most. It also adds the
+      `global` key, 1000 calls a day across everybody, the first thing that
+      bounds the bill rather than one actor.
+- [ ] **Redeploy `celestual-resolve`.** Counts misses, distinguishes a timeout
+      from a miss, gives the run a 30 second timeout on Apify's side so an
+      abandoned run is killed rather than billed, sends `maxItems=1`, refuses
+      to cache an empty item, reports `provider` beside `cached`, and reads the
+      proxy secret.
+- [ ] **Deploy the app.** Brings `api/resolve.js` and the one second debounce.
+- [ ] **Set `RESOLVE_PROXY_SECRET`** on both sides, above.
+- [ ] Then read the `ip` rows in `handle_search_events` after a lookup from a
+      phone: they should be the phone's address, not an AWS one.
 
 ### 3b. The 10 handle billing pilot
 
@@ -446,7 +474,12 @@ Phase 5 deploys and before Phase 6b ships the search UI.
 - [ ] Confirm it equals 10. If it is higher, the actor input is requesting more
       than profile metadata. Stop and tell me before opening it to users.
 - [ ] Resolve the same 10 handles a second time. Confirm the billed count does
-      not move, because cache hits must not reach Apify.
+      not move, because cache hits must not reach Apify. Every second pass
+      answer should carry `provider: false`; that field, not `cached`, is the
+      one that says whether Apify was reached. The first pilot, before 0037,
+      showed 12 billed for 10 handles: `vercel` once more because its first run
+      blew the timeout and was billed anyway, `supabase` once more because its
+      face-less row was never a cache hit.
 - [ ] **Also confirm the fields actually landed.** This is new and it matters.
       `select handle, display_name, is_verified, avatar_path from ig_profiles;`
       after the first pass. Every row should have a `display_name`, and any
@@ -646,12 +679,14 @@ One cron job exists today: `celestual-mutual-dm`.
 Nothing here needs DNS. What it needs is one deploy, because two of the four
 changes below are in `vercel.json` and take effect only when it ships.
 
-- [x] The `/api/resolve` rewrite. Done in Phase 5, Q8 option B, so the
-      resolver's `device_id` cookie is first party rather than a cookie on
-      `*.supabase.co` that Safari and Chrome drop. Its destination is a literal
-      URL carrying the project ref, because a Vercel rewrite cannot read an
-      environment variable: **if the project ref ever changes, this is one of
-      the two places to change it** (the other is `app/vite.config.js`).
+- [x] `/api/resolve`. Done in Phase 5, Q8 option B, so the resolver's
+      `device_id` cookie is first party rather than a cookie on `*.supabase.co`
+      that Safari and Chrome drop. It was a rewrite; since the 4 September
+      audit it is `api/resolve.js`, a Vercel function, because a rewrite handed
+      the edge function Vercel's egress as every visitor's address (section
+      3a). The function reads the project from `VITE_SUPABASE_URL`. **If the
+      project ref ever changes**, `app/vite.config.js` reads the same variable
+      and the fallback literal in `api/resolve.js` is the one line to update.
 - [x] **The CSP now allows the self hosted faces.** `font-src` read
       `https://fonts.gstatic.com` and nothing else, and because `font-src` is
       set explicitly it does not fall back to `default-src 'self'`. Phase 2 self
@@ -696,7 +731,8 @@ local fallback into real behaviour.
 | `VITE_IG_USERNAME` | celestual.us | unchanged |
 | `VITE_HANDLE_SEARCH` | 0 | leave at 0. `celestual-search` is a different feature, never deployed, and no answered question authorised deleting it |
 | `VITE_HANDLE_RESOLVE` | 0 | must become 1 after the Phase 5 pilot passes |
-| `VITE_RESOLVE_ENDPOINT` | unset | **leave unset.** The default `/api/resolve` is the rewrite, and the rewrite is what makes the resolver's device cookie first party. Set it only on a preview that is not behind the rewrite |
+| `VITE_RESOLVE_ENDPOINT` | unset | **leave unset.** The default `/api/resolve` is the Vercel function, and that is what makes the resolver's device cookie first party and its address the visitor's. Set it only on a preview that is not behind it |
+| `RESOLVE_PROXY_SECRET` | unset | **must be set**, and the same value set as a Supabase edge function secret. Section 3a |
 
 Phase 6b changes nothing in that table except which of them now matter. Three
 were flagged as being `0` in production and all three are load bearing now:
@@ -787,7 +823,8 @@ are real redeploys, not formalities.
 
 - [ ] `supabase functions deploy celestual-admin`. After 0033 and 0034, and
       after `CELESTUAL_ADMIN_PASSWORD` is set (section 2i).
-- [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`.
+- [ ] `supabase functions deploy celestual-resolve --no-verify-jwt`. After
+      0037. Section 3a.
 - [ ] `supabase functions deploy celestual-wall-moderate`.
 - [ ] `supabase functions deploy celestual-edu-verify`.
 - [ ] `supabase functions deploy celestual-notify`.
@@ -796,6 +833,7 @@ are real redeploys, not formalities.
 ### The secrets
 
 - [ ] `APIFY_TOKEN`. Section 3.
+- [ ] `RESOLVE_PROXY_SECRET`, in Supabase and in Vercel. Section 3a.
 - [ ] `MODERATION_API_KEY`. Section 7. **Without it every letter is held at
       pending and nothing publishes**, which is the correct failure.
 - [ ] `CELESTUAL_FROM_EMAIL` = `celestual <hello@celestual.us>`. Section 6.
