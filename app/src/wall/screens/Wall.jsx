@@ -492,7 +492,7 @@ export default function Wall({ go, reduce, rev }) {
         <Sparkle size={26} className="wl-mast-spark" twinkle={!reduce} delay={900} />
         <Halftone size={92} grid={20} className="wl-mast-ball" />
         <Display size="xl" className="wl-mast-title">
-          A wall of Berkeley<br />Students that are<br />Unforgettable.
+          A wall of<br />unforgettable<br />berkeley bears.
         </Display>
         <Label tone="dim" className="wl-mast-meta">{letters} letters</Label>
       </div>

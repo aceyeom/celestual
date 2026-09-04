@@ -1798,19 +1798,19 @@
    the one block on a page that is for the person who went looking for it. */
 .wl-colophon {
   flex: 0 0 auto;
-  display: grid; grid-template-columns: 1fr; gap: 24px;
-  padding: 26px 0 calc(22px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: 1fr; gap: 18px;
+  padding: 20px 0 calc(16px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--hair);
 }
-.wl-colophon-brand { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.wl-colophon-brand { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wl-colophon-brand .wl-brand { padding: 0; align-self: flex-start; }
 .wl-colophon-line {
   margin: 0; max-width: 30ch;
   font-family: var(--f-letter); font-optical-sizing: auto;
   font-size: 15px; line-height: 1.5; color: var(--ash);
 }
-.wl-colophon-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 16px; }
-.wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.wl-colophon-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px; }
+.wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .wl-colophon-col .wl-label { margin-bottom: 2px; }
 .wl-colophon-col a, .wl-colophon-col address {
   font-family: var(--f-util); font-size: 13px; line-height: 1.45; font-style: normal;
@@ -1822,7 +1822,7 @@
 .wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.01em; }
 .wl-colophon-foot {
   display: flex; flex-wrap: wrap; gap: 6px 18px;
-  padding-top: 16px; border-top: 1px solid var(--hair-soft);
+  padding-top: 12px; border-top: 1px solid var(--hair-soft);
   font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.5;
   color: var(--ash-dim);
 }
@@ -1832,8 +1832,8 @@
   .wl-colophon-col.is-contact { grid-column: 1 / -1; }
 }
 @media (min-width: 900px) {
-  .wl-colophon { grid-template-columns: minmax(240px, 1fr) auto; column-gap: 64px; align-items: start; padding-top: 30px; }
-  .wl-colophon-cols { gap: 20px 48px; }
+  .wl-colophon { grid-template-columns: minmax(240px, 1fr) auto; column-gap: 56px; align-items: start; padding-top: 22px; }
+  .wl-colophon-cols { gap: 14px 40px; }
   .wl-colophon-foot { grid-column: 1 / -1; }
 }
 

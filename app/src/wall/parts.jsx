@@ -1084,9 +1084,8 @@ export function SiteFoot({ go = null, className = '' }) {
       <nav className="wl-colophon-cols" aria-label="the rest of it">
         <div className="wl-colophon-col">
           <Label tone="dim">product</Label>
-          {link('/berkeley', 'the wall at berkeley')}
+          {link('/berkeley', 'berkeley wall')}
           {link('/place', 'place a ping')}
-          {link('/sky', 'your sky')}
           {link('/optout', 'take your @ off')}
         </div>
         <div className="wl-colophon-col">

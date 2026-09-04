@@ -10,5 +10,10 @@ node_modules
 .DS_Store
 *.log
 
+# screenshots the design scripts write (scripts/shots.mjs, preview.mjs,
+# mail-preview.mjs). 55MB of PNG was tracked here once and it made every
+# clone, Vercel's included, ten times slower. Regenerate them; do not commit them.
+design/shots/
+
 # supabase CLI local state (project ref, pooler url) — never commit
 supabase/.temp/
