@@ -12,7 +12,8 @@ import { Paging, Empty, Fault, When, None, clampOffset } from './parts.jsx'
 
 const LIMIT = 100
 
-export default function Waitlist({ password, onLock }) {
+export default function Waitlist({ password, onLock, overview }) {
+  const scans = overview?.scans || []
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
   const [busy, setBusy] = useState(true)
@@ -77,6 +78,37 @@ export default function Waitlist({ password, onLock }) {
       )}
 
       {page ? <Paging total={page.total || 0} limit={LIMIT} offset={offset} onOffset={setOffset} /> : null}
+
+      {/* ── which flyer ──
+          Scan attribution: the cheapest question in the campaign and the only
+          one that cannot be answered later. It lived on the first screen and
+          belongs with the names that came in off the same flyers. */}
+      <div className="ad-head is-sub">
+        <h2>which flyer</h2>
+        <span className="ad-head-note">every scan of a printed code, and how many letters each code produced.</span>
+      </div>
+      {scans.length ? (
+        <div className="ad-scroll">
+          <table className="ad-table">
+            <thead>
+              <tr><th className="is-wide">code</th><th>campus</th><th className="is-num">scans</th><th className="is-num">letters</th><th>last</th></tr>
+            </thead>
+            <tbody>
+              {scans.map((s) => (
+                <tr key={`${s.source_code}:${s.campus}`}>
+                  <td className="is-wide"><span className="ad-id">{s.source_code}</span></td>
+                  <td>{s.campus}</td>
+                  <td className="is-num is-key">{s.scans}</td>
+                  <td className="is-num">{s.letters}</td>
+                  <td><When at={s.last_at} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <Empty>no flyer has been scanned yet.</Empty>
+      )}
     </>
   )
 }

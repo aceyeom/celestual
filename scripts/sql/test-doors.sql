@@ -115,12 +115,19 @@ select d_ok('the one-argument erase no longer exists',
                  and pg_get_function_identity_arguments(p.oid) = 'p_handle text'));
 
 -- ── 4. suppress ─────────────────────────────────────────────────────────────
+-- 0039: the opt out takes the DM proof. Without one nothing is read and the
+-- refusal says nothing about the name.
 insert into celestual_entries (from_handle, to_hash, to_handle, expires_at)
 values ('dee', celestual_hash_handle('bo'), 'bo', now() + interval '60 days');
-select d_ok('suppress still needs no proof',
-  (celestual_suppress('bo')->>'suppressed') = 'bo');
-select d_ok('and no longer says how much it erased',
-  not (celestual_suppress('bo') ? 'erased'));
+select d_ok('suppress refuses without a proof',
+  (celestual_suppress('bo')->>'error') = 'unverified');
+select d_ok('and erased nothing on the refusal',
+  exists (select 1 from celestual_entries where to_handle = 'bo'));
+select d_proof('bo', 'proof-bo');
+select d_ok('with the proof it goes through',
+  (celestual_suppress('bo', 'proof-bo')->>'suppressed') = 'bo');
+select d_ok('and does not say how much it erased',
+  not (celestual_suppress('bo', 'proof-bo') ? 'erased'));
 select d_ok('and the rows pointing at the name are gone',
   not exists (select 1 from celestual_entries where to_handle = 'bo'));
 select d_ok('and the name is on the suppression list',

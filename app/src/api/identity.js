@@ -74,6 +74,23 @@ export function sessionToken() {
   return memory
 }
 
+// Take a token minted elsewhere as this device's session. The one caller is
+// /signin, for a link the desk minted (migration 0039): the desk bound the
+// token to a row that has already proved a campus, and the browser becomes
+// that row by holding it. Nothing about the token is checked here, because
+// the server checks it on every call and an unknown one is simply nobody.
+export function adoptSession(token) {
+  const t = String(token || '').trim()
+  if (t.length < 16 || t.length > 256) return false
+  memory = t
+  try {
+    localStorage.setItem(KEY, t)
+  } catch {
+    // Tab-lifetime, as above.
+  }
+  return true
+}
+
 // Forget this device's session. The row and everything in it stays; what goes
 // is this browser's claim on it.
 export function forgetSession() {

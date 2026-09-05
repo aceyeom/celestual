@@ -20,8 +20,10 @@ import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, 
 // it is punctuation and not a decoration — the poster's title has one and its
 // nav does not, and that distinction is the difference between a statement and
 // a label.
-export function Display({ children, size = 'xl', as: Tag = 'h1', className = '', style, id }) {
-  return <Tag id={id} className={`wl-display is-${size} ${className}`} style={style}>{children}</Tag>
+// `ref` rides through to the element (React 19 passes it as a prop), so a
+// screen can hand its headline to the sky (ground.jsx useSkyAvoid).
+export function Display({ children, size = 'xl', as: Tag = 'h1', className = '', style, id, ref }) {
+  return <Tag ref={ref} id={id} className={`wl-display is-${size} ${className}`} style={style}>{children}</Tag>
 }
 
 // The tiny letterspaced monospace the poster runs under its title and in its
@@ -375,9 +377,15 @@ export function Paper({ dateline, title, crest, children, foot, tone = '', class
 // one, and this is where that stops being a convention and starts being
 // enforced.
 export function HandleField({ value, onChange, onSubmit, autoFocus = false, locked = false,
-  placeholder = '', label = 'Instagram handle', size = '', busy = false }) {
+  placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null }) {
   const ref = useRef(null)
   const id = useId()
+  // The caller's own handle on the input, for "not them? change it": a
+  // control that sends the person back to the field has to reach the field.
+  const setRef = useCallback((el) => {
+    ref.current = el
+    if (inputRef) inputRef.current = el
+  }, [inputRef])
 
   useEffect(() => {
     if (!autoFocus || !ref.current) return
@@ -392,7 +400,7 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, lock
     <div className={`wl-field${size ? ` is-${size}` : ''}${locked ? ' is-locked' : ''}${busy ? ' is-busy' : ''}`}>
       <span className="wl-at" aria-hidden="true">@</span>
       <input
-        ref={ref} id={id} aria-label={label} type="text" value={value}
+        ref={setRef} id={id} aria-label={label} type="text" value={value}
         readOnly={locked} placeholder={placeholder}
         autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false"
         inputMode="text" enterKeyHint="go"
@@ -794,7 +802,42 @@ export function useResolver(handle) {
 
   const settled = !resolveEnabled || h.length < 2
     || at.state === 'found' || at.state === 'missing' || asked.current === h
-  return { at, ask, settled }
+  return { at, ask, settled, looking: at.state === 'looking' }
+}
+
+// ── the words under the field while the resolver is out ────────────────────
+// A cold handle takes six to twenty seconds, sometimes thirty, and a card
+// with a light running round it for twenty seconds with nothing said is a
+// screen that has frozen. So the field says what it is doing, and after a
+// while it says that this is normal. Ash, not the accent: nothing has failed.
+export function useLookingWords(at) {
+  const looking = at?.state === 'looking'
+  const since = useRef(0)
+  const [, bump] = useState(0)
+  useEffect(() => {
+    if (!looking) return undefined
+    since.current = Date.now()
+    bump((n) => n + 1)
+    const id = setInterval(() => bump((n) => n + 1), 1000)
+    return () => clearInterval(id)
+  }, [looking, at?.handle])
+  if (!looking) return ''
+  const s = (Date.now() - since.current) / 1000
+  if (s < 6) return `looking for ${atHandle(at.handle)} on instagram`
+  if (s < 16) return 'still looking. a first look at a name takes a few seconds'
+  return 'instagram is slow to answer. this can take up to half a minute'
+}
+
+// What the act's capsule says once the card is up. The second press is
+// against a person, and the button says which person it is agreeing to.
+export function confirmWord(at, idle) {
+  switch (at?.state) {
+    case 'looking': return 'looking'
+    case 'found':   return 'yes, that\u2019s them'
+    case 'missing': return 'use it anyway'
+    case 'unknown': return 'go on anyway'
+    default:        return idle
+  }
 }
 
 // ── the face ────────────────────────────────────────────────────────────────
@@ -992,23 +1035,32 @@ export function Light({ on = true, plate = 'star', className = '' }) {
 //   missing  no account by that name, said in one line, and the act still goes
 //            through. Our provider is imperfect and somebody who knows their
 //            friend's handle is right.
+//   unknown  we could not check: offline, capped, the provider down or slow.
+//            Said as that, in one line, and never as "no account": the two
+//            are different facts and reporting them the same way would be
+//            telling somebody their friend does not exist. It used to draw
+//            nothing, and a press that drew nothing and moved on read as a
+//            flow that skipped the confirmation.
 export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
   const h = normHandle(at.handle)
 
-  // Idle and unknown draw nothing. "Unknown" is our lookup failing, not an
-  // answer about the account, and reporting the two the same way would be
-  // telling somebody their friend does not exist.
-  if (!at || at.state === 'idle' || at.state === 'unknown') return null
+  if (!at || at.state === 'idle') return null
 
   const looking = at.state === 'looking'
   const missing = at.state === 'missing'
+  const unknown = at.state === 'unknown'
   const pick = typeof onSelect === 'function'
   const Tag = pick ? 'button' : 'div'
-  const cls = ['wl-card', looking ? 'is-looking' : missing ? 'is-missing' : 'is-found', pick && 'is-pick', className]
+  const cls = ['wl-card',
+    looking ? 'is-looking' : missing ? 'is-missing' : unknown ? 'is-unknown' : 'is-found',
+    pick && 'is-pick', className]
     .filter(Boolean).join(' ')
-  const mono = looking ? '' : missing ? h.slice(0, 1).toUpperCase() : monogram(at)
-  const name = looking ? '' : missing ? 'no account by that name' : (at.name || `@${at.handle}`)
-  const under = looking ? '' : missing ? `@${h}` : (at.name ? `@${at.handle}` : '')
+  const mono = looking ? '' : (missing || unknown) ? h.slice(0, 1).toUpperCase() : monogram(at)
+  const name = looking ? ''
+    : missing ? 'no account by that name'
+    : unknown ? 'could not check that one right now'
+    : (at.name || `@${at.handle}`)
+  const under = looking ? '' : (missing || unknown) ? `@${h}` : (at.name ? `@${at.handle}` : '')
   const live = pick ? { type: 'button', onClick: looking ? undefined : onSelect, disabled: looking } : {}
 
   return (
@@ -1046,10 +1098,16 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
 // ── the foot of the site ────────────────────────────────────────────────────
 // The same block under the front door, under the wall, and (restated in
 // legal.css, because a static page cannot import this) under the three legal
-// pages: the lockup and the one sentence, the addresses on the product, the
-// legal pages, and how to reach the company. It replaced a row of five links
-// with nothing behind them, which is what a footer looks like when nobody has
-// decided what a footer is for.
+// pages: the lockup and the one sentence, the legal pages, and how to reach
+// the company. It replaced a row of five links with nothing behind them, which
+// is what a footer looks like when nobody has decided what a footer is for.
+//
+// ── what came off it ────────────────────────────────────────────────────────
+// A third column called "product": the wall, the composer and the opt out. The
+// wall has its own door in the bar, the composer is the whole page above the
+// foot, and the opt out is a privacy control rather than a product, so it
+// stands with the legal pages. Three columns on a phone was also the reason
+// the foot was taller than the hero's type block: it is two now, and short.
 //
 // It is the one place the company is written as a company: the name, a
 // contact address, a telephone and a street. A product that asks somebody to
@@ -1088,22 +1146,17 @@ export function SiteFoot({ go = null, className = '' }) {
 
       <nav className="wl-colophon-cols" aria-label="the rest of it">
         <div className="wl-colophon-col">
-          <Label tone="dim">product</Label>
-          {link('/berkeley', 'berkeley wall')}
-          {link('/place', 'place a ping')}
-          {link('/optout', 'take your @ off')}
-        </div>
-        <div className="wl-colophon-col">
           <Label tone="dim">legal</Label>
           {link('/terms', 'terms')}
           {link('/privacy', 'privacy')}
           {link('/data-deletion', 'deleting your data')}
+          {link('/optout', 'take your @ off')}
         </div>
         <div className="wl-colophon-col is-contact">
           <Label tone="dim">contact</Label>
           <a className="wl-h" href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
           <a className="wl-h" href={`tel:${COMPANY.tel}`}>{COMPANY.phone}</a>
-          <address>{COMPANY.address[0]}<br />{COMPANY.address[1]}</address>
+          <address>{COMPANY.address[0]}, {COMPANY.address[1]}</address>
         </div>
       </nav>
 

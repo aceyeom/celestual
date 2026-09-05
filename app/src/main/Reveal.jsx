@@ -49,6 +49,7 @@ import { normHandle, atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
 import { myPings, sinceAgo } from './data.js'
 import LiquidMark from '../wall/LiquidMark.jsx'
+import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
 
 // One side of it: the paper, the person, the line. The person is parts.jsx
@@ -78,6 +79,7 @@ function Card({ handle, ping, side, delay }) {
 export default function Reveal({ go, who, known = true, id, still = false }) {
   const them = normHandle(id)
   const [mutual, setMutual] = useState(undefined)
+  const avoid = useSkyAvoid()
 
   // The mutual itself, off the same RPC the sky reads. Asked here as well as
   // there so a shared or reloaded address lands on the screen rather than on an
@@ -137,7 +139,7 @@ export default function Reveal({ go, who, known = true, id, still = false }) {
         </span>
       </div>
 
-      <h1 className="wl-display is-xl sg-in sg-reveal-say" style={{ '--d': '520ms' }}>
+      <h1 ref={avoid} className="wl-display is-xl sg-in sg-reveal-say" style={{ '--d': '520ms' }}>
         it&#8217;s mutual.
       </h1>
 

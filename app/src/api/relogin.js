@@ -5,14 +5,16 @@
 // iOS ITP, a new device. A one time link in a mail was meant to trade the
 // recurring DM for a tap, and this is the half of it that shipped: the redeem.
 //
-// ── the honest state of this door ───────────────────────────────────────────
-// `celestual_redeem_login` (migration 0029) is granted to service_role only,
-// and nothing in the repository mints a row in `celestual_login_links` or
-// mails one. So every token arriving at /signin is refused, and the screen
-// says so as "lapsed". docs/launchsteps.md section 9 is what closing the gap
-// needs. The rest of this module (the local router, the bind, the lookup, the
-// request that always answered "unwired") went on 4 September with the
-// retired design that called it.
+// ── the state of this door ──────────────────────────────────────────────────
+// `celestual_redeem_login` was granted to service_role only until migration
+// 0039, so every token that reached /signin was refused at the door; it is
+// callable by the browser now, because the token is the credential and the
+// function mints nothing without it. What mints a token today is the desk
+// (`celestual_desk_signin`): a link the team hands somebody, or opens
+// themselves, that signs a browser in as a handle with no DM. Nothing mails
+// one yet; docs/launchsteps.md section 9 is what that needs. The rest of this
+// module (the local router, the bind, the lookup, the request that always
+// answered "unwired") went on 4 September with the retired design.
 import { supabase, hasSupabase } from './supabase.js'
 import { genProof, sha256Hex } from './igverify.js'
 

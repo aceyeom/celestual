@@ -149,8 +149,9 @@ export default function Handles({ password, initialHandle = '', onLock }) {
               </Arm>}
           </div>
           <div className="ad-head-note">
-            admitting somebody here marks the old record manual. it does not prove a handle:
-            that needs the dm code, and nothing on this screen can stand in for it.
+            admitting somebody here marks the old record manual and needs a code they started.
+            for a person whose code never came, the sign in link on the access screen is the
+            cleaner door: it leaves them holding the same proof the dm would have.
           </div>
         </div>
       ) : look?.error ? (

@@ -114,6 +114,13 @@
 // to *.supabase.co is counted on the address it came from and cannot name a
 // different one.
 //
+// ── THE SWITCH ───────────────────────────────────────────────────────────────
+// The desk can pause the meter (migration 0039, `resolver_enabled` in
+// celestual_settings). It is read inside handle_search_allow, on the same call
+// that checks the caps, so it costs nothing extra and it applies only to the
+// path that would reach Apify: a cache hit answers whether the switch is on
+// or off, because a cache hit is free.
+//
 // Secrets (Supabase, Edge Functions, Secrets):
 //   APIFY_TOKEN           Apify API token, scoped to the actor below
 //   APIFY_ACTOR_ID        optional, defaults to the actor in spec section 5
@@ -575,10 +582,15 @@ Deno.serve(async (req) => {
     p_ip: ip,
   });
   if (allow && allow.ok === false) {
-    // Spec section 5: the seconds remaining, so the UI can say when. A cached
-    // row that only wanted a fresher face is still worth serving here rather
-    // than refusing outright; the face is thirty days old, not wrong.
+    // A cached row that only wanted a fresher face is still worth serving
+    // here rather than refusing outright; the face is thirty days old, not
+    // wrong. That holds for the switch as much as for a cap.
     if (cached) return json(req, shapeOut(cached, true, false), 200, cookieHeader);
+    // The desk turned the resolver off (0039, resolver_enabled). Answered as
+    // 'off', which the client draws as nothing, and never as a rate limit:
+    // there is no number of seconds after which this comes back on its own.
+    if (allow.off) return json(req, { ok: false, error: 'off' }, 200, cookieHeader);
+    // Spec section 5: the seconds remaining, so the UI can say when.
     return json(
       req,
       { ok: false, error: 'rate', retry_after: Number(allow.retry_after ?? 0) },

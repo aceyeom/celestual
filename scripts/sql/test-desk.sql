@@ -292,10 +292,12 @@ select d_ok('anon cannot execute any desk function',
     select 1 from information_schema.routine_privileges
      where routine_schema = 'public' and routine_name like 'celestual_desk_%'
        and grantee in ('anon', 'authenticated', 'PUBLIC')));
-select d_ok('service_role can execute all eleven',
+select d_ok('service_role can execute every one of them',
   (select count(distinct routine_name) from information_schema.routine_privileges
     where routine_schema = 'public' and routine_name like 'celestual_desk_%'
-      and grantee = 'service_role' and privilege_type = 'EXECUTE') = 11);
+      and grantee = 'service_role' and privilege_type = 'EXECUTE')
+  = (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname like 'celestual_desk_%'));
 
 -- ── 9. what the desk is not allowed to do ───────────────────────────────────
 -- handle_verified_at has exactly one writer and it demands a DM proof. If any

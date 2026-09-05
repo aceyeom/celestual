@@ -139,9 +139,9 @@ written and verified, and `launchsteps.md` says in what order to apply them.
 | `/reveal/<handle>` | a mutual, opened |
 | `/berkeley` | the wall, and eight addresses under it |
 | `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
-| `/optout` | take a handle off, permanently, with no account |
+| `/optout` | take a handle off, permanently, proved with one DM, no account |
 | `/copy`, `/signin` | the two links a mail sends somebody to |
-| `/admin` | the desk. Password checked server side |
+| `/admin` | the desk. Password checked server side. `#reports`, `#people=@handle` and the other section names in the fragment open a screen directly |
 | `/signature`, `/signature/reveal` | where the two signature surfaces were approved |
 | `/terms`, `/privacy`, `/data-deletion` | static, served by a rewrite |
 

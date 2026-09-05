@@ -134,7 +134,8 @@ export async function retirePing({ me, them, proof }) {
 //                  sessions and its letters with it.
 //   suppressHandle "nobody may ever enter my @." The real opt-out, for any
 //                  handle owner whether or not they use celestual. Permanent
-//                  by intent, lifted by hand on request, and it needs no proof.
+//                  by intent, lifted by hand on request, and since 0039 it
+//                  needs the same one DM proof placing a ping needs.
 export async function eraseAccount(handle, proof) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
@@ -148,12 +149,17 @@ export async function eraseAccount(handle, proof) {
   return data; // { erased: number, handle: string } or { erased:0, error }
 }
 
-export async function suppressHandle(handle) {
+// Since 0039 it asks for the DM proof too: one DM proves the handle to
+// anybody who holds the account, user or not, and without it nothing is read.
+export async function suppressHandle(handle, proof) {
   if (!hasSupabase) {
     await new Promise((r) => setTimeout(r, 300));
     return { suppressed: normHandle(handle) };
   }
-  const { data, error } = await supabase.rpc('celestual_suppress', { p_handle: handle });
+  const { data, error } = await supabase.rpc('celestual_suppress', {
+    p_handle: handle,
+    p_proof: proof || null,
+  });
   if (error) throw error;
-  return data; // { suppressed: string } or { suppressed:null, error:'rate_limited' }
+  return data; // { suppressed: string } or { suppressed:null, error:'rate_limited'|'unverified' }
 }

@@ -27,7 +27,8 @@ src/
 │                      shared component set BOTH surfaces draw from, and
 │                      wall.css is the one system (README.md in there says more)
 ├── admin/             THE DESK, at `/admin`. Password checked server side,
-│                      seven sections, its own stylesheet
+│                      eleven screens in four groups (today, people, the wall,
+│                      the team), a growth graph, its own stylesheet
 ├── signature/         where the two signature surfaces were approved. Static
 ├── api/               every call to Supabase, one module per concern:
 │   ├── supabase.js    the client, and the no-backend fallback flag

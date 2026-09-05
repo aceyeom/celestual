@@ -73,7 +73,9 @@ use never feels it; a sweep trips it fast.
 **per-`from` handle (20/hr)**, **per-target (60/hr, compared by hash)**.
 Attempt logs store the target hashed and are pruned on a rolling ~2-hour
 basis. `celestual_suppress` is rate-limited per IP (10/hr) against mass-wipe
-griefing; verification starts are capped per IP and per handle. Since 0009 the
+griefing and, since 0039, takes the DM proof, so a refusal costs the same
+quota as a real opt-out and says nothing about the name; verification starts
+are capped per IP and per handle. Since 0009 the
 "per-IP" identity comes from `celestual_client_ip()`, which prefers
 `cf-connecting-ip` (written by Cloudflare itself — a client cannot forge it)
 over the spoofable first `x-forwarded-for` hop, so rotating fake XFF values no
@@ -225,8 +227,13 @@ carries the seal rule.
 `celestual_suppress` is the opt-out any handle owner — user or not — can use
 without an account: it hashes the handle into the block list and erases
 **everything** referencing it (pings both directions, matches, pending mail,
-membership, worlds, campus preregistrations). Free, immediate, never behind a
-login, rate-limited against griefing. It is also how "delete everything" works
+membership, worlds, campus preregistrations, the identity row). Free,
+immediate, never behind a login, rate-limited against griefing. Since 0039 it
+takes the same one-DM proof placing a ping takes: anybody who holds the
+Instagram account can prove it, user or not, and without the proof nothing is
+read and the refusal is the same whether or not the name was ever on the
+books. Before that, anybody could type any handle into `/optout` and make it
+un-pingable for good, erasing its owner's pings on the way. It is also how "delete everything" works
 for a user's own handle. Reachable at `/optout` and documented on
 `/data-deletion`.
 

@@ -15,9 +15,18 @@
 //
 // Either way every report on the same letter closes together, because three
 // people reporting one letter is one decision.
+//
+// ── what a decision needs, on the row ───────────────────────────────────────
+// The letter, the reason, and three numbers the desk used to have to go and
+// find: how many reports the reporter has filed (a person who reports
+// everything is a different case from a person who reported once), how many
+// letters the author has written and how many were reported (the same for
+// the author), and whether the name is already shut. Two doors lead out of a
+// report besides the decision: the author, whole, on the people screen, and
+// the name, shut, so nothing more is written to it.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { deskReports, deskReportResolve } from '../api/admin.js'
-import { Tabs, Paging, Empty, Fault, When, State, None, Btn, Arm, clampOffset, failWord } from './parts.jsx'
+import { deskReports, deskReportResolve, deskNameShut, deskNameOpen } from '../api/admin.js'
+import { Tabs, Paging, Empty, Fault, When, State, None, Btn, Arm, Ledger, Figure, Note, clampOffset, failWord } from './parts.jsx'
 
 const LIMIT = 50
 const TABS = [
@@ -27,7 +36,7 @@ const TABS = [
   { value: '', label: 'all' },
 ]
 
-export default function Reports({ password, onChanged, onLock }) {
+export default function Reports({ password, go, onChanged, onLock }) {
   const [status, setStatus] = useState('open')
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
@@ -58,26 +67,27 @@ export default function Reports({ password, onChanged, onLock }) {
 
   useEffect(() => { load() }, [load])
 
-  const resolve = useCallback(async (id, uphold) => {
+  // One act at a time, and the answer is read: a failed write used to close
+  // the drawer and reload an unchanged list, which is what "done" looks like.
+  const act = useCallback(async (fn, keep = false) => {
     if (acting) return
     setActing(true)
     setSaid('')
-    const r = await deskReportResolve(password, id, uphold, note)
+    const r = await fn()
     setActing(false)
     if (!r?.ok) {
       setSaid(failWord(r))
       if (r?.error === 'password') onLock && onLock()
-      // Somebody else decided it: the list is stale, so read it again.
       if (r?.error === 'already_resolved') await load()
       return
     }
-    setNote('')
-    setOpen(null)
+    if (!keep) { setNote(''); setOpen(null) }
     await load()
     onChanged && onChanged()
-  }, [password, note, load, onChanged, onLock, acting])
+  }, [load, onChanged, onLock, acting])
 
   const rows = page?.rows || []
+  const c = page?.counts || {}
 
   return (
     <>
@@ -91,10 +101,19 @@ export default function Reports({ password, onChanged, onLock }) {
         </div>
       </div>
 
+      {page && !page.error ? (
+        <Ledger>
+          <Figure n={c.open} of="open, waiting on you" live={!!c.open} />
+          <Figure n={c.reports_7d} of="filed this week" />
+          <Figure n={c.upheld} of="upheld, stayed down" />
+          <Figure n={c.dismissed} of="dismissed, went back up" />
+        </Ledger>
+      ) : null}
+
       {said ? <p className="ad-head-note" style={{ margin: '0 0 12px', color: 'var(--ad-stop)' }}>{said}</p> : null}
 
       {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
-        <Empty>{status === 'open' ? 'nothing has been reported.' : 'nothing here.'}</Empty>
+        <Empty>{status === 'open' ? 'nothing is waiting on you.' : 'nothing here.'}</Empty>
       ) : (
         <div className="ad-scroll">
           <table className="ad-table">
@@ -102,7 +121,7 @@ export default function Reports({ password, onChanged, onLock }) {
               <tr>
                 <th>report</th>
                 <th className="is-wide">the letter</th>
-                <th>said</th>
+                <th className="is-mid">the reason</th>
                 <th className="is-num">reports</th>
                 <th>filed</th>
                 <th />
@@ -117,8 +136,12 @@ export default function Reports({ password, onChanged, onLock }) {
                   note={note}
                   setNote={setNote}
                   onOpen={() => { setOpen(open === r.id ? null : r.id); setNote(''); setSaid('') }}
-                  onResolve={resolve}
                   acting={acting}
+                  go={go}
+                  onUphold={() => act(() => deskReportResolve(password, r.id, true, note))}
+                  onDismiss={() => act(() => deskReportResolve(password, r.id, false, note))}
+                  onShut={() => act(() => deskNameShut(password, r.letter_target, r.letter_campus, note), true)}
+                  onOpenName={() => act(() => deskNameOpen(password, r.letter_target, r.letter_campus), true)}
                 />
               ))}
             </tbody>
@@ -127,33 +150,43 @@ export default function Reports({ password, onChanged, onLock }) {
       )}
 
       {page ? <Paging total={page.total || 0} limit={LIMIT} offset={offset} onOffset={setOffset} /> : null}
+
+      <Note>
+        upholding keeps the letter down for good and shuts nothing else. dismissing puts it back
+        on the wall. shutting the name takes every letter to that handle down and refuses new
+        ones until the name is opened again; use it when the person the letters are about has
+        asked, and the wall tab can put single letters back up afterwards.
+      </Note>
     </>
   )
 }
 
-function ReportRow({ r, open, note, setNote, onOpen, onResolve, acting }) {
+function ReportRow({ r, open, note, setNote, onOpen, acting, go, onUphold, onDismiss, onShut, onOpenName }) {
+  const isOpen = r.status === 'open'
   return (
     <>
       <tr className={open ? 'is-open' : ''}>
         <td><State>{r.status}</State></td>
         <td className="is-wide">
           <div className="ad-head-note ad-meta">
-            to @{r.letter_target}, and it is {r.letter_status}
+            to <span className="ad-id is-dim">@{r.letter_target}</span>, and it is {r.letter_status}
+            {r.name_shut ? <>, and the name is shut</> : null}
           </div>
           <p className="ad-body-text is-quote" style={{ margin: 0 }}>{r.letter_body}</p>
         </td>
         <td className="is-mid">
           <p className="ad-body-text" style={{ margin: 0 }}>{r.reason}</p>
           <div className="ad-head-note ad-meta">
-            {r.reporter_handle ? `@${r.reporter_handle}` : r.reporter_id ? 'a campus address' : <None>somebody since removed</None>}
+            {r.reporter_handle ? `@${r.reporter_handle}`
+              : r.reporter_id ? `a ${r.reporter_campus || 'campus'} address`
+                : <None>somebody since removed</None>}
+            {r.reporter_reports > 1 ? ` · ${r.reporter_reports} reports filed` : ''}
           </div>
         </td>
         <td className="is-num">{r.letter_reports}</td>
         <td><When at={r.created_at} /></td>
         <td className="is-act">
-          {r.status === 'open'
-            ? <Btn onClick={onOpen}>{open ? 'close' : 'decide'}</Btn>
-            : <Btn onClick={onOpen}>{open ? 'close' : 'read'}</Btn>}
+          <Btn onClick={onOpen} tone={isOpen && !open ? 'key' : ''}>{open ? 'close' : isOpen ? 'decide' : 'read'}</Btn>
         </td>
       </tr>
       {open ? (
@@ -161,11 +194,21 @@ function ReportRow({ r, open, note, setNote, onOpen, onResolve, acting }) {
           <td colSpan={6}>
             <div className="ad-drawer-in">
               <div className="ad-head-note">
-                written by {r.author_handle ? `@${r.author_handle}` : 'somebody with a campus address and no handle'},{' '}
+                written by {r.author_handle ? `@${r.author_handle}` : `somebody with a ${r.author_campus || 'campus'} address and no handle`},{' '}
                 <When at={r.letter_created_at} exact />, on the {r.letter_campus} wall.
+                {' '}the author has written {r.author_letters} {r.author_letters === 1 ? 'letter' : 'letters'}
+                {r.author_reported ? `, ${r.author_reported} of them reported` : ''}.
+                {r.author_id ? (
+                  <>
+                    {' '}
+                    <button type="button" className="ad-id" onClick={() => go('people', r.author_handle || r.author_id)}>
+                      open the author
+                    </button>
+                  </>
+                ) : null}
               </div>
 
-              {r.status === 'open' ? (
+              {isOpen ? (
                 <>
                   <div>
                     <label className="wl-label" htmlFor={`r-${r.id}`} style={{ marginBottom: 6 }}>
@@ -177,14 +220,14 @@ function ReportRow({ r, open, note, setNote, onOpen, onResolve, acting }) {
                       value={note}
                       maxLength={400}
                       onChange={(e) => setNote(e.target.value)}
-                      placeholder="optional"
+                      placeholder="optional. kept beside the decision"
                     />
                   </div>
                   <div className="ad-btns" style={{ justifyContent: 'flex-start' }}>
-                    <Arm armed="it stays down" busy={acting} onAct={() => onResolve(r.id, true)}>
+                    <Arm armed="it stays down" busy={acting} onAct={onUphold}>
                       uphold, and it stays down
                     </Arm>
-                    <Arm tone="go" armed="put it back" busy={acting} onAct={() => onResolve(r.id, false)}>
+                    <Arm tone="go" armed="put it back" busy={acting} onAct={onDismiss}>
                       dismiss, and it goes back up
                     </Arm>
                   </div>
@@ -205,6 +248,24 @@ function ReportRow({ r, open, note, setNote, onOpen, onResolve, acting }) {
                   </div>
                 </div>
               )}
+
+              {/* ── the name ──
+                  A different question from the report: not this letter, every
+                  letter to this person, and the ones not yet written. */}
+              <div className="ad-btns" style={{ justifyContent: 'flex-start', alignItems: 'center', gap: 10 }}>
+                {r.name_shut ? (
+                  <>
+                    <span className="ad-head-note">the name is shut. nothing new can be written to @{r.letter_target}.</span>
+                    <Arm tone="go" armed={`open @${r.letter_target} again`} busy={acting} onAct={onOpenName}>
+                      open the name again
+                    </Arm>
+                  </>
+                ) : (
+                  <Arm armed={`shut @${r.letter_target}`} busy={acting} onAct={onShut} title="every letter to this name comes down and no more can be written to it">
+                    shut the name
+                  </Arm>
+                )}
+              </div>
             </div>
           </td>
         </tr>

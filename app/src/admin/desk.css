@@ -1,5 +1,6 @@
 /* ── THE DESK ────────────────────────────────────────────────────────────────
-   Phase 7. Spec section 10: rebuild /admin for a non developer.
+   Phase 7, and its second sitting. Spec section 10: rebuild /admin for a non
+   developer.
 
    Nothing here declares a colour, a face, a radius or an easing curve. Every
    one of those is a token in wall.css, which docs/plan.md finding 1.9 settled
@@ -29,6 +30,14 @@
    somebody under time pressure. Form alone is not fast enough for that, so
    three states are allowed a tint and they are drawn as printed ink rather
    than as chips: a held letter, a rejected one, a name that has come off.
+
+   ── THE GRAPH'S FIVE ───────────────────────────────────────────────────────
+   The one place on the desk that needs more than three colours is the graph,
+   where five lines have to be told apart. Those five are named once, below,
+   chosen for the void and checked as a set for a colour blind reader (the
+   dataviz validator: lightness band, chroma floor, adjacent pair separation
+   for deutan and tritan, contrast). No text ever wears them; the swatch
+   beside a word does.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .ad-root {
@@ -36,12 +45,18 @@
   background: var(--void);
 }
 
-/* The three state tints. The only colours in this file, named here once so a
-   reader can see the whole exception in one place. */
+/* The three state tints, and the graph's five. The only colours in this
+   file, named here once so a reader can see the whole exception in one
+   place. */
 .ad-root {
   --ad-hold:  #C8A96A;   /* held, waiting on a person */
   --ad-stop:  #C8756A;   /* rejected, removed, over a cap */
   --ad-go:    #7FB59B;   /* live, resolved, under a cap */
+  --ad-s1:    #3F9FC9;   /* the graph: people */
+  --ad-s2:    #D46A9A;   /*            handles proved */
+  --ad-s3:    #B8892A;   /*            pings placed */
+  --ad-s4:    #9478DA;   /*            mutuals */
+  --ad-s5:    #3EA862;   /*            letters written */
   --ad-cell:  46px;
 }
 
@@ -52,34 +67,48 @@
 .ad-frame { display: flex; min-height: 100dvh; align-items: stretch; }
 
 .ad-rail {
-  flex: 0 0 218px;
+  flex: 0 0 232px;
   border-right: 1px solid var(--hair);
   padding: 20px 0 24px;
   position: sticky; top: 0; align-self: flex-start;
   height: 100dvh; overflow-y: auto;
   background: var(--void);
 }
-.ad-rail-head { padding: 0 18px 18px; display: flex; align-items: center; gap: 9px; }
+.ad-rail-head { padding: 0 18px 14px; display: flex; align-items: center; gap: 9px; }
 .ad-rail-head .wl-label { color: var(--chalk); }
 
+/* ── the rail, in four groups ──
+   A group is a label in the identifier face and the screens under it. Each
+   screen carries its own word and, under it, four words on what it is for:
+   a rail somebody new can read without opening every screen once. */
 .ad-nav { display: block; }
+.ad-nav-group { padding: 6px 0 4px; }
+.ad-nav-group + .ad-nav-group { border-top: 1px solid var(--hair-soft); margin-top: 4px; }
+.ad-nav-gl {
+  padding: 6px 18px 4px;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ash-dim);
+}
 .ad-nav button {
-  display: flex; align-items: baseline; gap: 8px; width: 100%;
-  padding: 9px 18px;
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 18px;
   font-family: var(--f-util); font-size: 13.5px; letter-spacing: 0.01em;
   color: var(--ash); text-align: left;
   border-left: 2px solid transparent;
   transition: color 160ms var(--ease), border-color 160ms var(--ease),
               background 160ms var(--ease);
 }
+.ad-nav-w { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
+.ad-nav-w small { font-size: 11px; color: var(--ash-dim); letter-spacing: 0.004em; line-height: 1.3; }
 .ad-nav button:hover { color: var(--chalk); background: var(--void-1); }
 .ad-nav button.is-on {
   color: var(--chalk);
   border-left-color: var(--accent);
   background: var(--void-1);
 }
+.ad-nav button.is-on .ad-nav-w small { color: var(--ash); }
 .ad-nav-n {
-  margin-left: auto;
+  margin-left: auto; flex: none;
   font-family: var(--f-id); font-size: 11px; font-variant-numeric: tabular-nums;
   color: var(--ash-dim);
 }
@@ -110,9 +139,14 @@
   /* On a phone the rail becomes one scrolling row of words. A drawer would be
      a tap in front of every section change on the surface most likely to be
      read on a phone at all, which is the one somebody opens when a person has
-     just messaged them about a letter. */
-  .ad-nav { display: flex; overflow-x: auto; gap: 2px; padding: 0 10px 2px; scrollbar-width: none; }
+     just messaged them about a letter. The groups and the descriptions go: a
+     row of words is what a thumb can scan. */
+  .ad-nav { display: flex; overflow-x: auto; gap: 0; padding: 0 10px 2px; scrollbar-width: none; }
   .ad-nav::-webkit-scrollbar { display: none; }
+  .ad-nav-group { display: flex; padding: 0; }
+  .ad-nav-group + .ad-nav-group { border-top: 0; margin-top: 0; border-left: 1px solid var(--hair-soft); margin-left: 4px; padding-left: 4px; }
+  .ad-nav-gl { display: none; }
+  .ad-nav-w small { display: none; }
   .ad-nav button {
     width: auto; white-space: nowrap; padding: 8px 10px 12px;
     border-left: 0; border-bottom: 2px solid transparent;
@@ -130,7 +164,7 @@
 .ad-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 16px; }
 .ad-head h1 { margin: 0; font-family: var(--f-display); font-weight: var(--w-display, 500); font-variation-settings: var(--opsz-display, normal); font-size: 27px; letter-spacing: -0.015em; color: var(--chalk); }
 .ad-head-note { font-family: var(--f-util); font-size: 12.5px; color: var(--ash-dim); }
-.ad-head-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ad-head-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ── a sub head ──
    Same face, one step down, and it is an h2 because the page already has an h1.
@@ -141,6 +175,14 @@
   margin: 0; font-family: var(--f-display); font-weight: var(--w-display, 500);
   font-variation-settings: var(--opsz-display, normal);
   font-size: 20px; letter-spacing: -0.01em; color: var(--chalk);
+}
+
+/* ── a paragraph of explanation ──
+   For the person who has never seen the screen. The reading measure, ash,
+   and never the dim tone: it is a sentence somebody has to read. */
+.ad-note-p {
+  margin: 8px 0 0; max-width: 62ch;
+  font-family: var(--f-util); font-size: 13px; line-height: 1.55; color: var(--ash);
 }
 
 /* ── what is waiting ──
@@ -242,6 +284,8 @@ button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
 .ad-table .is-act { text-align: right; white-space: nowrap; }
 .ad-table .is-act > * + * { margin-left: 8px; }
 .ad-table tr.is-open td { background: var(--void-1); }
+/* the graph as a table: tight rows, every column a number */
+.ad-table.is-series td { padding-top: 7px; padding-bottom: 7px; }
 
 /* An identifier is a monospace string and it is never uppercased, because a
    handle is a lower case identifier and uppercasing one makes it a different
@@ -253,6 +297,8 @@ button.ad-id { text-align: left; transition: color 160ms var(--ease); }
 button.ad-id:hover { color: var(--accent); }
 .ad-id.is-dim { color: var(--ash-dim); font-size: 11.5px; }
 .ad-uuid { font-family: var(--f-id); font-size: 10.5px; color: var(--ash-dim); letter-spacing: 0.02em; }
+button.ad-uuid { text-align: left; transition: color 160ms var(--ease); }
+button.ad-uuid:hover { color: var(--accent); }
 .ad-when { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ad-body-text { color: var(--ash); line-height: 1.5; }
 .ad-body-text.is-quote { font-family: var(--f-letter); font-size: 15px; color: var(--chalk); line-height: 1.45; }
@@ -283,6 +329,7 @@ button.ad-id:hover { color: var(--accent); }
   border: 1px solid var(--hair); border-radius: var(--r-field);
   font-family: var(--f-util); font-size: 12px; letter-spacing: 0.012em;
   color: var(--ash); background: var(--void-1);
+  text-decoration: none;
   transition: color 160ms var(--ease), border-color 160ms var(--ease), background 160ms var(--ease);
 }
 .ad-btn:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244, 241, 234, 0.2); }
@@ -311,7 +358,7 @@ button.ad-id:hover { color: var(--accent); }
 .ad-search input::placeholder { color: var(--ash-dim); }
 .ad-search-k { font-family: var(--f-id); font-size: 12px; color: var(--ash-dim); }
 
-.ad-tabs { display: inline-flex; gap: 2px; border: 1px solid var(--hair); border-radius: var(--r-field); padding: 2px; }
+.ad-tabs { display: inline-flex; gap: 2px; border: 1px solid var(--hair); border-radius: var(--r-field); padding: 2px; flex-wrap: wrap; }
 .ad-tabs button {
   padding: 5px 11px; border-radius: 9px;
   font-family: var(--f-util); font-size: 12px; color: var(--ash);
@@ -327,6 +374,128 @@ button.ad-id:hover { color: var(--accent); }
   resize: vertical; min-height: 62px;
 }
 .ad-note:focus { outline: none; border-color: rgba(244, 241, 234, 0.28); }
+
+/* ── a switch ──
+   A track, a knob, and the state in a word beside it, so it is never colour
+   alone. On is the accent, one of its two uses on the desk. */
+.ad-toggle {
+  display: inline-flex; align-items: center; gap: 10px; padding: 4px 6px 4px 2px;
+  font-family: var(--f-util); font-size: 12.5px; color: var(--ash);
+  border-radius: var(--r-field);
+  transition: color 160ms var(--ease);
+}
+.ad-toggle:hover:not(:disabled) { color: var(--chalk); }
+.ad-toggle:disabled { opacity: 0.6; }
+.ad-toggle-track {
+  position: relative; width: 36px; height: 20px; flex: none;
+  border-radius: var(--r-pill); background: var(--void-3);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: background 200ms var(--ease);
+}
+.ad-toggle-knob {
+  position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--ash);
+  transition: transform 220ms var(--ease), background 200ms var(--ease);
+}
+.ad-toggle.is-on .ad-toggle-track { background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(116, 199, 222, 0.5); }
+.ad-toggle.is-on .ad-toggle-knob { transform: translateX(16px); background: var(--accent); }
+.ad-toggle.is-on { color: var(--chalk); }
+
+/* ── a field with a label ── */
+.ad-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ad-field-l { font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim); min-height: 12px; }
+.ad-field-box {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--hair); border-radius: var(--r-field);
+  padding: 0 11px; min-height: 34px; background: var(--void-1);
+}
+.ad-field-box input {
+  flex: 1 1 auto; min-width: 0; width: 100%; background: none; border: 0; padding: 0;
+  font-family: var(--f-id); font-size: 13px; color: var(--chalk);
+}
+.ad-field-box.is-util input { font-family: var(--f-util); }
+.ad-field-box input:focus { outline: none; }
+.ad-field-box input::placeholder { color: var(--ash-dim); }
+.ad-field-box:focus-within { border-color: rgba(244, 241, 234, 0.28); }
+.ad-field-hint { font-family: var(--f-util); font-size: 11.5px; color: var(--ash-dim); line-height: 1.35; }
+.ad-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 14px; align-items: start; max-width: 900px; margin-top: 12px; }
+.ad-form > .ad-btn { margin-top: 17px; }
+.ad-form > .ad-btn { justify-self: start; }
+
+/* ── a panel ──
+   A sheet laid on the ground, for the one or two things on a screen that are
+   controls rather than rows: the resolver's switch and meter, the sign in
+   link. Never a card grid. */
+.ad-panel {
+  background: var(--void-1); border: 1px solid var(--hair-soft); border-radius: var(--r-card);
+  padding: 16px 18px 16px; max-width: 900px; margin: 0 0 18px;
+}
+.ad-panel-row { display: flex; flex-wrap: wrap; gap: 16px 40px; align-items: flex-start; }
+.ad-panel-fig { display: flex; align-items: baseline; gap: 9px; padding-top: 22px; }
+.ad-panel-fig .ad-fig-n { font-size: 22px; }
+
+/* ── rows of a setting or a screen: the thing on the left, its control on the
+   right, a hairline between rows ── */
+.ad-rows { border-top: 1px solid var(--hair); max-width: 900px; }
+.ad-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px 28px;
+  padding: 14px 0; border-bottom: 1px solid var(--hair-soft);
+}
+.ad-row-l { flex: 1 1 320px; min-width: 0; }
+.ad-row-t { font-family: var(--f-util); font-size: 14px; color: var(--chalk); }
+.ad-row-l .ad-note-p { margin-top: 4px; }
+.ad-row-r { display: flex; align-items: flex-end; gap: 8px; flex: 0 0 auto; }
+.ad-row-r .ad-field { width: 120px; }
+@media (max-width: 600px) { .ad-row { flex-direction: column; align-items: flex-start; } }
+
+/* ── the sign in link ── */
+.ad-link { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hair-soft); }
+.ad-link-url {
+  display: block; font-family: var(--f-id); font-size: 12px; line-height: 1.5; color: var(--chalk);
+  word-break: break-all; padding: 10px 12px; background: var(--void-2); border-radius: var(--r-field);
+}
+
+/* ── the guide: a situation, three sentences, and the way to the screen ── */
+.ad-guide { max-width: 760px; border-top: 1px solid var(--hair); }
+.ad-guide-row { padding: 14px 0 16px; border-bottom: 1px solid var(--hair-soft); }
+.ad-guide-t { font-family: var(--f-util); font-size: 14px; color: var(--chalk); }
+.ad-guide-row .ad-note-p { margin: 4px 0 10px; }
+
+/* ── the graph ── */
+.ad-chart { max-width: 900px; }
+.ad-chart-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.ad-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; }
+.ad-legend-k {
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 6px 4px 2px;
+  font-family: var(--f-util); font-size: 12.5px; color: var(--ash);
+  border-radius: 8px;
+  transition: color 160ms var(--ease), opacity 160ms var(--ease);
+}
+.ad-legend-k:hover { color: var(--chalk); }
+.ad-legend-k.is-off { opacity: 0.45; text-decoration: line-through; }
+.ad-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.ad-chart-box { position: relative; }
+.ad-chart-box.is-busy svg { opacity: 0.55; }
+.ad-chart-box svg { display: block; width: 100%; height: auto; touch-action: pan-y; transition: opacity 200ms var(--ease); }
+.ad-grid { stroke: var(--hair); stroke-width: 1; }
+.ad-axis { font-family: var(--f-id); font-size: 10px; fill: var(--ash-dim); letter-spacing: 0.02em; }
+.ad-axis.is-end { fill: var(--ash); }
+.ad-dot { stroke: var(--void); stroke-width: 2; }
+.ad-cross { stroke: rgba(244, 241, 234, 0.28); stroke-width: 1; }
+.ad-chart-empty {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  font-family: var(--f-util); font-size: 13px; color: var(--ash-dim);
+}
+.ad-tip {
+  position: absolute; top: 8px; transform: translateX(-50%);
+  min-width: 150px; padding: 8px 11px;
+  background: var(--void-2); border: 1px solid var(--hair); border-radius: var(--r-field);
+  pointer-events: none;
+}
+.ad-tip-t { font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ash-dim); margin-bottom: 5px; }
+.ad-tip-row { display: flex; align-items: center; gap: 7px; font-family: var(--f-util); font-size: 12px; color: var(--ash); line-height: 1.5; }
+.ad-tip-row strong { font-family: var(--f-id); font-weight: 400; color: var(--chalk); font-variant-numeric: tabular-nums; min-width: 3ch; }
+.ad-chart-note { margin: 10px 0 0; max-width: 62ch; font-family: var(--f-util); font-size: 11.5px; line-height: 1.5; color: var(--ash-dim); }
 
 /* ── the drawer ──
    One row opened in place, under itself, rather than in a modal. A modal on a
@@ -370,3 +539,8 @@ button.ad-id:hover { color: var(--accent); }
 }
 .ad-gate input:focus { outline: none; border-bottom-color: rgba(244, 241, 234, 0.4); }
 .ad-gate-fault { font-family: var(--f-util); font-size: 12.5px; color: var(--ad-stop); margin: 0; }
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .ad-toggle-knob, .ad-toggle-track, .ad-chart-box svg { transition: none; }
+}

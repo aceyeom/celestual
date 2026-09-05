@@ -13,8 +13,8 @@ import { Search, useDebounced, Paging, Empty, Fault, When, State, None, Btn, Def
 
 const LIMIT = 50
 
-export default function People({ password, go, onLock }) {
-  const [query, setQuery] = useState('')
+export default function People({ password, go, onLock, initialQuery = '' }) {
+  const [query, setQuery] = useState(initialQuery)
   const q = useDebounced(query)
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
@@ -25,6 +25,8 @@ export default function People({ password, go, onLock }) {
   const seq = useRef(0)
 
   useEffect(() => { setOffset(0) }, [q])
+  // Arriving from another screen with a person in hand: a handle, or an id.
+  useEffect(() => { if (initialQuery) setQuery(initialQuery) }, [initialQuery])
 
   const load = useCallback(async () => {
     const mine = ++seq.current

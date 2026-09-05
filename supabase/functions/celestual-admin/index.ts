@@ -10,10 +10,12 @@
 // from it rather than replacing it, so both are live and the DM code flow still
 // writes the old one. The desk reads both.
 //
-//   THE DESK (0033)              the rebuild's own tables
+//   THE DESK (0033, 0039)        the rebuild's own tables
 //     desk_overview              counts, rate limit status, merge conflicts,
-//                                scan attribution, campuses
+//                                scan attribution, campuses, the settings
+//     desk_growth                the series the chart is drawn from
 //     desk_users, desk_user      the person, and the person whole
+//     desk_pings                 the ping ledger, without the map
 //     desk_profiles              the Apify resolution cache
 //     desk_profile_forget        force a re-resolve (spec section 5)
 //     desk_letters               wall submissions and the moderation queue,
@@ -22,8 +24,19 @@
 //     desk_reports               user-flagged content
 //     desk_report_resolve        the action path: uphold, or dismiss and it
 //                                goes back up
+//     desk_name_shut, _open      every letter to a name down, and no more
 //     desk_waitlist              everybody who looked and found nothing
 //     desk_conflict_resolve      close a merge that stopped to ask
+//     desk_signin                a sign in link: a browser as a handle, a
+//                                campus, or both, with no DM and no mail
+//     desk_settings, desk_setting_set
+//                                the release gate, the resolver switch, the
+//                                four caps
+//     desk_campus_set, desk_campus_add
+//     desk_log                   what the desk did, and when
+//
+//   Every write that goes through is written to celestual_desk_log by this
+//   function, so the log is the function's and not the browser's.
 //
 //   THE LEGACY LAYER (0017 to 0020)   the DM flow's own records
 //     overview                   members, unverified attempts, growth, log
@@ -126,6 +139,17 @@ const DESK: Record<string, (b: Record<string, unknown>) => [string, Args]> = {
   desk_waitlist: (b) => ['celestual_desk_waitlist', {
     p_limit: num(b.limit, 100, 500), p_offset: num(b.offset, 0, 100000),
   }],
+  desk_growth: (b) => ['celestual_desk_growth', {
+    p_days: num(b.days, 30, 3650), p_grain: str(b.grain, 8) || 'day',
+  }],
+  desk_pings: (b) => ['celestual_desk_pings', {
+    p_state: str(b.state, 16), p_query: str(b.query),
+    p_limit: num(b.limit, 50, 200), p_offset: num(b.offset, 0, 100000),
+  }],
+  desk_settings: () => ['celestual_desk_settings', {}],
+  desk_log: (b) => ['celestual_desk_log_list', {
+    p_limit: num(b.limit, 100, 500), p_offset: num(b.offset, 0, 100000),
+  }],
 };
 
 // The writes. Separate from the reads above so that reading the file tells you
@@ -141,7 +165,54 @@ const DESK_WRITE: Record<string, (b: Record<string, unknown>) => [string, Args]>
   desk_conflict_resolve: (b) => ['celestual_desk_conflict_resolve', {
     p_id: str(b.id, 64), p_note: str(b.note, 400),
   }],
+  desk_signin: (b) => ['celestual_desk_signin', {
+    p_handle: str(b.handle, 40), p_edu_email: str(b.edu_email, 200),
+    p_email: str(b.email, 200), p_note: str(b.note, 120),
+  }],
+  desk_setting_set: (b) => ['celestual_desk_setting_set', {
+    p_key: str(b.key, 40), p_value: str(b.value, 40),
+  }],
+  desk_campus_set: (b) => ['celestual_desk_campus_set', {
+    p_slug: str(b.slug, 40), p_open: b.open === true,
+  }],
+  desk_campus_add: (b) => ['celestual_desk_campus_add', {
+    p_slug: str(b.slug, 40), p_name: str(b.name, 80), p_domain: str(b.domain, 80),
+  }],
+  desk_name_shut: (b) => ['celestual_desk_name_shut', {
+    p_handle: str(b.handle, 40), p_campus: str(b.campus, 40), p_note: str(b.note, 400),
+  }],
+  desk_name_open: (b) => ['celestual_desk_name_open', {
+    p_handle: str(b.handle, 40), p_campus: str(b.campus, 40),
+  }],
 };
+
+// What a write is about, for the log: the one argument that names its target.
+function targetOf(args: Args): string | null {
+  for (const k of ['p_handle', 'p_id', 'p_key', 'p_slug', 'p_edu_email']) {
+    const v = args[k];
+    if (typeof v === 'string' && v) return `${k.slice(2)}:${v}`;
+  }
+  return null;
+}
+
+// The log row, after a write that went through. The sign in link's tokens
+// are never written down: the row says a link was minted and for whom.
+async function logWrite(action: string, args: Args, data: unknown) {
+  const detail: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(args)) {
+    if (k === 'p_note' || k === 'p_status' || k === 'p_uphold' || k === 'p_value' || k === 'p_open') detail[k.slice(2)] = v;
+  }
+  const d = data as Record<string, unknown> | null;
+  if (d && typeof d === 'object') {
+    for (const k of ['letters', 'closed', 'restored', 'erased', 'banned', 'handle', 'edu_email']) {
+      if (k in d) detail[k] = d[k];
+    }
+  }
+  const { error } = await supabase.rpc('celestual_desk_log_add', {
+    p_action: action, p_target: targetOf(args), p_detail: detail,
+  });
+  if (error) console.error('desk log failed', error.message);
+}
 
 // The legacy layer, unchanged apart from delete_competitor coming off with the
 // campaign it belonged to.
@@ -207,6 +278,9 @@ Deno.serve(async (req) => {
       console.error(`admin ${action} failed`, error.message);
       return json({ ok: false, error: 'server' });
     }
+    if (DESK_WRITE[action] && data && (data as { ok?: boolean }).ok !== false) {
+      await logWrite(action, args, data);
+    }
     // The desk sends paths, not URLs (0033 says why). The bucket's public base
     // is added on the way out, here, where the project's own address is known.
     return json(action === 'desk_profiles' ? withAvatars(data) : data);
@@ -229,6 +303,10 @@ Deno.serve(async (req) => {
     if (error) {
       console.error(`admin ${action} failed`, error.message);
       return json({ ok: false, error: 'server' });
+    }
+    // handle_status is a read; the other five change somebody's record.
+    if (action !== 'handle_status' && data && (data as { ok?: boolean }).ok !== false) {
+      await logWrite(action, { p_handle: handle }, data);
     }
     return json(data);
   }

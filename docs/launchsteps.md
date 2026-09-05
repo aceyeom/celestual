@@ -986,3 +986,28 @@ Still open, and not in the repository's power to close:
   that can happen and the comment in `api/relogin.js` says why.
 - **`npm run lint` is green** for the first time since Phase 2. Keep it that way:
   it is the typecheck substitute Q1 agreed to.
+
+---
+
+## The desk's second sitting (migration 0039)
+
+Everything is in the repository; three things have to happen outside it, in
+this order.
+
+1. **Apply `0039_the_desk_second_sitting.sql`.** `supabase db push`, or paste
+   it into the SQL editor. It drops the one-argument `celestual_suppress` and
+   creates the two-argument one, creates `celestual_desk_log`, and is otherwise
+   `create or replace`. Until it is applied the desk's new screens answer "the
+   database did not answer", `/optout` refuses everybody (the client sends a
+   proof the old function does not take), and `/signin` still refuses every
+   link.
+2. **Redeploy two functions.** `supabase functions deploy celestual-admin` and
+   `supabase functions deploy celestual-resolve --no-verify-jwt`. The admin
+   function carries the new actions and writes the log; the resolver honours
+   the switch.
+3. **Deploy the app.** Vercel, as usual. Nothing new in its environment: the
+   resolver switch and the caps are rows now, not variables.
+
+Then, on the desk: settings, and confirm the release gate reads as you mean
+it. The first sign in link you mint is the test of the whole path: open it in
+a private window and the sky should be yours.

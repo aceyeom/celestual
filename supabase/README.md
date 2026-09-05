@@ -205,6 +205,23 @@ Idempotent migrations, applied in order:
   a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
   54 assertions, through `scripts/verify-migrations.sh --test`.**
 
+- `migrations/0039_the_desk_second_sitting.sql`: **the desk, for a team, and
+  one door closed.** The opt-out (`celestual_suppress`) takes the DM proof; the
+  one-argument form is dropped. `celestual_settings` grows a whitelist the desk
+  reads and writes (`require_ig_verification`, `resolver_enabled`, the four
+  `cap_*` numbers), `handle_search_limit` reads the caps from it and
+  `handle_search_allow` answers `off` when the resolver switch is off.
+  `celestual_desk_growth` (a series by day, week or month), `celestual_desk_pings`
+  (the ledger, never the map), `celestual_desk_signin` (a single-use link that
+  signs a browser in as a handle, a campus, or both; the browser redeems it
+  through `celestual_redeem_login`, now browser-callable and stamping `desk`,
+  and binds through the one writer), `celestual_desk_campus_set` / `_add`,
+  `celestual_desk_name_shut` / `_open` (with `wall_name_shut`, which
+  `wall_write` now asks), `celestual_desk_reports` re-emitted with the numbers
+  a decision needs, `celestual_desk_log` (a table the edge function writes
+  after every write), and the overview re-emitted with the pings and the
+  settings. **Tested by `scripts/sql/test-desk2.sql`, 84 assertions.**
+
 - `migrations/0038_the_audit.sql`: **the audit of 4 September.** Thirteen
   things found by reading the schema against the client and proving each on a
   migrated database: the public `wall_index` was a `security_invoker` view over
@@ -309,7 +326,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 
 | `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-wall-moderate` | the wall's composer posts here: layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
-| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033: people, the wall, reports, the resolution cache, the waitlist, merge conflicts) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 

@@ -233,6 +233,77 @@ export function failWord(r) {
           : 'that did not go through'
 }
 
+// ── a switch ────────────────────────────────────────────────────────────────
+// On or off, said in a word beside the control so the state is never colour
+// alone. It changes on the press and the caller writes it; `busy` holds it
+// while the write is out.
+export function Toggle({ on, onChange, disabled = false, busy = false, words = ['on', 'off'] }) {
+  return (
+    <button
+      type="button" role="switch" aria-checked={on}
+      className={`ad-toggle${on ? ' is-on' : ''}`}
+      disabled={disabled || busy}
+      onClick={() => onChange(!on)}
+    >
+      <span className="ad-toggle-track" aria-hidden="true"><span className="ad-toggle-knob" /></span>
+      <span className="ad-toggle-word">{busy ? 'saving' : on ? words[0] : words[1]}</span>
+    </button>
+  )
+}
+
+// ── a field with a label ────────────────────────────────────────────────────
+export function Field({ label, value, onChange, placeholder = '', prefix = '', type = 'text', hint = '', id, wide = false, mono = true }) {
+  const uid = id || `f-${String(label).replace(/[^a-z0-9]/gi, '')}`
+  return (
+    <label className={`ad-field${wide ? ' is-wide' : ''}`} htmlFor={uid}>
+      <span className="ad-field-l">{label}</span>
+      <span className={`ad-field-box${mono ? '' : ' is-util'}`}>
+        {prefix ? <span className="ad-search-k">{prefix}</span> : null}
+        <input
+          id={uid} type={type} value={value} placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false} autoComplete="off" autoCapitalize="none"
+        />
+      </span>
+      {hint ? <span className="ad-field-hint">{hint}</span> : null}
+    </label>
+  )
+}
+
+// ── copy to the clipboard ───────────────────────────────────────────────────
+export function CopyBtn({ text, children = 'copy', tone = '' }) {
+  const [done, setDone] = useState(false)
+  const timer = useRef(null)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  async function copy() {
+    let ok
+    try {
+      await navigator.clipboard.writeText(String(text))
+      ok = true
+    } catch {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = String(text); ta.setAttribute('readonly', '')
+        ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select()
+        ok = document.execCommand('copy')
+        document.body.removeChild(ta)
+      } catch { ok = false }
+    }
+    setDone(!!ok)
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => setDone(false), 2200)
+  }
+  return <Btn tone={tone} onClick={copy}>{done ? 'copied' : children}</Btn>
+}
+
+// ── a plain paragraph of explanation ────────────────────────────────────────
+// For the person who has never seen this screen. Kept short, in the reading
+// measure, and always beside the thing it explains.
+export function Note({ children, className = '' }) {
+  return <p className={`ad-note-p ${className}`}>{children}</p>
+}
+
 // ── a definition list ───────────────────────────────────────────────────────
 export function Def({ items }) {
   return (

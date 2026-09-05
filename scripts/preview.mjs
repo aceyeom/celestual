@@ -183,7 +183,9 @@ const DESK_REPORTS = [
     letter_id: DESK_LETTERS[3].id, letter_status: 'removed', letter_body: DESK_LETTERS[3].body,
     letter_target: 'm.okonkwo', letter_campus: 'berkeley',
     letter_created_at: DESK_LETTERS[3].created_at, author_id: DESK_USERS[1].id,
-    author_handle: null, letter_reports: 1 },
+    author_handle: null, letter_reports: 1,
+    reporter_campus: 'berkeley.edu', reporter_reports: 1, author_campus: 'berkeley.edu',
+    author_letters: 2, author_reported: 1, name_shut: false },
   { id: 'bbb11111-2222-4333-8444-555566660002', status: 'dismissed',
     reason: 'i think this is about somebody else with a similar name.',
     resolution: 'not the same person. put it back.',
@@ -192,7 +194,70 @@ const DESK_REPORTS = [
     letter_id: DESK_LETTERS[2].id, letter_status: 'live', letter_body: DESK_LETTERS[2].body,
     letter_target: 'pilar.echevarria', letter_campus: 'berkeley',
     letter_created_at: DESK_LETTERS[2].created_at, author_id: DESK_USERS[0].id,
-    author_handle: 'ace03d', letter_reports: 1 },
+    author_handle: 'ace03d', letter_reports: 1,
+    reporter_campus: 'berkeley.edu', reporter_reports: 1, author_campus: 'berkeley.edu',
+    author_letters: 3, author_reported: 1, name_shut: false },
+]
+
+// ── 0039: the series, the pings, the settings, the log ──
+// A month of days with a slow climb and one busy week, so the graph has a
+// shape worth looking at rather than a flat line at zero.
+const DESK_GROWTH = (b) => {
+  const grain = ['day', 'week', 'month'].includes(b.grain) ? b.grain : 'day'
+  const step = grain === 'day' ? DAY : grain === 'week' ? 7 * DAY : 30 * DAY
+  const days = Number(b.days) || 30
+  const n = Math.min(400, Math.max(2, Math.ceil((days || 365) / (step / DAY)) + 1))
+  let users_total = 12, handles_total = 7
+  const rows = []
+  for (let i = 0; i < n; i++) {
+    const t = new Date(now - (n - 1 - i) * step)
+    const busy = i > n * 0.55 && i < n * 0.75
+    const users = Math.max(0, Math.round((busy ? 6 : 1.4) + Math.sin(i * 1.3) * 1.2))
+    const handles = Math.round(users * 0.6)
+    users_total += users; handles_total += handles
+    rows.push({
+      t: t.toISOString().slice(0, 10),
+      users, handles, campuses: Math.round(users * 0.4),
+      pings: Math.max(0, Math.round((busy ? 9 : 2) + Math.cos(i * 0.9) * 1.5)),
+      mutuals: busy && i % 3 === 0 ? 1 : 0,
+      letters: Math.max(0, Math.round((busy ? 4 : 1) + Math.sin(i * 2.1))),
+      scans: Math.max(0, Math.round((busy ? 14 : 3) + Math.cos(i * 0.4) * 2)),
+      users_total, handles_total,
+    })
+  }
+  return { ok: true, grain, days, rows }
+}
+
+const DESK_PINGS = [
+  { id: 'p1', from_handle: 'ace03d', state: 'standing', matched_handle: null, matched_at: null,
+    created_at: new Date(now - 2 * DAY).toISOString(), expires_at: new Date(now + 58 * DAY).toISOString(),
+    days_left: 58, has_line: true, has_email: true, reminded: false },
+  { id: 'p2', from_handle: 'ace03d', state: 'mutual', matched_handle: 'jules.k', matched_at: new Date(now - 6 * DAY).toISOString(),
+    created_at: new Date(now - 9 * DAY).toISOString(), expires_at: new Date(now + 51 * DAY).toISOString(),
+    days_left: 51, has_line: true, has_email: true, reminded: false },
+  { id: 'p3', from_handle: 'jules.k', state: 'mutual', matched_handle: 'ace03d', matched_at: new Date(now - 6 * DAY).toISOString(),
+    created_at: new Date(now - 6 * DAY).toISOString(), expires_at: new Date(now + 54 * DAY).toISOString(),
+    days_left: 54, has_line: false, has_email: false, reminded: false },
+  { id: 'p4', from_handle: 'ren.tanaka', state: 'standing', matched_handle: null, matched_at: null,
+    created_at: new Date(now - 55 * DAY).toISOString(), expires_at: new Date(now + 5 * DAY).toISOString(),
+    days_left: 5, has_line: true, has_email: false, reminded: true },
+  { id: 'p5', from_handle: 'm.okonkwo', state: 'lapsed', matched_handle: null, matched_at: null,
+    created_at: new Date(now - 63 * DAY).toISOString(), expires_at: new Date(now - 3 * DAY).toISOString(),
+    days_left: 0, has_line: false, has_email: false, reminded: true },
+]
+const DESK_PING_COUNTS = { standing: 5, mutual: 2, pairs: 1, lapsed: 1, placed_7d: 3, mutual_7d: 1, lapsing_7d: 1, with_line: 4, senders: 4 }
+
+const DESK_SETTINGS = {
+  ok: true,
+  settings: { require_ig_verification: 'true', resolver_enabled: 'true', cap_user: 20, cap_device: 20, cap_ip: 200, cap_global: 1000 },
+  defaults: { require_ig_verification: 'false', resolver_enabled: 'true', cap_user: 20, cap_device: 20, cap_ip: 200, cap_global: 1000 },
+  updated: { require_ig_verification: new Date(now - 30 * DAY).toISOString() },
+}
+
+const DESK_LOG = [
+  { id: 3, at: new Date(now - 3600000).toISOString(), action: 'desk_letter_set', target: 'id:aaa11111-2222-4333-8444-555566660002', detail: { status: 'live' } },
+  { id: 2, at: new Date(now - DAY).toISOString(), action: 'desk_signin', target: 'handle:ace03d', detail: { note: 'testing on my phone', handle: 'ace03d' } },
+  { id: 1, at: new Date(now - 4 * DAY).toISOString(), action: 'desk_report_resolve', target: 'id:bbb11111-2222-4333-8444-555566660002', detail: { uphold: false, note: 'not the same person. put it back.', restored: true } },
 ]
 
 const DESK_PROFILES = HANDLES.slice(0, 9).map(([handle, display_name, is_verified], i) => ({
@@ -218,9 +283,13 @@ const DESK_OVERVIEW = {
     letters: 4, letters_live: 1, letters_pending: 1, letters_rejected: 1, letters_removed: 1,
     letters_7d: 2, claims: 3, asks_open: 1, revealed: 2, waitlist: 11, scans: 148,
     reports_open: 1, reports: 2,
-    profiles: 9, profiles_faced: 7, profiles_stale: 3, searches_24h: 37,
+    profiles: 9, profiles_faced: 7, profiles_stale: 3, searches_24h: 37, searches_48h: 61,
     conflicts_open: 1,
+    users_30d: 3, members: 3,
+    pings_standing: 5, pings_mutual: 2, pairs: 1, pings_7d: 3, mutuals_7d: 1, pings_lapsing_7d: 1, senders: 4,
+    reports_7d: 1, desk_actions_7d: 2,
   },
+  settings: { require_ig_verification: true, resolver_enabled: true, cap_global: 1000 },
   limits: [
     { key_type: 'ip', key_value: '169.229.216.200', spent: 24, cap: 200, remaining: 176,
       oldest: new Date(now - 19 * 3600000).toISOString(), newest: new Date(now - 1200000).toISOString(), blocked: false },
@@ -309,8 +378,28 @@ const DESK = {
   }),
   desk_profiles: () => page(DESK_PROFILES),
   desk_letters: (b) => page(b.status ? DESK_LETTERS.filter((l) => l.status === b.status) : DESK_LETTERS),
-  desk_reports: (b) => page(b.status ? DESK_REPORTS.filter((r) => r.status === b.status) : DESK_REPORTS),
+  desk_reports: (b) => ({
+    ...page(b.status ? DESK_REPORTS.filter((r) => r.status === b.status) : DESK_REPORTS),
+    counts: { open: 1, upheld: 0, dismissed: 1, reports_7d: 1 },
+  }),
   desk_waitlist: () => page(DESK_WAITLIST),
+  desk_growth: (b) => DESK_GROWTH(b),
+  desk_pings: (b) => ({
+    ...page(b.state ? DESK_PINGS.filter((p) => p.state === b.state) : DESK_PINGS),
+    counts: DESK_PING_COUNTS,
+  }),
+  desk_settings: () => DESK_SETTINGS,
+  desk_log: () => page(DESK_LOG),
+  desk_signin: (b) => ({
+    ok: true, handle: b.handle || null, edu_email: b.edu_email || null,
+    login_token: b.handle ? 'c'.repeat(48) : null, session_token: b.edu_email ? 'd'.repeat(64) : null,
+    expires_at: new Date(now + 3600000).toISOString(),
+  }),
+  desk_setting_set: (b) => ({ ok: true, key: b.key, value: b.value }),
+  desk_campus_set: (b) => ({ ok: true, slug: b.slug, is_open: !!b.open }),
+  desk_campus_add: (b) => ({ ok: true, slug: b.slug }),
+  desk_name_shut: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
+  desk_name_open: (b) => ({ ok: true, handle: b.handle, campus: b.campus, letters: 1 }),
   overview: () => DESK_LEGACY,
   handle_status: (b) => ({
     ok: true, handle: b.handle, suppressed: false, member: true,
@@ -424,7 +513,7 @@ const ROUTES = [
   // once with the answer and once while the resolver is still out, which is
   // the state the light was drawn for.
   { label: 'hero-card',     path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' } },
-  { label: 'hero-looking',  path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' }, slow: true },
+  { label: 'hero-looking',  path: '/?nointro=1', type: { into: '.wl-field input', text: 'jules.k' }, slow: true, press: '.hm-ask-row .wl-pill' },
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },
@@ -456,6 +545,11 @@ const ROUTES = [
   { label: 'admin-reports', path: '/admin', desk: true, click: 'reports' },
   { label: 'admin-cache',   path: '/admin', desk: true, click: 'cache' },
   { label: 'admin-handles', path: '/admin', desk: true, click: 'handles' },
+  // the second sitting (0039): the ledger, the doors, the switches, the guide
+  { label: 'admin-pings',    path: '/admin', desk: true, click: 'pings' },
+  { label: 'admin-access',   path: '/admin', desk: true, click: 'access' },
+  { label: 'admin-settings', path: '/admin', desk: true, click: 'settings' },
+  { label: 'admin-guide',    path: '/admin', desk: true, click: 'guide' },
   { label: 'admin-gate',    path: '/admin' },
 
   // Phase 8. The three addresses that arrive from outside the product, and the
