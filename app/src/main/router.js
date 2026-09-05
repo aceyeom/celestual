@@ -14,29 +14,27 @@
 // rest of the product is judged from.
 export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin']
 
-// Everything Main does NOT claim, and after Phase 8's routing pass the list is
-// short and every entry on it is a decision rather than a deferral:
-//
-//   berkeley, beta   the wall's, and the old printed address that rewrites onto it
-//   signature        where Phase 3 was approved. Static, and it stays
-//   admin            the desk
-//   paid             the Stripe return. Q3 keeps the billing layer out of scope,
-//                    so this is the one address still served by App.jsx
-//   privacy, terms, data-deletion   static HTML, served by a Vercel rewrite and
-//                    never reaching this bundle at all
-//
-// /trial, /recruit, /r and the bare four letter matcher went with the campaign
-// in Phase 7 (Q12). /c and /demo went in Phase 8 (Q15, Q16). None of them is
-// claimed by anything now, so they fall through to the not found below.
+// The addresses Main does not draw. The wall's, the old printed address that
+// rewrites onto it, the signature preview, the desk, and the three legal pages
+// that a Vercel rewrite serves as static HTML before this bundle is reached.
+// `paid` was on this list while the retired design still served the Stripe
+// return; both went on 4 September, and anything not claimed by another shell
+// draws the not found below.
 export const NOT_OURS = new Set([
-  'paid', 'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
+  'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
 ])
+
+function decode(s) {
+  try { return decodeURIComponent(s) } catch { return s }
+}
 
 export function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
   if (p === '/') return { name: 'hero' }
 
-  const [head, id = ''] = p.slice(1).split('/')
+  const [rawHead, rawId = ''] = p.slice(1).split('/')
+  const head = decode(rawHead)
+  const id = decode(rawId)
 
   // The open door: /@handle, which is what a shared link looks like. It is the
   // same act as /place with a name already in it, so it resolves to one screen
@@ -55,21 +53,6 @@ export function parse(pathname) {
     case 'signin': return { name: 'signin' }
     default:       return null
   }
-}
-
-// Whether Main owns this address at all. main.jsx asks before mounting.
-//
-// Phase 8 inverted the default. It used to answer `false` for anything not on
-// the table, which fell through to App.jsx and rendered the retired design for
-// every typo in the product. Main claims everything that is not somebody else's
-// now, and an address matching nothing draws the not found IN THE SYSTEM the
-// rest of the product is in.
-export function isMainPath(pathname) {
-  const p = String(pathname || '/').replace(/\/+$/, '') || '/'
-  if (p === '/') return true
-  const head = p.slice(1).split('/')[0]
-  if (head.startsWith('@')) return true
-  return !NOT_OURS.has(head)
 }
 
 export function href(name, id) {

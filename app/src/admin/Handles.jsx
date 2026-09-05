@@ -18,7 +18,7 @@ import {
 } from '../api/admin.js'
 import { Search, Empty, When, State, Btn, Arm, Ledger, Figure, Def } from './parts.jsx'
 
-export default function Handles({ password, initialHandle = '' }) {
+export default function Handles({ password, initialHandle = '', onLock }) {
   const [data, setData] = useState(null)
   const [busy, setBusy] = useState(true)
   const [handle, setHandle] = useState(initialHandle)
@@ -28,9 +28,10 @@ export default function Handles({ password, initialHandle = '' }) {
   const load = useCallback(async () => {
     setBusy(true)
     const r = await adminOverview(password)
+    if (r?.error === 'password') { onLock && onLock(); return }
     setData(r && r.ok ? r : null)
     setBusy(false)
-  }, [password])
+  }, [password, onLock])
 
   useEffect(() => { load() }, [load])
 
@@ -51,14 +52,23 @@ export default function Handles({ password, initialHandle = '' }) {
 
   useEffect(() => { if (initialHandle) lookUp() }, [initialHandle]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Every action is about the record on the screen, never about the text in
+  // the field. They used to send `clean`, so looking @alice up, starting to
+  // type @bob, and pressing "erase everything" erased bob while the drawer
+  // showed alice.
+  const [acting, setActing] = useState(false)
   const act = useCallback(async (fn, word) => {
-    if (!clean) return
+    const target = look?.handle
+    if (!target || acting) return
+    setActing(true)
     setSaid('')
-    const r = await fn(password, clean)
-    setSaid(r && r.ok !== false ? `${word}: @${clean}` : `that did not go through`)
+    const r = await fn(password, target)
+    setActing(false)
+    if (r?.error === 'password') { onLock && onLock(); return }
+    setSaid(r && r.ok !== false ? `${word}: @${target}` : 'that did not go through')
     await lookUp()
     await load()
-  }, [password, clean, lookUp, load])
+  }, [password, look, lookUp, load, onLock, acting])
 
   const c = data?.counts || {}
   const users = data?.users || []
@@ -88,7 +98,10 @@ export default function Handles({ password, initialHandle = '' }) {
             items={[
               ['handle', `@${look.handle}`],
               ['member', look.member ? 'yes' : 'no'],
-              ['blocked', look.suppressed ? 'yes' : 'no'],
+              /* `blocked` is the server's own word for un-pingable either way;
+                 `kind` says which way. The row used to read `suppressed`, which
+                 0020 keeps for a desk older than itself and which is ban only. */
+              ['blocked', look.blocked ? (look.kind === 'optout' ? 'yes, they opted out' : 'yes, refused') : 'no'],
               ['attempts on record', (look.verifications || []).length],
             ]}
           />
@@ -100,10 +113,14 @@ export default function Handles({ password, initialHandle = '' }) {
                 </thead>
                 <tbody>
                   {look.verifications.map((v, i) => (
-                    <tr key={`${v.token}-${i}`}>
+                    /* `code` and `via`: what celestual_admin_handle_status has
+                       always returned. The columns read `token` and
+                       `verified_via`, which nothing sends, so the code was
+                       blank and every row said dm. */
+                    <tr key={`${v.code}-${i}`}>
                       <td><State>{v.status}</State></td>
-                      <td><span className="ad-id">{v.token}</span></td>
-                      <td>{v.verified_via || 'dm'}</td>
+                      <td><span className="ad-id">{v.code}</span></td>
+                      <td>{v.via || (v.status === 'verified' ? 'dm' : '')}</td>
                       <td><When at={v.created_at} exact /></td>
                       <td><When at={v.verified_at} exact /></td>
                     </tr>
@@ -114,20 +131,20 @@ export default function Handles({ password, initialHandle = '' }) {
           ) : <p className="ad-head-note">no attempts on record.</p>}
 
           <div className="ad-btns" style={{ justifyContent: 'flex-start' }}>
-            <Btn onClick={() => act(adminClearPending, 'cleared the stuck codes for')}>
+            <Btn disabled={acting} onClick={() => act(adminClearPending, 'cleared the stuck codes for')}>
               clear their stuck codes
             </Btn>
-            <Arm tone="go" armed="admit them by hand" onAct={() => act(adminVerifyUser, 'admitted')}>
+            <Arm tone="go" armed={`admit @${look.handle} by hand`} busy={acting} onAct={() => act(adminVerifyUser, 'admitted')}>
               admit them by hand
             </Arm>
-            <Arm armed="erase everything" onAct={() => act(adminDeleteUser, 'erased')}>
+            <Arm armed={`erase everything @${look.handle} has`} busy={acting} onAct={() => act(adminDeleteUser, 'erased')}>
               erase everything they have
             </Arm>
-            {look.suppressed
-              ? <Arm tone="go" armed="let them back in" onAct={() => act(adminUnbanUser, 'lifted the block on')}>
-                lift the block
+            {look.blocked
+              ? <Arm tone="go" armed={`let @${look.handle} back in`} busy={acting} onAct={() => act(adminUnbanUser, 'lifted the block on')}>
+                {look.kind === 'optout' ? 'lift their opt out' : 'lift the block'}
               </Arm>
-              : <Arm armed="refuse this @" onAct={() => act(adminBanUser, 'blocked')}>
+              : <Arm armed={`refuse @${look.handle}`} busy={acting} onAct={() => act(adminBanUser, 'blocked')}>
                 erase and refuse this @
               </Arm>}
           </div>

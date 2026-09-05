@@ -69,6 +69,10 @@ export default function MainApp() {
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
   const [who, setWho] = useState(ANON)
+  // Whether whoami has answered at all. Until it has, `who` is the null
+  // identity by construction and not by fact, and the sky and the reveal wait
+  // rather than drawing the signed out state over somebody who is signed in.
+  const [known, setKnown] = useState(false)
   const still = useRef(prefersReducedMotion()).current
 
   // ── the faces ──
@@ -114,13 +118,14 @@ export default function MainApp() {
   // surfaces (spec section 3).
   useEffect(() => {
     let alive = true
-    whoAmI().then((u) => { if (alive) setWho(u) })
+    whoAmI().then((u) => { if (alive) { setWho(u); setKnown(true) } })
     return () => { alive = false }
   }, [])
 
   const refreshWho = useCallback(async () => {
     const u = await whoAmI()
     setWho(u)
+    setKnown(true)
     return u
   }, [])
 
@@ -139,7 +144,7 @@ export default function MainApp() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const shared = { go, who, refreshWho, still }
+  const shared = { go, who, known, refreshWho, still }
 
   return (
     <div className="wl-root sg-root mn-root">

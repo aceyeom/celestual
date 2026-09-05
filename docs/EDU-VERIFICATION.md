@@ -5,7 +5,7 @@ from its safe local stub into the real, email-backed thing in production.
 
 A ping only ever reaches people from your own community, so **membership has to
 be real, not self-declared.** Joining a curated school requires proving you're
-there: a 4-digit code is emailed to an address at that school's domain, and you
+there: a six digit code is emailed to an address at that school's domain, and you
 enter it back to confirm. This doc is the operator playbook for wiring that up.
 
 ---
@@ -17,7 +17,7 @@ modes depending on a single flag:
 
 | Mode | When | What happens |
 | --- | --- | --- |
-| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, no Supabase env, **or the `/demo` sandbox** | The join sheet accepts **any** plausibly-formatted address (any domain), waits a beat, accepts any 4 digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview + the `/demo` sandbox fully testable with no real inbox. |
+| **Stub** (default) | `VITE_EDU_VERIFY_ENABLED` unset/`0`, no Supabase env, **or the `/demo` sandbox** | The join sheet accepts **any** plausibly-formatted address (any domain), waits a beat, accepts any four to six digits, and joins. **Nothing is emailed or stored.** Keeps dev + preview + the `/demo` sandbox fully testable with no real inbox. |
 | **Live** | `VITE_EDU_VERIFY_ENABLED=1` **and** Supabase URL/anon key set, **outside `/demo`** | Real code emailed via Resend, hashed + stored in Postgres, verified server-side against the genuine school domain. |
 
 > **`/demo` always uses Stub mode**, even on a build with the flag on and Supabase
@@ -42,7 +42,7 @@ supabase/migrations/
 
 **The security model (why it's shaped this way):**
 
-- The 4-digit code is a **secret**. It is emailed, **never returned to the
+- The six digit code is a **secret** (four before the audit of 4 September, which also made the try count atomic: the attempt is spent before the code is compared, so a burst of guesses cannot share one counter). It is emailed, **never returned to the
   browser**, and only its **SHA-256 hash** is stored. A dump of the table reveals
   no live codes. (This is the opposite of the Instagram DM code, which the user
   re-sends to us — see `docs/DEBUG-IG-WEBHOOK.md`.) Four digits is enough here

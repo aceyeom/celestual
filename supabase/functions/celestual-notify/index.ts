@@ -23,6 +23,9 @@
 // MAX_ATTEMPTS, after which the row is marked `failed_at` (dead-lettered) so a
 // permanently-bad address isn't retried forever.
 //
+// Requires migration 0038 (celestual_notify_take). Against an older database
+// the RPC is missing and this answers 500 with the message naming it.
+//
 // Required secrets (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY        — your Resend API key
 //   CELESTUAL_FROM_EMAIL  — verified sender, e.g. "celestual <hello@celestual.us>"
@@ -83,6 +86,7 @@ function emailHtml(other: string, hasCard: boolean) {
 async function sendEmail(to: string, other: string, hasCard: boolean) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
+    signal: AbortSignal.timeout(15_000),
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
@@ -98,14 +102,13 @@ async function sendEmail(to: string, other: string, hasCard: boolean) {
 }
 
 Deno.serve(async () => {
-  const nowIso = new Date().toISOString();
-  const { data: pending, error } = await supabase
-    .from('celestual_notifications')
-    .select('id, to_email, self_handle, other_handle, has_card, attempts')
-    .is('sent_at', null)
-    .is('failed_at', null)
-    .or(`next_attempt_at.is.null,next_attempt_at.lte.${nowIso}`)
-    .limit(100);
+  // The rows are CLAIMED, not selected. celestual_notify_take (0038) takes the
+  // due rows under skip locked and pushes their next attempt ten minutes out,
+  // so a webhook firing once per insert (celestual_submit queues two rows per
+  // match) or a cron overlapping itself cannot send the same mail twice. A
+  // send that fails writes its own backoff over that; one that succeeds
+  // stamps sent_at.
+  const { data: pending, error } = await supabase.rpc('celestual_notify_take', { p_limit: 100 });
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
@@ -114,7 +117,7 @@ Deno.serve(async () => {
   let sent = 0;
   const retried: string[] = [];
   const deadLettered: string[] = [];
-  for (const n of pending ?? []) {
+  for (const n of (Array.isArray(pending) ? pending : [])) {
     try {
       await sendEmail(n.to_email, n.other_handle, n.has_card === true);
       await supabase.from('celestual_notifications').update({ sent_at: new Date().toISOString() }).eq('id', n.id);

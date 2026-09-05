@@ -15,9 +15,9 @@
 //
 // Either way every report on the same letter closes together, because three
 // people reporting one letter is one decision.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskReports, deskReportResolve } from '../api/admin.js'
-import { Tabs, Paging, Empty, When, State, None, Btn, Arm } from './parts.jsx'
+import { Tabs, Paging, Empty, Fault, When, State, None, Btn, Arm, clampOffset, failWord } from './parts.jsx'
 
 const LIMIT = 50
 const TABS = [
@@ -27,32 +27,55 @@ const TABS = [
   { value: '', label: 'all' },
 ]
 
-export default function Reports({ password, onChanged }) {
+export default function Reports({ password, onChanged, onLock }) {
   const [status, setStatus] = useState('open')
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
   const [busy, setBusy] = useState(true)
   const [open, setOpen] = useState(null)
   const [note, setNote] = useState('')
+  const [said, setSaid] = useState('')
+  const [acting, setActing] = useState(false)
+  const seq = useRef(0)
 
   useEffect(() => { setOffset(0) }, [status])
 
   const load = useCallback(async () => {
+    const mine = ++seq.current
     setBusy(true)
     const r = await deskReports(password, { status, limit: LIMIT, offset })
-    setPage(r && r.ok ? r : { rows: [], total: 0 })
+    if (mine !== seq.current) return
+    if (r?.error === 'password') { onLock && onLock(); return }
+    if (r && r.ok) {
+      const at = clampOffset(offset, r.total || 0, LIMIT)
+      if (at !== offset) { setOffset(at); return }
+      setPage(r)
+    } else {
+      setPage({ rows: [], total: 0, error: r?.error || 'network' })
+    }
     setBusy(false)
-  }, [password, status, offset])
+  }, [password, status, offset, onLock])
 
   useEffect(() => { load() }, [load])
 
   const resolve = useCallback(async (id, uphold) => {
-    await deskReportResolve(password, id, uphold, note)
+    if (acting) return
+    setActing(true)
+    setSaid('')
+    const r = await deskReportResolve(password, id, uphold, note)
+    setActing(false)
+    if (!r?.ok) {
+      setSaid(failWord(r))
+      if (r?.error === 'password') onLock && onLock()
+      // Somebody else decided it: the list is stale, so read it again.
+      if (r?.error === 'already_resolved') await load()
+      return
+    }
     setNote('')
     setOpen(null)
     await load()
     onChanged && onChanged()
-  }, [password, note, load, onChanged])
+  }, [password, note, load, onChanged, onLock, acting])
 
   const rows = page?.rows || []
 
@@ -68,7 +91,9 @@ export default function Reports({ password, onChanged }) {
         </div>
       </div>
 
-      {busy && !page ? <Empty>reading</Empty> : rows.length === 0 ? (
+      {said ? <p className="ad-head-note" style={{ margin: '0 0 12px', color: 'var(--ad-stop)' }}>{said}</p> : null}
+
+      {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>{status === 'open' ? 'nothing has been reported.' : 'nothing here.'}</Empty>
       ) : (
         <div className="ad-scroll">
@@ -91,8 +116,9 @@ export default function Reports({ password, onChanged }) {
                   open={open === r.id}
                   note={note}
                   setNote={setNote}
-                  onOpen={() => { setOpen(open === r.id ? null : r.id); setNote('') }}
+                  onOpen={() => { setOpen(open === r.id ? null : r.id); setNote(''); setSaid('') }}
                   onResolve={resolve}
+                  acting={acting}
                 />
               ))}
             </tbody>
@@ -105,7 +131,7 @@ export default function Reports({ password, onChanged }) {
   )
 }
 
-function ReportRow({ r, open, note, setNote, onOpen, onResolve }) {
+function ReportRow({ r, open, note, setNote, onOpen, onResolve, acting }) {
   return (
     <>
       <tr className={open ? 'is-open' : ''}>
@@ -155,10 +181,10 @@ function ReportRow({ r, open, note, setNote, onOpen, onResolve }) {
                     />
                   </div>
                   <div className="ad-btns" style={{ justifyContent: 'flex-start' }}>
-                    <Arm armed="it stays down" onAct={() => onResolve(r.id, true)}>
+                    <Arm armed="it stays down" busy={acting} onAct={() => onResolve(r.id, true)}>
                       uphold, and it stays down
                     </Arm>
-                    <Arm tone="go" armed="put it back" onAct={() => onResolve(r.id, false)}>
+                    <Arm tone="go" armed="put it back" busy={acting} onAct={() => onResolve(r.id, false)}>
                       dismiss, and it goes back up
                     </Arm>
                   </div>

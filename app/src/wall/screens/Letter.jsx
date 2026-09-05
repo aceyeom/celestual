@@ -55,7 +55,7 @@ import {
   Pill, Icon, Label, Face,
 } from '../parts.jsx'
 import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle } from '../data.js'
-import { mark } from '../store.js'
+import { mark, setAfterGate } from '../store.js'
 
 // The pager, and it lives in the header rather than under the card. It is the
 // answer to "where am I", which is what a header is for; under the card it was
@@ -200,7 +200,8 @@ export default function Letter({ id: param, go, back }) {
             /* The gate. It names no policy and gives no reasons: the card
                beside it already says SEALED, and a person who has not decided
                to open it does not need the argument for why it is shut. */
-            <Pill tone="light" wide icon={<Icon name="key" size={17} />} onClick={() => go('gate')}>
+            <Pill tone="light" wide icon={<Icon name="key" size={17} />}
+              onClick={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}>
               read it
             </Pill>
           )}

@@ -206,8 +206,12 @@ export const logScan = (source) =>
 // publishing is pre-moderated: the screenshot exists before you delete it, so a
 // queue that leaves the letter up while somebody thinks about it has understood
 // the asymmetry backwards.
+// The first step of the report is one tap with no reason. The row's reason
+// column is one to four hundred characters, so the tap goes up as
+// 'unspecified' (which is also what 0038's wall_report writes for an empty
+// string) rather than as '' against a database that is a migration behind.
 export const report = (id, reason) =>
-  call('wall_report', { p_token: sessionToken(), p_letter: id, p_reason: String(reason || '') })
+  call('wall_report', { p_token: sessionToken(), p_letter: id, p_reason: String(reason || '').trim() || 'unspecified' })
 
 export const removeLetter = (id) =>
   call('wall_remove_letter', { p_token: sessionToken(), p_letter: id })

@@ -58,7 +58,7 @@ import {
 } from '../parts.jsx'
 import { Sparkle, Provider } from '../art.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
-import { isVerified } from '../auth.js'
+import { isVerified, forgetVerified } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 
 export default function Remove({ handle: prefill, back }) {
@@ -71,6 +71,7 @@ export default function Remove({ handle: prefill, back }) {
   const [dm, setDm] = useState(() => held.current || null)   // { code, token, proofHash, proof }
   const [fault, setFault] = useState('')
   const [taking, setTaking] = useState(false)
+  const [minting, setMinting] = useState(false)
   const [gone, setGone] = useState(null)
 
   // Set on the way IN as well as cleared on the way out. React's StrictMode
@@ -102,10 +103,12 @@ export default function Remove({ handle: prefill, back }) {
   // Mint a code, show it, and watch. Meta tells the backend who actually sent
   // it, and that account is the identity whatever was typed here first.
   const ask = async () => {
-    if (!named || dm) return
+    if (!named || dm || minting) return
     setFault('')
+    setMinting(true)
     const out = await startHandoff(h)
     if (!alive.current) return
+    setMinting(false)
     if (!out.ok) {
       setFault(
         out.error === 'off' ? 'that door is not open yet'
@@ -125,8 +128,16 @@ export default function Remove({ handle: prefill, back }) {
   useEffect(() => {
     if (!dm) return
     let stop = false
+    // `polling` because two things drive this: the beat, and coming back to
+    // the tab. Without it every return from Instagram started another chain
+    // of polls beside the first, and five app switches were six chains.
+    let polling = false
     const tick = async () => {
+      if (stop || polling) return
+      polling = true
+      clearTimeout(timer)
       const out = await pollHandoff(dm)
+      polling = false
       if (stop || !alive.current) return
       if (out.ok) { clearPending(); setDm(null); setValue(out.handle); return }
       if (out.error === 'expired') { clearPending(); setDm(null); setFault('that code has lapsed'); return }
@@ -147,17 +158,36 @@ export default function Remove({ handle: prefill, back }) {
     }
   }, [dm])
 
+  // Every letter under the name, one call each. The first refusal stops it and
+  // is said: this used to count the successes, ignore the rest, and declare
+  // the name off the wall over zero removals when the server had refused every
+  // one, which is the one screen in the product that must never say that.
   const take = async () => {
     if (!proven || taking) return
     setTaking(true)
+    setFault('')
     const mine = lettersFor(h)
     let n = 0
+    let err = null
     for (const l of mine) {
       const out = await removeLetter(l.id)
-      if (out?.ok) n += 1
+      if (out?.ok) { n += 1; continue }
+      err = out?.error || 'network'
+      break
     }
     if (!alive.current) return
     setTaking(false)
+    if (err) {
+      if (err === 'unverified' || err === 'no_session') {
+        // This device believed the handle was proven; the server does not.
+        forgetVerified(h)
+        setFault('that @ is not proven on this device any more. prove it again')
+      } else {
+        setFault(n ? `${n} of ${mine.length} came down. the rest did not go through: try again`
+          : 'it did not go through. try once more')
+      }
+      return
+    }
     setGone({ handle: h, n })
   }
 
@@ -178,7 +208,7 @@ export default function Remove({ handle: prefill, back }) {
             <Label tone="dim"><span className="wl-h">{atHandle(gone.handle)}</span></Label>
             <Prose className="wl-gate-copy">
               {gone.n === 0
-                ? 'The name is gone, and it cannot be written to again.'
+                ? 'There was nothing under it. A name with no letters is not on the wall.'
                 : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
             </Prose>
           </div>
@@ -264,10 +294,10 @@ export default function Remove({ handle: prefill, back }) {
                   other glyph here, and the sentence under it saying exactly
                   what is asked and what is kept. */}
               <Pill
-                tone="light" wide disabled={!named} onClick={ask}
+                tone="light" wide disabled={!named || minting} onClick={ask}
                 icon={<Provider size={17} />}
               >
-                prove it is yours
+                {minting ? 'one moment' : 'prove it is yours'}
               </Pill>
               <div className="wl-remove-handoff">
                 <Label tone="dim">one question · nothing is kept</Label>

@@ -79,6 +79,15 @@ function write(next) {
 export function getState() { return read() }
 export function patch(fields) { return write({ ...read(), ...fields }) }
 
+// Where the gate should land once it opens. Set by the screen that sent
+// somebody to it, taken once by the gate. In memory only: it is about this
+// tap, and a return address that outlived the tab would send the next visit
+// somewhere it never asked to go. Without it the gate closed onto the wall and
+// the letter somebody pressed "read it" on had to be found again.
+let AFTER = null
+export function setAfterGate(route) { AFTER = route && route.name ? route : null }
+export function takeAfterGate() { const a = AFTER; AFTER = null; return a }
+
 // Append to one of the list buckets, once. Written here rather than at four
 // call sites so `[...removed(), h]` cannot be spelled two different ways and
 // end up with a duplicate in one of them.

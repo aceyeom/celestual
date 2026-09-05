@@ -57,11 +57,13 @@ import {
 } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { letter, loadLetter, report, atHandle, ago } from '../data.js'
+import { setAfterGate } from '../store.js'
 
 export default function Report({ id, go, back }) {
   const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 it is filed
   const [why, setWhy] = useState('')
   const [fault, setFault] = useState('')
+  const [busy, setBusy] = useState(false)
   // Held once it arrives: the letter is about to come off the wall, and the
   // screen that took it down still has to be able to name it afterwards.
   const held = useRef(null)
@@ -77,9 +79,13 @@ export default function Report({ id, go, back }) {
   // sending afterwards would be a screen that says "it's down" about a letter
   // that might still be up.
   const take = async (reason) => {
+    if (busy) return
+    setBusy(true)
     const out = await report(id, reason)
+    setBusy(false)
     if (out?.ok) { setStep(reason ? 2 : 1); return }
-    setFault(out?.error === 'gate' ? 'gate' : 'network')
+    setFault(out?.error === 'gate' || out?.error === 'no_session' ? 'gate'
+      : out?.error === 'rate_limited' ? 'rate' : 'network')
   }
 
   const head = <SheetHead onClose={back} label="back to the wall"
@@ -126,7 +132,7 @@ export default function Report({ id, go, back }) {
           {head}
           <Display size="s" as="h2" id="wl-rep-h">Reports come<br />from Berkeley.</Display>
           <div className="wl-push" />
-          <Locked onOpen={() => go('gate')}>
+          <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
             Sign in to take a letter down.
           </Locked>
         </div>
@@ -167,11 +173,13 @@ export default function Report({ id, go, back }) {
 
           <SheetFoot>
             <Pill tone="light" wide icon={<Icon name="flag" size={17} />}
-              onClick={() => take('')}>
-              take it down
+              disabled={busy} onClick={() => take('')}>
+              {busy ? 'taking it down…' : 'take it down'}
             </Pill>
             {fault === 'network' ? (
               <Label tone="dim">it did not go through</Label>
+            ) : fault === 'rate' ? (
+              <Label tone="dim">that is a lot of reports in one hour. give it time</Label>
             ) : null}
             <button type="button" className="wl-quiet" onClick={back}>leave it up</button>
           </SheetFoot>
@@ -204,7 +212,7 @@ export default function Report({ id, go, back }) {
             {/* The letter is already down; this only adds the words. A second
                 report on the same letter is a second row for the desk, which is
                 what a person adding a reason after the fact actually wants. */}
-            <Pill tone="light" wide onClick={() => (why.trim() ? take(why) : setStep(2))}>
+            <Pill tone="light" wide disabled={busy} onClick={() => (why.trim() ? take(why) : setStep(2))}>
               {why.trim() ? 'send it' : 'send it without a reason'}
             </Pill>
           </SheetFoot>

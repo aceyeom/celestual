@@ -54,7 +54,6 @@ import Find from './screens/Find.jsx'
 import Write from './screens/Write.jsx'
 import Posted from './screens/Posted.jsx'
 import Join from './screens/Join.jsx'
-import Core from './screens/Core.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
@@ -77,7 +76,6 @@ const FIELD = {
   write:  'drift',
   posted: 'drift',
   join:   'slow',
-  orbit:  'drift',
   gate:   'slow',
   remove: 'still',   // the room stops moving where the act cannot be undone
   report: 'still',   // and where something is coming down
@@ -113,7 +111,13 @@ export default function WallApp() {
   // Asked once, on mount. Somebody who verified their campus address on their
   // phone last week comes back to the wall already through the gate, because
   // the session is a row rather than a flag in this tab.
-  useEffect(() => { refreshMember() }, [])
+  // The store is not something React watches, so the answer has to be turned
+  // into a render or the gate keeps drawing the sign in form over a returning
+  // member until the next route change. Its OWN state, not `rev`: `rev` is
+  // set to the cache's revision number, and a counter bumped from two places
+  // lands on the same number twice, which React reads as nothing changed.
+  const [, setMemberRev] = useState(0)
+  useEffect(() => { refreshMember().then(() => setMemberRev((n) => n + 1)) }, [])
 
   // ── the faces ──
   // app/index.html fetches the three production faces on every route, and this
@@ -194,7 +198,17 @@ export default function WallApp() {
   // Down to the void in 160ms, swap underneath, back up in 380ms. No sliding,
   // no shared element, no crossfade — and none of it at all for a sheet, which
   // rises over a wall that never went anywhere.
+  // ── the history ──
+  // Opening a sheet pushes an entry, and closing it used to push another, so
+  // every sheet cost two entries and the browser's back button, pressed on the
+  // bare wall, re-raised the sheet somebody had just closed. A sheet the shell
+  // opened is closed by walking back over what it pushed: each sheet entry
+  // carries its depth, and closing goes that many steps back to the wall entry
+  // underneath, which onPop then renders. A sheet arrived at by deep link has
+  // no depth and closes the old way.
+  const leaving = useRef(false)
   const go = useCallback((name, id) => {
+    if (leaving.current) return
     const to = href(name, id)
     if (to === window.location.pathname) return
     const from = parse(window.location.pathname)
@@ -202,9 +216,18 @@ export default function WallApp() {
     // A sheet opening or closing over the same underlying surface, or a pager
     // step inside one sheet, is not a navigation.
     const sheetMove = SHEETS.has(target.name) || (SHEETS.has(from.name) && target.name === 'wall')
+    const depth = Number(window.history.state?.wallDepth) || 0
+
+    if (SHEETS.has(from.name) && target.name === 'wall' && depth > 0) {
+      leaving.current = true
+      setOverride(null)
+      window.history.go(-depth)
+      return
+    }
 
     const swap = () => {
-      window.history.pushState({ wall: name }, '', to)
+      const nextDepth = SHEETS.has(target.name) ? (SHEETS.has(from.name) ? depth + 1 : 1) : 0
+      window.history.pushState({ wall: name, wallDepth: nextDepth }, '', to)
       setOverride(null)
       setRoute(target)
       if (!sheetMove) window.scrollTo(0, 0)
@@ -224,6 +247,7 @@ export default function WallApp() {
   // to render a production route with.
   useEffect(() => {
     const onPop = () => {
+      leaving.current = false
       if (!isWallPath(window.location.pathname)) { window.location.reload(); return }
       setOverride(null)
       setRoute(parse(window.location.pathname))
@@ -257,7 +281,6 @@ export default function WallApp() {
   switch (route.name) {
     case 'posted': base = <Posted {...shared} />; break
     case 'join':   base = <Join {...shared} />; break
-    case 'orbit':  base = <Core id={route.id} {...shared} />; break
     default:       base = <Wall {...shared} />   // and everything a sheet sits on
   }
 

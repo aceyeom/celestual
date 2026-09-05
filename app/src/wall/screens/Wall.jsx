@@ -83,7 +83,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
 import { Sparkle, Halftone } from '../art.jsx'
-import { wall, liveCount, atHandle, rand } from '../data.js'
+import { wall, liveCount, atHandle, rand, wallError, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -494,7 +494,16 @@ export default function Wall({ go, reduce, rev }) {
         <Display size="xl" className="wl-mast-title">
           A wall of<br />unforgettable<br />berkeley bears.
         </Display>
-        <Label tone="dim" className="wl-mast-meta">{letters} letters</Label>
+        {wallError() ? (
+          <Label tone="dim" className="wl-mast-meta" aria-live="polite">
+            {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
+            {wallError() === 'offline' ? null : (
+              <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
+            )}
+          </Label>
+        ) : (
+          <Label tone="dim" className="wl-mast-meta">{letters} letters</Label>
+        )}
       </div>
 
       {/* ── the names ──

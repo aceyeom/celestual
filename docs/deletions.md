@@ -371,3 +371,25 @@ Two rows in this group should survive any wipe on their own merits:
 | G. Documentation | Partly ready | Q17 |
 | H. Old design surfaces | HOLD until Phase 3 approved | Q14, Q16, Q18 |
 | I. User data | CLOSED, nothing deleted | answered |
+
+
+---
+
+## Deleted on 4 September
+
+The audit deleted what the register above held. Every item is one `git rm` in
+commit history if it is ever wanted back.
+
+| What | Lines | Why |
+| --- | --- | --- |
+| `app/src/App.jsx`, `components/`, `card/`, `sky/`, `galaxy.js`, `texture.js`, `theme.js`, `i18n/`, `api/billing.js`, `api/pings.js` | 17,000 | The retired design. Reachable at `/paid` only, a Stripe return behind a flag that was never turned on, and the whole tree rode in the entry chunk of every address until the audit moved it to its own. Nothing live imported it. |
+| `app/src/wall/screens/Core.jsx`, `wall/orbit.js`, the seeded corpus and ledger in `wall/seed.js` | 1,300 | The `/berkeley/orbit` stand-in for the core service, with a seeded fake ledger, reachable by typing the address after the wall went live. |
+| `supabase/functions/celestual-search` | 100 | The typeahead proxy. Never deployed; its only caller was the retired design. |
+| `docs/STAR-CARDS.md`, `docs/ORBIT-REDESIGN.md`, `docs/WALL-LAUNCH.md`, `docs/MASTER-GUIDE.md` | 155 KB | Records of surfaces that no longer exist, a pre-6b audit that said the wall reached no server, and the older duplicate of the product framework (Q17). |
+
+Kept, deliberately: `app/src/signature/` (the static approval surface at
+`/signature`, whose stylesheet Main shares), the dormant Stripe functions and
+migration 0021 (`docs/STRIPE-SETUP.md` still describes them), `celestual-remind`
+(never deployed; the sweeps it was written to run are cron jobs since 0038, but
+its lapse warning mail is still a feature nobody has decided against), and
+`celestual-ig-webhook` (the no-ManyChat path to the same relay).

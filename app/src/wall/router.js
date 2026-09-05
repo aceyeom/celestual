@@ -40,15 +40,20 @@ export function parse(pathname) {
   const rest = p.startsWith(BASE + '/') ? p.slice(BASE.length + 1) : ''
   const [head, id = ''] = rest.split('/')
   switch (head) {
-    case 'letter': return { name: 'letter', id }   // a letter, raised over the wall
+    // A letter or a report with nothing after it is not an address: it drew a
+    // "reading" card that never finished. It is the wall.
+    case 'letter': return id ? { name: 'letter', id } : { name: 'wall' }   // a letter, raised over the wall
     case 'find':   return { name: 'find' }         // the search, raised over the wall
     case 'write':  return { name: 'write', id }    // the composer, raised over the wall
     case 'gate':   return { name: 'gate' }         // the door on the LETTERS, not on the wall
     case 'remove': return { name: 'remove', id }   // a whole name coming off, once it is proven
-    case 'report': return { name: 'report', id }   // one letter coming down, now
+    case 'report': return id ? { name: 'report', id } : { name: 'wall' }   // one letter coming down, now
     case 'posted': return { name: 'posted' }       // it is up, and the wall took it
-    case 'join':   return { name: 'join' }         // the ONLY door to the core service
-    case 'orbit':  return { name: 'orbit', id }    // the core service, standing
+    case 'join':   return { name: 'join' }         // the door to the core service, which is Main
+    // /berkeley/orbit was a drawn stand-in for the core service with a seeded
+    // ledger in it, reachable by anybody who typed the address. The core
+    // service is Main, at the root of the site, and /berkeley/join sends
+    // people there. The stand-in is gone.
     default:       return { name: 'wall' }
   }
 }

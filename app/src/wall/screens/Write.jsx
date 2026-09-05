@@ -49,7 +49,7 @@ import { Dots, Sparkle } from '../art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
-import { getState, patch } from '../store.js'
+import { getState, patch, setAfterGate } from '../store.js'
 
 // Characters. Below this it is a comment rather than a letter — but the floor
 // was twice this and it was wrong: at sixty, the true thing somebody actually
@@ -58,7 +58,10 @@ import { getState, patch } from '../store.js'
 // A letter is short because it is true. Thirty keeps a bare handle and a stray
 // keystroke off the wall and lets everything else through.
 const MIN_BODY = 30
-const MAX_BODY = 320
+// The server's ceiling (wall_letters_body_ck, and wall_write's left(…, 280)).
+// This said 320, so the last forty characters of a full letter were shown on
+// the posted screen and cut off the wall without a word to the writer.
+const MAX_BODY = 280
 
 export default function Write({ to: prefill, go, back }) {
   const draft = getState().draft || {}
@@ -80,6 +83,7 @@ export default function Write({ to: prefill, go, back }) {
   const caught = body.trim() ? fault(body) : ''
   const ok = [validHandle(h), body.trim().length >= MIN_BODY && !caught]
   const dl = useMemo(() => dateline(Date.now()), [])
+  const [asking, setAsking] = useState(false)
 
   // One draft under one key, so backing out of the sheet and coming back does
   // not cost somebody the forty words they just wrote.
@@ -90,10 +94,18 @@ export default function Write({ to: prefill, go, back }) {
 
   // The card under the handle field: peeks while typing, asks on the press.
   const them = useResolver(to)
-  function next() {
-    if (!ok[step]) return
+  async function next() {
+    if (!ok[step] || asking) return
     if (step === 0) {
-      if (!them.settled) { them.ask(); return }
+      if (!them.settled) {
+        // An answer draws the card and waits for the second press; no answer
+        // at all (offline, capped, provider down) draws nothing and the same
+        // press goes on.
+        setAsking(true)
+        const r = await them.ask()
+        setAsking(false)
+        if (r && r.state !== 'unknown') return
+      }
       setStep(1)
       return
     }
@@ -112,7 +124,7 @@ export default function Write({ to: prefill, go, back }) {
           <SheetHead onClose={back} label="back to the wall" />
           <Display size="s" as="h2" id="wl-write-h">Letters are written<br />by Berkeley.</Display>
           <div className="wl-push" />
-          <Locked onOpen={() => go('gate')}>
+          <Locked onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}>
             Your information will stay anonymous.
           </Locked>
         </div>

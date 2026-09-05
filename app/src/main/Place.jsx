@@ -62,6 +62,7 @@ import { normHandle, validHandle, atHandle, dateline } from '../wall/data.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../wall/handoff.js'
 import { heldProof } from '../wall/auth.js'
 import { getState, patch } from '../wall/store.js'
+import { signOut as dropProof } from '../api/auth.js'
 import { place } from './data.js'
 import TopBar from './TopBar.jsx'
 
@@ -91,7 +92,9 @@ function resume(prefill) {
 
 export default function Place({ go, who, refreshWho, to: prefill }) {
   const wrote = getState().wroteTo || []
-  const held = useRef(resume(prefill)).current
+  // Lazy: `useRef(resume(prefill))` evaluated the storage read and the JSON
+  // parse on every render and threw the result away on all but the first.
+  const [held] = useState(() => resume(prefill))
   const [to, setTo] = useState(() => prefill || held?.to || '')
   const [line, setLine] = useState(() => held?.line || '')
   // The sender's own @ — the third question, and the one this screen never
@@ -106,6 +109,10 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const [adopted, setAdopted] = useState(null)
   const [said, setSaid] = useState('')
   const [placing, setPlacing] = useState(false)
+  // A code is being minted. Without this, Enter held down or a double tap
+  // started two verifications, orphaned the first code, and spent two of the
+  // eight starts an hour the handle gets (0018).
+  const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
   const alive = useRef(true)
 
@@ -141,12 +148,18 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     if (!alive.current) return
     setPlacing(false)
     if (!out.ok) {
+      // The server's word for a full sky is 'no_slots' (celestual_submit);
+      // 'cap' was never answered by anything. A lapsed proof is dropped on the
+      // spot, so `readyToPlace` below turns false and this step asks for the
+      // DM again rather than saying "prove it again" over a screen with no
+      // way to.
+      if (out.error === 'unverified') dropProof()
       setSaid(
-        out.error === 'cap' ? 'you have as many out as you can hold'
+        out.error === 'no_slots' || out.error === 'cap' ? 'you have as many out as you can hold'
           : out.error === 'self' ? 'you cannot place one on yourself'
           : out.error === 'suppressed' ? 'that name has asked to be left alone'
-          : out.error === 'unverified' ? 'that proof has lapsed. prove the handle again'
-          : out.error === 'rate_limited' ? 'that is a lot of pings in one hour'
+          : out.error === 'unverified' ? 'that proof has lapsed. one more DM proves it again'
+          : out.error === 'rate_limited' ? 'that is a lot of pings for one month. give it time'
           : 'it did not go through',
       )
       return
@@ -161,14 +174,16 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // under, it is what the per-handle limit counts, and it is what the screen
   // has just been told — where it used to be whoever was being pinged.
   const ask = async () => {
-    if (dm) return
+    if (dm || busy) return
     setSaid('')
     if (!mineOk) {
       setSaid(me && me === h ? 'that is the name you are placing it on' : 'that handle does not look right')
       return
     }
+    setBusy(true)
     const out = await startHandoff(me)
     if (!alive.current) return
+    setBusy(false)
     if (!out.ok) {
       setSaid(
         out.error === 'off' ? 'that door is not open yet'
@@ -260,11 +275,17 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // The first press on a handle nobody has looked up draws the card looking;
   // the next, on the card or the pill, moves on.
   const them = useResolver(to)
-  const next = () => {
+  const next = async () => {
     setSaid('')
     if (step === 0) {
       if (!named) return
-      if (!them.settled) { them.ask(); return }
+      if (!them.settled) {
+        // An answer draws the card and waits for the second press; no answer
+        // at all (offline, capped, provider down) draws nothing, so the same
+        // press moves on rather than dying silently.
+        const r = await them.ask()
+        if (r && r.state !== 'unknown') return
+      }
       setStep(1)
       return
     }
@@ -294,6 +315,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         <div className="mn-foot">
           <Pill tone="light" wide onClick={() => go('sky')}>your sky</Pill>
           <button type="button" className="wl-quiet" onClick={() => {
+            // The address still carried the last person. A refresh here used
+            // to reopen them at step 1 under "place another".
+            window.history.replaceState(window.history.state, '', '/place')
             setDone(null); setTo(''); setLine(''); setStep(0)
           }}>
             place another
@@ -431,7 +455,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
                     about somebody else; this is the only field on the screen
                     that is about the person filling it in. */}
                 <HandleField
-                  value={mine} onChange={setMine} onSubmit={next}
+                  value={mine} onChange={setMine} onSubmit={next} busy={busy}
                   autoFocus size="lg" placeholder="yourhandle" label="your Instagram handle"
                 />
                 <div className="mn-prove-what">
@@ -483,11 +507,12 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             ) : null}
             <Pill
               tone="light" wide
-              disabled={placing || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
+              disabled={placing || busy || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
               onClick={next}
               icon={step === 2 && !readyToPlace ? <Provider size={17} /> : null}
             >
               {placing ? 'placing…'
+                : busy ? 'one moment'
                 : step === 0 ? 'next'
                 : step === 1 ? 'next'
                 : readyToPlace ? 'place it' : 'prove it'}

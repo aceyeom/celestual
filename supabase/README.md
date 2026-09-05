@@ -137,7 +137,7 @@ Idempotent migrations, applied in order:
   `match_card`), `celestual_ping_status` and `celestual_my_pings`. The old
   five-argument `celestual_submit` is DROPPED, not kept alongside — PostgREST
   resolves overloads by argument name and two candidates satisfying the same
-  call is an ambiguity error. See ../docs/STAR-CARDS.md §5.
+  call is an ambiguity error. The card system's design record went with the retired design on 4 September; the RPCs stay.
 - `migrations/0023_the_mutual_dm.sql` — **the reveal reaches the person who
   isn't looking.** `celestual_dm_contacts` (handle ⇄ ManyChat contact id, and the
   last time they messaged us — the only thing that decides whether a push is
@@ -163,7 +163,7 @@ Idempotent migrations, applied in order:
   client (`card/model.js` `LEGACY_PLATES`), because a migration that rewrites the
   column destroys the only record of what somebody actually chose and cannot be
   undone. Re-runnable; the faces (`serif`/`sans`/`mono`) are untouched.
-  **See [../design/DESIGN.md](../design/DESIGN.md) and ../docs/STAR-CARDS.md.**
+  **See [../design/DESIGN.md](../design/DESIGN.md).**
 
 - `migrations/0028_handle_resolver.sql` — **the handle resolver.** Strictly
   additive: `celestual_handle_cache` (one row per lowercased handle — display
@@ -204,6 +204,24 @@ Idempotent migrations, applied in order:
   foreign key that points at `celestual_users(id)` in the catalogue rather than
   a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
   54 assertions, through `scripts/verify-migrations.sh --test`.**
+
+- `migrations/0038_the_audit.sql`: **the audit of 4 September.** Thirteen
+  things found by reading the schema against the client and proving each on a
+  migrated database: the public `wall_index` was a `security_invoker` view over
+  tables `anon` cannot read, so the wall drew zero names for everybody; the one
+  tap report sent an empty reason into a `1..400` check and always failed; one
+  open report shut a handle for good; upholding a report did not take the letter
+  down; erasure left the identity row, its sessions and its letters (and the
+  next person to prove a recycled handle inherited them); withdrawing a mutual
+  left the other side matched to nobody; four reads were proof gated only while
+  the release flag was on; a departmental `berkeley.edu` address verified and
+  was then locked out; the resolver's ledger kept `(user id, typed handle)` in
+  plain text for ever; two mails went out for one mutual under a concurrent
+  drain; the desk counted ledger rows as Apify calls; two tables kept the
+  platform's default grants; and the four sweeps had no caller (scheduled with
+  pg_cron where it exists). Each block in the file says what was wrong, how it
+  was shown and what changed. **Tested by the additions to `test-wall.sql` and
+  `test-doors.sql`.**
 
 - `migrations/0032_the_wall.sql`: **the wall, on a server.** `app/src/wall/data.js`
   had said since it was written that the wall "reaches no server, it stores
@@ -282,7 +300,6 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | --- | --- | --- |
 | `functions/celestual-notify` | drains `celestual_notifications` and emails "celestual: it's mutual." to each side of a match, at addresses they stored (retry + dead-letter). Says whether a card is waiting, never what it says | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
 | `functions/celestual-remind` | the hourly caretaker: lapse warnings ("still feel it?"), the sixty-day purge (`celestual_purge_expired`), and the campus open/reveal mail queue — schedule hourly with pg_cron | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-search` | optional server-side Instagram @ typeahead proxy | `HANDLE_SEARCH_URL`, `HANDLE_SEARCH_KEY` |
 | `functions/celestual-resolve` | **the handle resolver** (0031): turns a typed @ into a display name, the verified badge and a face, so a person confirms against an account instead of against their own spelling. One Apify actor run per cache miss, profile details only with the post limit at zero. The face is downloaded once into the public `avatars` bucket at `ig/<handle>.jpg` and served to the browser from Supabase, so no Instagram CDN URL (signed, expires within days) ever reaches anybody and a cached card draws a cached face. The cache is permanent; the picture refreshes at thirty days. Caps are three rolling 24h windows enforced in the database (`handle_search_allow`): 20 per signed-in user, 20 per anonymous device, 200 per address, and a cache hit costs nothing because only a call that reached Apify writes a row. On a limit it answers 429 with the seconds remaining. The device id is a UUID this function issues in an httpOnly SameSite=Lax cookie, which is first party only because `/api/resolve` in `vercel.json` rewrites onto it. Never blocks a ping. Deploy with `--no-verify-jwt`. **Runbook: [../docs/HANDLE-RESOLVER.md](../docs/HANDLE-RESOLVER.md)** | `APIFY_TOKEN` (optional: `APIFY_ACTOR_ID`) |
 | `functions/celestual-manychat` | **(recommended)** receives the Instagram DM relayed by ManyChat's External Request (sender username + code), authenticated by a shared secret, calls `celestual_complete_ig_verification`, and returns a `reply` ManyChat DMs back (the verified-feedback message) — no Meta developer portal. Since 0023 it also records the sender's contact + open window (`celestual_dm_touch`) and appends any waiting mutual news to that same reply (`celestual_dm_take`), which is how the reveal reaches somebody whose window closed weeks ago. **Full setup: [../docs/MANYCHAT-SETUP.md](../docs/MANYCHAT-SETUP.md) · [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_SHARED_SECRET` |
 | `functions/celestual-mutual-dm` | the push half of the mutual reveal: drains `celestual_dm_outbox` for the people whose 24-hour Instagram window is open and sends each their line through ManyChat's sending API. Everybody else's stays queued for `celestual-manychat` to hand over on their next message. No message tags, ever. **Runbook: [../docs/MANYCHAT-MUTUAL-DM.md](../docs/MANYCHAT-MUTUAL-DM.md)** | `MANYCHAT_API_TOKEN`, `CELESTUAL_SITE_URL` |
@@ -290,8 +307,9 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/_shared/mail.ts` | not a function — the one email design, imported by every sender. The case blind-tooled, the mark, tooled rules, the ivory plate for the one action, the code struck into a well, and a colophon at the foot. There used to be five templates and no two agreed on a ground, an accent or a corner radius; each sender owns only its words now (**[../design/DESIGN.md](../design/DESIGN.md)**) | — |
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
-| `functions/celestual-trial` | the First Light trial's front door (`/trial`): emails the 6-digit ownership code (hash-stored), then `claim` (the in-app signature + the chosen four-letter code), `login` (back into an entry from any device) and `check` (code availability) through the service-role trial RPCs. **Runbook: [../docs/FIRST-LIGHT-TRIAL.md](../docs/FIRST-LIGHT-TRIAL.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-admin` | the admin dashboard behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` (falls back to the launch password — set the secret to rotate it); wrong tries rate limited per IP; fronts the service-role `celestual_admin_*` RPCs (overview, delete, ban, remove competitor) | `CELESTUAL_ADMIN_PASSWORD` |
+| `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033: people, the wall, reports, the resolution cache, the waitlist, merge conflicts) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand) | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 

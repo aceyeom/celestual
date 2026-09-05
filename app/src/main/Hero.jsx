@@ -38,11 +38,18 @@ export default function Hero({ go, who, still = false }) {
   // when they press: the first press on a handle nobody has looked up draws
   // the card looking, and the next press, on the card or the pill, is the act.
   const them = useResolver(to)
-  const submit = () => {
+  const submit = async () => {
     const h = normHandle(to)
     if (!h) { go('place'); return }
     if (!validHandle(h)) { setSaid('that handle does not look right'); return }
-    if (!them.settled) { them.ask(); return }
+    if (!them.settled) {
+      // An answer draws the card and waits for the second press. No answer
+      // (offline, capped, the provider down) is settled by definition and
+      // draws nothing, so the same press goes on: the first press used to be
+      // a silent no-op then, with nothing on the screen to say why.
+      const r = await them.ask()
+      if (r && r.state !== 'unknown') return
+    }
     go('place', h)
   }
 

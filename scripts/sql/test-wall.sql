@@ -53,6 +53,11 @@ select w_ok('a stanford address does not',
 select w_ok('nobody at all does not', wall_gate(null, 'berkeley') = false);
 select w_ok('a campus that is not open does not', wall_gate(
   (select id from celestual_users where edu_email='author@berkeley.edu'), 'nowhere') = false);
+-- 0038. celestual-edu-verify accepts any host under berkeley.edu and 0030
+-- keys the row on the full host, so a departmental address is the campus.
+insert into celestual_users (edu_email, edu_verified_at) values ('grad@eecs.berkeley.edu', now());
+select w_ok('a departmental berkeley address opens the berkeley wall',
+  wall_gate((select id from celestual_users where edu_email='grad@eecs.berkeley.edu'), 'berkeley'));
 
 -- ── 2. writing ──────────────────────────────────────────────────────────────
 select w_ok('the outsider cannot write',
@@ -94,6 +99,11 @@ select w_ok('the index has no seal column',
   (select count(*) = 0 from information_schema.columns
     where table_name = 'wall_index' and column_name = 'sealed_line'));
 select w_ok('anon can read the index', has_table_privilege('anon', 'wall_index', 'SELECT'));
+-- 0038. The grant was always there; the view was security_invoker over tables
+-- anon has no grant on, so the select itself failed. Read it as anon.
+set role anon;
+select w_ok('and anon can actually select from it', (select count(*) >= 0 from wall_index));
+reset role;
 select w_ok('the index counts the live letter',
   (select letters = 1 from wall_index where target_handle = 'subject'));
 
@@ -235,10 +245,18 @@ begin
   raise notice 'PASS  with an open report for a person to look at';
 end $$;
 
--- ── 9. a name that came off stays off ───────────────────────────────────────
-select w_ok('the handle cannot be written to again',
-  (wall_write('token-author-0000000000', 'subject', 'again', null, null, 'berkeley', 'live', '{}')->>'error')
-    = 'removed');
+-- ── 9. a report alone does not shut the name ────────────────────────────────
+-- 0038. A report is one letter coming down for a person to look at, not a
+-- verdict on the name: writing to it goes on until the subject takes it down
+-- (10 below) or the desk upholds the report. Before 0038 one report on one of
+-- three letters refused every future letter to that handle.
+select w_ok('an open report does not shut the handle',
+  (wall_write('token-author-0000000000', 'subject', 'again, after a report', null, null, 'berkeley', 'live', '{}')->>'ok')::boolean);
+select w_ok('an upheld report does',
+  (select (celestual_desk_report_resolve(r.id, true, 'it was right')->>'upheld')::boolean
+     from wall_reports r join wall_letters l on l.id = r.letter_id
+    where l.target_handle = 'subject' and r.status = 'open' limit 1)
+  and (wall_write('token-author-0000000000', 'subject', 'again, after it was upheld', null, null, 'berkeley', 'live', '{}')->>'error') = 'removed');
 
 -- ── 10. the takedown by the subject ─────────────────────────────────────────
 do $$
@@ -272,6 +290,8 @@ begin
   end if;
   raise notice 'PASS  and the claim is filed in the same breath';
 end $$;
+select w_ok('after the subject takes it down the handle cannot be written to again',
+  (wall_write('token-author-0000000000', 'another', 'again', null, null, 'berkeley', 'live', '{}')->>'error') = 'removed');
 
 -- ── 11. the waitlist and the flyer ──────────────────────────────────────────
 select w_ok('a handle joins the waitlist',
@@ -297,6 +317,15 @@ select w_ok('an exact handle is found', (wall_search('findme')->0->>'handle') = 
 select w_ok('a partial handle is found', (wall_search('find')->0->>'handle') = 'findme');
 select w_ok('one character finds nothing', jsonb_array_length(wall_search('f')) = 0);
 select w_ok('search returns no bodies', not ((wall_search('findme')->0) ? 'body'));
+
+-- ── 12b. the one tap report ─────────────────────────────────────────────────
+-- 0038. The screen's first step sends no reason. It used to reach the check
+-- constraint as '' and raise; it is filed as 'unspecified' now.
+select w_ok('a report with no reason is filed',
+  (wall_report('token-author-0000000000', (select id from wall_letters where target_handle = 'findme'), '')->>'ok')::boolean);
+select w_ok('and says unspecified',
+  (select r.reason = 'unspecified' from wall_reports r join wall_letters l on l.id = r.letter_id
+    where l.target_handle = 'findme'));
 
 -- ── 13. content follows its author through a merge ──────────────────────────
 -- 0030's catalogue loop should pick wall_letters up with nothing here to tell

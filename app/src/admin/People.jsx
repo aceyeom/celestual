@@ -7,29 +7,40 @@
 // A row opens under itself rather than in a modal. The question somebody has
 // while looking at one person is almost always "what else did they write", and
 // a modal means losing your place in the table to find out.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { deskUsers, deskUser } from '../api/admin.js'
-import { Search, useDebounced, Paging, Empty, When, State, None, Btn, Def, Json } from './parts.jsx'
+import { Search, useDebounced, Paging, Empty, Fault, When, State, None, Btn, Def, Json, clampOffset } from './parts.jsx'
 
 const LIMIT = 50
 
-export default function People({ password, go }) {
+export default function People({ password, go, onLock }) {
   const [query, setQuery] = useState('')
   const q = useDebounced(query)
   const [offset, setOffset] = useState(0)
   const [page, setPage] = useState(null)
   const [busy, setBusy] = useState(true)
   const [open, setOpen] = useState(null)
+  // null while reading, { error } when it could not be read, else the answer.
   const [detail, setDetail] = useState(null)
+  const seq = useRef(0)
 
   useEffect(() => { setOffset(0) }, [q])
 
   const load = useCallback(async () => {
+    const mine = ++seq.current
     setBusy(true)
     const r = await deskUsers(password, { query: q, limit: LIMIT, offset })
-    setPage(r && r.ok ? r : { rows: [], total: 0 })
+    if (mine !== seq.current) return
+    if (r?.error === 'password') { onLock && onLock(); return }
+    if (r && r.ok) {
+      const at = clampOffset(offset, r.total || 0, LIMIT)
+      if (at !== offset) { setOffset(at); return }
+      setPage(r)
+    } else {
+      setPage({ rows: [], total: 0, error: r?.error || 'network' })
+    }
     setBusy(false)
-  }, [password, q, offset])
+  }, [password, q, offset, onLock])
 
   useEffect(() => { load() }, [load])
 
@@ -38,8 +49,9 @@ export default function People({ password, go }) {
     setOpen(id)
     setDetail(null)
     const r = await deskUser(password, id)
-    setDetail(r && r.ok ? r : null)
-  }, [password, open])
+    if (r?.error === 'password') { onLock && onLock(); return }
+    setDetail(r && r.ok ? r : { error: r?.error || 'network' })
+  }, [password, open, onLock])
 
   const rows = page?.rows || []
 
@@ -53,7 +65,7 @@ export default function People({ password, go }) {
         </div>
       </div>
 
-      {busy && !page ? <Empty>reading</Empty> : rows.length === 0 ? (
+      {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>{q ? 'nobody matches that.' : 'nobody has a row yet.'}</Empty>
       ) : (
         <div className="ad-scroll">
@@ -134,7 +146,8 @@ function RowPair({ u, open, detail, onOpen, go }) {
                 ]}
               />
 
-              {detail === null ? <p className="ad-head-note">reading</p> : (
+              {detail === null ? <p className="ad-head-note" aria-live="polite">reading</p>
+                : detail.error ? <p className="ad-head-note">the rest of this row could not be read. open it again.</p> : (
                 <>
                   {detail.letters?.length ? (
                     <div>

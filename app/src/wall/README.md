@@ -16,7 +16,7 @@ which letters it opened. The paragraph below describes the state before that.
 outside the tab it is open in, and it ships populated — seventy-two letters
 across sixty-six handles — so the whole thing can be walked cold, on a phone, by
 somebody who has never seen it. Everything that has to change before it holds
-real letters, in order, is **[../../../docs/WALL-LAUNCH.md](../../../docs/WALL-LAUNCH.md)**.
+real letters, in order, is **[../../../docs/launchsteps.md](../../../docs/launchsteps.md)**.
 
 Run it: nothing to configure. `npm run dev`, open `/berkeley`.
 
@@ -165,10 +165,15 @@ question they are now actually carrying.
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
 | `/berkeley/posted` | three beats — the screening, the paper going, the landing |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament |
-| `/berkeley/orbit` | **the core service** — one letter at a time, laid sideways, on the sill that describes it |
-| `/berkeley/orbit/place` | place a ping, or the door that says both slots are taken |
-| `/berkeley/orbit/:id` | one ping — a mutual opened, or a standing one to renew or let go |
+| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `register` leaves for Main at `/` |
+
+`/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
+(the audit of 4 September). They were a drawn stand-in for the core service
+with a seeded ledger in it, still reachable by typing the address after the
+wall went live; the core service is Main, and `/berkeley/join` sends people
+there. Anything below that describes the orbit, `orbit.js`, `Core.jsx`, the
+seeded ledger or the printed date is a record of what was built, not of what
+runs.
 
 Six of those are **sheets, not pages**: `letter`, `find`, `write`, `gate`,
 `report` and `remove` rise off the bottom edge over a wall that stays mounted, scrolled
@@ -243,10 +248,8 @@ moderate.js  the screen: layer 1 for real, layers 2 and 3 drawn honestly, and
 data.js      handles, the deterministic hash everything derives from, the
              corpus, search, write, the reports (held, never deleted) and the
              removals
-seed.js      the letters, the sources, the seeded ledger
-orbit.js     the core service's own data: ONE clock off the printed date, the
-             ledger as a delta on the seed, the slots, and placing, renewing
-             and letting go for real inside the tab
+seed.js      the printed sources and nothing else now: the corpus and the
+             seeded ledger went with the orbit stand-in
 screens/     one file per screen
 ```
 
@@ -383,7 +386,7 @@ underneath already carried in words, more precisely.
 The one thing in it worth keeping was the arc: a picture of how much of the sixty
 days is left. That now lives **inside the count chip on the sill** as a fill, so
 one object carries the figure, the proportion, and the tap that resets it. See
-`docs/ORBIT-REDESIGN.md` §12 for the whole composition that replaced it.
+the orbit's design record, which went with the orbit on 4 September.
 
 A ping four days from lapsing has its ring drawn almost the whole way round
 with its moon nearly home; one placed this morning is a short stroke at twelve
@@ -561,7 +564,7 @@ which is what keeps the two surfaces one product.
   with a per-letter seal, an author column and a reveal request. It is **not**
   the schema for what is in this directory — there is no author on a letter
   here, no seal and no reveal — and it should be replaced rather than extended.
-  What the shipped wall actually needs is spelled out in docs/WALL-LAUNCH.md.
+  What the shipped wall actually needs is spelled out in docs/launchsteps.md.
   `supabase/functions/celestual-wall-moderate/` is the opposite case: its
   three-layer pre-publication design is exactly what this build now draws, and
   `moderate.js` mirrors its layer 1 deliberately so a writer is refused at the
@@ -591,7 +594,7 @@ which is what keeps the two surfaces one product.
   left out, labelled rather than disguised, because a screen that mimes an OAuth
   handshake without saying so is teaching the wrong thing about what this build
   does with what it is given. Each label comes off the day its round trip is
-  real, and not one day before — the order is in docs/WALL-LAUNCH.md.
+  real, and not one day before — the order is in docs/launchsteps.md.
 - **The core service's ledger is real inside the tab and nowhere else.**
   Placing, renewing and letting go write through the same one key as
   everything else, so a ping placed at a demo table survives a reload and the

@@ -1,10 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
-import App from './App.jsx'
-import { I18nProvider } from './i18n/index.js'
 import { BASE, legacyRewrite } from './wall/router.js'
-import { isMainPath } from './main/router.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
 // DM code entirely in-tab (see api/igverify.js), so the app just boots.
@@ -62,8 +59,11 @@ const wallPath = path === BASE || path.startsWith(BASE + '/')
 // does: whichever shell mounts owns the address, and two shells reading the
 // same path is how a route ends up rendered twice in two designs.
 //
-// ── what Main deliberately does not claim ────────────────────────────────────
-// Everything else. `main/router.js` carries the list and the reason.
+// ── what Main claims ─────────────────────────────────────────────────────────
+// Everything the other three do not. The retired design used to sit behind
+// that, serving /paid (a Stripe return that was never turned on) and drawing a
+// cold landing for every typo; it went on 4 September, and an address that
+// matches nothing draws Main's own not found.
 //
 // `/signature` still resolves, unchanged. It is where Phase 3 was approved, the
 // two surfaces there are static and take no backend, and keeping it costs one
@@ -79,8 +79,6 @@ const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
 // admin downloads and nobody else downloads it at all.
 const ADMIN = '/admin'
 const adminPath = path === ADMIN
-
-const mainPath = !sigPath && !wallPath && !adminPath && isMainPath(path)
 
 const root = createRoot(document.getElementById('root'))
 
@@ -100,14 +98,6 @@ if (adminPath) {
       </StrictMode>,
     )
   })
-} else if (mainPath) {
-  import('./main/index.jsx').then(({ default: MainApp }) => {
-    root.render(
-      <StrictMode>
-        <MainApp />
-      </StrictMode>,
-    )
-  })
 } else if (wallPath) {
   import('./wall/index.jsx').then(({ default: WallApp }) => {
     root.render(
@@ -117,11 +107,11 @@ if (adminPath) {
     )
   })
 } else {
-  root.render(
-    <StrictMode>
-      <I18nProvider>
-        <App />
-      </I18nProvider>
-    </StrictMode>,
-  )
+  import('./main/index.jsx').then(({ default: MainApp }) => {
+    root.render(
+      <StrictMode>
+        <MainApp />
+      </StrictMode>,
+    )
+  })
 }

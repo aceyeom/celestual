@@ -94,7 +94,7 @@ export function Figure({ n, of, live = false }) {
 // A destructive action arms on the first press and acts on the second, and the
 // armed label says what it is about to do. It disarms on its own after four
 // seconds, so a person who walked away does not come back to a live trigger.
-export function Arm({ children, armed: armedLabel, onAct, tone = 'stop', disabled = false, title }) {
+export function Arm({ children, armed: armedLabel, onAct, tone = 'stop', disabled = false, title, busy = false }) {
   // tone 'quiet' arms the same way and carries no colour until it is armed. It
   // is for an act that costs something without destroying anything, like
   // spending one Apify call: nine red bordered buttons down the right edge of a
@@ -106,6 +106,7 @@ export function Arm({ children, armed: armedLabel, onAct, tone = 'stop', disable
   useEffect(() => () => clearTimeout(timer.current), [])
 
   function press() {
+    if (busy) return
     if (armed) {
       clearTimeout(timer.current)
       setArmed(false)
@@ -121,7 +122,7 @@ export function Arm({ children, armed: armedLabel, onAct, tone = 'stop', disable
     <button
       type="button"
       title={title}
-      disabled={disabled}
+      disabled={disabled || busy}
       onClick={press}
       className={`ad-btn ${tone === 'quiet' ? '' : `is-${tone}`} ${armed ? 'is-armed' : ''}`}
     >
@@ -201,6 +202,35 @@ export function Paging({ total, limit, offset, onOffset }) {
 
 export function Empty({ children }) {
   return <div className="ad-empty"><p>{children}</p></div>
+}
+
+// What a failed read says instead of an empty state. An error drawn as "nothing
+// here" is the one lie a console must not tell.
+export function Fault({ error }) {
+  return (
+    <Empty>
+      {error === 'network' ? 'no answer. check the connection and read it again.'
+        : error === 'server' ? 'the database did not answer. the migrations may be behind.'
+          : 'that could not be read.'}
+    </Empty>
+  )
+}
+
+// The next page after a change: a decision on the only row of page two leaves
+// the offset past the end, and the label says "51 to 50 of 50".
+export function clampOffset(offset, total, limit) {
+  if (offset > 0 && offset >= total) return Math.max(0, total - limit)
+  return offset
+}
+
+// What a write action says when it did not happen.
+export function failWord(r) {
+  if (!r || r.ok !== false) return ''
+  return r.error === 'password' ? 'the password has changed. open the desk again'
+    : r.error === 'network' ? 'no answer. it was not done'
+      : r.error === 'already_resolved' ? 'somebody already decided this one'
+        : r.error === 'not_found' ? 'that row is gone'
+          : 'that did not go through'
 }
 
 // ── a definition list ───────────────────────────────────────────────────────

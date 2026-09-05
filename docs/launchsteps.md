@@ -363,7 +363,8 @@ so it can and should go in **before** anything else in this section.
 
 - [ ] **`celestual_settings.require_ig_verification` must be `'true'`.**
       `docs/SECURITY.md` has called this the release gate since 0004 and
-      `docs/WALL-LAUNCH.md` records it as `'false'`. While it is false the
+      the wall audit of 30 August recorded it as `'false'`, and it was still
+      `'false'` on 4 September. While it is false the
       server places a ping for any typed handle with no proof at all, whatever
       the client sends. One statement, SQL editor:
 
@@ -924,3 +925,64 @@ Phase 8 also put `app/src/wall`, `app/src/main` and `app/src/admin` into the
 voice lint, which reads **58 files** rather than 14. Those three surfaces write
 their copy inline, and between them they are now most of the product's words.
 It found two em dashes in aria-labels the first time it ran.
+
+
+---
+
+## The audit of 4 September (migration 0038)
+
+Everything the audit found in the repository is fixed in the repository; three
+things have to happen outside it.
+
+1. **Apply `0038_the_audit.sql`.** `supabase db push`, or paste it into the SQL
+   editor. It is `create or replace`, `alter` and guarded blocks only; it creates
+   no table. Until it is applied, the wall at `/berkeley` draws **zero names for
+   every visitor** (the `wall_index` view was `security_invoker` over tables
+   `anon` cannot read), and every one tap report fails. Those two alone make
+   this the first thing to do.
+2. **Redeploy three functions**, after the migration:
+   `celestual-notify` (it claims rows through `celestual_notify_take` now and
+   answers 500 without it), `celestual-edu-verify` (six digit codes, the try
+   spent before the code is compared) and `celestual-wall-moderate` (the
+   classifier call is bounded; a timeout is a review). The client accepts a four
+   or six digit campus code, so the order of the client deploy and the function
+   deploy does not matter.
+3. **Check the release flag.** `require_ig_verification` is what makes
+   `celestual_submit` demand the DM proof. This audit made the proof
+   unconditional in `celestual_renew`, `celestual_ping_status`,
+   `celestual_card_photo` and `celestual_card_photo_put` (0038 §7), but
+   `celestual_submit` still reads the flag, and this document has said since
+   section 2 that it must be `true` before any real launch:
+
+   ```sql
+   select value from celestual_settings where key = 'require_ig_verification';
+   -- if it is not 'true', anybody can place a ping as anybody:
+   update celestual_settings set value = 'true' where key = 'require_ig_verification';
+   ```
+
+4. **Set the secrets the wall and the mail depend on.** Under Edge Functions →
+   Secrets (or `supabase secrets set`). Without `MODERATION_API_KEY` (an
+   Anthropic Console key) `celestual-wall-moderate` answers `review` for every
+   letter, so every letter lands as `pending` and nothing reaches the wall
+   until somebody publishes it at `/admin`; that is by design, and it is also
+   why a wall with no key on it looks empty. Without `RESEND_API_KEY` and
+   `CELESTUAL_FROM_EMAIL` (a sender on a verified Resend domain) no campus code
+   is mailed, so nobody passes the gate, and no mutual mail goes out. As of
+   this audit, production has sent one campus code ever and verified none, so
+   check those two first. `MODERATION_MODEL` is optional and defaults to the
+   cheapest current model.
+
+The sweeps (`celestual_purge_expired`, `wall_expire`, `celestual_sessions_prune`,
+`handle_search_prune`) are scheduled by 0038 itself where `pg_cron` is installed;
+on Supabase that is `create extension pg_cron` under Database → Extensions,
+before the migration runs, or run the migration's last block again after.
+
+Still open, and not in the repository's power to close:
+
+- **The sign in link is dead.** `/signin` redeems `celestual_redeem_login`, which
+  0029 grants to `service_role` only, and nothing mints a row in
+  `celestual_login_links` or mails one. Every link says "lapsed". Section 9 above
+  is what closing it needs; until then the page is honest about the four things
+  that can happen and the comment in `api/relogin.js` says why.
+- **`npm run lint` is green** for the first time since Phase 2. Keep it that way:
+  it is the typecheck substitute Q1 agreed to.

@@ -45,18 +45,28 @@ export async function me() {
 // ── the standing pings ──────────────────────────────────────────────────────
 // What this person has out, and which of them came back. The proof is the DM
 // flow's, held in this browser, and it is what `celestual_my_pings` checks.
+//
+// Three answers, and the screens have to tell them apart: the list, "the proof
+// this browser holds has lapsed" (celestual_my_pings answers ok:false to a dead
+// proof, and the server's row still says handle_verified, so nothing else in
+// the product would ever ask again), and "could not read it". The sky used to
+// draw all three as "Nothing out yet.", which for the second is a lie told to
+// somebody with a mutual on their row.
 export async function myPings({ handle, proof }) {
-  if (!handle || !proof) return { ok: false, pings: [], mutuals: [] }
+  if (!handle || !proof) return { ok: false, error: 'unverified', pings: [], mutuals: [] }
   try {
     // api/celestual.js already normalises what celestual_my_pings returns, and
     // this follows ITS shape rather than the RPC's: one place in the product
     // reads that RPC and this is not it. The fields are
     // { handle, time, expires_at, mutual, card, theirCard }.
-    const rows = await fetchMyPings({ handle, proof })
-    const pings = (Array.isArray(rows) ? rows : []).map(shapePing)
+    const out = await fetchMyPings({ handle, proof })
+    if (!out || out.ok === false) {
+      return { ok: false, error: out?.error || 'network', pings: [], mutuals: [] }
+    }
+    const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
     return { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
   } catch {
-    return { ok: false, pings: [], mutuals: [] }
+    return { ok: false, error: 'network', pings: [], mutuals: [] }
   }
 }
 
@@ -84,6 +94,13 @@ function shapePing(p) {
 // Straight through to `celestual_submit`, which is where the cap, the window,
 // the suppression list and the billing chain all already live. Q3 keeps that
 // chain intact, so nothing here inlines a cap of its own.
+//
+// celestual_submit answers a refusal as { recorded:false, error } and never
+// carries an `ok` key at all. This used to test `out.ok === false`, which was
+// never true, so a person at the cap, or whose proof had lapsed, or who typed
+// an @ that had opted out, was told "It's out." over a ping that was never
+// written. The two exceptions the RPC raises ('same handle', 'invalid handle')
+// arrive as thrown errors and are named here rather than read as the network.
 export async function place({ me: mine, them, email, proof, words }) {
   try {
     const out = await placePing({
@@ -93,10 +110,15 @@ export async function place({ me: mine, them, email, proof, words }) {
       proof,
       card: words ? { words } : null,
     })
-    if (out?.ok === false) return { ok: false, error: out.error || 'failed' }
+    if (!out || out.recorded === false || out.ok === false) {
+      return { ok: false, error: out?.error || 'failed', slots: out?.slots || null }
+    }
     return { ok: true, ...out }
   } catch (e) {
-    return { ok: false, error: e?.code || 'network' }
+    const msg = String(e?.message || '')
+    if (/same handle/i.test(msg)) return { ok: false, error: 'self' }
+    if (/invalid handle/i.test(msg)) return { ok: false, error: 'invalid' }
+    return { ok: false, error: 'network' }
   }
 }
 
@@ -104,10 +126,13 @@ export async function place({ me: mine, them, email, proof, words }) {
 // The two things a person can do to a ping they have out, off the same RPCs
 // the old design called (celestual_renew, celestual_withdraw), gated by the
 // same proof. Both answer a plain yes or no; the sky reloads on yes.
+// celestual_renew says `ok` from its row count, and (before 0038) sent an
+// expires_at beside ok:false; reading either as a yes reported a renewal that
+// did not happen, on a ping that had just gone mutual or been let go elsewhere.
 export async function renew({ me: mine, them }) {
   try {
     const out = await renewPing({ me: mine, them, proof: heldProof(mine) })
-    return !!(out && (out.ok || out.expires_at))
+    return out?.ok === true
   } catch {
     return false
   }
@@ -128,6 +153,12 @@ export async function release({ me: mine, them }) {
 export function daysLeft(expires) {
   if (!expires) return PING_DAYS
   return Math.max(0, Math.ceil((expires - Date.now()) / 86400000))
+}
+
+// The count, as the sky says it. Zero is "lapses today", not "0 days left".
+export function daysLeftWords(expires) {
+  const n = daysLeft(expires)
+  return n === 0 ? 'lapses today' : n === 1 ? 'one day left' : `${n} days left`
 }
 
 export function since(ts) {

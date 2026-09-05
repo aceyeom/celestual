@@ -55,7 +55,7 @@ hash-to-hash, group-aware. Consequences, by design:
 - The opt-out registry (`celestual_suppressions`) is itself hashed.
 - The renewal email can name no handle — the server doesn't know one.
 
-### §3 — The three-slot rule + the sixty-day lapse
+### §3 — The two-slot rule + the sixty-day lapse
 A person holds at most **3 standing (unresolved, unlapsed) pings**, counted
 across their identity group. Each ping stands **60 days**, then lapses;
 `celestual_purge_expired` (run hourly by celestual-remind) deletes lapsed
@@ -217,8 +217,9 @@ Two things follow that are worth stating rather than discovering. A card is
 plaintext at rest in `celestual_entries` — the target handle beside it is a
 salted hash, the words are not, and they cannot be, because the other person has
 to be able to read them. And a card sits in `localStorage` on the device that
-placed it, exactly as the plaintext handles already do. See
-[STAR-CARDS.md](./STAR-CARDS.md) §5.
+placed it, exactly as the plaintext handles already do. The card system's
+design record went with the retired design on 4 September; 0022's header
+carries the seal rule.
 
 ### §optout — The public escape hatch
 `celestual_suppress` is the opt-out any handle owner — user or not — can use

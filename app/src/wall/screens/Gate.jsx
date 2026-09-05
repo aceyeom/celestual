@@ -34,8 +34,8 @@
 import { useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face } from '../parts.jsx'
 import { atHandle } from '../data.js'
-import { getState } from '../store.js'
-import { DOMAIN, emailFault, member, normEmail, signOut, validCode, validEmail } from '../auth.js'
+import { getState, takeAfterGate } from '../store.js'
+import { DOMAIN, emailFault, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
@@ -48,8 +48,10 @@ function AddressField({ value, onChange, onSubmit }) {
         className="wl-addr-in" value={value} onChange={(e) => onChange(e.target.value)}
         /* Sized to what is in it, so the painted half sits flush against the
            typed half and the two read as one address rather than as a box with
-           a domain parked to the right of it. */
-        style={{ width: `${Math.max(3, value.length) + 0.4}ch` }}
+           a domain parked to the right of it. Capped, so a long local part
+           scrolls inside the field rather than pushing the domain off the
+           screen. */
+        style={{ width: `${Math.min(22, Math.max(3, value.length)) + 0.4}ch` }}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
         aria-label="your berkeley address" placeholder="you"
         type="text" inputMode="email" autoComplete="username"
@@ -66,9 +68,9 @@ function CodeField({ value, onChange, onSubmit }) {
     <div className="wl-code">
       <input
         className="wl-code-in" value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
-        aria-label="the four digit code" placeholder="0000"
+        aria-label="the code from the mail" placeholder="000000"
         type="text" inputMode="numeric" autoComplete="one-time-code"
         autoCorrect="off" spellCheck="false" enterKeyHint="go"
       />
@@ -95,7 +97,7 @@ export default function Gate({ go, back }) {
 
   // ── the code goes out ──
   // celestual-edu-verify checks the address is at this campus's domain, mints a
-  // four digit code, stores only its hash, and mails it. The code rides the
+  // six digit code, stores only its hash, and mails it. The code rides the
   // subject line too, so the notification alone is enough to read it.
   const send = async () => {
     if (!ok || busy) return
@@ -129,12 +131,17 @@ export default function Gate({ go, back }) {
       setSaid(
         out.error === 'expired' ? 'that code has lapsed. ask for another'
           : out.error === 'other_campus' ? 'this device is already at another campus'
+          : out.error === 'identity' ? 'the address checked out, but this device could not be signed in. try once more'
           : 'that code is not right',
       )
       return
     }
     setWho(out.email)
-    back()
+    // Back to whatever sent somebody here: the letter they pressed "read it"
+    // on, the composer, the report. The wall, when nothing did.
+    const after = takeAfterGate()
+    if (after) go(after.name, after.id)
+    else back()
   }
 
   // ── signed in ──
@@ -161,7 +168,7 @@ export default function Gate({ go, back }) {
           <div className="wl-acct-id">
             <Face handle={who} size={44} resolve={false} />
             <div className="wl-acct-name">
-              <p className="wl-acct-addr" id="wl-gate-h">{who}</p>
+              <p className="wl-acct-addr" id="wl-gate-h">{memberLabel(who)}</p>
               <Label tone="dim">signed in on this device</Label>
             </div>
           </div>
@@ -217,7 +224,7 @@ export default function Gate({ go, back }) {
         <Display size="s" as="h2" id="wl-gate-h">
           {step === 0
             ? (registering ? <>The wall is<br />for Berkeley.</> : <>Come back in.</>)
-            : <>Four digits, and<br />you&rsquo;re in.</>}
+            : <>The code from<br />the mail, and you&rsquo;re in.</>}
         </Display>
 
         {step === 0 ? (
