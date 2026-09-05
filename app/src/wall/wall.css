@@ -60,10 +60,13 @@
   --ash-dim:     #605C55;   /* decorative and disabled ONLY, never body copy */
 
   /* ── the paper ──
-     THE only bright surface in the product. */
-  --paper:       #E9E4D8;
-  --paper-hi:    #F3EFE5;
-  --paper-edge:  #CFC7B6;
+     THE only bright surface in the product, and it is the same white as the
+     type and the capsule: chalk. It used to be a cream a step warmer than
+     the buttons beside it, and on one screen the letter read as ivory while
+     everything else read as white, which is two whites for one product. */
+  --paper:       #F4F1EA;
+  --paper-hi:    #FFFDF8;
+  --paper-edge:  #E3DFD6;
   --paper-ink:   #17150F;
   --paper-ink-2: #6A6357;
 
@@ -155,7 +158,20 @@
     radial-gradient(42% 34% at 26% 40%, rgba(250, 148, 194, 0.05) 0%, rgba(250, 148, 194, 0) 70%),
     radial-gradient(30% 26% at 70% 62%, rgba(107, 77, 184, 0.06) 0%, rgba(107, 77, 184, 0) 72%),
     var(--void);
+  /* Each cloud is a tile the width of the viewport, repeated along x, and the
+     tiles slide right one whole width every two minutes: the same drift the
+     shader draws, for a browser that has no shader. The canvas paints over
+     this the moment WebGL2 answers, so on every other machine it is never
+     seen. */
+  background-size: 100% 100%, 100% 100%, auto;
+  background-repeat: repeat-x, repeat-x, repeat;
+  animation: wl-sky-drift 120s linear infinite;
 }
+@keyframes wl-sky-drift {
+  from { background-position: 0 0, 0 0, 0 0; }
+  to   { background-position: 100vw 0, 100vw 0, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .wl-sky { animation: none; } }
 
 /* The poster's light source: one enormous off-centre warm halo, low enough in
    opacity that it is felt rather than seen. It is what stops the void reading
@@ -454,7 +470,7 @@
 .wl-paper {
   position: relative;
   border-radius: var(--r-card);
-  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, #E2DCCE 100%);
+  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
   color: var(--paper-ink);
   padding: 20px 20px 18px;
   box-shadow:
@@ -464,8 +480,8 @@
     0 4px 14px -6px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
-.wl-paper.is-empty { background: linear-gradient(168deg, #DED8CA 0%, #D6D0C1 100%); }
-.wl-paper.is-theirs { background: linear-gradient(168deg, var(--paper-hi) 0%, #E4DFD2 40%, #DAD3C3 100%); }
+.wl-paper.is-empty { background: linear-gradient(168deg, #EBE8E1 0%, #E1DED6 100%); }
+.wl-paper.is-theirs { background: linear-gradient(168deg, var(--paper-hi) 0%, #EFECE5 40%, #E6E2DA 100%); }
 
 .wl-paper-grain {
   position: absolute; inset: 0; pointer-events: none; opacity: 0.16; border-radius: inherit;
@@ -1796,48 +1812,56 @@
 
 /* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
    parts.jsx `SiteFoot`, under the front door and under the wall, and restated
-   in legal.css under the legal pages. The lockup and the sentence, three
-   short columns, and the company's line. It is set quiet: ash on the void, a
-   hairline over it, the labels in the identifier face, because a footer is
-   the one block on a page that is for the person who went looking for it. */
+   in legal.css under the legal pages. The lockup and the sentence on one
+   line, two short columns, and the company's line. It is set quiet: ash on
+   the void, a hairline over it, the labels in the identifier face, because a
+   footer is the one block on a page that is for the person who went looking
+   for it.
+
+   And it is short. On a phone it used to run three columns and four rows of
+   air and stood taller than the hero's own type block; the brand and the
+   sentence share a row now, the columns are two, and every vertical measure
+   is the smallest one on the rhythm. */
 .wl-colophon {
   flex: 0 0 auto;
-  display: grid; grid-template-columns: 1fr; gap: 18px;
-  padding: 20px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+  padding: 14px 0 calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--hair);
 }
-.wl-colophon-brand { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.wl-colophon-brand .wl-brand { padding: 0; align-self: flex-start; }
-.wl-colophon-line {
-  margin: 0; max-width: 30ch;
-  font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 15px; line-height: 1.5; color: var(--ash);
+.wl-colophon-brand {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0;
 }
-.wl-colophon-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px; }
-.wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
-.wl-colophon-col .wl-label { margin-bottom: 2px; }
+.wl-colophon-brand .wl-brand { padding: 0; flex: 0 0 auto; }
+.wl-colophon-line {
+  margin: 0; flex: 1 1 200px; min-width: 0;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 13.5px; line-height: 1.4; color: var(--ash);
+}
+.wl-colophon-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.wl-colophon-col .wl-label { margin-bottom: 1px; }
 .wl-colophon-col a, .wl-colophon-col address {
-  font-family: var(--f-util); font-size: 13px; line-height: 1.45; font-style: normal;
+  font-family: var(--f-util); font-size: 12.5px; line-height: 1.4; font-style: normal;
   color: var(--ash); text-decoration: none;
   transition: color 200ms var(--ease);
 }
 .wl-colophon-col a:hover { color: var(--chalk); }
 /* an address and a number are identifiers, so they keep the identifier face */
-.wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.01em; }
+.wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em; }
 .wl-colophon-foot {
-  display: flex; flex-wrap: wrap; gap: 6px 18px;
-  padding-top: 12px; border-top: 1px solid var(--hair-soft);
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.5;
+  display: flex; flex-wrap: wrap; gap: 3px 16px;
+  padding-top: 8px; border-top: 1px solid var(--hair-soft);
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.06em; line-height: 1.5;
   color: var(--ash-dim);
 }
-/* a narrow phone runs the three columns as two, with the contact block under */
-@media (max-width: 479px) {
-  .wl-colophon-cols { grid-template-columns: 1fr 1fr; }
-  .wl-colophon-col.is-contact { grid-column: 1 / -1; }
-}
 @media (min-width: 900px) {
-  .wl-colophon { grid-template-columns: minmax(240px, 1fr) auto; column-gap: 56px; align-items: start; padding-top: 22px; }
-  .wl-colophon-cols { gap: 14px 40px; }
+  .wl-colophon {
+    grid-template-columns: minmax(240px, 1fr) auto; column-gap: 56px; align-items: center;
+    padding-top: 18px;
+  }
+  .wl-colophon-brand { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .wl-colophon-line { flex: 0 0 auto; font-size: 14px; }
+  .wl-colophon-cols { gap: 10px 40px; }
   .wl-colophon-foot { grid-column: 1 / -1; }
 }
 
@@ -2335,8 +2359,10 @@
 .wl-card.is-pick:active:not(:disabled) { transform: scale(0.99); }
 
 /* missing: not an error and not drawn as one. The act still goes through, so
-   the card stays the same object at the same weight and only the words change. */
-.wl-card.is-missing .wl-card-name { font-weight: 400; color: var(--ash); }
+   the card stays the same object at the same weight and only the words change.
+   unknown, the same: we could not check, said once, and the act goes on. */
+.wl-card.is-missing .wl-card-name,
+.wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
   .wl-card { animation: none; }

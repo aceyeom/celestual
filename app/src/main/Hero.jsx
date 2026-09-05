@@ -20,9 +20,12 @@
 // and carry no handle, because a front door that fakes activity is the pattern
 // this product exists to not be.
 
-import { useState } from 'react'
-import { Pill, HandleField, HandleCard, Me, Brand, SiteFoot, useResolver } from '../wall/parts.jsx'
+import { useRef, useState } from 'react'
+import {
+  Pill, HandleField, HandleCard, Me, Brand, SiteFoot, useResolver, useLookingWords, confirmWord,
+} from '../wall/parts.jsx'
 import { normHandle, validHandle } from '../wall/data.js'
+import { useSkyAvoid } from '../wall/ground.jsx'
 import Scene from './Scene.jsx'
 import './hero.css'
 
@@ -34,24 +37,33 @@ export default function Hero({ go, who, still = false }) {
   // field is the same act: press the person, place the ping.
   const [to, setTo] = useState('')
   const [said, setSaid] = useState('')
-  // The card under the field. It peeks while the person types and asks only
-  // when they press: the first press on a handle nobody has looked up draws
-  // the card looking, and the next press, on the card or the pill, is the act.
+  // The headline is what the sky parts round on this screen.
+  const avoid = useSkyAvoid()
+  // ── the card under the field, and the two presses ──
+  // It peeks the cache while the person types (free, instant for a handle
+  // anybody has committed before) and asks Apify only when they press. The
+  // first press on a handle nobody has looked up draws the card looking, with
+  // a line under it saying so; the answer lands as a person, a "no account by
+  // that name", or a "could not check", and the capsule changes its word to
+  // match. The second press, on the card or the capsule, is the act, and it
+  // is against what the card says. Nothing moves on without that second
+  // press: a lookup that failed used to let the same press through, so the
+  // flow read as one that looked and then skipped the confirmation.
   const them = useResolver(to)
+  const words = useLookingWords(them.at)
+  const field = useRef(null)
   const submit = async () => {
     const h = normHandle(to)
     if (!h) { go('place'); return }
     if (!validHandle(h)) { setSaid('that handle does not look right'); return }
-    if (!them.settled) {
-      // An answer draws the card and waits for the second press. No answer
-      // (offline, capped, the provider down) is settled by definition and
-      // draws nothing, so the same press goes on: the first press used to be
-      // a silent no-op then, with nothing on the screen to say why.
-      const r = await them.ask()
-      if (r && r.state !== 'unknown') return
-    }
+    if (them.looking) return
+    if (!them.settled) { await them.ask(); return }
     go('place', h)
   }
+  // "not them": back to the field, with the name selected so a keystroke
+  // replaces it. Editing resets the card on its own.
+  const fix = () => { const el = field.current; if (el) { el.focus(); el.select() } }
+  const cardUp = ['found', 'missing', 'unknown'].includes(them.at.state)
 
   // The brand is a real anchor to `/`, so it opens in a new tab and copies like
   // one, and a plain click stays inside the shell rather than reloading the app.
@@ -85,7 +97,7 @@ export default function Hero({ go, who, still = false }) {
           {/* One sentence, two lines, and the break is chosen rather than left
               to the browser: the turn lands on "or neither", which is the half
               of the mechanic people do not expect. */}
-          <h1 className="wl-display is-xl hm-title hm-in" style={{ '--d': '100ms' }}>
+          <h1 ref={avoid} className="wl-display is-xl hm-title hm-in" style={{ '--d': '100ms' }}>
             <span className="hm-line">you both find out,</span>
             <span className="hm-line">or neither of you does.</span>
           </h1>
@@ -99,13 +111,23 @@ export default function Hero({ go, who, still = false }) {
             <HandleField
               value={to} onChange={(v) => { setTo(v); setSaid('') }} onSubmit={submit}
               size="lg" placeholder="theirhandle" label="their instagram handle"
+              busy={them.looking} inputRef={field}
             />
             <HandleCard at={them.at} onSelect={submit} />
             <div className="hm-ask-row">
               {/* Lit: the glow the result card waits with, seen through the
-                  capsule, on the one act on the screen. */}
-              <Pill tone="light" lit onClick={submit}>place a ping</Pill>
-              <p className="hm-said" role="status" aria-live="polite">{said}</p>
+                  capsule, on the one act on the screen. Disabled while the
+                  resolver is out, so a second tap cannot skip past the card. */}
+              <Pill tone="light" lit onClick={submit} disabled={them.looking}>
+                {confirmWord(them.at, 'place a ping')}
+              </Pill>
+              {cardUp && !said ? (
+                <button type="button" className="wl-quiet hm-fix" onClick={fix}>not them? change it</button>
+              ) : (
+                <p className={`hm-said${words && !said ? ' is-quiet' : ''}`} role="status" aria-live="polite">
+                  {said || words}
+                </p>
+              )}
             </div>
           </form>
         </div>

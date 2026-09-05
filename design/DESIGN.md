@@ -92,14 +92,17 @@ are ever set.
 
 | Token | Value | Where |
 | --- | --- | --- |
-| `--paper` | `#E9E4D8` | the card's body |
-| `--paper-hi` | `#F3EFE5` | its lit top edge |
-| `--paper-edge` | `#CFC7B6` | its shadowed foot |
+| `--paper` | `#F4F1EA` | the card's body. Chalk: the same white as the type and the capsule |
+| `--paper-hi` | `#FFFDF8` | its lit top edge |
+| `--paper-edge` | `#E3DFD6` | its shadowed foot |
 | `--paper-ink` | `#17150F` | type on paper |
 | `--paper-ink-2` | `#6A6357` | secondary type on paper |
 
 The card is a gradient across those three, plus its own grain at 16 percent in
-`multiply`. Without the grain it is a beige rectangle. With it, it is a material.
+`multiply`. Without the grain it is a white rectangle. With it, it is a material.
+It used to be a cream a step warmer than chalk, and a letter that read as ivory
+beside a white button and white type was two whites in one product; the paper
+is chalk now, and the grain and the gradient are what make it paper.
 
 ### 2.4 The two bright things
 
@@ -435,7 +438,7 @@ different skies.
 
 | Layer | What it is |
 | --- | --- |
-| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with the galaxy's violet and pink in it at a whisper: a domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is the deepest layer of the one field, drifting the way the farthest star drifts and shifting to the hand the way the farthest star shifts, and it lights by a few counts under the pointer. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
+| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with the galaxy's violet and pink in it at a whisper: a domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is a layer of the one field, drifting to the right the way the stars drift, at the pace of a star in the middle of the field, churning as it goes, and shifting to the hand the way a star shifts; it lights by a few counts under the pointer, and it parts round the type: whichever screen is up registers its headline (`useSkyAvoid` in ground.jsx) and the clouds flow round it, thin under it and gather a little pink along its edge. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
 | `.wl-halo` | one enormous off centre warm radial at 7.5 percent, plus a cold one at 4.5. It is what stops the void reading as `#000` with things on it |
 | `.wl-starfield` | the point field, on the GPU (`wall/field.js`): depth per point, parallax off the hand, and a count that is a density, about 0.9 points per thousand CSS pixels on every screen, so a desktop is as dense as a phone. It used to be a floor of 320 points that only a phone ever hit, and the desktop sky was three times sparser |
 | `.wl-grain` | `feTurbulence` at `baseFrequency 0.84`, three octaves, desaturated, 3.6 percent, tiled at 190px |
@@ -479,7 +482,7 @@ had already said it. The role went with the caller.
 | You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
 | Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised |
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash |
-| Foot | `.wl-colophon`, `SiteFoot` | the foot of the site, under the front door, under the wall, and restated in `legal.css` under the legal pages: the lockup and the sentence, the product's addresses, the legal pages, and the company (`COMPANY` in `parts.jsx`: the name, the address, the telephone and the street). The one place the company is written as a company |
+| Foot | `.wl-colophon`, `SiteFoot` | the foot of the site, under the front door, under the wall, and restated in `legal.css` under the legal pages: the lockup and the sentence on one line, two short columns (the legal pages with the opt out among them, and the company: `COMPANY` in `parts.jsx`, the name, the address, the telephone and the street), and the company's line. Short on purpose: it used to run three columns and stood taller than the hero's type block on a phone. The one place the company is written as a company |
 | Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Two grounds: `star`, the dark plate with star shaped holes the result card waits on, and `chalk`, the pill's own fill, so the light shows around the capsule as a halo. Spent on the result card while it is looking, on the pill that places a ping (`Pill lit`), and on the mutual row on the sky |
 
 ### 8.3 Fields

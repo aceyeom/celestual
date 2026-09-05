@@ -55,7 +55,8 @@
 // somebody who never came to this site.
 import { useEffect, useRef, useState } from 'react'
 import {
-  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, Face, useResolver,
+  Display, Label, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, Face,
+  useResolver, useLookingWords, confirmWord,
 } from '../wall/parts.jsx'
 import { Provider, Sparkle } from '../wall/art.jsx'
 import { normHandle, validHandle, atHandle, dateline } from '../wall/data.js'
@@ -64,6 +65,7 @@ import { heldProof } from '../wall/auth.js'
 import { getState, patch } from '../wall/store.js'
 import { signOut as dropProof } from '../api/auth.js'
 import { place } from './data.js'
+import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
 
 const MAX_WORDS = 20
@@ -115,6 +117,8 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
   const alive = useRef(true)
+  // The question is what the sky parts round on this screen.
+  const avoid = useSkyAvoid()
 
   useEffect(() => {
     alive.current = true
@@ -272,20 +276,22 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const readyToPlace = who.handleVerified && !!heldProof(who.handle)
 
   // The card under the handle field: peeks while typing, asks on the press.
-  // The first press on a handle nobody has looked up draws the card looking;
-  // the next, on the card or the pill, moves on.
+  // The first press on a handle nobody has looked up draws the card looking,
+  // with a line under it saying so; the next, on the card or the pill, is the
+  // one that moves on, and it is against what the card says. A lookup that
+  // could not answer draws that as a card too, and still waits for the
+  // second press: it used to let the same press through, which read as the
+  // flow skipping the person.
   const them = useResolver(to)
+  const looking = useLookingWords(them.at)
+  const field = useRef(null)
+  const fix = () => { const el = field.current; if (el) { el.focus(); el.select() } }
+  const cardUp = step === 0 && ['found', 'missing', 'unknown'].includes(them.at.state)
   const next = async () => {
     setSaid('')
     if (step === 0) {
-      if (!named) return
-      if (!them.settled) {
-        // An answer draws the card and waits for the second press; no answer
-        // at all (offline, capped, provider down) draws nothing, so the same
-        // press moves on rather than dying silently.
-        const r = await them.ask()
-        if (r && r.state !== 'unknown') return
-      }
+      if (!named || them.looking) return
+      if (!them.settled) { await them.ask(); return }
       setStep(1)
       return
     }
@@ -305,7 +311,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       <main className="mn-page mn-placed">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1">It&rsquo;s out.</Display>
+          <Display size="m" as="h1" ref={avoid}>It&rsquo;s out.</Display>
           <Prose className="mn-copy">
             sixty days on <span className="sg-h">{atHandle(done.to)}</span>. if they place
             one back, you both find out.
@@ -332,7 +338,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       <TopBar go={go} who={who} />
 
       <div className="mn-mid">
-        <Display size="m" as="h1" className="mn-h">
+        <Display size="m" as="h1" className="mn-h" ref={avoid}>
           {step === 0 ? <>Who&rsquo;s on<br />your mind.</>
             : step === 1 ? <>And what<br />you never said.</>
             : <>One question,<br />asked once.</>}
@@ -343,6 +349,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             <HandleField
               value={to} onChange={setTo} onSubmit={next}
               autoFocus={!prefill} size="lg" placeholder="theirhandle"
+              busy={them.looking} inputRef={field}
             />
             {/* The card. Spec section 5: a face, a name and the badge, so
                 somebody confirms against a person rather than against their own
@@ -478,7 +485,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
           </div>
         )}
 
-        <div className="mn-said" aria-live="polite">{said}</div>
+        <div className="mn-said" role="status" aria-live="polite">{said || (step === 0 ? looking : '')}</div>
       </div>
 
       <div className="mn-foot">
@@ -504,16 +511,19 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
               <button type="button" className="wl-quiet" onClick={() => setStep(step - 1)}>
                 {step === 1 ? 'a different name' : 'change what it says'}
               </button>
+            ) : cardUp ? (
+              <button type="button" className="wl-quiet" onClick={fix}>not them? change it</button>
             ) : null}
             <Pill
               tone="light" wide
-              disabled={placing || busy || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
+              disabled={placing || busy || them.looking
+                || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
               onClick={next}
               icon={step === 2 && !readyToPlace ? <Provider size={17} /> : null}
             >
               {placing ? 'placing…'
                 : busy ? 'one moment'
-                : step === 0 ? 'next'
+                : step === 0 ? confirmWord(them.at, 'next')
                 : step === 1 ? 'next'
                 : readyToPlace ? 'place it' : 'prove it'}
             </Pill>

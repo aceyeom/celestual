@@ -110,7 +110,8 @@
 .hm-ask .wl-field input::placeholder { color: rgba(156, 151, 142, 0.5); }
 .hm-ask-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .hm-ask-row .wl-pill.is-light { flex: 0 0 auto; min-height: 48px; padding: 0 24px; font-size: 14.5px; }
-/* A plain sentence, in place, next to what failed. Empty almost always. */
+/* A plain sentence, in place, next to what failed. Empty almost always. In
+   its quiet tone it is what the resolver is doing, in ash: nothing failed. */
 .hm-said {
   margin: 0;
   min-width: 0;
@@ -119,6 +120,9 @@
   line-height: 1.4;
   color: var(--accent);
 }
+.hm-said.is-quiet { color: var(--ash); }
+/* "not them? change it", beside the capsule once the card is up */
+.hm-fix { font-size: 12.5px; text-align: left; }
 
 /* ── the object ──
    Two cards, and the mark above them. See Scene.jsx for why it is this and
@@ -145,7 +149,8 @@
   padding: 54px 4px 22px;
 }
 /* The seal, clear of the cards: a material needs its own ground to read as
-   one. No glow on it: the metal is the light. */
+   one. No glow on it: the metal is the light. It moves FIRST, because the
+   alignment is the event and the cards are its consequence. */
 .hm-scene-mark {
   position: absolute;
   left: 50%;
@@ -153,46 +158,131 @@
   z-index: 3;
   color: var(--chalk);
   transform: translate(-50%, -22%) scale(1);
-  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
+  transition: opacity 700ms var(--ease), transform 900ms var(--ease);
 }
 .hm-scene.is-shut .hm-scene-mark {
   opacity: 0.32;
   transform: translate(-50%, -12%) scale(0.9);
+  transition-delay: 200ms;
 }
 
+/* ── the cards arrive ──
+   Each in its own slot, so the entrance (the slot) and the state (the card)
+   are two transforms on two elements and neither overwrites the other. One
+   comes in from the left and below, the other from the right and above, and
+   both settle by the time the mark lights. */
+.hm-scene-slot { animation: hm-arrive 1100ms var(--ease) both; }
+.hm-scene-a { --from-x: -34px; --from-y: 26px; --from-r: -8deg; animation-delay: 80ms; }
+.hm-scene-b { --from-x: 34px; --from-y: -18px; --from-r: 8deg; animation-delay: 220ms; }
+@keyframes hm-arrive {
+  from { opacity: 0; transform: translate(var(--from-x), var(--from-y)) rotate(var(--from-r)); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── the two cards on the table ──
+   One a little higher than the other, each leaning its own way, and neither
+   over the other's words. Shut, they lean further apart; open, they square up
+   toward each other. The lean settles over a long curve and never overshoots. */
 .hm-scene .wl-paper {
   padding: 15px 15px 16px;
   min-height: 146px;
-  transition: transform 900ms var(--ease);
+  transition: transform 1000ms var(--ease);
+  will-change: transform;
 }
-/* The two cards on the table. One a little higher than the other, each
-   leaning its own way, and neither over the other's words. Shut, they lean
-   further apart; open, they square up toward each other. */
-.hm-scene-a { transform: rotate(-2.5deg) translate(2px, 14px); }
-.hm-scene-b { transform: rotate(2deg) translate(-2px, -6px); }
-.hm-scene.is-shut .hm-scene-a { transform: rotate(-5deg) translate(-4px, 22px); }
-.hm-scene.is-shut .hm-scene-b { transform: rotate(5deg) translate(4px, -14px); }
+.hm-scene-a .wl-paper { transform: rotate(-2.5deg) translate(2px, 14px); }
+.hm-scene-b .wl-paper { transform: rotate(2deg) translate(-2px, -6px); }
+.hm-scene.is-shut .hm-scene-a .wl-paper { transform: rotate(-5deg) translate(-4px, 22px); }
+.hm-scene.is-shut .hm-scene-b .wl-paper { transform: rotate(5deg) translate(4px, -14px); }
 
+/* ── the shadow that crosses the card ──
+   The seal breaking is drawn as a page turned to the light: a soft band of
+   the paper's own ink passes left to right over each card, and the words come
+   up behind it. It is a pseudo element on the paper itself, so it covers the
+   whole card and clips to its corners, and it plays once each time the scene
+   opens because the animation is only named while it is open. On the second
+   card it runs a beat later, the way two things on one table catch the same
+   light one after the other. */
+.hm-scene .wl-paper::after {
+  content: '';
+  position: absolute;
+  inset: -10% -30%;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    rgba(23, 21, 15, 0) 30%, rgba(23, 21, 15, 0.075) 46%, rgba(23, 21, 15, 0.11) 50%,
+    rgba(23, 21, 15, 0.075) 54%, rgba(23, 21, 15, 0) 70%);
+  transform: translateX(-70%);
+  opacity: 0;
+}
+.hm-scene.is-open .wl-paper::after { animation: hm-cross 1150ms cubic-bezier(0.33, 0.02, 0.15, 1) both; }
+.hm-scene.is-open .hm-scene-a .wl-paper::after { animation-delay: 220ms; }
+.hm-scene.is-open .hm-scene-b .wl-paper::after { animation-delay: 380ms; }
+@keyframes hm-cross {
+  0%   { opacity: 0; transform: translateX(-70%); }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(70%); }
+}
+
+/* ── the dateline and the stamp ── */
 .hm-scene .wl-paper-head {
   font-size: 9.5px;
   min-height: 20px;
   padding-bottom: 9px;
   margin-bottom: 12px;
 }
-.hm-scene .wl-paper-stamp { transition: color 400ms var(--ease), border-color 400ms var(--ease); }
+.hm-scene .wl-paper-stamp {
+  color: var(--paper-ink);
+  border-color: rgba(23, 21, 15, 0.42);
+  transition: color 320ms var(--ease), border-color 320ms var(--ease);
+}
 .hm-scene.is-shut .wl-paper-stamp { color: rgba(23, 21, 15, 0.42); border-color: rgba(23, 21, 15, 0.16); }
-.hm-scene .wl-paper-stamp { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
+/* struck, not swapped: when the word changes to mutual the stamp presses down
+   and settles, once, a beat after the shadow has crossed */
+.hm-scene.is-open .wl-paper-stamp { animation: hm-strike 520ms var(--ease) 700ms both; }
+@keyframes hm-strike {
+  0%   { transform: scale(0.84); opacity: 0.35; }
+  55%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
 
-/* The two states of the body share one cell and cross fade. Nothing moves:
-   the words are where the bars were, because they are the same words. */
+/* ── the body, in one cell ──
+   The two states of the body share one cell and cross over. The bars are set
+   at the words' own size and line height, so the card is the same height shut
+   and open and nothing under it moves: the words are where the bars were,
+   because they are the same words. Opening, the bars go first and the words
+   arrive out of a slight blur a little after, behind the shadow; sealing, the
+   words go quickly and the bars come back, with no shadow, because a seal is
+   not an event. */
 .hm-scene-body { display: grid; }
-.hm-scene-body > * { grid-area: 1 / 1; transition: opacity 620ms var(--ease); }
-.hm-scene-open { opacity: 1; }
-.hm-scene-shut { opacity: 0; }
-.hm-scene.is-shut .hm-scene-open { opacity: 0; }
-.hm-scene.is-shut .hm-scene-shut { opacity: 1; }
+.hm-scene-body > * { grid-area: 1 / 1; }
 .hm-scene .wl-prose { font-size: 13.5px; line-height: 1.46; }
-.hm-scene .wl-redacted { margin: 0; }
+.hm-scene .wl-redacted { margin: 0; font-size: 13.5px; line-height: 1.46; gap: 0.32em 0.36em; }
+.hm-scene .wl-redact-w { height: 0.66em; vertical-align: middle; }
+
+.hm-scene-open {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  transition: opacity 720ms var(--ease) 460ms, transform 720ms var(--ease) 460ms, filter 720ms var(--ease) 460ms;
+}
+.hm-scene-shut {
+  opacity: 0;
+  transform: none;
+  transition: opacity 420ms var(--ease) 300ms;
+}
+.hm-scene.is-shut .hm-scene-open {
+  opacity: 0;
+  transform: translateY(3px);
+  filter: blur(2px);
+  transition: opacity 300ms var(--ease), transform 300ms var(--ease), filter 300ms var(--ease);
+}
+.hm-scene.is-shut .hm-scene-shut {
+  opacity: 1;
+  transition: opacity 420ms var(--ease) 140ms;
+}
+/* the second card's words land a beat after the first's, behind its own shadow */
+.hm-scene.is-open .hm-scene-b .hm-scene-open { transition-delay: 620ms; }
+.hm-scene.is-open .hm-scene-b .hm-scene-shut { transition-delay: 460ms; }
 
 /* A short screen keeps the type and lets the object go. */
 @media (max-width: 899px) and (max-height: 700px) { .hm-stage { display: none; } }
@@ -266,5 +356,7 @@
    The scene is drawn open by Scene.jsx under the same preference. */
 @media (prefers-reduced-motion: reduce) {
   .hm-in { animation-delay: 0ms !important; }
-  .hm-scene .wl-paper, .hm-scene-mark, .hm-scene-body > * { transition: none; }
+  .hm-scene .wl-paper, .hm-scene-mark, .hm-scene-body > *, .hm-scene .wl-paper-stamp { transition: none; }
+  .hm-scene-slot, .hm-scene .wl-paper::after, .hm-scene .wl-paper-stamp { animation: none !important; }
+  .hm-scene .wl-paper::after { display: none; }
 }

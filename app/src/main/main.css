@@ -219,19 +219,50 @@
 @media (min-width: 900px) {
   .mn-page { max-width: 1080px; padding: 0 40px; }
   .mn-top { padding-top: calc(22px + env(safe-area-inset-top, 0px)); }
+  /* The question and its control keep the column they were designed for,
+     and the column sits in the middle of the screen under the wide bar. It
+     used to hang off the left edge where the hero's type block is, which on
+     a flow screen with no object beside it read as a page that had lost its
+     right half. */
   .mn-mid {
     flex: 0 0 auto;
     width: 100%;
     max-width: 460px;
+    margin: 0 auto;
     padding: clamp(40px, 9vh, 90px) 0 12px;
   }
   .mn-foot {
     width: 100%;
     max-width: 460px;
+    margin: 0 auto;
     padding-top: 26px;
   }
   /* the flow's sheet is a dialog at this width (wall.css), and nothing here
      has to change for it */
+}
+
+/* ── sideways ──
+   A phone on its side: the same centred column, and every vertical measure
+   that was buying atmosphere gives its space back so the question, the field
+   and the control fit in three hundred and fifty pixels. */
+@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
+  .mn-page { max-width: none; padding: 0 26px; }
+  .mn-top { padding: calc(10px + env(safe-area-inset-top, 0px)) 0 4px; }
+  .mn-mid {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    gap: 12px;
+    padding: clamp(8px, 3vh, 20px) 0 8px;
+  }
+  .mn-foot {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    gap: 6px;
+    padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+  }
 }
 
 /* ── Phase 8: the three addresses that arrive from outside ────────────────────

@@ -55,10 +55,13 @@
 // other things: a plasma from a shader package that warped in place, and a
 // CSS layer of pink that slid on a timer of its own, and with the stars that
 // was three motions on one screen, which the eye reads as three things laid
-// on top of each other. Now there is one: the clouds are the farthest layer
-// of the same field, drifting the way the deepest star drifts, a little
-// slower, and shifting to the hand the way the deepest star shifts, a little
-// less. Near stars pass in front of them; that is the depth.
+// on top of each other. Now there is one: the clouds are a layer of the same
+// field, drifting to the right the way the stars drift, at the pace of a
+// star in the middle of the field, and shifting to the hand the way a star
+// shifts. Near stars pass in front of them; that is the depth. And they part
+// round the type: whichever screen is up registers its headline (ground.jsx
+// useSkyAvoid) and the clouds flow round it, thin under it, and gather a
+// little pink along its edge.
 //
 // The clouds themselves are a domain warped noise (fbm of fbm), which is what
 // gives them a current, and they carry the room's two accents at a whisper:
@@ -142,6 +145,8 @@ uniform float uT;      // seconds, the field's own clock
 uniform vec2  uPtr;    // the hand, -1..1, eased, the same values the stars get
 uniform float uHand;   // 0 until a pointer has moved, then 1: touch has no hand
 uniform vec2  uRes;    // this canvas, in pixels
+uniform vec4  uAvoid;  // the type: centre x, centre y, half width, half height, in uv
+uniform float uAvoidOn;// 0 with nothing registered, eased to 1 while something is
 out vec4 o;
 
 // The room's colours. The void is wall.css --void; the two accents are the
@@ -178,34 +183,63 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   float aspect = uRes.x / uRes.y;
 
-  // The farthest layer of the field. The deepest star drifts at 0.004 widths
-  // a second and answers the hand by 0.004 of the width; the clouds sit
-  // behind it, at 0.003 of each. Sampled at uv minus the shift, so the cloud
-  // moves the way the star moves.
-  vec2 p = uv - vec2(uT * 0.003, 0.0) - uPtr * 0.003;
+  // The sheet of cloud drifts the way the stars drift, to the right, at the
+  // pace of a star in the middle of the field: a screen in about eighty
+  // seconds. It used to sit behind the deepest star at a quarter of that,
+  // which on a phone read as a still tint with stars over it. It answers the
+  // hand a little more than the deepest star, because it is the largest thing
+  // on the screen and a sky that does not move under the hand is a poster.
+  vec2 p = uv - vec2(uT * 0.012, 0.0) - uPtr * 0.006;
   p.x *= aspect;
   vec2 s = p * 1.35;
 
-  // The current: the warp's own phase moves, slowly, so the clouds churn in
-  // place while the whole sheet of them drifts.
-  float t = uT * 0.012;
+  // ── the type ──
+  // Whatever the page registered (ground.jsx useSkyAvoid): the headline on
+  // the front door, the question on a flow screen. The clouds part round it
+  // the way a current parts round a stone. Three things, all off one signed
+  // distance to the block's rounded edge, in the same aspect corrected
+  // space the noise is sampled in:
+  //   the bow wave   the noise is pushed outward from the block, hardest at
+  //                  its edge, so the veins bend round the words
+  //   the clearing   the cloud thins inside the block, so the type sits in
+  //                  a still patch of the void and stays legible
+  //   the rim        the pink gathers along the edge, which is what makes
+  //                  the parting read as light round the words rather than
+  //                  as a hole cut out of a picture
+  vec2 aq = vec2(uv.x * aspect, uv.y) - vec2(uAvoid.x * aspect, uAvoid.y);
+  vec2 ah = vec2(uAvoid.z * aspect, uAvoid.w);
+  float ar = 0.05;
+  vec2 dq = abs(aq) - ah + ar;
+  float d = length(max(dq, 0.0)) + min(max(dq.x, dq.y), 0.0) - ar;
+  float wave = exp(-max(d, 0.0) * 9.0) * uAvoidOn;
+  s += (aq / max(length(aq), 0.02)) * wave * 0.22;
+  float clearing = (1.0 - smoothstep(-0.02, 0.10, d)) * uAvoidOn;
+  float rim = exp(-(d * d) / 0.0018) * uAvoidOn;
+
+  // The current: the warp's own phase moves, so the clouds churn in place
+  // while the whole sheet of them drifts. Fast enough to be seen changing
+  // over a few seconds, slow enough that nothing on the screen is ever
+  // moving faster than the near stars.
+  float t = uT * 0.045;
   vec2 q = vec2(fbm(s + t * 0.40), fbm(s + vec2(5.2, 1.3) - t * 0.30));
   vec2 r = vec2(fbm(s + 2.4 * q + vec2(1.7, 9.2) + t * 0.15),
                 fbm(s + 2.4 * q + vec2(8.3, 2.8) - t * 0.126));
   float n = fbm(s + 2.0 * r);
 
-  float dust = smoothstep(0.38, 0.78, n);           // where there is cloud
-  float body = smoothstep(0.30, 0.80, q.y) * dust;  // the violet of it
-  float vein = smoothstep(0.55, 0.90, r.x) * dust;  // the pink along the warp
+  float dust0 = smoothstep(0.38, 0.78, n);                 // where there is cloud
+  float dust = dust0 * (1.0 - 0.72 * clearing);            // and where the type is not
+  float body = smoothstep(0.30, 0.80, q.y) * dust;         // the violet of it
+  float vein = smoothstep(0.50, 0.88, r.x) * dust          // the pink along the warp
+             + rim * 0.5 * dust0 * smoothstep(0.35, 0.88, r.x);
 
   // The hand: a soft light in the cloud where the pointer is, a few counts
   // at most, and only where there is cloud to light.
   vec2 hand = vec2((uPtr.x * 0.5 + 0.5) * aspect, uPtr.y * 0.5 + 0.5);
-  vec2 d = vec2(uv.x * aspect, uv.y) - hand;
-  float lamp = exp(-dot(d, d) / 0.16) * uHand;
+  vec2 hd = vec2(uv.x * aspect, uv.y) - hand;
+  float lamp = exp(-dot(hd, hd) / 0.16) * uHand;
 
-  vec3 add = VIOLET * body * 0.08
-           + PINK * vein * 0.10
+  vec3 add = VIOLET * body * 0.09
+           + PINK * vein * 0.16
            + mix(PINK, VIOLET, 0.35) * lamp * (0.02 + 0.06 * dust);
 
   // Posterised through the dither at two pixel cells: texture, not gradient.
@@ -249,25 +283,37 @@ function mountSky(canvas) {
   const uPtr = gl.getUniformLocation(prog, 'uPtr')
   const uHand = gl.getUniformLocation(prog, 'uHand')
   const uRes = gl.getUniformLocation(prog, 'uRes')
+  const uAvoid = gl.getUniformLocation(prog, 'uAvoid')
+  const uAvoidOn = gl.getUniformLocation(prog, 'uAvoidOn')
 
+  // The canvas is only reallocated when its size has changed, since setting
+  // width or height clears it. The viewport and uRes are set every time,
+  // including the first, whatever the canvas already measures: a canvas keeps
+  // its size across a remount but the program is new, and a program whose
+  // uRes was never set divides every fragment by zero. Under React's
+  // development double mount that was every load: the sky came up flat, and
+  // went white the moment the hand lit the lamp, because NaN times a hand of
+  // zero folds to zero and NaN times anything else is NaN.
   function size() {
     const cw = Math.max(1, canvas.clientWidth), ch = Math.max(1, canvas.clientHeight)
     const k = Math.min(1, Math.sqrt(SKY_MAX_PX / (cw * ch)))
     const w = Math.max(1, Math.round(cw * k)), h = Math.max(1, Math.round(ch * k))
-    if (w === canvas.width && h === canvas.height) return false
-    canvas.width = w; canvas.height = h
+    const changed = w !== canvas.width || h !== canvas.height
+    if (changed) { canvas.width = w; canvas.height = h }
     gl.viewport(0, 0, w, h)
     gl.uniform2f(uRes, w, h)
-    return true
+    return changed
   }
   size()
 
   return {
     size,
-    draw(t, ptr, hand) {
+    draw(t, ptr, hand, av) {
       gl.uniform1f(uT, t)
       gl.uniform2f(uPtr, ptr.x, ptr.y)
       gl.uniform1f(uHand, hand)
+      gl.uniform4f(uAvoid, av.x, av.y, av.w, av.h)
+      gl.uniform1f(uAvoidOn, av.on)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
     stop() {
@@ -358,7 +404,7 @@ function twoD(canvas, count, still, pace0) {
 
   let last = performance.now()
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000)
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
     last = now
     if (!still) {
       ease += (target - ease) * (1 - Math.exp(-dt / PACE_TAU))
@@ -390,6 +436,27 @@ function twoD(canvas, count, still, pace0) {
     stop() { cancelAnimationFrame(raf); ro.disconnect() },
   }
 }
+
+// ── THE TYPE THE SKY PARTS ROUND ────────────────────────────────────────────
+// One element, registered by whichever screen is up (ground.jsx
+// `useSkyAvoid`), read as a rectangle a few times a second and handed to the
+// sky shader as the block the clouds flow round. Nothing about it is stored:
+// it is a box, in viewport fractions, and it is gone when the screen is.
+//
+// The rectangle is eased rather than snapped, so a route change glides the
+// clearing from the old headline to the new one, and the presence is eased
+// too, so a screen with nothing registered lets the clouds close back over
+// where the words were rather than cutting to a different sky.
+let avoidEl = null
+let avoidWake = null
+export function setSkyAvoid(el) {
+  avoidEl = el || null
+  if (avoidWake) avoidWake()
+}
+
+// How often the block is measured, in frames. A layout read every sixth
+// frame is nothing, and a headline does not move between them.
+const AVOID_EVERY = 6
 
 // Mount a field on a canvas. Returns { point, pace, stop }: `point` takes a
 // pointer in -1..1 and the field eases toward it, `pace` takes 'drift', 'slow'
@@ -436,13 +503,16 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.clearColor(0, 0, 0, 0)
 
+  // Reallocated only on a change of size, since that clears the canvas; the
+  // viewport and the uniforms are set every time. See the sky's size() for
+  // why: a remount keeps the canvas and its size but not the program, and a
+  // star program whose uDpr was never set draws every star at nothing.
   let dpr = 1
   function size() {
     dpr = Math.min(2, window.devicePixelRatio || 1)
     const w = Math.round(canvas.clientWidth * dpr)
     const h = Math.round(canvas.clientHeight * dpr)
-    if (w === canvas.width && h === canvas.height) return
-    canvas.width = w; canvas.height = h
+    if (w !== canvas.width || h !== canvas.height) { canvas.width = w; canvas.height = h }
     gl.viewport(0, 0, w, h)
     gl.uniform2f(uSize, w, h)
     gl.uniform1f(uDpr, dpr)
@@ -461,14 +531,51 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
   let ease = target
   let t = 0
 
+  // The block the clouds part round: where it is now, where it is going, and
+  // how present it is. Kept in viewport fractions with y up, which is the
+  // shader's own space.
+  const av = { x: 0.5, y: 0.5, w: 0, h: 0, on: 0 }
+  const avT = { x: 0.5, y: 0.5, w: 0, h: 0, on: 0 }
+  let avFrame = 0
+  function measureAvoid() {
+    const el = avoidEl
+    if (!el || !el.isConnected) { avT.on = 0; return }
+    const r = el.getBoundingClientRect()
+    const W = Math.max(1, window.innerWidth), H = Math.max(1, window.innerHeight)
+    if (r.width <= 0 || r.height <= 0) { avT.on = 0; return }
+    avT.x = (r.left + r.width / 2) / W
+    avT.y = 1 - (r.top + r.height / 2) / H
+    avT.w = r.width / 2 / W
+    avT.h = r.height / 2 / H
+    avT.on = 1
+  }
+  function easeAvoid(dt) {
+    const k = 1 - Math.exp(-dt / 0.35)
+    av.x += (avT.x - av.x) * k
+    av.y += (avT.y - av.y) * k
+    av.w += (avT.w - av.w) * k
+    av.h += (avT.h - av.h) * k
+    av.on = Math.max(0, Math.min(1, av.on + (avT.on - av.on) * (1 - Math.exp(-dt / 0.6))))
+  }
+
   // The sky follows the star canvas's size, and under reduced motion it is
   // drawn once here and again on each resize, since the loop below stops.
+  // A screen registering its headline under reduced motion redraws it too:
+  // the clearing is part of the still frame.
   let skyRo = null
+  const drawStill = () => {
+    if (!sky || !still) return
+    measureAvoid()
+    Object.assign(av, avT)
+    sky.draw(0, ptr, 0, av)
+  }
   if (sky) {
-    const resky = () => { if (sky.size() && still) sky.draw(0, ptr, 0) }
+    const resky = () => { if (sky.size() && still) drawStill() }
     skyRo = new ResizeObserver(resky)
     skyRo.observe(skyCanvas)
   }
+  const wake = () => drawStill()
+  avoidWake = wake
 
   // Seconds to cover most of the distance to the pointer. In seconds and not in
   // frames: a per frame coefficient is a different spring on a phone holding 30
@@ -480,7 +587,14 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
     // The hand is eased rather than followed. A field that snaps to the cursor
     // is a field that is being dragged; one that arrives a third of a second
     // late is a room with depth in it.
-    const dt = Math.min(0.05, (now - last) / 1000)
+    //
+    // The step is clamped at both ends. The first frame's timestamp can come
+    // in EARLIER than the clock the mount read, by most of a second on a busy
+    // load, and a negative step turns every easing here into a spring that
+    // flies away from its target instead of toward it: the block the clouds
+    // part round went to minus four screens on the first frame and the sky
+    // came up white.
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
     last = now
     const k = 1 - Math.exp(-dt / TAU)
     ptr.x += (ptr.tx - ptr.x) * k
@@ -493,7 +607,11 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
 
     // The clouds first, on their own canvas, off the same clock and the same
     // eased hand, so the two layers can never disagree about where they are.
-    if (sky) sky.draw(still ? 0 : t, ptr, hand)
+    if (sky) {
+      if (avFrame++ % AVOID_EVERY === 0) measureAvoid()
+      easeAvoid(dt)
+      sky.draw(still ? 0 : t, ptr, hand, av)
+    }
 
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.uniform1f(uT, still ? 0 : t)
@@ -515,6 +633,7 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
       cancelAnimationFrame(raf)
       ro.disconnect()
       if (skyRo) skyRo.disconnect()
+      if (avoidWake === wake) avoidWake = null
       if (sky) sky.stop()
       gl.deleteBuffer(buf)
       gl.deleteProgram(prog)

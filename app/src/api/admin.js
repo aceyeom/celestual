@@ -9,8 +9,9 @@
 // over the old identity layer and backfilled from it rather than replacing it,
 // so both are live and the DM code flow still writes the old one.
 //
-//   the desk     0033. The rebuild's tables: the row, the resolution cache,
-//                the moderation queue, the caps, the wall, the reports.
+//   the desk     0033 and 0039. The rebuild's tables: the row, the resolution
+//                cache, the moderation queue, the caps, the wall, the reports,
+//                the pings, the settings, the sign in links, the log.
 //   the legacy   0017 to 0020. The DM flow's own records, and the six handle
 //                actions that operate on them.
 import { supabase, hasSupabase } from './supabase.js'
@@ -28,12 +29,18 @@ async function call(body) {
   }
 }
 
-// ── the desk (0033) ──────────────────────────────────────────────────────────
+// ── the desk (0033, 0039) ────────────────────────────────────────────────────
 
-// Counts, rate limit status, merge conflicts, scan attribution, campuses.
-// One call, and it is what the desk opens on.
+// Counts, rate limit status, merge conflicts, scan attribution, campuses, the
+// settings. One call, and it is what the desk opens on.
 export function deskOverview(password) {
   return call({ password, action: 'desk_overview' })
+}
+
+// The series the chart is drawn from: one row per bucket over the last
+// `days` (0 is everything), by day, week or month.
+export function deskGrowth(password, { days = 30, grain = 'day' } = {}) {
+  return call({ password, action: 'desk_growth', days, grain })
 }
 
 // The rows. `query` matches a handle, an edu address, a plain email or an id.
@@ -45,6 +52,13 @@ export function deskUsers(password, { query = '', limit = 50, offset = 0 } = {})
 // bodies, and what they have claimed.
 export function deskUser(password, id) {
   return call({ password, action: 'desk_user', id })
+}
+
+// The pings, as a ledger and never as a map: who placed one and when, and
+// only on a mutual who it was on. `state` is standing, mutual, lapsed, or
+// empty for all of them.
+export function deskPings(password, { state = '', query = '', limit = 50, offset = 0 } = {}) {
+  return call({ password, action: 'desk_pings', state, query, limit, offset })
 }
 
 // The Apify resolution cache. Rows come back with `avatar`, which the edge
@@ -84,6 +98,14 @@ export function deskReportResolve(password, id, uphold, note = '') {
   return call({ password, action: 'desk_report_resolve', id, uphold, note })
 }
 
+// Every letter to a name down, and no more to it until it is opened again.
+export function deskNameShut(password, handle, campus, note = '') {
+  return call({ password, action: 'desk_name_shut', handle, campus, note })
+}
+export function deskNameOpen(password, handle, campus) {
+  return call({ password, action: 'desk_name_open', handle, campus })
+}
+
 // Everybody who looked for a name and found nothing.
 export function deskWaitlist(password, { limit = 100, offset = 0 } = {}) {
   return call({ password, action: 'desk_waitlist', limit, offset })
@@ -93,6 +115,33 @@ export function deskWaitlist(password, { limit = 100, offset = 0 } = {}) {
 // not perform the merge, because 0030 refuses those two merges on purpose.
 export function deskConflictResolve(password, id, note = '') {
   return call({ password, action: 'desk_conflict_resolve', id, note })
+}
+
+// A sign in link: a browser as a handle, a campus address, or both, with no
+// DM and no mailed code. Answers the two tokens; the desk builds the address.
+export function deskSignin(password, { handle = '', eduEmail = '', email = '', note = '' } = {}) {
+  return call({ password, action: 'desk_signin', handle, edu_email: eduEmail, email, note })
+}
+
+// The settings the desk may touch, and the one call that changes one.
+export function deskSettings(password) {
+  return call({ password, action: 'desk_settings' })
+}
+export function deskSettingSet(password, key, value) {
+  return call({ password, action: 'desk_setting_set', key, value: String(value) })
+}
+
+// The campuses: open, close, add.
+export function deskCampusSet(password, slug, open) {
+  return call({ password, action: 'desk_campus_set', slug, open: !!open })
+}
+export function deskCampusAdd(password, { slug, name, domain }) {
+  return call({ password, action: 'desk_campus_add', slug, name, domain })
+}
+
+// What the desk did, newest first.
+export function deskLog(password, { limit = 100, offset = 0 } = {}) {
+  return call({ password, action: 'desk_log', limit, offset })
 }
 
 // ── the legacy layer (0017 to 0020) ──────────────────────────────────────────
@@ -143,7 +192,8 @@ export function adminClearPending(password, handle) {
 //
 // This writes the OLD layer only. celestual_users.handle_verified_at has one
 // writer, celestual_user_bind_handle, and it demands a live DM proof
-// (spec section 4). Nothing on this screen can set it.
+// (spec section 4). Nothing on this screen can set it. The sign in link
+// (deskSignin) is the way to give somebody a proof without a DM.
 export function adminVerifyUser(password, handle) {
   return call({ password, action: 'verify_user', handle })
 }

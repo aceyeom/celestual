@@ -1,23 +1,28 @@
-// ── the overview ────────────────────────────────────────────────────────────
+// ── the desk ────────────────────────────────────────────────────────────────
 //
-// What the desk opens on, and one call gets all of it. Four things, in the
+// What the desk opens on, and one call gets all of it. Three things, in the
 // order somebody at a desk actually wants them:
 //
 //   1  what is waiting        the only rows that ask anything of a person
-//   2  the shape of it        counts, as a ledger rather than as tiles
-//   3  the caps               spec section 5's three counters, per key
-//   4  which flyer            scan attribution, which is the cheapest question
-//                             in the campaign and the only one that cannot be
-//                             answered later
-import { Ledger, Figure, State, When, Arm, Empty, Json } from './parts.jsx'
+//   2  the numbers            twelve figures, and not the forty the tables
+//                             behind them could produce
+//   3  the graph              people over time, and what happened when
+//
+// Everything else the overview used to carry moved to the screen it is about:
+// the caps to the resolver, the flyers to waiting, the campuses to settings. A
+// first screen that opens on twenty numbers makes somebody find the one that
+// needs them; this opens on the ones that do.
+import { Ledger, Figure, State, When, Arm, Empty, Json, Note } from './parts.jsx'
+import Growth from './Growth.jsx'
 
-export default function Overview({ data, go, onConflictResolve }) {
+export default function Overview({ password, data, go, onConflictResolve, onLock }) {
   const c = data?.counts || {}
+  const settings = data?.settings || {}
   const limits = data?.limits || []
   const conflicts = (data?.conflicts || []).filter((x) => !x.resolved_at)
-  const scans = data?.scans || []
   const campuses = data?.campuses || []
-  const blocked = limits.filter((l) => l.blocked)
+  const blocked = limits.filter((l) => l.blocked && l.key_type !== 'global')
+  const ceiling = limits.some((l) => l.blocked && l.key_type === 'global')
 
   const s = (n, one, many) => (n === 1 ? one : many)
   const waiting = [
@@ -35,9 +40,20 @@ export default function Overview({ data, go, onConflictResolve }) {
       n: conflicts.length,
       say: <><b>{s(conflicts.length, 'merge', 'merges')}</b> stopped and asked. nothing was moved</>,
     },
-    blocked.length && {
+    settings.resolver_enabled === false && {
+      n: 'off',
+      say: <>the <b>resolver</b> is switched off. no handle is looked up and nothing is spent</>,
+      go: () => go('cache'), act: 'the resolver',
+    },
+    ceiling && {
+      n: c.searches_24h,
+      say: <>the day's <b>ceiling</b> on apify is spent. new handles draw nothing until calls age out</>,
+      go: () => go('cache'), act: 'see who',
+    },
+    !ceiling && blocked.length && {
       n: blocked.length,
-      say: <><b>{s(blocked.length, 'cap', 'caps')}</b> spent. those lookups are refused until they age out</>,
+      say: <><b>{s(blocked.length, 'key is', 'keys are')}</b> at a cap. those lookups are refused until they age out</>,
+      go: () => go('cache'), act: 'see who',
     },
   ].filter(Boolean)
 
@@ -46,20 +62,22 @@ export default function Overview({ data, go, onConflictResolve }) {
       <div className="ad-head">
         <h1>the desk</h1>
         <span className="ad-head-note">
-          {campuses.map((x) => `${x.name}, ${x.is_open ? 'open' : 'closed'}`).join(' · ') || 'no campus yet'}
+          {campuses.map((x) => `${x.name} wall ${x.is_open ? 'open' : 'closed'}`).join(' · ') || 'no campus yet'}
+          {' · '}
+          {settings.require_ig_verification ? 'the release gate is on' : 'the release gate is off'}
         </span>
       </div>
 
       {/* ── what is waiting ──
-          First, and four lines at most. A console that opens on twenty numbers
-          makes somebody find the one that needs them; this opens on the ones
-          that do, and says so plainly when none do. */}
+          First, and a few lines at most. A console that opens on twenty
+          numbers makes somebody find the one that needs them; this opens on
+          the ones that do, and says so plainly when none do. */}
       {waiting.length ? (
         <div className="ad-waiting">
           {waiting.map((w, i) =>
             w.go ? (
               <button type="button" key={i} className="ad-wait" onClick={w.go}>
-                <span className="ad-wait-n">{w.n}</span>
+                <span className="ad-wait-n">{typeof w.n === 'number' ? w.n.toLocaleString() : w.n}</span>
                 <span className="ad-wait-t">{w.say}</span>
                 <span className="ad-wait-go">{w.act}</span>
               </button>
@@ -75,77 +93,34 @@ export default function Overview({ data, go, onConflictResolve }) {
         <Empty>nothing is waiting on anybody.</Empty>
       )}
 
+      {/* ── the numbers ──
+          Twelve. The tables behind them hold forty, and every one of the
+          forty is one screen away, on the screen it is about. */}
       <Ledger label="people">
-        <Figure n={c.users} of="rows" />
-        <Figure n={c.handle_verified} of="verified handles" />
-        <Figure n={c.edu_verified} of="campus addresses" />
-        <Figure n={c.with_email} of="carrying an email" />
-        <Figure n={c.sessions_live} of="sessions live" />
-        <Figure n={c.users_7d} of="new this week" />
-        <Figure n={c.merged} of="merged away" />
-        <Figure n={c.conflicts_open} of="merges that stopped" live={!!c.conflicts_open} />
+        <Figure n={c.users} of="people" />
+        <Figure n={c.handle_verified} of="proved a handle" />
+        <Figure n={c.edu_verified} of="proved a campus" />
+        <Figure n={c.users_7d} of="new this week" live={!!c.users_7d} />
       </Ledger>
-
-      <Ledger label="the wall">
+      <Ledger label="pings">
+        <Figure n={c.pings_standing} of="standing now" />
+        <Figure n={c.pairs} of="mutual pairs" live={!!c.pairs} />
+        <Figure n={c.pings_7d} of="placed this week" />
+        <Figure n={c.pings_lapsing_7d} of="lapse within a week" />
+      </Ledger>
+      <Ledger label="the wall and the resolver">
         <Figure n={c.letters_live} of="letters live" />
-        <Figure n={c.letters_pending} of="held" live={!!c.letters_pending} />
-        <Figure n={c.letters_rejected} of="rejected" />
-        <Figure n={c.letters_removed} of="taken down" />
         <Figure n={c.letters_7d} of="written this week" />
-        <Figure n={c.claims} of="claims" />
-        <Figure n={c.asks_open} of="asks unanswered" />
-        <Figure n={c.revealed} of="revealed" />
-        <Figure n={c.waitlist} of="waiting for a name" />
-        <Figure n={c.scans} of="scans" />
-        <Figure n={c.reports_open} of="reports open" live={!!c.reports_open} />
-        <Figure n={c.reports} of="reports ever" />
+        <Figure n={c.searches_24h} of={`apify calls today, of ${(settings.cap_global || 1000).toLocaleString()}`} live={ceiling} />
+        <Figure n={c.profiles} of="faces cached" />
       </Ledger>
 
-      <Ledger label="resolution">
-        <Figure n={c.profiles} of="profiles cached" />
-        <Figure n={c.profiles_faced} of="with a face" />
-        <Figure n={c.profiles_stale} of="faces past thirty days" />
-        <Figure n={c.searches_24h} of="apify calls today" />
-      </Ledger>
-
-      {/* ── the caps ──
-          Spec section 5. Cache hits never appear here, because only a call that
-          actually reached Apify writes a row, which is what keeps the number on
-          this screen the same number as the bill. */}
+      {/* ── the graph ── */}
       <div className="ad-head is-sub">
-        <h2>the caps</h2>
-        <span className="ad-head-note">
-          rolling twenty four hours. only calls that reached apify are counted.
-        </span>
+        <h2>over time</h2>
+        <span className="ad-head-note">point at it for the numbers on a day. the legend hides a line.</span>
       </div>
-      {limits.length ? (
-        <div className="ad-scroll">
-          <table className="ad-table">
-            <thead>
-              <tr>
-                <th>key</th><th className="is-wide">value</th>
-                <th className="is-num">spent</th><th className="is-num">cap</th>
-                <th className="is-num">left</th><th>first</th><th>last</th>
-              </tr>
-            </thead>
-            <tbody>
-              {limits.slice(0, 40).map((l) => (
-                <tr key={`${l.key_type}:${l.key_value}`}>
-                  <td><State tone={l.blocked ? 'is-stop' : 'is-live'}>{l.key_type}</State></td>
-                  <td className="is-wide"><span className="ad-id">{l.key_value}</span></td>
-                  <td className="is-num is-key">{l.spent}</td>
-                  <td className="is-num">{l.cap}</td>
-                  <td className="is-num">{l.remaining}</td>
-                  <td><When at={l.oldest} /></td>
-                  <td><When at={l.newest} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <Empty>nobody has spent a lookup today.</Empty>
-      )}
+      <Growth password={password} onLock={onLock} />
 
       {/* ── the stop and ask ──
           0030 refuses a merge that would join two verified handles or two
@@ -158,9 +133,14 @@ export default function Overview({ data, go, onConflictResolve }) {
           <div className="ad-head is-sub">
             <h2>merges that stopped</h2>
             <span className="ad-head-note">
-              nothing was moved. resolving one records that you looked, and does not merge them.
+              nothing was moved. closing one records that you looked, and does not merge them.
             </span>
           </div>
+          <Note>
+            two rows both proved something one person cannot have twice: two different handles, or two
+            different campuses. open both on the people screen, decide which is the person, and close
+            the question here.
+          </Note>
           <div className="ad-scroll">
             <table className="ad-table">
               <thead>
@@ -171,43 +151,15 @@ export default function Overview({ data, go, onConflictResolve }) {
                   <tr key={x.id}>
                     <td><State>{x.kind}</State></td>
                     <td className="is-wide">
-                      <div className="ad-uuid">{x.a_id}</div>
-                      <div className="ad-uuid">{x.b_id}</div>
+                      <button type="button" className="ad-uuid" onClick={() => go('people', x.a_id)}>{x.a_id}</button>
+                      <br />
+                      <button type="button" className="ad-uuid" onClick={() => go('people', x.b_id)}>{x.b_id}</button>
                       <Json value={x.detail} />
                     </td>
                     <td><When at={x.created_at} /></td>
                     <td className="is-act">
                       <Arm tone="go" armed="yes, close it" onAct={() => onConflictResolve(x.id, 'looked at from the desk')}>looked at it</Arm>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : null}
-
-      {scans.length ? (
-        <>
-          <div className="ad-head is-sub">
-            <h2>which flyer</h2>
-            <span className="ad-head-note">
-              the cheapest question in the campaign, and the only one that cannot be answered later.
-            </span>
-          </div>
-          <div className="ad-scroll">
-            <table className="ad-table">
-              <thead>
-                <tr><th className="is-wide">code</th><th>campus</th><th className="is-num">scans</th><th className="is-num">letters</th><th>last</th></tr>
-              </thead>
-              <tbody>
-                {scans.map((s) => (
-                  <tr key={`${s.source_code}:${s.campus}`}>
-                    <td className="is-wide"><span className="ad-id">{s.source_code}</span></td>
-                    <td>{s.campus}</td>
-                    <td className="is-num is-key">{s.scans}</td>
-                    <td className="is-num">{s.letters}</td>
-                    <td><When at={s.last_at} /></td>
                   </tr>
                 ))}
               </tbody>

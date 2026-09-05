@@ -45,6 +45,7 @@ import { signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../wall/handoff.js'
 import { myPings, renew, release, daysLeft, daysLeftWords } from './data.js'
 import LiquidMark from '../wall/LiquidMark.jsx'
+import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
 import Prove from './Prove.jsx'
 
@@ -56,6 +57,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
   // keeps the same card open with the new number on it.
   const [open, setOpen] = useState(null)
   const [rev, setRev] = useState(0)
+  const avoid = useSkyAvoid()
 
   useEffect(() => {
     let alive = true
@@ -101,7 +103,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
       <main className="mn-page mn-sky">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1">
+          <Display size="m" as="h1" ref={avoid}>
             {lapsed ? <>One message,<br />and it is back.</> : <>Your sky is<br />behind your @.</>}
           </Display>
           <Prose className="mn-copy">
@@ -126,7 +128,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
       <main className="mn-page mn-sky">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1">Your sky did<br />not load.</Display>
+          <Display size="m" as="h1" ref={avoid}>Your sky did<br />not load.</Display>
           <Prose className="mn-copy">nothing about it has changed. check the connection and try again.</Prose>
         </div>
         <div className="mn-foot">
@@ -146,7 +148,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
         <TopBar go={go} who={who} />
 
         <div className="mn-mid">
-          <Display size="m" as="h1" className="mn-h">
+          <Display size="m" as="h1" className="mn-h" ref={avoid}>
             {state.loading ? <>&nbsp;</>
               : mutuals.length ? <>It&rsquo;s mutual.</>
               : standing.length ? <>Standing.</>

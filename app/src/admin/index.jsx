@@ -2,8 +2,13 @@
 // ║  THE DESK                                                                ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// Phase 7. Spec section 10: rebuild /admin for a non developer, covering every
-// new feature, with a path from a report to a removal.
+// Phase 7, and its second sitting. Spec section 10: rebuild /admin for a non
+// developer, covering every new feature, with a path from a report to a
+// removal. The second sitting (migration 0039) is for a team: the rail is
+// grouped and each screen says what it is for, the first screen is the few
+// numbers that matter and a graph, the product's own object has a screen, and
+// the things that used to need Vercel or a SQL console (a sign in, a switch, a
+// cap, a wall) are controls.
 //
 // ── WHAT REPLACED WHAT ──────────────────────────────────────────────────────
 // components/admin.jsx was the Bindery's back office: laid paper, saddle brown,
@@ -12,17 +17,19 @@
 // the same argument made again in the system that won: the wall's tokens, spent
 // for density rather than for room. desk.css says how, at length.
 //
-// ── THE SEVEN SECTIONS, AND WHY THEY ARE THOSE SEVEN ────────────────────────
-// Spec section 10 names six things the desk must cover. Six sections carry them
-// and a seventh carries the half of the product that did not move:
+// ── THE SCREENS, IN FOUR GROUPS ─────────────────────────────────────────────
 //
-//   the desk    what is waiting, the counts, the caps, which flyer
-//   people      celestual_users. spec section 10's "user records"
-//   the wall    submissions and the moderation queue, one table two ways
-//   reports     user-flagged content, and the path from a report to a removal
-//   resolution  the Apify cache, and the only place a forced resolve happens
-//   waiting     everybody who looked for a name and found nothing
-//   handles     the DM verification records, which the old layer still writes
+//   today       the desk        what is waiting, twelve numbers, the graph
+//               the guide       what to do when. For whoever is new
+//   people      people          celestual_users. spec section 10's "user records"
+//               verification    the DM records, and the six handle actions
+//               pings           standing, mutual, lapsing. Never who a ping is on
+//   the wall    letters         submissions and the moderation queue, one table two ways
+//               reports         user-flagged content, and the path from a report to a removal
+//               waiting         names looked for and not found, and which flyer
+//   the team    the resolver    the Apify cache, the switch, the caps
+//               access          sign in links, with no DM in the way
+//               settings        the release gate, the caps, the walls, the log
 //
 // ── THE PASSWORD ────────────────────────────────────────────────────────────
 // Held in sessionStorage, sent with every request, and checked in exactly one
@@ -36,34 +43,58 @@ import { Ecliptic } from '../wall/art.jsx'
 import { deskOverview, deskConflictResolve } from '../api/admin.js'
 import { Btn } from './parts.jsx'
 import Overview from './Overview.jsx'
+import Guide from './Guide.jsx'
 import People from './People.jsx'
+import Handles from './Handles.jsx'
+import Pings from './Pings.jsx'
 import Letters from './Letters.jsx'
 import Reports from './Reports.jsx'
-import Cache from './Cache.jsx'
 import Waitlist from './Waitlist.jsx'
-import Handles from './Handles.jsx'
+import Resolver from './Resolver.jsx'
+import Access from './Access.jsx'
+import Settings from './Settings.jsx'
 
 const PW_STORE = 'celestual:adminpw' // session scoped. the server re-checks every call.
 
-const SECTIONS = [
-  { id: 'overview', word: 'the desk' },
-  { id: 'people', word: 'people', count: 'users' },
-  { id: 'wall', word: 'the wall', count: 'letters_pending', live: true },
-  { id: 'reports', word: 'reports', count: 'reports_open', live: true },
-  { id: 'cache', word: 'resolution', count: 'profiles' },
-  { id: 'waitlist', word: 'waiting', count: 'waitlist' },
-  { id: 'handles', word: 'handles' },
+const GROUPS = [
+  { word: 'today', items: [
+    { id: 'overview', word: 'the desk', say: 'what is waiting, and the numbers' },
+    { id: 'guide', word: 'the guide', say: 'what to do when' },
+  ] },
+  { word: 'people', items: [
+    { id: 'people', word: 'people', say: 'every row', count: 'users' },
+    { id: 'handles', word: 'verification', say: 'the DM records' },
+    { id: 'pings', word: 'pings', say: 'standing and mutual', count: 'pings_standing' },
+  ] },
+  { word: 'the wall', items: [
+    { id: 'wall', word: 'letters', say: 'held, live, down', count: 'letters_pending', live: true },
+    { id: 'reports', word: 'reports', say: 'flagged letters', count: 'reports_open', live: true },
+    { id: 'waitlist', word: 'waiting', say: 'names looked for', count: 'waitlist' },
+  ] },
+  { word: 'the team', items: [
+    { id: 'cache', word: 'the resolver', say: 'faces, apify, the caps', count: 'profiles' },
+    { id: 'access', word: 'access', say: 'sign in links' },
+    { id: 'settings', word: 'settings', say: 'switches, caps, walls, the log' },
+  ] },
 ]
 
 function held() {
   try { return sessionStorage.getItem(PW_STORE) || '' } catch { return '' }
 }
 
+// The section in the address, so a link to a screen can be sent to somebody
+// on the team and a reload lands where it was. `#reports`, `#people=@handle`.
+function fromHash() {
+  const m = (window.location.hash || '').match(/^#([a-z]+)(?:=(.*))?$/)
+  const ids = GROUPS.flatMap((g) => g.items.map((i) => i.id))
+  if (!m || !ids.includes(m[1])) return { section: 'overview', arg: '' }
+  return { section: m[1], arg: decodeURIComponent(m[2] || '') }
+}
+
 export default function AdminApp() {
   const [password, setPassword] = useState(held)
   const [ok, setOk] = useState(false)
-  const [section, setSection] = useState('overview')
-  const [arg, setArg] = useState('')
+  const [{ section, arg }, setWhere] = useState(fromHash)
   const [overview, setOverview] = useState(null)
   // The password the overview last accepted, so the door's own successful
   // check is not followed by a second identical call from the effect below.
@@ -100,7 +131,12 @@ export default function AdminApp() {
     return () => { alive = false }
   }, [password])
 
-  const go = useCallback((id, a = '') => { setSection(id); setArg(a); window.scrollTo(0, 0) }, [])
+  const go = useCallback((id, a = '') => {
+    setWhere({ section: id, arg: a })
+    const h = a ? `#${id}=${encodeURIComponent(a)}` : `#${id}`
+    if (window.location.hash !== h) window.history.replaceState(window.history.state, '', h)
+    window.scrollTo(0, 0)
+  }, [])
 
   const [said, setSaid] = useState('')
   const onConflictResolve = useCallback(async (id, note) => {
@@ -113,6 +149,7 @@ export default function AdminApp() {
   if (!ok) return <Gate onIn={(pw) => { setPassword(pw); }} refresh={refresh} />
 
   const c = overview?.counts || {}
+  const common = { password, go, onLock: lock, onChanged: () => refresh(), overview }
 
   return (
     <div className="wl-root ad-root">
@@ -123,45 +160,51 @@ export default function AdminApp() {
             <span className="wl-label">celestual</span>
           </div>
           <div className="ad-nav">
-            {SECTIONS.map((s) => {
-              const n = s.count ? c[s.count] : null
-              return (
-                <button
-                  key={s.id}
-                  data-sec={s.id}
-                  className={section === s.id ? 'is-on' : ''}
-                  onClick={() => go(s.id)}
-                >
-                  {s.word}
-                  {typeof n === 'number' && n > 0
-                    ? <span className={`ad-nav-n ${s.live ? 'is-live' : ''}`}>{n.toLocaleString()}</span>
-                    : null}
-                </button>
-              )
-            })}
+            {GROUPS.map((g) => (
+              <div className="ad-nav-group" key={g.word}>
+                <div className="ad-nav-gl">{g.word}</div>
+                {g.items.map((s) => {
+                  const n = s.count ? c[s.count] : null
+                  return (
+                    <button
+                      key={s.id}
+                      data-sec={s.id}
+                      className={section === s.id ? 'is-on' : ''}
+                      onClick={() => go(s.id)}
+                      aria-current={section === s.id ? 'page' : undefined}
+                    >
+                      <span className="ad-nav-w">
+                        {s.word}
+                        <small>{s.say}</small>
+                      </span>
+                      {typeof n === 'number' && n > 0
+                        ? <span className={`ad-nav-n ${s.live ? 'is-live' : ''}`}>{n.toLocaleString()}</span>
+                        : null}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
           </div>
           <div className="ad-rail-foot">
             <Btn onClick={() => refresh()}>read it again</Btn>{' '}
-            <Btn
-              onClick={() => {
-                try { sessionStorage.removeItem(PW_STORE) } catch { /* private mode */ }
-                setPassword(''); setOk(false); setOverview(null)
-              }}
-            >
-              lock it
-            </Btn>
+            <Btn onClick={lock}>lock it</Btn>
           </div>
         </nav>
 
         <main className="ad-body">
           {said ? <p className="ad-head-note" style={{ margin: '0 0 12px' }}>{said}</p> : null}
-          {section === 'overview' ? <Overview data={overview} go={go} onConflictResolve={onConflictResolve} />
-            : section === 'people' ? <People password={password} go={go} onLock={lock} />
-              : section === 'wall' ? <Letters password={password} initialStatus={arg || 'pending'} onChanged={refresh} onLock={lock} />
-                : section === 'reports' ? <Reports password={password} onChanged={refresh} onLock={lock} />
-                  : section === 'cache' ? <Cache password={password} onChanged={refresh} onLock={lock} />
-                    : section === 'waitlist' ? <Waitlist password={password} onLock={lock} />
-                      : <Handles password={password} initialHandle={arg} onLock={lock} />}
+          {section === 'overview' ? <Overview data={overview} go={go} password={password} onLock={lock} onConflictResolve={onConflictResolve} />
+            : section === 'guide' ? <Guide go={go} />
+              : section === 'people' ? <People {...common} initialQuery={arg} />
+                : section === 'handles' ? <Handles {...common} initialHandle={arg} />
+                  : section === 'pings' ? <Pings {...common} />
+                    : section === 'wall' ? <Letters {...common} initialStatus={arg || 'pending'} />
+                      : section === 'reports' ? <Reports {...common} />
+                        : section === 'waitlist' ? <Waitlist {...common} />
+                          : section === 'cache' ? <Resolver {...common} />
+                            : section === 'access' ? <Access {...common} />
+                              : <Settings {...common} />}
         </main>
       </div>
     </div>

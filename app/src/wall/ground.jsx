@@ -46,8 +46,8 @@
 // slowed under a sheet, or still where the act cannot be undone. The clouds
 // take the same pace, because they are the same field.
 
-import { useEffect, useRef } from 'react'
-import { mountField } from './field.js'
+import { useCallback, useEffect, useRef } from 'react'
+import { mountField, setSkyAvoid } from './field.js'
 
 let gl2 = null
 export function hasWebGL2() {
@@ -59,6 +59,33 @@ export function hasWebGL2() {
     gl2 = false
   }
   return gl2
+}
+
+// ── the type the sky parts round ────────────────────────────────────────────
+// A ref callback. Put it on the one block of type a screen is about, its
+// headline, and the clouds behind it flow round it, thin under it and gather
+// a little pink along its edge (field.js, THE TYPE THE SKY PARTS ROUND).
+// One block per screen, and the last one registered wins; when the screen
+// goes the clouds close back over where the words were.
+//
+//   const avoid = useSkyAvoid()
+//   <h1 ref={avoid}>…</h1>
+export function useSkyAvoid() {
+  const mine = useRef(null)
+  useEffect(() => () => {
+    // The screen unmounted with the block still registered: let it go, but
+    // only if nobody else has registered since.
+    if (mine.current) { setSkyAvoid(null); mine.current = null }
+  }, [])
+  return useCallback((el) => {
+    if (el) {
+      mine.current = el
+      setSkyAvoid(el)
+    } else if (mine.current) {
+      mine.current = null
+      setSkyAvoid(null)
+    }
+  }, [])
 }
 
 export default function Ground({ pace = 'drift', lit = true, still = false, className = '' }) {

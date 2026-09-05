@@ -44,10 +44,25 @@ between confirming a name and shopping for one.
 Apify. While a person types, the field only peeks the cache, which is free and
 instant for any handle anybody has committed before. The lookup that costs
 happens when they press: Enter, the button, or the card. That press draws the
-card in its looking state; the next press, on the card or the button, is the
-act. Two taps, and the second one is against a person. Faces drawn elsewhere
-in the product (`useProfile`) peek too, and a handle that was never committed
-draws its monogram.
+card in its looking state, with a line under it saying so (and, after a few
+seconds, that a first look takes a while), and the button goes quiet until the
+answer lands. The answer is one of three cards: the person, "no account by that
+name", or "could not check that one right now", and the button changes its
+word to match: *yes, that's them*, *use it anyway*, *go on anyway*. The next
+press, on the card or the button, is the act, and it is against what the card
+says. Nothing moves on without that second press; a lookup that could not
+answer used to let the same press through, which read as the flow skipping the
+person. Two taps, and the second one is against a person. Faces drawn
+elsewhere in the product (`useProfile`) peek too, and a handle that was never
+committed draws its monogram.
+
+So, to the question of when Apify is called: once per handle, on the person's
+own press, and never again for that handle from any browser, because the
+answer is cached for good. Typing costs nothing, backspacing costs nothing, a
+handle anybody has looked up before costs nothing, and the day has a ceiling
+the desk can lower. The desk can also switch the resolver off outright
+(`resolver_enabled`, migration 0039), which stops the bill at once and leaves
+cache hits answering.
 
 **It shows no numbers.** A display name, a badge, a face. No followers, no post
 count, no engagement. This product does not tell anybody how popular anybody is.
@@ -168,8 +183,14 @@ as "no account by that name". The pilot's `vercel` did exactly that.
 them bounds the bill, because a device cap is beaten by not sending the cookie
 and an address cap by having more than one address. `global` is written on
 every call and is the most the meter can run in 24 hours. Past it, cache hits
-still answer, new handles draw nothing, and the act still goes through. The
-number lives in `handle_search_limit` and nowhere else.
+still answer, new handles draw nothing, and the act still goes through. Since
+0039 all four numbers are rows in `celestual_settings` (`cap_user`,
+`cap_device`, `cap_ip`, `cap_global`), read by `handle_search_limit` with the
+numbers above as defaults, and the desk's settings screen writes them; a
+change takes on the next call. The same screen has the switch
+(`resolver_enabled`): off, `handle_search_allow` answers `off`, the function
+answers `{ ok:false, error:'off' }`, the card draws nothing and nothing is
+spent.
 
 **The first lookup is slow.** The pilot measured 6 to 21 seconds on a cache
 miss and under a second on a hit: actor startup dominates, and nothing in the
