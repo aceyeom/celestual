@@ -7,6 +7,10 @@
     <!-- The void (wall.css --void). One value, so the browser chrome, the page
          and the field behind it are all the same surface. -->
     <meta name="theme-color" content="#08070B" />
+    <!-- The same void, inline, so the very first paint of a cold load is the
+         ground and never the browser's default or a colour from a stylesheet
+         that has not arrived yet. -->
+    <style>html { background: #08070B; }</style>
 
     <title>celestual</title>
     <meta

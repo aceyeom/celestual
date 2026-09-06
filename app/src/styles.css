@@ -1,306 +1,68 @@
-/* CELESTUAL — the bindery.
-   Screens are inline-styled React components off src/theme.js; this file owns
-   the reset, the ground, the cursor, the scrollbar and the motion.
+/* CELESTUAL: the base sheet.
+   The reset, and the ground BEFORE anything mounts.
 
-   ── the motion law ─────────────────────────────────────────────────────────
-   Nothing springs, nothing bounces, nothing pulses for attention. Things
-   SETTLE — a page laid on a desk, a plate pressed, a rule tooled in. Every
-   easing below is either decelerating or linear; there is not an overshoot in
-   the file. The one thing that repeats is a lamp breathing in luminosity, and
-   it never changes size, because a light that scales is a notification badge
-   and a light that dims and lifts is a lamp somebody left on. */
+   Everything else that used to be in this file was the retired design's
+   bindery: a warm brown black case, a fixed sheet of "dark hide" grain
+   blended over the whole page, an ivory cursor, a brown scrollbar, and forty
+   keyframes for screens that no longer exist. None of it was referenced by
+   the tree that shipped on 4 September, and the ground was still the first
+   thing painted on every load: a tab the phone had put to sleep came back
+   with a split second of the old leather before the root covered it. The
+   system's ground is wall.css (`.wl-root`, `.wl-ground`); this file only has
+   to agree with it about the colour of the page before the root exists. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body { height: 100%; }
 html, body, #root { width: 100%; }
 
+/* The void: wall.css --void, and index.html's theme-color. One value, so the
+   browser chrome, the first paint and the field behind everything are one
+   surface, and there is no flash of a different colour before the root
+   paints. Chalk for the type, for the same reason. */
+html { background: #08070B; }
 body {
-  font-family: 'Jost', 'Futura', 'Century Gothic', system-ui, -apple-system, sans-serif;
-  font-weight: 300;
-  color: #F1E7D3;
-  /* the closed case — matches theme.js TOKENS.ink (and sky/post.js's floor,
-     which galaxy.js sets from the same token) so the canvas and the page are
-     one surface, and there is no flash of a different colour before it paints */
-  background: #0B0705;
+  background: #08070B;
+  color: #F4F1EA;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-kerning: normal;
-  font-variant-ligatures: common-ligatures contextual;
   overflow-x: hidden;
   overscroll-behavior-y: none;
 }
 
 #root { min-height: 100dvh; }
 
-.celestual-app { position: relative; width: 100%; }
-
 input, textarea, button, select { font: inherit; color: inherit; }
 button { background: none; border: 0; }
 
-::selection { background: rgba(185, 138, 85, 0.34); color: #FFF6E6; }
+::selection { background: rgba(244, 241, 234, 0.22); color: #F4F1EA; }
 
-/* A placeholder is a prompt, not a value. It sits at the weight of a pencil
-   note on the same surface, never at the weight of ink. */
-.ph-ink::placeholder { color: rgba(36, 24, 17, 0.30); }
-.ph-ivory::placeholder { color: rgba(241, 231, 211, 0.26); }
-
-/* ── the setting carries the ground ─────────────────────────────────────────
-   Paper is reserved for the seal and the plate (docs/DESIGN.md §4), which means
-   every paragraph in this product is set DIRECTLY on the engraved chart with
-   nothing under it. Nine tenths of the time that is fine and quiet. The tenth
-   is when a line crosses the galactic centre, which is orders of magnitude
-   brighter than the ground either side of it and turns a sentence into a smear.
-
-   So body text carries a tight, soft wash of the case's own colour beneath it.
-   It is invisible where there is nothing bright behind the type — a shadow the
-   same colour as the ground is no shadow at all — and it is the difference
-   between legible and not over the core. Same value as theme.js's ONSKY.
-
-   Scoped to `.celestual-app`, so the back office (which renders outside it, on
-   paper, and has no sky behind it) never gets a dark halo on ivory. Anything
-   with its own inline text-shadow — the seal's words, a label on a plate —
-   keeps it: an inline style wins over this. */
-.celestual-app p {
-  text-shadow: 0 1px 2px rgba(11, 7, 5, 0.9), 0 0 9px rgba(11, 7, 5, 0.75);
-}
-
-/* ── the ground's surface ────────────────────────────────────────────────────
-   The chart is engraved INTO something rather than photographed through a
-   window, and this is the something: a dark hide with a tooth to it.
-
-   Two scales, because that is what makes a material read as a material rather
-   than as noise. A fine tooth (the high-frequency turbulence) is the grain your
-   eye resolves at reading distance; a broad, slow mottle underneath it is the
-   unevenness of the sheet itself — the part you never consciously see and
-   always notice the absence of. On top of both, a warm bloom from above-left,
-   the way a book on a desk is lit.
-
-   It sits between the canvas (z-index auto) and the interface (z-index 4), so
-   the sky is genuinely UNDER the surface — the grain falls across the stars as
-   well as the page, which is exactly the difference between a texture pasted on
-   top of a render and one picture made of both. Never interactive, and it does
-   not scroll: it is the material, not the content.
-
-   The close vignette that used to live here is gone. It was doing the darkening
-   the ground now does for itself, and a heavy vignette over a near-black ground
-   is just a dirty lens. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.5;
-  background-image:
-    radial-gradient(120% 90% at 22% -8%, rgba(255, 226, 186, 0.045) 0%, transparent 58%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23t)' opacity='0.34'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)' opacity='0.5'/%3E%3C/svg%3E");
-  background-size: auto, 220px 220px, 420px 420px;
-  mix-blend-mode: soft-light;
-}
-
-/* A phone is held at half the distance and its pixels are a third the size, so
-   the same grain reads twice as loud on one. Quieter there, and quieter again
-   for anyone who has asked the interface to stop moving — a stationary texture
-   is not motion, but it is visual noise, and the preference is a request for
-   less of it.
-
-   ── and on a phone it stops being a BLEND ──────────────────────────────────
-   `mix-blend-mode` is the most expensive property in this file, and it is
-   expensive for a structural reason rather than a tunable one: an element that
-   blends cannot be composited on its own: the browser has to keep it and
-   everything behind it in one group and re-blend the whole group whenever any
-   of it changes. What is behind this one is a WebGL galaxy that changes on
-   every frame, full-bleed, at up to twice device resolution — so a texture that
-   never moves was making the compositor re-blend the entire viewport sixty
-   times a second, and taking every animation on top of it off the fast path
-   while it did. That is the jank: not the sky, and not any one animation, but
-   a soft-light sheet over both of them.
-
-   Desktop keeps it, where there is a discrete GPU and a 1x display and it is
-   genuinely free. Anything held in a hand gets the same grain as an ordinary
-   layer at the opacity that reads the same over this near-black ground, which
-   the compositor can promote, cache once and never look at again. */
-@media (max-width: 540px), (hover: none) {
-  body::after {
-    opacity: 0.2;
-    mix-blend-mode: normal;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  body::after { opacity: 0.16; mix-blend-mode: normal; }
-}
-
-/* ── the cursor: a printer's registration mark ────────────────────────────────
-   Not a sparkle. The small crosshair-in-a-circle a press operator lines two
-   plates up with, which is what you are doing on every screen in here: putting
-   one thing exactly on top of another. Ivory, hairline, centred on its hotspot;
-   touch devices never see it. */
+/* ── the cursor: a registration mark ──────────────────────────────────────────
+   The small crosshair in a circle a press operator lines two plates up with,
+   which is what you are doing on every screen in here: putting one thing
+   exactly on top of another. Chalk, hairline, centred on its hotspot; touch
+   devices never see it. */
 :root {
-  --reg: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS1vcGFjaXR5PSIuNDUiIHN0cm9rZS13aWR0aD0iMi42Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0LjciLz48cGF0aCBkPSJNMTIgMS44djUuMk0xMiAxN3Y1LjJNMS44IDEyaDUuMk0xNyAxMmg1LjIiLz48L2c+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjFFN0QzIiBzdHJva2Utd2lkdGg9IjEuMSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNC43Ii8+PHBhdGggZD0iTTEyIDEuOHY1LjJNMTIgMTd2NS4yTTEuOCAxMmg1LjJNMTcgMTJoNS4yIi8+PC9nPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEiIGZpbGw9IiNGMUU3RDMiLz48L3N2Zz4=") 12 12;
+  --reg: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSJub25lIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS1vcGFjaXR5PSIuNDUiIHN0cm9rZS13aWR0aD0iMi42Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0LjciLz48cGF0aCBkPSJNMTIgMS44djUuMk0xMiAxN3Y1LjJNMS44IDEyaDUuMk0xNyAxMmg1LjIiLz48L2c+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjRGMUVBIiBzdHJva2Utd2lkdGg9IjEuMSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iNC43Ii8+PHBhdGggZD0iTTEyIDEuOHY1LjJNMTIgMTd2NS4yTTEuOCAxMmg1LjJNMTcgMTJoNS4yIi8+PC9nPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEiIGZpbGw9IiNGNEYxRUEiLz48L3N2Zz4=") 12 12;
 }
-html, body, .celestual-app { cursor: var(--reg), auto; }
+html, body { cursor: var(--reg), auto; }
 a, button, [role="button"], label, summary { cursor: var(--reg), pointer; }
 input, textarea, select { cursor: text; }
 
 @media (hover: none) {
-  html, body, .celestual-app, a, button, [role="button"], label, summary { cursor: auto; }
+  html, body, a, button, [role="button"], label, summary { cursor: auto; }
 }
 
-/* ── the scrollbar, bound to match ─────────────────────────────────────────── */
+/* ── the scrollbar, in the system's own colours ─────────────────────────────── */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #0B0705; }
+::-webkit-scrollbar-track { background: #08070B; }
 ::-webkit-scrollbar-thumb {
-  background: #2F1E13;
-  border: 1px solid rgba(241, 231, 211, 0.14);
-  border-radius: 0;
+  background: rgba(244, 241, 234, 0.14);
+  border: 2px solid #08070B;
+  border-radius: 6px;
 }
-::-webkit-scrollbar-thumb:hover { background: #3C2819; }
-* { scrollbar-width: thin; scrollbar-color: #2F1E13 #0B0705; }
-
-/* ── entrance ─────────────────────────────────────────────────────────────────
-   A leaf laid down: it arrives from slightly above, at a hair of an angle, and
-   settles flat. The rotation is half a degree, which you do not consciously see
-   and which is the entire reason it reads as paper rather than as a div. */
-@keyframes leafIn {
-  from { opacity: 0; transform: translateY(14px) rotate(-0.5deg); }
-  to   { opacity: 1; transform: translateY(0) rotate(0deg); }
-}
-/* the quieter version, for anything that follows a leaf in */
-@keyframes riseIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-.enter   { animation: leafIn 0.52s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
-.fade    { animation: riseIn 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
-.rise-in { animation: riseIn 0.42s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
-
-/* a rule tooled into the case: drawn from one end, at the speed of a hand */
-@keyframes toolRule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.tool-rule { transform-origin: left center; animation: toolRule 0.85s cubic-bezier(0.22, 0.7, 0.2, 1) both; }
-/* the same gesture under its old name, for anything still asking for it */
-@keyframes ruleGrow { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
-
-/* the seal being set: the die comes down hard, then lifts */
-@keyframes sealSet {
-  0%   { opacity: 0; transform: scale(1.13); }
-  38%  { opacity: 1; transform: scale(0.988); }
-  100% { opacity: 1; transform: scale(1); }
-}
-.seal-set { animation: sealSet 0.7s cubic-bezier(0.2, 0.8, 0.24, 1) both; }
-/* the verification badge, struck the same way, and the two rules that spread
-   out from under it as it lands */
-.v-pop  { animation: sealSet 0.6s cubic-bezier(0.2, 0.8, 0.24, 1) both; }
-@keyframes vRing { 0% { transform: scale(0.7); opacity: 0.5; } 100% { transform: scale(1.6); opacity: 0; } }
-.v-ring { animation: vRing 1.1s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
-
-/* ── the one thing that repeats ───────────────────────────────────────────────
-   A standing ping's light, breathing in LUMINOSITY and never in scale. */
-@keyframes lamp { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-.lamp { animation: lamp 5.5s ease-in-out infinite; }
-/* the two older names for the same behaviour, kept so nothing goes dark */
-.star-core { animation: lamp 5.5s ease-in-out infinite; }
-.star-halo { animation: lamp 7s ease-in-out infinite; }
-@keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-/* the slow settle of a thing being held up to the light */
-@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-.floaty { animation: floaty 7s ease-in-out infinite; }
-
-/* ── sheets & overlays ────────────────────────────────────────────────────────
-   A sheet does not slide up from the bottom of a phone. It is laid down. */
-@keyframes scrimIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scrimOut { from { opacity: 1; } to { opacity: 0; } }
-@keyframes readoutIn {
-  from { opacity: 0; transform: translateY(10px) rotate(-0.4deg); }
-  to   { opacity: 1; transform: translateY(0) rotate(0deg); }
-}
-@keyframes readoutOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(6px); }
-}
-.scrim-in    { animation: scrimIn .4s linear both; }
-.scrim-out   { animation: scrimOut .24s linear both; }
-.readout-in  { animation: readoutIn .46s cubic-bezier(0.16, 0.84, 0.28, 1) both; }
-.readout-out { animation: readoutOut .24s ease both; }
-
-/* ── the send-off ─────────────────────────────────────────────────────────────
-   The first beat: the line the @ is written on presses down to the point of
-   light the star launches from, so the hand-off from the page to the chart has
-   nothing visible in it. One shot, torn down as soon as it has played.
-
-   What this replaced is worth naming, because it is the single clearest example
-   of the whole transfer: the field used to collapse into a slit and IGNITE — a
-   white core, crossed diffraction spikes, a blooming halo. Four layers of light
-   emitted by a form element. Nothing in this brand emits. */
-@keyframes liftOff {
-  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
-  46%  { opacity: 0.92; transform: scale(0.42); filter: blur(1.5px); }
-  100% { opacity: 0; transform: scale(0.03); filter: blur(4px); }
-}
-.lift-off { transform-origin: center; animation: liftOff 1.15s cubic-bezier(0.62, 0, 0.24, 1) both; will-change: transform, opacity; }
-
-/* the send-off screen's line, arriving under the flight */
-.sendoff-line { animation: riseIn 0.9s cubic-bezier(0.16, 0.84, 0.28, 1) 0.5s both; }
-
-/* ── the sealed mutual ────────────────────────────────────────────────────────
-   A match sits in the ledger unopened, and every few seconds it moves:
-   something is in there, and the seal is not going to pretend otherwise. Small
-   and quick, in degrees rather than pixels, so it reads as a thing straining
-   against a lid and not as an element sliding around a list. The rhythm (a
-   beat, then four quiet seconds) is JS — a shake that never stops is a
-   spinner. */
-@keyframes strain {
-  0%, 100% { transform: rotate(0) translateY(0); }
-  16%      { transform: rotate(-1.7deg) translateY(-1px); }
-  38%      { transform: rotate(1.4deg) translateY(0.5px); }
-  62%      { transform: rotate(-0.7deg) translateY(0); }
-  82%      { transform: rotate(0.3deg) translateY(0); }
-}
-.strain { animation: strain 0.78s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
-.rattle { animation: strain 0.78s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
-
-/* ── the live feed (communities) ──────────────────────────────────────────────
-   One beat at a time: it rises, holds, and lifts away over its own display
-   window (the duration is set per-beat via --live-dur / --pulse-dur), so a
-   keyed re-render plays the whole thing as one motion matched to the interval. */
-@keyframes livePop {
-  0%   { opacity: 0; transform: translateY(9px); }
-  10%  { opacity: 1; transform: translateY(0); }
-  86%  { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-6px); }
-}
-.live-pop   { animation: livePop var(--live-dur, 4s) cubic-bezier(0.16, 0.84, 0.28, 1) both; will-change: opacity, transform; }
-.pulse-line { animation: livePop var(--pulse-dur, 3.2s) cubic-bezier(0.16, 0.84, 0.28, 1) both; will-change: opacity, transform; }
-@keyframes liveRise { from { transform: translateY(11px); } to { transform: translateY(0); } }
-.live-line { animation: liveRise .5s cubic-bezier(0.16, 0.84, 0.28, 1) both; will-change: transform; }
-
-/* ── the caret ────────────────────────────────────────────────────────────────
-   A slim rule blinking beside the typed line; the line itself is driven in JS. */
-@keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
-.tw-caret { display: inline-block; animation: caretBlink 1.05s step-end infinite; }
-
-/* ── the page turning ─────────────────────────────────────────────────────────
-   A cross-document-style view transition used to live here, animating
-   ::view-transition-old(root) out and ::view-transition-new(root) in. It is
-   gone, and App.jsx `applyScreen` carries the reasoning: a view transition
-   captures the ENTIRE viewport as a still image, and the biggest thing in this
-   viewport is a galaxy painting every frame — so turning a page froze the sky
-   for half a second and slid it up and down with the type. The page still
-   turns; it is the `.fade` on the keyed screen wrapper, which animates the page
-   and leaves the sky alone. */
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-  .enter, .fade, .rise-in, .seal-set, .v-pop, .strain, .rattle, .live-pop, .pulse-line, .floaty {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-  .tool-rule { animation: none !important; transform: none !important; }
-  .tw-caret { animation: none; opacity: 1; }
-}
+::-webkit-scrollbar-thumb:hover { background: rgba(244, 241, 234, 0.24); }
+* { scrollbar-width: thin; scrollbar-color: rgba(244, 241, 234, 0.18) #08070B; }

@@ -40,7 +40,8 @@ src/
 │   ├── handles.js     the handle resolver's client half, through /api/resolve
 │   ├── relogin.js     the sign in link (redeem only; nothing mints one yet)
 │   └── admin.js       the desk's calls, every one carrying the password
-└── styles.css         the reset, the ground, the cursor and the motion law
+└── styles.css         the reset, the ground before anything mounts, the
+                       selection, the scrollbar and the cursor. Nothing else
 ```
 
 Anything referenced by string is live even when it looks dead: route names,
