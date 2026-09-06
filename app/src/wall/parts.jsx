@@ -11,7 +11,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
-import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
+import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
@@ -643,29 +643,34 @@ export function Waiting({ label = 'looking' }) {
 //
 // The one screen in the product that asks somebody to leave it, and the only
 // one whose success depends on what they do after they have gone. It is drawn
-// once, here, because it was drawn twice — on Main's proof step and on the
-// wall's takedown — and both copies had the same three faults:
+// once, here, for Main's proof step and the wall's takedown, so the two cannot
+// drift.
 //
-//   THE BUTTON DID NOTHING.  `<Pill href=...>` rendered a <button> with an href
-//                            attribute on it, which is inert. The only way out
-//                            of the flow was the small web link underneath.
-//   THE CODE STAYED BEHIND.  Nothing put it on the clipboard, so the way the
-//                            flow actually ran was: read four digits, leave for
-//                            another app, try to still have them. Instagram
-//                            cannot be handed a prefilled message — there is no
-//                            ?text= on ig.me and no scheme that carries one —
-//                            so the clipboard IS the way the code travels, and
-//                            every door out of here copies before it opens.
-//   THE THREAD WAS A GUESS.  Both links pointed at the same URL for every
-//                            device. handoff.openInstagram picks per device now:
-//                            ig.me into the app on a phone, instagram.com/m/<us>
-//                            on a desktop, which is the celestual thread and not
-//                            Instagram's front page.
+// ── four things, and nothing else ───────────────────────────────────────────
+// The code, one line saying where it goes, the one act, and one line of
+// status. It used to carry twice that: a label over the code, a sentence under
+// the pill, a second link to the same thread, three sparkles breathing out of
+// phase and a paragraph about the clipboard, and a person standing at the one
+// step that costs them anything was reading a screen instead of doing the one
+// thing on it. A verification screen that explains itself has already told
+// somebody they are being processed.
 //
-// The digits stay selectable (`user-select: all`) because a browser can refuse a
-// programmatic copy and a person who cannot select the code is a person who
-// cannot finish. `note` is whatever the calling screen has to say underneath.
-export function DmCode({ code, note = null }) {
+// ── what is still true ──────────────────────────────────────────────────────
+//   THE CODE TRAVELS.  Instagram cannot be handed a prefilled message, so the
+//                      clipboard is how the code gets there. The pill copies
+//                      before it opens, and the digits copy on a tap.
+//   THE DOOR IS PER DEVICE.  handoff.openInstagram picks ig.me into the app on
+//                      a phone and the web thread on a desktop. One door.
+//   THE DIGITS SELECT.  `user-select: all`, for the browser that refuses a
+//                      programmatic copy: a person who cannot select the code
+//                      is a person who cannot finish.
+//
+// `note` is whatever the calling screen has to say above the code (which handle
+// is being proved). `status` is a line the caller puts under the pill when it
+// knows something the block does not: the DM that arrived with a code that did
+// not match, or one that had lapsed. Without it the line says what the block is
+// doing, which is waiting.
+export function DmCode({ code, note = null, status = '' }) {
   const [copied, setCopied] = useState(false)
   const ig = igUsername()
 
@@ -681,9 +686,6 @@ export function DmCode({ code, note = null }) {
 
   return (
     <div className="wl-dm">
-      {/* Whatever the calling screen has to say about this code, said BEFORE
-          it: which handle is being proved is the context for the digits, not a
-          footnote to them. */}
       {note}
 
       <div className="wl-dm-code">
@@ -693,26 +695,16 @@ export function DmCode({ code, note = null }) {
         >
           {code}
         </button>
-        <Label tone="dim">send this to <span className="wl-h">{atHandle(ig)}</span> on instagram</Label>
+        <Label tone="dim">DM it to <span className="wl-h">{atHandle(ig)}</span></Label>
       </div>
 
       <Pill tone="light" wide onClick={openIt} icon={<Provider size={17} />}>
-        {copied ? `copied · open ${atHandle(ig)}` : `copy it and open ${atHandle(ig)}`}
+        {copied ? 'copied. open instagram' : 'copy and open instagram'}
       </Pill>
 
-      <div className="wl-dm-foot">
-        <Waiting label="watching for it" />
-        <Label tone="dim" className="wl-dm-alt">
-          {/* The same thread, as an ordinary link, for the tap that wants a new
-              tab or a long press. It copies on the way out too. */}
-          <a className="wl-a" href={igWebLink()} target="_blank" rel="noreferrer" onClick={copy}>
-            or open the celestual thread on the web
-          </a>
-        </Label>
-        <p className="wl-dm-said" role="status" aria-live="polite">
-          {copied ? 'the code is on your clipboard. paste it into the DM' : 'paste it into the DM and come back'}
-        </p>
-      </div>
+      <p className={`wl-dm-said${status ? ' is-note' : ''}`} role="status" aria-live="polite">
+        {status || (copied ? 'on your clipboard. paste it in the DM.' : 'waiting for your DM')}
+      </p>
     </div>
   )
 }

@@ -32,6 +32,8 @@ export default function Prove({ who, refreshWho, onProved }) {
   const [mine, setMine] = useState(() => held?.mine || who.handle || '')
   const [dm, setDm] = useState(() => held)
   const [said, setSaid] = useState('')
+  // What the last DM to arrive said, when it was not the code (0041).
+  const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const alive = useRef(true)
 
@@ -42,11 +44,12 @@ export default function Prove({ who, refreshWho, onProved }) {
 
   const me = normHandle(mine)
 
-  const drop = () => { clearPending(); setDm(null) }
+  const drop = () => { clearPending(); setDm(null); setNote('') }
 
   const ask = async () => {
     if (dm || busy) return
     setSaid('')
+    setNote('')
     if (!validHandle(me)) { setSaid('that handle does not look right'); return }
     setBusy(true)
     const out = await startHandoff(me)
@@ -93,6 +96,7 @@ export default function Prove({ who, refreshWho, onProved }) {
       }
       if (out.error === 'expired') { drop(); setSaid('that code has lapsed'); return }
       if (out.error) { drop(); setSaid('that did not go through'); return }
+      if (out.note) setNote(out.note)
       timer = setTimeout(tick, 2500)
     }
     timer = setTimeout(tick, 2500)
@@ -117,9 +121,11 @@ export default function Prove({ who, refreshWho, onProved }) {
               proving <span className="sg-h">{atHandle(dm.mine)}</span>
             </Label>
           )}
+          status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
+            : note === 'expired_code' ? 'that code had lapsed. send this one.'
+            : ''}
         />
         <button type="button" className="wl-quiet" onClick={drop}>start over</button>
-        <p className="mn-said" role="status" aria-live="polite">{said}</p>
       </div>
     )
   }

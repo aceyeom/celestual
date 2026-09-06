@@ -50,7 +50,7 @@ Written for a beginner — follow it top to bottom. ~30 minutes.
                            celestual-manychat ◀──────┘ External Request
                              ├─ 1. X-Celestual-Token header valid?  (the shared secret)
                              ├─ 2. does the sender's REAL @ == the @ the code was for?
-                             └─ 3. yes → row = 'verified', returns { reply: "✦ verified…" }
+                             └─ 3. yes → row = 'verified', returns { reply: "✦ … is verified…" }
                                                      │
                           user gets the feedback DM ◀┘ (ManyChat sends $.reply back)
   page polls, sees 'verified', flips to ✓
@@ -212,16 +212,30 @@ That message IS the verified-feedback DM: the function returns a human `reply` o
 
 | Outcome | The DM the person gets |
 | --- | --- |
-| verified ✓ | `✦ @handle is verified on CELESTUAL — head back to the app to finish.` |
-| wrong account | `That code was started for a different @. Start again from the app with this account.` |
-| expired code (retained 7 days since 0017) | `That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.` |
-| **sender's @ is suppressed** (0018) | `This account asked to be erased from CELESTUAL, so it can't verify back in. If that wasn't you — or you've changed your mind — write to privacy@celestual.us and we'll reopen it.` |
-| username unreadable (0018) | `Something went sideways reading your account — get a fresh code in the app and send it again.` |
-| completion RPC threw (0018) | `Our end hiccuped reading that code. Send it once more — if it happens again, the app will let you in on its own after twenty seconds.` |
-| unknown / typo'd / long-pruned code | `That code didn't match an active request — it may have lapsed. Get a fresh code in the app and send it here.` |
-| no code found in the text, but it mentions "star" | `Send the code exactly as the app shows it — like star-1234.` |
-| no code and no mention of "star" (an ordinary sentence — this trigger should not have fired) | *nothing* — `reply` is empty, `send` is `false` |
-| digits that match nothing, in text with no "star" (e.g. "I have 2000 followers") | *nothing* — same guard. Every other failure above proves a real code was sent, so those all still answer. |
+| verified ✓ | `✦ @handle is verified on Celestual.` |
+| **the same code again**, from the account it verified (a double send, or the direct webhook won the race) | `✦ @handle is verified on Celestual. Head back to the app.` |
+| lapsed code (retained 7 days since 0017) | `✦ That code has lapsed. Get a fresh one on Celestual and send it here.` |
+| **wrong digits** (a typo, or a code older than the retention) | `✦ That code didn't match. Check the code on Celestual and send it again.` |
+| **sender's @ is banned** (0018, 0020) | `✦ This account can't be verified on Celestual. If that's a mistake, write to privacy@celestual.us and we'll look at it.` |
+| username unreadable (0018) | `✦ We could not read your account. Get a fresh code on Celestual and send it again.` |
+| completion RPC threw (0018) | `✦ Our end did not read that code. Send it once more, or get a fresh one on Celestual.` |
+| no code found in the text, but it mentions "star" | `✦ Send the code exactly as Celestual shows it, like star-1234.` |
+| no code and no mention of "star" (an ordinary sentence; this trigger should not have fired) | *nothing*: `reply` is empty, `send` is `false` |
+| digits that match nothing, in text with no "star" (e.g. "I have 2000 followers") | *nothing*, same guard. Every other failure above proves a real code was sent, so those all still answer. |
+
+Every reply describes **the DM that was sent**, not the account that sent it.
+Until migration 0041 the relay asked first whether the sender had *ever*
+verified, so a person who mistyped today's code was told they were "already
+verified" and to stop sending, while the app sat on a live code waiting for
+them. "Already verified" now means one thing: this exact code, sent again by
+the account it verified. A wrong code from a verified account is a wrong
+code, and a lapsed one is lapsed.
+
+The same two answers reach the app. When a wrong or lapsed code arrives from
+an account that has a live code out, the RPC notes it on that pending row and
+`celestual_poll_ig_verification` hands the note back to the browser holding
+the proof, which draws *"that code didn't match. send this one."* under the
+code it should have been. Nothing to configure on the ManyChat side.
 
 Because the DM is an immediate reply to a message the person just sent, it sits
 inside **Meta's 24-hour standard messaging window** — fully ToS-compliant.
@@ -268,7 +282,8 @@ Watch both sides while testing:
 | **Correct, live codes rejected forever** — the DM says "didn't match an active request" while the browser says "that code lapsed" at ~20 seconds, and `celestual_ig_verifications` shows the rows sitting `pending` with a live `expires_at` | The sender's @ is in `celestual_suppressions`. Before 0020 that could be an admin **ban**, the **/privacy opt-out**, *or* the account screen's **delete everything** (which called the opt-out on your own handle). Since 0020 only a `kind='ban'` row blocks verifying, and "delete everything" sets no flag at all. Both completion paths refuse it (`error:'banned'`); before 0018 `start()` had no such check, so codes kept minting against a shut door and *neither* refusal was named to anyone. Check it on the desk: **/admin → look up an @**, or `select exists(select 1 from celestual_suppressions where handle_hash = celestual_hash_handle('theirhandle'));`. Lift it with the desk's **lift the lockout**, or `select celestual_admin_unban_user('theirhandle');`. Since 0018 the DM answers `status:"banned"` and the sheet says so outright. |
 | `status:"banned"` | Working as designed (0018): the sender opted out or was banned. Lift it as above if that was a mistake. |
 | `status:"bad_username"` / `status:"rpc_error"` | The `username` field didn't survive normalisation, or the completion RPC threw. Both used to hide inside `no_match`; both now log a line (`complete rpc threw` / `complete`) with the token, username and full RPC result. |
-| `status:"no_match"` | Random/unknown digits — or, before migration 0017, an expired code whose row the start-RPC prune had already deleted (rows lasted ~1 minute past their 30-min TTL, so any DM delayed past that — e.g. sitting in Message Requests — degraded from the honest `code_expired` to `no_match`). 0017 retains lapsed rows 7 days, so `code_expired` answers for the whole realistic window; a re-sent code from someone already verified answers `already_verified`. Since 0018 a `no_match` really is unknown digits: a suppressed sender, an unreadable username and a thrown RPC each carry their own status and their own log line instead of collapsing in here. |
+| `status:"no_match"` | Random/unknown digits — or, before migration 0017, an expired code whose row the start-RPC prune had already deleted (rows lasted ~1 minute past their 30-min TTL, so any DM delayed past that — e.g. sitting in Message Requests — degraded from the honest `code_expired` to `no_match`). 0017 retains lapsed rows 7 days, so `code_expired` answers for the whole realistic window. Since 0018 a `no_match` really is unknown digits: a suppressed sender, an unreadable username and a thrown RPC each carry their own status and their own log line instead of collapsing in here. |
+| `status:"already_verified"` on a code the person **did not** just verify with | Not possible since 0041. Before it, any DM from an account that had ever verified answered this, including a mistyped or lapsed code, and the app kept waiting. Now it answers only for the exact code that verified that sender, re-sent. If you see it on a fresh wrong code, 0041 is not applied. |
 | Function reachable but Meta's DMs are delayed | First-time DMs from strangers can land in **Message Requests**; open @celestual.us → Requests → Accept once, then it flows. |
 | `{"code":401,"message":"Missing authorization header"}` on the health-check GET | JWT verification still on — redeploy `--no-verify-jwt` (§2 Step 4). |
 

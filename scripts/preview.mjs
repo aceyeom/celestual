@@ -92,6 +92,9 @@ let VERIFIED = true
 // card's looking state is drawn for a wait that can run ten seconds on a cold
 // handle, and it only exists on the screen for as long as the wait does.
 let SLOW = false
+// What the relay has said about the last DM under this handle while a code is
+// out (0041): '' while nothing has arrived, 'wrong_code' or 'expired_code'.
+let NOTE = ''
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -432,6 +435,13 @@ const RPC = {
         }
       })
   },
+  // The DM code flow (0004, 0012, 0041). A code is minted at once, and the
+  // poll answers pending for as long as the screenshot takes, carrying
+  // whatever note the route asked for.
+  celestual_start_ig_verification: () => ({
+    ok: true, token: '1283', expires_at: new Date(now + 30 * 60000).toISOString(),
+  }),
+  celestual_poll_ig_verification: () => ({ status: 'pending', handle: null, note: NOTE || null }),
   // The front door's notice reads this.
   wall_pulse: () => ({
     ok: true, campus: 'berkeley', name: 'UC Berkeley', open: true,
@@ -553,12 +563,22 @@ const ROUTES = [
   // shown to one that has already proved
   { label: 'place-you',       path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill', verified: false },
   { label: 'place-you-known', path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill' },
+  // The code, out: the FROM row says proving and the foot is the code. And
+  // the same screen once a DM with the wrong digits has arrived (0041).
+  { label: 'place-code',      path: '/@pilar.echevarria', verified: false,
+    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
+           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill']] },
+  { label: 'place-code-note', path: '/@pilar.echevarria', verified: false, note: 'wrong_code',
+    acts: [['fill', 'textarea', 'i have wanted to say this since the second week of term.'], ['click', '.mn-foot .wl-pill'],
+           ['fill', '.mn-mail-field input', 'ace03d'], ['click', '.mn-foot .wl-pill'], ['wait', 3200]] },
   { label: 'sky',           path: '/sky' },
   // A standing ping, opened: the card, and the two things you can do to it.
   { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },
   // The sky before a handle is proved on this device: where the front door's
   // "sign in" lands, and the screen that asks the question.
   { label: 'sky-prove',     path: '/sky', verified: false },
+  { label: 'sky-prove-code', path: '/sky', verified: false,
+    acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
   { label: 'reveal',        path: '/reveal/jules.k' },
   { label: 'berkeley',      path: '/berkeley' },
   { label: 'find',          path: '/berkeley/find' },
@@ -573,6 +593,7 @@ const ROUTES = [
   { label: 'gate',          path: '/berkeley/gate', open: false },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
+  { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
   { label: 'join',          path: '/berkeley/join' },
   { label: 'posted',        path: '/berkeley/posted' },
 
@@ -615,6 +636,7 @@ for (const r of list) {
   OPEN = r.open !== false
   VERIFIED = r.verified !== false
   SLOW = r.slow === true
+  NOTE = r.note || ''
   for (const v of VIEWPORTS) {
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
@@ -699,6 +721,15 @@ for (const r of list) {
     if (r.click) {
       await page.click(`.ad-nav button[data-sec="${r.click}"]`, { timeout: 4000 }).catch(() => {})
       await page.waitForTimeout(900)
+    }
+    // A state several presses deep: fill, click and wait, in order, each on
+    // whatever the last one drew.
+    for (const [act, sel, arg] of r.acts || []) {
+      if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
+      await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
+      if (act === 'fill') await page.fill(sel, arg).catch(() => {})
+      if (act === 'click') await page.click(sel, { timeout: 4000 }).catch(() => {})
+      await page.waitForTimeout(700)
     }
     await page.waitForTimeout(2600)
 

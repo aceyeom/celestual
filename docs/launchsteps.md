@@ -1027,3 +1027,27 @@ One migration and the app. Nothing to redeploy on the function side.
    links to the wall: the notice at the foot of the fold does, while the
    campus is open, and it comes down on its own when the desk closes the
    campus.
+
+## The code that did not match (migration 0041)
+
+One migration, two functions, and the app.
+
+1. **Apply `0041_the_code_that_did_not_match.sql`.** `supabase db push`, or
+   paste it into the SQL editor. It adds two columns to
+   `celestual_ig_verifications` and re-emits `celestual_complete_ig_verification`
+   and `celestual_poll_ig_verification`. Until it is applied a wrong code from
+   an account that has ever verified is still answered "already verified", and
+   the app cannot be told about a wrong code at all.
+2. **Redeploy `celestual-manychat` and `celestual-ig-webhook`.** The replies
+   changed: each one now describes the DM that was sent, and the wrong-digits
+   case has a line of its own on the direct webhook where it used to be silent.
+   `supabase functions deploy celestual-manychat --no-verify-jwt` and
+   `supabase functions deploy celestual-ig-webhook --no-verify-jwt`.
+3. **Deploy the app.** Vercel, as usual. The proof step draws "that code
+   didn't match. send this one." under the code when the poll carries the
+   note; an app deployed before the migration draws nothing there, and an app
+   deployed after it against an unmigrated database does the same.
+
+The test of the whole path: mint a code on the site, DM a different four
+digits from the same account, and read the same sentence on Instagram and
+under the code on the screen. Then send the right one.

@@ -216,6 +216,16 @@ Idempotent migrations, applied in order:
   listed on its own (it is the list of everybody who has been pinged); the
   profile fields are joined onto the index, never the other way round.
   Re-runnable. Tests: `scripts/sql/test-wall.sql`, sections 12a and 12c.
+- `migrations/0041_the_code_that_did_not_match.sql`: **a DM that carries the
+  wrong code is told so.** `celestual_complete_ig_verification` answered
+  `already_verified` to any DM from an account that had ever verified, wrong
+  digits and lapsed codes included. It now answers that only for the exact code
+  that verified the sender, sent again; a lapsed code is `code_expired` and
+  wrong digits are `no_pending`. Both failures are noted on the sender's own
+  live pending rows (`last_dm_note`, `last_dm_at`) and
+  `celestual_poll_ig_verification` hands the note back to the browser holding
+  the proof, so the app says "that code didn't match" under the code it
+  should have been. `scripts/sql/test-code.sql` covers the four exits.
 
 - `migrations/0039_the_desk_second_sitting.sql`: **the desk, for a team, and
   one door closed.** The opt-out (`celestual_suppress`) takes the DM proof; the

@@ -11,6 +11,26 @@
 // "Who's on your mind." Three steps, in the order the spec puts them: a name, a
 // line, and their own handle proved through the DM code flow.
 //
+// ── one object, three steps ─────────────────────────────────────────────────
+// The three steps used to be three screens: a field, then a card, then a box
+// with two rows in it and a code under that. Each one replaced the last, so
+// what a person had already answered was gone from the glass, and the only
+// way back was a small link at the foot whose wording changed per screen.
+//
+// It is one object now, and it is shaped like the thing it is: a piece of
+// mail. TO at the top, FROM under it, the letter under both, the way an email
+// composes. The first step is still the name on its own, because a person
+// arriving from the front door has one thing in mind and the field is that.
+// From the second step on, the mail is on the glass and it stays there: the
+// letter is written on it, and then the FROM row opens above the letter and
+// the letter moves down to make room. The heading and the foot are what
+// change between steps; the object does not.
+//
+// Everything on it is a way back. The TO row reopens the name, the letter
+// reopens itself, and the bar of three segments over the heading goes to
+// any step that has been answered. Nothing a person has done is ever more
+// than one press away, and nothing is lost by going back to it.
+//
 // ── why the proof is last ───────────────────────────────────────────────────
 // It is the only expensive step, and asking for it first means asking somebody
 // to open Instagram before they know what for. The name and the line cost
@@ -22,8 +42,8 @@
 // written, so backing out at the last step leaves no half a ping anywhere.
 //
 // ── THE THIRD STEP ASKS WHOSE HANDLE IT IS. It did not, and that was the bug ─
-// The flow read: type THEIR @, write the line, and then — with no third
-// question asked — a code appeared to be DM'd to us. Nobody had said whose
+// The flow read: type THEIR @, write the line, and then, with no third
+// question asked, a code appeared to be DM'd to us. Nobody had said whose
 // handle was being proved, because the screen never asked: it sent
 // `who.handle || h` to the handoff, and for the person this flow exists for,
 // the one who has never proved anything and so has no `who.handle`, that `h`
@@ -36,13 +56,13 @@
 //      a screen showing somebody else's @ under "the handle has to be yours"
 //   2  the per-handle start limit (8/hour, 0018) and the suppression check ran
 //      against the RECIPIENT, so pinging an @ that had opted out answered "that
-//      door is not open yet" — which is that person's opt-out, told to a
+//      door is not open yet", which is that person's opt-out, told to a
 //      stranger who typed their name
 //   3  eight attempts at one popular @ locked everybody else out of pinging it
 //
-// So the third step asks, in one field, the same question it has always been
+// So the FROM row asks, in one field, the same question it has always been
 // answering: which @ is yours. It is prefilled when the browser already knows,
-// and what is proved is still whatever account actually sends the DM — the
+// and what is proved is still whatever account actually sends the DM: the
 // code is a correlation id and Meta's webhook is the authority (migration
 // 0012). When those differ, the screen says so and asks, rather than quietly
 // placing a ping under a name the person did not type.
@@ -92,6 +112,40 @@ function resume(prefill) {
   return p
 }
 
+// ── the bar ─────────────────────────────────────────────────────────────────
+// Three segments over the heading, one per step: spent, lit, or still to
+// come. Every segment a person has already answered is a way back to it, and
+// a segment they have not reached yet is not a control. No words on it. The
+// heading under it says what the step is, and a bar that labels its own
+// segments is a bar somebody has to read twice.
+const STEPS = ['who', 'the line', 'you']
+
+function Steps({ at, can, onGo }) {
+  return (
+    <div className="mn-steps" role="tablist" aria-label="step">
+      {STEPS.map((name, i) => (
+        <button
+          key={name} type="button" role="tab" aria-selected={i === at}
+          aria-label={`step ${i + 1}, ${name}`}
+          className={`mn-steps-seg${i === at ? ' is-on' : ''}${i < at ? ' is-done' : ''}`}
+          disabled={i === at || !can[i]}
+          onClick={() => onGo(i)}
+        />
+      ))}
+    </div>
+  )
+}
+
+// What the line under the mail says while the letter is being written: the
+// one thing that stops it going up, or the one fact about where it goes.
+function floorFor(line) {
+  const w = words(line)
+  const n = line.trim().length
+  if (w.length > MAX_WORDS) return `twenty words, and that is ${w.length}`
+  if (n && n < MIN_CHARS) return MIN_CHARS - n === 1 ? 'one more character' : `${MIN_CHARS - n} more characters`
+  return 'read only if it’s mutual'
+}
+
 export default function Place({ go, who, refreshWho, to: prefill }) {
   const wrote = getState().wroteTo || []
   // Lazy: `useRef(resume(prefill))` evaluated the storage read and the JSON
@@ -99,16 +153,24 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const [held] = useState(() => resume(prefill))
   const [to, setTo] = useState(() => prefill || held?.to || '')
   const [line, setLine] = useState(() => held?.line || '')
-  // The sender's own @ — the third question, and the one this screen never
+  // The sender's own @, the third question, and the one this screen never
   // asked. Prefilled from the identity row when the browser already has one.
   const [mine, setMine] = useState(() => held?.mine || who.handle || '')
   const [step, setStep] = useState(() => (held ? 2 : prefill ? 1 : 0))
   const [dm, setDm] = useState(() => held)
   // Set when the DM came from an account other than the one typed above. The
   // webhook's answer is the identity (0012), so the choice is not whether to
-  // believe it — it is whether to place THIS ping under a name the person did
+  // believe it: it is whether to place THIS ping under a name the person did
   // not type, and that is theirs to answer.
   const [adopted, setAdopted] = useState(null)
+  // Set when the DM verified the typed handle while the person was on another
+  // step. The proof is held here until they come back and press place, rather
+  // than spent on a ping whose line they might be halfway through changing.
+  const [proved, setProved] = useState(null)
+  // What the last DM to arrive said, when it was not the code (0041): the
+  // digits did not match, or they had lapsed. Drawn under the code, once, so
+  // a person who mistyped it is told so here and not only on Instagram.
+  const [note, setNote] = useState('')
   const [said, setSaid] = useState('')
   const [placing, setPlacing] = useState(false)
   // A code is being minted. Without this, Enter held down or a double tap
@@ -116,7 +178,13 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // eight starts an hour the handle gets (0018).
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
+  // The date on the letter. Struck once, when the screen opens, so the card
+  // does not change its mind about the day between one step and the next.
+  const [dated] = useState(() => dateline(Date.now()))
   const alive = useRef(true)
+  // The step, readable from inside the watch below without re-running it.
+  const stepNow = useRef(step)
+  stepNow.current = step
   // The question is what the sky parts round on this screen.
   const avoid = useSkyAvoid()
 
@@ -125,7 +193,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     return () => { alive.current = false }
   }, [])
 
-  // whoami lands after the first paint, so the field fills in when it does —
+  // whoami lands after the first paint, so the field fills in when it does,
   // and never over something already typed.
   useEffect(() => {
     if (who.handle) setMine((m) => m || who.handle)
@@ -146,6 +214,22 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const w = words(line)
   const lineOk = line.trim().length >= MIN_CHARS && w.length <= MAX_WORDS
 
+  // Which steps can be gone to. The first always; the line once there is a
+  // name; you once there is a line that would go up.
+  const can = [true, named, named && lineOk]
+  const goStep = (i) => {
+    if (i === step || !can[i]) return
+    setSaid('')
+    setStep(i)
+  }
+
+  // A live code is stashed with the name and the line it was minted for, and
+  // both can be changed while it is out. Keep the stash current, so a reload
+  // on the way back from Instagram resumes what is on the glass now.
+  useEffect(() => {
+    if (dm) savePending({ ...dm, to: h, line: line.trim() })
+  }, [dm, h, line])
+
   // ── the last step, once the handle is proved ──
   // The proof is the DM flow's secret and celestual_submit consumes it
   // (celestual_consume_ig_proof, 0023): without it the RPC answers 'unverified'
@@ -165,7 +249,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       // spot, so `readyToPlace` below turns false and this step asks for the
       // DM again rather than saying "prove it again" over a screen with no
       // way to.
-      if (out.error === 'unverified') dropProof()
+      if (out.error === 'unverified') { dropProof(); setProved(null) }
       setSaid(
         out.error === 'no_slots' || out.error === 'cap' ? 'you have as many out as you can hold'
           : out.error === 'self' ? 'you cannot place one on yourself'
@@ -184,10 +268,11 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // ── the handoff ──
   // Started against the SENDER's handle. It is the hint the code is filed
   // under, it is what the per-handle limit counts, and it is what the screen
-  // has just been told — where it used to be whoever was being pinged.
+  // has just been told, where it used to be whoever was being pinged.
   const ask = async () => {
     if (dm || busy) return
     setSaid('')
+    setNote('')
     if (!mineOk) {
       setSaid(me && me === h ? 'that is the name you are placing it on' : 'that handle does not look right')
       return
@@ -210,7 +295,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     setDm(rec)
   }
 
-  const drop = () => { clearPending(); setDm(null); setAdopted(null) }
+  const drop = () => { clearPending(); setDm(null); setAdopted(null); setNote('') }
 
   useEffect(() => {
     if (!dm) return
@@ -230,20 +315,20 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         // ── DO NOT setDm(null) AND THEN AWAIT ──
         // This is what actually swallowed the ping, and it swallowed it at the
         // last possible instant: the code was DM'd, the webhook answered, the
-        // handle bound — and then nothing was placed and the screen fell back
+        // handle bound, and then nothing was placed and the screen fell back
         // to the field as though the person had never started.
         //
         // The old shape was `setDm(null); await refreshWho(); if (!stop) send()`.
         // Clearing `dm` re-renders, the re-render tears this effect down, and
-        // the teardown sets `stop` — all of it during the await, because an
+        // the teardown sets `stop`, all of it during the await, because an
         // await yields to React. So the guard on the far side of the await was
         // always true and `send` was never reached. The one line that placed
         // the ping was unreachable by construction, and everything before it
         // worked, which is why it read as "verification does nothing".
         //
         // So: stop the polling with the local flag, do the awaiting, and let
-        // `alive` — which means THE SCREEN IS GONE, not "this effect was
-        // re-run" — be the only thing that can call it off.
+        // `alive`, which means THE SCREEN IS GONE, not "this effect was
+        // re-run", be the only thing that can call it off.
         stop = true
         clearTimeout(timer)
         clearPending()
@@ -252,14 +337,23 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         const u = await refreshWho()
         if (!alive.current) return
         setDm(null)
+        setNote('')
         // The DM came from another account. Say so and ask, rather than
         // placing a ping signed by a name nobody on this screen typed.
         if (got && got !== asked) { setAdopted({ handle: got, proof: dm.proof }); return }
-        send(got || u?.handle || asked, dm.proof)
+        const from = got || u?.handle || asked
+        // The person went back to the name or the line while the code was
+        // out. The proof is real; hold it until they are back on this step
+        // and press place, rather than spending it on a line mid-edit.
+        if (stepNow.current !== 2) { setProved({ handle: from, proof: dm.proof }); return }
+        send(from, dm.proof)
         return
       }
       if (out.error === 'expired') { drop(); setSaid('that code has lapsed'); return }
       if (out.error) { drop(); setSaid('that did not go through'); return }
+      // Still waiting, and the relay may have something to say about the
+      // last DM that arrived under this handle (0041).
+      if (out.note) setNote(out.note)
       timer = setTimeout(tick, 2500)
     }
     timer = setTimeout(tick, 2500)
@@ -281,7 +375,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // and the secret that spends it lives in this browser. A tab that has one
   // without the other has to ask again, and asking is cheaper than a ping that
   // comes back 'unverified' after the letter is written.
-  const readyToPlace = who.handleVerified && !!heldProof(who.handle)
+  const readyToPlace = !!proved || (who.handleVerified && !!heldProof(who.handle))
+  // Whose name the ping goes out under, once that is settled.
+  const you = adopted ? adopted.handle : proved ? proved.handle : readyToPlace ? who.handle : ''
 
   // The card under the handle field: peeks while typing, asks on the press.
   // The first press on a handle nobody has looked up draws the card looking,
@@ -304,6 +400,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       return
     }
     if (step === 1) { if (lineOk) setStep(2); return }
+    if (proved) { send(proved.handle, proved.proof); return }
     if (readyToPlace) { send(who.handle); return }
     ask()
   }
@@ -332,7 +429,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             // The address still carried the last person. A refresh here used
             // to reopen them at step 1 under "place another".
             window.history.replaceState(window.history.state, '', '/place')
-            setDone(null); setTo(''); setLine(''); setStep(0)
+            setDone(null); setTo(''); setLine(''); setStep(0); setProved(null); setAdopted(null)
           }}>
             place another
           </button>
@@ -341,11 +438,18 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     )
   }
 
+  // What the last DM said, put into words beside the code it should have been.
+  const noteText = note === 'wrong_code' ? 'that code didn’t match. send this one.'
+    : note === 'expired_code' ? 'that code had lapsed. send this one.'
+    : ''
+
   return (
     <main className="mn-page mn-place">
       <TopBar go={go} who={who} />
 
       <div className="mn-mid">
+        <Steps at={step} can={can} onGo={goStep} />
+
         <Display size="m" as="h1" className="mn-h" ref={avoid}>
           {step === 0 ? <>Who&rsquo;s on<br />your mind.</>
             : step === 1 ? <>And what<br />you never said.</>
@@ -390,128 +494,106 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
               </Label>
             )}
           </div>
-        ) : step === 1 ? (
-          <div className="mn-step">
-            <Paper
-              dateline={dateline(Date.now())}
-              title={<span className="wl-letter-to">{atHandle(h)}</span>}
-              tone={line.trim() ? '' : 'empty'}
-            >
-              <LetterField
-                value={line} onChange={setLine} max={140} autoFocus
-                placeholder="I have wanted to say this since the second week of term."
-              />
-            </Paper>
-            <div className="mn-floor" aria-live="polite">
-              {w.length > MAX_WORDS ? (
-                <Label>twenty words, and that is {w.length}</Label>
-              ) : line.trim().length && line.trim().length < MIN_CHARS ? (
-                <Label tone="dim">
-                  {MIN_CHARS - line.trim().length === 1
-                    ? 'one more character'
-                    : `${MIN_CHARS - line.trim().length} more characters`}
-                </Label>
-              ) : (
-                <Label tone="dim">read only if it&rsquo;s mutual</Label>
-              )}
-            </div>
-          </div>
         ) : (
-          <div className="mn-step mn-prove">
-            {/* ── the envelope ──
-                Both parties on one object, before anything is asked. TO is
-                the name from the first step, with its face; FROM is you. The
-                two handles on this screen used to be two identical fields
-                two screens apart, and the only thing telling them apart was
-                a placeholder, which is how the proof once got started against
-                the recipient. Here the question about you is asked in the
-                identity idiom rather than the name field's: a disc that fills
-                in as you type, the handle beside it, under the word "from",
-                with "to" already filled in above it.
+          /* ── the mail ──
+             One object from here on. TO, then FROM once it is asked, then the
+             letter. Every part of it that has been answered is a way back to
+             the step that answered it. */
+          <div className={`mn-mail${step === 2 ? ' is-you' : ''}`}>
+            <button
+              type="button" className="mn-mail-row is-to"
+              onClick={() => goStep(0)} aria-label={`to ${atHandle(h)}. change the name`}
+            >
+              <span className="mn-mail-lab">to</span>
+              <Face handle={h} size={30} />
+              <span className="mn-mail-h">{atHandle(h)}</span>
+              <span className="mn-mail-note">change</span>
+            </button>
 
-                The proof is about ONE thing: that the handle placing this
-                ping is the handle it says. Nothing about the account is read
-                and nothing is kept beside the handle. */}
-            <div className="mn-env">
-              <div className="mn-env-row is-to">
-                <span className="mn-env-lab">to</span>
-                <Face handle={h} size={34} />
-                <span className="mn-env-h">{atHandle(h)}</span>
-              </div>
-              <div className={`mn-env-row is-from${adopted || dm || readyToPlace ? '' : ' is-asking'}`}>
-                <span className="mn-env-lab">from</span>
-                {adopted ? (
-                  /* ── it came from another account ──
-                     The webhook says who actually sent the code, and that
-                     account is now this browser's identity whatever was
-                     typed. The ping is the part that still has a choice. */
-                  <>
-                    <Face handle={adopted.handle} size={34} />
-                    <span className="mn-env-h">{atHandle(adopted.handle)}</span>
-                    <span className="mn-env-note">proved</span>
-                  </>
-                ) : dm ? (
-                  <>
-                    <Face handle={dm.mine} size={34} />
-                    <span className="mn-env-h">{atHandle(dm.mine)}</span>
-                    <span className="mn-env-note">proving</span>
-                  </>
-                ) : readyToPlace ? (
-                  /* Already proved on this device and still holding the
-                     proof, so there is nothing to ask: the row says whose
-                     name it goes out under. */
-                  <>
-                    <Face handle={who.handle} size={34} />
-                    <span className="mn-env-h">{atHandle(who.handle)}</span>
-                    <span className="mn-env-note">you</span>
-                  </>
-                ) : (
-                  /* THE QUESTION THAT WAS MISSING, asked as who you are and
-                     not as another name: the disc is empty until something is
-                     typed, and is never seeded off the recipient. */
-                  <>
-                    <Face handle={meSlow} size={34} resolve={validHandle(meSlow)} />
-                    <div className="mn-env-field">
-                      <HandleField
-                        value={mine} onChange={setMine} onSubmit={next} busy={busy}
-                        autoFocus placeholder="yourhandle" label="your Instagram handle"
-                      />
-                    </div>
-                  </>
-                )}
+            {/* The FROM row. Closed on the letter step and opened on the
+                last one, and opening it is what moves the letter down. The
+                question about you is asked inside the row, in the identity
+                idiom rather than the name field's: a disc that fills in as
+                you type and the handle beside it, so the two handles on this
+                screen can never again be two identical fields two screens
+                apart. The proof is about ONE thing: that the handle placing
+                this ping is the handle it says. Nothing about the account is
+                read and nothing is kept beside the handle. */}
+            <div className="mn-mail-slot" aria-hidden={step !== 2}>
+              <div className="mn-mail-slot-in">
+                <div className={`mn-mail-row is-from${you || dm ? '' : ' is-asking'}`}>
+                  <span className="mn-mail-lab">from</span>
+                  {you ? (
+                    <>
+                      <Face handle={you} size={30} />
+                      <span className="mn-mail-h">{atHandle(you)}</span>
+                      <span className="mn-mail-note">{adopted || proved ? 'proved' : 'you'}</span>
+                    </>
+                  ) : dm ? (
+                    <>
+                      <Face handle={dm.mine} size={30} />
+                      <span className="mn-mail-h">{atHandle(dm.mine)}</span>
+                      <span className="mn-mail-note">proving</span>
+                    </>
+                  ) : (
+                    /* THE QUESTION THAT WAS MISSING, asked as who you are and
+                       not as another name: the disc is empty until something
+                       is typed, and is never seeded off the recipient. */
+                    <>
+                      <Face handle={meSlow} size={30} resolve={validHandle(meSlow)} />
+                      <div className="mn-mail-field">
+                        <HandleField
+                          value={mine} onChange={setMine} onSubmit={next} busy={busy}
+                          autoFocus={step === 2} placeholder="yourhandle" label="your Instagram handle"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {adopted ? (
-              <Prose className="mn-copy">
-                the code came from <span className="sg-h">{atHandle(adopted.handle)}</span>. place
-                it under that name?
-              </Prose>
-            ) : dm ? (
-              <DmCode
-                code={dm.code}
-                note={(
-                  <Label tone="dim" className="mn-prove-for">
-                    proving <span className="sg-h">{atHandle(dm.mine)}</span>
-                  </Label>
-                )}
-              />
+            {step === 1 ? (
+              <Paper
+                className="mn-mail-paper"
+                dateline={dated}
+                tone={line.trim() ? '' : 'empty'}
+              >
+                <LetterField
+                  value={line} onChange={setLine} max={140} autoFocus rows={3}
+                  placeholder="I have wanted to say this since the second week of term."
+                />
+              </Paper>
             ) : (
-              <Prose className="mn-copy mn-prove-note">
-                {readyToPlace ? 'goes out under your @. sixty days.'
-                  : mineOk ? 'one DM from that account proves it. nothing else is read.'
-                  : me && me === h ? 'that is the name you are placing it on.'
-                  : 'your @, not theirs. one DM from it proves it.'}
-              </Prose>
+              /* The letter, as it will go: the same paper, read rather than
+                 written, and pressing it reopens it. */
+              <Paper
+                className="mn-mail-paper is-read"
+                dateline={{ lead: dated.lead, stamp: 'change' }}
+                role="button" tabIndex={0}
+                aria-label="the line. change it"
+                onClick={() => goStep(1)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goStep(1) } }}
+              >
+                <Prose className="mn-mail-line">{line.trim()}</Prose>
+              </Paper>
             )}
           </div>
         )}
 
-        <div className="mn-said" role="status" aria-live="polite">{said || (step === 0 ? looking : '')}</div>
+        <div className="mn-said" role="status" aria-live="polite">
+          {said || (step === 0 ? looking : step === 1 ? floorFor(line)
+            : adopted ? `the code came from ${atHandle(adopted.handle)}. place it under that name?`
+            : dm ? ''
+            : readyToPlace ? 'sixty days, under your @.'
+            : mineOk ? 'one DM from that account proves it’s yours.'
+            : me && me === h ? 'that is the name you are placing it on.'
+            : 'your @, not theirs.')}
+        </div>
       </div>
 
       <div className="mn-foot">
-        {adopted ? (
+        {step === 2 && adopted ? (
           <>
             <Pill tone="light" wide disabled={placing}
               onClick={() => send(adopted.handle, adopted.proof)}>
@@ -521,19 +603,19 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
               not that account
             </button>
           </>
-        ) : dm ? (
-          /* The one way out while a code is live. It clears the stashed record
-             too, so a code abandoned here is not resumed on the next visit. */
-          <button type="button" className="wl-quiet" onClick={drop}>
-            start this again
-          </button>
+        ) : step === 2 && dm ? (
+          /* The code takes the foot: it is the act on this step while it is
+             out. The one way out of it clears the stashed record too, so a
+             code abandoned here is not resumed on the next visit. */
+          <>
+            <DmCode code={dm.code} status={noteText} />
+            <button type="button" className="wl-quiet" onClick={drop}>
+              start this again
+            </button>
+          </>
         ) : (
           <>
-            {step > 0 ? (
-              <button type="button" className="wl-quiet" onClick={() => setStep(step - 1)}>
-                {step === 1 ? 'a different name' : 'change what it says'}
-              </button>
-            ) : cardUp ? (
+            {cardUp ? (
               <button type="button" className="wl-quiet" onClick={fix}>not them? change it</button>
             ) : null}
             <Pill

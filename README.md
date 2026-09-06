@@ -41,7 +41,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0038, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0041, in order. 0029 onward is the rebuild; 0038 is the audit
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook

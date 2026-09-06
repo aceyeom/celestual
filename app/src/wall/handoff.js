@@ -111,11 +111,16 @@ export async function startHandoff(handle) {
 // On success the proof is spent once, here, against
 // celestual_user_bind_handle, which is the only writer of handle_verified_at
 // anywhere in the product.
+//
+// While it is still pending, `note` carries what the relay has said about the
+// last DM to arrive under this handle (0041): 'wrong_code' when the digits
+// matched nothing, 'expired_code' when they matched a code that had lapsed.
+// The screen puts words to it under the code that should have been sent.
 export async function pollHandoff({ token, proofHash, proof }) {
   try {
     const out = await pollVerification(token, proofHash)
     if (out?.status === 'expired') return { ok: false, error: 'expired' }
-    if (out?.status !== 'verified') return { ok: false, pending: true }
+    if (out?.status !== 'verified') return { ok: false, pending: true, note: out?.note || '' }
     // Whoever DMd the live code is the identity, whatever was typed into the
     // field first. Migration 0012: the code is a pure correlation id.
     const handle = out.handle || ''

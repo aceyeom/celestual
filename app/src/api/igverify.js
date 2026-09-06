@@ -101,21 +101,24 @@ export async function startVerification(handle) {
 // What is left is the path that actually proves it: mint a code, DM it, and let
 // Meta's webhook say who really sent it.
 
-// Poll for the DM result. Returns { status, handle }:
+// Poll for the DM result. Returns { status, handle, note }:
 //   status: 'pending' | 'verified' | 'expired' | 'none'
 //   handle: the adopted @ (the Meta-authenticated account that DM'd), present
-//           only once status is 'verified' — the browser adopts it as identity.
-// Never throws — a transient failure reads as 'pending' so the UI keeps watching.
+//           only once status is 'verified'. The browser adopts it as identity.
+//   note:   while pending, what the relay said about the last DM that arrived
+//           under this handle and was not this code (migration 0041):
+//           'wrong_code' or 'expired_code'. Empty otherwise.
+// Never throws. A transient failure reads as 'pending' so the UI keeps watching.
 export async function pollVerification(token, proofHash) {
   try {
     const { data, error } = await supabase.rpc('celestual_poll_ig_verification', {
       p_token: token,
       p_proof_hash: proofHash,
     })
-    if (error) return { status: 'pending', handle: null }
-    return { status: data?.status || 'pending', handle: data?.handle || null }
+    if (error) return { status: 'pending', handle: null, note: '' }
+    return { status: data?.status || 'pending', handle: data?.handle || null, note: data?.note || '' }
   } catch {
-    return { status: 'pending', handle: null }
+    return { status: 'pending', handle: null, note: '' }
   }
 }
 

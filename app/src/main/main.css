@@ -139,59 +139,106 @@
 }
 .mn-chip:hover { color: var(--chalk); border-color: rgba(244, 241, 234, 0.2); }
 
-/* ── the proof ──
-   The code, large enough to read off a screen while typing it into another
-   app, in the identifier face because that is what it is. */
+/* ── the proof, on its own (Prove.jsx) ──
+   The sky's sign in: the field, or the code where the field was. */
 .mn-prove { align-items: stretch; }
+.mn-prove-for { text-align: center; }
 
-/* ── the envelope ──
-   Place.jsx, the third step. Both parties on one object: TO, the name from
-   the first step with its face, and FROM, which is you. The question about
-   you is asked inside the FROM row, in the identity idiom rather than the
-   name field's: a disc that fills in as you type and the handle beside it,
-   so the two handles on this screen can never again be two identical fields
-   two screens apart. The row is the sky's person row at the field's scale. */
-.mn-env {
-  display: flex; flex-direction: column;
-  border: 1px solid var(--hair-soft); border-radius: var(--r-card);
-  overflow: hidden;
+/* ── the bar ──
+   Place.jsx `Steps`. Three segments over the heading, one per step: spent,
+   lit, still to come. Each is a button the height of a finger, drawing a
+   two pixel line through its middle, so the target is a target and the
+   drawing is a hairline. Compact and left aligned, at the width of a label
+   rather than of the column: it is a mark above the heading, not a header. */
+.mn-steps { display: flex; gap: 6px; width: 168px; margin: 0 0 -6px; }
+.mn-steps-seg {
+  position: relative; flex: 1 1 0; height: 14px; padding: 0; border: 0;
+  background: none; cursor: default;
 }
-.mn-env-row {
+.mn-steps-seg::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 6px; height: 2px;
+  border-radius: 2px;
+  background: rgba(244, 241, 234, 0.14);
+  transition: background 320ms var(--ease);
+}
+.mn-steps-seg.is-done::after { background: rgba(244, 241, 234, 0.42); }
+.mn-steps-seg.is-on::after { background: var(--chalk); }
+.mn-steps-seg:not(:disabled):hover::after { background: rgba(244, 241, 234, 0.7); }
+.mn-steps-seg:focus-visible { outline: none; }
+.mn-steps-seg:focus-visible::after { background: var(--chalk); }
+
+/* ── the mail ──
+   Place.jsx, from the second step on. One object shaped like a piece of
+   mail: TO, then FROM once it is asked, then the letter. The rows are the
+   sky's person row at the field's scale, set on hairlines rather than in a
+   box, the way the head of an email is. Every part of it that has been
+   answered is a way back: the TO row is a button, the letter is a button,
+   and both say so with one dim word at their edge. */
+.mn-mail { display: flex; flex-direction: column; animation: wl-fade 340ms var(--ease) both; }
+.mn-mail-row {
   display: flex; align-items: center; gap: 12px;
-  min-height: 60px; padding: 11px 14px;
+  width: 100%; min-height: 52px; padding: 9px 2px;
+  border-bottom: 1px solid var(--hair-soft);
+  color: var(--chalk); text-align: left;
 }
-.mn-env-row + .mn-env-row { border-top: 1px solid var(--hair-soft); }
-.mn-env-row.is-from { background: rgba(244, 241, 234, 0.028); }
-.mn-env-lab {
-  flex: 0 0 42px;
+.mn-mail-lab {
+  flex: 0 0 40px;
   font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ash-dim);
 }
-.mn-env-h {
+.mn-mail-h {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--f-id); font-size: 15.5px; letter-spacing: -0.01em;
+  font-family: var(--f-id); font-size: 15px; letter-spacing: -0.01em;
   color: var(--chalk);
 }
-.mn-env-note {
+.mn-mail-note {
   margin-left: auto; flex: 0 0 auto;
   font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ash-dim);
+  transition: color 200ms var(--ease);
 }
+button.mn-mail-row:hover .mn-mail-note, button.mn-mail-row:focus-visible .mn-mail-note { color: var(--ash); }
+button.mn-mail-row:focus-visible { outline: none; }
+button.mn-mail-row:focus-visible .mn-mail-h { text-decoration: underline; text-underline-offset: 3px; }
 /* the field for you, inside its row: the underline stays, the type comes
    down to the row's scale, and the disc beside it is the answer's face */
-.mn-env-field { flex: 1 1 auto; min-width: 0; }
-.mn-env-field .wl-field { padding-bottom: 5px; }
-.mn-env-field .wl-field input, .mn-env-field .wl-at { font-size: 17px; }
-.mn-env-row.is-asking .wl-face { opacity: 0.7; }
-.mn-prove-note { margin-top: 2px; }
-/* ── the DM code is drawn by parts.DmCode now (wall.css, `.wl-dm`) ──
-   What was here was a second copy of that block under a name /copy had already
-   taken: `.mn-code` is ALSO the six-digit code on the mail screen, 170 lines
-   further down this file, where it is set at 54px with `white-space: nowrap`.
-   Both rules matched both screens, the later one won, and the proof step's
-   code and its label were being drawn by a rule written for a different code
-   on a different page. One block, one name, one place. */
-.mn-prove-for { text-align: center; }
+.mn-mail-field { flex: 1 1 auto; min-width: 0; }
+.mn-mail-field .wl-field { padding-bottom: 4px; }
+.mn-mail-field .wl-field input, .mn-mail-field .wl-at { font-size: 16px; }
+.mn-mail-row.is-asking .wl-face { opacity: 0.7; }
+
+/* The FROM row's slot. Shut on the letter step and open on the last, and
+   the opening is what moves the letter down: a grid row that grows from
+   nothing to its content, so the paper under it is pushed rather than
+   jumped. Shut, the row is out of the tab order too. */
+.mn-mail-slot { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 380ms var(--ease); }
+.mn-mail-slot-in { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 0s 380ms; }
+.mn-mail.is-you .mn-mail-slot { grid-template-rows: 1fr; }
+.mn-mail.is-you .mn-mail-slot-in { visibility: visible; transition-delay: 0s; }
+
+/* The letter. The same paper on both steps, written on one and read on the
+   other, so the object a person sees on the last step is the one they wrote
+   on. Read, it is a button: it lifts a hair under the pointer and the stamp
+   in its head says what pressing it does. */
+.mn-mail-paper { margin-top: 16px; padding: 15px 18px 17px; }
+.mn-mail-paper .wl-paper-head { margin-bottom: 12px; padding-bottom: 9px; }
+.mn-mail-paper .wl-letterfield textarea { font-size: 16.5px; line-height: 1.52; }
+.mn-mail-paper.is-read { cursor: pointer; transition: transform 260ms var(--ease); }
+.mn-mail-paper.is-read:hover { transform: translateY(-1px); }
+.mn-mail-paper.is-read:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.7); outline-offset: 3px; }
+.mn-mail-line {
+  min-height: calc(3 * 1.52 * 16.5px);
+  font-size: 16.5px; line-height: 1.52; color: var(--paper-ink);
+  overflow-wrap: anywhere;
+}
+
+/* the code, when it is the act: it takes the foot at the column's width */
+.mn-foot > .wl-dm { align-self: stretch; width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mn-mail { animation: none; }
+  .mn-mail-slot, .mn-mail-slot-in, .mn-mail-paper.is-read, .mn-steps-seg::after { transition: none; }
+}
 
 /* ── it is out ── */
 .mn-placed-mark { display: flex; justify-content: center; padding: 10px 0 4px; }
