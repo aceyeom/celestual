@@ -88,7 +88,7 @@ export function useSkyAvoid() {
   }, [])
 }
 
-export default function Ground({ pace = 'drift', lit = true, still = false, className = '' }) {
+export default function Ground({ pace = 'drift', lit = true, still = false, tint = 'main', className = '' }) {
   const canvas = useRef(null)
   const sky = useRef(null)
   const field = useRef(null)
@@ -99,7 +99,7 @@ export default function Ground({ pace = 'drift', lit = true, still = false, clas
   useEffect(() => {
     const cv = canvas.current
     if (!cv) return undefined
-    const f = mountField(cv, { pace, sky: sky.current })
+    const f = mountField(cv, { pace, sky: sky.current, tint })
     field.current = f
 
     // The hand. One pointer listener, feeding the field's parallax. Under
@@ -121,14 +121,14 @@ export default function Ground({ pace = 'drift', lit = true, still = false, clas
     }
     // `pace` is fed through below; remounting the field to change it would
     // reshuffle nothing, but it would restart the drift.
-  }, [still])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [still, tint])   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (field.current) field.current.pace(pace)
   }, [pace])
 
   return (
-    <div className={`wl-ground ${className}`} aria-hidden="true">
+    <div className={`wl-ground is-${tint} ${className}`} aria-hidden="true">
       <canvas ref={sky} className="wl-sky" />
       <div className="wl-halo" />
       <canvas ref={canvas} className={`wl-starfield${lit ? '' : ' is-hidden'}`} />

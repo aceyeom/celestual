@@ -216,6 +216,43 @@ export function peekHandle(raw) {
   return memo.get(handle) || null;
 }
 
+// ── learned, not asked ───────────────────────────────────────────────────────
+// The wall's search (wall_search, 0040) answers with the resolver's own fields
+// for every name it lists: the display name, the badge, the path to the
+// stored face. Those are the same facts a peek would fetch, one request per
+// row, so a row that arrives already known is written into the memo here and
+// every Face and Who on the screen draws from it without a request.
+//
+// Only a row the resolver actually saw is learned (`known`). A name on the
+// wall the resolver never resolved draws its monogram, which is the designed
+// state, and is not marked found on the strength of being on a wall.
+//
+// This is the ONLY way into the memo that is not the resolver's own answer,
+// and it only ever carries names off the public index. See the migration for
+// why the cache itself is never listed.
+const STORAGE = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+
+// The public URL of a stored face, from the path the database keeps. The
+// resolver builds the same URL server side (celestual-resolve, avatarUrl);
+// this is the browser's copy for callers handed a path rather than a URL.
+export function avatarUrl(path) {
+  const p = String(path || '').trim();
+  return p && STORAGE ? `${STORAGE}/storage/v1/object/public/avatars/${p}` : '';
+}
+
+export function learnHandle(r) {
+  const handle = normHandle(r?.handle);
+  if (!handle || !r?.known || memo.has(handle)) return;
+  memo.set(handle, {
+    state: 'found',
+    handle,
+    name: String(r.name || ''),
+    verified: !!r.verified,
+    avatar: String(r.avatar || ''),
+  });
+  missed.delete(handle);
+}
+
 // What a person is about to act on, read back to them. Used by the confirm
 // steps: 'missing' is the one that changes the copy on the button.
 export function isMissing(r) {

@@ -1011,3 +1011,19 @@ this order.
 Then, on the desk: settings, and confirm the release gate reads as you mean
 it. The first sign in link you mint is the test of the whole path: open it in
 a private window and the sky should be yours.
+
+## The wall suggests (migration 0040)
+
+One migration and the app. Nothing to redeploy on the function side.
+
+1. **Apply `0040_the_wall_suggests.sql`.** `supabase db push`, or paste it
+   into the SQL editor. It re-emits `wall_search` (from the first character,
+   ranked, with the resolver's name and face joined on for every name it
+   lists) and adds `wall_pulse`. Both are readable by the browser; both read
+   the public index and nothing else. Until it is applied the wall's search
+   still works on the old function, without faces in one request, and the
+   front door shows no notice, because there is no pulse to read.
+2. **Deploy the app.** Vercel, as usual. The front door's bar no longer
+   links to the wall: the notice at the foot of the fold does, while the
+   campus is open, and it comes down on its own when the desk closes the
+   campus.

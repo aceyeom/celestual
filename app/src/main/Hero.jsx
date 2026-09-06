@@ -27,6 +27,7 @@ import {
 import { normHandle, validHandle } from '../wall/data.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import Scene from './Scene.jsx'
+import WallNotice from './Notice.jsx'
 import './hero.css'
 
 export default function Hero({ go, who, still = false }) {
@@ -82,11 +83,13 @@ export default function Hero({ go, who, still = false }) {
       <div className="hm-fold">
       {/* ── the bar ──
           The brand, which is the same lockup every bar in the product
-          carries. Then the wall, and you. */}
+          carries, and you. Nothing else: the wall used to be a link here, and
+          a campus event is not a destination the front door carries on every
+          visit forever. It is a notice at the foot of the fold now
+          (Notice.jsx), up while the wall is. */}
       <header className="hm-top hm-in" style={{ '--d': '0ms' }}>
         <Brand href="/" onClick={home} className="hm-home" />
         <nav className="hm-nav" aria-label="celestual">
-          <a className="hm-navlink" href="/berkeley">the wall</a>
           <Me who={who} onClick={() => go('sky')} />
         </nav>
       </header>
@@ -136,6 +139,12 @@ export default function Hero({ go, who, still = false }) {
           <Scene still={still} />
         </div>
       </section>
+
+      {/* ── the notice ──
+          A flyer pinned at the foot of the door while a campus wall is open.
+          Last into the fold, after the object, and only when there is a wall
+          to point at. */}
+      <WallNotice className="hm-in" style={{ '--d': '640ms' }} />
       </div>
 
       {/* ── the foot ──

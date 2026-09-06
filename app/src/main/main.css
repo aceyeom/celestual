@@ -143,12 +143,47 @@
    The code, large enough to read off a screen while typing it into another
    app, in the identifier face because that is what it is. */
 .mn-prove { align-items: stretch; }
-.mn-prove-what {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 0;
+
+/* ── the envelope ──
+   Place.jsx, the third step. Both parties on one object: TO, the name from
+   the first step with its face, and FROM, which is you. The question about
+   you is asked inside the FROM row, in the identity idiom rather than the
+   name field's: a disc that fills in as you type and the handle beside it,
+   so the two handles on this screen can never again be two identical fields
+   two screens apart. The row is the sky's person row at the field's scale. */
+.mn-env {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--hair-soft); border-radius: var(--r-card);
+  overflow: hidden;
 }
+.mn-env-row {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 60px; padding: 11px 14px;
+}
+.mn-env-row + .mn-env-row { border-top: 1px solid var(--hair-soft); }
+.mn-env-row.is-from { background: rgba(244, 241, 234, 0.028); }
+.mn-env-lab {
+  flex: 0 0 42px;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ash-dim);
+}
+.mn-env-h {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--f-id); font-size: 15.5px; letter-spacing: -0.01em;
+  color: var(--chalk);
+}
+.mn-env-note {
+  margin-left: auto; flex: 0 0 auto;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ash-dim);
+}
+/* the field for you, inside its row: the underline stays, the type comes
+   down to the row's scale, and the disc beside it is the answer's face */
+.mn-env-field { flex: 1 1 auto; min-width: 0; }
+.mn-env-field .wl-field { padding-bottom: 5px; }
+.mn-env-field .wl-field input, .mn-env-field .wl-at { font-size: 17px; }
+.mn-env-row.is-asking .wl-face { opacity: 0.7; }
+.mn-prove-note { margin-top: 2px; }
 /* ── the DM code is drawn by parts.DmCode now (wall.css, `.wl-dm`) ──
    What was here was a second copy of that block under a name /copy had already
    taken: `.mn-code` is ALSO the six-digit code on the mail screen, 170 lines

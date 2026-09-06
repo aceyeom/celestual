@@ -82,8 +82,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
-import { Sparkle, Halftone } from '../art.jsx'
-import { wall, liveCount, atHandle, rand, wallError, loadWall } from '../data.js'
+import { Sparkle, Campanile } from '../art.jsx'
+import { wall, liveCount, atHandle, rand, wallError, loadWall, term } from '../data.js'
 import { getState, patch } from '../store.js'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -483,14 +483,18 @@ export default function Wall({ go, reduce, rev }) {
       <TopBar go={go} at="wall" onMark={() => window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })} />
 
       {/* ── the masthead ──
-          The poster's title block: the Didone with its terminal period, one
-          sparkle off the top-right shoulder, the dotted sphere sunk into the
-          corner. A count is the only fact about this wall worth printing —
-          because a thin wall should look thin — and everything else that used
-          to sit here was decoration wearing an information costume. */}
+          The poster's title block: the Didone with its terminal period, and
+          standing in the corner, the Campanile, with its lantern lit. It
+          replaced a dotted sphere and a sparkle off the title's shoulder,
+          which were the reference poster's ornaments and said nothing about
+          where this wall was; the tower is the one silhouette that says
+          "berkeley" before the type does, and its lantern is the masthead's
+          light now (art.jsx). A count and the term are the only facts about
+          this wall worth printing, because a thin wall should look thin, and
+          everything else that used to sit here was decoration wearing an
+          information costume. */}
       <div className="wl-mast">
-        <Sparkle size={26} className="wl-mast-spark" twinkle={!reduce} delay={900} />
-        <Halftone size={92} grid={20} className="wl-mast-ball" />
+        <Campanile width={64} className="wl-mast-tower" twinkle={!reduce} />
         <Display size="xl" className="wl-mast-title">
           A wall of<br />unforgettable<br />berkeley bears.
         </Display>
@@ -502,7 +506,7 @@ export default function Wall({ go, reduce, rev }) {
             )}
           </Label>
         ) : (
-          <Label tone="dim" className="wl-mast-meta">{letters} letters</Label>
+          <Label tone="dim" className="wl-mast-meta"><b>{letters}</b> letters · {term()}</Label>
         )}
       </div>
 

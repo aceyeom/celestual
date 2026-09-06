@@ -205,6 +205,18 @@ Idempotent migrations, applied in order:
   a list anybody has to maintain. **Tested by `scripts/sql/test-identity.sql`,
   54 assertions, through `scripts/verify-migrations.sh --test`.**
 
+- `migrations/0040_the_wall_suggests.sql`: **the wall suggests, off the
+  public index and nothing else.** `wall_search` answers from the first
+  character, ranks an exact handle first, then the names that start with what
+  was typed, then the ones that contain it, and carries the resolver's own
+  fields for each name (`known`, `display_name`, `is_verified`, `avatar_path`),
+  so a list of eight people is one request and the browser learns the faces
+  from it. `wall_pulse(campus)` is new: open or not, and the names and letters
+  on the wall, for the front door's notice. The resolver's cache is never
+  listed on its own (it is the list of everybody who has been pinged); the
+  profile fields are joined onto the index, never the other way round.
+  Re-runnable. Tests: `scripts/sql/test-wall.sql`, sections 12a and 12c.
+
 - `migrations/0039_the_desk_second_sitting.sql`: **the desk, for a team, and
   one door closed.** The opt-out (`celestual_suppress`) takes the DM proof; the
   one-argument form is dropped. `celestual_settings` grows a whitelist the desk

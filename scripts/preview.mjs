@@ -414,11 +414,30 @@ const DESK = {
 
 const RPC = {
   celestual_whoami: () => whoami(),
+  // 0040: from the first character, exact then prefix then contains, with the
+  // resolver's answer joined on for the names the fixture resolver knows.
   wall_search: (b) => {
-    const q = String(b.p_query || '').toLowerCase()
+    const q = String(b.p_query || '').toLowerCase().replace(/^@/, '')
+    if (!q) return []
+    const rank = (h) => (h === q ? 0 : h.startsWith(q) ? 1 : 2)
     return INDEX.filter((r) => r.target_handle.includes(q))
-      .map((r) => ({ handle: r.target_handle, letters: r.letters, last_at: r.last_at, campus: 'berkeley' }))
+      .sort((a, c) => rank(a.target_handle) - rank(c.target_handle) || c.letters - a.letters)
+      .slice(0, 12)
+      .map((r) => {
+        const row = HANDLES.find(([x]) => x === r.target_handle)
+        return {
+          handle: r.target_handle, letters: r.letters, last_at: r.last_at, campus: 'berkeley',
+          known: !!row, display_name: row ? row[1] : null, is_verified: row ? !!row[2] : false,
+          avatar_path: row && FACES[r.target_handle] ? `ig/${r.target_handle}.jpg` : null,
+        }
+      })
   },
+  // The front door's notice reads this.
+  wall_pulse: () => ({
+    ok: true, campus: 'berkeley', name: 'UC Berkeley', open: true,
+    names: INDEX.length, letters: INDEX.reduce((n, r) => n + r.letters, 0),
+    last_at: INDEX[0] ? INDEX[0].last_at : null,
+  }),
   wall_letters_for: (b) => ({
     ok: true, open: OPEN, handle: b.p_handle,
     letters: lettersFor(String(b.p_handle || '').replace(/^@/, ''), OPEN),
@@ -471,6 +490,19 @@ async function fulfil(route) {
     return answer()
   }
 
+  // A stored face off the public bucket, by the path the search carries: the
+  // fixture's swatch for the two handles that have one, and a 404 for the
+  // rest, which draws the monogram under it.
+  const face = url.match(/\/storage\/v1\/object\/public\/avatars\/ig\/([a-z0-9._]+)\.jpg/)
+  if (face) {
+    const src = FACES[face[1]]
+    if (!src) return route.fulfill({ status: 404, body: '' })
+    return route.fulfill({
+      status: 200, contentType: 'image/svg+xml',
+      body: decodeURIComponent(src.replace(/^data:image\/svg\+xml;utf8,/, '')),
+    })
+  }
+
   // The public index, read straight off the view.
   if (url.includes('/rest/v1/wall_index')) {
     return route.fulfill({ json: INDEX })
@@ -517,6 +549,10 @@ const ROUTES = [
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },
+  // the third step, the envelope: asked of a browser that knows nobody, and
+  // shown to one that has already proved
+  { label: 'place-you',       path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill', verified: false },
+  { label: 'place-you-known', path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill' },
   { label: 'sky',           path: '/sky' },
   // A standing ping, opened: the card, and the two things you can do to it.
   { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },
@@ -530,6 +566,10 @@ const ROUTES = [
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
+  // 0040: the names off the index under the field while a handle is still
+  // being typed, and the search from its first character
+  { label: 'write-suggest', path: '/berkeley/write', type: { into: ".wl-field input", text: 'a' }, draft: null },
+  { label: 'find-typed',    path: '/berkeley/find', type: { into: ".wl-field input", text: 'a' } },
   { label: 'gate',          path: '/berkeley/gate', open: false },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },

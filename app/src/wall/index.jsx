@@ -286,7 +286,7 @@ export default function WallApp() {
 
   return (
     <div className="wl-root" data-route={route.name}>
-      <Ground pace={mode} lit={lit} still={reduce} />
+      <Ground pace={mode} lit={lit} still={reduce} tint="berkeley" />
 
       {/* Nothing is mounted under the intro until it starts to lift, and
           then everything is: the wall's own cascade runs while the black is

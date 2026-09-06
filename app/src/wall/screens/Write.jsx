@@ -43,10 +43,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
-  HandleField, LetterField, HandleCard, useResolver,
+  HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots, Sparkle } from '../art.jsx'
-import { normHandle, validHandle, atHandle, dateline } from '../data.js'
+import { normHandle, validHandle, atHandle, dateline, hash } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -62,6 +62,16 @@ const MIN_BODY = 30
 // This said 320, so the last forty characters of a full letter were shown on
 // the posted screen and cut off the wall without a word to the writer.
 const MAX_BODY = 280
+
+// The example under the empty card, and it is set on that campus: a place a
+// person there has actually stood. One line per handle rather than a rotation
+// on a clock, so the same name gets the same example twice.
+const EXAMPLES = [
+  'You gave me your umbrella outside Wheeler and walked home in it. I still have it.',
+  'You sat two rows ahead in Dwinelle all semester and never once turned round. I noticed anyway.',
+  'You held the door at Moffitt at two in the morning and asked if I was okay. I was not, and then I was.',
+  'You were the one singing on the 51B that night. I wanted the song to be about me.',
+]
 
 export default function Write({ to: prefill, go, back }) {
   const draft = getState().draft || {}
@@ -94,6 +104,14 @@ export default function Write({ to: prefill, go, back }) {
 
   // The card under the handle field: peeks while typing, asks on the press.
   const them = useResolver(to)
+  // And under that, the names already on the wall that match what is typed,
+  // until the card has the person: a list under a settled card would list
+  // them twice. Pressing a row types that handle.
+  const sug = useSuggest(to, {
+    skip: step !== 0 || (them.at.state === 'found' && them.at.handle === h),
+    exclude: h,
+    onPick: (t) => setTo(t.handle),
+  })
   async function next() {
     if (!ok[step] || asking) return
     if (step === 0) {
@@ -147,12 +165,14 @@ export default function Write({ to: prefill, go, back }) {
             <HandleField
               value={to} onChange={setTo} onSubmit={next}
               autoFocus size="lg" placeholder="theirhandle"
+              onKeyDown={sug.keyDown}
             />
             {/* the account, under the line. A letter addressed to a mistyped
                 handle is a letter about somebody that nobody can ever find, and
                 this is the only step where that is still fixable. Pressing the
                 person is the same act as the pill below. */}
             <HandleCard at={them.at} onSelect={next} />
+            <Suggest sug={sug} />
             <Label tone="dim" className="wl-write-note">
               {/* A name that has come off the wall is refused by the schema
                   rather than by this screen: wall_write returns 'removed' and
@@ -170,7 +190,7 @@ export default function Write({ to: prefill, go, back }) {
             >
               <LetterField
                 value={body} onChange={setBody} max={MAX_BODY} autoFocus
-                placeholder="You gave me your umbrella outside Wheeler and walked home in it. I still have it."
+                placeholder={EXAMPLES[hash(h || 'wheeler') % EXAMPLES.length]}
               />
             </Paper>
             {/* One line under the card, and it is the same line whether the

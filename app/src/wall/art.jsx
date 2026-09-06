@@ -17,7 +17,8 @@
 //
 // The five primitives, and where the reference puts each one:
 //   Sparkle    the four-point star, top-right of the poster and beside the title
-//   Halftone   the dotted sphere in the poster's bottom corner
+//   Halftone   the dotted sphere in the poster's bottom corner (kept; the
+//              wall's masthead carries the Campanile now, below)
 //   Orrery     the ring system the journey screen opens on, rebuilt as a
 //              readout: one ring per ping, and the moon is where the clock is
 //   Bloom      the soft blurred mass the modal is built around
@@ -206,6 +207,95 @@ export function Halftone({ size = 96, grid = 20, className = '', style }) {
     <svg className={`wl-halftone ${className}`} style={style} width={size} height={size}
       viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       <path d={dots.join('')} fill="currentColor" fillRule="evenodd" />
+    </svg>
+  )
+}
+
+// ── the campanile ───────────────────────────────────────────────────────────
+// The wall's own object, where the dotted sphere used to sit in the corner of
+// the masthead. The sphere was the reference poster's ornament and it said
+// nothing about where the wall was; this is the one silhouette anybody who
+// has stood on that campus knows from across the bay, drawn the way the rest
+// of the art is drawn: in hairlines, from a handful of numbers, no asset.
+//
+// A front elevation of Sather Tower, simplified to what reads at sixty pixels
+// wide: the plinth, the shaft with its corner pilasters and a run of slit
+// windows, the clock, the observation deck's balustrade, the belfry with its
+// three arches, the cornice and the steep pyramid roof. At the apex, the
+// lantern: the wall's one sparkle, in the campus's gold, with a bloom behind
+// it. The tower is lit at night, and that light is the masthead's light now.
+//
+// Strokes are one device pixel whatever the size (vector-effect), so it is a
+// line drawing at every scale and never a filled glyph.
+export function Campanile({ width = 64, lit = true, twinkle = false, className = '', style }) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
+  // the belfry's three arches, and the shaft's slit windows
+  const arches = [40, 47.25, 54.5].map((x) => `M${x} 104V73A3.25 3.25 0 0 1 ${x + 6.5} 73V104`).join('')
+  const slits = [150, 186, 222, 258].map((y) => `M48.4 ${y}h3.2v9h-3.2z`).join('')
+  const balusters = Array.from({ length: 9 }, (_, i) => `M${35 + i * 3.75} 111.5v4.5`).join('')
+  return (
+    <svg
+      className={`wl-campanile${lit ? ' is-lit' : ''} ${className}`} style={style}
+      width={width} height={width * 3} viewBox="0 0 100 300"
+      aria-hidden="true" focusable="false"
+    >
+      <defs>
+        <radialGradient id={`${uid}g`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.55" />
+          <stop offset="45%" stopColor="var(--gold)" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${uid}f`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="82%" stopColor="#fff" stopOpacity="1" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <mask id={`${uid}m`}>
+          <rect x="0" y="0" width="100" height="300" fill={`url(#${uid}f)`} />
+        </mask>
+      </defs>
+      {/* the light at the top, behind the drawing */}
+      {lit && <circle className="wl-campanile-bloom" cx="50" cy="16" r="22" fill={`url(#${uid}g)`} />}
+      <g
+        className="wl-campanile-line" mask={`url(#${uid}m)`}
+        fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      >
+        {/* the roof: a steep pyramid, its ridge, and the cornice it sits on */}
+        <path d="M50 16L32.5 60H67.5Z" />
+        <path d="M50 16V60" opacity="0.45" />
+        <path d="M30 60H70M31 64H69" />
+        {/* the belfry: three arches between the shaft's edges */}
+        <path d="M36 64V110M64 64V110" />
+        <path d={arches} />
+        {/* the observation deck: a ledge and its balusters */}
+        <path d="M33 110H67M33 117H67" />
+        <path d={balusters} opacity="0.7" />
+        {/* the clock */}
+        <circle cx="50" cy="134" r="7.5" />
+        <path d="M50 134V128.5M50 134H54" />
+        {/* the shaft: its edges, its corner pilasters, and the slit windows */}
+        <path d="M36 117V282M64 117V282" />
+        <path d="M40.5 117V282M59.5 117V282" opacity="0.4" />
+        <path d={slits} opacity="0.75" />
+        {/* the plinth */}
+        <path d="M30 282H70M27 290H73M27 290V300M73 290V300" />
+      </g>
+      {/* the lantern: SPARK, the same star as everywhere else, in gold, its
+          centre exactly on the roof's apex so the star is the tip of the
+          tower and not a thing floating over it. In its own small viewport
+          rather than under a transform attribute, because the twinkle is a
+          CSS transform and a CSS transform replaces the attribute rather
+          than composing with it: drawn that way the star came up the width
+          of the tower. */}
+      {lit && (
+        <svg x="40" y="6" width="20" height="20" viewBox="0 0 100 100" overflow="visible">
+          <path
+            className={`wl-campanile-lamp wl-spark${twinkle ? ' is-twinkle' : ''}`}
+            d={SPARK} fill="var(--gold)"
+          />
+        </svg>
+      )}
     </svg>
   )
 }

@@ -331,3 +331,27 @@ and the card draws nothing. If it still happens, the actor returned an item
 with an `error` field and no `username` for a real account, which is a miss as
 far as the function can tell. The logs carry the status and the first 300
 bytes of the body for every failed run.
+
+## 10. Suggestions, and what they may list
+
+The wall's search and the composer's handle field suggest names as a person
+types, from the first character: a face, a name, the handle and how many
+letters it carries, the way a search box on a social app fills in under the
+cursor. Those rows come from `wall_search` (0040), which reads the wall's
+public index and joins the resolver's fields onto each name it already knows.
+One request per keystroke for the whole list, held per query for the life of
+the tab, and the browser learns the faces from it (`learnHandle` in
+`app/src/api/handles.js`), so every `Face` on the screen draws without a peek.
+
+**The cache itself is never listed.** `ig_profiles` holds every handle anybody
+has ever committed through a field, and most of those were the targets of
+pings. A typeahead over it would let anyone enumerate who has been pinged one
+letter at a time, which is exactly the fact this product exists to keep. So
+the cache answers only about a handle typed in full (the peek, section 3),
+and suggestions come from the index, which is public on purpose: a name on
+the wall is a name somebody wrote to in public. The profile fields ride on
+those names and never the other way round.
+
+That is also why Main's front door has no suggestions at all. Its field peeks
+the cache for the exact handle typed and offers the person's own history
+(the chips on the place screen), and nothing about anybody else.

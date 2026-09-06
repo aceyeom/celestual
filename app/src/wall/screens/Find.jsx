@@ -7,10 +7,14 @@
 //
 // Two behaviours worth naming:
 //
-//   · It matches on CONTAINS, not on equals. Somebody who half-remembers a
-//     handle, or types the name without the dots, still lands somewhere. An
-//     exact hit is always sorted first, so a person who types their own handle
-//     precisely gets their own row and not a list of near-misses above it.
+//   · It answers from the FIRST CHARACTER, the way a search box on a social
+//     app does, and it matches on CONTAINS, not on equals: somebody who
+//     half-remembers a handle, or types the name without the dots, still
+//     lands somewhere. The server ranks it (0040): an exact hit first, then
+//     the names that start with what was typed, then the rest, so a person
+//     who types their own handle precisely gets their own row and not a list
+//     of near-misses above it. Each row arrives with the resolver's name and
+//     face already on it, one request for the whole list.
 //   · Finding nothing is not a dead end and it is not a sign-up. Nobody is
 //     asked to leave a handle, register an interest or wait for a
 //     notification: the wall has no accounts and cannot tell anybody anything
@@ -41,7 +45,7 @@ export default function Find({ go, back, rev }) {
   const latest = useRef(0)
 
   useEffect(() => {
-    if (q.length < 2) { setFound(null); setAsking(false); return }
+    if (q.length < 1) { setFound(null); setAsking(false); return }
     const seq = ++latest.current
     setAsking(true)
     const t = setTimeout(async () => {
@@ -49,7 +53,7 @@ export default function Find({ go, back, rev }) {
       if (seq !== latest.current) return
       setFound(rows)
       setAsking(false)
-    }, 180)
+    }, 120)
     return () => clearTimeout(t)
   }, [q])
 
@@ -57,8 +61,8 @@ export default function Find({ go, back, rev }) {
   // loaded even when somebody opened this sheet directly off a link.
   useEffect(() => { loadWall() }, [])
 
-  const hits = q.length >= 2 ? (found || []) : top
-  const exact = q.length >= 2 && hits.length > 0 && hits[0].handle === q
+  const hits = q.length >= 1 ? (found || []) : top
+  const exact = q.length >= 1 && hits.length > 0 && hits[0].handle === q
 
   useEffect(() => { patch({ query: q }) }, [q])
 
@@ -91,7 +95,7 @@ export default function Find({ go, back, rev }) {
         </div>
 
         <div className="wl-find-results" role="region" aria-live="polite">
-          {q.length < 2 && (
+          {q.length < 1 && (
             <Label tone="dim" className="wl-find-hint">
               <Sparkle size={9} /> written to most
             </Label>
@@ -112,11 +116,11 @@ export default function Find({ go, back, rev }) {
             />
           ))}
 
-          {q.length >= 2 && asking && !hits.length && (
+          {q.length >= 1 && asking && !hits.length && (
             <Label tone="dim" className="wl-find-hint">looking</Label>
           )}
 
-          {q.length >= 2 && !asking && !hits.length && (
+          {q.length >= 1 && !asking && !hits.length && (
             <div className="wl-find-empty">
               <Label tone="dim">nobody has written to</Label>
               <p className="wl-find-echo">{atHandle(q)}</p>
@@ -136,7 +140,7 @@ export default function Find({ go, back, rev }) {
           <Pill tone="ghost" icon={<Icon name="write" size={15} />} onClick={() => go('write')}>
             write one instead
           </Pill>
-          <Pill tone="ghost" onClick={() => go('remove', q.length >= 2 ? q : '')}>
+          <Pill tone="ghost" onClick={() => go('remove', q.length >= 1 ? q : '')}>
             take a name off
           </Pill>
         </div>
