@@ -14,9 +14,9 @@
 // So it is a notice now, and it is shaped like the thing it is: a piece of
 // paper, pinned up, carrying the wall's own headline, the count, and the way
 // there. It reads wall_pulse (0040) once per tab, and it is only on the door
-// while that says the campus is open and there are names on the wall. When
-// the term ends and the campus closes, it comes down on its own, and nothing
-// on the front door has to be edited.
+// while that says the campus is open. When the term ends and the campus
+// closes, it comes down on its own, and nothing on the front door has to be
+// edited.
 //
 // It is the same paper as a ping, because a flyer on this door is a piece of
 // this product's paper and not a banner. The pin is the campus's gold.
@@ -43,8 +43,14 @@ export default function WallNotice({ className = '', style }) {
     return () => { alive = false }
   }, [])
 
-  if (!p || !p.ok || !p.open || p.names < 1) return null
+  // Up while the campus is open, whatever is on the wall. An open wall with
+  // nothing on it yet is the state the term starts in, and the door is the
+  // one place a person who did not scan a flyer can find it from; hiding
+  // the notice until the first letter would hide the wall exactly when it
+  // most needs somebody to be first.
+  if (!p || !p.ok || !p.open) return null
 
+  const empty = p.names < 1
   const letters = p.letters === 1 ? 'one letter' : `${p.letters} letters`
   const names = p.names === 1 ? 'one name' : `${p.names} names`
 
@@ -55,8 +61,8 @@ export default function WallNotice({ className = '', style }) {
       <span className="hm-notice-lab">on now, at berkeley</span>
       <span className="hm-notice-title">A wall of unforgettable berkeley bears.</span>
       <span className="hm-notice-meta">
-        <span>{letters} to {names}</span>
-        <span className="hm-notice-go">read the wall &#8594;</span>
+        <span>{empty ? 'nothing on it yet' : `${letters} to ${names}`}</span>
+        <span className="hm-notice-go">{empty ? 'write the first' : 'read the wall'} &#8594;</span>
       </span>
     </a>
   )
