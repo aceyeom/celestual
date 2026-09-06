@@ -549,6 +549,10 @@ const ROUTES = [
   { label: 'place',         path: '/place' },
   { label: 'place-card',    path: '/place', type: { into: ".wl-field input", text: 'jules.k' } },
   { label: 'place-named',   path: '/@pilar.echevarria' },
+  // the third step, the envelope: asked of a browser that knows nobody, and
+  // shown to one that has already proved
+  { label: 'place-you',       path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill', verified: false },
+  { label: 'place-you-known', path: '/@pilar.echevarria', type: { into: 'textarea', text: 'i have wanted to say this since the second week of term.' }, press: '.mn-foot .wl-pill' },
   { label: 'sky',           path: '/sky' },
   // A standing ping, opened: the card, and the two things you can do to it.
   { label: 'sky-card',      path: '/sky', press: '.mn-list .wl-row' },

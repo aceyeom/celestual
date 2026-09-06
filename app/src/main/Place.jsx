@@ -135,6 +135,14 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const named = validHandle(h)
   const me = normHandle(mine)
   const mineOk = validHandle(me) && me !== h
+  // The disc beside the field for you draws off the handle a beat after it
+  // is typed, so a name typed in one go asks the cache once and not once per
+  // keystroke.
+  const [meSlow, setMeSlow] = useState(me)
+  useEffect(() => {
+    const t = setTimeout(() => setMeSlow(me), 400)
+    return () => clearTimeout(t)
+  }, [me])
   const w = words(line)
   const lineOk = line.trim().length >= MIN_CHARS && w.length <= MAX_WORDS
 
@@ -341,7 +349,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         <Display size="m" as="h1" className="mn-h" ref={avoid}>
           {step === 0 ? <>Who&rsquo;s on<br />your mind.</>
             : step === 1 ? <>And what<br />you never said.</>
-            : <>One question,<br />asked once.</>}
+            : <>Now you.</>}
         </Display>
 
         {step === 0 ? (
@@ -410,77 +418,91 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
           </div>
         ) : (
           <div className="mn-step mn-prove">
-            {/* The proof, and it is about ONE thing: that the handle placing
-                this ping is the handle it says. Nothing about the account is
-                read and nothing is kept beside the handle. */}
+            {/* ── the envelope ──
+                Both parties on one object, before anything is asked. TO is
+                the name from the first step, with its face; FROM is you. The
+                two handles on this screen used to be two identical fields
+                two screens apart, and the only thing telling them apart was
+                a placeholder, which is how the proof once got started against
+                the recipient. Here the question about you is asked in the
+                identity idiom rather than the name field's: a disc that fills
+                in as you type, the handle beside it, under the word "from",
+                with "to" already filled in above it.
+
+                The proof is about ONE thing: that the handle placing this
+                ping is the handle it says. Nothing about the account is read
+                and nothing is kept beside the handle. */}
+            <div className="mn-env">
+              <div className="mn-env-row is-to">
+                <span className="mn-env-lab">to</span>
+                <Face handle={h} size={34} />
+                <span className="mn-env-h">{atHandle(h)}</span>
+              </div>
+              <div className={`mn-env-row is-from${adopted || dm || readyToPlace ? '' : ' is-asking'}`}>
+                <span className="mn-env-lab">from</span>
+                {adopted ? (
+                  /* ── it came from another account ──
+                     The webhook says who actually sent the code, and that
+                     account is now this browser's identity whatever was
+                     typed. The ping is the part that still has a choice. */
+                  <>
+                    <Face handle={adopted.handle} size={34} />
+                    <span className="mn-env-h">{atHandle(adopted.handle)}</span>
+                    <span className="mn-env-note">proved</span>
+                  </>
+                ) : dm ? (
+                  <>
+                    <Face handle={dm.mine} size={34} />
+                    <span className="mn-env-h">{atHandle(dm.mine)}</span>
+                    <span className="mn-env-note">proving</span>
+                  </>
+                ) : readyToPlace ? (
+                  /* Already proved on this device and still holding the
+                     proof, so there is nothing to ask: the row says whose
+                     name it goes out under. */
+                  <>
+                    <Face handle={who.handle} size={34} />
+                    <span className="mn-env-h">{atHandle(who.handle)}</span>
+                    <span className="mn-env-note">you</span>
+                  </>
+                ) : (
+                  /* THE QUESTION THAT WAS MISSING, asked as who you are and
+                     not as another name: the disc is empty until something is
+                     typed, and is never seeded off the recipient. */
+                  <>
+                    <Face handle={meSlow} size={34} resolve={validHandle(meSlow)} />
+                    <div className="mn-env-field">
+                      <HandleField
+                        value={mine} onChange={setMine} onSubmit={next} busy={busy}
+                        autoFocus placeholder="yourhandle" label="your Instagram handle"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
             {adopted ? (
-              /* ── it came from another account ──
-                 The webhook says who actually sent the code, and that account
-                 is now this browser's identity whatever was typed. The ping is
-                 the part that still has a choice in it. */
-              <>
-                <Prose className="mn-copy">
-                  the code came from <span className="sg-h">{atHandle(adopted.handle)}</span>. place
-                  it under that name?
-                </Prose>
-                <div className="mn-prove-what">
-                  <Face handle={adopted.handle} size={40} />
-                  <Label tone="dim">{atHandle(adopted.handle)} → {atHandle(h)}</Label>
-                </div>
-              </>
+              <Prose className="mn-copy">
+                the code came from <span className="sg-h">{atHandle(adopted.handle)}</span>. place
+                it under that name?
+              </Prose>
             ) : dm ? (
-              <>
-                <DmCode
-                  code={dm.code}
-                  note={(
-                    <Label tone="dim" className="mn-prove-for">
-                      proving <span className="sg-h">{atHandle(dm.mine)}</span>
-                    </Label>
-                  )}
-                />
-              </>
-            ) : readyToPlace ? (
-              /* Already proved on this device and still holding the proof, so
-                 there is nothing to ask. The screen says whose name it is
-                 going out under rather than asking a question it knows the
-                 answer to. */
-              <>
-                <Prose className="mn-copy">
-                  goes out under your @. sixty days.
-                </Prose>
-                <div className="mn-prove-what">
-                  <Face handle={who.handle} size={40} />
-                  <Label tone="dim">{atHandle(who.handle)} → {atHandle(h)} · sixty days</Label>
-                </div>
-              </>
-            ) : (
-              <>
-                <Prose className="mn-copy">
-                  which @ is yours? one DM from it proves it.
-                </Prose>
-                {/* THE QUESTION THAT WAS MISSING. Everything above this step is
-                    about somebody else; this is the only field on the screen
-                    that is about the person filling it in. */}
-                <HandleField
-                  value={mine} onChange={setMine} onSubmit={next} busy={busy}
-                  autoFocus size="lg" placeholder="yourhandle" label="your Instagram handle"
-                />
-                <div className="mn-prove-what">
-                  {/* The constellation is drawn off whatever is in the field,
-                      and only once something is. Seeded on `h` while the field
-                      is empty it drew THE RECIPIENT'S mark under the words
-                      "your @, not theirs", which is the same confusion this
-                      step exists to undo. */}
-                  {me ? <Face handle={me} size={40} /> : null}
-                  <Label tone="dim">
-                    {mineOk
-                      ? <>{atHandle(me)} → {atHandle(h)} · sixty days</>
-                      : me === h && me
-                        ? 'that is the name you are placing it on'
-                        : 'your @, not theirs'}
+              <DmCode
+                code={dm.code}
+                note={(
+                  <Label tone="dim" className="mn-prove-for">
+                    proving <span className="sg-h">{atHandle(dm.mine)}</span>
                   </Label>
-                </div>
-              </>
+                )}
+              />
+            ) : (
+              <Prose className="mn-copy mn-prove-note">
+                {readyToPlace ? 'goes out under your @. sixty days.'
+                  : mineOk ? 'one DM from that account proves it. nothing else is read.'
+                  : me && me === h ? 'that is the name you are placing it on.'
+                  : 'your @, not theirs. one DM from it proves it.'}
+              </Prose>
             )}
           </div>
         )}
