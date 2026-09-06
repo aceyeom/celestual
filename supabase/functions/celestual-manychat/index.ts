@@ -25,10 +25,11 @@
 //   • Body (JSON), inserting ManyChat fields with the "+" picker:
 //       { "username": "{{instagram.username}}", "text": "{{last_text_input}}" }
 //   • Response Mapping: map JSONPath $.reply to a text field and send that field
-//     back as the next DM — that's the instant "you're verified ✦" feedback the
-//     sender sees. Every verification outcome carries a `reply` (verified, wrong
-//     account, expired code), so the automation never goes silent on somebody
-//     who was actually trying to verify.
+//     back as the next DM. That's the instant "you're verified ✦" feedback the
+//     sender sees. Every verification outcome carries a `reply` (verified, the
+//     same code again, a lapsed code, a code that did not match), so the
+//     automation never goes silent on somebody who was actually trying to
+//     verify, and each reply describes the DM that was sent (0041).
 //     Replying immediately to a user-initiated DM sits inside Meta's 24-hour
 //     standard messaging window, so this is ToS-clean.
 //   • ALSO map JSONPath $.send to a field, and put a Condition on it before the
@@ -179,7 +180,7 @@ Deno.serve(async (req) => {
   // the only way a match can be pushed to them. Map it.
   const subscriberId = body.subscriber_id != null ? String(body.subscriber_id) : '';
   if (!username) {
-    return answer({ ok: false, status: 'no_username', reply: 'Something went sideways reading your account — get a fresh code in the app and send it again.' });
+    return answer({ ok: false, status: 'no_username', reply: '✦ We could not read your account. Get a fresh code on Celestual and send it again.' });
   }
 
   // This person just messaged us, so their 24-hour window is open and we know
@@ -233,7 +234,7 @@ Deno.serve(async (req) => {
     // or a Default Reply pointed here would otherwise hand a stranger's ordinary
     // sentence a form letter about a code they never asked for.
     if (/star/i.test(text)) {
-      return answer({ ok: false, status: 'no_code', reply: 'Send the code exactly as the app shows it — like star-1234.' });
+      return answer({ ok: false, status: 'no_code', reply: '✦ Send the code exactly as Celestual shows it, like star-1234.' });
     }
     return answer({ ok: true, status: 'nothing_waiting', reply: '' });
   }
@@ -283,11 +284,16 @@ Deno.serve(async (req) => {
   // fails its one job. A failed code is no reason to withhold the answer to the
   // question the person actually came here with.
   //
-  // Nothing was pending under any candidate code. Tell the sender the TRUTH
-  // about their state instead of a dead-end: a re-sent code after a success
-  // (or after the direct Meta webhook won the race) means they're already in.
+  // Nothing was pending under any candidate code. Each exit below describes
+  // the DM, not the account (0041): already_verified is THIS code re-sent by
+  // the account it verified (a double send, or the direct Meta webhook won
+  // the race), code_expired is a code that was live and is not any more,
+  // and no_match is digits that are wrong. It used to answer already_verified
+  // to any DM from any account that had ever verified, so a person who
+  // mistyped today's code was told to stop sending and go back to an app
+  // that was still waiting.
   if (alreadyVerified) {
-    return answer({ ok: true, status: 'already_verified', handle: alreadyVerified, mutual: news !== '', reply: withMutual(`✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, it's waiting on you, not on this DM.`, news) });
+    return answer({ ok: true, status: 'already_verified', handle: alreadyVerified, mutual: news !== '', reply: withMutual(`✦ @${alreadyVerified} is verified on Celestual. Head back to the app.`, news) });
   }
   // This sender is BANNED (since 0020 that is the only thing that reaches here —
   // an opt-out no longer blocks anyone from verifying). The code was fine, so
@@ -297,24 +303,25 @@ Deno.serve(async (req) => {
   // No news can reach this branch: a ban erases the matches it would have come
   // from, and the outbox cascades off them (0023 §10).
   if (banned) {
-    return answer({ ok: false, status: 'banned', reply: 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
+    return answer({ ok: false, status: 'banned', reply: '✦ This account can’t be verified on Celestual. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.' });
   }
   if (codeExpired) {
-    return answer({ ok: false, status: 'code_expired', mutual: news !== '', reply: withMutual('That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.', news) });
+    return answer({ ok: false, status: 'code_expired', mutual: news !== '', reply: withMutual('✦ That code has lapsed. Get a fresh one on Celestual and send it here.', news) });
   }
   // The username ManyChat sent didn't survive normalisation (an unmapped or
   // mangled {{instagram.username}} field). The person can't fix this — say so
   // instead of blaming their code, and check the log line above.
   if (badInput) {
-    return answer({ ok: false, status: 'bad_username', mutual: news !== '', reply: withMutual('Something went sideways reading your account — get a fresh code in the app and send it again.', news) });
+    return answer({ ok: false, status: 'bad_username', mutual: news !== '', reply: withMutual('✦ We could not read your account. Get a fresh code on Celestual and send it again.', news) });
   }
   if (rpcFailed) {
-    return answer({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('Our end hiccuped reading that code. Send it once more, or get a fresh one in the app.', news) });
+    return answer({ ok: false, status: 'rpc_error', mutual: news !== '', reply: withMutual('✦ Our end did not read that code. Send it once more, or get a fresh one on Celestual.', news) });
   }
   // Genuinely unknown digits. (Since 0017 an expired-but-retained code answers
   // code_expired above for a full week, so landing HERE means a typo'd code or
-  // a code older than that retention — every other failure now has its own
-  // status above.)
+  // a code older than that retention. Every other failure now has its own
+  // status above.) The browser waiting under this handle has been told the
+  // same thing by the RPC (0041), so the person reads it in both places.
   //
   // Unknown digits with no "star" anywhere are, most likely, not a code at all:
   // a sentence with a year or a follower count in it, relayed by a trigger that
@@ -327,5 +334,5 @@ Deno.serve(async (req) => {
     console.log('silent', JSON.stringify({ username, status: 'no_match_no_prefix' }));
     return answer({ ok: true, status: 'nothing_waiting', reply: '' });
   }
-  return answer({ ok: false, status: 'no_match', mutual: news !== '', reply: withMutual('That code didn’t match an active request — it may have lapsed. Get a fresh code in the app and send it here.', news) });
+  return answer({ ok: false, status: 'no_match', mutual: news !== '', reply: withMutual('✦ That code didn’t match. Check the code on Celestual and send it again.', news) });
 });

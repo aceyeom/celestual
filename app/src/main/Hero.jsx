@@ -85,8 +85,8 @@ export default function Hero({ go, who, still = false }) {
           The brand, which is the same lockup every bar in the product
           carries, and you. Nothing else: the wall used to be a link here, and
           a campus event is not a destination the front door carries on every
-          visit forever. It is a notice at the foot of the fold now
-          (Notice.jsx), up while the wall is. */}
+          visit forever. It is a line under the ask now (Notice.jsx), up
+          while the wall is. */}
       <header className="hm-top hm-in" style={{ '--d': '0ms' }}>
         <Brand href="/" onClick={home} className="hm-home" />
         <nav className="hm-nav" aria-label="celestual">
@@ -133,18 +133,19 @@ export default function Hero({ go, who, still = false }) {
               )}
             </div>
           </form>
+
+          {/* ── the notice ──
+              The way to the campus wall, while one is open: one line under
+              the ask, in the reading column, and only when there is a wall
+              to point at. It arrives after the act, because it is the second
+              thing on this door and not the first. */}
+          <WallNotice className="hm-in" style={{ '--d': '460ms' }} />
         </div>
 
         <div className="hm-stage hm-in" style={{ '--d': '300ms' }}>
           <Scene still={still} />
         </div>
       </section>
-
-      {/* ── the notice ──
-          A flyer pinned at the foot of the door while a campus wall is open.
-          Last into the fold, after the object, and only when there is a wall
-          to point at. */}
-      <WallNotice className="hm-in" style={{ '--d': '640ms' }} />
       </div>
 
       {/* ── the foot ──

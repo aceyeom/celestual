@@ -200,12 +200,17 @@ Deno.serve(async (req) => {
         if (!done) {
           // Feedback instead of silence: tell the sender the truth about the
           // state they're actually in, so a re-run never reads as broken.
+          // Each line describes the DM, not the account (0041): already
+          // verified is THIS code re-sent by the account it verified, and
+          // anything else is a code that lapsed or digits that are wrong.
           if (alreadyVerified) {
-            await sendDm(String(igsid), `✦ @${alreadyVerified} is already verified on CELESTUAL — head back to the app, nothing more to send here.`);
+            await sendDm(String(igsid), `✦ @${alreadyVerified} is verified on Celestual. Head back to the app.`);
           } else if (banned) {
-            await sendDm(String(igsid), 'This account can’t be verified on CELESTUAL. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.');
+            await sendDm(String(igsid), '✦ This account can’t be verified on Celestual. If that’s a mistake, write to privacy@celestual.us and we’ll look at it.');
           } else if (codeExpired) {
-            await sendDm(String(igsid), 'That code expired. Get a fresh one in the app and send it here — codes last about 30 minutes.');
+            await sendDm(String(igsid), '✦ That code has lapsed. Get a fresh one on Celestual and send it here.');
+          } else {
+            await sendDm(String(igsid), '✦ That code didn’t match. Check the code on Celestual and send it again.');
           }
           results.push({ igsid, username, matched: false, alreadyVerified: !!alreadyVerified, codeExpired, banned });
         }

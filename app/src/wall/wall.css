@@ -2132,7 +2132,8 @@
 
 /* ── the code, and the way out to it ──
    One block, used by both surfaces that ask for a DM (Main's proof step and
-   the wall's takedown), so the two cannot drift.
+   the wall's takedown), so the two cannot drift. Four things in a column: the
+   digits, the line saying where they go, the act, and one line of status.
 
    The digits are a <button> because tapping them copies, and they are set in
    the identity face at tabular width: this is a string somebody has to carry
@@ -2140,15 +2141,13 @@
    face puts 1 and l a hair apart at exactly the moment that costs them the
    attempt. `user-select: all` makes one tap or long press take the whole code.
 
-   And `.wl-a` finally has a rule. It had none anywhere in the sheet, so every
-   link written with it — all three of them, all in this flow — rendered as the
-   browser's default blue underline: the one object in the build that was not
-   ours, on the one screen where a person is being asked to trust where a link
-   goes. It is chalk on a hairline now, like every other link here. */
-.wl-dm { display: flex; flex-direction: column; gap: 13px; }
+   The status line is dim while it only says the block is waiting, and ash
+   when it is saying something: a DM arrived with the wrong code, or one that
+   had lapsed. That is the one line on the screen a person has to read. */
+.wl-dm { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
 .wl-dm-code {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 4px 0 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 2px 0 4px;
 }
 .wl-dm-digits {
   font-family: var(--f-id);
@@ -2164,17 +2163,20 @@
   user-select: all; -webkit-user-select: all;
   text-shadow: 0 0 22px rgba(255, 244, 228, 0.16);
 }
-.wl-dm-foot { display: flex; flex-direction: column; align-items: center; gap: 9px; padding-top: 2px; }
-.wl-dm-alt { text-align: center; }
 .wl-dm-drop { align-self: center; margin-top: 4px; }
 .wl-dm-said {
   margin: 0;
+  min-height: 17px;
   font-family: var(--f-util);
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
   color: var(--ash-dim);
   text-align: center;
+  transition: color 240ms var(--ease);
 }
+.wl-dm-said.is-note { color: var(--ash); }
+/* `.wl-a`: chalk on a hairline, like every other link here, so a link is never
+   the browser's default blue. */
 .wl-a {
   color: var(--chalk);
   text-decoration: none;
