@@ -32,6 +32,7 @@
 // words and you may not read them" from "somebody wrote nothing".
 
 import * as api from './api.js'
+import { learnHandle } from '../api/handles.js'
 
 const DAY = 86400000
 
@@ -318,13 +319,28 @@ export function knowsHandle(handle) {
 // containing what was typed, so a person who half-remembers a handle still
 // lands somewhere and a person who types their own exact handle lands on
 // themselves rather than on a list of near-misses.
+//
+// Every row the resolver already knew is learned by the resolver's own memo
+// on the way through (api/handles.js learnHandle), so the faces and names in
+// the list draw at once and cost no request of their own.
 export async function search(query) {
   const rows = await api.wallSearch(query)
+  rows.forEach(learnHandle)
   return rows.map((t) => ({
     ...t,
     weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
     seed: hash(t.handle),
   }))
+}
+
+// The term the wall is up in, for its masthead: the season and the year. A
+// wall is a thing that happens in a term, and saying which one is the one
+// honest date it has.
+export function term(ts = Date.now()) {
+  const d = new Date(ts)
+  const m = d.getMonth()
+  const season = m >= 7 ? 'fall' : m >= 5 ? 'summer' : 'spring'
+  return `${season} ${d.getFullYear()}`
 }
 
 // ── writing ─────────────────────────────────────────────────────────────────

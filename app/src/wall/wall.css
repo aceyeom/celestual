@@ -72,6 +72,7 @@
 
   /* ── the two accents, both rationed ── */
   --glow:        #FFF4E4;
+  --gold:        #FDB515;   /* the campus's own light: the wall's lantern, its count, the notice's pin */
 
   /* ── the one saturated colour, and the one line that changes it ──
      Everything in the build that is allowed colour reads --accent. Nothing
@@ -172,6 +173,16 @@
   to   { background-position: 100vw 0, 100vw 0, 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .wl-sky { animation: none; } }
+/* the campus wall's night, for a browser without WebGL2: the same two lights
+   the shader carries on that surface (field.js SKY_TINT.berkeley), still */
+.wl-ground.is-berkeley .wl-sky {
+  background:
+    radial-gradient(42% 34% at 26% 40%, rgba(158, 199, 255, 0.05) 0%, rgba(158, 199, 255, 0) 70%),
+    radial-gradient(30% 26% at 70% 62%, rgba(56, 107, 217, 0.08) 0%, rgba(56, 107, 217, 0) 72%),
+    var(--void);
+  background-size: 100% 100%, 100% 100%, auto;
+  background-repeat: repeat-x, repeat-x, repeat;
+}
 
 /* The poster's light source: one enormous off-centre warm halo, low enough in
    opacity that it is felt rather than seen. It is what stops the void reading
@@ -227,7 +238,7 @@
 }
 @media (max-width: 359px) {
   .wl-page { --pad: 16px; }
-  .wl-mast-ball { width: 74px; height: 74px; }
+  .wl-mast-tower { width: 50px; height: 150px; }
   /* The orrery is drawn a little wider than the phone it is on, which is the
      one place a moon can be cut. At 470 on a 320px screen the overhang is
      forty pixels a side and a ping a quarter of the way through its sixty
@@ -849,8 +860,27 @@
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
 .wl-mast { position: relative; padding: 26px 0 30px; flex: 0 0 auto; }
 .wl-mast-meta { margin-top: 16px; }
-.wl-mast-spark { position: absolute; top: 0; right: 0; color: var(--chalk); }
-.wl-mast-ball { position: absolute; right: -10px; bottom: 6px; opacity: 0.24; }
+/* the count, in the campus's gold: the one number on the poster */
+.wl-mast-meta b { font-weight: 400; color: var(--gold); }
+
+/* ── the campanile ──
+   art.jsx `Campanile`. Standing in the masthead's corner where the dotted
+   sphere was, its plinth on the count's baseline, drawn in hairlines of
+   chalk at half strength so it is a thing in the night and not a logo on
+   it. Its lantern is the masthead's one light, in the campus's gold. */
+.wl-mast-tower {
+  position: absolute; right: 0; bottom: -2px;
+  width: 64px; height: 192px;
+  color: rgba(244, 241, 234, 0.5);
+  pointer-events: none;
+}
+.wl-campanile { display: block; overflow: visible; }
+.wl-campanile-line path, .wl-campanile-line circle { vector-effect: non-scaling-stroke; }
+.wl-campanile-lamp {
+  filter: drop-shadow(0 0 5px rgba(253, 181, 21, 0.6));
+  /* the twinkle scales and turns the star about its own centre */
+  transform-box: fill-box; transform-origin: center;
+}
 
 /* ═══ THE INSCRIPTION ══════════════════════════════════════════════════════
    One run of names at three weights — not a grid of cards (a directory) and
@@ -957,8 +987,7 @@
    patience and the tail may as well be there already. */
 .wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
 .wl-wallpage.is-opening .wl-mast-meta  { animation: wl-fade 900ms var(--ease) 900ms both; }
-.wl-wallpage.is-opening .wl-mast-spark { animation: wl-fade 900ms var(--ease) 700ms both; }
-.wl-wallpage.is-opening .wl-mast-ball  { animation: wl-fade 1200ms var(--ease) 1100ms both; }
+.wl-wallpage.is-opening .wl-mast-tower { animation: wl-fade 1200ms var(--ease) 1000ms both; }
 /* the cascade arrives a LANE at a time rather than a name at a time. Eighty
    staggered fades over a field that is also travelling is two animations
    arguing; one fade per lane reads as the wall assembling in bands. */
@@ -1043,6 +1072,23 @@
 }
 .wl-find-empty .wl-pill { margin-top: 4px; }
 .wl-find-foot { padding-top: 14px; border-top: 1px solid var(--hair-soft); }
+
+/* ═══ THE SUGGESTIONS ══════════════════════════════════════════════════════
+   parts.jsx `Suggest`: names off the wall's public index, under a field, as
+   a person types. The row is the person row's shape at the field's scale,
+   and the lit one is the one the arrows or the pointer are on. */
+.wl-suggest { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; animation: wl-fade 240ms var(--ease) both; }
+.wl-suggest-lab { display: flex; align-items: center; gap: 6px; padding: 2px 4px 6px; }
+.wl-suggest-lab .wl-spark { color: var(--ash-dim); }
+.wl-suggest-row {
+  display: flex; align-items: center; width: 100%;
+  padding: 7px 10px 7px 7px;
+  border: 1px solid transparent; border-radius: 14px;
+  background: none; color: var(--chalk); text-align: left; cursor: pointer;
+  transition: background 160ms var(--ease), border-color 160ms var(--ease);
+}
+.wl-suggest-row.is-active { background: rgba(244, 241, 234, 0.045); border-color: var(--hair-soft); }
+.wl-suggest-who { width: 100%; }
 
 /* ═══ THE COMPOSER ═════════════════════════════════════════════════════════ */
 .wl-write { padding-top: 4px; }
@@ -1668,8 +1714,8 @@
     position: sticky; top: 28px;
     padding: 30px 0 0;
   }
-  .wl-mast-spark { top: -6px; right: 34px; }
-  .wl-mast-ball { right: 18px; bottom: -46px; }
+  /* the tower stands under the count, in the column's own room */
+  .wl-mast-tower { right: 6px; top: calc(100% + 4px); bottom: auto; width: 72px; height: 216px; }
   .wl-wall {
     grid-column: 2; grid-row: 2 / span 3;
     padding-top: 34px;
@@ -1748,7 +1794,7 @@
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
   .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; }
-  .wl-mast-ball { display: none; }
+  .wl-mast-tower { display: none; }
   .wl-wall { grid-column: 2; grid-row: 2 / span 3; padding-top: 10px; line-height: 1.9; }
   /* 350px of height is four lanes, and the ladder in Wall.jsx caps it there.
      The lanes give back the air rather than the type: a 24px lane cannot set a

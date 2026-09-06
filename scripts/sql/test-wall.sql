@@ -315,8 +315,49 @@ begin
 end $$;
 select w_ok('an exact handle is found', (wall_search('findme')->0->>'handle') = 'findme');
 select w_ok('a partial handle is found', (wall_search('find')->0->>'handle') = 'findme');
-select w_ok('one character finds nothing', jsonb_array_length(wall_search('f')) = 0);
+-- 0040. From the first character, like a search box a person is still
+-- typing into.
+select w_ok('one character finds it', (wall_search('f')->0->>'handle') = 'findme');
 select w_ok('search returns no bodies', not ((wall_search('findme')->0) ? 'body'));
+
+-- ── 12a. the ranking, and the resolver's answer joined on (0040) ─────────────
+-- A name that starts with what was typed comes before one that merely
+-- contains it, however many letters the second one carries.
+do $$
+begin
+  insert into wall_letters (target_handle, body, author_id, campus, status)
+  select 'afindy', 'letter ' || g,
+         (select id from celestual_users where edu_email='author@berkeley.edu'), 'berkeley', 'live'
+    from generate_series(1, 3) g;
+end $$;
+select w_ok('a prefix match ranks before a contains match',
+  (wall_search('find')->0->>'handle') = 'findme' and (wall_search('find')->1->>'handle') = 'afindy');
+select w_ok('the exact handle still ranks first',
+  (wall_search('afindy')->0->>'handle') = 'afindy');
+select w_ok('a name the resolver never saw is not marked known',
+  (wall_search('afindy')->0->>'known')::boolean = false
+  and (wall_search('afindy')->0) ? 'display_name'
+  and (wall_search('afindy')->0->>'display_name') is null);
+select ig_profile_put('findme', 'Finn Dme', true, false, false);
+select w_ok('a name the resolver has carries its answer',
+  (wall_search('findme')->0->>'known')::boolean
+  and (wall_search('findme')->0->>'display_name') = 'Finn Dme'
+  and (wall_search('findme')->0->>'is_verified')::boolean
+  and (wall_search('findme')->0->>'avatar_path') is null);
+select w_ok('the profile is joined onto the index and never the other way round',
+  (select count(*) = 0 from jsonb_array_elements(wall_search('fin')) e
+    where not exists (select 1 from wall_index i where i.target_handle = e->>'handle')));
+select w_ok('search stays open to the browser',
+  has_function_privilege('anon', 'wall_search(text)', 'execute'));
+
+-- ── 12c. the pulse (0040) ────────────────────────────────────────────────────
+select w_ok('the pulse says the wall is open', (wall_pulse('berkeley')->>'open')::boolean);
+select w_ok('and counts the names on it',
+  (wall_pulse('berkeley')->>'names')::int = (select count(*) from wall_index where campus = 'berkeley'));
+select w_ok('and the letters',
+  (wall_pulse('berkeley')->>'letters')::int = (select coalesce(sum(letters), 0) from wall_index where campus = 'berkeley'));
+select w_ok('a campus that does not exist has no pulse', wall_pulse('nowhere') is null);
+select w_ok('the pulse is open to the browser', has_function_privilege('anon', 'wall_pulse(text)', 'execute'));
 
 -- ── 12b. the one tap report ─────────────────────────────────────────────────
 -- 0038. The screen's first step sends no reason. It used to reach the check

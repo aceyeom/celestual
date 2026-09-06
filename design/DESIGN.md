@@ -80,6 +80,7 @@ Three strengths of one near white, and the third one has a hard rule on it.
 | `--chalk` | `#F4F1EA` | primary type, the mark, a filled control |
 | `--ash` | `#9C978E` | secondary. Meaningful text only |
 | `--ash-dim` | `#605C55` | decorative and disabled only. Never body copy |
+| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the Campanile's lantern, the count on the masthead, the pin on the front door's notice. Nowhere else, and never as type |
 
 `--ash-dim` on `--void` is roughly 3.2:1. It is legible for a label and it is not
 legible for a sentence somebody has to read. Putting prose in it is the single
@@ -438,7 +439,7 @@ different skies.
 
 | Layer | What it is |
 | --- | --- |
-| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with the galaxy's violet and pink in it at a whisper: a domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is a layer of the one field, drifting to the right the way the stars drift, at the pace of a star in the middle of the field, churning as it goes, and shifting to the hand the way a star shifts; it lights by a few counts under the pointer, and it parts round the type: whichever screen is up registers its headline (`useSkyAvoid` in ground.jsx) and the clouds flow round it, thin under it and gather a little pink along its edge. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
+| `.wl-sky` | the clouds, drawn by the field's own loop (field.js, THE SKY BEHIND THE STARS). The void with two lights in it at a whisper, the body of the cloud and the veins along its warp: the galaxy's violet and pink on Main, and the campus's blue on the wall, deep in the body and cold along the veins (`SKY_TINT`, passed as `tint` on `Ground`), so the two surfaces are two rooms and not one room with two headlines. The wall's gold is not in its sky: gold through blue mixes to olive, and it reads as gold only where it is small and alone. A domain warped noise with a current, posterised through an 8x8 ordered dither at two pixels so it is texture and not gradient. It is a layer of the one field, drifting to the right the way the stars drift, at the pace of a star in the middle of the field, churning as it goes, and shifting to the hand the way a star shifts; it lights by a few counts under the pointer, and it parts round the type: whichever screen is up registers its headline (`useSkyAvoid` in ground.jsx) and the clouds flow round it, thin under it and gather a little pink along its edge. One pixel per CSS pixel, capped under a megapixel. Without WebGL2 it is a still gradient of the same two colours |
 | `.wl-halo` | one enormous off centre warm radial at 7.5 percent, plus a cold one at 4.5. It is what stops the void reading as `#000` with things on it |
 | `.wl-starfield` | the point field, on the GPU (`wall/field.js`): depth per point, parallax off the hand, and a count that is a density, about 0.9 points per thousand CSS pixels on every screen, so a desktop is as dense as a phone. It used to be a floor of 320 points that only a phone ever hit, and the desktop sky was three times sparser |
 | `.wl-grain` | `feTurbulence` at `baseFrequency 0.84`, three octaves, desaturated, 3.6 percent, tiled at 190px |
@@ -507,7 +508,8 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Ecliptic` | the mark. `size`, `sweep` |
 | `Face` | the disc beside a handle. The picture, or a monogram. See 3.4 |
 | `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
-| `Halftone` | the dotted sphere |
+| `Halftone` | the dotted sphere. Off the wall's masthead since the Campanile; kept |
+| `Campanile` | the wall's own object: a front elevation of Sather Tower in hairlines, from a handful of numbers, with the lantern lit in `--gold`. `width` (the height is three times it), `lit`, `twinkle`. It stands in the masthead's corner where the sphere stood, because a wall on one campus should say which campus before its type does |
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |

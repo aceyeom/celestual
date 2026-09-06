@@ -91,6 +91,16 @@ cap, and the hourly limits make enumeration cost slots, time, and identity.
 `celestual_ping_status` returns reachability only for targets the caller has
 actually placed.
 
+### §suggest — What a typeahead may list (0040)
+The wall's search and composer suggest names as a person types. They read
+`wall_index`, which is public by design (§campus), and join the resolver's
+display name and face onto the names already on it. The resolver's cache
+(`ig_profiles`) is never listed on its own: it is the set of handles people
+have pinged, and listing it by prefix would enumerate ping targets. Main's
+front door suggests nothing about anybody else for the same reason; it peeks
+the cache only for a handle typed in full. The line is in the migration and in
+`docs/HANDLE-RESOLVER.md` §10.
+
 ### §verify — Handle-ownership verification (Instagram DM)
 Load-bearing since 0004: a one-time 4-digit code DM'd to `@celestual.us`; Meta's
 authenticated sender identity (relayed by ManyChat's External Request — setup in

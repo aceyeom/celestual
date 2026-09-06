@@ -30,6 +30,7 @@
 // one of a small set of slugs the UI can put words to.
 import { supabase, hasSupabase } from '../api/supabase.js'
 import { sessionToken } from '../api/identity.js'
+import { avatarUrl } from '../api/handles.js'
 
 // One campus is open. Q11: berkeley for launch, and the schema is shaped so a
 // second one is a row in wall_campuses rather than a migration. It is a
@@ -81,10 +82,15 @@ export async function wallIndex() {
   }
 }
 
-// Exact handle first, then anything containing what was typed. The ordering is
-// the server's, for the reason `data.js` gives: somebody who half-remembers a
-// handle still lands somewhere, and somebody who types their own exact handle
-// lands on themselves rather than on a list of near-misses.
+// Exact handle first, then the names that start with what was typed, then
+// the ones that contain it. The ordering is the server's (0040), for the
+// reason `data.js` gives: somebody who half-remembers a handle still lands
+// somewhere, and somebody who types their own exact handle lands on
+// themselves rather than on a list of near-misses.
+//
+// Each row carries the resolver's answer for that name when there is one:
+// `known` says whether there is, and the name, the badge and the face come
+// with it, so a list of eight people is one request and not nine.
 export async function wallSearch(query) {
   const rows = await call('wall_search', { p_query: String(query || '') })
   if (!Array.isArray(rows)) return []
@@ -92,7 +98,27 @@ export async function wallSearch(query) {
     handle: r.handle,
     count: r.letters,
     at: new Date(r.last_at).getTime(),
+    known: !!r.known,
+    name: String(r.display_name || ''),
+    verified: !!r.is_verified,
+    avatar: avatarUrl(r.avatar_path),
   }))
+}
+
+// ── the pulse ────────────────────────────────────────────────────────────────
+// Whether this campus's wall is open and how much is on it, in one row. The
+// front door pins the wall's poster up off this and takes it down when the
+// campus closes. Anything short of an answer reads as closed.
+export async function wallPulse() {
+  const out = await call('wall_pulse', { p_campus: CAMPUS })
+  if (!out || out.ok !== true) return { ok: false, error: out?.error || 'network', open: false, names: 0, letters: 0 }
+  return {
+    ok: true,
+    open: !!out.open,
+    names: Number(out.names) || 0,
+    letters: Number(out.letters) || 0,
+    at: out.last_at ? new Date(out.last_at).getTime() : 0,
+  }
 }
 
 // ── reading ──────────────────────────────────────────────────────────────────

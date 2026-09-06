@@ -8,7 +8,7 @@
 // one edit in one file rather than nine inline objects that drifted apart.
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import { atHandle, normHandle } from './data.js'
+import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Provider, Sparkle } from './art.jsx'
 import { member } from './auth.js'
 import { copyText, openInstagram, igUsername, igWebLink } from './handoff.js'
@@ -377,7 +377,8 @@ export function Paper({ dateline, title, crest, children, foot, tone = '', class
 // one, and this is where that stops being a convention and starts being
 // enforced.
 export function HandleField({ value, onChange, onSubmit, autoFocus = false, locked = false,
-  placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null }) {
+  placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null,
+  onKeyDown = null }) {
   const ref = useRef(null)
   const id = useId()
   // The caller's own handle on the input, for "not them? change it": a
@@ -405,7 +406,13 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, lock
         autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false"
         inputMode="text" enterKeyHint="go"
         onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && onSubmit) { e.preventDefault(); onSubmit() } }}
+        onKeyDown={(e) => {
+          // A list under the field (Suggest) takes the arrows, escape, and
+          // an enter on a lit row, and says so; everything else is the
+          // field's own.
+          if (onKeyDown && onKeyDown(e)) return
+          if (e.key === 'Enter' && onSubmit) { e.preventDefault(); onSubmit() }
+        }}
       />
       <span className="wl-field-line" aria-hidden="true" />
     </div>
@@ -838,6 +845,101 @@ export function confirmWord(at, idle) {
     case 'unknown': return 'go on anyway'
     default:        return idle
   }
+}
+
+// ── THE SUGGESTIONS ─────────────────────────────────────────────────────────
+// Names off the wall's public index, as a person types, the way a search box
+// on a social app fills in under the cursor: a face, a name, the handle and
+// how many letters it carries, from the first character.
+//
+// They come from wall_search (0040) and from nowhere else. The resolver's
+// cache would be the obvious source and it is the one source this must never
+// read: it is the list of everybody who has ever been pinged, and a typeahead
+// over it would let anyone enumerate that list a letter at a time. The
+// index is public on purpose, and the resolver's fields ride on it for the
+// names it already knows, so the rows arrive drawn and cost no request each.
+//
+//   useSuggest   the rows, the lit one, and the keys. `onPick` takes a row;
+//                `skip` hides the list (the field is settled, or on another
+//                step); `exclude` drops the handle already in the field, so
+//                the person in the card is not listed again under it.
+//   Suggest      draws them. Pointer and keyboard both move the light, and
+//                pressing a row is the same act as typing that handle.
+//
+// Answers are held for the life of the tab per query: backspacing through a
+// name replays what was already seen, and the wall's index does not change
+// between one keystroke and the next.
+const SUGGEST_MS = 120
+const SUGGEST_MAX = 6
+const suggested = new Map()
+
+export function useSuggest(query, { onPick = null, skip = false, exclude = '' } = {}) {
+  const q = normHandle(query)
+  const ex = normHandle(exclude)
+  const [got, setGot] = useState(() => (q && suggested.get(q)) || [])
+  const [asking, setAsking] = useState(false)
+  const [active, setActive] = useState(-1)
+  const [shut, setShut] = useState(false)
+  const latest = useRef(0)
+
+  useEffect(() => {
+    setActive(-1)
+    setShut(false)
+    if (skip || q.length < 1) { setGot([]); setAsking(false); return undefined }
+    const known = suggested.get(q)
+    if (known) { setGot(known); setAsking(false); return undefined }
+    const seq = ++latest.current
+    setAsking(true)
+    const t = setTimeout(async () => {
+      const out = await search(q)
+      if (seq !== latest.current) return
+      const top = out.slice(0, SUGGEST_MAX)
+      suggested.set(q, top)
+      setGot(top)
+      setAsking(false)
+    }, SUGGEST_MS)
+    return () => clearTimeout(t)
+  }, [q, skip])
+
+  const rows = ex ? got.filter((t) => t.handle !== ex) : got
+  const open = !skip && !shut && rows.length > 0
+  const pick = useCallback((t) => {
+    setShut(true)
+    if (onPick) onPick(t)
+  }, [onPick])
+  const keyDown = useCallback((e) => {
+    if (!open) return false
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => (i + 1) % rows.length); return true }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setActive((i) => (i <= 0 ? rows.length - 1 : i - 1)); return true }
+    if (e.key === 'Escape') { e.preventDefault(); setShut(true); return true }
+    if (e.key === 'Enter' && active >= 0 && rows[active]) { e.preventDefault(); pick(rows[active]); return true }
+    return false
+  }, [open, rows, active, pick])
+
+  return { rows, open, asking, active, setActive, pick, keyDown }
+}
+
+export function Suggest({ sug, label = 'on the wall', className = '' }) {
+  const { rows, open, active, setActive, pick } = sug
+  if (!open) return null
+  return (
+    <div className={`wl-suggest ${className}`} role="listbox" aria-label={label}>
+      <Label as="span" tone="dim" className="wl-suggest-lab"><Sparkle size={8} /> {label}</Label>
+      {rows.map((t, i) => (
+        <button
+          type="button" role="option" aria-selected={i === active} key={t.handle}
+          className={`wl-suggest-row${i === active ? ' is-active' : ''}`}
+          /* the field keeps its focus and its keyboard through a press on a
+             row, so a person on a phone is not thrown back to the top */
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => pick(t)}
+          onPointerEnter={() => setActive(i)}
+        >
+          <Who handle={t.handle} size={34} meta={t.count === 1 ? 'one letter' : `${t.count} letters`} className="wl-suggest-who" />
+        </button>
+      ))}
+    </div>
+  )
 }
 
 // ── the face ────────────────────────────────────────────────────────────────

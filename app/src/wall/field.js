@@ -149,11 +149,14 @@ uniform vec4  uAvoid;  // the type: centre x, centre y, half width, half height,
 uniform float uAvoidOn;// 0 with nothing registered, eased to 1 while something is
 out vec4 o;
 
-// The room's colours. The void is wall.css --void; the two accents are the
-// galaxy's, and they are added at a few counts, never painted.
+// The room's colours. The void is wall.css --void. The two lights are
+// uniforms rather than constants, because the two surfaces of the product
+// are not the same room: Main's sky carries the galaxy's violet and pink,
+// and a campus wall carries the campus's own two colours (SKY_TINT, below).
+// Either way they are added at a few counts, never painted.
 const vec3 VOID   = vec3(0.031, 0.027, 0.043);
-const vec3 VIOLET = vec3(0.42, 0.30, 0.72);
-const vec3 PINK   = vec3(0.98, 0.58, 0.76);
+uniform vec3  uBody;   // the cloud's own colour
+uniform vec3  uVein;   // the colour along the warp, and gathered at the rim
 
 float hash(vec2 p) {
   vec3 q = fract(vec3(p.xyx) * 0.1031);
@@ -238,9 +241,9 @@ void main() {
   vec2 hd = vec2(uv.x * aspect, uv.y) - hand;
   float lamp = exp(-dot(hd, hd) / 0.16) * uHand;
 
-  vec3 add = VIOLET * body * 0.09
-           + PINK * vein * 0.16
-           + mix(PINK, VIOLET, 0.35) * lamp * (0.02 + 0.06 * dust);
+  vec3 add = uBody * body * 0.09
+           + uVein * vein * 0.16
+           + mix(uVein, uBody, 0.35) * lamp * (0.02 + 0.06 * dust);
 
   // Posterised through the dither at two pixel cells: texture, not gradient.
   // Only the light is quantised, so the void between the clouds stays flat.
@@ -254,9 +257,26 @@ void main() {
 // them. There is nothing sharp in a cloud.
 const SKY_MAX_PX = 900_000
 
+// The two lights in the cloud, per surface: the body of it and the veins
+// along the warp. Linear RGB, 0..1.
+//
+//   main       the galaxy's violet and pink, which is the product's own sky
+//   berkeley   the campus's blue, deep in the body of the cloud and cold
+//              along the veins, so the wall's night is recognisably that
+//              campus's night and not the product's default one with a
+//              different headline on it. The blue is set lighter than the
+//              university's own, because at nine counts a navy is black. Its
+//              gold is NOT in the sky: gold veins through a blue cloud mix
+//              to olive, and the gold reads as gold only where it is small
+//              and alone, which is the lantern, the count and the pin.
+export const SKY_TINT = {
+  main:     [[0.42, 0.30, 0.72], [0.98, 0.58, 0.76]],
+  berkeley: [[0.22, 0.42, 0.85], [0.62, 0.78, 1.00]],
+}
+
 // The sky's own program on its own canvas. Returns null when WebGL2 is not
 // there, in which case the canvas keeps its CSS gradient (wall.css .wl-sky).
-function mountSky(canvas) {
+function mountSky(canvas, tint = SKY_TINT.main) {
   if (!canvas) return null
   const gl = canvas.getContext('webgl2', {
     alpha: false, antialias: false, depth: false, stencil: false,
@@ -285,6 +305,10 @@ function mountSky(canvas) {
   const uRes = gl.getUniformLocation(prog, 'uRes')
   const uAvoid = gl.getUniformLocation(prog, 'uAvoid')
   const uAvoidOn = gl.getUniformLocation(prog, 'uAvoidOn')
+  // The two lights, set once: a surface does not change its colours mid
+  // session, and a remount is a new program (see size(), below).
+  gl.uniform3f(gl.getUniformLocation(prog, 'uBody'), tint[0][0], tint[0][1], tint[0][2])
+  gl.uniform3f(gl.getUniformLocation(prog, 'uVein'), tint[1][0], tint[1][1], tint[1][2])
 
   // The canvas is only reallocated when its size has changed, since setting
   // width or height clears it. The viewport and uRes are set every time,
@@ -463,7 +487,8 @@ const AVOID_EVERY = 6
 // or 'still' and the field decelerates to it, `stop` releases everything.
 // `sky` is a second canvas, under the first, for the clouds (THE SKY BEHIND
 // THE STARS, above); without it, or without WebGL2, there are only stars.
-export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: skyCanvas = null } = {}) {
+// `tint` names the two lights in the cloud (SKY_TINT): 'main' or 'berkeley'.
+export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: skyCanvas = null, tint = 'main' } = {}) {
   const still = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -485,7 +510,7 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return twoD(canvas, count, still, pace0)
   gl.useProgram(prog)
 
-  const sky = mountSky(skyCanvas)
+  const sky = mountSky(skyCanvas, SKY_TINT[tint] || SKY_TINT.main)
 
   const buf = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, buf)
