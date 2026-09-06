@@ -1697,35 +1697,43 @@
 @media (min-width: 900px) {
   .wl-page { --pad: 40px; max-width: 1080px; padding: 0 var(--pad) 40px; }
 
-  /* ── the spread ── */
-  /* Four rows, and the third exists only for the takedown: the names span the
-     whole height of the right-hand column, so a foot placed in the row the
-     dock is in lands on top of them. */
+  /* ── the poster ──
+     The title block runs across the top with the tower at the page's right
+     edge, the names take the whole width of the screen and the whole middle
+     of it, and the bottom row is the way in on the left and the way off on
+     the right. It used to be two columns, a sticky masthead on the left and
+     the names in a column beside it, and on a screen with any height that
+     was three short lanes floating in a void with the tower and the takedown
+     stacked under the title. A wall is wide. */
+  .wl-main { overflow-x: clip; }
   .wl-wallpage {
     display: grid;
-    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
-    grid-template-rows: auto auto auto 1fr;
-    column-gap: 64px;
-    align-content: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto 1fr auto;
+    column-gap: 40px;
+    align-content: stretch;
   }
-  .wl-wallpage .wl-top { grid-column: 1 / -1; }
+  .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
   .wl-mast {
-    grid-column: 1; grid-row: 2;
-    position: sticky; top: 28px;
-    padding: 30px 0 0;
+    grid-column: 1 / -1; grid-row: 2;
+    padding: 34px 130px 0 0;
   }
-  /* the tower stands under the count, in the column's own room */
-  .wl-mast-tower { right: 6px; top: calc(100% + 4px); bottom: auto; width: 72px; height: 216px; }
+  /* the tower stands at the page's right edge, its plinth on the count's line */
+  .wl-mast-tower { right: 0; bottom: -6px; top: auto; width: 74px; height: 222px; }
   .wl-wall {
-    grid-column: 2; grid-row: 2 / span 3;
-    padding-top: 34px;
+    grid-column: 1 / -1; grid-row: 3;
+    align-self: center;
+    padding: 28px 0;
     line-height: 2.15;
   }
+  /* edge to edge of the screen, not of the column: the type keeps the
+     column and the names leave it, which is the difference between a wall
+     and a widget. The fade at each end is the lanes' own. */
+  .wl-wall.is-drifting { --lane-h: 46px; margin: 0 calc(50% - 50vw); }
   .wl-wallpage .wl-dock {
     grid-column: 1; grid-row: 4;
-    position: sticky; bottom: 0;
-    align-self: end;
-    margin: 0; padding: 0;
+    position: static; align-self: end;
+    margin: 0; padding: 0 0 6px;
     max-width: 380px;
   }
 
@@ -1851,9 +1859,8 @@
    design, and the names simply get more room per line inside a wall column
    that has stopped widening. */
 @media (min-width: 1280px) {
-  .wl-wallpage { column-gap: 88px; grid-template-columns: 380px minmax(0, 1fr); }
   .wl-mast { padding-top: 46px; }
-  .wl-wall { padding-top: 52px; }
+  .wl-wall { padding: 36px 0; }
 }
 
 /* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
@@ -2419,19 +2426,18 @@
 /* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* its own row in the masthead's column, under the title and over the dock */
-  .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 30px 0 0; }
+  /* the way off, on the bottom row beside the way in (the poster, above) */
+  .wl-wall-foot { grid-column: 2; grid-row: 4; align-self: center; justify-content: flex-end; padding: 0 0 6px; }
 
-  /* The bleed goes right, where there is a viewport edge to run off. The fade
-     stays on BOTH ends, and the left one is not optional: a lane's first name
-     starts mid-word by design, and without a dissolve it reads as text that
-     has been chopped rather than as a name walking in. It is shorter on the
-     left because there is a column gutter behind it doing half the work. */
+  /* The bleed goes both ways now, to the edges of the screen and not of the
+     column (the poster, above): the type keeps the column and the names
+     leave it. The fade stays on BOTH ends: a lane's first name starts
+     mid-word by design, and without a dissolve it reads as text that has
+     been chopped rather than as a name walking in. */
   .wl-wall.is-drifting {
-    /* a little into the gutter on the left as well, so the dissolve happens
-       over empty column rather than over the first name in every lane */
-    margin: 0 -40px 0 -30px;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 88%, transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 88%, transparent 100%);
+    margin: 0 calc(50% - 50vw);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
     gap: 2px;
     /* ── and it sits in the middle of its column ──
        The lanes are a fixed block about 440px tall, and the grid row they are

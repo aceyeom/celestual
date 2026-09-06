@@ -255,7 +255,7 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
         </mask>
       </defs>
       {/* the light at the top, behind the drawing */}
-      {lit && <circle className="wl-campanile-bloom" cx="50" cy="9" r="22" fill={`url(#${uid}g)`} />}
+      {lit && <circle className="wl-campanile-bloom" cx="50" cy="16" r="22" fill={`url(#${uid}g)`} />}
       <g
         className="wl-campanile-line" mask={`url(#${uid}m)`}
         fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
@@ -281,13 +281,15 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
         {/* the plinth */}
         <path d="M30 282H70M27 290H73M27 290V300M73 290V300" />
       </g>
-      {/* the lantern: SPARK, the same star as everywhere else, in gold. In
-          its own small viewport at the apex rather than under a transform
-          attribute, because the twinkle is a CSS transform and a CSS
-          transform replaces the attribute rather than composing with it:
-          drawn that way the star came up the width of the tower. */}
+      {/* the lantern: SPARK, the same star as everywhere else, in gold, its
+          centre exactly on the roof's apex so the star is the tip of the
+          tower and not a thing floating over it. In its own small viewport
+          rather than under a transform attribute, because the twinkle is a
+          CSS transform and a CSS transform replaces the attribute rather
+          than composing with it: drawn that way the star came up the width
+          of the tower. */}
       {lit && (
-        <svg x="39" y="-2" width="22" height="22" viewBox="0 0 100 100" overflow="visible">
+        <svg x="40" y="6" width="20" height="20" viewBox="0 0 100 100" overflow="visible">
           <path
             className={`wl-campanile-lamp wl-spark${twinkle ? ' is-twinkle' : ''}`}
             d={SPARK} fill="var(--gold)"

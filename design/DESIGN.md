@@ -343,9 +343,12 @@ it can. The empty field around the column is the design.
 | max width | 460px, rising to 1080px at 900px where the layout becomes a spread |
 | page min height | `100dvh` |
 
-At 900px and up three things change and nothing else: the wall becomes a two
-column spread, sheets stop being bottom sheets and become centred dialogs, and
-the core service puts its ring system beside its ledger. Main makes the same
+At 900px and up three things change and nothing else: the wall becomes a
+poster (the title across the top with the tower at the page's right edge, the
+names edge to edge of the screen and across the whole middle of it, the way
+in and the way off on the bottom row), sheets stop being bottom sheets and
+become centred dialogs, and the core service puts its ring system beside its
+ledger. Main makes the same
 move at the same width: the hero's object goes beside its type, and the flow
 screens keep their 460px question on the left under a bar that spans the hero's
 1080, with the control following the question rather than docked to the bottom

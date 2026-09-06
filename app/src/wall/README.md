@@ -535,11 +535,12 @@ which an icon library cannot do because it does not know what it is next to.
 
 The phone is the one this was designed for and it does not change.
 
-- **≥ 900px** — the wall becomes a spread: the masthead takes its own sticky
-  column and the lanes run beside it, bleeding off the right edge and centred
-  vertically in their column — which is the shape the poster reference actually
-  is, and which is why the empty field around the three objects reads as air
-  rather than as a list that ran out. Sheets become centred dialogs. The core
+- **≥ 900px** — the wall becomes a poster: the title block across the top with
+  the Campanile at the page's right edge, the lanes edge to edge of the screen
+  and centred in the whole middle of it, and the way in and the way off on the
+  bottom row. It used to be a two column spread, a sticky masthead beside a
+  column of lanes, and on any screen with height that was three short lanes
+  floating in a void. Sheets become centred dialogs. The core
   service does **not** become a spread: it keeps its one flexible column and
   centres a 30rem measure in it, because a letter set to the width of a desktop
   is not a letter. The room goes around it rather than into it.

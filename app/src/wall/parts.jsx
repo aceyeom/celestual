@@ -870,7 +870,7 @@ export function confirmWord(at, idle) {
 // name replays what was already seen, and the wall's index does not change
 // between one keystroke and the next.
 const SUGGEST_MS = 120
-const SUGGEST_MAX = 6
+const SUGGEST_MAX = 4
 const suggested = new Map()
 
 export function useSuggest(query, { onPick = null, skip = false, exclude = '' } = {}) {
