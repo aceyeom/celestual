@@ -121,10 +121,11 @@
 .mn-prove { align-items: stretch; }
 
 /* ── the place flow (Place.jsx) ──
-   Three screens, one per step, and each one holds the one thing that step
-   asks. What they share is the head: three dots and the step's word, on
-   every screen, at the same place, so the walk is counted without a bar
-   being drawn for it. A dot already passed is the way back to that step. */
+   Two screens, one per step, and each one holds the one thing that step
+   asks: the name, and the letter. What they share is the head: two dots and
+   the step's word, at the same place on both, so the walk is counted without
+   a bar being drawn for it. The dot already passed is the way back. The
+   proof is a page of its own with no mark on it. */
 .mn-mark { display: flex; align-items: center; gap: 13px; min-height: 18px; }
 .mn-mark-word { color: var(--chalk); }
 .mn-mark .wl-dot { cursor: default; }
@@ -132,82 +133,44 @@
 .mn-mark .wl-dot.is-done:hover { background: rgba(244, 241, 234, 0.7); }
 .mn-mark .wl-dot:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
 
-/* ── the small lines ──
-   Above the paper and above the field: what has been answered, one line
-   each, the way an envelope carries its address above the letter. A label
-   at the left in the identifier face, the answer beside it, and, when the
-   line is a way back, one dim word at its end. The lines sit on hairlines,
-   and the line that holds the question draws the field's own focus line
-   across its rule when the field is focused, so the line that is being
-   answered reads as the one that is. */
-.mn-rows { display: flex; flex-direction: column; margin-top: -4px; }
-.mn-row {
-  position: relative;
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; min-height: 48px; padding: 6px 2px;
-  border: 0; background: none; text-align: left;
-  color: var(--chalk);
-  animation: wl-fade 260ms var(--ease) both;
-}
-.mn-row::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
-  background: var(--hair-soft);
-}
-.mn-row::before {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; z-index: 1;
-  background: linear-gradient(90deg, var(--chalk), rgba(244, 241, 234, 0.22));
-  transform: scaleX(0); transform-origin: 0 50%;
-  transition: transform 520ms var(--ease);
-}
-.mn-row.is-ask:focus-within::before { transform: scaleX(1); }
-.mn-row-lab {
-  flex: 0 0 48px;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--ash-dim);
-}
-.mn-row.is-ask .mn-row-lab, .mn-row.is-you .mn-row-lab { color: var(--ash); }
-.mn-row-h {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--f-id); font-size: 15px; letter-spacing: -0.01em;
-  color: var(--chalk);
-}
-/* the letter, read back in one line, in its own face */
-.mn-row-line {
-  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--f-letter); font-optical-sizing: auto; font-size: 15.5px;
-  color: var(--ash);
-}
-.mn-row-note {
-  margin-left: auto; flex: 0 0 auto;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--ash-dim);
-  transition: color 200ms var(--ease);
-}
-button.mn-row { cursor: pointer; }
-button.mn-row:hover .mn-row-note, button.mn-row:focus-visible .mn-row-note { color: var(--ash); }
-button.mn-row:hover .mn-row-line { color: var(--chalk); }
-button.mn-row:focus-visible { outline: none; }
-button.mn-row:focus-visible .mn-row-h, button.mn-row:focus-visible .mn-row-line {
-  text-decoration: underline; text-underline-offset: 3px;
-}
-/* the field for you, inside its line: the rule is the line's, the type is
-   the field's own size, one step down from the first screen's */
-.mn-row .wl-field { flex: 1 1 auto; min-width: 0; padding-bottom: 0; }
-.mn-row .wl-field-line { display: none; }
-.mn-row .wl-field input, .mn-row .wl-at { font-size: 21px; }
-
 /* ── the letter ──
-   The one bright thing on its screen, and the screen is built round it: the
-   name in one small line above, the paper under it at the column's width,
-   and room to write. */
-.mn-letter { margin-top: 12px; padding: 16px 20px 20px; animation: wl-rise 340ms var(--ease) both; }
+   One sheet, and the screen is built round it. The paper carries what a
+   letter carries: the address at its head (a label, the face, the name, and
+   the pen at the end of the line), the words, and the signature at its
+   foot, set in the same ink as the rest of the sheet. The two labels are the
+   dateline's own type, so the head and the foot are the paper speaking and
+   not a form laid over it. */
+.mn-letter { margin-top: 8px; padding: 16px 20px 18px; animation: wl-rise 340ms var(--ease) both; }
 .mn-letter .wl-paper-head { margin-bottom: 14px; }
+.mn-letter .wl-paper-crest { gap: 11px; margin-bottom: 12px; }
+.mn-letter .wl-paper-title { flex: 0 1 auto; }
 .mn-letter .wl-letterfield textarea { font-size: 17px; line-height: 1.55; min-height: calc(5 * 1.55 * 17px); }
-.mn-letter .wl-letterfield { padding-bottom: 16px; }
+.mn-letter .wl-letterfield { padding-bottom: 20px; }
+.mn-letter .wl-count { bottom: 2px; }
+.mn-letter .wl-paper-foot { margin-top: 12px; padding-top: 12px; }
+
+.mn-lab {
+  flex: 0 0 auto; min-width: 34px;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--paper-ink-2);
+}
+
+/* the signature line. A field in ink while it is asked; the face and the
+   name once it is known. The field keeps the bare baseline every field in
+   the product has, struck in the paper's ink rather than in chalk. */
+.mn-sign { display: flex; align-items: center; gap: 11px; min-height: 32px; }
+.mn-sign-h { font-family: var(--f-id); font-size: 17px; letter-spacing: -0.012em; color: var(--paper-ink); }
+.mn-sign .wl-field { flex: 1 1 auto; min-width: 0; align-items: baseline; padding-bottom: 5px; }
+.mn-sign .wl-field input, .mn-sign .wl-at { font-size: 18px; }
+.mn-sign .wl-field input { color: var(--paper-ink); }
+.mn-sign .wl-field input::placeholder { color: rgba(106, 99, 87, 0.5); }
+.mn-sign .wl-at { color: var(--paper-ink-2); }
+.mn-sign .wl-field:focus-within .wl-at { color: var(--paper-ink); }
+.mn-sign .wl-field-line { background: rgba(23, 21, 15, 0.16); }
+.mn-sign .wl-field-line::after { background: linear-gradient(90deg, var(--paper-ink), rgba(23, 21, 15, 0.28)); }
 
 @media (prefers-reduced-motion: reduce) {
-  .mn-row, .mn-letter { animation: none; }
-  .mn-row::before { transition: none; }
+  .mn-letter { animation: none; }
 }
 
 /* ── it is out ── */

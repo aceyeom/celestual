@@ -560,6 +560,21 @@
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(23, 21, 15, 0.16); }
 
+/* the pen, at the end of the crest row. Ink on paper: the ring is the same
+   hairline the head rule is drawn in, and the nib is the wall's own glyph. */
+.wl-pen {
+  flex: 0 0 auto; margin-left: auto;
+  display: grid; place-items: center; padding: 0;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--paper-ink-2);
+  border: 1px solid rgba(23, 21, 15, 0.18);
+  background: none;
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+}
+.wl-pen:hover { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
+.wl-pen:active { transform: scale(0.94); }
+.wl-pen:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; }
+
 /* the @handle set as a card's title, in the identity face. It is the SUBJECT
    of the sheet and it is now set like one: bigger than the body it sits over,
    on its own line, with the crest beside it and nothing else in the row. */

@@ -375,7 +375,9 @@ export function TopBar({ go, at = 'wall' }) {
 // somebody. It used to sit in a row underneath the card with a timestamp and a
 // button, where it was one of three unrelated objects competing at the same
 // weight and read as none of them.
-export function Paper({ dateline, title, crest, children, foot, tone = '', className = '', style, ...rest }) {
+// `aside` stands at the end of the crest row: the one control a card may
+// carry beside its title, which today is the pen on Main's letter.
+export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', className = '', style, ...rest }) {
   return (
     <article className={`wl-paper${tone ? ` is-${tone}` : ''} ${className}`} style={style} {...rest}>
       <div className="wl-paper-grain" aria-hidden="true" />
@@ -396,11 +398,27 @@ export function Paper({ dateline, title, crest, children, foot, tone = '', class
         <div className={`wl-paper-crest${title ? '' : ' is-bare'}`}>
           {crest}
           {title && <h2 className="wl-paper-title">{title}</h2>}
+          {aside}
         </div>
       )}
       <div className="wl-paper-body">{children}</div>
       {foot && <footer className="wl-paper-foot">{foot}</footer>}
     </article>
+  )
+}
+
+// ── the pen ─────────────────────────────────────────────────────────────────
+// The one control that lives on paper: the nib, struck in the paper's ink
+// inside a hairline ring, standing at the end of a line that can be changed.
+// It is the same nib the wall's bar draws for "write", on the same grid at
+// the same stroke, so it is one glyph in two materials rather than an icon
+// set's pencil beside the product's own pen. A word ("change") stood where it
+// stands, and a word on a letter is a word in the letter.
+export function Pen({ onClick, label = 'change it', className = '' }) {
+  return (
+    <button type="button" className={`wl-pen ${className}`} onClick={onClick} aria-label={label} title={label}>
+      <Icon name="write" size={15} />
+    </button>
   )
 }
 

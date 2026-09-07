@@ -3,48 +3,50 @@
 // docs/rebuild-spec.md section 6. Both routes into Main end here: from the
 // wall, and straight in from the front door.
 //
-// "Who's on your mind." Three steps, in the order the spec puts them: a name,
-// a line, and their own handle proved through the DM code flow.
+// "Who's on your mind." A name, a letter, and their own handle proved through
+// the DM code flow.
 //
-// ── three screens, one thing each ───────────────────────────────────────────
-// It used to be one object shaped like a piece of mail, with every part of it
-// on the glass from the first step to the last: the envelope's two lines, the
-// folded paper, a bar of segments, a chip row, a note, and a sentence under
-// all of it that changed with the step. It showed everything so that nothing
-// would be lost, and what it cost was that nothing on it was the thing to do.
+// ── the letter is the object ────────────────────────────────────────────────
+// Two screens, and the second one is a letter. Not a form shaped like one:
+// the paper, the only bright surface in the product and the place anything a
+// person writes actually lives, carrying what a letter carries. Who it is to,
+// at its head, with their face beside the name. The words. And who it is
+// from, at its foot, signed in the same ink. Nothing stands beside the paper
+// and nothing is stacked over it; the one control it carries is a pen at the
+// end of the address, which is the way back to the name.
 //
-// It is three screens now, and each one holds the one thing that step asks:
+// It used to be three rows under each other, the name, the letter cut to one
+// line, and a field, each on its own hairline, with a word at the end of each
+// row for going back. Three rows on three lines is a form, whatever it holds.
+// A letter addressed at the top and signed at the bottom is a letter.
 //
-//   to          the name, and the card that says who that is
-//   the letter  the paper, and nothing beside it. The name stands in one
-//               small line above, as the address stands on an envelope
-//   from        the name and the line in two small lines above, and the
-//               question about you under them. The code replaces the
-//               question while it is out, and nothing else stays
+// The first screen is still the name on its own, because a person arriving
+// from the front door has one thing in mind and the field is that, and the
+// card under it is the one place they confirm against a face rather than
+// against their own spelling.
 //
-// Every step is marked: three dots and the step's word, at the head of the
-// screen. A dot already passed is the way back to that step, and so is each
-// of the small lines above the paper and the field. Nothing a person has
-// done is more than one press away, and nothing is lost by going back.
+// Each of the two is marked: two dots and the step's word, at the head of
+// the screen. The dot already passed is the way back, and so is the pen.
 //
-// ── why the proof is last ───────────────────────────────────────────────────
-// It is the only expensive step, and asking for it first means asking somebody
-// to open Instagram before they know what for. The name and the line cost
-// nothing and they are what the person actually came to do; the proof is what
-// the product needs, and it is asked once, at the end, about the one thing it
-// is needed for.
+// ── the proof is its own page ───────────────────────────────────────────────
+// It is the only expensive step, and asking for it first means asking
+// somebody to open Instagram before they know what for. So it is asked last,
+// once, and on a page of its own that is nothing but the proof: the heading,
+// where the code goes, the code, and the act. The letter is not on it. The
+// step marker is not on it. It is not a step of the letter; it is the door
+// the letter goes through, and it shuts again the moment the proof lands.
 //
 // The ping is not placed until the proof comes back. Nothing partial is
-// written, so backing out at the last step leaves no half a ping anywhere.
+// written, so backing out at the door leaves no half a ping anywhere.
 //
-// ── the third step asks whose handle it is ──────────────────────────────────
-// The proof is started against the SENDER's handle, asked in one field on the
-// third step, prefilled when the browser already knows. What is proved is
-// still whatever account actually sends the DM: the code is a correlation id
-// and Meta's webhook is the authority (migration 0012). When those differ,
-// the screen says so and asks, rather than quietly placing a ping under a
-// name the person did not type. A handle on the desk's pass list (0043) is
-// proved on the spot and the code is never drawn.
+// ── the signature asks whose handle it is ───────────────────────────────────
+// The proof is started against the SENDER's handle, the one signed at the
+// foot of the letter, prefilled when the browser already knows it. What is
+// proved is still whatever account actually sends the DM: the code is a
+// correlation id and Meta's webhook is the authority (migration 0012). When
+// those differ, the screen says so and asks, rather than quietly placing a
+// ping under a name the person did not sign. A handle on the desk's pass
+// list (0043) is proved on the spot and the door is never drawn.
 //
 // ── what this screen never does ─────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
@@ -54,7 +56,7 @@
 // somebody who never came to this site.
 import { useEffect, useRef, useState } from 'react'
 import {
-  Display, Pill, Prose, HandleField, LetterField, HandleCard, Paper, DmCode, VerifyHead, Face,
+  Display, Pill, Prose, HandleField, LetterField, HandleCard, Paper, Pen, DmCode, VerifyHead, Face,
   useResolver, useLookingWords, confirmWord,
 } from '../wall/parts.jsx'
 import { Provider, Dots } from '../wall/art.jsx'
@@ -69,7 +71,7 @@ import TopBar from './TopBar.jsx'
 
 const MAX_WORDS = 20
 const MIN_CHARS = 12
-const STEPS = ['to', 'the letter', 'from']
+const STEPS = ['to', 'the letter']
 
 function words(s) {
   return String(s || '').trim().split(/\s+/).filter(Boolean)
@@ -93,7 +95,7 @@ function resume(prefill) {
 }
 
 // The one line under the paper, and only when there is one: the thing that
-// stops the letter going up. Nothing when it would go.
+// stops the letter going. Nothing when it would go.
 function floorFor(line) {
   const w = words(line)
   const n = line.trim().length
@@ -102,39 +104,21 @@ function floorFor(line) {
   return ''
 }
 
-// One of the small lines above the paper and the field: a label, what stands
-// there, and, when it is a way back, the word for that at its end.
-function Row({ label, children, onClick, note = 'change', ariaLabel, className = '' }) {
-  const body = <><span className="mn-row-lab">{label}</span>{children}</>
-  if (onClick) {
-    return (
-      <button type="button" className={`mn-row is-back ${className}`} onClick={onClick} aria-label={ariaLabel}>
-        {body}
-        <span className="mn-row-note">{note}</span>
-      </button>
-    )
-  }
-  return <div className={`mn-row ${className}`}>{body}</div>
-}
-
 export default function Place({ go, who, refreshWho, to: prefill }) {
   const wrote = getState().wroteTo || []
   const [held] = useState(() => resume(prefill))
   const [to, setTo] = useState(() => prefill || held?.to || '')
   const [line, setLine] = useState(() => held?.line || '')
-  // The sender's own @, the third question. Prefilled from the identity row
-  // when the browser already has one.
+  // The signature. Prefilled from the identity row when the browser already
+  // has one, and never seeded off the recipient.
   const [mine, setMine] = useState(() => held?.mine || who.handle || '')
-  const [step, setStep] = useState(() => (held ? 2 : prefill ? 1 : 0))
+  const [step, setStep] = useState(() => (held || prefill ? 1 : 0))
   const [dm, setDm] = useState(() => held)
-  // Set when the DM came from an account other than the one typed. The
+  // Set when the DM came from an account other than the one signed. The
   // webhook's answer is the identity (0012), so the choice is not whether to
   // believe it: it is whether to place THIS ping under a name the person did
-  // not type, and that is theirs to answer.
+  // not sign, and that is theirs to answer.
   const [adopted, setAdopted] = useState(null)
-  // Set when the DM verified the typed handle while the person was on another
-  // step. The proof is held here until they come back and press place.
-  const [proved, setProved] = useState(null)
   // What the last DM to arrive said, when it was not the code (0041).
   const [note, setNote] = useState('')
   const [said, setSaid] = useState('')
@@ -147,8 +131,6 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // The date on the letter. Struck once, when the screen opens.
   const [dated] = useState(() => dateline(Date.now()))
   const alive = useRef(true)
-  const stepNow = useRef(step)
-  stepNow.current = step
   const avoid = useSkyAvoid()
 
   useEffect(() => {
@@ -156,8 +138,8 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     return () => { alive.current = false }
   }, [])
 
-  // whoami lands after the first paint, so the field fills in when it does,
-  // and never over something already typed.
+  // whoami lands after the first paint, so the signature fills in when it
+  // does, and never over something already typed.
   useEffect(() => {
     if (who.handle) setMine((m) => m || who.handle)
   }, [who.handle])
@@ -169,23 +151,20 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   const w = words(line)
   const lineOk = line.trim().length >= MIN_CHARS && w.length <= MAX_WORDS
 
-  // Which steps can be gone to: the first always; the letter once there is a
-  // name; you once there is a line that would go up.
-  const can = [true, named, named && lineOk]
   const goStep = (i) => {
-    if (i === step || !can[i]) return
+    if (i === step || (i === 1 && !named)) return
     setSaid('')
     setStep(i)
   }
 
-  // A live code is stashed with the name and the line it was minted for, and
-  // both can be changed while it is out. Keep the stash current, so a reload
-  // on the way back from Instagram resumes what is on the glass now.
+  // A live code is stashed with the name and the line it was minted for.
+  // Keep the stash current, so a reload on the way back from Instagram
+  // resumes what is on the glass now.
   useEffect(() => {
     if (dm) savePending({ ...dm, to: h, line: line.trim() })
   }, [dm, h, line])
 
-  // ── the last step, once the handle is proved ──
+  // ── placing it, once the handle is proved ──
   // The proof is the DM flow's secret and celestual_submit consumes it
   // (celestual_consume_ig_proof, 0023): without it the RPC answers 'unverified'
   // and nothing is placed.
@@ -199,9 +178,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     setPlacing(false)
     if (!out.ok) {
       // A lapsed proof is dropped on the spot, so `readyToPlace` turns false
-      // and this step asks for the DM again rather than saying "prove it
+      // and the letter asks for the DM again rather than saying "prove it
       // again" over a screen with no way to.
-      if (out.error === 'unverified') { dropProof(); setProved(null) }
+      if (out.error === 'unverified') dropProof()
       setSaid(
         out.error === 'no_slots' || out.error === 'cap' ? 'you have as many out as you can hold'
           : out.error === 'self' ? 'you cannot place one on yourself'
@@ -218,29 +197,27 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   }
 
   // The proof landed, from the poll or on the spot for a passed handle. The
-  // DM came from another account: say so and ask. The person went to another
-  // step while the code was out: hold the proof until they are back here.
+  // door shuts, and the ping goes. The DM came from another account: say so
+  // on the letter and ask, rather than placing it under a name nobody signed.
   const landed = async (got, asked, proof) => {
     const u = await refreshWho()
     if (!alive.current) return
     setDm(null)
     setNote('')
     if (got && got !== asked) { setAdopted({ handle: got, proof }); return }
-    const from = got || u?.handle || asked
-    if (stepNow.current !== 2) { setProved({ handle: from, proof }); return }
-    send(from, proof)
+    send(got || u?.handle || asked, proof)
   }
 
-  // ── the handoff ──
+  // ── the door ──
   // Started against the SENDER's handle. It is the hint the code is filed
-  // under, it is what the per-handle limit counts, and it is what the screen
-  // has just been told.
+  // under, it is what the per-handle limit counts, and it is what the letter
+  // is signed with.
   const ask = async () => {
     if (dm || busy) return
     setSaid('')
     setNote('')
     if (!mineOk) {
-      setSaid(me && me === h ? 'that is the name you are placing it on' : 'that handle does not look right')
+      setSaid(me && me === h ? 'that is the name you are placing it on' : 'sign it with your @')
       return
     }
     setBusy(true)
@@ -316,9 +293,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   // Proved on this device AND still holding the proof that says so. The second
   // half matters: `handleVerified` is the server's memory of a verification,
   // and the secret that spends it lives in this browser.
-  const readyToPlace = !!proved || (who.handleVerified && !!heldProof(who.handle))
-  // Whose name the ping goes out under, once that is settled.
-  const you = adopted ? adopted.handle : proved ? proved.handle : readyToPlace ? who.handle : ''
+  const readyToPlace = who.handleVerified && !!heldProof(who.handle)
+  // Whose name the letter is signed with, once that is settled.
+  const you = adopted ? adopted.handle : readyToPlace ? who.handle : ''
 
   // The card under the handle field: peeks while typing, asks on the press.
   // The first press on a handle nobody has looked up draws the card looking;
@@ -337,8 +314,8 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       setStep(1)
       return
     }
-    if (step === 1) { if (lineOk) setStep(2); return }
-    if (proved) { send(proved.handle, proved.proof); return }
+    if (!lineOk) return
+    if (adopted) { send(adopted.handle, adopted.proof); return }
     if (readyToPlace) { send(who.handle); return }
     ask()
   }
@@ -364,9 +341,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
           <Pill tone="light" wide onClick={() => go('sky')}>your sky</Pill>
           <button type="button" className="wl-quiet" onClick={() => {
             // The address still carried the last person. A refresh here used
-            // to reopen them at step 1 under "place another".
+            // to reopen them at the letter under "place another".
             window.history.replaceState(window.history.state, '', '/place')
-            setDone(null); setTo(''); setLine(''); setStep(0); setProved(null); setAdopted(null)
+            setDone(null); setTo(''); setLine(''); setStep(0); setAdopted(null)
           }}>
             place another
           </button>
@@ -375,22 +352,31 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     )
   }
 
-  // What the last DM said, put into words beside the code it should have been.
-  const noteText = note === 'wrong_code' ? 'that code didn’t match. send this one.'
-    : note === 'expired_code' ? 'that code had lapsed. send this one.'
-    : ''
-
-  // The small line for the name, above the paper and above the field.
-  const toRow = (
-    <Row label="to" onClick={() => goStep(0)} ariaLabel={`to ${atHandle(h)}. change the name`}>
-      <Face handle={h} size={26} />
-      <span className="mn-row-h">{atHandle(h)}</span>
-    </Row>
-  )
-
-  // Whether the code has the third screen. While it is out nothing else is on
-  // it: the heading, where the code goes, the code, the act.
-  const codeUp = step === 2 && !!dm
+  // ── the door ──
+  // The proof, on a page of its own. Nothing of the letter is on it.
+  if (dm) {
+    return (
+      <main className="mn-page mn-place">
+        <TopBar go={go} who={who} />
+        <div className="mn-mid">
+          <VerifyHead ref={avoid} />
+          <div className="mn-step mn-prove">
+            <DmCode
+              code={dm.code}
+              status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
+                : note === 'expired_code' ? 'that code had lapsed. send this one.'
+                : ''}
+            />
+          </div>
+        </div>
+        <div className="mn-foot">
+          {/* The one way out. It clears the stashed record too, so a code
+              abandoned here is not resumed on the next visit. */}
+          <button type="button" className="wl-quiet" onClick={drop}>back to the letter</button>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="mn-page mn-place">
@@ -398,9 +384,9 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
 
       <div className="mn-mid">
         {/* ── the step, marked ──
-            Three dots and the step's word. A dot already passed goes back. */}
+            Two dots and the step's word. The dot already passed goes back. */}
         <div className="mn-mark">
-          <Dots n={3} at={step} onGo={goStep} />
+          <Dots n={2} at={step} onGo={goStep} />
           <span className="wl-label mn-mark-word">{STEPS[step]}</span>
         </div>
 
@@ -421,93 +407,67 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             </div>
             <p className="mn-said" role="status" aria-live="polite">{said || looking}</p>
           </>
-        ) : step === 1 ? (
-          /* ── the letter ── the name in one small line, and the paper */
+        ) : (
+          /* ── the letter ──
+             One sheet. Addressed at the head, with the face beside the name
+             and the pen at the end of the line; written in the middle; signed
+             at the foot, in the same ink, by the handle that will prove it. */
           <>
-            <div className="mn-rows">{toRow}</div>
-            <Paper className="mn-letter" dateline={dated}>
+            <Paper
+              className="mn-letter"
+              dateline={dated}
+              crest={<><span className="mn-lab">to</span><Face handle={h} size={28} /></>}
+              title={<span className="wl-letter-to">{atHandle(h)}</span>}
+              aside={<Pen onClick={() => goStep(0)} label="change the name" />}
+              foot={(
+                <div className={`mn-sign${you ? '' : ' is-ask'}`}>
+                  <span className="mn-lab">from</span>
+                  {you ? (
+                    <>
+                      <Face handle={you} size={24} />
+                      <span className="mn-sign-h">{atHandle(you)}</span>
+                    </>
+                  ) : (
+                    <HandleField
+                      value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={next}
+                      placeholder="yourhandle" label="your instagram handle" busy={busy}
+                    />
+                  )}
+                </div>
+              )}
+            >
               <LetterField
                 value={line} onChange={setLine} max={140} autoFocus rows={5}
                 placeholder="I have wanted to say this since the second week of term."
               />
             </Paper>
-            <p className="mn-said" role="status" aria-live="polite">{said || floorFor(line)}</p>
-          </>
-        ) : codeUp ? (
-          /* ── the code ── nothing else on the screen while it is out */
-          <>
-            <VerifyHead ref={avoid} />
-            <div className="mn-step mn-prove">
-              <DmCode code={dm.code} status={noteText} />
-            </div>
-          </>
-        ) : (
-          /* ── from ── the name and the line in two small lines, then you */
-          <>
-            <div className="mn-rows">
-              {toRow}
-              <Row label="letter" onClick={() => goStep(1)} ariaLabel="the letter. change it" className="is-line">
-                <span className="mn-row-line">{line.trim()}</span>
-              </Row>
-              {you ? (
-                <Row label="from" className="is-you">
-                  <Face handle={you} size={26} />
-                  <span className="mn-row-h">{atHandle(you)}</span>
-                </Row>
-              ) : (
-                /* THE QUESTION: whose handle is placing this. Asked in the
-                   envelope's own second line, never seeded off the recipient. */
-                <Row label="from" className="is-ask">
-                  <HandleField
-                    value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={next} busy={busy}
-                    autoFocus placeholder="yourhandle" label="your instagram handle"
-                  />
-                </Row>
-              )}
-            </div>
             <p className="mn-said" role="status" aria-live="polite">
-              {said || (adopted ? `the code came from ${atHandle(adopted.handle)}. place it under that name?` : '')}
+              {said || floorFor(line)
+                || (adopted ? `the code came from ${atHandle(adopted.handle)}. place it under that name?` : '')}
             </p>
           </>
         )}
       </div>
 
       <div className="mn-foot">
-        {step === 2 && adopted ? (
-          <>
-            <Pill tone="light" wide disabled={placing}
-              onClick={() => send(adopted.handle, adopted.proof)}>
-              {placing ? 'placing…' : `place it as ${atHandle(adopted.handle)}`}
-            </Pill>
-            <button type="button" className="wl-quiet" onClick={() => setAdopted(null)}>
-              not that account
-            </button>
-          </>
-        ) : codeUp ? (
-          /* The code is the act while it is out. The one way out of it clears
-             the stashed record too, so a code abandoned here is not resumed
-             on the next visit. */
-          <button type="button" className="wl-quiet" onClick={drop}>start this again</button>
-        ) : (
-          <>
-            <Pill
-              tone="light" wide
-              disabled={placing || busy || them.looking
-                || (step === 0 ? !named : step === 1 ? !lineOk : !readyToPlace && !mineOk)}
-              onClick={next}
-              icon={step === 2 && !readyToPlace ? <Provider size={17} /> : null}
-            >
-              {placing ? 'placing…'
-                : busy ? 'one moment'
-                : step === 0 ? confirmWord(them.at, 'next')
-                : step === 1 ? 'next'
-                : readyToPlace ? 'place it' : 'prove it'}
-            </Pill>
-            {cardUp ? (
-              <button type="button" className="wl-quiet" onClick={fix}>not them? change it</button>
-            ) : null}
-          </>
-        )}
+        <Pill
+          tone="light" wide
+          disabled={placing || busy || them.looking
+            || (step === 0 ? !named : !lineOk || (!readyToPlace && !adopted && !mineOk))}
+          onClick={next}
+          icon={step === 1 && !readyToPlace && !adopted ? <Provider size={17} /> : null}
+        >
+          {placing ? 'placing…'
+            : busy ? 'one moment'
+            : step === 0 ? confirmWord(them.at, 'next')
+            : adopted ? `place it as ${atHandle(adopted.handle)}`
+            : readyToPlace ? 'place it' : 'prove it'}
+        </Pill>
+        {cardUp ? (
+          <button type="button" className="wl-quiet" onClick={fix}>not them? change it</button>
+        ) : adopted ? (
+          <button type="button" className="wl-quiet" onClick={() => setAdopted(null)}>not that account</button>
+        ) : null}
       </div>
     </main>
   )
