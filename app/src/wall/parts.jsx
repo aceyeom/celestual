@@ -220,6 +220,26 @@ export function Close({ onClick, label = 'close', className = '' }) {
   )
 }
 
+// ── the heart ───────────────────────────────────────────────────────────────
+// The tenth glyph, on the same grid at the same stroke, and the one that has
+// two states: a line when nobody has pressed it, and filled with its own ink
+// when this person has. It is drawn here and not in an icon set for the
+// reason every glyph is: it has to sit on the paper beside the letter's own
+// type, struck in the paper's ink, and a set would not know it was there.
+export function Heart({ size = 18, on = false, className = '' }) {
+  return (
+    <svg
+      className={`wl-icon wl-heart-glyph${on ? ' is-on' : ''} ${className}`}
+      width={size} height={size} viewBox="0 0 24 24"
+      fill={on ? 'currentColor' : 'none'} stroke="currentColor"
+      strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true" focusable="false"
+    >
+      <path d="M12 20.4C8.6 17.6 4.4 14.3 4.4 10.1A4 4 0 0 1 12 8.1a4 4 0 0 1 7.6 2c0 4.2-4.2 7.5-7.6 10.3z" />
+    </svg>
+  )
+}
+
 export function Icon({ name, size = 20, className = '' }) {
   return (
     <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
@@ -290,15 +310,28 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // it teaches it on the first screen of the product. The way back to the wall is
 // the mark, on the left, on every screen, which is where a person reaches for
 // it anyway.
-export function TopBar({ go, at = 'wall', onMark }) {
+//
+// ── and on the wall itself, the brand is the way to the front ──
+// design/DESIGN.md 3.6: the brand is the way home on every bar in the
+// product, and off the front door it grows the chevron the sheets use, so
+// "back" and "home" are the same target in the same place. On the wall it
+// used to scroll to the top instead, which on a screen one viewport tall was
+// a control that did nothing, and it left a person who had come from the
+// front door with no way back to it but the foot. It is a real anchor to `/`
+// now: the wall's shell cannot draw Main, so the walk back is a navigation,
+// and a plain click, a middle click and a copy all get the same address. On a
+// sheet it stays what it was, the way back to the wall the sheet is over.
+export function TopBar({ go, at = 'wall' }) {
   const who = member()
+  const onWall = at === 'wall'
   return (
     <header className="wl-top">
       <Brand
-        back={at !== 'wall'}
-        onClick={onMark || (() => go('wall'))}
-        label={at === 'wall' ? 'celestual, back to the top' : 'back to the wall'}
-        title={at === 'wall' ? 'the top' : 'the wall'}
+        back
+        href={onWall ? '/' : undefined}
+        onClick={onWall ? undefined : () => go('wall')}
+        label={onWall ? 'celestual, the front' : 'back to the wall'}
+        title={onWall ? 'the front' : 'the wall'}
       />
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
@@ -954,9 +987,13 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
       style={{ '--s': `${size}px`, ...style }} aria-hidden="true"
     >
       <span className="wl-face-mono">{mono}</span>
+      {/* Eager, not lazy. A face is thirty pixels and it is almost always in
+          the first screen; `loading="lazy"` held every one of them back until
+          layout had settled, which on a phone was the visible beat between
+          the row landing and the picture arriving. */}
       {src && !broken ? (
         <img
-          src={src} alt="" loading="lazy" decoding="async"
+          src={src} alt="" decoding="async"
           onLoad={() => setShown(true)} onError={() => setBroken(true)}
         />
       ) : null}

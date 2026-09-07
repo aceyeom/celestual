@@ -47,10 +47,25 @@ import { useEffect, useState } from 'react'
 import { Who, useProfile } from '../wall/parts.jsx'
 import { normHandle, atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
-import { myPings, sinceAgo } from './data.js'
+import { myPings, heldPings, sinceAgo } from './data.js'
 import LiquidMark from '../wall/LiquidMark.jsx'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
+
+// The mutual this address names, out of an answer already in hand: the sky's,
+// held a moment ago (data.js heldPings). Null when there is none to read,
+// which is not the same as "not a mutual".
+function fromHeld(handle, verified, them) {
+  if (!verified || !them) return null
+  const held = heldPings(handle)
+  if (!held) return null
+  return held.mutuals.find((m) => normHandle(m.to) === them) || null
+}
+
+// The seal's shader mounts after the screen's entrance has landed (the cards
+// rise at 900 and take 820), on a flat mark that stood in for it from the
+// first frame. The compile then costs the screen nothing it can see.
+const SEAL_AT = 1750
 
 // One side of it: the paper, the person, the line. The person is parts.jsx
 // `Who`, which is the same face and name the sky and the search draw, so the
@@ -60,9 +75,11 @@ function Card({ handle, ping, side, delay }) {
     <article className="wl-paper sg-card sg-in" style={{ '--d': delay }}>
       <div className="wl-paper-grain" />
 
+      {/* The other side's card carries no date (see below), and a stamp
+          with nothing on it used to draw as an empty capsule on that card. */}
       <div className="wl-paper-head">
         <span>{side}</span>
-        <span className="wl-paper-stamp">{sinceAgo(ping.at)}</span>
+        {ping.at ? <span className="wl-paper-stamp">{sinceAgo(ping.at)}</span> : null}
       </div>
 
       <div className="sg-who">
@@ -78,24 +95,33 @@ function Card({ handle, ping, side, delay }) {
 
 export default function Reveal({ go, who, known = true, id, still = false }) {
   const them = normHandle(id)
-  const [mutual, setMutual] = useState(undefined)
+  const { handle, handleVerified: verified } = who
+  // Drawn on the first frame from the sky's own answer when there is one, so
+  // the tap on a mutual row lands on this screen and not on a bare bar. The
+  // server is still asked, below.
+  const [mutual, setMutual] = useState(() => fromHeld(handle, verified, them) || undefined)
   const avoid = useSkyAvoid()
 
   // The mutual itself, off the same RPC the sky reads. Asked here as well as
   // there so a shared or reloaded address lands on the screen rather than on an
-  // empty one. Not asked, and nothing said, until whoami has answered: this
-  // screen used to say "Nothing here." for the second before it did.
+  // empty one, and so a copy held from a moment ago is checked against the
+  // row. Not asked, and nothing said, until whoami has answered: this screen
+  // used to say "Nothing here." for the second before it did.
   useEffect(() => {
     let alive = true
     if (!known) { setMutual(undefined); return undefined }
-    if (!who.handleVerified || !them) { setMutual(null); return undefined }
-    setMutual(undefined)
-    myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
+    if (!verified || !them) { setMutual(null); return undefined }
+    // Nothing in hand: wait on the server rather than say anything. With a
+    // held copy the screen is already drawn, and the answer only corrects it.
+    const held = fromHeld(handle, verified, them)
+    setMutual(held || undefined)
+    myPings({ handle, proof: heldProof(handle) }).then((out) => {
       if (!alive) return
+      if (!out.ok && held) return   // a read that failed does not unsay a mutual in hand
       setMutual(out.mutuals.find((m) => normHandle(m.to) === them) || null)
     })
     return () => { alive = false }
-  }, [who.handle, who.handleVerified, them, known])
+  }, [handle, verified, them, known])
 
   const theirs = useProfile(them)
 
@@ -132,10 +158,13 @@ export default function Reveal({ go, who, known = true, id, still = false }) {
       {/* The seal: the mark as a material, the same object the sky's mutual
           row wears and the front door lights. No bloom behind it. The paper is
           the bright thing on this screen, because it is what the two of them
-          actually wrote, and the metal is the light of its own. */}
+          actually wrote, and the metal is the light of its own. It rises flat
+          with the screen and pours once the cards have landed: the compile
+          and the first heavy frames used to fall inside the entrance, and
+          that was the hitch a tap on the mutual row answered with. */}
       <div className="sg-reveal-stage sg-in" style={{ '--d': '0ms' }}>
         <span className="sg-reveal-seal" aria-hidden="true">
-          <LiquidMark size="100%" speed={0.6} still={still} />
+          <LiquidMark size="100%" speed={0.6} still={still} quality="seal" defer={still ? 0 : SEAL_AT} />
         </span>
       </div>
 

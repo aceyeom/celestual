@@ -48,6 +48,24 @@ if (moved) {
 const path = moved || here
 const wallPath = path === BASE || path.startsWith(BASE + '/')
 
+// ── the project, connected early ─────────────────────────────────────────────
+// Every read on either surface goes to the one Supabase project, and every
+// face is a picture served from it. The handshake with that origin (DNS, the
+// connection, TLS) used to start with the first RPC, after the shell's chunk
+// had loaded and mounted, and it stood in front of the first picture too. It
+// starts here, before anything mounts. Two links because the browser keeps
+// two pools: pictures are fetched plain, and the RPCs are fetched with CORS.
+const PROJECT = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '')
+if (PROJECT) {
+  for (const cors of [false, true]) {
+    const link = document.createElement('link')
+    link.rel = 'preconnect'
+    link.href = PROJECT
+    if (cors) link.crossOrigin = 'anonymous'
+    document.head.appendChild(link)
+  }
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 // Phase 6b. The Phase 3 signature surfaces were built at `/signature` and
 // `/signature/reveal`, which was always a preview address: the hero becomes `/`

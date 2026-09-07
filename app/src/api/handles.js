@@ -123,9 +123,10 @@ function shape(handle, data) {
   };
 }
 
-// One request to the function. `peek` asks only what the cache already holds
-// and never reaches Apify; without it, this is the lookup that costs.
-async function post(handle, peek) {
+// One request to the function. `{ handle }` is the lookup that costs;
+// `{ handle, peek }` and `{ handles, peek }` ask only what the cache already
+// holds and never reach Apify.
+async function post(body) {
   return fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -135,8 +136,66 @@ async function post(handle, peek) {
     // The session token, so a signed-in person is counted against their own
     // allowance rather than their browser's. Absent for a first visit,
     // which is the ordinary case and costs nothing.
-    body: JSON.stringify({ handle, session: sessionToken(), ...(peek ? { peek: true } : {}) }),
+    body: JSON.stringify({ session: sessionToken(), ...body }),
   });
+}
+
+// ── the peek, batched ────────────────────────────────────────────────────────
+// A face is drawn for every handle on a screen, and each one used to be its
+// own request: through the Vercel function, through the edge function, into
+// the database, and back, per face, before a single picture could start. A
+// sky with six rows was six round trips. The peeks a screen makes in the
+// same breath are gathered here and sent as one list, and the answer is
+// dealt back to each waiter. Twenty-four milliseconds is longer than one
+// render and shorter than anybody can see.
+const PEEK_BATCH_MS = 24;
+const PEEK_BATCH_MAX = 24;
+const peeking = new Map();
+let batch = null;
+
+function enqueuePeek(handle) {
+  if (!batch) batch = { waiters: new Map(), timer: setTimeout(flushPeeks, PEEK_BATCH_MS) };
+  let waiter = batch.waiters.get(handle);
+  if (!waiter) {
+    let resolve;
+    const promise = new Promise((r) => { resolve = r; });
+    waiter = { promise, resolve };
+    batch.waiters.set(handle, waiter);
+    peeking.set(handle, promise);
+    if (batch.waiters.size >= PEEK_BATCH_MAX) flushPeeks();
+  }
+  return waiter.promise;
+}
+
+async function flushPeeks() {
+  const b = batch;
+  batch = null;
+  if (!b) return;
+  clearTimeout(b.timer);
+  const handles = [...b.waiters.keys()];
+  let results = {};
+  try {
+    const res = await post({ handles, peek: true });
+    if (res.ok) {
+      const data = await res.json();
+      results = (data && data.results) || {};
+    }
+  } catch {
+    // Nothing to draw yet. Every waiter gets null, below, and the miss is
+    // remembered for a minute like a single peek's.
+  }
+  for (const [handle, waiter] of b.waiters) {
+    peeking.delete(handle);
+    const data = results[handle];
+    if (!data || data.ok === false || !data.found) {
+      missed.set(handle, Date.now() + MISS_MS);
+      waiter.resolve(null);
+      continue;
+    }
+    const out = shape(handle, data);
+    memo.set(handle, out);
+    waiter.resolve(out);
+  }
 }
 
 // What the cache already knows about a handle, from the server, for free.
@@ -152,20 +211,8 @@ export async function peekServer(raw) {
     const r = await inflight.get(handle);
     return r && r.state === 'found' ? r : null;
   }
-  try {
-    const res = await post(handle, true);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || data.ok === false || !data.found) {
-      missed.set(handle, Date.now() + MISS_MS);
-      return null;
-    }
-    const out = shape(handle, data);
-    memo.set(handle, out);
-    return out;
-  } catch {
-    return null;
-  }
+  if (peeking.has(handle)) return peeking.get(handle);
+  return enqueuePeek(handle);
 }
 
 // Resolve one handle: the lookup that may reach Apify. Called on commit and
@@ -178,10 +225,16 @@ export async function resolveHandle(raw) {
   if (memo.has(handle)) return memo.get(handle);
   if (rateLimitedFor() > 0) return { state: 'unknown', handle };
   if (inflight.has(handle)) return inflight.get(handle);
+  // A peek already out for this handle answers first, and a found account
+  // is the whole answer: the press then costs nothing.
+  if (peeking.has(handle)) {
+    const known = await peeking.get(handle);
+    if (known) return known;
+  }
 
   const call = (async () => {
     try {
-      const res = await post(handle, false);
+      const res = await post({ handle });
 
       if (res.status === 429) {
         const data = await res.json().catch(() => null);

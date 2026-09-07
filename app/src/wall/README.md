@@ -158,7 +158,7 @@ question they are now actually carrying.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall** — the inscription, the names at three weights, drifting in lanes you can pull |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, and the heart on its foot with the count beside it |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
@@ -201,7 +201,7 @@ word among them is the name:
 
 | | |
 | --- | --- |
-| ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it goes to the top; off it, it grows a chevron and goes back |
+| ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | ⌕ | **look for a name** |
 | ✎ | **write a letter** |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |

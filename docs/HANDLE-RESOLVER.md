@@ -36,6 +36,13 @@ to exist at all, and anything that breaks one of them is a bug.
 somebody who knows their friend's handle is right is right. A handle we cannot
 find still places. The app says so once, in one line, and the button still works.
 
+**A private account is an account.** The page of a private account is shut
+to the actor that reads pages, and for a while that came back as "no account
+by that name", which is the one thing this feature must never say about an
+account that exists. A shut page is answered by a second, cheaper look at the
+profile header alone, which Instagram keeps public for private accounts (the
+name, the picture, the badge: everything the card draws). Section 4b.
+
 **It never browses.** There is no search, no suggestion list, no partial match.
 It answers about a handle already typed **in full**, which is the difference
 between confirming a name and shopping for one.
@@ -103,6 +110,10 @@ typed in full.
     │                                                               │
     ├─ handle_search_record(user, device, ip, handle)  found or not │
     │                                                               │
+    ├─ page shut (private, restricted)? the second look:            │
+    │    apify~instagram-profile-scraper, usernames: [handle]       │
+    │    the header alone, recorded again. section 4b               │
+    │                                                               │
     ├─ download the picture once, upload to Storage                 │
     │    bucket `avatars`, path `ig/<handle>.jpg`                   │
     │                                                               │
@@ -152,6 +163,52 @@ a fresh profile and a cache hit; the face is retried on the next lookup after
 function also no longer caches an actor item that has neither a name nor a
 picture URL, which is what the actor returns when Instagram turned it away
 mid-run and is how those nameless rows got written in the first place.
+
+## 4b. The private account
+
+The actor in section 3 reads a profile the way a browser reads the page, with
+the post limit at zero. A private account's page is shut, and the actor says
+so in one of two shapes: an item with an error on it and no username
+(`no_items`, "Empty or private data for provided input", which is the wording
+in Apify's own issue tracker), or a username with nothing beside it and the
+`private` flag up. Read as a miss, the first shape put "no account by that
+name" on the card for an account that plainly exists, which is the one lie
+this feature is not allowed to tell.
+
+So the function reads three answers out of an item now, not two:
+
+| The item | Read as |
+| --- | --- |
+| a username with a name or a picture | **found**, cached, `is_private` kept |
+| an error whose wording says not found (`not_found`, "does not exist", `404`) | **missing** |
+| any other error with no username, or a username with nothing beside it and `private` set | **unclear**: the page is shut, the account may well exist |
+
+An unclear item is put to a second actor, `apify~instagram-profile-scraper`,
+with `usernames: [handle]`. It asks for the profile header alone, which
+Instagram keeps public for a private account: the name, the picture, the
+verification badge, the `private` flag, and no posts. That is exactly the set
+the card draws and no more (section 2, "it shows no numbers"), so a private
+account resolves the way a public one does, its face is stored the same way,
+and the row is cached with `is_private` set. Both runs are recorded against
+the caps, because both cost.
+
+When the second look also comes back empty, what the first look did say
+stands: a username the actor confirmed and flagged private is a found account,
+cached with no name and no face, and the card draws its monogram and its
+handle. A miss from either actor is a miss. Anything else is a provider
+failure, which the card draws as nothing and never as "no account".
+
+The second actor is named rather than keyed (`APIFY_PROFILE_ACTOR_ID`,
+default `apify~instagram-profile-scraper`): the Apify API takes `owner~name`
+wherever it takes an id, and a name survives the store republishing the actor.
+It is pay per result, so a look that finds nothing costs nothing on that side.
+Set it to an empty string and the second look is skipped, and an unclear item
+is answered as a provider failure.
+
+What is still not read: the bio, the counts, the posts. The second actor
+returns them and the function drops every one of them before the row is
+written. Nothing about a private account reaches a browser that does not
+reach it about a public one.
 
 ## 5. The caps
 
@@ -287,6 +344,7 @@ In order. Every step is also in `docs/launchsteps.md`.
 | --- | --- | --- | --- |
 | `APIFY_TOKEN` | Supabase secret | yes | Apify API token. Without it the function answers `{ ok:false, error:'off' }` and the UI renders nothing |
 | `APIFY_ACTOR_ID` | Supabase secret | no | Defaults to `shu8hvrXbJbY3Eb9W` |
+| `APIFY_PROFILE_ACTOR_ID` | Supabase secret | no | The second look, for a page the first actor could not read (section 4b). Defaults to `apify~instagram-profile-scraper`. Empty to skip it |
 | `RESOLVE_PROXY_SECRET` | Supabase secret **and** Vercel env | yes | The same value in both. Proves a request came through `api/resolve.js`, so the visitor's address is the one counted. Without it the backstop counts Vercel's egress |
 | `VITE_HANDLE_RESOLVE` | Vercel env | yes | `1` to render the card. `0` and nothing about the product changes |
 | `VITE_RESOLVE_ENDPOINT` | Vercel env | no | Leave unset. Defaults to `/api/resolve`, which is the function. Only set it on a preview that is not behind it |
@@ -327,10 +385,20 @@ is a refresh that failed and served yesterday's row.
 
 **A handle that exists reads as "no account by that name".** It should not any
 more: a timeout or an Apify refusal answers `{ ok:false, error:'provider' }`
-and the card draws nothing. If it still happens, the actor returned an item
-with an `error` field and no `username` for a real account, which is a miss as
-far as the function can tell. The logs carry the status and the first 300
-bytes of the body for every failed run.
+and the card draws nothing, and an item with an error on it is a miss only
+when the error's own wording says not found (section 4b). If it still
+happens, the actor has started saying not found in a wording the function
+does not know; the logs carry the item's words (`apify could not see in`, and
+the status and the first 300 bytes of the body for every failed run), and
+`NOT_FOUND` in the function is the one line to extend.
+
+**A private account resolves with no name and no face.** The second look came
+back empty too, and the first look had the username and the `private` flag
+and nothing else. The log says `private account, header shut`. Check that
+`APIFY_PROFILE_ACTOR_ID` is not set to an empty string, and that the token is
+allowed to run that actor: the run log names the actor beside the status.
+The row is cached as found and private, and the face is retried on the next
+lookup after seven days like any other faceless row.
 
 ## 10. Suggestions, and what they may list
 
@@ -355,3 +423,36 @@ those names and never the other way round.
 That is also why Main's front door has no suggestions at all. Its field peeks
 the cache for the exact handle typed and offers the person's own history
 (the chips on the place screen), and nothing about anybody else.
+
+## 11. The faces, and what a screen costs
+
+Every `Face` used to be its own peek: through the Vercel function, through
+the edge function, a `celestual_whoami` and an `ig_profile_get`, and back,
+once per handle on the screen, and only then the picture. A sky with six rows
+was six of those before a single picture could start, and on a phone that
+was the visible beat between a row landing and its face arriving. Three
+things changed, and all three keep the rules in section 2:
+
+**The reads that already run carry the answer** (migration 0042). The ping
+rows on `celestual_my_pings` and the letter rows on `wall_letters_for` and
+`wall_letter` ride with the resolver's name, badge and stored face for the
+handle they name, the way `wall_search` has since 0040, and the browser
+learns them into its memo (`learnHandle`). The sky, the reveal and a letter
+draw every face with no second request. A ping row names a handle its owner
+typed; a letter row names a handle that is on the public index.
+
+**The peek takes a list.** The faces a screen draws in the same breath that
+are on no row anybody read (the chip in the bar, a handle just typed) are
+gathered for twenty-four milliseconds in `app/src/api/handles.js` and sent as
+one `{ handles, peek: true }`, answered by `ig_profile_peek` in one call.
+Exact handles only, twenty-four at most, cache only, and it never counts
+against a cap because nothing was spent.
+
+**A peek asks the database once.** The function used to resolve the session
+token before reading the cache, on every peek; it resolves it only on the
+path that can reach Apify, where it decides whose allowance is spent. And
+the app preconnects to the project's origin at boot, so the first picture
+and the first RPC do not pay for the handshake.
+
+What is still true: the cache is never listed. A list of handles is still a
+list somebody typed in full, one at a time, on screens they are looking at.

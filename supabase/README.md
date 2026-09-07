@@ -227,6 +227,21 @@ Idempotent migrations, applied in order:
   the proof, so the app says "that code didn't match" under the code it
   should have been. `scripts/sql/test-code.sql` covers the four exits.
 
+- `migrations/0042_the_hearts_and_the_faces.sql`: **a letter can be hearted,
+  and the faces ride on the reads.** `wall_hearts` is one row per (letter,
+  person), counted and never listed: `wall_heart(token, id, on)` puts one on
+  or takes it off, behind `wall_gate` like reading, and answers the count;
+  `wall_letters_for` and `wall_letter` carry `hearts` and `hearted` on every
+  row. A trigger folds the absorbed row's heart into the survivor's under
+  `celestual_user_merge`, so a shared heart never turns a merge into a
+  conflict. The same two functions, and `celestual_my_pings`, now carry the
+  resolver's `known`, `display_name`, `is_verified` and `avatar_path` for the
+  handle each row names, the way `wall_search` has since 0040, so the sky,
+  the reveal and a letter draw every face with no second request; and
+  `ig_profile_peek(handles[])` answers up to twenty-four exact handles from
+  the cache in one call, service role only, for the edge function's batched
+  peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
+
 - `migrations/0039_the_desk_second_sitting.sql`: **the desk, for a team, and
   one door closed.** The opt-out (`celestual_suppress`) takes the DM proof; the
   one-argument form is dropped. `celestual_settings` grows a whitelist the desk

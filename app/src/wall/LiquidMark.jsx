@@ -32,15 +32,45 @@
 // ── where it is spent ───────────────────────────────────────────────────────
 // Rationed like the bloom. It stands in the intro, large, for the two seconds
 // before either surface exists, it stands in the hero's scene where the mark
-// lights when the two cards open, and it is the seal on a mutual. It does not replace the mark in the bar, in the
-// steps, or anywhere the mark is a glyph rather than an event.
+// lights when the two cards open, and it is the seal on a mutual. It does not
+// replace the mark in the bar, in the steps, or anywhere the mark is a glyph
+// rather than an event.
+//
+// ── what a mount costs, and where the cost is put ───────────────────────────
+// A mount is not free: the mask is decoded, the fragment shader is compiled
+// and linked on the GPU driver's own time, the texture is uploaded with its
+// mipmaps, and then every frame runs a heavy shader over every pixel of the
+// canvas. On the reveal that used to land in the middle of the screen's
+// entrance, on a canvas rendered at twice the device's pixels, beside a sky
+// that is already a shader: the tap on the mutual row answered with a hitch
+// and a few dropped frames, which on a phone read as the screen lagging.
+//
+// Three things about that, all here so no caller has to know:
+//
+//   THE FLAT MARK IS UNDER IT. The same drawing the bar carries stands in the
+//   metal's place from the first frame, in chalk, and the metal fades in
+//   over it once its first frame is drawn. The silhouette is identical, so
+//   the fade reads as the mark lighting, not as a swap, and a slow driver or
+//   a missing texture leaves a mark on the screen rather than a hole.
+//
+//   THE PIXELS ARE COUNTED. `quality` says what a mount is for: the intro
+//   at full size renders at the package's own two pixels per CSS pixel; a
+//   seal and a row are capped at a pixel count, and one per CSS pixel, since
+//   there is nothing sharp in a soft metal and nobody can tell at 44px.
+//
+//   THE MOUNT CAN WAIT. `defer` holds the shader back by that many
+//   milliseconds, so a screen can run its entrance on a flat mark and pay
+//   for the compile once nothing else is moving.
+//
+// The mask is fetched and decoded once per page and handed to every mount as
+// the same image element, rather than each mount loading the URL again.
 //
 // ── the fallback ────────────────────────────────────────────────────────────
 // A browser without WebGL2 gets the flat mark at the same size. The surface is
 // correct as a still frame either way, which is the rule for every drawn thing
 // in the system.
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ShaderMount } from '@paper-design/shaders-react'
 import { liquidMetalFragmentShader, LiquidMetalShapes, ShaderFitOptions } from '@paper-design/shaders'
 import { Ecliptic } from './art.jsx'
@@ -60,7 +90,6 @@ const NONE = [0, 0, 0, 0]
 const UNIFORMS = {
   u_colorBack: NONE,
   u_colorTint: CHALK,
-  u_image: LIQUID_MASK,
   u_isImage: true,
   u_shape: LiquidMetalShapes.none,
   u_softness: 0.3,
@@ -82,18 +111,89 @@ const UNIFORMS = {
   u_worldHeight: 0,
 }
 
-export default function LiquidMark({ size = 64, speed = 0.7, still = false, className = '', style }) {
+// What each use is worth in pixels. `full` is the package's own default: two
+// pixels per CSS pixel, uncapped. The other two are capped at a count and at
+// the device's own pixels, since the material is soft and the canvas is small.
+const QUALITY = {
+  full: { minPixelRatio: 2, maxPixelCount: 1920 * 1080 * 4 },
+  seal: { minPixelRatio: 1, maxPixelCount: 120_000 },
+  row:  { minPixelRatio: 1, maxPixelCount: 24_000 },
+}
+
+// The mask, once. Decoded on first use and held for the page, so the second
+// and third mounts on a screen wait on nothing but the compile.
+let MASK = null
+function mask() {
+  if (MASK) return MASK
+  const img = new Image()
+  img.decoding = 'async'
+  img.src = LIQUID_MASK
+  MASK = img
+  return img
+}
+
+// Fetch and decode the mask now, ahead of a mount that is about to happen: the
+// sky calls it when there is a mutual on it, so the reveal's seal has its
+// texture before the row is even pressed.
+export function warmLiquidMark() {
+  if (typeof window === 'undefined' || !hasWebGL2()) return
+  const img = mask()
+  if (img.decode) img.decode().catch(() => {})
+}
+
+export default function LiquidMark({
+  size = 64, speed = 0.7, still = false, quality = 'full', defer = 0, className = '', style,
+}) {
   const ok = useMemo(hasWebGL2, [])
+  const host = useRef(null)
+  // Whether the shader's canvas exists yet: the mount is asynchronous behind
+  // the texture, and until it lands the flat mark is the whole drawing.
+  const [ready, setReady] = useState(false)
+  const [mounted, setMounted] = useState(defer <= 0)
+
+  useEffect(() => {
+    if (!ok || mounted) return undefined
+    const t = setTimeout(() => setMounted(true), defer)
+    return () => clearTimeout(t)
+  }, [ok, mounted, defer])
+
+  // The canvas arrives as a child of the mount's own element, prepended by the
+  // package once the texture has loaded and the program is linked, which is
+  // also the moment its first frame is drawn. Watched rather than assumed.
+  useEffect(() => {
+    if (!ok || !mounted) return undefined
+    const el = host.current
+    if (!el) return undefined
+    if (el.querySelector('canvas')) { setReady(true); return undefined }
+    const mo = new MutationObserver(() => {
+      if (el.querySelector('canvas')) { setReady(true); mo.disconnect() }
+    })
+    mo.observe(el, { childList: true })
+    return () => mo.disconnect()
+  }, [ok, mounted])
+
+  // One uniforms object per mount, carrying the shared decoded mask.
+  const uniforms = useMemo(() => (ok ? { ...UNIFORMS, u_image: mask() } : null), [ok])
+  const q = QUALITY[quality] || QUALITY.full
+
+  const box = { width: size, height: size, ...style }
   if (!ok) return <Ecliptic size={size} className={className} style={style} />
   return (
-    <ShaderMount
-      fragmentShader={liquidMetalFragmentShader}
-      uniforms={UNIFORMS}
-      mipmaps={['u_image']}
-      speed={still ? 0 : speed}
-      className={className}
-      style={{ width: size, height: size, display: 'block', ...style }}
-      aria-hidden="true"
-    />
+    <span className={`wl-liquid${ready ? ' is-ready' : ''} ${className}`} style={box} aria-hidden="true">
+      <Ecliptic size="100%" className="wl-liquid-flat" />
+      {mounted && (
+        <ShaderMount
+          ref={host}
+          fragmentShader={liquidMetalFragmentShader}
+          uniforms={uniforms}
+          mipmaps={['u_image']}
+          minPixelRatio={q.minPixelRatio}
+          maxPixelCount={q.maxPixelCount}
+          speed={still ? 0 : speed}
+          className="wl-liquid-metal"
+          aria-hidden="true"
+        />
+      )}
+    </span>
   )
 }

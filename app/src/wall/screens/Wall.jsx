@@ -81,7 +81,7 @@
 // names in ragged rows, but the composition this was before it moved.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
+import { Display, Label, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
 import { Sparkle, Campanile } from '../art.jsx'
 import { wall, liveCount, atHandle, rand, wallError, loadWall, term } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -480,7 +480,7 @@ export default function Wall({ go, reduce, rev }) {
   return (
     <>
     <div className={`wl-page wl-wallpage${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}`}>
-      <TopBar go={go} at="wall" onMark={() => window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })} />
+      <TopBar go={go} at="wall" />
 
       {/* ── the masthead ──
           The poster's title block: the Didone with its terminal period, and
@@ -610,10 +610,24 @@ export default function Wall({ go, reduce, rev }) {
           </button>
         )}
 
+        {/* ── the way in, and the way back ──
+            The composer's pill, and beside it the one link off the wall
+            that is not the tab above: the front door, named by the act it
+            is for. "write one" here, "place a ping" there: the two acts of
+            the product on one row, in the product's own words. It is a way
+            back and not a pitch, which is why it is a quiet arrow link and
+            not the tab: the tab offers an account and waits until a letter
+            is up (above); this offers an address and is always here, because
+            a person who walked in from the front door has to be able to
+            walk out the same way. A real anchor: the wall's shell cannot
+            draw Main, so the walk back is a navigation. */}
         <div className="wl-dock-in">
           <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={() => go('write')}>
             write one
           </Pill>
+          <ArrowLink href="/" size="s" tone="quiet" className="wl-dock-front" title="the front">
+            place a ping
+          </ArrowLink>
         </div>
       </div>
     </div>

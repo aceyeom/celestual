@@ -80,7 +80,7 @@ Three strengths of one near white, and the third one has a hard rule on it.
 | `--chalk` | `#F4F1EA` | primary type, the mark, a filled control |
 | `--ash` | `#9C978E` | secondary. Meaningful text only |
 | `--ash-dim` | `#605C55` | decorative and disabled only. Never body copy |
-| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the Campanile's lantern, the count on the masthead, the pin on the front door's notice. Nowhere else, and never as type |
+| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the Campanile's lantern and the count on the masthead. Nowhere else, and never as type. It was the pin on the front door's notice for a while, and it came off: the door's line to the wall is an ear of type now (hero.css `.hm-ear`), and the wall's colour stays on the wall |
 
 `--ash-dim` on `--void` is roughly 3.2:1. It is legible for a label and it is not
 legible for a sentence somebody has to read. Putting prose in it is the single
@@ -230,9 +230,11 @@ them is ash. It is the way home on every bar in the product, the front door's,
 Main's flow screens' and the wall's, and it stands again at the head of the
 site's foot. It used to be three things: the word alone on the front door, the
 mark alone on Main's other screens, and the mark alone on the wall, which is
-how one product came to sign itself three ways. Off the wall it grows the
-chevron the wall's sheets use, so "back" and "home" are the same target in the
-same place.
+how one product came to sign itself three ways. Off the front door it grows
+the chevron the wall's sheets use, so "back" and "home" are the same target in
+the same place: on the wall it is a real anchor to `/`, the front, and on a
+sheet it is the way back to the wall under it. It used to scroll the wall to
+its top, which on a wall one screen tall was a control that did nothing.
 
 ---
 
@@ -516,6 +518,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
+| `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
 

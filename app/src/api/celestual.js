@@ -86,6 +86,12 @@ export async function fetchMyPings({ handle, proof } = {}) {
         mutual: !!p.mutual,
         card: p.card || null,
         theirCard: p.their_card || null,
+        // The resolver's answer for the handle, when it has one (0042), so
+        // the row draws its face with no second request. The path, not a
+        // URL: main/data.js turns it into one and teaches the memo.
+        profile: p.known
+          ? { name: String(p.display_name || ''), verified: !!p.is_verified, avatarPath: String(p.avatar_path || '') }
+          : null,
       })),
     };
   } catch {
