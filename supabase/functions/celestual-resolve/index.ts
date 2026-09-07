@@ -14,6 +14,8 @@
 //     { ok:true, found:false, handle, provider }        nobody by that name
 //     { ok:true, found:null,  handle, provider:false }  a peek, and the cache
 //                                                       had nothing. Not a miss.
+//   POST { handles: [..], peek: true }                  up to 24, cache only
+//     { ok:true, peek:true, results: { handle: <one of the two peek shapes> } }
 //     { ok:false, error:'rate', retry_after }           429, with the seconds
 //     { ok:false, error:'provider' }                    Apify timed out or
 //                                                       failed. NOT a miss.
@@ -47,6 +49,22 @@
 // synchronous run per cache miss, asking for profile details with the post
 // limit at zero: no posts, no comments, no reels, nothing that would turn a
 // name lookup into a scrape of somebody's account.
+//
+// ── THE PRIVATE ACCOUNT ──────────────────────────────────────────────────────
+// That actor reads a profile the way a page does, and a private account's
+// page is shut: it comes back as an item with an error on it and no username
+// (`no_items`, "Empty or private data for provided input"), or as a username
+// with nothing beside it. Read as a miss, that told a person their friend does
+// not exist, over an account that plainly does. Neither shape is a miss now.
+// An item that cannot say either way is UNCLEAR, and an unclear item is put
+// to a second actor, apify's own profile scraper, which asks for the profile
+// header and nothing under it. The header of a private account is public on
+// Instagram (the name, the picture, the badge: everything this card draws),
+// so the second look answers what the first could not, and the row is cached
+// with `is_private` set. When even that comes back empty and the first look
+// had at least the username and said it was private, that IS the answer: a
+// found account, private, drawn as a monogram and its handle. Only a plain
+// "not found" from either actor is a miss.
 //
 // ── THE FACE ─────────────────────────────────────────────────────────────────
 // Instagram's CDN URLs are signed and expire within days. Storing one would
@@ -122,10 +140,12 @@
 // or off, because a cache hit is free.
 //
 // Secrets (Supabase, Edge Functions, Secrets):
-//   APIFY_TOKEN           Apify API token, scoped to the actor below
-//   APIFY_ACTOR_ID        optional, defaults to the actor in spec section 5
-//   RESOLVE_PROXY_SECRET  the same value as the Vercel env var of that name.
-//                         Without it the backstop counts Vercel, not visitors.
+//   APIFY_TOKEN             Apify API token, scoped to the actors below
+//   APIFY_ACTOR_ID          optional, defaults to the actor in spec section 5
+//   APIFY_PROFILE_ACTOR_ID  optional, the second look for a private account.
+//                           Defaults to apify's profile scraper, by name
+//   RESOLVE_PROXY_SECRET    the same value as the Vercel env var of that name.
+//                           Without it the backstop counts Vercel, not visitors.
 // Provided by the platform: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 //
 // Deploy:  supabase functions deploy celestual-resolve --no-verify-jwt
@@ -136,6 +156,10 @@ const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_
 
 const APIFY_TOKEN = Deno.env.get('APIFY_TOKEN') ?? '';
 const APIFY_ACTOR = Deno.env.get('APIFY_ACTOR_ID') ?? 'shu8hvrXbJbY3Eb9W';
+// The second look (THE PRIVATE ACCOUNT, above). Named rather than keyed: the
+// Apify API takes `owner~name` wherever it takes an id, and a name survives
+// the store republishing the actor under a new id.
+const APIFY_PROFILE_ACTOR = Deno.env.get('APIFY_PROFILE_ACTOR_ID') ?? 'apify~instagram-profile-scraper';
 const PROXY_SECRET = Deno.env.get('RESOLVE_PROXY_SECRET') ?? '';
 const PROXY_HEADER = 'x-resolve-proxy';
 
@@ -324,10 +348,15 @@ function pick(u: Record<string, unknown>, keys: string[]): unknown {
 //             used to finish anyway and bill for a result nobody received.
 //   maxItems  one billed result per run, whatever the actor decides to return.
 //
-// The answer is one of four things, and the caller treats each differently:
+// The answer is one of five things, and the caller treats each differently:
 //   found     an account. Cached, recorded, answered.
 //   missing   the actor ran and there is no such account. Recorded, held in the
 //             isolate for ten minutes, answered as found:false.
+//   unclear   the actor ran and could not see in: a private account, or a
+//             page it was turned away from. Recorded, never held as a miss,
+//             and put to the second actor (THE PRIVATE ACCOUNT, above). It
+//             carries whatever the item did say, which for a private account
+//             is sometimes the username and its flag and nothing else.
 //   timeout   the run was killed. Recorded (it ran), NOT held as a miss, and
 //             answered as a provider failure: the account may well exist.
 //   error     Apify refused the request (ran:false, nothing recorded), or
@@ -339,15 +368,22 @@ function pick(u: Record<string, unknown>, keys: string[]): unknown {
 type Lookup =
   | { kind: 'found'; acct: Account }
   | { kind: 'missing' }
+  | { kind: 'unclear'; acct: Account | null; why: string }
   | { kind: 'timeout' }
   | { kind: 'error'; ran: boolean };
 
-async function fromApify(handle: string): Promise<Lookup> {
-  if (!APIFY_TOKEN) return { kind: 'error', ran: false };
+// One synchronous run of one actor, and its dataset back. What the run says
+// about the account is read by `readItem`, below, the same way for both.
+type Run =
+  | { kind: 'items'; items: unknown[] }
+  | { kind: 'timeout' }
+  | { kind: 'refused' };
+
+async function runActor(actor: string, input: Record<string, unknown>): Promise<Run> {
   const { signal, done } = withTimeout(APIFY_TIMEOUT_MS);
   try {
     const url = new URL(
-      `https://api.apify.com/v2/acts/${encodeURIComponent(APIFY_ACTOR)}/run-sync-get-dataset-items`,
+      `https://api.apify.com/v2/acts/${encodeURIComponent(actor)}/run-sync-get-dataset-items`,
     );
     url.searchParams.set('timeout', String(APIFY_RUN_TIMEOUT_S));
     url.searchParams.set('maxItems', '1');
@@ -358,13 +394,7 @@ async function fromApify(handle: string): Promise<Lookup> {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${APIFY_TOKEN}`,
       },
-      body: JSON.stringify({
-        directUrls: [`https://www.instagram.com/${handle}/`],
-        resultsType: 'details',
-        resultsLimit: 0,
-        addParentData: false,
-        searchLimit: 1,
-      }),
+      body: JSON.stringify(input),
     });
     if (!res.ok) {
       // The body names the reason, and the log used to carry only the status:
@@ -373,54 +403,101 @@ async function fromApify(handle: string): Promise<Lookup> {
       // run-failed error naming TIMED-OUT, and either is a timeout, not a
       // refusal: it ran, it is recorded, and it is not a miss.
       const text = (await res.text().catch(() => '')).slice(0, 300);
-      console.error('apify run failed', res.status, text);
+      console.error('apify run failed', actor, res.status, text);
       const timedOut = res.status === 408 || /TIMED.?OUT/i.test(text);
-      return timedOut ? { kind: 'timeout' } : { kind: 'error', ran: false };
+      return timedOut ? { kind: 'timeout' } : { kind: 'refused' };
     }
     const items = await res.json();
-    const u = Array.isArray(items) ? items[0] : items;
-    if (!u || typeof u !== 'object') return { kind: 'missing' };
-
-    const rec = u as Record<string, unknown>;
-    // An actor that could not reach the account still returns an item, with an
-    // error field and no username. That is a miss, not an answer.
-    if (rec.error && !rec.username) return { kind: 'missing' };
-
-    const username = norm(pick(rec, ['username', 'handle', 'ownerUsername']));
-    if (!username) return { kind: 'missing' };
-
-    const display_name = String(pick(rec, ['fullName', 'full_name', 'name']) ?? '').slice(0, 120);
-    const pic_url = String(
-      pick(rec, ['profilePicUrlHD', 'profilePicUrl', 'profile_pic_url_hd', 'profile_pic_url']) ?? '',
-    ).slice(0, 2048);
-
-    // A username with no name and no picture at all is not what a profile
-    // looks like: every Instagram account has a picture URL, even the default
-    // grey one. It is what the actor returns when Instagram turned it away
-    // mid-run. The pilot's `supabase` was one of these, and caching it wrote a
-    // faceless, nameless row that every later lookup then paid to refresh.
-    if (!display_name && !pic_url) {
-      console.error('apify item was empty', username);
-      return { kind: 'error', ran: true };
-    }
-
-    return {
-      kind: 'found',
-      acct: {
-        handle: username,
-        display_name,
-        is_verified: !!pick(rec, ['verified', 'isVerified', 'is_verified']),
-        is_private: !!pick(rec, ['private', 'isPrivate', 'is_private']),
-        pic_url,
-      },
-    };
+    return { kind: 'items', items: Array.isArray(items) ? items : [items] };
   } catch (e) {
     const aborted = e instanceof DOMException && e.name === 'AbortError';
-    console.error(aborted ? 'apify call timed out' : 'apify call threw', String(e));
-    return aborted ? { kind: 'timeout' } : { kind: 'error', ran: false };
+    console.error(aborted ? 'apify call timed out' : 'apify call threw', actor, String(e));
+    return aborted ? { kind: 'timeout' } : { kind: 'refused' };
   } finally {
     done();
   }
+}
+
+// The one wording that means the account is not there. Everything else an
+// actor says about a page it could not read ("Empty or private data",
+// "restricted", "login required", an Instagram page that "isn't available"
+// while logged out) says nothing about whether the account exists, and is
+// unclear rather than missing.
+const NOT_FOUND = /not.?found|no.?such.?user|does.?n.?t.?exist|user_not_found|\b404\b/i;
+
+// What one dataset item says about the account.
+function readItem(u: unknown): Lookup {
+  if (!u || typeof u !== 'object') return { kind: 'missing' };
+  const rec = u as Record<string, unknown>;
+  const username = norm(pick(rec, ['username', 'handle', 'ownerUsername']));
+  const said = [rec.error, rec.errorDescription, rec.errorMessage, rec.message]
+    .filter((v) => v !== undefined && v !== null && v !== '')
+    .map(String).join(' ').slice(0, 160);
+
+  // An actor that could not reach the account returns an item with an error
+  // on it and no username. It used to be read as a miss whatever the error
+  // said, and for a private account that was "no account by that name".
+  if (rec.error && !username) {
+    return NOT_FOUND.test(said) ? { kind: 'missing' } : { kind: 'unclear', acct: null, why: said };
+  }
+  if (!username) return { kind: 'missing' };
+
+  const display_name = String(pick(rec, ['fullName', 'full_name', 'name']) ?? '').slice(0, 120);
+  const pic_url = String(
+    pick(rec, ['profilePicUrlHD', 'profilePicUrl', 'profile_pic_url_hd', 'profile_pic_url']) ?? '',
+  ).slice(0, 2048);
+  const acct: Account = {
+    handle: username,
+    display_name,
+    is_verified: !!pick(rec, ['verified', 'isVerified', 'is_verified']),
+    is_private: !!pick(rec, ['private', 'isPrivate', 'is_private']),
+    pic_url,
+  };
+
+  // A username with no name and no picture at all is not what a profile
+  // looks like: every Instagram account has a picture URL, even the default
+  // grey one. From a page that says it is private it is the shut door, and
+  // the second look is for exactly that. From anything else it is what the
+  // actor returns when Instagram turned it away mid-run. The pilot's
+  // `supabase` was one of these, and caching it wrote a faceless, nameless
+  // row that every later lookup then paid to refresh.
+  if (!display_name && !pic_url) {
+    if (acct.is_private || rec.error) return { kind: 'unclear', acct, why: said || 'private' };
+    console.error('apify item was empty', username);
+    return { kind: 'error', ran: true };
+  }
+  return { kind: 'found', acct };
+}
+
+function fromRun(run: Run): Lookup {
+  if (run.kind === 'timeout') return { kind: 'timeout' };
+  if (run.kind === 'refused') return { kind: 'error', ran: false };
+  return readItem(run.items[0]);
+}
+
+// The first look: the page, with the post limit at zero.
+async function fromApify(handle: string): Promise<Lookup> {
+  if (!APIFY_TOKEN) return { kind: 'error', ran: false };
+  return fromRun(await runActor(APIFY_ACTOR, {
+    directUrls: [`https://www.instagram.com/${handle}/`],
+    resultsType: 'details',
+    resultsLimit: 0,
+    addParentData: false,
+    searchLimit: 1,
+  }));
+}
+
+// The second look: the profile header alone, by username, from the actor
+// built for that and nothing under it. Asked only about an account the first
+// look could not see into.
+async function fromProfileScraper(handle: string): Promise<Lookup> {
+  if (!APIFY_TOKEN || !APIFY_PROFILE_ACTOR) return { kind: 'error', ran: false };
+  return fromRun(await runActor(APIFY_PROFILE_ACTOR, { usernames: [handle] }));
+}
+
+// Whether a run reached an actor at all, which is the only thing that costs.
+function reached(got: Lookup): boolean {
+  return got.kind !== 'error' || got.ran;
 }
 
 // ── the face, downloaded once ────────────────────────────────────────────────
@@ -520,23 +597,32 @@ Deno.serve(async (req) => {
   }
 
   const handle = norm(body.handle);
+  // A list of handles is a peek and only a peek: what the cache holds for
+  // each, in one call, for the faces a screen draws in the same breath (0042,
+  // ig_profile_peek). Never Apify, never a cap, never the ledger.
+  const many = Array.isArray(body.handles)
+    ? [...new Set((body.handles as unknown[]).map(norm).filter((h) => h.length >= 2))].slice(0, 24)
+    : null;
   // Instagram's own floor is one character, but a one-character query is a
   // person mid-word rather than a person naming somebody. Two is where a
   // lookup starts being about an account.
-  if (handle.length < 2) return json(req, { ok: false, error: 'bad_input' }, 400);
+  if (many === null && handle.length < 2) return json(req, { ok: false, error: 'bad_input' }, 400);
 
   if (!APIFY_TOKEN) return json(req, { ok: false, error: 'off' });
 
-  // ── who is asking ──────────────────────────────────────────────────────────
-  // The session token, if the browser sent one, resolves to a user through the
-  // same function every other surface uses (migration 0030). A signed-in person
-  // is counted on their id and not on their device.
-  const ip = clientIp(req);
-  let userId: string | null = null;
-  const token = String(body.session ?? '');
-  if (token.length >= 16 && token.length <= 256) {
-    const { data } = await supabase.rpc('celestual_whoami', { p_token: token });
-    if (data?.signed_in && data.user?.id) userId = String(data.user.id);
+  if (many !== null) {
+    if (body.peek !== true) return json(req, { ok: false, error: 'bad_input' }, 400);
+    const results: Record<string, unknown> = {};
+    if (many.length) {
+      const { data } = await supabase.rpc('ig_profile_peek', { p_handles: many });
+      const rows = (data ?? {}) as Record<string, Profile>;
+      for (const h of many) {
+        results[h] = rows[h]
+          ? shapeOut(rows[h], true, false)
+          : { ok: true, found: null, handle: h, provider: false };
+      }
+    }
+    return json(req, { ok: true, peek: true, results });
   }
 
   // The device id is ours, not the client's. A cookie we set, or a new one.
@@ -566,6 +652,20 @@ Deno.serve(async (req) => {
   if (body.peek === true) {
     if (cached) return json(req, shapeOut(cached, true, false), 200, cookieHeader);
     return json(req, { ok: true, found: null, handle, provider: false }, 200, cookieHeader);
+  }
+
+  // ── who is asking ──────────────────────────────────────────────────────────
+  // The session token, if the browser sent one, resolves to a user through the
+  // same function every other surface uses (migration 0030). A signed-in person
+  // is counted on their id and not on their device. Asked only now: a peek
+  // and a cache hit are counted against nobody, and this used to be a round
+  // trip to the database on every face a screen drew.
+  const ip = clientIp(req);
+  let userId: string | null = null;
+  const token = String(body.session ?? '');
+  if (token.length >= 16 && token.length <= 256) {
+    const { data } = await supabase.rpc('celestual_whoami', { p_token: token });
+    if (data?.signed_in && data.user?.id) userId = String(data.user.id);
   }
 
   // A handle we failed to find a few minutes ago, held in this isolate only.
@@ -600,21 +700,40 @@ Deno.serve(async (req) => {
   }
 
   // ── the call ───────────────────────────────────────────────────────────────
-  const got = await fromApify(handle);
+  let got = await fromApify(handle);
 
-  // Recorded against the caps for every call that reached the actor, found or
+  // Recorded against the caps for every call that reached an actor, found or
   // not, which is what the ledger's own comment says a row is. It used to be
   // recorded only on a found account, so a handle nobody has ran the actor
   // and cost nothing here: free, and therefore unlimited. A request Apify
   // refused outright never ran and is not recorded.
-  const ran = got.kind !== 'error' || got.ran;
-  if (ran) {
-    await supabase.rpc('handle_search_record', {
-      p_user: userId,
-      p_device: device,
-      p_ip: ip,
-      p_handle: handle,
-    });
+  const record = () => supabase.rpc('handle_search_record', {
+    p_user: userId,
+    p_device: device,
+    p_ip: ip,
+    p_handle: handle,
+  });
+  let ran = reached(got);
+  if (ran) await record();
+
+  // ── the second look ────────────────────────────────────────────────────────
+  // The page could not be read: private, or shut to the first actor. The
+  // profile header can (THE PRIVATE ACCOUNT, above), and that run is counted
+  // like any other. What it says wins; what it cannot say falls back to what
+  // the first look did say, which for a private account with its username
+  // and nothing else is still a found account.
+  if (got.kind === 'unclear') {
+    console.warn('apify could not see in', handle, got.why);
+    const first = got;
+    const second = await fromProfileScraper(handle);
+    if (reached(second)) { ran = true; await record(); }
+    if (second.kind === 'found' || second.kind === 'missing') got = second;
+    else if (second.kind === 'unclear' && second.acct) got = { kind: 'found', acct: second.acct };
+    else if (first.acct) got = { kind: 'found', acct: first.acct };
+    else got = second.kind === 'timeout' ? second : { kind: 'error', ran };
+    if (got.kind === 'found' && !got.acct.display_name && !got.acct.pic_url) {
+      console.warn('private account, header shut', handle);
+    }
   }
 
   if (got.kind !== 'found') {

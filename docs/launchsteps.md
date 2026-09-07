@@ -1051,3 +1051,39 @@ One migration, two functions, and the app.
 The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
+
+## The hearts and the faces (migration 0042), and the private account
+
+One migration, one function, and the app. Everything is additive: an app
+deployed before the migration draws no hearts and peeks one face at a time,
+exactly as it did.
+
+1. **Apply `0042_the_hearts_and_the_faces.sql`.** `supabase db push`, or
+   paste it into the SQL editor. It adds `wall_hearts` and `wall_heart`,
+   re-emits `wall_letters_for`, `wall_letter` and `celestual_my_pings` with
+   the resolver's name, badge and face beside every handle they name (and
+   `hearts` and `hearted` on every letter), and adds `ig_profile_peek` for the
+   service role. Verified end to end by `scripts/verify-migrations.sh --test`
+   (`test-hearts.sql`, 31 assertions).
+2. **Redeploy `celestual-resolve`.** Two things changed in it.
+   `supabase functions deploy celestual-resolve --no-verify-jwt`.
+   - **The private account** (docs/HANDLE-RESOLVER.md section 4b). An item
+     the first actor could not see into is no longer read as "no account by
+     that name": it is put to a second actor, `apify~instagram-profile-scraper`,
+     which reads the profile header Instagram keeps public for a private
+     account. No new secret is needed; the same `APIFY_TOKEN` runs it.
+     `APIFY_PROFILE_ACTOR_ID` is optional, to point the second look at another
+     actor or to switch it off with an empty string. Check the token is
+     allowed to run actors under `apify/`, which a token scoped to one actor
+     may not be.
+   - **The batched peek.** `{ handles: [...], peek: true }` answers up to
+     twenty-four handles from the cache in one call, and a single peek no
+     longer resolves the session token before reading the cache. Against a
+     database without 0042 the batch answers every handle as unknown, and the
+     app draws monograms until the migration lands.
+3. **Deploy the app.** Vercel, as usual.
+
+The test of the whole path: open a letter on the wall through the gate and
+press the heart, then open the same letter from another verified browser and
+read the count; and type a private account's handle into the front door and
+watch the card come back as that person.
