@@ -275,54 +275,40 @@
 /* A short screen keeps the type and lets the object go. */
 @media (max-width: 899px) and (max-height: 700px) { .hm-stage { display: none; } }
 
-/* ═══ THE NOTICE ═══════════════════════════════════════════════════════════
-   Notice.jsx. The way to the campus wall while one is open: one line under
-   the ask, in the reading column. It is drawn in the room's own material and
-   not on paper, because the front door already has two sheets of paper on it
-   and a third read as a third letter. A hairline capsule on the void, the
-   campus's lamp at the head of it (the wall's gold, rationed to this one
-   dot), the wall's name in the display face, the count in the identifier
-   face, and the arrow, which travels under the pointer the way every arrow
-   in the product does. */
-.hm-wall {
-  display: inline-flex; align-items: center; gap: 11px;
+/* ═══ THE EAR ══════════════════════════════════════════════════════════════
+   Notice.jsx. The way to the campus wall while one is open: one line at the
+   head of the type block, before the headline, the way a paper runs its ear
+   above the masthead. It is set as a label, in the identifier face at the
+   size and the tracking every dateline and count in the product is set at,
+   and the wall's own masthead prints its count in the same face at the same
+   size, so the line on the door and the line on the wall are one line. No
+   capsule, no dot, no glow: the wall's gold stays on the wall. The sparkle at
+   the head of it is dim, the name is chalk, the count is ash, and the arrow
+   travels under the pointer the way every arrow in the product does. */
+.hm-ear {
+  display: inline-flex; align-items: baseline; gap: 9px;
   align-self: flex-start; max-width: 100%; min-width: 0;
-  margin: 24px 0 0; padding: 8px 15px 8px 13px;
-  border: 1px solid var(--hair); border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.028);
-  color: var(--chalk); text-decoration: none;
-  transition: border-color 240ms var(--ease), background 240ms var(--ease);
+  margin: 0 0 16px; padding: 6px 0;
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--ash); text-decoration: none;
+  transition: color 200ms var(--ease);
 }
-.hm-wall:hover { border-color: rgba(244, 241, 234, 0.24); background: rgba(244, 241, 234, 0.05); }
-.hm-wall-lamp {
-  flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 9px rgba(253, 181, 21, 0.55), 0 0 1px rgba(253, 181, 21, 0.9);
-}
-.hm-wall-name {
-  flex: 0 0 auto;
-  font-family: var(--f-display); font-weight: var(--w-display);
-  font-variation-settings: var(--opsz-display);
-  font-size: 16.5px; line-height: 1.2; letter-spacing: -0.008em;
-  white-space: nowrap;
-}
-.hm-wall-meta {
-  flex: 0 1 auto; min-width: 0;
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.03em; line-height: 1.2;
-  color: var(--ash);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.hm-wall-go {
-  flex: 0 0 auto; margin-left: 2px;
-  font-family: var(--f-util); font-size: 15px; line-height: 1;
+.hm-ear-spark { align-self: center; color: var(--ash-dim); transition: color 200ms var(--ease); }
+.hm-ear-name { color: var(--chalk); white-space: nowrap; }
+.hm-ear-dot { color: var(--ash-dim); }
+.hm-ear-meta { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-ear-go {
+  font-family: var(--f-util); font-size: 14px; line-height: 1; letter-spacing: 0; text-transform: none;
   color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.hm-wall:hover .hm-wall-go { transform: translateX(4px); color: var(--chalk); }
-/* a phone: the letters are counted and the names are not, so the line
-   fits on one line without an ellipsis in the middle of a number */
-@media (max-width: 479px) { .hm-wall-more { display: none; } }
-@media (max-width: 359px) { .hm-wall-meta { display: none; } }
+.hm-ear:hover .hm-ear-go { transform: translateX(4px); color: var(--chalk); }
+.hm-ear:hover .hm-ear-spark { color: var(--chalk); }
+.hm-ear:hover .hm-ear-meta { color: var(--chalk); }
+.hm-ear:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
+/* the narrowest phones keep the name and give the count back */
+@media (max-width: 359px) { .hm-ear-meta, .hm-ear-dot { display: none; } }
 
 /* ═══ THE FOOT ═════════════════════════════════════════════════════════════
    wall.css `.wl-colophon`. It enters last, after the object. */
@@ -353,7 +339,7 @@
 
   .hm-fold { min-height: calc(100dvh - 190px); }
   .hm-page > .wl-colophon { margin-top: 0; }
-  .hm-wall { margin-top: 28px; }
+  .hm-ear { margin-bottom: 20px; }
 }
 
 /* ═══ SIDEWAYS ═════════════════════════════════════════════════════════════
@@ -387,7 +373,7 @@
   .hm-scene .wl-prose { font-size: 12px; line-height: 1.4; }
   .hm-scene-mark { transform: translate(-50%, -30%) scale(0.8); }
   .hm-scene.is-shut .hm-scene-mark { transform: translate(-50%, -20%) scale(0.72); }
-  .hm-wall { display: none; }
+  .hm-ear { display: none; }
 }
 
 /* ═══ REDUCED MOTION ═══════════════════════════════════════════════════════

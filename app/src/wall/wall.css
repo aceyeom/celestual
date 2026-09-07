@@ -480,6 +480,12 @@
    material. */
 .wl-paper {
   position: relative;
+  /* its own group. The grain under it multiplies, and without this the
+     blend reaches past the card to whatever is behind it, which is a live
+     canvas of sky: every card on the screen was making the compositor read
+     the room back through it on every frame. The paper is opaque, so the
+     blend only ever had the paper to multiply with, and now it only can. */
+  isolation: isolate;
   border-radius: var(--r-card);
   background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
   color: var(--paper-ink);
@@ -739,6 +745,25 @@
 .wl-mark.is-near .wl-mark-gauge { stroke: var(--ember); opacity: 0.78; }
 .wl-mark.is-mutual .wl-mark-gauge { stroke: rgba(255,244,228,0.5); }
 
+/* ── the mark as a material (LiquidMark.jsx) ──
+   The flat mark stands under the shader from the first frame, and the metal
+   fades in over it once its first frame is drawn. Same silhouette, so what
+   the eye sees is the mark lighting; a driver that never answers leaves the
+   mark, not a hole. The fade is the length of a bloom. */
+.wl-liquid { position: relative; display: block; flex: 0 0 auto; }
+.wl-liquid-flat {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  color: var(--chalk);
+  transition: opacity 900ms var(--ease);
+}
+.wl-liquid-metal {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0;
+  transition: opacity 900ms var(--ease);
+}
+.wl-liquid.is-ready .wl-liquid-metal { opacity: 1; }
+.wl-liquid.is-ready .wl-liquid-flat { opacity: 0; }
+
 /* the bloom — the whole accent system, spent once per screen */
 .wl-bloom {
   position: absolute; left: 50%; top: 50%;
@@ -848,6 +873,10 @@
 }
 .wl-dock-in > .wl-pill { flex: 0 0 auto; }
 .wl-dock-in > .wl-arrow { min-width: 0; white-space: nowrap; }
+/* the composer's pill and the way back to the front on one row: the pill
+   takes the room the link leaves it, rather than the whole row */
+.wl-dock-in > .wl-pill.is-wide { width: auto; flex: 1 1 auto; }
+.wl-dock-front { flex: 0 0 auto; padding-right: 2px; }
 /* a docked page hands the bottom edge to the dock — the page's own padding
    would otherwise leave a strip of void under a gradient that is supposed to
    run off the screen */
@@ -1055,6 +1084,41 @@
   display: flex; align-items: center; justify-content: center;
   flex-wrap: wrap; gap: 10px; padding-top: 12px;
 }
+
+/* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
+   Letter.jsx `Hearts`, in the paper's foot. The glyph is a control on its
+   own 34px round, struck in the paper's ink: a hairline heart until this
+   person has pressed it, and filled with the ink when they have, with one
+   small press as it fills. The count beside it is an identifier and is set
+   like one. Nothing else: no names, no "and 3 others", no colour of its
+   own. On a letter still sealed the glyph is the way to the gate, and the
+   count is the count. */
+.wl-hearts { display: flex; align-items: center; gap: 6px; min-height: 22px; }
+.wl-heart {
+  display: grid; place-items: center; padding: 0;
+  width: 34px; height: 34px; margin: -6px 0 -6px -8px;
+  border: 0; border-radius: 50%; background: none;
+  color: var(--paper-ink-2);
+  transition: color 220ms var(--ease), background 220ms var(--ease), transform 220ms var(--ease);
+}
+.wl-heart:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+.wl-heart:active { transform: scale(0.92); }
+.wl-heart:disabled { cursor: default; }
+.wl-heart:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
+.wl-heart.is-on { color: var(--paper-ink); }
+.wl-heart.is-on .wl-heart-glyph { animation: wl-heart-strike 420ms var(--ease) both; }
+@keyframes wl-heart-strike {
+  0%   { transform: scale(0.78); }
+  55%  { transform: scale(1.18); }
+  100% { transform: none; }
+}
+.wl-hearts-n {
+  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper-ink-2);
+  transition: color 220ms var(--ease);
+}
+.wl-hearts.is-on .wl-hearts-n { color: var(--paper-ink); }
 
 /* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
 .wl-find { padding-top: 4px; }

@@ -288,7 +288,7 @@
   width: min(46vw, 24vh, 190px);
   aspect-ratio: 1;
 }
-.sg-reveal-seal > canvas, .sg-reveal-seal > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
+.sg-reveal-seal > .wl-liquid, .sg-reveal-seal > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
 @media (min-width: 900px) {
   .sg-reveal-seal { width: 230px; }
 }

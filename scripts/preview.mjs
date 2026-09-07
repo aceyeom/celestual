@@ -80,8 +80,23 @@ function lettersFor(handle, open) {
       campus: 'berkeley',
       at: new Date(now - (i * 3 + 1) * DAY).toISOString(),
       expires: new Date(now + (27 - i) * DAY).toISOString(),
+      // 0042: how many hearted it, and whether this browser did
+      hearts: i === 0 ? 3 : i === 1 ? 1 : 0,
+      hearted: false,
     }
   })
+}
+
+// The resolver's answer for a name, as the reads carry it since 0042: the
+// letters, one letter and the sky's rows each ride with these four fields.
+function faceOf(handle) {
+  const row = HANDLES.find(([h]) => h === handle)
+  return {
+    known: !!row,
+    display_name: row ? row[1] : '',
+    is_verified: row ? !!row[2] : false,
+    avatar_path: row && FACES[handle] ? `ig/${handle}.jpg` : null,
+  }
 }
 
 // Whether the fixture browser is through the campus gate and whether it holds a
@@ -451,11 +466,15 @@ const RPC = {
   wall_letters_for: (b) => ({
     ok: true, open: OPEN, handle: b.p_handle,
     letters: lettersFor(String(b.p_handle || '').replace(/^@/, ''), OPEN),
+    ...faceOf(String(b.p_handle || '').replace(/^@/, '')),
   }),
   wall_letter: () => ({
     ok: true, open: OPEN,
     letter: { ...lettersFor('pilar.echevarria', OPEN)[0], mine: VERIFIED },
+    ...faceOf('pilar.echevarria'),
   }),
+  // 0042: a heart on, or off, and the count back
+  wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 4 : 3, hearted: !!b.p_on }),
   // The RPC's own shape, which api/celestual.js normalises before Main sees it.
   celestual_my_pings: () => ({
     ok: true,
@@ -467,6 +486,7 @@ const RPC = {
         mutual: true,
         card: { words: 'i have wanted to say this since the second week of term.' },
         their_card: { words: 'i kept nearly saying something after class and then not saying it.' },
+        ...faceOf('jules.k'),
       },
       {
         handle: 'sofiaaa.reyes',

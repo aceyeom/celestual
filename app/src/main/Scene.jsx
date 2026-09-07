@@ -113,7 +113,7 @@ export default function Scene({ still = false }) {
           current runs. The same object the intro poured, at the size of a
           seal rather than a screen. */}
       <div className="hm-scene-mark">
-        <LiquidMark size={66} speed={open ? 0.8 : 0.12} still={still} />
+        <LiquidMark size={66} speed={open ? 0.8 : 0.12} still={still} quality="row" />
       </div>
       <Card who="you" text={YOU} className="hm-scene-a" stamp={stamp} />
       <Card who="them" text={THEM} className="hm-scene-b" stamp={stamp} />

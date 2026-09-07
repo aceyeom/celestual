@@ -30,7 +30,7 @@
 // one of a small set of slugs the UI can put words to.
 import { supabase, hasSupabase } from '../api/supabase.js'
 import { sessionToken } from '../api/identity.js'
-import { avatarUrl } from '../api/handles.js'
+import { avatarUrl, learnHandle } from '../api/handles.js'
 
 // One campus is open. Q11: berkeley for launch, and the schema is shaped so a
 // second one is a row in wall_campuses rather than a migration. It is a
@@ -131,6 +131,7 @@ export async function lettersFor(handle) {
     p_handle: String(handle || ''),
   })
   if (!out?.ok) return { ok: false, error: out?.error || 'network', open: false, letters: [] }
+  learnFace(out, out.handle)
   return {
     ok: true,
     open: !!out.open,
@@ -142,7 +143,22 @@ export async function lettersFor(handle) {
 export async function letter(id) {
   const out = await call('wall_letter', { p_token: sessionToken(), p_letter: id })
   if (!out?.ok) return { ok: false, error: out?.error || 'gone' }
+  learnFace(out, out.letter?.handle)
   return { ok: true, open: !!out.open, letter: shapeLetter(out.letter) }
+}
+
+// The resolver's answer for the name the letters are under rides on the
+// same read (0042), the way it rides on wall_search: the crest on the card
+// and the disc in the bar draw from the memo and cost no request of their
+// own. Only a name the resolver actually saw is learned.
+function learnFace(out, handle) {
+  if (!out?.known || !handle) return
+  learnHandle({
+    handle, known: true,
+    name: String(out.display_name || ''),
+    verified: !!out.is_verified,
+    avatar: avatarUrl(out.avatar_path),
+  })
 }
 
 function shapeLetter(l) {
@@ -165,6 +181,10 @@ function shapeLetter(l) {
     // Only ever true when the reader holds the verified handle the letter is
     // addressed to. It is what turns on the ask and the takedown.
     mine: !!l.mine,
+    // How many hearted it, and whether this session is one of them (0042).
+    // A count, never a list: nothing anywhere says who.
+    hearts: Number(l.hearts) || 0,
+    hearted: !!l.hearted,
   }
 }
 
@@ -211,6 +231,12 @@ export const answerReveal = (id, reveal) =>
   call('wall_reveal_answer', { p_token: sessionToken(), p_letter: id, p_reveal: !!reveal })
 
 export const seal = (id) => call('wall_letter_seal', { p_token: sessionToken(), p_letter: id })
+
+// ── the heart ────────────────────────────────────────────────────────────────
+// On, or off. Behind the campus gate like reading, and it answers the count
+// so the screen draws the server's number and not its own arithmetic.
+export const heart = (id, on) =>
+  call('wall_heart', { p_token: sessionToken(), p_letter: id, p_on: !!on })
 
 // ── the nineteen, and the flyer ──────────────────────────────────────────────
 // Nothing reads either of these back. A function that could read the waitlist

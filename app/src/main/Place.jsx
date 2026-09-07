@@ -112,30 +112,6 @@ function resume(prefill) {
   return p
 }
 
-// ── the bar ─────────────────────────────────────────────────────────────────
-// Three segments over the heading, one per step: spent, lit, or still to
-// come. Every segment a person has already answered is a way back to it, and
-// a segment they have not reached yet is not a control. No words on it. The
-// heading under it says what the step is, and a bar that labels its own
-// segments is a bar somebody has to read twice.
-const STEPS = ['who', 'the line', 'you']
-
-function Steps({ at, can, onGo }) {
-  return (
-    <div className="mn-steps" role="tablist" aria-label="step">
-      {STEPS.map((name, i) => (
-        <button
-          key={name} type="button" role="tab" aria-selected={i === at}
-          aria-label={`step ${i + 1}, ${name}`}
-          className={`mn-steps-seg${i === at ? ' is-on' : ''}${i < at ? ' is-done' : ''}`}
-          disabled={i === at || !can[i]}
-          onClick={() => onGo(i)}
-        />
-      ))}
-    </div>
-  )
-}
-
 // What the line under the mail says while the letter is being written: the
 // one thing that stops it going up, or the one fact about where it goes.
 function floorFor(line) {
@@ -443,143 +419,214 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
     : note === 'expired_code' ? 'that code had lapsed. send this one.'
     : ''
 
+  // ── the three parts, and which is open ──
+  // `to` and `from` are the envelope's two lines; `line` is the letter under
+  // them. One of the three is open at a time and it is the step; the other
+  // two are shut, and a shut part that has been answered is the way back to
+  // it. A part that cannot be reached yet (the letter before there is a name,
+  // you before there is a line) is drawn later: dim, and not a control.
+  const lineWritten = !!line.trim()
+  const toOpen = step === 0
+  const fromOpen = step === 2
+  const lineOpen = step === 1
+  const partClass = (open, reach, extra = '') =>
+    `mn-part${open ? ' is-open' : ' is-shut'}${reach ? '' : ' is-later'} ${extra}`
+
+  // The line under the head of the FROM part: whose handle stands there, or
+  // the question, while the step is open.
+  const fromHead = fromOpen
+    ? you ? (
+      <div className="mn-part-cell" key="you">
+        <Face handle={you} size={30} />
+        <span className="mn-part-h">{atHandle(you)}</span>
+        <span className="mn-part-note">{adopted || proved ? 'proved' : 'you'}</span>
+      </div>
+    ) : dm ? (
+      <div className="mn-part-cell" key="proving">
+        <Face handle={dm.mine} size={30} />
+        <span className="mn-part-h">{atHandle(dm.mine)}</span>
+        <span className="mn-part-note">proving</span>
+      </div>
+    ) : (
+      /* THE QUESTION THAT WAS MISSING, asked as who you are and not as
+         another name: the disc is empty until something is typed, and is
+         never seeded off the recipient. */
+      <div className="mn-part-cell is-asking" key="asking">
+        <Face handle={meSlow} size={30} resolve={validHandle(meSlow)} />
+        <div className="mn-part-field">
+          <HandleField
+            value={mine} onChange={setMine} onSubmit={next} busy={busy}
+            autoFocus placeholder="yourhandle" label="your Instagram handle"
+          />
+        </div>
+      </div>
+    )
+    : can[2] ? (
+      <button
+        type="button" className="mn-part-cell is-row" key="shut"
+        onClick={() => goStep(2)}
+        aria-label={you ? `from ${atHandle(you)}. go to this step` : 'from you. go to this step'}
+      >
+        {you || mineOk ? <Face handle={you || meSlow} size={30} resolve={!!you || validHandle(meSlow)} /> : null}
+        <span className={`mn-part-h${you || mineOk ? '' : ' is-dim'}`}>{you ? atHandle(you) : mineOk ? atHandle(me) : 'you'}</span>
+        <span className="mn-part-note">{you ? 'you' : 'next'}</span>
+      </button>
+    ) : (
+      <div className="mn-part-cell is-row" key="later" aria-hidden="true">
+        <span className="mn-part-h is-dim">you</span>
+      </div>
+    )
+
   return (
     <main className="mn-page mn-place">
       <TopBar go={go} who={who} />
 
       <div className="mn-mid">
-        <Steps at={step} can={can} onGo={goStep} />
-
-        <Display size="m" as="h1" className="mn-h" ref={avoid}>
+        {/* The question, and it changes with the step: keyed so the old one
+            leaves and the new one arrives rather than the words swapping in
+            place. */}
+        <Display size="m" as="h1" className="mn-h mn-h-step" ref={avoid} key={step}>
           {step === 0 ? <>Who&rsquo;s on<br />your mind.</>
             : step === 1 ? <>And what<br />you never said.</>
             : <>Now you.</>}
         </Display>
 
-        {step === 0 ? (
-          <div className="mn-step">
-            <HandleField
-              value={to} onChange={setTo} onSubmit={next}
-              autoFocus={!prefill} size="lg" placeholder="theirhandle"
-              busy={them.looking} inputRef={field}
-            />
-            {/* The card. Spec section 5: a face, a name and the badge, so
-                somebody confirms against a person rather than against their own
-                spelling. A ping placed at a typo stands for sixty days against
-                nobody and nothing in the product can ever say so. */}
-            <HandleCard at={them.at} onSelect={next} className="mn-card" />
-
-            {/* ── the stack ──
-                Spec section 6: somebody who came from the wall having already
-                written gets the handles they wrote to, and the option to type a
-                new one. This is that, and it is read out of this browser rather
-                than out of the wall, because the wall has no author field for
-                it to come from. */}
-            {!prefill && wrote.length ? (
-              <div className="mn-stack">
-                <Label tone="dim">you wrote to</Label>
-                <div className="mn-stack-row">
-                  {wrote.slice(0, 6).map((x) => (
-                    <button key={x} type="button" className="mn-chip"
-                      onClick={() => { setTo(x); setStep(1) }}>
-                      <Face handle={x} size={20} />
-                      <span>{atHandle(x)}</span>
-                    </button>
-                  ))}
+        {/* ── the mail ──
+            One object, on the glass from the first step to the last, shaped
+            like the thing it is: TO, FROM, and the letter under both. The
+            open part is the step. Every shut part that has been answered is
+            a way back to it, and a part that cannot be reached yet is drawn
+            later. Going between steps shuts one part and opens another, and
+            the paper folds and unfolds under them. */}
+        <div className={`mn-mail is-at${step}`}>
+          {/* ── to ── */}
+          <section className={partClass(toOpen, true, 'is-to')} aria-current={toOpen ? 'step' : undefined}>
+            <div className="mn-part-head">
+              <span className="mn-part-lab">to</span>
+              {toOpen ? (
+                <div className="mn-part-cell" key="open">
+                  <div className="mn-part-field">
+                    <HandleField
+                      value={to} onChange={setTo} onSubmit={next}
+                      autoFocus={!prefill} placeholder="theirhandle" label="their instagram handle"
+                      busy={them.looking} inputRef={field}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Label tone="dim" className="mn-note">
-                <Sparkle size={9} /> never told unless it&rsquo;s mutual
-              </Label>
-            )}
-          </div>
-        ) : (
-          /* ── the mail ──
-             One object from here on. TO, then FROM once it is asked, then the
-             letter. Every part of it that has been answered is a way back to
-             the step that answered it. */
-          <div className={`mn-mail${step === 2 ? ' is-you' : ''}`}>
-            <button
-              type="button" className="mn-mail-row is-to"
-              onClick={() => goStep(0)} aria-label={`to ${atHandle(h)}. change the name`}
-            >
-              <span className="mn-mail-lab">to</span>
-              <Face handle={h} size={30} />
-              <span className="mn-mail-h">{atHandle(h)}</span>
-              <span className="mn-mail-note">change</span>
-            </button>
+              ) : (
+                <button
+                  type="button" className="mn-part-cell is-row" key="shut"
+                  onClick={() => goStep(0)} aria-label={`to ${atHandle(h)}. change the name`}
+                >
+                  <Face handle={h} size={30} />
+                  <span className="mn-part-h">{atHandle(h)}</span>
+                  <span className="mn-part-note">change</span>
+                </button>
+              )}
+            </div>
+            <div className="mn-part-body">
+              <div className="mn-part-in">
+                {toOpen && (
+                  <div className="mn-part-under">
+                    {/* The card. Spec section 5: a face, a name and the badge,
+                        so somebody confirms against a person rather than
+                        against their own spelling. A ping placed at a typo
+                        stands for sixty days against nobody and nothing in
+                        the product can ever say so. */}
+                    <HandleCard at={them.at} onSelect={next} className="mn-card" />
 
-            {/* The FROM row. Closed on the letter step and opened on the
-                last one, and opening it is what moves the letter down. The
-                question about you is asked inside the row, in the identity
-                idiom rather than the name field's: a disc that fills in as
-                you type and the handle beside it, so the two handles on this
-                screen can never again be two identical fields two screens
-                apart. The proof is about ONE thing: that the handle placing
-                this ping is the handle it says. Nothing about the account is
-                read and nothing is kept beside the handle. */}
-            <div className="mn-mail-slot" aria-hidden={step !== 2}>
-              <div className="mn-mail-slot-in">
-                <div className={`mn-mail-row is-from${you || dm ? '' : ' is-asking'}`}>
-                  <span className="mn-mail-lab">from</span>
-                  {you ? (
-                    <>
-                      <Face handle={you} size={30} />
-                      <span className="mn-mail-h">{atHandle(you)}</span>
-                      <span className="mn-mail-note">{adopted || proved ? 'proved' : 'you'}</span>
-                    </>
-                  ) : dm ? (
-                    <>
-                      <Face handle={dm.mine} size={30} />
-                      <span className="mn-mail-h">{atHandle(dm.mine)}</span>
-                      <span className="mn-mail-note">proving</span>
-                    </>
-                  ) : (
-                    /* THE QUESTION THAT WAS MISSING, asked as who you are and
-                       not as another name: the disc is empty until something
-                       is typed, and is never seeded off the recipient. */
-                    <>
-                      <Face handle={meSlow} size={30} resolve={validHandle(meSlow)} />
-                      <div className="mn-mail-field">
-                        <HandleField
-                          value={mine} onChange={setMine} onSubmit={next} busy={busy}
-                          autoFocus={step === 2} placeholder="yourhandle" label="your Instagram handle"
-                        />
+                    {/* ── the stack ──
+                        Spec section 6: somebody who came from the wall having
+                        already written gets the handles they wrote to, and the
+                        option to type a new one. Read out of this browser
+                        rather than out of the wall, because the wall has no
+                        author field for it to come from. */}
+                    {!prefill && wrote.length ? (
+                      <div className="mn-stack">
+                        <Label tone="dim">you wrote to</Label>
+                        <div className="mn-stack-row">
+                          {wrote.slice(0, 6).map((x) => (
+                            <button key={x} type="button" className="mn-chip"
+                              onClick={() => { setTo(x); setStep(1) }}>
+                              <Face handle={x} size={20} />
+                              <span>{atHandle(x)}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </>
-                  )}
-                </div>
+                    ) : (
+                      <Label tone="dim" className="mn-note">
+                        <Sparkle size={9} /> never told unless it&rsquo;s mutual
+                      </Label>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+          </section>
 
-            {step === 1 ? (
-              <Paper
-                className="mn-mail-paper"
-                dateline={dated}
-                tone={line.trim() ? '' : 'empty'}
-              >
-                <LetterField
-                  value={line} onChange={setLine} max={140} autoFocus rows={3}
-                  placeholder="I have wanted to say this since the second week of term."
-                />
-              </Paper>
-            ) : (
-              /* The letter, as it will go: the same paper, read rather than
-                 written, and pressing it reopens it. */
-              <Paper
-                className="mn-mail-paper is-read"
-                dateline={{ lead: dated.lead, stamp: 'change' }}
-                role="button" tabIndex={0}
-                aria-label="the line. change it"
-                onClick={() => goStep(1)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goStep(1) } }}
-              >
-                <Prose className="mn-mail-line">{line.trim()}</Prose>
-              </Paper>
-            )}
-          </div>
-        )}
+          {/* ── from ──
+              The question about you, asked inside the envelope's own second
+              line, in the identity idiom rather than the name field's: a
+              disc that fills in as you type and the handle beside it, so the
+              two handles on this screen can never be two identical fields two
+              screens apart. The proof is about ONE thing: that the handle
+              placing this ping is the handle it says. Nothing about the
+              account is read and nothing is kept beside the handle. While a
+              code is out it stands under this line, because the proof is
+              this part's business and nowhere else's. */}
+          <section className={partClass(fromOpen, can[2], 'is-from')} aria-current={fromOpen ? 'step' : undefined}>
+            <div className="mn-part-head">
+              <span className="mn-part-lab">from</span>
+              {fromHead}
+            </div>
+            <div className="mn-part-body">
+              <div className="mn-part-in">
+                {fromOpen && dm ? (
+                  <div className="mn-part-under">
+                    <DmCode code={dm.code} status={noteText} />
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          {/* ── the line ──
+              The same paper on every step: folded to its dateline until
+              there is something on it, written on when its step is open,
+              and read, as it will go, on the last. Pressing it read or
+              folded reopens it. */}
+          <section className={partClass(lineOpen, can[1], `is-line${lineOpen ? '' : lineWritten ? ' is-read' : ' is-folded'}`)} aria-current={lineOpen ? 'step' : undefined}>
+            <Paper
+              className="mn-mail-paper"
+              dateline={lineOpen ? dated : { lead: dated.lead, stamp: lineWritten ? 'change' : 'the line' }}
+              tone={lineOpen || lineWritten ? '' : 'empty'}
+              {...(!lineOpen && can[1] ? {
+                role: 'button', tabIndex: 0,
+                'aria-label': lineWritten ? 'the line. change it' : 'the line. write it',
+                onClick: () => goStep(1),
+                onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goStep(1) } },
+              } : {})}
+            >
+              <div className="mn-part-body">
+                <div className="mn-part-in">
+                  {lineOpen ? (
+                    <div className="mn-part-under">
+                      <LetterField
+                        value={line} onChange={setLine} max={140} autoFocus rows={3}
+                        placeholder="I have wanted to say this since the second week of term."
+                      />
+                    </div>
+                  ) : lineWritten ? (
+                    <div className="mn-part-under">
+                      <Prose className="mn-mail-line">{line.trim()}</Prose>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </Paper>
+          </section>
+        </div>
 
         <div className="mn-said" role="status" aria-live="polite">
           {said || (step === 0 ? looking : step === 1 ? floorFor(line)
@@ -604,15 +651,13 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             </button>
           </>
         ) : step === 2 && dm ? (
-          /* The code takes the foot: it is the act on this step while it is
-             out. The one way out of it clears the stashed record too, so a
-             code abandoned here is not resumed on the next visit. */
-          <>
-            <DmCode code={dm.code} status={noteText} />
-            <button type="button" className="wl-quiet" onClick={drop}>
-              start this again
-            </button>
-          </>
+          /* The code is the act on this step while it is out, and it stands
+             in the envelope's FROM line above. The one way out of it clears
+             the stashed record too, so a code abandoned here is not resumed
+             on the next visit. */
+          <button type="button" className="wl-quiet" onClick={drop}>
+            start this again
+          </button>
         ) : (
           <>
             {cardUp ? (

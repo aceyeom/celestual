@@ -6,10 +6,11 @@
 // months. So this module is thin on purpose. It shapes what those RPCs return
 // into what these screens draw, and it does not reimplement any of it.
 //
-import { placePing, fetchMyPings, renewPing, retirePing, PING_DAYS } from '../api/celestual.js'
+import { placePing, fetchMyPings, renewPing, retirePing, normHandle, PING_DAYS } from '../api/celestual.js'
 import { heldProof } from '../wall/auth.js'
 import { whoami, ANON } from '../api/identity.js'
 import { getSession } from '../api/auth.js'
+import { learnHandle, avatarUrl } from '../api/handles.js'
 
 export { PING_DAYS }
 
@@ -64,14 +65,50 @@ export async function myPings({ handle, proof }) {
       return { ok: false, error: out?.error || 'network', pings: [], mutuals: [] }
     }
     const pings = (Array.isArray(out.pings) ? out.pings : []).map(shapePing)
-    return { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
+    const answer = { ok: true, pings, mutuals: pings.filter((p) => p.state === 'mutual') }
+    HELD.set(normHandle(handle), { at: Date.now(), answer })
+    return answer
   } catch {
     return { ok: false, error: 'network', pings: [], mutuals: [] }
   }
 }
 
+// ── the last answer, held ───────────────────────────────────────────────────
+// The sky reads the pings, and the reveal, one tap later, used to read them
+// again from the server before it would draw anything: the tap on a mutual
+// answered with a bare bar for as long as the round trip took, which on a
+// phone is most of a second, and the whole screen then arrived at once. That
+// wait was the lag. The sky's answer is held here for a short while, the
+// reveal draws from it on its first frame, and it still asks the server, so
+// a mutual that was let go elsewhere in the meantime corrects itself on the
+// screen rather than standing on a stale copy.
+//
+// Nothing about anybody else is in it: it is this person's own list, read
+// with this person's own proof, and it goes when they sign out.
+const HELD = new Map()
+const HOLD_MS = 120_000
+
+export function heldPings(handle) {
+  const h = normHandle(handle)
+  const held = h && HELD.get(h)
+  if (!held || Date.now() - held.at > HOLD_MS) return null
+  return held.answer
+}
+
+export function forgetPings() {
+  HELD.clear()
+}
+
 function shapePing(p) {
   const to = p.handle || ''
+  // The face rides on the row (0042), and the memo learns it here so every
+  // Face and Who on the sky and the reveal draws without a peek.
+  if (p.profile) {
+    learnHandle({
+      handle: to, known: true, name: p.profile.name, verified: p.profile.verified,
+      avatar: avatarUrl(p.profile.avatarPath),
+    })
+  }
   return {
     // A ping is one per pair, so the handle is its identity. There is no id on
     // the wire and inventing one would only be inventing a key for React.

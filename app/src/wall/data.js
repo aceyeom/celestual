@@ -366,6 +366,30 @@ export async function write({ to, body, sealedLine, source }) {
   return out || { ok: false, error: 'network' }
 }
 
+// ── the heart ───────────────────────────────────────────────────────────────
+// Drawn at once and corrected by the answer: the card's count moves under
+// the finger, and the server's number replaces it when it lands. A refusal
+// puts back what was there. Every copy of the letter in the cache moves
+// together, so the pager and the wall behind it agree.
+export async function heart(id, on) {
+  const was = BY_ID.get(id) || null
+  const set = (fn) => {
+    const cur = BY_ID.get(id)
+    if (cur) BY_ID.set(id, fn(cur))
+    for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.map((l) => (l.id === id ? fn(l) : l)))
+    bump()
+  }
+  set((l) => ({
+    ...l,
+    hearted: !!on,
+    hearts: Math.max(0, (l.hearts || 0) + (on ? (l.hearted ? 0 : 1) : (l.hearted ? -1 : 0))),
+  }))
+  const out = await api.heart(id, on)
+  if (out?.ok) set((l) => ({ ...l, hearts: Number(out.hearts) || 0, hearted: !!out.hearted }))
+  else if (was) set((l) => ({ ...l, hearts: was.hearts, hearted: was.hearted }))
+  return out || { ok: false, error: 'network' }
+}
+
 // ── the nineteen ────────────────────────────────────────────────────────────
 // Nineteen of twenty look and find nothing, which is the point of the surface
 // and the moment the product is actually sold. Nothing reads this back.

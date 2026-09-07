@@ -43,8 +43,8 @@ import { atHandle, dateline } from '../wall/data.js'
 import { heldProof, signOut as leaveWall } from '../wall/auth.js'
 import { signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../wall/handoff.js'
-import { myPings, renew, release, daysLeft, daysLeftWords } from './data.js'
-import LiquidMark from '../wall/LiquidMark.jsx'
+import { myPings, forgetPings, renew, release, daysLeft, daysLeftWords } from './data.js'
+import LiquidMark, { warmLiquidMark } from '../wall/LiquidMark.jsx'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
 import Prove from './Prove.jsx'
@@ -65,7 +65,11 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
     if (!who.handleVerified) { setState({ loading: false, pings: [], error: null }); return undefined }
     setState((s) => ({ ...s, loading: true }))
     myPings({ handle: who.handle, proof: heldProof(who.handle) }).then((out) => {
-      if (alive) setState({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
+      if (!alive) return
+      setState({ loading: false, pings: out.pings, error: out.ok ? null : out.error })
+      // A mutual on the sky means the reveal is one tap away, and its seal is
+      // the mark poured: have the texture decoded before the tap.
+      if (out.pings.some((p) => p.state === 'mutual')) warmLiquidMark()
     })
     return () => { alive = false }
   }, [who.handle, who.handleVerified, known, rev])
@@ -77,6 +81,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
   const leave = async () => {
     dropProof()
     clearPending()
+    forgetPings()
     leaveWall()
     await refreshWho()
     go('hero')
@@ -166,7 +171,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
               <Light on={!still} />
               <Who handle={p.to} size={40} meta="both of you" />
               <span className="mn-mutual-seal" aria-hidden="true">
-                <LiquidMark size="100%" speed={0.5} still={still} />
+                <LiquidMark size="100%" speed={0.5} still={still} quality="row" />
               </span>
             </button>
           ))}

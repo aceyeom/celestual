@@ -49,13 +49,53 @@
 // the core service — no "find out who", no account for it, no offer of any
 // kind. The door to the product opens after you have written, on the wall.
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label, Face,
+  Pill, Icon, Label, Face, Heart,
 } from '../parts.jsx'
-import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle } from '../data.js'
+import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle, heart } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
+
+// ── the hearts ──────────────────────────────────────────────────────────────
+// The one thing a reader can do to a letter that is not writing, reporting or
+// taking it down: press the heart, once, and see how many did. It sits in the
+// paper's foot, under the words, struck in the paper's ink (parts.jsx
+// `Heart`, wall.css `.wl-hearts`), because it is a mark on the document and
+// not a control on the sheet. The count is a count and nothing else: no
+// names ride with it, from the server or anywhere, and zero says nothing at
+// all rather than "0", because an unhearted letter is not a letter that
+// failed. Behind the same gate as reading: on a sealed letter the heart is
+// the way to the gate, and the count still shows, since it is public the way
+// the letter's shape is.
+function Hearts({ letter: l, open, onGate }) {
+  const [busy, setBusy] = useState(false)
+  const n = l.hearts || 0
+  const press = async () => {
+    if (!open) { onGate(); return }
+    if (busy) return
+    setBusy(true)
+    await heart(l.id, !l.hearted)
+    setBusy(false)
+  }
+  const said = n === 0 ? '' : String(n)
+  return (
+    <div className={`wl-hearts${l.hearted ? ' is-on' : ''}`}>
+      <button
+        type="button" className={`wl-heart${l.hearted ? ' is-on' : ''}`}
+        onClick={press} disabled={busy}
+        aria-pressed={open ? l.hearted : undefined}
+        aria-label={!open ? 'sign in to heart this letter'
+          : l.hearted ? 'take your heart off this letter' : 'heart this letter'}
+      >
+        <Heart size={18} on={l.hearted} />
+      </button>
+      <span className="wl-hearts-n" aria-live="polite" aria-label={n === 1 ? 'one heart' : n ? `${n} hearts` : undefined}>
+        {said}
+      </span>
+    </div>
+  )
+}
 
 // The pager, and it lives in the header rather than under the card. It is the
 // answer to "where am I", which is what a header is for; under the card it was
@@ -179,6 +219,12 @@ export default function Letter({ id: param, go, back }) {
           crest={<Face handle={one.to} size={30} />}
           title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
           tone={open ? '' : 'shut'}
+          foot={(
+            <Hearts
+              letter={one} open={open}
+              onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
+            />
+          )}
         >
           {open
             ? <Prose>{one.body}</Prose>

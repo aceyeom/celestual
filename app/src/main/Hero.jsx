@@ -97,6 +97,14 @@ export default function Hero({ go, who, still = false }) {
       {/* ── the hero ── */}
       <section className="hm-hero">
         <div className="hm-say">
+          {/* ── the ear ──
+              The way to the campus wall, while one is open: one line of the
+              identifier face at the head of the type block, the way a paper
+              runs its ear above the masthead (Notice.jsx). It enters with the
+              headline, because it is where the eye starts, and it is only
+              here while there is a wall to point at. */}
+          <WallNotice className="hm-in" style={{ '--d': '60ms' }} />
+
           {/* One sentence, two lines, and the break is chosen rather than left
               to the browser: the turn lands on "or neither", which is the half
               of the mechanic people do not expect. */}
@@ -133,13 +141,6 @@ export default function Hero({ go, who, still = false }) {
               )}
             </div>
           </form>
-
-          {/* ── the notice ──
-              The way to the campus wall, while one is open: one line under
-              the ask, in the reading column, and only when there is a wall
-              to point at. It arrives after the act, because it is the second
-              thing on this door and not the first. */}
-          <WallNotice className="hm-in" style={{ '--d': '460ms' }} />
         </div>
 
         <div className="hm-stage hm-in" style={{ '--d': '300ms' }}>

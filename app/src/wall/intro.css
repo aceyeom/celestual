@@ -45,7 +45,7 @@
   width: min(44vw, 24vh, 196px);
   aspect-ratio: 1;
 }
-.hi-mark > canvas, .hi-mark > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
+.hi-mark > .wl-liquid, .hi-mark > .wl-ecl { width: 100% !important; height: 100% !important; display: block; }
 
 /* the cover, and the two cuts in it. It is gone before the lift: see Intro.jsx
    on the square it would otherwise draw over the page. */
