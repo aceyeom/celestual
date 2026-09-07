@@ -272,11 +272,20 @@ do $$ begin
     raise exception 'FAIL  a handle without a verification date was accepted';
   exception when check_violation then raise notice 'PASS  a handle without a verification date is refused';
   end;
+  -- 0043: the schema takes any well formed address, and which addresses may
+  -- reach the column (a campus one, or one on the pass list) is the bind
+  -- function's rule. Both halves are asserted: the shape here, the rule
+  -- through the function.
   begin
-    insert into celestual_users (edu_email, edu_verified_at) values ('someone@gmail.com', now());
-    raise exception 'FAIL  a non-edu address reached edu_email';
-  exception when check_violation then raise notice 'PASS  a non-edu address cannot reach edu_email';
+    insert into celestual_users (edu_email, edu_verified_at) values ('not an address', now());
+    raise exception 'FAIL  a malformed address reached edu_email';
+  exception when check_violation then raise notice 'PASS  a malformed address cannot reach edu_email';
   end;
+  if (celestual_user_bind_edu('identity-test-gmail-0000000', 'someone@gmail.com')->>'error') = 'email' then
+    raise notice 'PASS  a non-edu address off the pass list cannot bind';
+  else
+    raise exception 'FAIL  a non-edu address off the pass list bound';
+  end if;
   begin
     insert into celestual_users (instagram_handle, handle_verified_at) values ('ada', now());
     raise exception 'FAIL  a duplicate handle was accepted';

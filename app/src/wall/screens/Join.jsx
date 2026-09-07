@@ -76,7 +76,7 @@
 // knowing nothing about what it is next to.
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { Display, Label, Pill, Close, Icon } from '../parts.jsx'
+import { Display, Pill, Close, Icon } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
@@ -309,8 +309,6 @@ export default function Join({ go, setField, reduce }) {
       <div className="wl-push" />
 
       <div className={`wl-join-foot${at >= LAST ? ' is-in' : ''}`}>
-        <Label tone="dim">your information will stay anonymous</Label>
-        <div className="wl-gap" />
         {/* ── the hand-off ──
             This used to open /berkeley/orbit, a drawn stand-in for the core
             service that lived inside the wall's own bundle. It does not any

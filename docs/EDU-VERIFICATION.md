@@ -76,6 +76,16 @@ Error slugs the UI localizes: `domain` · `email` · `rate` · `send` · `code` 
 
 ---
 
+### The pass list (migration 0043)
+
+An address that is not at the campus can still get in: put it on the pass
+list on the desk's access screen. `send` asks `celestual_pass_email` before it
+refuses a domain, mails the code to that inbox, and `verify` binds it through
+`celestual_user_bind_edu`, which takes an address on the list as a campus one,
+as does `wall_gate`. The gate on the wall takes a whole address typed with its
+@ for exactly this. The list is the whole of it: take the row off and the
+address is refused again.
+
 ## 2 · What you need before you start
 
 1. The Supabase project already linked to this repo (the same one the `celestual_*`

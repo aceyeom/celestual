@@ -74,13 +74,13 @@ export function validEmail(raw) {
   return /^[a-z0-9][a-z0-9._%+-]{0,63}@berkeley\.edu$/.test(e)
 }
 
-// Said once, in one place, so the two screens that need it cannot word it
-// differently. The address is only ever wrong in one way here.
-export function emailFault(raw) {
+// Any well formed address. The gate takes one typed whole, with its @, and
+// the server decides whether it passes: the campus, or the desk's pass list
+// (migration 0043). Nothing in this browser knows the list, and nothing
+// should; a copy of it here could only agree with the server or be wrong.
+export function anyEmail(raw) {
   const e = normEmail(raw)
-  if (!e) return ''
-  if (!e.includes('@')) return ''
-  return validEmail(e) ? '' : `letters open for ${DOMAIN} addresses`
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) && e.length <= 200
 }
 
 // The shape only. The code itself is checked by celestual-edu-verify against
@@ -115,7 +115,7 @@ export function isMember() { return !!getState().member }
 // on the same redacted card it left and the gate says "signed in".
 export function signIn(email) {
   const e = normEmail(email)
-  if (!validEmail(e)) return null
+  if (!anyEmail(e)) return null
   patch({ member: e })
   forgetLetters()
   return e

@@ -679,14 +679,17 @@ export function Waiting({ label = 'looking' }) {
 // once, here, for Main's proof step and the wall's takedown, so the two cannot
 // drift.
 //
-// ── four things, and nothing else ───────────────────────────────────────────
-// The code, one line saying where it goes, the one act, and one line of
-// status. It used to carry twice that: a label over the code, a sentence under
-// the pill, a second link to the same thread, three sparkles breathing out of
-// phase and a paragraph about the clipboard, and a person standing at the one
-// step that costs them anything was reading a screen instead of doing the one
-// thing on it. A verification screen that explains itself has already told
-// somebody they are being processed.
+// ── three things, and nothing else ──────────────────────────────────────────
+// One line saying where the code goes, the code, and the one act. Under the
+// heading every screen sets over it (`VerifyHead`), that is the whole page.
+// It used to carry a label over the code naming the handle being proved, a
+// line under the code saying where to send it, a status line saying the block
+// was waiting, and another saying the code was on the clipboard, and a person
+// standing at the one step that costs them anything was reading a screen
+// instead of doing the one thing on it. The pill says when it has copied.
+// The only line that ever appears under it is `status`: what the relay said
+// about a DM that arrived with the wrong code, or a lapsed one, which is the
+// one thing a person here has to be told.
 //
 // ── what is still true ──────────────────────────────────────────────────────
 //   THE CODE TRAVELS.  Instagram cannot be handed a prefilled message, so the
@@ -697,13 +700,7 @@ export function Waiting({ label = 'looking' }) {
 //   THE DIGITS SELECT.  `user-select: all`, for the browser that refuses a
 //                      programmatic copy: a person who cannot select the code
 //                      is a person who cannot finish.
-//
-// `note` is whatever the calling screen has to say above the code (which handle
-// is being proved). `status` is a line the caller puts under the pill when it
-// knows something the block does not: the DM that arrived with a code that did
-// not match, or one that had lapsed. Without it the line says what the block is
-// doing, which is waiting.
-export function DmCode({ code, note = null, status = '' }) {
+export function DmCode({ code, status = '' }) {
   const [copied, setCopied] = useState(false)
   const ig = igUsername()
 
@@ -719,7 +716,7 @@ export function DmCode({ code, note = null, status = '' }) {
 
   return (
     <div className="wl-dm">
-      {note}
+      <p className="wl-dm-to">DM the code to <span className="wl-h">{atHandle(ig)}</span></p>
 
       <div className="wl-dm-code">
         <button
@@ -728,17 +725,27 @@ export function DmCode({ code, note = null, status = '' }) {
         >
           {code}
         </button>
-        <Label tone="dim">DM it to <span className="wl-h">{atHandle(ig)}</span></Label>
       </div>
 
       <Pill tone="light" wide onClick={openIt} icon={<Provider size={17} />}>
         {copied ? 'copied. open instagram' : 'copy and open instagram'}
       </Pill>
 
-      <p className={`wl-dm-said${status ? ' is-note' : ''}`} role="status" aria-live="polite">
-        {status || (copied ? 'on your clipboard. paste it in the DM.' : 'waiting for your DM')}
-      </p>
+      {status ? (
+        <p className="wl-dm-said is-note" role="status" aria-live="polite">{status}</p>
+      ) : null}
     </div>
+  )
+}
+
+// The one heading over the code, wherever it is drawn: Main's proof step, the
+// sky's sign in, the opt out, the wall's takedown. It says what the step is
+// for and nothing about how; the block under it is the how.
+export function VerifyHead({ size = 'm', as = 'h1', id, className = '', ref }) {
+  return (
+    <Display size={size} as={as} id={id} className={className} ref={ref}>
+      Verify the account<br />belongs to you.
+    </Display>
   )
 }
 

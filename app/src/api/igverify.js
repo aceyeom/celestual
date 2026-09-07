@@ -81,7 +81,10 @@ export async function startVerification(handle) {
     e.code = data?.error
     throw e
   }
-  return { token: data.token, expiresAt: data.expires_at, proof, proofHash }
+  // `passed` (migration 0043): the handle is on the desk's pass list, the row
+  // was written verified on the spot, and there is no code to send. The
+  // caller polls at once instead of drawing one.
+  return { token: data.token, expiresAt: data.expires_at, proof, proofHash, passed: data.passed === true }
 }
 
 // ── The 20-second grace is GONE (it was 0017's; 0026 closed it) ───────────

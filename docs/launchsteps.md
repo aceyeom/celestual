@@ -1052,6 +1052,36 @@ The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
 
+## The pass list (migration 0043)
+
+Who is let through without the campus code's domain rule or the DM. One
+migration, two functions, and the app. Everything is additive: until the
+migration lands the desk's access screen says the list could not be read and
+every attempt is asked for the real thing.
+
+1. **Apply `0043_the_pass_list.sql`.** `supabase db push`, or paste it into
+   the SQL editor. It adds `celestual_passes` and the desk's three calls on
+   it, re-emits `celestual_user_bind_edu`, `wall_gate` and
+   `celestual_desk_signin` to take an address on the list as a campus one,
+   loosens the shape check on `celestual_users.edu_email` to any well formed
+   address (the bind function is the rule now), and re-emits
+   `celestual_start_ig_verification` to write a passed handle's verification
+   on the spot, marked `pass`. Verified end to end by
+   `scripts/verify-migrations.sh --test` (`test-pass.sql`, 29 assertions).
+2. **Redeploy `celestual-admin`.** It gains `desk_passes`, `desk_pass_add`
+   and `desk_pass_remove`. `supabase functions deploy celestual-admin`.
+3. **Redeploy `celestual-edu-verify`.** An address that is not at the campus
+   is asked of the list before it is refused, and the code goes to that
+   inbox. `supabase functions deploy celestual-edu-verify`.
+4. **Deploy the app.** Vercel, as usual.
+
+Then, on the desk's access screen, put your own address on the list. The
+wall's gate takes a whole address typed with its @, mails the code to it,
+and opens once the code is typed back. Put a handle on the list and the
+third step of placing a ping, the sky's sign in, the opt out and the wall's
+takedown all prove it the moment it is typed, with no DM. Take a row off and
+the next attempt is asked for the real thing again.
+
 ## The hearts and the faces (migration 0042), and the private account
 
 One migration, one function, and the app. Everything is additive: an app

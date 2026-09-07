@@ -180,7 +180,15 @@ Deno.serve(async (req) => {
     const school = SCHOOLS[slug];
     if (!school) return json({ ok: false, error: 'domain' });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'email' });
-    if (!matchesSchool(email, slug, demo)) return json({ ok: false, error: 'domain' });
+    if (!matchesSchool(email, slug, demo)) {
+      // The pass list (migration 0043). An address the desk put on it gets the
+      // code at that inbox whatever its domain, and celestual_user_bind_edu
+      // takes it on the same list once the code checks out. Nothing else about
+      // the flow changes: the code is still mailed, hashed and checked.
+      const { data: passed, error: passErr } = await supabase.rpc('celestual_pass_email', { p_email: email });
+      if (passErr) console.error('pass list read failed', passErr.message);
+      if (passed !== true) return json({ ok: false, error: 'domain' });
+    }
 
     // Rate-limit fresh codes per address AND per IP, and sweep expired rows
     // opportunistically. The IP guard stops one machine spraying codes across

@@ -84,6 +84,15 @@ export async function startHandoff(handle) {
     // startVerification mints the proof itself and hands both halves back.
     const out = await startVerification(handle)
     if (!out?.token) return { ok: false, error: 'start' }
+    // The pass list (migration 0043). The handle was written verified when it
+    // was started, so there is nothing to send: read the row back and bind
+    // the handle now, exactly as the poll would after a DM, and answer
+    // `passed` so the screen goes straight on instead of drawing a code.
+    if (out.passed) {
+      const got = await pollHandoff({ token: out.token, proofHash: out.proofHash, proof: out.proof })
+      if (!got.ok) return { ok: false, error: got.error || 'start' }
+      return { ok: true, passed: true, handle: got.handle, proof: out.proof }
+    }
     // expiresAt rides along because the record is stashed in localStorage while
     // the person is away in Instagram, and a stash with no clock on it is a
     // stash that resumes a code that lapsed while they were gone.

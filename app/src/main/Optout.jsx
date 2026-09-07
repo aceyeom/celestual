@@ -33,7 +33,7 @@
 // every row referencing it on either side, the proof it was just given
 // included. It cannot be undone from here, and it says so.
 import { useState } from 'react'
-import { Display, Label, Pill, Prose, Rule, Face, COMPANY } from '../wall/parts.jsx'
+import { Display, Label, Pill, Prose, Rule, Who, COMPANY } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
 import { suppressHandle } from '../api/celestual.js'
 import { atHandle } from '../wall/data.js'
@@ -113,33 +113,33 @@ export default function Optout({ go, who, refreshWho }) {
     <main className="mn-page">
       <TopBar go={go} who={who} />
       <div className="mn-mid">
-        <Display size="m" as="h1" ref={avoid}>Take your @<br />off celestual.</Display>
-        <Prose className="mn-copy">
-          {held
-            ? 'it can never be entered again. anything pointing at it is erased, both ways.'
-            : 'it can never be entered again. one instagram message proves the @ is yours first, so nobody can take off a name that is not theirs.'}
-        </Prose>
-
         {held ? (
           /* ── proved: the one control, and it asks once ── */
-          <div className="mn-step">
-            <div className="mn-prove-what">
-              <Face handle={held} size={40} />
-              <Label tone="dim">{atHandle(held)} · proved on this device</Label>
+          <>
+            <Display size="m" as="h1" ref={avoid}>Take your @<br />off celestual.</Display>
+            <Prose className="mn-copy">
+              it can never be entered again. anything pointing at it is erased, both ways.
+            </Prose>
+            <div className="mn-step">
+              <Who handle={held} size={40} />
+              {phase === 'asking' ? (
+                <Prose className="mn-copy">
+                  this cannot be undone from here. every ping placed on it, and every ping it
+                  placed, goes with it.
+                </Prose>
+              ) : null}
             </div>
-            {phase === 'asking' ? (
-              <Prose className="mn-copy">
-                this cannot be undone from here. every ping placed on it, and every ping it
-                placed, goes with it.
-              </Prose>
-            ) : null}
-          </div>
+          </>
         ) : (
-          /* ── not proved: the same block the sky asks with ── */
+          /* ── not proved: the same block the sky asks with, under this
+                screen's own heading, and the code's heading once one is out ── */
           <Prove
             who={who}
             refreshWho={refreshWho}
             onProved={(h) => { setProved(h); setPhase('idle') }}
+            headRef={avoid}
+            title={<>Take your @<br />off celestual.</>}
+            copy="it can never be entered again. one instagram message proves the @ is yours first."
           />
         )}
 

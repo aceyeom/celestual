@@ -16,7 +16,7 @@ const SCREENS = [
   ['reports', 'reports', 'letters somebody flagged. the letter is already down; you decide whether it goes back up.'],
   ['waiting', 'waitlist', 'names people looked for on the wall and did not find, and which flyer brought them.'],
   ['the resolver', 'cache', 'the face and name under a typed handle, the apify switch, and who has spent what against the caps.'],
-  ['access', 'access', 'sign a browser in as a handle or a campus with no DM. for testing, and for a person whose code never came.'],
+  ['access', 'access', 'the pass list: an address that gets the wall\'s code at any inbox, a handle that skips the DM. and a link that signs one browser in.'],
   ['settings', 'settings', 'the release gate, the resolver switch, the four caps, the walls, and the log of what the desk did.'],
 ]
 

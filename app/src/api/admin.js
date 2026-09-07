@@ -139,6 +139,19 @@ export function deskCampusAdd(password, { slug, name, domain }) {
   return call({ password, action: 'desk_campus_add', slug, name, domain })
 }
 
+// The pass list (0043). An address on it gets the wall's code at that inbox
+// whatever its domain and opens the wall once the code checks out; a handle
+// on it skips the DM. One field adds either; the server decides which it is.
+export function deskPasses(password) {
+  return call({ password, action: 'desk_passes' })
+}
+export function deskPassAdd(password, { value, note = '' }) {
+  return call({ password, action: 'desk_pass_add', value, note })
+}
+export function deskPassRemove(password, id) {
+  return call({ password, action: 'desk_pass_remove', id })
+}
+
 // What the desk did, newest first.
 export function deskLog(password, { limit = 100, offset = 0 } = {}) {
   return call({ password, action: 'desk_log', limit, offset })

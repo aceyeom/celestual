@@ -28,7 +28,7 @@
 //               reports         user-flagged content, and the path from a report to a removal
 //               waiting         names looked for and not found, and which flyer
 //   the team    the resolver    the Apify cache, the switch, the caps
-//               access          sign in links, with no DM in the way
+//               access          the pass list, and sign in links with no DM in the way
 //               settings        the release gate, the caps, the walls, the log
 //
 // ── THE PASSWORD ────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ const GROUPS = [
   ] },
   { word: 'the team', items: [
     { id: 'cache', word: 'the resolver', say: 'faces, apify, the caps', count: 'profiles' },
-    { id: 'access', word: 'access', say: 'sign in links' },
+    { id: 'access', word: 'access', say: 'the pass list, sign in links' },
     { id: 'settings', word: 'settings', say: 'switches, caps, walls, the log' },
   ] },
 ]

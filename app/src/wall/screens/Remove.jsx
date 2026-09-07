@@ -54,7 +54,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, Face,
+  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, VerifyHead, Face,
 } from '../parts.jsx'
 import { Sparkle, Provider } from '../art.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
@@ -117,6 +117,9 @@ export default function Remove({ handle: prefill, back }) {
       )
       return
     }
+    // A handle on the desk's pass list is proved on the spot (0043), and the
+    // proof is already on this device: the field locks and the act is live.
+    if (out.passed) { setValue(out.handle); return }
     // Stashed while the person is away in Instagram: the app can reload this
     // page out from under them, and a code minted for a wait nothing is
     // watching any more can never complete. Cleared on every way out below.
@@ -224,42 +227,53 @@ export default function Remove({ handle: prefill, back }) {
       <div className="wl-sheet-in wl-remove">
         {head}
 
-        <Display size="s" as="h2" id="wl-rm-h">
-          {proven ? <>It&rsquo;s yours.<br />Take it down.</> : <>Take your name<br />off the wall.</>}
-        </Display>
+        {dm ? (
+          /* ── the code ──
+             The whole of the proof, on one screen: the heading, where the
+             code goes, the code, and the act. The field and the count come
+             back the moment the proof lands or the code is dropped. Whoever
+             sends it from Instagram is who this is. */
+          <VerifyHead size="s" as="h2" id="wl-rm-h" />
+        ) : (
+          <>
+            <Display size="s" as="h2" id="wl-rm-h">
+              {proven ? <>It&rsquo;s yours.<br />Take it down.</> : <>Take your name<br />off the wall.</>}
+            </Display>
 
-        {/* Two lines, not a paragraph. What it costs, and the cheaper door
-            beside it. */}
-        <Prose className="wl-gate-copy">
-          {proven
-            ? 'Every letter under it goes too.'
-            : 'Permanent. To take down one letter, report it instead.'}
-        </Prose>
+            {/* Two lines, not a paragraph. What it costs, and the cheaper door
+                beside it. */}
+            <Prose className="wl-gate-copy">
+              {proven
+                ? 'Every letter under it goes too.'
+                : 'Permanent. To take down one letter, report it instead.'}
+            </Prose>
 
-        <div className="wl-remove-field">
-          <HandleField
-            value={value} onChange={setValue} onSubmit={proven ? take : ask}
-            autoFocus={!prefill} size="lg" placeholder="yourhandle"
-            locked={proven || !!dm}
-          />
-        </div>
-
-        {/* What is about to happen, said before it happens rather than in a
-            dialogue afterwards. The count is the whole of it. */}
-        <div className="wl-remove-what" aria-live="polite">
-          {fault ? (
-            <Label tone="dim">{fault}</Label>
-          ) : validHandle(h) ? (
-            <div className="wl-remove-row">
-              <Face handle={h} size={28} lit={proven} />
-              <Label tone="dim">
-                {count === 0 ? 'no letters · no way back on'
-                  : count === 1 ? 'one letter goes with it · no way back'
-                  : `${count} letters go with it · no way back`}
-              </Label>
+            <div className="wl-remove-field">
+              <HandleField
+                value={value} onChange={setValue} onSubmit={proven ? take : ask}
+                autoFocus={!prefill} size="lg" placeholder="yourhandle"
+                locked={proven}
+              />
             </div>
-          ) : null}
-        </div>
+
+            {/* What is about to happen, said before it happens rather than in
+                a dialogue afterwards. The count is the whole of it. */}
+            <div className="wl-remove-what" aria-live="polite">
+              {fault ? (
+                <Label tone="dim">{fault}</Label>
+              ) : validHandle(h) ? (
+                <div className="wl-remove-row">
+                  <Face handle={h} size={28} lit={proven} />
+                  <Label tone="dim">
+                    {count === 0 ? 'no letters under it'
+                      : count === 1 ? 'one letter goes with it'
+                      : `${count} letters go with it`}
+                  </Label>
+                </div>
+              ) : null}
+            </div>
+          </>
+        )}
 
         <div className="wl-push" />
 
@@ -269,13 +283,7 @@ export default function Remove({ handle: prefill, back }) {
               {taking ? 'taking it down…' : 'take it down'}
             </Pill>
           ) : dm ? (
-            /* ── the code ──
-               The whole of the proof, on one screen: a code, where to send it,
-               and the fact that we are watching. No form, no account, no queue.
-               Whoever sends it from Instagram is who this is, which is why the
-               field above is locked while it is out.
-
-               Drawn by parts.DmCode, which is the same block Main's proof step
+            /* Drawn by parts.DmCode, which is the same block Main's proof step
                draws. It used to be a local copy whose "open instagram" pill
                rendered a <button href>: inert, on the only way out of the only
                irreversible action on the wall. */
@@ -287,22 +295,16 @@ export default function Remove({ handle: prefill, back }) {
               </button>
             </>
           ) : (
-            <>
-              {/* ── the handoff ──
-                  Drawn as a destination rather than as a security step: one
-                  button, the provider's shape on the same 24-unit grid as every
-                  other glyph here, and the sentence under it saying exactly
-                  what is asked and what is kept. */}
-              <Pill
-                tone="light" wide disabled={!named || minting} onClick={ask}
-                icon={<Provider size={17} />}
-              >
-                {minting ? 'one moment' : 'prove it is yours'}
-              </Pill>
-              <div className="wl-remove-handoff">
-                <Label tone="dim">one question · nothing is kept</Label>
-              </div>
-            </>
+            /* ── the handoff ──
+                Drawn as a destination rather than as a security step: one
+                button, the provider's shape on the same 24-unit grid as every
+                other glyph here. */
+            <Pill
+              tone="light" wide disabled={!named || minting} onClick={ask}
+              icon={<Provider size={17} />}
+            >
+              {minting ? 'one moment' : 'prove it is yours'}
+            </Pill>
           )}
         </SheetFoot>
       </div>

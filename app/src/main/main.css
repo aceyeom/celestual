@@ -88,8 +88,6 @@
    two read as one object rather than as a result panel beside a form. */
 .mn-card { margin-top: 2px; }
 
-.mn-note { display: flex; align-items: center; gap: 6px; }
-
 .mn-floor { min-height: 20px; }
 .mn-said {
   min-height: 18px;
@@ -117,201 +115,99 @@
 }
 .mn-quiet-link:hover { color: var(--chalk); }
 
-/* ── the stack ──
-   The handles somebody already wrote to on the wall, offered as a row of
-   chips rather than as a list. It is a shortcut, not a menu: the field above it
-   is still the way in, and these are three taps saved for somebody who has one
-   name in mind and already typed it once today. */
-.mn-stack { display: flex; flex-direction: column; gap: 8px; }
-.mn-stack-row { display: flex; flex-wrap: wrap; gap: 7px; }
-.mn-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 11px 5px 6px;
-  border: 1px solid var(--hair);
-  border-radius: var(--r-pill);
-  font-family: var(--f-id);
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
-  color: var(--ash);
-  transition: color 200ms var(--ease-out), border-color 200ms var(--ease-out);
-}
-.mn-chip:hover { color: var(--chalk); border-color: rgba(244, 241, 234, 0.2); }
-
 /* ── the proof, on its own (Prove.jsx) ──
-   The sky's sign in: the field, or the code where the field was. */
+   The sky's sign in and the opt out's: the field, or the code where the
+   field was. */
 .mn-prove { align-items: stretch; }
-.mn-prove-for { text-align: center; }
 
-/* ── the mail ──
-   Place.jsx, on every step. One object shaped like a piece of mail: TO,
-   FROM, and the letter under both, on the glass from the first step to the
-   last. Each of the three is a PART, and a part is a head (the envelope's
-   line: the label at the left, the answer or the question beside it) over a
-   body that folds. The open part is the step, and it is said by the object
-   itself rather than by a bar over it: its label is chalk where the others
-   are dim, and a line draws across under its head the way the focus line
-   draws across a field, so the part that is selected reads as selected.
-   Going to another step shuts one head and opens another, and the bodies
-   fold and unfold under them on the same curve, so the walk between steps is
-   one movement and never a cut.
+/* ── the place flow (Place.jsx) ──
+   Three screens, one per step, and each one holds the one thing that step
+   asks. What they share is the head: three dots and the step's word, on
+   every screen, at the same place, so the walk is counted without a bar
+   being drawn for it. A dot already passed is the way back to that step. */
+.mn-mark { display: flex; align-items: center; gap: 13px; min-height: 18px; }
+.mn-mark-word { color: var(--chalk); }
+.mn-mark .wl-dot { cursor: default; }
+.mn-mark .wl-dot.is-done { cursor: pointer; }
+.mn-mark .wl-dot.is-done:hover { background: rgba(244, 241, 234, 0.7); }
+.mn-mark .wl-dot:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
 
-   Every shut part that has been answered is a way back: its head is a
-   button, and one dim word at its edge says so. A part that cannot be
-   reached yet is drawn later, dim and inert, so the whole schema is on the
-   screen before any of it is filled and nobody has to guess what comes
-   next. */
-.mn-mail { display: flex; flex-direction: column; }
-.mn-part { position: relative; }
-
-/* the head: one line of the envelope. 52px whatever it holds, so the labels
-   do not move when a field becomes a name. */
-.mn-part-head {
+/* ── the small lines ──
+   Above the paper and above the field: what has been answered, one line
+   each, the way an envelope carries its address above the letter. A label
+   at the left in the identifier face, the answer beside it, and, when the
+   line is a way back, one dim word at its end. The lines sit on hairlines,
+   and the line that holds the question draws the field's own focus line
+   across its rule when the field is focused, so the line that is being
+   answered reads as the one that is. */
+.mn-rows { display: flex; flex-direction: column; margin-top: -4px; }
+.mn-row {
   position: relative;
   display: flex; align-items: center; gap: 12px;
-  min-height: 52px; padding: 9px 2px;
+  width: 100%; min-height: 48px; padding: 6px 2px;
+  border: 0; background: none; text-align: left;
+  color: var(--chalk);
+  animation: wl-fade 260ms var(--ease) both;
 }
-/* the rule under it, and the line that draws across the rule when the part
-   is open: the field's own focus line, lifted to the part, since the part is
-   what is selected and not only its input */
-.mn-part-head::after {
+.mn-row::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
   background: var(--hair-soft);
 }
-.mn-part-head::before {
+.mn-row::before {
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; z-index: 1;
   background: linear-gradient(90deg, var(--chalk), rgba(244, 241, 234, 0.22));
   transform: scaleX(0); transform-origin: 0 50%;
   transition: transform 520ms var(--ease);
 }
-.mn-part.is-open .mn-part-head::before { transform: scaleX(1); }
-/* the field inside a head keeps the head's line and gives up its own */
-.mn-part-head .wl-field-line { display: none; }
-
-.mn-part-lab {
-  flex: 0 0 40px;
+.mn-row.is-ask:focus-within::before { transform: scaleX(1); }
+.mn-row-lab {
+  flex: 0 0 48px;
   font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ash-dim);
-  transition: color 320ms var(--ease);
 }
-.mn-part.is-open .mn-part-lab { color: var(--chalk); }
-
-/* what stands beside the label: the answer, the question, or the word
-   for what is not there yet. Keyed per state in Place.jsx, so one fades out
-   and the next fades in rather than the words swapping in place. */
-.mn-part-cell {
-  flex: 1 1 auto; min-width: 0;
-  display: flex; align-items: center; gap: 12px;
-  padding: 0; border: 0; background: none; text-align: left;
-  color: var(--chalk);
-  animation: wl-fade 260ms var(--ease) both;
-}
-.mn-part-cell.is-row { min-height: 34px; }
-.mn-part-cell.is-asking .wl-face { opacity: 0.7; }
-.mn-part-h {
+.mn-row.is-ask .mn-row-lab, .mn-row.is-you .mn-row-lab { color: var(--ash); }
+.mn-row-h {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-family: var(--f-id); font-size: 15px; letter-spacing: -0.01em;
   color: var(--chalk);
-  transition: color 320ms var(--ease);
 }
-.mn-part-h.is-dim { color: var(--ash-dim); }
-.mn-part.is-shut .mn-part-h { color: var(--ash); }
-.mn-part.is-shut .mn-part-h.is-dim { color: var(--ash-dim); }
-.mn-part-note {
+/* the letter, read back in one line, in its own face */
+.mn-row-line {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--f-letter); font-optical-sizing: auto; font-size: 15.5px;
+  color: var(--ash);
+}
+.mn-row-note {
   margin-left: auto; flex: 0 0 auto;
   font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--ash-dim);
   transition: color 200ms var(--ease);
 }
-button.mn-part-cell { cursor: pointer; }
-button.mn-part-cell:hover .mn-part-note, button.mn-part-cell:focus-visible .mn-part-note { color: var(--ash); }
-button.mn-part-cell:hover .mn-part-h { color: var(--chalk); }
-button.mn-part-cell:focus-visible { outline: none; }
-button.mn-part-cell:focus-visible .mn-part-h { text-decoration: underline; text-underline-offset: 3px; }
-/* a part that cannot be reached yet: inert, and one step dimmer */
-.mn-part.is-later .mn-part-lab, .mn-part.is-later .mn-part-h, .mn-part.is-later .mn-part-note { color: var(--ash-dim); }
-
-/* the field for a name, inside its head: the underline is the head's, the
-   type is the field's own size */
-.mn-part-field { flex: 1 1 auto; min-width: 0; }
-.mn-part-field .wl-field { padding-bottom: 0; }
-.mn-part-field .wl-field input, .mn-part-field .wl-at { font-size: 21px; }
-
-/* the body: a grid row that grows from nothing to its content and back, so
-   the part under it is pushed rather than jumped, and the object keeps its
-   shape while one part shuts and another opens. Shut, it is out of the tab
-   order too. */
-.mn-part-body {
-  display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows 420ms var(--ease);
+button.mn-row { cursor: pointer; }
+button.mn-row:hover .mn-row-note, button.mn-row:focus-visible .mn-row-note { color: var(--ash); }
+button.mn-row:hover .mn-row-line { color: var(--chalk); }
+button.mn-row:focus-visible { outline: none; }
+button.mn-row:focus-visible .mn-row-h, button.mn-row:focus-visible .mn-row-line {
+  text-decoration: underline; text-underline-offset: 3px;
 }
-.mn-part-in { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 0s 420ms; }
-.mn-part.is-open .mn-part-body, .mn-part.is-read .mn-part-body { grid-template-rows: 1fr; }
-.mn-part.is-open .mn-part-in, .mn-part.is-read .mn-part-in { visibility: visible; transition-delay: 0s; }
-.mn-part-under { display: flex; flex-direction: column; gap: 14px; padding: 14px 0 6px; }
-.mn-part.is-line .mn-part-under { padding: 0; }
-.mn-part.is-from .mn-part-under { padding-top: 18px; }
+/* the field for you, inside its line: the rule is the line's, the type is
+   the field's own size, one step down from the first screen's */
+.mn-row .wl-field { flex: 1 1 auto; min-width: 0; padding-bottom: 0; }
+.mn-row .wl-field-line { display: none; }
+.mn-row .wl-field input, .mn-row .wl-at { font-size: 21px; }
 
 /* ── the letter ──
-   The same paper on every step, written on one, read on another, and
-   folded to its dateline until there is anything on it. Folded, it is the
-   quieter cream so the open part above it is the bright thing on the
-   screen; open or read, it is the paper. Read or folded and reachable it is
-   a button: it lifts a hair under the pointer and the stamp in its head says
-   what pressing it does. */
-.mn-part.is-line { margin-top: 16px; }
-.mn-mail-paper { padding: 15px 18px 17px; }
-.mn-mail-paper .wl-paper-head {
-  margin-bottom: 12px; padding-bottom: 9px;
-  transition: margin 420ms var(--ease), padding 420ms var(--ease), border-color 420ms var(--ease);
-}
-.mn-mail-paper .wl-paper-body { min-height: 0; }
-.mn-mail-paper .wl-letterfield textarea { font-size: 16.5px; line-height: 1.52; }
-.mn-mail-paper .wl-letterfield { padding-bottom: 14px; }
-/* folded, the paper is not yet paper: the sheet's silhouette, drawn in the
-   room's own material (a hairline on the void, the dateline in ash), with
-   the place the letter will go held under it. It lights into the cream the
-   moment its step opens, which is the one thing on the screen that moves
-   when the name is done. A dimmed sheet of cream read as a disabled control;
-   an outline reads as a sheet waiting to be written on. */
-.mn-part.is-folded .mn-mail-paper {
-  padding: 12px 18px;
-  background: rgba(244, 241, 234, 0.028);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  color: var(--ash);
-}
-.mn-part.is-folded .mn-mail-paper .wl-paper-grain { opacity: 0; }
-.mn-part.is-folded .mn-mail-paper .wl-paper-head {
-  margin-bottom: 0; padding-bottom: 0; border-bottom-color: transparent;
-  color: var(--ash-dim);
-}
-.mn-part.is-folded .mn-mail-paper .wl-paper-stamp { color: var(--ash-dim); border-color: var(--hair); }
-.mn-mail-paper { transition: transform 260ms var(--ease), padding 420ms var(--ease), background 420ms var(--ease), box-shadow 420ms var(--ease), color 420ms var(--ease); }
-.mn-mail-paper .wl-paper-grain { transition: opacity 420ms var(--ease); }
-.mn-mail-paper .wl-paper-stamp { transition: color 320ms var(--ease), border-color 320ms var(--ease); }
-.mn-mail-paper[role="button"] { cursor: pointer; }
-.mn-mail-paper[role="button"]:hover { transform: translateY(-1px); }
-.mn-part.is-folded .mn-mail-paper[role="button"]:hover { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.22); }
-.mn-mail-paper[role="button"]:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.7); outline-offset: 3px; }
-.mn-part.is-later .mn-mail-paper { pointer-events: none; }
-.mn-part.is-later .mn-mail-paper .wl-paper-head, .mn-part.is-later .mn-mail-paper .wl-paper-stamp { color: var(--ash-dim); opacity: 0.7; }
-.mn-mail-line {
-  min-height: calc(3 * 1.52 * 16.5px);
-  font-size: 16.5px; line-height: 1.52; color: var(--paper-ink);
-  overflow-wrap: anywhere;
-}
-
-/* the question changes with the step, and arrives rather than swaps */
-.mn-h-step { animation: wl-fade 340ms var(--ease) both; }
-
-/* the code, when it is the act: it stands in the FROM line at the column's width */
-.mn-part-under > .wl-dm { align-self: stretch; width: 100%; }
+   The one bright thing on its screen, and the screen is built round it: the
+   name in one small line above, the paper under it at the column's width,
+   and room to write. */
+.mn-letter { margin-top: 12px; padding: 16px 20px 20px; animation: wl-rise 340ms var(--ease) both; }
+.mn-letter .wl-paper-head { margin-bottom: 14px; }
+.mn-letter .wl-letterfield textarea { font-size: 17px; line-height: 1.55; min-height: calc(5 * 1.55 * 17px); }
+.mn-letter .wl-letterfield { padding-bottom: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .mn-part-cell, .mn-h-step { animation: none; }
-  .mn-part-body, .mn-part-in, .mn-part-head::before, .mn-mail-paper, .mn-mail-paper .wl-paper-head,
-  .mn-mail-paper .wl-paper-grain, .mn-mail-paper .wl-paper-stamp { transition: none; }
+  .mn-row, .mn-letter { animation: none; }
+  .mn-row::before { transition: none; }
 }
 
 /* ── it is out ── */

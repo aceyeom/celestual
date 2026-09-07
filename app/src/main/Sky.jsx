@@ -101,22 +101,19 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
   // ── not proved on this device, or the proof has lapsed ──
   // Said instead of the list rather than over a greyed-out one, and it asks
   // the question right here. This is where the front door's "sign in" lands,
-  // and where a lapsed proof lands too: same block, one different sentence.
+  // and where a lapsed proof lands too: same block, one different heading.
+  // The heading and the pill are the whole of it; the pill says what proves
+  // it, so no sentence between them has to.
   if (!who.handleVerified || state.error === 'unverified') {
     const lapsed = state.error === 'unverified'
     return (
       <main className="mn-page mn-sky">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1" ref={avoid}>
-            {lapsed ? <>One message,<br />and it is back.</> : <>Your sky is<br />behind your @.</>}
-          </Display>
-          <Prose className="mn-copy">
-            {lapsed
-              ? 'the proof this device held has lapsed. one instagram message proves it again, and everything you have out is still there.'
-              : 'one instagram message proves it.'}
-          </Prose>
-          <Prove who={who} refreshWho={refreshWho} onProved={() => setRev((n) => n + 1)} />
+          <Prove
+            who={who} refreshWho={refreshWho} onProved={() => setRev((n) => n + 1)} headRef={avoid}
+            title={lapsed ? <>One message,<br />and it is back.</> : <>Your sky is<br />behind your @.</>}
+          />
         </div>
         <div className="mn-foot">
           <button type="button" className="wl-quiet" onClick={() => go('place')}>
@@ -264,11 +261,13 @@ function CardSheet({ ping: p, who, onClose, onChange }) {
           <Prose>{p.line || 'placed without a line.'}</Prose>
         </Paper>
 
-        <p className="wl-say is-lead mn-card-say">
-          {said || (asking
-            ? 'this frees the slot. nothing was ever revealed.'
-            : 'they have not been told.')}
-        </p>
+        {/* One sentence, and only when there is a decision to make: what
+            letting go does. Nothing under the card otherwise. */}
+        {said || asking ? (
+          <p className="wl-say is-lead mn-card-say">
+            {said || 'this frees the slot. nothing was ever revealed.'}
+          </p>
+        ) : null}
 
         <SheetFoot>
           {asking ? (

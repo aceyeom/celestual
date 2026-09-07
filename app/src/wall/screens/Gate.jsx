@@ -35,15 +35,21 @@ import { useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face } from '../parts.jsx'
 import { atHandle } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
-import { DOMAIN, emailFault, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
+import { DOMAIN, anyEmail, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
 // the string painted beside it rather than typed into it. The '@berkeley.edu'
 // is not in the value, cannot be backspaced away, and cannot be got wrong.
+//
+// Typed with its own @, the address stands whole and the painted half comes
+// off. That is how an address the desk put on the pass list (migration 0043)
+// gets in: it is not at the campus, the server knows whether it passes, and
+// the field does not argue.
 function AddressField({ value, onChange, onSubmit }) {
+  const whole = value.includes('@')
   return (
-    <div className="wl-addr">
+    <div className={`wl-addr${whole ? ' is-whole' : ''}`}>
       <input
         className="wl-addr-in" value={value} onChange={(e) => onChange(e.target.value)}
         /* Sized to what is in it, so the painted half sits flush against the
@@ -51,13 +57,13 @@ function AddressField({ value, onChange, onSubmit }) {
            a domain parked to the right of it. Capped, so a long local part
            scrolls inside the field rather than pushing the domain off the
            screen. */
-        style={{ width: `${Math.min(22, Math.max(3, value.length)) + 0.4}ch` }}
+        style={whole ? undefined : { width: `${Math.min(22, Math.max(3, value.length)) + 0.4}ch` }}
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
-        aria-label="your berkeley address" placeholder="you"
+        aria-label={whole ? 'your address' : 'your berkeley address'} placeholder="you"
         type="text" inputMode="email" autoComplete="username"
         autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="next"
       />
-      <span className="wl-addr-fix" aria-hidden="true">@{DOMAIN}</span>
+      {whole ? null : <span className="wl-addr-fix" aria-hidden="true">@{DOMAIN}</span>}
       <span className="wl-field-line" aria-hidden="true" />
     </div>
   )
@@ -91,9 +97,11 @@ export default function Gate({ go, back }) {
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')       // what went wrong, in words
 
-  const email = normEmail(`${local}@${DOMAIN}`)
-  const fault = local.includes('@') ? emailFault(local) : ''
-  const ok = validEmail(email)
+  // A local part at the campus, or a whole address typed with its @. The
+  // server is the gate either way (the campus, or the desk's pass list).
+  const whole = local.includes('@')
+  const email = whole ? normEmail(local) : normEmail(`${local}@${DOMAIN}`)
+  const ok = whole ? anyEmail(email) : validEmail(email)
 
   // ── the code goes out ──
   // celestual-edu-verify checks the address is at this campus's domain, mints a
@@ -169,7 +177,6 @@ export default function Gate({ go, back }) {
             <Face handle={who} size={44} resolve={false} />
             <div className="wl-acct-name">
               <p className="wl-acct-addr" id="wl-gate-h">{memberLabel(who)}</p>
-              <Label tone="dim">signed in on this device</Label>
             </div>
           </div>
 
@@ -241,7 +248,7 @@ export default function Gate({ go, back }) {
               your information will stay anonymous
             </Label>
             <AddressField value={local} onChange={setLocal} onSubmit={send} />
-            <div className="wl-gate-fault" aria-live="polite">{fault || said}</div>
+            <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
         ) : (
           <div className="wl-gate-step">
