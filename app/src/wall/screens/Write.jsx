@@ -45,7 +45,7 @@ import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
-import { Dots, Sparkle } from '../art.jsx'
+import { Dots } from '../art.jsx'
 import { normHandle, validHandle, atHandle, dateline, hash } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
@@ -171,15 +171,12 @@ export default function Write({ to: prefill, go, back }) {
                 handle is a letter about somebody that nobody can ever find, and
                 this is the only step where that is still fixable. Pressing the
                 person is the same act as the pill below. */}
+            {/* A name that has come off the wall is refused by the schema
+                rather than by this screen: wall_write returns 'removed' and
+                the posting step says so. Guessing here would mean asking the
+                server about every handle anybody types. */}
             <HandleCard at={them.at} onSelect={next} />
             <Suggest sug={sug} />
-            <Label tone="dim" className="wl-write-note">
-              {/* A name that has come off the wall is refused by the schema
-                  rather than by this screen: wall_write returns 'removed' and
-                  the posting step says so. Guessing here would mean asking the
-                  server about every handle anybody types. */}
-              <Sparkle size={9} /> yours is never asked for
-            </Label>
           </div>
         ) : (
           <div className="wl-write-step">

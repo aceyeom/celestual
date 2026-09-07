@@ -242,6 +242,19 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0043_the_pass_list.sql`: **the pass list.** `celestual_passes`
+  is a short list the desk keeps of addresses and handles let through the
+  product's two proofs: an address on it gets the wall's code mailed to that
+  inbox whatever its domain, and `celestual_user_bind_edu`, `wall_gate` and
+  `celestual_desk_signin` take it as a campus address; a handle on it is
+  written verified by `celestual_start_ig_verification` the moment it asks,
+  marked `verified_via = 'pass'`, and the browser binds through
+  `celestual_user_bind_handle` as after a DM. The shape check on
+  `celestual_users.edu_email` takes any well formed address now, and the bind
+  function is the rule. `celestual_desk_passes`, `_pass_add(value, note)` and
+  `_pass_remove(id)` are service role only. **Tested by
+  `scripts/sql/test-pass.sql`, 29 assertions.**
+
 - `migrations/0039_the_desk_second_sitting.sql`: **the desk, for a team, and
   one door closed.** The opt-out (`celestual_suppress`) takes the DM proof; the
   one-argument form is dropped. `celestual_settings` grows a whitelist the desk

@@ -33,6 +33,9 @@
 //                                the release gate, the resolver switch, the
 //                                four caps
 //     desk_campus_set, desk_campus_add
+//     desk_passes, desk_pass_add, desk_pass_remove
+//                                the pass list (0043): who is let through
+//                                without the code's domain rule or the DM
 //     desk_log                   what the desk did, and when
 //
 //   Every write that goes through is written to celestual_desk_log by this
@@ -147,6 +150,7 @@ const DESK: Record<string, (b: Record<string, unknown>) => [string, Args]> = {
     p_limit: num(b.limit, 50, 200), p_offset: num(b.offset, 0, 100000),
   }],
   desk_settings: () => ['celestual_desk_settings', {}],
+  desk_passes: () => ['celestual_desk_passes', {}],
   desk_log: (b) => ['celestual_desk_log_list', {
     p_limit: num(b.limit, 100, 500), p_offset: num(b.offset, 0, 100000),
   }],
@@ -184,11 +188,17 @@ const DESK_WRITE: Record<string, (b: Record<string, unknown>) => [string, Args]>
   desk_name_open: (b) => ['celestual_desk_name_open', {
     p_handle: str(b.handle, 40), p_campus: str(b.campus, 40),
   }],
+  // The pass list (0043): an address or a handle let through without the
+  // code's domain rule or the DM. One field; the function decides which.
+  desk_pass_add: (b) => ['celestual_desk_pass_add', {
+    p_value: str(b.value, 200), p_note: str(b.note, 120),
+  }],
+  desk_pass_remove: (b) => ['celestual_desk_pass_remove', { p_id: str(b.id, 64) }],
 };
 
 // What a write is about, for the log: the one argument that names its target.
 function targetOf(args: Args): string | null {
-  for (const k of ['p_handle', 'p_id', 'p_key', 'p_slug', 'p_edu_email']) {
+  for (const k of ['p_handle', 'p_id', 'p_key', 'p_slug', 'p_edu_email', 'p_value']) {
     const v = args[k];
     if (typeof v === 'string' && v) return `${k.slice(2)}:${v}`;
   }
@@ -204,7 +214,7 @@ async function logWrite(action: string, args: Args, data: unknown) {
   }
   const d = data as Record<string, unknown> | null;
   if (d && typeof d === 'object') {
-    for (const k of ['letters', 'closed', 'restored', 'erased', 'banned', 'handle', 'edu_email']) {
+    for (const k of ['letters', 'closed', 'restored', 'erased', 'banned', 'handle', 'edu_email', 'kind', 'value']) {
       if (k in d) detail[k] = d[k];
     }
   }

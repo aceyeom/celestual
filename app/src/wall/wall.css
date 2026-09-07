@@ -560,6 +560,21 @@
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(23, 21, 15, 0.16); }
 
+/* the pen, at the end of the crest row. Ink on paper: the ring is the same
+   hairline the head rule is drawn in, and the nib is the wall's own glyph. */
+.wl-pen {
+  flex: 0 0 auto; margin-left: auto;
+  display: grid; place-items: center; padding: 0;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--paper-ink-2);
+  border: 1px solid rgba(23, 21, 15, 0.18);
+  background: none;
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+}
+.wl-pen:hover { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
+.wl-pen:active { transform: scale(0.94); }
+.wl-pen:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; }
+
 /* the @handle set as a card's title, in the identity face. It is the SUBJECT
    of the sheet and it is now set like one: bigger than the body it sits over,
    on its own line, with the crest beside it and nothing else in the row. */
@@ -2092,6 +2107,9 @@
   color: var(--chalk); letter-spacing: -0.014em;
 }
 .wl-addr-in { flex: 0 0 auto; min-width: 3ch; max-width: 62vw; }
+/* typed whole, with its own @: the painted domain comes off and the field
+   takes the line. An address on the desk's pass list gets in this way. */
+.wl-addr.is-whole .wl-addr-in { flex: 1 1 auto; max-width: none; width: auto; }
 .wl-addr-in::placeholder, .wl-code-in::placeholder { color: rgba(96, 92, 85, 0.62); }
 .wl-addr-in:focus, .wl-code-in:focus { outline: none; }
 .wl-addr-fix {
@@ -2191,8 +2209,6 @@
    line under it saying what is asked and what is kept. A verification screen
    that explains itself in four bullet points has already told somebody they
    are being processed. */
-.wl-remove-handoff { display: flex; flex-direction: column; gap: 11px; padding-top: 14px; }
-.wl-remove-handoff .wl-waiting { padding-bottom: 2px; }
 
 /* ── the code, and the way out to it ──
    One block, used by both surfaces that ask for a DM (Main's proof step and
@@ -2209,6 +2225,15 @@
    when it is saying something: a DM arrived with the wrong code, or one that
    had lapsed. That is the one line on the screen a person has to read. */
 .wl-dm { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+/* the one line over the code: where it goes. The reading face, because it
+   is the one sentence on the screen a person reads before they act. */
+.wl-dm-to {
+  margin: 0 0 2px;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 16.5px; line-height: 1.5;
+  color: var(--ash);
+}
+.wl-dm-to .wl-h { font-family: var(--f-id); font-size: 0.92em; letter-spacing: -0.01em; color: var(--chalk); }
 .wl-dm-code {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 2px 0 4px;

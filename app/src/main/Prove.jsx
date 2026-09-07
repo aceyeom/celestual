@@ -2,22 +2,28 @@
 //
 // The DM code flow, as one block that any screen can stand where it needs a
 // person to prove their @. It is the same question the third step of /place
-// asks, lifted out so the sky can ask it too: until now the only way to sign in
-// was to start placing a ping, and a front door with no way in for somebody who
-// already has pings out is a front door that has not looked.
+// asks, lifted out so the sky and the opt out can ask it too.
 //
-// Nothing here is new mechanics. `startHandoff` mints the code, `pollHandoff`
+// Two stages, and the block owns the heading of both, so the three screens
+// that ask cannot word the code stage three ways:
+//
+//   the ask    the caller's own heading (`title`), the field, the pill
+//   the code   "Verify the account belongs to you." over the DM block, and
+//              one way out of it
+//
+// Nothing here is new mechanics. `startHandoff` mints the code (or, for a
+// handle on the desk's pass list, answers proved on the spot), `pollHandoff`
 // watches for Instagram's answer and binds the handle, and the pending record
 // is the same one /place stashes, filed under its own `use` so the two screens
 // never resume each other's code.
 //
 // What it does NOT do is decide what happens next. It reports the handle that
 // was proved and the caller draws its own next screen, because the sky and the
-// composer want different things once the proof lands.
+// opt out want different things once the proof lands.
 import { useEffect, useRef, useState } from 'react'
-import { Label, Pill, HandleField, DmCode } from '../wall/parts.jsx'
+import { Display, Prose, Pill, HandleField, DmCode, VerifyHead } from '../wall/parts.jsx'
 import { Provider } from '../wall/art.jsx'
-import { normHandle, validHandle, atHandle } from '../wall/data.js'
+import { normHandle, validHandle } from '../wall/data.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../wall/handoff.js'
 
 const USE = 'prove'
@@ -27,7 +33,7 @@ function resume() {
   return p && p.use === USE ? p : null
 }
 
-export default function Prove({ who, refreshWho, onProved }) {
+export default function Prove({ who, refreshWho, onProved, title, copy = null, headRef = null }) {
   const held = useRef(resume()).current
   const [mine, setMine] = useState(() => held?.mine || who.handle || '')
   const [dm, setDm] = useState(() => held)
@@ -45,6 +51,15 @@ export default function Prove({ who, refreshWho, onProved }) {
   const me = normHandle(mine)
 
   const drop = () => { clearPending(); setDm(null); setNote('') }
+
+  // The proof landed: the handle is bound, the row is read again, and the
+  // caller is told. From the poll after a DM, or at once for a passed handle.
+  const landed = async (handle) => {
+    const u = await refreshWho()
+    if (!alive.current) return
+    setDm(null)
+    if (onProved) onProved(normHandle(handle), u)
+  }
 
   const ask = async () => {
     if (dm || busy) return
@@ -64,6 +79,7 @@ export default function Prove({ who, refreshWho, onProved }) {
       )
       return
     }
+    if (out.passed) { landed(out.handle); return }
     const rec = { ...out, use: USE, mine: me }
     savePending(rec)
     setDm(rec)
@@ -88,10 +104,7 @@ export default function Prove({ who, refreshWho, onProved }) {
         stop = true
         clearTimeout(timer)
         clearPending()
-        const u = await refreshWho()
-        if (!alive.current) return
-        setDm(null)
-        if (onProved) onProved(normHandle(out.handle), u)
+        landed(out.handle)
         return
       }
       if (out.error === 'expired') { drop(); setSaid('that code has lapsed'); return }
@@ -113,33 +126,35 @@ export default function Prove({ who, refreshWho, onProved }) {
 
   if (dm) {
     return (
-      <div className="mn-step mn-prove">
-        <DmCode
-          code={dm.code}
-          note={(
-            <Label tone="dim" className="mn-prove-for">
-              proving <span className="sg-h">{atHandle(dm.mine)}</span>
-            </Label>
-          )}
-          status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
-            : note === 'expired_code' ? 'that code had lapsed. send this one.'
-            : ''}
-        />
-        <button type="button" className="wl-quiet" onClick={drop}>start over</button>
-      </div>
+      <>
+        <VerifyHead ref={headRef} />
+        <div className="mn-step mn-prove">
+          <DmCode
+            code={dm.code}
+            status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
+              : note === 'expired_code' ? 'that code had lapsed. send this one.'
+              : ''}
+          />
+          <button type="button" className="wl-quiet" onClick={drop}>start over</button>
+        </div>
+      </>
     )
   }
 
   return (
-    <div className="mn-step">
-      <HandleField
-        value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={ask}
-        size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
-      />
-      <Pill tone="light" wide onClick={ask} disabled={busy} icon={<Provider size={17} />}>
-        prove it with one DM
-      </Pill>
-      <p className="mn-said" role="status" aria-live="polite">{said}</p>
-    </div>
+    <>
+      {title ? <Display size="m" as="h1" ref={headRef}>{title}</Display> : null}
+      {copy ? <Prose className="mn-copy">{copy}</Prose> : null}
+      <div className="mn-step">
+        <HandleField
+          value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={ask}
+          size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
+        />
+        <Pill tone="light" wide onClick={ask} disabled={busy} icon={<Provider size={17} />}>
+          {busy ? 'one moment' : 'prove it with one DM'}
+        </Pill>
+        <p className="mn-said" role="status" aria-live="polite">{said}</p>
+      </div>
+    </>
   )
 }
