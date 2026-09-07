@@ -158,6 +158,7 @@ export default function Posted({ go, reduce }) {
         <Display size="m">
           {refused === 'screened' ? <>It didn&rsquo;t go up.</>
             : refused === 'removed' ? <>That name is off<br />the wall.</>
+            : refused === 'cap' ? <>Three a week,<br />and that was three.</>
             : refused === 'gate' || refused === 'no_session' ? <>Letters are written<br />by Berkeley.</>
             : refused === 'network' ? <>It did not<br />go through.</>
             : <>Nothing to put up.</>}
@@ -170,6 +171,7 @@ export default function Posted({ go, reduce }) {
           <Label tone="dim" className="wl-posted-count">
             {refused === 'screened' ? 'the screen held it back'
               : refused === 'removed' ? 'nobody can write to it now'
+              : refused === 'cap' ? 'one comes back seven days after you wrote it'
               : refused === 'gate' ? 'open the letters first'
               : refused === 'no_session' ? 'this device is no longer signed in. sign in again and it is still here'
               : 'it did not go through'}
@@ -178,10 +180,20 @@ export default function Posted({ go, reduce }) {
           <Label tone="dim" className="wl-posted-count">your letter is still here. try again</Label>
         ) : null}
         <div className="wl-gap" />
-        <Pill tone="light" icon={<Icon name="write" size={17} />}
-          onClick={() => go(refused === 'gate' || refused === 'no_session' ? 'gate' : 'write')}>
-          {refused === 'gate' || refused === 'no_session' ? 'open them' : refused === 'network' ? 'try again' : 'write one'}
-        </Pill>
+        {/* Nothing to press towards on a cap: another letter is the one thing
+            this person cannot do, and a button offering it would be the screen
+            arguing with itself. The way back to the wall is the mark, where it
+            is on every screen. */}
+        {refused === 'cap' ? (
+          <Pill tone="light" icon={<Icon name="wall" size={17} />} onClick={() => go('wall')}>
+            back to the wall
+          </Pill>
+        ) : (
+          <Pill tone="light" icon={<Icon name="write" size={17} />}
+            onClick={() => go(refused === 'gate' || refused === 'no_session' ? 'gate' : 'write')}>
+            {refused === 'gate' || refused === 'no_session' ? 'open them' : refused === 'network' ? 'try again' : 'write one'}
+          </Pill>
+        )}
       </div>
     )
   }

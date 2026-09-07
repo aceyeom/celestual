@@ -3,7 +3,7 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // The event surface, and the product it hands off into. As of Phase 6b it
-// reaches a server for everything it holds: the letters, the campus gate, the
+// reaches a server for everything it holds: the letters, the two gates, the
 // handle proof, the reports and the takedowns are all in the schema. What is
 // still local is what should be, and only that: the draft in the composer, the
 // names this browser has written to, and which letters it has opened.

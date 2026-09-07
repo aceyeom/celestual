@@ -1185,6 +1185,27 @@
   flex: 0 0 auto;
 }
 .wl-write-foot .wl-pill { margin-left: auto; min-width: 128px; }
+/* the allowance, standing at the left of the composer's foot opposite the one
+   thing to press. It is the quietest object on the screen and stays that way:
+   three hairline marks, struck as they are spent, and no sentence beside them
+   until there is one letter left. The pills already claim the right edge with
+   margin-left, so it needs nothing but permission to shrink. */
+.wl-write-foot .wl-allow { flex: 0 1 auto; }
+
+/* ── three letters in any seven days ── */
+.wl-allow { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.wl-allow-marks { display: flex; align-items: center; gap: 5px; }
+.wl-allow-mark {
+  width: 5px; height: 5px; border-radius: 50%;
+  border: 1px solid rgba(244, 241, 234, 0.34);
+  transition: background 400ms var(--ease), border-color 400ms var(--ease), opacity 400ms var(--ease);
+}
+.wl-allow-mark.is-used { background: rgba(244, 241, 234, 0.34); border-color: transparent; }
+.wl-allow-say { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Spent is a fact, not an alarm: the marks go out rather than turning red, and
+   the only thing that changes colour is the line that says when one comes back. */
+.wl-allow.is-spent .wl-allow-mark { opacity: 0.5; }
+.wl-allow.is-spent .wl-allow-say { color: var(--ember); }
 
 /* ═══ PUTTING IT UP ═════════════════════════════════════════════════════════════
    Four beats. Each stage is a class on the page and every element reads its
@@ -2069,6 +2090,8 @@
   letter-spacing: -0.02em; color: var(--chalk);
   overflow-wrap: anywhere;
 }
+/* the allowance, under the address it belongs to */
+.wl-acct-allow { margin-top: -1px; }
 .wl-acct-rule { flex: 0 0 auto; }
 .wl-acct-sect { padding: 20px 0 0; flex: 0 0 auto; }
 .wl-acct-wrote { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 14px; }

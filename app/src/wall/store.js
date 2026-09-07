@@ -15,12 +15,18 @@ const KEY = 'celestual.wall.v5'
 // Two different identities live here and they are not the same key, because
 // they do not buy the same thing and they are not proven the same way:
 //
-//   member    a berkeley.edu address. It opens reading, writing and reporting
-//             — the three things a stranger off the street does not get — and
-//             it is never attached to a letter. The composer never reads it.
+//   member    a berkeley.edu address. It opens WRITING, and it is never
+//             attached to a letter. The composer never reads it.
+//   reader    whether this browser's person has been proved at all, by either
+//             proof: the campus address above, or a handle through the
+//             Instagram handoff. It opens READING, the heart and the report.
+//             Held apart from `member` because the two doors are two doors
+//             (migration 0044), and a screen that read one for the other is
+//             how a person who had proved their handle was shown a wall of
+//             struck-out words with no way to open one.
 //   verified  handles proven through the Instagram handoff. Not an account and
 //             not a login: it is the answer to one question, asked once, on the
-//             one action that is permanent — taking a whole name off the wall.
+//             one action that is permanent, taking a whole name off the wall.
 const EMPTY = {
   source: 'direct',   // which printed surface produced this scan
   query: '',          // the last thing typed into the search
@@ -38,7 +44,10 @@ const EMPTY = {
                       // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
   member: null,       // a berkeley.edu address, if one has been given. It gates
-                      // reading, writing and reporting — and nothing else.
+                      // writing, and nothing else.
+  reader: false,      // whether either proof has landed. It gates reading, the
+                      // heart and the report. The server decides; this is the
+                      // copy of its answer the interface draws from.
   removed: [],        // handles that have asked to come off the wall. Held
                       // beside everything else so the reset clears them too.
   reported: [],       // letters a report took down. HELD, never deleted — the

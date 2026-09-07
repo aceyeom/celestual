@@ -13,27 +13,35 @@
 //                to be findable by the person it belongs to before they can
 //                ask for it to come off.
 //   the letters  what was actually written, who may write one, and who may
-//                take one down. Behind this gate.
+//                take one down. Behind the two gates below.
 //
-// So the letter arrives redacted to a stranger and whole to somebody with a
-// berkeley.edu address, and the index is untouched.
+// So the letter arrives redacted to a stranger and whole to somebody this
+// product has proved, and the index is untouched.
 //
-// ── the three things the address opens ──────────────────────────────────────
-// READING, WRITING and REPORTING. It is one door and it is opened once:
+// ── TWO DOORS, NOT ONE (migration 0044) ─────────────────────────────────────
+// It used to be one door for three acts, and that was wrong in a way that took
+// a live wall to see. A person who had proved their Instagram handle through
+// the DM code — this product's own proof, the expensive one — arrived here
+// signed in, was shown a wall of struck-out words, and read "sign in to read
+// the letters" on a screen they had signed in to. So the door splits along the
+// line it was always two things on either side of:
 //
-//   reading    a wall of things students wrote about each other, readable by
-//              the open internet, is a different object from one readable by
-//              the campus it is about.
-//   writing    an anonymous letter about a named person, publishable by anybody
-//              on earth with a browser, is not anonymity — it is an open relay
-//              pointed at a student. The address does not sign the letter and
-//              is never stored beside it. What it does is make the wall a room
-//              with a door on it, which is the only reason the letters in it
-//              can be worth reading.
-//   reporting  a control that takes a public letter down on one tap has to cost
-//              something to reach, or the wall's contents are decided by
-//              whoever is bored. A campus address is the cheapest thing that is
-//              not nothing.
+//   READING (and the heart, and the report) — anybody this product has proved.
+//              A campus address, or a verified handle. Either proof costs
+//              something real, and a wall of things students wrote about each
+//              other is still a different object from one the open internet
+//              can read. Reporting goes with reading on purpose: the person a
+//              letter is about is the likeliest reader to want it down and the
+//              least likely to hold a berkeley.edu address at that moment.
+//   WRITING    the campus address, and only the campus address. An anonymous
+//              letter about a named person, publishable by anybody on earth
+//              with a browser, is not anonymity: it is an open relay pointed
+//              at a student. The address does not sign the letter and is never
+//              stored beside it. What it does is make the wall a room with a
+//              door on it, which is the only reason the letters in it can be
+//              worth reading. Three in any seven days, because a wall whose
+//              contents are decided by whoever writes the most is a wall about
+//              its most prolific writer.
 //
 // ── what this is not ────────────────────────────────────────────────────────
 // It is not an identity, and being signed in is still not being known. The
@@ -49,8 +57,8 @@
 // module decides whether anybody is a member: it asks, and the server answers.
 //
 // The gate that matters is not here either. Every read of a letter body goes
-// through wall_letters_for, which checks the campus itself and returns a null
-// body to anybody outside it, so a person who edits `member` in devtools gets a
+// through wall_letters_for, which asks wall_read_gate itself and returns a null
+// body to anybody outside it, so a person who edits `reader` in devtools gets a
 // wall with no words on it. What this module holds is the copy of that answer
 // the interface draws from, not the answer.
 
@@ -104,8 +112,12 @@ export function validCode(raw) {
 // without waiting for a round trip. `refresh()` is what puts it there and
 // `celestual_whoami` is where it comes from. Never trusted for access: it is
 // what the interface draws, and wall_letters_for is what decides.
+//
+// `member` is the campus address and answers ONE question: may this person
+// write. `reader` is either proof and answers the other: may this person read.
 export function member() { return getState().member || null }
 export function isMember() { return !!getState().member }
+export function isReader() { return !!getState().reader }
 
 // Called after celestual-edu-verify confirms a code. The address it takes is
 // the one the server just verified, not one the browser typed.
@@ -116,7 +128,7 @@ export function isMember() { return !!getState().member }
 export function signIn(email) {
   const e = normEmail(email)
   if (!anyEmail(e)) return null
-  patch({ member: e })
+  patch({ member: e, reader: true })
   forgetLetters()
   return e
 }
@@ -126,7 +138,7 @@ export function signIn(email) {
 // person who signed out here on a shared laptop was still signed in to their
 // sky on Main, one tap away. One session, one sign out.
 export function signOut() {
-  patch({ member: null, verified: [] })
+  patch({ member: null, reader: false, verified: [] })
   forgetSession()
   dropProof()
   clearPending()
@@ -151,15 +163,25 @@ export async function refresh() {
   const me = await whoamiStrict()
   if (me === null) return member()
   const verified = me.handleVerified && me.handle ? [me.handle] : (getState().verified || [])
+
+  // Either proof opens the letters (migration 0044). The cache is dropped when
+  // this ANSWER changes rather than when the address does: a person who proved
+  // their handle on Main and walked over here has a cache full of redactions
+  // and no address, and a cache keyed on the address would never drop it.
+  const was = isReader()
+  const now = !!(me.signedIn && (me.eduVerified || me.handleVerified))
+  if (was !== now) forgetLetters()
+
   if (!me.signedIn || !me.eduVerified) {
-    if (member()) forgetLetters()
-    patch({ member: null, verified })
+    // No campus address, so no writing. Reading is a separate question and it
+    // has already been answered above.
+    patch({ member: null, reader: now, verified })
     return null
   }
   // The row does not carry the address (0030 keeps it server side on
   // purpose), so a device that lost its own copy is signed in as the campus
   // rather than as an invented someone@ at it.
-  patch({ member: member() || (me.campus || DOMAIN), verified })
+  patch({ member: member() || (me.campus || DOMAIN), reader: now, verified })
   return member()
 }
 
@@ -237,6 +259,12 @@ export async function verifyHandle(handle, proof) {
   }
   if (out.ok) {
     push('verified', h)
+    // ── AND THE LETTERS OPEN ──
+    // A proved handle is one of the two proofs wall_read_gate takes (0044), so
+    // the wall this browser was reading redacted a second ago is readable now.
+    // Every letter in the cache was read through the old answer, so the cache
+    // goes, exactly as it does when a campus address lands.
+    if (!isReader()) { patch({ reader: true }); forgetLetters() }
     // ── AND THE PROOF IS KEPT ──
     // This line is the difference between a verification that finishes and one
     // that finishes and then cannot do anything. `proof` is not a receipt: it

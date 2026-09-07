@@ -230,7 +230,7 @@ Idempotent migrations, applied in order:
 - `migrations/0042_the_hearts_and_the_faces.sql`: **a letter can be hearted,
   and the faces ride on the reads.** `wall_hearts` is one row per (letter,
   person), counted and never listed: `wall_heart(token, id, on)` puts one on
-  or takes it off, behind `wall_gate` like reading, and answers the count;
+  or takes it off, behind the same gate as reading, and answers the count;
   `wall_letters_for` and `wall_letter` carry `hearts` and `hearted` on every
   row. A trigger folds the absorbed row's heart into the survivor's under
   `celestual_user_merge`, so a shared heart never turns a merge into a
@@ -241,6 +241,26 @@ Idempotent migrations, applied in order:
   `ig_profile_peek(handles[])` answers up to twenty-four exact handles from
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
+
+- `migrations/0044_the_reading_room_and_the_three.sql`: **reading opens, and
+  writing gets a meter.** `wall_gate` answered three questions and should have
+  answered one: a person who had proved their Instagram handle arrived at the
+  wall signed in and was handed struck-out words with no way to open one, which
+  was twenty-five of the twenty-seven identity rows on the product. The gate
+  splits. `wall_read_gate(user, campus)` takes either proof, a campus address
+  (or a pass, or a subdomain) or `handle_verified_at`, and `wall_letters_for`,
+  `wall_letter`, `wall_heart` and `wall_report` ask it; `wall_gate` is
+  unchanged and is now the WRITE gate alone. Reporting follows reading on
+  purpose: the subject of a letter is the likeliest reader to want it down and
+  the least likely to hold a campus address at that moment. Writing also gets
+  an allowance of three letters in any seven days, held in
+  `wall_letter_allowance()` and `wall_letter_window()` and counted by
+  `wall_letters_spent(user)`: `wall_write` refuses the fourth with `cap` and
+  `wall_quota(token)` answers the caller (and only ever the caller) with
+  `limit`, `used`, `left` and `resets_at`. A letter the screen rejected is
+  still stored and does not spend one; a letter later taken down still does, so
+  a report cannot hand its author a fresh slot. **Tested by
+  `scripts/sql/test-reading-room.sql`, 36 assertions.**
 
 - `migrations/0043_the_pass_list.sql`: **the pass list.** `celestual_passes`
   is a short list the desk keeps of addresses and handles let through the
@@ -309,8 +329,8 @@ Idempotent migrations, applied in order:
   the wall readable by the open internet, against what `app/src/wall/auth.js`
   says at length in its own header. `wall_index` carries a handle and a count;
   the bodies come through `wall_letters_for`, which returns a null body to
-  anybody outside the campus, because a redaction the client performs is not a
-  redaction. `wall_letter_seal` is the only function anywhere that returns
+  anybody outside the read gate (0044: either proof), because a redaction the
+  client performs is not a redaction. `wall_letter_seal` is the only function anywhere that returns
   `sealed_line`, and it wants the verified handle, the ask and the author's yes.
   **Tested by `scripts/sql/test-wall.sql`, 72 assertions.**
 
@@ -375,7 +395,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 | `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-wall-moderate` | the wall's composer posts here: layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`, so nobody waits on a model call to be told they have none left), layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
 | `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |

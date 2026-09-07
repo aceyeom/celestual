@@ -31,23 +31,28 @@ The wall carries two different things and they cannot have the same rule.
 | | |
 | --- | --- |
 | **the index** | sixty-six handles, the count against each one, and nothing else. **Open to everybody.** It is what somebody who has just scanned a code off a card has to be able to see in four seconds without answering anything, and it is how a person finds their own name in order to ask for it to come off. |
-| **the letters** | what was actually written, who may write one, and who may take one down. **Behind a `berkeley.edu` address.** |
+| **the letters** | what was actually written, who may write one, and who may take one down. **Behind a proof.** |
 
 So a letter arrives at a stranger **redacted** — the real letter, at its real
-length, with every word struck out and nothing readable in the document — and
-an address lifts it. The index does not move: the names, the counts and the
-search stay open to everybody, forever, and the first time anybody is asked for
+length, with every word struck out and nothing readable in the document — and a
+proof lifts it. The index does not move: the names, the counts and the search
+stay open to everybody, forever, and the first time anybody is asked for
 anything is the moment they reach for one of the three acts that touch what is
 on the wall.
 
-Those three are **reading**, **writing** and **reporting**. One door, opened
-once:
+Those three are **reading**, **writing** and **reporting**, and since migration
+0044 they stand behind **two** doors rather than one. It used to be one door,
+and that was wrong in a way it took a live wall to see: a person who had proved
+their Instagram handle, this product's own proof, arrived here signed in and
+was handed a wall of struck-out words with no way to open one. That was
+twenty-five of the twenty-seven people on the product, reading "sign in to read
+the letters" on a surface they had signed in to.
 
-| | |
-| --- | --- |
-| **reading** | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by the campus it is about |
-| **writing** | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity — it is an open relay pointed at a person who never agreed to any of it |
-| **reporting** | a one-tap control over what is on a public page has to cost *something* to reach, or the wall's contents are decided by whoever is bored |
+| | | |
+| --- | --- | --- |
+| **reading** | either proof: a `berkeley.edu` address, or a handle verified by the DM code | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved |
+| **reporting** | either proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
+| **writing** | the `berkeley.edu` address, and three letters in any seven days | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
 
 **Being let in is not being known.** The address is never attached to a letter,
 the composer never reads it, and a letter still has three fields with no fourth
@@ -614,6 +619,7 @@ which is what keeps the two surfaces one product.
   The spread stops sliding between letters and jumps; the count still rolls to
   sixty, because that number IS the feedback that the tap worked. Nothing on the
   surface is only knowable by watching something move.
-- **The gate checks a domain, not a person.** Any `berkeley.edu` address opens
-  the wall. The Instagram handoff is the only place a *person* is checked, and
-  it is asked once, about one handle, on the one action nobody can undo.
+- **The write gate checks a domain, not a person.** Any `berkeley.edu` address
+  may write. The Instagram handoff is the only place a *person* is checked; it
+  opens reading (0044) and it is asked for again, about one handle, on the one
+  action nobody can undo.

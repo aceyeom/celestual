@@ -36,10 +36,11 @@
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
 // this card arrives REDACTED — the real letter, at its real length, with every
-// word struck out — and a berkeley.edu address lifts it. Nothing else on the
-// index changes: the wall, the search and the counts are open to everybody, and
-// a person who has just scanned a code off a card is never asked for anything
-// before they have seen what this is.
+// word struck out — and either of the product's proofs lifts it: a campus
+// address, or a handle proved by the DM code (migration 0044). Nothing else on
+// the index changes: the wall, the search and the counts are open to
+// everybody, and a person who has just scanned a code off a card is never
+// asked for anything before they have seen what this is.
 //
 // The redaction is drawn from the letter's own words, not from a grey block,
 // because the shape of the thing has to be honest even while it is shut. And

@@ -12,11 +12,14 @@
 //   the index      public. A handle and a count. Anybody, no session, no
 //                  answering anything, because somebody who just scanned a code
 //                  off a flyer has to see the wall in four seconds.
-//   the letters    behind the campus gate. A stranger gets the shape of a
-//                  letter and `body` as null; somebody with a verified
-//                  berkeley.edu address gets the words. The redaction happens
-//                  in the database, because a redaction the client performs is
+//   the letters    behind the read gate. A stranger gets the shape of a letter
+//                  and `body` as null; somebody this product has proved, by a
+//                  campus address OR a verified handle, gets the words
+//                  (wall_read_gate, migration 0044). The redaction happens in
+//                  the database, because a redaction the client performs is
 //                  not a redaction.
+//   writing        behind the campus gate, which is a different and narrower
+//                  door, and three letters in any seven days.
 //   the seal       one function returns it, and only when the caller holds the
 //                  verified handle it is addressed to, asked, and the author
 //                  said yes.
@@ -121,6 +124,29 @@ export async function wallPulse() {
   }
 }
 
+// ── the allowance ────────────────────────────────────────────────────────────
+// Three letters in any seven days, and this is the only way to ask how many are
+// left. It answers about the CALLER and takes no argument for anybody else:
+// how much somebody has written is a fact about them, and a function that could
+// be asked it about a handle would be a way to ask whether a particular person
+// has been writing letters.
+//
+// A browser with no session is told the whole allowance rather than nothing, so
+// the meter under the composer has a number to draw before it knows who is
+// holding the phone.
+export async function quota() {
+  const out = await call('wall_quota', { p_token: sessionToken() })
+  if (!out?.ok) return { ok: false, error: out?.error || 'network', limit: 3, used: 0, left: 3, resets: 0 }
+  return {
+    ok: true,
+    signedIn: !!out.signed_in,
+    limit: Number(out.limit) || 0,
+    used: Number(out.used) || 0,
+    left: Number(out.left) || 0,
+    resets: out.resets_at ? new Date(out.resets_at).getTime() : 0,
+  }
+}
+
 // ── reading ──────────────────────────────────────────────────────────────────
 // `open` is the gate. When it is false every letter comes back with a null
 // body, which is the redacted read, and the screen draws the shape of a letter
@@ -201,6 +227,11 @@ function shapeLetter(l) {
 //
 // "Held" and "published" must read the same, or the screen becomes a way to
 // find out what gets through by writing until something does.
+//
+// One more refusal since 0044: `cap`, when three letters are already spent in
+// the last seven days. It carries `resets_at`, so the screen can say when one
+// comes back rather than only that none is left. A rejected letter never
+// spends one, so a person who has been screened is not also charged for it.
 export async function write({ to, body, sealedLine, source }) {
   if (!hasSupabase) return OFFLINE
   try {
@@ -233,7 +264,7 @@ export const answerReveal = (id, reveal) =>
 export const seal = (id) => call('wall_letter_seal', { p_token: sessionToken(), p_letter: id })
 
 // ── the heart ────────────────────────────────────────────────────────────────
-// On, or off. Behind the campus gate like reading, and it answers the count
+// On, or off. Behind the read gate like reading, and it answers the count
 // so the screen draws the server's number and not its own arithmetic.
 export const heart = (id, on) =>
   call('wall_heart', { p_token: sessionToken(), p_letter: id, p_on: !!on })

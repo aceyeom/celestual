@@ -80,10 +80,14 @@ select w_ok('the author is recorded as a row, not a string',
 -- A rejected letter is STORED. Spec section 9.
 select wall_write('token-author-0000000000', 'someoneelse', 'call me on 555 123 4567', null, null,
                   'berkeley', 'rejected', '{"verdict":"reject","reasons":["phone"]}');
+-- Scoped to the letter just written rather than to every rejected letter in
+-- the database: the tests share one cluster, and a count over the whole table
+-- is a count of what every other test file did before this one ran.
 select w_ok('a rejected letter is stored, not dropped',
-  (select count(*) = 1 from wall_letters where status = 'rejected'));
+  (select count(*) = 1 from wall_letters where status = 'rejected' and target_handle = 'someoneelse'));
 select w_ok('with its reason attached',
-  (select moderation->'reasons'->>0 = 'phone' from wall_letters where status = 'rejected'));
+  (select moderation->'reasons'->>0 = 'phone' from wall_letters
+    where status = 'rejected' and target_handle = 'someoneelse'));
 select w_ok('and it is not on the wall',
   (select count(*) = 0 from wall_index where target_handle = 'someoneelse'));
 
