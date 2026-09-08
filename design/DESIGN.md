@@ -486,7 +486,7 @@ had already said it. The role went with the caller.
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
 | You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
-| Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised |
+| Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised. On the wall it carries the composer's pill and, under it, one quiet line to the rest of the product (`.wl-dock-rest`), which goes while the tab is up |
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash |
 | Foot | `.wl-colophon`, `SiteFoot` | the foot of the site, under the front door, under the wall, and restated in `legal.css` under the legal pages: the lockup and the sentence on one line, two short columns (the legal pages with the opt out among them, and the company: `COMPANY` in `parts.jsx`, the name, the address, the telephone and the street), and the company's line. Short on purpose: it used to run three columns and stood taller than the hero's type block on a phone. The one place the company is written as a company |
 | Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Two grounds: `star`, the dark plate with star shaped holes the result card waits on, and `chalk`, the pill's own fill, so the light shows around the capsule as a halo. Spent on the result card while it is looking, on the pill that places a ping (`Pill lit`), and on the mutual row on the sky |
@@ -518,6 +518,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
+| `Tally` | the wall's count, drawn: one sparkle per letter on the masthead, filling like lines of writing, beside the number in `--gold`. One pitch for up to three lines, then smaller, so five hundred is a strip and not a block. A few twinkle; none under reduced motion (`.wl-tally`) |
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |

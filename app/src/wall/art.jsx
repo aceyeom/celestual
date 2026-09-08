@@ -50,6 +50,78 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
   )
 }
 
+// ── the tally ───────────────────────────────────────────────────────────────
+// One star for every letter on the wall, for the masthead. The count used to
+// be a number in a label, "19 letters", and a number is a fact about the wall
+// that says nothing about its shape. This is the same fact drawn: a thin wall
+// is a few stars with room round them, a full one is a band of light, and
+// neither is a picture of anything except how many.
+//
+// It is the sparkle, because the sparkle is already what a letter is on this
+// surface: it stands between the names on the wall and it is what a letter
+// turns into on its way up (screens/Posted.jsx). One star per letter, in the
+// order they are counted, and the number is printed beside the figure because
+// past about forty nobody counts stars. The picture is the size of the thing;
+// the number is the truth.
+//
+// It fills the way writing fills a page, left to right and then the next
+// line, three lines at full size and then smaller, so a wall of four hundred
+// is a dense strip and not a block that pushes the names off the screen.
+// Every star is jittered a little off its cell and drawn at a slightly
+// different size, because a grid of identical stars is a texture and a wall
+// is a crowd. A handful twinkle, staggered; none under reduced motion.
+const TALLY_W = 240
+export function Tally({ n, twinkle = false, className = '', style }) {
+  const count = Math.max(0, Math.floor(n || 0))
+  if (!count) return null
+  let pitch = 9
+  let cols = Math.max(1, Math.min(count, Math.floor(TALLY_W / pitch)))
+  let rows = Math.ceil(count / cols)
+  if (rows > 3) {
+    // past three lines the cells shrink so the block stays about the height
+    // of three, down to a floor where a star is still a star
+    pitch = Math.max(2.6, Math.sqrt((TALLY_W * pitch * 3) / count))
+    cols = Math.max(1, Math.floor(TALLY_W / pitch))
+    rows = Math.ceil(count / cols)
+  }
+  const width = cols * pitch
+  const height = rows * pitch
+  const size = Math.max(2, pitch * 0.74)
+  // which ones twinkle: a few, spread through the run, never more than eight
+  const step = Math.max(5, Math.ceil(count / 8))
+  const stars = []
+  for (let i = 0; i < count; i++) {
+    const c = i % cols
+    const r = Math.floor(i / cols)
+    const x = c * pitch + pitch / 2 + (rand('tally', i) - 0.5) * pitch * 0.36
+    const y = r * pitch + pitch / 2 + (rand('tally', i + 1000) - 0.5) * pitch * 0.36
+    const s = size * (0.76 + rand('tally', i + 2000) * 0.48)
+    const o = 0.55 + rand('tally', i + 3000) * 0.45
+    const lit = twinkle && i % step === step - 1
+    stars.push(
+      // each star in its own viewport rather than under a transform
+      // attribute, because the twinkle is a CSS transform and a CSS transform
+      // replaces the attribute rather than composing with it
+      <svg key={i} x={f2(x - s / 2)} y={f2(y - s / 2)} width={f2(s)} height={f2(s)} viewBox="0 0 100 100" overflow="visible">
+        <path
+          className={`wl-spark${lit ? ' is-twinkle' : ''}`}
+          style={lit ? { '--spark-delay': `${(i * 97) % 3600}ms` } : undefined}
+          d={SPARK} fill="currentColor" opacity={f2(o)}
+        />
+      </svg>,
+    )
+  }
+  return (
+    <svg
+      className={`wl-tally-stars ${className}`} style={style}
+      width={f2(width)} height={f2(height)} viewBox={`0 0 ${f2(width)} ${f2(height)}`}
+      aria-hidden="true" focusable="false"
+    >
+      {stars}
+    </svg>
+  )
+}
+
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  ECLIPTIC, THE MARK                                                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝

@@ -282,15 +282,27 @@
       <div class="spec"><span class="cap">quiet · second option only</span><button class="wl-quiet">let it go instead</button></div>
       <div class="spec"><span class="cap">mine · a control with a consequence</span><button class="wl-mine">take a name off</button></div>
       <div class="spec"><span class="cap">mine is-wide</span><button class="wl-mine is-wide">take your name off the wall</button></div>
-      <div class="spec"><span class="cap">flag · rest</span><button class="wl-flag" id="fl1"></button></div>
-      <div class="spec"><span class="cap">flag · is-on</span><button class="wl-flag is-on" id="fl2"></button></div>
     </div>
 
-    <h3>What the flag opens · the choice, with its cost under it</h3>
+    <h3>The flag · on the paper, at the end of the foot, opposite the heart</h3>
+    <div class="bed is-chalk statebar">
+      <div class="spec"><span class="cap">flag · rest</span><button class="wl-flag" id="fl1"></button></div>
+      <div class="spec"><span class="cap">flag · hover</span><button class="wl-flag" id="fl3" data-state=".wl-flag:hover"></button></div>
+      <div class="spec"><span class="cap">flag · is-on</span><button class="wl-flag is-on" id="fl2"></button></div>
+    </div>
+    <p class="note">
+      A marker left on a thing, not a verdict about it. It stood alone under the pill
+      at the foot of the letter sheet, a ring on the void with nothing beside it; it
+      belongs to the letter, so it is struck in the paper's ink at the heart's size
+      and stands in the card's corner.
+    </p>
+
+    <h3>What the flag opens · two rows where the primary stood, and the way back</h3>
     <div class="bed">
       <div class="wl-flag-opts" style="max-width:340px">
-        <button class="wl-opt"><span class="wl-opt-t">This is me</span><span class="wl-opt-s">the name, and every letter under it, comes off</span></button>
-        <button class="wl-opt"><span class="wl-opt-t">Report this letter</span><span class="wl-opt-s">this one comes down now, and someone reads it after</span></button>
+        <button class="wl-opt"><span>Take my @ down</span><span class="wl-opt-go">&#8594;</span></button>
+        <button class="wl-opt"><span>Report letter</span><span class="wl-opt-go">&#8594;</span></button>
+        <button class="wl-quiet">leave it up</button>
       </div>
     </div>
 
@@ -374,8 +386,8 @@
         <div class="wl-dock" style="position:relative">
           <div class="wl-dock-veil"></div>
           <div class="wl-dock-in">
-            <button class="wl-pill is-light">write</button>
-            <a class="wl-arrow is-s is-quiet" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">how this works</span></a>
+            <button class="wl-pill is-light is-wide">write</button>
+            <a class="wl-quiet wl-dock-rest" href="#"><span>the rest of celestual</span><span class="wl-dock-rest-go">&#8594;</span></a>
           </div>
         </div>
       </div>
@@ -506,6 +518,8 @@
       <div class="spec"><span class="cap">sparkle · 18</span><span id="art-spark"></span></div>
       <div class="spec"><span class="cap">sparkle · twinkle</span><span id="art-spark-t"></span></div>
       <div class="spec"><span class="cap">halftone</span><span id="art-half"></span></div>
+      <div class="spec"><span class="cap">tally · 19 letters</span><span id="art-tally"></span></div>
+      <div class="spec"><span class="cap">tally · 120</span><span id="art-tally-b"></span></div>
       <div class="spec"><span class="cap">mark · rest</span><span id="art-mark"></span></div>
       <div class="spec"><span class="cap">mark · is-lit</span><span id="art-mark-lit"></span></div>
       <div class="spec"><span class="cap">mark · gauge, is-near</span><span id="art-mark-near"></span></div>
@@ -757,7 +771,29 @@ const icon = (d, px = 18) => `<svg class="wl-icon" width="${px}" height="${px}" 
 ;['ib1', 'ib2', 'ib4', 'ib5'].forEach((id, i) => { $(id).innerHTML = icon(ICONS[i % 3]) })
 $('ib3').innerHTML = icon(ICONS[1]); $('ib6').innerHTML = icon(ICONS[2])
 // the flag — a marker left on a thing, not a verdict about it
-;['fl1', 'fl2'].forEach((id) => { $(id).innerHTML = icon('M6 21V4M6 5h11l-2.4 3.9L17 12.8H6', 15) })
+;['fl1', 'fl2', 'fl3'].forEach((id) => { $(id).innerHTML = icon('M6 21V4M6 5h11l-2.4 3.9L17 12.8H6', 15) })
+
+// the tally: one sparkle per letter, filling like lines of writing, at one
+// pitch for up to three lines and smaller past that (art.jsx Tally). The
+// number beside it is the fact; this is its size.
+function tally(n) {
+  const W = 240
+  let pitch = 9, cols = Math.max(1, Math.min(n, Math.floor(W / pitch))), rows = Math.ceil(n / cols)
+  if (rows > 3) { pitch = Math.max(2.6, Math.sqrt((W * pitch * 3) / n)); cols = Math.max(1, Math.floor(W / pitch)); rows = Math.ceil(n / cols) }
+  const size = Math.max(2, pitch * 0.74), stars = []
+  for (let i = 0; i < n; i++) {
+    const x = (i % cols) * pitch + pitch / 2 + (rand('tally', i) - 0.5) * pitch * 0.36
+    const y = Math.floor(i / cols) * pitch + pitch / 2 + (rand('tally', i + 1000) - 0.5) * pitch * 0.36
+    const s = size * (0.76 + rand('tally', i + 2000) * 0.48), o = 0.55 + rand('tally', i + 3000) * 0.45
+    stars.push(`<svg x="${(x - s / 2).toFixed(2)}" y="${(y - s / 2).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" viewBox="0 0 100 100" overflow="visible"><path d="${SPARK}" fill="currentColor" opacity="${o.toFixed(2)}"/></svg>`)
+  }
+  const w = (cols * pitch).toFixed(2), h = (rows * pitch).toFixed(2)
+  return `<div class="wl-tally" style="padding-right:0"><span class="wl-tally-n">${n}</span><div class="wl-tally-fig">
+    <svg class="wl-tally-stars" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">${stars.join('')}</svg>
+    <span class="wl-label is-dim wl-tally-say">letters &middot; fall 2026</span></div></div>`
+}
+$('art-tally').innerHTML = tally(19)
+$('art-tally-b').innerHTML = tally(120)
 ;['cl1', 'cl2'].forEach((id) => { $(id).innerHTML = icon('M6 6l12 12M18 6L6 18', 15) })
 
 // ── the field, at a size ──

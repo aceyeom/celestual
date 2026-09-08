@@ -102,7 +102,7 @@ the same act:
 
 | | |
 | --- | --- |
-| **one letter** | the flag under the letter, then `Report this letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **one letter** | the flag in the corner of the letter, then `Report letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 There is a third, and it is not a wall control at all: the product's opt out
@@ -122,15 +122,22 @@ room and cannot be asked. So the proof sits on the irreversible action and
 nowhere else, and the person who just wants a letter about them gone is never
 sent through it.
 
-They are reachable from three places, none of them a footer: the flag under any
-letter, which opens both of them with the cost of each written under it; under
-the names on the wall itself; and from the search.
+They are reachable from three places, none of them a footer: the flag at the
+foot of any letter, which opens both of them, `Take my @ down` and
+`Report letter`, standing where the sheet's primary stood; under the names on
+the wall itself; and from the search.
 
 The flag replaced a pair of bare capsules — `this is me` and `report it` — that
 stood side by side at one weight. Between them they asked a person to choose
 between the reversible act and the irreversible one before either had been
 described, which is the one decision on this surface that must not be made by
-guessing at a label.
+guessing at a label. The flag then stood alone under the pill, a ring on the
+void at the bottom of the sheet, which is where a control goes when nothing has
+been decided about what it belongs to. It belongs to the letter: a flag is left
+ON a thing. So it stands on the card now, at the end of its foot opposite the
+heart, struck in the paper's ink at the heart's size, and the two acts it opens
+carry no small print, because each leads to a screen that says what it does
+before anything happens.
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -173,11 +180,19 @@ thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
 control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
 is still gated on having put a letter up.
 
-The tab is the only route out of the wall, and it does not exist until
-somebody has put a letter up. Offering an account to a person who has not
+The tab is the only offer the wall makes of the product, and it does not exist
+until somebody has put a letter up. Offering an account to a person who has not
 written anything is asking them to register for a result they cannot receive.
 Offering it thirty seconds after they have named somebody is asking the one
 question they are now actually carrying.
+
+Before the tab there is a signpost and nothing more: one quiet line under the
+composer's pill, `the rest of celestual`, a real anchor to `/`. It says there is
+more and asks nothing, and it goes while the tab is up. It replaced an arrow
+link beside the pill reading `place a ping`, set in the display face at the
+pill's own height: two verbs on one row, in two vocabularies, and the second
+one a word nobody who scanned a flyer had met. The brand in the bar goes to the
+front too, and always has.
 
 ## The screens
 
@@ -340,6 +355,20 @@ look deliberate.
 
 Under `prefers-reduced-motion` the original wrapping inscription is rendered
 instead, and none of the above runs.
+
+### The count
+
+The masthead prints two facts, the count and the term, and the count is drawn
+as well as printed (`art.jsx Tally`): the number in the campus's gold, and
+beside it one star per letter, the same sparkle the wall sets between its names,
+filling like lines of writing. It was one line of label, `19 letters · fall
+2026`, which was true and said nothing about the size of the thing. Nineteen
+stars with room round them says thin; four hundred says a band of light. The
+stars sit at one pitch for up to three lines and shrink past that, so a wall of
+five hundred is a dense strip and not a block that pushes the names off the
+screen, and the number stays because past forty nobody counts stars. A few of
+them twinkle, staggered; none under reduced motion. An open wall with nothing
+on it yet says `open now`, the way the front door does, and not a zero.
 
 ## The mark
 
