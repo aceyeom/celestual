@@ -928,50 +928,52 @@
 .wl-mast-meta { margin-top: 16px; }
 
 /* ── the board ──
-   art.jsx `Flap`, under the title: the count on split flaps, and the label
-   the count used to be a word in running on beside it. The flap is a plate
-   of the void with a hairline round it and a seam across its middle, the
-   digit in the identifier face in the campus's gold, the one number on the
-   poster. The lanes below move at the speed of a departures board; this is
-   that board's number. */
+   art.jsx `Flap`, under the title: the count on split flaps, and the word
+   "letters" beside it in the label. The flap is a flat plate a step up from
+   the void with a hairline round it and a seam across its middle, and the
+   digit is chalk in the util face: on a board a figure is a thing on a
+   plate, not an identifier in a line of type, so this is the one count in
+   the build not set in the mono. No colour anywhere on it; the masthead's
+   one light is the lantern. The lanes below move at the speed of a
+   departures board, and this is that board's number. */
 .wl-board { display: flex; align-items: center; gap: 12px; }
 .wl-board-say { display: block; padding-top: 1px; }
 
 .wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
 .wl-flap {
   position: relative; display: block;
-  width: 24px; height: 32px;
+  width: 25px; height: 34px;
   perspective: 260px;
-  font-family: var(--f-id); font-size: 21px; line-height: 32px;
-  font-variant-numeric: tabular-nums; letter-spacing: 0;
-  color: var(--gold);
+  font-family: var(--f-util); font-weight: 500; font-size: 21px; line-height: 34px;
+  font-feature-settings: 'tnum' 1; letter-spacing: -0.01em;
+  color: var(--chalk);
   -webkit-user-select: none; user-select: none;
 }
 /* the seam, over everything */
 .wl-flap::after {
-  content: ''; position: absolute; left: 0; right: 0; top: 16px; height: 1px;
-  background: var(--void); opacity: 0.85; z-index: 4;
+  content: ''; position: absolute; left: 0; right: 0; top: 17px; height: 1px;
+  background: var(--void); opacity: 0.9; z-index: 4;
 }
 /* each half is the whole digit, clipped: the top half holds it at the top of
-   the plate and the bottom half holds it sixteen pixels up, so the two show
-   the two halves of one figure */
+   the plate and the bottom half holds it seventeen pixels up, so the two
+   show the two halves of one figure */
 .wl-flap-half {
-  position: absolute; left: 0; right: 0; height: 16px; overflow: hidden;
-  background: var(--void-3);
+  position: absolute; left: 0; right: 0; height: 17px; overflow: hidden;
+  background: #1A191E;
   box-shadow: 0 0 0 1px var(--hair) inset;
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
 }
-.wl-flap-half > span { position: absolute; left: 0; right: 0; height: 32px; text-align: center; display: block; }
-.wl-flap-half.is-top { top: 0; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #211F29 0%, var(--void-3) 100%); }
+.wl-flap-half > span { position: absolute; left: 0; right: 0; height: 34px; text-align: center; display: block; }
+.wl-flap-half.is-top { top: 0; border-radius: 5px 5px 0 0; background: #1E1D22; }
 .wl-flap-half.is-top > span { top: 0; }
-.wl-flap-half.is-bottom { top: 16px; border-radius: 0 0 5px 5px; background: linear-gradient(180deg, #171620 0%, var(--void-2) 100%); }
-.wl-flap-half.is-bottom > span { top: -16px; }
+.wl-flap-half.is-bottom { top: 17px; border-radius: 0 0 5px 5px; background: #151418; }
+.wl-flap-half.is-bottom > span { top: -17px; }
 /* the moving halves. The old top folds down about the seam and goes edge on
    at ninety degrees; the new bottom starts edge on and folds down to flat.
-   Both are the same 130ms, one after the other, which is the 260 the roll
-   is timed on. At rest the top fold shows the digit already showing and
-   the bottom fold is edge on, so neither is a fifth thing on the plate. */
+   Both are the same 130ms, one after the other. At rest neither exists on
+   the plate: they are there only for the length of a fold. */
 .wl-flap-fold { z-index: 3; }
+.wl-flap:not(.is-flipping) .wl-flap-fold { visibility: hidden; }
 .wl-flap-fold.is-top { transform-origin: 50% 100%; }
 .wl-flap-fold.is-bottom { transform-origin: 50% 0; transform: rotateX(90deg); }
 .wl-flap.is-flipping .wl-flap-fold.is-top { animation: wl-flap-top 130ms cubic-bezier(0.4, 0, 1, 1) both; }

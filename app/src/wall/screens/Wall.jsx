@@ -85,7 +85,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
 import { Sparkle, Campanile, Flap } from '../art.jsx'
-import { wall, liveCount, atHandle, rand, wallError, loadWall, term } from '../data.js'
+import { wall, liveCount, atHandle, rand, wallError, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -491,18 +491,19 @@ export default function Wall({ go, reduce, rev }) {
           which were the reference poster's ornaments and said nothing about
           where this wall was; the tower is the one silhouette that says
           "berkeley" before the type does, and its lantern is the masthead's
-          light now (art.jsx). A count and the term are the only facts about
-          this wall worth printing, because a thin wall should look thin, and
+          light now (art.jsx). The count is the only fact about this wall
+          worth printing, because a thin wall should look thin, and
           everything else that used to sit here was decoration wearing an
-          information costume.
+          information costume. The term went with it: a wall that is up is
+          up now, and a date beside a live count read as a footnote.
 
           The count is on split flaps (art.jsx Flap): the departures board
-          the lanes already move at the speed of, one flap per digit in the
-          campus's gold, and the label the count used to be a word in runs
-          on beside it. On the opening the digits roll into place; after that
-          a flap moves only when a letter goes up. It was one line of label,
-          "19 letters", which was true and read as a footnote under a poster
-          whose one number is the point. */}
+          the lanes already move at the speed of, one flap per digit in
+          chalk on a plate of the void, and the word beside it. On the
+          opening the digits roll into place; after that a flap moves only
+          when a letter goes up. It was one line of label, "19 letters",
+          which was true and read as a footnote under a poster whose one
+          number is the point. */}
       <div className="wl-mast">
         <Campanile width={64} className="wl-mast-tower" twinkle={!reduce} />
         <Display size="xl" className="wl-mast-title">
@@ -521,13 +522,13 @@ export default function Wall({ go, reduce, rev }) {
                 in at 900ms and the flaps start turning once it is there */}
             <Flap value={letters} roll={playing} delay={1100} />
             <Label tone="dim" as="span" className="wl-board-say">
-              {letters === 1 ? 'letter' : 'letters'} · {term()}
+              {letters === 1 ? 'letter' : 'letters'}
             </Label>
           </div>
         ) : (
           /* an open wall with nothing on it yet: the state a term starts in,
              said the way the front door says it, and not as a zero */
-          <Label tone="dim" className="wl-mast-meta">open now · {term()}</Label>
+          <Label tone="dim" className="wl-mast-meta">open now</Label>
         )}
       </div>
 
