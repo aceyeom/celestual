@@ -358,17 +358,20 @@ instead, and none of the above runs.
 
 ### The count
 
-The masthead prints two facts, the count and the term, and the count is drawn
-as well as printed (`art.jsx Tally`): the number in the campus's gold, and
-beside it one star per letter, the same sparkle the wall sets between its names,
-filling like lines of writing. It was one line of label, `19 letters · fall
-2026`, which was true and said nothing about the size of the thing. Nineteen
-stars with room round them says thin; four hundred says a band of light. The
-stars sit at one pitch for up to three lines and shrink past that, so a wall of
-five hundred is a dense strip and not a block that pushes the names off the
-screen, and the number stays because past forty nobody counts stars. A few of
-them twinkle, staggered; none under reduced motion. An open wall with nothing
-on it yet says `open now`, the way the front door does, and not a zero.
+The masthead prints two facts, the count and the term, and the count is on
+split flaps (`art.jsx Flap`). The lanes under it move at the speed of a
+departures board, and this is that board's number: one flap per digit, the
+digit in the identifier face in the campus's gold, on a plate of the void with
+a seam across its middle, and the label the count used to be a word in running
+on beside it. When the number changes, the top half of the old digit folds
+down over the bottom half of the new one, which is the whole of the mechanism.
+On the opening every digit rolls through a few figures before it lands, the
+ones column further than the tens the way an odometer turns; after that a flap
+moves only when a letter goes up, so a flap moving means one did. Under
+reduced motion nothing rolls and nothing folds. It was one line of label,
+`19 letters · fall 2026`, true and read as a footnote under a poster whose one
+number is the point. An open wall with nothing on it yet says `open now`, the
+way the front door does, and not a zero.
 
 ## The mark
 

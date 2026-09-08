@@ -927,35 +927,63 @@
 .wl-mast { position: relative; padding: 26px 0 30px; flex: 0 0 auto; }
 .wl-mast-meta { margin-top: 16px; }
 
-/* ── the tally ──
-   art.jsx `Tally`, under the title: the count drawn and printed. The number
-   in the campus's gold, the one number on the poster, set in the identifier
-   face at a size between the label and the title; beside it, one star per
-   letter, filling like lines of writing, in chalk at the strength of a name
-   on the wall; and under the stars the caption, "letters" and the term, in
-   the label the count used to be a word in. Three objects, one fact. On a
-   phone the figure keeps clear of the tower standing at the right. */
-.wl-tally {
-  display: flex; align-items: flex-start; gap: 13px;
-  padding-right: 78px;
-}
-.wl-tally-n {
-  flex: 0 0 auto;
-  font-family: var(--f-id); font-size: 27px; line-height: 1; letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
+/* ── the board ──
+   art.jsx `Flap`, under the title: the count on split flaps, and the label
+   the count used to be a word in running on beside it. The flap is a plate
+   of the void with a hairline round it and a seam across its middle, the
+   digit in the identifier face in the campus's gold, the one number on the
+   poster. The lanes below move at the speed of a departures board; this is
+   that board's number. */
+.wl-board { display: flex; align-items: center; gap: 12px; }
+.wl-board-say { display: block; padding-top: 1px; }
+
+.wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
+.wl-flap {
+  position: relative; display: block;
+  width: 24px; height: 32px;
+  perspective: 260px;
+  font-family: var(--f-id); font-size: 21px; line-height: 32px;
+  font-variant-numeric: tabular-nums; letter-spacing: 0;
   color: var(--gold);
-  /* the numeral's cap height on the first row of stars */
-  transform: translateY(-1px);
+  -webkit-user-select: none; user-select: none;
 }
-.wl-tally-fig {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-  min-width: 0; padding-top: 1px;
+/* the seam, over everything */
+.wl-flap::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 16px; height: 1px;
+  background: var(--void); opacity: 0.85; z-index: 4;
 }
-.wl-tally-stars {
-  display: block; max-width: 100%; height: auto;
-  color: rgba(244, 241, 234, 0.72);
+/* each half is the whole digit, clipped: the top half holds it at the top of
+   the plate and the bottom half holds it sixteen pixels up, so the two show
+   the two halves of one figure */
+.wl-flap-half {
+  position: absolute; left: 0; right: 0; height: 16px; overflow: hidden;
+  background: var(--void-3);
+  box-shadow: 0 0 0 1px var(--hair) inset;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
 }
-.wl-tally-say { display: block; }
+.wl-flap-half > span { position: absolute; left: 0; right: 0; height: 32px; text-align: center; display: block; }
+.wl-flap-half.is-top { top: 0; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #211F29 0%, var(--void-3) 100%); }
+.wl-flap-half.is-top > span { top: 0; }
+.wl-flap-half.is-bottom { top: 16px; border-radius: 0 0 5px 5px; background: linear-gradient(180deg, #171620 0%, var(--void-2) 100%); }
+.wl-flap-half.is-bottom > span { top: -16px; }
+/* the moving halves. The old top folds down about the seam and goes edge on
+   at ninety degrees; the new bottom starts edge on and folds down to flat.
+   Both are the same 130ms, one after the other, which is the 260 the roll
+   is timed on. At rest the top fold shows the digit already showing and
+   the bottom fold is edge on, so neither is a fifth thing on the plate. */
+.wl-flap-fold { z-index: 3; }
+.wl-flap-fold.is-top { transform-origin: 50% 100%; }
+.wl-flap-fold.is-bottom { transform-origin: 50% 0; transform: rotateX(90deg); }
+.wl-flap.is-flipping .wl-flap-fold.is-top { animation: wl-flap-top 130ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-flap.is-flipping .wl-flap-fold.is-bottom { animation: wl-flap-bottom 130ms 130ms cubic-bezier(0, 0, 0.6, 1) both; }
+@keyframes wl-flap-top {
+  from { transform: rotateX(0deg); filter: brightness(1); }
+  to   { transform: rotateX(-90deg); filter: brightness(0.6); }
+}
+@keyframes wl-flap-bottom {
+  from { transform: rotateX(90deg); filter: brightness(0.7); }
+  to   { transform: rotateX(0deg); filter: brightness(1); }
+}
 
 /* ── the campanile ──
    art.jsx `Campanile`. Standing in the masthead's corner where the dotted
@@ -1923,7 +1951,6 @@
   }
   /* the tower stands at the page's right edge, its plinth on the count's line */
   .wl-mast-tower { right: 0; bottom: -6px; top: auto; width: 74px; height: 222px; }
-  .wl-tally { padding-right: 0; }
   .wl-wall {
     grid-column: 1 / -1; grid-row: 3;
     align-self: center;
@@ -2022,7 +2049,6 @@
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
   .wl-mast-meta { margin-top: 10px; }
-  .wl-tally { padding-right: 0; }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }

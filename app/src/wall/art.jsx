@@ -28,7 +28,7 @@
 // out of the same SPARK curve as the sparkle above, which is asserted rather
 // than asserted-in-a-comment — see the check at the end of its section.
 
-import { useEffect, useId, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { hash, rand } from './data.js'
 
 // ── the four-point star ─────────────────────────────────────────────────────
@@ -50,75 +50,100 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
   )
 }
 
-// ── the tally ───────────────────────────────────────────────────────────────
-// One star for every letter on the wall, for the masthead. The count used to
-// be a number in a label, "19 letters", and a number is a fact about the wall
-// that says nothing about its shape. This is the same fact drawn: a thin wall
-// is a few stars with room round them, a full one is a band of light, and
-// neither is a picture of anything except how many.
+// ── the flaps ───────────────────────────────────────────────────────────────
+// The count on the masthead, on split flaps. The lanes under it already move
+// at the speed of a departures board, and this is that board's number: one
+// flap per digit, the digit in the identifier face in the campus's gold, on a
+// plate of the void with a seam across its middle. When the number changes
+// the top half of the old digit folds down over the bottom half of the new
+// one, which is the whole of the mechanism and the only motion here.
 //
-// It is the sparkle, because the sparkle is already what a letter is on this
-// surface: it stands between the names on the wall and it is what a letter
-// turns into on its way up (screens/Posted.jsx). One star per letter, in the
-// order they are counted, and the number is printed beside the figure because
-// past about forty nobody counts stars. The picture is the size of the thing;
-// the number is the truth.
+// On the opening every digit rolls through a few figures before it lands,
+// the ones column further than the tens the way an odometer turns; after
+// that a flap moves only when a letter goes up, so a flap moving means one
+// did. Under reduced motion nothing rolls and nothing folds: the number is
+// simply there.
 //
-// It fills the way writing fills a page, left to right and then the next
-// line, three lines at full size and then smaller, so a wall of four hundred
-// is a dense strip and not a block that pushes the names off the screen.
-// Every star is jittered a little off its cell and drawn at a slightly
-// different size, because a grid of identical stars is a texture and a wall
-// is a crowd. A handful twinkle, staggered; none under reduced motion.
-const TALLY_W = 240
-export function Tally({ n, twinkle = false, className = '', style }) {
-  const count = Math.max(0, Math.floor(n || 0))
-  if (!count) return null
-  let pitch = 9
-  let cols = Math.max(1, Math.min(count, Math.floor(TALLY_W / pitch)))
-  let rows = Math.ceil(count / cols)
-  if (rows > 3) {
-    // past three lines the cells shrink so the block stays about the height
-    // of three, down to a floor where a star is still a star
-    pitch = Math.max(2.6, Math.sqrt((TALLY_W * pitch * 3) / count))
-    cols = Math.max(1, Math.floor(TALLY_W / pitch))
-    rows = Math.ceil(count / cols)
+// The figure is read as one number and not as four halves: the digits carry
+// an aria-label and the halves are hidden from the tree.
+// the fold itself is timed in wall.css (two halves of 130ms); this is the
+// beat between one figure landing and the next one leaving
+const FLAP_GAP = 40
+const mod10 = (d) => ((d % 10) + 10) % 10
+
+function FlapDigit({ digit, roll = 0, delay = 0 }) {
+  const first = roll > 0 ? mod10(digit - roll) : digit
+  const [shown, setShown] = useState({ cur: first, prev: first, flipping: false })
+  const cur = useRef(first)
+  const queue = useRef([])
+  const busy = useRef(false)
+  const timer = useRef(0)
+
+  // the next figure in the queue that is not the one already showing
+  const advance = useCallback(() => {
+    let next
+    do { next = queue.current.shift() } while (next != null && next === cur.current)
+    if (next == null) { busy.current = false; return }
+    busy.current = true
+    setShown({ cur: next, prev: cur.current, flipping: true })
+    cur.current = next
+  }, [])
+
+  // the roll, once, on mount: up through the figures to the one asked for.
+  // The queue is assigned rather than added to, so an effect that runs twice
+  // (React does, in development) rolls once.
+  useEffect(() => {
+    if (!roll) return undefined
+    queue.current = Array.from({ length: roll }, (_, k) => mod10(digit - (roll - 1 - k)))
+    timer.current = setTimeout(advance, delay)
+    return () => clearTimeout(timer.current)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // a later change joins the queue, and goes now if nothing is moving
+  const asked = useRef(digit)
+  useEffect(() => {
+    if (asked.current === digit) return
+    asked.current = digit
+    queue.current.push(digit)
+    if (!busy.current) advance()
+  }, [digit, advance])
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const landed = () => {
+    setShown((s) => ({ ...s, prev: s.cur, flipping: false }))
+    timer.current = setTimeout(advance, FLAP_GAP)
   }
-  const width = cols * pitch
-  const height = rows * pitch
-  const size = Math.max(2, pitch * 0.74)
-  // which ones twinkle: a few, spread through the run, never more than eight
-  const step = Math.max(5, Math.ceil(count / 8))
-  const stars = []
-  for (let i = 0; i < count; i++) {
-    const c = i % cols
-    const r = Math.floor(i / cols)
-    const x = c * pitch + pitch / 2 + (rand('tally', i) - 0.5) * pitch * 0.36
-    const y = r * pitch + pitch / 2 + (rand('tally', i + 1000) - 0.5) * pitch * 0.36
-    const s = size * (0.76 + rand('tally', i + 2000) * 0.48)
-    const o = 0.55 + rand('tally', i + 3000) * 0.45
-    const lit = twinkle && i % step === step - 1
-    stars.push(
-      // each star in its own viewport rather than under a transform
-      // attribute, because the twinkle is a CSS transform and a CSS transform
-      // replaces the attribute rather than composing with it
-      <svg key={i} x={f2(x - s / 2)} y={f2(y - s / 2)} width={f2(s)} height={f2(s)} viewBox="0 0 100 100" overflow="visible">
-        <path
-          className={`wl-spark${lit ? ' is-twinkle' : ''}`}
-          style={lit ? { '--spark-delay': `${(i * 97) % 3600}ms` } : undefined}
-          d={SPARK} fill="currentColor" opacity={f2(o)}
-        />
-      </svg>,
-    )
-  }
+
+  const { cur: c, prev: p, flipping } = shown
   return (
-    <svg
-      className={`wl-tally-stars ${className}`} style={style}
-      width={f2(width)} height={f2(height)} viewBox={`0 0 ${f2(width)} ${f2(height)}`}
-      aria-hidden="true" focusable="false"
-    >
-      {stars}
-    </svg>
+    <span className={`wl-flap${flipping ? ' is-flipping' : ''}`} aria-hidden="true">
+      {/* what is under the moving halves: the new top, the old bottom */}
+      <span className="wl-flap-half is-top"><span>{c}</span></span>
+      <span className="wl-flap-half is-bottom"><span>{p}</span></span>
+      {/* the moving halves: the old top folding down, the new bottom folding in */}
+      <span className="wl-flap-half wl-flap-fold is-top"><span>{p}</span></span>
+      <span className="wl-flap-half wl-flap-fold is-bottom" onAnimationEnd={landed}><span>{c}</span></span>
+    </span>
+  )
+}
+
+export function Flap({ value, roll = false, delay = 0, className = '', style }) {
+  const n = Math.max(0, Math.floor(value || 0))
+  const digits = String(n).split('').map(Number)
+  const len = digits.length
+  return (
+    <span className={`wl-flaps ${className}`} style={style} role="img" aria-label={String(n)}>
+      {digits.map((d, i) => (
+        // keyed from the right, so a count going from 99 to 100 keeps the
+        // flaps it had and mounts one new one at the head; and the ones
+        // column rolls furthest, the way an odometer turns
+        <FlapDigit
+          key={len - i} digit={d}
+          roll={roll ? 3 + i * 2 : 0} delay={delay}
+        />
+      ))}
+    </span>
   )
 }
 

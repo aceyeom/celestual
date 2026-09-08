@@ -518,8 +518,8 @@
       <div class="spec"><span class="cap">sparkle · 18</span><span id="art-spark"></span></div>
       <div class="spec"><span class="cap">sparkle · twinkle</span><span id="art-spark-t"></span></div>
       <div class="spec"><span class="cap">halftone</span><span id="art-half"></span></div>
-      <div class="spec"><span class="cap">tally · 19 letters</span><span id="art-tally"></span></div>
-      <div class="spec"><span class="cap">tally · 120</span><span id="art-tally-b"></span></div>
+      <div class="spec"><span class="cap">flaps · the count on the masthead</span><span id="art-flaps"></span></div>
+      <div class="spec"><span class="cap">flaps · 120</span><span id="art-flaps-b"></span></div>
       <div class="spec"><span class="cap">mark · rest</span><span id="art-mark"></span></div>
       <div class="spec"><span class="cap">mark · is-lit</span><span id="art-mark-lit"></span></div>
       <div class="spec"><span class="cap">mark · gauge, is-near</span><span id="art-mark-near"></span></div>
@@ -773,27 +773,13 @@ $('ib3').innerHTML = icon(ICONS[1]); $('ib6').innerHTML = icon(ICONS[2])
 // the flag — a marker left on a thing, not a verdict about it
 ;['fl1', 'fl2', 'fl3'].forEach((id) => { $(id).innerHTML = icon('M6 21V4M6 5h11l-2.4 3.9L17 12.8H6', 15) })
 
-// the tally: one sparkle per letter, filling like lines of writing, at one
-// pitch for up to three lines and smaller past that (art.jsx Tally). The
-// number beside it is the fact; this is its size.
-function tally(n) {
-  const W = 240
-  let pitch = 9, cols = Math.max(1, Math.min(n, Math.floor(W / pitch))), rows = Math.ceil(n / cols)
-  if (rows > 3) { pitch = Math.max(2.6, Math.sqrt((W * pitch * 3) / n)); cols = Math.max(1, Math.floor(W / pitch)); rows = Math.ceil(n / cols) }
-  const size = Math.max(2, pitch * 0.74), stars = []
-  for (let i = 0; i < n; i++) {
-    const x = (i % cols) * pitch + pitch / 2 + (rand('tally', i) - 0.5) * pitch * 0.36
-    const y = Math.floor(i / cols) * pitch + pitch / 2 + (rand('tally', i + 1000) - 0.5) * pitch * 0.36
-    const s = size * (0.76 + rand('tally', i + 2000) * 0.48), o = 0.55 + rand('tally', i + 3000) * 0.45
-    stars.push(`<svg x="${(x - s / 2).toFixed(2)}" y="${(y - s / 2).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}" viewBox="0 0 100 100" overflow="visible"><path d="${SPARK}" fill="currentColor" opacity="${o.toFixed(2)}"/></svg>`)
-  }
-  const w = (cols * pitch).toFixed(2), h = (rows * pitch).toFixed(2)
-  return `<div class="wl-tally" style="padding-right:0"><span class="wl-tally-n">${n}</span><div class="wl-tally-fig">
-    <svg class="wl-tally-stars" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">${stars.join('')}</svg>
-    <span class="wl-label is-dim wl-tally-say">letters &middot; fall 2026</span></div></div>`
-}
-$('art-tally').innerHTML = tally(19)
-$('art-tally-b').innerHTML = tally(120)
+// the flaps: the count on split flaps (art.jsx Flap), drawn still. The digit
+// in the identifier face in gold on a plate of the void with a seam across it;
+// in the build the top half of the old digit folds down over the new one.
+const flapDigit = (d) => `<span class="wl-flap"><span class="wl-flap-half is-top"><span>${d}</span></span><span class="wl-flap-half is-bottom"><span>${d}</span></span></span>`
+const flaps = (n) => `<span class="wl-board"><span class="wl-flaps">${String(n).split('').map(flapDigit).join('')}</span><span class="wl-label is-dim wl-board-say">letters &middot; fall 2026</span></span>`
+$('art-flaps').innerHTML = flaps(19)
+$('art-flaps-b').innerHTML = flaps(120)
 ;['cl1', 'cl2'].forEach((id) => { $(id).innerHTML = icon('M6 6l12 12M18 6L6 18', 15) })
 
 // ── the field, at a size ──

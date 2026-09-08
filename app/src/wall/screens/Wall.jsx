@@ -84,7 +84,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
-import { Sparkle, Campanile, Tally } from '../art.jsx'
+import { Sparkle, Campanile, Flap } from '../art.jsx'
 import { wall, liveCount, atHandle, rand, wallError, loadWall, term } from '../data.js'
 import { getState, patch } from '../store.js'
 
@@ -496,12 +496,13 @@ export default function Wall({ go, reduce, rev }) {
           everything else that used to sit here was decoration wearing an
           information costume.
 
-          The count is drawn as well as printed (art.jsx Tally): one star per
-          letter, filling like lines of writing, with the number beside it in
-          the campus's gold. It was one line of label, "19 letters", which was
-          true and said nothing about the size of the thing. Nineteen stars
-          with room round them says thin; four hundred says a band of light;
-          and the number stays because past forty nobody counts stars. */}
+          The count is on split flaps (art.jsx Flap): the departures board
+          the lanes already move at the speed of, one flap per digit in the
+          campus's gold, and the label the count used to be a word in runs
+          on beside it. On the opening the digits roll into place; after that
+          a flap moves only when a letter goes up. It was one line of label,
+          "19 letters", which was true and read as a footnote under a poster
+          whose one number is the point. */}
       <div className="wl-mast">
         <Campanile width={64} className="wl-mast-tower" twinkle={!reduce} />
         <Display size="xl" className="wl-mast-title">
@@ -515,14 +516,13 @@ export default function Wall({ go, reduce, rev }) {
             )}
           </Label>
         ) : letters > 0 ? (
-          <div className="wl-mast-meta wl-tally">
-            <span className="wl-tally-n">{letters}</span>
-            <div className="wl-tally-fig">
-              <Tally n={letters} twinkle={!reduce} />
-              <Label tone="dim" as="span" className="wl-tally-say">
-                {letters === 1 ? 'letter' : 'letters'} · {term()}
-              </Label>
-            </div>
+          <div className="wl-mast-meta wl-board">
+            {/* the roll plays with the opening and only then: the meta fades
+                in at 900ms and the flaps start turning once it is there */}
+            <Flap value={letters} roll={playing} delay={1100} />
+            <Label tone="dim" as="span" className="wl-board-say">
+              {letters === 1 ? 'letter' : 'letters'} · {term()}
+            </Label>
           </div>
         ) : (
           /* an open wall with nothing on it yet: the state a term starts in,

@@ -518,7 +518,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
-| `Tally` | the wall's count, drawn: one sparkle per letter on the masthead, filling like lines of writing, beside the number in `--gold`. One pitch for up to three lines, then smaller, so five hundred is a strip and not a block. A few twinkle; none under reduced motion (`.wl-tally`) |
+| `Flap` | the wall's count, on split flaps: one per digit, the digit in the identifier face in `--gold` on a plate of the void with a seam across it. The top half of the old digit folds down over the new one when the number changes; on the opening the digits roll into place. Nothing moves under reduced motion (`.wl-flap`) |
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |

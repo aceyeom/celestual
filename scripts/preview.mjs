@@ -603,8 +603,10 @@ const ROUTES = [
   { label: 'sky-prove-code', path: '/sky', verified: false,
     acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
   { label: 'reveal',        path: '/reveal/jules.k' },
-  { label: 'berkeley',      path: '/berkeley' },
-  { label: 'berkeley-tab',  path: '/berkeley', tab: true },
+  // the wall's board rolls into place over the opening's first three seconds
+  // (art.jsx Flap), so the wall is shot once it has landed
+  { label: 'berkeley',      path: '/berkeley', settle: 6500 },
+  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 6500 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
@@ -759,7 +761,7 @@ for (const r of list) {
       if (act === 'click') await page.click(sel, { timeout: 4000 }).catch(() => {})
       await page.waitForTimeout(700)
     }
-    await page.waitForTimeout(2600)
+    await page.waitForTimeout(r.settle || 2600)
 
     const file = join(out, `${r.label}-${v.name}.png`)
     await page.screenshot({ path: file })
