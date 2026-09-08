@@ -22,7 +22,7 @@
 //     that name is free, be the first to put a letter under it.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display, Icon } from '../parts.jsx'
+import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { search, wall, loadWall, normHandle, validHandle, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -125,7 +125,7 @@ export default function Find({ go, back, rev }) {
               <Label tone="dim">nobody has written to</Label>
               <p className="wl-find-echo">{atHandle(q)}</p>
               {validHandle(q) && (
-                <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={commit}>
+                <Pill tone="light" wide onClick={commit}>
                   be the first
                 </Pill>
               )}
@@ -137,8 +137,8 @@ export default function Find({ go, back, rev }) {
             back: the X in the corner is the way back, on every sheet, and it
             does not need a sentence underneath it saying so. */}
         <div className="wl-find-foot">
-          <Pill tone="ghost" icon={<Icon name="write" size={15} />} onClick={() => go('write')}>
-            write one instead
+          <Pill tone="ghost" onClick={() => go('write')}>
+            write instead
           </Pill>
           <Pill tone="ghost" onClick={() => go('remove', q.length >= 1 ? q : '')}>
             take a name off

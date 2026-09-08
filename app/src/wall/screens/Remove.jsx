@@ -44,7 +44,7 @@
 // can empty somebody.
 //
 // And the person who genuinely just wants a letter about them gone is never
-// sent here to get it: they tap `report it` on the letter, it is down, and this
+// sent here to get it: they tap the flag on the letter, it is down, and this
 // screen is not in their way.
 //
 // ── what this screen still refuses ──────────────────────────────────────────
@@ -56,7 +56,6 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, VerifyHead, Face,
 } from '../parts.jsx'
-import { Sparkle, Provider } from '../art.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
 import { isVerified, forgetVerified } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
@@ -194,8 +193,7 @@ export default function Remove({ handle: prefill, back }) {
     setGone({ handle: h, n })
   }
 
-  const head = <SheetHead onClose={back} label="back to the wall"
-    lead={<Sparkle size={13} className="wl-head-spark" />} />
+  const head = <SheetHead onClose={back} label="back to the wall" />
 
   // ── done ──
   // It has already happened. No confirmation to accept, nothing to check an
@@ -245,7 +243,7 @@ export default function Remove({ handle: prefill, back }) {
             <Prose className="wl-gate-copy">
               {proven
                 ? 'Every letter under it goes too.'
-                : 'Permanent. To take down one letter, report it instead.'}
+                : 'Permanent. To take down one letter, report that one instead.'}
             </Prose>
 
             <div className="wl-remove-field">
@@ -299,10 +297,7 @@ export default function Remove({ handle: prefill, back }) {
                 Drawn as a destination rather than as a security step: one
                 button, the provider's shape on the same 24-unit grid as every
                 other glyph here. */
-            <Pill
-              tone="light" wide disabled={!named || minting} onClick={ask}
-              icon={<Provider size={17} />}
-            >
+            <Pill tone="light" wide disabled={!named || minting} onClick={ask}>
               {minting ? 'one moment' : 'prove it is yours'}
             </Pill>
           )}

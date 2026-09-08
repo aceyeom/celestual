@@ -31,7 +31,8 @@
 //      consequence, at the moment somebody has decided to find out.
 //
 // What is left reads top to bottom in four steps at four weights: the header,
-// the card, the one thing to do, and the two quiet things you can do instead.
+// the card, the one thing to do, and the flag under it for the one reader in
+// twenty who came here to get something off the wall rather than to read it.
 //
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
@@ -60,6 +61,7 @@ import {
   sinceline, atHandle, heart, gated, freeReads,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
+import { isReader } from '../auth.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -72,11 +74,22 @@ import { mark, setAfterGate } from '../store.js'
 // failed. Behind the same gate as reading: on a sealed letter the heart is
 // the way to the gate, and the count still shows, since it is public the way
 // the letter's shape is.
-function Hearts({ letter: l, open, onGate }) {
+//
+// ── it asks the door, not the card ──
+// The press used to be allowed whenever the WORDS had arrived, and since 0045
+// the words arrive for anybody: five whole letters land open on a browser that
+// has proved nothing. So an unverified reader pressed a heart, watched it fill,
+// and had it emptied again a moment later when the server refused the same
+// browser it had never let through. The glyph now asks the same question every
+// other act on this surface asks — is this reader through the door — and sends
+// the ones who are not to it: the same answer they were going to get, arriving
+// before the count moves rather than after.
+function Hearts({ letter: l, onGate }) {
   const [busy, setBusy] = useState(false)
+  const mine = isReader()
   const n = l.hearts || 0
   const press = async () => {
-    if (!open) { onGate(); return }
+    if (!mine) { onGate(); return }
     if (busy) return
     setBusy(true)
     await heart(l.id, !l.hearted)
@@ -88,8 +101,8 @@ function Hearts({ letter: l, open, onGate }) {
       <button
         type="button" className={`wl-heart${l.hearted ? ' is-on' : ''}`}
         onClick={press} disabled={busy}
-        aria-pressed={open ? l.hearted : undefined}
-        aria-label={!open ? 'sign in to heart this letter'
+        aria-pressed={mine ? l.hearted : undefined}
+        aria-label={!mine ? 'sign in to heart this letter'
           : l.hearted ? 'take your heart off this letter' : 'heart this letter'}
       >
         <Heart size={18} on={l.hearted} />
@@ -133,6 +146,10 @@ function Pager({ at, of, go, siblings }) {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default function Letter({ id: param, go, back }) {
+  // Whether the flag has been opened. Nothing else on this sheet holds state:
+  // the card is the server's, and this is one control deciding whether it is
+  // showing itself or the two things it opens.
+  const [flagged, setFlagged] = useState(false)
   const byId = UUID.test(String(param || ''))
   const handle = byId ? null : normHandle(param)
 
@@ -192,7 +209,7 @@ export default function Letter({ id: param, go, back }) {
             <Prose>That letter has come down.</Prose>
           </Paper>
           <SheetFoot>
-            <Pill tone="light" wide icon={<Icon name="wall" size={17} />} onClick={back}>back to the wall</Pill>
+            <Pill tone="light" wide onClick={back}>back to the wall</Pill>
           </SheetFoot>
         </div>
       </Sheet>
@@ -240,7 +257,7 @@ export default function Letter({ id: param, go, back }) {
           tone={open ? '' : 'shut'}
           foot={(
             <Hearts
-              letter={one} open={open}
+              letter={one}
               onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
             />
           )}
@@ -274,33 +291,55 @@ export default function Letter({ id: param, go, back }) {
           ) : null}
 
           {open ? (
-            <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={() => go('write', one.to)}>
-              write one to {atHandle(one.to)}
+            <Pill tone="light" wide onClick={() => go('write', one.to)}>
+              write to {atHandle(one.to)}
             </Pill>
           ) : (
             /* The gate. It names no policy and gives no reasons: the card
                beside it already says SEALED, and a person who has not decided
                to open it does not need the argument for why it is shut. */
-            <Pill tone="light" wide icon={<Icon name="key" size={17} />}
+            <Pill tone="light" wide
               onClick={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}>
               read it
             </Pill>
           )}
 
+          {/* ── the flag ──
+              One mark where there were two sentences. "this is me" and "report
+              it" stood side by side at one weight, and between them they asked
+              a person to choose between two irreversible acts before either had
+              been described: one takes a name and everything under it off the
+              wall for good, the other takes a single letter down for somebody
+              to read. Nothing on the screen said which was which.
+
+              So the two collapse into the one thing they have in common — this
+              should not be up — and the difference moves to where it belongs,
+              into the choice that opens on the tap, with its cost written under
+              it. A flag and not a word, because a word here is a third sentence
+              under a card that is already the point; and in plain sight rather
+              than behind the gate, because a control that appears only once you
+              are known is a control nobody knows is there. */}
           <div className="wl-letter-quiet">
-            {/* The way off the wall, standing beside the name it is about, on
-                the screen where somebody who came looking for themselves has
-                just found what they came for. */}
-            <button type="button" className="wl-mine" onClick={() => go('remove', one.to)}>
-              this is me
+            <button
+              type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
+              onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
+              aria-label="take this off the wall" title="take this off the wall"
+            >
+              <Icon name="flag" size={15} />
             </button>
-            {/* And the way to take THIS ONE down, which is a different act with
-                a different cost and belongs beside it rather than buried. It is
-                not hidden from a stranger: a control that only appears once you
-                are signed in is a control nobody knows exists. */}
-            <button type="button" className="wl-mine" onClick={() => go('report', one.id)}>
-              report it
-            </button>
+
+            {flagged ? (
+              <div className="wl-flag-opts">
+                <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
+                  <span className="wl-opt-t">This is me</span>
+                  <span className="wl-opt-s">the name, and every letter under it, comes off</span>
+                </button>
+                <button type="button" className="wl-opt" onClick={() => go('report', one.id)}>
+                  <span className="wl-opt-t">Report this letter</span>
+                  <span className="wl-opt-s">this one comes down now, and someone reads it after</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </SheetFoot>
       </div>

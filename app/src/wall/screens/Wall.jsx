@@ -613,7 +613,7 @@ export default function Wall({ go, reduce, rev }) {
         {/* ── the way in, and the way back ──
             The composer's pill, and beside it the one link off the wall
             that is not the tab above: the front door, named by the act it
-            is for. "write one" here, "place a ping" there: the two acts of
+            is for. "write" here, "place a ping" there: the two acts of
             the product on one row, in the product's own words. It is a way
             back and not a pitch, which is why it is a quiet arrow link and
             not the tab: the tab offers an account and waits until a letter
@@ -622,8 +622,8 @@ export default function Wall({ go, reduce, rev }) {
             walk out the same way. A real anchor: the wall's shell cannot
             draw Main, so the walk back is a navigation. */}
         <div className="wl-dock-in">
-          <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={() => go('write')}>
-            write one
+          <Pill tone="light" wide onClick={() => go('write')}>
+            write
           </Pill>
           <ArrowLink href="/" size="s" tone="quiet" className="wl-dock-front" title="the front">
             place a ping
