@@ -19,11 +19,14 @@
 // — one heading, one line of copy, and the same address and code beneath.
 //
 // ── what a signed-in address buys, and what it does not ─────────────────────
-// Three things and no fourth: READING a letter, WRITING one, and REPORTING one.
-// They are the three acts that touch what is on the wall, and the index — the
-// names, the counts, the search — stays open to everybody, forever, because a
-// person who has just scanned a code off a card has to be able to see what this
-// is before answering anything.
+// Since migration 0044 this door is not the only way to READ. Either proof this
+// product takes opens the letters, the heart and the report: a campus address,
+// or a handle proved by the DM code on Main. What this address and only this
+// address buys is WRITING, three letters in any seven days.
+//
+// The index stays open to everybody, forever, because a person who has just
+// scanned a code off a card has to be able to see what this is before answering
+// anything.
 //
 // It is never attached to anything anybody writes. The composer never reads it,
 // no letter gains an author because somebody is signed in, and there is no
@@ -31,11 +34,11 @@
 // by policy. Being let in and being known are two different things, and only
 // the first one happens here.
 
-import { useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face } from '../parts.jsx'
-import { atHandle } from '../data.js'
+import { useEffect, useState } from 'react'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face, Allowance } from '../parts.jsx'
+import { atHandle, allowance, loadQuota } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
-import { DOMAIN, anyEmail, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
+import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
@@ -96,6 +99,18 @@ export default function Gate({ go, back }) {
   const [token, setToken] = useState(null)   // the correlation id for the code out
   const [busy, setBusy] = useState(false)
   const [said, setSaid] = useState('')       // what went wrong, in words
+
+  // Somebody may already be able to READ without holding an address here: a
+  // handle proved on Main opens the letters (migration 0044). This sheet then
+  // asks for the one thing they still do not have, and says so, rather than
+  // telling a person who is reading the wall that the wall is not for them.
+  const reads = isReader()
+
+  // The allowance, for the account sheet. Asked on mount rather than on the
+  // composer alone, because "how many letters do I have left" is a question
+  // about the account and this is the account screen.
+  useEffect(() => { if (who) loadQuota() }, [who])
+  const left = allowance()
 
   // A local part at the campus, or a whole address typed with its @. The
   // server is the gate either way (the campus, or the desk's pass list).
@@ -177,6 +192,13 @@ export default function Gate({ go, back }) {
             <Face handle={who} size={44} resolve={false} />
             <div className="wl-acct-name">
               <p className="wl-acct-addr" id="wl-gate-h">{memberLabel(who)}</p>
+              {/* The allowance, under the address it belongs to. Three marks
+                  and no sentence until it matters, exactly as the composer
+                  draws it, so the number is the same object in both places. */}
+              {left ? (
+                <Allowance left={left.left} limit={left.limit} resets={left.resets}
+                  className="wl-acct-allow" />
+              ) : null}
             </div>
           </div>
 
@@ -230,7 +252,12 @@ export default function Gate({ go, back }) {
 
         <Display size="s" as="h2" id="wl-gate-h">
           {step === 0
-            ? (registering ? <>The wall is<br />for Berkeley.</> : <>Come back in.</>)
+            ? (!registering ? <>Come back in.</>
+              /* A person already reading the wall is not being told the wall
+                 is not for them. They are being told the one thing this
+                 address is still for. */
+              : reads ? <>Letters are written<br />by Berkeley.</>
+              : <>The wall is<br />for Berkeley.</>)
             : <>The code from<br />the mail, and you&rsquo;re in.</>}
         </Display>
 

@@ -124,13 +124,19 @@ export default function Report({ id, go, back }) {
   // out they cannot do the thing; this makes the sentence the thing.
   //
   // The gate is the server's answer, not this tab's: a letter read from outside
-  // the campus arrives with no body, and wall_report refuses the same reader.
+  // the gate arrives with no body, and wall_report refuses the same reader.
+  //
+  // Since 0044 that gate is wall_read_gate rather than the campus, so anybody
+  // who can READ this letter can take it down. It is the direction that
+  // protects the person the letter is about: the likeliest reader to want a
+  // letter down is its subject, and the subject holds a handle far more often
+  // than they hold a berkeley.edu address at the moment they find their name.
   if (one.body === null || fault === 'gate') {
     return (
       <Sheet onClose={back} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">Reports come<br />from Berkeley.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">You have to be<br />signed in for this.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
             Sign in to take a letter down.

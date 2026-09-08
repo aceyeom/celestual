@@ -73,11 +73,19 @@ select t_ok('backfill leaves the edu row without a handle',
 select t_ok('edu_domain is generated',
   (select edu_domain = 'berkeley.edu' from celestual_users where edu_email = 'someone@berkeley.edu'));
 
--- Replaying it adds nobody.
-insert into celestual_users (instagram_handle, handle_verified_at, created_at)
-select m.handle, m.first_verified_at, m.first_verified_at from celestual_members m
- where not exists (select 1 from celestual_users u where u.instagram_handle = m.handle);
-select t_ok('backfill is idempotent', (select count(*) = 2 from celestual_users));
+-- Replaying it adds nobody. Asserted as a difference rather than as a total:
+-- the tests share one cluster, so a count over the whole table is a count of
+-- what every other test file did before this one ran.
+do $$
+declare v_before bigint; v_after bigint;
+begin
+  select count(*) into v_before from celestual_users;
+  insert into celestual_users (instagram_handle, handle_verified_at, created_at)
+  select m.handle, m.first_verified_at, m.first_verified_at from celestual_members m
+   where not exists (select 1 from celestual_users u where u.instagram_handle = m.handle);
+  select count(*) into v_after from celestual_users;
+  perform t_ok('backfill is idempotent', v_after = v_before);
+end $$;
 
 -- ── 2. a first handle, with no session ──────────────────────────────────────
 select t_proof('ada', 'proof-ada');

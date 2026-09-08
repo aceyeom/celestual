@@ -19,6 +19,8 @@
 //     { ok:true,  status:'pending',  id }        held for a person to look at
 //     { ok:true,  status:'rejected', id, reasons }  stored, and visible only in admin
 //     { ok:false, error }                        the write itself was refused
+//     { ok:false, error:'cap', limit, used, resets_at }
+//                                                three in any seven days, spent
 //
 // A REJECT IS STILL A WRITE. Spec section 9: rejected content is stored with a
 // rejection reason so it appears in admin, not silently dropped. A letter
@@ -212,6 +214,26 @@ Deno.serve(async (req: Request) => {
   if (!target.trim()) return json({ ok: false, error: 'handle' })
   if (token.length < 16 || token.length > 256) return json({ ok: false, error: 'no_session' })
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+
+  // ── the allowance, asked before anything is spent on the letter ────────────
+  // Three in any seven days (migration 0044). wall_write is the authority and
+  // refuses the fourth whatever this says, because a check here and a write
+  // there is two requests that can both pass. This is only so a person who has
+  // none left does not wait on a model call to be told so, and so nobody pays
+  // for one.
+  //
+  // A read that fails is not a refusal. wall_write will ask again in the same
+  // statement that inserts, so a flaky moment here costs nothing but the
+  // classifier call this was trying to save.
+  const { data: quota } = await supabase.rpc('wall_quota', { p_token: token })
+  if (quota?.ok === true && Number(quota.left) <= 0) {
+    return json({ ok: false, error: 'cap', limit: quota.limit, used: quota.used, resets_at: quota.resets_at })
+  }
+
   // ── layer 1 ────────────────────────────────────────────────────────────────
   // Short-circuit on reject: there is no reason to spend a model call on a
   // letter with a phone number in it. It is still WRITTEN, at status rejected,
@@ -241,11 +263,6 @@ Deno.serve(async (req: Request) => {
   // 'review' is layer 3: the letter stays pending, a person moves it or
   // wall_expire() closes it out after seven days, and nobody is told which.
   const status = verdict === 'pass' ? 'live' : verdict === 'reject' ? 'rejected' : 'pending'
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  )
 
   const { data, error } = await supabase.rpc('wall_write', {
     p_token: token,

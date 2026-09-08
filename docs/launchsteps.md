@@ -1052,6 +1052,82 @@ The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
 
+## Five before the door (migration 0045)
+
+The first five letters anybody reads are free, whoever they are, and the sixth
+is blurred with the gate on it. One migration and the app. No function changes.
+
+**Why.** 0044 opened reading to either proof and left everybody else at a wall
+of struck-out words, which asks somebody to answer for something before they
+have read a sentence of it. The wall's own words are the only argument for
+signing in that was ever going to work, so it gets to make it five times first.
+
+1. **Apply `0045_five_before_the_door.sql`.** `supabase db push`, or paste it
+   into the SQL editor. It adds `wall_free_reads` (one row per browser key per
+   letter, at most five per browser, no identity on it) and six service-role
+   functions around it, and re-emits `wall_letters_for` and `wall_letter` to
+   spend one per letter handed over. Both stop being `stable`: spending a read
+   is a write, and it happens on the read that hands the letter over. Verified
+   end to end by `scripts/verify-migrations.sh --test`
+   (`test-free-reads.sql`, 39 assertions).
+2. **Deploy the app.** Vercel, as usual. It draws five marks under the letter,
+   struck as they go, and blurs the redaction rather than striking it out.
+
+Order matters slightly here, and only in one direction: an app deployed before
+the migration asks for keys the old functions do not return, draws no meter,
+and behaves exactly as 0044 left it. A migration applied before the app opens
+five letters to every visitor immediately and the meter arrives with the
+deploy, which is the harmless way round.
+
+The test of the whole path: open `/berkeley` in a private window, walk six
+different names, and watch the marks go out one at a time. The fifth card
+should say "that was the last free one" and the sixth should arrive blurred
+with "read it" under it. Sign in, and the sixth comes back.
+
+If a browser needs its five back for a demo, clearing site data is the
+supported way. There is deliberately no function that resets somebody else's.
+
+## The reading room, and three a week (migration 0044)
+
+Two changes pulling opposite ways: the door to reading opens, and the door to
+writing gets a meter. One migration, one function, and the app.
+
+**Why.** `wall_gate` answered three questions and should have answered one.
+A person who had proved their Instagram handle, this product's own proof,
+arrived at `/berkeley` signed in and was handed a wall of struck-out words with
+no way to open one, under the line "sign in to read the letters". That was
+twenty-five of the twenty-seven identity rows in production.
+
+1. **Apply `0044_the_reading_room_and_the_three.sql`.** `supabase db push`, or
+   paste it into the SQL editor. It adds `wall_read_gate(user, campus)`, which
+   takes either proof (a campus address, a subdomain of it or a pass, OR
+   `handle_verified_at`), and re-emits `wall_letters_for`, `wall_letter`,
+   `wall_heart` and `wall_report` to ask it. `wall_gate` is untouched and is
+   the WRITE gate alone. It also adds the allowance:
+   `wall_letter_allowance()`, `wall_letter_window()`, `wall_letters_spent()`
+   and the client-callable `wall_quota(token)`, and re-emits `wall_write` to
+   refuse the fourth letter in seven days with `cap`. Verified end to end by
+   `scripts/verify-migrations.sh --test` (`test-reading-room.sql`, 36
+   assertions).
+2. **Redeploy `celestual-wall-moderate`.** It asks `wall_quota` before it
+   spends a classifier call, so a writer with none left is told at once and
+   nobody pays for the model call. `supabase functions deploy
+   celestual-wall-moderate`. `wall_write` refuses the fourth either way, so
+   an old function against the new schema is correct and only slower.
+3. **Deploy the app.** Vercel, as usual.
+
+Order does not matter much: an app deployed before the migration draws no
+meter (`wall_quota` is missing, the read fails, and the composer simply does
+not draw a number) and reads exactly as it did. A migration applied before the
+app opens the letters to every handle-verified person immediately, which is
+the point.
+
+The test of the whole path: sign in on Main with the DM code, open
+`/berkeley`, and read a letter without ever giving an address. Then open the
+composer: it should still say the letters are written by Berkeley. On a campus
+address, write three letters and watch the three marks in the composer's foot
+go out one at a time; the fourth press is refused before it is written.
+
 ## The pass list (migration 0043)
 
 Who is let through without the campus code's domain rule or the DM. One

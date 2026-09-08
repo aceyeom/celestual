@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Provider, Sparkle } from './art.jsx'
-import { member } from './auth.js'
+import { member, isReader, verified } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 
@@ -42,7 +42,7 @@ export function Prose({ children, className = '', style }) {
 }
 
 // ── the redaction ───────────────────────────────────────────────────────────
-// What a letter looks like to somebody who is not from Berkeley: the real
+// What a letter looks like to somebody this product has not proved: the real
 // letter, its real length, its real line breaks, with every word struck out.
 //
 // It is built out of the actual words rather than out of lorem or a grey block,
@@ -51,7 +51,7 @@ export function Prose({ children, className = '', style }) {
 // paragraph. Nothing readable is in the DOM: the bars carry a length and no
 // text, so the letter is not sitting in the page waiting to be read out of it.
 // ── the redaction ───────────────────────────────────────────────────────────
-// A letter read from outside the campus gate never arrives with its words. The
+// A letter read from outside the read gate never arrives with its words. The
 // database withholds the body and sends two integers instead: how many words
 // there are and how many characters. That is enough to draw a redaction at the
 // right size, and it is the least that is: a fixed-size grey box pretending to
@@ -323,6 +323,15 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // sheet it stays what it was, the way back to the wall the sheet is over.
 export function TopBar({ go, at = 'wall' }) {
   const who = member()
+  // Whether the letters are open, which is not the same question as whether
+  // this browser has a campus address. A person who proved their handle on
+  // Main can read every letter here, and the bar used to answer their tap with
+  // "sign in to read the letters" on a surface they were already signed in to.
+  const reads = isReader()
+  // What to put on the disc. The address when this browser holds one, and the
+  // handle it proved when it does not: both are the person, and the second one
+  // even has a face the resolver can draw.
+  const mine = who || verified()[0] || ''
   const onWall = at === 'wall'
   return (
     <header className="wl-top">
@@ -345,11 +354,16 @@ export function TopBar({ go, at = 'wall' }) {
           type="button"
           className={`wl-iconbtn wl-memberbtn${at === 'gate' ? ' is-on' : ''}`}
           onClick={() => go('gate')}
-          aria-label={who ? `signed in as ${who}` : 'sign in to read the letters'}
-          title={who ? who : 'sign in to read'}
+          aria-label={who ? `signed in as ${who}`
+            : mine ? `signed in as ${atHandle(mine)}`
+            : reads ? 'your account'
+            : 'sign in to read the letters'}
+          title={who || (mine ? atHandle(mine) : reads ? 'your account' : 'sign in to read')}
           aria-current={at === 'gate' ? 'page' : undefined}
         >
-          {who ? <Face handle={who} size={22} resolve={false} /> : <Icon name="key" />}
+          {who || reads
+            ? <Face handle={mine} size={22} resolve={!who && !!mine} />
+            : <Icon name="key" />}
         </button>
       </nav>
     </header>
@@ -606,13 +620,18 @@ export function SheetFoot({ children, className = '' }) {
 }
 
 // ── the door, stated where it stands ────────────────────────────────────────
-// Reading, writing and reporting are all behind the same berkeley.edu address
-// (auth.js), and all three used to say so in their own words in their own
-// place. This is the one wording, in the one shape, wherever somebody has
-// walked into that door: the sentence that names what is shut, and the pill
-// that opens it. Nothing else — no explanation of the policy, no second
-// argument for it. A person who has just tapped a control they cannot use wants
-// the key, not the reasoning.
+// Reading, writing and reporting each stand behind a door (auth.js), and all
+// three used to say so in their own words in their own place. This is the one
+// wording, in the one shape, wherever somebody has walked into one: the
+// sentence that names what is shut, and the pill that opens it. Nothing else.
+// No explanation of the policy, no second argument for it. A person who has
+// just tapped a control they cannot use wants the key, not the reasoning.
+//
+// The pill goes to the campus gate in every case, because that is the door
+// this surface owns. It is not the only way through the reading door since
+// 0044 (a handle proved on Main opens it too), but a person standing here has
+// not proved anything yet, and offering them two doors at once is offering
+// them a decision instead of a way in.
 export function Locked({ children, onOpen, cta = 'sign in with berkeley' }) {
   return (
     <div className="wl-locked">
@@ -621,6 +640,73 @@ export function Locked({ children, onOpen, cta = 'sign in with berkeley' }) {
       <Pill tone="light" wide icon={<Icon name="key" size={17} />} onClick={onOpen}>{cta}</Pill>
     </div>
   )
+}
+
+// ── the allowance, said quietly ─────────────────────────────────────────────
+// One object for the two things this surface rations, drawn as marks: one
+// struck for each already spent, one hollow for each still standing.
+//
+//   week   three letters in any seven days, for the writer (migration 0044)
+//   reads  five whole letters before the door, for the reader (0045)
+//
+// It is deliberately the smallest object on the screen it appears on, and it is
+// a STATE and not a warning. A person writing their first letter of the week,
+// or reading their first letter of five, should be able to look straight past
+// it; a person on their last should be able to see, without reading anything,
+// that it is their last. So there is no sentence next to it until then, and
+// none at all before: nobody needs to be told they have three left out of three.
+//
+// The count is the server's (`wall_quota`, and the `free` on every read), never
+// this browser's arithmetic. A count the client keeps is a count the reader
+// owns.
+export function Allowance({ left, limit, resets = 0, kind = 'week', reading = false, className = '' }) {
+  if (!Number.isFinite(left) || !Number.isFinite(limit) || limit <= 0) return null
+  const spent = Math.max(0, Math.min(limit, limit - left))
+  const reads = kind === 'reads'
+  // Short enough to survive a 390px foot beside a capsule. The week's line said
+  // "none left. one comes back in four days" and the phone cut it at "one comes
+  // back", which is the half that carries the information.
+  // On the last free letter the reader is looking AT the letter, and telling
+  // somebody to sign in while they are mid-sentence is the screen talking over
+  // itself. It says what just happened instead, and asks on the next card,
+  // which is the one that is actually shut.
+  const say = reads
+    ? (left === 0 ? (reading ? 'that was the last free one' : 'sign in to keep reading')
+      : left === 1 ? 'one free letter left' : '')
+    : (left === 0 ? untilOne(resets) : left === 1 ? 'one left this week' : '')
+  const said = reads
+    ? (left === 0 ? `no free letters left, of ${limit}`
+      : left === 1 ? `one free letter left, of ${limit}`
+      : `${left} free letters left, of ${limit}`)
+    : (left === 0 ? `no letters left this week, of ${limit}`
+      : left === 1 ? `one letter left this week, of ${limit}`
+      : `${left} letters left this week, of ${limit}`)
+  return (
+    <div className={`wl-allow${left === 0 ? ' is-spent' : ''} ${className}`}>
+      <span className="wl-allow-marks" aria-hidden="true">
+        {Array.from({ length: limit }, (_, i) => (
+          <span key={i} className={`wl-allow-mark${i < spent ? ' is-used' : ''}`} />
+        ))}
+      </span>
+      <Label tone="dim" as="span" className="wl-allow-say">
+        <span className="wl-sr">{said}</span>
+        <span aria-hidden="true">{say}</span>
+      </Label>
+    </div>
+  )
+}
+
+// How long the wait is, said as a wait rather than as a date. The wall already
+// says how long ago something happened (data.js `ago`); this is the same voice
+// pointed forwards, and it is here rather than there because it has one caller.
+function untilOne(at) {
+  const ms = at ? at - Date.now() : 0
+  if (ms <= 0) return 'none left this week'
+  const h = Math.round(ms / 3600000)
+  if (h <= 1) return 'none left for an hour'
+  if (h < 24) return `none left for ${h} hours`
+  const d = Math.round(h / 24)
+  return d <= 1 ? 'none left until tomorrow' : `none left for ${d} days`
 }
 
 // ── the small box ───────────────────────────────────────────────────────────
@@ -1162,13 +1248,18 @@ export function Light({ on = true, plate = 'star', className = '' }) {
 // name, a verification badge. Nothing else. No follower count, no post count,
 // no bio, no link. This product does not tell anybody how popular anybody is.
 //
-// ── it waits with a light ───────────────────────────────────────────────────
-// While the resolver is out, which on a cold handle is ten seconds, a point of
-// light (`Light`, above) runs round the card's own edge and twinkles through
-// the plate's star shaped holes as it passes. Not a spinner, which promises a computation, and
-// not a shimmer, which is a pattern from a different product: the frame the
-// answer will land in, lit round its border. The frame holds the exact height
-// the answer takes, so nothing under it moves when the answer lands.
+// ── it waits with two bars, and no light ────────────────────────────────────
+// While the resolver is out, which on a cold handle is ten seconds, the card
+// holds the exact height the answer takes and breathes two bars where the name
+// and the handle will land, so nothing under it moves when the answer arrives.
+//
+// It used to also carry `Light`: a point of light running round the card's edge
+// and twinkling through a star shaped plate as it passed. That came off. The
+// card is already the loudest object on the screen at the moment it appears,
+// the bars under it are saying the same thing more quietly, and a shape
+// sparkling around somebody's name while it is being looked up is decoration on
+// top of a wait rather than an account of it. The light still runs where it was
+// designed to, on the result card's own frame elsewhere and on the primary pill.
 //
 // ── and it can be pressed ───────────────────────────────────────────────────
 // Given `onSelect` the card is a button from the first frame: disabled while it
@@ -1221,7 +1312,6 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
 
   return (
     <Tag className={cls} aria-live="polite" aria-busy={looking || undefined} {...live}>
-      <Light on={looking} />
       <span className="wl-card-disc" aria-hidden="true">
         <span className="wl-card-mono">{mono}</span>
         {!looking && at.avatar ? (

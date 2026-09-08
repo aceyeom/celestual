@@ -20,10 +20,19 @@
 // what they see here is exactly what goes up.
 //
 // ── the door, and what it does not change ──────────────────────────────────
-// The composer is behind the same berkeley.edu address that opens the letters
-// (auth.js). An anonymous letter about a named student, publishable by anybody
-// on earth with a browser, is not anonymity — it is an open relay pointed at a
-// person who never agreed to any of it.
+// The composer is behind the berkeley.edu address, and it is the only thing on
+// the wall that still is: reading opened to either proof in migration 0044, and
+// writing did not. An anonymous letter about a named student, publishable by
+// anybody on earth with a browser, is not anonymity. It is an open relay
+// pointed at a person who never agreed to any of it.
+//
+// ── and three of them in any seven days ────────────────────────────────────
+// A wall whose contents are decided by whoever writes the most is a wall about
+// its most prolific writer, and the cheapest way to stop that is a number
+// everybody can hold in their head. It is drawn in the foot, opposite the one
+// thing to press: three marks, struck as they are spent (parts.jsx
+// `Allowance`). The count is the server's, from `wall_quota`, so the number
+// somebody is looking at is the number they would be refused on.
 //
 // The address does not follow the letter anywhere. It is not read on this
 // screen, it is not passed to `write`, and there is no author field in the
@@ -42,11 +51,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, Paper, Display, Label, Pill, Locked,
+  Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance,
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots } from '../art.jsx'
-import { normHandle, validHandle, atHandle, dateline, hash } from '../data.js'
+import { normHandle, validHandle, atHandle, dateline, hash, allowance, loadQuota } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -95,6 +104,13 @@ export default function Write({ to: prefill, go, back }) {
   const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
 
+  // The allowance. Asked once on mount and drawn out of the cache during
+  // render like everything else on this surface; `null` until it lands, and
+  // the meter draws nothing rather than a guessed number.
+  useEffect(() => { loadQuota() }, [])
+  const left = allowance()
+  const spent = !!left && left.left <= 0
+
   // One draft under one key, so backing out of the sheet and coming back does
   // not cost somebody the forty words they just wrote.
   useEffect(() => {
@@ -113,7 +129,7 @@ export default function Write({ to: prefill, go, back }) {
     onPick: (t) => setTo(t.handle),
   })
   async function next() {
-    if (!ok[step] || asking) return
+    if (!ok[step] || asking || spent) return
     if (step === 0) {
       if (!them.settled) {
         // An answer draws the card and waits for the second press; no answer
@@ -211,10 +227,17 @@ export default function Write({ to: prefill, go, back }) {
         )}
 
         <div className="wl-write-foot">
+          {/* The meter stands at the left of the foot, opposite the act, on
+              both steps: it is the one thing here that is about the WRITER
+              rather than about the letter, and the step where somebody is
+              about to spend one is the step where they should be able to see
+              how many they have. Nothing is drawn until the server has
+              answered, so the foot never shows a guessed number. */}
+          {left ? <Allowance left={left.left} limit={left.limit} resets={left.resets} /> : null}
           {step === 1 && (
             <Pill tone="ghost" onClick={() => setStep(0)}>a different name</Pill>
           )}
-          <Pill tone="light" onClick={next} disabled={!ok[step]}>
+          <Pill tone="light" onClick={next} disabled={!ok[step] || spent}>
             {step === 0 ? 'next' : 'put it up'}
           </Pill>
         </div>

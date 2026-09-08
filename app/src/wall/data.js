@@ -26,10 +26,16 @@
 // That is the guarantee the printed card makes.
 //
 // ── body can be null, and null is not empty ─────────────────────────────────
-// A letter read from outside the campus gate comes back with `body: null`. That
-// is the redaction, it is performed by the database rather than here, and it is
+// A letter this browser may not read comes back with `body: null`. That is the
+// redaction, it is performed by the database rather than here, and it is
 // deliberately distinct from `''`: the screen has to be able to tell "there are
 // words and you may not read them" from "somebody wrote nothing".
+//
+// Which letters those are is the server's arithmetic too. Every browser is
+// handed five whole ones before it is asked for anything (0045) and the rest
+// go through the read gate (0044), so openness is per LETTER and `body` is the
+// only thing a screen should branch on. `gated()` and `freeReads()` below are
+// what the meter draws, and neither of them decides anything.
 
 import * as api from './api.js'
 import { learnHandle } from '../api/handles.js'
@@ -108,14 +114,42 @@ const BY_ID = new Map()
 let OPEN = null
 export function gateOpen() { return OPEN }
 
+// ── the five ────────────────────────────────────────────────────────────────
+// Every browser reads five whole letters before it is asked for anything
+// (migration 0045). These two are the server's last word on that, updated by
+// every read: `GATED` is whether the reader is through the gate, in which case
+// the five stop applying, and `FREE` is { limit, used, left } counted after
+// that read. `null` before anything has been asked.
+//
+// Nothing here decides anything. The body is withheld by the database and the
+// count is kept by the database; this is what the meter draws.
+let GATED = null
+let FREE = null
+export function gated() { return GATED }
+export function freeReads() { return FREE }
+
+// ── the allowance ───────────────────────────────────────────────────────────
+// Three letters in any seven days (migration 0044). Cached the way everything
+// else here is, so the composer can draw the meter during render and the
+// server stays the one that decides. `null` before it has been asked, which
+// the composer reads as "do not draw a number yet" rather than as zero.
+let QUOTA = null
+export function allowance() { return QUOTA }
+
 // Everything read about the letters, dropped. Called when the gate opens or
 // closes, because every cached letter was read with the gate the way it was:
 // signing in over a cache of redacted bodies is a wall that stays shut, and
 // signing out over a cache of open ones is a wall that stays open.
+//
+// The allowance goes with them, for the same reason: it is a fact about a
+// person, and the person at this browser has just changed.
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
   OPEN = null
+  GATED = null
+  FREE = null
+  QUOTA = null
   bump()
 }
 
@@ -171,6 +205,19 @@ export function loadWall(force = false) {
   })
 }
 
+// How many letters are left this week. Asked by the composer on mount and
+// again after one goes up, because the number the writer is looking at has to
+// be the number the server would refuse them on.
+export function loadQuota(force = false) {
+  if (!force && QUOTA) return Promise.resolve()
+  return once('quota', async () => {
+    const out = await api.quota()
+    if (!out.ok) return
+    QUOTA = out
+    bump()
+  })
+}
+
 export function loadHandle(raw, force = false) {
   const h = normHandle(raw)
   if (!h) return Promise.resolve()
@@ -179,6 +226,8 @@ export function loadHandle(raw, force = false) {
     const out = await api.lettersFor(h)
     if (!out.ok) return
     OPEN = out.open
+    GATED = out.gated
+    if (out.free) FREE = out.free
     BY_HANDLE.set(h, out.letters)
     for (const l of out.letters) BY_ID.set(l.id, l)
     bump()
@@ -199,6 +248,8 @@ export function loadLetter(id, force = false) {
       return
     }
     OPEN = out.open
+    GATED = out.gated
+    if (out.free) FREE = out.free
     BY_ID.set(id, out.letter)
     bump()
   })
@@ -212,7 +263,7 @@ export function loadLetter(id, force = false) {
 //
 // Two doors, and they cost different things because they are not the same act:
 //
-//   ONE LETTER   any reader through the campus gate can report it, and it is
+//   ONE LETTER   any reader through the read gate can report it, and it is
 //                off the wall on the tap. `report` below. Nothing is proven,
 //                nothing is destroyed, and a person at the admin desk can put
 //                it back, because a wrong report costs one letter a day in a
@@ -360,9 +411,13 @@ export async function write({ to, body, sealedLine, source }) {
     const h = normHandle(to)
     BY_HANDLE.delete(h)
     TILES_AT = 0
-    await Promise.all([loadWall(true), loadHandle(h, true)])
+    await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true)])
     bump()
   }
+  // A refusal moves the count too. 'cap' means the server disagreed with the
+  // number this browser was drawing, and the meter has to end up saying what
+  // the server just said rather than what it thought a second ago.
+  if (out && !out.ok && out.error === 'cap') await loadQuota(true)
   return out || { ok: false, error: 'network' }
 }
 

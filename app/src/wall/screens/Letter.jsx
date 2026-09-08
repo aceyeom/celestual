@@ -36,10 +36,11 @@
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
 // this card arrives REDACTED — the real letter, at its real length, with every
-// word struck out — and a berkeley.edu address lifts it. Nothing else on the
-// index changes: the wall, the search and the counts are open to everybody, and
-// a person who has just scanned a code off a card is never asked for anything
-// before they have seen what this is.
+// word struck out — and either of the product's proofs lifts it: a campus
+// address, or a handle proved by the DM code (migration 0044). Nothing else on
+// the index changes: the wall, the search and the counts are open to
+// everybody, and a person who has just scanned a code off a card is never
+// asked for anything before they have seen what this is.
 //
 // The redaction is drawn from the letter's own words, not from a grey block,
 // because the shape of the thing has to be honest even while it is shut. And
@@ -52,9 +53,12 @@
 import { useEffect, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label, Face, Heart,
+  Pill, Icon, Label, Face, Heart, Allowance,
 } from '../parts.jsx'
-import { letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle, sinceline, atHandle, heart } from '../data.js'
+import {
+  letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle,
+  sinceline, atHandle, heart, gated, freeReads,
+} from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
@@ -164,7 +168,11 @@ export default function Letter({ id: param, go, back }) {
       <Sheet onClose={back} labelledBy="wl-letter-h">
         <div className="wl-sheet-in wl-letter">
           <SheetHead onClose={back} label="back to the wall" />
-          <Paper dateline={{ lead: 'reading' }} title={<span id="wl-letter-h" className="wl-letter-to">&nbsp;</span>} tone="shut">
+          {/* `waiting`, not `shut`. They draw the same block of bars and they
+              are not the same fact: a letter that has arrived shut is blurred,
+              because it is a letter you are not close enough to, and a letter
+              that has not arrived is neither shut nor open yet. */}
+          <Paper dateline={{ lead: 'reading' }} title={<span id="wl-letter-h" className="wl-letter-to">&nbsp;</span>} tone="waiting">
             <Redacted words={22} chars={110} seed={String(param)} />
           </Paper>
         </div>
@@ -192,6 +200,17 @@ export default function Letter({ id: param, go, back }) {
   }
 
   const open = one.body !== null
+
+  // ── the five ──
+  // Every browser reads five whole letters before it is asked for anything
+  // (migration 0045). The meter is drawn only for somebody the five still
+  // apply to: a person through the gate is not counting anything, and drawing
+  // them five hollow marks would be inventing a limit they do not have.
+  //
+  // Both facts are the server's, off the read that drew this card. Nothing
+  // here counts, and nothing here decides: `open` above is still the only
+  // thing that says whether the words came.
+  const free = gated() === false ? freeReads() : null
 
   return (
     /* Not `tall`. The floor exists so a bottom sheet does not read as a
@@ -238,6 +257,22 @@ export default function Letter({ id: param, go, back }) {
             the answer for about one reader in twenty — and for that one reader
             they have to be in plain sight rather than in a menu. */}
         <SheetFoot>
+          {/* ── how many are left, over the one thing to do ──
+              Five marks, struck as they go, and no sentence beside them until
+              the last one. It stands above the pill rather than beside it
+              because on this screen the pill is the whole width, and it is
+              drawn whether the card is open or shut: seeing the fourth mark go
+              out while you are still reading is what makes the fifth not a
+              surprise. Nothing here is a countdown to a paywall. It is a
+              statement of how much of somebody else's wall this browser has
+              been handed without being asked for anything. */}
+          {free ? (
+            <Allowance
+              left={free.left} limit={free.limit} kind="reads" reading={open}
+              className="wl-letter-free"
+            />
+          ) : null}
+
           {open ? (
             <Pill tone="light" wide icon={<Icon name="write" size={17} />} onClick={() => go('write', one.to)}>
               write one to {atHandle(one.to)}

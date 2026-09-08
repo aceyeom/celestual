@@ -12,11 +12,17 @@
 //   the index      public. A handle and a count. Anybody, no session, no
 //                  answering anything, because somebody who just scanned a code
 //                  off a flyer has to see the wall in four seconds.
-//   the letters    behind the campus gate. A stranger gets the shape of a
-//                  letter and `body` as null; somebody with a verified
-//                  berkeley.edu address gets the words. The redaction happens
-//                  in the database, because a redaction the client performs is
-//                  not a redaction.
+//   the letters    five to anybody, then the read gate. Every browser is handed
+//                  five whole letters before it is asked for anything (0045);
+//                  after that a body travels only to somebody this product has
+//                  proved, by a campus address OR a verified handle
+//                  (wall_read_gate, 0044), and everything else arrives with
+//                  `body` as null. The redaction happens in the database,
+//                  because a redaction the client performs is not a redaction,
+//                  and so does the counting, because a count the client keeps
+//                  is a count the reader owns.
+//   writing        behind the campus gate, which is a different and narrower
+//                  door, and three letters in any seven days.
 //   the seal       one function returns it, and only when the caller holds the
 //                  verified handle it is addressed to, asked, and the author
 //                  said yes.
@@ -121,10 +127,40 @@ export async function wallPulse() {
   }
 }
 
+// ── the allowance ────────────────────────────────────────────────────────────
+// Three letters in any seven days, and this is the only way to ask how many are
+// left. It answers about the CALLER and takes no argument for anybody else:
+// how much somebody has written is a fact about them, and a function that could
+// be asked it about a handle would be a way to ask whether a particular person
+// has been writing letters.
+//
+// A browser with no session is told the whole allowance rather than nothing, so
+// the meter under the composer has a number to draw before it knows who is
+// holding the phone.
+export async function quota() {
+  const out = await call('wall_quota', { p_token: sessionToken() })
+  if (!out?.ok) return { ok: false, error: out?.error || 'network', limit: 3, used: 0, left: 3, resets: 0 }
+  return {
+    ok: true,
+    signedIn: !!out.signed_in,
+    limit: Number(out.limit) || 0,
+    used: Number(out.used) || 0,
+    left: Number(out.left) || 0,
+    resets: out.resets_at ? new Date(out.resets_at).getTime() : 0,
+  }
+}
+
 // ── reading ──────────────────────────────────────────────────────────────────
-// `open` is the gate. When it is false every letter comes back with a null
-// body, which is the redacted read, and the screen draws the shape of a letter
-// with the words withheld rather than an empty state.
+// Whether a body travels is a question per LETTER, not per reader (0045): a
+// browser gets five whole ones before it is asked for anything, so the first
+// five arrive with their words and the rest arrive redacted. `body === null` is
+// the only thing a screen should branch on.
+//
+// Two facts about the reader ride alongside, and they are what the meter draws
+// from. `gated` is whether this person is through wall_read_gate, in which case
+// the five are irrelevant; `free` is { limit, used, left }, counted AFTER the
+// read that answered it, which is the number a screen wants: somebody who has
+// just been handed one letter is told four, not five.
 export async function lettersFor(handle) {
   const out = await call('wall_letters_for', {
     p_token: sessionToken(),
@@ -135,6 +171,8 @@ export async function lettersFor(handle) {
   return {
     ok: true,
     open: !!out.open,
+    gated: !!out.gated,
+    free: shapeFree(out.free),
     handle: out.handle,
     letters: (out.letters ?? []).map(shapeLetter),
   }
@@ -144,7 +182,25 @@ export async function letter(id) {
   const out = await call('wall_letter', { p_token: sessionToken(), p_letter: id })
   if (!out?.ok) return { ok: false, error: out?.error || 'gone' }
   learnFace(out, out.letter?.handle)
-  return { ok: true, open: !!out.open, letter: shapeLetter(out.letter) }
+  return {
+    ok: true,
+    open: !!out.open,
+    gated: !!out.gated,
+    free: shapeFree(out.free),
+    letter: shapeLetter(out.letter),
+  }
+}
+
+// A count, a ceiling and what is left. Never a list: nothing anywhere says
+// WHICH letters a browser has read, and there is no function that could be
+// asked it about anybody else.
+function shapeFree(f) {
+  if (!f) return null
+  return {
+    limit: Number(f.limit) || 0,
+    used: Number(f.used) || 0,
+    left: Number(f.left) || 0,
+  }
 }
 
 // The resolver's answer for the name the letters are under rides on the
@@ -201,6 +257,11 @@ function shapeLetter(l) {
 //
 // "Held" and "published" must read the same, or the screen becomes a way to
 // find out what gets through by writing until something does.
+//
+// One more refusal since 0044: `cap`, when three letters are already spent in
+// the last seven days. It carries `resets_at`, so the screen can say when one
+// comes back rather than only that none is left. A rejected letter never
+// spends one, so a person who has been screened is not also charged for it.
 export async function write({ to, body, sealedLine, source }) {
   if (!hasSupabase) return OFFLINE
   try {
@@ -233,7 +294,7 @@ export const answerReveal = (id, reveal) =>
 export const seal = (id) => call('wall_letter_seal', { p_token: sessionToken(), p_letter: id })
 
 // ── the heart ────────────────────────────────────────────────────────────────
-// On, or off. Behind the campus gate like reading, and it answers the count
+// On, or off. Behind the read gate like reading, and it answers the count
 // so the screen draws the server's number and not its own arithmetic.
 export const heart = (id, on) =>
   call('wall_heart', { p_token: sessionToken(), p_letter: id, p_on: !!on })
