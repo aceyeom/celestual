@@ -17,11 +17,13 @@ days each, and a reveal that happens to both people or to neither.
 
 **The wall**, at `/berkeley`. A campus surface reached by scanning a code off a
 flyer: short anonymous letters, each addressed to one handle. The list of
-handles is public. Reading a letter needs one of the product's two proofs, a
-verified `berkeley.edu` address or a verified Instagram handle; writing one
-needs the address, three in any seven days. Every letter is screened before it
-appears, the person a letter is about can take it down from a verified handle,
-and the author is never disclosed unless they are asked and say yes.
+handles is public, and so are the first five letters anybody reads. After
+those, reading needs one of the product's two proofs, a verified
+`berkeley.edu` address or a verified Instagram handle, and everything else
+arrives blurred; writing needs the address, three in any seven days. Every
+letter is screened before it appears, the person a letter is about can take it
+down from a verified handle, and the author is never disclosed unless they are
+asked and say yes.
 
 They are one session. Proving a campus address on the wall or a handle on Main
 signs you in to both.
@@ -42,7 +44,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0044, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0045, in order. 0029 onward is the rebuild; 0038 is the audit
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook

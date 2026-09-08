@@ -71,6 +71,34 @@ select rr_ok('the read gate is not reachable from the browser',
 select wall_write('rr-token-writer-000000', 'rrsubject', 'the letter itself, in words',
                   null, null, 'berkeley', 'live', '{}');
 
+-- 0045 gives every browser five whole letters before it asks for anything, so
+-- a token that has spent none of them is not outside any gate yet: it is a
+-- reader with change in its pocket. This file is about the GATE, so the
+-- readers who are meant to be refused have their five spent first, on five
+-- letters under a name nothing else here looks at.
+-- Under a second author, and inserted rather than written, so that spending
+-- the readers' five does not also spend the writer's three: section 4 below
+-- counts the writer's letters and there are two of them.
+do $$
+declare i int; w uuid;
+begin
+  insert into celestual_users (edu_email, edu_verified_at)
+    values ('rr-spender@berkeley.edu', now()) returning id into w;
+  for i in 1..5 loop
+    insert into wall_letters (target_handle, body, author_id, campus, status, created_at)
+    values ('rrspend', 'a letter written only to be counted, number ' || i,
+            w, 'berkeley', 'live', now() - (i || ' minutes')::interval);
+  end loop;
+end $$;
+select rr_ok('the five spend out on a name of their own',
+  (select count(*) from jsonb_array_elements(
+     wall_letters_for('rr-token-neither-00000', 'rrspend')->'letters') e
+    where e->>'body' is not null) = 5);
+select wall_letters_for('rr-token-other-0000000', 'rrspend');
+select wall_letters_for('rr-token-nobody-000000', 'rrspend');
+select rr_ok('and then there are none',
+  (wall_letters_for('rr-token-neither-00000', 'rrspend')->'free'->>'left')::int = 0);
+
 select rr_ok('a proved handle is handed the words',
   (wall_letters_for('rr-token-handle-000000', 'rrsubject')->'letters'->0->>'body')
     = 'the letter itself, in words');

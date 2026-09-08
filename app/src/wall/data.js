@@ -26,10 +26,16 @@
 // That is the guarantee the printed card makes.
 //
 // ── body can be null, and null is not empty ─────────────────────────────────
-// A letter read from outside the read gate comes back with `body: null`. That
-// is the redaction, it is performed by the database rather than here, and it is
+// A letter this browser may not read comes back with `body: null`. That is the
+// redaction, it is performed by the database rather than here, and it is
 // deliberately distinct from `''`: the screen has to be able to tell "there are
 // words and you may not read them" from "somebody wrote nothing".
+//
+// Which letters those are is the server's arithmetic too. Every browser is
+// handed five whole ones before it is asked for anything (0045) and the rest
+// go through the read gate (0044), so openness is per LETTER and `body` is the
+// only thing a screen should branch on. `gated()` and `freeReads()` below are
+// what the meter draws, and neither of them decides anything.
 
 import * as api from './api.js'
 import { learnHandle } from '../api/handles.js'
@@ -108,6 +114,20 @@ const BY_ID = new Map()
 let OPEN = null
 export function gateOpen() { return OPEN }
 
+// ── the five ────────────────────────────────────────────────────────────────
+// Every browser reads five whole letters before it is asked for anything
+// (migration 0045). These two are the server's last word on that, updated by
+// every read: `GATED` is whether the reader is through the gate, in which case
+// the five stop applying, and `FREE` is { limit, used, left } counted after
+// that read. `null` before anything has been asked.
+//
+// Nothing here decides anything. The body is withheld by the database and the
+// count is kept by the database; this is what the meter draws.
+let GATED = null
+let FREE = null
+export function gated() { return GATED }
+export function freeReads() { return FREE }
+
 // ── the allowance ───────────────────────────────────────────────────────────
 // Three letters in any seven days (migration 0044). Cached the way everything
 // else here is, so the composer can draw the meter during render and the
@@ -127,6 +147,8 @@ export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
   OPEN = null
+  GATED = null
+  FREE = null
   QUOTA = null
   bump()
 }
@@ -204,6 +226,8 @@ export function loadHandle(raw, force = false) {
     const out = await api.lettersFor(h)
     if (!out.ok) return
     OPEN = out.open
+    GATED = out.gated
+    if (out.free) FREE = out.free
     BY_HANDLE.set(h, out.letters)
     for (const l of out.letters) BY_ID.set(l.id, l)
     bump()
@@ -224,6 +248,8 @@ export function loadLetter(id, force = false) {
       return
     }
     OPEN = out.open
+    GATED = out.gated
+    if (out.free) FREE = out.free
     BY_ID.set(id, out.letter)
     bump()
   })

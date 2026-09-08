@@ -643,26 +643,44 @@ export function Locked({ children, onOpen, cta = 'sign in with berkeley' }) {
 }
 
 // ── the allowance, said quietly ─────────────────────────────────────────────
-// Three letters in any seven days (migration 0044), drawn as three marks: one
-// struck for each letter already spent, one hollow for each still standing.
+// One object for the two things this surface rations, drawn as marks: one
+// struck for each already spent, one hollow for each still standing.
+//
+//   week   three letters in any seven days, for the writer (migration 0044)
+//   reads  five whole letters before the door, for the reader (0045)
 //
 // It is deliberately the smallest object on the screen it appears on, and it is
-// a STATE and not a warning. A person writing their first letter of the week
-// should be able to look straight past it; a person on their third should be
-// able to see, without reading anything, that it is their third. So there is no
-// sentence next to it until the last one, and no sentence at all until it
-// matters: nobody needs to be told they have three left out of three.
+// a STATE and not a warning. A person writing their first letter of the week,
+// or reading their first letter of five, should be able to look straight past
+// it; a person on their last should be able to see, without reading anything,
+// that it is their last. So there is no sentence next to it until then, and
+// none at all before: nobody needs to be told they have three left out of three.
 //
-// The count is the server's (`wall_quota`), never this browser's arithmetic.
-export function Allowance({ left, limit, resets = 0, className = '' }) {
+// The count is the server's (`wall_quota`, and the `free` on every read), never
+// this browser's arithmetic. A count the client keeps is a count the reader
+// owns.
+export function Allowance({ left, limit, resets = 0, kind = 'week', reading = false, className = '' }) {
   if (!Number.isFinite(left) || !Number.isFinite(limit) || limit <= 0) return null
   const spent = Math.max(0, Math.min(limit, limit - left))
-  // Short enough to survive a 390px foot beside a capsule. It said "none left.
-  // one comes back in four days" and the phone cut it at "one comes back",
-  // which is the half that carries the information.
-  const say = left === 0 ? untilOne(resets)
-    : left === 1 ? 'one left this week'
-    : ''
+  const reads = kind === 'reads'
+  // Short enough to survive a 390px foot beside a capsule. The week's line said
+  // "none left. one comes back in four days" and the phone cut it at "one comes
+  // back", which is the half that carries the information.
+  // On the last free letter the reader is looking AT the letter, and telling
+  // somebody to sign in while they are mid-sentence is the screen talking over
+  // itself. It says what just happened instead, and asks on the next card,
+  // which is the one that is actually shut.
+  const say = reads
+    ? (left === 0 ? (reading ? 'that was the last free one' : 'sign in to keep reading')
+      : left === 1 ? 'one free letter left' : '')
+    : (left === 0 ? untilOne(resets) : left === 1 ? 'one left this week' : '')
+  const said = reads
+    ? (left === 0 ? `no free letters left, of ${limit}`
+      : left === 1 ? `one free letter left, of ${limit}`
+      : `${left} free letters left, of ${limit}`)
+    : (left === 0 ? `no letters left this week, of ${limit}`
+      : left === 1 ? `one letter left this week, of ${limit}`
+      : `${left} letters left this week, of ${limit}`)
   return (
     <div className={`wl-allow${left === 0 ? ' is-spent' : ''} ${className}`}>
       <span className="wl-allow-marks" aria-hidden="true">
@@ -671,11 +689,7 @@ export function Allowance({ left, limit, resets = 0, className = '' }) {
         ))}
       </span>
       <Label tone="dim" as="span" className="wl-allow-say">
-        <span className="wl-sr">
-          {left === 0 ? `no letters left this week, of ${limit}`
-            : left === 1 ? `one letter left this week, of ${limit}`
-            : `${left} letters left this week, of ${limit}`}
-        </span>
+        <span className="wl-sr">{said}</span>
         <span aria-hidden="true">{say}</span>
       </Label>
     </div>

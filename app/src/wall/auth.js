@@ -15,10 +15,11 @@
 //   the letters  what was actually written, who may write one, and who may
 //                take one down. Behind the two gates below.
 //
-// So the letter arrives redacted to a stranger and whole to somebody this
-// product has proved, and the index is untouched.
+// So the letter arrives whole for the first five reads whoever is asking,
+// whole after that to somebody this product has proved, and blurred to
+// everybody else. The index is untouched in every case.
 //
-// ── TWO DOORS, NOT ONE (migration 0044) ─────────────────────────────────────
+// ── TWO DOORS, NOT ONE (migration 0044), AND FIVE STEPS TO THE FIRST (0045) ─
 // It used to be one door for three acts, and that was wrong in a way that took
 // a live wall to see. A person who had proved their Instagram handle through
 // the DM code — this product's own proof, the expensive one — arrived here
@@ -26,13 +27,19 @@
 // the letters" on a screen they had signed in to. So the door splits along the
 // line it was always two things on either side of:
 //
-//   READING (and the heart, and the report) — anybody this product has proved.
-//              A campus address, or a verified handle. Either proof costs
-//              something real, and a wall of things students wrote about each
-//              other is still a different object from one the open internet
-//              can read. Reporting goes with reading on purpose: the person a
-//              letter is about is the likeliest reader to want it down and the
-//              least likely to hold a berkeley.edu address at that moment.
+//   READING    the first FIVE are free to anybody (0045), because a person
+//              asked to answer for something before they have read a sentence
+//              of it has been asked one decision too early. After those,
+//              anybody this product has proved: a campus address, or a
+//              verified handle. Either proof costs something real, and a wall
+//              of things students wrote about each other is still a different
+//              object from one the open internet can read.
+//   THE HEART AND THE REPORT
+//              the proof, with no free five in front of them. They are things
+//              you DO to a letter rather than things you read, and reporting
+//              goes with reading on purpose otherwise: the person a letter is
+//              about is the likeliest reader to want it down and the least
+//              likely to hold a berkeley.edu address at that moment.
 //   WRITING    the campus address, and only the campus address. An anonymous
 //              letter about a named person, publishable by anybody on earth
 //              with a browser, is not anonymity: it is an open relay pointed

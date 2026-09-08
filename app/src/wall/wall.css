@@ -1077,6 +1077,12 @@
 /* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
 .wl-letter { padding-top: 4px; }
 
+/* the five, over the one thing to do. Centred under the card, because on this
+   screen the pill takes the whole width and a mark hanging off one end of it
+   would read as an ornament on the button rather than as a fact about the
+   reader. Its own breathing room above the pill and none below. */
+.wl-letter-free { justify-content: center; padding: 2px 0 10px; }
+
 /* the pager, in the header. It is the answer to "where am I", which is what a
    header is for; under the card it was a third object competing with the two
    controls beside it and pushing the only thing worth pressing further down. */
@@ -2035,6 +2041,18 @@
   display: flex; flex-wrap: wrap; align-items: center;
   gap: 10px 0.36em;
 }
+/* ── and it is blurred, not struck ──
+   The bars are the same bars: the words are NOT in the document, because the
+   database withheld them, and there is nothing here to un-blur with a devtools
+   console. What the blur changes is what the shape says. Struck out reads as
+   censored, as though somebody decided this letter should not be seen; out of
+   focus reads as writing you are not close enough to, which is the truth. A
+   letter you have not signed in for is not being kept from you, it is a few
+   inches further away than the five you have already read.
+
+   On the block rather than each bar, so the words bleed into each other the
+   way out of focus type does instead of staying six separate lozenges. */
+.wl-redacted { filter: blur(4px); opacity: 0.8; }
 .wl-redact-w {
   display: inline-block;
   width: calc(var(--n) * 0.5em);
@@ -2043,9 +2061,13 @@
   background: var(--paper-ink);
   opacity: 0.7;
 }
+/* A card still waiting on its first answer draws the same block, and there the
+   blur would read as a letter that has arrived shut. It has not arrived. */
+.wl-paper.is-waiting .wl-redacted { filter: none; opacity: 0.5; }
 /* the card, shut. A hair flatter and cooler than the open one, so a redacted
    letter and a whole one are not the same object with the words swapped. */
-.wl-paper.is-shut { background: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
+.wl-paper.is-shut,
+.wl-paper.is-waiting { background: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
 
 /* ── the door, wherever it is met ──
    Reading, writing and reporting are behind one address, and all three used to

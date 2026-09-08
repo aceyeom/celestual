@@ -1052,6 +1052,41 @@ The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
 
+## Five before the door (migration 0045)
+
+The first five letters anybody reads are free, whoever they are, and the sixth
+is blurred with the gate on it. One migration and the app. No function changes.
+
+**Why.** 0044 opened reading to either proof and left everybody else at a wall
+of struck-out words, which asks somebody to answer for something before they
+have read a sentence of it. The wall's own words are the only argument for
+signing in that was ever going to work, so it gets to make it five times first.
+
+1. **Apply `0045_five_before_the_door.sql`.** `supabase db push`, or paste it
+   into the SQL editor. It adds `wall_free_reads` (one row per browser key per
+   letter, at most five per browser, no identity on it) and six service-role
+   functions around it, and re-emits `wall_letters_for` and `wall_letter` to
+   spend one per letter handed over. Both stop being `stable`: spending a read
+   is a write, and it happens on the read that hands the letter over. Verified
+   end to end by `scripts/verify-migrations.sh --test`
+   (`test-free-reads.sql`, 39 assertions).
+2. **Deploy the app.** Vercel, as usual. It draws five marks under the letter,
+   struck as they go, and blurs the redaction rather than striking it out.
+
+Order matters slightly here, and only in one direction: an app deployed before
+the migration asks for keys the old functions do not return, draws no meter,
+and behaves exactly as 0044 left it. A migration applied before the app opens
+five letters to every visitor immediately and the meter arrives with the
+deploy, which is the harmless way round.
+
+The test of the whole path: open `/berkeley` in a private window, walk six
+different names, and watch the marks go out one at a time. The fifth card
+should say "that was the last free one" and the sixth should arrive blurred
+with "read it" under it. Sign in, and the sixth comes back.
+
+If a browser needs its five back for a demo, clearing site data is the
+supported way. There is deliberately no function that resets somebody else's.
+
 ## The reading room, and three a week (migration 0044)
 
 Two changes pulling opposite ways: the door to reading opens, and the door to

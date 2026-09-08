@@ -242,6 +242,25 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0045_five_before_the_door.sql`: **five letters, then the door.**
+  0044 opened reading to either proof and left everybody else at a wall of
+  struck-out words, which is one decision too early: somebody who has just
+  scanned a code off a flyer is being asked to answer for something before they
+  have read a sentence of it. `wall_free_reads` is one row per (browser key,
+  letter), and `wall_letters_for` and `wall_letter` spend one per letter handed
+  over until five are gone, greedily and in the order they return them, after
+  which a body is null exactly as before. Both stop being `stable`, because
+  spending a read is a write. Idempotent by (browser, letter), so re-reading
+  something costs nothing. The answer carries `gated` and `free`
+  (`{limit, used, left}`, counted after that read) so the screen can draw a
+  meter; nothing anywhere returns WHICH letters were read. The key is
+  `wall_free_key`, the browser's own token hashed with its own prefix, so the
+  tally cannot be joined to `celestual_sessions` by anybody reading the
+  database, and `wall_free_clear` deletes a browser's rows the moment it passes
+  the gate. `wall_free_allowance`, `_key`, `_used`, `_take`, `_state` and
+  `_clear` are service role only. **Tested by `scripts/sql/test-free-reads.sql`,
+  39 assertions.**
+
 - `migrations/0044_the_reading_room_and_the_three.sql`: **reading opens, and
   writing gets a meter.** `wall_gate` answered three questions and should have
   answered one: a person who had proved their Instagram handle arrived at the
@@ -329,8 +348,9 @@ Idempotent migrations, applied in order:
   the wall readable by the open internet, against what `app/src/wall/auth.js`
   says at length in its own header. `wall_index` carries a handle and a count;
   the bodies come through `wall_letters_for`, which returns a null body to
-  anybody outside the read gate (0044: either proof), because a redaction the
-  client performs is not a redaction. `wall_letter_seal` is the only function anywhere that returns
+  anybody outside the read gate (0044: either proof) who has spent the five
+  free letters every browser gets (0045), because a redaction the client
+  performs is not a redaction and a count the client keeps is not a count. `wall_letter_seal` is the only function anywhere that returns
   `sealed_line`, and it wants the verified handle, the ask and the author's yes.
   **Tested by `scripts/sql/test-wall.sql`, 72 assertions.**
 
