@@ -605,8 +605,8 @@ const ROUTES = [
   { label: 'reveal',        path: '/reveal/jules.k' },
   // the wall's board rolls into place over the opening's first three seconds
   // (art.jsx Flap), so the wall is shot once it has landed
-  { label: 'berkeley',      path: '/berkeley', settle: 6500 },
-  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 6500 },
+  { label: 'berkeley',      path: '/berkeley', settle: 8500 },
+  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 8500 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },

@@ -510,6 +510,14 @@ export default function Wall({ go, reduce, rev }) {
         <Display size="xl" className="wl-mast-title">
           A wall of<br />unforgettable<br />berkeley bears.
         </Display>
+        {/* ── what it is, in one line ──
+            The title names the wall and this says what is on it, in the
+            reading face, the way the front door runs one line of the
+            mechanic under its own headline (hero.css .hm-read). A person
+            who scanned a code off a flyer reads the title, then this, then
+            the names, and does not have to open a letter to learn what a
+            letter here is. Under it the board, on its own row. */}
+        <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
         {wallError() ? (
           <Label tone="dim" className="wl-mast-meta" aria-live="polite">
             {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}

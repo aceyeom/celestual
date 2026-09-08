@@ -356,6 +356,16 @@ look deliberate.
 Under `prefers-reduced-motion` the original wrapping inscription is rendered
 instead, and none of the above runs.
 
+### The line under the title
+
+The title names the wall and one line under it says what is on it, `anonymous
+letters to the one you never told.`, in the reading face at seventeen pixels,
+the way the front door runs one line of the mechanic under its own headline. A
+person who scanned a code off a flyer reads the title, this, and then the
+names, and does not have to open a letter to learn what a letter here is. On a
+phone the line keeps clear of the tower, which hangs from the top of the
+masthead beside the whole type block rather than off its last row.
+
 ### The count
 
 The masthead prints one fact, the count, and it is on split flaps
