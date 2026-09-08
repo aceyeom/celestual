@@ -11,10 +11,17 @@
    import them, because a static page is outside the bundle, so they are
    restated once, here, and nowhere else in this folder.
 
-   A legal document is the one surface in the product with no art direction to
-   do. What it owes the reader is a measure they can hold, a clear hierarchy,
-   and nothing moving. So: one column at 68 characters, the display face for the
-   title only, and the reading face for everything under it. ══════════════ */
+   Three things changed when the product's own type ruling did
+   (design/DESIGN.md section 4, "explanation is reading, not mechanics"): the
+   body of a legal page is set in the reading face at 17px rather than in the
+   interface face at 15.5, the ground carries the same halo and grain every
+   other surface stands on, and the bar at the top carries the other two
+   documents, because a person who has found one of these pages usually wants
+   a second one.
+
+   What has not changed is the brief. A legal document is the one surface in
+   the product with no art direction to do. It owes the reader a measure they
+   can hold, a hierarchy they can scan, and nothing moving. ═══════════════ */
 
 :root {
   --void: #08070B;
@@ -23,7 +30,9 @@
   --ash: #9C978E;
   --ash-dim: #605C55;
   --hair: rgba(244, 241, 234, 0.09);
+  --hair-soft: rgba(244, 241, 234, 0.05);
   --accent: #74C7DE;
+  --r-card: 18px;
   --f-display: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --f-letter: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --f-util: 'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -31,31 +40,68 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 24px; }
+
 body {
   margin: 0;
   background: var(--void);
   color: var(--ash);
-  font-family: var(--f-util);
-  font-size: 15.5px;
-  line-height: 1.68;
-  letter-spacing: -0.004em;
+  font-family: var(--f-letter);
+  font-optical-sizing: auto;
+  font-size: 17px;
+  line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.wrap {
-  max-width: 68ch;
-  margin: 0 auto;
-  padding: 34px 22px 96px;
-  padding-top: max(34px, env(safe-area-inset-top));
+/* ── the ground ──
+   The room the rest of the product stands in, with the moving half taken out:
+   the halo, and the grain over it. No canvas, no shader, no script. Without
+   the grain the black is a screen that is off; with it, it is a room. */
+.ground { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.ground::before,
+.ground::after { content: ''; position: absolute; inset: 0; }
+.ground::before {
+  background:
+    radial-gradient(58% 40% at 62% 0%, rgba(255, 244, 228, 0.055) 0%, rgba(255, 244, 228, 0) 68%),
+    radial-gradient(46% 34% at 12% 34%, rgba(190, 205, 255, 0.035) 0%, rgba(190, 205, 255, 0) 70%);
 }
+.ground::after {
+  opacity: 0.036;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.84' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 190px 190px;
+}
+
+/* ── the column ──
+   640px. At 17px in a transitional serif that is a little over seventy
+   characters, which is a measure a person can read a page of. */
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 22px 96px;
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+@media (max-width: 359px) { .wrap { padding-left: 16px; padding-right: 16px; } }
 
 a { color: var(--chalk); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+::selection { background: rgba(116, 199, 222, 0.22); color: var(--chalk); }
 
-/* the brand: the same lockup every bar in the app carries (wall.css
-   `.wl-brand`), the mark at 26px and the name in the display face at 22px,
+/* ── the bar ──
+   The brand on the left, the other two documents on the right. Every other
+   surface in the product carries the lockup in this position, and a legal
+   page that is missing it is a page somebody cannot get home from. */
+.bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px 18px;
+  padding: 26px 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+
+/* the lockup: the mark at 26px and the name in the display face at 22px,
    lifted a hair because a serif's optical centre sits below its cap line */
 .brand {
   display: inline-flex; align-items: center; gap: 8px;
@@ -67,52 +113,124 @@ a:hover { color: var(--accent); }
 .brand span { transform: translateY(-0.03em); }
 .brand:hover { color: var(--chalk); }
 
-.rule { height: 1px; background: var(--hair); margin: 26px 0 0; }
+.bar nav { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.bar nav a {
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--ash-dim); text-decoration: none;
+}
+.bar nav a:hover { color: var(--chalk); }
+.bar nav a[aria-current='page'] { color: var(--chalk); }
 
+/* ── the head ── */
 h1 {
   font-family: var(--f-display);
-  font-weight: 400;
-  font-size: clamp(32px, 8vw, 44px);
-  line-height: 1.05;
-  letter-spacing: -0.018em;
+  font-weight: 500;
+  font-size: clamp(30px, 8.8vw, 39px);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
   color: var(--chalk);
-  margin: 34px 0 0;
+  text-wrap: balance;
+  margin: 38px 0 0;
 }
 .updated {
-  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.06em;
-  color: var(--ash-dim); margin: 12px 0 0;
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ash-dim); margin: 14px 0 0;
 }
-.lead { color: var(--chalk); font-size: 17px; line-height: 1.6; margin: 26px 0 0; }
+.lead { color: var(--chalk); font-size: 19px; line-height: 1.5; margin: 22px 0 0; }
 
+/* ── the contents ──
+   Two columns of identifiers, between hairlines. Nobody reads a legal page
+   from the top; they arrive looking for one section of it. */
+.toc {
+  margin: 30px 0 0; padding: 14px 0;
+  border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair);
+}
+.toc ol {
+  margin: 0; padding: 0; list-style: none;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 20px;
+}
+@media (max-width: 439px) { .toc ol { grid-template-columns: 1fr; } }
+.toc a {
+  display: flex; gap: 9px;
+  font-family: var(--f-util); font-size: 12.5px; line-height: 1.35;
+  color: var(--ash); text-decoration: none;
+}
+.toc a:hover { color: var(--chalk); }
+.toc .n { font-family: var(--f-id); font-size: 11px; color: var(--ash-dim); }
+/* the contents is a list of destinations, not a list of points: it does not
+   take the rule the body's bullets carry */
+.toc li { margin: 0; padding-left: 0; }
+.toc li::before { content: none; }
+
+/* ── a section ── */
+section { margin: 40px 0 0; }
 h2 {
+  display: flex; gap: 10px; align-items: baseline;
   font-family: var(--f-id);
-  font-weight: 400; font-size: 11px;
+  font-weight: 400; font-size: 10.5px;
   letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--ash-dim);
-  margin: 44px 0 12px;
+  color: var(--ash);
+  margin: 0 0 10px;
+}
+h2 .n { color: var(--ash-dim); }
+h3 {
+  font-family: var(--f-util); font-weight: 500; font-size: 14px;
+  letter-spacing: 0.004em; color: var(--chalk); margin: 22px 0 0;
 }
 
-p { margin: 15px 0 0; }
-ul { margin: 15px 0 0; padding-left: 0; list-style: none; }
-li { margin: 11px 0 0; padding-left: 18px; position: relative; }
-/* A rule rather than a bullet: the product has one ornament and this is not the
-   place to introduce a second. */
+p { margin: 14px 0 0; }
+ul { margin: 14px 0 0; padding-left: 0; list-style: none; }
+li { margin: 10px 0 0; padding-left: 18px; position: relative; }
+/* A rule rather than a bullet: the product has one ornament and this is not
+   the place to introduce a second. */
 li::before {
-  content: ''; position: absolute; left: 0; top: 0.72em;
+  content: ''; position: absolute; left: 0; top: 0.78em;
   width: 8px; height: 1px; background: var(--ash-dim);
 }
 strong { color: var(--chalk); font-weight: 500; }
 em { font-style: normal; color: var(--chalk); }
+h2 + p, h2 + ul, h2 + .defs, h2 + .act { margin-top: 0; }
 
-/* The one thing on a legal page worth pulling out of the flow: the sentence
-   somebody came here to act on. */
+/* ── a list where the left column is the thing itself ──
+   What we hold, and how long we hold it. The left side is an identifier, so
+   it is set in the identifier face. */
+.defs { margin: 14px 0 0; border-top: 1px solid var(--hair-soft); }
+.defs > div {
+  display: grid; grid-template-columns: 1fr; gap: 3px;
+  padding: 12px 0; border-bottom: 1px solid var(--hair-soft);
+}
+@media (min-width: 560px) {
+  .defs > div { grid-template-columns: 150px minmax(0, 1fr); gap: 20px; }
+}
+.defs dt {
+  font-family: var(--f-id); font-size: 12px; line-height: 1.5;
+  letter-spacing: -0.01em; color: var(--chalk);
+}
+.defs dd { margin: 0; font-size: 16px; line-height: 1.55; }
+
+/* ── the one thing worth pulling out of the flow ──
+   The sentence somebody came here to act on. One filled sheet per page and no
+   more: the ration on a bright object holds on a document too. */
 .act {
-  margin: 24px 0 0; padding: 18px 20px;
-  border: 1px solid var(--hair); border-radius: 14px;
+  margin: 24px 0 0; padding: 18px 20px 20px;
+  border: 1px solid var(--hair); border-radius: var(--r-card);
   background: var(--void-1);
+}
+.act .k {
+  display: block; font-family: var(--f-id); font-size: 10.5px;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--ash-dim);
+  margin-bottom: 10px;
 }
 .act p { margin: 0; color: var(--chalk); }
 .act p + p { margin-top: 10px; }
+.act .go {
+  display: inline-block; margin-top: 12px;
+  font-family: var(--f-display); font-weight: 500; font-size: 21px;
+  letter-spacing: -0.022em; color: var(--chalk);
+  text-decoration: none; border-bottom: 1px solid var(--hair);
+  padding-bottom: 2px;
+}
+.act .go:hover { color: var(--chalk); border-bottom-color: var(--chalk); }
 
 /* ── the foot of the site ──
    The same block the front door and the wall end on (wall.css
@@ -120,7 +238,7 @@ em { font-style: normal; color: var(--chalk); }
    lockup and the sentence on one line, two short columns, and the company's
    line. */
 .colophon {
-  margin: 40px 0 0; padding: 14px 0 0; border-top: 1px solid var(--hair);
+  margin: 52px 0 0; padding: 14px 0 0; border-top: 1px solid var(--hair);
   display: grid; grid-template-columns: 1fr; gap: 12px;
 }
 .colophon-brand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
@@ -130,7 +248,7 @@ em { font-style: normal; color: var(--chalk); }
 }
 .colophon-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
 .colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
-.colophon-col h2 { margin: 0 0 1px; }
+.colophon-col h2 { margin: 0 0 1px; color: var(--ash-dim); }
 .colophon-col a, .colophon-col address {
   font-family: var(--f-util); font-size: 12.5px; line-height: 1.4; font-style: normal;
   color: var(--ash); text-decoration: none;
@@ -139,7 +257,34 @@ em { font-style: normal; color: var(--chalk); }
 .colophon-col a.id { font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em; }
 .colophon-foot {
   display: flex; flex-wrap: wrap; gap: 3px 16px;
-  padding-top: 8px; border-top: 1px solid rgba(244, 241, 234, 0.05);
+  padding-top: 8px; border-top: 1px solid var(--hair-soft);
   font-family: var(--f-id); font-size: 10px; letter-spacing: 0.06em; line-height: 1.5;
   color: var(--ash-dim);
+}
+
+/* ── printed ──
+   These three are the pages in the product most likely to be printed or saved
+   as a PDF, usually by somebody who wants a copy of what they agreed to. On
+   paper the room is wrong, so it goes, and every link says where it went. */
+@media print {
+  .ground, .bar nav, .toc { display: none; }
+  body { background: #fff; color: #17150F; font-size: 11pt; line-height: 1.5; }
+  .wrap { max-width: none; padding: 0; }
+  .bar { border-bottom: 1px solid #C9C4BA; padding-top: 0; }
+  h1, .lead, strong, em, .brand, .act p, .defs dt { color: #17150F; }
+  .updated, h2, h2 .n, .colophon-foot, .colophon-col h2 { color: #6A6357; }
+  a { color: #17150F; }
+  .act { background: none; border-color: #C9C4BA; break-inside: avoid; }
+  .defs, .defs > div { border-color: #E3DFD6; }
+  section { break-inside: avoid; }
+  /* the mark is drawn in chalk, which is invisible on paper */
+  .brand img { filter: invert(1); }
+  /* Only the document's own links are annotated. The lockup and the foot are
+     furniture, and a page footer that prints its own address four times is
+     the kind of thing that makes a printout look like a fax. */
+  section a[href^='/']::after, .act a[href^='/']::after { content: ' (celestual.us' attr(href) ')'; }
+  section a[href^='mailto:']::after { content: ' (' attr(href) ')'; }
+  section a::after, .act a::after {
+    font-family: var(--f-id); font-size: 8.5pt; color: #6A6357; word-break: break-all;
+  }
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#08070B" />
     <title>Privacy · celestual</title>
-    <meta name="description" content="What celestual stores, what it can never learn, and how to take your handle off. Who you pinged is stored only as a salted one way hash." />
+    <meta name="description" content="What celestual holds, what it deliberately cannot hold, how long any of it lasts, and how to take a handle off. Who you pinged is stored only as a salted hash." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://celestual.us/privacy" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -13,104 +13,329 @@
     <link rel="stylesheet" href="/legal.css" />
   </head>
   <body>
+    <div class="ground" aria-hidden="true"></div>
+
     <main class="wrap">
-      <a class="brand" href="/"><img src="/mark.svg" alt="" /><span>celestual.</span></a>
-      <div class="rule"></div>
+      <div class="bar">
+        <a class="brand" href="/"><img src="/mark.svg" alt="" /><span>celestual.</span></a>
+        <nav aria-label="the legal pages">
+          <a href="/terms">terms</a>
+          <a href="/privacy" aria-current="page">privacy</a>
+          <a href="/data-deletion">deletion</a>
+        </nav>
+      </div>
 
       <h1>Privacy</h1>
-      <p class="updated">last updated 3 september 2026</p>
+      <p class="updated">last updated 8 september 2026</p>
 
       <p class="lead">
-        The shortest true version: we cannot read who your pings point at, and
-        neither can anybody who ever breaches us.
-      </p>
-
-      <h2>1 · what we store</h2>
-      <ul>
-        <li><strong>Your Instagram handle</strong>, in plain text, once you have proved it is yours.</li>
-        <li><strong>Who you pinged</strong>, as a salted one way hash and never as a handle. A hash cannot be turned back into a name, by us or by anybody else, which is why the product can promise what it promises.</li>
-        <li><strong>An email address</strong>, if you leave one. It is optional everywhere except the campus wall, which requires an address at that campus.</li>
-        <li><strong>What you wrote</strong>, when you write a card or a letter. It is sealed until the moment it is opened, and a letter's author is never disclosed.</li>
-        <li><strong>A session</strong>, as a hash of a token your browser holds. We store the hash; the token never leaves your device.</li>
-        <li><strong>Ordinary operational records</strong>: timestamps, rate limit counters, and the IP address a request came from, kept only as long as the limit window they serve.</li>
-      </ul>
-
-      <h2>2 · what nobody ever learns</h2>
-      <ul>
-        <li>A one sided ping is revealed to nobody. Not to the person it points at, not to anybody else, not ever.</li>
-        <li>Nothing is posted, messaged, followed or notified on your behalf.</li>
-        <li>The only thing that surfaces is a pair who both entered each other, shown to exactly those two people at the same moment.</li>
-        <li>There is no browsing, no profiles, no list, and no feed.</li>
-        <li>The one fact you are shown after placing a ping is whether that handle has reached celestual yet. It says nothing about anybody's feelings or activity, and it is the only signal the product will ever give you about somebody else.</li>
-      </ul>
-
-      <h2>3 · the sixty days</h2>
-      <p>
-        A ping stands for sixty days. Renewing restarts them, free, as often as you
-        feel it. Otherwise it lapses and the record is purged: unresolved longing
-        self destructs instead of accumulating into an archive nobody wants to exist.
-      </p>
-
-      <h2>4 · public profile lookups</h2>
-      <p>
-        When you type a handle, we look up that account's public profile so you can
-        confirm you have the right person: a display name, a verification badge, and a
-        picture. That lookup goes through Apify, a third party scraping service, and
-        it happens whether or not the account belongs to somebody using celestual.
+        celestual is built to hold as little as possible about who you are
+        interested in. The handle you pinged is stored as a salted one way hash
+        and never as a name, so a database dump, an employee and a subpoena all
+        come back with a string nobody can read.
       </p>
       <p>
-        We store the name, the badge and a copy of the picture on our own storage, so
-        that a card keeps working and so the same account is never looked up twice.
-        Looking a handle up proves nothing about who is using a browser, and it never
-        signs anybody in.
+        This page is Celestual LLC's privacy policy, and it covers celestual.us
+        and the campus wall. It is the whole of what we hold.
       </p>
 
-      <h2>5 · who else touches your data</h2>
-      <ul>
-        <li><strong>Supabase</strong>, which hosts the database, the functions and the file storage.</li>
-        <li><strong>Vercel</strong>, which serves the site.</li>
-        <li><strong>Resend</strong>, which sends the mail.</li>
-        <li><strong>Apify</strong>, for the public profile lookups above.</li>
-        <li><strong>Anthropic</strong>, which screens wall letters before they are published. A letter is sent for screening and is not used to train anything.</li>
-        <li><strong>Meta</strong>, for the Instagram direct message that proves a handle. Your use of Instagram stays subject to Instagram's own terms.</li>
-      </ul>
-      <p>We do not sell anything to anybody, and there is no advertising on celestual.</p>
+      <nav class="toc" aria-label="contents">
+        <ol>
+          <li><a href="#hold"><span class="n">01</span> What we hold</a></li>
+          <li><a href="#cannot"><span class="n">02</span> What we cannot produce</a></li>
+          <li><a href="#long"><span class="n">03</span> How long it lasts</a></li>
+          <li><a href="#why"><span class="n">04</span> Why we hold it</a></li>
+          <li><a href="#lookup"><span class="n">05</span> Looking a handle up</a></li>
+          <li><a href="#others"><span class="n">06</span> Who else handles it</a></li>
+          <li><a href="#mail"><span class="n">07</span> What we send you</a></li>
+          <li><a href="#cookies"><span class="n">08</span> Cookies, and your device</a></li>
+          <li><a href="#rights"><span class="n">09</span> Your controls</a></li>
+          <li><a href="#kept"><span class="n">10</span> How it is kept</a></li>
+          <li><a href="#law"><span class="n">11</span> When the law asks</a></li>
+          <li><a href="#where"><span class="n">12</span> Where it is</a></li>
+          <li><a href="#adults"><span class="n">13</span> For adults</a></li>
+          <li><a href="#changes"><span class="n">14</span> Changes, and contact</a></li>
+        </ol>
+      </nav>
 
-      <h2>6 · cookies</h2>
-      <p>
-        One, and it is not a tracker: a random identifier the server sets so a
-        handle lookup can be rate limited without an account. It is not a
-        fingerprint, it carries nothing about you, and there is no analytics or
-        advertising cookie on this site.
-      </p>
+      <section id="hold">
+        <h2><span class="n">01</span> What we hold</h2>
+        <dl class="defs">
+          <div>
+            <dt>your handle</dt>
+            <dd>In plain text, once you have proved it with the code you send our Instagram account. It is the identity the whole product runs on.</dd>
+          </div>
+          <div>
+            <dt>who you pinged</dt>
+            <dd>As a salted one way hash, never as a handle. Two pings are matched by comparing hashes. Nothing in that column can be turned back into a name, by us or by anybody who takes the database.</dd>
+          </div>
+          <div>
+            <dt>your twenty words</dt>
+            <dd>The line you put with a ping, if you wrote one. It is sealed unless the ping turns out to be mutual, and it is purged with the ping if it lapses.</dd>
+          </div>
+          <div>
+            <dt>an email address</dt>
+            <dd>If you leave one, so we can tell you about a mutual or a ping coming up on its sixty days. Optional everywhere except the campus wall, which needs an address at that campus.</dd>
+          </div>
+          <div>
+            <dt>a campus address</dt>
+            <dd>The address that opened the wall, and when it was proved. It is held apart from anything you write, and the composer never sees it.</dd>
+          </div>
+          <div>
+            <dt>what you wrote</dt>
+            <dd>A letter, the handle it is addressed to, and the record of the screening it passed. No author is stored against it.</dd>
+          </div>
+          <div>
+            <dt>a heart</dt>
+            <dd>That a letter was hearted, and by how many. Nothing anywhere returns who.</dd>
+          </div>
+          <div>
+            <dt>a session</dt>
+            <dd>The hash of a token your browser makes. The token itself never leaves your device, so reading that table does not let anybody sign in as you.</dd>
+          </div>
+          <div>
+            <dt>five reads</dt>
+            <dd>At most five rows saying that a browser opened a letter, so the first five on the wall can be free without the count being the reader's to keep. They carry no identity, cannot be joined to a session, and are deleted the moment that browser passes a gate.</dd>
+          </div>
+          <div>
+            <dt>operational records</dt>
+            <dd>Timestamps, rate limit counters, the IP address a request came from, and the record of a screening, a report or a takedown.</dd>
+          </div>
+          <div>
+            <dt>a bar</dt>
+            <dd>If a handle is taken off, the salted hash of it, so the refusal holds. It contains nothing else.</dd>
+          </div>
+        </dl>
+      </section>
 
-      <h2>7 · your data is yours</h2>
-      <div class="act">
+      <section id="cannot">
+        <h2><span class="n">02</span> What we cannot produce</h2>
+        <p>Some of this is a promise. Some of it is arithmetic, and the arithmetic comes first.</p>
+        <ul>
+          <li>A one sided ping is revealed to nobody. Not to the person it points at, not to another user, not to us.</li>
+          <li>Nobody who breaches the database reads the map of who wanted whom, because it is not written down. The plain handle exists only on the sender's own device.</li>
+          <li>We cannot hand anybody the list of people you have pinged. Not you, not a parent, not a court. There is nothing to read. A mutual is the exception, and it is not a secret: once two people have found each other, both handles are on the record.</li>
+        </ul>
+        <p>And the promises:</p>
+        <ul>
+          <li>Nothing is posted, messaged, followed or liked on your behalf, and the person you pinged is not told. The one message celestual ever sends about another person is the one that says it is mutual, to both of you.</li>
+          <li>There is no browsing, no profile, no ranking, no feed, and no list of who is on the service.</li>
+          <li>The single fact shown after you place a ping is whether that handle has reached celestual. It is never a hint about anybody's feelings or activity, and we do not build one.</li>
+        </ul>
+      </section>
+
+      <section id="long">
+        <h2><span class="n">03</span> How long it lasts</h2>
+        <dl class="defs">
+          <div>
+            <dt>a standing ping</dt>
+            <dd>Sixty days. Then it lapses and the row is deleted outright. Renewing restarts the sixty, free and as often as you like. Letting one go deletes it the same day.</dd>
+          </div>
+          <div>
+            <dt>a mutual</dt>
+            <dd>While both people hold it. It goes when either of them takes their handle off.</dd>
+          </div>
+          <div>
+            <dt>a letter</dt>
+            <dd>Thirty days on the wall. A letter that was reported or refused is held out of sight instead of published, so that the decision can be looked at again.</dd>
+          </div>
+          <div>
+            <dt>a code</dt>
+            <dd>The code mailed to a campus address lasts ten minutes, dies after six wrong guesses, and is stored only as a hash. The code you send our Instagram account lasts until you send it or it lapses, and all it does is tie one message to one browser.</dd>
+          </div>
+          <div>
+            <dt>a session</dt>
+            <dd>Until it lapses or you sign out.</dd>
+          </div>
+          <div>
+            <dt>rate limit records</dt>
+            <dd>About two hours, which is the window they exist to enforce.</dd>
+          </div>
+          <div>
+            <dt>a bar</dt>
+            <dd>Kept, as a hash. A permanent refusal we forget is not permanent.</dd>
+          </div>
+          <div>
+            <dt>backups</dt>
+            <dd>Deleted rows can sit in an encrypted backup for a short period before it is overwritten. Nothing is restored from one except to recover the service.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section id="why">
+        <h2><span class="n">04</span> Why we hold it</h2>
         <p>
-          Take a handle off permanently, whether or not you use celestual. No account,
-          no code, and nothing to ask us for.
+          Each of the things in section 1 is there for one of four reasons: to
+          run the service you asked for, to keep it from being turned against
+          somebody, to keep it secure and working, or because you handed it to
+          us and can take it back. If you are in the United Kingdom or the
+          European Union, those are contract, legitimate interests, legitimate
+          interests, and consent, in that order. Consent is withdrawn by taking
+          the address off or by writing to us.
         </p>
-        <p><a href="/optout">celestual.us/optout</a></p>
-      </div>
-      <p>
-        That is also the deletion path: it bars the handle from ever being entered
-        again and erases everything that referenced it, on either side. The
-        <a href="/data-deletion">deletion instructions</a> say what happens in more
-        detail. For anything else, write to
-        <a href="mailto:contact@celestual.app">contact@celestual.app</a>.
-      </p>
+      </section>
 
-      <h2>8 · for adults</h2>
-      <p>
-        Celestual is for people 18 and older. We do not knowingly collect anything
-        from anybody under 18, and we delete it if we learn we have.
-      </p>
+      <section id="lookup">
+        <h2><span class="n">05</span> Looking a handle up</h2>
+        <p>
+          When you type a handle we look up that account's public profile so you
+          can check you have the right person: the display name, the badge, and
+          the picture. The lookup runs through Apify, a third party service, and
+          it happens whether or not that account has ever touched celestual.
+        </p>
+        <p>
+          We keep the name, the badge and a copy of the picture on our own
+          storage, so a screen keeps working and the same account is not looked
+          up twice. It is public profile information and nothing else. Looking a
+          handle up proves nothing about who is holding a browser and it never
+          signs anybody in. Write to us if you want a cached profile dropped.
+        </p>
+      </section>
 
-      <h2>9 · changes</h2>
-      <p>
-        The date at the top moves when this does. Material changes are what that date
-        is for.
-      </p>
+      <section id="others">
+        <h2><span class="n">06</span> Who else handles it</h2>
+        <p>
+          Each of these handles data only to do a job for us, under a contract
+          that says so.
+        </p>
+        <ul>
+          <li><strong>Supabase</strong>, the database, the server functions and the file storage.</li>
+          <li><strong>Vercel</strong>, which serves the site.</li>
+          <li><strong>Resend</strong>, which sends the mail.</li>
+          <li><strong>Apify</strong>, for the public profile lookups above.</li>
+          <li><strong>Anthropic</strong>, which screens wall letters before they are published. A letter is sent to be read by a model and is not used to train one.</li>
+          <li><strong>Meta and ManyChat</strong>, for the Instagram direct messages that prove a handle and carry a mutual. Your use of Instagram stays under Instagram's own terms.</li>
+        </ul>
+        <p>
+          We do not sell personal information, and we do not share it for cross
+          context behavioural advertising, in the sense California gives those
+          words. We have not done either in the past twelve months, and we do
+          not plan to. There is no advertising on celestual and no third party
+          analytics anywhere on it.
+        </p>
+      </section>
+
+      <section id="mail">
+        <h2><span class="n">07</span> What we send you</h2>
+        <ul>
+          <li>That it is mutual. By email if there is an address on file, and by Instagram direct message inside the window Meta allows.</li>
+          <li>That a ping is coming up on its sixty days. Once per ping, five days out.</li>
+          <li>A code, when you are proving a campus address.</li>
+          <li>A link back in, when you ask for one.</li>
+        </ul>
+        <p>
+          There is no newsletter and no marketing mail. Every message above is
+          about something you did.
+        </p>
+      </section>
+
+      <section id="cookies">
+        <h2><span class="n">08</span> Cookies, and your device</h2>
+        <p>
+          One cookie, and it is not a tracker: a random identifier the server
+          sets so that a handle lookup can be rate limited without an account.
+          It carries nothing about you.
+        </p>
+        <p>
+          Your browser also keeps things that never reach us: the plain text of
+          the handles you have pinged, a draft letter, which letters you have
+          opened, and the token that keeps you signed in. Clearing your browser
+          storage clears all of it. There is no analytics cookie, no advertising
+          cookie, and no third party tag on this site.
+        </p>
+      </section>
+
+      <section id="rights">
+        <h2><span class="n">09</span> Your controls</h2>
+        <div class="act">
+          <span class="k">the way out</span>
+          <p>
+            Take a handle off permanently, whether or not it has ever been used
+            here. One direct message from that account proves it is yours. No
+            account to make, and nothing to ask us for.
+          </p>
+          <a class="go" href="/optout">celestual.us/optout</a>
+        </div>
+        <p>
+          That is the deletion path as well. It bars the handle and erases
+          everything that referenced it on either side. The
+          <a href="/data-deletion">deletion page</a> says exactly what goes and
+          what does not.
+        </p>
+        <p>
+          You can also write to
+          <a href="mailto:contact@celestual.app">contact@celestual.app</a> and
+          ask what we hold about a handle, ask us to correct it, ask for a copy
+          in a portable file, or ask us to delete it. We answer within thirty
+          days, and asking costs you nothing and changes nothing about how the
+          service treats you. If we say no, you can appeal by replying to that
+          answer. Because a handle is the identity here, we check a request the
+          way the product checks everything else, with one direct message from
+          the account.
+        </p>
+        <p>
+          Depending on where you live, those rights may come from California,
+          Colorado, Connecticut, Virginia or Utah law, or from the United
+          Kingdom and European Union rules, and you may complain to your own
+          regulator. Since celestual sells nothing and carries no advertising,
+          there is no sale or targeted advertising for a browser signal such as
+          Global Privacy Control to switch off.
+        </p>
+      </section>
+
+      <section id="kept">
+        <h2><span class="n">10</span> How it is kept</h2>
+        <p>
+          The browser cannot read any table in the database. Every path into the
+          data is a small server function that returns a status and never
+          somebody else's row. Targets are hashed, codes are hashed, sessions
+          are hashed, and traffic is encrypted in transit. Production access
+          belongs to the people who run the company and to nobody else. No
+          system is perfect and we will not pretend this one is.
+        </p>
+      </section>
+
+      <section id="law">
+        <h2><span class="n">11</span> When the law asks</h2>
+        <p>
+          A valid legal demand can require us to hand over what we hold, and
+          section 1 is that list. We will tell you when it happens unless we are
+          forbidden to. What we cannot hand over is what was never written down:
+          who you pinged, in a form anybody can read, does not exist here.
+        </p>
+      </section>
+
+      <section id="where">
+        <h2><span class="n">12</span> Where it is</h2>
+        <p>
+          celestual runs on servers in the United States. If you use it from
+          somewhere else, what you send comes here and is handled under United
+          States law, which may protect it differently from your own.
+        </p>
+      </section>
+
+      <section id="adults">
+        <h2><span class="n">13</span> For adults</h2>
+        <p>
+          celestual is for people 18 and older. We do not knowingly collect
+          anything from anybody under 18, and we delete it if we learn that we
+          have. If you believe a child's information is here, write to us and we
+          will act on it.
+        </p>
+      </section>
+
+      <section id="changes">
+        <h2><span class="n">14</span> Changes, and contact</h2>
+        <p>
+          The date at the top moves when this page does, and that date is what
+          it is for. Where a change is material we will say so on the site
+          before it takes effect.
+        </p>
+        <p>
+          Celestual LLC, 8 The Green, Dover, Delaware 19901.
+          <a href="mailto:contact@celestual.app">contact@celestual.app</a>.
+        </p>
+      </section>
 
       <footer class="colophon">
         <div class="colophon-brand">
