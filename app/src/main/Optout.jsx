@@ -31,7 +31,9 @@
 // ── what it actually does ───────────────────────────────────────────────────
 // celestual_suppress: it bars the @ from ever being entered again, and erases
 // every row referencing it on either side, the proof it was just given
-// included. It cannot be undone from here, and it says so.
+// included. Since migration 0046 it reaches the wall as well: every letter
+// written about the handle comes down, the name goes off the index, and no
+// desk can put either back. It cannot be undone from here, and it says so.
 import { useState } from 'react'
 import { Display, Label, Pill, Prose, Rule, Who, COMPANY } from '../wall/parts.jsx'
 import { Sparkle } from '../wall/art.jsx'
@@ -98,8 +100,8 @@ export default function Optout({ go, who, refreshWho }) {
           <Label><Sparkle size={11} />done</Label>
           <Display size="m" as="h1" ref={avoid}>{atHandle(done)} is out.</Display>
           <Prose className="mn-copy">
-            nobody can enter it again, and nothing that pointed at it is left. to undo
-            this, write to {COMPANY.email}.
+            nobody can enter it again, nothing that pointed at it is left, and the wall
+            has let the name go. to undo this, write to {COMPANY.email}.
           </Prose>
         </div>
         <div className="mn-foot">
@@ -118,14 +120,15 @@ export default function Optout({ go, who, refreshWho }) {
           <>
             <Display size="m" as="h1" ref={avoid}>Take your @<br />off celestual.</Display>
             <Prose className="mn-copy">
-              it can never be entered again. anything pointing at it is erased, both ways.
+              it can never be entered again. every ping is erased both ways, and every
+              letter about it comes off the wall.
             </Prose>
             <div className="mn-step">
               <Who handle={held} size={40} />
               {phase === 'asking' ? (
                 <Prose className="mn-copy">
-                  this cannot be undone from here. every ping placed on it, and every ping it
-                  placed, goes with it.
+                  this cannot be undone from here. every ping placed on it, every ping it
+                  placed, and every letter written about it goes with it.
                 </Prose>
               ) : null}
             </div>

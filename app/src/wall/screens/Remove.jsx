@@ -212,6 +212,17 @@ export default function Remove({ handle: prefill, back }) {
                 ? 'There was nothing under it. A name with no letters is not on the wall.'
                 : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
             </Prose>
+            {/* The wall is one of two surfaces, and this control is only the
+                wall's. Somebody who wants the handle out of the product
+                altogether has one more door, and it is better said here than
+                found later: the opt out bars the handle everywhere, erases
+                the pings both ways, and takes the name off the wall as part
+                of the same act (migration 0046). */}
+            <Prose className="wl-gate-copy">
+              The rest of celestual is its own door.{' '}
+              <a className="wl-quiet" href="/optout">Take the handle off there</a> and it
+              goes from both, for good.
+            </Prose>
           </div>
           <div className="wl-push" />
           <SheetFoot><Pill tone="light" wide onClick={back}>done</Pill></SheetFoot>

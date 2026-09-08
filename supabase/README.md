@@ -242,6 +242,21 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0046_the_opt_out_reaches_the_wall.sql`: **one act, both
+  surfaces.** `celestual_suppress` erased the whole of Main and half the wall:
+  the cascade off `celestual_users` took the letters the person had WRITTEN and
+  left every letter written ABOUT them standing under their name, on a public
+  index, which is exactly the person the opt out exists for. It now takes those
+  down too, on every campus, marked `desk.via = 'optout'`, which drops the name
+  out of `wall_index` and out of every read. `wall_name_shut` asks the
+  suppression list first, so `wall_write` refuses the name for good and does so
+  even for a handle that never had a letter; and the two paths that could put
+  one back up (`celestual_desk_letter_set` publishing, and
+  `celestual_desk_report_resolve` restoring on a dismissal) refuse a letter
+  whose subject has left. Rejected letters are untouched: they were never
+  published and moving one to `removed` would say that they had been.
+  **Tested by `scripts/sql/test-optout-wall.sql`, 21 assertions.**
+
 - `migrations/0045_five_before_the_door.sql`: **five letters, then the door.**
   0044 opened reading to either proof and left everybody else at a wall of
   struck-out words, which is one decision too early: somebody who has just

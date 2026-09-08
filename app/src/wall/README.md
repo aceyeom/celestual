@@ -105,6 +105,13 @@ the same act:
 | **one letter** | the flag under the letter, then `Report this letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
+There is a third, and it is not a wall control at all: the product's opt out
+at `/optout` bars the handle everywhere, and since migration 0046 that takes
+every letter about it off the wall as part of the same act, on every campus,
+with no desk able to put one back. The wall's own takedown says so on its last
+screen, because somebody who wants the letters gone often wants the rest of it
+gone too, and the wall is only half the product.
+
 An earlier build made the second one instant too, and argued for it: a takedown
 behind a login says *make an account first* to the one person on the wall who
 never chose to be there. That argument is right about the **cost** and wrong
