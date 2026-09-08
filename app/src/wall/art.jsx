@@ -324,16 +324,28 @@ export function Halftone({ size = 96, grid = 20, className = '', style }) {
 //
 // Strokes are one device pixel whatever the size (vector-effect), so it is a
 // line drawing at every scale and never a filled glyph.
-export function Campanile({ width = 64, lit = true, twinkle = false, className = '', style }) {
+// `stands` is the tower with something under it. Floating, it dissolves at the
+// foot, because a hairline drawing that simply stops reads as a drawing that
+// ran out; standing, it must not, because the thing below it is solid and a
+// tower that fades into its own base is a tower nobody built. So the mask
+// comes off and the drawing ends on the upper plinth ledge: the course below
+// that ledge is the count, and it is drawn by the thing that knows how wide
+// the count is. Its lower ledge is a rule on the block itself
+// (wall.css `.wl-board::before`), which is what keeps the cap the width of
+// what it caps whether the wall is carrying nine letters or nine hundred.
+export function Campanile({ width = 64, lit = true, twinkle = false, stands = false, className = '', style }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   // the belfry's three arches, and the shaft's slit windows
   const arches = [40, 47.25, 54.5].map((x) => `M${x} 104V73A3.25 3.25 0 0 1 ${x + 6.5} 73V104`).join('')
   const slits = [150, 186, 222, 258].map((y) => `M48.4 ${y}h3.2v9h-3.2z`).join('')
   const balusters = Array.from({ length: 9 }, (_, i) => `M${35 + i * 3.75} 111.5v4.5`).join('')
+  // drawn to the foot of its plinth and no further when it is standing on
+  // something, and to the full 300 when it is not
+  const deep = stands ? 284 : 300
   return (
     <svg
-      className={`wl-campanile${lit ? ' is-lit' : ''} ${className}`} style={style}
-      width={width} height={width * 3} viewBox="0 0 100 300"
+      className={`wl-campanile${lit ? ' is-lit' : ''}${stands ? ' is-standing' : ''} ${className}`} style={style}
+      width={width} height={Math.round(width * (deep / 100))} viewBox={`0 0 100 ${deep}`}
       aria-hidden="true" focusable="false"
     >
       <defs>
@@ -348,13 +360,13 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
           <stop offset="100%" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
         <mask id={`${uid}m`}>
-          <rect x="0" y="0" width="100" height="300" fill={`url(#${uid}f)`} />
+          <rect x="0" y="0" width="100" height={deep} fill={`url(#${uid}f)`} />
         </mask>
       </defs>
       {/* the light at the top, behind the drawing */}
       {lit && <circle className="wl-campanile-bloom" cx="50" cy="16" r="22" fill={`url(#${uid}g)`} />}
       <g
-        className="wl-campanile-line" mask={`url(#${uid}m)`}
+        className="wl-campanile-line" mask={stands ? undefined : `url(#${uid}m)`}
         fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       >
@@ -375,8 +387,11 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
         <path d="M36 117V282M64 117V282" />
         <path d="M40.5 117V282M59.5 117V282" opacity="0.4" />
         <path d={slits} opacity="0.75" />
-        {/* the plinth */}
-        <path d="M30 282H70M27 290H73M27 290V300M73 290V300" />
+        {/* the plinth. Standing, the two ledges are the cap on whatever is
+            under the tower and the courses step out as they descend, the way
+            a base course does; the verticals go, because the block below the
+            ledges is the plinth's body and it is drawn out of flaps. */}
+        <path d={stands ? 'M27 282H73' : 'M30 282H70M27 290H73M27 290V300M73 290V300'} />
       </g>
       {/* the lantern: SPARK, the same star as everywhere else, in gold, its
           centre exactly on the roof's apex so the star is the tip of the

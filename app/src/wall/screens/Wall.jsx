@@ -497,46 +497,62 @@ export default function Wall({ go, reduce, rev }) {
           information costume. The term went with it: a wall that is up is
           up now, and a date beside a live count read as a footnote.
 
-          The count is on split flaps (art.jsx Flap): the departures board
-          the lanes already move at the speed of, one flap per digit in the
-          campus's gold on a plate of the void, and the word beside it at
-          reading strength, since it is half of the fact. On the
-          opening the digits roll into place; after that a flap moves only
-          when a letter goes up. It was one line of label, "19 letters",
-          which was true and read as a footnote under a poster whose one
-          number is the point. */}
+          The count is on split flaps (art.jsx Flap), and it is not a block
+          NEXT TO the tower: it is the tower's plinth. The shaft comes down,
+          its two ledges step out, and the course they cap is the number,
+          with the word cut under it the way a date is cut into a base. The
+          tower and the count are one monument, which is what they were
+          always describing between them: this campus, this many letters.
+          Beside each other they were two objects at one weight arguing over
+          the same corner. On the opening the digits roll into place; after
+          that a flap moves only when a letter goes up. */}
       <div className="wl-mast">
-        <Campanile width={64} className="wl-mast-tower" twinkle={!reduce} />
-        <Display size="xl" className="wl-mast-title">
-          A wall of<br />unforgettable<br />berkeley bears.
-        </Display>
-        {/* ── what it is, in one line ──
-            The title names the wall and this says what is on it, in the
-            reading face, the way the front door runs one line of the
-            mechanic under its own headline (hero.css .hm-read). A person
-            who scanned a code off a flyer reads the title, then this, then
-            the names, and does not have to open a letter to learn what a
-            letter here is. Under it the board, on its own row. */}
-        <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
-        {wallError() ? (
-          <Label tone="dim" className="wl-mast-meta" aria-live="polite">
-            {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
-            {wallError() === 'offline' ? null : (
-              <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
-            )}
-          </Label>
-        ) : letters > 0 ? (
-          <div className="wl-mast-meta wl-board">
-            {/* the roll plays with the opening and only then: the meta fades
-                in at 900ms and the flaps start turning once it is there */}
-            <Flap value={letters} roll={playing} delay={1100} />
-            <span className="wl-board-say">{letters === 1 ? 'letter' : 'letters'}</span>
-          </div>
-        ) : (
-          /* an open wall with nothing on it yet: the state a term starts in,
-             said the way the front door says it, and not as a zero */
-          <Label className="wl-mast-meta">open now</Label>
-        )}
+        <div className="wl-mast-type">
+          <Display size="xl" className="wl-mast-title">
+            A wall of<br />unforgettable<br />berkeley bears.
+          </Display>
+          {/* ── what it is, in one line ──
+              The title names the wall and this says what is on it, in the
+              reading face, the way the front door runs one line of the
+              mechanic under its own headline (hero.css .hm-read). A person
+              who scanned a code off a flyer reads the title, then this, then
+              the names, and does not have to open a letter to learn what a
+              letter here is. */}
+          <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
+          {wallError() ? (
+            <Label tone="dim" className="wl-mast-meta" aria-live="polite">
+              {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
+              {wallError() === 'offline' ? null : (
+                <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
+              )}
+            </Label>
+          ) : null}
+        </div>
+
+        {/* ── the monument ──
+            The tower standing on its count. The shaft is drawn to the foot
+            of its plinth (art.jsx Campanile `stands`), the flaps are the
+            course that plinth caps, and the word is cut under them. With no
+            letters yet there is nothing to stand on, so the tower is the
+            floating one it has always been and the line says the wall is
+            open rather than drawing a nought into a monument. */}
+        <div className="wl-mast-stand">
+          <Campanile
+            width={58} stands={letters > 0} className="wl-mast-tower" twinkle={!reduce}
+          />
+          {letters > 0 ? (
+            <div className="wl-board">
+              {/* the roll plays with the opening and only then: the stand
+                  fades in at 900ms and the flaps turn once it is there */}
+              <Flap value={letters} roll={playing} delay={1100} />
+              <span className="wl-board-say">{letters === 1 ? 'letter' : 'letters'}</span>
+            </div>
+          ) : (
+            /* an open wall with nothing on it yet: the state a term starts
+               in, said the way the front door says it, and not as a zero */
+            <Label className="wl-board-say is-open">open now</Label>
+          )}
+        </div>
       </div>
 
       {/* ── the names ──

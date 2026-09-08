@@ -518,7 +518,7 @@
       <div class="spec"><span class="cap">sparkle · 18</span><span id="art-spark"></span></div>
       <div class="spec"><span class="cap">sparkle · twinkle</span><span id="art-spark-t"></span></div>
       <div class="spec"><span class="cap">halftone</span><span id="art-half"></span></div>
-      <div class="spec"><span class="cap">flaps · the count on the masthead</span><span id="art-flaps"></span></div>
+      <div class="spec"><span class="cap">flaps · the tower's plinth</span><span id="art-flaps"></span></div>
       <div class="spec"><span class="cap">flaps · 120</span><span id="art-flaps-b"></span></div>
       <div class="spec"><span class="cap">mark · rest</span><span id="art-mark"></span></div>
       <div class="spec"><span class="cap">mark · is-lit</span><span id="art-mark-lit"></span></div>
@@ -774,8 +774,11 @@ $('ib3').innerHTML = icon(ICONS[1]); $('ib6').innerHTML = icon(ICONS[2])
 ;['fl1', 'fl2', 'fl3'].forEach((id) => { $(id).innerHTML = icon('M6 21V4M6 5h11l-2.4 3.9L17 12.8H6', 15) })
 
 // the flaps: the count on split flaps (art.jsx Flap), drawn still. The digit
-// in gold in the util face on a plate of the void with a seam across it;
-// in the build the top half of the old digit folds down over the new one.
+// in gold in the util face on a plate of the void with a seam across it; in
+// the build the top half of the old digit folds down over the new one. On the
+// masthead this block is the Campanile's plinth: the rule over it is the
+// ledge the tower's shaft comes down onto, and it is drawn by the block
+// because only the block knows how wide the count is.
 const flapDigit = (d) => `<span class="wl-flap"><span class="wl-flap-half is-top"><span>${d}</span></span><span class="wl-flap-half is-bottom"><span>${d}</span></span></span>`
 const flaps = (n) => `<span class="wl-board"><span class="wl-flaps">${String(n).split('').map(flapDigit).join('')}</span><span class="wl-board-say">letters</span></span>`
 $('art-flaps').innerHTML = flaps(19)

@@ -366,26 +366,41 @@ names, and does not have to open a letter to learn what a letter here is. On a
 phone the line keeps clear of the tower, which hangs from the top of the
 masthead beside the whole type block rather than off its last row.
 
-### The count
+### The count, and the tower it holds up
 
-The masthead prints one fact, the count, and it is on split flaps
-(`art.jsx Flap`). The lanes under it move at the speed of a departures board,
-and this is that board's number: one flap per digit, the digit in the campus's
-gold on a flat plate a step up from the void with a hairline round it and a
-seam across its middle, and the word `letters` beside it in the same face at
-reading strength, because it is half of the fact and not a caption on it. The
-figure is set in the util face rather than the mono, the one count in the build
-that is: on a board a figure is a thing on a plate, not an identifier in a line
-of type. When the number changes,
-the top half of the old digit folds down over the bottom half of the new one,
-which is the whole of the mechanism. On the opening every digit rolls through a
-few figures before it lands, the ones column further than the tens the way an
-odometer turns; after that a flap moves only when a letter goes up, so a flap
-moving means one did. Under reduced motion nothing rolls and nothing folds. It
-was one line of label, `19 letters · fall 2026`, true and read as a footnote
-under a poster whose one number is the point; the term went with the label,
-since a wall that is up is up now. An open wall with nothing on it yet says
-`open now`, the way the front door does, and not a zero.
+The masthead prints one fact, the count, and it is not a block beside the
+tower: it is the tower's plinth. The Campanile's shaft comes down, its ledge
+steps out, and the course that ledge caps is the number, on split flaps
+(`art.jsx Flap`), with the word `letters` cut under it the way a date is cut
+into a base. The two used to stand side by side, a drawing and a number at one
+weight arguing over the same corner of the masthead. A tower on a plinth is one
+object, and what is cut into the plinth is what the tower is for: this campus,
+this many letters.
+
+The tower knows it is standing (`Campanile stands`). Floating, it dissolves at
+the foot, because a hairline drawing that simply stops reads as one that ran
+out; standing, the fade comes off, because the thing under it is solid. Its
+drawing ends on the upper ledge and the plinth's lower ledge is a rule on the
+block itself (`wall.css .wl-board::before`), which is what keeps the cap the
+width of what it caps whether the wall carries nine letters or nine hundred. A
+cap drawn at a fixed width is right for one count and wrong for every other.
+The plates run almost flush and the top of the block is square along its whole
+length, because a rounded corner under a straight cap is a gap.
+
+The figure is set in the util face rather than the mono, the one count in the
+build that is: on a board a figure is a thing on a plate, not an identifier in
+a line of type. When the number changes, the top half of the old digit folds
+down over the bottom half of the new one, which is the whole of the mechanism.
+On the opening every digit rolls through a few figures before it lands, the
+ones column further than the tens the way an odometer turns; after that a flap
+moves only when a letter goes up, so a flap moving means one did. Under reduced
+motion nothing rolls and nothing folds.
+
+An open wall with nothing on it yet has nothing to stand on, so the tower is
+the floating one it has always been and the line under it says `open now`, the
+way the front door does, and not a zero. A phone on its side has no room for a
+tower at all: it goes, and the flaps and their word drop back to a row beside
+the type, which is what they were before the tower had anything to stand on.
 
 ## The mark
 
