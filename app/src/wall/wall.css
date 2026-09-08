@@ -929,15 +929,23 @@
 
 /* ── the board ──
    art.jsx `Flap`, under the title: the count on split flaps, and the word
-   "letters" beside it in the label. The flap is a flat plate a step up from
-   the void with a hairline round it and a seam across its middle, and the
-   digit is chalk in the util face: on a board a figure is a thing on a
+   "letters" beside it. The flap is a flat plate a step up from the void
+   with a hairline round it and a seam across its middle, and the digit is
+   the campus's gold in the util face: on a board a figure is a thing on a
    plate, not an identifier in a line of type, so this is the one count in
-   the build not set in the mono. No colour anywhere on it; the masthead's
-   one light is the lantern. The lanes below move at the speed of a
-   departures board, and this is that board's number. */
-.wl-board { display: flex; align-items: center; gap: 12px; }
-.wl-board-say { display: block; padding-top: 1px; }
+   the build not set in the mono. The word beside it is set in the same
+   face at reading strength, because it is half of the fact and not a
+   caption on it: it was the small letterspaced label in the dim grey, and
+   under a gold figure it read as a footnote nobody could make out. The
+   lanes below move at the speed of a departures board, and this is that
+   board's number. */
+.wl-board { display: flex; align-items: center; gap: 11px; }
+.wl-board-say {
+  display: block; padding-top: 2px;
+  font-family: var(--f-util); font-size: 15px; font-weight: 500; letter-spacing: 0.004em;
+  line-height: 1;
+  color: rgba(244, 241, 234, 0.82);
+}
 
 .wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
 .wl-flap {
@@ -946,7 +954,7 @@
   perspective: 260px;
   font-family: var(--f-util); font-weight: 500; font-size: 21px; line-height: 34px;
   font-feature-settings: 'tnum' 1; letter-spacing: -0.01em;
-  color: var(--chalk);
+  color: var(--gold);
   -webkit-user-select: none; user-select: none;
 }
 /* the seam, over everything */

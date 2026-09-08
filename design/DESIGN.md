@@ -80,7 +80,7 @@ Three strengths of one near white, and the third one has a hard rule on it.
 | `--chalk` | `#F4F1EA` | primary type, the mark, a filled control |
 | `--ash` | `#9C978E` | secondary. Meaningful text only |
 | `--ash-dim` | `#605C55` | decorative and disabled only. Never body copy |
-| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the Campanile's lantern. Nowhere else, and never as type. The count on the masthead carried it for a while and does not now: on flaps the figure is chalk, and the lantern is the masthead's one light. It was the pin on the front door's notice for a while, and it came off: the door's line to the wall is an ear of type now (hero.css `.hm-ear`), and the wall's colour stays on the wall |
+| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the Campanile's lantern and the figures on the masthead's flaps. Nowhere else, and never as running type. It was the pin on the front door's notice for a while, and it came off: the door's line to the wall is an ear of type now (hero.css `.hm-ear`), and the wall's colour stays on the wall |
 
 `--ash-dim` on `--void` is roughly 3.2:1. It is legible for a label and it is not
 legible for a sentence somebody has to read. Putting prose in it is the single
@@ -518,7 +518,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
-| `Flap` | the wall's count, on split flaps: one per digit, the digit in chalk on a flat plate a step up from the void, a hairline round it and a seam across it. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes; on the opening the digits roll into place. Nothing moves under reduced motion (`.wl-flap`) |
+| `Flap` | the wall's count, on split flaps: one per digit, the digit in `--gold` on a flat plate a step up from the void, a hairline round it and a seam across it, and the word beside it in the util face at reading strength. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes; on the opening the digits roll into place. Nothing moves under reduced motion (`.wl-flap`) |
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |

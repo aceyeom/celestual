@@ -360,12 +360,13 @@ instead, and none of the above runs.
 
 The masthead prints one fact, the count, and it is on split flaps
 (`art.jsx Flap`). The lanes under it move at the speed of a departures board,
-and this is that board's number: one flap per digit, the digit in chalk on a
-flat plate a step up from the void with a hairline round it and a seam across
-its middle, and the word `letters` beside it in the label. The figure is set in
-the util face rather than the mono, the one count in the build that is: on a
-board a figure is a thing on a plate, not an identifier in a line of type. No
-colour on it; the masthead's one light is the lantern. When the number changes,
+and this is that board's number: one flap per digit, the digit in the campus's
+gold on a flat plate a step up from the void with a hairline round it and a
+seam across its middle, and the word `letters` beside it in the same face at
+reading strength, because it is half of the fact and not a caption on it. The
+figure is set in the util face rather than the mono, the one count in the build
+that is: on a board a figure is a thing on a plate, not an identifier in a line
+of type. When the number changes,
 the top half of the old digit folds down over the bottom half of the new one,
 which is the whole of the mechanism. On the opening every digit rolls through a
 few figures before it lands, the ones column further than the tens the way an

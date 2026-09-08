@@ -498,8 +498,9 @@ export default function Wall({ go, reduce, rev }) {
           up now, and a date beside a live count read as a footnote.
 
           The count is on split flaps (art.jsx Flap): the departures board
-          the lanes already move at the speed of, one flap per digit in
-          chalk on a plate of the void, and the word beside it. On the
+          the lanes already move at the speed of, one flap per digit in the
+          campus's gold on a plate of the void, and the word beside it at
+          reading strength, since it is half of the fact. On the
           opening the digits roll into place; after that a flap moves only
           when a letter goes up. It was one line of label, "19 letters",
           which was true and read as a footnote under a poster whose one
@@ -521,14 +522,12 @@ export default function Wall({ go, reduce, rev }) {
             {/* the roll plays with the opening and only then: the meta fades
                 in at 900ms and the flaps start turning once it is there */}
             <Flap value={letters} roll={playing} delay={1100} />
-            <Label tone="dim" as="span" className="wl-board-say">
-              {letters === 1 ? 'letter' : 'letters'}
-            </Label>
+            <span className="wl-board-say">{letters === 1 ? 'letter' : 'letters'}</span>
           </div>
         ) : (
           /* an open wall with nothing on it yet: the state a term starts in,
              said the way the front door says it, and not as a zero */
-          <Label tone="dim" className="wl-mast-meta">open now</Label>
+          <Label className="wl-mast-meta">open now</Label>
         )}
       </div>
 
