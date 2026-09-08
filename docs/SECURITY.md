@@ -74,7 +74,10 @@ use never feels it; a sweep trips it fast.
 Attempt logs store the target hashed and are pruned on a rolling ~2-hour
 basis. `celestual_suppress` is rate-limited per IP (10/hr) against mass-wipe
 griefing and, since 0039, takes the DM proof, so a refusal costs the same
-quota as a real opt-out and says nothing about the name; verification starts
+quota as a real opt-out and says nothing about the name; since 0046 it also
+reaches the wall, taking every letter written ABOUT the handle down on every
+campus and shutting the name to future writes (the letters written BY it
+already went with the identity row's cascade); verification starts
 are capped per IP and per handle. Since 0009 the
 "per-IP" identity comes from `celestual_client_ip()`, which prefers
 `cf-connecting-ip` (written by Cloudflare itself — a client cannot forge it)

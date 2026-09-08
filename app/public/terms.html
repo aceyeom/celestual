@@ -11,6 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="stylesheet" href="/fonts/faces.css" />
     <link rel="stylesheet" href="/legal.css" />
+    <script src="/legal.js" defer></script>
   </head>
   <body>
     <div class="ground" aria-hidden="true"></div>
@@ -18,11 +19,7 @@
     <main class="wrap">
       <div class="bar">
         <a class="brand" href="/"><img src="/mark.svg" alt="" /><span>celestual.</span></a>
-        <nav aria-label="the legal pages">
-          <a href="/terms" aria-current="page">terms</a>
-          <a href="/privacy">privacy</a>
-          <a href="/data-deletion">deletion</a>
-        </nav>
+        <a class="me" id="me" href="/sky" title="sign in">sign in</a>
       </div>
 
       <h1>Terms of service</h1>
@@ -40,7 +37,12 @@
         opting out changes nothing else.
       </p>
 
-      <nav class="toc" aria-label="contents">
+      <nav class="toc" aria-label="the legal pages, and this one's sections">
+        <div class="docs">
+          <a href="/terms" aria-current="page">terms</a>
+          <a href="/privacy">privacy</a>
+          <a href="/data-deletion">deleting your data</a>
+        </div>
         <ol>
           <li><a href="#who"><span class="n">01</span> Who can use it</a></li>
           <li><a href="#what"><span class="n">02</span> What the service does</a></li>
@@ -111,7 +113,7 @@
           <li>A letter stands for thirty days and then comes off by itself.</li>
           <li>Every letter is screened before it appears. Software reads it first, a person reads anything the software is unsure of, and a letter that fails the screen is stored and never published.</li>
           <li>Anybody who has passed either proof can report a letter. Reporting takes it off immediately, before anybody reviews it.</li>
-          <li>The person a letter is about can take their whole name off the wall from a verified handle. Every letter written to that handle goes with it, no desk can put it back, and there is no appeal for them to answer.</li>
+          <li>The person a letter is about can take their whole name off the wall from a verified handle. Every letter written to that handle goes with it, no desk can put it back, and there is no appeal for them to answer. Taking the handle off celestual entirely does the same thing, on every campus and for good.</li>
           <li>We do not disclose who wrote a letter to anybody, including the person it is about, unless the author is asked and agrees. A valid court order is the one thing that could compel us, and there is very little we could produce.</li>
         </ul>
       </section>
@@ -187,16 +189,20 @@
           lasts is in the <a href="/privacy">privacy policy</a>. The short
           version: who you pinged is stored only as a salted hash, an unmatched
           ping is purged when it lapses, and a letter comes off after thirty
-          days. You are responsible for the handles and addresses you enter.
+          days. The opt out below is one act and it covers both surfaces. You
+          are responsible for the handles and addresses you enter.
         </p>
         <div class="act">
           <span class="k">the way out</span>
           <p>
             Any handle can come off celestual permanently, whether or not it has
-            ever been used here. One direct message from that account proves it
-            is yours. No account to make, and nothing to ask us for.
+            ever been used here. It takes both surfaces with it: the pings on
+            Main, and every letter about that handle on the wall. One direct
+            message from the account proves it is yours, and there is no account
+            to make.
           </p>
-          <a class="go" href="/optout">celestual.us/optout</a>
+          <a class="go" href="/optout">take a handle off</a>
+          <span class="at">celestual.us/optout</span>
         </div>
       </section>
 

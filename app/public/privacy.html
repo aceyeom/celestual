@@ -11,6 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="stylesheet" href="/fonts/faces.css" />
     <link rel="stylesheet" href="/legal.css" />
+    <script src="/legal.js" defer></script>
   </head>
   <body>
     <div class="ground" aria-hidden="true"></div>
@@ -18,11 +19,7 @@
     <main class="wrap">
       <div class="bar">
         <a class="brand" href="/"><img src="/mark.svg" alt="" /><span>celestual.</span></a>
-        <nav aria-label="the legal pages">
-          <a href="/terms">terms</a>
-          <a href="/privacy" aria-current="page">privacy</a>
-          <a href="/data-deletion">deletion</a>
-        </nav>
+        <a class="me" id="me" href="/sky" title="sign in">sign in</a>
       </div>
 
       <h1>Privacy</h1>
@@ -39,7 +36,12 @@
         and the campus wall. It is the whole of what we hold.
       </p>
 
-      <nav class="toc" aria-label="contents">
+      <nav class="toc" aria-label="the legal pages, and this one's sections">
+        <div class="docs">
+          <a href="/terms">terms</a>
+          <a href="/privacy" aria-current="page">privacy</a>
+          <a href="/data-deletion">deleting your data</a>
+        </div>
         <ol>
           <li><a href="#hold"><span class="n">01</span> What we hold</a></li>
           <li><a href="#cannot"><span class="n">02</span> What we cannot produce</a></li>
@@ -137,7 +139,7 @@
           </div>
           <div>
             <dt>a letter</dt>
-            <dd>Thirty days on the wall. A letter that was reported or refused is held out of sight instead of published, so that the decision can be looked at again.</dd>
+            <dd>Thirty days on the wall, and sooner if it is reported or if the person it is about takes their handle off. A letter that came down is held out of sight rather than published, so that the decision can be looked at again.</dd>
           </div>
           <div>
             <dt>a code</dt>
@@ -251,14 +253,16 @@
           <span class="k">the way out</span>
           <p>
             Take a handle off permanently, whether or not it has ever been used
-            here. One direct message from that account proves it is yours. No
-            account to make, and nothing to ask us for.
+            here. One direct message from the account proves it is yours, and
+            there is no account to make.
           </p>
-          <a class="go" href="/optout">celestual.us/optout</a>
+          <a class="go" href="/optout">take a handle off</a>
+          <span class="at">celestual.us/optout</span>
         </div>
         <p>
-          That is the deletion path as well. It bars the handle and erases
-          everything that referenced it on either side. The
+          That is the deletion path as well, and it is one act across both
+          surfaces: it bars the handle, erases everything that referenced it on
+          either side, and takes every letter about it off the wall. The
           <a href="/data-deletion">deletion page</a> says exactly what goes and
           what does not.
         </p>

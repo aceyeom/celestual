@@ -1052,6 +1052,42 @@ The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
 
+## The opt out reaches the wall (migration 0046)
+
+Taking a handle off celestual takes it off both surfaces. One migration and the
+app. No new tables.
+
+**Why.** The opt out is the one irreversible promise this product makes to
+somebody who never asked to be in it, and it reached half of it. On Main it
+erased the pings both ways, the mutuals, the membership and the identity row.
+On the wall it erased what that person had written, through the cascade off
+`celestual_users`, and left every letter written about them standing under
+their own name on a public index. The person the opt out exists for could take
+their @ off, read a screen saying every ping was gone, and still find their
+name drifting in the inscription.
+
+1. **Apply `0046_the_opt_out_reaches_the_wall.sql`.** `supabase db push`, or
+   paste it into the SQL editor. It re-emits four functions and adds no tables:
+   `celestual_suppress` (takes every letter to the handle down, on every
+   campus), `wall_name_shut` (the suppression list first, so `wall_write`
+   refuses the name for good), `celestual_desk_letter_set` and
+   `celestual_desk_report_resolve` (neither can put such a letter back up).
+   Verified by `scripts/verify-migrations.sh --test`
+   (`test-optout-wall.sql`, 21 assertions).
+2. **Deploy the app.** Vercel, as usual. `/optout` says the wall is included,
+   the wall's own takedown offers the fuller door, and the three legal pages
+   say what the act now covers.
+
+Order does not matter much: the migration alone is the whole behaviour, and
+the app alone only changes what four screens say. Applying the migration first
+is the honest way round, since the pages describe what it does.
+
+The test of the whole path: put a letter up to a spare handle at
+`/berkeley/write`, confirm the name is on the wall, take that handle off at
+`/optout` from the account that owns it, and reload `/berkeley`. The name
+should be gone from the inscription and from the search, and writing to it
+again should be refused.
+
 ## Five before the door (migration 0045)
 
 The first five letters anybody reads are free, whoever they are, and the sixth
