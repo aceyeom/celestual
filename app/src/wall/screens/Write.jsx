@@ -86,7 +86,7 @@ export default function Write({ to: prefill, go, back }) {
   const draft = getState().draft || {}
   const [to, setTo] = useState(() => prefill || draft.to || '')
   const [body, setBody] = useState(() => draft.body || '')
-  // Somebody who tapped "write one to @them" on a letter already answered the
+  // Somebody who tapped "write to @them" on a letter already answered the
   // first question.
   const [step, setStep] = useState(() => (prefill ? 1 : 0))
   const first = useRef(true)
@@ -156,7 +156,7 @@ export default function Write({ to: prefill, go, back }) {
       <Sheet onClose={back} labelledBy="wl-write-h">
         <div className="wl-sheet-in wl-write">
           <SheetHead onClose={back} label="back to the wall" />
-          <Display size="s" as="h2" id="wl-write-h">Letters are written<br />by Berkeley.</Display>
+          <Display size="s" as="h2" id="wl-write-h">Berkeley only.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}>
             Your information will stay anonymous.

@@ -102,7 +102,7 @@ the same act:
 
 | | |
 | --- | --- |
-| **one letter** | `report it`, on the letter. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **one letter** | the flag under the letter, then `Report this letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 An earlier build made the second one instant too, and argued for it: a takedown
@@ -115,9 +115,15 @@ room and cannot be asked. So the proof sits on the irreversible action and
 nowhere else, and the person who just wants a letter about them gone is never
 sent through it.
 
-They are reachable from four places, none of them a footer: `this is me` and
-`report it` beside the name on any letter, under the names on the wall itself,
-and from the search.
+They are reachable from three places, none of them a footer: the flag under any
+letter, which opens both of them with the cost of each written under it; under
+the names on the wall itself; and from the search.
+
+The flag replaced a pair of bare capsules — `this is me` and `report it` — that
+stood side by side at one weight. Between them they asked a person to choose
+between the reversible act and the irreversible one before either had been
+described, which is the one decision on this surface that must not be made by
+guessing at a label.
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -130,7 +136,7 @@ Cards and flyers go out with a QR code on them. The code lands on the wall.
 
 ```
                      ┌──▶ a letter ──┬─ from berkeley? ──▶ read it whole
-                     │               │                     └─▶ report it ──▶ off
+                     │               │                     └─▶ the flag ──▶ off
                      │               │                        the wall NOW, then
                      │               │                        read by a person
                      │               └─ otherwise ───────▶ redacted, and one
@@ -139,7 +145,7 @@ Cards and flyers go out with a QR code on them. The code lands on the wall.
      (the names ask  │         └──▶ nobody has? be the first
       nothing, ever) ├──▶ that's my name ──▶ prove it (instagram) ──▶ the whole
                      │                                        name off, for good
-                     └──▶ write one ── berkeley? ── screened ──┐
+                     └──▶ write ─────── berkeley? ── screened ──┐
                                   │                            │
                                   ▼                            ▼
                              it's up ──▶ the wall, with it on ◀┘

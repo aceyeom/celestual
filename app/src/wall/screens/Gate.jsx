@@ -35,7 +35,7 @@
 // the first one happens here.
 
 import { useEffect, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Icon, Face, Allowance } from '../parts.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Face, Allowance } from '../parts.jsx'
 import { atHandle, allowance, loadQuota } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
 import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
@@ -228,7 +228,7 @@ export default function Gate({ go, back }) {
           <div className="wl-push" />
 
           <SheetFoot>
-            <Pill tone="light" wide icon={<Icon name="join" size={17} />} onClick={() => go('join')}>
+            <Pill tone="light" wide onClick={() => go('join')}>
               try mutual matching
             </Pill>
             <button
@@ -250,14 +250,19 @@ export default function Gate({ go, back }) {
       <div className="wl-sheet-in wl-gate">
         <SheetHead onClose={back} label="back to the wall" />
 
+        {/* ── the heading names the act, not the wall ──
+            It used to open on "The wall is for Berkeley", which is a statement
+            about the room and leaves the person in front of it to work out what
+            is being asked of them. What is being asked of them is one thing, so
+            it says that thing. The other branch — for somebody who can already
+            read here and is only missing the address that lets them write —
+            said "Letters are written by Berkeley", a sentence long enough to
+            need parsing for a fact that fits in two words. */}
         <Display size="s" as="h2" id="wl-gate-h">
           {step === 0
             ? (!registering ? <>Come back in.</>
-              /* A person already reading the wall is not being told the wall
-                 is not for them. They are being told the one thing this
-                 address is still for. */
-              : reads ? <>Letters are written<br />by Berkeley.</>
-              : <>The wall is<br />for Berkeley.</>)
+              : reads ? <>Berkeley only.</>
+              : <>Verify you&rsquo;re<br />at Berkeley.</>)
             : <>The code from<br />the mail, and you&rsquo;re in.</>}
         </Display>
 

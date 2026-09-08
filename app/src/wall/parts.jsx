@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { atHandle, normHandle, search } from './data.js'
-import { Ecliptic, Provider, Sparkle } from './art.jsx'
+import { Ecliptic, Sparkle } from './art.jsx'
 import { member, isReader, verified } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
@@ -597,14 +597,21 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
 // nothing has been decided about what the top of a sheet is FOR.
 //
 // It is for two things: what this sheet is about, on the left, and the way out,
-// on the right. `lead` carries the first — the mark when there is nothing to
-// say, a pager when there is more than one letter, step dots in the composer —
-// and it is always optically lighter than the close, because the way out is the
-// only control in the row.
+// on the right. `lead` carries the first — a pager when there is more than one
+// letter, step dots in the composer — and it is always optically lighter than
+// the close, because the way out is the only control in the row.
+//
+// ── and when a sheet has nothing to say there, it says nothing ──
+// The empty half used to be filled with the mark, and a brand mark standing on
+// a sheet that is already inside the product is signage pointing at the room
+// you are in. Worse, it was not even the same object twice: the letter drew the
+// mark, the report and the takedown drew a sparkle, and the composer drew step
+// dots, so three sheets a person walks in one minute opened three different
+// ways. The slot is empty unless the sheet has a real answer for it.
 export function SheetHead({ lead = null, onClose, label = 'close' }) {
   return (
     <div className="wl-head">
-      <div className="wl-head-lead">{lead || <Ecliptic size={20} className="wl-head-mark" />}</div>
+      <div className="wl-head-lead">{lead}</div>
       <Close onClick={onClose} label={label} />
     </div>
   )
@@ -632,12 +639,15 @@ export function SheetFoot({ children, className = '' }) {
 // 0044 (a handle proved on Main opens it too), but a person standing here has
 // not proved anything yet, and offering them two doors at once is offering
 // them a decision instead of a way in.
-export function Locked({ children, onOpen, cta = 'sign in with berkeley' }) {
+//
+// The word on it is "sign in" and nothing more. It used to read "sign in with
+// berkeley", under a heading that had just said Berkeley in larger type: the
+// button repeated the room's name back at somebody standing in it.
+export function Locked({ children, onOpen, cta = 'sign in' }) {
   return (
     <div className="wl-locked">
-      <Sparkle size={12} className="wl-locked-spark" />
       <p className="wl-locked-say">{children}</p>
-      <Pill tone="light" wide icon={<Icon name="key" size={17} />} onClick={onOpen}>{cta}</Pill>
+      <Pill tone="light" wide onClick={onOpen}>{cta}</Pill>
     </div>
   )
 }
@@ -831,7 +841,7 @@ export function DmCode({ code, status = '' }) {
         </button>
       </div>
 
-      <Pill tone="light" wide onClick={openIt} icon={<Provider size={17} />}>
+      <Pill tone="light" wide onClick={openIt}>
         {copied ? 'copied. open instagram' : 'copy and open instagram'}
       </Pill>
 

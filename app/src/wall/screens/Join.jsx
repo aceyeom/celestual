@@ -76,7 +76,7 @@
 // knowing nothing about what it is next to.
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { Display, Pill, Close, Icon } from '../parts.jsx'
+import { Display, Pill, Close } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
@@ -319,7 +319,7 @@ export default function Join({ go, setField, reduce }) {
             production are two different apps behind one document (main.jsx) and
             pushing a production path into this history stack would leave the
             wall trying to render a screen it does not have. */}
-        <Pill tone="light" wide icon={<Icon name="join" size={17} />} onClick={register}>
+        <Pill tone="light" wide onClick={register}>
           register
         </Pill>
       </div>

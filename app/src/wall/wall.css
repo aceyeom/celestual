@@ -454,9 +454,10 @@
 }
 .wl-quiet:hover { color: var(--ash); text-decoration: underline; text-underline-offset: 3px; }
 
-/* "this is me" — the way off the wall, wherever a name is standing. Set as a
-   hairline capsule rather than as a link, because it is a control with a
-   consequence and a link is what people skim past. */
+/* the way off the wall, under the names on the wall itself. Set as a hairline
+   capsule rather than as a link, because it is a control with a consequence and
+   a link is what people skim past. It used to stand on the letter sheet too, as
+   "this is me" beside "report it"; there it is the flag below. */
 .wl-mine {
   flex: 0 0 auto;
   padding: 5px 12px; border-radius: var(--r-pill);
@@ -1062,7 +1063,6 @@
   min-height: 36px; padding: 2px 0 20px; flex: 0 0 auto;
 }
 .wl-head-lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.wl-head-mark, .wl-head-spark { color: var(--ash-dim); }
 
 /* One primary, then whatever is quieter than it, in one column with one
    rhythm — instead of every sheet inventing its own arrangement of a pill and
@@ -1097,13 +1097,52 @@
 .wl-pager-b:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244,241,234,0.24); }
 .wl-pager-b:disabled { opacity: 0.28; }
 
-/* the two quiet ways out, under the one loud way on. Centred under a full
-   width pill so the block has an axis, and set at the same weight as each
-   other because between them they are the answer for one reader in twenty and
-   neither is more likely than the other. */
+/* ── the flag, and the two things it opens ────────────────────────────────
+   Two hairline capsules stood here — "this is me" and "report it" — at one
+   weight, side by side, each of them a sentence that named an act without
+   naming what the act costs. One mark now, the size of a mark rather than of
+   a button, centred on the same axis as the pill above it; and the choice
+   arrives underneath it, on the tap, with the consequence set under each
+   option in the reader's grey. */
 .wl-letter-quiet {
-  display: flex; align-items: center; justify-content: center;
-  flex-wrap: wrap; gap: 10px; padding-top: 12px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding-top: 14px;
+}
+.wl-flag {
+  flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid var(--hair-soft); color: var(--ash-dim);
+  transition: color 220ms var(--ease), border-color 220ms var(--ease),
+              background 220ms var(--ease);
+}
+.wl-flag:hover { color: var(--ash); border-color: var(--hair); }
+/* Open, it is the thing the two options belong to rather than a control
+   waiting to be pressed again, so it holds the light instead of inviting. */
+.wl-flag.is-on {
+  color: var(--chalk); border-color: var(--hair);
+  background: rgba(244, 241, 234, 0.05);
+}
+
+.wl-flag-opts {
+  width: 100%; display: flex; flex-direction: column; gap: 8px;
+  animation: wl-fade 260ms var(--ease) both;
+}
+.wl-opt {
+  display: flex; flex-direction: column; gap: 3px;
+  text-align: left; padding: 12px 16px;
+  border-radius: var(--r-field); border: 1px solid var(--hair-soft);
+  transition: border-color 220ms var(--ease), background 220ms var(--ease);
+}
+.wl-opt:hover { border-color: var(--hair); background: rgba(244, 241, 234, 0.04); }
+.wl-opt-t {
+  font-family: var(--f-util); font-size: 13px; letter-spacing: 0.01em;
+  color: var(--chalk);
+}
+/* The cost, and it is body copy rather than decoration: somebody is about to
+   choose between two irreversible acts on the strength of this line. */
+.wl-opt-s {
+  font-family: var(--f-util); font-size: 11.5px; line-height: 1.45;
+  color: var(--ash);
 }
 
 /* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
@@ -2078,7 +2117,6 @@
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 13px;
   padding: 18px 0 calc(16px + env(safe-area-inset-bottom, 0px));
 }
-.wl-locked-spark { color: var(--ash-dim); }
 .wl-locked-say {
   margin: 0; max-width: 40ch;
   font-family: var(--f-letter); font-size: 15.5px; line-height: 1.55; color: var(--ash);
@@ -2215,25 +2253,16 @@
 }
 .wl-report .wl-gate-beta { margin-top: 20px; }
 
-/* ── three facts, one line each ────────────────────────────────────────────
-   The report's "what happens now" was a forty-word paragraph on a screen
-   whose whole argument is that nothing here needs arguing about. Set as
-   three lines it is read at a glance, which on a takedown control is the
-   difference between somebody knowing what the button does and somebody
-   pressing it anyway. */
-.wl-facts {
-  list-style: none; margin: 18px 0 0; padding: 0; flex: 0 0 auto;
-  display: flex; flex-direction: column; gap: 9px;
-}
-.wl-facts li {
-  position: relative; padding-left: 18px;
-  font-size: 15px; line-height: 1.4; color: var(--ash);
-}
-.wl-facts li::before {
-  content: ''; position: absolute; left: 2px; top: 0.62em;
-  width: 4px; height: 4px; border-radius: 50%;
-  background: rgba(244, 241, 234, 0.34);
-}
+/* ── what the tap does, in one line ────────────────────────────────────────
+   This was a forty-word paragraph, then three bulleted facts, and the list
+   was the worse of the two: a numbered account of an internal process, set
+   out like terms, above a button whose whole argument is that there is
+   nothing here to deliberate about. One sentence is the whole of it, set in
+   the same copy the rest of these sheets answer in (`.wl-gate-copy`). It is
+   held at its own height like everything else in this column: the sheet is a
+   flex column with a spacer in it, and a paragraph left shrinkable is a
+   paragraph that gets squeezed on a short phone. */
+.wl-report .wl-gate-copy { flex: 0 0 auto; }
 
 /* the small box. It counts nothing and it is three lines tall: a box the size
    of the composer would say a case is being made, and nobody is making one. */

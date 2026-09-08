@@ -53,9 +53,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose,
-  ReasonField, Locked, Icon,
+  ReasonField, Locked,
 } from '../parts.jsx'
-import { Sparkle } from '../art.jsx'
 import { letter, loadLetter, report, atHandle, ago } from '../data.js'
 import { setAfterGate } from '../store.js'
 
@@ -88,8 +87,7 @@ export default function Report({ id, go, back }) {
       : out?.error === 'rate_limited' ? 'rate' : 'network')
   }
 
-  const head = <SheetHead onClose={back} label="back to the wall"
-    lead={<Sparkle size={13} className="wl-head-spark" />} />
+  const head = <SheetHead onClose={back} label="back to the wall" />
 
   if (live === undefined && !one) {
     return (
@@ -166,19 +164,20 @@ export default function Report({ id, go, back }) {
             </p>
           </div>
 
-          {/* Three facts, one line each, in the order they happen. It was one
-              forty word paragraph saying the same three things, on a screen
-              where the control is the point and nobody is reading. */}
-          <ul className="wl-facts">
-            <li>Off the wall now.</li>
-            <li>Someone reads it after.</li>
-            <li>If it is fine, it goes back up.</li>
-          </ul>
+          {/* One line, and it is the only line. This was a forty word paragraph
+              first and then three bulleted facts, and the list was the worse of
+              the two: a numbered account of an internal process, set out like
+              terms, above a button whose whole argument is that there is nothing
+              here to think about. Somebody standing on this screen wants to know
+              what the tap does, which is one sentence long. */}
+          <Prose className="wl-gate-copy">
+            It comes off the wall now, and someone reads it after.
+          </Prose>
 
           <div className="wl-push" />
 
           <SheetFoot>
-            <Pill tone="light" wide icon={<Icon name="flag" size={17} />}
+            <Pill tone="light" wide
               disabled={busy} onClick={() => take('')}>
               {busy ? 'taking it down…' : 'take it down'}
             </Pill>

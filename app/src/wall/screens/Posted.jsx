@@ -32,7 +32,7 @@
 // is one tap away and does not chase anybody down here to make its case.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, Paper, Prose, Icon, Face } from '../parts.jsx'
+import { Display, Label, Pill, Paper, Prose, Face } from '../parts.jsx'
 import { Sparkle, Bloom } from '../art.jsx'
 import { write, wall, liveCount, atHandle, dateline } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -159,7 +159,7 @@ export default function Posted({ go, reduce }) {
           {refused === 'screened' ? <>It didn&rsquo;t go up.</>
             : refused === 'removed' ? <>That name is off<br />the wall.</>
             : refused === 'cap' ? <>Three a week,<br />and that was three.</>
-            : refused === 'gate' || refused === 'no_session' ? <>Letters are written<br />by Berkeley.</>
+            : refused === 'gate' || refused === 'no_session' ? <>Berkeley only.</>
             : refused === 'network' ? <>It did not<br />go through.</>
             : <>Nothing to put up.</>}
         </Display>
@@ -185,13 +185,13 @@ export default function Posted({ go, reduce }) {
             arguing with itself. The way back to the wall is the mark, where it
             is on every screen. */}
         {refused === 'cap' ? (
-          <Pill tone="light" icon={<Icon name="wall" size={17} />} onClick={() => go('wall')}>
+          <Pill tone="light" onClick={() => go('wall')}>
             back to the wall
           </Pill>
         ) : (
-          <Pill tone="light" icon={<Icon name="write" size={17} />}
+          <Pill tone="light"
             onClick={() => go(refused === 'gate' || refused === 'no_session' ? 'gate' : 'write')}>
-            {refused === 'gate' || refused === 'no_session' ? 'open them' : refused === 'network' ? 'try again' : 'write one'}
+            {refused === 'gate' || refused === 'no_session' ? 'open them' : refused === 'network' ? 'try again' : 'write'}
           </Pill>
         )}
       </div>
@@ -252,7 +252,7 @@ export default function Posted({ go, reduce }) {
         {/* It says what you get, not where you came from. "Back to the wall"
             describes a direction; the wall now has this letter on it, and that
             is the thing worth naming on the one control that leaves here. */}
-        <Pill tone="light" wide icon={<Icon name="wall" size={17} />} onClick={() => go('wall')}>
+        <Pill tone="light" wide onClick={() => go('wall')}>
           see it on the wall
         </Pill>
       </div>

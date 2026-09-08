@@ -280,8 +280,18 @@
       <div class="spec"><span class="cap">iconbtn · is-on</span><button class="wl-iconbtn is-on" id="ib3"></button></div>
       <div class="spec"><span class="cap">close · 36px · turns a quarter</span><button class="wl-close" id="cl1"></button></div>
       <div class="spec"><span class="cap">quiet · second option only</span><button class="wl-quiet">let it go instead</button></div>
-      <div class="spec"><span class="cap">mine · a control with a consequence</span><button class="wl-mine">this is me</button></div>
-      <div class="spec"><span class="cap">mine is-wide</span><button class="wl-mine is-wide">this is me</button></div>
+      <div class="spec"><span class="cap">mine · a control with a consequence</span><button class="wl-mine">take a name off</button></div>
+      <div class="spec"><span class="cap">mine is-wide</span><button class="wl-mine is-wide">take your name off the wall</button></div>
+      <div class="spec"><span class="cap">flag · rest</span><button class="wl-flag" id="fl1"></button></div>
+      <div class="spec"><span class="cap">flag · is-on</span><button class="wl-flag is-on" id="fl2"></button></div>
+    </div>
+
+    <h3>What the flag opens · the choice, with its cost under it</h3>
+    <div class="bed">
+      <div class="wl-flag-opts" style="max-width:340px">
+        <button class="wl-opt"><span class="wl-opt-t">This is me</span><span class="wl-opt-s">the name, and every letter under it, comes off</span></button>
+        <button class="wl-opt"><span class="wl-opt-t">Report this letter</span><span class="wl-opt-s">this one comes down now, and someone reads it after</span></button>
+      </div>
     </div>
 
     <h3>Focus · never removed, on any of them</h3>
@@ -364,7 +374,7 @@
         <div class="wl-dock" style="position:relative">
           <div class="wl-dock-veil"></div>
           <div class="wl-dock-in">
-            <button class="wl-pill is-light">write one</button>
+            <button class="wl-pill is-light">write</button>
             <a class="wl-arrow is-s is-quiet" href="#"><span class="wl-arrow-g">&#8594;</span><span class="wl-arrow-t">how this works</span></a>
           </div>
         </div>
@@ -380,7 +390,7 @@
         </div>
         <div style="flex:1 1 auto;align-self:flex-end;background:var(--void-1);border-top-left-radius:var(--r-sheet);border-top-right-radius:var(--r-sheet);border-top:1px solid var(--hair);margin-top:34px;padding:0 20px 26px">
           <div class="wl-grip"><span></span></div>
-          <div class="wl-head"><span class="wl-head-lead"><span id="sheet-mark" class="wl-head-mark"></span><span class="wl-label is-dim">the letter</span></span><button class="wl-close" id="cl2"></button></div>
+          <div class="wl-head"><span class="wl-head-lead"><span class="wl-label is-dim">the letter</span></span><button class="wl-close" id="cl2"></button></div>
           <p class="wl-display is-s" style="padding:14px 0 4px">Somebody wrote to you.</p>
           <p style="color:var(--ash);font-size:13.5px;line-height:1.6;margin:0 0 16px">it stays shut until you answer it.</p>
           <button class="wl-pill is-light is-wide">open it</button>
@@ -619,7 +629,6 @@ document.querySelectorAll('.wl-light').forEach((frame) => {
   const f = (v) => Math.round(v * 100) / 100
   beam.style.setProperty('--path', `path('M ${f(k)} 0 H ${f(w - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w)} ${f(k)} V ${f(h - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w - k)} ${f(h)} H ${f(k)} A ${f(k)} ${f(k)} 0 0 1 0 ${f(h - k)} V ${f(k)} A ${f(k)} ${f(k)} 0 0 1 ${f(k)} 0 Z')`)
 })
-$('sheet-mark').innerHTML = `<span style="display:block;opacity:.42">${at(17, 'chalk')}</span>`
 $('art-bloom-mark').innerHTML = at(66, 'chalk')
 
 $('mark-void').innerHTML = at(132, 'chalk')
@@ -747,6 +756,8 @@ const ICONS = ['M4 7h9M16 7h4M4 12h5M12 12h8M4 17h11M18 17h2',
 const icon = (d, px = 18) => `<svg class="wl-icon" width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`
 ;['ib1', 'ib2', 'ib4', 'ib5'].forEach((id, i) => { $(id).innerHTML = icon(ICONS[i % 3]) })
 $('ib3').innerHTML = icon(ICONS[1]); $('ib6').innerHTML = icon(ICONS[2])
+// the flag — a marker left on a thing, not a verdict about it
+;['fl1', 'fl2'].forEach((id) => { $(id).innerHTML = icon('M6 21V4M6 5h11l-2.4 3.9L17 12.8H6', 15) })
 ;['cl1', 'cl2'].forEach((id) => { $(id).innerHTML = icon('M6 6l12 12M18 6L6 18', 15) })
 
 // ── the field, at a size ──
