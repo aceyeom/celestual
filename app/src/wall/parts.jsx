@@ -1258,18 +1258,22 @@ export function Light({ on = true, plate = 'star', className = '' }) {
 // name, a verification badge. Nothing else. No follower count, no post count,
 // no bio, no link. This product does not tell anybody how popular anybody is.
 //
-// ── it waits with two bars, and no light ────────────────────────────────────
-// While the resolver is out, which on a cold handle is ten seconds, the card
-// holds the exact height the answer takes and breathes two bars where the name
-// and the handle will land, so nothing under it moves when the answer arrives.
+// ── it waits with a light ───────────────────────────────────────────────────
+// While the resolver is out, which on a cold handle is ten seconds, a point of
+// light (`Light`, above) runs round the card's own edge and twinkles through
+// the plate's star shaped holes as it passes, and two bars breathe where the
+// name and the handle will land. Not a spinner, which promises a computation,
+// and not a shimmer, which is a pattern from a different product: the frame
+// the answer will land in, lit round its border. The frame holds the exact
+// height the answer takes, so nothing under it moves when the answer lands.
 //
-// It used to also carry `Light`: a point of light running round the card's edge
-// and twinkling through a star shaped plate as it passed. That came off. The
-// card is already the loudest object on the screen at the moment it appears,
-// the bars under it are saying the same thing more quietly, and a shape
-// sparkling around somebody's name while it is being looked up is decoration on
-// top of a wait rather than an account of it. The light still runs where it was
-// designed to, on the result card's own frame elsewhere and on the primary pill.
+// The light came off for one release and went back on. Without it the card
+// waited as two grey bars in an unframed box, and a wait of ten seconds with
+// nothing moving on the card itself read as a card that had stalled; the words
+// under the field said what was happening, but the object the eye was on did
+// not. The light is the account of the wait, and it is the same light that
+// takes over on the capsule the moment the answer lands (`Pill lit`), so the
+// two are one clock handed from the card to the act.
 //
 // ── and it can be pressed ───────────────────────────────────────────────────
 // Given `onSelect` the card is a button from the first frame: disabled while it
@@ -1322,6 +1326,7 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
 
   return (
     <Tag className={cls} aria-live="polite" aria-busy={looking || undefined} {...live}>
+      <Light on={looking} />
       <span className="wl-card-disc" aria-hidden="true">
         <span className="wl-card-mono">{mono}</span>
         {!looking && at.avatar ? (

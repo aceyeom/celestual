@@ -106,6 +106,10 @@ let TILES_AT = 0
 // loaded, which is the one number on the surface and was a lie.
 let TILES_ERROR = null
 export function wallError() { return TILES.length ? null : TILES_ERROR }
+// Whether the index has answered at all. A wall that has not loaded is not an
+// empty wall, and a screen that cannot tell the two apart says "nobody has
+// been written to yet" over a request that is still open.
+export function wallLoaded() { return TILES_AT > 0 || !!TILES_ERROR }
 const BY_HANDLE = new Map()
 const BY_ID = new Map()
 

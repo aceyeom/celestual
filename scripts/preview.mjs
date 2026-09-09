@@ -505,7 +505,22 @@ async function fulfil(route) {
 
   // The resolver, through the first party rewrite.
   if (url.includes('/api/resolve')) {
-    const h = String(JSON.parse(req.postData() || '{}').handle || '').toLowerCase()
+    const body = JSON.parse(req.postData() || '{}')
+    // A batched peek (api/handles.js flushPeeks): every face on a screen in
+    // one request, answered from what the fixture resolver knows and nothing
+    // for the rest, which draws their monograms.
+    if (Array.isArray(body.handles)) {
+      const results = {}
+      for (const raw of body.handles) {
+        const h = String(raw || '').toLowerCase()
+        const row = HANDLES.find(([x]) => x === h)
+        results[h] = row
+          ? { ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2], avatar: FACES[row[0]] || '', cached: true }
+          : { ok: true, found: false, handle: h, cached: true }
+      }
+      return route.fulfill({ json: { ok: true, results } })
+    }
+    const h = String(body.handle || '').toLowerCase()
     const row = HANDLES.find(([x]) => x === h)
     // a handle the fixture does not carry is an account the resolver did not
     // find, which is a state worth drawing, and not a reason to stop the run
@@ -603,10 +618,17 @@ const ROUTES = [
   { label: 'sky-prove-code', path: '/sky', verified: false,
     acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
   { label: 'reveal',        path: '/reveal/jules.k' },
-  // the monument's flaps roll into place over the opening (art.jsx Flap), so
-  // the wall is shot once they have landed
-  { label: 'berkeley',      path: '/berkeley', settle: 6000 },
-  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 6000 },
+  // the veil over the field, with the flaps rolled into place (art.jsx
+  // Flap), so the wall is shot once they have landed; then the field with
+  // the veil lifted, once the lens has bloomed and the walk has taken its
+  // first step and come to rest on a person
+  { label: 'berkeley',        path: '/berkeley', settle: 6000 },
+  { label: 'berkeley-lifted', path: '/berkeley', press: '.wl-mast-go', settle: 5200 },
+  { label: 'berkeley-tab',    path: '/berkeley', tab: true, press: '.wl-mast-go', settle: 5200 },
+  // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
+  // composed with nothing arriving, and the field still, with the lens on
+  { label: 'berkeley-still',        path: '/berkeley', still: true, settle: 1200 },
+  { label: 'berkeley-lifted-still', path: '/berkeley', still: true, press: '.wl-mast-go', settle: 1200 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
@@ -668,6 +690,8 @@ for (const r of list) {
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
       deviceScaleFactor: v.scale,
+      // a route marked `still` is shot under prefers-reduced-motion
+      reducedMotion: r.still ? 'reduce' : 'no-preference',
     })
     const problems = []
     page.on('console', (m) => { if (m.type() === 'error') problems.push(m.text()) })

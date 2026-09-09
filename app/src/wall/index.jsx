@@ -266,8 +266,10 @@ export default function WallApp() {
   // change — the only moment a screen under a sheet can come back into view.
   // It is what makes a name taken down on a sheet actually be gone from the
   // wall that sheet was raised over.
-  const shared = { go, back, setField, reduce, rev: revision() }
   const onSheet = SHEETS.has(route.name)
+  // `under` is whether a sheet is up over the wall: the hive stops moving and
+  // stops writing to the DOM while it is dimmed and blurred behind one.
+  const shared = { go, back, setField, reduce, rev: revision(), under: onSheet }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />

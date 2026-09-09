@@ -198,7 +198,7 @@ front too, and always has.
 
 | Route | What it is |
 | --- | --- |
-| `/berkeley` | **the wall** — the inscription, the names at three weights, drifting in lanes you can pull |
+| `/berkeley` | **the wall**: the hive, the names as a field of faces packed under a lens and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, and the heart on its foot with the count beside it |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
@@ -273,6 +273,8 @@ index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
 Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
              skippable on any key, and the same intro Main plays at `/`
+Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
+             pull, and the pool of slots that draws it
 ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
@@ -294,113 +296,120 @@ seed.js      the printed sources and nothing else now: the corpus and the
 screens/     one file per screen
 ```
 
-## The inscription
+## The hive
 
-One run of names at three weights — not a grid of cards (a directory) and not a
-tag cloud (analytics). Weight comes off how many letters a name carries, so a
-name written to three times is set larger than one written to once and the wall
-has a real topography rather than a decorative one.
+The names are a field of faces seen through a lens (`Hive.jsx`). One disc per
+person written to, the picture the resolver has or a monogram until then,
+packed on a hexagonal lattice that never ends in any direction, each disc
+about nine tenths of the pitch so at full size they nearly touch. The lens is
+the screen's own window: the discs nearest its middle are full size, they
+shrink smoothly toward the edges, and at the rim they are points and the
+field dissolves. A name written to three times is a slightly larger disc than
+one written to once, so the field has a topography under the lens.
 
-It **drifts**, and it can be **pulled**. A static block of names is a
-screenshot: it reads as a list that was printed once, and the one thing this
-surface has to say in its first second is that people are still doing this. So
-the run is broken into lanes, each lane travels at about the speed of a
-departures board, and a finger dragged across any of it takes the whole field
-with it and lets it coast to a stop.
+One thing is written on it. The person in the lens carries a small tag with
+their handle, on a plate of the void on the disc's own lower edge, and under
+a mouse so does the disc the pointer is on. Nothing else: not the name, which
+the resolver knows for a few people and not for most; not the count, which is
+the disc's size; not the time since the last letter. Every one of those is
+behind the tap, on the letters themselves. A field with a caption under every
+third face is a directory, and the wall is a place where people are, not a
+list about them. The handle is the wall's own identifier: letters are
+addressed to it and a person finds their own by it.
 
-One `requestAnimationFrame` in `screens/Wall.jsx` writes every lane's transform.
-The drift, the drag and the throw are the same number, because a CSS animation
-and a pointer handler fighting over the same track is a wall that tears in half
-the moment somebody touches it.
+It replaced three lanes of handles crawling left and right. The lanes said
+the wall was alive and nothing else about anybody on it, and a handle at
+thirteen pixels sliding past is a handle nobody reads.
 
-- **It never ends and it never starts.** Each lane wraps on the modulo of its
-  own **measured** cycle, so there is no first name, no last one, and no edge to
-  hit — pull far enough either way and you come back round to where you began.
-  The measurement is read back after layout and re-read when the faces land: an
-  estimate decides how many copies to render, and a real face is never the face
-  the arithmetic assumed.
-- **A pull moves everything.** Every lane takes the same delta while a drag is
-  live, so the wall reads as one surface being pushed rather than as lanes that
-  happen to be stacked. The alternating drift resumes the instant it ends.
-- **A pull is not a tap.** A press that travels more than 6px swallows the click
-  it would have ended in. Every name is a target, and nothing is worse than a
-  surface that opens a letter because you tried to look past it.
-- **`touch-action: pan-y`** is the whole contract with the browser: vertical is
-  the page's, horizontal is the wall's. A trackpad swiped sideways is taken too,
-  and only when `deltaX` is the larger component.
-- **Slow enough to read**, at one constant speed across every lane whatever it
-  is carrying, with a few percent of jitter. Lanes at visibly different speeds
-  read as a bug, not as parallax.
-- **Alternating direction.** Every lane going one way is a stock crawl; lanes
-  going opposite ways read as a field with weather in it.
-- **The lane under the pointer stops**, drift and throw both, and the whole wall
-  stops for a keyboard. Motion that will not hold still for the person trying to
-  use it has forgotten what it is on top of.
-- **The ends are masked, not cut.** A hard edge on a moving name is a box; a
-  dissolve is a room the name walked out of.
-- **Round-robin, not sliced in blocks**, so the heaviest names end up one per
-  lane instead of stacked in the first two.
+- **It drifts by itself.** One slow drift, always, whose heading wanders so
+  the field never runs one way for long. Nothing steps, settles or snaps: the
+  lens is a continuous function of where a disc is, so as the field moves
+  every disc grows and shrinks smoothly through it, and the tag passes from
+  one person to the next as they cross the middle.
+- **It can be pulled, in any direction.** The field takes the finger; a throw
+  coasts on friction and eases back into the drift rather than stopping; a
+  wheel or a trackpad pans it. Under a mouse the drift slows over the field
+  and rests over a disc, so a name can be pressed. A keyboard walking the
+  names brings each into the lens as it lands on it.
+- **A pull is not a tap.** A press that travels more than 6px swallows the
+  click it would have ended in. Every disc is a target.
+- **The disc is scaled and the tag is not.** A cell is two elements placed
+  separately by the loop, so the type is sharp whatever the lens is doing to
+  the picture.
+- **One `requestAnimationFrame`** writes every position, scale and tag.
+  React is told only when a slot changes hands or the lens moves to another
+  person. Under a sheet the loop stops.
+- **The ends dissolve, in every direction.** A hard edge on a moving face is
+  a box; a fade is a room the face walked out of.
 
 ### It has to work at five names and at five hundred
 
-The corpus is a live thing: on the first morning of a campaign the wall might
-carry five handles and by the end of the week it carries hundreds. Both have to
-look deliberate.
+The lattice is a torus: a tile of C by R cells that repeats in both axes, so
+there is no first name, no last one and no edge to reach. The tile is the
+smallest with room for every name (R even, so the offset rows line up across
+the seam), and the names are laid into it from its middle outward in the
+order the index carries them, newest first, so the people most recently
+written to sit together at the centre of the tile and the stalest at its rim.
+Cells left over are filled from the heaviest names, in turn. A wall of five is
+a field of the same five, which is the truth, and a wall of three hundred
+repeats only at a distance nobody sees twice. Past 240 names the rest are a
+search away.
 
-| | |
-| --- | --- |
-| **the lane count** | a ladder off the handle count (1 lane at ≤4, 2 at ≤10, 3 at ≤18, 4 at ≤30, 5 at ≤44, 6 at ≤60, 7 above), capped again by the room: a lane is 40px and the masthead, the takedown and the dock take about 430, so a short phone gets four and a tall one gets seven. A phone on its side is its own case and gets four |
-| **the run** | repeats itself in **whole passes** through its lane's own names until it is wider than the lane. This is what makes five names work at all: the lane is full, it is simply full of the same five names, which is the truth |
-| **the block** | is centred in whatever height is left over, so two lanes and seven lanes are both placed rather than one of them being dumped under the other |
+The DOM holds a pool of slots the size of the screen and no more, however
+many names the wall carries: each slot owns one cell of the visible window
+and is handed a new name when the field scrolls a cell across. About a
+hundred and fifty slots on a phone and two hundred and fifty on a desktop,
+and the loop's own cost is about a millisecond a frame on either.
 
-Under `prefers-reduced-motion` the original wrapping inscription is rendered
-instead, and none of the above runs.
+### The veil, and the ear
 
-### The line under the title
+The masthead is over the field, not above it. On a fresh load the whole
+screen under the bar is the field, greyed, with the title, the one line
+(`anonymous letters to the one you never told.`, in the reading face, the way
+the front door runs one line of the mechanic under its own headline) and the
+way in laid over it. The scrim is darkest where the type is and gone where it
+is not, so the discs show through under the words as a texture, and it runs
+up over the bar so it has no edge. The scrim is itself the way in, and one
+arrow link says so in words: `view the wall`.
 
-The title names the wall and one line under it says what is on it, `anonymous
-letters to the one you never told.`, in the reading face at seventeen pixels,
-the way the front door runs one line of the mechanic under its own headline. A
-person who scanned a code off a flyer reads the title, this, and then the
-names, and does not have to open a letter to learn what a letter here is. On a
-phone the line keeps clear of the tower, which hangs from the top of the
-masthead beside the whole type block rather than off its last row.
+Lifting it is one movement. The type rises off the field, the field comes up
+to full light, and the lens blooms from flat to full over about a second.
+One line stays exactly where it was through all of it: the ear, under the
+bar, the campus and the count in the identifier face at the size and the
+tracking every dateline in the product is set at. It is the same line the
+front door runs above its own headline to point here, so the line on the
+door and the line on the wall are one line, and it is what makes the veil
+and the field one masthead rather than two: nothing at the top changes shape
+when the type goes. The veil is up once per tab: coming back from a letter
+lands on the field.
 
-### The count, and the tower it holds up
+The tower came off, and so did the count on flaps. The Campanile stood in
+the masthead's corner and then on the count as its plinth, and it never
+stopped reading as a thing put there: a drawing beside a headline that had
+already said which campus this was. The flaps under it were a board, and a
+board is furniture. The wall's one fact is a line of type now, in the ear,
+and the wall's own light is in its field, on the person in the lens.
 
-The masthead prints one fact, the count, and it is not a block beside the
-tower: it is the tower's plinth. The Campanile's shaft comes down, its ledge
-steps out, and the course that ledge caps is the number, on split flaps
-(`art.jsx Flap`), with the word `letters` cut under it the way a date is cut
-into a base. The two used to stand side by side, a drawing and a number at one
-weight arguing over the same corner of the masthead. A tower on a plinth is one
-object, and what is cut into the plinth is what the tower is for: this campus,
-this many letters.
+### The count
 
-The tower knows it is standing (`Campanile stands`). Floating, it dissolves at
-the foot, because a hairline drawing that simply stops reads as one that ran
-out; standing, the fade comes off, because the thing under it is solid. Its
-drawing ends on the upper ledge and the plinth's lower ledge is a rule on the
-block itself (`wall.css .wl-board::before`), which is what keeps the cap the
-width of what it caps whether the wall carries nine letters or nine hundred. A
-cap drawn at a fixed width is right for one count and wrong for every other.
-The plates run almost flush and the top of the block is square along its whole
-length, because a rounded corner under a straight cap is a gap.
+The one fact about this wall worth printing: `19 letters`, in the ear. An
+open wall with nothing on it yet says `open now` in its place, the way the
+front door does, and not a nought; one whose index did not load says so in
+the same place, because a wall that has not loaded has no number; and while
+the index is still loading there is no count at all, since a wall that has
+not answered is not a wall that is open with nothing on it.
 
-The figure is set in the util face rather than the mono, the one count in the
-build that is: on a board a figure is a thing on a plate, not an identifier in
-a line of type. When the number changes, the top half of the old digit folds
-down over the bottom half of the new one, which is the whole of the mechanism.
-On the opening every digit rolls through a few figures before it lands, the
-ones column further than the tens the way an odometer turns; after that a flap
-moves only when a letter goes up, so a flap moving means one did. Under reduced
-motion nothing rolls and nothing folds.
+### What is not on the wall any more
 
-An open wall with nothing on it yet has nothing to stand on, so the tower is
-the floating one it has always been and the line under it says `open now`, the
-way the front door does, and not a zero. A phone on its side has no room for a
-tower at all: it goes, and the flaps and their word drop back to a row beside
-the type, which is what they were before the tower had anything to stand on.
+Two controls stood under the names and both came off. `the rest of
+celestual`, one quiet line under the composer's pill, went because a sign on
+the road is still a sign and the wall is not a road: the brand in the bar
+goes to the front, and that is the whole of the wall's pointing at the
+product until a letter is up and the tab rises. `take your name off the
+wall`, a hairline capsule under the names on every visit, went because on
+the wall it was a control about a consequence nobody had met yet; it stands
+in the search and under the flag on every letter, which is where a person
+who has found their name is standing when they want it gone.
 
 ## The mark
 
@@ -622,18 +631,19 @@ which an icon library cannot do because it does not know what it is next to.
 
 The phone is the one this was designed for and it does not change.
 
-- **≥ 900px** — the wall becomes a poster: the title block across the top with
-  the Campanile at the page's right edge, the lanes edge to edge of the screen
-  and centred in the whole middle of it, and the way in and the way off on the
-  bottom row. It used to be a two column spread, a sticky masthead beside a
-  column of lanes, and on any screen with height that was three short lanes
-  floating in a void. Sheets become centred dialogs. The core
+- **≥ 900px**: the wall becomes a poster. The ear under the bar, the field
+  edge to edge of the screen and the whole middle of it, the veil's type over
+  the left of the field, and the way in on the bottom row. It used to be a two column spread, a sticky masthead
+  beside a column of lanes, and on any screen with height that was three
+  short lanes floating in a void. Sheets become centred dialogs. The core
   service does **not** become a spread: it keeps its one flexible column and
   centres a 30rem measure in it, because a letter set to the width of a desktop
   is not a letter. The room goes around it rather than into it.
-- **landscape phone** (`max-height: 560px`, `min-width: 640px`) — the same
-  spread, early, and every vertical measure that was buying atmosphere gives
-  its space back. On 390px of height, atmosphere is just scrolling.
+- **landscape phone** (`max-height: 560px`, `min-width: 640px`): the same
+  spread, early. The ear and the dock in the left column, the field taking
+  the right column's whole height with the veil over it, and every vertical
+  measure that was buying atmosphere gives its space back. On 390px of
+  height, atmosphere is just scrolling.
 - **≥ 1280px** — the column stops growing. Past that the field around it is the
   design.
 
@@ -665,10 +675,10 @@ which is what keeps the two surfaces one product.
 - **Reduced motion is honoured by jumping, not by freezing.** Three sequences
   here (the overture's six beats, the posting's three, the door's four) are the
   only way those screens reach their final state, so the preference is read in
-  JS and the screen starts at the last beat. The wall's drift is the one thing
-  that is *replaced* rather than jumped: under the preference it renders the
-  original wrapping inscription, because a frozen banner would strand the names
-  in eight ragged rows.
+  JS and the screen starts at the last beat. The hive is the one thing
+  that is *held* rather than jumped: under the preference the field is still
+  with the lens on it, a pull moves it and leaves it, nothing drifts and nothing
+  coasts, and the veil lifts without rising.
 - **The takedown and the report are real inside the tab and nowhere else.**
   Both write to the same one key everything else does, so they survive a reload
   the way a real removal would and are cleared by the same reset — and a
