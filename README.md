@@ -101,8 +101,10 @@ everything that has to happen outside the repo, and
 **[docs/deletions.md](./docs/deletions.md)** carry the decisions and the
 deletions.
 
-Nothing in this repository has been applied to production. The migrations are
-written and verified, and `launchsteps.md` says in what order to apply them.
+Most of the schema is live. The database carries every migration through 0045,
+and 0047; **0038 and 0046 are not recorded as applied**, and
+[docs/launchsteps.md](./docs/launchsteps.md) says what that means and in what
+order to apply what is left.
 
 ---
 

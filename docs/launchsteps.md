@@ -8,10 +8,26 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-**Status: every phase is complete.** Nothing in this repository has been
-applied to production. The migrations are written and verified against a bare
-PostgreSQL; section 2 says in what order to apply them, and section 11 is the
-checklist to work through on the day.
+**Status: every phase is complete, and most of the schema is live.** This line
+used to say nothing in the repository had been applied. That is no longer true
+and had stopped being true some time ago: the database carries every migration
+through 0045 and, since 9 September 2026, 0047.
+
+Two are NOT recorded as applied, and this is the first place to look when
+something in here does not match the database:
+
+- **0038, the audit.** Not in the migration history, and yet part of it is
+  live: `wall_index` is `security_invoker = false` in production, which is
+  0038 line 33 and nothing else. So the history is a record of what was pushed,
+  not a complete record of what was run. Read the database, not this file, when
+  the answer matters.
+- **0046, the opt out reaching the wall.** Not applied. Until it is, taking a
+  handle off at `/optout` still leaves every letter written ABOUT that person
+  standing on the wall under their name.
+
+The migrations are written and verified against a bare PostgreSQL; section 2
+says in what order to apply them, and section 11 is the checklist to work
+through on the day.
 
 Three steps in here are irreversible and are marked where they appear. The free
 tier has no point in time recovery.
@@ -1082,24 +1098,34 @@ the same symbol. A domain is case blind and the route lowercases the code, so
 both forms work. A shorter domain pointed at the same deployment would print as
 `<name>/c/a` and needs one line changed: `SITE` in `app/src/cards.js`.
 
-1. **Apply `0047_the_five_cards.sql`.** `supabase db push`, or paste it into
-   the SQL editor. It adds `wall_cards` (the registry, seeded with `a` through
-   `e`),
+**Status: applied on 9 September 2026.** The migration is in the database
+(recorded as `the_five_cards`) and `celestual-admin` is deployed with it
+(version 15). What is left is the app deploy, step 3.
+
+1. **Apply `0047_the_five_cards.sql`. DONE.** It adds `wall_cards` (the
+   registry, seeded with `a` through `e`),
    `wall_card_events` (the four steps between a scan and a letter),
    `wall_card_step` for the browser, and `celestual_desk_cards` and
    `celestual_desk_card_set` for the desk. Nothing existing is changed and no
    data is touched. Verified by `scripts/verify-migrations.sh --test`
    (`test-cards.sql`, 30 assertions).
-2. **Redeploy `celestual-admin`.** It gains `desk_cards` and `desk_card_set`.
-   `supabase functions deploy celestual-admin`.
+2. **Redeploy `celestual-admin`. DONE.** It gains `desk_cards` and
+   `desk_card_set`. The deployed source was read back and matches this
+   repository byte for byte; `verify_jwt` is still on.
 3. **Deploy the app.** Vercel, as usual. `/c/<code>` resolves before anything
    mounts and needs no rewrite rule: `vercel.json` already sends every path to
-   the SPA.
+   the SPA. Until this lands, the five addresses draw the wall's own not found:
+   the database is ready and the route is not there yet.
 
 Everything is additive and the order is forgiving. An app deployed before the
 migration lands still routes every card to the wall and still logs the scan;
 the four steps are answered `logged: false` until the registry exists. A desk
 opened before the app is deployed shows the five rows with the funnel on them.
+
+Checked against the live database after the apply: five cards seeded and no
+sixth, `celestual_desk_cards` answering five rows, the browser able to log a
+step and unable to read either table or the desk, RLS on both, and a code that
+is not one of the five answered `logged: false` with nothing written.
 
 Then, on the desk: open **the cards** under the wall, name each card and say
 where it is standing, and read the table. It is ordered best first, and best

@@ -242,9 +242,9 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
-- `migrations/0047_the_five_cards.sql`: **five printed cards, and which of
-  them worked.** `wall_cards` is the registry (seeded with `a` through `e`,
-  one letter each because the whole address is printed and a shorter string is
+- `migrations/0047_the_five_cards.sql` (**applied 9 September 2026**): **five
+  printed cards, and which of them worked.** `wall_cards` is the registry
+  (seeded with `a` through `e`, one letter each because the whole address is printed and a shorter string is
   a smaller QR, and each with a label, a place and the path it lands on), so a
   card with no scans on it is still a row rather than an absence. `wall_card_events`
   holds the four steps that had nowhere to be written down between a scan and a
