@@ -28,7 +28,7 @@
 // out of the same SPARK curve as the sparkle above, which is asserted rather
 // than asserted-in-a-comment — see the check at the end of its section.
 
-import { useEffect, useId, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { hash, rand } from './data.js'
 
 // ── the four-point star ─────────────────────────────────────────────────────
@@ -47,6 +47,121 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
     >
       <path d={SPARK} fill={tone === 'ember' ? 'var(--ember)' : tone === 'ink' ? 'var(--paper-ink)' : 'currentColor'} />
     </svg>
+  )
+}
+
+// ── the flaps ───────────────────────────────────────────────────────────────
+// The count on the masthead, on split flaps. The lanes under it already move
+// at the speed of a departures board, and this is that board's number: one
+// flap per digit, the digit in the identifier face in the campus's gold, on a
+// plate of the void with a seam across its middle. When the number changes
+// the top half of the old digit folds down over the bottom half of the new
+// one, which is the whole of the mechanism and the only motion here.
+//
+// On the opening every digit rolls through a few figures before it lands,
+// the ones column further than the tens the way an odometer turns; after
+// that a flap moves only when a letter goes up, so a flap moving means one
+// did. Under reduced motion nothing rolls and nothing folds: the number is
+// simply there.
+//
+// The figure is read as one number and not as four halves: the digits carry
+// an aria-label and the halves are hidden from the tree.
+// the fold itself is timed in wall.css (two halves of 130ms); this is the
+// beat between one figure landing and the next one leaving
+// One fold, and the pause after it. FLAP_MS is the two halves of the CSS
+// animation end to end (130ms down, 130ms in), and the sequence is driven off
+// these rather than off `animationend`.
+//
+// It used to wait for the event, and a flap that never got one stopped where
+// it stood: a browser does not restart an animation whose class was taken off
+// and put back inside one frame, so under load the roll could stall halfway
+// and leave a number on the masthead that was not the number of letters on
+// the wall. A count this product shows is exactly accurate or it is absent
+// (design/VOICE.md section 4), and a stalled flap is neither. On a timer the
+// figure is always the one the server sent, whether or not the fold is drawn.
+const FLAP_MS = 260
+const FLAP_GAP = 40
+const mod10 = (d) => ((d % 10) + 10) % 10
+
+function FlapDigit({ digit, roll = 0, delay = 0 }) {
+  const first = roll > 0 ? mod10(digit - roll) : digit
+  const [shown, setShown] = useState({ cur: first, prev: first, flipping: false })
+  const cur = useRef(first)
+  const queue = useRef([])
+  const busy = useRef(false)
+  const timer = useRef(0)
+
+  // the next figure in the queue that is not the one already showing
+  const advance = useCallback(() => {
+    let next
+    do { next = queue.current.shift() } while (next != null && next === cur.current)
+    if (next == null) { busy.current = false; return }
+    busy.current = true
+    setShown({ cur: next, prev: cur.current, flipping: true })
+    cur.current = next
+    // the fold is over after FLAP_MS whatever the compositor did with it
+    clearTimeout(timer.current)
+    timer.current = setTimeout(land, FLAP_MS)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The fold is done: the halves under it now carry the new figure, and the
+  // next one in the queue goes after a beat.
+  function land() {
+    setShown((s) => ({ ...s, prev: s.cur, flipping: false }))
+    clearTimeout(timer.current)
+    timer.current = setTimeout(advance, FLAP_GAP)
+  }
+
+  // the roll, once, on mount: up through the figures to the one asked for.
+  // The queue is assigned rather than added to, so an effect that runs twice
+  // (React does, in development) rolls once.
+  useEffect(() => {
+    if (!roll) return undefined
+    queue.current = Array.from({ length: roll }, (_, k) => mod10(digit - (roll - 1 - k)))
+    timer.current = setTimeout(advance, delay)
+    return () => clearTimeout(timer.current)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // a later change joins the queue, and goes now if nothing is moving
+  const asked = useRef(digit)
+  useEffect(() => {
+    if (asked.current === digit) return
+    asked.current = digit
+    queue.current.push(digit)
+    if (!busy.current) advance()
+  }, [digit, advance])
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const { cur: c, prev: p, flipping } = shown
+  return (
+    <span className={`wl-flap${flipping ? ' is-flipping' : ''}`} aria-hidden="true">
+      {/* what is under the moving halves: the new top, the old bottom */}
+      <span className="wl-flap-half is-top"><span>{c}</span></span>
+      <span className="wl-flap-half is-bottom"><span>{p}</span></span>
+      {/* the moving halves: the old top folding down, the new bottom folding in */}
+      <span className="wl-flap-half wl-flap-fold is-top"><span>{p}</span></span>
+      <span className="wl-flap-half wl-flap-fold is-bottom"><span>{c}</span></span>
+    </span>
+  )
+}
+
+export function Flap({ value, roll = false, delay = 0, className = '', style }) {
+  const n = Math.max(0, Math.floor(value || 0))
+  const digits = String(n).split('').map(Number)
+  const len = digits.length
+  return (
+    <span className={`wl-flaps ${className}`} style={style} role="img" aria-label={String(n)}>
+      {digits.map((d, i) => (
+        // keyed from the right, so a count going from 99 to 100 keeps the
+        // flaps it had and mounts one new one at the head; and the ones
+        // column rolls furthest, the way an odometer turns
+        <FlapDigit
+          key={len - i} digit={d}
+          roll={roll ? 3 + i * 2 : 0} delay={delay}
+        />
+      ))}
+    </span>
   )
 }
 
@@ -227,16 +342,28 @@ export function Halftone({ size = 96, grid = 20, className = '', style }) {
 //
 // Strokes are one device pixel whatever the size (vector-effect), so it is a
 // line drawing at every scale and never a filled glyph.
-export function Campanile({ width = 64, lit = true, twinkle = false, className = '', style }) {
+// `stands` is the tower with something under it. Floating, it dissolves at the
+// foot, because a hairline drawing that simply stops reads as a drawing that
+// ran out; standing, it must not, because the thing below it is solid and a
+// tower that fades into its own base is a tower nobody built. So the mask
+// comes off and the drawing ends on the upper plinth ledge: the course below
+// that ledge is the count, and it is drawn by the thing that knows how wide
+// the count is. Its lower ledge is a rule on the block itself
+// (wall.css `.wl-board::before`), which is what keeps the cap the width of
+// what it caps whether the wall is carrying nine letters or nine hundred.
+export function Campanile({ width = 64, lit = true, twinkle = false, stands = false, className = '', style }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   // the belfry's three arches, and the shaft's slit windows
   const arches = [40, 47.25, 54.5].map((x) => `M${x} 104V73A3.25 3.25 0 0 1 ${x + 6.5} 73V104`).join('')
   const slits = [150, 186, 222, 258].map((y) => `M48.4 ${y}h3.2v9h-3.2z`).join('')
   const balusters = Array.from({ length: 9 }, (_, i) => `M${35 + i * 3.75} 111.5v4.5`).join('')
+  // drawn to the foot of its plinth and no further when it is standing on
+  // something, and to the full 300 when it is not
+  const deep = stands ? 284 : 300
   return (
     <svg
-      className={`wl-campanile${lit ? ' is-lit' : ''} ${className}`} style={style}
-      width={width} height={width * 3} viewBox="0 0 100 300"
+      className={`wl-campanile${lit ? ' is-lit' : ''}${stands ? ' is-standing' : ''} ${className}`} style={style}
+      width={width} height={Math.round(width * (deep / 100))} viewBox={`0 0 100 ${deep}`}
       aria-hidden="true" focusable="false"
     >
       <defs>
@@ -251,13 +378,13 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
           <stop offset="100%" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
         <mask id={`${uid}m`}>
-          <rect x="0" y="0" width="100" height="300" fill={`url(#${uid}f)`} />
+          <rect x="0" y="0" width="100" height={deep} fill={`url(#${uid}f)`} />
         </mask>
       </defs>
       {/* the light at the top, behind the drawing */}
       {lit && <circle className="wl-campanile-bloom" cx="50" cy="16" r="22" fill={`url(#${uid}g)`} />}
       <g
-        className="wl-campanile-line" mask={`url(#${uid}m)`}
+        className="wl-campanile-line" mask={stands ? undefined : `url(#${uid}m)`}
         fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       >
@@ -278,8 +405,11 @@ export function Campanile({ width = 64, lit = true, twinkle = false, className =
         <path d="M36 117V282M64 117V282" />
         <path d="M40.5 117V282M59.5 117V282" opacity="0.4" />
         <path d={slits} opacity="0.75" />
-        {/* the plinth */}
-        <path d="M30 282H70M27 290H73M27 290V300M73 290V300" />
+        {/* the plinth. Standing, the two ledges are the cap on whatever is
+            under the tower and the courses step out as they descend, the way
+            a base course does; the verticals go, because the block below the
+            ledges is the plinth's body and it is drawn out of flaps. */}
+        <path d={stands ? 'M27 282H73' : 'M30 282H70M27 290H73M27 290V300M73 290V300'} />
       </g>
       {/* the lantern: SPARK, the same star as everywhere else, in gold, its
           centre exactly on the roof's apex so the star is the tip of the

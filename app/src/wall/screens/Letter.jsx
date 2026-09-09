@@ -30,9 +30,10 @@
 //      own rule, which is the fact; the gate names the domain, which is the
 //      consequence, at the moment somebody has decided to find out.
 //
-// What is left reads top to bottom in four steps at four weights: the header,
-// the card, the one thing to do, and the flag under it for the one reader in
-// twenty who came here to get something off the wall rather than to read it.
+// What is left reads top to bottom in three steps at three weights: the header,
+// the card, and the one thing to do. The flag for the one reader in twenty who
+// came here to get something off the wall stands on the card itself, at the
+// end of its foot, opposite the heart (below).
 //
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
@@ -256,10 +257,30 @@ export default function Letter({ id: param, go, back }) {
           title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
           tone={open ? '' : 'shut'}
           foot={(
-            <Hearts
-              letter={one}
-              onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
-            />
+            /* ── the two marks a reader can leave ──
+                The heart at the head of the foot and the flag at its end,
+                both struck in the paper's ink, because both are marks on the
+                document rather than controls on the sheet. The flag used to
+                float alone under the pill, a hairline ring on the void at the
+                bottom of the sheet, which is where a thing goes when nothing
+                has been decided about it. It belongs to the letter: a flag
+                is left ON a thing. So it is in the card's corner now, where a
+                reader looking for the way to say "not this one" looks, and it
+                is the size of the heart beside it rather than of a button. */
+            <div className="wl-letter-marks">
+              <Hearts
+                letter={one}
+                onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
+              />
+              <button
+                type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
+                onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
+                aria-controls="wl-flag-opts"
+                aria-label="take this off the wall" title="take this off the wall"
+              >
+                <Icon name="flag" size={15} />
+              </button>
+            </div>
           )}
         >
           {open
@@ -268,12 +289,34 @@ export default function Letter({ id: param, go, back }) {
         </Paper>
 
         {/* ── the foot ──
-            One primary, and under it the two things somebody who came looking
-            for THEMSELVES needs. Those two are set at the same quiet weight as
-            each other and well below the pill, because between them they are
-            the answer for about one reader in twenty — and for that one reader
-            they have to be in plain sight rather than in a menu. */}
+            One primary, and while the flag is on, the two things somebody who
+            came looking for THEMSELVES needs, standing where the primary was.
+            They take its place rather than stacking under it because a person
+            who has just tapped the flag is not here to write, and a foot that
+            keeps offering the pill above the choice they asked for has two
+            questions on it. "leave it up" is the way back, in the words the
+            report screen uses for the same act. */}
         <SheetFoot>
+          {flagged ? (
+            /* ── what the flag opens ──
+                Two rows, each a sentence in the reader's own words, and no
+                cost written under either: both lead to a screen that says
+                what it does before anything happens, and a menu that
+                explains two irreversible acts in small grey type was asking
+                somebody to read terms at the moment they least wanted to. */
+            <div className="wl-flag-opts" id="wl-flag-opts">
+              <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
+                <span>Take my @ down</span>
+                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
+              </button>
+              <button type="button" className="wl-opt" onClick={() => go('report', one.id)}>
+                <span>Report letter</span>
+                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
+              </button>
+              <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
+            </div>
+          ) : (
+          <>
           {/* ── how many are left, over the one thing to do ──
               Five marks, struck as they go, and no sentence beside them until
               the last one. It stands above the pill rather than beside it
@@ -303,44 +346,8 @@ export default function Letter({ id: param, go, back }) {
               read it
             </Pill>
           )}
-
-          {/* ── the flag ──
-              One mark where there were two sentences. "this is me" and "report
-              it" stood side by side at one weight, and between them they asked
-              a person to choose between two irreversible acts before either had
-              been described: one takes a name and everything under it off the
-              wall for good, the other takes a single letter down for somebody
-              to read. Nothing on the screen said which was which.
-
-              So the two collapse into the one thing they have in common — this
-              should not be up — and the difference moves to where it belongs,
-              into the choice that opens on the tap, with its cost written under
-              it. A flag and not a word, because a word here is a third sentence
-              under a card that is already the point; and in plain sight rather
-              than behind the gate, because a control that appears only once you
-              are known is a control nobody knows is there. */}
-          <div className="wl-letter-quiet">
-            <button
-              type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
-              onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
-              aria-label="take this off the wall" title="take this off the wall"
-            >
-              <Icon name="flag" size={15} />
-            </button>
-
-            {flagged ? (
-              <div className="wl-flag-opts">
-                <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
-                  <span className="wl-opt-t">This is me</span>
-                  <span className="wl-opt-s">the name, and every letter under it, comes off</span>
-                </button>
-                <button type="button" className="wl-opt" onClick={() => go('report', one.id)}>
-                  <span className="wl-opt-t">Report this letter</span>
-                  <span className="wl-opt-s">this one comes down now, and someone reads it after</span>
-                </button>
-              </div>
-            ) : null}
-          </div>
+          </>
+          )}
         </SheetFoot>
       </div>
     </Sheet>

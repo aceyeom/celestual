@@ -238,7 +238,8 @@
 }
 @media (max-width: 359px) {
   .wl-page { --pad: 16px; }
-  .wl-mast-tower { width: 50px; height: 150px; }
+  .wl-mast { gap: 12px; }
+  .wl-mast-tower { width: 46px; }
   /* The orrery is drawn a little wider than the phone it is on, which is the
      one place a moon can be cut. At 470 on a 320px screen the overhang is
      forty pixels a side and a ping a quarter of the way through its sixty
@@ -884,15 +885,36 @@
 }
 .wl-dock-in {
   position: relative;
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 12px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; align-items: stretch; gap: 0;
+  padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
 }
 .wl-dock-in > .wl-pill { flex: 0 0 auto; }
-.wl-dock-in > .wl-arrow { min-width: 0; white-space: nowrap; }
-/* the composer's pill and the way back to the front on one row: the pill
-   takes the room the link leaves it, rather than the whole row */
-.wl-dock-in > .wl-pill.is-wide { width: auto; flex: 1 1 auto; }
-.wl-dock-front { flex: 0 0 auto; padding-right: 2px; }
+/* ── the signpost ──
+   One quiet line under the composer's pill, and the only way to the rest of
+   the product before a letter is up: the quiet control the sheets put under
+   a primary, in the same size and the same grey, so it reads as a caption on
+   the act above it and not as a second act. It stood beside the pill as an
+   arrow link reading "place a ping", at the pill's own height in the display
+   face, and a person who had just scanned a flyer met two verbs on one row
+   and did not know the second one. The arrow travels under the pointer the
+   way every arrow in the product does. */
+.wl-dock-rest {
+  align-self: center;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 6px 7px;
+  text-decoration: none;
+}
+.wl-dock-rest:hover { text-decoration: none; }
+.wl-dock-rest:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; }
+.wl-dock-rest-go {
+  font-size: 13px; line-height: 1;
+  transition: transform 280ms var(--ease), color 200ms var(--ease);
+}
+.wl-dock-rest:hover .wl-dock-rest-go { transform: translateX(4px); color: var(--chalk); }
+.wl-dock-rest:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
+/* with the tab up the signpost is gone (Wall.jsx) and the pill keeps a little
+   floor under it */
+.wl-wallpage.has-tab .wl-dock-in { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 /* a docked page hands the bottom edge to the dock — the page's own padding
    would otherwise leave a strip of void under a gradient that is supposed to
    run off the screen */
@@ -903,20 +925,146 @@
 .wl-page.is-foot .wl-colophon { border-top-color: var(--hair-soft); }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
-.wl-mast { position: relative; padding: 26px 0 30px; flex: 0 0 auto; }
-.wl-mast-meta { margin-top: 16px; }
-/* the count, in the campus's gold: the one number on the poster */
-.wl-mast-meta b { font-weight: 400; color: var(--gold); }
+/* ── the masthead ──
+   Two things on one row: the type on the left, and on the right the tower
+   standing on the count. The tower used to be absolutely positioned over
+   this box, which is what an ornament is; it carries a fact now, so it is
+   laid out with the rest. Both are set on the same floor, so the word cut
+   under the count and the last line of the type share a baseline. */
+.wl-mast {
+  position: relative; padding: 26px 0 30px; flex: 0 0 auto;
+  display: flex; align-items: flex-end; gap: 18px;
+}
+.wl-mast-type { flex: 1 1 auto; min-width: 0; }
+/* ── the line under the title ──
+   What the wall is, in one sentence, set the way the front door sets the
+   line under its own headline (hero.css .hm-read): the reading face at
+   seventeen pixels in ash. */
+.wl-mast-sub {
+  margin: 14px 0 0; max-width: 30ch;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 17px; line-height: 1.5; letter-spacing: 0;
+  color: var(--ash);
+  text-wrap: balance;
+}
+.wl-mast-meta { margin-top: 20px; }
+
+/* ── the monument ──
+   The tower and the count are one object: the shaft comes down, its two
+   ledges step out, and the course they cap is the number. They stood side
+   by side before, two things at one weight in the same corner arguing over
+   which was the masthead's second act. A tower on a plinth is one thing,
+   and what is cut into the plinth is what the tower is for.
+
+   art.jsx `Flap`: the flap is a flat plate a step up from the void with a
+   hairline round it and a seam across its middle, and the digit is the
+   campus's gold in the util face. On a board a figure is a thing on a
+   plate, not an identifier in a line of type, so this is the one count in
+   the build not set in the mono. The lanes below move at the speed of a
+   departures board, and this is that board's number. */
+.wl-mast-stand {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center;
+  /* the hairline the whole monument is drawn in. The tower takes it as
+     currentColor and so does the ledge on the block below it, so the two
+     halves of one object cannot drift apart. */
+  color: rgba(244, 241, 234, 0.5);
+}
+.wl-board { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+/* the plinth's lower ledge, and it is here rather than in the drawing
+   because only the block knows how wide the block is: two digits and four
+   digits are two different plinths, and a cap that is a fixed width is
+   right for one of them and wrong for the other. */
+.wl-board::before {
+  content: ''; align-self: stretch; height: 1px;
+  background: currentColor;
+}
+/* ── the course under the ledge ──
+   Smaller plates than a board on its own carries, so the block sits under
+   the ledge that caps it, and run almost flush: the plates are masonry in
+   one course here, not tiles on a shelf. The top of the block is square
+   along its whole length, because the ledge rests ON it and a rounded
+   corner under a straight cap is a gap; only the two feet are turned. */
+.wl-board .wl-flaps { gap: 1px; }
+.wl-board .wl-flap { --flap-w: 21px; --flap-h: 30px; --flap-half: 15px; --flap-type: 18px; --flap-r: 0px; }
+.wl-board .wl-flap:first-child .wl-flap-half.is-bottom { border-radius: 0 0 0 4px; }
+.wl-board .wl-flap:last-child .wl-flap-half.is-bottom { border-radius: 0 0 4px 0; }
+/* the word, cut under the count the way a date is cut into a base */
+.wl-board-say {
+  display: block;
+  font-family: var(--f-util); font-size: 13px; font-weight: 500; letter-spacing: 0.06em;
+  line-height: 1;
+  color: rgba(244, 241, 234, 0.72);
+}
+/* nothing to stand on yet, so the tower floats and this is a line under it
+   rather than an inscription on anything */
+.wl-board-say.is-open { letter-spacing: 0.13em; margin-top: 10px; }
+
+.wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
+/* One plate. Every measure on it is a variable, because the same plate is
+   drawn at two sizes: on its own, and as a course of the tower's plinth,
+   where it is smaller so the block it makes sits under the ledge that caps
+   it rather than out past the drawing. */
+.wl-flap {
+  --flap-w: 25px; --flap-h: 34px; --flap-half: 17px; --flap-type: 21px; --flap-r: 5px;
+  position: relative; display: block;
+  width: var(--flap-w); height: var(--flap-h);
+  perspective: 260px;
+  font-family: var(--f-util); font-weight: 500;
+  font-size: var(--flap-type); line-height: var(--flap-h);
+  font-feature-settings: 'tnum' 1; letter-spacing: -0.01em;
+  color: var(--gold);
+  -webkit-user-select: none; user-select: none;
+}
+/* the seam, over everything */
+.wl-flap::after {
+  content: ''; position: absolute; left: 0; right: 0; top: var(--flap-half); height: 1px;
+  background: var(--void); opacity: 0.9; z-index: 4;
+}
+/* each half is the whole digit, clipped: the top half holds it at the top of
+   the plate and the bottom half holds it seventeen pixels up, so the two
+   show the two halves of one figure */
+.wl-flap-half {
+  position: absolute; left: 0; right: 0; height: var(--flap-half); overflow: hidden;
+  background: #1A191E;
+  box-shadow: 0 0 0 1px var(--hair) inset;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.wl-flap-half > span { position: absolute; left: 0; right: 0; height: var(--flap-h); text-align: center; display: block; }
+.wl-flap-half.is-top { top: 0; border-radius: var(--flap-r) var(--flap-r) 0 0; background: #1E1D22; }
+.wl-flap-half.is-top > span { top: 0; }
+.wl-flap-half.is-bottom { top: var(--flap-half); border-radius: 0 0 var(--flap-r) var(--flap-r); background: #151418; }
+.wl-flap-half.is-bottom > span { top: calc(var(--flap-half) * -1); }
+/* the moving halves. The old top folds down about the seam and goes edge on
+   at ninety degrees; the new bottom starts edge on and folds down to flat.
+   Both are the same 130ms, one after the other. At rest neither exists on
+   the plate: they are there only for the length of a fold. */
+.wl-flap-fold { z-index: 3; }
+.wl-flap:not(.is-flipping) .wl-flap-fold { visibility: hidden; }
+.wl-flap-fold.is-top { transform-origin: 50% 100%; }
+.wl-flap-fold.is-bottom { transform-origin: 50% 0; transform: rotateX(90deg); }
+.wl-flap.is-flipping .wl-flap-fold.is-top { animation: wl-flap-top 130ms cubic-bezier(0.4, 0, 1, 1) both; }
+.wl-flap.is-flipping .wl-flap-fold.is-bottom { animation: wl-flap-bottom 130ms 130ms cubic-bezier(0, 0, 0.6, 1) both; }
+@keyframes wl-flap-top {
+  from { transform: rotateX(0deg); filter: brightness(1); }
+  to   { transform: rotateX(-90deg); filter: brightness(0.6); }
+}
+@keyframes wl-flap-bottom {
+  from { transform: rotateX(90deg); filter: brightness(0.7); }
+  to   { transform: rotateX(0deg); filter: brightness(1); }
+}
 
 /* ── the campanile ──
    art.jsx `Campanile`. Standing in the masthead's corner where the dotted
-   sphere was, its plinth on the count's baseline, drawn in hairlines of
-   chalk at half strength so it is a thing in the night and not a logo on
-   it. Its lantern is the masthead's one light, in the campus's gold. */
+   sphere was, drawn in hairlines of chalk at half strength so it is a
+   thing in the night and not a logo on it. Its lantern is the masthead's
+   one light, in the campus's gold. It is in the flow rather than hung over
+   the box: it stands on the count, and a thing that stands on something
+   cannot be positioned away from it. The height comes off the drawing's
+   own viewBox, which is shorter when it stands, so only the width is set
+   here and the ratio is the SVG's. */
 .wl-mast-tower {
-  position: absolute; right: 0; bottom: -2px;
-  width: 64px; height: 192px;
-  color: rgba(244, 241, 234, 0.5);
+  width: 58px; height: auto;
   pointer-events: none;
 }
 .wl-campanile { display: block; overflow: visible; }
@@ -1031,8 +1179,11 @@
    stagger capped at forty — past that the cascade is longer than anybody's
    patience and the tail may as well be there already. */
 .wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
+.wl-wallpage.is-opening .wl-mast-sub   { animation: wl-fade 900ms var(--ease) 620ms both; }
 .wl-wallpage.is-opening .wl-mast-meta  { animation: wl-fade 900ms var(--ease) 900ms both; }
-.wl-wallpage.is-opening .wl-mast-tower { animation: wl-fade 1200ms var(--ease) 1000ms both; }
+/* the monument arrives as one object, tower and plinth together, and the
+   flaps start turning while it is still coming up */
+.wl-wallpage.is-opening .wl-mast-stand { animation: wl-fade 1200ms var(--ease) 900ms both; }
 /* the cascade arrives a LANE at a time rather than a name at a time. Eighty
    staggered fades over a field that is also travelling is two animations
    arguing; one fade per lane reads as the wall assembling in bands. */
@@ -1097,53 +1248,62 @@
 .wl-pager-b:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244,241,234,0.24); }
 .wl-pager-b:disabled { opacity: 0.28; }
 
-/* ── the flag, and the two things it opens ────────────────────────────────
-   Two hairline capsules stood here — "this is me" and "report it" — at one
-   weight, side by side, each of them a sentence that named an act without
-   naming what the act costs. One mark now, the size of a mark rather than of
-   a button, centred on the same axis as the pill above it; and the choice
-   arrives underneath it, on the tap, with the consequence set under each
-   option in the reader's grey. */
-.wl-letter-quiet {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding-top: 14px;
+/* ── the flag, on the card ─────────────────────────────────────────────────
+   Letter.jsx. The two marks a reader can leave on a letter share the paper's
+   foot: the heart at its head and the flag at its end, both struck in the
+   paper's ink, both the size of a glyph rather than of a button. The flag
+   used to stand alone under the pill at the bottom of the sheet, a hairline
+   ring on the void with nothing beside it, which is where a control goes
+   when nobody has decided what it belongs to. It belongs to the letter. */
+.wl-letter-marks {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 22px;
 }
 .wl-flag {
-  flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  flex: 0 0 auto; width: 34px; height: 34px; padding: 0;
+  margin: -6px -8px -6px 0; border-radius: 50%;
   display: grid; place-items: center;
-  border: 1px solid var(--hair-soft); color: var(--ash-dim);
+  border: 1px solid transparent; background: none;
+  color: var(--paper-ink-2);
   transition: color 220ms var(--ease), border-color 220ms var(--ease),
               background 220ms var(--ease);
 }
-.wl-flag:hover { color: var(--ash); border-color: var(--hair); }
+.wl-flag:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+.wl-flag:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
 /* Open, it is the thing the two options belong to rather than a control
-   waiting to be pressed again, so it holds the light instead of inviting. */
+   waiting to be pressed again: a ring in the head rule's own ink, and the
+   glyph at full strength. */
 .wl-flag.is-on {
-  color: var(--chalk); border-color: var(--hair);
-  background: rgba(244, 241, 234, 0.05);
+  color: var(--paper-ink);
+  border-color: rgba(23, 21, 15, 0.28);
+  background: rgba(23, 21, 15, 0.06);
 }
 
+/* ── what the flag opens ──
+   Two rows in the sheet's foot, standing where the primary stood, each one
+   sentence and an arrow: both lead to a screen that says what it does before
+   anything happens, so nothing has to be explained here in small type. The
+   quiet line under them is the way back. */
 .wl-flag-opts {
   width: 100%; display: flex; flex-direction: column; gap: 8px;
   animation: wl-fade 260ms var(--ease) both;
 }
 .wl-opt {
-  display: flex; flex-direction: column; gap: 3px;
-  text-align: left; padding: 12px 16px;
-  border-radius: var(--r-field); border: 1px solid var(--hair-soft);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 50px; padding: 12px 18px;
+  text-align: left;
+  border-radius: var(--r-field); border: 1px solid var(--hair);
+  font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  color: var(--chalk);
   transition: border-color 220ms var(--ease), background 220ms var(--ease);
 }
-.wl-opt:hover { border-color: var(--hair); background: rgba(244, 241, 234, 0.04); }
-.wl-opt-t {
-  font-family: var(--f-util); font-size: 13px; letter-spacing: 0.01em;
-  color: var(--chalk);
+.wl-opt:hover { border-color: rgba(244, 241, 234, 0.24); background: rgba(244, 241, 234, 0.04); }
+.wl-opt-go {
+  flex: 0 0 auto; color: var(--ash-dim); font-size: 14px; line-height: 1;
+  transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-/* The cost, and it is body copy rather than decoration: somebody is about to
-   choose between two irreversible acts on the strength of this line. */
-.wl-opt-s {
-  font-family: var(--f-util); font-size: 11.5px; line-height: 1.45;
-  color: var(--ash);
-}
+.wl-opt:hover .wl-opt-go { transform: translateX(4px); color: var(--chalk); }
+.wl-flag-opts > .wl-quiet { margin-top: 2px; }
 
 /* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
    Letter.jsx `Hearts`, in the paper's foot. The glyph is a control on its
@@ -1861,10 +2021,16 @@
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
   .wl-mast {
     grid-column: 1 / -1; grid-row: 2;
-    padding: 34px 130px 0 0;
+    padding: 34px 0 0;
+    gap: 40px;
   }
-  /* the tower stands at the page's right edge, its plinth on the count's line */
-  .wl-mast-tower { right: 0; bottom: -6px; top: auto; width: 74px; height: 222px; }
+  /* the monument stands at the page's right edge, on the type's own floor,
+     and it is drawn larger here: a spread has the room, and the count is a
+     headline number rather than a mark in a corner */
+  .wl-mast-tower { width: 84px; }
+  .wl-board .wl-flap { --flap-w: 26px; --flap-h: 37px; --flap-half: 18.5px; --flap-type: 22px; }
+  .wl-board-say { font-size: 14px; }
+  .wl-mast-sub { max-width: 40ch; font-size: 18px; }
   .wl-wall {
     grid-column: 1 / -1; grid-row: 3;
     align-self: center;
@@ -1946,8 +2112,18 @@
     column-gap: 40px;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
-  .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; }
+  .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; gap: 14px; }
+  /* three hundred and fifty pixels of height has no room for a tower. The
+     count is not an ornament and stays: the flaps and their word drop back
+     to a row beside the type, which is what they were before the tower had
+     anything to stand on. */
   .wl-mast-tower { display: none; }
+  .wl-board { flex-direction: row; align-items: center; gap: 10px; }
+  /* no tower, so nothing is being capped: the ledge is a plinth's cap and
+     not a rule under a number */
+  .wl-board::before { display: none; }
+  .wl-board .wl-flap:first-child .wl-flap-half.is-top { border-radius: 4px 0 0 0; }
+  .wl-board .wl-flap:last-child .wl-flap-half.is-top { border-radius: 0 4px 0 0; }
   .wl-wall { grid-column: 2; grid-row: 2 / span 3; padding-top: 10px; line-height: 1.9; }
   /* 350px of height is four lanes, and the ladder in Wall.jsx caps it there.
      The lanes give back the air rather than the type: a 24px lane cannot set a
@@ -1962,7 +2138,8 @@
   .wl-display.is-xl { font-size: clamp(23px, 3.4vw, 30px); }
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
-  .wl-mast-meta { margin-top: 10px; }
+  .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: 15px; }
+  .wl-mast-meta { margin-top: 12px; }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }

@@ -507,6 +507,9 @@ async function fulfil(route) {
   if (url.includes('/api/resolve')) {
     const h = String(JSON.parse(req.postData() || '{}').handle || '').toLowerCase()
     const row = HANDLES.find(([x]) => x === h)
+    // a handle the fixture does not carry is an account the resolver did not
+    // find, which is a state worth drawing, and not a reason to stop the run
+    if (!row) return route.fulfill({ json: { ok: true, found: false, handle: h, cached: true } })
     const answer = () => route.fulfill({
       json: {
         ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2],
@@ -600,10 +603,14 @@ const ROUTES = [
   { label: 'sky-prove-code', path: '/sky', verified: false,
     acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
   { label: 'reveal',        path: '/reveal/jules.k' },
-  { label: 'berkeley',      path: '/berkeley' },
+  // the monument's flaps roll into place over the opening (art.jsx Flap), so
+  // the wall is shot once they have landed
+  { label: 'berkeley',      path: '/berkeley', settle: 6000 },
+  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 6000 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
+  { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
   // 0040: the names off the index under the field while a handle is still
@@ -691,13 +698,16 @@ for (const r of list) {
       })
     }
 
-    await page.addInitScript(({ DRAFT, VERIFIED }) => {
+    // The tab at the foot of the wall exists once this browser has put a
+    // letter up, and `written` is the list of those letters' ids.
+    const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
           member: 'someone@berkeley.edu',
           verified: VERIFIED ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
-          written: [],
+          written: WRITTEN,
           proof: 'a'.repeat(64),
           draft: DRAFT,
         }))
@@ -715,7 +725,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED })
+    }, { DRAFT, VERIFIED, WRITTEN })
 
     await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)
@@ -751,7 +761,7 @@ for (const r of list) {
       if (act === 'click') await page.click(sel, { timeout: 4000 }).catch(() => {})
       await page.waitForTimeout(700)
     }
-    await page.waitForTimeout(2600)
+    await page.waitForTimeout(r.settle || 2600)
 
     const file = join(out, `${r.label}-${v.name}.png`)
     await page.screenshot({ path: file })

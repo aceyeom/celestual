@@ -17,8 +17,10 @@
 // somewhere else (auth.js).
 //
 // The core service is the opposite of all of that, and it is somewhere else
-// again. The ONE door to it is the tab at the bottom of this screen, and that
-// tab does not exist until you have put a letter up yourself.
+// again. The one OFFER of it is the tab at the bottom of this screen, and that
+// tab does not exist until you have put a letter up yourself. Before that
+// there is a signpost and nothing more: one quiet line under the composer's
+// pill, "the rest of celestual", which says there is more and asks nothing.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE INSCRIPTION — it drifts, and now it is also a thing you can pull    ║
@@ -81,9 +83,9 @@
 // names in ragged rows, but the composition this was before it moved.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
-import { Sparkle, Campanile } from '../art.jsx'
-import { wall, liveCount, atHandle, rand, wallError, loadWall, term } from '../data.js'
+import { Display, Label, Pill, TopBar, Icon, SiteFoot } from '../parts.jsx'
+import { Sparkle, Campanile, Flap } from '../art.jsx'
+import { wall, liveCount, atHandle, rand, wallError, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -217,7 +219,7 @@ export default function Wall({ go, reduce, rev }) {
   // ── how many lanes the SCREEN is worth ──
   // The ladder above answers how many lanes the corpus is worth. This answers
   // how many the room is: a lane is 40px and the masthead, the takedown and the
-  // dock take about 430 of them, so a short phone gets four lanes and a tall one
+  // dock take about 470 of them, so a short phone gets four lanes and a tall one
   // gets seven. Without this the wall either overflows a small screen and gets
   // its top and bottom rows clipped, or floats seven rows in the middle of a
   // desktop column with nothing under them.
@@ -226,7 +228,7 @@ export default function Wall({ go, reduce, rev }) {
   // the masthead has moved into the left column, so the names have the whole
   // height of the right one. Four is what 350px of it holds.
   const sideways = vp.w >= 640 && vp.h < 560
-  const cap = sideways ? 4 : Math.max(2, Math.min(7, Math.floor((vp.h - 430) / 42)))
+  const cap = sideways ? 4 : Math.max(2, Math.min(7, Math.floor((vp.h - 470) / 42)))
   const lanes = useMemo(() => laneUp(tiles, laneCount(tiles.length, cap)), [tiles, cap])
 
   // How wide one pass has to be before the lane is full. The wall is full
@@ -489,25 +491,68 @@ export default function Wall({ go, reduce, rev }) {
           which were the reference poster's ornaments and said nothing about
           where this wall was; the tower is the one silhouette that says
           "berkeley" before the type does, and its lantern is the masthead's
-          light now (art.jsx). A count and the term are the only facts about
-          this wall worth printing, because a thin wall should look thin, and
+          light now (art.jsx). The count is the only fact about this wall
+          worth printing, because a thin wall should look thin, and
           everything else that used to sit here was decoration wearing an
-          information costume. */}
+          information costume. The term went with it: a wall that is up is
+          up now, and a date beside a live count read as a footnote.
+
+          The count is on split flaps (art.jsx Flap), and it is not a block
+          NEXT TO the tower: it is the tower's plinth. The shaft comes down,
+          its two ledges step out, and the course they cap is the number,
+          with the word cut under it the way a date is cut into a base. The
+          tower and the count are one monument, which is what they were
+          always describing between them: this campus, this many letters.
+          Beside each other they were two objects at one weight arguing over
+          the same corner. On the opening the digits roll into place; after
+          that a flap moves only when a letter goes up. */}
       <div className="wl-mast">
-        <Campanile width={64} className="wl-mast-tower" twinkle={!reduce} />
-        <Display size="xl" className="wl-mast-title">
-          A wall of<br />unforgettable<br />berkeley bears.
-        </Display>
-        {wallError() ? (
-          <Label tone="dim" className="wl-mast-meta" aria-live="polite">
-            {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
-            {wallError() === 'offline' ? null : (
-              <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
-            )}
-          </Label>
-        ) : (
-          <Label tone="dim" className="wl-mast-meta"><b>{letters}</b> letters · {term()}</Label>
-        )}
+        <div className="wl-mast-type">
+          <Display size="xl" className="wl-mast-title">
+            A wall of<br />unforgettable<br />berkeley bears.
+          </Display>
+          {/* ── what it is, in one line ──
+              The title names the wall and this says what is on it, in the
+              reading face, the way the front door runs one line of the
+              mechanic under its own headline (hero.css .hm-read). A person
+              who scanned a code off a flyer reads the title, then this, then
+              the names, and does not have to open a letter to learn what a
+              letter here is. */}
+          <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
+          {wallError() ? (
+            <Label tone="dim" className="wl-mast-meta" aria-live="polite">
+              {wallError() === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
+              {wallError() === 'offline' ? null : (
+                <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
+              )}
+            </Label>
+          ) : null}
+        </div>
+
+        {/* ── the monument ──
+            The tower standing on its count. The shaft is drawn to the foot
+            of its plinth (art.jsx Campanile `stands`), the flaps are the
+            course that plinth caps, and the word is cut under them. With no
+            letters yet there is nothing to stand on, so the tower is the
+            floating one it has always been and the line says the wall is
+            open rather than drawing a nought into a monument. */}
+        <div className="wl-mast-stand">
+          <Campanile
+            width={58} stands={letters > 0} className="wl-mast-tower" twinkle={!reduce}
+          />
+          {letters > 0 ? (
+            <div className="wl-board">
+              {/* the roll plays with the opening and only then: the stand
+                  fades in at 900ms and the flaps turn once it is there */}
+              <Flap value={letters} roll={playing} delay={1100} />
+              <span className="wl-board-say">{letters === 1 ? 'letter' : 'letters'}</span>
+            </div>
+          ) : (
+            /* an open wall with nothing on it yet: the state a term starts
+               in, said the way the front door says it, and not as a zero */
+            <Label className="wl-board-say is-open">open now</Label>
+          )}
+        </div>
       </div>
 
       {/* ── the names ──
@@ -610,24 +655,32 @@ export default function Wall({ go, reduce, rev }) {
           </button>
         )}
 
-        {/* ── the way in, and the way back ──
-            The composer's pill, and beside it the one link off the wall
-            that is not the tab above: the front door, named by the act it
-            is for. "write" here, "place a ping" there: the two acts of
-            the product on one row, in the product's own words. It is a way
-            back and not a pitch, which is why it is a quiet arrow link and
-            not the tab: the tab offers an account and waits until a letter
-            is up (above); this offers an address and is always here, because
-            a person who walked in from the front door has to be able to
-            walk out the same way. A real anchor: the wall's shell cannot
-            draw Main, so the walk back is a navigation. */}
+        {/* ── the way in, and the signpost ──
+            The composer's pill, and under it one quiet line. The line used
+            to be an arrow link beside the pill reading "place a ping", set
+            in the display face at the pill's own height: two acts on one
+            row, in two vocabularies, and the second one a word nobody who
+            scanned a flyer has met. A person standing on the wall read it
+            as a choice they could not make.
+
+            So it is the quiet control now, the sentence the sheets put under
+            a primary and nothing else, and it names the product rather than
+            an act: there is more of celestual than this wall, and the front
+            door says what. It does not pitch, it does not say "ping", and
+            it is the size of a caption, because the tab above is the offer
+            and this is only the sign on the road to it. It goes while the
+            tab is up, since the tab is that road. A real anchor: the wall's
+            shell cannot draw Main, so the walk over is a navigation. */}
         <div className="wl-dock-in">
           <Pill tone="light" wide onClick={() => go('write')}>
             write
           </Pill>
-          <ArrowLink href="/" size="s" tone="quiet" className="wl-dock-front" title="the front">
-            place a ping
-          </ArrowLink>
+          {!tab && (
+            <a className="wl-quiet wl-dock-rest" href="/" title="the front">
+              <span>the rest of celestual</span>
+              <span className="wl-dock-rest-go" aria-hidden="true">&#8594;</span>
+            </a>
+          )}
         </div>
       </div>
     </div>

@@ -102,7 +102,7 @@ the same act:
 
 | | |
 | --- | --- |
-| **one letter** | the flag under the letter, then `Report this letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **one letter** | the flag in the corner of the letter, then `Report letter`. Off the wall on the tap, with no category, no severity and no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 There is a third, and it is not a wall control at all: the product's opt out
@@ -122,15 +122,22 @@ room and cannot be asked. So the proof sits on the irreversible action and
 nowhere else, and the person who just wants a letter about them gone is never
 sent through it.
 
-They are reachable from three places, none of them a footer: the flag under any
-letter, which opens both of them with the cost of each written under it; under
-the names on the wall itself; and from the search.
+They are reachable from three places, none of them a footer: the flag at the
+foot of any letter, which opens both of them, `Take my @ down` and
+`Report letter`, standing where the sheet's primary stood; under the names on
+the wall itself; and from the search.
 
 The flag replaced a pair of bare capsules — `this is me` and `report it` — that
 stood side by side at one weight. Between them they asked a person to choose
 between the reversible act and the irreversible one before either had been
 described, which is the one decision on this surface that must not be made by
-guessing at a label.
+guessing at a label. The flag then stood alone under the pill, a ring on the
+void at the bottom of the sheet, which is where a control goes when nothing has
+been decided about what it belongs to. It belongs to the letter: a flag is left
+ON a thing. So it stands on the card now, at the end of its foot opposite the
+heart, struck in the paper's ink at the heart's size, and the two acts it opens
+carry no small print, because each leads to a screen that says what it does
+before anything happens.
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -173,11 +180,19 @@ thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
 control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
 is still gated on having put a letter up.
 
-The tab is the only route out of the wall, and it does not exist until
-somebody has put a letter up. Offering an account to a person who has not
+The tab is the only offer the wall makes of the product, and it does not exist
+until somebody has put a letter up. Offering an account to a person who has not
 written anything is asking them to register for a result they cannot receive.
 Offering it thirty seconds after they have named somebody is asking the one
 question they are now actually carrying.
+
+Before the tab there is a signpost and nothing more: one quiet line under the
+composer's pill, `the rest of celestual`, a real anchor to `/`. It says there is
+more and asks nothing, and it goes while the tab is up. It replaced an arrow
+link beside the pill reading `place a ping`, set in the display face at the
+pill's own height: two verbs on one row, in two vocabularies, and the second
+one a word nobody who scanned a flyer had met. The brand in the bar goes to the
+front too, and always has.
 
 ## The screens
 
@@ -340,6 +355,52 @@ look deliberate.
 
 Under `prefers-reduced-motion` the original wrapping inscription is rendered
 instead, and none of the above runs.
+
+### The line under the title
+
+The title names the wall and one line under it says what is on it, `anonymous
+letters to the one you never told.`, in the reading face at seventeen pixels,
+the way the front door runs one line of the mechanic under its own headline. A
+person who scanned a code off a flyer reads the title, this, and then the
+names, and does not have to open a letter to learn what a letter here is. On a
+phone the line keeps clear of the tower, which hangs from the top of the
+masthead beside the whole type block rather than off its last row.
+
+### The count, and the tower it holds up
+
+The masthead prints one fact, the count, and it is not a block beside the
+tower: it is the tower's plinth. The Campanile's shaft comes down, its ledge
+steps out, and the course that ledge caps is the number, on split flaps
+(`art.jsx Flap`), with the word `letters` cut under it the way a date is cut
+into a base. The two used to stand side by side, a drawing and a number at one
+weight arguing over the same corner of the masthead. A tower on a plinth is one
+object, and what is cut into the plinth is what the tower is for: this campus,
+this many letters.
+
+The tower knows it is standing (`Campanile stands`). Floating, it dissolves at
+the foot, because a hairline drawing that simply stops reads as one that ran
+out; standing, the fade comes off, because the thing under it is solid. Its
+drawing ends on the upper ledge and the plinth's lower ledge is a rule on the
+block itself (`wall.css .wl-board::before`), which is what keeps the cap the
+width of what it caps whether the wall carries nine letters or nine hundred. A
+cap drawn at a fixed width is right for one count and wrong for every other.
+The plates run almost flush and the top of the block is square along its whole
+length, because a rounded corner under a straight cap is a gap.
+
+The figure is set in the util face rather than the mono, the one count in the
+build that is: on a board a figure is a thing on a plate, not an identifier in
+a line of type. When the number changes, the top half of the old digit folds
+down over the bottom half of the new one, which is the whole of the mechanism.
+On the opening every digit rolls through a few figures before it lands, the
+ones column further than the tens the way an odometer turns; after that a flap
+moves only when a letter goes up, so a flap moving means one did. Under reduced
+motion nothing rolls and nothing folds.
+
+An open wall with nothing on it yet has nothing to stand on, so the tower is
+the floating one it has always been and the line under it says `open now`, the
+way the front door does, and not a zero. A phone on its side has no room for a
+tower at all: it goes, and the flaps and their word drop back to a row beside
+the type, which is what they were before the tower had anything to stand on.
 
 ## The mark
 
