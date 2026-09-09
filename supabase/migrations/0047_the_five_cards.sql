@@ -43,12 +43,19 @@
 -- be inflated from a console. The desk shows both.
 --
 -- ── THE ROUTE ────────────────────────────────────────────────────────────────
--- The cards do not carry `?s=`. They carry `celestual.us/c/<code>`, a route the
--- app owns, which logs the scan and hands the visitor on to wherever that card
--- is pointed. `landing` here is what the desk reads; app/src/cards.js is what
--- the browser reads, and the two are kept the same by hand. The reason the
--- route exists at all is that paper cannot be redeployed: a card printed on
--- Tuesday can be pointed somewhere else on Friday.
+-- The cards do not carry `?s=`. They carry `celestual.us/c/a`, a route the app
+-- owns, which logs the scan and hands the visitor on to wherever that card is
+-- pointed. `landing` here is what the desk reads; app/src/cards.js is what the
+-- browser reads, and the two are kept the same by hand. The reason the route
+-- exists at all is that paper cannot be redeployed: a card printed on Tuesday
+-- can be pointed somewhere else on Friday.
+--
+-- The codes are one letter because the whole address is printed and a shorter
+-- string is a smaller QR: sixteen characters fits the smallest symbol there is,
+-- which means fatter modules and a scan that survives a worse phone at a worse
+-- angle. What each letter means is the `label` beside it, which is a word the
+-- desk can change; the letter is the part that cannot be changed, because it
+-- has been printed.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── 1. the registry ──────────────────────────────────────────────────────────
@@ -86,11 +93,11 @@ create table if not exists wall_cards (
 -- that is wrong the first time the creative changes. What each one says and
 -- where it stands is the label and the place, and both are edited on the desk.
 insert into wall_cards (code, label, place, campus, landing) values
-  ('card-a', 'card a', null, 'berkeley', '/berkeley'),
-  ('card-b', 'card b', null, 'berkeley', '/berkeley'),
-  ('card-c', 'card c', null, 'berkeley', '/berkeley'),
-  ('card-d', 'card d', null, 'berkeley', '/berkeley'),
-  ('card-e', 'card e', null, 'berkeley', '/berkeley')
+  ('a', 'card a', null, 'berkeley', '/berkeley'),
+  ('b', 'card b', null, 'berkeley', '/berkeley'),
+  ('c', 'card c', null, 'berkeley', '/berkeley'),
+  ('d', 'card d', null, 'berkeley', '/berkeley'),
+  ('e', 'card e', null, 'berkeley', '/berkeley')
 on conflict (code) do nothing;
 
 -- ── 2. the steps ─────────────────────────────────────────────────────────────
@@ -116,6 +123,20 @@ create table if not exists wall_card_events (
   constraint wall_card_events_step_ck check (step in ('read', 'gate', 'joined', 'handoff'))
 );
 create index if not exists wall_card_events_idx on wall_card_events (code, step, created_at);
+
+-- ── and the codes this file used to seed ─────────────────────────────────────
+-- An earlier draft of this migration seeded `card-a` through `card-e`, and the
+-- codes went to one letter before anything was printed. A database that took
+-- the first draft would otherwise carry ten rows and show five empty cards on
+-- the desk for good.
+--
+-- Only ever a row nothing has happened to. A code that has been scanned once is
+-- a code that is out in the world on a piece of paper, whatever this file now
+-- says, and deleting it would take its scans with it.
+delete from wall_cards c
+ where c.code in ('card-a', 'card-b', 'card-c', 'card-d', 'card-e')
+   and not exists (select 1 from wall_card_events e where e.code = c.code)
+   and not exists (select 1 from wall_scans s where s.source_code = c.code);
 
 -- Deny by default, like every other table on the wall. Both of these are
 -- reached through the SECURITY DEFINER functions below and through nothing

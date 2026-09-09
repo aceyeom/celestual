@@ -1067,15 +1067,24 @@ which pointed them at one surface for as long as the paper existed.
 The addresses, one per card, and they are what goes in the QR:
 
 ```
-https://celestual.us/c/card-a
-https://celestual.us/c/card-b
-https://celestual.us/c/card-c
-https://celestual.us/c/card-d
-https://celestual.us/c/card-e
+https://celestual.us/c/a
+https://celestual.us/c/b
+https://celestual.us/c/c
+https://celestual.us/c/d
+https://celestual.us/c/e
 ```
 
+Sixteen characters, which is the smallest QR symbol there is: fatter modules,
+read from further away by a worse phone. Encode the string in UPPERCASE
+(`HTTPS://CELESTUAL.US/C/A`) and it is smaller again, because a QR encoder has
+an alphanumeric mode with no lowercase in it that packs about a third more into
+the same symbol. A domain is case blind and the route lowercases the code, so
+both forms work. A shorter domain pointed at the same deployment would print as
+`<name>/c/a` and needs one line changed: `SITE` in `app/src/cards.js`.
+
 1. **Apply `0047_the_five_cards.sql`.** `supabase db push`, or paste it into
-   the SQL editor. It adds `wall_cards` (the registry, seeded with the five),
+   the SQL editor. It adds `wall_cards` (the registry, seeded with `a` through
+   `e`),
    `wall_card_events` (the four steps between a scan and a letter),
    `wall_card_step` for the browser, and `celestual_desk_cards` and
    `celestual_desk_card_set` for the desk. Nothing existing is changed and no
@@ -1097,8 +1106,8 @@ where it is standing, and read the table. It is ordered best first, and best
 is `joined`: a campus address or a handle proved after that code was scanned.
 Scans alone measure the corridor the card is taped to.
 
-The test of the whole path: open `celestual.us/c/card-a` on a phone, land on
-the wall, open a letter, and put an address into the gate. Three rows appear
+The test of the whole path: open `celestual.us/c/a` on a phone, land on the
+wall, open a letter, and put an address into the gate. Three rows appear
 against card a on the desk within the minute: the scan, `read one`, and
 `asked`. Type the code back and `joined` follows.
 

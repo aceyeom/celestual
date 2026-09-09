@@ -136,8 +136,12 @@ export default function Cards({ password, onLock }) {
                 {rows.map((c) => (
                   <tr key={c.code}>
                     <td className="is-wide">
+                      {/* The label, then the path rather than the bare code:
+                          a card that has not been named yet is labelled "card
+                          a" and a dim "a" beside it says nothing twice, while
+                          "/c/a" is the thing printed on it. */}
                       <span className="ad-id">{c.label}</span>{' '}
-                      <span className="ad-id is-dim">{c.code}</span>
+                      <span className="ad-id is-dim">/c/{c.code}</span>
                       {c.place ? <div className="ad-sub">{c.place}</div> : null}
                       {!c.is_active ? <div className="ad-sub"><State tone="is-off">out of circulation</State></div> : null}
                     </td>
