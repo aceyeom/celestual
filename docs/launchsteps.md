@@ -1161,8 +1161,9 @@ the point.
 The test of the whole path: sign in on Main with the DM code, open
 `/berkeley`, and read a letter without ever giving an address. Then open the
 composer: it should still say the letters are written by Berkeley. On a campus
-address, write three letters and watch the three marks in the composer's foot
-go out one at a time; the fourth press is refused before it is written.
+address, write three letters: the composer's foot says nothing about the
+count while any are left, and after the third it says the limit is reached
+and the act goes dark; a fourth press is refused before it is written.
 
 ## The pass list (migration 0043)
 

@@ -158,7 +158,7 @@ export default function Posted({ go, reduce }) {
         <Display size="m">
           {refused === 'screened' ? <>It didn&rsquo;t go up.</>
             : refused === 'removed' ? <>That name is off<br />the wall.</>
-            : refused === 'cap' ? <>Three a week,<br />and that was three.</>
+            : refused === 'cap' ? <>Letter limit<br />reached.</>
             : refused === 'gate' || refused === 'no_session' ? <>Berkeley only.</>
             : refused === 'network' ? <>It did not<br />go through.</>
             : <>Nothing to put up.</>}
@@ -171,7 +171,7 @@ export default function Posted({ go, reduce }) {
           <Label tone="dim" className="wl-posted-count">
             {refused === 'screened' ? 'the screen held it back'
               : refused === 'removed' ? 'nobody can write to it now'
-              : refused === 'cap' ? 'one comes back seven days after you wrote it'
+              : refused === 'cap' ? 'three a week. wait a week and try again'
               : refused === 'gate' ? 'open the letters first'
               : refused === 'no_session' ? 'this device is no longer signed in. sign in again and it is still here'
               : 'it did not go through'}

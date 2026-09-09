@@ -23,7 +23,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display } from '../parts.jsx'
-import { Sparkle } from '../art.jsx'
 import { search, wall, loadWall, normHandle, validHandle, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
 
@@ -96,9 +95,7 @@ export default function Find({ go, back, rev }) {
 
         <div className="wl-find-results" role="region" aria-live="polite">
           {q.length < 1 && (
-            <Label tone="dim" className="wl-find-hint">
-              <Sparkle size={9} /> written to most
-            </Label>
+            <Label tone="dim" className="wl-find-hint">written to most</Label>
           )}
 
           {/* A person per row: the face and the name the resolver has, the

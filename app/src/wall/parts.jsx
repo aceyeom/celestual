@@ -194,6 +194,9 @@ const PATHS = {
   /* a flag on a staff — a mark left on a thing, which is what a report is:
      it does not judge the letter, it points at it */
   flag:  'M6 21V4M6 5h11l-2.4 3.9L17 12.8H6',
+  /* the way out of the room: the door's frame and an arrow leaving through
+     it. The one glyph in the set that points away from the wall */
+  signout: 'M12.6 4H7a2.2 2.2 0 0 0-2.2 2.2v11.6A2.2 2.2 0 0 0 7 20h5.6M9.8 12h9.6M15.9 8.4l3.5 3.6-3.5 3.6',
 }
 
 // ── the close mark ──────────────────────────────────────────────────────────
@@ -484,10 +487,13 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, lock
   )
 }
 
-// The letter's own field. Counts down rather than up, because the limit is the
-// point — forty words is what makes these readable, and a counter that only
-// tells you when you have broken the rule has told you too late.
-export function LetterField({ value, onChange, max = 260, placeholder = '', autoFocus = false, rows = 5 }) {
+// The letter's own field. `count` draws the characters left under the
+// paper's corner, counting down rather than up, because where a limit is the
+// point a counter that only says when it has been broken has said it too
+// late. The wall turns it off: there the box grows with the words and the
+// ceiling is the server's, and a number ticking under a letter somebody is
+// still finding the words for is a meter on a moment that should not have one.
+export function LetterField({ value, onChange, max = 260, placeholder = '', autoFocus = false, rows = 5, count = true }) {
   const ref = useRef(null)
   const id = useId()
   const left = max - value.length
@@ -514,7 +520,7 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
         aria-label="your letter" maxLength={max} spellCheck="true"
         onChange={(e) => onChange(e.target.value)}
       />
-      <div className={`wl-count${left < 40 ? ' is-near' : ''}`} aria-hidden="true">{left}</div>
+      {count ? <div className={`wl-count${left < 40 ? ' is-near' : ''}`} aria-hidden="true">{left}</div> : null}
     </div>
   )
 }
@@ -529,6 +535,13 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // Dismissal is by the grip, by the scrim, by Escape, and by dragging it down
 // past a third of its height — four ways, because a sheet you cannot get out
 // of is the fastest way to lose somebody at a demo table.
+//
+// The way out ends when the drop ends. The route used to change on a timer
+// set to the length of the stylesheet's drop, and on a phone that was slow
+// to start the animation the sheet was cut off mid-fall by the wall coming
+// back under it. So the close listens for the animation's own end and the
+// timer is only the floor under a browser that never sends one.
+const SHEET_OUT_MS = 320
 export function Sheet({ children, onClose, tall = false, labelledBy, className = '' }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
@@ -538,8 +551,22 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
   const dismiss = () => {
     if (closing) return
     setClosing(true)
-    setTimeout(onClose, 240)
   }
+
+  useEffect(() => {
+    if (!closing) return undefined
+    const el = box.current
+    let done = false
+    const finish = () => { if (done) return; done = true; onClose() }
+    // the section's own drop (wall.css `wl-drop-sheet`, or `wl-dialog-out`
+    // on a spread), and not the end of anything animating inside it
+    const onEnd = (e) => {
+      if (e.target === el && /^wl-(drop-sheet|dialog-out)$/.test(e.animationName)) finish()
+    }
+    if (el) el.addEventListener('animationend', onEnd)
+    const t = setTimeout(finish, SHEET_OUT_MS + 260)
+    return () => { if (el) el.removeEventListener('animationend', onEnd); clearTimeout(t) }
+  }, [closing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') dismiss() }
@@ -558,20 +585,32 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
     const y = e.touches ? e.touches[0].clientY : e.clientY
     setDrag(Math.max(0, y - start.current))
   }
+  // A sheet let go past a third of its height closes from where the hand
+  // left it. The offset is KEPT through the close rather than reset to zero
+  // first: reset, the sheet jumped back to the top of its travel and then
+  // fell the whole way, which is the one moment in the gesture that read as
+  // clunky. The drop keyframe (wall.css `wl-drop-sheet`) starts from the
+  // `--drag` the section carries, so the fall picks up exactly where the
+  // drag stopped.
   const onUp = () => {
     const h = box.current ? box.current.offsetHeight : 400
-    if (drag > h / 3) dismiss()
     start.current = null
+    if (drag > h / 3) { dismiss(); return }
     setDrag(0)
   }
+
+  const held = drag > 0 && !closing
+  const style = drag > 0
+    ? { '--drag': `${drag}px`, ...(held ? { transform: `translate3d(0, ${drag}px, 0)` } : null) }
+    : undefined
 
   return (
     <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''} ${className}`}>
       <button type="button" className="wl-scrim" aria-label="close" onClick={dismiss} />
       <section
         ref={box}
-        className={`wl-sheet${tall ? ' is-tall' : ''}${drag ? ' is-dragging' : ''}`}
-        style={drag ? { transform: `translate3d(0, ${drag}px, 0)` } : undefined}
+        className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
+        style={style}
         role="dialog" aria-modal="true" aria-labelledby={labelledBy}
       >
         <div
@@ -653,44 +692,48 @@ export function Locked({ children, onOpen, cta = 'sign in' }) {
 }
 
 // ── the allowance, said quietly ─────────────────────────────────────────────
-// One object for the two things this surface rations, drawn as marks: one
-// struck for each already spent, one hollow for each still standing.
+// One object for the two things this surface rations.
 //
-//   week   three letters in any seven days, for the writer (migration 0044)
-//   reads  five whole letters before the door, for the reader (0045)
+//   week   three letters in any seven days, for the writer (migration 0044).
+//          Drawn as NOTHING until the week is spent, and then as one line.
+//   reads  five whole letters before the door, for the reader (0045). Drawn
+//          as marks: one struck for each already read, one hollow for each
+//          still standing, and a sentence only on the last.
 //
-// It is deliberately the smallest object on the screen it appears on, and it is
-// a STATE and not a warning. A person writing their first letter of the week,
-// or reading their first letter of five, should be able to look straight past
-// it; a person on their last should be able to see, without reading anything,
-// that it is their last. So there is no sentence next to it until then, and
-// none at all before: nobody needs to be told they have three left out of three.
+// Both are a STATE and not a warning. A person reading their first letter of
+// five should be able to look straight past the marks; a person writing their
+// second letter of the week should not be looking at a meter at all.
 //
 // The count is the server's (`wall_quota`, and the `free` on every read), never
 // this browser's arithmetic. A count the client keeps is a count the reader
 // owns.
-export function Allowance({ left, limit, resets = 0, kind = 'week', reading = false, className = '' }) {
+export function Allowance({ left, limit, kind = 'week', reading = false, className = '' }) {
   if (!Number.isFinite(left) || !Number.isFinite(limit) || limit <= 0) return null
   const spent = Math.max(0, Math.min(limit, limit - left))
   const reads = kind === 'reads'
-  // Short enough to survive a 390px foot beside a capsule. The week's line said
-  // "none left. one comes back in four days" and the phone cut it at "one comes
-  // back", which is the half that carries the information.
+  // ── the week says nothing until it is over ──
+  // The three marks came off the composer and the account. A person writing
+  // their second letter of the week does not need a meter saying it is their
+  // second, and "one left this week" beside the one thing to press read as a
+  // warning about an act they had not yet decided on. So the week is silent
+  // while any letter is left, and says one thing, once, when none is.
+  if (!reads) {
+    if (left > 0) return null
+    return (
+      <Label tone="dim" className={`wl-allow is-spent is-week ${className}`} role="status">
+        letter limit reached. wait a week
+      </Label>
+    )
+  }
   // On the last free letter the reader is looking AT the letter, and telling
   // somebody to sign in while they are mid-sentence is the screen talking over
   // itself. It says what just happened instead, and asks on the next card,
   // which is the one that is actually shut.
-  const say = reads
-    ? (left === 0 ? (reading ? 'that was the last free one' : 'sign in to keep reading')
-      : left === 1 ? 'one free letter left' : '')
-    : (left === 0 ? untilOne(resets) : left === 1 ? 'one left this week' : '')
-  const said = reads
-    ? (left === 0 ? `no free letters left, of ${limit}`
-      : left === 1 ? `one free letter left, of ${limit}`
-      : `${left} free letters left, of ${limit}`)
-    : (left === 0 ? `no letters left this week, of ${limit}`
-      : left === 1 ? `one letter left this week, of ${limit}`
-      : `${left} letters left this week, of ${limit}`)
+  const say = left === 0 ? (reading ? 'that was the last free one' : 'sign in to keep reading')
+    : left === 1 ? 'one free letter left' : ''
+  const said = left === 0 ? `no free letters left, of ${limit}`
+    : left === 1 ? `one free letter left, of ${limit}`
+    : `${left} free letters left, of ${limit}`
   return (
     <div className={`wl-allow${left === 0 ? ' is-spent' : ''} ${className}`}>
       <span className="wl-allow-marks" aria-hidden="true">
@@ -704,19 +747,6 @@ export function Allowance({ left, limit, resets = 0, kind = 'week', reading = fa
       </Label>
     </div>
   )
-}
-
-// How long the wait is, said as a wait rather than as a date. The wall already
-// says how long ago something happened (data.js `ago`); this is the same voice
-// pointed forwards, and it is here rather than there because it has one caller.
-function untilOne(at) {
-  const ms = at ? at - Date.now() : 0
-  if (ms <= 0) return 'none left this week'
-  const h = Math.round(ms / 3600000)
-  if (h <= 1) return 'none left for an hour'
-  if (h < 24) return `none left for ${h} hours`
-  const d = Math.round(h / 24)
-  return d <= 1 ? 'none left until tomorrow' : `none left for ${d} days`
 }
 
 // ── the small box ───────────────────────────────────────────────────────────
@@ -1070,7 +1100,7 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
   if (!open) return null
   return (
     <div className={`wl-suggest ${className}`} role="listbox" aria-label={label}>
-      <Label as="span" tone="dim" className="wl-suggest-lab"><Sparkle size={8} /> {label}</Label>
+      <Label as="span" tone="dim" className="wl-suggest-lab">{label}</Label>
       {rows.map((t, i) => (
         <button
           type="button" role="option" aria-selected={i === active} key={t.handle}

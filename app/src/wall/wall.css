@@ -97,6 +97,17 @@
 
   --ease:     cubic-bezier(0.16, 1, 0.30, 1);
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* ── the two curves a sheet moves on ──
+     `--ease` spends four fifths of its distance in the first quarter of its
+     time, which is right for a thing appearing and wrong for a thing that
+     travels the height of the screen: a sheet on it was finished at 120ms
+     and then crept for another 340, which read as a snap and a stall. The
+     sheet's own curve holds a longer straight run through the middle and
+     settles over the last third, so the rise is one movement. The way out
+     is the opposite shape, gathering speed as it goes, because a thing that
+     leaves the screen should be seen to leave rather than to fade in place. */
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in:    cubic-bezier(0.4, 0.05, 0.6, 0.6);
 
   /* ── the faces ──
      Fallbacks are chosen for metric proximity, not for taste: the swap has to
@@ -220,8 +231,18 @@
    almost entirely on a phone, after picking a card up off a table, should not
    stretch itself into a dashboard to prove that it can. The empty field around
    the column IS the design. */
-.wl-main { position: relative; z-index: 4; transition: opacity 260ms var(--ease), filter 260ms var(--ease); }
+.wl-main { position: relative; z-index: 4; transition: opacity 480ms var(--ease-sheet), filter 480ms var(--ease-sheet); }
 .wl-main.is-under { opacity: 0.30; filter: blur(2px) saturate(0.6); pointer-events: none; }
+/* ── and it comes back as the sheet goes, not after ──
+   The route changes when the sheet has left the glass, and that is when the
+   wall used to start un-blurring: the sheet fell, the wall sat dim under it
+   for a beat, and then woke up. The sheet's closing state is a sibling the
+   wall cannot see, so the root reads it and hands the wall its light back
+   on the same clock the sheet drops on. */
+.wl-root:has(.wl-sheet-wrap.is-closing) .wl-main.is-under {
+  opacity: 1; filter: none;
+  transition-duration: 340ms; transition-timing-function: var(--ease-out);
+}
 
 /* `--pad` is the page's own gutter, declared beside the padding that sets it.
    The spread on the core service cancels it to run its slides full-bleed, and
@@ -641,7 +662,7 @@
 .wl-scrim {
   position: absolute; inset: 0; width: 100%; padding: 0;
   background: radial-gradient(120% 80% at 50% 100%, rgba(8,7,11,0.46) 0%, rgba(8,7,11,0.66) 60%, rgba(8,7,11,0.78) 100%);
-  animation: wl-fade 320ms var(--ease) both;
+  animation: wl-fade 480ms var(--ease-sheet) both;
   border: 0;
 }
 
@@ -667,7 +688,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.11),
     inset 0 0 0 1px rgba(244, 241, 234, 0.07),
     0 -30px 70px -30px rgba(0, 0, 0, 0.9);
-  animation: wl-rise-sheet 460ms var(--ease) both;
+  animation: wl-rise-sheet 540ms var(--ease-sheet) both;
   overflow: hidden;
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -679,8 +700,10 @@
 }
 .wl-sheet.is-tall { min-height: 62dvh; }
 .wl-sheet.is-dragging { animation: none; transition: none; }
-.wl-sheet-wrap.is-closing .wl-sheet { animation: wl-drop-sheet 240ms var(--ease-out) both; }
-.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-fade 240ms var(--ease) reverse both; }
+/* the way out: 320ms, and parts.jsx `SHEET_OUT_MS` is the same number, so
+   the route changes on the frame the sheet clears the glass */
+.wl-sheet-wrap.is-closing .wl-sheet { animation: wl-drop-sheet 320ms var(--ease-in) both; }
+.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-fade 320ms var(--ease-in) reverse both; }
 
 /* the grip — a drag target with a real 24px height around a 4px bar */
 .wl-grip { flex: 0 0 auto; height: 26px; display: grid; place-items: center; touch-action: none; }
@@ -690,7 +713,12 @@
   flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 4px 22px calc(22px + env(safe-area-inset-bottom, 0px));
   display: flex; flex-direction: column;
+  /* what is on the sheet arrives a beat after the sheet does, so the glass
+     is seen to rise and the words to settle on it, rather than a finished
+     page sliding up as one block */
+  animation: wl-fade 460ms var(--ease-sheet) 90ms both;
 }
+.wl-sheet-wrap.is-closing .wl-sheet-in { animation: none; }
 
 /* ═══ THE ROW ══════════════════════════════════════════════════════════════
    The journey list, with the constellation standing where the reference puts
@@ -904,31 +932,62 @@
    would otherwise leave a strip of void under a gradient that is supposed to
    run off the screen */
 .wl-wallpage, .wl-core { padding-bottom: 0; }
-/* the foot of the site, under a docked page: the same column, no height of
-   its own to fill, and the dock above it stays with the page it belongs to */
+/* ── the foot of the site, under a docked page ──
+   The same column, no height of its own to fill, and the dock above it stays
+   with the page it belongs to.
+
+   It used to start on a hairline, on the bare ground, directly under a
+   shade that had poured the void back to nearly opaque over the field: the
+   wall ended in black, a line was drawn, and the stars came back on under
+   it. Three edges in twenty pixels, and the foot read as a different page
+   stapled to the bottom of this one. So the shade above now ends in the
+   void itself, and the foot opens on the void and lets the room back in
+   over its own first two hundred pixels, full bleed like the shade, so the
+   one gradient runs from the last faces down into the company's line and
+   there is no edge anywhere between them. */
 .wl-page.is-foot { min-height: 0; padding-top: 0; padding-bottom: 0; }
-.wl-page.is-foot .wl-colophon { border-top-color: var(--hair-soft); }
+.wl-page.is-foot::before {
+  content: ''; position: absolute; top: 0; left: calc(50% - 50vw); width: 100vw; height: 260px;
+  pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg,
+    var(--void) 0%,
+    rgba(8, 7, 11, 0.94) 22%,
+    rgba(8, 7, 11, 0.72) 52%,
+    rgba(8, 7, 11, 0.32) 80%,
+    rgba(8, 7, 11, 0) 100%);
+}
+.wl-page.is-foot .wl-colophon { position: relative; z-index: 1; border-top: 0; padding-top: 30px; }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
 /* ── the ear ──
-   The campus and the count on one line under the bar, in the identifier face
-   at the size and the tracking every dateline in the product is set at: the
-   same line the front door runs above its headline to point here (hero.css
-   .hm-ear), so the line on the door and the line on the wall are one line.
-   It stands above the veil's scrim and does not move when the veil lifts, so
-   the veil and the field share one masthead element. The sparkle is dim, the
-   campus is chalk, the count is ash. */
+   The campus and the count on one line under the bar. The campus is set in
+   the display face, small, the way the brand sets its own word in the bar
+   above it, and the count beside it is an identifier and is set like one:
+   the mono at the size every dateline is set at, the number a step brighter
+   than its noun. Two faces are the whole hierarchy of the line, so it
+   carries no sparkle and no dot; it used to carry both, at one size in one
+   face, and read as a string of ornaments. It stands above the veil's scrim
+   and does not move when the veil lifts, so the veil and the field share
+   one masthead element. */
 .wl-ear {
   position: relative; z-index: 4; flex: 0 0 auto;
-  display: flex; align-items: baseline; gap: 9px; min-width: 0;
-  padding: 6px 0 12px;
-  font-size: 11px; line-height: 1.5;
+  display: flex; align-items: baseline; gap: 13px; min-width: 0;
+  padding: 4px 0 12px;
+  line-height: 1.4;
 }
-.wl-ear-spark { align-self: center; color: var(--ash-dim); }
-.wl-ear-name { color: var(--chalk); white-space: nowrap; }
-.wl-ear-dot { color: var(--ash-dim); }
-.wl-ear-meta { color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wl-ear-again { padding: 0; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
+.wl-ear-name {
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 17px; letter-spacing: var(--track-display);
+  color: var(--chalk); white-space: nowrap;
+}
+.wl-ear-meta {
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--ash-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wl-ear-n { color: var(--ash); }
+.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; align-self: baseline; }
 
 /* ── the board ──
    art.jsx `Flap`: the count on split flaps, the word beside it. The flap is a
@@ -1074,10 +1133,12 @@
 }
 .wl-shade.is-bottom {
   bottom: 0; height: clamp(150px, 34vh, 320px);
+  /* to the void itself at the edge, and not to within a hair of it, so the
+     foot under this page can start on the same colour and carry on */
   background: linear-gradient(0deg,
-    rgba(8, 7, 11, 0.96) 0%,
-    rgba(8, 7, 11, 0.86) 20%,
-    rgba(8, 7, 11, 0.54) 46%,
+    var(--void) 0%,
+    rgba(8, 7, 11, 0.9) 18%,
+    rgba(8, 7, 11, 0.56) 44%,
     rgba(8, 7, 11, 0.18) 74%,
     rgba(8, 7, 11, 0) 100%);
 }
@@ -1316,43 +1377,29 @@
   pointer-events: none;
   will-change: transform;
 }
-/* The field behind the plate is faces, and a face is the worst ground eleven
-   pixels of type ever has to sit on. This is a soft well of the void under
-   it — wider than the plate, gone by its own edge — so the plate is standing
-   in a shadow it cast rather than on whoever happens to be underneath. */
-.wl-hive-say::before {
-  content: ''; position: absolute; inset: -18px -30px;
-  background: radial-gradient(ellipse at center, rgba(8, 7, 11, 0.66) 0%, rgba(8, 7, 11, 0.3) 52%, rgba(8, 7, 11, 0) 100%);
-  opacity: 0; transition: opacity 220ms var(--ease);
-}
-.wl-hive-say.is-on::before { opacity: 1; }
+/* ── the plate, and nothing round it ──
+   One small capsule of the void, nearly opaque, and a hairline. It used to
+   be glass: a backdrop blur, and under it a "well" of shadow drawn as a
+   radial gradient over a box thirty pixels wider than the plate. That
+   gradient was sized to the box's corners, which is what a radial gradient
+   does when nobody tells it otherwise, so it reached zero only at the four
+   corners and was still a fifth dark along every straight edge: a soft grey
+   rectangle appeared round every name the pointer touched, over the faces
+   beside it. It is gone, and the blur went with it, because a plate that is
+   opaque needs neither: the type is legible on it whatever is underneath,
+   and it costs the compositor nothing. */
 .wl-hive-say-h {
   display: block;
-  padding: 5px 11px 6px;
+  padding: 5px 10px 6px;
   border-radius: var(--r-pill);
-  background: rgba(10, 9, 14, 0.82);
-  box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.16),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
-    0 12px 30px -14px rgba(0, 0, 0, 0.95);
+  background: rgba(8, 7, 11, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.12);
   font-family: var(--f-id); font-size: 11.5px; line-height: 1.15; letter-spacing: -0.012em;
   color: var(--chalk);
   white-space: nowrap;
-  opacity: 0; transform: translate3d(0, -6px, 0) scale(0.94);
+  opacity: 0; transform: translate3d(0, -4px, 0) scale(0.96);
   transform-origin: 50% 0;
-  transition: opacity 200ms var(--ease), transform 340ms var(--ease);
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  /* `brightness` is the load-bearing filter here, not the blur. The plate
-     lands on a photograph as often as not, and a blur alone over a bright
-     face leaves eleven-pixel type on a light ground. Pushing the backdrop
-     down to two fifths is what lets the plate stay genuinely transparent —
-     the faces are still legible through it — and still hold chalk type. */
-  .wl-hive-say-h {
-    background: rgba(10, 9, 14, 0.34);
-    -webkit-backdrop-filter: blur(18px) saturate(1.25) brightness(0.34);
-    backdrop-filter: blur(18px) saturate(1.25) brightness(0.34);
-  }
+  transition: opacity 180ms var(--ease), transform 320ms var(--ease);
 }
 .wl-hive-say.is-on .wl-hive-say-h { opacity: 1; transform: none; }
 
@@ -1404,7 +1451,16 @@
 @keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
 @keyframes wl-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes wl-rise-sheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
-@keyframes wl-drop-sheet { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
+/* The fall starts from wherever the sheet is: `--drag` is the offset a hand
+   left it at (parts.jsx `Sheet`), and nothing when it was dismissed by the
+   scrim, the mark or the key. It keeps its light until it is most of the
+   way down and then lets it go, so the last inch does not hard-cut against
+   the edge of the glass. */
+@keyframes wl-drop-sheet {
+  from { transform: translate3d(0, var(--drag, 0px), 0); opacity: 1; }
+  64%  { opacity: 1; }
+  to   { transform: translate3d(0, 100%, 0); opacity: 0.72; }
+}
 
 /* ═══ THE SHEET'S HEADER AND FOOT ══════════════════════════════════════════
    Six sheets used to own six different tops. One was a lone close mark on an
@@ -1570,8 +1626,7 @@
    a person types. The row is the person row's shape at the field's scale,
    and the lit one is the one the arrows or the pointer are on. */
 .wl-suggest { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; animation: wl-fade 240ms var(--ease) both; }
-.wl-suggest-lab { display: flex; align-items: center; gap: 6px; padding: 2px 4px 6px; }
-.wl-suggest-lab .wl-spark { color: var(--ash-dim); }
+.wl-suggest-lab { display: block; padding: 2px 4px 6px; }
 .wl-suggest-row {
   display: flex; align-items: center; width: 100%;
   padding: 7px 10px 7px 7px;
@@ -1587,25 +1642,26 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-.wl-write-note .wl-spark { color: var(--ash-dim); }
 /* one line under the card, whether the letter is too short or has tripped the
    screen — to the person writing, both are the same fact */
 .wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
 .wl-write-caught { color: var(--ember); text-align: right; }
 .wl-write-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
   padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
   flex: 0 0 auto;
 }
 .wl-write-foot .wl-pill { margin-left: auto; min-width: 128px; }
-/* the allowance, standing at the left of the composer's foot opposite the one
-   thing to press. It is the quietest object on the screen and stays that way:
-   three hairline marks, struck as they are spent, and no sentence beside them
-   until there is one letter left. The pills already claim the right edge with
-   margin-left, so it needs nothing but permission to shrink. */
-.wl-write-foot .wl-allow { flex: 0 1 auto; }
+/* the week's one line, on its own row over the two capsules, and only when
+   the week is spent. Beside them it had a third of a phone's width and
+   broke into five lines of uppercase mono; a whole row is one line. */
+.wl-write-foot .wl-allow { flex: 1 1 100%; margin-bottom: -2px; }
 
-/* ── three letters in any seven days ── */
+/* ── the two allowances ──
+   The reads are drawn as marks: one struck for each free letter read, one
+   hollow for each still standing, and a sentence only on the last. The week
+   is drawn as nothing while any letter is left, and as one line when none
+   is (parts.jsx `Allowance`). */
 .wl-allow { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .wl-allow-marks { display: flex; align-items: center; gap: 5px; }
 .wl-allow-mark {
@@ -1616,9 +1672,12 @@
 .wl-allow-mark.is-used { background: rgba(244, 241, 234, 0.34); border-color: transparent; }
 .wl-allow-say { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Spent is a fact, not an alarm: the marks go out rather than turning red, and
-   the only thing that changes colour is the line that says when one comes back. */
+   the only thing that changes colour is the line that says what to do. */
 .wl-allow.is-spent .wl-allow-mark { opacity: 0.5; }
 .wl-allow.is-spent .wl-allow-say { color: var(--ember); }
+/* the week's line: the label's own face, in ash rather than the accent,
+   because a limit met is a fact about the week and not an alarm about it */
+.wl-allow.is-week { display: block; color: var(--ash); letter-spacing: 0.12em; animation: wl-fade 320ms var(--ease) both; }
 
 /* ═══ PUTTING IT UP ═════════════════════════════════════════════════════════════
    Four beats. Each stage is a class on the page and every element reads its
@@ -2164,8 +2223,7 @@
   display: block; width: 34px; height: 3px; border-radius: 2px;
   margin: 9px auto 0; background: rgba(255,244,228,0.30);
 }
-.wl-tab-body { display: flex; align-items: center; gap: 12px; padding: 12px 4px 14px 2px; }
-.wl-tab-spark { color: var(--glow); flex: 0 0 auto; }
+.wl-tab-body { display: flex; align-items: center; gap: 12px; padding: 12px 4px 14px 8px; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
@@ -2276,13 +2334,13 @@
     min-height: 0;
     max-width: 560px; max-height: min(84dvh, 860px);
     border-radius: var(--r-sheet);
-    animation: wl-dialog-in 380ms var(--ease) both;
+    animation: wl-dialog-in 460ms var(--ease-sheet) both;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.11),
       inset 0 0 0 1px rgba(244, 241, 234, 0.08),
       0 40px 90px -30px rgba(0, 0, 0, 0.92);
   }
-  .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-dialog-out 220ms var(--ease-out) both; }
+  .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-dialog-out 300ms var(--ease-in) both; }
   .wl-grip { display: none; }
   .wl-sheet-in { padding: 26px 30px 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
@@ -2293,12 +2351,12 @@
 }
 
 @keyframes wl-dialog-in {
-  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.985); }
+  from { opacity: 0; transform: translate3d(0, 22px, 0) scale(0.975); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes wl-dialog-out {
   from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.99); }
+  to   { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.985); }
 }
 
 /* ── the landscape phone ───────────────────────────────────────────────────
@@ -2517,44 +2575,74 @@
 .wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
 .wl-gate-note { padding-bottom: 16px; }
 
-/* ── the account ───────────────────────────────────────────────────────────
-   The address is the heading here, and it is set in the identifier face
-   rather than in the Didone: an email is a string somebody has to read
-   character by character to check it is theirs, which is the one job a
-   monospace is for and the one job a Didone is worst at.
+/* ── the account: the profile card ─────────────────────────────────────────
+   Gate.jsx, signed in. One object on the sheet that is the person, the way
+   the paper is the letter: a pane a step up from the sheet's own glass, with
+   the light caught along its top edge the way the sheet catches it, so the
+   card is IN the sheet rather than drawn on it.
 
-   Three blocks with one rhythm — who, what, and the way on — because the
-   sheet this replaced was a sentence about the software's state with the
-   address set small underneath it, and the address is the whole reason
-   anybody opens this. */
-.wl-acct-id { display: flex; align-items: center; gap: 16px; padding: 2px 0 22px; flex: 0 0 auto; }
-.wl-acct-name { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
-.wl-acct-addr {
+   The address is the heading and it is set in the identifier face rather
+   than in the Didone: an email is a string somebody has to read character
+   by character to check it is theirs, which is the one job a monospace is
+   for and the one job a Didone is worst at. Under it, one word and one
+   point of the accent. Under a hairline, the names this device has written
+   to, as chips. Nothing else: no meter, no count, no date. */
+.wl-profile {
+  position: relative; flex: 0 0 auto;
+  display: flex; flex-direction: column;
+  padding: 20px 20px 19px;
+  border-radius: var(--r-card);
+  background: linear-gradient(168deg, rgba(244, 241, 234, 0.06) 0%, rgba(244, 241, 234, 0.03) 55%, rgba(244, 241, 234, 0.018) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.08);
+  animation: wl-fade 360ms var(--ease) both;
+}
+.wl-profile-id { display: flex; align-items: center; gap: 16px; min-width: 0; }
+/* the disc, a size up from the bar's and the row's, with a soft second ring
+   standing off it: the one face on the sheet that is the person looking */
+.wl-face.wl-profile-face {
+  background: rgba(244, 241, 234, 0.07);
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.22),
+    0 0 0 5px rgba(244, 241, 234, 0.035);
+}
+.wl-profile-face .wl-face-mono { color: var(--chalk); font-size: 17px; letter-spacing: 0.08em; }
+.wl-profile-who { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.wl-profile-addr {
   margin: 0;
-  font-family: var(--f-id); font-size: clamp(15px, 4.4vw, 19px);
+  font-family: var(--f-id); font-size: clamp(15px, 4.4vw, 18px); line-height: 1.25;
   letter-spacing: -0.02em; color: var(--chalk);
   overflow-wrap: anywhere;
 }
-/* the allowance, under the address it belongs to */
-.wl-acct-allow { margin-top: -1px; }
-.wl-acct-rule { flex: 0 0 auto; }
-.wl-acct-sect { padding: 20px 0 0; flex: 0 0 auto; }
-.wl-acct-wrote { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 14px; }
+.wl-profile-status { display: flex; align-items: center; gap: 8px; }
+/* the point: the accent's one appearance on the sheet, four pixels of ice
+   beside the one word that is a settled fact about the person */
+.wl-profile-dot {
+  flex: 0 0 auto; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.wl-profile-sect { padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--hair); }
+.wl-profile-wrote { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 11px; }
 /* a chip, not a row and not a link. This list is a record, and every one of
-   its entries is a name whose letter may have come down since — a tappable
+   its entries is a name whose letter may have come down since: a tappable
    row that lands on nothing is worse than a name that was never offered. */
-.wl-acct-chip {
+.wl-profile-chip {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 13px 7px 9px;
-  border: 1px solid var(--hair); border-radius: var(--r-pill);
-  background: var(--void-1);
-  font-family: var(--f-id); font-size: 12.5px; letter-spacing: -0.01em;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--r-pill);
+  background: rgba(244, 241, 234, 0.055);
+  font-family: var(--f-id); font-size: 12px; letter-spacing: -0.01em;
   color: var(--ash);
 }
-.wl-acct-none {
-  margin: 14px 0 0;
-  font-family: var(--f-id); font-size: 12.5px; color: var(--ash-dim);
-}
+.wl-profile-none { margin: 10px 0 0; font-family: var(--f-id); font-size: 12.5px; color: var(--ash-dim); }
+/* the week, said once, and only when it is over */
+.wl-profile-cap { padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--hair); }
+/* the way out: a capsule carrying its glyph, centred under the primary */
+.wl-profile-out { align-self: center; margin-top: 8px; gap: 7px; padding: 0 15px 0 12px; min-height: 34px; }
+.wl-profile-out .wl-icon { color: var(--ash-dim); transition: color 220ms var(--ease); }
+.wl-profile-out:hover .wl-icon { color: var(--chalk); }
 .wl-gate-copy { color: var(--ash); font-size: 15px; line-height: 1.55; padding-top: 16px; max-width: 40ch; }
 .wl-gate-fault {
   min-height: 20px; padding-top: 10px;

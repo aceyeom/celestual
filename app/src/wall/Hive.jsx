@@ -131,15 +131,25 @@ const LENS = {
 }
 // The pointer's own light: how wide it reaches (in pitches), how much it adds
 // to a disc under it, and how hard it parts the crowd to make the room.
-const TOUCH = { reach: 1.75, swell: 0.34, part: 0.30 }
+//
+// The swell is small on purpose. At a third over, a full disc at the middle
+// of the lens was drawn at more than a whole pitch and lay over the faces on
+// either side of it, and the crowd could not part fast enough to make that
+// much room; the ring on the read disc then closed over its neighbours. At a
+// seventh the disc under the pointer still lifts, the parting makes more
+// room than it needs, and nothing on the field is ever under anything else.
+const TOUCH = { reach: 1.75, swell: 0.14, part: 0.42 }
 // How far the field's light leans toward the pointer, as a fraction of the
 // offset, and the ceiling on that lean as a fraction of the smaller side. The
 // picture must not slide under the pointer; it must be aware of it.
 const LEAN = { pull: 0.14, cap: 0.1 }
 // The drift: its speed, and how fast its heading wanders (radians a second,
-// so a full turn takes a couple of minutes).
-const DRIFT = 7
-const TURN = 0.05
+// so a full turn takes a minute and a half). It was seven pixels a second,
+// which on a phone read as a field that might be moving; eleven is a field
+// that is, and still slow enough that a name can be pressed without chasing
+// it.
+const DRIFT = 11
+const TURN = 0.065
 // A disc's own breathing: the slowest and fastest periods, in seconds, and
 // how much of its slack it may spend on it.
 const BREATH = { slow: 17, fast: 31, amp: 0.34 }
@@ -492,7 +502,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         } else if (m.reduce) {
           m.v.x = 0; m.v.y = 0
         } else {
-          const hold = m.kbd || m.on >= 0 ? 0 : m.over ? 0.3 : 1
+          // under a mouse the field keeps half its drift, and rests only on
+          // a disc, so a name can be pressed without the crowd going still
+          // the moment a pointer crosses it
+          const hold = m.kbd || m.on >= 0 ? 0 : m.over ? 0.5 : 1
           if (hold === 1) m.heading += TURN * sec
           const ax = Math.cos(m.heading) * DRIFT * hold
           const ay = Math.sin(m.heading) * DRIFT * hold

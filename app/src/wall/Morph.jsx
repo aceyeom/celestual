@@ -50,7 +50,7 @@ import { Face } from './parts.jsx'
 // The whole movement. The face is on a shorter clock than the frame so it
 // settles first; the paper is on a later one so the cream arrives under a face
 // that has already landed.
-const DUR = 600
+const DUR = 640
 // The three clocks, as fractions of the frame's. The face leads a little so it
 // is where it is going before the paper has finished arriving; the corner
 // leads a lot, because a rectangle that keeps a circle's radius while it grows
@@ -140,16 +140,19 @@ export default function Morph({ from, handle, card, crest, reduce = false, onDon
     to.style.opacity = '0'
 
     // ── the landing ──
-    // The stand-in and the card are the same rectangle by now, so the two
-    // cross over rather than one replacing the other: at no frame is there
-    // nothing there, and at no frame are both fully on.
+    // The stand-in and the card are the same rectangle by now, the same
+    // paper with the same face at its head, and the stand-in is over the
+    // card. So the card is simply switched on underneath and the stand-in
+    // fades off it: what a person sees is the words arriving on a card that
+    // never moved. The two used to cross-fade, both half on at the midpoint,
+    // and a card that dims for a tenth of a second at the end of its own
+    // flight reads as a flicker.
     const handOver = () => {
       to.style.opacity = ''
-      if (to.animate) to.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 210, easing: 'linear' })
       if (el.animate) {
-        const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 190, easing: 'linear', fill: 'both' })
+        const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'both' })
         a.onfinish = end
-        setTimeout(end, 320)
+        setTimeout(end, 400)
       } else end()
     }
 
