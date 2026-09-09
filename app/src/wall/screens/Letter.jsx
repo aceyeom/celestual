@@ -52,7 +52,7 @@
 // the core service — no "find out who", no account for it, no offer of any
 // kind. The door to the product opens after you have written, on the wall.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
   Pill, Icon, Label, Face, Heart, Allowance,
@@ -63,6 +63,8 @@ import {
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { isReader } from '../auth.js'
+import { land } from '../morph.js'
+import Morph from '../Morph.jsx'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -146,13 +148,25 @@ function Pager({ at, of, go, siblings }) {
 // still has its own address.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export default function Letter({ id: param, go, back }) {
+export default function Letter({ id: param, go, back, reduce = false }) {
   // Whether the flag has been opened. Nothing else on this sheet holds state:
   // the card is the server's, and this is one control deciding whether it is
   // showing itself or the two things it opens.
   const [flagged, setFlagged] = useState(false)
   const byId = UUID.test(String(param || ''))
   const handle = byId ? null : normHandle(param)
+
+  // ── the disc that was pressed ──
+  // Claimed once, on the first render, and only ever there: the wall left a
+  // circle behind on the way out of it (morph.js) and the card grows out of
+  // that circle instead of the sheet rising over it. Nothing is claimed on a
+  // deep link, a refresh or a back button, so all three open the ordinary way.
+  const [from] = useState(() => land(handle))
+  const cardBox = useRef(null)
+  const cardCrest = useRef(null)
+  const flight = from
+    ? <Morph from={from} handle={from.handle} card={cardBox} crest={cardCrest} reduce={reduce} />
+    : null
 
   // The letters under a name, when that is what the address named.
   const forHandle = handle ? lettersFor(handle) : []
@@ -183,6 +197,7 @@ export default function Letter({ id: param, go, back }) {
   // card waits rather than announcing a removal that has not happened.
   if (one === undefined) {
     return (
+      <>
       <Sheet onClose={back} labelledBy="wl-letter-h">
         <div className="wl-sheet-in wl-letter">
           <SheetHead onClose={back} label="back to the wall" />
@@ -190,11 +205,19 @@ export default function Letter({ id: param, go, back }) {
               are not the same fact: a letter that has arrived shut is blurred,
               because it is a letter you are not close enough to, and a letter
               that has not arrived is neither shut nor open yet. */}
-          <Paper dateline={{ lead: 'reading' }} title={<span id="wl-letter-h" className="wl-letter-to">&nbsp;</span>} tone="waiting">
-            <Redacted words={22} chars={110} seed={String(param)} />
-          </Paper>
+          <div className="wl-letter-card" ref={cardBox}>
+            <Paper
+              dateline={{ lead: 'reading' }}
+              crest={from ? <span className="wl-letter-crest" ref={cardCrest}><Face handle={from.handle} size={30} /></span> : null}
+              title={<span id="wl-letter-h" className="wl-letter-to">&nbsp;</span>} tone="waiting"
+            >
+              <Redacted words={22} chars={110} seed={String(param)} />
+            </Paper>
+          </div>
         </div>
       </Sheet>
+      {flight}
+      </>
     )
   }
 
@@ -236,6 +259,7 @@ export default function Letter({ id: param, go, back }) {
        two controls. Forcing it to 62dvh on a long phone left a slab of empty
        void under the last control, which is the same "nothing has been decided
        about this space" the old header had at the other end. */
+    <>
     <Sheet onClose={back} labelledBy="wl-letter-to">
       <div className="wl-sheet-in wl-letter">
         <SheetHead
@@ -251,9 +275,10 @@ export default function Letter({ id: param, go, back }) {
             has been up, whether it is shut, whose name it is under, and the
             words. The crest is the person's own face, the same disc the search
             puts in its rows and the sky puts beside a ping. */}
+        <div className="wl-letter-card" ref={cardBox}>
         <Paper
           dateline={sinceline(one.at, open ? '' : 'sealed')}
-          crest={<Face handle={one.to} size={30} />}
+          crest={<span className="wl-letter-crest" ref={cardCrest}><Face handle={one.to} size={30} /></span>}
           title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
           tone={open ? '' : 'shut'}
           foot={(
@@ -287,6 +312,7 @@ export default function Letter({ id: param, go, back }) {
             ? <Prose>{one.body}</Prose>
             : <Redacted words={one.words} chars={one.chars} seed={one.id} />}
         </Paper>
+        </div>
 
         {/* ── the foot ──
             One primary, and while the flag is on, the two things somebody who
@@ -351,5 +377,7 @@ export default function Letter({ id: param, go, back }) {
         </SheetFoot>
       </div>
     </Sheet>
+    {flight}
+    </>
   )
 }

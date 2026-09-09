@@ -198,7 +198,7 @@ front too, and always has.
 
 | Route | What it is |
 | --- | --- |
-| `/berkeley` | **the wall**: the hive, the names as a field of faces packed under a lens and drifting, and the veil over it |
+| `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, and the heart on its foot with the count beside it |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
@@ -274,7 +274,10 @@ index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
 Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
              skippable on any key, and the same intro Main plays at `/`
 Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
-             pull, and the pool of slots that draws it
+             pull, the pointer, and the pool of slots that draws it
+morph.js     the hand-off: the circle the wall leaves behind when a disc is
+             pressed, claimed by the letter on the way in
+Morph.jsx    the other half of it — the disc flying and opening into the card
 ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
@@ -298,59 +301,147 @@ screens/     one file per screen
 
 ## The hive
 
-The names are a field of faces seen through a lens (`Hive.jsx`). One disc per
+The names are a crowd of faces bent by a lens (`Hive.jsx`). One disc per
 person written to, the picture the resolver has or a monogram until then,
-packed on a hexagonal lattice that never ends in any direction, each disc
-about nine tenths of the pitch so at full size they nearly touch. The lens is
-the screen's own window: the discs nearest its middle are full size, they
-shrink smoothly toward the edges, and at the rim they are points and the
-field dissolves. A name written to three times is a slightly larger disc than
-one written to once, so the field has a topography under the lens.
+laid on a hexagonal lattice that never ends in any direction — and then put
+through one continuous function of how far a disc is from the light.
 
-One thing is written on it. The person in the lens carries a small tag with
-their handle, on a plate of the void on the disc's own lower edge, and under
-a mouse so does the disc the pointer is on. Nothing else: not the name, which
-the resolver knows for a few people and not for most; not the count, which is
-the disc's size; not the time since the last letter. Every one of those is
-behind the tap, on the letters themselves. A field with a caption under every
-third face is a directory, and the wall is a place where people are, not a
-list about them. The handle is the wall's own identifier: letters are
-addressed to it and a person finds their own by it.
+### One function, three effects
+
+For every disc the loop computes `u`, its distance from the light in units of
+the screen's own half-size. Everything the field looks like comes out of that
+one number:
+
+| | |
+| --- | --- |
+| **size** | full, and a hair over dead centre, out to a plateau; then a power curve down to about a quarter of that at the rim. |
+| **spacing** | the lattice is pushed *outward* from the light as it goes, half again as far apart by the rim. The crowd thins as it leaves the middle. |
+| **slack** | what is left over between a disc and its neighbour once the first two have had their say. It is the room a disc is allowed to wander in, and every wander is a fraction of it — so the middle, where there is no room, is ordered and still, and the rim, where there is a great deal, is scattered and adrift. Two discs can never collide, because neither can spend room that does not exist. |
+| **air** | and the light on it. A disc half the size is also half the way into the room, so the far faces recede rather than sitting on the same plane at a smaller scale. |
+
+That third row is what stops this reading as a grid. A hexagonal lattice with
+a size ramp on it is a grid with a size ramp on it; a lattice whose disorder
+is exactly the space its own packing left over is a crowd. Nothing about the
+size is stepped, either: the disc a name is set at is a log of its letter
+count, and the lattice's own pitch is a function of the window rather than two
+hard numbers either side of a breakpoint.
+
+### It is the whole screen
+
+Not a panel between the bar and the pill. The field runs corner to corner,
+behind the bar, behind the ear, behind the pill, out past the column's own
+gutters to the edges of the glass, and it dissolves at every edge rather than
+stopping at one. What keeps the type over it legible is not a box around the
+field but two gradients over it — the shades — which pour the void back in at
+the top and the bottom on a long ramp and are gone before the middle. A field
+of faces inside a margin is a widget on a page.
+
+The bar and the dock are the two strips that stay solid to the pointer. They
+are chrome nobody is trying to look through, and they are also the only part
+of the screen where a wheel or a finger still belongs to the page: the field
+takes both wherever it is exposed, so if it were exposed everywhere there
+would be no way left to scroll down to the foot of the site.
+
+### One name, on one plate
+
+Whoever the lens is reading carries their handle on a small plate of glass —
+under a mouse that is the disc the pointer is nearest, and on a phone the disc
+in the middle. There is only ever one. It used to be one tag per cell, sixty
+of them, each fading itself in and out as a pointer swept past: two were on
+the screen at once as often as not, they sat on the faces under them, and at
+the edge of the field they were cut in half by the mask. There is no
+arrangement of sixty labels that is not messy, so there is one — a single
+element the loop moves, held inside the stage, over a soft well of the void so
+eleven pixels of type never has to stand on a photograph.
+
+Nothing else is written on the field: not the name, which the resolver knows
+for a few people and not for most; not the count, which is the disc's size;
+not the time since the last letter. Every one of those is behind the tap, on
+the letters themselves. A field with a caption under every third face is a
+directory, and the wall is a place where people are, not a list about them.
 
 It replaced three lanes of handles crawling left and right. The lanes said
 the wall was alive and nothing else about anybody on it, and a handle at
 thirteen pixels sliding past is a handle nobody reads.
 
-- **It drifts by itself.** One slow drift, always, whose heading wanders so
-  the field never runs one way for long. Nothing steps, settles or snaps: the
-  lens is a continuous function of where a disc is, so as the field moves
-  every disc grows and shrinks smoothly through it, and the tag passes from
-  one person to the next as they cross the middle.
+- **It drifts by itself, and every disc moves differently.** One slow drift,
+  always, whose heading wanders so the field never runs one way for long; and
+  on top of it every disc breathes on its own clock, by its own amount, in its
+  own direction, inside the slack its neighbours leave it. A field that
+  translates as one block is a picture being panned.
+- **It answers the pointer.** A mouse is a second, smaller light: what is
+  under it swells, the crowd parts around it to make the room that swelling
+  needs, and the nearest disc is the one being named. The field's own light
+  leans a little toward it, capped at a tenth of the screen, so the crowd is
+  aware of where you are without the picture sliding under you. A finger gets
+  none of this, because a finger is already the pull.
 - **It can be pulled, in any direction.** The field takes the finger; a throw
   coasts on friction and eases back into the drift rather than stopping; a
   wheel or a trackpad pans it. Under a mouse the drift slows over the field
   and rests over a disc, so a name can be pressed. A keyboard walking the
-  names brings each into the lens as it lands on it.
+  names brings each into the light as it lands on it.
 - **A pull is not a tap.** A press that travels more than 6px swallows the
   click it would have ended in. Every disc is a target.
-- **The disc is scaled and the tag is not.** A cell is two elements placed
-  separately by the loop, so the type is sharp whatever the lens is doing to
-  the picture.
-- **One `requestAnimationFrame`** writes every position, scale and tag.
+- **A name that has just arrived rises into the field.** A letter goes up, the
+  index moves, and that person's disc comes up past its own size and settles
+  while one ring leaves it and opens out into the crowd. It plays for a name
+  that is new and for a name that has gained a letter, and never on the first
+  reading of the wall — a wall that pops sixty times on load is a wall having
+  a seizure.
+- **Nobody moves when it does.** The index is ordered by when each name was
+  last written to, so one letter posted while somebody is looking would push
+  every other name one place along and reshuffle sixty faces to show one
+  arrival. A name holds its seat for as long as it is on the wall; the ranked
+  order only decides where somebody sits the first time.
+- **The disc is placed by the loop and animated by the stylesheet, and they
+  are two elements.** Two owners on one transform is how these end up fighting
+  each other at 60Hz.
+- **One `requestAnimationFrame`** writes every position, scale and opacity.
   React is told only when a slot changes hands or the lens moves to another
   person. Under a sheet the loop stops.
 - **The ends dissolve, in every direction.** A hard edge on a moving face is
-  a box; a fade is a room the face walked out of.
+  a box; a fade is a room the face walked out of. The mask is on the faces and
+  not on the plate naming somebody, because under a pointer near the rim that
+  is exactly where the plate is standing.
+
+### A name opens into the letter it carries
+
+Pressing a disc does not cut to a sheet. The circle that was pressed lifts off
+the field, opens as it travels, and lands as the letter's cream card with the
+same face settled into its letterhead (`morph.js`, `Morph.jsx`). One object,
+one movement, and nowhere in it the moment where the wall was replaced by a
+screen.
+
+Three things interpolate at once, on three clocks, because a shape that
+changes everything about itself at one rate reads as a slide: the frame (from
+the disc's circle to the card's box, its corner leading so a growing rectangle
+never reads as a capsule), the paper (early and quick — a half-opaque cream
+over a dark room is neither the photograph nor the card), and the face (from
+filling the frame to standing at the head of it, leading the frame so it is
+where it is going while the paper is still opening around it). The sheet's own
+entrance does not play: this *is* the entrance, and two of them at once is why
+shared-element transitions usually look wrong.
+
+The destination is read fresh every frame rather than measured once, because
+it moves: the letter is not in the cache when the disc is pressed, the sheet
+opens on a card that is waiting for it, and when the words land the card grows
+and the sheet re-centres under them. And the whole thing is decoration on a
+screen that works without it — no hand-off, a deep link, a refresh, a back
+button or a reader who has asked for less movement, and the sheet opens the
+way it always did.
 
 ### It has to work at five names and at five hundred
 
 The lattice is a torus: a tile of C by R cells that repeats in both axes, so
 there is no first name, no last one and no edge to reach. The tile is the
 smallest with room for every name (R even, so the offset rows line up across
-the seam), and the names are laid into it from its middle outward in the
-order the index carries them, newest first, so the people most recently
-written to sit together at the centre of the tile and the stalest at its rim.
-Cells left over are filled from the heaviest names, in turn. A wall of five is
+the seam), and on the first seating the names are laid into it from its middle
+outward in the order the index carries them, newest first, so the people most
+recently written to sit together at the centre of the tile and the stalest at
+its rim. Every later seating keeps everybody where they already were; seats
+given up by names that have come down are handed to names that have just
+arrived. Cells left over are filled from the heaviest names, in turn. A wall
+of five is
 a field of the same five, which is the truth, and a wall of three hundred
 repeats only at a distance nobody sees twice. Past 240 names the rest are a
 search away.
@@ -364,7 +455,10 @@ and the loop's own cost is about a millisecond a frame on either.
 ### The veil, and the ear
 
 The masthead is over the field, not above it. On a fresh load the whole
-screen under the bar is the field, greyed, with the title, the one line
+screen is the field, greyed — and still bent by the lens at rather more than
+half strength, because a flat grid of faces under a title is wallpaper and the
+poster wants its depth before anybody has pressed anything — with the title,
+the one line
 (`anonymous letters to the one you never told.`, in the reading face, the way
 the front door runs one line of the mechanic under its own headline) and the
 way in laid over it. The scrim is darkest where the type is and gone where it
@@ -388,7 +482,7 @@ the masthead's corner and then on the count as its plinth, and it never
 stopped reading as a thing put there: a drawing beside a headline that had
 already said which campus this was. The flaps under it were a board, and a
 board is furniture. The wall's one fact is a line of type now, in the ear,
-and the wall's own light is in its field, on the person in the lens.
+and the wall's own light is in its field, on the person being read.
 
 ### The count
 
