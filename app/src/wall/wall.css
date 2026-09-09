@@ -468,7 +468,6 @@
 .wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
 .wl-mine.is-wide { padding: 9px 16px; font-size: 12px; }
 
-.wl-wall-foot { padding: 6px 0 26px; display: flex; justify-content: center; flex: 0 0 auto; }
 
 /* ═══ THE PAPER ════════════════════════════════════════════════════════════
    The journal's card. A knife edge would be the Bindery's; this reference's
@@ -887,32 +886,8 @@
   padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
 }
 .wl-dock-in > .wl-pill { flex: 0 0 auto; }
-/* ── the signpost ──
-   One quiet line under the composer's pill, and the only way to the rest of
-   the product before a letter is up: the quiet control the sheets put under
-   a primary, in the same size and the same grey, so it reads as a caption on
-   the act above it and not as a second act. It stood beside the pill as an
-   arrow link reading "place a ping", at the pill's own height in the display
-   face, and a person who had just scanned a flyer met two verbs on one row
-   and did not know the second one. The arrow travels under the pointer the
-   way every arrow in the product does. */
-.wl-dock-rest {
-  align-self: center;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 6px 7px;
-  text-decoration: none;
-}
-.wl-dock-rest:hover { text-decoration: none; }
-.wl-dock-rest:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; }
-.wl-dock-rest-go {
-  font-size: 13px; line-height: 1;
-  transition: transform 280ms var(--ease), color 200ms var(--ease);
-}
-.wl-dock-rest:hover .wl-dock-rest-go { transform: translateX(4px); color: var(--chalk); }
-.wl-dock-rest:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
-/* with the tab up the signpost is gone (Wall.jsx) and the pill keeps a little
-   floor under it */
-.wl-wallpage.has-tab .wl-dock-in { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+/* the pill keeps a little floor under it */
+.wl-wallpage .wl-dock-in { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
 /* a docked page hands the bottom edge to the dock — the page's own padding
    would otherwise leave a strip of void under a gradient that is supposed to
    run off the screen */
@@ -923,25 +898,25 @@
 .wl-page.is-foot .wl-colophon { border-top-color: var(--hair-soft); }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
-/* ── the band ──
-   The masthead once the veil has lifted: the title on one row, small, with
-   the count at its end, so the wall keeps its name over the field and the one
-   fact worth printing stays in view. It keeps its room while the veil is up
-   (opacity, never display), so the stage under it is the same size before
-   and after the lift and the field does not jump when the type goes. */
-.wl-band {
-  position: relative; z-index: 2; flex: 0 0 auto;
-  display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: space-between; gap: 18px;
-  padding: 8px 0 14px;
-  transition: opacity 520ms var(--ease) 200ms;
+/* ── the ear ──
+   The campus and the count on one line under the bar, in the identifier face
+   at the size and the tracking every dateline in the product is set at: the
+   same line the front door runs above its headline to point here (hero.css
+   .hm-ear), so the line on the door and the line on the wall are one line.
+   It stands above the veil's scrim and does not move when the veil lifts, so
+   the veil and the field share one masthead element. The sparkle is dim, the
+   campus is chalk, the count is ash. */
+.wl-ear {
+  position: relative; z-index: 4; flex: 0 0 auto;
+  display: flex; align-items: baseline; gap: 9px; min-width: 0;
+  padding: 6px 0 12px;
+  font-size: 11px; line-height: 1.5;
 }
-.wl-wallpage.is-veiled .wl-band { opacity: 0; transition-delay: 0ms; pointer-events: none; }
-.wl-band-title { margin: 0; flex: 1 1 auto; min-width: 0; max-width: 22ch; }
-.wl-band-count { flex: 0 0 auto; padding-bottom: 4px; }
-.wl-band .wl-flap { --flap-w: 18px; --flap-h: 26px; --flap-half: 13px; --flap-type: 15px; --flap-r: 3px; }
-.wl-band .wl-flaps { gap: 2px; }
-.wl-band .wl-board-say { font-size: 12px; }
-.wl-band .wl-count-meta { text-align: right; }
+.wl-ear-spark { align-self: center; color: var(--ash-dim); }
+.wl-ear-name { color: var(--chalk); white-space: nowrap; }
+.wl-ear-dot { color: var(--ash-dim); }
+.wl-ear-meta { color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-ear-again { padding: 0; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
 
 /* ── the board ──
    art.jsx `Flap`: the count on split flaps, the word beside it. The flap is a
@@ -949,8 +924,9 @@
    across its middle, and the digit is the campus's gold in the util face. On
    a board a figure is a thing on a plate, not an identifier in a line of
    type, so this is the one count in the build not set in the mono. It stood
-   under the tower as its plinth for a while; the tower came off, and the
-   board is a row again, on the veil at full size and on the band small. */
+   on the wall's masthead, under the tower as its plinth and then on its own;
+   both came off, and the wall's count is a line of type in the ear now. The
+   board is kept, and drawn on the components sheet. */
 .wl-board { display: inline-flex; align-items: center; gap: 10px; }
 /* the word beside the count */
 .wl-board-say {
@@ -961,8 +937,6 @@
 }
 /* nothing on the wall yet: a line, and not a nought */
 .wl-board-say.is-open { letter-spacing: 0.13em; }
-/* the index did not load: the fact, in place of a number */
-.wl-count-meta { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
 
 .wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
 /* One plate. Every measure on it is a variable, because the same plate is
@@ -1019,24 +993,24 @@
 }
 
 /* ═══ THE ROOM ═════════════════════════════════════════════════════════════
-   The band, the stage, and the veil over both: everything between the bar
-   and the way off. The stage is the whole of the screen the bar, the strip,
-   the way off and the dock leave, and it bleeds to the edges of the viewport:
-   a field of faces with a margin either side is a widget on a page. */
+   The ear, the stage, and the veil over both: everything between the bar
+   and the dock. The stage is the whole of the screen the bar, the ear and
+   the dock leave, and it bleeds to the edges of the viewport: a field of
+   faces with a margin either side is a widget on a page. */
 .wl-room {
   position: relative; flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column;
 }
 .wl-stage {
-  position: relative; flex: 1 1 auto; min-height: 220px;
+  position: relative; flex: 1 1 auto; min-height: 240px;
   margin: 0 calc(-1 * var(--pad));
 }
 
 /* ═══ THE VEIL ═════════════════════════════════════════════════════════════
    The masthead, over the field rather than above it. The field is greyed
    under a scrim that is darkest where the type is and gone where it is not,
-   so the names show through under the words, and the title, the line, the
-   count and the way in stand on it. The scrim is itself the way in, and the
+   so the names show through under the words, and the title, the line and the
+   way in stand on it under the ear. The scrim is itself the way in, and the
    arrow link says so in words. It lifts once per tab, and it lifts as one
    movement: the type rises off the field while the field comes up to full
    light under it and the lens blooms (Hive.jsx). */
@@ -1058,7 +1032,8 @@
   pointer-events: none;
 }
 .wl-veil.is-lifting::before { display: none; }
-.wl-veil-in { position: relative; padding: 4px var(--pad) 0; pointer-events: none; }
+/* the type starts under the ear's row, which the veil also covers */
+.wl-veil-in { position: relative; padding: 44px var(--pad) 0; pointer-events: none; }
 .wl-mast { display: flex; flex-direction: column; align-items: flex-start; }
 .wl-mast-title { margin: 0; }
 /* ── the line under the title ──
@@ -1072,30 +1047,28 @@
   color: var(--ash);
   text-wrap: balance;
 }
-.wl-mast-count { margin-top: 22px; min-height: 34px; display: flex; align-items: center; }
 /* the way in, in words: the arrow link, which is the poster's own nav */
-.wl-mast-go { margin-top: 16px; pointer-events: auto; }
-.wl-count-meta .wl-quiet { pointer-events: auto; padding: 0; }
+.wl-mast-go { margin-top: 24px; pointer-events: auto; }
 /* lifting: the whole veil fades, and the type rises off the field as it goes */
 .wl-veil.is-lifting { pointer-events: none; animation: wl-fade 520ms var(--ease) reverse both; }
 .wl-veil.is-lifting .wl-mast { animation: wl-veil-rise 520ms var(--ease) both; }
 @keyframes wl-veil-rise { from { transform: none; } to { transform: translate3d(0, -16px, 0); } }
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
-   Hive.jsx. A field of faces on a hexagonal lattice that never ends, seen
-   through a lens: the person nearest the middle is largest and carries the
-   name, the count and how long since the last letter; the ring round them
-   carries the handle; the rest shrink to points at the rim. Every position,
-   scale and label opacity is written by one requestAnimationFrame; this file
-   sets what a cell is made of and nothing about where it stands.
+   Hive.jsx. A field of faces packed on a hexagonal lattice that never ends,
+   seen through a lens: full size and nearly touching at the middle, points at
+   the rim, and one name written on it, the handle of the person in the lens,
+   on a tag. Every position, scale and tag is written by one
+   requestAnimationFrame; this file sets what a cell is made of and nothing
+   about where it stands.
 
    The ends dissolve, in every direction. A hard edge on a moving face is a
    box; a fade is a room the face walked out of. */
 .wl-hive {
   position: absolute; inset: 0; overflow: hidden;
   contain: layout paint;
-  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 50% 50%, #000 46%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
-  mask-image: radial-gradient(ellipse 78% 70% at 50% 50%, #000 46%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 84% 76% at 50% 50%, #000 52%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
+  mask-image: radial-gradient(ellipse 84% 76% at 50% 50%, #000 52%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
   transition: opacity 760ms var(--ease);
 
   /* ── it is a thing you can pull ──
@@ -1109,15 +1082,19 @@
 }
 .wl-hive.is-held { cursor: grabbing; }
 /* under the veil the field is grey: dimmed, not blurred, because a blur over
-   a hundred moving discs is a hundred rasters a frame */
+   a hundred moving discs is a hundred rasters a frame. The monograms go
+   further, so the type stands on a texture of discs and not on a field of
+   other letters. */
 .wl-hive.is-veiled { opacity: 0.38; cursor: default; }
+.wl-hive .wl-face-mono { transition: opacity 760ms var(--ease); }
+.wl-hive.is-veiled .wl-face-mono { opacity: 0.3; }
 .wl-hive.is-empty { display: grid; place-items: center; -webkit-mask-image: none; mask-image: none; cursor: default; }
 .wl-hive-none { text-align: center; }
 
 /* ── a cell ──
    A button with no box of its own, standing at the field's origin; its two
    children are placed by the loop. The disc is scaled by the lens and the
-   words under it are only moved, so the type stays sharp at every scale. */
+   tag under it is only moved, so the type stays sharp at every scale. */
 .wl-cell {
   position: absolute; left: 0; top: 0; width: 0; height: 0;
   padding: 0; margin: 0; overflow: visible; display: block;
@@ -1149,40 +1126,20 @@
 .wl-cell.is-mine .wl-face { box-shadow: inset 0 0 0 1px rgba(255, 244, 228, 0.55); }
 .wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
-/* the words under a disc: the loop moves them and sets how much of them
-   shows, from all of it in the lens to none at the rim */
+/* the tag: the handle, on a small plate of the void with a hairline, under
+   the disc in the lens and under a disc the pointer is on, and on no other.
+   The loop moves it and turns it on and off; the fade is this transition. */
 .wl-cell-tag {
   position: absolute; left: 0; top: 0;
+  padding: 3px 9px 4px; border-radius: var(--r-pill);
+  background: rgba(8, 7, 11, 0.92);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  font-family: var(--f-id); font-size: 11px; letter-spacing: -0.01em; line-height: 1.2;
+  color: var(--chalk);
   white-space: nowrap; text-align: center;
   opacity: 0; will-change: transform, opacity;
+  transition: opacity 220ms var(--ease);
   pointer-events: none;
-}
-.wl-cell-h {
-  display: block;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: -0.01em; line-height: 1.3;
-  color: rgba(244, 241, 234, 0.72);
-  transition: color 200ms var(--ease);
-}
-.wl-cell:hover .wl-cell-h { color: var(--chalk); }
-.wl-cell-n { font-size: 0.7em; vertical-align: super; margin-left: 2px; color: var(--ash-dim); letter-spacing: 0; }
-/* the person in the lens: the name, and the line under it. The same two
-   lines `Who` draws beside a face on a row, and they arrive as one. */
-.wl-cell-cap {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  animation: wl-cap-in 360ms var(--ease) both;
-}
-@keyframes wl-cap-in { from { opacity: 0; transform: translate3d(0, 4px, 0); } to { opacity: 1; transform: none; } }
-.wl-cell-name {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--f-util); font-size: 14px; font-weight: 500; line-height: 1.25;
-  letter-spacing: -0.005em; color: var(--chalk);
-}
-/* a handle standing as the name is still an identifier, so it keeps its face */
-.wl-cell-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: 13.5px; letter-spacing: -0.012em; }
-.wl-cell-badge { color: var(--accent); flex: 0 0 auto; }
-.wl-cell-meta {
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.03em; line-height: 1.3;
-  color: var(--ash);
 }
 
 /* ── the opening ──
@@ -1192,8 +1149,8 @@
    than in rows. */
 .wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
 .wl-wallpage.is-opening .wl-mast-sub   { animation: wl-fade 900ms var(--ease) 620ms both; }
-.wl-wallpage.is-opening .wl-mast-count { animation: wl-fade 1200ms var(--ease) 900ms both; }
-.wl-wallpage.is-opening .wl-mast-go    { animation: wl-fade 900ms var(--ease) 1300ms both; }
+.wl-wallpage.is-opening .wl-ear        { animation: wl-fade 900ms var(--ease) 900ms both; }
+.wl-wallpage.is-opening .wl-mast-go    { animation: wl-fade 900ms var(--ease) 1200ms both; }
 .wl-wallpage.is-opening .wl-cell       { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
 .wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
 .wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
@@ -2005,11 +1962,10 @@
   .wl-page { --pad: 40px; max-width: 1080px; padding: 0 var(--pad) 40px; }
 
   /* ── the poster ──
-     The band runs across the top with the count at the page's right edge,
-     the field takes the whole width of the screen and the whole middle of
-     it, and the bottom row is the way in on the left and the way off on the
-     right. The veil lays the type over the left of the field, centred in
-     the field's height, with the names showing through to the right of it. */
+     The ear under the bar, the field taking the whole width of the screen
+     and the whole middle of it, and the way in on the bottom row. The veil
+     lays the type over the left of the field, centred in the field's
+     height, with the names showing through to the right of it. */
   .wl-main { overflow-x: clip; }
   .wl-wallpage {
     display: grid;
@@ -2019,24 +1975,19 @@
     align-content: stretch;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
-  .wl-band { grid-row: 1; padding: 20px 0 12px; align-items: baseline; }
-  .wl-band-title { max-width: none; }
-  .wl-band .wl-flap { --flap-w: 20px; --flap-h: 28px; --flap-half: 14px; --flap-type: 16px; }
+  .wl-ear { grid-row: 1; padding: 14px 0 12px; }
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
   .wl-stage { grid-row: 2; margin: 0 calc(50% - 50vw); min-height: 380px; }
   /* the veil's type keeps the column while the field leaves it */
   .wl-veil { inset: 0 calc(50% - 50vw); justify-content: center; }
-  .wl-cell-h { font-size: 11px; }
   .wl-veil-in { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 40px 24px; }
   .wl-veil-scrim {
     background: linear-gradient(90deg, rgba(8, 7, 11, 0.64) 0%, rgba(8, 7, 11, 0.44) 34%, rgba(8, 7, 11, 0.1) 60%, rgba(8, 7, 11, 0) 100%);
   }
   .wl-mast-sub { max-width: 40ch; font-size: 18px; }
-  .wl-mast-count .wl-flap { --flap-w: 26px; --flap-h: 37px; --flap-half: 18.5px; --flap-type: 22px; }
-  .wl-mast-count .wl-board-say { font-size: 14px; }
   .wl-hive {
-    -webkit-mask-image: radial-gradient(ellipse 64% 80% at 50% 50%, #000 44%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
-    mask-image: radial-gradient(ellipse 64% 80% at 50% 50%, #000 44%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 84% at 50% 50%, #000 50%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
+    mask-image: radial-gradient(ellipse 70% 84% at 50% 50%, #000 50%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
   }
   .wl-wallpage .wl-dock {
     grid-column: 1; grid-row: 4;
@@ -2109,16 +2060,13 @@
     column-gap: 40px;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
-  /* the band stands in the left column, the title over the count, and the
-     field takes the right column's whole height with the veil over it */
-  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
-  .wl-band { grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 6px 0 0; }
-  .wl-band-title { max-width: 16ch; }
-  .wl-band .wl-count-meta { text-align: left; }
-  .wl-stage { grid-column: 2; grid-row: 1 / span 3; margin: 0 -26px 0 0; min-height: 0; }
+  /* the ear stands in the left column over the dock, and the field takes the
+     right column's whole height with the veil over it */
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
+  .wl-ear { grid-column: 1; grid-row: 1; padding: 6px 0 0; }
+  .wl-stage { grid-column: 2; grid-row: 1 / span 2; margin: 0 -26px 0 0; min-height: 0; }
   .wl-veil { inset: 0 -26px 0 0; }
   .wl-veil-in { padding: 6px 18px 0; }
-  .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 4px 0 10px; }
   .wl-wallpage .wl-dock { grid-column: 1; grid-row: 4; align-self: end; margin: 0; padding: 0; max-width: 340px; }
   .wl-wallpage .wl-dock-veil { left: -22px; right: -16px; width: auto; transform: none; top: -70px; }
 
@@ -2128,8 +2076,7 @@
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
   .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: 15px; }
-  .wl-mast-count { margin-top: 12px; min-height: 0; }
-  .wl-mast-go { margin-top: 8px; }
+  .wl-mast-go { margin-top: 12px; }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
@@ -2171,7 +2118,7 @@
    design, and the names simply get more room per line inside a wall column
    that has stopped widening. */
 @media (min-width: 1280px) {
-  .wl-band { padding-top: 32px; }
+  .wl-ear { padding-top: 22px; }
 }
 
 /* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
@@ -2749,23 +2696,11 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-cap { animation: none !important; }
-  .wl-hive, .wl-band, .wl-cell-disc::before { transition: none; }
+  .wl-veil, .wl-veil .wl-mast, .wl-cell { animation: none !important; }
+  .wl-hive, .wl-cell-tag, .wl-cell-disc::before { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }
-}
-
-/* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  /* the way off, on the bottom row beside the way in (the poster, above) */
-  .wl-wall-foot { grid-column: 2; grid-row: 4; align-self: center; justify-content: flex-end; padding: 0 0 6px; }
-}
-
-@media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
-  /* 350px of height: the band gives back its air, and the way off sits
-     under it */
-  .wl-band-title.wl-display.is-s { font-size: clamp(19px, 2.6vw, 22px); }
 }
 
 /* ── the audit of 4 September ────────────────────────────────────────────────

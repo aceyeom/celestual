@@ -80,7 +80,7 @@ Three strengths of one near white, and the third one has a hard rule on it.
 | `--chalk` | `#F4F1EA` | primary type, the mark, a filled control |
 | `--ash` | `#9C978E` | secondary. Meaningful text only |
 | `--ash-dim` | `#605C55` | decorative and disabled only. Never body copy |
-| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the figures on the wall's flaps, on the veil and on the band. It lit the Campanile's lantern while the tower stood on the masthead; the tower came off with the hive. Nowhere else, and never as running type. It was the pin on the front door's notice for a while, and it came off: the door's line to the wall is an ear of type now (hero.css `.hm-ear`), and the wall's colour stays on the wall |
+| `--gold` | `#FDB515` | the campus's own light, and the wall's only colour of its own: the figures on the split flaps (`Flap`). It lit the Campanile's lantern and the count on the wall's masthead while those stood there; both came off with the hive, and the wall's count is a line of the ear now, in ash. The flaps are kept on the components sheet. Nowhere else, and never as running type. It was the pin on the front door's notice for a while, and it came off: the door's line to the wall is an ear of type now (hero.css `.hm-ear`), and the wall's colour stays on the wall |
 
 `--ash-dim` on `--void` is roughly 3.2:1. It is legible for a label and it is not
 legible for a sentence somebody has to read. Putting prose in it is the single
@@ -346,9 +346,8 @@ it can. The empty field around the column is the design.
 | page min height | `100dvh` |
 
 At 900px and up three things change and nothing else: the wall becomes a
-poster (the band across the top with the count at the page's right edge, the
-hive edge to edge of the screen and across the whole middle of it, the way
-in and the way off on the bottom row), sheets stop being bottom sheets and
+poster (the ear under the bar, the hive edge to edge of the screen and
+across the whole middle of it, the way in on the bottom row), sheets stop being bottom sheets and
 become centred dialogs, and the core service puts its ring system beside its
 ledger. Main makes the same
 move at the same width: the hero's object goes beside its type, and the flow
@@ -417,7 +416,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-converge`, `wl-land` | the letter going up and the card landing |
 | `wl-lead`, `wl-breathe` | the circuit, the pulse |
 | `wl-light-run` | the running light, round the edge of the thing it is on |
-| the veil (`.wl-veil`) | the wall's masthead laid over its greyed hive, lifted once per tab: 520ms, the type rising off the field while the field comes up to full light and the lens blooms from flat to full over about a second (`wall/Hive.jsx`). Under reduced motion it goes without rising |
+| the veil (`.wl-veil`) | the wall's masthead laid over its greyed hive, lifted once per tab: 520ms, the type rising off the field while the field comes up to full light and the lens blooms from flat to full over about a second (`wall/Hive.jsx`). The ear does not move. Under reduced motion it goes without rising |
 | the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
@@ -489,10 +488,9 @@ had already said it. The role went with the caller.
 | You | `.wl-me` | the chip on Main's bar, on every screen: the face and the handle once one is proved, and the way in before that |
 | Dock | `.wl-dock` | a sticky gradient off the bottom edge. Why the composer never has to be advertised. On the wall it carries the composer's pill and, under it, one quiet line to the rest of the product (`.wl-dock-rest`), which goes while the tab is up |
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash |
-| Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line, the count on flaps and `view the wall` on a scrim that greys the field under the words and is itself the way in. Once per tab |
-| Band | `.wl-band` | the wall's title and its count on one row under the bar, once the veil has lifted. It keeps its room while the veil is up, so the field under it is one size before and after |
-| Hive | `.wl-hive`, `Hive` | the wall's names as a field of faces seen through a lens (`wall/Hive.jsx`): a hexagonal torus of discs, the person nearest the middle largest with the name, the count and the time since the last letter under it, the ring round them carrying the handle, the rim points. It walks by itself, one person into the lens at a time, and it can be pulled in any direction. `app/src/wall/README.md`, The hive |
-| Foot | `.wl-colophon`, `SiteFoot` | the foot of the site, under the front door, under the wall, and restated in `legal.css` under the legal pages: the lockup and the sentence on one line, two short columns (the legal pages with the opt out among them, and the company: `COMPANY` in `parts.jsx`, the name, the address, the telephone and the street), and the company's line. Short on purpose: it used to run three columns and stood taller than the hero's type block on a phone. The one place the company is written as a company |
+| Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and `view the wall` on a scrim that greys the field under the words and is itself the way in. Once per tab |
+| Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element |
+| Hive | `.wl-hive`, `Hive` | the wall's names as a field of faces packed on a hexagonal torus and seen through a lens (`wall/Hive.jsx`): full size and nearly touching at the middle of the screen, points at the rim, one tag with the handle on the person in the lens and on a disc under the pointer. It drifts by itself and it can be pulled in any direction. `app/src/wall/README.md`, The hive |
 | Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Two grounds: `star`, the dark plate with star shaped holes the result card waits on, and `chalk`, the pill's own fill, so the light shows around the capsule as a halo. Spent on the result card while it is looking, on the pill that places a ping (`Pill lit`), and on the mutual row on the sky |
 
 ### 8.3 Fields
@@ -522,7 +520,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Bloom` | the soft blurred mass. The whole accent system, spent once |
 | `Field` | the drifting points |
 | `Dots` | step dots. The one place in the build with a sequence worth counting |
-| `Flap` | the wall's count, on split flaps: one per digit, the digit in `--gold` on a flat plate a step up from the void, a hairline round it and a seam across it, the word beside it. On the veil it is full size and rolls into place on the opening; on the band it is small and still. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes. Nothing moves under reduced motion (`.wl-flap`) |
+| `Flap` | a count on split flaps: one per digit, the digit in `--gold` on a flat plate a step up from the void, a hairline round it and a seam across it, the word beside it. The one count in the build set in the util face rather than the mono, because on a board a figure is a thing on a plate and not an identifier in a line of type. The top half of the old digit folds down over the new one when the number changes, and on mount it can roll into place. It was the wall's count on the masthead; that is a line in the ear now, and the flaps are kept, drawn on the components sheet and by nothing in the product. Nothing moves under reduced motion (`.wl-flap`) |
 | `Heart` | the tenth glyph, on the icon set's grid at its stroke, with two states: a hairline until this person has pressed it, filled with its own ink when they have. It stands in a letter's foot on the wall with the count beside it in the identifier face, struck in the paper's ink, and nowhere else (`.wl-hearts`, `.wl-heart`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |

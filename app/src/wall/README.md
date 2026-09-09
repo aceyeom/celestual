@@ -198,7 +198,7 @@ front too, and always has.
 
 | Route | What it is |
 | --- | --- |
-| `/berkeley` | **the wall**: the hive, the names as a field of faces seen through a lens that walks by itself, and the veil over it |
+| `/berkeley` | **the wall**: the hive, the names as a field of faces packed under a lens and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, and the heart on its foot with the count beside it |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
@@ -273,7 +273,7 @@ index.jsx    the shell — routing, the cut, the ground, ?s=, the tab's icon,
              and the intro
 Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
              skippable on any key, and the same intro Main plays at `/`
-Hive.jsx     the field: the lattice and its tile, the lens, the walk, the
+Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
              pull, and the pool of slots that draws it
 ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
@@ -299,43 +299,46 @@ screens/     one file per screen
 ## The hive
 
 The names are a field of faces seen through a lens (`Hive.jsx`). One disc per
-person written to, the picture the resolver has or a monogram until then, set
-on a hexagonal lattice that never ends in any direction. The person nearest
-the middle of the screen is drawn largest and carries the most: the name and
-the badge when the resolver knows them, the handle, how many letters, and how
-long since the last one. The ring round them is smaller and carries the
-handle. Past that the discs shrink toward the edges and the handles fade,
-until at the rim they are points and the field dissolves. A name written to
-three times is a larger disc than one written to once, so the field has a
-real topography under the lens.
+person written to, the picture the resolver has or a monogram until then,
+packed on a hexagonal lattice that never ends in any direction, each disc
+about nine tenths of the pitch so at full size they nearly touch. The lens is
+the screen's own window: the discs nearest its middle are full size, they
+shrink smoothly toward the edges, and at the rim they are points and the
+field dissolves. A name written to three times is a slightly larger disc than
+one written to once, so the field has a topography under the lens.
+
+One thing is written on it. The person in the lens carries a small tag with
+their handle, on a plate of the void on the disc's own lower edge, and under
+a mouse so does the disc the pointer is on. Nothing else: not the name, which
+the resolver knows for a few people and not for most; not the count, which is
+the disc's size; not the time since the last letter. Every one of those is
+behind the tap, on the letters themselves. A field with a caption under every
+third face is a directory, and the wall is a place where people are, not a
+list about them. The handle is the wall's own identifier: letters are
+addressed to it and a person finds their own by it.
 
 It replaced three lanes of handles crawling left and right. The lanes said
 the wall was alive and nothing else about anybody on it, and a handle at
 thirteen pixels sliding past is a handle nobody reads.
 
-- **It walks by itself, one person at a time.** The field glides so that the
-  next person lands in the lens, holds there for two and a half seconds, and
-  glides on. Six steps make a stitch (east, east, south east, east, east,
-  north east), so the walk snakes across rows rather than running along one.
-  A glide is the product's own curve, solved in JavaScript so it is the same
-  `--ease` an entrance takes in CSS. A person at the centre is a person at
-  rest, which a crawl never gave anybody.
-- **It can be pulled, in any direction.** A throw coasts on the same friction
-  the lanes had and, when it stops, the field settles so the nearest person is
-  exactly in the lens, holds, and the walk resumes from there. A wheel or a
-  trackpad pans it and it settles the same way. A name under the pointer holds
-  the whole field still, and a keyboard walking the names brings each into
-  the lens as it lands on it.
+- **It drifts by itself.** One slow drift, always, whose heading wanders so
+  the field never runs one way for long. Nothing steps, settles or snaps: the
+  lens is a continuous function of where a disc is, so as the field moves
+  every disc grows and shrinks smoothly through it, and the tag passes from
+  one person to the next as they cross the middle.
+- **It can be pulled, in any direction.** The field takes the finger; a throw
+  coasts on friction and eases back into the drift rather than stopping; a
+  wheel or a trackpad pans it. Under a mouse the drift slows over the field
+  and rests over a disc, so a name can be pressed. A keyboard walking the
+  names brings each into the lens as it lands on it.
 - **A pull is not a tap.** A press that travels more than 6px swallows the
   click it would have ended in. Every disc is a target.
-- **The disc is scaled and the words are not.** A cell is two elements placed
-  separately by the loop: the disc under the lens's scale, and the handle or
-  the caption under it moved but never scaled, so the type is sharp whatever
-  the lens is doing to the picture. The two beside the person in the lens
-  carry their handles above the disc, because below they ran into the caption.
-- **One `requestAnimationFrame`** writes every position, scale and label
-  opacity. React is told only when a slot changes hands or the lens moves to
-  another person. Under a sheet the loop stops.
+- **The disc is scaled and the tag is not.** A cell is two elements placed
+  separately by the loop, so the type is sharp whatever the lens is doing to
+  the picture.
+- **One `requestAnimationFrame`** writes every position, scale and tag.
+  React is told only when a slot changes hands or the lens moves to another
+  person. Under a sheet the loop stops.
 - **The ends dissolve, in every direction.** A hard edge on a moving face is
   a box; a fade is a room the face walked out of.
 
@@ -354,49 +357,59 @@ search away.
 
 The DOM holds a pool of slots the size of the screen and no more, however
 many names the wall carries: each slot owns one cell of the visible window
-and is handed a new name when the field scrolls a cell across. About seventy
-slots on a phone and two hundred on a desktop, and the loop's own cost is
-under a millisecond a frame on either.
+and is handed a new name when the field scrolls a cell across. About a
+hundred and fifty slots on a phone and two hundred and fifty on a desktop,
+and the loop's own cost is about a millisecond a frame on either.
 
-### The veil, and the band
+### The veil, and the ear
 
 The masthead is over the field, not above it. On a fresh load the whole
 screen under the bar is the field, greyed, with the title, the one line
 (`anonymous letters to the one you never told.`, in the reading face, the way
-the front door runs one line of the mechanic under its own headline), the
-count and the way in laid over it. The scrim is darkest where the type is and
-gone where it is not, so the names show through under the words, and it runs
+the front door runs one line of the mechanic under its own headline) and the
+way in laid over it. The scrim is darkest where the type is and gone where it
+is not, so the discs show through under the words as a texture, and it runs
 up over the bar so it has no edge. The scrim is itself the way in, and one
 arrow link says so in words: `view the wall`.
 
 Lifting it is one movement. The type rises off the field, the field comes up
-to full light, the lens blooms from flat to full over about a second, the
-field settles on the nearest person and the walk begins. The title and the
-count settle into one row under the bar, the band, so the wall keeps its name
-and its one fact while the names take the screen. The band keeps its room
-while the veil is up, so the field is the same size before and after the lift
-and nothing under the type jumps. The veil is up once per tab: coming back
-from a letter lands on the field.
+to full light, and the lens blooms from flat to full over about a second.
+One line stays exactly where it was through all of it: the ear, under the
+bar, the campus and the count in the identifier face at the size and the
+tracking every dateline in the product is set at. It is the same line the
+front door runs above its own headline to point here, so the line on the
+door and the line on the wall are one line, and it is what makes the veil
+and the field one masthead rather than two: nothing at the top changes shape
+when the type goes. The veil is up once per tab: coming back from a letter
+lands on the field.
 
-The tower came off. The Campanile stood in the masthead's corner and then on
-the count as its plinth, and it never stopped reading as a thing put there: a
-drawing beside a headline that had already said which campus this was. The
-wall's own light is in its field now, on the person in the lens.
+The tower came off, and so did the count on flaps. The Campanile stood in
+the masthead's corner and then on the count as its plinth, and it never
+stopped reading as a thing put there: a drawing beside a headline that had
+already said which campus this was. The flaps under it were a board, and a
+board is furniture. The wall's one fact is a line of type now, in the ear,
+and the wall's own light is in its field, on the person in the lens.
 
 ### The count
 
-The one fact about this wall worth printing, on split flaps (`art.jsx Flap`),
-the word beside it. On the veil the flaps are full size and roll into place
-on the opening; on the band they are small and still. The figure is set in
-the util face rather than the mono, the one count in the build that is: on a
-board a figure is a thing on a plate, not an identifier in a line of type.
-When the number changes the top half of the old digit folds down over the
-bottom half of the new one, and after the opening a flap moves only when a
-letter goes up. Under reduced motion nothing rolls and nothing folds.
+The one fact about this wall worth printing: `19 letters`, in the ear. An
+open wall with nothing on it yet says `open now` in its place, the way the
+front door does, and not a nought; one whose index did not load says so in
+the same place, because a wall that has not loaded has no number; and while
+the index is still loading there is no count at all, since a wall that has
+not answered is not a wall that is open with nothing on it.
 
-An open wall with nothing on it yet says `open now` in the count's place, the
-way the front door does, and not a nought; and one whose index did not load
-says so in the same place, because a wall that has not loaded has no number.
+### What is not on the wall any more
+
+Two controls stood under the names and both came off. `the rest of
+celestual`, one quiet line under the composer's pill, went because a sign on
+the road is still a sign and the wall is not a road: the brand in the bar
+goes to the front, and that is the whole of the wall's pointing at the
+product until a letter is up and the tab rises. `take your name off the
+wall`, a hairline capsule under the names on every visit, went because on
+the wall it was a control about a consequence nobody had met yet; it stands
+in the search and under the flag on every letter, which is where a person
+who has found their name is standing when they want it gone.
 
 ## The mark
 
@@ -618,21 +631,19 @@ which an icon library cannot do because it does not know what it is next to.
 
 The phone is the one this was designed for and it does not change.
 
-- **≥ 900px**: the wall becomes a poster. The band across the top with the
-  count at the page's right edge, the field edge to edge of the screen and
-  the whole middle of it, under a deeper and steeper lens than a phone gets,
-  the veil's type over the left of the field, and the way in and the way off
-  on the bottom row. It used to be a two column spread, a sticky masthead
+- **≥ 900px**: the wall becomes a poster. The ear under the bar, the field
+  edge to edge of the screen and the whole middle of it, the veil's type over
+  the left of the field, and the way in on the bottom row. It used to be a two column spread, a sticky masthead
   beside a column of lanes, and on any screen with height that was three
   short lanes floating in a void. Sheets become centred dialogs. The core
   service does **not** become a spread: it keeps its one flexible column and
   centres a 30rem measure in it, because a letter set to the width of a desktop
   is not a letter. The room goes around it rather than into it.
 - **landscape phone** (`max-height: 560px`, `min-width: 640px`): the same
-  spread, early. The band in the left column with the count under the title,
-  the field taking the right column's whole height with the veil over it, and
-  every vertical measure that was buying atmosphere gives its space back. On
-  390px of height, atmosphere is just scrolling.
+  spread, early. The ear and the dock in the left column, the field taking
+  the right column's whole height with the veil over it, and every vertical
+  measure that was buying atmosphere gives its space back. On 390px of
+  height, atmosphere is just scrolling.
 - **≥ 1280px** — the column stops growing. Past that the field around it is the
   design.
 
@@ -666,8 +677,8 @@ which is what keeps the two surfaces one product.
   only way those screens reach their final state, so the preference is read in
   JS and the screen starts at the last beat. The hive is the one thing
   that is *held* rather than jumped: under the preference the field is still
-  with the lens on it, a pull moves it and it lands at once, nothing walks and
-  nothing coasts, and the veil lifts without rising.
+  with the lens on it, a pull moves it and leaves it, nothing drifts and nothing
+  coasts, and the veil lifts without rising.
 - **The takedown and the report are real inside the tab and nowhere else.**
   Both write to the same one key everything else does, so they survive a reload
   the way a real removal would and are cleared by the same reset — and a

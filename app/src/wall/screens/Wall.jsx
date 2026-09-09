@@ -18,38 +18,49 @@
 //
 // The core service is the opposite of all of that, and it is somewhere else
 // again. The one OFFER of it is the tab at the bottom of this screen, and that
-// tab does not exist until you have put a letter up yourself. Before that
-// there is a signpost and nothing more: one quiet line under the composer's
-// pill, "the rest of celestual", which says there is more and asks nothing.
+// tab does not exist until you have put a letter up yourself. Nothing else on
+// the wall points at the product: the brand in the bar goes to the front, and
+// that is the whole of it. There was a quiet line under the composer's pill
+// once, "the rest of celestual", and it went: a sign on the road is still a
+// sign, and the wall is not a road.
+//
+// Nor is the way off on the wall itself any more. "take your name off the
+// wall" stood as a capsule under the names on every visit; it stands in the
+// search now, and under the flag on every letter, which is where a person who
+// has found their name is standing when they want it gone. On the wall it
+// was a control about a consequence nobody had met yet.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE HIVE, AND THE VEIL OVER IT                                          ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The names are a field of faces seen through a lens (Hive.jsx): the person
-// nearest the middle is drawn largest and carries the name, the handle, the
-// count and how long since the last letter; the ring round them carries the
-// handle; the rest shrink toward the edges until they are points. The field
-// walks by itself, one person into the lens at a time, and it can be pulled
+// The names are a field of faces seen through a lens (Hive.jsx): packed on a
+// hexagonal lattice, full size and nearly touching at the middle of the
+// screen, shrinking to points at the rim. One name is written on it, the
+// handle of the person in the lens, on a small tag; everything else about a
+// person is behind the tap. The field drifts by itself and it can be pulled
 // in any direction. It replaced three lanes of handles crawling left and
 // right, which said the wall was alive and nothing else about anybody on it.
 //
 // The masthead is over it, not above it. On a fresh load the whole screen
-// under the bar is the field, greyed, with the title, the one line, the count
-// and the way in laid over it: THE VEIL. "view the wall" lifts it, the field
-// comes up to full light, the lens blooms and the walk begins, and the title
-// and the count settle into one row under the bar, THE BAND, so the wall
-// keeps its name and its one fact while the names take the screen. The veil
-// is up once per tab: coming back from a letter lands on the field.
+// under the bar is the field, greyed, with the title, the one line and the
+// way in laid over it: THE VEIL. "view the wall" lifts it, the field comes up
+// to full light, the lens blooms, and the field has the screen. One line
+// stays where it was through the lift, THE EAR: the campus and the count, set
+// the way the front door sets its own ear above its headline, so the veil and
+// the field share one masthead element and nothing at the top changes shape
+// when the type goes. The veil is up once per tab: coming back from a letter
+// lands on the field.
 //
-// The tower came off. The Campanile stood in the masthead's corner and then
-// on the count as its plinth, and it never stopped reading as a thing put
-// there: a drawing beside a headline that had already said which campus this
-// was. The wall's own light is in its field now, on the person in the lens.
+// The tower came off, and so did the count on flaps. The Campanile stood in
+// the masthead's corner and then on the count as its plinth, and it never
+// stopped reading as a thing put there; the flaps under it were a board, and
+// a board is furniture. The wall's one fact is a line of type now, and the
+// wall's own light is in its field, on the person in the lens.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Display, Label, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
-import { Sparkle, Flap } from '../art.jsx'
+import { Sparkle } from '../art.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
 import Hive from '../Hive.jsx'
@@ -58,32 +69,40 @@ import Hive from '../Hive.jsx'
 // from a letter should land on the wall, not on a title.
 let OPENED = false
 
-// The count, wherever it stands: the flaps and the word while there are
-// letters, the open line while there are none, the plain fact when the index
-// did not load, and nothing at all while it is still loading, because a wall
-// that has not loaded has no number and is not open with nothing on it.
-function Count({ letters, roll = false, delay = 0 }) {
+// ── the ear ─────────────────────────────────────────────────────────────────
+// The campus and the count, on one line in the identifier face at the size
+// and the tracking every dateline in the product is set at: the same line
+// the front door runs above its headline to point here (Notice.jsx), so the
+// line on the door and the line on the wall are one line. The count is the
+// one fact about this wall worth printing. While the index is still loading
+// there is no count, because a wall that has not loaded has no number; when
+// it did not load the line says so, in the count's place.
+function Ear({ letters }) {
   const err = wallError()
-  if (!err && !letters && !wallLoaded()) return null
+  const loaded = wallLoaded()
+  let meta = null
   if (err) {
-    return (
-      <Label tone="dim" className="wl-count-meta" aria-live="polite">
-        {err === 'offline' ? 'the wall is not connected here' : 'the wall did not load. '}
+    meta = (
+      <>
+        <span className="wl-ear-meta">{err === 'offline' ? 'not connected here' : 'did not load'}</span>
         {err === 'offline' ? null : (
-          <button type="button" className="wl-quiet" onClick={() => loadWall(true)}>read it again</button>
+          <button type="button" className="wl-quiet wl-ear-again" onClick={() => loadWall(true)}>read it again</button>
         )}
-      </Label>
+      </>
     )
+  } else if (letters > 0) {
+    meta = <span className="wl-ear-meta">{letters === 1 ? 'one letter' : `${letters} letters`}</span>
+  } else if (loaded) {
+    meta = <span className="wl-ear-meta">open now</span>
   }
-  if (letters > 0) {
-    return (
-      <span className="wl-board">
-        <Flap value={letters} roll={roll} delay={delay} />
-        <span className="wl-board-say">{letters === 1 ? 'letter' : 'letters'}</span>
-      </span>
-    )
-  }
-  return <Label className="wl-board-say is-open">open now</Label>
+  return (
+    <Label as="div" className="wl-ear" aria-live="polite">
+      <Sparkle size={9} className="wl-ear-spark" />
+      <span className="wl-ear-name">berkeley</span>
+      {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
+      {meta}
+    </Label>
+  )
 }
 
 export default function Wall({ go, reduce, rev, under = false }) {
@@ -139,48 +158,34 @@ export default function Wall({ go, reduce, rev, under = false }) {
       <TopBar go={go} at="wall" />
 
       {/* ── the room ──
-          Everything under the bar and over the way off: the band, the stage
-          the hive fills, and while it is up the veil over both. The veil
-          covers the band as well as the stage so its scrim runs from the
-          bar down and the type stands where the masthead stood. */}
+          Everything under the bar and over the dock: the ear, the stage the
+          hive fills, and while it is up the veil over both. The veil covers
+          the ear's row as well as the stage, so its scrim runs from the bar
+          down; the ear stands above the scrim and does not move. */}
       <div className="wl-room">
-      {/* ── the band ──
-          The masthead once the veil has gone: the title on one row with the
-          count at its end, small, so the wall keeps its name over the field
-          and the one fact worth printing stays in view. It holds its room
-          while the veil is up so the field under it does not change size when
-          the veil lifts. */}
-      <div className="wl-band" aria-hidden={veiled || undefined}>
-        <Display size="s" as="h1" className="wl-band-title">
-          A wall of unforgettable berkeley bears.
-        </Display>
-        <div className="wl-band-count">
-          <Count letters={letters} />
+        <Ear letters={letters} />
+
+        {/* ── the stage ──
+            The field, and the veil laid over it. The stage is the whole of
+            the screen the bar, the ear and the dock leave, and it bleeds to
+            the edges of the viewport, because a field of faces with a margin
+            either side is a widget on a page. */}
+        <div className="wl-stage">
+          <Hive
+            tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
+            opening={playing} mine={wroteTo} onOpen={open}
+            none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
+          />
         </div>
-      </div>
 
-      {/* ── the stage ──
-          The field, and the veil laid over it. The stage is the whole of the
-          screen the bar, the strip, the way off and the dock leave, and it
-          bleeds to the edges of the viewport, because a field of faces with a
-          margin either side is a widget on a page. */}
-      <div className="wl-stage">
-        <Hive
-          tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
-          opening={playing} mine={wroteTo} onOpen={open}
-          none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
-        />
-
-      </div>
-
-      {veil !== 'down' && (
+        {veil !== 'down' && (
           <div className={`wl-veil${veil === 'lifting' ? ' is-lifting' : ''}`}>
             {/* the grey over the field is itself the way in: a tap anywhere on
                 it lifts it, and the arrow link below says so in words */}
             <button type="button" className="wl-veil-scrim" onClick={lift} aria-label="view the wall" tabIndex={-1} />
             <div className="wl-veil-in">
               <div className="wl-mast">
-                <Display size="xl" as="p" className="wl-mast-title">
+                <Display size="xl" as="h1" className="wl-mast-title">
                   A wall of<br />unforgettable<br />berkeley bears.
                 </Display>
                 {/* ── what it is, in one line ──
@@ -188,32 +193,11 @@ export default function Wall({ go, reduce, rev, under = false }) {
                     the reading face, the way the front door runs one line of
                     the mechanic under its own headline (hero.css .hm-read). */}
                 <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
-                {/* ── the count ──
-                    The one fact about this wall worth printing, on split flaps
-                    (art.jsx Flap). On the opening the digits roll into place;
-                    after that a flap moves only when a letter goes up. */}
-                <div className="wl-mast-count">
-                  <Count letters={letters} roll={playing} delay={1100} />
-                </div>
                 <ArrowLink className="wl-mast-go" onClick={lift}>view the wall</ArrowLink>
               </div>
             </div>
           </div>
-      )}
-      </div>
-
-      {/* ── the way off ──
-          A public list of handles says, in public, that these people are being
-          written about, and not one of them asked to be. So the way back off
-          sits on the wall itself, in plain sight under the names.
-
-          It is set quiet rather than hidden. Quiet is right, because it is not
-          what the wall is for; hidden would be the tell that the wall would
-          rather not be asked. */}
-      <div className="wl-wall-foot">
-        <button type="button" className="wl-mine is-wide" onClick={() => go('remove')}>
-          take your name off the wall
-        </button>
+        )}
       </div>
 
       {/* ── the dock ──
@@ -247,32 +231,12 @@ export default function Wall({ go, reduce, rev, under = false }) {
           </button>
         )}
 
-        {/* ── the way in, and the signpost ──
-            The composer's pill, and under it one quiet line. The line used
-            to be an arrow link beside the pill reading "place a ping", set
-            in the display face at the pill's own height: two acts on one
-            row, in two vocabularies, and the second one a word nobody who
-            scanned a flyer has met. A person standing on the wall read it
-            as a choice they could not make.
-
-            So it is the quiet control now, the sentence the sheets put under
-            a primary and nothing else, and it names the product rather than
-            an act: there is more of celestual than this wall, and the front
-            door says what. It does not pitch, it does not say "ping", and
-            it is the size of a caption, because the tab above is the offer
-            and this is only the sign on the road to it. It goes while the
-            tab is up, since the tab is that road. A real anchor: the wall's
-            shell cannot draw Main, so the walk over is a navigation. */}
+        {/* ── the way in ──
+            The composer's pill, and nothing under it. */}
         <div className="wl-dock-in">
           <Pill tone="light" wide onClick={() => go('write')}>
             write
           </Pill>
-          {!tab && (
-            <a className="wl-quiet wl-dock-rest" href="/" title="the front">
-              <span>the rest of celestual</span>
-              <span className="wl-dock-rest-go" aria-hidden="true">&#8594;</span>
-            </a>
-          )}
         </div>
       </div>
     </div>
