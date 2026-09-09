@@ -131,7 +131,7 @@
 .wl-root * { box-sizing: border-box; }
 /* The button reset, in :where() so it carries NO specificity of its own.
    Written as `.wl-root button` it is (0,1,1) and beats every single-class role
-   below it — `.wl-iconbtn`, `.wl-arrow.is-quiet`, `.wl-name.is-w0`, `.wl-close`
+   below it — `.wl-iconbtn`, `.wl-arrow.is-quiet`, `.wl-quiet`, `.wl-close`
    — so every button in the build rendered at full chalk with no border, and
    the entire tonal hierarchy of the surface was flat. `:where()` drops it to
    (0,1,0), which ties with the roles and hands the decision to source order:
@@ -238,8 +238,6 @@
 }
 @media (max-width: 359px) {
   .wl-page { --pad: 16px; }
-  .wl-mast { gap: 12px; }
-  .wl-mast-tower { width: 46px; }
   /* The orrery is drawn a little wider than the phone it is on, which is the
      one place a moon can be cut. At 470 on a 320px screen the overhang is
      forty pixels a side and a ping a quarter of the way through its sixty
@@ -925,80 +923,46 @@
 .wl-page.is-foot .wl-colophon { border-top-color: var(--hair-soft); }
 
 /* ═══ THE WALL ═════════════════════════════════════════════════════════════ */
-/* ── the masthead ──
-   Two things on one row: the type on the left, and on the right the tower
-   standing on the count. The tower used to be absolutely positioned over
-   this box, which is what an ornament is; it carries a fact now, so it is
-   laid out with the rest. Both are set on the same floor, so the word cut
-   under the count and the last line of the type share a baseline. */
-.wl-mast {
-  position: relative; padding: 26px 0 30px; flex: 0 0 auto;
-  display: flex; align-items: flex-end; gap: 18px;
+/* ── the band ──
+   The masthead once the veil has lifted: the title on one row, small, with
+   the count at its end, so the wall keeps its name over the field and the one
+   fact worth printing stays in view. It keeps its room while the veil is up
+   (opacity, never display), so the stage under it is the same size before
+   and after the lift and the field does not jump when the type goes. */
+.wl-band {
+  position: relative; z-index: 2; flex: 0 0 auto;
+  display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: space-between; gap: 18px;
+  padding: 8px 0 14px;
+  transition: opacity 520ms var(--ease) 200ms;
 }
-.wl-mast-type { flex: 1 1 auto; min-width: 0; }
-/* ── the line under the title ──
-   What the wall is, in one sentence, set the way the front door sets the
-   line under its own headline (hero.css .hm-read): the reading face at
-   seventeen pixels in ash. */
-.wl-mast-sub {
-  margin: 14px 0 0; max-width: 30ch;
-  font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 17px; line-height: 1.5; letter-spacing: 0;
-  color: var(--ash);
-  text-wrap: balance;
-}
-.wl-mast-meta { margin-top: 20px; }
+.wl-wallpage.is-veiled .wl-band { opacity: 0; transition-delay: 0ms; pointer-events: none; }
+.wl-band-title { margin: 0; flex: 1 1 auto; min-width: 0; max-width: 22ch; }
+.wl-band-count { flex: 0 0 auto; padding-bottom: 4px; }
+.wl-band .wl-flap { --flap-w: 18px; --flap-h: 26px; --flap-half: 13px; --flap-type: 15px; --flap-r: 3px; }
+.wl-band .wl-flaps { gap: 2px; }
+.wl-band .wl-board-say { font-size: 12px; }
+.wl-band .wl-count-meta { text-align: right; }
 
-/* ── the monument ──
-   The tower and the count are one object: the shaft comes down, its two
-   ledges step out, and the course they cap is the number. They stood side
-   by side before, two things at one weight in the same corner arguing over
-   which was the masthead's second act. A tower on a plinth is one thing,
-   and what is cut into the plinth is what the tower is for.
-
-   art.jsx `Flap`: the flap is a flat plate a step up from the void with a
-   hairline round it and a seam across its middle, and the digit is the
-   campus's gold in the util face. On a board a figure is a thing on a
-   plate, not an identifier in a line of type, so this is the one count in
-   the build not set in the mono. The lanes below move at the speed of a
-   departures board, and this is that board's number. */
-.wl-mast-stand {
-  flex: 0 0 auto;
-  display: flex; flex-direction: column; align-items: center;
-  /* the hairline the whole monument is drawn in. The tower takes it as
-     currentColor and so does the ledge on the block below it, so the two
-     halves of one object cannot drift apart. */
-  color: rgba(244, 241, 234, 0.5);
-}
-.wl-board { display: flex; flex-direction: column; align-items: center; gap: 7px; }
-/* the plinth's lower ledge, and it is here rather than in the drawing
-   because only the block knows how wide the block is: two digits and four
-   digits are two different plinths, and a cap that is a fixed width is
-   right for one of them and wrong for the other. */
-.wl-board::before {
-  content: ''; align-self: stretch; height: 1px;
-  background: currentColor;
-}
-/* ── the course under the ledge ──
-   Smaller plates than a board on its own carries, so the block sits under
-   the ledge that caps it, and run almost flush: the plates are masonry in
-   one course here, not tiles on a shelf. The top of the block is square
-   along its whole length, because the ledge rests ON it and a rounded
-   corner under a straight cap is a gap; only the two feet are turned. */
-.wl-board .wl-flaps { gap: 1px; }
-.wl-board .wl-flap { --flap-w: 21px; --flap-h: 30px; --flap-half: 15px; --flap-type: 18px; --flap-r: 0px; }
-.wl-board .wl-flap:first-child .wl-flap-half.is-bottom { border-radius: 0 0 0 4px; }
-.wl-board .wl-flap:last-child .wl-flap-half.is-bottom { border-radius: 0 0 4px 0; }
-/* the word, cut under the count the way a date is cut into a base */
+/* ── the board ──
+   art.jsx `Flap`: the count on split flaps, the word beside it. The flap is a
+   flat plate a step up from the void with a hairline round it and a seam
+   across its middle, and the digit is the campus's gold in the util face. On
+   a board a figure is a thing on a plate, not an identifier in a line of
+   type, so this is the one count in the build not set in the mono. It stood
+   under the tower as its plinth for a while; the tower came off, and the
+   board is a row again, on the veil at full size and on the band small. */
+.wl-board { display: inline-flex; align-items: center; gap: 10px; }
+/* the word beside the count */
 .wl-board-say {
   display: block;
   font-family: var(--f-util); font-size: 13px; font-weight: 500; letter-spacing: 0.06em;
   line-height: 1;
   color: rgba(244, 241, 234, 0.72);
 }
-/* nothing to stand on yet, so the tower floats and this is a line under it
-   rather than an inscription on anything */
-.wl-board-say.is-open { letter-spacing: 0.13em; margin-top: 10px; }
+/* nothing on the wall yet: a line, and not a nought */
+.wl-board-say.is-open { letter-spacing: 0.13em; }
+/* the index did not load: the fact, in place of a number */
+.wl-count-meta { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
 
 .wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
 /* One plate. Every measure on it is a variable, because the same plate is
@@ -1054,142 +1018,183 @@
   to   { transform: rotateX(0deg); filter: brightness(1); }
 }
 
-/* ── the campanile ──
-   art.jsx `Campanile`. Standing in the masthead's corner where the dotted
-   sphere was, drawn in hairlines of chalk at half strength so it is a
-   thing in the night and not a logo on it. Its lantern is the masthead's
-   one light, in the campus's gold. It is in the flow rather than hung over
-   the box: it stands on the count, and a thing that stands on something
-   cannot be positioned away from it. The height comes off the drawing's
-   own viewBox, which is shorter when it stands, so only the width is set
-   here and the ratio is the SVG's. */
-.wl-mast-tower {
-  width: 58px; height: auto;
+/* ═══ THE ROOM ═════════════════════════════════════════════════════════════
+   The band, the stage, and the veil over both: everything between the bar
+   and the way off. The stage is the whole of the screen the bar, the strip,
+   the way off and the dock leave, and it bleeds to the edges of the viewport:
+   a field of faces with a margin either side is a widget on a page. */
+.wl-room {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.wl-stage {
+  position: relative; flex: 1 1 auto; min-height: 220px;
+  margin: 0 calc(-1 * var(--pad));
+}
+
+/* ═══ THE VEIL ═════════════════════════════════════════════════════════════
+   The masthead, over the field rather than above it. The field is greyed
+   under a scrim that is darkest where the type is and gone where it is not,
+   so the names show through under the words, and the title, the line, the
+   count and the way in stand on it. The scrim is itself the way in, and the
+   arrow link says so in words. It lifts once per tab, and it lifts as one
+   movement: the type rises off the field while the field comes up to full
+   light under it and the lens blooms (Hive.jsx). */
+.wl-veil {
+  position: absolute; inset: 0 calc(-1 * var(--pad)); z-index: 3;
+  display: flex; flex-direction: column;
+}
+.wl-veil-scrim {
+  position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0;
+  background: linear-gradient(180deg, rgba(8, 7, 11, 0.58) 0%, rgba(8, 7, 11, 0.36) 46%, rgba(8, 7, 11, 0.04) 100%);
+  cursor: pointer;
+}
+/* the scrim's top edge, softened up over the bar: a ramp from nothing to the
+   scrim's own depth, so the grey over the field has no edge where the bar
+   ends. It takes no pointer, so the bar under it is still the bar. */
+.wl-veil::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 64px;
+  background: linear-gradient(180deg, rgba(8, 7, 11, 0) 0%, rgba(8, 7, 11, 0.58) 100%);
   pointer-events: none;
 }
-.wl-campanile { display: block; overflow: visible; }
-.wl-campanile-line path, .wl-campanile-line circle { vector-effect: non-scaling-stroke; }
-.wl-campanile-lamp {
-  filter: drop-shadow(0 0 5px rgba(253, 181, 21, 0.6));
-  /* the twinkle scales and turns the star about its own centre */
-  transform-box: fill-box; transform-origin: center;
+.wl-veil.is-lifting::before { display: none; }
+.wl-veil-in { position: relative; padding: 4px var(--pad) 0; pointer-events: none; }
+.wl-mast { display: flex; flex-direction: column; align-items: flex-start; }
+.wl-mast-title { margin: 0; }
+/* ── the line under the title ──
+   What the wall is, in one sentence, set the way the front door sets the
+   line under its own headline (hero.css .hm-read): the reading face at
+   seventeen pixels in ash. */
+.wl-mast-sub {
+  margin: 14px 0 0; max-width: 30ch;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 17px; line-height: 1.5; letter-spacing: 0;
+  color: var(--ash);
+  text-wrap: balance;
 }
+.wl-mast-count { margin-top: 22px; min-height: 34px; display: flex; align-items: center; }
+/* the way in, in words: the arrow link, which is the poster's own nav */
+.wl-mast-go { margin-top: 16px; pointer-events: auto; }
+.wl-count-meta .wl-quiet { pointer-events: auto; padding: 0; }
+/* lifting: the whole veil fades, and the type rises off the field as it goes */
+.wl-veil.is-lifting { pointer-events: none; animation: wl-fade 520ms var(--ease) reverse both; }
+.wl-veil.is-lifting .wl-mast { animation: wl-veil-rise 520ms var(--ease) both; }
+@keyframes wl-veil-rise { from { transform: none; } to { transform: translate3d(0, -16px, 0); } }
 
-/* ═══ THE INSCRIPTION ══════════════════════════════════════════════════════
-   One run of names at three weights — not a grid of cards (a directory) and
-   not a tag cloud (analytics). It has two presentations and they are the same
-   content:
+/* ═══ THE HIVE ═════════════════════════════════════════════════════════════
+   Hive.jsx. A field of faces on a hexagonal lattice that never ends, seen
+   through a lens: the person nearest the middle is largest and carries the
+   name, the count and how long since the last letter; the ring round them
+   carries the handle; the rest shrink to points at the rim. Every position,
+   scale and label opacity is written by one requestAnimationFrame; this file
+   sets what a cell is made of and nothing about where it stands.
 
-   IS-DRIFTING   the default. The run is broken into lanes and each lane
-                 travels, alternating direction, at one constant speed. A
-                 static block of sixty-six names reads as a list that was
-                 printed once, and the one thing this surface has to say in
-                 its first second is that people are still doing this.
-   IS-STILL      under `prefers-reduced-motion`. The original wrapping run —
-                 not a frozen banner, which would strand the names in eight
-                 ragged rows, but the composition this was before it moved. */
-.wl-wall { padding: 4px 0 20px; }
-
-.wl-wall.is-still {
-  display: block;
-  line-height: 2.05;
-  word-spacing: 0.04em;
-}
-.wl-wall.is-still .wl-slot { display: inline; white-space: nowrap; }
-
-.wl-wall.is-drifting {
-  --lane-h: 40px;
-  display: flex; flex-direction: column;
-  gap: 1px;
-  /* The wall takes whatever height the masthead, the takedown and the dock did
-     not, and the lanes sit in the middle of it. That is what keeps two lanes
-     and seven lanes both looking placed: the air is shared above and below them
-     rather than dumped underneath the last one, which is what a wall of five
-     names looked like before the lanes were centred in their own room. */
-  flex: 1 1 auto; justify-content: center; min-height: 0;
-  /* full bleed. The lanes run off both edges of the phone, because a banner
-     with a 22px margin either side is a widget on a page — the names have to
-     leave the screen rather than stop before it. */
-  margin: 0 -22px;
-  /* and they dissolve at the ends rather than being cut. A hard edge on a
-     moving name is a box; a fade is a room the name walked out of. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 13%, #000 87%, transparent 100%);
+   The ends dissolve, in every direction. A hard edge on a moving face is a
+   box; a fade is a room the face walked out of. */
+.wl-hive {
+  position: absolute; inset: 0; overflow: hidden;
+  contain: layout paint;
+  -webkit-mask-image: radial-gradient(ellipse 78% 70% at 50% 50%, #000 46%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 70% at 50% 50%, #000 46%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
+  transition: opacity 760ms var(--ease);
 
   /* ── it is a thing you can pull ──
-     `pan-y` is the whole contract with the browser: a vertical gesture is the
-     page's and is never intercepted, a horizontal one is the wall's and is
-     never turned into a scroll. Without it a phone claims the drag before the
-     first pointermove arrives and the names simply do not move.
-
-     The selection and the tap highlight go for the same reason: dragging
-     across a run of type selects it on every platform, and a wall left
-     half-highlighted after a swipe reads as broken rather than as text. */
-  touch-action: pan-y;
+     In any direction, so the browser is handed none of the gesture. The
+     selection and the tap highlight go for the same reason the lanes lost
+     them: a field left half highlighted after a swipe reads as broken. */
+  touch-action: none;
   cursor: grab;
   user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.wl-wall.is-drifting.is-held { cursor: grabbing; }
+.wl-hive.is-held { cursor: grabbing; }
+/* under the veil the field is grey: dimmed, not blurred, because a blur over
+   a hundred moving discs is a hundred rasters a frame */
+.wl-hive.is-veiled { opacity: 0.38; cursor: default; }
+.wl-hive.is-empty { display: grid; place-items: center; -webkit-mask-image: none; mask-image: none; cursor: default; }
+.wl-hive-none { text-align: center; }
 
-.wl-lane {
-  /* `clip`, with `hidden` under it for anything that does not know the word.
-     `hidden` makes a scroll container, and a browser scrolling a lane to
-     reveal a focused name inside it would drag the track sideways under the
-     transform the loop is writing. `clip` cannot be scrolled, so it cannot
-     fight. */
-  overflow: hidden;
-  overflow: clip;
-  height: var(--lane-h, 40px);
-  display: flex; align-items: center;
+/* ── a cell ──
+   A button with no box of its own, standing at the field's origin; its two
+   children are placed by the loop. The disc is scaled by the lens and the
+   words under it are only moved, so the type stays sharp at every scale. */
+.wl-cell {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  padding: 0; margin: 0; overflow: visible; display: block;
+  color: inherit;
+  -webkit-user-drag: none;
 }
-/* The track the loop moves. It carries no animation of its own: every frame
-   is written by one rAF in Wall.jsx, because the drift, the drag and the throw
-   have to be the same number or the wall tears in half the moment a finger
-   lands on it. */
-.wl-lane-run {
-  display: flex; align-items: center; width: max-content;
+.wl-cell:focus-visible { outline: none; }
+.wl-cell-disc {
+  position: absolute; left: 0; top: 0; display: block;
+  width: var(--d); height: var(--d);
+  margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  transform-origin: 50% 50%;
   will-change: transform;
 }
-.wl-lane-copy { display: flex; align-items: center; flex: 0 0 auto; }
-.wl-wall.is-drifting .wl-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
-.wl-wall.is-drifting .wl-name { -webkit-user-drag: none; }
+/* the lens's own light: a soft warm halo behind the person in focus, drawn
+   as a gradient and not cast as a shadow. It is the wall's one bright thing,
+   and it is on whoever is being read. */
+.wl-cell-disc::before {
+  content: ''; position: absolute; inset: -42%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 244, 228, 0.20) 0%, rgba(255, 244, 228, 0.05) 42%, rgba(255, 244, 228, 0) 70%);
+  opacity: 0; transition: opacity 620ms var(--ease);
+  pointer-events: none;
+}
+.wl-cell.is-focus .wl-cell-disc::before { opacity: 1; }
+.wl-cell.is-focus .wl-face { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.3); }
+.wl-cell:hover .wl-face,
+.wl-cell:focus-visible .wl-face { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.46); }
+/* a name this browser wrote to is lit on the wall it came back to */
+.wl-cell.is-mine .wl-face { box-shadow: inset 0 0 0 1px rgba(255, 244, 228, 0.55); }
+.wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
-.wl-name {
-  font-family: var(--f-id);
-  color: rgba(244, 241, 234, 0.60);
-  letter-spacing: -0.014em;
-  white-space: nowrap;
-  transition: color 260ms var(--ease), text-shadow 460ms var(--ease);
-  padding: 2px 0;
+/* the words under a disc: the loop moves them and sets how much of them
+   shows, from all of it in the lens to none at the rim */
+.wl-cell-tag {
+  position: absolute; left: 0; top: 0;
+  white-space: nowrap; text-align: center;
+  opacity: 0; will-change: transform, opacity;
+  pointer-events: none;
 }
-.wl-name.is-w0 { font-size: 13px; }
-.wl-name.is-w1 { font-size: 16.5px; color: rgba(244, 241, 234, 0.76); }
-.wl-name.is-w2 { font-size: 21px; color: rgba(244, 241, 234, 0.92); }
-.wl-name:hover { color: var(--glow); text-shadow: 0 0 18px rgba(255,244,228,0.5); }
-.wl-name.is-ember { color: var(--glow); text-shadow: 0 0 22px rgba(255,244,228,0.55); }
-.wl-name-n {
-  font-size: 0.62em; vertical-align: super; margin-left: 2px;
-  color: var(--ash-dim); letter-spacing: 0;
+.wl-cell-h {
+  display: block;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: -0.01em; line-height: 1.3;
+  color: rgba(244, 241, 234, 0.72);
+  transition: color 200ms var(--ease);
 }
-.wl-sep { display: inline-block; vertical-align: middle; margin: 0 8px; color: rgba(244,241,234,0.14); }
+.wl-cell:hover .wl-cell-h { color: var(--chalk); }
+.wl-cell-n { font-size: 0.7em; vertical-align: super; margin-left: 2px; color: var(--ash-dim); letter-spacing: 0; }
+/* the person in the lens: the name, and the line under it. The same two
+   lines `Who` draws beside a face on a row, and they arrive as one. */
+.wl-cell-cap {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  animation: wl-cap-in 360ms var(--ease) both;
+}
+@keyframes wl-cap-in { from { opacity: 0; transform: translate3d(0, 4px, 0); } to { opacity: 1; transform: none; } }
+.wl-cell-name {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--f-util); font-size: 14px; font-weight: 500; line-height: 1.25;
+  letter-spacing: -0.005em; color: var(--chalk);
+}
+/* a handle standing as the name is still an identifier, so it keeps its face */
+.wl-cell-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: 13.5px; letter-spacing: -0.012em; }
+.wl-cell-badge { color: var(--accent); flex: 0 0 auto; }
+.wl-cell-meta {
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.03em; line-height: 1.3;
+  color: var(--ash);
+}
 
 /* ── the opening ──
-   Plays once per session. The masthead rises, then the names arrive in a
-   stagger capped at forty — past that the cascade is longer than anybody's
-   patience and the tail may as well be there already. */
+   Plays once per session. The masthead rises on the veil, and the field
+   arrives under it from the middle outward: each disc's delay is its distance
+   from the lens (Hive.jsx, `--in`), so the wall fills as a ripple rather
+   than in rows. */
 .wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
 .wl-wallpage.is-opening .wl-mast-sub   { animation: wl-fade 900ms var(--ease) 620ms both; }
-.wl-wallpage.is-opening .wl-mast-meta  { animation: wl-fade 900ms var(--ease) 900ms both; }
-/* the monument arrives as one object, tower and plinth together, and the
-   flaps start turning while it is still coming up */
-.wl-wallpage.is-opening .wl-mast-stand { animation: wl-fade 1200ms var(--ease) 900ms both; }
-/* the cascade arrives a LANE at a time rather than a name at a time. Eighty
-   staggered fades over a field that is also travelling is two animations
-   arguing; one fade per lane reads as the wall assembling in bands. */
-.wl-wallpage.is-opening .wl-lane       { animation: wl-fade 800ms var(--ease) both; animation-delay: var(--in, 900ms); }
-.wl-wallpage.is-opening .wl-wall.is-still .wl-name { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
-.wl-wallpage.is-opening .wl-wall.is-still .wl-sep  { animation: wl-fade 700ms var(--ease) 1400ms both; }
+.wl-wallpage.is-opening .wl-mast-count { animation: wl-fade 1200ms var(--ease) 900ms both; }
+.wl-wallpage.is-opening .wl-mast-go    { animation: wl-fade 900ms var(--ease) 1300ms both; }
+.wl-wallpage.is-opening .wl-cell       { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
 .wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
 .wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
 
@@ -1984,9 +1989,6 @@
     rgba(8,7,11,0) 0%, rgba(8,7,11,0.55) 22%, rgba(8,7,11,0.93) 46%, var(--void) 62%);
 }
 
-/* a name this session put up is lit on the wall it went back to */
-.wl-name.is-mine { color: var(--glow); text-shadow: 0 0 16px rgba(255,244,228,0.35); }
-
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
    The phone layout is the one this was designed for and it does not change.
    What changes on a landscape phone, a tablet or a desktop is that the empty
@@ -2003,13 +2005,11 @@
   .wl-page { --pad: 40px; max-width: 1080px; padding: 0 var(--pad) 40px; }
 
   /* ── the poster ──
-     The title block runs across the top with the tower at the page's right
-     edge, the names take the whole width of the screen and the whole middle
-     of it, and the bottom row is the way in on the left and the way off on
-     the right. It used to be two columns, a sticky masthead on the left and
-     the names in a column beside it, and on a screen with any height that
-     was three short lanes floating in a void with the tower and the takedown
-     stacked under the title. A wall is wide. */
+     The band runs across the top with the count at the page's right edge,
+     the field takes the whole width of the screen and the whole middle of
+     it, and the bottom row is the way in on the left and the way off on the
+     right. The veil lays the type over the left of the field, centred in
+     the field's height, with the names showing through to the right of it. */
   .wl-main { overflow-x: clip; }
   .wl-wallpage {
     display: grid;
@@ -2019,28 +2019,25 @@
     align-content: stretch;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
-  .wl-mast {
-    grid-column: 1 / -1; grid-row: 2;
-    padding: 34px 0 0;
-    gap: 40px;
+  .wl-band { grid-row: 1; padding: 20px 0 12px; align-items: baseline; }
+  .wl-band-title { max-width: none; }
+  .wl-band .wl-flap { --flap-w: 20px; --flap-h: 28px; --flap-half: 14px; --flap-type: 16px; }
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
+  .wl-stage { grid-row: 2; margin: 0 calc(50% - 50vw); min-height: 380px; }
+  /* the veil's type keeps the column while the field leaves it */
+  .wl-veil { inset: 0 calc(50% - 50vw); justify-content: center; }
+  .wl-cell-h { font-size: 11px; }
+  .wl-veil-in { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 40px 24px; }
+  .wl-veil-scrim {
+    background: linear-gradient(90deg, rgba(8, 7, 11, 0.64) 0%, rgba(8, 7, 11, 0.44) 34%, rgba(8, 7, 11, 0.1) 60%, rgba(8, 7, 11, 0) 100%);
   }
-  /* the monument stands at the page's right edge, on the type's own floor,
-     and it is drawn larger here: a spread has the room, and the count is a
-     headline number rather than a mark in a corner */
-  .wl-mast-tower { width: 84px; }
-  .wl-board .wl-flap { --flap-w: 26px; --flap-h: 37px; --flap-half: 18.5px; --flap-type: 22px; }
-  .wl-board-say { font-size: 14px; }
   .wl-mast-sub { max-width: 40ch; font-size: 18px; }
-  .wl-wall {
-    grid-column: 1 / -1; grid-row: 3;
-    align-self: center;
-    padding: 28px 0;
-    line-height: 2.15;
+  .wl-mast-count .wl-flap { --flap-w: 26px; --flap-h: 37px; --flap-half: 18.5px; --flap-type: 22px; }
+  .wl-mast-count .wl-board-say { font-size: 14px; }
+  .wl-hive {
+    -webkit-mask-image: radial-gradient(ellipse 64% 80% at 50% 50%, #000 44%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
+    mask-image: radial-gradient(ellipse 64% 80% at 50% 50%, #000 44%, rgba(0, 0, 0, 0.5) 74%, transparent 100%);
   }
-  /* edge to edge of the screen, not of the column: the type keeps the
-     column and the names leave it, which is the difference between a wall
-     and a widget. The fade at each end is the lanes' own. */
-  .wl-wall.is-drifting { --lane-h: 46px; margin: 0 calc(50% - 50vw); }
   .wl-wallpage .wl-dock {
     grid-column: 1; grid-row: 4;
     position: static; align-self: end;
@@ -2112,23 +2109,15 @@
     column-gap: 40px;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
-  .wl-mast { grid-column: 1; grid-row: 2; padding: 8px 0 0; position: sticky; top: 8px; gap: 14px; }
-  /* three hundred and fifty pixels of height has no room for a tower. The
-     count is not an ornament and stays: the flaps and their word drop back
-     to a row beside the type, which is what they were before the tower had
-     anything to stand on. */
-  .wl-mast-tower { display: none; }
-  .wl-board { flex-direction: row; align-items: center; gap: 10px; }
-  /* no tower, so nothing is being capped: the ledge is a plinth's cap and
-     not a rule under a number */
-  .wl-board::before { display: none; }
-  .wl-board .wl-flap:first-child .wl-flap-half.is-top { border-radius: 4px 0 0 0; }
-  .wl-board .wl-flap:last-child .wl-flap-half.is-top { border-radius: 0 4px 0 0; }
-  .wl-wall { grid-column: 2; grid-row: 2 / span 3; padding-top: 10px; line-height: 1.9; }
-  /* 350px of height is four lanes, and the ladder in Wall.jsx caps it there.
-     The lanes give back the air rather than the type: a 24px lane cannot set a
-     21px name, which is the whole point of the three weights. */
-  .wl-wall.is-drifting { --lane-h: 32px; margin: 0 -10px; }
+  /* the band stands in the left column, the title over the count, and the
+     field takes the right column's whole height with the veil over it */
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
+  .wl-band { grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 6px 0 0; }
+  .wl-band-title { max-width: 16ch; }
+  .wl-band .wl-count-meta { text-align: left; }
+  .wl-stage { grid-column: 2; grid-row: 1 / span 3; margin: 0 -26px 0 0; min-height: 0; }
+  .wl-veil { inset: 0 -26px 0 0; }
+  .wl-veil-in { padding: 6px 18px 0; }
   .wl-wall-foot { grid-column: 1; grid-row: 3; justify-content: flex-start; padding: 4px 0 10px; }
   .wl-wallpage .wl-dock { grid-column: 1; grid-row: 4; align-self: end; margin: 0; padding: 0; max-width: 340px; }
   .wl-wallpage .wl-dock-veil { left: -22px; right: -16px; width: auto; transform: none; top: -70px; }
@@ -2139,7 +2128,8 @@
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
   .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: 15px; }
-  .wl-mast-meta { margin-top: 12px; }
+  .wl-mast-count { margin-top: 12px; min-height: 0; }
+  .wl-mast-go { margin-top: 8px; }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
@@ -2181,8 +2171,7 @@
    design, and the names simply get more room per line inside a wall column
    that has stopped widening. */
 @media (min-width: 1280px) {
-  .wl-mast { padding-top: 46px; }
-  .wl-wall { padding: 36px 0; }
+  .wl-band { padding-top: 32px; }
 }
 
 /* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
@@ -2760,6 +2749,8 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
+  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-cap { animation: none !important; }
+  .wl-hive, .wl-band, .wl-cell-disc::before { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }
@@ -2767,40 +2758,15 @@
 
 /* ═══ THE WALL, WIDE ═══════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  /* its own row in the masthead's column, under the title and over the dock */
   /* the way off, on the bottom row beside the way in (the poster, above) */
   .wl-wall-foot { grid-column: 2; grid-row: 4; align-self: center; justify-content: flex-end; padding: 0 0 6px; }
-
-  /* The bleed goes both ways now, to the edges of the screen and not of the
-     column (the poster, above): the type keeps the column and the names
-     leave it. The fade stays on BOTH ends: a lane's first name starts
-     mid-word by design, and without a dissolve it reads as text that has
-     been chopped rather than as a name walking in. */
-  .wl-wall.is-drifting {
-    margin: 0 calc(50% - 50vw);
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
-    gap: 2px;
-    /* ── and it sits in the middle of its column ──
-       The lanes are a fixed block about 440px tall, and the grid row they are
-       in is the whole height of the page. Anchored to the top, the composition
-       was a banner with seven hundred pixels of nothing under it, which reads
-       as a list that ran out rather than as air. Centred, the masthead sits at
-       the top left, the names sit opposite it, the one control sits bottom
-       left, and the empty field around all three is the design — which is what
-       the rest of this file already says about the column on a wide screen. */
-    align-self: center;
-  }
-  .wl-lane { height: 52px; }
 }
 
 @media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
-  /* 350px of height, eight lanes: the lane is the first thing to give its
-     space back, and the masking goes with the bleed. */
-  .wl-wall.is-drifting { margin: 0 -26px 0 0; gap: 0; }
-  .wl-lane { height: 32px; }
+  /* 350px of height: the band gives back its air, and the way off sits
+     under it */
+  .wl-band-title.wl-display.is-s { font-size: clamp(19px, 2.6vw, 22px); }
 }
-
 
 /* ── the audit of 4 September ────────────────────────────────────────────────
    A thirty character handle, which the schema allows, is wider than the paper
