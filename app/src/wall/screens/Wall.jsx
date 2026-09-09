@@ -34,23 +34,43 @@
 // ║  THE HIVE, AND THE VEIL OVER IT                                          ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// The names are a field of faces seen through a lens (Hive.jsx): packed on a
-// hexagonal lattice, full size and nearly touching at the middle of the
-// screen, shrinking to points at the rim. One name is written on it, the
-// handle of the person in the lens, on a small tag; everything else about a
-// person is behind the tap. The field drifts by itself and it can be pulled
-// in any direction. It replaced three lanes of handles crawling left and
-// right, which said the wall was alive and nothing else about anybody on it.
+// The names are a crowd of faces bent by a lens (Hive.jsx): laid on a
+// hexagonal lattice that never ends and then, by one continuous function of
+// how far a face is from the light, made large and nearly touching at the
+// middle and small, far apart and scattered toward the rim. One name is
+// written on it — the handle of whoever the lens is reading, on one glass
+// plate, and never two — and everything else about a person is behind the
+// tap. The field drifts, every disc in it breathes on its own clock, it can
+// be pulled in any direction, and under a mouse it swells where the pointer
+// is. It replaced three lanes of handles crawling left and right, which said
+// the wall was alive and nothing else about anybody on it.
 //
-// The masthead is over it, not above it. On a fresh load the whole screen
-// under the bar is the field, greyed, with the title, the one line and the
-// way in laid over it: THE VEIL. "view the wall" lifts it, the field comes up
-// to full light, the lens blooms, and the field has the screen. One line
-// stays where it was through the lift, THE EAR: the campus and the count, set
-// the way the front door sets its own ear above its headline, so the veil and
-// the field share one masthead element and nothing at the top changes shape
-// when the type goes. The veil is up once per tab: coming back from a letter
-// lands on the field.
+// ── the field is the screen, and the screen has no margins ──────────────────
+// It is not a panel between the bar and the pill. It runs corner to corner,
+// behind the bar, behind the ear, behind the pill, out past the column's own
+// gutters to the edges of the glass, and it dissolves at every edge rather
+// than stopping at one. What keeps the type over it legible is not a box
+// around the field but two gradients over it — THE SHADES — which pour the
+// void back in at the top and the bottom and are gone by the middle. A field
+// of faces inside a margin is a widget on a page; this is the room the page
+// is standing in.
+//
+// The masthead is over it, not above it. On a fresh load the whole screen is
+// the field, greyed, with the title, the one line and the way in laid over
+// it: THE VEIL. "view the wall" lifts it, the field comes up to full light,
+// the lens blooms, and the field has the screen. One line stays where it was
+// through the lift, THE EAR: the campus and the count, set the way the front
+// door sets its own ear above its headline, so the veil and the field share
+// one masthead element and nothing at the top changes shape when the type
+// goes. The veil is up once per tab: coming back from a letter lands on the
+// field.
+//
+// ── and a name opens into the letter it carries ─────────────────────────────
+// Pressing a disc does not cut to a sheet. The circle that was pressed lifts
+// off the field, opens as it travels, and lands as the letter's cream card
+// with the same face settled into its letterhead (morph.js, Morph.jsx). One
+// object, one movement, and nowhere in it the moment where the wall was
+// replaced by a screen.
 //
 // The tower came off, and so did the count on flaps. The Campanile stood in
 // the masthead's corner and then on the count as its plinth, and it never
@@ -113,7 +133,13 @@ export default function Wall({ go, reduce, rev, under = false }) {
   const written = state.written
   const wroteTo = state.wroteTo
 
-  const [playing] = useState(() => !OPENED && !getState().seen && !reduce)
+  // The opening cascade. It is a state rather than a constant because the
+  // class that carries it has to come back off: while `is-opening` is on the
+  // page every disc in the field is under a `both`-filled arrival animation,
+  // and an arrival animation on an element is an animation a later one — a
+  // name that has just been written to, say — has to out-specify to be seen
+  // at all. It plays, and then it is over.
+  const [playing, setPlaying] = useState(() => !OPENED && !getState().seen && !reduce)
   const [armed, setArmed] = useState(() => OPENED || getState().seen || reduce)
   // ── the veil ──
   // Up on a fresh load, once per tab. `lifting` is the beat it takes to go,
@@ -141,6 +167,14 @@ export default function Wall({ go, reduce, rev, under = false }) {
     return () => clearTimeout(t)
   }, [armed])
 
+  // the cascade's own length: the last thing in it starts at 1900ms and the
+  // field's outermost discs land a little after that
+  useEffect(() => {
+    if (!playing) return undefined
+    const t = setTimeout(() => setPlaying(false), 3400)
+    return () => clearTimeout(t)
+  }, [playing])
+
   useEffect(() => {
     if (!written.length || tab) return undefined
     const t = setTimeout(() => setTab(true), reduce ? 0 : 900)
@@ -155,28 +189,41 @@ export default function Wall({ go, reduce, rev, under = false }) {
   return (
     <>
     <div className={`wl-page wl-wallpage${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}${veil === 'up' ? ' is-veiled' : ' is-lifted'}`}>
+      {/* ── the stage ──
+          The field, and it is the whole screen: corner to corner, behind the
+          bar, behind the ear, behind the pill, out past the column's own
+          gutters to the edges of the glass. A field of faces inside a margin
+          is a widget on a page, and this is not a widget — it is the room the
+          page is standing in. What keeps the type on top of it legible is not
+          a box around the field but two gradients over it, below. */}
+      <div className="wl-stage">
+        <Hive
+          tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
+          opening={playing} mine={wroteTo} onOpen={open}
+          none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
+        />
+      </div>
+
+      {/* ── the two shades ──
+          The bar has to be readable over whatever face happens to be under it
+          and so does the pill, and the answer is not a plate behind either of
+          them: a plate is a bar sitting ON a picture, and these have to be IN
+          it. So the void is poured back over the field at the top and the
+          bottom, deepest at the two edges and gone by the time it reaches the
+          middle of the screen — the same fade the field's own mask has at its
+          rim, running the other way. Neither takes a pointer: the faces under
+          them are still names you can press. */}
+      <div className="wl-shade is-top" aria-hidden="true" />
+      <div className="wl-shade is-bottom" aria-hidden="true" />
+
       <TopBar go={go} at="wall" />
 
       {/* ── the room ──
-          Everything under the bar and over the dock: the ear, the stage the
-          hive fills, and while it is up the veil over both. The veil covers
-          the ear's row as well as the stage, so its scrim runs from the bar
-          down; the ear stands above the scrim and does not move. */}
+          The ear, and while it is up the veil. Both stand over the field
+          rather than beside it: the veil's scrim runs from the bar down, and
+          the ear stands above the scrim and does not move when it goes. */}
       <div className="wl-room">
         <Ear letters={letters} />
-
-        {/* ── the stage ──
-            The field, and the veil laid over it. The stage is the whole of
-            the screen the bar, the ear and the dock leave, and it bleeds to
-            the edges of the viewport, because a field of faces with a margin
-            either side is a widget on a page. */}
-        <div className="wl-stage">
-          <Hive
-            tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
-            opening={playing} mine={wroteTo} onOpen={open}
-            none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
-          />
-        </div>
 
         {veil !== 'down' && (
           <div className={`wl-veil${veil === 'lifting' ? ' is-lifting' : ''}`}>

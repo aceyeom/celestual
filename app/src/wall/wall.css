@@ -658,7 +658,15 @@
   display: flex; flex-direction: column;
   background: linear-gradient(180deg, rgba(13, 12, 18, 0.9) 0%, rgba(8, 7, 11, 0.94) 42%);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  box-shadow: 0 -1px 0 var(--hair) inset, 0 -30px 70px -30px rgba(0,0,0,0.9);
+  /* ── the frame ──
+     A pane, not a panel: one bright hairline along the top edge where the
+     light would catch it, a dimmer one all the way round, and the cast
+     shadow under it. Three lines and the sheet stops being a rectangle of
+     dark and starts being a piece of glass over the room. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.07),
+    0 -30px 70px -30px rgba(0, 0, 0, 0.9);
   animation: wl-rise-sheet 460ms var(--ease) both;
   overflow: hidden;
 }
@@ -883,6 +891,10 @@
 .wl-dock-in {
   position: relative;
   display: flex; flex-direction: column; align-items: stretch; gap: 0;
+  /* centred, and capped: on a phone the column is narrower than the cap and
+     nothing changes, and on anything wider the one act on the screen stands
+     in the middle of the bottom edge rather than against its left gutter */
+  width: 100%; max-width: 400px; margin: 0 auto;
   padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
 }
 .wl-dock-in > .wl-pill { flex: 0 0 auto; }
@@ -993,17 +1005,81 @@
 }
 
 /* ═══ THE ROOM ═════════════════════════════════════════════════════════════
-   The ear, the stage, and the veil over both: everything between the bar
-   and the dock. The stage is the whole of the screen the bar, the ear and
-   the dock leave, and it bleeds to the edges of the viewport: a field of
-   faces with a margin either side is a widget on a page. */
+   The ear and, while it is up, the veil. Everything between the bar and the
+   dock that is TYPE. The field is not in here any more: it is under all of
+   it, edge to edge (below). */
 .wl-room {
-  position: relative; flex: 1 1 auto; min-height: 0;
+  position: relative; z-index: 2; flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column;
+  /* ── it is a layer of type over a field, and type does not catch fingers ──
+     The room stands over the stage and it is most of the screen: left solid to
+     the pointer it swallows every face behind it, and a mouse in the middle of
+     the wall was hovering a div with a date on it rather than a person. So it
+     hands the pointer back, and the two things in it that are actually
+     controls take it again.
+
+     The BAR and the DOCK deliberately do not do this. They are strips of
+     chrome a person is not trying to look through, and they are also the only
+     part of this screen where a wheel or a finger still belongs to the page:
+     the field takes both wherever it is exposed (it is a thing you pull, in
+     any direction), so if it were exposed everywhere there would be no way
+     left to scroll down to the foot of the site. */
+  pointer-events: none;
 }
+.wl-ear, .wl-veil { pointer-events: auto; }
+
+/* ═══ THE STAGE ════════════════════════════════════════════════════════════
+   The field, and it is the whole screen. Not a band between the bar and the
+   pill with the void either side of it — corner to corner, out past the
+   column's gutters to the edges of the glass, behind the bar and behind the
+   dock. A field of faces inside a margin is a widget on a page; this is the
+   room the page is standing in, and everything else on the wall is laid on
+   top of it.
+
+   `100vw` off the page's own centre rather than a negative margin, because
+   the column is capped at 460 and then at 1080 and the field is capped at
+   neither: the same rule bleeds it on a 390px phone and a 1600px display. */
 .wl-stage {
-  position: relative; flex: 1 1 auto; min-height: 240px;
-  margin: 0 calc(-1 * var(--pad));
+  position: absolute; inset: 0;
+  left: calc(50% - 50vw); width: 100vw;
+  z-index: 0;
+  overflow: hidden;
+}
+/* the bar and the dock stand over the field, so both need a layer of their
+   own — without it a positioned stage paints over an unpositioned nav */
+.wl-wallpage .wl-top { position: relative; z-index: 4; }
+
+/* ═══ THE TWO SHADES ═══════════════════════════════════════════════════════
+   The bar has to be readable over whatever face happens to be under it, and
+   so does the pill, and the answer is not a plate behind either of them: a
+   plate is a bar sitting ON a picture and both of these have to be IN one.
+
+   So the void is poured back over the field at the top and at the bottom,
+   deepest at the two edges and gone before it reaches the middle. Four stops
+   rather than two, weighted so most of the fall happens in the first third:
+   a linear gradient over a photograph has a visible waist where the eye finds
+   the middle of the ramp, and the whole job here is to have no edge anywhere. */
+.wl-shade {
+  position: absolute; left: calc(50% - 50vw); width: 100vw;
+  z-index: 1; pointer-events: none;
+}
+.wl-shade.is-top {
+  top: 0; height: clamp(120px, 26vh, 230px);
+  background: linear-gradient(180deg,
+    rgba(8, 7, 11, 0.94) 0%,
+    rgba(8, 7, 11, 0.80) 22%,
+    rgba(8, 7, 11, 0.48) 48%,
+    rgba(8, 7, 11, 0.16) 76%,
+    rgba(8, 7, 11, 0) 100%);
+}
+.wl-shade.is-bottom {
+  bottom: 0; height: clamp(150px, 34vh, 320px);
+  background: linear-gradient(0deg,
+    rgba(8, 7, 11, 0.96) 0%,
+    rgba(8, 7, 11, 0.86) 20%,
+    rgba(8, 7, 11, 0.54) 46%,
+    rgba(8, 7, 11, 0.18) 74%,
+    rgba(8, 7, 11, 0) 100%);
 }
 
 /* ═══ THE VEIL ═════════════════════════════════════════════════════════════
@@ -1015,7 +1091,7 @@
    movement: the type rises off the field while the field comes up to full
    light under it and the lens blooms (Hive.jsx). */
 .wl-veil {
-  position: absolute; inset: 0 calc(-1 * var(--pad)); z-index: 3;
+  position: absolute; inset: 0; left: calc(50% - 50vw); width: 100vw; z-index: 3;
   display: flex; flex-direction: column;
 }
 .wl-veil-scrim {
@@ -1027,7 +1103,7 @@
    scrim's own depth, so the grey over the field has no edge where the bar
    ends. It takes no pointer, so the bar under it is still the bar. */
 .wl-veil::before {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 64px;
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 110px;
   background: linear-gradient(180deg, rgba(8, 7, 11, 0) 0%, rgba(8, 7, 11, 0.58) 100%);
   pointer-events: none;
 }
@@ -1055,21 +1131,17 @@
 @keyframes wl-veil-rise { from { transform: none; } to { transform: translate3d(0, -16px, 0); } }
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
-   Hive.jsx. A field of faces packed on a hexagonal lattice that never ends,
-   seen through a lens: full size and nearly touching at the middle, points at
-   the rim, and one name written on it, the handle of the person in the lens,
-   on a tag. Every position, scale and tag is written by one
-   requestAnimationFrame; this file sets what a cell is made of and nothing
-   about where it stands.
+   Hive.jsx. A crowd of faces on a hexagonal lattice that never ends, bent by
+   one lens: large and nearly touching at the light, and outward smaller,
+   further apart and less ordered until at the rim they are scattered points.
+   Every position and scale is written by one requestAnimationFrame; this file
+   sets what a cell is MADE of and almost nothing about where it stands.
 
    The ends dissolve, in every direction. A hard edge on a moving face is a
    box; a fade is a room the face walked out of. */
 .wl-hive {
   position: absolute; inset: 0; overflow: hidden;
   contain: layout paint;
-  -webkit-mask-image: radial-gradient(ellipse 84% 76% at 50% 50%, #000 52%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
-  mask-image: radial-gradient(ellipse 84% 76% at 50% 50%, #000 52%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
-  transition: opacity 760ms var(--ease);
 
   /* ── it is a thing you can pull ──
      In any direction, so the browser is handed none of the gesture. The
@@ -1081,20 +1153,51 @@
   -webkit-tap-highlight-color: transparent;
 }
 .wl-hive.is-held { cursor: grabbing; }
+
+/* ── the crowd, and the mask on it ──
+   The mask is on this rather than on the hive, because the one thing in here
+   that must NOT dissolve at the edges is the plate naming somebody, and under
+   a pointer near the rim that is exactly where it stands. So the faces are
+   masked and the plate is not.
+
+   Two shapes composited: an ellipse that takes the corners, and a pair of
+   linear ramps that take the left and right edges square. The ellipse alone
+   left the middle of each vertical edge harder than its corners, which reads
+   as a lens rather than as a room. */
+.wl-hive-crowd {
+  position: absolute; inset: 0;
+  transition: opacity 760ms var(--ease);
+  -webkit-mask-image:
+    radial-gradient(ellipse 86% 82% at 50% 47%, #000 26%, rgba(0,0,0,0.86) 56%, rgba(0,0,0,0.34) 84%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  mask-image:
+    radial-gradient(ellipse 86% 82% at 50% 47%, #000 26%, rgba(0,0,0,0.86) 56%, rgba(0,0,0,0.34) 84%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
 /* under the veil the field is grey: dimmed, not blurred, because a blur over
    a hundred moving discs is a hundred rasters a frame. The monograms go
    further, so the type stands on a texture of discs and not on a field of
    other letters. */
-.wl-hive.is-veiled { opacity: 0.38; cursor: default; }
+.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.4; }
+.wl-hive.is-veiled { cursor: default; }
+/* Nothing is being read while the masthead is up either — but that is decided
+   in Hive.jsx, by not putting the class on anybody, rather than by unpicking
+   it here: an override for a state that is drawn by three other rules is three
+   places to keep in step. */
 .wl-hive .wl-face-mono { transition: opacity 760ms var(--ease); }
 .wl-hive.is-veiled .wl-face-mono { opacity: 0.3; }
-.wl-hive.is-empty { display: grid; place-items: center; -webkit-mask-image: none; mask-image: none; cursor: default; }
+.wl-hive.is-empty { display: grid; place-items: center; cursor: default; }
 .wl-hive-none { text-align: center; }
 
 /* ── a cell ──
-   A button with no box of its own, standing at the field's origin; its two
-   children are placed by the loop. The disc is scaled by the lens and the
-   tag under it is only moved, so the type stays sharp at every scale. */
+   A button with no box of its own, standing at the field's origin. The DISC
+   is placed and scaled by the loop and nothing in this file writes to its
+   transform; the ORB inside it is the stylesheet's, and every movement a cell
+   makes that is not the field's — arriving, being read, being pressed, being
+   new — is on the orb. Two owners on one transform is the way these end up
+   fighting each other at 60Hz. */
 .wl-cell {
   position: absolute; left: 0; top: 0; width: 0; height: 0;
   padding: 0; margin: 0; overflow: visible; display: block;
@@ -1109,51 +1212,194 @@
   transform-origin: 50% 50%;
   will-change: transform;
 }
-/* the lens's own light: a soft warm halo behind the person in focus, drawn
-   as a gradient and not cast as a shadow. It is the wall's one bright thing,
-   and it is on whoever is being read. */
-.wl-cell-disc::before {
-  content: ''; position: absolute; inset: -42%; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 244, 228, 0.20) 0%, rgba(255, 244, 228, 0.05) 42%, rgba(255, 244, 228, 0) 70%);
-  opacity: 0; transition: opacity 620ms var(--ease);
+.wl-cell-orb {
+  position: absolute; inset: 0; display: block; border-radius: 50%;
+  transform-origin: 50% 50%;
+  transition: transform 460ms var(--ease);
+}
+/* ── the light on whoever is being read ──
+   A soft warm halo behind the disc the lens is on, drawn as a gradient and
+   not cast as a shadow. It is the wall's one bright thing and it is on the
+   one person the wall is naming. */
+.wl-cell-orb::before {
+  content: ''; position: absolute; inset: -44%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 244, 228, 0.24) 0%, rgba(255, 244, 228, 0.06) 44%, rgba(255, 244, 228, 0) 70%);
+  opacity: 0; transition: opacity 560ms var(--ease);
   pointer-events: none;
 }
-.wl-cell.is-focus .wl-cell-disc::before { opacity: 1; }
-.wl-cell.is-focus .wl-face { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.3); }
-.wl-cell:hover .wl-face,
-.wl-cell:focus-visible .wl-face { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.46); }
-/* a name this browser wrote to is lit on the wall it came back to */
-.wl-cell.is-mine .wl-face { box-shadow: inset 0 0 0 1px rgba(255, 244, 228, 0.55); }
+/* ── and the rim of glass round it ──
+   Two hairlines a pixel apart: a bright one inside the disc's own edge and a
+   dark one outside it, which is what an edge of glass on a dark ground
+   actually looks like. It arrives by growing the last four percent into
+   place rather than by fading, so the ring reads as closing round the face. */
+.wl-cell-orb::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.34),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.10),
+    0 0 0 1px rgba(8, 7, 11, 0.55);
+  opacity: 0; transform: scale(0.96);
+  transition: opacity 300ms var(--ease), transform 460ms var(--ease);
+  pointer-events: none;
+}
+.wl-cell.is-focus .wl-cell-orb { transform: scale(1.04); }
+.wl-cell.is-focus .wl-cell-orb::before { opacity: 1; }
+.wl-cell.is-focus .wl-cell-orb::after { opacity: 1; transform: none; }
+.wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
+/* the press: the disc gives, and takes 90ms to do it, because a press is the
+   one movement on this surface that has to answer instantly */
+.wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
+/* ── a name this browser wrote to ──
+   Lit on the wall it came back to, and lit the same way the lens lights
+   somebody: the ring, warm, and standing whether or not it is being read. It
+   is the one thing on this field that is about the person looking. */
+.wl-cell.is-mine .wl-cell-orb::after {
+  opacity: 1; transform: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 228, 0.5),
+    0 0 0 1px rgba(8, 7, 11, 0.5);
+}
+.wl-cell.is-mine.is-focus .wl-cell-orb::after {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 228, 0.85),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(8, 7, 11, 0.55);
+}
 .wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
-/* the tag: the handle, on a small plate of the void with a hairline, under
-   the disc in the lens and under a disc the pointer is on, and on no other.
-   The loop moves it and turns it on and off; the fade is this transition. */
-.wl-cell-tag {
-  position: absolute; left: 0; top: 0;
-  padding: 3px 9px 4px; border-radius: var(--r-pill);
-  background: rgba(8, 7, 11, 0.92);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  font-family: var(--f-id); font-size: 11px; letter-spacing: -0.01em; line-height: 1.2;
-  color: var(--chalk);
-  white-space: nowrap; text-align: center;
-  opacity: 0; will-change: transform, opacity;
-  transition: opacity 220ms var(--ease);
-  pointer-events: none;
+/* ── a name that has just arrived ──
+   A letter goes up, the index moves, and the person it was written to rises
+   into the field rather than being there the next time you look: the disc
+   comes up past its own size and settles, and one ring leaves it and opens
+   out into the crowd. It plays for a name that is new and for a name that has
+   gained a letter, and never on the first reading of the wall. */
+/* Four classes deep on purpose. The opening cascade below puts a `both`
+   filled arrival animation on every orb on the page, at the same three-class
+   weight this rule would otherwise have, and later in the file — so a name
+   arriving during the first three seconds of a session would have had its
+   whole entrance eaten by the entrance of the wall. */
+.wl-wallpage .wl-cell.is-new .wl-cell-orb { animation: wl-cell-pop 900ms var(--ease) both; }
+.wl-cell-disc::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 244, 228, 0.75);
+  opacity: 0; pointer-events: none;
 }
+.wl-wallpage .wl-cell.is-new .wl-cell-disc::after { animation: wl-cell-ping 1500ms var(--ease-out) both; }
+@keyframes wl-cell-pop {
+  0%   { opacity: 0; transform: scale(0.34); }
+  56%  { opacity: 1; transform: scale(1.13); }
+  78%  { transform: scale(0.975); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes wl-cell-ping {
+  0%   { opacity: 0.85; transform: scale(0.86); }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+
+/* ── the one name on the field ──
+   ONE plate, moved to whoever the lens is reading — under a mouse the disc
+   the pointer is nearest, and on a phone the disc in the middle. It used to
+   be one tag per cell, sixty of them, each fading itself in and out as a
+   pointer swept past: two were on the screen at once as often as not, they
+   overlapped the faces under them, and at the edge of the field they were cut
+   in half by the mask. There is no arrangement of sixty labels that is not
+   messy, so there is one.
+
+   It is glass, not a plate: the faces go on under it, blurred, so it belongs
+   to the field rather than sitting on it. The outer element is moved by the
+   loop and the inner one carries every pixel of the look, because a transform
+   written from a rAF and a transform written by a transition cannot be the
+   same transform. */
+.wl-hive-say {
+  position: absolute; left: 0; top: 0; z-index: 3;
+  width: max-content;
+  pointer-events: none;
+  will-change: transform;
+}
+/* The field behind the plate is faces, and a face is the worst ground eleven
+   pixels of type ever has to sit on. This is a soft well of the void under
+   it — wider than the plate, gone by its own edge — so the plate is standing
+   in a shadow it cast rather than on whoever happens to be underneath. */
+.wl-hive-say::before {
+  content: ''; position: absolute; inset: -18px -30px;
+  background: radial-gradient(ellipse at center, rgba(8, 7, 11, 0.66) 0%, rgba(8, 7, 11, 0.3) 52%, rgba(8, 7, 11, 0) 100%);
+  opacity: 0; transition: opacity 220ms var(--ease);
+}
+.wl-hive-say.is-on::before { opacity: 1; }
+.wl-hive-say-h {
+  display: block;
+  padding: 5px 11px 6px;
+  border-radius: var(--r-pill);
+  background: rgba(10, 9, 14, 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.16),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+    0 12px 30px -14px rgba(0, 0, 0, 0.95);
+  font-family: var(--f-id); font-size: 11.5px; line-height: 1.15; letter-spacing: -0.012em;
+  color: var(--chalk);
+  white-space: nowrap;
+  opacity: 0; transform: translate3d(0, -6px, 0) scale(0.94);
+  transform-origin: 50% 0;
+  transition: opacity 200ms var(--ease), transform 340ms var(--ease);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* `brightness` is the load-bearing filter here, not the blur. The plate
+     lands on a photograph as often as not, and a blur alone over a bright
+     face leaves eleven-pixel type on a light ground. Pushing the backdrop
+     down to two fifths is what lets the plate stay genuinely transparent —
+     the faces are still legible through it — and still hold chalk type. */
+  .wl-hive-say-h {
+    background: rgba(10, 9, 14, 0.34);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25) brightness(0.34);
+    backdrop-filter: blur(18px) saturate(1.25) brightness(0.34);
+  }
+}
+.wl-hive-say.is-on .wl-hive-say-h { opacity: 1; transform: none; }
+
+/* ═══ THE MORPH ════════════════════════════════════════════════════════════
+   Morph.jsx: the stand-in that starts as the disc that was pressed and ends
+   as the card. It is over the sheet, never under it, and it takes no pointer
+   at any point in its half second of life. */
+.wl-morph {
+  position: fixed; z-index: 55; pointer-events: none;
+  overflow: hidden;
+  /* the card's cast shadow, which is also a fair shadow for a disc — the two
+     highlights that belong to PAPER are on the paper, so they arrive with it
+     rather than sitting on a photograph for the first tenth of the flight */
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 26px 60px -22px rgba(0, 0, 0, 0.85);
+  will-change: left, top, width, height, border-radius;
+}
+.wl-morph-paper {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+.wl-morph-face {
+  position: absolute; left: 0; top: 0;
+  border-radius: 50%; overflow: hidden;
+}
+.wl-morph-face > .wl-face { width: 100%; height: 100%; }
+/* the letterhead the stand-in lands on, and the ring it lands as: a plain
+   wrapper round the card's own face so the flight has something to measure */
+.wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
+.wl-letter-card { position: relative; }
 
 /* ── the opening ──
    Plays once per session. The masthead rises on the veil, and the field
    arrives under it from the middle outward: each disc's delay is its distance
-   from the lens (Hive.jsx, `--in`), so the wall fills as a ripple rather
-   than in rows. */
+   from the light (Hive.jsx, `--in`), so the wall fills as a ripple rather
+   than in rows, and each disc comes up out of nothing rather than fading in
+   flat. */
 .wl-wallpage.is-opening .wl-mast-title { animation: wl-rise 900ms var(--ease) 300ms both; }
 .wl-wallpage.is-opening .wl-mast-sub   { animation: wl-fade 900ms var(--ease) 620ms both; }
 .wl-wallpage.is-opening .wl-ear        { animation: wl-fade 900ms var(--ease) 900ms both; }
 .wl-wallpage.is-opening .wl-mast-go    { animation: wl-fade 900ms var(--ease) 1200ms both; }
-.wl-wallpage.is-opening .wl-cell       { animation: wl-fade 700ms var(--ease) both; animation-delay: var(--in, 900ms); }
+.wl-wallpage.is-opening .wl-cell-orb   { animation: wl-cell-in 760ms var(--ease) both; animation-delay: var(--in, 900ms); }
 .wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
 .wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
+@keyframes wl-cell-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: none; } }
 
 @keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
 @keyframes wl-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -1938,12 +2184,18 @@
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to   { opacity: 1; transform: none; }
 }
-/* the dock's gradient starts higher when the tab is under it, so the tab is
-   sitting in the light rather than on top of the names */
+/* On the wall the bottom of the screen is already dark: `.wl-shade.is-bottom`
+   pours the void back over the field on a much longer ramp than this one, and
+   two gradients over each other put a visible waist across the field where
+   the shorter one starts. So the wall's dock has no veil of its own — except
+   under the tab, which is an opaque drawer and needs the ground it stands on
+   to be opaque too. */
+.wl-wallpage .wl-dock-veil { display: none; }
 .wl-wallpage.has-tab .wl-dock-veil {
+  display: block;
   top: -150px;
   background: linear-gradient(180deg,
-    rgba(8,7,11,0) 0%, rgba(8,7,11,0.55) 22%, rgba(8,7,11,0.93) 46%, var(--void) 62%);
+    rgba(8,7,11,0) 0%, rgba(8,7,11,0.42) 26%, rgba(8,7,11,0.86) 52%, var(--void) 68%);
 }
 
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
@@ -1977,23 +2229,34 @@
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
   .wl-ear { grid-row: 1; padding: 14px 0 12px; }
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
-  .wl-stage { grid-row: 2; margin: 0 calc(50% - 50vw); min-height: 380px; }
-  /* the veil's type keeps the column while the field leaves it */
-  .wl-veil { inset: 0 calc(50% - 50vw); justify-content: center; }
+  /* the veil's type keeps the column while the field, which is the whole
+     window at every width, does not */
+  .wl-veil { justify-content: center; }
   .wl-veil-in { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 40px 24px; }
   .wl-veil-scrim {
     background: linear-gradient(90deg, rgba(8, 7, 11, 0.64) 0%, rgba(8, 7, 11, 0.44) 34%, rgba(8, 7, 11, 0.1) 60%, rgba(8, 7, 11, 0) 100%);
   }
   .wl-mast-sub { max-width: 40ch; font-size: 18px; }
-  .wl-hive {
-    -webkit-mask-image: radial-gradient(ellipse 70% 84% at 50% 50%, #000 50%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
-    mask-image: radial-gradient(ellipse 70% 84% at 50% 50%, #000 50%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
+  /* a spread is wider than it is tall, so the corners are further out and the
+     sides are what the mask has to work on */
+  .wl-hive-crowd {
+    -webkit-mask-image:
+      radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
+      linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
+    mask-image:
+      radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
+      linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
   }
+  /* ── the pill, in the middle of the bottom edge ──
+     It used to stand in the left column under the masthead, which is where it
+     belonged while the field was a panel to the right of the type. The field
+     is the whole window now and the pill is the one act on top of it, so it
+     goes where the one act goes: the centre. */
   .wl-wallpage .wl-dock {
-    grid-column: 1; grid-row: 4;
-    position: static; align-self: end;
-    margin: 0; padding: 0 0 6px;
-    max-width: 380px;
+    grid-column: 1 / -1; grid-row: 4;
+    position: static; align-self: end; justify-self: center;
+    width: 100%; margin: 0; padding: 0 0 10px;
+    max-width: 420px;
   }
 
   /* the gradient exists to hide content scrolling under the dock, and on a
@@ -2014,7 +2277,10 @@
     max-width: 560px; max-height: min(84dvh, 860px);
     border-radius: var(--r-sheet);
     animation: wl-dialog-in 380ms var(--ease) both;
-    box-shadow: 0 0 0 1px var(--hair), 0 40px 90px -30px rgba(0,0,0,0.92);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.11),
+      inset 0 0 0 1px rgba(244, 241, 234, 0.08),
+      0 40px 90px -30px rgba(0, 0, 0, 0.92);
   }
   .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-dialog-out 220ms var(--ease-out) both; }
   .wl-grip { display: none; }
@@ -2064,11 +2330,17 @@
      right column's whole height with the veil over it */
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
   .wl-ear { grid-column: 1; grid-row: 1; padding: 6px 0 0; }
-  .wl-stage { grid-column: 2; grid-row: 1 / span 2; margin: 0 -26px 0 0; min-height: 0; }
-  .wl-veil { inset: 0 -26px 0 0; }
   .wl-veil-in { padding: 6px 18px 0; }
-  .wl-wallpage .wl-dock { grid-column: 1; grid-row: 4; align-self: end; margin: 0; padding: 0; max-width: 340px; }
-  .wl-wallpage .wl-dock-veil { left: -22px; right: -16px; width: auto; transform: none; top: -70px; }
+  .wl-wallpage .wl-dock {
+    grid-column: 1 / -1; grid-row: 4;
+    align-self: end; justify-self: center;
+    width: 100%; margin: 0; padding: 0; max-width: 360px;
+  }
+  .wl-wallpage .wl-dock-veil { display: none; }
+  /* 350px of height: the shades are most of it if they keep their share, so
+     both give it back and the mask does the work instead */
+  .wl-shade.is-top { height: 96px; }
+  .wl-shade.is-bottom { height: 120px; }
 
   /* 390px of height is the constraint here, and display type is what spends
      it fastest */
@@ -2696,8 +2968,8 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-cell { animation: none !important; }
-  .wl-hive, .wl-cell-tag, .wl-cell-disc::before { transition: none; }
+  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
+  .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }

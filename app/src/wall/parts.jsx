@@ -1098,10 +1098,18 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
   const p = useProfile(resolve ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
   const mono = p ? monogram(p) : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
-  const [shown, setShown] = useState(false)
-  const [broken, setBroken] = useState(false)
+  // Which src has actually arrived, and which one failed — held as the URL
+  // rather than as two booleans reset by an effect. The effect version had a
+  // race the whole product could hit: a picture already in the browser's cache
+  // finishes before React attaches `onLoad`, that event is gone, and the reset
+  // effect then ran on mount and put the flag back to false — so the face sat
+  // at opacity 0 behind its monogram with the image right there in the DOM.
+  // Comparing against `src` makes a new handle's picture unshown for free.
+  const [got, setGot] = useState('')
+  const [bad, setBad] = useState('')
   const src = p?.avatar || ''
-  useEffect(() => { setShown(false); setBroken(false) }, [src])
+  const shown = !!src && got === src
+  const broken = !!src && bad === src
   return (
     <span
       className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''} ${className}`}
@@ -1115,7 +1123,10 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
       {src && !broken ? (
         <img
           src={src} alt="" decoding="async"
-          onLoad={() => setShown(true)} onError={() => setBroken(true)}
+          /* the cache race, caught on the way in: an image that is already
+             complete when the ref runs never fires the handler below */
+          ref={(el) => { if (el && el.complete && el.naturalWidth > 0) setGot(src) }}
+          onLoad={() => setGot(src)} onError={() => setBad(src)}
         />
       ) : null}
     </span>
