@@ -29,6 +29,9 @@ const KEY = 'celestual.wall.v5'
 //             one action that is permanent, taking a whole name off the wall.
 const EMPTY = {
   source: 'direct',   // which printed surface produced this scan
+  steps: [],          // the funnel steps this device has already reported for
+                      // that surface, so one person reads as one person. See
+                      // seed.js `cardStep`, and migration 0047
   query: '',          // the last thing typed into the search
   opened: {},         // letterId -> true, so the wall can dim what has been read
   draft: null,        // the composer's in-flight letter

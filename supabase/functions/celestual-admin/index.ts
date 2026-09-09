@@ -26,6 +26,10 @@
 //                                goes back up
 //     desk_name_shut, _open      every letter to a name down, and no more
 //     desk_waitlist              everybody who looked and found nothing
+//     desk_cards                 the five printed cards, and the funnel under
+//                                each one, best first
+//     desk_card_set              what a card says, where it stands, whether it
+//                                is still out
 //     desk_conflict_resolve      close a merge that stopped to ask
 //     desk_signin                a sign in link: a browser as a handle, a
 //                                campus, or both, with no DM and no mail
@@ -142,6 +146,7 @@ const DESK: Record<string, (b: Record<string, unknown>) => [string, Args]> = {
   desk_waitlist: (b) => ['celestual_desk_waitlist', {
     p_limit: num(b.limit, 100, 500), p_offset: num(b.offset, 0, 100000),
   }],
+  desk_cards: () => ['celestual_desk_cards', {}],
   desk_growth: (b) => ['celestual_desk_growth', {
     p_days: num(b.days, 30, 3650), p_grain: str(b.grain, 8) || 'day',
   }],
@@ -194,11 +199,21 @@ const DESK_WRITE: Record<string, (b: Record<string, unknown>) => [string, Args]>
     p_value: str(b.value, 200), p_note: str(b.note, 120),
   }],
   desk_pass_remove: (b) => ['celestual_desk_pass_remove', { p_id: str(b.id, 64) }],
+  // What a printed card says, where it stands, and whether it is still out
+  // (0047). `place` is passed through as a string when it is one, including the
+  // empty string, which is how the desk clears a place: str() answers null for
+  // that, and a null here means "leave it alone".
+  desk_card_set: (b) => ['celestual_desk_card_set', {
+    p_code: str(b.code, 32),
+    p_label: str(b.label, 80),
+    p_place: typeof b.place === 'string' ? b.place.trim().slice(0, 80) : null,
+    p_active: typeof b.active === 'boolean' ? b.active : null,
+  }],
 };
 
 // What a write is about, for the log: the one argument that names its target.
 function targetOf(args: Args): string | null {
-  for (const k of ['p_handle', 'p_id', 'p_key', 'p_slug', 'p_edu_email', 'p_value']) {
+  for (const k of ['p_handle', 'p_id', 'p_key', 'p_slug', 'p_edu_email', 'p_value', 'p_code']) {
     const v = args[k];
     if (typeof v === 'string' && v) return `${k.slice(2)}:${v}`;
   }
@@ -210,7 +225,8 @@ function targetOf(args: Args): string | null {
 async function logWrite(action: string, args: Args, data: unknown) {
   const detail: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(args)) {
-    if (k === 'p_note' || k === 'p_status' || k === 'p_uphold' || k === 'p_value' || k === 'p_open') detail[k.slice(2)] = v;
+    if (k === 'p_note' || k === 'p_status' || k === 'p_uphold' || k === 'p_value' || k === 'p_open'
+      || k === 'p_label' || k === 'p_active') detail[k.slice(2)] = v;
   }
   const d = data as Record<string, unknown> | null;
   if (d && typeof d === 'object') {

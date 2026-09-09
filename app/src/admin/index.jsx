@@ -27,6 +27,8 @@
 //   the wall    letters         submissions and the moderation queue, one table two ways
 //               reports         user-flagged content, and the path from a report to a removal
 //               waiting         names looked for and not found, and which flyer
+//               the cards       the five printed cards, and how far each one
+//                               carried somebody
 //   the team    the resolver    the Apify cache, the switch, the caps
 //               access          the pass list, and sign in links with no DM in the way
 //               settings        the release gate, the caps, the walls, the log
@@ -50,6 +52,7 @@ import Pings from './Pings.jsx'
 import Letters from './Letters.jsx'
 import Reports from './Reports.jsx'
 import Waitlist from './Waitlist.jsx'
+import Cards from './Cards.jsx'
 import Resolver from './Resolver.jsx'
 import Access from './Access.jsx'
 import Settings from './Settings.jsx'
@@ -70,6 +73,7 @@ const GROUPS = [
     { id: 'wall', word: 'letters', say: 'held, live, down', count: 'letters_pending', live: true },
     { id: 'reports', word: 'reports', say: 'flagged letters', count: 'reports_open', live: true },
     { id: 'waitlist', word: 'waiting', say: 'names looked for', count: 'waitlist' },
+    { id: 'cards', word: 'the cards', say: 'which paper worked' },
   ] },
   { word: 'the team', items: [
     { id: 'cache', word: 'the resolver', say: 'faces, apify, the caps', count: 'profiles' },
@@ -202,9 +206,10 @@ export default function AdminApp() {
                     : section === 'wall' ? <Letters {...common} initialStatus={arg || 'pending'} />
                       : section === 'reports' ? <Reports {...common} />
                         : section === 'waitlist' ? <Waitlist {...common} />
-                          : section === 'cache' ? <Resolver {...common} />
-                            : section === 'access' ? <Access {...common} />
-                              : <Settings {...common} />}
+                          : section === 'cards' ? <Cards {...common} />
+                            : section === 'cache' ? <Resolver {...common} />
+                              : section === 'access' ? <Access {...common} />
+                                : <Settings {...common} />}
         </main>
       </div>
     </div>

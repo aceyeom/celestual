@@ -334,6 +334,35 @@ const DESK_OVERVIEW = {
   ],
 }
 
+// 0047. The five printed cards, with a spread worth looking at: one that is
+// working, one that is scanned and goes nowhere, one taken out of circulation,
+// one barely found, and one nobody has scanned at all. The last is the row that
+// only exists because the registry does: it is what proves a card with nothing
+// against it still appears.
+const DESK_CARDS = {
+  ok: true,
+  now: new Date(now).toISOString(),
+  rows: [
+    { code: 'card-c', label: 'the one with the quote', place: 'moffitt, 4th floor',
+      campus: 'berkeley', landing: '/berkeley', is_active: true,
+      scans: 64, first_at: new Date(now - 9 * DAY).toISOString(), last_at: new Date(now - 2 * 3600000).toISOString(),
+      read: 41, gate: 19, joined: 14, handoff: 6, letters: 9, letters_live: 8, waiting: 3 },
+    { code: 'card-a', label: 'card a', place: 'sather gate', campus: 'berkeley', landing: '/berkeley', is_active: true,
+      scans: 88, first_at: new Date(now - 11 * DAY).toISOString(), last_at: new Date(now - 3600000).toISOString(),
+      read: 40, gate: 12, joined: 7, handoff: 2, letters: 4, letters_live: 4, waiting: 6 },
+    { code: 'card-b', label: 'card b', place: 'the table at sproul', campus: 'berkeley', landing: '/berkeley', is_active: false,
+      scans: 31, first_at: new Date(now - 12 * DAY).toISOString(), last_at: new Date(now - 4 * DAY).toISOString(),
+      read: 9, gate: 2, joined: 1, handoff: 0, letters: 0, letters_live: 0, waiting: 1 },
+    { code: 'card-d', label: 'card d', place: null, campus: 'berkeley', landing: '/berkeley', is_active: true,
+      scans: 5, first_at: new Date(now - 3 * DAY).toISOString(), last_at: new Date(now - 2 * DAY).toISOString(),
+      read: 1, gate: 0, joined: 0, handoff: 0, letters: 0, letters_live: 0, waiting: 0 },
+    { code: 'card-e', label: 'card e', place: null, campus: 'berkeley', landing: '/berkeley', is_active: true,
+      scans: 0, first_at: null, last_at: null,
+      read: 0, gate: 0, joined: 0, handoff: 0, letters: 0, letters_live: 0, waiting: 0 },
+  ],
+  totals: { cards: 5, scans: 188, joined: 22, letters: 13, other_scans: 148 },
+}
+
 const DESK_WAITLIST = ['nour.haddad', 'elias.brandt', 'aya.nakamura', 'k.villarreal', 'thom.iversen']
   .map((handle, i) => ({
     handle, campus: 'berkeley', source_code: i % 2 ? 'flyer-a' : null,
@@ -401,6 +430,8 @@ const DESK = {
     counts: { open: 1, upheld: 0, dismissed: 1, reports_7d: 1 },
   }),
   desk_waitlist: () => page(DESK_WAITLIST),
+  desk_cards: () => DESK_CARDS,
+  desk_card_set: (b) => ({ ok: true, code: b.code, label: b.label }),
   desk_growth: (b) => DESK_GROWTH(b),
   desk_pings: (b) => ({
     ...page(b.state ? DESK_PINGS.filter((p) => p.state === b.state) : DESK_PINGS),
@@ -638,6 +669,9 @@ const ROUTES = [
   { label: 'admin-access',   path: '/admin', desk: true, click: 'access' },
   { label: 'admin-settings', path: '/admin', desk: true, click: 'settings' },
   { label: 'admin-guide',    path: '/admin', desk: true, click: 'guide' },
+  // 0047: the five printed cards, ordered by the one number that decides a
+  // reprint, and the address that goes in each QR
+  { label: 'admin-cards',    path: '/admin', desk: true, click: 'cards' },
   { label: 'admin-gate',    path: '/admin' },
 
   // Phase 8. The three addresses that arrive from outside the product, and the

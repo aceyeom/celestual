@@ -62,6 +62,7 @@ import {
   sinceline, atHandle, heart, gated, freeReads,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
+import { cardStep } from '../seed.js'
 import { isReader } from '../auth.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
@@ -172,7 +173,15 @@ export default function Letter({ id: param, go, back }) {
   useEffect(() => { if (handle) loadHandle(handle) }, [handle])
   useEffect(() => { if (one) loadHandle(one.to) }, [one])
 
-  useEffect(() => { if (one) mark('opened', one.id) }, [one])
+  // The first step off the scan: a letter was opened. `mark` dims the tile on
+  // the wall behind this sheet; `step` is what says the card that produced this
+  // visit got somebody as far as reading something (migration 0047), once per
+  // device however many letters they go on to open.
+  useEffect(() => {
+    if (!one) return
+    mark('opened', one.id)
+    cardStep('read')
+  }, [one])
 
   // A letter that was here a moment ago and is not now. It is not an error and
   // it is not framed as one: a report takes a letter down on the tap, and the

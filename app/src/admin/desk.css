@@ -455,6 +455,28 @@ button.ad-uuid:hover { color: var(--accent); }
   word-break: break-all; padding: 10px 12px; background: var(--void-2); border-radius: var(--r-field);
 }
 
+/* ── the cards: a rate, and one block per printed surface ──
+   The bar is the only chart on the desk that is not the growth graph, and it
+   is drawn in one element because that is all a proportion needs. It is set
+   in the accent, which the desk rations: a per-card onboarding rate is the
+   one number on this screen anybody is looking for. */
+.ad-rate { display: flex; align-items: center; gap: 8px; min-width: 108px; }
+.ad-rate-bar {
+  flex: 1 1 auto; height: 4px; min-width: 52px; border-radius: 2px;
+  background: var(--void-2); overflow: hidden;
+}
+.ad-rate-fill { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.ad-rate-n { font-family: var(--f-id); font-size: 12px; color: var(--chalk); flex: 0 0 auto; }
+
+/* minmax(0, 1fr) rather than the implicit auto column: an auto column is
+   sized to its contents, and the form inside carries a 210px minimum per
+   field, so on a phone the block grew to 880px inside a 390px body and the
+   second field and the save went off the side of the screen. */
+.ad-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 760px; }
+.ad-card { padding: 14px 0 4px; border-top: 1px solid var(--hair-soft); }
+.ad-card-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 2px; }
+.ad-card .ad-form > .ad-toggle { margin-top: 17px; }
+
 /* ── the guide: a situation, three sentences, and the way to the screen ── */
 .ad-guide { max-width: 760px; border-top: 1px solid var(--hair); }
 .ad-guide-row { padding: 14px 0 16px; border-bottom: 1px solid var(--hair-soft); }

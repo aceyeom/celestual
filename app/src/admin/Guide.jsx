@@ -15,6 +15,7 @@ const SCREENS = [
   ['the wall', 'wall', 'every letter and its state. held letters wait here for a person to read them.'],
   ['reports', 'reports', 'letters somebody flagged. the letter is already down; you decide whether it goes back up.'],
   ['waiting', 'waitlist', 'names people looked for on the wall and did not find, and which flyer brought them.'],
+  ['the cards', 'cards', 'the five printed cards. what each one was scanned, read, and joined off, best first, and the address that goes in its QR.'],
   ['the resolver', 'cache', 'the face and name under a typed handle, the apify switch, and who has spent what against the caps.'],
   ['access', 'access', 'the pass list: an address that gets the wall\'s code at any inbox, a handle that skips the DM. and a link that signs one browser in.'],
   ['settings', 'settings', 'the release gate, the resolver switch, the four caps, the walls, and the log of what the desk did.'],
@@ -40,6 +41,11 @@ const WHEN = [
     t: 'somebody wants their @ to never be entered again',
     say: 'send them to /optout: one DM and it is done, and it erases every ping both ways. if they cannot DM, "erase and refuse" on verification does the same from here. "lift the block" undoes it.',
     to: ['handles'],
+  },
+  {
+    t: 'you are deciding which card to print more of',
+    say: 'open the cards screen. it is ordered best first, and best means joined: people who proved an address or a handle after scanning that code. scans alone measure the corridor the card is taped to. if a card has scans and nothing after them, the paper works and the wall is not landing; if it has no scans at all, nobody is finding it.',
+    to: ['cards'],
   },
   {
     t: 'the apify bill is climbing',

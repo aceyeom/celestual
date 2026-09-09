@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { BASE, legacyRewrite } from './wall/router.js'
+import { landing as cardLanding } from './cards.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
 // DM code entirely in-tab (see api/igverify.js), so the app just boots.
@@ -40,12 +41,31 @@ import { BASE, legacyRewrite } from './wall/router.js'
 // navigation, so a scan of an old card lands on the wall with the right address
 // in the bar and no visible redirect.
 const here = (window.location.pathname || '/').replace(/\/+$/, '') || '/'
-const moved = legacyRewrite(here)
+
+// ── the cards ────────────────────────────────────────────────────────────────
+// Five ad cards are out with a QR each, and every one of them points at
+// /c/<code> rather than at the surface it opens. src/cards.js says why at
+// length: paper cannot be redeployed, so the one hop we own is what makes
+// "point card d somewhere else" a deploy instead of a print run.
+//
+// It is resolved here, before the fork and before anything mounts, for the same
+// reason the old prefix is: a scan should land on the wall with the wall's
+// address in the bar, not on a redirect somebody watches happen. The code rides
+// on as ?s=, which is the attribution the wall has had since 0032 — logged once
+// as a scan, attached to whatever that session writes, and scrubbed out of the
+// address afterwards.
+const scanned = cardLanding(here, window.location.search)
+if (scanned) {
+  window.history.replaceState(window.history.state, '', scanned + window.location.hash)
+}
+
+const at = scanned ? scanned.split('?')[0] : here
+const moved = legacyRewrite(at)
 if (moved) {
   window.history.replaceState(window.history.state, '', moved + window.location.search + window.location.hash)
 }
 
-const path = moved || here
+const path = moved || at
 const wallPath = path === BASE || path.startsWith(BASE + '/')
 
 // ── the project, connected early ─────────────────────────────────────────────

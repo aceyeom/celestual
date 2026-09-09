@@ -1052,6 +1052,59 @@ The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
 
+## The five cards (migration 0047)
+
+Five printed ad cards, a code each, a route of our own in the QR, and a screen
+on the desk that says which of them actually brought somebody in. One
+migration, the admin function, and the app.
+
+**Why.** The attribution the wall has had since 0032 counts scans and letters
+and nothing between them, which is not enough to choose between five pieces of
+paper: a card that put forty people on the wall and no letters up read as worse
+than one nobody scanned. And the cards carried `/berkeley?s=<code>` in the QR,
+which pointed them at one surface for as long as the paper existed.
+
+The addresses, one per card, and they are what goes in the QR:
+
+```
+https://celestual.us/c/card-a
+https://celestual.us/c/card-b
+https://celestual.us/c/card-c
+https://celestual.us/c/card-d
+https://celestual.us/c/card-e
+```
+
+1. **Apply `0047_the_five_cards.sql`.** `supabase db push`, or paste it into
+   the SQL editor. It adds `wall_cards` (the registry, seeded with the five),
+   `wall_card_events` (the four steps between a scan and a letter),
+   `wall_card_step` for the browser, and `celestual_desk_cards` and
+   `celestual_desk_card_set` for the desk. Nothing existing is changed and no
+   data is touched. Verified by `scripts/verify-migrations.sh --test`
+   (`test-cards.sql`, 30 assertions).
+2. **Redeploy `celestual-admin`.** It gains `desk_cards` and `desk_card_set`.
+   `supabase functions deploy celestual-admin`.
+3. **Deploy the app.** Vercel, as usual. `/c/<code>` resolves before anything
+   mounts and needs no rewrite rule: `vercel.json` already sends every path to
+   the SPA.
+
+Everything is additive and the order is forgiving. An app deployed before the
+migration lands still routes every card to the wall and still logs the scan;
+the four steps are answered `logged: false` until the registry exists. A desk
+opened before the app is deployed shows the five rows with the funnel on them.
+
+Then, on the desk: open **the cards** under the wall, name each card and say
+where it is standing, and read the table. It is ordered best first, and best
+is `joined`: a campus address or a handle proved after that code was scanned.
+Scans alone measure the corridor the card is taped to.
+
+The test of the whole path: open `celestual.us/c/card-a` on a phone, land on
+the wall, open a letter, and put an address into the gate. Three rows appear
+against card a on the desk within the minute: the scan, `read one`, and
+`asked`. Type the code back and `joined` follows.
+
+**To point a card somewhere else**, change its `to` in `app/src/cards.js` and
+deploy. The paper stays good, which is the whole reason the route exists.
+
 ## The opt out reaches the wall (migration 0046)
 
 Taking a handle off celestual takes it off both surfaces. One migration and the
