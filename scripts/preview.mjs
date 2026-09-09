@@ -603,11 +603,10 @@ const ROUTES = [
   { label: 'sky-prove-code', path: '/sky', verified: false,
     acts: [['fill', '.wl-field input', 'ace03d'], ['click', '.mn-mid .wl-pill.is-light']] },
   { label: 'reveal',        path: '/reveal/jules.k' },
-  // the monument's flaps roll into place over the opening (art.jsx Flap), and
-  // a 1440 shot at a high scale factor renders slowly enough to still be
-  // turning at eight seconds, so the wall is given a long settle
-  { label: 'berkeley',      path: '/berkeley', settle: 14000 },
-  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 14000 },
+  // the monument's flaps roll into place over the opening (art.jsx Flap), so
+  // the wall is shot once they have landed
+  { label: 'berkeley',      path: '/berkeley', settle: 6000 },
+  { label: 'berkeley-tab',  path: '/berkeley', tab: true, settle: 6000 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },

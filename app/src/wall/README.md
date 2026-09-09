@@ -102,7 +102,7 @@ the same act:
 
 | | |
 | --- | --- |
-| **one letter** | the flag in the corner of the letter, then `Report letter`. Off the wall on the tap — no category, no severity, no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **one letter** | the flag in the corner of the letter, then `Report letter`. Off the wall on the tap, with no category, no severity and no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 There is a third, and it is not a wall control at all: the product's opt out

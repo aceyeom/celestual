@@ -68,6 +68,18 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
 // an aria-label and the halves are hidden from the tree.
 // the fold itself is timed in wall.css (two halves of 130ms); this is the
 // beat between one figure landing and the next one leaving
+// One fold, and the pause after it. FLAP_MS is the two halves of the CSS
+// animation end to end (130ms down, 130ms in), and the sequence is driven off
+// these rather than off `animationend`.
+//
+// It used to wait for the event, and a flap that never got one stopped where
+// it stood: a browser does not restart an animation whose class was taken off
+// and put back inside one frame, so under load the roll could stall halfway
+// and leave a number on the masthead that was not the number of letters on
+// the wall. A count this product shows is exactly accurate or it is absent
+// (design/VOICE.md section 4), and a stalled flap is neither. On a timer the
+// figure is always the one the server sent, whether or not the fold is drawn.
+const FLAP_MS = 260
 const FLAP_GAP = 40
 const mod10 = (d) => ((d % 10) + 10) % 10
 
@@ -87,7 +99,18 @@ function FlapDigit({ digit, roll = 0, delay = 0 }) {
     busy.current = true
     setShown({ cur: next, prev: cur.current, flipping: true })
     cur.current = next
-  }, [])
+    // the fold is over after FLAP_MS whatever the compositor did with it
+    clearTimeout(timer.current)
+    timer.current = setTimeout(land, FLAP_MS)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The fold is done: the halves under it now carry the new figure, and the
+  // next one in the queue goes after a beat.
+  function land() {
+    setShown((s) => ({ ...s, prev: s.cur, flipping: false }))
+    clearTimeout(timer.current)
+    timer.current = setTimeout(advance, FLAP_GAP)
+  }
 
   // the roll, once, on mount: up through the figures to the one asked for.
   // The queue is assigned rather than added to, so an effect that runs twice
@@ -110,11 +133,6 @@ function FlapDigit({ digit, roll = 0, delay = 0 }) {
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const landed = () => {
-    setShown((s) => ({ ...s, prev: s.cur, flipping: false }))
-    timer.current = setTimeout(advance, FLAP_GAP)
-  }
-
   const { cur: c, prev: p, flipping } = shown
   return (
     <span className={`wl-flap${flipping ? ' is-flipping' : ''}`} aria-hidden="true">
@@ -123,7 +141,7 @@ function FlapDigit({ digit, roll = 0, delay = 0 }) {
       <span className="wl-flap-half is-bottom"><span>{p}</span></span>
       {/* the moving halves: the old top folding down, the new bottom folding in */}
       <span className="wl-flap-half wl-flap-fold is-top"><span>{p}</span></span>
-      <span className="wl-flap-half wl-flap-fold is-bottom" onAnimationEnd={landed}><span>{c}</span></span>
+      <span className="wl-flap-half wl-flap-fold is-bottom"><span>{c}</span></span>
     </span>
   )
 }
