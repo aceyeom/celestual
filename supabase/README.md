@@ -242,6 +242,22 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0047_the_five_cards.sql` (**applied 9 September 2026**): **five
+  printed cards, and which of them worked.** `wall_cards` is the registry
+  (seeded with `a` through `e`, one letter each because the whole address is printed and a shorter string is
+  a smaller QR, and each with a label, a place and the path it lands on), so a
+  card with no scans on it is still a row rather than an absence. `wall_card_events`
+  holds the four steps that had nowhere to be written down between a scan and a
+  letter three days later: `read`, `gate`, `joined`, `handoff`. `wall_card_step`
+  is the browser's one call, anon, no session and nothing about a person in it;
+  a code that is not in the registry is answered ok and written nowhere.
+  `celestual_desk_cards` returns the whole funnel per card, ordered by `joined`
+  (proofs that landed) rather than by scans, and `celestual_desk_card_set` is
+  the desk naming a card and saying where it stands. The scan itself stays in
+  `wall_scans` and the letters stay on `wall_letters.source_code`: nothing here
+  is a second copy of a fact that already has a home.
+  **Tested by `scripts/sql/test-cards.sql`, 30 assertions.**
+
 - `migrations/0046_the_opt_out_reaches_the_wall.sql`: **one act, both
   surfaces.** `celestual_suppress` erased the whole of Main and half the wall:
   the cascade off `celestual_users` took the letters the person had WRITTEN and

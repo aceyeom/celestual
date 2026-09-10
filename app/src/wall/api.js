@@ -313,6 +313,21 @@ export const joinWaitlist = (handle, source) =>
 export const logScan = (source) =>
   call('wall_scan', { p_source: String(source || ''), p_campus: CAMPUS })
 
+// ── and how far they got ─────────────────────────────────────────────────────
+// The four steps between a scan and a letter (migration 0047). Nothing reads
+// these back either: they are counted on the desk, per card, and there is no
+// function that could tell a browser anything about them.
+//
+// Called through seed.js `cardStep`, which is what holds them to once per device.
+// A code the registry does not know is answered ok and written nowhere, so a
+// stale code in an old tab costs one request and changes no number.
+export const logStep = (source, name) =>
+  call('wall_card_step', {
+    p_code: String(source || ''),
+    p_step: String(name || ''),
+    p_campus: CAMPUS,
+  })
+
 // ── coming down ──────────────────────────────────────────────────────────────
 // Both of these take the letter down in the same statement that files the
 // record. Reporting is post-moderated, on purpose and for the same reason

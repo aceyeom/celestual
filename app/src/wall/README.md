@@ -148,6 +148,13 @@ more.
 
 Cards and flyers go out with a QR code on them. The code lands on the wall.
 
+The five ad cards carry `celestual.us/c/<code>` rather than the wall's own
+address: one hop the app owns, so a card printed on Tuesday can be pointed
+somewhere else on Friday (`app/src/cards.js`). It logs the scan, hands the code
+on to the surface as `?s=`, and the desk reads the five against each other on
+its cards screen. What each card is judged on is not scans but `joined`: a
+campus address or a handle proved after that code was scanned (migration 0047).
+
 ```
                      ┌──▶ a letter ──┬─ from berkeley? ──▶ read it whole
                      │               │                     └─▶ the flag ──▶ off

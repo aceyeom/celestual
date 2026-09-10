@@ -111,6 +111,19 @@ export function deskWaitlist(password, { limit = 100, offset = 0 } = {}) {
   return call({ password, action: 'desk_waitlist', limit, offset })
 }
 
+// The five printed cards, with the whole funnel against each one and the best
+// first (0047). One call: there are five rows and no page to turn.
+export function deskCards(password) {
+  return call({ password, action: 'desk_cards' })
+}
+
+// What a card says, where it is standing, and whether it is still out. The
+// code, the campus and the landing are not editable: the code is printed on
+// paper, and where a card lands is read by the browser out of src/cards.js.
+export function deskCardSet(password, code, { label = null, place = null, active = null } = {}) {
+  return call({ password, action: 'desk_card_set', code, label, place, active })
+}
+
 // Close a merge that stopped to ask. It records that a person looked; it does
 // not perform the merge, because 0030 refuses those two merges on purpose.
 export function deskConflictResolve(password, id, note = '') {

@@ -78,6 +78,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Display, Pill, Close } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
+import { cardStep } from '../seed.js'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
 // this figure moves with it, because it is not a drawing of the logo: it is the
@@ -244,7 +245,10 @@ export default function Join({ go, setField, reduce }) {
 
   // Out of the wall and into the product. `assign` rather than a route change:
   // see the note on the button below.
-  const register = () => { window.location.assign('/') }
+  // The last step a card can be credited with, and the furthest one: out of the
+  // wall and into the product. Written down before the navigation, because
+  // after it this shell is gone (migration 0047).
+  const register = () => { cardStep('handoff'); window.location.assign('/') }
 
   // The same escape the overture has, for the same reason: this runs three and
   // a half seconds and the second person at a demo table has already seen it.

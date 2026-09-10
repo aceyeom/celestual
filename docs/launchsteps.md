@@ -8,10 +8,26 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-**Status: every phase is complete.** Nothing in this repository has been
-applied to production. The migrations are written and verified against a bare
-PostgreSQL; section 2 says in what order to apply them, and section 11 is the
-checklist to work through on the day.
+**Status: every phase is complete, and most of the schema is live.** This line
+used to say nothing in the repository had been applied. That is no longer true
+and had stopped being true some time ago: the database carries every migration
+through 0045 and, since 9 September 2026, 0047.
+
+Two are NOT recorded as applied, and this is the first place to look when
+something in here does not match the database:
+
+- **0038, the audit.** Not in the migration history, and yet part of it is
+  live: `wall_index` is `security_invoker = false` in production, which is
+  0038 line 33 and nothing else. So the history is a record of what was pushed,
+  not a complete record of what was run. Read the database, not this file, when
+  the answer matters.
+- **0046, the opt out reaching the wall.** Not applied. Until it is, taking a
+  handle off at `/optout` still leaves every letter written ABOUT that person
+  standing on the wall under their name.
+
+The migrations are written and verified against a bare PostgreSQL; section 2
+says in what order to apply them, and section 11 is the checklist to work
+through on the day.
 
 Three steps in here are irreversible and are marked where they appear. The free
 tier has no point in time recovery.
@@ -1051,6 +1067,78 @@ One migration, two functions, and the app.
 The test of the whole path: mint a code on the site, DM a different four
 digits from the same account, and read the same sentence on Instagram and
 under the code on the screen. Then send the right one.
+
+## The five cards (migration 0047)
+
+Five printed ad cards, a code each, a route of our own in the QR, and a screen
+on the desk that says which of them actually brought somebody in. One
+migration, the admin function, and the app.
+
+**Why.** The attribution the wall has had since 0032 counts scans and letters
+and nothing between them, which is not enough to choose between five pieces of
+paper: a card that put forty people on the wall and no letters up read as worse
+than one nobody scanned. And the cards carried `/berkeley?s=<code>` in the QR,
+which pointed them at one surface for as long as the paper existed.
+
+The addresses, one per card, and they are what goes in the QR:
+
+```
+https://celestual.us/c/a
+https://celestual.us/c/b
+https://celestual.us/c/c
+https://celestual.us/c/d
+https://celestual.us/c/e
+```
+
+Sixteen characters, which is the smallest QR symbol there is: fatter modules,
+read from further away by a worse phone. Encode the string in UPPERCASE
+(`HTTPS://CELESTUAL.US/C/A`) and it is smaller again, because a QR encoder has
+an alphanumeric mode with no lowercase in it that packs about a third more into
+the same symbol. A domain is case blind and the route lowercases the code, so
+both forms work. A shorter domain pointed at the same deployment would print as
+`<name>/c/a` and needs one line changed: `SITE` in `app/src/cards.js`.
+
+**Status: applied on 9 September 2026.** The migration is in the database
+(recorded as `the_five_cards`) and `celestual-admin` is deployed with it
+(version 15). What is left is the app deploy, step 3.
+
+1. **Apply `0047_the_five_cards.sql`. DONE.** It adds `wall_cards` (the
+   registry, seeded with `a` through `e`),
+   `wall_card_events` (the four steps between a scan and a letter),
+   `wall_card_step` for the browser, and `celestual_desk_cards` and
+   `celestual_desk_card_set` for the desk. Nothing existing is changed and no
+   data is touched. Verified by `scripts/verify-migrations.sh --test`
+   (`test-cards.sql`, 30 assertions).
+2. **Redeploy `celestual-admin`. DONE.** It gains `desk_cards` and
+   `desk_card_set`. The deployed source was read back and matches this
+   repository byte for byte; `verify_jwt` is still on.
+3. **Deploy the app.** Vercel, as usual. `/c/<code>` resolves before anything
+   mounts and needs no rewrite rule: `vercel.json` already sends every path to
+   the SPA. Until this lands, the five addresses draw the wall's own not found:
+   the database is ready and the route is not there yet.
+
+Everything is additive and the order is forgiving. An app deployed before the
+migration lands still routes every card to the wall and still logs the scan;
+the four steps are answered `logged: false` until the registry exists. A desk
+opened before the app is deployed shows the five rows with the funnel on them.
+
+Checked against the live database after the apply: five cards seeded and no
+sixth, `celestual_desk_cards` answering five rows, the browser able to log a
+step and unable to read either table or the desk, RLS on both, and a code that
+is not one of the five answered `logged: false` with nothing written.
+
+Then, on the desk: open **the cards** under the wall, name each card and say
+where it is standing, and read the table. It is ordered best first, and best
+is `joined`: a campus address or a handle proved after that code was scanned.
+Scans alone measure the corridor the card is taped to.
+
+The test of the whole path: open `celestual.us/c/a` on a phone, land on the
+wall, open a letter, and put an address into the gate. Three rows appear
+against card a on the desk within the minute: the scan, `read one`, and
+`asked`. Type the code back and `joined` follows.
+
+**To point a card somewhere else**, change its `to` in `app/src/cards.js` and
+deploy. The paper stays good, which is the whole reason the route exists.
 
 ## The opt out reaches the wall (migration 0046)
 

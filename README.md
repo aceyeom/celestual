@@ -36,6 +36,8 @@ signs you in to both.
 app/                the SPA. Vite + React, no router library
   src/main.jsx      the fork. Which surface owns this address, decided before
                     anything mounts, so a route is never rendered twice
+  src/cards.js      the five printed cards, and where each one lands. Read by
+                    the fork above, and by the desk
   src/main/         Main. hero, place, sky, reveal, optout, copy, signin
   src/wall/         the wall. ten screens, its own art and its own store
   src/signature/    where the two signature surfaces were approved. static
@@ -44,7 +46,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0046, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0047, in order. 0029 onward is the rebuild; 0038 is the audit
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook
@@ -99,8 +101,10 @@ everything that has to happen outside the repo, and
 **[docs/deletions.md](./docs/deletions.md)** carry the decisions and the
 deletions.
 
-Nothing in this repository has been applied to production. The migrations are
-written and verified, and `launchsteps.md` says in what order to apply them.
+Most of the schema is live. The database carries every migration through 0045,
+and 0047; **0038 and 0046 are not recorded as applied**, and
+[docs/launchsteps.md](./docs/launchsteps.md) says what that means and in what
+order to apply what is left.
 
 ---
 
@@ -142,9 +146,10 @@ written and verified, and `launchsteps.md` says in what order to apply them.
 | `/reveal/<handle>` | a mutual, opened |
 | `/berkeley` | the wall, and eight addresses under it |
 | `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
+| `/c/<code>` | what the five printed cards carry in their QR. Logs the scan, then hands the visitor to wherever that card is pointed |
 | `/optout` | take a handle off, permanently, proved with one DM, no account |
 | `/copy`, `/signin` | the two links a mail sends somebody to |
-| `/admin` | the desk. Password checked server side. `#reports`, `#people=@handle` and the other section names in the fragment open a screen directly |
+| `/admin` | the desk. Password checked server side. `#reports`, `#cards`, `#people=@handle` and the other section names in the fragment open a screen directly |
 | `/signature`, `/signature/reveal` | where the two signature surfaces were approved |
 | `/terms`, `/privacy`, `/data-deletion` | static, served by a rewrite |
 

@@ -40,6 +40,7 @@ import { atHandle, allowance, loadQuota } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
 import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
+import { cardStep } from '../seed.js'
 
 // The composer's own field, reused: a bare baseline with the constant part of
 // the string painted beside it rather than typed into it. The '@berkeley.edu'
@@ -138,6 +139,13 @@ export default function Gate({ go, back }) {
     }
     setToken(out.token)
     setStep(1)
+    // The step before the proof: somebody gave an address and asked for a code.
+    // Logged here rather than when this sheet opens, because the sheet is also
+    // the account screen and a person reading their own address on it has not
+    // done anything. It says which card produced intent, and the 'joined' step
+    // in auth.js says which produced a proof. The gap between the two is the
+    // mail arriving, and it is worth being able to see.
+    cardStep('gate')
   }
 
   // ── and comes back ──

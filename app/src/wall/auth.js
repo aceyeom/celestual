@@ -70,6 +70,7 @@
 // the interface draws from, not the answer.
 
 import { getState, patch, push } from './store.js'
+import { cardStep } from './seed.js'
 import { normHandle, forgetLetters } from './data.js'
 import { whoamiStrict, bindHandle, forgetSession } from '../api/identity.js'
 import { getSession, markVerified, signOut as dropProof } from '../api/auth.js'
@@ -137,6 +138,11 @@ export function signIn(email) {
   if (!anyEmail(e)) return null
   patch({ member: e, reader: true })
   forgetLetters()
+  // Which piece of paper this person came in off has an answer now, and this is
+  // the moment it is worth writing down: a proof landed. Nothing about the
+  // address goes up with it (seed.js `cardStep`, migration 0047), and a person who
+  // arrived here without scanning anything reports nothing at all.
+  cardStep('joined')
   return e
 }
 
@@ -288,6 +294,9 @@ export async function verifyHandle(handle, proof) {
     // writes it there, and App.jsx has always read it there), so it is written
     // there and nowhere new: one secret, one key, one place to clear it.
     markVerified(h, proof)
+    // The other proof this product takes, and the same step. A card is judged
+    // on people who got through a door, and it does not matter which one.
+    cardStep('joined')
   }
   return out
 }
