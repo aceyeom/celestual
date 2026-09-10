@@ -36,7 +36,10 @@ The wall carries two different things and they cannot have the same rule.
 Every browser is handed **five whole letters** before it is asked for anything
 (migration 0045). After those, a letter arrives **blurred** — the real letter,
 at its real length, with nothing readable in the document — and a proof brings
-it back into focus. The index does not move: the names, the counts and the
+it back into focus. The five are not drawn: they stood as five marks under
+every card, one struck per letter read, and a meter over a letter is a
+countdown whatever it is called. The sixth card arrives sealed and says so on
+its own rule, which is the moment the fact is worth having. The index does not move: the names, the counts and the
 search stay open to everybody, forever, and the first time anybody is asked for
 anything is the moment they reach for a sixth letter, or for one of the two
 acts that CHANGE what is on the wall.
@@ -187,6 +190,11 @@ thing. `/berkeley/gate` opens the wall — its letters, its composer, its report
 control — and buys nothing else. `/berkeley/join` is the door into the product — accounts, pings, mutuals — and it
 is still gated on having put a letter up.
 
+The search ends on its results. Two capsules stood under them, `write instead`
+and `take a name off`, and both were doors to other rooms on a sheet whose one
+job is to find a name: the nib in the bar is the composer, and the way off the
+wall stands under the flag on every letter.
+
 The tab is the only offer the wall makes of the product, and it does not exist
 until somebody has put a letter up. Offering an account to a person who has not
 written anything is asking them to register for a result they cannot receive.
@@ -206,7 +214,7 @@ front too, and always has.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, and the heart on its foot with the count beside it |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and a chevron in each gutter to the letter before and after: the stack is turned where the letter is, by the chevrons, a swipe on the card or the arrow keys, and the header keeps the count |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
@@ -473,16 +481,39 @@ is not, so the discs show through under the words as a texture, and it runs
 up over the bar so it has no edge. The scrim is itself the way in, and one
 arrow link says so in words: `view the wall`.
 
-Lifting it is one movement. The type rises off the field, the field comes up
-to full light, and the lens blooms from flat to full over about a second.
+And that is the whole screen. Under the veil there is no composer's pill, no
+foot under that and no glyphs in the bar: a poster with one door on it, over
+a field that is plainly alive, and the brand in the corner as the way home.
+Everything else is built once the door has been opened, because a person
+reading the title has not decided anything yet, and a screen already
+offering three controls and a footer has decided for them.
+
+Lifting it is one movement, and it starts where it was touched. A tap
+anywhere on the veil opens it as a circle growing out from under the finger
+(`Wall.jsx`, `wall.css .wl-veil-mask`): the grey and the type are one masked
+layer and the circle is cut out of both, over a soft shoulder, with one
+hairline ring standing on its edge; the field comes up to full light and the
+lens blooms inside the circle as it grows. The title is not faded on a clock
+of its own: the circle takes it as it reaches it, so a tap under the title
+clears the title first and a tap in the far corner clears it last. One
+number drives the hole and the ring, written to the veil on every frame of
+the second the ripple takes, so the edge of the light and the ring on it
+cannot drift apart; the curve is a shallow ease out, because on an ease-out
+cubic a phone's far corner is under six hundred pixels away and the circle
+was a pop. When it has cleared the glass the rest of the wall arrives, a
+beat apart: the bar's glyphs, then the pill, then the foot. It used to fade;
+a fade is the screen changing its mind, and a circle from the finger is the
+person opening it.
+
 One line stays exactly where it was through all of it: the ear, under the
 bar, the campus and the count in the identifier face at the size and the
-tracking every dateline in the product is set at. It is the same line the
-front door runs above its own headline to point here, so the line on the
-door and the line on the wall are one line, and it is what makes the veil
-and the field one masthead rather than two: nothing at the top changes shape
-when the type goes. The veil is up once per tab: coming back from a letter
-lands on the field.
+tracking every dateline in the product is set at, the word in ash and the
+figure in chalk. It is the same line the front door runs above its own
+headline to point here, so the line on the door and the line on the wall
+are one line, and it is what makes the veil and the field one masthead
+rather than two: nothing at the top changes shape when the type goes. The
+veil is up once per tab: coming back from a letter lands on the field. Under
+reduced motion it goes without travelling.
 
 The tower came off, and so did the count on flaps. The Campanile stood in
 the masthead's corner and then on the count as its plinth, and it never
@@ -679,11 +710,11 @@ product opened on two different logos.
 
 | | |
 | --- | --- |
-| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land |
+| `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`): the index carries every face since migration 0048, so the pictures are the next request and not the one after a peek |
 | `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close |
 | `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out |
 | `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
-| `1560ms` | **the lift**, after a hold. The mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone. One movement, not two screens |
+| `1560ms` | **the lift**, after a hold, and not before the wall is ready. The lift waits on the index and the first screen's faces having landed, with a ceiling at 4200ms from mount so a dead network is a wall of monograms and not a logo forever; on an ordinary connection they are there long before the clock is. The mark is the one thing in the product built to be looked at while something else finishes, and a wall drawn with sixty grey discs that fill in a second later is a wall that arrived too early. Then the mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone, every face on it a picture from its first frame. One movement, not two screens |
 | `2280ms` | the black is gone |
 
 No name, because the name is in the bar of the page underneath; no bloom,

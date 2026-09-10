@@ -968,7 +968,14 @@
    carries no sparkle and no dot; it used to carry both, at one size in one
    face, and read as a string of ornaments. It stands above the veil's scrim
    and does not move when the veil lifts, so the veil and the field share
-   one masthead element. */
+   one masthead element.
+
+   The count is in ash with the number in chalk. It was set in `--ash-dim`
+   with the number in ash, which is the one token the system says is for
+   decoration and disabled things, and the one fact about the wall worth
+   printing was the faintest type on the screen: over a field of faces at
+   eleven pixels it could not be read at all. It is the front door's own ear
+   now (hero.css .hm-ear): ash for the word, chalk for the figure. */
 .wl-ear {
   position: relative; z-index: 4; flex: 0 0 auto;
   display: flex; align-items: baseline; gap: 13px; min-width: 0;
@@ -982,12 +989,12 @@
   color: var(--chalk); white-space: nowrap;
 }
 .wl-ear-meta {
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
   font-variant-numeric: tabular-nums;
-  color: var(--ash-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.wl-ear-n { color: var(--ash); }
-.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; align-self: baseline; }
+.wl-ear-n { color: var(--chalk); }
+.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
 
 /* ── the board ──
    art.jsx `Flap`: the count on split flaps, the word beside it. The flap is a
@@ -1148,27 +1155,54 @@
    under a scrim that is darkest where the type is and gone where it is not,
    so the names show through under the words, and the title, the line and the
    way in stand on it under the ear. The scrim is itself the way in, and the
-   arrow link says so in words. It lifts once per tab, and it lifts as one
-   movement: the type rises off the field while the field comes up to full
-   light under it and the lens blooms (Hive.jsx). */
+   arrow link says so in words. It lifts once per tab.
+
+   ── and it opens from the finger ──
+   A tap opens it as a circle growing out from the tap (screens/Wall.jsx):
+   the scrim is masked by a hole whose radius is `--rp` of `--rmax`, the
+   distance from the tap to the farthest corner of the glass, and one
+   hairline ring stands on the hole's edge and runs out with it. One number
+   drives both, written to the veil on every frame of the ripple, so the
+   edge of the light and the ring on it cannot drift apart. The field comes
+   up to full light and the lens blooms inside the circle as it grows
+   (Hive.jsx), and the type rises off the field as the circle reaches it.
+
+   `--ramp` is how far the scrim reaches up over the bar, so the grey over
+   the field has no edge where the bar ends. The scrim carries the ramp in
+   its own gradient rather than on a pseudo-element, so the same hole cuts
+   through both. */
 .wl-veil {
+  --ramp: 110px;
+  --rp: 0;
+  --rr: calc(var(--rmax, 1400px) * var(--rp));
   position: absolute; inset: 0; left: calc(50% - 50vw); width: 100vw; z-index: 3;
   display: flex; flex-direction: column;
 }
+/* the layer the circle is cut out of: the scrim and the type together. The
+   ring is the veil's other child and stands outside it. */
+.wl-veil-mask {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: inherit;
+}
+/* ── the scrim ──
+   Deep where the type stands and gone where it does not. It used to fall
+   from 0.58 at the bar to nothing at the foot, and at that depth the title
+   stood on a crowd of faces at three fifths of their own light: legible, and
+   never plainly so. It holds at four fifths through the type now, falls off
+   through the lower half, and the names show through under the words as a
+   texture rather than as a crowd. */
 .wl-veil-scrim {
-  position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0;
-  background: linear-gradient(180deg, rgba(8, 7, 11, 0.58) 0%, rgba(8, 7, 11, 0.36) 46%, rgba(8, 7, 11, 0.04) 100%);
+  position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ramp));
+  width: 100%; padding: 0; border: 0;
+  background: linear-gradient(180deg,
+    rgba(8, 7, 11, 0) 0px,
+    rgba(8, 7, 11, 0.84) var(--ramp),
+    rgba(8, 7, 11, 0.80) 38%,
+    rgba(8, 7, 11, 0.50) 66%,
+    rgba(8, 7, 11, 0.12) 100%);
   cursor: pointer;
 }
-/* the scrim's top edge, softened up over the bar: a ramp from nothing to the
-   scrim's own depth, so the grey over the field has no edge where the bar
-   ends. It takes no pointer, so the bar under it is still the bar. */
-.wl-veil::before {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 110px;
-  background: linear-gradient(180deg, rgba(8, 7, 11, 0) 0%, rgba(8, 7, 11, 0.58) 100%);
-  pointer-events: none;
-}
-.wl-veil.is-lifting::before { display: none; }
 /* the type starts under the ear's row, which the veil also covers */
 .wl-veil-in { position: relative; padding: 44px var(--pad) 0; pointer-events: none; }
 .wl-mast { display: flex; flex-direction: column; align-items: flex-start; }
@@ -1186,10 +1220,62 @@
 }
 /* the way in, in words: the arrow link, which is the poster's own nav */
 .wl-mast-go { margin-top: 24px; pointer-events: auto; }
-/* lifting: the whole veil fades, and the type rises off the field as it goes */
-.wl-veil.is-lifting { pointer-events: none; animation: wl-fade 520ms var(--ease) reverse both; }
-.wl-veil.is-lifting .wl-mast { animation: wl-veil-rise 520ms var(--ease) both; }
-@keyframes wl-veil-rise { from { transform: none; } to { transform: translate3d(0, -16px, 0); } }
+
+/* ── lifting ──
+   The hole: transparent inside the radius, and a soft shoulder past it so
+   the edge of the light is a shoulder and not a cut, and the type dissolves
+   over the last hundred pixels before the edge rather than being sliced.
+   The ring stands on the radius itself, the one crisp line in the movement.
+   Nothing on the veil is faded on a clock of its own: the circle is the
+   whole of the reveal, and it takes the title when it reaches it. The mask
+   is on the layer, not the scrim, so the scrim's ramp over the bar is
+   accounted for once, in the circle's centre. */
+.wl-veil.is-lifting { pointer-events: none; }
+.wl-veil.is-lifting .wl-veil-mask {
+  -webkit-mask-image: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
+    transparent var(--rr),
+    rgba(0, 0, 0, 0.55) calc(var(--rr) + 40px),
+    #000 calc(var(--rr) + 130px));
+  mask-image: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
+    transparent var(--rr),
+    rgba(0, 0, 0, 0.55) calc(var(--rr) + 40px),
+    #000 calc(var(--rr) + 130px));
+}
+/* the ring. Its box is the circle at full size and it is scaled by the same
+   number the hole is cut by, so it is a transform and costs the compositor
+   nothing. Bright as it leaves the finger, and gone before it reaches the
+   corners: a ring that arrives at the edge of the glass is a ring that hit
+   something. */
+.wl-veil-ring {
+  position: absolute; z-index: 2;
+  left: var(--rx, 50%); top: var(--ry, 50%);
+  width: calc(var(--rmax, 1400px) * 2); height: calc(var(--rmax, 1400px) * 2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(var(--rp));
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.55),
+    inset 0 0 28px rgba(255, 244, 228, 0.10),
+    0 0 0 1px rgba(8, 7, 11, 0.4);
+  pointer-events: none;
+  will-change: transform;
+  animation: wl-ring-off 1050ms linear both;
+}
+@keyframes wl-ring-off {
+  0%   { opacity: 0.9; }
+  50%  { opacity: 0.62; }
+  100% { opacity: 0; }
+}
+
+/* ── and then the rest of the wall arrives ──
+   Nothing under the veil exists while it is up: no pill, no glyphs in the
+   bar, no foot (screens/Wall.jsx). They are built once the circle has
+   cleared the glass, and for the beat after they rise in, the glyphs first
+   and the pill a step behind, so the wall is seen to be furnished rather
+   than to have been furnished all along behind a curtain. */
+.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn { animation: wl-rise 620ms var(--ease) both; }
+.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn:nth-child(2) { animation-delay: 70ms; }
+.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn:nth-child(3) { animation-delay: 140ms; }
+.wl-wallpage.is-arriving .wl-dock-in { animation: wl-rise 700ms var(--ease) 160ms both; }
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
    Hive.jsx. A crowd of faces on a hexagonal lattice that never ends, bent by
@@ -1444,8 +1530,9 @@
 .wl-wallpage.is-opening .wl-ear        { animation: wl-fade 900ms var(--ease) 900ms both; }
 .wl-wallpage.is-opening .wl-mast-go    { animation: wl-fade 900ms var(--ease) 1200ms both; }
 .wl-wallpage.is-opening .wl-cell-orb   { animation: wl-cell-in 760ms var(--ease) both; animation-delay: var(--in, 900ms); }
-.wl-wallpage.is-opening .wl-dock-in    { animation: wl-fade 900ms var(--ease) 1900ms both; }
 .wl-wallpage.is-opening .wl-top        { animation: wl-fade 900ms var(--ease) 1500ms both; }
+/* the dock is not in the cascade: it does not exist until the veil has gone,
+   and it arrives then (`.is-arriving`, above) */
 @keyframes wl-cell-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: none; } }
 
 @keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
@@ -1490,27 +1577,47 @@
 .wl-foot > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
-.wl-letter { padding-top: 4px; }
+.wl-letter { --gutter: 22px; padding-top: 4px; }
 
-/* the five, over the one thing to do. Centred under the card, because on this
-   screen the pill takes the whole width and a mark hanging off one end of it
-   would read as an ornament on the button rather than as a fact about the
-   reader. Its own breathing room above the pill and none below. */
-.wl-letter-free { justify-content: center; padding: 2px 0 10px; }
+/* the count, in the header. It is the answer to "where am I", which is what a
+   header is for. The two arrows that stood beside it went to the card. */
+.wl-pager { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
 
-/* the pager, in the header. It is the answer to "where am I", which is what a
-   header is for; under the card it was a third object competing with the two
-   controls beside it and pushing the only thing worth pressing further down. */
-.wl-pager { display: flex; align-items: center; gap: 9px; }
-.wl-pager-b {
-  width: 28px; height: 28px; border-radius: 50%; padding: 0;
-  border: 1px solid var(--hair); color: var(--ash);
-  display: grid; place-items: center;
-  transition: color 200ms var(--ease), border-color 200ms var(--ease);
+/* ── turning the pages ──
+   Letter.jsx. The stack is turned where the letter is: a chevron in each
+   gutter beside the card, bare, in ash, brightening under the pointer, and
+   nearly gone at the end of the stack; and the card takes a horizontal
+   swipe, following the finger with some give and springing back if it was
+   not far enough. `pan-y` hands a vertical drag to the sheet, so a long
+   letter can still be scrolled past.
+
+   The gutter on a phone is the sheet's own 22px, so the chevron is a bare
+   stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
+   edge. In the dialog the gutters are wide and the chevrons stand in rings,
+   the way the close mark does. */
+.wl-letter-stage { position: relative; touch-action: pan-y; }
+.wl-letter-card {
+  position: relative;
+  transition: transform 320ms var(--ease);
+  will-change: transform;
 }
-.wl-pager-b--next .wl-icon { transform: scaleX(-1); }
-.wl-pager-b:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244,241,234,0.24); }
-.wl-pager-b:disabled { opacity: 0.28; }
+.wl-letter-card.is-from-right { animation: wl-turn-r 360ms var(--ease) both; }
+.wl-letter-card.is-from-left  { animation: wl-turn-l 360ms var(--ease) both; }
+@keyframes wl-turn-r { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes wl-turn-l { from { opacity: 0; transform: translate3d(-28px, 0, 0); } to { opacity: 1; transform: none; } }
+.wl-turn {
+  position: absolute; top: 50%; z-index: 2;
+  width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
+  display: grid; place-items: center;
+  border: 0; background: none; color: var(--ash);
+  transition: color 200ms var(--ease), opacity 200ms var(--ease);
+}
+.wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
+.wl-turn.is-next { right: calc(-1 * var(--gutter)); }
+.wl-turn.is-next .wl-icon { transform: scaleX(-1); }
+.wl-turn:hover:not(:disabled) { color: var(--chalk); }
+.wl-turn:disabled { opacity: 0.22; cursor: default; }
+.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 8px; }
 
 /* ── the flag, on the card ─────────────────────────────────────────────────
    Letter.jsx. The two marks a reader can leave on a letter share the paper's
@@ -1619,7 +1726,6 @@
   color: var(--chalk);
 }
 .wl-find-empty .wl-pill { margin-top: 4px; }
-.wl-find-foot { padding-top: 14px; border-top: 1px solid var(--hair-soft); }
 
 /* ═══ THE SUGGESTIONS ══════════════════════════════════════════════════════
    parts.jsx `Suggest`: names off the wall's public index, under a field, as
@@ -2291,8 +2397,15 @@
      window at every width, does not */
   .wl-veil { justify-content: center; }
   .wl-veil-in { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 40px 24px; }
+  /* the type is on the left of the field here, so the scrim runs across
+     rather than down: deep under the type, gone past the middle */
   .wl-veil-scrim {
-    background: linear-gradient(90deg, rgba(8, 7, 11, 0.64) 0%, rgba(8, 7, 11, 0.44) 34%, rgba(8, 7, 11, 0.1) 60%, rgba(8, 7, 11, 0) 100%);
+    background: linear-gradient(90deg,
+      rgba(8, 7, 11, 0.88) 0%,
+      rgba(8, 7, 11, 0.80) 26%,
+      rgba(8, 7, 11, 0.46) 52%,
+      rgba(8, 7, 11, 0.10) 78%,
+      rgba(8, 7, 11, 0) 100%);
   }
   .wl-mast-sub { max-width: 40ch; font-size: 18px; }
   /* a spread is wider than it is tall, so the corners are further out and the
@@ -2344,6 +2457,26 @@
   .wl-grip { display: none; }
   .wl-sheet-in { padding: 26px 30px 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
+  /* ── the letter's dialog is wider than the card in it ──
+     The card keeps its measure and the dialog grows round it, so the two
+     chevrons stand in the room either side of the paper rather than on its
+     edge: a ring each, the close mark's own size, centred in the band. */
+  .wl-sheet-wrap:has(.wl-letter) .wl-sheet { max-width: 680px; }
+  .wl-letter { --gutter: 30px; }
+  .wl-letter-stage { max-width: 460px; margin: 0 auto; }
+  .wl-turn {
+    width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
+    border: 1px solid var(--hair);
+    transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
+  }
+  .wl-turn.is-prev { left: -62px; }
+  .wl-turn.is-next { right: -62px; }
+  .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
+  /* the card's own act stands under the card, at the card's measure, on
+     both sheets that carry one: a pill the width of the dialog under a
+     paper narrower than it is a pill about the dialog */
+  .wl-letter .wl-foot, .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
   /* ── the standalone screens keep the column, and gain air ── */
   .wl-join, .wl-posted { max-width: 640px; }
@@ -2584,9 +2717,11 @@
    The address is the heading and it is set in the identifier face rather
    than in the Didone: an email is a string somebody has to read character
    by character to check it is theirs, which is the one job a monospace is
-   for and the one job a Didone is worst at. Under it, one word and one
-   point of the accent. Under a hairline, the names this device has written
-   to, as chips. Nothing else: no meter, no count, no date. */
+   for and the one job a Didone is worst at. Nothing under it: the word
+   "verified" with a point of the accent stood there, and a status badge on
+   an account card is the most generic object on the web. Under a hairline,
+   the names this device has written to, as chips. Nothing else: no meter,
+   no count, no date, no badge. */
 .wl-profile {
   position: relative; flex: 0 0 auto;
   display: flex; flex-direction: column;
@@ -2608,20 +2743,12 @@
     0 0 0 5px rgba(244, 241, 234, 0.035);
 }
 .wl-profile-face .wl-face-mono { color: var(--chalk); font-size: 17px; letter-spacing: 0.08em; }
-.wl-profile-who { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.wl-profile-who { min-width: 0; display: flex; flex-direction: column; }
 .wl-profile-addr {
   margin: 0;
   font-family: var(--f-id); font-size: clamp(15px, 4.4vw, 18px); line-height: 1.25;
   letter-spacing: -0.02em; color: var(--chalk);
   overflow-wrap: anywhere;
-}
-.wl-profile-status { display: flex; align-items: center; gap: 8px; }
-/* the point: the accent's one appearance on the sheet, four pixels of ice
-   beside the one word that is a settled fact about the person */
-.wl-profile-dot {
-  flex: 0 0 auto; width: 5px; height: 5px; border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .wl-profile-sect { padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--hair); }
 .wl-profile-wrote { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 11px; }
@@ -2699,9 +2826,6 @@
    mark ended up drawn in the bar's ash on every screen no matter what the
    rule above it said. */
 .wl-brand.is-still { padding: 6px 8px 6px 0; color: var(--ash); }
-
-/* the search foot carries two offers now, and they wrap on a narrow phone */
-.wl-find-foot { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ═══ THE REPORT ═══════════════════════════════════════════════════════════
    The tap takes the letter off the wall; everything after it happens to
@@ -3056,7 +3180,8 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
+  .wl-veil, .wl-veil .wl-mast, .wl-veil-ring, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
+  .wl-wallpage.is-arriving .wl-iconbtn, .wl-wallpage.is-arriving .wl-dock-in { animation: none !important; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }

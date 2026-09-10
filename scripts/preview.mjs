@@ -52,11 +52,17 @@ const HANDLES = [
 
 const COUNTS = [3, 1, 2, 1, 4, 1, 1, 2, 1, 1, 1, 1]
 
-const INDEX = HANDLES.map(([h], i) => ({
+// 0048: the index carries the resolver's answer for each name, so the faces
+// draw off the one read and the intro can hold for the pictures.
+const INDEX = HANDLES.map(([h, name, verified], i) => ({
   target_handle: h,
   campus: 'berkeley',
   letters: COUNTS[i],
   last_at: new Date(now - (i * 9 + 2) * 3600000).toISOString(),
+  known: true,
+  display_name: name,
+  is_verified: verified,
+  avatar_path: null,
 }))
 
 const LINES = [
@@ -122,6 +128,7 @@ const swatch = (a, b) => `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><circle cx="40" cy="31" r="13" fill="rgba(255,255,255,0.55)"/><ellipse cx="40" cy="66" rx="22" ry="16" fill="rgba(255,255,255,0.5)"/></svg>`,
 )}`
 const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swatch('#8a6a5a', '#4a3028') }
+for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.target_handle}.jpg`
 
 function whoami() {
   return {
@@ -663,6 +670,11 @@ const ROUTES = [
   // the veil lifted, once the lens has bloomed and the walk has taken its
   // first step and come to rest on a person
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
+  // the veil opening from the tap, held at four tenths of its reach
+  // (Wall.jsx `heldRipple`): the circle, the ring on its edge, and the type
+  // going where the edge has reached it. A capture takes longer than the
+  // ripple's middle lasts, so the frame is held rather than caught.
+  { label: 'berkeley-ripple', path: '/berkeley?rp=0.42', press: '.wl-veil-scrim', at: { x: 0.62, y: 0.58 }, settle: 900 },
   { label: 'berkeley-lifted', path: '/berkeley', press: '.wl-mast-go', settle: 5200 },
   // the field under a mouse: the disc the pointer is on, lifted and named,
   // and the crowd parted round it. The one state of the wall that only a
@@ -677,6 +689,8 @@ const ROUTES = [
   { label: 'berkeley-lifted-still', path: '/berkeley', still: true, press: '.wl-mast-go', settle: 1200 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
+  // the stack, turned once: the second letter under the name, in from the right
+  { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-turn.is-next', settle: 1200 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
@@ -723,8 +737,10 @@ const ROUTES = [
   { label: 'notfound',      path: '/nothing-here' },
 ]
 
+// one label, or several separated by commas
 const want = process.argv[2]
-const list = want ? ROUTES.filter((r) => r.label === want) : ROUTES
+const wants = want ? want.split(',') : null
+const list = wants ? ROUTES.filter((r) => wants.includes(r.label)) : ROUTES
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH
     || (process.env.PLAYWRIGHT_BROWSERS_PATH && join(process.env.PLAYWRIGHT_BROWSERS_PATH, 'chromium'))
@@ -823,8 +839,14 @@ for (const r of list) {
     // one: the sky's card is raised by tapping a row.
     if (r.press) {
       await page.waitForSelector(r.press, { timeout: 4000 }).catch(() => {})
-      await page.click(r.press, { timeout: 4000 }).catch(() => {})
-      await page.waitForTimeout(900)
+      // `at` presses a point on the element, as a fraction of its box, for
+      // the one control whose response depends on where it was touched
+      const pos = r.at ? await page.$eval(r.press, (el, at) => {
+        const b = el.getBoundingClientRect()
+        return { x: b.width * at.x, y: b.height * at.y }
+      }, r.at).catch(() => null) : null
+      await page.click(r.press, { timeout: 4000, position: pos || undefined }).catch(() => {})
+      await page.waitForTimeout(r.pressWait ?? 900)
     }
     if (r.click) {
       await page.click(`.ad-nav button[data-sec="${r.click}"]`, { timeout: 4000 }).catch(() => {})
@@ -839,7 +861,7 @@ for (const r of list) {
       if (act === 'click') await page.click(sel, { timeout: 4000 }).catch(() => {})
       await page.waitForTimeout(700)
     }
-    await page.waitForTimeout(r.settle || 2600)
+    await page.waitForTimeout(r.settle ?? 2600)
     // a pointer on the field, a little off the middle, so the lens has a
     // person under it and the crowd has parted round them
     if (r.hover) {

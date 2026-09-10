@@ -44,7 +44,7 @@ import { prefersReducedMotion } from './parts.jsx'
 import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { revision, subscribe, loadWall } from './data.js'
+import { revision, subscribe, warmWall } from './data.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
 
@@ -87,6 +87,12 @@ const FIELD = {
 // back from a letter should not sit through a logo to do it.
 let BOOTED = false
 
+// The longest the intro is held for the index and the first faces, measured
+// from the shell mounting. The intro's own lift is at 1560ms, so on any
+// ordinary connection this never applies; on a bad one the wall arrives with
+// its monograms, which is a designed state, and the pictures fill in.
+const READY_CEILING_MS = 4200
+
 export default function WallApp() {
   const [route, setRoute] = useState(() => parse(window.location.pathname))
   // 0 the intro has the screen · 1 the wall is mounted and cascading under
@@ -105,7 +111,25 @@ export default function WallApp() {
   // none of them has to know a network exists.
   const [, setRev] = useState(0)
   useEffect(() => subscribe(setRev), [])
-  useEffect(() => { loadWall() }, [])
+
+  // ── the wall, ready ──
+  // The index, and then the pictures of the names that will be in the light
+  // on the first screen, fetched and decoded while the intro still has the
+  // screen (data.js warmWall). The intro holds its lift on this: the mark is
+  // the one thing in the product built to be looked at while something else
+  // finishes, and the wall is not drawn until its faces are there to draw.
+  // With a ceiling, because a wall of monograms after four seconds is a wall
+  // and a logo after four seconds is a stall. A tab that has already booted
+  // is ready by definition.
+  const [ready, setReady] = useState(() => BOOTED)
+  useEffect(() => {
+    let alive = true
+    let t = 0
+    const up = () => { clearTimeout(t); if (alive) setReady(true) }
+    warmWall().then(up, up)
+    t = setTimeout(up, READY_CEILING_MS)
+    return () => { alive = false; clearTimeout(t) }
+  }, [])
 
   // ── who this browser is ──
   // Asked once, on mount. Somebody who verified their campus address on their
@@ -303,7 +327,7 @@ export default function WallApp() {
         </>
       )}
 
-      {boot < 2 && <Intro reduce={reduce} onReveal={handOff} onDone={settle} />}
+      {boot < 2 && <Intro reduce={reduce} ready={ready} onReveal={handOff} onDone={settle} />}
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>

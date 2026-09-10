@@ -12,7 +12,7 @@ import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Sparkle } from './art.jsx'
 import { member, isReader, verified } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
-import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
+import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -324,7 +324,14 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // now: the wall's shell cannot draw Main, so the walk back is a navigation,
 // and a plain click, a middle click and a copy all get the same address. On a
 // sheet it stays what it was, the way back to the wall the sheet is over.
-export function TopBar({ go, at = 'wall' }) {
+//
+// ── and under the wall's veil, the brand alone ──
+// `acts` is whether the three glyphs on the right are drawn at all. The wall
+// hands it false while its veil is up: the poster has one door on it and the
+// way home, and a bar offering three more things to press over a title
+// nobody has read yet is three decisions before the first one. They arrive
+// with the pill once the veil has gone (screens/Wall.jsx).
+export function TopBar({ go, at = 'wall', acts = true }) {
   const who = member()
   // Whether the letters are open, which is not the same question as whether
   // this browser has a campus address. A person who proved their handle on
@@ -345,6 +352,7 @@ export function TopBar({ go, at = 'wall' }) {
         label={onWall ? 'celestual, the front' : 'back to the wall'}
         title={onWall ? 'the front' : 'the wall'}
       />
+      {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
         <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => go('write')} />
@@ -369,6 +377,7 @@ export function TopBar({ go, at = 'wall' }) {
             : <Icon name="key" />}
         </button>
       </nav>
+      )}
     </header>
   )
 }
@@ -1135,11 +1144,18 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
   // effect then ran on mount and put the flag back to false — so the face sat
   // at opacity 0 behind its monogram with the image right there in the DOM.
   // Comparing against `src` makes a new handle's picture unshown for free.
-  const [got, setGot] = useState('')
-  const [bad, setBad] = useState('')
+  //
+  // A picture the wall has already fetched and decoded (api/handles.js
+  // warmFaces, and every Face that finished loading one) is shown on the
+  // first frame, with no fade: `got` starts at the src, so the face is a
+  // person from the moment it is on the screen. The 320ms fade is for a
+  // picture that is actually arriving.
   const src = p?.avatar || ''
-  const shown = !!src && got === src
+  const [got, setGot] = useState(() => (isWarm(src) ? src : ''))
+  const [bad, setBad] = useState('')
+  const shown = !!src && (got === src || isWarm(src))
   const broken = !!src && bad === src
+  const landed = () => { markWarm(src); setGot(src) }
   return (
     <span
       className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''} ${className}`}
@@ -1155,8 +1171,8 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
           src={src} alt="" decoding="async"
           /* the cache race, caught on the way in: an image that is already
              complete when the ref runs never fires the handler below */
-          ref={(el) => { if (el && el.complete && el.naturalWidth > 0) setGot(src) }}
-          onLoad={() => setGot(src)} onError={() => setBad(src)}
+          ref={(el) => { if (el && el.complete && el.naturalWidth > 0 && got !== src) landed() }}
+          onLoad={landed} onError={() => setBad(src)}
         />
       ) : null}
     </span>

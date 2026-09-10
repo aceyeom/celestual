@@ -208,7 +208,7 @@ export default function Posted({ go, reduce }) {
         <div className="wl-posted-card">
           <Paper
             dateline={dateline(row.at)}
-            crest={<Face handle={row.to} size={26} />}
+            crest={<Face handle={row.to} size={30} />}
             title={<span className="wl-letter-to">{atHandle(row.to)}</span>}
           >
             <Prose>{row.body}</Prose>

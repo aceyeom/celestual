@@ -52,7 +52,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance,
+  Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance, Face,
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots } from '../art.jsx'
@@ -197,8 +197,13 @@ export default function Write({ to: prefill, go, back }) {
           </div>
         ) : (
           <div className="wl-write-step">
+            {/* The same card the wall shows, letterhead included: the face
+                at the head of the paper beside the name, at the size the
+                letter sets it, so what is being written on is what goes up
+                and not a plainer copy of it. */}
             <Paper
               dateline={dl}
+              crest={<Face handle={h} size={30} />}
               title={<span className="wl-letter-to">{atHandle(h)}</span>}
               tone={body.trim() ? '' : 'empty'}
             >

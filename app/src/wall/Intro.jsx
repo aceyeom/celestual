@@ -54,6 +54,18 @@
 // the wall from a letter, does not replay it; a refresh does. It is skippable
 // on any tap or key. Under prefers-reduced-motion it renders assembled, holds
 // a beat, and lifts; the metal stands still.
+//
+// ── and it waits, when there is something to wait for ───────────────────────
+// `ready` is whether the page under it is ready to be seen. The wall hands it
+// false until its index and the faces on its first screen have landed
+// (index.jsx), and the lift holds on the assembled mark, metal flowing, until
+// it is true: the one screen in the product built to be looked at while
+// something else finishes is this one, and a wall drawn with sixty grey discs
+// that fill in a second later is a wall that arrived too early. It is never a
+// spinner and never says it is loading. The mark holds, and then it lifts.
+// The shell puts a ceiling on it, so a dead network is a wall of monograms
+// and not a logo forever; and a tap still lifts it at once, because a brand
+// animation that cannot be got out of is a toll gate.
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { ECL, ECL_SPINE, ringPath, starPath } from './mark.js'
@@ -80,9 +92,13 @@ function heldBeat() {
   return b === null ? null : Math.max(0, Math.min(LIFT, Number(b) || 0))
 }
 
-export default function Intro({ reduce, onReveal, onDone }) {
+export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   const hold = useRef(heldBeat()).current
   const [at, setAt] = useState(hold ?? 0)
+  // The clock has reached the lift. The lift itself waits on this AND on
+  // `ready`, so a page that is slow to arrive holds the assembled mark and a
+  // page that is quick changes nothing about the two seconds.
+  const [due, setDue] = useState(false)
   const timers = useRef([])
   const done = useRef(false)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
@@ -99,17 +115,21 @@ export default function Intro({ reduce, onReveal, onDone }) {
     if (hold !== null) return undefined
     if (reduce) {
       setAt(3)
-      timers.current.push(setTimeout(() => setAt(LIFT), 560))
+      timers.current.push(setTimeout(() => setDue(true), 560))
       return () => timers.current.forEach(clearTimeout)
     }
     // Geometry only, so every beat can start on the first frame: there is no
     // face to wait for.
     BEATS.forEach((ms, i) => {
       if (i === 0) return
-      timers.current.push(setTimeout(() => setAt(i), ms))
+      timers.current.push(setTimeout(() => (i === LIFT ? setDue(true) : setAt(i)), ms))
     })
     return () => timers.current.forEach(clearTimeout)
   }, [reduce, hold])
+
+  useEffect(() => {
+    if (due && ready) setAt((a) => (a < LIFT ? LIFT : a))
+  }, [due, ready])
 
   useEffect(() => {
     if (hold !== null) return undefined

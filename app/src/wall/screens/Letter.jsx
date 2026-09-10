@@ -35,6 +35,23 @@
 // came here to get something off the wall stands on the card itself, at the
 // end of its foot, opposite the heart (below).
 //
+// ── turning the pages ───────────────────────────────────────────────────────
+// A name with more than one letter under it is a small stack, and the stack
+// is turned where the letter is: a chevron either side of the card, in the
+// gutters, and the card itself takes a swipe. On a phone the swipe is the
+// gesture and the chevrons are what say there is more; on a desktop the
+// chevrons are the control and the arrow keys do the same. The header keeps
+// the count, `2 / 3`, because that is where "where am I" belongs; it used to
+// carry the two small arrows as well, twenty-eight pixel rings at the far end
+// of the sheet from the thing they turned, and a control for the card that is
+// not on the card is a control somebody has to go looking for.
+//
+// A turn is a route change, the same as it always was, so every letter under
+// a name keeps its own address. The card that arrives comes in from the side
+// it was turned toward, a beat, and the one that left is simply gone: the
+// letter is the object, and one object moving is a page turning where two
+// crossing would be a carousel.
+//
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
 // this card arrives REDACTED — the real letter, at its real length, with every
@@ -48,6 +65,12 @@
 // because the shape of the thing has to be honest even while it is shut. And
 // no readable text is in the DOM behind it.
 //
+// The five free letters (migration 0045) are the server's count and they are
+// not drawn here any more. Five hollow marks under every card, one struck per
+// letter read, put a meter on a page somebody was reading, and a meter over a
+// letter is a countdown whatever it is called. The sixth card arrives sealed
+// and says so on its own rule, which is the moment the fact is worth having.
+//
 // What is still NOT here matters as much. There is no way from a letter into
 // the core service — no "find out who", no account for it, no offer of any
 // kind. The door to the product opens after you have written, on the wall.
@@ -55,11 +78,11 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label, Face, Heart, Allowance,
+  Pill, Icon, Label, Face, Heart,
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle,
-  sinceline, atHandle, heart, gated, freeReads,
+  sinceline, atHandle, heart,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
@@ -118,25 +141,15 @@ function Hearts({ letter: l, onGate }) {
   )
 }
 
-// The pager, and it lives in the header rather than under the card. It is the
-// answer to "where am I", which is what a header is for; under the card it was
-// a third object competing with the two controls beside it, and it pushed the
-// only thing worth pressing another forty pixels down the screen.
-function Pager({ at, of, go, siblings }) {
-  return (
-    <div className="wl-pager">
-      <button type="button" className="wl-pager-b" disabled={at <= 0}
-        onClick={() => go('letter', siblings[at - 1].id)} aria-label="the letter before this one">
-        <Icon name="back" size={15} />
-      </button>
-      <Label tone="dim">{at + 1} / {of}</Label>
-      <button type="button" className="wl-pager-b wl-pager-b--next" disabled={at >= of - 1}
-        onClick={() => go('letter', siblings[at + 1].id)} aria-label="the letter after this one">
-        <Icon name="back" size={15} />
-      </button>
-    </div>
-  )
-}
+// ── the swipe ───────────────────────────────────────────────────────────────
+// How far a finger has to travel, or how fast, for the card to turn rather
+// than spring back; how much of the travel the card follows; and how much
+// less it follows at the end of the stack, where there is nothing to turn to.
+const TURN_PX = 64
+const TURN_V = 0.45        // px per ms
+const FOLLOW = 0.55
+const FOLLOW_END = 0.2
+const SLOP = 6
 
 // ── the address takes two shapes ────────────────────────────────────────────
 // /berkeley/letter/<uuid>    one letter, which is what a shared link points at
@@ -145,7 +158,7 @@ function Pager({ at, of, go, siblings }) {
 //
 // They are not ambiguous: a handle is at most 30 characters of [a-z0-9._] and
 // an id is a 36 character uuid with hyphens in it. Both land on the same
-// screen, and the pager below always moves by id so every letter under a name
+// screen, and the turn below always moves by id so every letter under a name
 // still has its own address.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -179,10 +192,82 @@ export default function Letter({ id: param, go, back, reduce = false }) {
 
   const siblings = one ? lettersFor(one.to) : forHandle
   const at = siblings.findIndex((l) => l.id === (one?.id || id))
+  const of = siblings.length
 
-  // The letter, then the rest of its handle's letters for the pager. Two
+  // ── turning ──
+  // Which way the card that is arriving came from: set by a turn, read by
+  // the card that mounts on the new id, and left alone otherwise, so a deep
+  // link and a refresh open the card the ordinary way.
+  const slide = useRef(0)
+  const turn = (dir) => {
+    const next = siblings[at + dir]
+    if (!next) return
+    slide.current = dir
+    setFlagged(false)
+    go('letter', next.id)
+  }
+  const turnRef = useRef(turn)
+  turnRef.current = turn
+
+  // The arrow keys turn the stack, on a keyboard. Not while a sheet is being
+  // typed into, and there is nothing to type into here.
+  useEffect(() => {
+    if (of < 2) return undefined
+    const onKey = (e) => {
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return
+      if (e.key === 'ArrowRight') { e.preventDefault(); turnRef.current(1) }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); turnRef.current(-1) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [of])
+
+  // A finger on the card takes it sideways. The axis is decided on the first
+  // few pixels and a vertical drag is handed back to the sheet at once, so
+  // the card can still be scrolled past on a long phone; `touch-action:
+  // pan-y` on the stage says the same thing to the browser. The card follows
+  // with some resistance, and with a great deal more at the end of the stack,
+  // where a pull says "there is nothing further" by giving less.
+  const drag = useRef(null)
+  const onDown = (e) => {
+    if (e.pointerType === 'mouse' || of < 2) return
+    drag.current = { x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, axis: '' }
+  }
+  const onMove = (e) => {
+    const d = drag.current
+    if (!d) return
+    const dx = e.clientX - d.x
+    const dy = e.clientY - d.y
+    if (!d.axis) {
+      if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return
+      d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      if (d.axis === 'y') { drag.current = null; return }
+    }
+    d.dx = dx
+    const end = (dx < 0 && at >= of - 1) || (dx > 0 && at <= 0)
+    const el = cardBox.current
+    if (el) {
+      el.style.transition = 'none'
+      el.style.transform = `translate3d(${(dx * (end ? FOLLOW_END : FOLLOW)).toFixed(1)}px, 0, 0)`
+    }
+  }
+  const onUp = () => {
+    const d = drag.current
+    drag.current = null
+    const el = cardBox.current
+    if (el) { el.style.transition = ''; el.style.transform = '' }
+    if (!d || d.axis !== 'x') return
+    const v = d.dx / Math.max(1, performance.now() - d.t)
+    const dir = d.dx < 0 ? 1 : -1
+    if (Math.abs(d.dx) > TURN_PX || Math.abs(v) > TURN_V) turn(dir)
+  }
+  const swipe = of > 1
+    ? { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp }
+    : null
+
+  // The letter, then the rest of its handle's letters for the turn. Two
   // requests rather than one, because a person who opened a link off a card
-  // wants the letter on screen before the pager exists.
+  // wants the letter on screen before the stack exists.
   useEffect(() => { if (byId) loadLetter(param) }, [byId, param])
   useEffect(() => { if (handle) loadHandle(handle) }, [handle])
   useEffect(() => { if (one) loadHandle(one.to) }, [one])
@@ -214,6 +299,7 @@ export default function Letter({ id: param, go, back, reduce = false }) {
               are not the same fact: a letter that has arrived shut is blurred,
               because it is a letter you are not close enough to, and a letter
               that has not arrived is neither shut nor open yet. */}
+          <div className="wl-letter-stage">
           <div className="wl-letter-card" ref={cardBox}>
             <Paper
               dateline={{ lead: 'reading' }}
@@ -222,6 +308,7 @@ export default function Letter({ id: param, go, back, reduce = false }) {
             >
               <Redacted words={22} chars={110} seed={String(param)} />
             </Paper>
+          </div>
           </div>
         </div>
       </Sheet>
@@ -250,17 +337,7 @@ export default function Letter({ id: param, go, back, reduce = false }) {
   }
 
   const open = one.body !== null
-
-  // ── the five ──
-  // Every browser reads five whole letters before it is asked for anything
-  // (migration 0045). The meter is drawn only for somebody the five still
-  // apply to: a person through the gate is not counting anything, and drawing
-  // them five hollow marks would be inventing a limit they do not have.
-  //
-  // Both facts are the server's, off the read that drew this card. Nothing
-  // here counts, and nothing here decides: `open` above is still the only
-  // thing that says whether the words came.
-  const free = gated() === false ? freeReads() : null
+  const came = slide.current > 0 ? ' is-from-right' : slide.current < 0 ? ' is-from-left' : ''
 
   return (
     /* Not `tall`. The floor exists so a bottom sheet does not read as a
@@ -274,53 +351,73 @@ export default function Letter({ id: param, go, back, reduce = false }) {
         <SheetHead
           onClose={back}
           label="back to the wall"
-          lead={siblings.length > 1
-            ? <Pager at={at} of={siblings.length} go={go} siblings={siblings} />
+          lead={of > 1
+            ? <Label tone="dim" className="wl-pager" aria-label={`letter ${at + 1} of ${of}`}>{at + 1} / {of}</Label>
             : null}
         />
 
-        {/* ── the card ──
+        {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, whose name it is under, and the
             words. The crest is the person's own face, the same disc the search
-            puts in its rows and the sky puts beside a ping. */}
-        <div className="wl-letter-card" ref={cardBox}>
-        <Paper
-          dateline={sinceline(one.at, open ? '' : 'sealed')}
-          crest={<span className="wl-letter-crest" ref={cardCrest}><Face handle={one.to} size={30} /></span>}
-          title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
-          tone={open ? '' : 'shut'}
-          foot={(
-            /* ── the two marks a reader can leave ──
-                The heart at the head of the foot and the flag at its end,
-                both struck in the paper's ink, because both are marks on the
-                document rather than controls on the sheet. The flag used to
-                float alone under the pill, a hairline ring on the void at the
-                bottom of the sheet, which is where a thing goes when nothing
-                has been decided about it. It belongs to the letter: a flag
-                is left ON a thing. So it is in the card's corner now, where a
-                reader looking for the way to say "not this one" looks, and it
-                is the size of the heart beside it rather than of a button. */
-            <div className="wl-letter-marks">
-              <Hearts
-                letter={one}
-                onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
-              />
-              <button
-                type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
-                onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
-                aria-controls="wl-flag-opts"
-                aria-label="take this off the wall" title="take this off the wall"
-              >
-                <Icon name="flag" size={15} />
-              </button>
-            </div>
+            puts in its rows and the sky puts beside a ping. Either side of it,
+            in the gutters, a chevron to the letter before and the one after;
+            and the card itself takes the finger. */}
+        <div className="wl-letter-stage" {...swipe}>
+          {of > 1 && (
+            <button
+              type="button" className="wl-turn is-prev" disabled={at <= 0}
+              onClick={() => turn(-1)} aria-label="the letter before this one" title="the letter before"
+            >
+              <Icon name="back" size={16} />
+            </button>
           )}
-        >
-          {open
-            ? <Prose>{one.body}</Prose>
-            : <Redacted words={one.words} chars={one.chars} seed={one.id} />}
-        </Paper>
+          <div className={`wl-letter-card${came}`} ref={cardBox} key={one.id}>
+          <Paper
+            dateline={sinceline(one.at, open ? '' : 'sealed')}
+            crest={<span className="wl-letter-crest" ref={cardCrest}><Face handle={one.to} size={30} /></span>}
+            title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
+            tone={open ? '' : 'shut'}
+            foot={(
+              /* ── the two marks a reader can leave ──
+                  The heart at the head of the foot and the flag at its end,
+                  both struck in the paper's ink, because both are marks on the
+                  document rather than controls on the sheet. The flag used to
+                  float alone under the pill, a hairline ring on the void at the
+                  bottom of the sheet, which is where a thing goes when nothing
+                  has been decided about it. It belongs to the letter: a flag
+                  is left ON a thing. So it is in the card's corner now, where a
+                  reader looking for the way to say "not this one" looks, and it
+                  is the size of the heart beside it rather than of a button. */
+              <div className="wl-letter-marks">
+                <Hearts
+                  letter={one}
+                  onGate={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}
+                />
+                <button
+                  type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
+                  onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
+                  aria-controls="wl-flag-opts"
+                  aria-label="take this off the wall" title="take this off the wall"
+                >
+                  <Icon name="flag" size={15} />
+                </button>
+              </div>
+            )}
+          >
+            {open
+              ? <Prose>{one.body}</Prose>
+              : <Redacted words={one.words} chars={one.chars} seed={one.id} />}
+          </Paper>
+          </div>
+          {of > 1 && (
+            <button
+              type="button" className="wl-turn is-next" disabled={at >= of - 1}
+              onClick={() => turn(1)} aria-label="the letter after this one" title="the letter after"
+            >
+              <Icon name="back" size={16} />
+            </button>
+          )}
         </div>
 
         {/* ── the foot ──
@@ -350,25 +447,7 @@ export default function Letter({ id: param, go, back, reduce = false }) {
               </button>
               <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
             </div>
-          ) : (
-          <>
-          {/* ── how many are left, over the one thing to do ──
-              Five marks, struck as they go, and no sentence beside them until
-              the last one. It stands above the pill rather than beside it
-              because on this screen the pill is the whole width, and it is
-              drawn whether the card is open or shut: seeing the fourth mark go
-              out while you are still reading is what makes the fifth not a
-              surprise. Nothing here is a countdown to a paywall. It is a
-              statement of how much of somebody else's wall this browser has
-              been handed without being asked for anything. */}
-          {free ? (
-            <Allowance
-              left={free.left} limit={free.limit} kind="reads" reading={open}
-              className="wl-letter-free"
-            />
-          ) : null}
-
-          {open ? (
+          ) : open ? (
             <Pill tone="light" wide onClick={() => go('write', one.to)}>
               write to {atHandle(one.to)}
             </Pill>
@@ -380,8 +459,6 @@ export default function Letter({ id: param, go, back, reduce = false }) {
               onClick={() => { setAfterGate({ name: 'letter', id: one.id }); go('gate') }}>
               read it
             </Pill>
-          )}
-          </>
           )}
         </SheetFoot>
       </div>

@@ -242,6 +242,19 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0048_the_faces_on_the_index.sql` (**applied 10 September 2026**):
+  **the faces ride on the index.** `wall_index` carries the resolver's answer
+  for every name on it, the way `wall_search` has since 0040 and the letter
+  reads have since 0042: `known`, `display_name`, `is_verified` and
+  `avatar_path`, left-joined from `ig_profiles` onto the public names and never
+  the other way round. The wall used to draw its discs off the index and then
+  peek the resolver for every face through the Vercel function and the edge
+  function before a single picture could start; it is one read now, and the
+  pictures are the next request. Definer semantics restated (0038), since the
+  join reads a table anon cannot. Nothing new is disclosed: the same rows the
+  search already carries, for the same names. **Tested by
+  `scripts/sql/test-wall.sql`.**
+
 - `migrations/0047_the_five_cards.sql` (**applied 9 September 2026**): **five
   printed cards, and which of them worked.** `wall_cards` is the registry
   (seeded with `a` through `e`, one letter each because the whole address is printed and a shorter string is
