@@ -65,15 +65,42 @@ async function call(fn, args) {
 //
 // A direct select on the view rather than an RPC, because the view is the
 // public thing and going through a function would only add a hop.
+//
+// ── and the face rides with the name ──
+// Since 0048 the view carries the resolver's answer for every name on it,
+// the way the search has since 0040: `known`, the display name, the badge
+// and the path to the stored face. The wall used to draw sixty grey discs
+// off this read and then ask a second question, a batched peek through the
+// Vercel function into the edge function and back, before a single picture
+// could start. One read now, and the pictures are the next request.
+//
+// The four columns are asked for by name, and a database that does not have
+// them yet answers with an error rather than with a narrower row. So the read
+// falls back to the four 0032 columns on that one error, and the wall draws
+// its monograms the way it did: a deploy that lands before the migration is a
+// slower wall, never a blank one.
+const INDEX_COLS = 'target_handle, letters, last_at'
+const INDEX_FACES = `${INDEX_COLS}, known, display_name, is_verified, avatar_path`
+let indexCols = INDEX_FACES
+
 export async function wallIndex() {
   if (!hasSupabase) return { ok: false, error: 'offline', tiles: [] }
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('wall_index')
-      .select('target_handle, letters, last_at')
+      .select(indexCols)
       .eq('campus', CAMPUS)
       .order('last_at', { ascending: false })
       .limit(500)
+    if (error && indexCols !== INDEX_COLS) {
+      indexCols = INDEX_COLS
+      ;({ data, error } = await supabase
+        .from('wall_index')
+        .select(indexCols)
+        .eq('campus', CAMPUS)
+        .order('last_at', { ascending: false })
+        .limit(500))
+    }
     if (error) return { ok: false, error: 'network', tiles: [] }
     return {
       ok: true,
@@ -81,6 +108,10 @@ export async function wallIndex() {
         handle: r.target_handle,
         count: r.letters,
         at: new Date(r.last_at).getTime(),
+        known: !!r.known,
+        name: String(r.display_name || ''),
+        verified: !!r.is_verified,
+        avatar: avatarUrl(r.avatar_path),
       })),
     }
   } catch {

@@ -25,10 +25,10 @@
 // sign, and the wall is not a road.
 //
 // Nor is the way off on the wall itself any more. "take your name off the
-// wall" stood as a capsule under the names on every visit; it stands in the
-// search now, and under the flag on every letter, which is where a person who
-// has found their name is standing when they want it gone. On the wall it
-// was a control about a consequence nobody had met yet.
+// wall" stood as a capsule under the names on every visit; it stands under
+// the flag on every letter now, which is where a person who has found their
+// name is standing when they want it gone. On the wall it was a control
+// about a consequence nobody had met yet.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE HIVE, AND THE VEIL OVER IT                                          ║
@@ -55,15 +55,34 @@
 // of faces inside a margin is a widget on a page; this is the room the page
 // is standing in.
 //
-// The masthead is over it, not above it. On a fresh load the whole screen is
-// the field, greyed, with the title, the one line and the way in laid over
-// it: THE VEIL. "view the wall" lifts it, the field comes up to full light,
-// the lens blooms, and the field has the screen. One line stays where it was
-// through the lift, THE EAR: the campus and the count, set the way the front
-// door sets its own ear above its headline, so the veil and the field share
-// one masthead element and nothing at the top changes shape when the type
-// goes. The veil is up once per tab: coming back from a letter lands on the
-// field.
+// ── the veil, and what is under it ──────────────────────────────────────────
+// On a fresh load the whole screen is the field, greyed, with the title, the
+// one line and the way in laid over it: THE VEIL. And that is the whole
+// screen. There is no pill under it, no foot under that and no glyphs in the
+// bar: a poster with one door on it, over a field that is plainly alive, and
+// the brand in the corner as the way home. Everything else is built after
+// the door has been opened, because a person reading the title has not
+// decided anything yet and a screen that is already offering them three
+// controls and a footer has decided for them.
+//
+// ── and it opens where it was touched ───────────────────────────────────────
+// A tap anywhere on the veil lifts it, and it lifts FROM THE TAP: the veil,
+// grey and type together, opens as a circle growing out from under the
+// finger, with one hairline ring on its edge, and the field comes up to full
+// light and the lens blooms inside the circle as it grows. The title is not
+// faded on a clock of its own: the circle takes it as it reaches it, over a
+// soft shoulder, so a tap under the title clears the title first and a tap in
+// the far corner clears it last. When the circle has cleared the screen the
+// rest of the wall arrives — the bar's glyphs, then the pill, then the foot —
+// a beat apart. One line stays exactly where it was through all of it, THE
+// EAR: the campus and the count, set the way the front door sets its own ear
+// above its headline, so the veil and the field share one masthead element
+// and nothing at the top changes shape when the type goes.
+//
+// It used to fade. A fade is the screen changing its mind; a circle from the
+// finger is the person opening it. The veil is up once per tab: coming back
+// from a letter lands on the field. Under reduced motion it goes without
+// travelling.
 //
 // ── and a name opens into the letter it carries ─────────────────────────────
 // Pressing a disc does not cut to a sheet. The circle that was pressed lifts
@@ -87,6 +106,33 @@ import Hive from '../Hive.jsx'
 // The opening plays once per session and never again. Coming back to the wall
 // from a letter should land on the wall, not on a title.
 let OPENED = false
+
+// How long the circle takes to clear the screen from the tap, and how long
+// the rest of the wall takes to arrive after it. The ring runs the same clock
+// as the hole (wall.css `.wl-veil-ring`), because they are one edge.
+//
+// The curve is a shallow ease out, and the number matters: on an ease-out
+// cubic the circle had three quarters of its radius by a third of its time,
+// which on a phone, where the far corner is under six hundred pixels away,
+// cleared the glass in under four hundred milliseconds. That is a pop. A
+// ripple travels: nearly straight, slowing a little as it goes, and the
+// whole second is spent crossing the screen.
+const RIPPLE_MS = 1050
+const RIPPLE_POW = 1.7
+const ARRIVE_MS = 1400
+// The veil's scrim reaches this far up over the bar, so a circle has to
+// travel that much further to clear the top of the glass (wall.css --ramp).
+const RAMP = 110
+
+// A frame to hold the ripple on, for the screenshot loop only: `/berkeley?rp=0.4`
+// opens the veil from wherever it is tapped and leaves the circle at four
+// tenths of its reach, the way `/?beat=3` holds the intro. Nothing in
+// production reads the query string.
+function heldRipple() {
+  if (!import.meta.env.DEV) return null
+  const v = new URLSearchParams(window.location.search).get('rp')
+  return v === null ? null : Math.max(0, Math.min(1, Number(v) || 0))
+}
 
 // ── the ear ─────────────────────────────────────────────────────────────────
 // The campus and the count, on one line under the bar. Two faces and no
@@ -145,20 +191,74 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // at all. It plays, and then it is over.
   const [playing, setPlaying] = useState(() => !OPENED && !getState().seen && !reduce)
   const [armed, setArmed] = useState(() => OPENED || getState().seen || reduce)
+
   // ── the veil ──
-  // Up on a fresh load, once per tab. `lifting` is the beat it takes to go,
-  // so the type can rise off the field rather than vanish from it.
+  // Up on a fresh load, once per tab. `lifting` is the ripple's own length:
+  // the circle is opening from the tap and nothing under the veil exists yet.
+  // `down` is the wall. `tap` is where the veil was touched, in its own
+  // frame, and how far a circle from there has to grow to clear the glass;
+  // the stylesheet reads all three and the loop below drives the growth.
   const [veil, setVeil] = useState(() => (OPENED ? 'down' : 'up'))
-  const veiled = veil !== 'down'
-  const lifting = useRef(0)
-  const lift = useCallback(() => {
+  const [tap, setTap] = useState(null)
+  // The beat after the veil has gone, while the pill, the glyphs and the
+  // foot arrive. A class on the page for that long, and then nothing: the
+  // arrival is an entrance, not a state.
+  const [arriving, setArriving] = useState(false)
+  const veilEl = useRef(null)
+  const timers = useRef([])
+  const lift = useCallback((e) => {
     if (veil !== 'up') return
     OPENED = true
     if (reduce) { setVeil('down'); return }
+    const box = veilEl.current ? veilEl.current.getBoundingClientRect() : null
+    let x = box ? box.width / 2 : 0
+    let y = box ? box.height / 2 : 0
+    if (box && e) {
+      // A key press has no point on the glass, so it opens from the middle
+      // of the thing that was pressed; a finger or a pointer opens from
+      // exactly where it landed.
+      const byKey = e.detail === 0 || (!e.clientX && !e.clientY)
+      const own = byKey && e.currentTarget && e.currentTarget.getBoundingClientRect
+        ? e.currentTarget.getBoundingClientRect() : null
+      x = own ? own.left + own.width / 2 - box.left : e.clientX - box.left
+      y = own ? own.top + own.height / 2 - box.top : e.clientY - box.top
+    }
+    // the farthest corner of the glass from the tap, and the ramp over the
+    // bar above it, is how far the circle has to reach
+    const r = box
+      ? Math.hypot(Math.max(x, box.width - x), Math.max(y + RAMP, box.height - y))
+      : 1400
+    setTap({ x, y, r })
     setVeil('lifting')
-    lifting.current = window.setTimeout(() => setVeil('down'), 560)
+    if (heldRipple() !== null) return
+    timers.current.push(window.setTimeout(() => { setVeil('down'); setArriving(true) }, RIPPLE_MS))
+    timers.current.push(window.setTimeout(() => setArriving(false), RIPPLE_MS + ARRIVE_MS))
   }, [veil, reduce])
-  useEffect(() => () => window.clearTimeout(lifting.current), [])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+
+  // ── the circle ──
+  // One number, `--rp`, from nought to one, written to the veil on every
+  // frame of the ripple. The scrim's mask and the ring both read it, so the
+  // hole and its edge are one edge and cannot drift apart. Eased out hard,
+  // because a circle that is still accelerating when it reaches the type is
+  // a wipe, and one that has nearly stopped is light arriving.
+  useEffect(() => {
+    if (veil !== 'lifting' || !tap) return undefined
+    const el = veilEl.current
+    if (!el) return undefined
+    const held = heldRipple()
+    if (held !== null) { el.style.setProperty('--rp', held.toFixed(4)); return undefined }
+    const t0 = performance.now()
+    let raf = 0
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / RIPPLE_MS)
+      const e = 1 - Math.pow(1 - p, RIPPLE_POW)
+      el.style.setProperty('--rp', e.toFixed(4))
+      if (p < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [veil, tap])
 
   // The tab is not on the screen the instant you land back from posting: it
   // rises a beat later, once the wall has settled. A panel that is already
@@ -190,9 +290,18 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // the tap does not wait on a request that has not happened yet.
   const open = useCallback((handle) => go('letter', handle), [go])
 
+  // Under the veil nothing is being read and nothing can be pulled; the
+  // moment the circle starts to open the field is the field, so it comes up
+  // to full light inside the circle as it grows rather than after it.
+  const veiled = veil === 'up'
+  const lifted = veil === 'down'
+  const veilStyle = tap
+    ? { '--rx': `${tap.x.toFixed(1)}px`, '--ry': `${tap.y.toFixed(1)}px`, '--rmax': `${tap.r.toFixed(1)}px` }
+    : undefined
+
   return (
     <>
-    <div className={`wl-page wl-wallpage${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}${veil === 'up' ? ' is-veiled' : ' is-lifted'}`}>
+    <div className={`wl-page wl-wallpage is-${veil}${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}${arriving ? ' is-arriving' : ''}`}>
       {/* ── the stage ──
           The field, and it is the whole screen: corner to corner, behind the
           bar, behind the ear, behind the pill, out past the column's own
@@ -220,7 +329,10 @@ export default function Wall({ go, reduce, rev, under = false }) {
       <div className="wl-shade is-top" aria-hidden="true" />
       <div className="wl-shade is-bottom" aria-hidden="true" />
 
-      <TopBar go={go} at="wall" />
+      {/* the bar keeps its brand throughout and gains its glyphs when the
+          veil has gone: under the veil the poster has one door and the way
+          home, and nothing else to press */}
+      <TopBar go={go} at="wall" acts={lifted} />
 
       {/* ── the room ──
           The ear, and while it is up the veil. Both stand over the field
@@ -229,24 +341,37 @@ export default function Wall({ go, reduce, rev, under = false }) {
       <div className="wl-room">
         <Ear letters={letters} />
 
-        {veil !== 'down' && (
-          <div className={`wl-veil${veil === 'lifting' ? ' is-lifting' : ''}`}>
-            {/* the grey over the field is itself the way in: a tap anywhere on
-                it lifts it, and the arrow link below says so in words */}
-            <button type="button" className="wl-veil-scrim" onClick={lift} aria-label="view the wall" tabIndex={-1} />
-            <div className="wl-veil-in">
-              <div className="wl-mast">
-                <Display size="xl" as="h1" className="wl-mast-title">
-                  A wall of<br />unforgettable<br />berkeley bears.
-                </Display>
-                {/* ── what it is, in one line ──
-                    The title names the wall and this says what is on it, in
-                    the reading face, the way the front door runs one line of
-                    the mechanic under its own headline (hero.css .hm-read). */}
-                <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
-                <ArrowLink className="wl-mast-go" onClick={lift}>view the wall</ArrowLink>
+        {!lifted && (
+          <div
+            className={`wl-veil${veil === 'lifting' ? ' is-lifting' : ''}`}
+            ref={veilEl} style={veilStyle}
+          >
+            {/* everything the circle takes: the grey and the type, in one
+                masked layer, so one edge cuts through both */}
+            <div className="wl-veil-mask">
+              {/* the grey over the field is itself the way in: a tap anywhere
+                  on it opens it from there, and the arrow link below says so
+                  in words */}
+              <button type="button" className="wl-veil-scrim" onClick={lift} aria-label="view the wall" tabIndex={-1} />
+              <div className="wl-veil-in">
+                <div className="wl-mast">
+                  <Display size="xl" as="h1" className="wl-mast-title">
+                    A wall of<br />unforgettable<br />berkeley bears.
+                  </Display>
+                  {/* ── what it is, in one line ──
+                      The title names the wall and this says what is on it,
+                      in the reading face, the way the front door runs one
+                      line of the mechanic under its own headline (hero.css
+                      .hm-read). */}
+                  <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
+                  <ArrowLink className="wl-mast-go" onClick={lift}>view the wall</ArrowLink>
+                </div>
               </div>
             </div>
+            {/* the edge of the circle: one hairline on the edge of the light,
+                outside the mask so the mask cannot take it, and gone by the
+                time it reaches the corners */}
+            {veil === 'lifting' && <span className="wl-veil-ring" aria-hidden="true" />}
           </div>
         )}
       </div>
@@ -254,7 +379,9 @@ export default function Wall({ go, reduce, rev, under = false }) {
       {/* ── the dock ──
           The gradient that rises off the bottom edge. It is the reason the
           composer never has to be advertised: it is already half on screen,
-          under everything, the whole time. */}
+          under everything, the whole time — once the veil has gone. Under
+          the veil there is no dock: the poster has one door. */}
+      {lifted && (
       <div className="wl-dock">
         <div className="wl-dock-veil" aria-hidden="true" />
 
@@ -282,22 +409,30 @@ export default function Wall({ go, reduce, rev, under = false }) {
         )}
 
         {/* ── the way in ──
-            The composer's pill, and nothing under it. */}
+            The composer's pill, and nothing under it. The word on it is the
+            one fact a person hesitating over it wants, said before they have
+            pressed anything: the wall is anonymous by shape, and the button
+            says so in the same two words the composer's own act does. */}
         <div className="wl-dock-in">
           <Pill tone="light" wide onClick={() => go('write')}>
-            write
+            write anonymously
           </Pill>
         </div>
       </div>
+      )}
     </div>
 
     {/* ── the foot of the site ──
         Under the wall, in its own column, so the wall keeps the whole first
         screen and the dock keeps the bottom of it. The same block the front
-        door ends on, with the company on it. */}
+        door ends on, with the company on it. Not under the veil: the veil is
+        one screen exactly, and there is nothing to scroll to until it has
+        gone. */}
+    {lifted && (
     <div className="wl-page is-foot">
       <SiteFoot />
     </div>
+    )}
     </>
   )
 }

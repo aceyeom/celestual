@@ -38,7 +38,7 @@
 // what the meter draws, and neither of them decides anything.
 
 import * as api from './api.js'
-import { learnHandle } from '../api/handles.js'
+import { learnHandle, warmFaces } from '../api/handles.js'
 
 const DAY = 86400000
 
@@ -199,6 +199,11 @@ export function loadWall(force = false) {
   return once('wall', async () => {
     const out = await api.wallIndex()
     if (out.ok) {
+      // Every name the resolver knew is learned by the resolver's own memo
+      // on the way through (api/handles.js learnHandle), the way the search
+      // rows are, so every disc on the field draws its picture off this one
+      // read and no face costs a request of its own.
+      out.tiles.forEach(learnHandle)
       TILES = out.tiles
       TILES_AT = Date.now()
       TILES_ERROR = null
@@ -207,6 +212,21 @@ export function loadWall(force = false) {
     }
     bump()
   })
+}
+
+// ── the first screen's faces, before the first screen ───────────────────────
+// The index, and then the pictures of the names that will stand in the light
+// when the field is first drawn, fetched and decoded before anything is on
+// the screen (api/handles.js warmFaces). The hive seats the index's order
+// from the middle of the tile outward, newest first, so the first names in it
+// are the ones nearest the light; a phone shows a few dozen at full size and
+// the rest are at the rim or off it. The shell holds the intro on this, with
+// a ceiling, so the wall is drawn with its faces on it and never with sixty
+// grey discs filling in a second later.
+const WARM_FIRST = 32
+
+export function warmWall() {
+  return loadWall().then(() => warmFaces(TILES.slice(0, WARM_FIRST).map((t) => t.handle)))
 }
 
 // How many letters are left this week. Asked by the composer on mount and

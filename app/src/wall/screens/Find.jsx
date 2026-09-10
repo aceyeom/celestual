@@ -20,6 +20,12 @@
 //     notification: the wall has no accounts and cannot tell anybody anything
 //     later. What it offers instead is the only thing it can honestly offer —
 //     that name is free, be the first to put a letter under it.
+//   · It ends on the results. Two capsules used to stand under them on a
+//     hairline, "write instead" and "take a name off", and both were doors
+//     to other rooms on a sheet whose one job is to find a name: the nib in
+//     the bar is the composer, and the way off the wall stands under the flag
+//     on every letter, which is where a person who has found their name is
+//     standing when they want it gone.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display } from '../parts.jsx'
@@ -128,18 +134,6 @@ export default function Find({ go, back, rev }) {
               )}
             </div>
           )}
-        </div>
-
-        {/* Two ways on from an empty search, and neither of them is a way
-            back: the X in the corner is the way back, on every sheet, and it
-            does not need a sentence underneath it saying so. */}
-        <div className="wl-find-foot">
-          <Pill tone="ghost" onClick={() => go('write')}>
-            write instead
-          </Pill>
-          <Pill tone="ghost" onClick={() => go('remove', q.length >= 1 ? q : '')}>
-            take a name off
-          </Pill>
         </div>
       </div>
     </Sheet>

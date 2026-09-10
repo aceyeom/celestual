@@ -457,3 +457,19 @@ select w_ok('beta_letters_public is gone', to_regclass('public.beta_letters_publ
 select w_ok('beta_remove_letter is gone',
   (select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'beta_remove_letter'));
+
+-- ── 0048. THE FACES RIDE ON THE INDEX ──────────────────────────────────────
+-- The public index carries the resolver's answer for each name, the way the
+-- search has since 0040: a name the resolver never saw is `known = false` and
+-- draws its monogram; nothing about the letter itself has joined the row.
+select w_ok('the index carries the resolver''s four fields',
+  (select count(*) = 4 from information_schema.columns
+    where table_name = 'wall_index'
+      and column_name in ('known', 'display_name', 'is_verified', 'avatar_path')));
+select w_ok('a name the resolver never saw is not known',
+  (select known = false and display_name = '' and avatar_path is null
+     from wall_index where target_handle = 'subject'));
+select w_ok('and it still carries no body, author or seal',
+  (select count(*) = 0 from information_schema.columns
+    where table_name = 'wall_index'
+      and column_name in ('body', 'author_id', 'author_handle', 'sealed_line')));

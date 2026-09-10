@@ -306,6 +306,58 @@ export function learnHandle(r) {
   missed.delete(handle);
 }
 
+// ── the pictures, before they are asked for ──────────────────────────────────
+// A face is drawn by `Face` (wall/parts.jsx) the moment its handle is in the
+// memo, and the picture then takes however long the network takes: on a phone
+// that is the visible beat between a grey disc and a person. The wall knows
+// which names it is about to draw before it draws them, so it asks for those
+// pictures here, off the screen, and decodes them, and the shell holds the
+// intro until they have landed.
+//
+// `WARM` is the set of picture URLs that are known to be in the browser's
+// memory, kept by this and by every Face that finishes loading one. A Face
+// whose picture is warm is drawn with it on its first frame, with no fade,
+// because there is nothing to wait for. The Image objects are held so the
+// decoded bitmaps stay in the cache the Faces read from.
+const WARM = new Set();
+const HELD = [];
+const HELD_MAX = 64;
+
+export function isWarm(url) {
+  return !!url && WARM.has(url);
+}
+
+export function markWarm(url) {
+  if (url) WARM.add(url);
+}
+
+// Fetch and decode the pictures the memo holds for these handles. Answers
+// when every one has landed or failed, never throws, and a handle with no
+// picture costs nothing: its monogram is the designed state.
+export function warmFaces(handles) {
+  const urls = [];
+  for (const raw of handles || []) {
+    const p = memo.get(normHandle(raw));
+    const url = p && p.state === 'found' ? p.avatar : '';
+    if (url && !WARM.has(url) && !urls.includes(url)) urls.push(url);
+  }
+  if (!urls.length || typeof Image === 'undefined') return Promise.resolve();
+  return Promise.all(urls.map((url) => new Promise((done) => {
+    const img = new Image();
+    img.decoding = 'async';
+    const ok = () => { WARM.add(url); done(); };
+    img.onload = () => {
+      // Decoded as well as fetched, so the first paint of the face is a blit
+      // and not a decode on the frame the wall arrives on.
+      if (img.decode) img.decode().then(ok, ok); else ok();
+    };
+    img.onerror = () => done();
+    img.src = url;
+    HELD.push(img);
+    if (HELD.length > HELD_MAX) HELD.shift();
+  })));
+}
+
 // What a person is about to act on, read back to them. Used by the confirm
 // steps: 'missing' is the one that changes the copy on the button.
 export function isMissing(r) {

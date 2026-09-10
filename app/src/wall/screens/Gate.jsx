@@ -187,11 +187,15 @@ export default function Gate({ go, back }) {
   // that is the person, the way the paper is the letter. The disc, wearing
   // the address's initial because an address is not a handle and has no face
   // to resolve; the address beside it, in the identifier face like every
-  // other identifier in the build; and under it, in one word, what this
-  // address is here: verified. Then the one thing this device honestly knows
-  // about them, the names they have written to. The week's allowance is not
-  // drawn on it: nobody opens their own account to be shown a meter, and the
-  // card says one line, once, when the week is spent.
+  // other identifier in the build; and nothing under it. It used to say
+  // "verified address" there with a point of the accent beside it, which is
+  // a status badge, and a status badge is the one object every account
+  // screen on the web carries: an address that is on this card is on it
+  // because it was verified, and the card does not need to say so twice.
+  // Then the one thing this device honestly knows about them, the names they
+  // have written to. The week's allowance is not drawn on it: nobody opens
+  // their own account to be shown a meter, and the card says one line, once,
+  // when the week is spent.
   //
   // The way out stands in the foot as a capsule carrying its own glyph, the
   // door and the arrow out of it, rather than as a grey sentence: it is a
@@ -210,15 +214,6 @@ export default function Gate({ go, back }) {
               <Face handle={who} size={52} resolve={false} className="wl-profile-face" />
               <div className="wl-profile-who">
                 <p className="wl-profile-addr" id="wl-gate-h">{memberLabel(who)}</p>
-                {/* ── the one word the card has to say ──
-                    The accent's one appearance on this sheet: a point of the
-                    ice beside the word, because a verified address is the
-                    one thing on the wall that is a settled fact about the
-                    person rather than about a letter. */}
-                <Label tone="dim" className="wl-profile-status">
-                  <span className="wl-profile-dot" aria-hidden="true" />
-                  verified address
-                </Label>
               </div>
             </div>
 
