@@ -4,9 +4,29 @@ An audit of `/berkeley` — the wall — read end to end: `app/src/wall/` (13k l
 the schema it reaches (`0032`, `0038`–`0048`), the one edge function it writes
 through, and the deploy posture around both.
 
-Nothing in this file is a change. It is the list, in the order it is worth
-fixing, and a plan under it. Everything carries a `file:line` so each claim can
-be checked rather than taken.
+---
+
+## Status, 10 September
+
+**Most of P0 and P1 is done.** What changed, and what the live database now
+carries, is in [§7 · What was fixed](#7--what-was-fixed) at the bottom. The
+findings below are left as written, in the past tense they were written in, so
+the record of what was wrong survives the fixing of it.
+
+**And the audit found something live while it was being written.** Two of the
+four letters ever written to this wall were sitting at `pending`, invisible, and
+the classifier's own recorded reasons said why: *"The sealed line is empty, which
+is unusual and makes it impossible to fully assess"*. Nothing in the product
+collects a sealed line, so it was empty on **every** request — the model was
+being handed a field it had been told to judge, finding it blank, and erring
+toward review exactly as its prompt instructs. Half of everything ever written to
+the wall was held in a queue with nobody at the end of it. That is finding
+**S1a** below, it was not in the first draft of this document, and it is the
+reason the rest of §1 got shipped the same day.
+
+§1 to §6 are the list, in the order it was worth fixing, and the plan that came
+off it. Everything carries a `file:line` so each claim can be checked rather than
+taken. §7 is what has since been done about it.
 
 **The headline: the wall's whole safety model rests on one model call, and that
 call is injectable from the letter body.** Everything else on this list is
@@ -89,6 +109,42 @@ pre-publication is non-negotiable ("the screenshot exists before you delete it",
    is a letter a person looks at.
 4. Require the model's JSON to echo the nonce, and treat a missing echo as
    `review`.
+
+### S1a — CRITICAL · The empty sealed line held half the wall in review
+
+`celestual-wall-moderate/index.ts:172` (the same line as S1) and the prompt at
+`:137`, which said: *"Judge the letter and the sealed line together. The sealed
+line is private until the recipient asks for it, which makes it MORE sensitive,
+not less."*
+
+Nothing in the product collects a sealed line. `Write.jsx` has two steps, a
+handle and a body, and `sealedLine` is `null` on every call — so every request
+carried a literal `<sealed_line></sealed_line>`, and the prompt had just told the
+model that block was load-bearing. It read an empty required-looking field as
+withheld evidence, and the last line of the prompt — *"Err toward review"* —
+told it what to do about that.
+
+This is not theoretical. Both `pending` letters in the live database recorded it
+in their own `moderation.reasons`:
+
+> "The sealed line is empty, which is unusual and makes it impossible to fully
+> assess the letter's context and the writer's actual relationship to the
+> subject."
+
+> "Without the sealed line content, cannot determine if this is genuine
+> admiration/longing or something else."
+
+Two of four letters, held. And `review` means `pending`, `pending` renders
+nowhere, there is no human review UI running, and `wall_expire()` — which would
+at least close them out after seven days — has no scheduler (D2). So the letters
+were not queued. They were lost, silently, while their writers were told "it's
+up" (which is correct and deliberate: `pending` and `live` must read the same to
+the writer, or the screen becomes a way to find out what gets through).
+
+**Fix.** Omit the block entirely when there is no sealed line, and say in the
+prompt that its absence is the normal case and is never on its own a reason to
+review. Also worth saying, and now said: these letters are two lines long by
+design, so "I would like more context" is not caution, it is a refusal to decide.
 
 ### S2 — HIGH · Unauthenticated cost amplification on the Anthropic key
 
@@ -669,3 +725,87 @@ Ordered so that each group can ship on its own.
 *Read against the repository at `claude/berkeley-page-audit-r6abao`. Every claim
 above carries a `file:line`; where this file and the database disagree,
 `launchsteps.md` is right that the database is the authority.*
+
+---
+
+## 7 · What was fixed
+
+Shipped 10 September, in one pass. The live database carries `0046` and `0049`;
+the two edge functions and the client are in the repository and need deploying.
+
+### In the schema (applied to production)
+
+| | |
+| --- | --- |
+| **`0046`, at last** | `the_opt_out_reaches_the_wall`. It was written, verified and never applied, so `/optout` had been erasing a person's pings, mutuals, membership and identity row while leaving every letter written *about* them standing on a public wall under their name — with the wall's own takedown screen saying otherwise. **D1, closed.** |
+| **`0049`** | `the_audit_of_ten_september`. Four things: `wall_can_write` (S2), a campus predicate on `wall_search` (S5), `wall_remove_handle` (P5), and the reads rewritten — one free letter per request, one gate check, hearts joined rather than subqueried (P1, P2). |
+
+One thing `0049` got wrong on the first application and is worth recording,
+because it would have taken the search down: giving the new two-argument
+`wall_search` a default campus made `wall_search('x')` ambiguous against the
+one-argument form, and Postgres refuses such a call outright — which is exactly
+how PostgREST invokes it from the browser. Caught by the smoke test, fixed by
+dropping the default. Postgres will not remove a parameter default in place, so
+the two-argument form is dropped and rebuilt.
+
+Verified against the live database rather than asserted:
+
+```
+wall_can_write(<junk token>)  → session:false gate:false left:0   ✓ refuses free
+wall_search('dav')            → 1 row     (one-arg form still resolves)  ✓
+wall_search('dav','berkeley') → 1 row                                    ✓
+wall_search('dav','nowhere')  → 0 rows    (the campus predicate bites)   ✓
+wall_remove_handle(<junk>)    → no_session                               ✓
+a 3-letter name, fresh browser → free {used:1, left:4}, 1 body travelled ✓
+                                 (before: used 3, three bodies)
+```
+
+### In the edge functions (in the repo, to deploy)
+
+- **`celestual-wall-moderate`** — the sealed-line block omitted when absent and
+  the prompt told absence is normal (**S1a**); the letter delimited by a
+  per-request random id, angle brackets stripped, an echo of that id required on
+  the reply, and an injection tripwire that refuses tag- and verdict-shaped
+  bodies before the call is spent (**S1**); `wall_can_write` asked *before* the
+  model call (**S2**); CORS narrowed to the site origin (**S2**); reasons
+  constrained to category slugs, since they are stored on the letter and shown to
+  the writer on a reject and the model had been returning paragraphs.
+- **`celestual-edu-verify`** — six digits exactly, no longer four-or-six
+  (**S7**). The function mints six, so a four-digit entry could never match a
+  hash and each one still spent one of six attempts: four early taps on Enter
+  killed a person's real code and told them it had lapsed.
+- **`config.toml`** — `celestual-wall-moderate` has an entry, with the reason
+  (**S3**). It was the only function in the project without one.
+
+### In the client
+
+| | |
+| --- | --- |
+| **W1** | `Report.jsx` asks `isReader()`, not `body !== null`. Since 0045 a free reader got the whole report screen and was refused *after* the tap. `Hearts` was fixed for this one screen over; this was the worse place to have it. |
+| **S4** | Spaced slurs (`n i g g e r`) caught, in both halves of layer 1, at four characters or more. |
+| **S6** | `signOut()` clears the browser, not the two flags. `wroteTo` — which the account sheet draws — plus `written`, `draft` and `opened` all used to survive it, so a shared laptop showed the next person the last person's list. Only the scan attribution is put back. |
+| **P3** | The stage's origin is cached instead of read with `getBoundingClientRect()` on every `pointermove`, against a loop writing 250 transforms a frame. Refreshed on resize and on scroll. |
+| **P4** | The cell's ref callback is hoisted, so React stops detaching and re-attaching it — and running a `querySelector` — on every re-render of every cell. |
+| **P5** | The takedown is one `wall_remove_handle` call. It was a loop with a full index reload per letter, and it was not atomic: a letter arriving mid-loop was never removed while the first removal had already shut the name. |
+| **P6** | The draft write is debounced to 400ms and flushed once on unmount. It ran `JSON.stringify` over the whole store plus a synchronous `setItem` per keystroke. |
+| **P7** | `once(key, run, force)` — a forced load now chains behind an in-flight one instead of joining it. Post-mutation refreshes could resolve against a request issued before the mutation. |
+| **P8** | A generation counter. `forgetLetters()` could not cancel a read already on the wire, so signing in could have the pre-gate answer land on top of the cleared cache. |
+| **P9** | The index read asks for 260 rows, not 500, against a field that draws 240. |
+| **P10** | The index revalidates when the tab comes back. Nothing ever asked it twice, so the hive's arrival animation could only play for whoever wrote the letter. |
+| **P11** | The heart rolls back from whichever cache holds the letter. A refused heart on a letter reached through a name stayed filled. |
+
+`npm run lint` (0 errors), `npm run build` and `npm run lint:voice` (60 files
+clean) all pass.
+
+### Still open
+
+Everything in §5, plus: **D2** (nothing schedules `wall_expire` or the other
+three sweeps — this is now the most consequential item left, because it is what
+turns a held letter into a closed one), **S8** (a per-target report cap),
+**W2** (no way to ask for another code), **W3** (250 focusable discs in the tab
+order), **W4** (the composer's gate ordering), **W5** (a reason files a second
+report), **P12** (measure on real hardware), **D4** (a column test on
+`wall_index`), **D5** (the dead CSP allowances).
+
+**D3 is moot**: `0048` was applied at 03:05 UTC on 10 September, between the
+first draft of this document and this section. The index carries its faces.

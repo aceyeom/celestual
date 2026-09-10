@@ -37,11 +37,18 @@
 // product that writes handle_verified_at.
 //
 // ── how it comes off, on a server ───────────────────────────────────────────
-// There is no operation that empties a name. 0032 removes letters one at a
-// time, and refuses a write to a handle any of whose letters were removed. So
-// this screen takes down every letter it can see and the schema holds the name
-// shut afterwards, which is the same outcome without a single statement that
-// can empty somebody.
+// One statement: `wall_remove_handle` (migration 0049). It proves the handle,
+// sets every live letter to it to 'removed', and files the claim that holds the
+// name shut afterwards.
+//
+// There used to be no such operation, and this screen looped 0032's
+// one-letter-at-a-time removal instead. That was the wrong shape for the one
+// irreversible act on the surface: it was slow in proportion to how much had
+// been written about somebody, and it was not atomic, so a letter that arrived
+// mid-loop was never taken down while the claim from the first removal had
+// already shut the name. The result was a letter standing on a public wall
+// under a handle nobody could write to any more, after this screen had told its
+// subject that every letter was gone.
 //
 // And the person who genuinely just wants a letter about them gone is never
 // sent here to get it: they tap the flag on the letter, it is down, and this
@@ -56,7 +63,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, VerifyHead, Face,
 } from '../parts.jsx'
-import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
+import { atHandle, lettersFor, loadHandle, normHandle, removeHandle, validHandle } from '../data.js'
 import { isVerified, forgetVerified } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 
@@ -160,37 +167,39 @@ export default function Remove({ handle: prefill, back }) {
     }
   }, [dm])
 
-  // Every letter under the name, one call each. The first refusal stops it and
-  // is said: this used to count the successes, ignore the rest, and declare
-  // the name off the wall over zero removals when the server had refused every
-  // one, which is the one screen in the product that must never say that.
+  // ── one call ──
+  // This looped `removeLetter` over whatever the cache held, one request per
+  // letter, and data.js reloads the whole index after each one: a name with
+  // twelve letters cost twelve removals and twelve five-hundred-row reads,
+  // serially, on the one screen that must not feel broken.
+  //
+  // It was also not atomic, which is the half that mattered. A letter written
+  // between `loadHandle` above and the end of the loop was never removed — and
+  // the first successful removal files a claim, which shuts the name — so it
+  // stood on the wall for good under a handle nobody could write to again,
+  // after this screen had told its subject every letter was gone.
+  //
+  // `wall_remove_handle` (migration 0049) does it in one statement, so there is
+  // no partial state left to report. The count comes back from the server: what
+  // actually came down, rather than what this browser had happened to cache.
   const take = async () => {
     if (!proven || taking) return
     setTaking(true)
     setFault('')
-    const mine = lettersFor(h)
-    let n = 0
-    let err = null
-    for (const l of mine) {
-      const out = await removeLetter(l.id)
-      if (out?.ok) { n += 1; continue }
-      err = out?.error || 'network'
-      break
-    }
+    const out = await removeHandle(h)
     if (!alive.current) return
     setTaking(false)
-    if (err) {
-      if (err === 'unverified' || err === 'no_session') {
+    if (!out?.ok) {
+      if (out?.error === 'unverified' || out?.error === 'no_session') {
         // This device believed the handle was proven; the server does not.
         forgetVerified(h)
         setFault('that @ is not proven on this device any more. prove it again')
       } else {
-        setFault(n ? `${n} of ${mine.length} came down. the rest did not go through: try again`
-          : 'it did not go through. try once more')
+        setFault('it did not go through. try once more')
       }
       return
     }
-    setGone({ handle: h, n })
+    setGone({ handle: h, n: Number(out.removed) || 0 })
   }
 
   const head = <SheetHead onClose={back} label="back to the wall" />

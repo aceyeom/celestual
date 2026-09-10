@@ -44,7 +44,7 @@ import { prefersReducedMotion } from './parts.jsx'
 import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { revision, subscribe, warmWall } from './data.js'
+import { loadWall, revision, subscribe, warmWall } from './data.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
 
@@ -129,6 +129,28 @@ export default function WallApp() {
     warmWall().then(up, up)
     t = setTimeout(up, READY_CEILING_MS)
     return () => { alive = false; clearTimeout(t) }
+  }, [])
+
+  // ── the wall, kept current ──
+  // Nothing ever asked the index a second time. `loadWall` has honoured a thirty
+  // second freshness window since it was written, and the only callers were the
+  // boot warm, the Ear's own "read it again", and the refreshes that follow a
+  // mutation — so a wall left open on a phone on a table showed the index it
+  // loaded when it loaded, for as long as it was open. The hive's arrival
+  // animation, a disc rising as its name gains a letter, is built and could only
+  // ever play for the person who wrote that letter themselves.
+  //
+  // Coming back to the tab is the moment worth asking on: it is when somebody
+  // has been away, which is when the wall has had time to change. The freshness
+  // window makes it free when they have not been away long.
+  useEffect(() => {
+    const again = () => { if (document.visibilityState === 'visible') loadWall() }
+    document.addEventListener('visibilitychange', again)
+    window.addEventListener('focus', again)
+    return () => {
+      document.removeEventListener('visibilitychange', again)
+      window.removeEventListener('focus', again)
+    }
   }, [])
 
   // ── who this browser is ──

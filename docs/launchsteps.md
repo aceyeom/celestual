@@ -13,17 +13,34 @@ used to say nothing in the repository had been applied. That is no longer true
 and had stopped being true some time ago: the database carries every migration
 through 0045 and, since 9 September 2026, 0047.
 
-Two are NOT recorded as applied, and this is the first place to look when
-something in here does not match the database:
+**Updated 10 September.** The database now also carries **0046**, **0048** and
+**0049**. One remains unapplied:
 
 - **0038, the audit.** Not in the migration history, and yet part of it is
   live: `wall_index` is `security_invoker = false` in production, which is
   0038 line 33 and nothing else. So the history is a record of what was pushed,
   not a complete record of what was run. Read the database, not this file, when
-  the answer matters.
-- **0046, the opt out reaching the wall.** Not applied. Until it is, taking a
-  handle off at `/optout` still leaves every letter written ABOUT that person
-  standing on the wall under their name.
+  the answer matters. **What is still missing from it is section 13, the four
+  scheduled sweeps** — `wall_expire`, the purge, `celestual_sessions_prune` and
+  the resolver prune. Nothing anywhere schedules them: 0038 wires them to
+  pg_cron if the extension exists and raises a notice if it does not, and
+  `vercel.json` has no `crons` block. A letter held for review therefore stays
+  held rather than closing out after seven days, which is half of why two
+  letters sat invisible for three days (docs/BERKELEY-AUDIT.md S1a, D2).
+- **0046, the opt out reaching the wall.** ~~Not applied.~~ **Applied
+  10 September.** Taking a handle off at `/optout` now takes every letter
+  written ABOUT that person off the wall in the same act, on every campus, and
+  neither desk path can put one back.
+- **0049, the audit of ten September.** Applied. `wall_can_write` (so the
+  moderation function asks the gate before it spends a classifier call), a
+  campus predicate on `wall_search`, `wall_remove_handle`, and the letter reads
+  rewritten to spend one free read per request rather than one per letter. See
+  docs/BERKELEY-AUDIT.md §7.
+
+**Two edge functions in the repository are ahead of what is deployed** and need
+`supabase functions deploy`: `celestual-wall-moderate` (the sealed-line fix, the
+injection hardening, and the pre-gate that 0049 exists for) and
+`celestual-edu-verify` (six-digit codes only).
 
 The migrations are written and verified against a bare PostgreSQL; section 2
 says in what order to apply them, and section 11 is the checklist to work

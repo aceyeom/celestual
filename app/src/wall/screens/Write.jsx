@@ -114,10 +114,30 @@ export default function Write({ to: prefill, go, back }) {
 
   // One draft under one key, so backing out of the sheet and coming back does
   // not cost somebody the forty words they just wrote.
+  //
+  // Debounced, and that is a typing-latency fix rather than tidiness. `patch`
+  // serialises the ENTIRE store blob — `opened`, `written`, `wroteTo`, `steps`,
+  // `removed`, `reported`, `verified` — and hands it to a synchronous
+  // localStorage.setItem (store.js). Undebounced that ran once per character of
+  // a 280 character letter, on the main thread, while a live `Paper` re-rendered
+  // behind it and the ground's two WebGL loops ran underneath. On a mid-range
+  // phone that is the letter arriving on screen behind the finger.
+  //
+  // Flushed on the way out as well as on the timer, because the whole point of
+  // the draft is the person who closes the sheet, and a debounce that loses the
+  // last four hundred milliseconds of typing loses the end of the sentence. The
+  // flush is its own effect with no dependencies: putting it in this one's
+  // teardown would fire it on every keystroke, which is the debounce undone.
+  const latest = useRef({ to: h, body })
+  latest.current = { to: h, body }
+  const touched = useRef(false)
   useEffect(() => {
-    if (first.current) { first.current = false; return }
-    patch({ draft: { to: h, body } })
+    if (first.current) { first.current = false; return undefined }
+    touched.current = true
+    const t = setTimeout(() => patch({ draft: latest.current }), 400)
+    return () => clearTimeout(t)
   }, [h, body])
+  useEffect(() => () => { if (touched.current) patch({ draft: latest.current }) }, [])
 
   // The card under the handle field: peeks while typing, asks on the press.
   const them = useResolver(to)

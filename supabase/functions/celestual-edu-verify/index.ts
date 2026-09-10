@@ -108,8 +108,12 @@ async function sha256Hex(str: string): Promise<string> {
 // identity row (celestual_user_bind_edu), which opens their letters, their
 // claims and their reveal requests. Four digits under six tries was a real
 // hole. The client and this function have disagreed about the length before
-// and locked everybody out of the wall, so verify() below takes four or six
-// while the two halves deploy in either order.
+// and locked everybody out of the wall, so verify() below took four or six
+// while the two halves deployed in either order. Both shipped months ago and
+// the loose form had become a cost of its own: this function MINTS six, so a
+// four digit entry can never match a hash, and the attempt counter is spent
+// before the code is looked at. So four early taps on Enter killed a person's
+// real code and told them it had lapsed. Six exactly, on both halves.
 function sixDigit(): string {
   const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
   return String(n).padStart(6, '0');
@@ -253,7 +257,7 @@ Deno.serve(async (req) => {
   if (action === 'verify') {
     const token = String(body.token || '');
     const code = String(body.code || '').replace(/\D/g, '');
-    if (!token || (code.length !== 4 && code.length !== 6)) return json({ ok: false, error: 'code' });
+    if (!token || code.length !== 6) return json({ ok: false, error: 'code' });
 
     const { data: row, error } = await supabase
       .from('celestual_edu_verifications')

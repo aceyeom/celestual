@@ -148,6 +148,7 @@ export function allowance() { return QUOTA }
 // The allowance goes with them, for the same reason: it is a fact about a
 // person, and the person at this browser has just changed.
 export function forgetLetters() {
+  GEN += 1
   BY_HANDLE.clear()
   BY_ID.clear()
   OPEN = null
@@ -185,12 +186,42 @@ function bump() {
 // is fill the cache and bump, and the caller re-renders off that.
 const inflight = new Map()
 
-function once(key, run) {
-  if (inflight.has(key)) return inflight.get(key)
-  const p = run().finally(() => inflight.delete(key))
-  inflight.set(key, p)
-  return p
+// `force` is not decoration. Every post-mutation refresh below passes it —
+// `write`, `report`, `removeLetter` all say "read this again, the wall has
+// changed" — and this used to hand them back whatever was already in flight
+// under the same key. So a forced read issued after a letter went up could
+// resolve against a request issued BEFORE it, and the screen was told the truth
+// about a wall that no longer existed: the letter is up and the wall behind it
+// has not moved.
+//
+// A forced call therefore chains rather than joins: it waits for the one in
+// flight and then runs its own. The entry is only deleted when it is still the
+// current one, so a chained force cannot delete a newer entry out from under a
+// later caller.
+function once(key, run, force = false) {
+  const held = inflight.get(key)
+  const settle = (p) => {
+    inflight.set(key, p)
+    return p
+  }
+  if (held) {
+    if (!force) return held
+    const p = held.then(run, run).finally(() => { if (inflight.get(key) === p) inflight.delete(key) })
+    return settle(p)
+  }
+  const p = run().finally(() => { if (inflight.get(key) === p) inflight.delete(key) })
+  return settle(p)
 }
+
+// ── which reader the cache belongs to ───────────────────────────────────────
+// Bumped whenever the gate's answer changes (forgetLetters). A read issued
+// before that and landing after it is a read taken through the OLD answer, and
+// writing it into the cache is how signing in lands on the same struck-out card
+// it left: the redacted bodies come back, along with the old `gated` and `free`,
+// and the only way out is another navigation. forgetLetters cleared the caches
+// but could not clear a request already on the wire, so each loader carries the
+// generation it started in and drops its answer if that has moved.
+let GEN = 0
 
 const FRESH_MS = 30_000
 
@@ -211,7 +242,7 @@ export function loadWall(force = false) {
       TILES_ERROR = out.error || 'network'
     }
     bump()
-  })
+  }, force)
 }
 
 // ── the first screen's faces, before the first screen ───────────────────────
@@ -235,11 +266,12 @@ export function warmWall() {
 export function loadQuota(force = false) {
   if (!force && QUOTA) return Promise.resolve()
   return once('quota', async () => {
+    const gen = GEN
     const out = await api.quota()
-    if (!out.ok) return
+    if (!out.ok || gen !== GEN) return
     QUOTA = out
     bump()
-  })
+  }, force)
 }
 
 export function loadHandle(raw, force = false) {
@@ -247,22 +279,27 @@ export function loadHandle(raw, force = false) {
   if (!h) return Promise.resolve()
   if (!force && BY_HANDLE.has(h)) return Promise.resolve()
   return once(`h:${h}`, async () => {
+    const gen = GEN
     const out = await api.lettersFor(h)
-    if (!out.ok) return
+    // A read taken through a gate answer that has since changed is not this
+    // reader's answer. Dropped rather than cached.
+    if (!out.ok || gen !== GEN) return
     OPEN = out.open
     GATED = out.gated
     if (out.free) FREE = out.free
     BY_HANDLE.set(h, out.letters)
     for (const l of out.letters) BY_ID.set(l.id, l)
     bump()
-  })
+  }, force)
 }
 
 export function loadLetter(id, force = false) {
   if (!id) return Promise.resolve()
   if (!force && BY_ID.has(id)) return Promise.resolve()
   return once(`l:${id}`, async () => {
+    const gen = GEN
     const out = await api.letter(id)
+    if (gen !== GEN) return
     if (!out.ok) {
       // A letter that is gone is a fact worth caching, so a screen that keeps
       // asking about a removed id does not keep asking. A network that did not
@@ -276,7 +313,7 @@ export function loadLetter(id, force = false) {
     if (out.free) FREE = out.free
     BY_ID.set(id, out.letter)
     bump()
-  })
+  }, force)
 }
 
 // ── coming off the wall ─────────────────────────────────────────────────────
@@ -330,6 +367,33 @@ export async function removeLetter(id) {
   if (out?.ok) {
     BY_ID.set(id, null)
     for (const [h, list] of BY_HANDLE) BY_HANDLE.set(h, list.filter((l) => l.id !== id))
+    TILES_AT = 0
+    await loadWall(true)
+    bump()
+  }
+  return out || { ok: false, error: 'network' }
+}
+
+// ── a whole name, in one call ───────────────────────────────────────────────
+// This used to be a loop in screens/Remove.jsx calling `removeLetter` once per
+// letter — and because each of those reloads the entire index, a name with
+// twelve letters cost twelve removal calls and twelve five-hundred-row index
+// reads, serially, on the one screen in this product that must not feel broken.
+//
+// It was also not atomic, which matters more. A letter written between the
+// screen reading the list and the loop reaching the end was never removed, and
+// the first successful removal files a claim, which shuts the name — so that
+// straggler stood on the wall for good, under a handle nobody could write to
+// again, after a screen had told its subject every letter was gone.
+//
+// `wall_remove_handle` (migration 0049) is one statement. One call, one index
+// read, and nothing left standing.
+export async function removeHandle(handle) {
+  const h = normHandle(handle)
+  const out = await api.removeHandle(h)
+  if (out?.ok) {
+    for (const l of BY_HANDLE.get(h) || []) BY_ID.set(l.id, null)
+    BY_HANDLE.set(h, [])
     TILES_AT = 0
     await loadWall(true)
     bump()
@@ -451,7 +515,17 @@ export async function write({ to, body, sealedLine, source }) {
 // puts back what was there. Every copy of the letter in the cache moves
 // together, so the pager and the wall behind it agree.
 export async function heart(id, on) {
-  const was = BY_ID.get(id) || null
+  // The previous state, from whichever cache is holding it. This read BY_ID
+  // alone, and a letter reached through a name lives in BY_HANDLE without
+  // necessarily being in BY_ID — so `was` was null, the rollback at the bottom
+  // was skipped, and a heart the server refused stayed filled on the card.
+  let was = BY_ID.get(id) || null
+  if (!was) {
+    for (const list of BY_HANDLE.values()) {
+      const found = list.find((l) => l.id === id)
+      if (found) { was = found; break }
+    }
+  }
   const set = (fn) => {
     const cur = BY_ID.get(id)
     if (cur) BY_ID.set(id, fn(cur))

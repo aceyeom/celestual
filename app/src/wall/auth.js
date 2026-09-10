@@ -69,7 +69,7 @@
 // wall with no words on it. What this module holds is the copy of that answer
 // the interface draws from, not the answer.
 
-import { getState, patch, push } from './store.js'
+import { getState, patch, push, reset } from './store.js'
 import { cardStep } from './seed.js'
 import { normHandle, forgetLetters } from './data.js'
 import { whoamiStrict, bindHandle, forgetSession } from '../api/identity.js'
@@ -108,12 +108,18 @@ export function anyEmail(raw) {
 // a way the DM code is not: guessing it binds a stranger's browser to the
 // victim's identity row. Four digits under six tries was a real hole, and the
 // function now spends a try before it looks at the code, so a burst of guesses
-// cannot all read the same counter. The client and the function have disagreed
-// about this length before and locked everybody out of the wall, so BOTH
-// accept four or six while the two halves deploy in either order: the function
-// mints six and checks a hash, the field takes up to six and lights at four.
+// cannot all read the same counter.
+//
+// It accepted four OR six for a while, on both halves, so the two could deploy
+// in either order without locking everybody out of the wall — the two have
+// disagreed about this length before and that is what it cost. Both halves have
+// been deployed for months, and the loose form had turned into a cost of its
+// own: the function mints six, so a four digit entry can never match a hash, but
+// the submit lit up at four and each miss SPENDS one of six attempts. Four
+// early taps on Enter and a person's real code was dead, told to them as "that
+// code has lapsed". Six exactly, on both halves, from here.
 export function validCode(raw) {
-  return /^\d{4,6}$/.test(String(raw || '').replace(/\s+/g, ''))
+  return /^\d{6}$/.test(String(raw || '').replace(/\s+/g, ''))
 }
 
 // The server's last answer about this browser, kept so a screen can draw
@@ -150,8 +156,27 @@ export function signIn(email) {
 // token and the wall's store and leave the DM proof in api/auth.js, so a
 // person who signed out here on a shared laptop was still signed in to their
 // sky on Main, one tap away. One session, one sign out.
+//
+// ── and the whole browser, not the two flags that said who it was ──
+// It also used to clear `member`, `reader` and `verified` and nothing else, so
+// everything this device knew about the person who had just left stayed in
+// localStorage: `wroteTo`, the handles they wrote anonymous letters to, which
+// the account sheet DRAWS (screens/Gate.jsx); `written`, the letter ids;
+// `draft`, a half-composed letter with its body in it; and `opened`, which
+// letters they had read. On a shared laptop the next person to sign in was shown
+// the last person's list of handles, with faces. On a surface whose entire claim
+// is that authorship is absent, that was the one place a device remembered it.
+//
+// The store's own header argues for one key so that "the reset has to be total
+// and instant", and `reset()` was right there. What is deliberately put back is
+// only what is about the PAPER rather than the person — which flyer produced
+// this scan and which funnel steps it has already reported (seed.js `cardStep`,
+// migration 0047). Those carry nothing about anybody, and clearing them would
+// make one person read as two on the desk's cards screen.
 export function signOut() {
-  patch({ member: null, reader: false, verified: [] })
+  const { source, steps } = getState()
+  reset()
+  patch({ source, steps })
   forgetSession()
   dropProof()
   clearPending()

@@ -91,7 +91,8 @@ import { takeOff } from './morph.js'
 // ── the numbers ─────────────────────────────────────────────────────────────
 // At most this many names in the field. Past it the rest are a search away,
 // and a torus of three hundred already repeats only at the far side of a wall
-// nobody scrolls to.
+// nobody scrolls to. `INDEX_LIMIT` in api.js is set from this number: the index
+// read should not fetch rows the field will throw away.
 const CAP = 240
 // The row pitch as a fraction of the column pitch: a true hexagonal packing.
 const ROW = 0.866
@@ -269,14 +270,22 @@ function tileUp(tiles, was) {
 // writing to the same transform. Memoised so a slot re-renders only when its
 // name changes or the lens arrives on it or leaves it.
 const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, onOpen, onHover }) {
-  if (!tile) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
+  // Hoisted, and it matters. This was an inline `(el) => bind(s, el)`, which is a
+  // new function identity on every render of this component — so React detached
+  // the ref (bind(s, null)) and re-attached it (bind(s, el)) each time, and
+  // `bind` runs a querySelector for the disc inside. Every focus change
+  // re-rendered the cells whose `focus` prop flipped, so that was a couple of
+  // hundred needless DOM queries per pointer move across the field. Memoised on
+  // the two things it closes over, so the identity is stable for a slot's life.
+  const hold = useCallback((el) => bind(s, el), [bind, s])
+  if (!tile) return <button type="button" className="wl-cell" ref={hold} tabIndex={-1} aria-hidden="true" />
   return (
     <button
       type="button"
       className={`wl-cell${focus ? ' is-focus' : ''}${mine ? ' is-mine' : ''}${fresh ? ' is-new' : ''}`}
       style={{ '--d': `${d}px`, '--in': `${delay}ms` }}
       data-slot={s}
-      ref={(el) => bind(s, el)}
+      ref={hold}
       onClick={(e) => onOpen(tile.handle, e)}
       onPointerEnter={(e) => onHover(s, e)}
       onPointerLeave={(e) => onHover(-1, e)}
@@ -354,6 +363,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     goal: null,               // where a keyboard asked the field to go
     focus: null,              // { I, J, nd }
     slots: [], used: null, Mx: 0, My: 0,
+    ox: 0, oy: 0,           // where the stage is on the glass, cached
     sayW: 0, sayOn: 0,
     veiled, reduce,
     ready: false,
@@ -395,6 +405,16 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const My = Math.ceil((h + 2 * pad) / rowH) + 3
       const was = { ...m.c }
       size.current = { w, h }
+      // Where the stage is on the glass, cached. The pointer handlers below used
+      // to call getBoundingClientRect() on every single pointermove — and this
+      // loop writes a transform and an opacity to as many as 250 elements every
+      // frame, so reading a rect in that handler forced a style recalculation and
+      // a layout of the busiest subtree on the screen, at mouse event rate. That
+      // is a read after a write, which is the one ordering that costs a frame.
+      // It moves on a resize and on a scroll, and both of those already come
+      // through here or through the listener below.
+      const box = el.getBoundingClientRect()
+      m.ox = box.left; m.oy = box.top
       m.c = { x: w / 2, y: h / 2 }
       if (!m.ready) {
         // the tile's middle cell starts in the light
@@ -433,7 +453,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     measure()
     const ro = window.ResizeObserver ? new ResizeObserver(measure) : null
     if (ro) ro.observe(el)
-    return () => { if (ro) ro.disconnect() }
+    // The page scrolls to the foot of the site under the wall, which moves the
+    // stage without resizing it. Only the two cached numbers are refreshed —
+    // `measure` recomputes the whole lattice and has no business running on a
+    // scroll.
+    const reorigin = () => {
+      const box = el.getBoundingClientRect()
+      motion.current.ox = box.left
+      motion.current.oy = box.top
+    }
+    window.addEventListener('scroll', reorigin, { passive: true })
+    return () => {
+      if (ro) ro.disconnect()
+      window.removeEventListener('scroll', reorigin)
+    }
   }, [lay, worldX])
 
   const bind = useCallback((s, el) => {
@@ -771,12 +804,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // under the one thing on the screen you cannot see past.
   const onMove = useCallback((e) => {
     if (e.pointerType && e.pointerType !== 'mouse') return
-    const el = stage.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
     const m = motion.current
-    m.px = e.clientX - r.left
-    m.py = e.clientY - r.top
+    if (!m.ready) return
+    // The cached origin, not a fresh rect. See `measure` above for why.
+    m.px = e.clientX - m.ox
+    m.py = e.clientY - m.oy
     m.over = true
   }, [])
 
@@ -792,10 +824,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     m.over = on
     // an enter carries a position, and it is the only one there is until the
     // pointer actually moves in here
-    if (on && stage.current && typeof e.clientX === 'number') {
-      const r = stage.current.getBoundingClientRect()
-      m.px = e.clientX - r.left
-      m.py = e.clientY - r.top
+    if (on && m.ready && typeof e.clientX === 'number') {
+      m.px = e.clientX - m.ox
+      m.py = e.clientY - m.oy
     }
     if (!on) m.on = -1
   }, [])

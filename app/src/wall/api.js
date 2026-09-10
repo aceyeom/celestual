@@ -79,6 +79,15 @@ async function call(fn, args) {
 // falls back to the four 0032 columns on that one error, and the wall draws
 // its monograms the way it did: a deploy that lands before the migration is a
 // slower wall, never a blank one.
+//
+// How many names the index read asks for. The field draws at most 240 of them
+// (Hive.jsx CAP) and the search covers everything past that, so the 500 this
+// used to ask for meant 260 rows — each carrying the resolver's four extra
+// columns since 0048 — fetched, parsed, learned and thrown away, on the one
+// paint the intro is holding itself back for. The margin over the cap is for
+// the search's own memo.
+const INDEX_LIMIT = 260
+
 const INDEX_COLS = 'target_handle, letters, last_at'
 const INDEX_FACES = `${INDEX_COLS}, known, display_name, is_verified, avatar_path`
 let indexCols = INDEX_FACES
@@ -91,7 +100,7 @@ export async function wallIndex() {
       .select(indexCols)
       .eq('campus', CAMPUS)
       .order('last_at', { ascending: false })
-      .limit(500)
+      .limit(INDEX_LIMIT)
     if (error && indexCols !== INDEX_COLS) {
       indexCols = INDEX_COLS
       ;({ data, error } = await supabase
@@ -99,7 +108,7 @@ export async function wallIndex() {
         .select(indexCols)
         .eq('campus', CAMPUS)
         .order('last_at', { ascending: false })
-        .limit(500))
+        .limit(INDEX_LIMIT))
     }
     if (error) return { ok: false, error: 'network', tiles: [] }
     return {
@@ -129,7 +138,14 @@ export async function wallIndex() {
 // `known` says whether there is, and the name, the badge and the face come
 // with it, so a list of eight people is one request and not nine.
 export async function wallSearch(query) {
-  const rows = await call('wall_search', { p_query: String(query || '') })
+  // The campus travels since 0049. It joined wall_index without one, while
+  // every other read filters on it, so the day a second campus opens an
+  // unscoped search would have started answering Berkeley with the other
+  // campus's names — silently, with no code change anywhere to make anybody
+  // look. A database that predates 0049 has only the one-argument form, so an
+  // error here falls back to it rather than leaving the search dead.
+  let rows = await call('wall_search', { p_query: String(query || ''), p_campus: CAMPUS })
+  if (!Array.isArray(rows)) rows = await call('wall_search', { p_query: String(query || '') })
   if (!Array.isArray(rows)) return []
   return rows.map((r) => ({
     handle: r.handle,
@@ -374,3 +390,10 @@ export const report = (id, reason) =>
 
 export const removeLetter = (id) =>
   call('wall_remove_letter', { p_token: sessionToken(), p_letter: id })
+
+// A whole name, in one statement (migration 0049). It proves the handle once,
+// sets every live letter to it to 'removed', and files the claim that holds the
+// name shut afterwards. The takedown screen looped `removeLetter` before this
+// existed, which was neither atomic nor complete — see data.js `removeHandle`.
+export const removeHandle = (handle) =>
+  call('wall_remove_handle', { p_token: sessionToken(), p_handle: String(handle || '') })

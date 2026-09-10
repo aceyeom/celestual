@@ -57,6 +57,7 @@ import {
 } from '../parts.jsx'
 import { letter, loadLetter, report, atHandle, ago } from '../data.js'
 import { setAfterGate } from '../store.js'
+import { isReader } from '../auth.js'
 
 export default function Report({ id, go, back }) {
   const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 it is filed
@@ -129,7 +130,20 @@ export default function Report({ id, go, back }) {
   // protects the person the letter is about: the likeliest reader to want a
   // letter down is its subject, and the subject holds a handle far more often
   // than they hold a berkeley.edu address at the moment they find their name.
-  if (one.body === null || fault === 'gate') {
+  //
+  // ── and it asks the DOOR, not the card ──
+  // This used to read `one.body === null` alone, and that stopped being the same
+  // question in migration 0045: every browser is handed five whole letters
+  // before it is asked for anything, so a body arrives for somebody who has
+  // proved nothing. A free reader therefore reached this screen in full, read
+  // "This comes down when you tap it", tapped it, and had wall_report refuse
+  // them — and the sheet only then flipped to the sign in panel, after the act.
+  //
+  // Hearts was fixed for precisely this one screen over (Letter.jsx `Hearts`),
+  // and this is the worse of the two places to get it wrong: the person most
+  // likely to be standing here is the subject of the letter, in the thirty
+  // seconds after they found their own name.
+  if (!isReader() || one.body === null || fault === 'gate') {
     return (
       <Sheet onClose={back} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">

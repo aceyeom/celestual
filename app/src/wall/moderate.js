@@ -73,13 +73,28 @@ function fold(s) {
     .replace(/[^a-z\s]/g, '')
 }
 
+// ── the space bar was the whole bypass ──────────────────────────────────────
+// Kept identical to the Edge Function's own list, which is the property this
+// module's header claims. `fold` folds leetspeak and then strips everything
+// that is not a letter or a space, so `n1gg3r` was caught and `n i g g e r` was
+// not: the spaces survived the strip and \b anchored each letter separately. So
+// each slur is also matched with separators tolerated between its letters —
+// only at four characters or more, because a three-letter sequence spelled out
+// across word boundaries is something an innocent sentence can do and a false
+// refusal here is a real letter turned away at the keyboard.
+const SEP = '[\\s._\\-*+~]*'
+const SLUR_RES = SLURS.flatMap((s) => {
+  const exact = new RegExp(`\\b${s}\\b`)
+  return s.length >= 4 ? [exact, new RegExp(`\\b${s.split('').join(SEP)}\\b`)] : [exact]
+})
+
 // Returns the first thing wrong, said in words, or ''. One fault at a time on
 // purpose: a list of five complaints under a text box is a wall, and the writer
 // only has to fix one of them to find out whether the next one is real.
 export function fault(text) {
   const folded = fold(text)
-  for (const s of SLURS) {
-    if (new RegExp(`\\b${s}\\b`).test(folded)) return 'that word does not go on the wall'
+  for (const re of SLUR_RES) {
+    if (re.test(folded)) return 'that word does not go on the wall'
   }
   for (const p of PATTERNS) if (p.re.test(text)) return p.say
   return ''
