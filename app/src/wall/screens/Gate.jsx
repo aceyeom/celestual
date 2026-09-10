@@ -35,7 +35,7 @@
 // the first one happens here.
 
 import { useEffect, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Rule, Face, Allowance } from '../parts.jsx'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Face, Icon, Allowance } from '../parts.jsx'
 import { atHandle, allowance, loadQuota } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
 import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
@@ -175,55 +175,71 @@ export default function Gate({ go, back }) {
   // sentence about themselves: they came here to check WHICH ADDRESS is signed
   // in on this phone, and that fact was the smallest thing on the sheet.
   //
-  // So the address is the heading now, set in the identifier face the way every
-  // other identifier in the build is, with a disc beside it: the same object
-  // that carries a face everywhere else, wearing the address's initial here,
-  // because an address is not an Instagram handle and has no face to resolve.
-  // Under it, the one thing this device actually knows about them: the names
-  // they have written to. Then the way on, and the way out.
+  // So it is a card now (wall.css `.wl-profile`): one object on the sheet
+  // that is the person, the way the paper is the letter. The disc, wearing
+  // the address's initial because an address is not a handle and has no face
+  // to resolve; the address beside it, in the identifier face like every
+  // other identifier in the build; and under it, in one word, what this
+  // address is here: verified. Then the one thing this device honestly knows
+  // about them, the names they have written to. The week's allowance is not
+  // drawn on it: nobody opens their own account to be shown a meter, and the
+  // card says one line, once, when the week is spent.
+  //
+  // The way out stands in the foot as a capsule carrying its own glyph, the
+  // door and the arrow out of it, rather than as a grey sentence: it is a
+  // real act with a real consequence and it should look like one, quietly.
   if (who) {
     const wrote = getState().wroteTo || []
+    const spent = !!left && left.left <= 0
+    const out = () => { signOut(); setWho(null); setMode('signin'); setStep(0) }
     return (
       <Sheet onClose={back} labelledBy="wl-gate-h">
-        <div className="wl-sheet-in wl-gate wl-acct">
+        <div className="wl-sheet-in wl-gate">
           <SheetHead onClose={back} label="back to the wall" />
 
-          <div className="wl-acct-id">
-            <Face handle={who} size={44} resolve={false} />
-            <div className="wl-acct-name">
-              <p className="wl-acct-addr" id="wl-gate-h">{memberLabel(who)}</p>
-              {/* The allowance, under the address it belongs to. Three marks
-                  and no sentence until it matters, exactly as the composer
-                  draws it, so the number is the same object in both places. */}
-              {left ? (
-                <Allowance left={left.left} limit={left.limit} resets={left.resets}
-                  className="wl-acct-allow" />
-              ) : null}
-            </div>
-          </div>
-
-          <Rule className="wl-acct-rule" />
-
-          {/* ── who this device has written to ──
-              The letters are anonymous and stay anonymous: nothing on a letter
-              points back here, and this list is read out of this browser rather
-              than out of the wall. It is the one thing an account can honestly
-              show somebody without breaking the thing the account is for. */}
-          <div className="wl-acct-sect">
-            <Label tone="dim">you have written to</Label>
-            {wrote.length ? (
-              <div className="wl-acct-wrote">
-                {wrote.map((h) => (
-                  <span className="wl-acct-chip" key={h}>
-                    <Face handle={h} size={20} />
-                    <span>{atHandle(h)}</span>
-                  </span>
-                ))}
+          <section className="wl-profile" aria-labelledby="wl-gate-h">
+            <div className="wl-profile-id">
+              <Face handle={who} size={52} resolve={false} className="wl-profile-face" />
+              <div className="wl-profile-who">
+                <p className="wl-profile-addr" id="wl-gate-h">{memberLabel(who)}</p>
+                {/* ── the one word the card has to say ──
+                    The accent's one appearance on this sheet: a point of the
+                    ice beside the word, because a verified address is the
+                    one thing on the wall that is a settled fact about the
+                    person rather than about a letter. */}
+                <Label tone="dim" className="wl-profile-status">
+                  <span className="wl-profile-dot" aria-hidden="true" />
+                  verified address
+                </Label>
               </div>
-            ) : (
-              <p className="wl-acct-none">nobody yet</p>
-            )}
-          </div>
+            </div>
+
+            {/* ── who this device has written to ──
+                The letters are anonymous and stay anonymous: nothing on a
+                letter points back here, and this list is read out of this
+                browser rather than out of the wall. It is the one thing an
+                account can honestly show somebody without breaking the thing
+                the account is for. */}
+            <div className="wl-profile-sect">
+              <Label tone="dim">written to</Label>
+              {wrote.length ? (
+                <div className="wl-profile-wrote">
+                  {wrote.map((h) => (
+                    <span className="wl-profile-chip" key={h}>
+                      <Face handle={h} size={22} />
+                      <span>{atHandle(h)}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="wl-profile-none">nobody yet</p>
+              )}
+            </div>
+
+            {spent ? (
+              <Allowance left={left.left} limit={left.limit} className="wl-profile-cap" />
+            ) : null}
+          </section>
 
           <div className="wl-push" />
 
@@ -231,12 +247,9 @@ export default function Gate({ go, back }) {
             <Pill tone="light" wide onClick={() => go('join')}>
               try mutual matching
             </Pill>
-            <button
-              type="button" className="wl-quiet"
-              onClick={() => { signOut(); setWho(null); setMode('signin'); setStep(0) }}
-            >
+            <Pill tone="ghost" className="wl-profile-out" icon={<Icon name="signout" size={15} />} onClick={out}>
               sign out
-            </button>
+            </Pill>
           </SheetFoot>
         </div>
       </Sheet>

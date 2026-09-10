@@ -29,10 +29,11 @@
 // ── and three of them in any seven days ────────────────────────────────────
 // A wall whose contents are decided by whoever writes the most is a wall about
 // its most prolific writer, and the cheapest way to stop that is a number
-// everybody can hold in their head. It is drawn in the foot, opposite the one
-// thing to press: three marks, struck as they are spent (parts.jsx
-// `Allowance`). The count is the server's, from `wall_quota`, so the number
-// somebody is looking at is the number they would be refused on.
+// everybody can hold in their head. The number itself is not drawn: while any
+// letter is left the foot says nothing about it, and when none is, one line
+// stands where the act was and the act goes dark (parts.jsx `Allowance`). The
+// count is the server's, from `wall_quota`, so the letter somebody is refused
+// on is the one the server refuses.
 //
 // The address does not follow the letter anywhere. It is not read on this
 // screen, it is not passed to `write`, and there is no author field in the
@@ -60,13 +61,13 @@ import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
 
-// Characters. Below this it is a comment rather than a letter — but the floor
-// was twice this and it was wrong: at sixty, the true thing somebody actually
-// wanted to say ("you gave me your umbrella and walked home in it") was being
-// turned away for being short, and what got typed to clear the bar was padding.
-// A letter is short because it is true. Thirty keeps a bare handle and a stray
-// keystroke off the wall and lets everything else through.
-const MIN_BODY = 30
+// There is no floor. It was sixty characters, then thirty, and both were
+// wrong in the same way: the true thing somebody wanted to say ("you gave me
+// your umbrella and walked home in it") was being turned away for being
+// short, and what got typed to clear the bar was padding. A letter is short
+// because it is true. The one thing the wall asks is that something was
+// written, and the screen (moderate.js) and the reader do the rest.
+//
 // The server's ceiling (wall_letters_body_ck, and wall_write's left(…, 280)).
 // This said 320, so the last forty characters of a full letter were shown on
 // the posted screen and cut off the wall without a word to the writer.
@@ -100,13 +101,13 @@ export default function Write({ to: prefill, go, back }) {
   // list runs again in celestual-wall-moderate, where it cannot be edited out
   // with a devtools console, and the classifier runs after it.
   const caught = body.trim() ? fault(body) : ''
-  const ok = [validHandle(h), body.trim().length >= MIN_BODY && !caught]
+  const ok = [validHandle(h), body.trim().length > 0 && !caught]
   const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
 
   // The allowance. Asked once on mount and drawn out of the cache during
   // render like everything else on this surface; `null` until it lands, and
-  // the meter draws nothing rather than a guessed number.
+  // nothing is said about it until it is spent.
   useEffect(() => { loadQuota() }, [])
   const left = allowance()
   const spent = !!left && left.left <= 0
@@ -202,43 +203,35 @@ export default function Write({ to: prefill, go, back }) {
               tone={body.trim() ? '' : 'empty'}
             >
               <LetterField
-                value={body} onChange={setBody} max={MAX_BODY} autoFocus
+                value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
                 placeholder={EXAMPLES[hash(h || 'wheeler') % EXAMPLES.length]}
               />
             </Paper>
-            {/* One line under the card, and it is the same line whether the
-                letter is too short or has tripped the screen — because to the
-                person writing, both are the same fact: this is not going up
-                yet, and here is the one thing to change. The fault wins, since
-                a letter that is short AND has a phone number in it is not
-                fixed by getting longer. */}
+            {/* One line under the card, and only when the screen has caught
+                something: the one thing to change, named. There is no count
+                under the card and no "more characters" line, because the box
+                is not a form field with a floor. It is a letter, and a letter
+                goes up the moment there is one. */}
             <div className="wl-write-floor" aria-live="polite">
-              {caught ? (
-                <Label className="wl-write-caught">{caught}</Label>
-              ) : body.trim().length > 0 && body.trim().length < MIN_BODY ? (
-                <Label tone="dim">
-                  {MIN_BODY - body.trim().length === 1
-                    ? 'one more character'
-                    : `${MIN_BODY - body.trim().length} more characters`}
-                </Label>
-              ) : null}
+              {caught ? <Label className="wl-write-caught">{caught}</Label> : null}
             </div>
           </div>
         )}
 
         <div className="wl-write-foot">
-          {/* The meter stands at the left of the foot, opposite the act, on
-              both steps: it is the one thing here that is about the WRITER
-              rather than about the letter, and the step where somebody is
-              about to spend one is the step where they should be able to see
-              how many they have. Nothing is drawn until the server has
-              answered, so the foot never shows a guessed number. */}
-          {left ? <Allowance left={left.left} limit={left.limit} resets={left.resets} /> : null}
+          {/* Nothing at the left of the foot while the week has letters in
+              it. When it does not, the one line stands opposite the act,
+              which is dark, and says why. */}
+          {left ? <Allowance left={left.left} limit={left.limit} /> : null}
           {step === 1 && (
             <Pill tone="ghost" onClick={() => setStep(0)}>a different name</Pill>
           )}
+          {/* "send anonymously", not "put it up": the word on the button is
+              the one fact a person hesitating over it wants, said at the
+              moment they are deciding. The wall is anonymous by shape and
+              the button says so in the writer's own frame. */}
           <Pill tone="light" onClick={next} disabled={!ok[step] || spent}>
-            {step === 0 ? 'next' : 'put it up'}
+            {step === 0 ? 'next' : 'send anonymously'}
           </Pill>
         </div>
       </div>

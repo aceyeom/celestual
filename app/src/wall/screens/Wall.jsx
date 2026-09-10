@@ -79,8 +79,7 @@
 // wall's own light is in its field, on the person in the lens.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, Label, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
-import { Sparkle } from '../art.jsx'
+import { Display, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
 import Hive from '../Hive.jsx'
@@ -90,13 +89,16 @@ import Hive from '../Hive.jsx'
 let OPENED = false
 
 // ── the ear ─────────────────────────────────────────────────────────────────
-// The campus and the count, on one line in the identifier face at the size
-// and the tracking every dateline in the product is set at: the same line
-// the front door runs above its headline to point here (Notice.jsx), so the
-// line on the door and the line on the wall are one line. The count is the
-// one fact about this wall worth printing. While the index is still loading
-// there is no count, because a wall that has not loaded has no number; when
-// it did not load the line says so, in the count's place.
+// The campus and the count, on one line under the bar. Two faces and no
+// punctuation: the campus in the display face, small, the way the brand sets
+// its own word, and the count beside it in the identifier face at the size
+// every dateline is set at. The two faces are the hierarchy, so the line
+// needs no sparkle in front of it and no dot between its halves; it used to
+// carry both, and eleven pixels of uppercase mono with two ornaments in it
+// was the busiest object on a screen whose whole job is to be calm. The
+// count is the one fact about this wall worth printing. While the index is
+// still loading there is no count, because a wall that has not loaded has no
+// number; when it did not load the line says so, in the count's place.
 function Ear({ letters }) {
   const err = wallError()
   const loaded = wallLoaded()
@@ -111,17 +113,19 @@ function Ear({ letters }) {
       </>
     )
   } else if (letters > 0) {
-    meta = <span className="wl-ear-meta">{letters === 1 ? 'one letter' : `${letters} letters`}</span>
+    meta = (
+      <span className="wl-ear-meta">
+        <span className="wl-ear-n">{letters}</span> {letters === 1 ? 'letter' : 'letters'}
+      </span>
+    )
   } else if (loaded) {
     meta = <span className="wl-ear-meta">open now</span>
   }
   return (
-    <Label as="div" className="wl-ear" aria-live="polite">
-      <Sparkle size={9} className="wl-ear-spark" />
+    <div className="wl-ear" aria-live="polite">
       <span className="wl-ear-name">berkeley</span>
-      {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
       {meta}
-    </Label>
+    </div>
   )
 }
 
@@ -269,7 +273,6 @@ export default function Wall({ go, reduce, rev, under = false }) {
           <button type="button" className="wl-tab" onClick={() => go('join')}>
             <span className="wl-tab-grip" aria-hidden="true" />
             <span className="wl-tab-body">
-              <Sparkle size={13} className="wl-tab-spark" />
               <span className="wl-tab-text">
                 Get notified if they<br />put you down too.
               </span>

@@ -110,6 +110,9 @@ let SLOW = false
 // What the relay has said about the last DM under this handle while a code is
 // out (0041): '' while nothing has arrived, 'wrong_code' or 'expired_code'.
 let NOTE = ''
+// Whether the week's three letters are spent (0044): the composer's act goes
+// dark and one line says why. Off, the fixture browser has one left.
+let SPENT = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -432,6 +435,12 @@ const DESK = {
 
 const RPC = {
   celestual_whoami: () => whoami(),
+  // 0044: the week's allowance, about the caller. Without this the composer
+  // read the RPC's absence as a limit of nought and drew its act dark.
+  wall_quota: () => ({
+    ok: true, signed_in: true, limit: 3, used: SPENT ? 3 : 2, left: SPENT ? 0 : 1,
+    resets_at: new Date(now + 4 * DAY).toISOString(),
+  }),
   // 0040: from the first character, exact then prefix then contains, with the
   // resolver's answer joined on for the names the fixture resolver knows.
   wall_search: (b) => {
@@ -624,6 +633,12 @@ const ROUTES = [
   // first step and come to rest on a person
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   { label: 'berkeley-lifted', path: '/berkeley', press: '.wl-mast-go', settle: 5200 },
+  // the field under a mouse: the disc the pointer is on, lifted and named,
+  // and the crowd parted round it. The one state of the wall that only a
+  // pointer can draw, and the one that used to draw a frame round the name.
+  { label: 'berkeley-hover',  path: '/berkeley', press: '.wl-mast-go', settle: 4200, hover: true },
+  // the foot of the site, where the wall's own gradient runs out into it
+  { label: 'berkeley-foot',   path: '/berkeley', press: '.wl-mast-go', settle: 4200, scroll: 'bottom' },
   { label: 'berkeley-tab',    path: '/berkeley', tab: true, press: '.wl-mast-go', settle: 5200 },
   // the same two under prefers-reduced-motion (rebuild-spec 7.2): the veil
   // composed with nothing arriving, and the field still, with the lens on
@@ -634,12 +649,16 @@ const ROUTES = [
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
+  // the week spent: the act dark, and the one line the foot says about it
+  { label: 'write-spent',   path: '/berkeley/write/sofiaaa.reyes', spent: true },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
   // 0040: the names off the index under the field while a handle is still
   // being typed, and the search from its first character
   { label: 'write-suggest', path: '/berkeley/write', type: { into: ".wl-field input", text: 'a' }, draft: null },
   { label: 'find-typed',    path: '/berkeley/find', type: { into: ".wl-field input", text: 'a' } },
   { label: 'gate',          path: '/berkeley/gate', open: false },
+  // the same address, through the door: the profile card
+  { label: 'gate-in',       path: '/berkeley/gate' },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
@@ -686,6 +705,7 @@ for (const r of list) {
   VERIFIED = r.verified !== false
   SLOW = r.slow === true
   NOTE = r.note || ''
+  SPENT = r.spent === true
   for (const v of VIEWPORTS) {
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
@@ -786,6 +806,18 @@ for (const r of list) {
       await page.waitForTimeout(700)
     }
     await page.waitForTimeout(r.settle || 2600)
+    // a pointer on the field, a little off the middle, so the lens has a
+    // person under it and the crowd has parted round them
+    if (r.hover) {
+      await page.mouse.move(v.width / 2 + 30, v.height / 2 - 20, { steps: 10 })
+      await page.waitForTimeout(1100)
+    }
+    // the foot of a page, for the one screen whose bottom edge is a join
+    if (r.scroll === 'bottom') {
+      await page.mouse.move(v.width / 2, v.height - 24)
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(900)
+    }
 
     const file = join(out, `${r.label}-${v.name}.png`)
     await page.screenshot({ path: file })
