@@ -60,6 +60,20 @@
 // bulge travels over the faces; take it away and the crowd closes over it.
 // A finger gets none of this, because a finger is already the pull.
 //
+// ── and it carries the pulse that opens the wall ────────────────────────────
+// The veil lifts as one wave sent out through the crowd from under the tap
+// (ripple.js). It is not drawn over the faces: it is IN them. Ahead of the
+// crest a disc heaves outward, on the crest it swells and comes up to full
+// light, behind it it drops back a little and settles, and once the wave
+// has been through a region the lens's depth arrives there, so the far
+// faces recede into the room after the wave has lifted them and not while.
+// The heave is the swell's own integral, which is what lets a wave run
+// through a packed crowd without pushing anybody into anybody: where a disc
+// grows the lattice opens by as much along the wave, and where it dips the
+// lattice closes by as much. Across the wave there is no such room, so a
+// disc swells only as far as the gap beside it allows, which in the packed
+// middle is a little and at the rim is the whole of it. THE PULSE, below.
+//
 // ── it has to work at five names and at five hundred ────────────────────────
 // The lattice is a torus: a tile of C by R cells that repeats in both axes, so
 // there is no first name and no last one and no edge to reach. The tile is
@@ -87,6 +101,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { Face, Label } from './parts.jsx'
 import { atHandle } from './data.js'
 import { takeOff } from './morph.js'
+import { RIPPLE_MS, SIGMA, SWELL, HEAVE, TAIL, front, swell, heave, lit as litAt, bloom as bloomAt } from './ripple.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
 // At most this many names in the field. Past it the rest are a search away,
@@ -118,6 +133,20 @@ const DISC_TOP = 7          // the count at which a name is as large as it gets
 // how much of all of it applies while the masthead is over the field: not
 // none, because a flat grid of faces under a title is wallpaper, and the
 // poster wants its depth before anybody has pressed anything.
+//
+// ── `reach`, and the phone's edges ──
+// The lens's rim is the edge of the window, so on a spread the fall from
+// full to a quarter is spread over six pitches and on a phone it was spread
+// over under three: a face one column out from the middle was already at
+// nine tenths, the next was at a half, and the column against the edge was a
+// scatter of points a quarter of the size with half again the space between
+// them. The middle of a phone was a crowd and the sides of it were empty.
+// So the rim is never nearer than this many pitches from the light, whatever
+// the window: on a spread nothing changes, and on a phone the rim stands a
+// column past the edge of the glass, so the column against the edge is at
+// half size and nearly its own spacing rather than a quarter and adrift.
+// The packing's guarantee holds as it did, because the guarantee is per disc
+// off its own `open` and `z` and never off the window.
 const LENS = {
   hold: 0.26,
   rim: 0.24,
@@ -128,7 +157,13 @@ const LENS = {
   slack: 0.62,
   air: 0.52,
   veiled: 0.58,
+  reach: 4,
 }
+// How much light a disc has under the veil, before the wave has reached it.
+// Dimmed and not blurred, because a blur over a hundred moving discs is a
+// hundred rasters a frame; the monograms go further (wall.css `--rv`), so the
+// type on the veil stands on a texture of discs and not on other letters.
+const VEILED_LIGHT = 0.4
 // The pointer's own light: how wide it reaches (in pitches), how much it adds
 // to a disc under it, and how hard it parts the crowd to make the room.
 //
@@ -292,7 +327,7 @@ const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, o
   )
 })
 
-export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', onOpen }) {
+export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', pulse = null, onOpen }) {
   const names = useMemo(() => tiles.slice(0, CAP), [tiles])
   // The last seating, carried forward so a new reading of the index does not
   // move anybody who was already on the wall. Written during the memo rather
@@ -345,7 +380,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     c: { x: 0, y: 0 },        // the centre of the window
     lx: 0, ly: 0,             // where the light actually is, eased
     S: 70, rowH: 70 * ROW,    // the lattice pitch, set from the window
-    bloom: 0,                 // 0 under the veil, 1 with the field at full
+    pulse: null,              // the wave in flight, if one is: { x, y, t0, rc, hold }
     v: { x: 0, y: 0 },        // the field's velocity, px/s
     heading: 0.6,             // where the drift is going
     drag: null, moved: 0,
@@ -360,6 +395,25 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   })
   motion.current.veiled = veiled
   motion.current.reduce = reduce
+
+  // ── the wave, handed in ──
+  // The tap, in the glass's own coordinates, and where the stage stands on
+  // the glass, taken once: the wave runs in screen space from then on, so a
+  // field pulled while it is still in flight is pulled under the wave and
+  // not with it. A layout effect and not a plain one, because the same
+  // render that carries the pulse takes the veil off, and a frame drawn
+  // between the two would light every disc at once for one frame.
+  useLayoutEffect(() => {
+    const m = motion.current
+    if (!pulse) { m.pulse = null; return }
+    const el = stage.current
+    const r = el ? el.getBoundingClientRect() : { left: 0, top: 0 }
+    m.pulse = {
+      x: pulse.x - r.left, y: pulse.y - r.top,
+      t0: pulse.at, rc: pulse.r,
+      hold: typeof pulse.hold === 'number' ? pulse.hold : null,
+    }
+  }, [pulse])
 
   // ── the lattice, in world units ──
   const worldX = useCallback((I, J, S) => (I + (J & 1) * 0.5) * S, [])
@@ -422,7 +476,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       if (m.Mx !== Mx || m.My !== My) {
         m.Mx = Mx; m.My = My
         m.slots = Array.from({ length: Mx * My }, () => ({
-          I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true,
+          I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true, rv: -1,
         }))
         m.used = new Uint8Array(Mx * My)
         m.focus = null
@@ -478,14 +532,23 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const sec = dt / 1000
       const t = now / 1000
 
-      // the field comes up to full over about a second as the veil lifts
-      const want = m.veiled ? 0 : 1
-      if (m.reduce) m.bloom = want
-      else {
-        m.bloom += (want - m.bloom) * (1 - Math.exp(-dt / 340))
-        if (Math.abs(want - m.bloom) < 0.002) m.bloom = want
+      // ── the wave ──
+      // Where the crest is, from the tap, on the ripple's own clock; and
+      // once it is past the far corner by the width of its own tail, it is
+      // over and every disc is simply lit. A frame held for the screenshot
+      // loop never ends. Nothing here is eased: the crest's curve is the
+      // wave's (ripple.js `front`), and what the discs do is a function of
+      // their distance from it.
+      let P = m.pulse
+      let crest = 0
+      const sig = m.S * SIGMA
+      if (P) {
+        const p = P.hold !== null ? P.hold : (now - P.t0) / RIPPLE_MS
+        crest = P.rc * front(p)
+        if (P.hold === null && crest > P.rc + sig * TAIL) { m.pulse = null; P = null }
       }
-      const L = LENS.veiled + (1 - LENS.veiled) * m.bloom
+      // with no wave in flight, the light is the veil's or it is full
+      const rest = m.veiled ? 0 : 1
 
       // ── the motion ──
       // Not while a finger is on it. Otherwise the velocity relaxes toward the
@@ -539,10 +602,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const { S, rowH, Mx, My, slots, used } = m
       const pad = S * 0.6
       const lx = m.lx, ly = m.ly
-      // The lens reaches the edge of the window and no further: the rim of the
-      // screen is the rim of the lens on a phone and on a spread alike.
-      const Rx = w / 2 + S * 0.3
-      const Ry = h / 2 + S * 0.3
+      // The lens reaches the edge of the window and no further, on a spread;
+      // on a phone it reaches `LENS.reach` pitches, which is past the edge,
+      // so the sides of a narrow glass are not the rim (see LENS).
+      const Rx = Math.max(w / 2 + S * 0.3, S * LENS.reach)
+      const Ry = Math.max(h / 2 + S * 0.3, S * LENS.reach)
       const reach = S * TOUCH.reach
       const pa = m.pa
       const I0 = Math.floor((-pad - m.o.x) / S - 0.5)
@@ -573,10 +637,38 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           const e = clamp01((u - LENS.hold) / (1 - LENS.hold))
           const q = 1 - clamp01(u / LENS.hold)
           const zL = LENS.rim + (1 - LENS.rim) * Math.pow(1 - e, LENS.fall) + (LENS.crown - 1) * q * q
+          const spread = LENS.open * Math.pow(e, LENS.openPow)
+
+          // THE PULSE: where this disc stands against the crest, measured
+          // from where the lens will put it once the wave has been through,
+          // so the crest is one circle on the glass and not a ring bent by
+          // the depth it is still bringing. Ahead of the crest the disc is
+          // in the veil's light and at the veil's depth; behind it, in full
+          // light, and then in the full lens.
+          let lt = rest
+          let bl = rest
+          let sw = 0
+          let hv = 0
+          let tx = 0
+          let ty = 0
+          if (P) {
+            const fx = lx + dx * (1 + spread) - P.x
+            const fy = ly + dy * (1 + spread) - P.y
+            const r = Math.sqrt(fx * fx + fy * fy)
+            const phi = (crest - r) / sig
+            lt = litAt(phi)
+            bl = bloomAt(phi)
+            if (phi > -3 && phi < 3) {
+              sw = swell(phi)
+              hv = heave(phi)
+              if (r > 0.5) { tx = fx / r; ty = fy / r }
+            }
+          }
+          const L = LENS.veiled + (1 - LENS.veiled) * bl
           let z = 1 + (zL - 1) * L
 
           // SPACING: the lattice opens away from the light as it goes out
-          const open = 1 + LENS.open * Math.pow(e, LENS.openPow) * L
+          const open = 1 + spread * L
           let px = lx + dx * open
           let py = ly + dy * open
 
@@ -610,6 +702,19 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             }
           }
 
+          // THE PULSE, on the disc. The heave along the wave, which opens the
+          // lattice by exactly the swell; and the swell itself, capped by the
+          // room across the wave, which the heave does not make: half the gap
+          // beside this disc, because the disc beside it is swelling too.
+          if (P && (sw !== 0 || hv !== 0)) {
+            const gap = Math.max(0, S * open - d * z)
+            const k = Math.min(SWELL, (gap * 0.5) / Math.max(1, d * z))
+            z *= 1 + k * sw
+            const hp = HEAVE * sig * hv
+            px += tx * hp
+            py += ty * hp
+          }
+
           // THE POINTER: a second, smaller light. What is under it swells, and
           // the crowd parts to make the room that swelling needs — nothing at
           // the very middle, so the disc you are on does not run away from you.
@@ -636,8 +741,19 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             // else is off, so a disc that is half the size is also half the
             // way into the room. Without it the rim reads as small faces on
             // the same plane as the near ones, which is a diagram.
-            const air = LENS.air + (1 - LENS.air) * clamp01((z - LENS.rim) / (1 - LENS.rim))
+            // ── and the light on it ──
+            // Under the veil a disc has two fifths of its light, and the wave
+            // brings the rest as it reaches it; the monogram inside reads the
+            // same number off `--rv` and goes further (wall.css). Written
+            // only when it moves, since for all but two seconds a session it
+            // is one.
+            const air = (LENS.air + (1 - LENS.air) * clamp01((z - LENS.rim) / (1 - LENS.rim)))
+              * (VEILED_LIGHT + (1 - VEILED_LIGHT) * lt)
             slot.disc.style.opacity = air > 0.995 ? '1' : air.toFixed(3)
+            if (Math.abs(lt - slot.rv) > 0.015) {
+              slot.rv = lt
+              slot.disc.style.setProperty('--rv', lt >= 0.995 ? '1' : lt.toFixed(2))
+            }
           }
           // how far the pointer is from this disc, in its own drawn place: the
           // plate goes on whoever is nearest it, and on a phone, where there is
@@ -671,10 +787,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       // ── the plate ──
       // One element, under the disc it names, held inside the stage. It is on
       // when the field is up and there is somebody to name; it is off under
-      // the veil, off while the field is being thrown, and off on a disc so
-      // far from the light that naming it would be pointing at nothing.
+      // the veil and while the wave that lifts it is still crossing the
+      // glass, off while the field is being thrown, and off on a disc so far
+      // from the light that naming it would be pointing at nothing.
       if (say.current) {
-        const on = !m.veiled && bestAt && best && best.nd < 1.6 && !m.drag ? 1 : 0
+        const on = !m.veiled && !P && bestAt && best && best.nd < 1.6 && !m.drag ? 1 : 0
         if (bestAt) {
           const half = m.sayW / 2 + 10
           const x = clamp(bestAt.x, half, Math.max(half, w - half))

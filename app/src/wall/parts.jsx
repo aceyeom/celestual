@@ -550,8 +550,35 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // to start the animation the sheet was cut off mid-fall by the wall coming
 // back under it. So the close listens for the animation's own end and the
 // timer is only the floor under a browser that never sends one.
+//
+// ── and it can open from a point ────────────────────────────────────────────
+// `origin` is a point on the glass, in the viewport's own coordinates, and
+// given one the sheet does not rise off the bottom edge: it opens OUT OF
+// THAT POINT, with everything on it already there, scaled up from a twelfth
+// of its size to its place over half a second (wall.css `.wl-sheet-lift`).
+// The wall hands the letter the centre of the disc that was pressed
+// (morph.js), so the card is seen to come from the face it belongs to, and
+// the words are on it from the first frame rather than arriving after a
+// flight.
+//
+// It used to be a stand-in: a circle that flew from the disc to where the
+// card would be, opening into a card on the way, with the real card hidden
+// under it until it landed. That is the textbook shared element and it was
+// glitchy for a textbook reason: the destination moves. The letter is not
+// in the cache when the disc is pressed, so the card grows when the words
+// land, the sheet re-centres under it, and a flight aimed at a target that
+// is measured every frame jitters after it; and a card kept invisible until
+// a stand-in has landed on it is a letter that arrives late, with a flicker
+// where the two are swapped. Scaling the whole sheet from the point is one
+// transform on one layer that never measures anything, so it cannot jitter,
+// and the letter is on the screen the moment the sheet is.
+//
+// The layer that scales is a full-viewport frame round the sheet and not the
+// sheet itself, because the sheet's own height changes when the words land
+// and a transform origin in a box that is changing size is a pivot that
+// moves; the frame is the size of the glass and stays that size.
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, tall = false, labelledBy, className = '' }) {
+export function Sheet({ children, onClose, tall = false, labelledBy, className = '', origin = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const start = useRef(null)
@@ -612,23 +639,29 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
   const style = drag > 0
     ? { '--drag': `${drag}px`, ...(held ? { transform: `translate3d(0, ${drag}px, 0)` } : null) }
     : undefined
+  // The point the sheet opens from, held for the life of the sheet: the
+  // origin is claimed once, on the way in, and a re-render must not move it.
+  const [from] = useState(() => (origin && Number.isFinite(origin.x) && Number.isFinite(origin.y) ? origin : null))
+  const lift = from ? { '--ox': `${from.x.toFixed(1)}px`, '--oy': `${from.y.toFixed(1)}px` } : undefined
 
   return (
-    <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''} ${className}`}>
+    <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''}${from ? ' is-from' : ''} ${className}`}>
       <button type="button" className="wl-scrim" aria-label="close" onClick={dismiss} />
-      <section
-        ref={box}
-        className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
-        style={style}
-        role="dialog" aria-modal="true" aria-labelledby={labelledBy}
-      >
-        <div
-          className="wl-grip" aria-hidden="true"
-          onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-          onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
-        ><span /></div>
-        {children}
-      </section>
+      <div className="wl-sheet-lift" style={lift}>
+        <section
+          ref={box}
+          className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
+          style={style}
+          role="dialog" aria-modal="true" aria-labelledby={labelledBy}
+        >
+          <div
+            className="wl-grip" aria-hidden="true"
+            onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+            onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
+          ><span /></div>
+          {children}
+        </section>
+      </div>
     </div>
   )
 }

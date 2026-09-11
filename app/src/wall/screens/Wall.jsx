@@ -66,30 +66,36 @@
 // controls and a footer has decided for them.
 //
 // ── and it opens where it was touched ───────────────────────────────────────
-// A tap anywhere on the veil lifts it, and it lifts FROM THE TAP: the veil,
-// grey and type together, opens as a circle growing out from under the
-// finger, with one hairline ring on its edge, and the field comes up to full
-// light and the lens blooms inside the circle as it grows. The title is not
-// faded on a clock of its own: the circle takes it as it reaches it, over a
-// soft shoulder, so a tap under the title clears the title first and a tap in
-// the far corner clears it last. When the circle has cleared the screen the
-// rest of the wall arrives — the bar's glyphs, then the pill, then the foot —
-// a beat apart. One line stays exactly where it was through all of it, THE
-// EAR: the campus and the count, set the way the front door sets its own ear
-// above its headline, so the veil and the field share one masthead element
-// and nothing at the top changes shape when the type goes.
+// A tap anywhere on the veil lifts it, and it lifts FROM THE TAP, as a wave
+// sent out through the crowd from under the finger (ripple.js). The wave is
+// in the faces: ahead of its crest a disc heaves outward, on the crest it
+// swells and comes up to full light, behind it it drops back a little and
+// settles, and once the wave has been through a region the lens's depth
+// arrives there. The veil's grey and type go with the crest, over a shoulder
+// a third of the screen wide, so what a person sees is light arriving and
+// the crowd answering it, and nowhere in it an edge. The title is not faded
+// on a clock of its own: the wave takes it as it reaches it, so a tap under
+// the title clears the title first and a tap in the far corner clears it
+// last. When the crest has cleared the glass the rest of the wall arrives —
+// the bar's glyphs, then the pill, then the foot — a beat apart. One line
+// stays exactly where it was through all of it, THE EAR: the campus and the
+// count, set the way the front door sets its own ear above its headline, so
+// the veil and the field share one masthead element and nothing at the top
+// changes shape when the type goes.
 //
-// It used to fade. A fade is the screen changing its mind; a circle from the
-// finger is the person opening it. The veil is up once per tab: coming back
-// from a letter lands on the field. Under reduced motion it goes without
+// It used to fade, and then it was a circle with a hairline ring on its
+// edge. A fade is the screen changing its mind; a ring crossing the faces is
+// a line passing over a picture; a wave the faces themselves carry is the
+// person opening the wall. The veil is up once per tab: coming back from a
+// letter lands on the field. Under reduced motion it goes without
 // travelling.
 //
 // ── and a name opens into the letter it carries ─────────────────────────────
-// Pressing a disc does not cut to a sheet. The circle that was pressed lifts
-// off the field, opens as it travels, and lands as the letter's cream card
-// with the same face settled into its letterhead (morph.js, Morph.jsx). One
-// object, one movement, and nowhere in it the moment where the wall was
-// replaced by a screen.
+// Pressing a disc does not cut to a sheet. The sheet opens out of the disc
+// that was pressed, with the letter on it from its first frame (parts.jsx
+// `Sheet`, `origin`), so the card is seen to come from the face it belongs
+// to and nowhere in it is the moment where the wall was replaced by a
+// screen.
 //
 // The tower came off, and so did the count on flaps. The Campanile stood in
 // the masthead's corner and then on the count as its plinth, and it never
@@ -101,32 +107,25 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Display, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall } from '../data.js'
 import { getState, patch } from '../store.js'
+import { RIPPLE_MS, front } from '../ripple.js'
 import Hive from '../Hive.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
 // from a letter should land on the wall, not on a title.
 let OPENED = false
 
-// How long the circle takes to clear the screen from the tap, and how long
-// the rest of the wall takes to arrive after it. The ring runs the same clock
-// as the hole (wall.css `.wl-veil-ring`), because they are one edge.
-//
-// The curve is a shallow ease out, and the number matters: on an ease-out
-// cubic the circle had three quarters of its radius by a third of its time,
-// which on a phone, where the far corner is under six hundred pixels away,
-// cleared the glass in under four hundred milliseconds. That is a pop. A
-// ripple travels: nearly straight, slowing a little as it goes, and the
-// whole second is spent crossing the screen.
-const RIPPLE_MS = 1050
-const RIPPLE_POW = 1.7
+// How long the rest of the wall takes to arrive once the crest has cleared
+// the glass. The crest's own clock, and its curve, are the wave's (ripple.js
+// `RIPPLE_MS`, `front`): the scrim's light and the crowd's movement are one
+// wave, so they are read off one file.
 const ARRIVE_MS = 1400
-// The veil's scrim reaches this far up over the bar, so a circle has to
+// The veil's scrim reaches this far up over the bar, so the wave has to
 // travel that much further to clear the top of the glass (wall.css --ramp).
 const RAMP = 110
 
 // A frame to hold the ripple on, for the screenshot loop only: `/berkeley?rp=0.4`
-// opens the veil from wherever it is tapped and leaves the circle at four
-// tenths of its reach, the way `/?beat=3` holds the intro. Nothing in
+// opens the veil from wherever it is tapped and holds the wave at four
+// tenths of its progress, the way `/?beat=3` holds the intro. Nothing in
 // production reads the query string.
 function heldRipple() {
   if (!import.meta.env.DEV) return null
@@ -194,12 +193,15 @@ export default function Wall({ go, reduce, rev, under = false }) {
 
   // ── the veil ──
   // Up on a fresh load, once per tab. `lifting` is the ripple's own length:
-  // the circle is opening from the tap and nothing under the veil exists yet.
-  // `down` is the wall. `tap` is where the veil was touched, in its own
-  // frame, and how far a circle from there has to grow to clear the glass;
-  // the stylesheet reads all three and the loop below drives the growth.
+  // the wave is crossing the glass from the tap and nothing under the veil
+  // exists yet. `down` is the wall. `tap` is where the veil was touched, in
+  // its own frame, and how far the crest has to travel from there to clear
+  // the glass; the stylesheet reads all three and the loop below drives the
+  // light. `pulse` is the same tap in the glass's own coordinates, handed to
+  // the hive, which runs the wave through the crowd off the same clock.
   const [veil, setVeil] = useState(() => (OPENED ? 'down' : 'up'))
   const [tap, setTap] = useState(null)
+  const [pulse, setPulse] = useState(null)
   // The beat after the veil has gone, while the pill, the glyphs and the
   // foot arrive. A class on the page for that long, and then nothing: the
   // arrival is an entrance, not a state.
@@ -224,36 +226,42 @@ export default function Wall({ go, reduce, rev, under = false }) {
       y = own ? own.top + own.height / 2 - box.top : e.clientY - box.top
     }
     // the farthest corner of the glass from the tap, and the ramp over the
-    // bar above it, is how far the circle has to reach
+    // bar above it, is how far the crest has to travel
     const r = box
       ? Math.hypot(Math.max(x, box.width - x), Math.max(y + RAMP, box.height - y))
       : 1400
+    const held = heldRipple()
     setTap({ x, y, r })
+    setPulse({
+      x: box ? box.left + x : x, y: box ? box.top + y : y,
+      at: performance.now(), r,
+      hold: held,
+    })
     setVeil('lifting')
-    if (heldRipple() !== null) return
+    if (held !== null) return
     timers.current.push(window.setTimeout(() => { setVeil('down'); setArriving(true) }, RIPPLE_MS))
     timers.current.push(window.setTimeout(() => setArriving(false), RIPPLE_MS + ARRIVE_MS))
   }, [veil, reduce])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
-  // ── the circle ──
-  // One number, `--rp`, from nought to one, written to the veil on every
-  // frame of the ripple. The scrim's mask and the ring both read it, so the
-  // hole and its edge are one edge and cannot drift apart. Eased out hard,
-  // because a circle that is still accelerating when it reaches the type is
-  // a wipe, and one that has nearly stopped is light arriving.
+  // ── the light ──
+  // One number, `--rp`, the crest's distance as a fraction of its reach,
+  // written to the veil on every frame of the ripple. The scrim's mask reads
+  // it (wall.css `.wl-veil-mask`) and thins over a wide shoulder ahead of
+  // it, so the grey goes as the light arrives and there is no edge to see.
+  // The curve is the wave's own (ripple.js `front`), the same one the hive
+  // moves the crest on, so the light and the crowd cannot drift apart.
   useEffect(() => {
     if (veil !== 'lifting' || !tap) return undefined
     const el = veilEl.current
     if (!el) return undefined
     const held = heldRipple()
-    if (held !== null) { el.style.setProperty('--rp', held.toFixed(4)); return undefined }
+    if (held !== null) { el.style.setProperty('--rp', front(held).toFixed(4)); return undefined }
     const t0 = performance.now()
     let raf = 0
     const step = (now) => {
       const p = Math.min(1, (now - t0) / RIPPLE_MS)
-      const e = 1 - Math.pow(1 - p, RIPPLE_POW)
-      el.style.setProperty('--rp', e.toFixed(4))
+      el.style.setProperty('--rp', front(p).toFixed(4))
       if (p < 1) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
@@ -291,8 +299,8 @@ export default function Wall({ go, reduce, rev, under = false }) {
   const open = useCallback((handle) => go('letter', handle), [go])
 
   // Under the veil nothing is being read and nothing can be pulled; the
-  // moment the circle starts to open the field is the field, so it comes up
-  // to full light inside the circle as it grows rather than after it.
+  // moment the wave leaves the finger the field is the field, and each disc
+  // comes up to full light as the crest reaches it rather than after it.
   const veiled = veil === 'up'
   const lifted = veil === 'down'
   const veilStyle = tap
@@ -312,7 +320,7 @@ export default function Wall({ go, reduce, rev, under = false }) {
       <div className="wl-stage">
         <Hive
           tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
-          opening={playing} mine={wroteTo} onOpen={open}
+          opening={playing} mine={wroteTo} pulse={pulse} onOpen={open}
           none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
         />
       </div>
@@ -346,8 +354,8 @@ export default function Wall({ go, reduce, rev, under = false }) {
             className={`wl-veil${veil === 'lifting' ? ' is-lifting' : ''}`}
             ref={veilEl} style={veilStyle}
           >
-            {/* everything the circle takes: the grey and the type, in one
-                masked layer, so one edge cuts through both */}
+            {/* everything the wave takes: the grey and the type, in one
+                masked layer, so the light goes through both at once */}
             <div className="wl-veil-mask">
               {/* the grey over the field is itself the way in: a tap anywhere
                   on it opens it from there, and the arrow link below says so
@@ -368,10 +376,6 @@ export default function Wall({ go, reduce, rev, under = false }) {
                 </div>
               </div>
             </div>
-            {/* the edge of the circle: one hairline on the edge of the light,
-                outside the mask so the mask cannot take it, and gone by the
-                time it reaches the corners */}
-            {veil === 'lifting' && <span className="wl-veil-ring" aria-hidden="true" />}
           </div>
         )}
       </div>

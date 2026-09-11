@@ -1,4 +1,4 @@
-// ── morph.js — the disc that becomes the card ───────────────────────────────
+// ── morph.js — the disc the letter opens from ───────────────────────────────
 //
 // A name on the wall is a circle with a face in it, and the letter under that
 // name is a cream card with the same face at its head. Those are the same
@@ -7,24 +7,24 @@
 // person who pressed it had to work out for themselves that the card belonged
 // to the thing they touched.
 //
-// So the disc travels. The circle that was pressed lifts off the field, opens
-// as it goes, and lands as the card, with the face settling into the card's
-// letterhead where it belongs. One object, one movement, and nowhere in it is
-// the moment where the wall was replaced by a screen.
+// So the sheet opens out of the disc. The circle that was pressed is where the
+// letter's sheet grows from, with the card already on it (parts.jsx `Sheet`,
+// `origin`), so the card is seen to come from the face it belongs to and
+// nowhere in it is the moment where the wall was replaced by a screen.
 //
 // ── why this is a module and not a prop ─────────────────────────────────────
 // The two ends of the movement are in two different trees. The disc is a slot
-// in the hive, thrown away the instant the route changes; the card is inside a
-// sheet the shell mounts afterwards. Nothing renders both, and threading a
-// DOMRect up through the wall's screen, the shell's router and back down into
-// the sheet would put a piece of animation state on four components that have
-// no other reason to know about it.
+// in the hive, thrown away the instant the route changes; the sheet is mounted
+// by the shell afterwards. Nothing renders both, and threading a DOMRect up
+// through the wall's screen, the shell's router and back down into the sheet
+// would put a piece of animation state on four components that have no other
+// reason to know about it.
 //
-// So the disc leaves its rectangle here on the way out and the card picks it
+// So the disc leaves its rectangle here on the way out and the sheet picks it
 // up on the way in. It is a single slot with a short life: a hand-off that is
 // not claimed within `WINDOW` never happened, which is what makes a deep link,
 // a back button and a page reload all land as an ordinary sheet rather than
-// flying in from a disc that is not on the screen.
+// opening out of a disc that is not on the screen.
 
 // How long a hand-off stays claimable. Long enough to cover the route change
 // and the sheet's first render, short enough that a letter opened from
@@ -43,10 +43,10 @@ export function takeOff(handle, rect) {
   }
 }
 
-// The card, on the way in. Claims the hand-off and clears it, so a second
-// screen mounting behind the first cannot fly the same circle twice. `handle`
-// is checked when the caller knows one — a letter opened by id off a shared
-// link has none, and the freshness window is enough on its own there.
+// The sheet, on the way in. Claims the hand-off and clears it, so a second
+// screen mounting behind the first cannot open from the same circle twice.
+// `handle` is checked when the caller knows one — a letter opened by id off a
+// shared link has none, and the freshness window is enough on its own there.
 export function land(handle) {
   const p = PENDING
   PENDING = null

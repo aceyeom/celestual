@@ -653,7 +653,40 @@
    and slightly out of focus behind it — which is the modal reference exactly,
    and which is the difference between a surface with things on it and a stack
    of pages. */
-.wl-sheet-wrap { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; }
+.wl-sheet-wrap { position: fixed; inset: 0; z-index: 50; }
+/* ── the frame the sheet stands in ──
+   The size of the glass, and the sheet is laid out inside it: on a phone
+   against the bottom edge, on a spread in the middle. It is a separate layer
+   from the wrap because it is the thing that scales when a sheet opens from
+   a point (parts.jsx `Sheet`, `origin`): a full-viewport frame keeps its
+   size when the sheet inside it grows, so the point it opens from stays
+   where the finger was. It takes no pointer of its own, so the scrim under
+   it is still the way out; the sheet takes it back. */
+.wl-sheet-lift {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  pointer-events: none;
+}
+.wl-sheet-lift > .wl-sheet { pointer-events: auto; }
+/* ── opening from a point ──
+   The frame scales up from a twelfth of itself round the point the disc
+   stood on, and comes to full light over the first third of that; the sheet
+   inside it does not also rise, and what is on it does not also fade in,
+   because this IS the entrance and the letter is on it from the first
+   frame. One transform and one opacity on one layer, and nothing measured
+   on the way. The way out is the sheet's own, as it always was. */
+.wl-sheet-wrap.is-from .wl-sheet-lift {
+  transform-origin: var(--ox, 50%) var(--oy, 50%);
+  animation: wl-open-from 560ms var(--ease-sheet) both;
+  will-change: transform, opacity;
+}
+.wl-sheet-wrap.is-from .wl-sheet, .wl-sheet-wrap.is-from .wl-sheet-in { animation: none; }
+.wl-sheet-wrap.is-from.is-closing .wl-sheet-lift { animation: none; will-change: auto; }
+@keyframes wl-open-from {
+  from { transform: scale(0.12); opacity: 0; }
+  34%  { opacity: 1; }
+  to   { transform: none; opacity: 1; }
+}
 
 /* The scrim dims the wall behind a sheet without putting it out: the names
    and the sky are still there, lower, and the field has slowed under it
@@ -1158,14 +1191,17 @@
    arrow link says so in words. It lifts once per tab.
 
    ── and it opens from the finger ──
-   A tap opens it as a circle growing out from the tap (screens/Wall.jsx):
-   the scrim is masked by a hole whose radius is `--rp` of `--rmax`, the
-   distance from the tap to the farthest corner of the glass, and one
-   hairline ring stands on the hole's edge and runs out with it. One number
-   drives both, written to the veil on every frame of the ripple, so the
-   edge of the light and the ring on it cannot drift apart. The field comes
-   up to full light and the lens blooms inside the circle as it grows
-   (Hive.jsx), and the type rises off the field as the circle reaches it.
+   A tap sends one wave out through the crowd from under it (ripple.js,
+   screens/Wall.jsx), and the veil goes with the wave's crest: the scrim is
+   masked by a hole whose radius is `--rp` of `--rmax`, the distance from
+   the tap to the farthest corner of the glass, with a shoulder on it a
+   third of that distance wide. The number is written to the veil on every
+   frame of the ripple, on the wave's own curve, so the light and the
+   movement in the faces under it are one thing. There is no line on the
+   edge of the light: there was a hairline ring once, and a ring crossing
+   the faces is a line passing over a picture. What crosses the faces now is
+   the faces (Hive.jsx, THE PULSE), and the type rises off them as the
+   crest reaches it.
 
    `--ramp` is how far the scrim reaches up over the bar, so the grey over
    the field has no edge where the bar ends. The scrim carries the ramp in
@@ -1178,8 +1214,7 @@
   position: absolute; inset: 0; left: calc(50% - 50vw); width: 100vw; z-index: 3;
   display: flex; flex-direction: column;
 }
-/* the layer the circle is cut out of: the scrim and the type together. The
-   ring is the veil's other child and stands outside it. */
+/* the layer the light is cut out of: the scrim and the type together */
 .wl-veil-mask {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -1222,48 +1257,24 @@
 .wl-mast-go { margin-top: 24px; pointer-events: auto; }
 
 /* ── lifting ──
-   The hole: transparent inside the radius, and a soft shoulder past it so
-   the edge of the light is a shoulder and not a cut, and the type dissolves
-   over the last hundred pixels before the edge rather than being sliced.
-   The ring stands on the radius itself, the one crisp line in the movement.
-   Nothing on the veil is faded on a clock of its own: the circle is the
-   whole of the reveal, and it takes the title when it reaches it. The mask
-   is on the layer, not the scrim, so the scrim's ramp over the bar is
-   accounted for once, in the circle's centre. */
+   The light: gone inside the crest, and a shoulder ahead of it a third of
+   the crest's whole reach wide, so the grey thins for most of a second
+   before the crest arrives and there is no edge anywhere on the glass to
+   look at. It is light arriving, and the crowd rising to meet it is the
+   ripple. The type dissolves on the same shoulder, so the title goes as the
+   wave reaches it and not on a clock of its own. The mask is on the layer,
+   not the scrim, so the scrim's ramp over the bar is accounted for once, in
+   the wave's centre. */
 .wl-veil.is-lifting { pointer-events: none; }
 .wl-veil.is-lifting .wl-veil-mask {
   -webkit-mask-image: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
-    transparent var(--rr),
-    rgba(0, 0, 0, 0.55) calc(var(--rr) + 40px),
-    #000 calc(var(--rr) + 130px));
+    transparent calc(var(--rr) - var(--rmax, 1400px) * 0.04),
+    rgba(0, 0, 0, 0.5) calc(var(--rr) + var(--rmax, 1400px) * 0.13),
+    #000 calc(var(--rr) + var(--rmax, 1400px) * 0.34));
   mask-image: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
-    transparent var(--rr),
-    rgba(0, 0, 0, 0.55) calc(var(--rr) + 40px),
-    #000 calc(var(--rr) + 130px));
-}
-/* the ring. Its box is the circle at full size and it is scaled by the same
-   number the hole is cut by, so it is a transform and costs the compositor
-   nothing. Bright as it leaves the finger, and gone before it reaches the
-   corners: a ring that arrives at the edge of the glass is a ring that hit
-   something. */
-.wl-veil-ring {
-  position: absolute; z-index: 2;
-  left: var(--rx, 50%); top: var(--ry, 50%);
-  width: calc(var(--rmax, 1400px) * 2); height: calc(var(--rmax, 1400px) * 2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(var(--rp));
-  box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.55),
-    inset 0 0 28px rgba(255, 244, 228, 0.10),
-    0 0 0 1px rgba(8, 7, 11, 0.4);
-  pointer-events: none;
-  will-change: transform;
-  animation: wl-ring-off 1050ms linear both;
-}
-@keyframes wl-ring-off {
-  0%   { opacity: 0.9; }
-  50%  { opacity: 0.62; }
-  100% { opacity: 0; }
+    transparent calc(var(--rr) - var(--rmax, 1400px) * 0.04),
+    rgba(0, 0, 0, 0.5) calc(var(--rr) + var(--rmax, 1400px) * 0.13),
+    #000 calc(var(--rr) + var(--rmax, 1400px) * 0.34));
 }
 
 /* ── and then the rest of the wall arrives ──
@@ -1313,7 +1324,6 @@
    as a lens rather than as a room. */
 .wl-hive-crowd {
   position: absolute; inset: 0;
-  transition: opacity 760ms var(--ease);
   -webkit-mask-image:
     radial-gradient(ellipse 86% 82% at 50% 47%, #000 26%, rgba(0,0,0,0.86) 56%, rgba(0,0,0,0.34) 84%, transparent 100%),
     linear-gradient(90deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
@@ -1323,18 +1333,21 @@
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
-/* under the veil the field is grey: dimmed, not blurred, because a blur over
-   a hundred moving discs is a hundred rasters a frame. The monograms go
-   further, so the type stands on a texture of discs and not on a field of
-   other letters. */
-.wl-hive.is-veiled .wl-hive-crowd { opacity: 0.4; }
+/* Under the veil the field is grey: dimmed, not blurred, because a blur over
+   a hundred moving discs is a hundred rasters a frame. The dimming is not
+   this file's: it is per disc, written by the loop with the disc's own
+   opacity, because the wave that lifts the veil brings the light to each
+   face as it reaches it and a fade on the crowd as a whole would be a
+   second reveal running under the first (Hive.jsx, VEILED_LIGHT). What
+   this file adds is that the monograms go further, off the same number
+   (`--rv`, nought under the veil and one in the light), so the type on the
+   veil stands on a texture of discs and not on a field of other letters. */
 .wl-hive.is-veiled { cursor: default; }
 /* Nothing is being read while the masthead is up either — but that is decided
    in Hive.jsx, by not putting the class on anybody, rather than by unpicking
    it here: an override for a state that is drawn by three other rules is three
    places to keep in step. */
-.wl-hive .wl-face-mono { transition: opacity 760ms var(--ease); }
-.wl-hive.is-veiled .wl-face-mono { opacity: 0.3; }
+.wl-hive .wl-face-mono { opacity: calc(0.3 + 0.7 * var(--rv, 1)); }
 .wl-hive.is-empty { display: grid; place-items: center; cursor: default; }
 .wl-hive-none { text-align: center; }
 
@@ -1489,36 +1502,6 @@
 }
 .wl-hive-say.is-on .wl-hive-say-h { opacity: 1; transform: none; }
 
-/* ═══ THE MORPH ════════════════════════════════════════════════════════════
-   Morph.jsx: the stand-in that starts as the disc that was pressed and ends
-   as the card. It is over the sheet, never under it, and it takes no pointer
-   at any point in its half second of life. */
-.wl-morph {
-  position: fixed; z-index: 55; pointer-events: none;
-  overflow: hidden;
-  /* the card's cast shadow, which is also a fair shadow for a disc — the two
-     highlights that belong to PAPER are on the paper, so they arrive with it
-     rather than sitting on a photograph for the first tenth of the flight */
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.22),
-    0 26px 60px -22px rgba(0, 0, 0, 0.85);
-  will-change: left, top, width, height, border-radius;
-}
-.wl-morph-paper {
-  position: absolute; inset: 0; border-radius: inherit;
-  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
-}
-.wl-morph-face {
-  position: absolute; left: 0; top: 0;
-  border-radius: 50%; overflow: hidden;
-}
-.wl-morph-face > .wl-face { width: 100%; height: 100%; }
-/* the letterhead the stand-in lands on, and the ring it lands as: a plain
-   wrapper round the card's own face so the flight has something to measure */
-.wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
-.wl-letter-card { position: relative; }
-
 /* ── the opening ──
    Plays once per session. The masthead rises on the veil, and the field
    arrives under it from the middle outward: each disc's delay is its distance
@@ -1583,41 +1566,84 @@
    header is for. The two arrows that stood beside it went to the card. */
 .wl-pager { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
 
-/* ── turning the pages ──
-   Letter.jsx. The stack is turned where the letter is: a chevron in each
-   gutter beside the card, bare, in ash, brightening under the pointer, and
-   nearly gone at the end of the stack; and the card takes a horizontal
-   swipe, following the finger with some give and springing back if it was
-   not far enough. `pan-y` hands a vertical drag to the sheet, so a long
-   letter can still be scrolled past.
+/* ── the deck ──
+   Letter.jsx `Deck`. Every letter under a name is a card on one track, the
+   one being read at the middle and the edge of the one before and the one
+   after showing either side of it, a little smaller and a little dimmer, so
+   the fact that there is more is on the screen. The track follows a finger
+   one to one and a turn is a transition on the same transform, from wherever
+   the finger let go to the card that was asked for; nothing is measured on
+   the way. `pan-y` hands a vertical drag to the sheet, so a long letter can
+   still be scrolled past.
 
-   The gutter on a phone is the sheet's own 22px, so the chevron is a bare
-   stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
-   edge. In the dialog the gutters are wide and the chevrons stand in rings,
-   the way the close mark does. */
-.wl-letter-stage { position: relative; touch-action: pan-y; }
-.wl-letter-card {
+   ── the track is placed by two numbers and one rule ──
+   `--at` is which card is at the middle and `--dx` is the finger's offset,
+   both written by the deck; this one transform turns them into a place. A
+   slot is the width of the track, so one card's width is 100% of it and the
+   arithmetic never has to know what that is in pixels.
+
+   ── it bleeds to the sheet's edge ──
+   On a phone the deck runs out over the sheet's own gutters, so the
+   neighbours' edges show against the edge of the glass and the card at the
+   middle keeps nearly the whole measure it had; the gutter it takes back is
+   what the peek is drawn in. The padding under it is for the paper's cast
+   shadow, which the deck would otherwise cut, and the margin under that
+   gives the room back. */
+.wl-deck-room { position: relative; }
+.wl-deck {
+  --peek: 30px; --gap: 10px; --shadow: 36px;
   position: relative;
-  transition: transform 320ms var(--ease);
+  margin: 0 calc(-1 * var(--gutter)) calc(-1 * var(--shadow));
+  padding: 0 var(--peek) var(--shadow);
+  overflow: hidden;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  transition: height 380ms var(--ease-sheet);
+}
+/* the height of the card at the middle, once it has been measured, so the
+   sheet is the height of the letter being read and not of the longest
+   letter under the name; the track's other cards hang below the edge */
+.wl-deck.is-sized { height: calc(var(--deck-h) + var(--shadow)); }
+.wl-deck.is-held { user-select: none; -webkit-user-select: none; }
+.wl-deck-track {
+  display: flex; align-items: flex-start; gap: var(--gap);
+  width: 100%;
+  transform: translate3d(calc(var(--at, 0) * (-100% - var(--gap)) + var(--dx, 0px)), 0, 0);
+  transition: transform 460ms var(--ease-sheet);
   will-change: transform;
 }
-.wl-letter-card.is-from-right { animation: wl-turn-r 360ms var(--ease) both; }
-.wl-letter-card.is-from-left  { animation: wl-turn-l 360ms var(--ease) both; }
-@keyframes wl-turn-r { from { opacity: 0; transform: translate3d(28px, 0, 0); } to { opacity: 1; transform: none; } }
-@keyframes wl-turn-l { from { opacity: 0; transform: translate3d(-28px, 0, 0); } to { opacity: 1; transform: none; } }
-.wl-turn {
-  position: absolute; top: 50%; z-index: 2;
-  width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
-  display: grid; place-items: center;
-  border: 0; background: none; color: var(--ash);
-  transition: color 200ms var(--ease), opacity 200ms var(--ease);
+.wl-deck-slot {
+  flex: 0 0 100%; min-width: 0;
+  opacity: 0.55; transform: scale(0.965);
+  transform-origin: 50% 50%;
+  transition: opacity 460ms var(--ease-sheet), transform 460ms var(--ease-sheet);
 }
-.wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
-.wl-turn.is-next { right: calc(-1 * var(--gutter)); }
+.wl-deck-slot.is-on { opacity: 1; transform: none; }
+/* the dots under the deck: one per letter, the one at the middle drawn long,
+   the ones before it a step brighter than the ones after, and each a way to
+   its card. The dot's own rule is the step dots' (`.wl-dot`, above); this
+   gives each a target a finger can find without making the row taller. */
+.wl-deck-dots { justify-content: center; margin-top: 18px; }
+.wl-deck-dots .wl-dot { position: relative; }
+.wl-deck-dots .wl-dot::before { content: ''; position: absolute; inset: -9px -4px; }
+.wl-deck-dots .wl-dot:focus-visible { outline-offset: 5px; }
+/* ── the chevrons ──
+   In the dialog only, where there is room either side of the paper for a
+   ring each, the close mark's own size, centred in the band; on a phone the
+   neighbours' own edges and the dots are the way through, and a chevron on
+   the paper's edge was the one sign of a swipe nobody could see. */
+.wl-turn {
+  display: none;
+  position: absolute; top: 50%; z-index: 2;
+  width: 36px; height: 36px; margin-top: -18px; padding: 0;
+  place-items: center;
+  border: 1px solid var(--hair); border-radius: 50%; background: none; color: var(--ash);
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
+}
 .wl-turn.is-next .wl-icon { transform: scaleX(-1); }
-.wl-turn:hover:not(:disabled) { color: var(--chalk); }
+.wl-turn:hover:not(:disabled) { color: var(--chalk); border-color: rgba(244, 241, 234, 0.24); }
 .wl-turn:disabled { opacity: 0.22; cursor: default; }
-.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 8px; }
+.wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
 
 /* ── the flag, on the card ─────────────────────────────────────────────────
    Letter.jsx. The two marks a reader can leave on a letter share the paper's
@@ -2439,7 +2465,7 @@
      Same component, same content, different physics: it arrives from the
      middle rather than the bottom edge, and the wall behind it is dimmed the
      same way. */
-  .wl-sheet-wrap { justify-content: center; align-items: center; padding: 32px; }
+  .wl-sheet-lift { justify-content: center; align-items: center; padding: 32px; }
   .wl-sheet {
     /* a dialog hugs its content — the 62dvh floor exists so a bottom sheet
        does not look like a notification, and a centred card has no such
@@ -2458,21 +2484,17 @@
   .wl-sheet-in { padding: 26px 30px 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
   /* ── the letter's dialog is wider than the card in it ──
-     The card keeps its measure and the dialog grows round it, so the two
-     chevrons stand in the room either side of the paper rather than on its
-     edge: a ring each, the close mark's own size, centred in the band. */
+     The card keeps its measure and the dialog grows round it, so the deck
+     shows the neighbours' edges either side of the paper and the two
+     chevrons stand in the room past those: a ring each, the close mark's
+     own size, centred in the band. */
   .wl-sheet-wrap:has(.wl-letter) .wl-sheet { max-width: 680px; }
   .wl-letter { --gutter: 30px; }
-  .wl-letter-stage { max-width: 460px; margin: 0 auto; }
-  .wl-turn {
-    width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
-    border: 1px solid var(--hair);
-    transition: color 200ms var(--ease), border-color 200ms var(--ease), opacity 200ms var(--ease);
-  }
-  .wl-turn.is-prev { left: -62px; }
-  .wl-turn.is-next { right: -62px; }
-  .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
-  .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
+  .wl-deck-room { max-width: 520px; margin: 0 auto; }
+  .wl-deck { margin-left: 0; margin-right: 0; }
+  .wl-turn { display: grid; }
+  .wl-turn.is-prev { left: -43px; }
+  .wl-turn.is-next { right: -43px; }
   /* the card's own act stands under the card, at the card's measure, on
      both sheets that carry one: a pill the width of the dialog under a
      paper narrower than it is a pill about the dialog */
@@ -2542,7 +2564,7 @@
   .wl-mast-go { margin-top: 12px; }
   .wl-pill.is-wide { min-height: 44px; }
 
-  .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
+  .wl-sheet-lift { justify-content: center; align-items: center; padding: 14px; }
   .wl-sheet { min-height: 0; max-width: 620px; max-height: 94dvh; border-radius: 18px; }
   .wl-grip { display: none; }
   .wl-sheet-in { padding: 18px 22px 22px; }
@@ -3180,9 +3202,9 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-veil-ring, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
+  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
   .wl-wallpage.is-arriving .wl-iconbtn, .wl-wallpage.is-arriving .wl-dock-in { animation: none !important; }
-  .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
+  .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }
   .wl-card-bar { animation: none; opacity: 0.6; }

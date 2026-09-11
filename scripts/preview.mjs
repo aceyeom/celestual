@@ -670,10 +670,11 @@ const ROUTES = [
   // the veil lifted, once the lens has bloomed and the walk has taken its
   // first step and come to rest on a person
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
-  // the veil opening from the tap, held at four tenths of its reach
-  // (Wall.jsx `heldRipple`): the circle, the ring on its edge, and the type
-  // going where the edge has reached it. A capture takes longer than the
-  // ripple's middle lasts, so the frame is held rather than caught.
+  // the veil opening from the tap, held at four tenths of the wave's progress
+  // (Wall.jsx `heldRipple`, ripple.js): the light gone behind the crest and
+  // thinning ahead of it, the crowd heaved and swollen along the crest, and
+  // the type going where the light has reached it. A capture takes longer
+  // than the ripple's middle lasts, so the frame is held rather than caught.
   { label: 'berkeley-ripple', path: '/berkeley?rp=0.42', press: '.wl-veil-scrim', at: { x: 0.62, y: 0.58 }, settle: 900 },
   { label: 'berkeley-lifted', path: '/berkeley', press: '.wl-mast-go', settle: 5200 },
   // the field under a mouse: the disc the pointer is on, lifted and named,
@@ -689,8 +690,9 @@ const ROUTES = [
   { label: 'berkeley-lifted-still', path: '/berkeley', still: true, press: '.wl-mast-go', settle: 1200 },
   { label: 'find',          path: '/berkeley/find' },
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
-  // the stack, turned once: the second letter under the name, in from the right
-  { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-turn.is-next', settle: 1200 },
+  // the deck, turned once by its dots: the second letter under the name at
+  // the middle, the first and the third showing either side of it
+  { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-deck-dots .wl-dot:nth-child(2)', settle: 1200 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
