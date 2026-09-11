@@ -41,17 +41,24 @@ verify_jwt = false
 verify_jwt = false
 
 # The wall's composer (/berkeley/write). This was the one function in the project
-# with no entry here, so it inherited verify_jwt = true and its real posture was
-# whatever flag the last deploy happened to use. Stated explicitly now, and the
-# statement is the same as every other one: the anon key is in the bundle, so a
-# JWT proves nothing about who is calling.
+# with no entry here, so its real posture was whatever flag the last deploy
+# happened to use. Production has it ON, and it stays on — this is the one
+# function in the list that KEEPS JWT verification, so the note here is the
+# opposite of the others.
+#
+# It is on because turning it off would strictly widen the door and buy nothing:
+# the client invokes this through supabase-js, which sends the anon key as the
+# bearer, so verification costs the real caller nothing. It is not the control,
+# though, and must never be mistaken for one — the anon key is in the bundle, so
+# a valid JWT here says only "somebody read our JavaScript".
 #
 # What this function actually rests on is wall_can_write (migration 0049), asked
 # BEFORE the model call, and wall_write, which re-checks everything in the
-# statement that inserts. That ordering is the control — it used to spend a paid
-# classifier call on a caller with no session and refuse it afterwards.
+# statement that inserts. That ordering is the control: the function used to
+# spend a paid classifier call on a caller with no session at all and refuse it
+# afterwards, which is a way to spend the moderation budget from a shell script.
 [functions.celestual-wall-moderate]
-verify_jwt = false
+verify_jwt = true
 
 # Durable, DM-free re-login (the email magic link). Invoked by anonymous visitors
 # (with the anon key) from the sign-back-in flow and the /signin redeem, so JWT
