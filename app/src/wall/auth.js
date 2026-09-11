@@ -69,7 +69,7 @@
 // wall with no words on it. What this module holds is the copy of that answer
 // the interface draws from, not the answer.
 
-import { getState, patch, push } from './store.js'
+import { getState, patch, push, setAfterGate } from './store.js'
 import { cardStep } from './seed.js'
 import { normHandle, forgetLetters } from './data.js'
 import { whoamiStrict, bindHandle, forgetSession } from '../api/identity.js'
@@ -126,6 +126,20 @@ export function validCode(raw) {
 export function member() { return getState().member || null }
 export function isMember() { return !!getState().member }
 export function isReader() { return !!getState().reader }
+
+// ── the composer, or the door in front of it ────────────────────────────────
+// Every way into the composer comes through here: the pill on the wall, the
+// nib in the bar, "write to @them" on a letter. A member lands on the
+// composer. Anybody else lands on the campus gate with the composer set as
+// where the gate opens onto, so the one press says "write" and the next
+// screen is the address, not a greyed composer with a sentence beside it
+// explaining that the address comes first.
+export function toWrite(go, handle = '') {
+  const h = normHandle(handle)
+  if (isMember()) { go('write', h || undefined); return }
+  setAfterGate({ name: 'write', id: h })
+  go('gate')
+}
 
 // Called after celestual-edu-verify confirms a code. The address it takes is
 // the one the server just verified, not one the browser typed.

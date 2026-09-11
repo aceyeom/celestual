@@ -206,6 +206,21 @@ const FLING = 2400
 const SLOP = 6
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
+// ── the window, and the window's bar ──
+// A phone's browser bar comes and goes as the page is scrolled, and the
+// stage's height with it, by eighty pixels or so, many times a minute. The
+// field used to answer every one of those as a new window: a new centre for
+// the light, a new rim for the lens, and when the change was worth a row of
+// slots, a new pool, which handed every disc on the screen to a different
+// slot in the same frame. That was the wall seen to breathe and reshuffle
+// under a thumb. So the lens is drawn for a height that moves only when the
+// window has actually changed shape (a turn, a resize, a keyboard: more
+// than this share of it, or more than this many pixels), and the pool is
+// cut with this much headroom below the stage, so the taller stage a
+// collapsed bar leaves is already covered and no slot changes hands.
+const RESHAPE_PX = 160
+const RESHAPE_SHARE = 0.24
+const HEADROOM = 220
 
 const mod = (v, m) => ((v % m) + m) % m
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
@@ -426,6 +441,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     c: { x: 0, y: 0 },        // the centre of the window
     lx: 0, ly: 0,             // where the light actually is, eased
     S: 70, rowH: 70 * ROW,    // the lattice pitch, set from the window
+    wL: 0, hL: 0,             // the window the lens is drawn for (RESHAPE_PX)
     lens: lensFor(0, 0),      // the four ramps, for this window's shape
     wave: null,               // the pulse, placed in this frame
     bloom: 0,                 // 0 under the veil, 1 with the field at full
@@ -471,15 +487,22 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const h = el.clientHeight
       if (!w || !h) return
       const m = motion.current
-      const S = pitchFor(w, h)
+      // the window the lens is drawn for: this one, unless the only thing
+      // that changed is a browser bar (RESHAPE_PX, above)
+      const reshaped = !m.ready
+        || Math.abs(h - m.hL) > Math.max(RESHAPE_PX, m.hL * RESHAPE_SHARE)
+        || Math.abs(w - m.wL) > 40
+      if (reshaped) { m.wL = w; m.hL = h }
+      const hL = m.hL
+      const S = pitchFor(w, hL)
       const rowH = S * ROW
       const pad = S * 0.6
       const Mx = Math.ceil((w + 2 * pad) / S) + 3
-      const My = Math.ceil((h + 2 * pad) / rowH) + 3
+      const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / rowH) + 3
       const was = { ...m.c }
       size.current = { w, h }
-      m.c = { x: w / 2, y: h / 2 }
-      m.lens = lensFor(w, h)
+      m.c = { x: w / 2, y: hL / 2 }
+      m.lens = lensFor(w, hL)
       if (!m.ready) {
         // the tile's middle cell starts in the light
         m.S = S; m.rowH = rowH
@@ -503,15 +526,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         m.o.x += m.c.x - was.x
         m.o.y += m.c.y - was.y
       }
-      if (m.Mx !== Mx || m.My !== My) {
-        m.Mx = Mx; m.My = My
-        m.slots = Array.from({ length: Mx * My }, () => ({
+      // The pool only ever grows, and only when the window has outgrown it:
+      // cutting a new one hands every disc to a different slot, which is a
+      // reshuffle the eye sees, so it is done for a turn of the phone and
+      // never for a bar.
+      if (Mx > m.Mx || My > m.My) {
+        const NX = Math.max(Mx, m.Mx), NY = Math.max(My, m.My)
+        m.Mx = NX; m.My = NY
+        m.slots = Array.from({ length: NX * NY }, () => ({
           I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true,
         }))
-        m.used = new Uint8Array(Mx * My)
+        m.used = new Uint8Array(NX * NY)
         m.focus = null
-        setGrid({ Mx, My })
-        setAssign(new Array(Mx * My).fill(null))
+        setGrid({ Mx: NX, My: NY })
+        setAssign(new Array(NX * NY).fill(null))
       }
     }
     measure()
@@ -628,8 +656,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       // screen is the rim of the lens on a spread. On a phone held upright it
       // is drawn taller than it is wide (lensFor), so the two long edges —
       // the edges a phone has — stand inside it rather than on its rim.
-      const Ry = h / 2 + S * 0.3
-      const Rx = Math.max(w / 2 + S * 0.3, Ry * lens.side)
+      // off the window the lens is drawn for, not the stage's height this
+      // frame (measure, above)
+      const Ry = m.c.y + S * 0.3
+      const Rx = Math.max(m.c.x + S * 0.3, Ry * lens.side)
       const reach = S * TOUCH.reach
       const pa = m.pa
       // the pulse, if one is crossing the field, and how wide its crest is

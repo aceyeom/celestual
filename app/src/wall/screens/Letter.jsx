@@ -35,71 +35,69 @@
 // came here to get something off the wall stands on the card itself, at the
 // end of its foot, opposite the heart (below).
 //
+// ── who it is for ───────────────────────────────────────────────────────────
+// The card opens on "for", the name the resolver has for the person, and the
+// handle under it (parts.jsx `Addressee`), with their face beside it; the
+// face can be pressed and opens large, the way a profile picture does on
+// Instagram (parts.jsx `OpenFace`). It used to open on the handle alone, set
+// large, which read as a card about a handle rather than a letter to a person.
+//
 // ── it opens out of the disc that was pressed ───────────────────────────────
 // The wall leaves the circle of the disc behind on the way out (morph.js)
 // and the card claims it on the way in: the letter's own card, with its words
 // on it from the first frame, starts as that circle — the paper cut round,
 // the whole card scaled to the disc — and opens out to where it stands, while
 // the sheet's glass comes up under it and the header and the foot arrive a
-// beat behind. One element, one transform, and the real card the whole way:
-// there is no stand-in, nothing is hidden until something else has landed,
-// and nothing is measured against a destination that might move. It used to
-// be a stand-in flown by hand against a card that was read fresh every frame
-// and switched on at the end; when the words landed mid-flight the card grew
-// under the stand-in, the sheet re-centred, and the landing was a jump.
+// beat behind. One element, one transform, and the real card the whole way.
 //
 // A deep link, a refresh, a back button, a turn of the stack or a reader who
 // has asked for less movement opens the ordinary way, because none of them
 // has a circle to open out of.
 //
-// ── the deck ────────────────────────────────────────────────────────────────
-// Every letter on the wall is one card in one deck, and the deck is turned
-// where the card is. The order is the wall's own: the names in the order the
-// index carries them, newest first, and under each name its letters. So the
-// card after the last letter under a name is the first letter under the next
-// name, and a swipe can be kept up from one end of the wall to the other. It
-// used to stop at the name: a stack of one — which is most names — had no
-// turn at all, and a person who swiped the card got a spring back and no way
-// to read on.
+// ── the deck, turned like a carousel ────────────────────────────────────────
+// Every letter on the wall is one card in one deck, in the wall's own order:
+// the names in the order the index carries them, newest first, and under each
+// name its letters. So the card after the last letter under a name is the
+// first letter under the next name, and a swipe can be kept up from one end
+// of the wall to the other.
 //
-// What says there is more is the deck itself: the edge of the next card and
-// the one after it stand under the card, and a swipe takes the card off the
-// top and the next rises from the stack. On a phone the swipe is the gesture;
-// a chevron in each gutter says the same on a desktop, and the arrow keys do
-// the same. The header keeps the count, `3 / 19`, over the whole wall,
-// because that is where "where am I" belongs.
+// The turn is a carousel, and the direction is the one a person expects from
+// every carousel they have ever used. Swipe LEFT and the card goes left while
+// the NEXT letter comes in from the right; swipe RIGHT and the card goes right
+// while the PREVIOUS letter comes in from the left. The chevron on the right
+// is the next letter and the one on the left is the previous, and the arrow
+// keys do the same. It used to be a stack: the card flew off and the next
+// rose from under it, and a turn back flew the card off to the right while
+// the previous slid in from the left, which is two cards moving away from
+// each other, and on the chevrons it read as the card being sent the wrong
+// way. Now the two cards move together, as one strip, the whole way.
 //
-// A turn is a route change, the same as it always was, so every letter keeps
-// its own address. The next name's letters are asked for while this one is
-// being read, so the turn onto them does not wait on a request.
+// The finger has the card. While it is down both neighbours stand beside the
+// card, off the glass, and travel with it, so a drag shows the next letter
+// arriving rather than a card leaving on its own. Let go past the threshold,
+// or thrown, and the strip runs on to the neighbour; let go short, and it
+// springs back. At either end of the deck, where there is nothing further,
+// the card follows a fifth as far, which is how a thing says "no more".
+//
+// A turn is still a route change, so every letter keeps its own address. The
+// strip moves first and the address changes once the neighbour has landed,
+// silently: the leaf that takes over is the same card the neighbour slot was
+// already showing, at the same place, so nothing on the glass changes on the
+// swap. The next name's letters are asked for while this one is being read,
+// so the neighbour has its words before it is ever pulled into view.
 //
 // ── the one place anything is asked for ─────────────────────────────────────
 // The names are public and what was written under them is not. To a stranger
 // this card arrives REDACTED — the real letter, at its real length, with every
 // word struck out — and either of the product's proofs lifts it: a campus
-// address, or a handle proved by the DM code (migration 0044). Nothing else on
-// the index changes: the wall, the search and the counts are open to
-// everybody, and a person who has just scanned a code off a card is never
-// asked for anything before they have seen what this is.
-//
-// The redaction is drawn from the letter's own words, not from a grey block,
-// because the shape of the thing has to be honest even while it is shut. And
-// no readable text is in the DOM behind it.
-//
-// The five free letters (migration 0045) are the server's count and they are
-// not drawn here any more. Five hollow marks under every card, one struck per
-// letter read, put a meter on a page somebody was reading, and a meter over a
-// letter is a countdown whatever it is called. The sixth card arrives sealed
-// and says so on its own rule, which is the moment the fact is worth having.
-//
-// What is still NOT here matters as much. There is no way from a letter into
-// the core service — no "find out who", no account for it, no offer of any
-// kind. The door to the product opens after you have written, on the wall.
+// address, or a handle proved by the DM code (migration 0044). The first
+// eight are free to anybody (0045, 0049) and are the server's count; nothing
+// here draws a meter over a letter somebody is reading.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label, Face, Heart,
+  Pill, Icon, Label, OpenFace, Addressee, Heart,
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle,
@@ -107,7 +105,7 @@ import {
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
-import { isReader } from '../auth.js'
+import { isReader, toWrite } from '../auth.js'
 import { land } from '../morph.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
@@ -121,16 +119,6 @@ import { land } from '../morph.js'
 // failed. Behind the same gate as reading: on a sealed letter the heart is
 // the way to the gate, and the count still shows, since it is public the way
 // the letter's shape is.
-//
-// ── it asks the door, not the card ──
-// The press used to be allowed whenever the WORDS had arrived, and since 0045
-// the words arrive for anybody: five whole letters land open on a browser that
-// has proved nothing. So an unverified reader pressed a heart, watched it fill,
-// and had it emptied again a moment later when the server refused the same
-// browser it had never let through. The glyph now asks the same question every
-// other act on this surface asks — is this reader through the door — and sends
-// the ones who are not to it: the same answer they were going to get, arriving
-// before the count moves rather than after.
 function Hearts({ letter: l, onGate }) {
   const [busy, setBusy] = useState(false)
   const mine = isReader()
@@ -162,20 +150,20 @@ function Hearts({ letter: l, onGate }) {
 }
 
 // ── the swipe ───────────────────────────────────────────────────────────────
-// How far a finger has to travel, or how fast, for the card to leave rather
+// How far a finger has to travel, or how fast, for the strip to run on rather
 // than spring back; how much of the travel the card follows (all of it: a
 // card that lags the finger is a card on a string); how much less it follows
-// at the end of the deck, where a pull says "there is nothing further" by
-// giving less; and how far it tilts at a whole card's width of travel.
+// at the end of the deck; the room between the card and the one beside it;
+// and how long the strip takes to run on, or to spring back.
 const TURN_PX = 56
 const TURN_V = 0.4         // px per ms
 const FOLLOW = 1
 const FOLLOW_END = 0.22
 const SLOP = 6
-const TILT = 4             // degrees
-// how long the card takes to leave the glass on a turn
-const FLY_MS = 260
-const EASE_LEAVE = 'cubic-bezier(0.4, 0.05, 0.6, 0.6)'
+const GAP = 24
+const SLIDE_MS = 320
+const SPRING_MS = 280
+const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 
 // ── the opening ─────────────────────────────────────────────────────────────
 // How long the card takes to open out of the disc, on the travelling curve
@@ -198,14 +186,53 @@ const RADIUS = 18          // wall.css --r-card
 // still has its own address.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-// The leaf: the paper and the words, keyed per card so each arrival plays
-// its entrance once. It tells the screen when it is on the glass, before
-// paint, so the card that left on the last turn can be let go of on the
-// same frame the next one is drawn — which is the one moment that cannot be
-// found from the screen's own render, since a render is not a commit.
+// Where a neighbour stands, relative to the card, while the card is at `dx`.
+const beside = (dir, dx, w) => dx + dir * (w + GAP)
+
+// The leaf: the paper and the words, keyed per card so each arrival is its
+// own element. It tells the screen when it is on the glass, before paint, so
+// the strip can be put back to rest on the same frame the next card is
+// drawn — which is the one moment that cannot be found from the screen's own
+// render, since a render is not a commit.
 function Leaf({ className, onMount, children }) {
   useLayoutEffect(() => { onMount() }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return <div className={className}>{children}</div>
+}
+
+// The card, for one letter, or the waiting card for a name whose letters are
+// still on their way. Drawn once here and used for the card on the glass and
+// for the neighbours beside it, so what slides in is what lands.
+function Card({ l, handle, seed, id, foot }) {
+  if (!l) {
+    /* `waiting`, not `shut`. They draw the same block of bars and they are
+       not the same fact: a letter that has arrived shut is blurred, because
+       it is a letter you are not close enough to, and a letter that has not
+       arrived is neither shut nor open yet. */
+    return (
+      <Paper
+        dateline={{ lead: 'reading' }}
+        crest={handle ? <span className="wl-letter-crest"><OpenFace handle={handle} size={34} /></span> : null}
+        title={<Addressee handle={handle || ''} id={id} />}
+        tone="waiting"
+      >
+        <Redacted words={22} chars={110} seed={String(seed || handle || '')} />
+      </Paper>
+    )
+  }
+  const open = l.body !== null
+  return (
+    <Paper
+      dateline={sinceline(l.at, open ? '' : 'sealed')}
+      crest={<span className="wl-letter-crest"><OpenFace handle={l.to} size={34} /></span>}
+      title={<Addressee handle={l.to} id={id} />}
+      tone={open ? '' : 'shut'}
+      foot={foot}
+    >
+      {open
+        ? <Prose>{l.body}</Prose>
+        : <Redacted words={l.words} chars={l.chars} seed={l.id} />}
+    </Paper>
+  )
 }
 
 export default function Letter({ id: param, go, back, reduce = false, rev = 0 }) {
@@ -221,8 +248,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // keys the leaf, and it is kept as state from the last render rather than
   // as a ref: a render can be thrown away without being committed, and a ref
   // moved during one of those leaves a key that has already changed by the
-  // time the commit comes, with no arrival to play. The flag closes with the
-  // card it was opened on.
+  // time the commit comes. The flag closes with the card it was opened on.
   const [seen, setSeen] = useState(param)
   const [leafKey, setLeafKey] = useState(0)
   if (seen !== param) {
@@ -237,7 +263,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // that circle instead of the sheet rising over it. Nothing is claimed on a
   // deep link, a refresh or a back button, so all three open the ordinary
   // way. `flying` is the opening itself: while it is on, the sheet's glass
-  // lets the card stand outside it, and the deck under the card waits.
+  // lets the card stand outside it.
   const [from] = useState(() => land(handle))
   const [flying, setFlying] = useState(() => !!from && !reduce)
   const cardBox = useRef(null)
@@ -272,7 +298,6 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   const prevTo = at > 0 ? { id: siblings[at - 1].id }
     : ti > 0 ? { handle: tiles[ti - 1].handle, end: 'last' }
     : null
-  const ahead = ti >= 0 ? Math.max(0, total - pos - 1) : Math.max(0, of - 1 - Math.max(0, at))
 
   // the neighbours' letters, asked for while this one is read, so a turn
   // onto another name lands on its card and not on a request
@@ -281,62 +306,104 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   useEffect(() => { if (nextH) loadHandle(nextH) }, [nextH])
   useEffect(() => { if (prevH) loadHandle(prevH) }, [prevH])
 
-  // ── turning ──
-  // `slide` is which way the card that is arriving came from, and `flight`
-  // is the card on its way off the glass, kept off it until the next leaf is
-  // on. The card leaves first and the route changes when it has gone: the
-  // letter is the object, and one object leaving and the next rising from
-  // the deck is a card being turned where two crossing would be a carousel.
-  // Nothing here sets state: a render between the card leaving and the
-  // route changing would be a render of the card that has left.
-  const slide = useRef(0)
-  const flight = useRef(null)
-  const busy = useRef(false)
-  const turn = (dir, fromX = 0) => {
-    if (busy.current) return
-    const to = dir > 0 ? nextTo : prevTo
-    if (!to) return
-    let target = to.id
-    if (!target) {
-      // the next name's own letters, if they have landed; its name if not,
-      // which opens on its first letter
-      const ls = lettersFor(to.handle)
-      target = ls.length ? (to.end === 'last' ? ls[ls.length - 1].id : ls[0].id) : to.handle
-    }
-    slide.current = dir
-    const el = cardBox.current
-    if (reduce || !el || !el.animate) { go('letter', target); return }
-    busy.current = true
-    const w = el.offsetWidth || 360
-    const a = el.animate([
-      { transform: `translate3d(${fromX.toFixed(1)}px, 0, 0) rotate(${(fromX / w * TILT).toFixed(2)}deg)`, opacity: 1 },
-      { transform: `translate3d(${(dir > 0 ? -(w + 80) : w + 80).toFixed(1)}px, 0, 0) rotate(${dir > 0 ? -TILT : TILT}deg)`, opacity: 0.5 },
-    ], { duration: FLY_MS, easing: EASE_LEAVE, fill: 'forwards' })
-    flight.current = a
-    let over = false
-    const done = () => {
-      if (over) return
-      over = true
-      busy.current = false
-      go('letter', target)
-      // a route that did not change leaves no new leaf to take the card
-      // back; it comes back on its own
-      setTimeout(() => { if (flight.current === a) { flight.current = null; try { a.cancel() } catch { /* gone */ } } }, 400)
-    }
-    a.onfinish = done
-    setTimeout(done, FLY_MS + 200)
+  // What stands either side: the letter itself when it has landed, and the
+  // name's waiting card when it has not. The route a turn goes to is the
+  // letter's own id when there is one, and the name when there is not, which
+  // opens on its first letter the moment it lands.
+  const cardBeside = (to) => {
+    if (!to) return null
+    if (to.id) return { l: letter(to.id) || null, handle: null, target: to.id }
+    const ls = lettersFor(to.handle)
+    const l = ls.length ? (to.end === 'last' ? ls[ls.length - 1] : ls[0]) : null
+    return { l, handle: to.handle, target: l ? l.id : to.handle }
   }
-  const turnRef = useRef(turn)
-  turnRef.current = turn
+  const prevCard = cardBeside(prevTo)
+  const nextCard = cardBeside(nextTo)
 
-  // The leaf that has just arrived takes the glass: the card that left is
-  // let go of, before paint, and whatever the finger left on the card goes
-  // with it.
+  // ── the strip ──
+  // `move` is what the strip is doing: nothing, following a finger, or
+  // running on to a neighbour. While it is anything, the neighbours stand
+  // beside the card, and every position is written straight to the three
+  // elements from the gesture rather than through a render. `dx` is where
+  // the card is, and `silent` says the next leaf is the neighbour that was
+  // already on the glass, so it takes over without an entrance.
+  const [move, setMove] = useState(null)   // null · { kind: 'drag'|'slide', dir?, w }
+  const prevSlot = useRef(null)
+  const nextSlot = useRef(null)
+  const dx = useRef(0)
+  const silent = useRef(false)
+  const busy = useRef(false)
+  const timers = useRef([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  const after = (ms, fn) => { timers.current.push(setTimeout(fn, ms)) }
+
+  const place = (x, w, transition) => {
+    dx.current = x
+    const set = (el, v) => {
+      if (!el) return
+      el.style.transition = transition
+      el.style.transform = `translate3d(${v.toFixed(1)}px, 0, 0)`
+    }
+    set(cardBox.current, x)
+    set(prevSlot.current, beside(-1, x, w))
+    set(nextSlot.current, beside(1, x, w))
+    // a style flush, so a neighbour that has just been put on the glass has
+    // a place to move FROM: a transition set on an element that has never
+    // been styled does not run, it arrives
+    if (transition === 'none' && cardBox.current) void cardBox.current.offsetWidth
+  }
+  const rest = () => {
+    for (const el of [cardBox.current, prevSlot.current, nextSlot.current]) {
+      if (el) { el.style.transition = ''; el.style.transform = '' }
+    }
+    dx.current = 0
+  }
+  // The neighbours are put beside the card before they are painted.
+  useLayoutEffect(() => {
+    if (!move) return
+    place(dx.current, move.w, 'none')
+  }, [move])
+
+  const width = () => (cardBox.current && cardBox.current.offsetWidth) || 360
+
+  // Run on to the neighbour in `dir` (1 next, -1 previous), from wherever
+  // the finger left the card, then change the address once it has landed.
+  const slide = (dir, fromX = 0) => {
+    if (busy.current) return
+    const side = dir > 0 ? nextCard : prevCard
+    if (!side) return
+    const w = width()
+    if (reduce) { silent.current = true; go('letter', side.target); return }
+    busy.current = true
+    dx.current = fromX
+    setMove((m) => (m && m.kind === 'drag' ? { ...m, kind: 'slide', dir } : { kind: 'slide', dir, w }))
+    requestAnimationFrame(() => {
+      place(-dir * (w + GAP), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`)
+    })
+    after(SLIDE_MS + 20, () => {
+      silent.current = true
+      busy.current = false
+      go('letter', side.target)
+    })
+  }
+  const slideRef = useRef(slide)
+  slideRef.current = slide
+
+  // Let go short of the threshold: the strip springs back to rest.
+  const spring = () => {
+    if (!move && Math.abs(dx.current) < 0.5) { rest(); return }
+    busy.current = true
+    place(0, width(), `transform ${SPRING_MS}ms ${EASE_SLIDE}`)
+    after(SPRING_MS + 20, () => { busy.current = false; rest(); setMove(null) })
+  }
+
+  // The leaf that has just arrived takes the glass: the strip is put back
+  // to rest before paint, and the neighbours go, so the card the neighbour
+  // slot was showing is now the card, in the same place, with nothing seen
+  // to change.
   const landed = () => {
-    const a = flight.current
-    if (a) { flight.current = null; try { a.cancel() } catch { /* gone */ } }
-    const el = cardBox.current
-    if (el) { el.style.transition = ''; el.style.transform = '' }
+    rest()
+    if (silent.current) { silent.current = false; setMove(null) }
   }
 
   // The arrow keys turn the deck, on a keyboard. Not while a sheet is being
@@ -346,64 +413,52 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     if (!canTurn) return undefined
     const onKey = (e) => {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return
-      if (e.key === 'ArrowRight') { e.preventDefault(); turnRef.current(1) }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); turnRef.current(-1) }
+      if (e.key === 'ArrowRight') { e.preventDefault(); slideRef.current(1) }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); slideRef.current(-1) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [canTurn])
 
   // ── the swipe ──
-  // A finger on the card takes it sideways. The axis is decided on the first
-  // few pixels and a vertical drag is handed back to the sheet at once, so
-  // the card can still be scrolled past on a long phone; `touch-action:
-  // pan-y` on the stage says the same thing to the browser. The card follows
-  // the finger and tilts a little with it, and at the end of the deck, where
-  // there is nothing to turn to, it follows a fifth as far. Let go past the
-  // threshold, or thrown, it leaves the way it was going; let go short of it,
-  // it springs back. A mouse does not swipe: on a desktop the chevrons and
-  // the arrow keys turn the deck, and a drag over a letter selects its words.
+  // A finger on the card takes the strip sideways. The axis is decided on
+  // the first few pixels and a vertical drag is handed back to the sheet at
+  // once, so the card can still be scrolled past on a long phone;
+  // `touch-action: pan-y` on the stage says the same thing to the browser.
+  // A mouse does not swipe: on a desktop the chevrons and the arrow keys
+  // turn the deck, and a drag over a letter selects its words.
   const drag = useRef(null)
-  const settle = () => {
-    const el = cardBox.current
-    if (el) { el.style.transition = ''; el.style.transform = '' }
-  }
   const onDown = (e) => {
     if (e.pointerType === 'mouse' || busy.current || !canTurn) return
-    drag.current = {
-      x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, axis: '',
-      w: cardBox.current ? cardBox.current.offsetWidth || 360 : 360,
-    }
+    drag.current = { x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, axis: '', w: width() }
   }
   const onMove = (e) => {
     const d = drag.current
     if (!d) return
-    const dx = e.clientX - d.x
-    const dy = e.clientY - d.y
+    const x = e.clientX - d.x
+    const y = e.clientY - d.y
     if (!d.axis) {
-      if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return
-      d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      if (Math.abs(x) < SLOP && Math.abs(y) < SLOP) return
+      d.axis = Math.abs(x) > Math.abs(y) ? 'x' : 'y'
       if (d.axis === 'y') { drag.current = null; return }
+      // the neighbours come to stand beside the card
+      setMove({ kind: 'drag', w: d.w })
     }
-    const end = (dx < 0 && !nextTo) || (dx > 0 && !prevTo)
-    d.dx = dx * (end ? FOLLOW_END : FOLLOW)
-    const el = cardBox.current
-    if (el) {
-      el.style.transition = 'none'
-      el.style.transform = `translate3d(${d.dx.toFixed(1)}px, 0, 0) rotate(${(d.dx / d.w * TILT).toFixed(2)}deg)`
-    }
+    const end = (x < 0 && !nextTo) || (x > 0 && !prevTo)
+    d.dx = x * (end ? FOLLOW_END : FOLLOW)
+    place(d.dx, d.w, 'none')
   }
   const onUp = () => {
     const d = drag.current
     drag.current = null
-    if (!d || d.axis !== 'x') { settle(); return }
+    if (!d || d.axis !== 'x') return
     const v = d.dx / Math.max(1, performance.now() - d.t)
     const dir = d.dx < 0 ? 1 : -1
     const to = dir > 0 ? nextTo : prevTo
-    if (to && (Math.abs(d.dx) > TURN_PX || Math.abs(v) > TURN_V)) turn(dir, d.dx)
-    else settle()
+    if (to && (Math.abs(d.dx) > TURN_PX || Math.abs(v) > TURN_V)) slide(dir, d.dx)
+    else spring()
   }
-  const onCancel = () => { drag.current = null; settle() }
+  const onCancel = () => { drag.current = null; spring() }
   const swipe = canTurn
     ? { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onCancel }
     : null
@@ -432,9 +487,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // curve. The card is the real card the whole way, words and all, so if the
   // letter lands mid-flight it lands on the card that is opening, and the
   // sheet under it comes up as glass rather than rising (wall.css
-  // `.is-from-disc`). Measured once: the transform is relative to wherever
-  // the card ends up, so a layout that moves under it moves the card with it
-  // rather than leaving a stand-in aimed at where it used to be.
+  // `.is-from-disc`).
   useLayoutEffect(() => {
     if (!from || reduce) return undefined
     const el = cardBox.current
@@ -443,10 +496,10 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     const c = el.getBoundingClientRect()
     if (!c.width || !c.height) { setFlying(false); return undefined }
     const s = Math.max(0.05, from.w / c.width)
-    const dx = from.x + from.w / 2 - (c.left + c.width / 2)
-    const dy = from.y + from.h / 2 - (c.top + c.height / 2)
+    const ox = from.x + from.w / 2 - (c.left + c.width / 2)
+    const oy = from.y + from.h / 2 - (c.top + c.height / 2)
     const a = el.animate([
-      { transform: `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0) scale(${s.toFixed(4)})` },
+      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})` },
       { transform: 'none' },
     ], { duration: OPEN_MS, easing: EASE_TRAVEL, fill: 'backwards' })
     const b = paper.animate([
@@ -493,18 +546,47 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   }
 
   const open = !!one && one.body !== null
-  const came = slide.current > 0 ? ' is-from-right' : slide.current < 0 ? ' is-from-left' : ''
   const pager = at >= 0 && total > 1
     ? <Label tone="dim" className="wl-pager" aria-label={`letter ${pos + 1} of ${total}`}>{pos + 1} / {total}</Label>
     : null
   const toGate = () => { if (one) setAfterGate({ name: 'letter', id: one.id }); go('gate') }
 
+  // ── the two marks a reader can leave ──
+  // The heart at the head of the foot and the flag at its end, both struck in
+  // the paper's ink, because both are marks on the document rather than
+  // controls on the sheet. A flag is left ON a thing, so it stands in the
+  // card's corner, the size of the heart beside it rather than of a button.
+  const marks = (l, live) => (
+    <div className="wl-letter-marks">
+      <Hearts letter={l} onGate={toGate} />
+      <button
+        type="button" className={`wl-flag${live && flagged ? ' is-on' : ''}`}
+        onClick={live ? () => setFlagged(!flagged) : undefined}
+        aria-expanded={live ? flagged : undefined}
+        aria-controls={live ? 'wl-flag-opts' : undefined}
+        aria-label="take this off the wall" title="take this off the wall"
+        tabIndex={live ? undefined : -1}
+      >
+        <Icon name="flag" size={15} />
+      </button>
+    </div>
+  )
+  // a neighbour beside the card, off the glass, drawn as the card it is
+  const slot = (side, dir, ref) => side ? (
+    <div className="wl-letter-slot" ref={ref} aria-hidden="true" data-side={dir > 0 ? 'next' : 'prev'}>
+      <Card l={side.l} handle={side.handle} seed={side.target} foot={side.l ? marks(side.l, false) : null} />
+    </div>
+  ) : null
+  const showPrev = move && (move.kind === 'drag' || move.dir < 0)
+  const showNext = move && (move.kind === 'drag' || move.dir > 0)
+  // an arrival that is not the strip landing: a back button, a link. A
+  // beat of fade, and none at all on the first leaf, which is the sheet's.
+  const came = leafKey > 0 && !silent.current ? ' is-arrived' : ''
+
   return (
     /* Not `tall`. The floor exists so a bottom sheet does not read as a
        notification, and this one is never small: a card, a full-width pill and
-       two controls. Forcing it to 62dvh on a long phone left a slab of empty
-       void under the last control, which is the same "nothing has been decided
-       about this space" the old header had at the other end. */
+       two controls. */
     <Sheet
       onClose={back} labelledBy="wl-letter-to"
       className={from ? `is-from-disc${flying ? ' is-flying' : ''}` : ''}
@@ -512,89 +594,41 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
       <div className="wl-sheet-in wl-letter">
         <SheetHead onClose={back} label="back to the wall" lead={pager} />
 
-        {/* ── the card, the deck under it, and the two ways past it ──
+        {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
-            has been up, whether it is shut, whose name it is under, and the
-            words. The crest is the person's own face, the same disc the search
-            puts in its rows and the sky puts beside a ping. Under it, the
-            edges of the cards still to come; either side of it, in the
-            gutters, a chevron to the letter before and the one after; and
-            the card itself takes the finger. The stage is one element across
-            every state of the card — waiting, open, shut, turned — so the
-            card that is opening out of a disc is the card the words land on. */}
+            has been up, whether it is shut, who it is for, and the words.
+            Either side of it, in the gutters, a chevron to the letter before
+            and the one after; the card itself takes the finger; and while it
+            is moving the neighbours stand beside it on the same strip, clipped
+            at the sheet's edge (wall.css `.wl-letter-track`). */}
         <div
-          className={`wl-letter-stage${flying ? '' : ' is-landed'}${ahead > 0 ? ' has-next' : ''}${ahead > 1 ? ' has-more' : ''}`}
+          className={`wl-letter-stage${flying ? '' : ' is-landed'}${move ? ' is-moving' : ''}`}
           {...swipe}
         >
           {canTurn ? (
             <button
               type="button" className="wl-turn is-prev" disabled={!prevTo}
-              onClick={() => turn(-1)} aria-label="the letter before this one" title="the letter before"
+              onClick={() => slide(-1)} aria-label="the letter before this one" title="the letter before"
             >
               <Icon name="back" size={16} />
             </button>
           ) : null}
-          <div className="wl-letter-card" ref={cardBox}>
-            <Leaf className={`wl-letter-leaf${came}`} key={leafKey} onMount={landed}>
-              {one ? (
-                <Paper
-                  dateline={sinceline(one.at, open ? '' : 'sealed')}
-                  crest={<span className="wl-letter-crest"><Face handle={one.to} size={30} /></span>}
-                  title={<span id="wl-letter-to" className="wl-letter-to">{atHandle(one.to)}</span>}
-                  tone={open ? '' : 'shut'}
-                  foot={(
-                    /* ── the two marks a reader can leave ──
-                        The heart at the head of the foot and the flag at its
-                        end, both struck in the paper's ink, because both are
-                        marks on the document rather than controls on the
-                        sheet. The flag used to float alone under the pill, a
-                        hairline ring on the void at the bottom of the sheet,
-                        which is where a thing goes when nothing has been
-                        decided about it. It belongs to the letter: a flag is
-                        left ON a thing. So it is in the card's corner now,
-                        where a reader looking for the way to say "not this
-                        one" looks, and it is the size of the heart beside it
-                        rather than of a button. */
-                    <div className="wl-letter-marks">
-                      <Hearts letter={one} onGate={toGate} />
-                      <button
-                        type="button" className={`wl-flag${flagged ? ' is-on' : ''}`}
-                        onClick={() => setFlagged(!flagged)} aria-expanded={flagged}
-                        aria-controls="wl-flag-opts"
-                        aria-label="take this off the wall" title="take this off the wall"
-                      >
-                        <Icon name="flag" size={15} />
-                      </button>
-                    </div>
-                  )}
-                >
-                  {open
-                    ? <Prose>{one.body}</Prose>
-                    : <Redacted words={one.words} chars={one.chars} seed={one.id} />}
-                </Paper>
-              ) : (
-                /* `waiting`, not `shut`. They draw the same block of bars and
-                   they are not the same fact: a letter that has arrived shut
-                   is blurred, because it is a letter you are not close enough
-                   to, and a letter that has not arrived is neither shut nor
-                   open yet. The crest is the name's own face, which the wall
-                   already had, so the card opening out of a disc carries that
-                   face from its first frame. */
-                <Paper
-                  dateline={{ lead: 'reading' }}
-                  crest={handle ? <span className="wl-letter-crest"><Face handle={handle} size={30} /></span> : null}
-                  title={<span id="wl-letter-to" className="wl-letter-to">{handle ? atHandle(handle) : ' '}</span>}
-                  tone="waiting"
-                >
-                  <Redacted words={22} chars={110} seed={String(param)} />
-                </Paper>
-              )}
-            </Leaf>
+          <div className="wl-letter-track">
+            {showPrev ? slot(prevCard, -1, prevSlot) : null}
+            <div className="wl-letter-card" ref={cardBox}>
+              <Leaf className={`wl-letter-leaf${came}`} key={leafKey} onMount={landed}>
+                <Card
+                  l={one || null} handle={one ? null : handle} seed={String(param)}
+                  id="wl-letter-to" foot={one ? marks(one, true) : null}
+                />
+              </Leaf>
+            </div>
+            {showNext ? slot(nextCard, 1, nextSlot) : null}
           </div>
           {canTurn ? (
             <button
               type="button" className="wl-turn is-next" disabled={!nextTo}
-              onClick={() => turn(1)} aria-label="the letter after this one" title="the letter after"
+              onClick={() => slide(1)} aria-label="the letter after this one" title="the letter after"
             >
               <Icon name="back" size={16} />
             </button>
@@ -604,23 +638,12 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
         {/* ── the foot ──
             One primary, and while the flag is on, the two things somebody who
             came looking for THEMSELVES needs, standing where the primary was.
-            They take its place rather than stacking under it because a person
-            who has just tapped the flag is not here to write, and a foot that
-            keeps offering the pill above the choice they asked for has two
-            questions on it. "leave it up" is the way back, in the words the
-            report screen uses for the same act. While the words are still on
-            their way the foot holds its height with nothing on it, so the
-            card does not move when they land. */}
+            While the words are still on their way the foot holds its height
+            with nothing on it, so the card does not move when they land. */}
         <SheetFoot>
           {!one ? (
             <div className="wl-foot-hold" aria-hidden="true" />
           ) : flagged ? (
-            /* ── what the flag opens ──
-                Two rows, each a sentence in the reader's own words, and no
-                cost written under either: both lead to a screen that says
-                what it does before anything happens, and a menu that
-                explains two irreversible acts in small grey type was asking
-                somebody to read terms at the moment they least wanted to. */
             <div className="wl-flag-opts" id="wl-flag-opts">
               <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
                 <span>Take my @ down</span>
@@ -633,7 +656,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
               <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
             </div>
           ) : open ? (
-            <Pill tone="light" wide onClick={() => go('write', one.to)}>
+            <Pill tone="light" wide onClick={() => toWrite(go, one.to)}>
               write to {atHandle(one.to)}
             </Pill>
           ) : (

@@ -56,7 +56,9 @@ const SLURS = [
 const PATTERNS = [
   { id: 'url',     say: 'links do not go on the wall',              re: /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|co|edu|gg|me|ly)\b)/i },
   { id: 'email',   say: 'take the email address out',               re: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i },
-  { id: 'phone',   say: 'take the phone number out',                re: /(\+?\d[\d\s().-]{8,}\d)/ },
+  // a run that looks like a number, then at least nine digits in it and no
+  // full stop: "since 2019. 2020 was the year" is two years and a sentence
+  { id: 'phone',   say: 'take the phone number out',                re: /(\+?\d[\d\s().-]{8,}\d)/, digits: 9 },
   { id: 'address', say: 'a street address cannot go on a public wall',
     re: /\b\d{2,5}\s+[A-Za-z][A-Za-z.'-]*(\s+[A-Za-z][A-Za-z.'-]*)?\s+(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|ln|lane|ct|court|pl|place|terrace)\b/i },
   { id: 'room',    say: 'a room or apartment number cannot go on a public wall',
@@ -81,7 +83,12 @@ export function fault(text) {
   for (const s of SLURS) {
     if (new RegExp(`\\b${s}\\b`).test(folded)) return 'that word does not go on the wall'
   }
-  for (const p of PATTERNS) if (p.re.test(text)) return p.say
+  for (const p of PATTERNS) {
+    const m = String(text || '').match(p.re)
+    if (!m) continue
+    if (p.digits && (m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0]))) continue
+    return p.say
+  }
   return ''
 }
 

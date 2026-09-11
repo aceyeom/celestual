@@ -692,6 +692,21 @@ const ROUTES = [
   { label: 'letter',        path: '/berkeley/letter/pilar.echevarria' },
   // the stack, turned once: the second letter under the name, in from the right
   { label: 'letter-turned', path: '/berkeley/letter/pilar.echevarria', press: '.wl-turn.is-next', settle: 1200 },
+  // and turned back: the previous letter, in from the left
+  { label: 'letter-back',   path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-turn.is-next'], ['wait', 500], ['click', '.wl-turn.is-prev']], settle: 1000 },
+  // a finger on the card, held mid swipe: the next card standing beside it
+  { label: 'letter-swipe',  path: '/berkeley/letter/pilar.echevarria',
+    acts: [['swipe', '.wl-letter-card', -150, 'hold']], settle: 400 },
+  // and let go past the threshold: the strip ran on to the next letter
+  { label: 'letter-swiped', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
+  // the face on the card, pressed: the picture, large
+  { label: 'letter-face',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-face-open', settle: 900 },
+  // "write anonymously" pressed by a browser not through the gate: the gate,
+  // with the composer set as where it opens onto
+  { label: 'berkeley-write-gate', path: '/berkeley', open: false,
+    acts: [['click', '.wl-mast-go'], ['wait', 3000], ['click', '.wl-dock-in .wl-pill']], settle: 1200 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
@@ -855,11 +870,36 @@ for (const r of list) {
     }
     // A state several presses deep: fill, click and wait, in order, each on
     // whatever the last one drew.
-    for (const [act, sel, arg] of r.acts || []) {
+    for (const [act, sel, arg, more] of r.acts || []) {
       if (act === 'wait') { await page.waitForTimeout(Number(sel) || 500); continue }
       await page.waitForSelector(sel, { timeout: 4000 }).catch(() => {})
       if (act === 'fill') await page.fill(sel, arg).catch(() => {})
       if (act === 'click') await page.click(sel, { timeout: 4000 }).catch(() => {})
+      // A finger across an element, as the pointer events a touch sends,
+      // since a mouse is not a swipe anywhere in the product. `arg` is how
+      // far, in pixels, and `more` of 'hold' leaves the finger down so the
+      // frame in the middle of the gesture can be shot.
+      if (act === 'swipe') {
+        await page.evaluate(async ({ sel, dx, hold }) => {
+          const el = document.querySelector(sel)
+          if (!el) return
+          const b = el.getBoundingClientRect()
+          const x0 = b.left + b.width / 2, y0 = b.top + b.height / 2
+          const ev = (type, x, y) => el.dispatchEvent(new PointerEvent(type, {
+            bubbles: true, cancelable: true, composed: true,
+            pointerId: 7, pointerType: 'touch', isPrimary: true,
+            clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1,
+          }))
+          const frame = () => new Promise((r) => requestAnimationFrame(r))
+          ev('pointerdown', x0, y0)
+          const steps = 12
+          for (let i = 1; i <= steps; i++) {
+            await frame()
+            ev('pointermove', x0 + (dx * i) / steps, y0)
+          }
+          if (!hold) { await frame(); ev('pointerup', x0 + dx, y0) }
+        }, { sel, dx: Number(arg) || 0, hold: more === 'hold' }).catch(() => {})
+      }
       await page.waitForTimeout(700)
     }
     await page.waitForTimeout(r.settle ?? 2600)

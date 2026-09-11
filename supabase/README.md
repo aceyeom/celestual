@@ -242,6 +242,12 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0049_eight_before_the_door.sql` (**not yet applied**): **eight
+  letters, then the door.** One function, `wall_free_allowance()`, from five
+  to eight. Everything 0045 built reads its ceiling from that function, so
+  the reads, the key and the meter are untouched, and a browser that spent
+  five under 0045 has three left under this. Five arrived while a person who
+  had just scanned a card was still finding out what the wall is.
 - `migrations/0048_the_faces_on_the_index.sql` (**applied 10 September 2026**):
   **the faces ride on the index.** `wall_index` carries the resolver's answer
   for every name on it, the way `wall_search` has since 0040 and the letter

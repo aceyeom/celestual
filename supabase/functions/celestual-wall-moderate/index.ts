@@ -67,10 +67,12 @@ const SLURS = [
   'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
 ]
 
-const PATTERNS: Array<{ id: string; re: RegExp }> = [
+const PATTERNS: Array<{ id: string; re: RegExp; digits?: number }> = [
   { id: 'url',     re: /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|co|edu|gg|me|ly)\b)/i },
   { id: 'email',   re: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i },
-  { id: 'phone',   re: /(\+?\d[\d\s().-]{8,}\d)/ },
+  // a run that looks like a number, then at least nine digits in it and no
+  // full stop: "since 2019. 2020 was the year" is two years and a sentence
+  { id: 'phone',   re: /(\+?\d[\d\s().-]{8,}\d)/, digits: 9 },
   { id: 'address', re: /\b\d{2,5}\s+[A-Za-z][A-Za-z.'-]*(\s+[A-Za-z][A-Za-z.'-]*)?\s+(st|street|ave|avenue|rd|road|blvd|boulevard|way|dr|drive|ln|lane|ct|court|pl|place|terrace)\b/i },
   { id: 'room',    re: /\b(room|rm|apt|apartment|suite|ste|dorm)\s*#?\s*\d{1,4}[a-z]?\b|#\s?\d{3,4}\b/i },
 ]
@@ -89,7 +91,12 @@ function deterministic(text: string) {
   for (const s of SLURS) {
     if (new RegExp(`\\b${s}\\b`).test(folded)) { reasons.push('slur'); break }
   }
-  for (const p of PATTERNS) if (p.re.test(text)) reasons.push(p.id)
+  for (const p of PATTERNS) {
+    const m = text.match(p.re)
+    if (!m) continue
+    if (p.digits && (m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0]))) continue
+    reasons.push(p.id)
+  }
   return { verdict: reasons.length ? 'reject' : 'pass', reasons }
 }
 
@@ -99,44 +106,53 @@ function deterministic(text: string) {
 // about strangers on the internet, and what this wall needs is a decision
 // against a list somebody can be held to.
 //
-// Two of these categories are the ones a generic safety filter will not catch,
-// and they are the two that matter most here:
+// ── and it passes by default ────────────────────────────────────────────────
+// The first version of this prompt was written to err toward review: it
+// passed only a letter that was "unambiguously" longing, admiration, regret
+// or apology, rejected anything lukewarm or sarcastic under a category called
+// valence, sent anything that named a place or a class to review as
+// "locate", and held anything it was unsure of for a person to look at. On a
+// live wall that was most letters. The composer's own example letters, the
+// ones it prints under the empty card, would not have passed it: they name
+// Wheeler, Dwinelle, Moffitt and the 51B. A screen that holds the product's
+// own examples is not a screen, it is a closed door with a queue in front of
+// it, and a letter held for a person to look at is a letter the writer
+// watches not appear.
 //
-//   · PHYSICAL DESCRIPTION + LOCATION OR SCHEDULE. Individually innocuous, and
-//     together it is a set of instructions for finding a specific person at a
-//     predictable time. Every generic filter passes it. It is the single
-//     highest-severity shape this wall can publish and it looks like a
-//     compliment.
-//   · VALENCE. This wall accepts longing, admiration, regret and apology. It
-//     does not accept jokes at somebody's expense. A letter can break no rule,
-//     name nothing, threaten nobody, and still be a public sentence about a
-//     named person written to be laughed at, and it is a bad day for them
-//     either way. A wall that only screens for policy violations becomes a
-//     burn book with a nice typeface inside a month.
-const SYSTEM_PROMPT = `You screen short anonymous letters before they are published on a public wall.
-Each letter is addressed to a named Instagram handle at UC Berkeley. The person it is about did not consent to it and will read it.
+// So the list is short and the bar is harm, not tone. A letter goes up
+// unless it is one of the six things below, and review is for a letter the
+// model genuinely cannot place on one side of one of them, not for a letter
+// it merely would not have written. Two of the categories are still the ones
+// a generic safety filter will not catch, and they are still the two that
+// matter most here:
+//
+//   · A PHYSICAL DESCRIPTION WITH A ROUTINE. "You sit in Dwinelle" is a
+//     campus letter. "Tall, red jacket, Dwinelle 155 every Tuesday at ten,
+//     then the Moffitt second floor" is a set of instructions for finding a
+//     specific person at a predictable time, and it reads as a compliment.
+//     The line is the routine: a place is not a schedule.
+//   · CONTEMPT DRESSED AS AFFECTION. Teasing is fine; a letter written so
+//     that the person it is about is the joke, on a public wall, with their
+//     handle on it, is not, whatever the framing.
+const SYSTEM_PROMPT = `You screen short anonymous letters before they are published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle. The person it is about did not write it and will read it.
 
 Return ONLY JSON: {"verdict":"pass"|"review"|"reject","reasons":[string]}
 
-REJECT if any of the following is true:
-1. sexual:  sexual content, sexual interest, or sexualised description about an identifiable person.
-2. threat:  threats, intimidation, implied surveillance, or any suggestion of consequences.
-3. locate:  a physical description of the person COMBINED WITH a location, a route, or a schedule. Treat this as the most serious category. It reads as a compliment and it functions as instructions for finding somebody. Reject even when the tone is warm.
-4. mockery: mockery of appearance, body, race, ethnicity, disability, class, or accent. Reject regardless of how affectionate the framing is.
-5. minor:   the subject is stated or implied to be under 18.
-6. contact: phone numbers, addresses, room numbers, links, email addresses, or any other way to reach or find the person.
-7. valence: the letter is a joke at the subject's expense, sarcastic, backhanded, contemptuous, or written to be laughed at rather than read. This wall accepts longing, admiration, regret and apology. It accepts nothing else, and a technically compliant but lukewarm letter about a real person is still a bad day for that person.
+The wall is for longing, admiration, gratitude, regret, apology, inside jokes and warm memories. Most letters are fine, and your default is PASS. Ordinary campus detail is fine: a class, a building, a bus line, a library, a party, a place somebody was once seen. Flirting is fine. Teasing is fine. Awkward, sad, short, clumsy or lukewarm letters are fine.
 
-REVIEW (do not reject, do not pass) if:
-- you are unsure which side of any category above it falls on
-- it references a specific private event in a way that could identify a third party
-- it is warm but names somebody other than the addressee
+REJECT only if one of these is clearly true:
+1. sexual: explicit sexual content, or sexualised description of the person's body.
+2. threat: a threat, intimidation, stalking, "I know where you live", or any promised consequence.
+3. locate: a physical description of the person COMBINED WITH a recurring schedule or route, precise enough to find them at a predictable time. A place on its own is not this. A memory of one day is not this.
+4. hate: slurs, or contempt for the person's race, ethnicity, religion, disability, body, gender or sexuality. Cruelty at the person's expense, written to humiliate them, whatever the framing.
+5. minor: the person is stated or clearly implied to be under 18.
+6. contact: a phone number, a street address, a room number, a link or an email address.
 
-PASS only if the letter is unambiguously one of: longing, admiration, regret, apology.
+REVIEW only when you genuinely cannot tell which side of one of those six a letter falls on. Do not review a letter for being sarcastic, blunt, unromantic, mentioning a third person, or referring to a private moment: those pass.
 
-Judge the letter and the sealed line together. The sealed line is private until the recipient asks for it, which makes it MORE sensitive, not less: it is the part that proves the writer knows them.
+Judge the letter and the sealed line together; the sealed line is private until the recipient asks for it.
 
-Err toward review. A letter held for a person to look at costs the writer a day. A letter published wrongly costs the subject much more than that, and cannot be taken back.`
+Reasons: one or two words each, from the category names above, or [] on a pass.`
 
 async function classify(body: string, sealedLine: string | null) {
   const key = Deno.env.get('MODERATION_API_KEY')
@@ -150,13 +166,16 @@ async function classify(body: string, sealedLine: string | null) {
   // variable away from being off.
   if (!key) return { verdict: 'review', reasons: ['unconfigured'] }
 
-  // Bounded. A classifier that hangs used to hang the request until the
-  // platform killed it, and the letter was never written, not even as pending.
-  // A timeout is a verdict of review: a person looks at it.
+  // Bounded, and short. A classifier that hangs used to hang the request
+  // until the platform killed it, and the letter was never written, not even
+  // as pending. A short letter against a short list is a one second call;
+  // ten seconds is a provider that is not answering, and the writer has been
+  // watching "read before it goes up" for all of them. A timeout is a
+  // verdict of review: a person looks at it.
   let res: Response
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(10_000),
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -165,7 +184,10 @@ async function classify(body: string, sealedLine: string | null) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 300,
+      max_tokens: 120,
+      // The same letter gets the same answer: a screen that flips a coin on
+      // a borderline letter is a screen somebody can retry their way past.
+      temperature: 0,
       system: SYSTEM_PROMPT,
       messages: [{
         role: 'user',

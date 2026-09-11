@@ -32,7 +32,7 @@
 .hm-fold {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100vh; min-height: 100svh;
 }
 
 /* One entrance, one keyframe, and the delay is the only thing that varies, so
@@ -307,6 +307,8 @@
 .hm-ear:hover .hm-ear-spark { color: var(--chalk); }
 .hm-ear:hover .hm-ear-meta { color: var(--chalk); }
 .hm-ear:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
+/* the line held open while the pulse is out: the ear's own height, unlit */
+.hm-ear.is-hold { visibility: hidden; min-height: calc(11px * 1.5 + 12px); }
 /* the narrowest phones keep the name and give the count back */
 @media (max-width: 359px) { .hm-ear-meta, .hm-ear-dot { display: none; } }
 
@@ -337,7 +339,7 @@
   .hm-scene .wl-paper { min-height: 168px; padding: 17px 18px 18px; }
   .hm-scene .wl-prose { font-size: 15px; }
 
-  .hm-fold { min-height: calc(100dvh - 190px); }
+  .hm-fold { min-height: calc(100vh - 190px); min-height: calc(100svh - 190px); }
   .hm-page > .wl-colophon { margin-top: 0; }
   .hm-ear { margin-bottom: 20px; }
 }
@@ -350,7 +352,7 @@
    rather than under it, at the size the height allows. */
 @media (max-height: 560px) and (min-width: 640px) and (orientation: landscape) {
   .hm-page { max-width: none; padding: 0 26px; }
-  .hm-fold { min-height: 100dvh; }
+  .hm-fold { min-height: 100vh; min-height: 100svh; }
   .hm-top { padding: calc(10px + env(safe-area-inset-top, 0px)) 0 4px; }
   .hm-hero {
     flex-direction: row;

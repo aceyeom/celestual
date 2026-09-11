@@ -52,11 +52,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance, Face,
+  Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance, OpenFace, Addressee,
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots } from '../art.jsx'
-import { normHandle, validHandle, atHandle, dateline, hash, allowance, loadQuota } from '../data.js'
+import { normHandle, validHandle, dateline, hash, allowance, loadQuota } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -203,8 +203,8 @@ export default function Write({ to: prefill, go, back }) {
                 and not a plainer copy of it. */}
             <Paper
               dateline={dl}
-              crest={<Face handle={h} size={30} />}
-              title={<span className="wl-letter-to">{atHandle(h)}</span>}
+              crest={<span className="wl-letter-crest"><OpenFace handle={h} size={34} /></span>}
+              title={<Addressee handle={h} />}
               tone={body.trim() ? '' : 'empty'}
             >
               <LetterField

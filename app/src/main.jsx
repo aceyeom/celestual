@@ -118,6 +118,34 @@ const sigPath = path === SIGNATURE || path.startsWith(SIGNATURE + '/')
 const ADMIN = '/admin'
 const adminPath = path === ADMIN
 
+// ── the faces, and the metal, fetched now ────────────────────────────────────
+// Both surfaces set their type in the same four faces and open on the same
+// liquid mark, and until now neither was asked for until the shell's chunk
+// had loaded, mounted and injected a stylesheet. The faces then arrived a
+// moment after the page did, and every headline on it reflowed as its
+// fallback was swapped out: that is the flash of type changing shape that
+// was on every screen. Fetched from here they ride beside the chunk, and
+// the shells hold the intro until they have landed (wall/type.js), so the
+// first frame of either surface is set in its own faces. The mask is the
+// shader's texture; the wall never preloaded it and the mark was seen to
+// change material partway through its own sequence on a slow connection.
+if (!adminPath && !sigPath) {
+  const pre = (href, as, type) => {
+    const link = document.createElement('link')
+    link.rel = 'preload'
+    link.as = as
+    link.href = href
+    if (type) link.type = type
+    if (as === 'font') link.crossOrigin = 'anonymous'
+    document.head.appendChild(link)
+  }
+  pre('/fonts/newsreader-normal-200-800-latin.woff2', 'font', 'font/woff2')
+  pre('/fonts/inter-tight-normal-100-900-latin.woff2', 'font', 'font/woff2')
+  pre('/fonts/geist-mono-normal-100-900-latin.woff2', 'font', 'font/woff2')
+  pre('/liquid-mark.png', 'image')
+}
+
+
 const root = createRoot(document.getElementById('root'))
 
 if (adminPath) {

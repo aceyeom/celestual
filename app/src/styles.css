@@ -21,6 +21,12 @@ html, body, #root { width: 100%; }
    surface, and there is no flash of a different colour before the root
    paints. Chalk for the type, for the same reason. */
 html { background: #08070B; }
+/* The gutter for a classic scrollbar is reserved whether or not the page
+   scrolls yet. Without it, a page that grows past one screen (the hero once
+   its foot mounts under the intro, the wall once its veil lifts) grew a
+   scrollbar and every centred thing on it jumped fifteen pixels to the left
+   at that moment. Overlay scrollbars, which is every phone, are unaffected. */
+html { scrollbar-gutter: stable; }
 body {
   background: #08070B;
   color: #F4F1EA;
@@ -33,7 +39,7 @@ body {
   overscroll-behavior-y: none;
 }
 
-#root { min-height: 100dvh; }
+#root { min-height: 100vh; min-height: 100svh; }
 
 input, textarea, button, select { font: inherit; color: inherit; }
 button { background: none; border: 0; }

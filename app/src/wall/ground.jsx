@@ -128,7 +128,7 @@ export default function Ground({ pace = 'drift', lit = true, still = false, tint
   }, [pace])
 
   return (
-    <div className={`wl-ground is-${tint} ${className}`} aria-hidden="true">
+    <div className={`wl-ground is-${tint}${hasWebGL2() ? ' has-gl' : ''} ${className}`} aria-hidden="true">
       <canvas ref={sky} className="wl-sky" />
       <div className="wl-halo" />
       <canvas ref={canvas} className={`wl-starfield${lit ? '' : ' is-hidden'}`} />
