@@ -79,9 +79,33 @@
 // person. The disc is scaled and the plate is not, so the type stays sharp
 // whatever the lens is doing to the picture.
 //
-// Under `prefers-reduced-motion` nothing drifts, breathes, coasts or bulges:
-// the field is still, the lens still applies, and a pull moves it and leaves
-// it.
+// ── the pulse ───────────────────────────────────────────────────────────────
+// The veil opens from the finger, and what opens it is not a line drawn over
+// the field but a wave sent through it. The caller (screens/Wall.jsx) owns one
+// object — where it was touched and how far the front has travelled this
+// frame — and the loop reads it: every disc is measured against the front,
+// and the ones under the crest swell, are pushed out ahead of it, drawn back a
+// hair behind it, and settle. The lens arrives with the light: inside the
+// front a disc is drawn at the field's full lens and outside it at the veiled
+// one, so the field is seen to bloom as the wave crosses it rather than on a
+// clock of its own. The wave loses a little as it goes and dies at the far
+// corner, the way a ripple does.
+//
+// ── and it is drawn for the screen it is on ─────────────────────────────────
+// The lens is not two constants either side of a breakpoint. On a wide screen
+// it is the lens above: full at the light, a quarter at the rim, the lattice
+// half again as open by the edge. A phone held upright has its two long edges
+// a hand's width from the light, and the same ramp put the rim of the lens on
+// them: three discs from the middle the crowd was already points a long way
+// apart, and the sides of the screen were empty. So on a narrow, tall window
+// the lens is drawn taller than it is wide and its fall is gentler (lensFor):
+// the edges a phone actually has stand well inside it, and the crowd runs to
+// them. Nothing about the packing changes, so nothing can overlap that could
+// not before.
+//
+// Under `prefers-reduced-motion` nothing drifts, breathes, coasts, bulges or
+// pulses: the field is still, the lens still applies, and a pull moves it and
+// leaves it.
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Face, Label } from './parts.jsx'
@@ -129,6 +153,26 @@ const LENS = {
   air: 0.52,
   veiled: 0.58,
 }
+// ── the same lens, on a phone ──
+// What the four ramps become on a narrow window held upright: the rim nearly
+// half rather than a quarter, a straighter fall to it, a lattice that barely
+// opens, and more light left at the edge. `side` is how far the lens's
+// horizontal radius is drawn out toward its vertical one, so the two long
+// edges are not the rim. The numbers are blended in by `lensFor` off the
+// window's own shape, so a tablet gets something between and a laptop gets
+// none of it.
+const PHONE = { rim: 0.46, fall: 1.05, open: 0.16, air: 0.72, side: 0.74 }
+// ── the pulse ──
+// The crest's width in pitches; how much a disc under it swells, and how
+// much of the gap its packing leaves it the swell may take (the rest is the
+// room its neighbours wander in, so a disc under the crest grows into the
+// space there is and never into a face); how far it is pushed, as a
+// fraction of the pitch (the shove peaks at four tenths of this, at the
+// shoulder of the crest); how much of that a disc is drawn back behind the
+// crest, which is a fraction because a draw toward the tap closes the ring
+// of discs round it; how much of the wave is lost by the far corner; and
+// how much light the crest puts on a face as it passes.
+const PULSE = { width: 1.7, swell: 0.28, fill: 0.6, push: 0.75, back: 0.25, decay: 0.45, light: 0.5 }
 // The pointer's own light: how wide it reaches (in pitches), how much it adds
 // to a disc under it, and how hard it parts the crowd to make the room.
 //
@@ -176,6 +220,40 @@ const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v)
 // ceiling stops a very wide screen from drawing portraits.
 function pitchFor(w, h) {
   return Math.round(Math.max(56, Math.min(w * 0.185, h * 0.142, 116)))
+}
+
+// The lens, for this window. One number, `k`, says how much of a phone this
+// is — nought on anything wider than 760px or squarer than 4:5, one on a
+// phone held upright — and the four ramps and the lens's own shape are
+// blended between LENS and PHONE on it.
+function lensFor(w, h) {
+  const narrow = clamp01((760 - w) / 360)
+  const tall = clamp01((h / Math.max(1, w) - 1.1) / 0.6)
+  const k = narrow * tall
+  return {
+    rim: LENS.rim + (PHONE.rim - LENS.rim) * k,
+    fall: LENS.fall + (PHONE.fall - LENS.fall) * k,
+    open: LENS.open + (PHONE.open - LENS.open) * k,
+    air: LENS.air + (PHONE.air - LENS.air) * k,
+    side: PHONE.side * k,
+  }
+}
+
+// The wave, this frame, in the stage's own frame. The caller's object is in
+// the window's coordinates and is written on every frame of the opening; the
+// tap is placed once per wave, the rest is read.
+function readWave(m, wave, el) {
+  const w = wave && wave.current
+  if (!w || w.amp <= 0.001) { m.wave = null; return null }
+  let v = m.wave
+  if (!v || v.id !== w.id) {
+    const r = el ? el.getBoundingClientRect() : { left: 0, top: 0 }
+    v = m.wave = { id: w.id, x: w.cx - r.left, y: w.cy - r.top, R: 0, amp: 0, rmax: 1 }
+  }
+  v.R = w.r
+  v.amp = w.amp
+  v.rmax = Math.max(1, w.rmax)
+  return v
 }
 
 // A stable scatter per lattice cell. The same name at two repeats of the torus
@@ -268,7 +346,7 @@ function tileUp(tiles, was) {
 // and a new letter can be animated without the loop and the stylesheet
 // writing to the same transform. Memoised so a slot re-renders only when its
 // name changes or the lens arrives on it or leaves it.
-const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, onOpen, onHover }) {
+const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, onOpen, onHover, onPeek }) {
   if (!tile) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
@@ -278,6 +356,9 @@ const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, o
       data-slot={s}
       ref={(el) => bind(s, el)}
       onClick={(e) => onOpen(tile.handle, e)}
+      /* the letters under this name are asked for on the way down, so a tap
+         that turns into an open has a head start on the words */
+      onPointerDown={onPeek ? () => onPeek(tile.handle) : undefined}
       onPointerEnter={(e) => onHover(s, e)}
       onPointerLeave={(e) => onHover(-1, e)}
       aria-label={`${atHandle(tile.handle)}, ${tile.count === 1 ? 'one letter' : `${tile.count} letters`}`}
@@ -292,7 +373,7 @@ const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, o
   )
 })
 
-export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', onOpen }) {
+export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', wave = null, onOpen, onPeek }) {
   const names = useMemo(() => tiles.slice(0, CAP), [tiles])
   // The last seating, carried forward so a new reading of the index does not
   // move anybody who was already on the wall. Written during the memo rather
@@ -345,6 +426,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     c: { x: 0, y: 0 },        // the centre of the window
     lx: 0, ly: 0,             // where the light actually is, eased
     S: 70, rowH: 70 * ROW,    // the lattice pitch, set from the window
+    lens: lensFor(0, 0),      // the four ramps, for this window's shape
+    wave: null,               // the pulse, placed in this frame
     bloom: 0,                 // 0 under the veil, 1 with the field at full
     v: { x: 0, y: 0 },        // the field's velocity, px/s
     heading: 0.6,             // where the drift is going
@@ -396,6 +479,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const was = { ...m.c }
       size.current = { w, h }
       m.c = { x: w / 2, y: h / 2 }
+      m.lens = lensFor(w, h)
       if (!m.ready) {
         // the tile's middle cell starts in the light
         m.S = S; m.rowH = rowH
@@ -478,14 +562,15 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const sec = dt / 1000
       const t = now / 1000
 
-      // the field comes up to full over about a second as the veil lifts
+      // the field comes up to full over about a second as the veil lifts —
+      // or, while the pulse is crossing it, disc by disc as the front
+      // reaches each one (below)
       const want = m.veiled ? 0 : 1
       if (m.reduce) m.bloom = want
       else {
         m.bloom += (want - m.bloom) * (1 - Math.exp(-dt / 340))
         if (Math.abs(want - m.bloom) < 0.002) m.bloom = want
       }
-      const L = LENS.veiled + (1 - LENS.veiled) * m.bloom
 
       // ── the motion ──
       // Not while a finger is on it. Otherwise the velocity relaxes toward the
@@ -536,15 +621,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       else m.pa += (wantA - m.pa) * (1 - Math.exp(-dt / (wantA ? 150 : 380)))
 
       // ── the draw ──
-      const { S, rowH, Mx, My, slots, used } = m
+      const { S, rowH, Mx, My, slots, used, lens } = m
       const pad = S * 0.6
       const lx = m.lx, ly = m.ly
       // The lens reaches the edge of the window and no further: the rim of the
-      // screen is the rim of the lens on a phone and on a spread alike.
-      const Rx = w / 2 + S * 0.3
+      // screen is the rim of the lens on a spread. On a phone held upright it
+      // is drawn taller than it is wide (lensFor), so the two long edges —
+      // the edges a phone has — stand inside it rather than on its rim.
       const Ry = h / 2 + S * 0.3
+      const Rx = Math.max(w / 2 + S * 0.3, Ry * lens.side)
       const reach = S * TOUCH.reach
       const pa = m.pa
+      // the pulse, if one is crossing the field, and how wide its crest is
+      const wv = m.reduce ? null : readWave(m, wave, stage.current)
+      const W = S * PULSE.width
       const I0 = Math.floor((-pad - m.o.x) / S - 0.5)
       const I1 = Math.ceil((w + pad - m.o.x) / S)
       const J0 = Math.floor((-pad - m.o.y) / rowH)
@@ -572,11 +662,26 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           // hair over full dead centre so the light has a point
           const e = clamp01((u - LENS.hold) / (1 - LENS.hold))
           const q = 1 - clamp01(u / LENS.hold)
-          const zL = LENS.rim + (1 - LENS.rim) * Math.pow(1 - e, LENS.fall) + (LENS.crown - 1) * q * q
+          const zL = lens.rim + (1 - lens.rim) * Math.pow(1 - e, lens.fall) + (LENS.crown - 1) * q * q
+
+          // how much of the lens applies to THIS disc: all of it once the
+          // field is up, `veiled` under the masthead, and while the pulse is
+          // crossing the field the full lens inside the front and the veiled
+          // one outside it, over the width of the crest, so the lens is seen
+          // to arrive with the light rather than on a clock of its own
+          let bl = m.bloom
+          let wx = 0, wy = 0, wr = 0, wq = 0
+          if (wv) {
+            wx = ax - wv.x; wy = ay - wv.y
+            wr = Math.sqrt(wx * wx + wy * wy)
+            wq = (wr - wv.R) / W
+            bl = clamp01(0.5 - wq)
+          }
+          const L = LENS.veiled + (1 - LENS.veiled) * bl
           let z = 1 + (zL - 1) * L
 
           // SPACING: the lattice opens away from the light as it goes out
-          const open = 1 + LENS.open * Math.pow(e, LENS.openPow) * L
+          const open = 1 + lens.open * Math.pow(e, LENS.openPow) * L
           let px = lx + dx * open
           let py = ly + dy * open
 
@@ -625,6 +730,36 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             }
           }
 
+          // THE PULSE: the crest passes through. A disc ahead of the front is
+          // pushed out ahead of it, swells as the crest reaches it, is drawn
+          // back a little behind it, and settles; the shove is largest at the
+          // crest's shoulders and nothing at the crest itself, so the discs
+          // under it are spread apart exactly where they are largest. The
+          // swell is the crest's where there is room for it and the gap's
+          // where there is not: at the light, where the crowd is packed, a
+          // disc lifts a little; out toward the rim, where the discs are
+          // small and far apart, it swells whole. The draw back behind the
+          // crest is a fraction of the shove, and let go altogether within a
+          // few pitches of the tap, because an inward pull there closes the
+          // ring of neighbours over the disc that was touched. The wave is
+          // weaker the further it has come, and a face under the crest
+          // catches some light.
+          let lift = 0
+          if (wv && wq > -2.6 && wq < 2.6) {
+            const g = Math.exp(-wq * wq)
+            const a = wv.amp * g * (1 - PULSE.decay * Math.min(1, wr / wv.rmax))
+            const gap = Math.max(0, S * open - d * z)
+            const zCap = z + (gap * PULSE.fill) / d
+            z = Math.min(z * (1 + PULSE.swell * a), Math.max(z, zCap))
+            if (wr > 0.01) {
+              const back = wq < 0 ? PULSE.back * Math.min(1, wr / (3 * S)) : 1
+              const dd = PULSE.push * S * a * wq * back
+              px += (wx / wr) * dd
+              py += (wy / wr) * dd
+            }
+            lift = PULSE.light * a
+          }
+
           if (!slot.shown) { slot.shown = true; if (slot.el) slot.el.style.visibility = '' }
           const isFocus = f && f.I === I && f.J === J
           if (slot.disc) {
@@ -636,7 +771,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             // else is off, so a disc that is half the size is also half the
             // way into the room. Without it the rim reads as small faces on
             // the same plane as the near ones, which is a diagram.
-            const air = LENS.air + (1 - LENS.air) * clamp01((z - LENS.rim) / (1 - LENS.rim))
+            const air = Math.min(1, lens.air + (1 - lens.air) * clamp01((z - lens.rim) / (1 - lens.rim)) + lift)
             slot.disc.style.opacity = air > 0.995 ? '1' : air.toFixed(3)
           }
           // how far the pointer is from this disc, in its own drawn place: the
@@ -698,7 +833,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf) }
-  }, [paused, grid, names, tileAt, worldX, discOf])
+  }, [paused, grid, names, tileAt, worldX, discOf, wave])
 
   // ── the pull ──
   // Listeners go on the window rather than through pointer capture. Capture
@@ -825,7 +960,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // A press that travelled swallows the tap it would have ended in, because
   // every disc is a target and nothing is worse than a surface that opens a
   // letter because you tried to look past it. The disc that is opened hands
-  // its own circle to the letter, which grows out of it (morph.js).
+  // its own circle to the letter, which opens out of it (morph.js,
+  // screens/Letter.jsx).
   const open = useCallback((handle, e) => {
     if (motion.current.moved > SLOP) return
     const disc = e && e.currentTarget ? e.currentTarget.querySelector('.wl-cell-disc') : null
@@ -885,6 +1021,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             bind={bind}
             onOpen={open}
             onHover={onHover}
+            onPeek={onPeek}
           />
         )
       })}

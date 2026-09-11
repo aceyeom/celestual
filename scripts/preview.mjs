@@ -671,9 +671,10 @@ const ROUTES = [
   // first step and come to rest on a person
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   // the veil opening from the tap, held at four tenths of its reach
-  // (Wall.jsx `heldRipple`): the circle, the ring on its edge, and the type
-  // going where the edge has reached it. A capture takes longer than the
-  // ripple's middle lasts, so the frame is held rather than caught.
+  // (Wall.jsx `heldRipple`): the circle, the crest of the pulse running
+  // through the discs on its edge, and the type going where the edge has
+  // reached it. A capture takes longer than the ripple's middle lasts, so
+  // the frame is held rather than caught.
   { label: 'berkeley-ripple', path: '/berkeley?rp=0.42', press: '.wl-veil-scrim', at: { x: 0.62, y: 0.58 }, settle: 900 },
   { label: 'berkeley-lifted', path: '/berkeley', press: '.wl-mast-go', settle: 5200 },
   // the field under a mouse: the disc the pointer is on, lifted and named,
