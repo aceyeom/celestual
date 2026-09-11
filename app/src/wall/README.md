@@ -214,7 +214,7 @@ front too, and always has.
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
-| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and a chevron in each gutter to the letter before and after: the stack is turned where the letter is, by the chevrons, a swipe on the card or the arrow keys, and the header keeps the count |
+| `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
 | `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
@@ -291,8 +291,8 @@ Intro.jsx    the first two seconds, on black: the liquid mark. Once per tab,
 Hive.jsx     the field: the lattice and its tile, the lens, the drift, the
              pull, the pointer, and the pool of slots that draws it
 morph.js     the hand-off: the circle the wall leaves behind when a disc is
-             pressed, claimed by the letter on the way in
-Morph.jsx    the other half of it — the disc flying and opening into the card
+             pressed, claimed by the letter on the way in, which opens its
+             own card out of it (screens/Letter.jsx)
 ground.jsx   the room: the plasma, the halo, the field (field.js) and the
              grain. One component, mounted by this shell and by Main's
 wall.css     every rule scoped under .wl-root
@@ -340,6 +340,18 @@ is exactly the space its own packing left over is a crowd. Nothing about the
 size is stepped, either: the disc a name is set at is a log of its letter
 count, and the lattice's own pitch is a function of the window rather than two
 hard numbers either side of a breakpoint.
+
+Nor is the lens. On a wide screen it is the ramp above: full at the light, a
+quarter at the rim, the lattice half again as open by the edge. A phone held
+upright has its two long edges a hand's width from the light, and the same
+ramp put the rim of the lens on them — three discs from the middle the crowd
+was already points a long way apart, and the sides of the screen were empty.
+So on a narrow, tall window the lens is drawn taller than it is wide, its
+fall is gentler, the rim is nearly half rather than a quarter, the lattice
+barely opens and more light is left at the edge (`Hive.jsx lensFor`), and
+the mask that dissolves the field's edges reaches past the glass. The edges
+a phone actually has stand well inside the lens and the crowd runs to them.
+The packing is untouched, so nothing can overlap that could not before.
 
 ### It is the whole screen
 
@@ -421,29 +433,53 @@ thirteen pixels sliding past is a handle nobody reads.
 
 ### A name opens into the letter it carries
 
-Pressing a disc does not cut to a sheet. The circle that was pressed lifts off
-the field, opens as it travels, and lands as the letter's cream card with the
-same face settled into its letterhead (`morph.js`, `Morph.jsx`). One object,
-one movement, and nowhere in it the moment where the wall was replaced by a
-screen.
+Pressing a disc does not cut to a sheet. The letter's own card opens out of
+the circle that was pressed: the wall leaves the disc's rectangle behind on
+the way out (`morph.js`), the card claims it on the way in, and one transform
+puts the real card — words, crest, dateline and all — where the disc was, at
+the disc's size, with the paper's corner a circle's, and runs it out to where
+it stands on the travelling curve the sheets move on (`screens/Letter.jsx`).
+The sheet's glass comes up under it in place rather than rising, and its
+header and foot arrive a beat behind the card. The words are on the card from
+the first frame, and there is no stand-in: the card the flight starts on is
+the card the words land on, so a letter that arrives mid-flight arrives on a
+card that is opening rather than under one that is hiding it.
 
-Three things interpolate at once, on three clocks, because a shape that
-changes everything about itself at one rate reads as a slide: the frame (from
-the disc's circle to the card's box, its corner leading so a growing rectangle
-never reads as a capsule), the paper (early and quick — a half-opaque cream
-over a dark room is neither the photograph nor the card), and the face (from
-filling the frame to standing at the head of it, leading the frame so it is
-where it is going while the paper is still opening around it). The sheet's own
-entrance does not play: this *is* the entrance, and two of them at once is why
-shared-element transitions usually look wrong.
+It used to be a stand-in flown by hand from the disc to a card that was read
+fresh every frame and switched on at the end, and it was glitchy for exactly
+the reasons that design tried to handle: the destination moved when the words
+landed, the sheet re-centred under it, the face inside the stand-in was a
+monogram set at the disc's size inside a thirty pixel circle, and the real
+card was invisible for two thirds of a second. The transform is measured once
+now, against the card's own final box, and is relative to it: whatever the
+layout does under the card, the card goes with it.
 
-The destination is read fresh every frame rather than measured once, because
-it moves: the letter is not in the cache when the disc is pressed, the sheet
-opens on a card that is waiting for it, and when the words land the card grows
-and the sheet re-centres under them. And the whole thing is decoration on a
-screen that works without it — no hand-off, a deep link, a refresh, a back
-button or a reader who has asked for less movement, and the sheet opens the
-way it always did.
+A deep link, a refresh, a back button, a turn of the deck or a reader who has
+asked for less movement opens the ordinary way, because none of them has a
+circle to open out of.
+
+### The deck
+
+Every letter on the wall is one card in one deck, and the deck is turned
+where the card is. The order is the wall's own: the names in the order the
+index carries them, newest first, and under each name its letters, so the
+card after the last letter under a name is the first letter under the next
+name and a swipe can be kept up from one end of the wall to the other. The
+next name's letters are asked for while this one is being read, so the turn
+onto them lands on its card and not on a request; the turn back lands on the
+name before's last letter.
+
+What says there is more is the deck itself: the edges of the next card and
+the one after it stand under the card, drawn as two sheets of paper a step
+darker than the letter's, hung from their bottom edges so the peek is the
+peek whatever the card's height (`wall.css .wl-letter-stage::before`). A
+swipe takes the card off the top, following the finger and tilting a little
+with it, leaving the glass the way it was going, and the next rises from the
+stack; a turn back slides in from the side it went to. A chevron in each
+gutter says the same on a desktop and the arrow keys do the same, and the
+header keeps the count over the whole wall, `3 / 19`. It used to stop at the
+name, and a stack of one — which is most names — had no turn at all: a person
+who swiped the card got a spring back and no way to read on.
 
 ### It has to work at five names and at five hundred
 
@@ -489,21 +525,31 @@ reading the title has not decided anything yet, and a screen already
 offering three controls and a footer has decided for them.
 
 Lifting it is one movement, and it starts where it was touched. A tap
-anywhere on the veil opens it as a circle growing out from under the finger
-(`Wall.jsx`, `wall.css .wl-veil-mask`): the grey and the type are one masked
-layer and the circle is cut out of both, over a soft shoulder, with one
-hairline ring standing on its edge; the field comes up to full light and the
-lens blooms inside the circle as it grows. The title is not faded on a clock
-of its own: the circle takes it as it reaches it, so a tap under the title
-clears the title first and a tap in the far corner clears it last. One
-number drives the hole and the ring, written to the veil on every frame of
-the second the ripple takes, so the edge of the light and the ring on it
-cannot drift apart; the curve is a shallow ease out, because on an ease-out
-cubic a phone's far corner is under six hundred pixels away and the circle
-was a pop. When it has cleared the glass the rest of the wall arrives, a
-beat apart: the bar's glyphs, then the pill, then the foot. It used to fade;
-a fade is the screen changing its mind, and a circle from the finger is the
-person opening it.
+anywhere on the veil opens it as a pulse sent through the crowd (`Wall.jsx`,
+`Hive.jsx`, `wall.css .wl-veil-mask`): the grey and the type are one masked
+layer and a circle is cut out of both from under the finger, over a soft
+shoulder, and the same front runs through the field under it. Every disc it
+reaches swells, is pushed out ahead of it, drawn back a hair behind it and
+settles, and the lens arrives with the light — inside the front a disc is
+drawn at the field's full lens and outside it at the veiled one — so the
+faces are seen to come up as the wave crosses them. Nothing is drawn on the
+edge of the light: the edge is the crowd moving. The swell is the crest's
+where the packing has room for it and the gap's where it has not, so at the
+light a disc lifts a little and out toward the rim it swells whole, and
+nothing is ever drawn over a face. The title is not faded on a clock of its
+own: the circle takes it as it reaches it, so a tap under the title clears
+the title first and a tap in the far corner clears it last. One number
+drives the hole and the crest, written to the veil and to the wave on every
+frame, so the light and the crowd moving under it cannot drift apart. It is
+slow, on purpose: the front's clock is a function of how far it has to go,
+the better part of two seconds on a phone and a little over on a spread, on
+a shallow ease out, and the wave loses a little as it goes and dies at the
+far corner a beat after the veil has gone. When the circle has cleared the
+glass the rest of the wall arrives, a beat apart: the bar's glyphs, then the
+pill, then the foot. It used to fade, and then it was a circle with a
+hairline ring running out on its edge; a fade is the screen changing its
+mind, a ring is a line drawn over the crowd, and a wave through the crowd is
+the person touching it.
 
 One line stays exactly where it was through all of it: the ear, under the
 bar, the campus and the count in the identifier face at the size and the
