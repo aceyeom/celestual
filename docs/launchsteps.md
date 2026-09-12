@@ -636,10 +636,13 @@ still nobody's decision; see `docs/deletions.md` group D.
       somebody else has to act on is a screen with a gap in it.
 
 - [ ] Set `MODERATION_API_KEY` as a Supabase edge function secret. An Anthropic
-      API key. **Without it every letter is held at pending and nothing is ever
-      published.** That is deliberate: failing open would mean the one control
-      standing between this wall and its worst day is a missing environment
-      variable away from being off.
+      API key. **Without it every letter goes up flagged as `unconfigured`**
+      (migration 0050): the desk's letters screen opens on a run of them, which
+      is how you find out the key is missing. It used to hold every letter at
+      pending instead, and that rule made the wall's one control a single
+      environment variable away from silently stopping the wall.
+      `HOLD_WHEN_UNSCREENED` in the function puts the old rule back if that
+      trade is ever wrong for a campus.
 - [ ] `MODERATION_MODEL` is optional and defaults to
       `claude-haiku-4-5-20251001`, which is what spec section 9 asks for.
       Confirm the model id is still current when you deploy.
@@ -979,9 +982,9 @@ things have to happen outside it.
 4. **Set the secrets the wall and the mail depend on.** Under Edge Functions →
    Secrets (or `supabase secrets set`). Without `MODERATION_API_KEY` (an
    Anthropic Console key) `celestual-wall-moderate` answers `review` for every
-   letter, so every letter lands as `pending` and nothing reaches the wall
-   until somebody publishes it at `/admin`; that is by design, and it is also
-   why a wall with no key on it looks empty. Without `RESEND_API_KEY` and
+   letter, and since 0050 a review goes up at once, flagged `unconfigured`,
+   for a person to read at `/admin`; a wall with no key on it is a wall whose
+   flagged queue fills up, not an empty one. Without `RESEND_API_KEY` and
    `CELESTUAL_FROM_EMAIL` (a sender on a verified Resend domain) no campus code
    is mailed, so nobody passes the gate, and no mutual mail goes out. As of
    this audit, production has sent one campus code ever and verified none, so
@@ -1175,6 +1178,45 @@ The test of the whole path: put a letter up to a spare handle at
 `/optout` from the account that owns it, and reload `/berkeley`. The name
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
+
+## The letter goes up first (migration 0050)
+
+The screen's hold is gone. A letter the classifier is unsure of goes up the
+moment it is written and is flagged for a person to read while it stands; a
+refusal is still a refusal, stored and never shown, and the writer is now
+told what the screen read it as and handed the words back. One migration,
+the moderation function, the app and the desk.
+
+**Why.** Anything the classifier answered `review` on used to sit at
+`pending`, rendering nowhere, until somebody sat at the desk. On a live wall
+that was a writer watching their letter not appear, for hours, with no word
+about why.
+
+1. **Apply `0050_the_letter_goes_up_first.sql`.** `supabase db push`, or paste
+   it into the SQL editor. Re-runnable. It adds `wall_mine(token)` (a device's
+   own letters and whose hand took one down, the only function that returns a
+   body to its author), teaches `celestual_desk_letters` the status
+   `'flagged'`, and wraps `celestual_desk_overview` so its counts carry
+   `letters_flagged` (the standing function is renamed once, to
+   `celestual_desk_overview_0039`, and called by the wrapper). Verified end to
+   end by `scripts/verify-migrations.sh --test` (`test-flagged.sql`, 25
+   assertions; the three older tests that still asserted five free reads were
+   brought up to eight in the same change).
+2. **Redeploy `celestual-wall-moderate`.** `supabase functions deploy
+   celestual-wall-moderate`. It writes a review at `live` with
+   `moderation.flagged`, and a classifier that does not answer publishes
+   flagged as `unscreened` rather than holding; `HOLD_WHEN_UNSCREENED` in the
+   function puts the old rule back if that trade is ever wrong.
+3. **Deploy the app.** Vercel, as usual. The desk's letters screen opens on the
+   flagged queue with a "looks fine" decision on each row, the posted screen
+   says what a refused letter was read as and offers the words back, and the
+   wall raises a notice to a writer whose letter came down by the desk's hand.
+
+Order matters in one direction only: the function deployed before the
+migration still works (`wall_write` takes `live`, and `flagged` is a key in
+the record it already writes), but the desk asks for `'flagged'` and
+`letters_flagged` and gets `bad_status` and no count until the migration has
+run. Apply first.
 
 ## Eight before the door (migration 0049)
 

@@ -71,19 +71,25 @@ the composer never reads it, and a letter still has three fields with no fourth
 one to leak. Reading is gated; authorship stays absent; those two facts are
 independent on purpose, and the second one is the product.
 
-### 1a · Every letter is read before it is published, and a reported letter comes down first.
+### 1a · Every letter is read before it is published, nothing is held, and a reported letter comes down first.
 
-Publication is **pre-moderated** and takedown is **post-hoc**, and the same
-asymmetry drives both: the screenshot exists before the decision does.
+The screen runs on the way in and refuses on the way in; what it is merely
+unsure of is not held. Takedown is **post-hoc**, and the same asymmetry drives
+both: the screenshot exists before the decision does.
 
 ```
   writing        layer 1  regex — slurs, links, phones, addresses, room numbers.
                           Runs at the keyboard (moderate.js) and again on the
                           server, because a client-side check is a courtesy to
                           the writer, not a control on the writer.
-                 layer 2  one Haiku call, against explicit categories.
-                 layer 3  anything ambiguous waits for a person.
-                          -> and only then is it on the wall.
+                 layer 2  one Haiku call, against explicit categories. A pass
+                          goes up. A refusal is stored, never shown, and the
+                          writer is told what the screen read it as and handed
+                          their words back to change.
+                 layer 3  anything ambiguous goes up AT ONCE, flagged, and a
+                          person reads it at the desk while it stands. If that
+                          person takes it down, the writer is told so on the
+                          wall, with the reason and their words back.
 
   reporting      the tap  off the wall, the search and the count. Immediately.
                  the box  optional, three lines. Why.
@@ -96,6 +102,24 @@ A report queue that leaves the letter up while somebody decides whether the
 complaint was fair has protected the wrong person. And a takedown that destroys
 what it took down is one no review can ever be right about — which matters most
 for the writer, since any signed-in reader can report any letter.
+
+**It used to hold.** Anything the classifier answered `review` on sat at
+`pending`, rendering nowhere, until a person at the desk moved it, and on a
+live wall that was a writer watching their letter not appear, for hours, with
+no word about why. Since migration 0050 the hold is gone: a review goes up
+flagged (`moderation.flagged`), the desk's letters screen opens on the flagged
+queue, and "looks fine" there is a decision that changes nothing but the
+queue. A letter a person takes down after it stood tells its writer so, on the
+wall: `wall_mine` answers a device about its own letters and whose hand took
+one down, and the notice at the foot of the wall says which letter, why in one
+sentence (`moderate.js whyDown`), and offers the words back on the composer.
+The notice is never raised for a reader's report, because telling the writer
+would point them at the person likeliest to have filed it. A refusal was
+always final and silent; it is final and spoken now, on the posted screen, for
+the same reason. What still stands before anything is published is the part
+that catches the worst of it, and a classifier that does not answer publishes
+flagged rather than holding (`HOLD_WHEN_UNSCREENED` in the function puts the
+old rule back).
 
 ### 2 · Getting a letter down is free. Emptying a whole name is the one thing that asks.
 
@@ -180,7 +204,7 @@ campus address or a handle proved after that code was scanned (migration 0047).
                                     │  tab at the bottom │
                                     └─────────┬──────────┘
                                               ▼
-                             "Get notified if they put you down too."
+                             "Get notified if they put you up too."
                                               │
                                               ▼
                                       THE CORE SERVICE
@@ -221,7 +245,7 @@ front too, and always has.
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/posted` | three beats — the screening, the paper going, the landing |
+| `/berkeley/posted` | three beats — the reading, with the mark poured over the card and a light passing over the paper; the seal, the card closing into a disc and falling; the landing, among the names nearest it, rippled. Or the refusal, with the screen's reason and the words handed back |
 | `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `register` leaves for Main at `/` |
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
@@ -254,13 +278,13 @@ line: the heaviest object on the screen, sitting on the emptiest row.
 ## Navigation
 
 Three targets, in the same two places, on every screen of the wall, and the only
-word among them is the name:
+words among them are the name and the one act:
 
 | | |
 | --- | --- |
 | ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
 | ⌕ | **look for a name** |
-| ✎ | **write a letter** |
+| write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: a small chalk capsule carrying the nib and the word, with the running light inside it, between the glass and the person. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
 
 There used to be a fourth, a `wall` glyph at the head of the row, lit whenever
@@ -434,12 +458,22 @@ thirteen pixels sliding past is a handle nobody reads.
 
 ### A name opens into the letter it carries
 
-Pressing a disc does not cut to a sheet. The letter's own card opens out of
-the circle that was pressed: the wall leaves the disc's rectangle behind on
-the way out (`morph.js`), the card claims it on the way in, and one transform
-puts the real card — words, crest, dateline and all — where the disc was, at
-the disc's size, with the paper's corner a circle's, and runs it out to where
-it stands on the travelling curve the sheets move on (`screens/Letter.jsx`).
+Pressing a disc does not cut to a sheet. First the wall answers the press the
+way it answers the tap that opens the veil: the same pulse is sent out from
+the disc through the crowd, and the field travels to bring that disc into the
+light (`Hive.jsx tapAt`, half a second, on the same wave and the same crest
+the veil runs). Then the letter's own card opens out of the circle that was
+pressed: the wall leaves the disc's rectangle behind on the way out
+(`morph.js`), the card claims it on the way in, and one transform puts the
+real card — words, crest, dateline and all — where the disc was, at the
+disc's size, with the paper's corner a circle's, and runs it out to where it
+stands on the travelling curve the sheets move on (`screens/Letter.jsx`). The
+pulse's tail runs out under the sheet's glass, because a crowd frozen in the
+middle of a wave is a crowd that jumps when the sheet goes. And it closes the
+same way: the mark, the scrim or the key sends the card back into the disc of
+whichever name the deck is showing, if that disc is on the glass
+(`morph.js locate`), while the glass fades in place instead of dropping.
+Dragged down, the sheet falls the way every sheet falls.
 The sheet's glass comes up under it in place rather than rising, and its
 header and foot arrive a beat behind the card. The words are on the card from
 the first frame, and there is no stand-in: the card the flight starts on is
@@ -482,6 +516,15 @@ header keeps the count over the whole wall, `3 / 19`. It used to stop at the
 name, and a stack of one — which is most names — had no turn at all: a person
 who swiped the card got a spring back and no way to read on.
 
+The height goes with the strip. A short letter beside a long one is a card
+beside a taller card, and the glass used to take the new height on the frame
+the address changed: everything under the card jumped. The track's height
+follows the strip instead, from this card's height toward the neighbour's by
+how far the strip has gone, so the sheet is seen to grow or shrink with the
+finger, a turn from a chevron carries its height on the same clock as its
+travel, and the next card takes over at exactly the height the strip arrived
+at (`Letter.jsx place`).
+
 ### It has to work at five names and at five hundred
 
 The lattice is a torus: a tile of C by R cells that repeats in both axes, so
@@ -515,8 +558,16 @@ the one line
 the front door runs one line of the mechanic under its own headline) and the
 way in laid over it. The scrim is darkest where the type is and gone where it
 is not, so the discs show through under the words as a texture, and it runs
-up over the bar so it has no edge. The scrim is itself the way in, and one
-arrow link says so in words: `view the wall`.
+up over the bar so it has no edge. The type stands in the middle of the
+glass, centred, the way a poster's title block does; it used to hang off the
+top left under the ear, and on a phone that put the wall's one headline in
+the corner of the one screen built to be looked at. The scrim is itself the
+way in, and the capsule under the line says so in words: `view the wall`,
+the product's own primary with the running light inside it, and a hairline
+ring leaving it every sixteen hundred milliseconds and opening out into the
+field, the shape of the pulse the tap will send through the crowd. It
+replaced an arrow link, which is the poster's nav voice and read as a link
+to somewhere else rather than as the door into the thing under it.
 
 And that is the whole screen. Under the veil there is no composer's pill, no
 foot under that and no glyphs in the bar: a poster with one door on it, over

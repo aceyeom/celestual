@@ -223,8 +223,8 @@ function Circuit({ at }) {
 }
 
 const LINES = [
-  'You put their name down.',
-  'They put yours down.',
+  'You put their name up.',
+  'They put yours up.',
   'You both find out. At once.',
 ]
 
@@ -290,7 +290,7 @@ export default function Join({ go, setField, reduce }) {
           that says what pressing the button GETS them, and it is the same
           sentence, word for word, as the tab they pressed to get here. */}
       <Display size="l" className="wl-join-h">
-        Get notified if they<br />put you down too.
+        Get notified if they<br />put you up too.
       </Display>
 
       <div className="wl-join-fig">

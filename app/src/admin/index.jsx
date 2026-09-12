@@ -70,7 +70,7 @@ const GROUPS = [
     { id: 'pings', word: 'pings', say: 'standing and mutual', count: 'pings_standing' },
   ] },
   { word: 'the wall', items: [
-    { id: 'wall', word: 'letters', say: 'held, live, down', count: 'letters_pending', live: true },
+    { id: 'wall', word: 'letters', say: 'flagged, live, down', count: 'letters_flagged', live: true },
     { id: 'reports', word: 'reports', say: 'flagged letters', count: 'reports_open', live: true },
     { id: 'waitlist', word: 'waiting', say: 'names looked for', count: 'waitlist' },
     { id: 'cards', word: 'the cards', say: 'which paper worked' },
@@ -203,7 +203,7 @@ export default function AdminApp() {
               : section === 'people' ? <People {...common} initialQuery={arg} />
                 : section === 'handles' ? <Handles {...common} initialHandle={arg} />
                   : section === 'pings' ? <Pings {...common} />
-                    : section === 'wall' ? <Letters {...common} initialStatus={arg || 'pending'} />
+                    : section === 'wall' ? <Letters {...common} initialStatus={arg || 'flagged'} />
                       : section === 'reports' ? <Reports {...common} />
                         : section === 'waitlist' ? <Waitlist {...common} />
                           : section === 'cards' ? <Cards {...common} />

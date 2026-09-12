@@ -52,7 +52,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose,
+  Sheet, SheetHead, SheetFoot, Display, Label, Pill, ClosePill, CloseQuiet, Prose,
   ReasonField, Locked,
 } from '../parts.jsx'
 import { letter, loadLetter, report, atHandle, ago } from '../data.js'
@@ -109,7 +109,7 @@ export default function Report({ id, go, back }) {
           <Display size="s" as="h2" id="wl-rep-h">It is already down.</Display>
           <Prose className="wl-gate-copy">Nothing here is on the wall any more.</Prose>
           <div className="wl-push" />
-          <SheetFoot><Pill tone="light" wide onClick={back}>back to the wall</Pill></SheetFoot>
+          <SheetFoot><ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill></SheetFoot>
         </div>
       </Sheet>
     )
@@ -186,7 +186,7 @@ export default function Report({ id, go, back }) {
             ) : fault === 'rate' ? (
               <Label tone="dim">that is a lot of reports in one hour. give it time</Label>
             ) : null}
-            <button type="button" className="wl-quiet" onClick={back}>leave it up</button>
+            <CloseQuiet onClose={back}>leave it up</CloseQuiet>
           </SheetFoot>
         </div>
       </Sheet>
@@ -248,7 +248,7 @@ export default function Report({ id, go, back }) {
         <div className="wl-push" />
 
         <SheetFoot>
-          <Pill tone="light" wide onClick={back}>back to the wall</Pill>
+          <ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill>
         </SheetFoot>
       </div>
     </Sheet>

@@ -16,14 +16,19 @@
 //   2  CLASSIFIER      one Haiku call per letter, against explicit categories.
 //                      Not a vibe check: a decision against a list somebody
 //                      can be held to.
-//   3  HUMAN           anything the classifier calls ambiguous waits for a
-//                      person. Nobody is told which.
+//   3  HUMAN           anything the classifier calls ambiguous goes up at
+//                      once, flagged, and a person reads it at the desk
+//                      while it stands (migration 0050). Nobody is told
+//                      which letters those are.
 //
 // ── the two clocks, and why they are different ──────────────────────────────
-// PUBLISHING is pre-moderated: a letter is written at pending, renders nowhere
-// and becomes visible only after 1 and 2 pass. The screenshot exists before you
-// delete it, so a ninety-second exposure window is not a small version of the
-// harm, it is the whole harm.
+// PUBLISHING is screened on the way in and refused on the way in: a letter
+// the screen refuses is stored and never shown, and the writer is told what
+// it was read as (`said`, below) and handed the words back. The screenshot
+// exists before you delete it, so a ninety-second exposure of a letter the
+// screen could fault is the whole harm. What the screen merely cannot place
+// is not held any more: it goes up flagged, because a letter held for hours
+// with no word about why was its own harm, to the writer.
 //
 // REPORTING is the opposite and for the same reason: the letter comes down on
 // the tap, before anybody reasons about anything, and the reasoning happens to
@@ -93,6 +98,54 @@ export function fault(text) {
 }
 
 export function clean(text) { return !fault(text) }
+
+// ── what the screen said, in words ──────────────────────────────────────────
+// The classifier answers in category words (celestual-wall-moderate's six, and
+// layer 1's pattern ids), and a writer whose letter came down is owed the
+// reason in a sentence rather than a slug. One sentence, for the first reason
+// the screen gave: the writer only has to change one thing to find out whether
+// the next one was real, which is the same rule the composer's floor follows.
+// Written here beside layer 1 because these are the screen's own words on the
+// other side of the same decision.
+const SAID = {
+  sexual:  'the screen read it as sexual.',
+  threat:  'the screen read it as a threat.',
+  locate:  'the screen read it as a way to find them.',
+  hate:    'the screen read it as cruelty.',
+  minor:   'the screen read it as about somebody under eighteen.',
+  contact: 'it has a way to reach them in it, and that cannot go on a public wall.',
+  slur:    'a word in it does not go on the wall.',
+  url:     'links do not go on the wall.',
+  email:   'it has an email address in it, and that cannot go on a public wall.',
+  phone:   'it has a phone number in it, and that cannot go on a public wall.',
+  address: 'it has a street address in it, and that cannot go on a public wall.',
+  room:    'it has a room number in it, and that cannot go on a public wall.',
+}
+
+export function said(reasons) {
+  for (const r of reasons || []) {
+    const key = String(r || '').toLowerCase().trim()
+    if (SAID[key]) return SAID[key]
+    // the model sometimes answers in a phrase rather than a word; the first
+    // category named inside it is the one
+    for (const k of Object.keys(SAID)) if (key.includes(k)) return SAID[k]
+  }
+  return ''
+}
+
+// Why a letter of this person's is not on the wall, as one sentence for the
+// notice at the foot of the wall and for the screen after sending. `downBy`
+// is the server's word for whose hand it was (api.js `mine`).
+export function whyDown(downBy, reasons) {
+  const s = said(reasons)
+  switch (downBy) {
+    case 'screen': return s || 'the screen held it back.'
+    case 'desk':   return s ? `${s.replace(/\.$/, '')}, and a person agreed.` : 'a person read it and took it down.'
+    case 'shut':   return 'the name has come off the wall, and nothing can be written to it now.'
+    case 'lapsed': return 'it stood for its thirty days.'
+    default:       return s || 'it is not on the wall.'
+  }
+}
 
 // ── layer 2, drawn ──────────────────────────────────────────────────────────
 // The shape the real endpoint returns — { verdict, reasons } — on the timing a

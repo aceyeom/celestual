@@ -54,7 +54,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Prose, HandleField, DmCode, VerifyHead, Face,
+  Sheet, SheetHead, SheetFoot, Display, Label, Pill, ClosePill, Prose, HandleField, DmCode, VerifyHead, Face,
 } from '../parts.jsx'
 import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle } from '../data.js'
 import { isVerified, forgetVerified } from '../auth.js'
@@ -225,7 +225,7 @@ export default function Remove({ handle: prefill, back }) {
             </Prose>
           </div>
           <div className="wl-push" />
-          <SheetFoot><Pill tone="light" wide onClick={back}>done</Pill></SheetFoot>
+          <SheetFoot><ClosePill tone="light" wide onClose={back}>done</ClosePill></SheetFoot>
         </div>
       </Sheet>
     )

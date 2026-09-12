@@ -26,10 +26,15 @@ export default function Overview({ password, data, go, onConflictResolve, onLock
 
   const s = (n, one, many) => (n === 1 ? one : many)
   const waiting = [
+    c.letters_flagged && {
+      n: c.letters_flagged,
+      say: <><b>{s(c.letters_flagged, 'letter', 'letters')}</b> up and flagged by the screen, waiting to be read</>,
+      go: () => go('wall', 'flagged'), act: 'read them',
+    },
     c.letters_pending && {
       n: c.letters_pending,
-      say: <><b>{s(c.letters_pending, 'letter', 'letters')}</b> held, waiting to be read</>,
-      go: () => go('wall', 'pending'), act: 'read them',
+      say: <><b>{s(c.letters_pending, 'letter', 'letters')}</b> held back, off the wall</>,
+      go: () => go('wall', 'pending'), act: 'decide',
     },
     c.reports_open && {
       n: c.reports_open,

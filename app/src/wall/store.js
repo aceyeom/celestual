@@ -46,6 +46,18 @@ const EMPTY = {
                       // this device, it is cleared with everything else, and
                       // nothing on a letter points back at it.
   seen: false,        // the opening cascade has played once
+  tabHid: 0,          // when the tab at the foot of the wall was last put away,
+                      // and how many letters this device had put up by then.
+                      // The tab comes back after a while, and at once after
+                      // another letter goes up, because that is the moment the
+                      // question it asks is fresh again (screens/Wall.jsx)
+  tabHidFor: 0,
+  noticed: {},        // letterId -> true: a letter of this device's that came
+                      // down, and whose notice has been read. The notice stands
+                      // at the foot of the wall until it is answered, once
+  justPosted: '',     // the handle a letter was just put up to, so the wall can
+                      // send one ripple out from that name on the way back
+                      // from the posted screen. Taken once
   member: null,       // a berkeley.edu address, if one has been given. It gates
                       // writing, and nothing else.
   reader: false,      // whether either proof has landed. It gates reading, the

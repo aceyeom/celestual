@@ -7,7 +7,7 @@
 // prop and no `size` in pixels — so changing what a ghost pill looks like is
 // one edit in one file rather than nine inline objects that drifted apart.
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Sparkle } from './art.jsx'
@@ -356,7 +356,24 @@ export function TopBar({ go, at = 'wall', acts = true }) {
       {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
-        <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => toWrite(go)} />
+        {/* ── the composer, as a word ──
+            The one act on the wall, and it stands in the bar between the glass
+            and the person: a small chalk capsule carrying the nib and the word
+            "write", with the running light inside it, so it is the primary on
+            the screen the way the wide pill at the foot used to be. It was a
+            bare nib among two other glyphs, and a wide capsule reading "write
+            anonymously" docked at the bottom edge over the field. The capsule
+            was standing on the faces it was about, and the nib in the bar was
+            a glyph nobody read as the door. One control now, where the eye
+            already goes for the controls, and the field keeps its bottom edge. */}
+        <Pill
+          tone="light" lit className={`wl-top-write${at === 'write' ? ' is-on' : ''}`}
+          onClick={() => toWrite(go)} icon={<Icon name="write" size={15} />}
+          aria-label="write a letter" title="write a letter"
+          aria-current={at === 'write' ? 'page' : undefined}
+        >
+          write
+        </Pill>
         {/* The fourth target, and the only one that changes what it draws. A
             keyhole while the letters are shut, and once they are open, the
             constellation of the address that opened them — the same figure the
@@ -551,17 +568,42 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // to start the animation the sheet was cut off mid-fall by the wall coming
 // back under it. So the close listens for the animation's own end and the
 // timer is only the floor under a browser that never sends one.
+//
+// ── and everything on the sheet leaves through the same door ────────────────
+// The close mark in the head, and any capsule on a sheet that says "back to
+// the wall", used to call the route change directly: the sheet was unmounted
+// on the spot, with no drop, while the scrim and the key closed it with one.
+// Two of the four ways out of the same sheet cut and two fell. So the sheet
+// leaves its own way out on a context (`useSheet`), the head's mark takes it,
+// `ClosePill` takes it, and the route changes when the glass has gone,
+// whichever of the four it was.
+//
+// `onClosing` is told the moment the way out is taken, and by what: the
+// letter uses it to fly its card back into the disc it came out of, and
+// declines when the sheet was dragged down, since a sheet already half off
+// the glass is not a sheet a card flies home from.
+const SheetCtx = createContext(null)
+export function useSheet() { return useContext(SheetCtx) }
+
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, tall = false, labelledBy, className = '' }) {
+export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '' }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
+  const closingRef = useRef(false)
   const start = useRef(null)
   const box = useRef(null)
+  // the latest handler, read at the moment the way out is taken rather than
+  // at the moment the key listener was attached
+  const onClosingRef = useRef(onClosing)
+  onClosingRef.current = onClosing
 
-  const dismiss = () => {
-    if (closing) return
+  const dismiss = useCallback((by = 'scrim') => {
+    if (closingRef.current) return
+    closingRef.current = true
     setClosing(true)
-  }
+    if (onClosingRef.current) onClosingRef.current(by)
+  }, [])
+  const ctx = useMemo(() => ({ dismiss }), [dismiss])
 
   useEffect(() => {
     if (!closing) return undefined
@@ -569,9 +611,10 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
     let done = false
     const finish = () => { if (done) return; done = true; onClose() }
     // the section's own drop (wall.css `wl-drop-sheet`, or `wl-dialog-out`
-    // on a spread), and not the end of anything animating inside it
+    // on a spread, or `wl-glass-out` when a card is flying home), and not
+    // the end of anything animating inside it
     const onEnd = (e) => {
-      if (e.target === el && /^wl-(drop-sheet|dialog-out)$/.test(e.animationName)) finish()
+      if (e.target === el && /^wl-(drop-sheet|dialog-out|glass-out)$/.test(e.animationName)) finish()
     }
     if (el) el.addEventListener('animationend', onEnd)
     const t = setTimeout(finish, SHEET_OUT_MS + 260)
@@ -579,7 +622,7 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
   }, [closing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') dismiss() }
+    const onKey = (e) => { if (e.key === 'Escape') dismiss('key') }
     window.addEventListener('keydown', onKey)
     // The wall behind must not scroll while a sheet is up: on a phone the
     // touch would otherwise be taken by the wall the moment the sheet's own
@@ -587,7 +630,7 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dismiss])
 
   const onDown = (e) => { start.current = e.touches ? e.touches[0].clientY : e.clientY }
   const onMove = (e) => {
@@ -605,7 +648,7 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
   const onUp = () => {
     const h = box.current ? box.current.offsetHeight : 400
     start.current = null
-    if (drag > h / 3) { dismiss(); return }
+    if (drag > h / 3) { dismiss('drag'); return }
     setDrag(0)
   }
 
@@ -615,8 +658,9 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
     : undefined
 
   return (
+    <SheetCtx.Provider value={ctx}>
     <div className={`wl-sheet-wrap${closing ? ' is-closing' : ''} ${className}`}>
-      <button type="button" className="wl-scrim" aria-label="close" onClick={dismiss} />
+      <button type="button" className="wl-scrim" aria-label="close" onClick={() => dismiss('scrim')} />
       <section
         ref={box}
         className={`wl-sheet${tall ? ' is-tall' : ''}${held ? ' is-dragging' : ''}`}
@@ -631,6 +675,31 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
         {children}
       </section>
     </div>
+    </SheetCtx.Provider>
+  )
+}
+
+// A capsule that closes the sheet it stands on, through the sheet's own way
+// out, so it leaves the glass the way the close mark does. `onClose` is what
+// it does when it is drawn on no sheet at all.
+export function ClosePill({ children, onClose, ...rest }) {
+  const sheet = useContext(SheetCtx)
+  return (
+    <Pill {...rest} onClick={() => (sheet ? sheet.dismiss('pill') : onClose && onClose())}>{children}</Pill>
+  )
+}
+
+// The same, as the quiet control: a sentence under a primary that closes
+// the sheet, for "leave it up" and its kind.
+export function CloseQuiet({ children, onClose, className = '' }) {
+  const sheet = useContext(SheetCtx)
+  return (
+    <button
+      type="button" className={`wl-quiet ${className}`}
+      onClick={() => (sheet ? sheet.dismiss('quiet') : onClose && onClose())}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -658,10 +727,13 @@ export function Sheet({ children, onClose, tall = false, labelledBy, className =
 // dots, so three sheets a person walks in one minute opened three different
 // ways. The slot is empty unless the sheet has a real answer for it.
 export function SheetHead({ lead = null, onClose, label = 'close' }) {
+  // the sheet's own way out when there is one, so the mark closes the sheet
+  // the way the scrim does rather than cutting the route under it
+  const sheet = useContext(SheetCtx)
   return (
     <div className="wl-head">
       <div className="wl-head-lead">{lead}</div>
-      <Close onClick={onClose} label={label} />
+      <Close onClick={sheet ? () => sheet.dismiss('mark') : onClose} label={label} />
     </div>
   )
 }
@@ -1213,20 +1285,83 @@ export function Addressee({ handle, id, className = '' }) {
 // and the handle under it, and a tap anywhere puts it away. Rendered at the
 // body, because a sheet's glass is a containing block for anything fixed
 // inside it and the picture has to stand over the whole screen.
-export function FaceViewer({ handle, onClose }) {
+//
+// ── it opens out of the disc, and closes back into it ───────────────────────
+// `from` is where the small face was standing when it was pressed, and
+// `source` is that face's element, asked again on the way out in case the
+// sheet under it has scrolled. The large disc is put where the small one
+// was, at its size, and runs out to where it stands on the travelling curve
+// the sheets move on; the name and the handle arrive a beat behind it; and
+// on the way out the same disc runs back and lands on the small one as the
+// room's light comes back. It used to pop up from nothing at the middle of
+// the screen and vanish on the tap: a picture that comes from nowhere and
+// goes nowhere is a dialog, and this is the same face, larger.
+const VIEW_IN_MS = 460
+const VIEW_OUT_MS = 340
+const EASE_VIEW = 'cubic-bezier(0.32, 0.72, 0, 1)'
+export function FaceViewer({ handle, onClose, from = null, source = null }) {
   const p = useProfile(handle)
   const name = p?.name || ''
+  const disc = useRef(null)
+  const [closing, setClosing] = useState(false)
+  const done = useRef(false)
+  const still = useMemo(prefersReducedMotion, [])
+
+  // the flight in, before the first paint
+  useLayoutEffect(() => {
+    const el = disc.current
+    if (!el || !from || still || !el.animate) return undefined
+    const c = el.getBoundingClientRect()
+    if (!c.width) return undefined
+    const s = Math.max(0.05, from.w / c.width)
+    const ox = from.x + from.w / 2 - (c.left + c.width / 2)
+    const oy = from.y + from.h / 2 - (c.top + c.height / 2)
+    const a = el.animate([
+      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})` },
+      { transform: 'none' },
+    ], { duration: VIEW_IN_MS, easing: EASE_VIEW, fill: 'backwards' })
+    return () => { try { a.cancel() } catch { /* gone */ } }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // the flight out, and then the caller takes the viewer down
+  const close = useCallback(() => {
+    if (done.current) return
+    done.current = true
+    setClosing(true)
+    const el = disc.current
+    const srcEl = source && source.current
+      ? (source.current.querySelector('.wl-face') || source.current) : null
+    const src = srcEl ? srcEl.getBoundingClientRect() : null
+    const to = src && src.width ? { x: src.left, y: src.top, w: src.width, h: src.height } : from
+    if (!el || !to || still || !el.animate) { onClose(); return }
+    const c = el.getBoundingClientRect()
+    if (!c.width) { onClose(); return }
+    const s = Math.max(0.05, to.w / c.width)
+    const ox = to.x + to.w / 2 - (c.left + c.width / 2)
+    const oy = to.y + to.h / 2 - (c.top + c.height / 2)
+    el.animate([
+      { transform: 'none' },
+      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})` },
+    ], { duration: VIEW_OUT_MS, easing: EASE_VIEW, fill: 'forwards' })
+    setTimeout(onClose, VIEW_OUT_MS)
+  }, [from, source, still, onClose])
+
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose() } }
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close() } }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [close])
   if (typeof document === 'undefined') return null
   return createPortal(
-    <div className="wl-viewer" role="dialog" aria-modal="true" aria-label={`${name || atHandle(handle)}, the picture`}>
-      <button type="button" className="wl-viewer-scrim" aria-label="close" onClick={onClose} />
-      <div className="wl-viewer-in" onClick={onClose}>
-        <Face handle={handle} size={280} className="wl-viewer-face" />
+    <div
+      className={`wl-viewer${from ? ' is-from' : ''}${closing ? ' is-closing' : ''}`}
+      role="dialog" aria-modal="true" aria-label={`${name || atHandle(handle)}, the picture`}
+    >
+      <button type="button" className="wl-viewer-scrim" aria-label="close" onClick={close} />
+      <div className="wl-viewer-in" onClick={close}>
+        <span className="wl-viewer-disc" ref={disc}>
+          <Face handle={handle} size={280} className="wl-viewer-face" />
+        </span>
         <span className="wl-viewer-who">
           <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
             {name || atHandle(handle)}
@@ -1240,23 +1375,33 @@ export function FaceViewer({ handle, onClose }) {
   )
 }
 
-// The face as a control: press it and it opens (FaceViewer). One element on
-// the paper, so the crest of a letter is the same disc it always was with a
-// press on it, and the viewer rides on the caller's tree.
+// The face as a control: press it and it opens (FaceViewer) out of itself.
+// One element on the paper, so the crest of a letter is the same disc it
+// always was with a press on it, and the viewer rides on the caller's tree.
 export function OpenFace({ handle, size = 34, className = '' }) {
   const [open, setOpen] = useState(false)
+  const [from, setFrom] = useState(null)
+  const btn = useRef(null)
   const close = useCallback(() => setOpen(false), [])
   const h = normHandle(handle)
+  const press = () => {
+    if (!h) return
+    const el = btn.current ? (btn.current.querySelector('.wl-face') || btn.current) : null
+    const r = el ? el.getBoundingClientRect() : null
+    setFrom(r && r.width ? { x: r.left, y: r.top, w: r.width, h: r.height } : null)
+    setOpen(true)
+  }
   return (
     <>
       <button
+        ref={btn}
         type="button" className={`wl-face-open ${className}`}
-        onClick={() => { if (h) setOpen(true) }}
+        onClick={press}
         aria-label={`see ${atHandle(h) || 'their'} picture larger`} title="see it larger"
       >
         <Face handle={h} size={size} />
       </button>
-      {open ? <FaceViewer handle={h} onClose={close} /> : null}
+      {open ? <FaceViewer handle={h} onClose={close} from={from} source={btn} /> : null}
     </>
   )
 }

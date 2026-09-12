@@ -123,10 +123,10 @@ select w_ok('anon cannot call the gate directly',
   not has_function_privilege('anon', 'wall_gate(uuid, text)', 'EXECUTE'));
 
 -- ── 5. the redaction is the database's, not the client's ────────────────────
--- 0045 hands every browser five whole letters before it asks for anything, so
+-- 0045 hands every browser eight whole letters (five then, raised in 0049) before it asks for anything, so
 -- a browser that has spent none of them is not a stranger to the wall yet. The
 -- redaction is what this section is about, so the two readers who are meant to
--- be refused spend their five first, on five letters under a name nothing else
+-- be refused spend their eight first, on eight letters under a name nothing else
 -- here looks at, written by an author of their own so the writer's three a
 -- week (0044) is untouched.
 do $$
@@ -134,13 +134,13 @@ declare i int; w uuid;
 begin
   insert into celestual_users (edu_email, edu_verified_at)
     values ('spender@berkeley.edu', now()) returning id into w;
-  for i in 1..5 loop
+  for i in 1..8 loop
     insert into wall_letters (target_handle, body, author_id, campus, status, created_at)
     values ('spendthem', 'a letter written only to be counted, number ' || i,
             w, 'berkeley', 'live', now() - (i || ' minutes')::interval);
   end loop;
 end $$;
-select w_ok('the five spend out',
+select w_ok('the eight spend out',
   (wall_letters_for('token-nobody-00000000000', 'spendthem')->'free'->>'left')::int = 0
   and (wall_letters_for('token-outsider-00000000', 'spendthem')->'free'->>'left')::int = 0);
 
