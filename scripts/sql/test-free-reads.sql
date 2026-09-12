@@ -1,7 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- test-free-reads.sql: exercises 0045_five_before_the_door.sql.
 --
--- Five whole letters to anybody, then the door. The claims worth asserting are
+-- Eight whole letters to anybody, then the door (0045, raised in 0049). The claims worth asserting are
 -- that the count is the SERVER'S (a sixth body does not travel), that reading
 -- the same letter twice costs one, that the tally carries no identity and is
 -- never listed, and that passing the gate erases it. Run through
@@ -40,7 +40,7 @@ insert into celestual_settings (key, value) values ('handle_salt', 'test-salt')
 
 -- ── the cast ────────────────────────────────────────────────────────────────
 -- fr-writer   at berkeley. Puts the letters up.
--- fr-reader   through the gate. The five never apply.
+-- fr-reader   through the gate. The eight never apply.
 -- and two browsers with no session at all, which is who this migration is for.
 do $$
 declare w uuid; r uuid;
@@ -53,39 +53,40 @@ begin
   perform fr_session(r, 'fr-token-reader-000000');
 end $$;
 
--- Seven letters under one name, so one call can run the allowance out and
+-- Ten letters under one name, so one call can run the allowance out and
 -- still have two left over to withhold. Inserted directly rather than through
 -- wall_write: the three a week is 0044's rule and test-reading-room.sql is
 -- where it is asserted, and a fixture that has to fight it proves nothing
--- about the five.
+-- about the allowance. It was seven, for five; 0049 made it eight, and this
+-- file follows.
 do $$
 declare i int; w uuid;
 begin
   select id into w from celestual_users where edu_email = 'fr-writer@berkeley.edu';
-  for i in 1..7 loop
+  for i in 1..10 loop
     insert into wall_letters (target_handle, body, author_id, campus, status, created_at)
     values ('qqfivesubject', 'letter number ' || i || ', written so there is something to withhold',
             w, 'berkeley', 'live', now() - (i || ' minutes')::interval);
   end loop;
 end $$;
 
-select fr_ok('seven letters are up',
-  (select count(*) from wall_letters where target_handle = 'qqfivesubject' and status = 'live') = 7);
-select fr_ok('the allowance is five', wall_free_allowance() = 5);
+select fr_ok('ten letters are up',
+  (select count(*) from wall_letters where target_handle = 'qqfivesubject' and status = 'live') = 10);
+select fr_ok('the allowance is eight', wall_free_allowance() = 8);
 
--- ── 1. five whole letters, then nothing ─────────────────────────────────────
+-- ── 1. eight whole letters, then nothing ────────────────────────────────────
 -- One call, because that is how the screen reads a name: every letter under it
 -- at once, and the allowance spent in the order they come back.
 select fr_ok('a browser with no session reads the first',
   fr_body('fr-token-stranger-0001', 'qqfivesubject', 0) is not null);
-select fr_ok('and the fifth',
-  fr_body('fr-token-stranger-0001', 'qqfivesubject', 4) is not null);
-select fr_ok('and the sixth is withheld',
-  fr_body('fr-token-stranger-0001', 'qqfivesubject', 5) is null);
-select fr_ok('and so is the seventh',
-  fr_body('fr-token-stranger-0001', 'qqfivesubject', 6) is null);
+select fr_ok('and the eighth',
+  fr_body('fr-token-stranger-0001', 'qqfivesubject', 7) is not null);
+select fr_ok('and the ninth is withheld',
+  fr_body('fr-token-stranger-0001', 'qqfivesubject', 8) is null);
+select fr_ok('and so is the tenth',
+  fr_body('fr-token-stranger-0001', 'qqfivesubject', 9) is null);
 select fr_ok('the withheld letter still carries its shape',
-  ((wall_letters_for('fr-token-stranger-0001', 'qqfivesubject')->'letters'->5->>'words')::int) > 0);
+  ((wall_letters_for('fr-token-stranger-0001', 'qqfivesubject')->'letters'->8->>'words')::int) > 0);
 select fr_ok('nothing is left',
   fr_left('fr-token-stranger-0001', 'qqfivesubject') = 0);
 select fr_ok('and the read says so, not that the reader is through the gate',
@@ -94,12 +95,12 @@ select fr_ok('and the read says so, not that the reader is through the gate',
 -- ── 2. a letter already read costs nothing to read again ────────────────────
 -- The point of counting letters rather than requests: walking back to
 -- something you have read is not a punishment.
-select fr_ok('reading it all again hands back the same five',
+select fr_ok('reading it all again hands back the same eight',
   fr_body('fr-token-stranger-0001', 'qqfivesubject', 0) is not null
-  and fr_body('fr-token-stranger-0001', 'qqfivesubject', 4) is not null
-  and fr_body('fr-token-stranger-0001', 'qqfivesubject', 5) is null);
-select fr_ok('and has not spent a sixth',
-  (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0001')) = 5);
+  and fr_body('fr-token-stranger-0001', 'qqfivesubject', 7) is not null
+  and fr_body('fr-token-stranger-0001', 'qqfivesubject', 8) is null);
+select fr_ok('and has not spent a ninth',
+  (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0001')) = 8);
 
 -- ── 3. one letter at a time, by its own address ─────────────────────────────
 -- What a shared link does. A second browser spends them one by one.
@@ -108,11 +109,11 @@ declare r record; i int := 0;
 begin
   for r in select id from wall_letters where target_handle = 'qqfivesubject' order by created_at desc loop
     i := i + 1;
-    if i <= 5 then
+    if i <= 8 then
       perform fr_ok('letter ' || i || ' opens by its own address',
         (wall_letter('fr-token-stranger-0002', r.id)->'letter'->>'body') is not null);
-    elsif i = 6 then
-      perform fr_ok('the sixth by its own address is withheld',
+    elsif i = 9 then
+      perform fr_ok('the ninth by its own address is withheld',
         (wall_letter('fr-token-stranger-0002', r.id)->'letter'->>'body') is null);
       perform fr_ok('and it says none are left',
         (wall_letter('fr-token-stranger-0002', r.id)->'free'->>'left')::int = 0);
@@ -125,14 +126,14 @@ end $$;
 -- number a screen wants: a stranger who has just been handed one letter is
 -- told four, not five. So a browser that has spent nothing is asked about
 -- without reading anything.
-select fr_ok('one browser spending five does not spend anybody else s',
+select fr_ok('one browser spending eight does not spend anybody else s',
   (select count(distinct token_key) from wall_free_reads) = 2);
 select fr_ok('a third browser has spent nothing',
   wall_free_used(wall_free_key('fr-token-stranger-0003')) = 0);
-select fr_ok('and gets its own five',
+select fr_ok('and gets its own eight',
   (select count(*) from jsonb_array_elements(
      wall_letters_for('fr-token-stranger-0003', 'qqfivesubject')->'letters') e
-    where e->>'body' is not null) = 5);
+    where e->>'body' is not null) = 8);
 select fr_ok('and is at nothing left once it has',
   fr_left('fr-token-stranger-0003', 'qqfivesubject') = 0);
 
@@ -159,22 +160,22 @@ select fr_ok('the reads themselves stay open to the browser',
   has_function_privilege('anon', 'wall_letters_for(text, text)', 'EXECUTE')
   and has_function_privilege('anon', 'wall_letter(text, uuid)', 'EXECUTE'));
 
--- ── 6. through the gate, the five do not apply ──────────────────────────────
+-- ── 6. through the gate, the eight do not apply ──────────────────────────────
 select fr_ok('a proved reader gets every letter',
   (select count(*) from jsonb_array_elements(wall_letters_for('fr-token-reader-000000', 'qqfivesubject')->'letters') e
-    where e->>'body' is not null) = 7);
+    where e->>'body' is not null) = 10);
 select fr_ok('and is told they are through the gate',
   (wall_letters_for('fr-token-reader-000000', 'qqfivesubject')->>'gated')::boolean);
 select fr_ok('and is not counted down',
-  fr_left('fr-token-reader-000000', 'qqfivesubject') = 5);
+  fr_left('fr-token-reader-000000', 'qqfivesubject') = 8);
 select fr_ok('a proved reader spends nothing',
   (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-reader-000000')) = 0);
 
 -- ── 7. passing the gate erases what it makes irrelevant ─────────────────────
 -- The rows exist to ration something. The moment they stop rationing anything
 -- they stop existing, so the readership record does not outlive its reason.
-select fr_ok('the stranger has five rows before the door opens',
-  (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0001')) = 5);
+select fr_ok('the stranger has eight rows before the door opens',
+  (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0001')) = 8);
 do $$
 declare u uuid;
 begin
@@ -187,14 +188,14 @@ end $$;
 -- statement that deletes them had run.
 select fr_ok('the same browser is through the gate now',
   (wall_letters_for('fr-token-stranger-0001', 'qqfivesubject')->>'gated')::boolean);
-select fr_ok('and its five rows are gone',
+select fr_ok('and its eight rows are gone',
   (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0001')) = 0);
 
 -- ── 8. an empty name does not count anybody down ────────────────────────────
 select fr_ok('a proved reader on a name with nothing under it is still gated',
   (wall_letters_for('fr-token-reader-000000', 'frnobodywroteto')->>'gated')::boolean);
 select fr_ok('and a stranger there spends nothing',
-  fr_left('fr-token-stranger-0004', 'frnobodywroteto') = 5
+  fr_left('fr-token-stranger-0004', 'frnobodywroteto') = 8
   and (select count(*) from wall_free_reads where token_key = wall_free_key('fr-token-stranger-0004')) = 0);
 
 -- ── 9. a letter that comes down takes its tally rows with it ────────────────

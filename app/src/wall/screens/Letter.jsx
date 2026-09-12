@@ -97,7 +97,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, Icon, Label, OpenFace, Addressee, Heart,
+  Pill, ClosePill, Icon, Label, OpenFace, Addressee, Heart,
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle,
@@ -106,7 +106,7 @@ import {
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
-import { land } from '../morph.js'
+import { land, locate } from '../morph.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -174,6 +174,11 @@ const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const OPEN_MS = 560
 const EASE_TRAVEL = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const RADIUS = 18          // wall.css --r-card
+// ── and the closing ─────────────────────────────────────────────────────────
+// How long the card takes to go back into its disc, on the same curve: it
+// leaves quickly and settles onto the face, dissolving over the last part of
+// the way so what is left on the field is the disc and not a small paper.
+const CLOSE_MS = 420
 
 // ── the address takes two shapes ────────────────────────────────────────────
 // /berkeley/letter/<uuid>    one letter, which is what a shared link points at
@@ -330,14 +335,18 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   const [move, setMove] = useState(null)   // null · { kind: 'drag'|'slide', dir?, w }
   const prevSlot = useRef(null)
   const nextSlot = useRef(null)
+  const track = useRef(null)
   const dx = useRef(0)
+  // the card's height when the strip started to move, which is where the
+  // track's height is measured from while it moves
+  const hBase = useRef(0)
   const silent = useRef(false)
   const busy = useRef(false)
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
   const after = (ms, fn) => { timers.current.push(setTimeout(fn, ms)) }
 
-  const place = (x, w, transition) => {
+  const place = (x, w, transition, ms = 0) => {
     dx.current = x
     const set = (el, v) => {
       if (!el) return
@@ -347,6 +356,24 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     set(cardBox.current, x)
     set(prevSlot.current, beside(-1, x, w))
     set(nextSlot.current, beside(1, x, w))
+    // ── the height goes with the strip ──
+    // A short letter beside a long one is a card beside a taller card, and
+    // the glass used to take the new height on the frame the address
+    // changed: everything under the card jumped. The track's height follows
+    // the strip instead, from this card's height toward the neighbour's by
+    // how far the strip has gone, so the sheet is seen to grow or shrink
+    // with the finger, and a turn from a chevron carries its height on the
+    // same clock as its travel. It finishes where the next card stands, and
+    // the next card takes over at exactly that height (`rest`).
+    const tr = track.current
+    if (tr) {
+      const h0 = hBase.current
+      const side = x < 0 ? nextSlot.current : x > 0 ? prevSlot.current : null
+      const h1 = side ? side.offsetHeight : h0
+      const f = Math.min(1, Math.abs(x) / (w + GAP))
+      tr.style.transition = ms ? `height ${ms}ms ${EASE_SLIDE}` : 'none'
+      if (h0) tr.style.height = `${(h0 + (h1 - h0) * f).toFixed(1)}px`
+    }
     // a style flush, so a neighbour that has just been put on the glass has
     // a place to move FROM: a transition set on an element that has never
     // been styled does not run, it arrives
@@ -356,8 +383,11 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     for (const el of [cardBox.current, prevSlot.current, nextSlot.current]) {
       if (el) { el.style.transition = ''; el.style.transform = '' }
     }
+    if (track.current) { track.current.style.transition = ''; track.current.style.height = '' }
+    hBase.current = 0
     dx.current = 0
   }
+  const measure = () => { hBase.current = cardBox.current ? cardBox.current.offsetHeight : 0 }
   // The neighbours are put beside the card before they are painted.
   useLayoutEffect(() => {
     if (!move) return
@@ -376,9 +406,10 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     if (reduce) { silent.current = true; go('letter', side.target); return }
     busy.current = true
     dx.current = fromX
+    if (!hBase.current) measure()
     setMove((m) => (m && m.kind === 'drag' ? { ...m, kind: 'slide', dir } : { kind: 'slide', dir, w }))
     requestAnimationFrame(() => {
-      place(-dir * (w + GAP), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`)
+      place(-dir * (w + GAP), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`, SLIDE_MS)
     })
     after(SLIDE_MS + 20, () => {
       silent.current = true
@@ -393,7 +424,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   const spring = () => {
     if (!move && Math.abs(dx.current) < 0.5) { rest(); return }
     busy.current = true
-    place(0, width(), `transform ${SPRING_MS}ms ${EASE_SLIDE}`)
+    place(0, width(), `transform ${SPRING_MS}ms ${EASE_SLIDE}`, SPRING_MS)
     after(SPRING_MS + 20, () => { busy.current = false; rest(); setMove(null) })
   }
 
@@ -441,7 +472,9 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
       if (Math.abs(x) < SLOP && Math.abs(y) < SLOP) return
       d.axis = Math.abs(x) > Math.abs(y) ? 'x' : 'y'
       if (d.axis === 'y') { drag.current = null; return }
-      // the neighbours come to stand beside the card
+      // the neighbours come to stand beside the card, and the height the
+      // strip starts from is this card's
+      measure()
       setMove({ kind: 'drag', w: d.w })
     }
     const end = (x < 0 && !nextTo) || (x > 0 && !prevTo)
@@ -519,6 +552,41 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── the way out, back into the disc ──
+  // Closed by the mark, the scrim or the key, the card goes back to the disc
+  // of the name it is showing, if that disc is on the glass: the same
+  // transform the opening ran, the other way, with the paper's corner going
+  // round and the card dissolving over the last part of the way, while the
+  // glass fades in place instead of dropping (wall.css `.is-to-disc`) and
+  // the wall's light comes back under it. Dragged down, the sheet falls the
+  // way every sheet falls, and with no disc to go to it drops. The disc is
+  // asked for on the way out and not remembered from the way in, because the
+  // deck may have been turned to another name since.
+  const [leaving, setLeaving] = useState(false)
+  const closing = (by) => {
+    if (by === 'drag' || reduce) return
+    const el = cardBox.current
+    const to = locate(name)
+    if (!el || !to || !el.animate) return
+    const paper = el.querySelector('.wl-paper') || el
+    const c = el.getBoundingClientRect()
+    if (!c.width || !c.height) return
+    const s = Math.max(0.05, to.w / c.width)
+    const ox = to.x + to.w / 2 - (c.left + c.width / 2)
+    const oy = to.y + to.h / 2 - (c.top + c.height / 2)
+    el.animate([
+      { transform: 'none', opacity: 1 },
+      { opacity: 1, offset: 0.5 },
+      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})`, opacity: 0 },
+    ], { duration: CLOSE_MS, easing: EASE_TRAVEL, fill: 'forwards' })
+    paper.animate([
+      { borderRadius: `${RADIUS}px` },
+      { borderRadius: '50%', offset: 0.7 },
+      { borderRadius: '50%' },
+    ], { duration: CLOSE_MS, easing: EASE_TRAVEL, fill: 'forwards' })
+    setLeaving(true)
+  }
+
   // A letter that was here a moment ago and is not now. It is not an error and
   // it is not framed as one: a report takes a letter down on the tap, and the
   // most likely way somebody lands here is by walking back to one they or
@@ -538,7 +606,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
             <Prose>That letter has come down.</Prose>
           </Paper>
           <SheetFoot>
-            <Pill tone="light" wide onClick={back}>back to the wall</Pill>
+            <ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill>
           </SheetFoot>
         </div>
       </Sheet>
@@ -588,8 +656,8 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
        notification, and this one is never small: a card, a full-width pill and
        two controls. */
     <Sheet
-      onClose={back} labelledBy="wl-letter-to"
-      className={from ? `is-from-disc${flying ? ' is-flying' : ''}` : ''}
+      onClose={back} onClosing={closing} labelledBy="wl-letter-to"
+      className={`${from ? `is-from-disc${flying ? ' is-flying' : ''}` : ''}${leaving ? ' is-to-disc' : ''}`}
     >
       <div className="wl-sheet-in wl-letter">
         <SheetHead onClose={back} label="back to the wall" lead={pager} />
@@ -602,7 +670,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
             is moving the neighbours stand beside it on the same strip, clipped
             at the sheet's edge (wall.css `.wl-letter-track`). */}
         <div
-          className={`wl-letter-stage${flying ? '' : ' is-landed'}${move ? ' is-moving' : ''}`}
+          className={`wl-letter-stage${flying || leaving ? '' : ' is-landed'}${move ? ' is-moving' : ''}`}
           {...swipe}
         >
           {canTurn ? (
@@ -613,7 +681,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
               <Icon name="back" size={16} />
             </button>
           ) : null}
-          <div className="wl-letter-track">
+          <div className="wl-letter-track" ref={track}>
             {showPrev ? slot(prevCard, -1, prevSlot) : null}
             <div className="wl-letter-card" ref={cardBox}>
               <Leaf className={`wl-letter-leaf${came}`} key={leafKey} onMount={landed}>
@@ -637,22 +705,35 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
 
         {/* ── the foot ──
             One primary, and while the flag is on, the two things somebody who
-            came looking for THEMSELVES needs, standing where the primary was.
+            came looking for THEMSELVES needs, standing where the primary was:
+            one pane of glass, two rows in it, each a glyph, the act and what
+            it does in one line, so the reversible act and the irreversible
+            one are told apart before either is pressed. The fast door first.
             While the words are still on their way the foot holds its height
             with nothing on it, so the card does not move when they land. */}
         <SheetFoot>
           {!one ? (
             <div className="wl-foot-hold" aria-hidden="true" />
           ) : flagged ? (
-            <div className="wl-flag-opts" id="wl-flag-opts">
-              <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
-                <span>Take my @ down</span>
-                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
-              </button>
-              <button type="button" className="wl-opt" onClick={() => go('report', one.id)}>
-                <span>Report letter</span>
-                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
-              </button>
+            <div className="wl-acts" id="wl-flag-opts">
+              <div className="wl-acts-pane" role="group" aria-label="take this off the wall">
+                <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
+                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
+                  <span className="wl-act-text">
+                    <span className="wl-act-h">Report this letter</span>
+                    <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
+                  </span>
+                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                </button>
+                <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
+                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
+                  <span className="wl-act-text">
+                    <span className="wl-act-h">Take my name off the wall</span>
+                    <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
+                  </span>
+                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                </button>
+              </div>
               <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
             </div>
           ) : open ? (

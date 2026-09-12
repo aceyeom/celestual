@@ -140,13 +140,23 @@ export function freeReads() { return FREE }
 let QUOTA = null
 export function allowance() { return QUOTA }
 
+// ── this device's own letters ───────────────────────────────────────────────
+// Where each letter this person put up stands now (api.js `mine`). `null`
+// before it has been asked. It is what the notice at the foot of the wall
+// draws from when one of them has come down, and it is read again whenever
+// the wall is landed on, since a person at a desk can take a letter down at
+// any hour.
+let MINE = null
+export function mine() { return MINE }
+
 // Everything read about the letters, dropped. Called when the gate opens or
 // closes, because every cached letter was read with the gate the way it was:
 // signing in over a cache of redacted bodies is a wall that stays shut, and
 // signing out over a cache of open ones is a wall that stays open.
 //
 // The allowance goes with them, for the same reason: it is a fact about a
-// person, and the person at this browser has just changed.
+// person, and the person at this browser has just changed. So do the person's
+// own letters.
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
@@ -154,6 +164,7 @@ export function forgetLetters() {
   GATED = null
   FREE = null
   QUOTA = null
+  MINE = null
   bump()
 }
 
@@ -238,6 +249,22 @@ export function loadQuota(force = false) {
     const out = await api.quota()
     if (!out.ok) return
     QUOTA = out
+    bump()
+  })
+}
+
+// This person's own letters, and where each one stands. Asked when the wall
+// is landed on by a device that has put something up, and again after a
+// letter goes up. Held for a short while like the index, so walking back and
+// forth between the wall and a sheet is not a request each time.
+let MINE_AT = 0
+export function loadMine(force = false) {
+  if (!force && MINE && Date.now() - MINE_AT < FRESH_MS) return Promise.resolve()
+  return once('mine', async () => {
+    const out = await api.mine()
+    if (!out.ok) return
+    MINE = out.letters
+    MINE_AT = Date.now()
     bump()
   })
 }
@@ -420,13 +447,13 @@ export function term(ts = Date.now()) {
 
 // ── writing ─────────────────────────────────────────────────────────────────
 // Not an insert. The letter goes to celestual-wall-moderate, which screens it
-// and writes it in one request, and comes back with one of three answers:
+// and writes it in one request, and comes back with one of two answers:
 //
-//   live      it is on the wall
-//   pending   a person will look at it, and this reads as 'live' to the writer
-//   rejected  it is not going up, and `reasons` says why
+//   live      it is on the wall, whether the screen passed it or flagged it
+//             for a person to read while it stands (migration 0050)
+//   rejected  it is not going up, and `reasons` says what it was read as
 //
-// Held and published read the same on purpose. A screen that distinguished
+// Flagged and published read the same on purpose. A screen that distinguished
 // them would be a way to find out what gets through by writing until something
 // does.
 export async function write({ to, body, sealedLine, source }) {
@@ -435,7 +462,7 @@ export async function write({ to, body, sealedLine, source }) {
     const h = normHandle(to)
     BY_HANDLE.delete(h)
     TILES_AT = 0
-    await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true)])
+    await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true), loadMine(true)])
     bump()
   }
   // A refusal moves the count too. 'cap' means the server disagreed with the

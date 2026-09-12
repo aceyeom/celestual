@@ -1195,6 +1195,9 @@
   --rr: calc(var(--rmax, 1400px) * var(--rp));
   position: absolute; inset: 0; left: calc(50% - 50vw); width: 100vw; z-index: 3;
   display: flex; flex-direction: column;
+  /* the type stands in the middle of the glass, at every width: a poster's
+     title block, not a heading hanging off the corner under the ear */
+  justify-content: center;
 }
 /* the layer the circle is cut out of: the scrim and the type together. The
    ring is the veil's other child and stands outside it. */
@@ -1204,40 +1207,94 @@
   justify-content: inherit;
 }
 /* ── the scrim ──
-   Deep where the type stands and gone where it does not. It used to fall
-   from 0.58 at the bar to nothing at the foot, and at that depth the title
-   stood on a crowd of faces at three fifths of their own light: legible, and
-   never plainly so. It holds at four fifths through the type now, falls off
-   through the lower half, and the names show through under the words as a
-   texture rather than as a crowd. */
+   Deep where the type stands and gone where it does not. The type is in the
+   middle of the glass, so the grey holds through the middle band and lets
+   go toward the foot, where nothing is written, and the names show through
+   under the words as a texture rather than as a crowd. It used to fall from
+   the bar to the foot in one ramp, for a title that hung under the ear. */
 .wl-veil-scrim {
   position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ramp));
   width: 100%; padding: 0; border: 0;
   background: linear-gradient(180deg,
     rgba(8, 7, 11, 0) 0px,
-    rgba(8, 7, 11, 0.84) var(--ramp),
-    rgba(8, 7, 11, 0.80) 38%,
-    rgba(8, 7, 11, 0.50) 66%,
-    rgba(8, 7, 11, 0.12) 100%);
+    rgba(8, 7, 11, 0.82) var(--ramp),
+    rgba(8, 7, 11, 0.86) 34%,
+    rgba(8, 7, 11, 0.86) 64%,
+    rgba(8, 7, 11, 0.52) 86%,
+    rgba(8, 7, 11, 0.14) 100%);
   cursor: pointer;
 }
-/* the type starts under the ear's row, which the veil also covers */
-.wl-veil-in { position: relative; padding: 44px var(--pad) 0; pointer-events: none; }
-.wl-mast { display: flex; flex-direction: column; align-items: flex-start; }
+/* the type block, centred in the glass and a little above its middle, so
+   the bar and the ear above it and the empty foot below read as one page
+   around it rather than as a heavy top and a light bottom */
+.wl-veil-in { position: relative; width: 100%; padding: 0 var(--pad) 9vh; pointer-events: none; }
+.wl-mast {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 460px; margin: 0 auto;
+  text-align: center;
+}
 .wl-mast-title { margin: 0; }
 /* ── the line under the title ──
    What the wall is, in one sentence, set the way the front door sets the
    line under its own headline (hero.css .hm-read): the reading face at
    seventeen pixels in ash. */
 .wl-mast-sub {
-  margin: 14px 0 0; max-width: 30ch;
+  margin: 16px auto 0; max-width: 30ch;
   font-family: var(--f-letter); font-optical-sizing: auto;
   font-size: 17px; line-height: 1.5; letter-spacing: 0;
   color: var(--ash);
   text-wrap: balance;
 }
-/* the way in, in words: the arrow link, which is the poster's own nav */
-.wl-mast-go { margin-top: 24px; pointer-events: auto; }
+/* ── the way in ──
+   The product's primary capsule, with the running light riding inside it,
+   and two rings that leave it in turn and open out into the field: the
+   shape of the pulse a tap will send through the crowd, shown before it is
+   pressed. The button's own padding is the room the rings travel in, so
+   nothing clips them. It replaced an arrow link, which is the poster's nav
+   voice and read as a link to somewhere else rather than as the door into
+   the thing under it. */
+.wl-mast-go {
+  --room: 14px;
+  position: relative; margin-top: 30px; padding: var(--room);
+  border: 0; background: none; pointer-events: auto; cursor: pointer;
+  display: inline-grid; place-items: center;
+}
+.wl-mast-go-pill {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 10px;
+  min-height: 46px; padding: 0 22px 0 24px; border-radius: var(--r-pill);
+  font-family: var(--f-util); font-size: 14.5px; font-weight: 500; letter-spacing: 0.008em;
+  color: #14131A;
+  transition: transform 220ms var(--ease);
+}
+.wl-mast-go-pill > :not(.wl-light) { position: relative; z-index: 2; }
+.wl-mast-go-g {
+  font-family: var(--f-util); font-size: 16px; line-height: 1;
+  color: rgba(20, 19, 26, 0.55);
+  transition: transform 280ms var(--ease), color 200ms var(--ease);
+}
+.wl-mast-go:hover .wl-mast-go-g { transform: translateX(4px); color: #14131A; }
+.wl-mast-go:active .wl-mast-go-pill { transform: scale(0.975); }
+.wl-mast-go:focus-visible { outline: none; }
+.wl-mast-go:focus-visible .wl-mast-go-pill {
+  box-shadow: 0 0 0 2px var(--void), 0 0 0 3px rgba(244, 241, 234, 0.55);
+}
+/* the rings. A hairline capsule the size of the pill, leaving it and going
+   out, one every sixteen hundred milliseconds, on the same shallow ease the
+   veil opens on, and gone before it reaches the type. */
+.wl-mast-go-ring {
+  position: absolute; inset: var(--room); border-radius: var(--r-pill);
+  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.6);
+  opacity: 0; pointer-events: none;
+  animation: wl-mast-ring 3200ms cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+}
+.wl-mast-go-ring.is-late { animation-delay: 1600ms; }
+@keyframes wl-mast-ring {
+  0%   { opacity: 0; transform: scale(1); }
+  8%   { opacity: 0.55; }
+  62%  { opacity: 0; transform: scale(1.62); }
+  100% { opacity: 0; transform: scale(1.62); }
+}
 
 /* ── lifting ──
    The hole: transparent inside the radius, and a long soft shoulder past it
@@ -1268,10 +1325,24 @@
    cleared the glass, and for the beat after they rise in, the glyphs first
    and the pill a step behind, so the wall is seen to be furnished rather
    than to have been furnished all along behind a curtain. */
-.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn { animation: wl-rise 620ms var(--ease) both; }
-.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn:nth-child(2) { animation-delay: 70ms; }
-.wl-wallpage.is-arriving .wl-top-acts .wl-iconbtn:nth-child(3) { animation-delay: 140ms; }
-.wl-wallpage.is-arriving .wl-dock-in { animation: wl-rise 700ms var(--ease) 160ms both; }
+.wl-wallpage.is-arriving .wl-top-acts > * { animation: wl-rise 620ms var(--ease) both; }
+.wl-wallpage.is-arriving .wl-top-acts > :nth-child(2) { animation-delay: 70ms; }
+.wl-wallpage.is-arriving .wl-top-acts > :nth-child(3) { animation-delay: 140ms; }
+.wl-wallpage.is-arriving .wl-dock { animation: wl-rise 700ms var(--ease) 160ms both; }
+
+/* ── the composer, in the bar ──
+   parts.jsx TopBar. The primary capsule at the bar's own scale, between the
+   glass and the person: the nib and the word, with the running light inside
+   it. It is the one act on the wall and it is drawn as the one primary, the
+   way the wide pill at the foot was, at a size that sits on the bar's line. */
+.wl-top-write {
+  min-height: 34px; padding: 0 14px 0 12px; gap: 7px; margin: 0 3px;
+  font-size: 12.5px;
+}
+.wl-top-write .wl-icon { color: rgba(20, 19, 26, 0.72); }
+@media (max-width: 359px) {
+  .wl-top-write { padding: 0 12px 0 10px; gap: 6px; margin: 0 1px; }
+}
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
    Hive.jsx. A crowd of faces on a hexagonal lattice that never ends, bent by
@@ -1419,30 +1490,23 @@
 /* ── a name that has just arrived ──
    A letter goes up, the index moves, and the person it was written to rises
    into the field rather than being there the next time you look: the disc
-   comes up past its own size and settles, and one ring leaves it and opens
-   out into the crowd. It plays for a name that is new and for a name that has
-   gained a letter, and never on the first reading of the wall. */
+   comes up past its own size and settles, while the pulse the wall sends out
+   from it crosses the crowd (Hive.jsx `pulse`). It plays for a name that is
+   new and for a name that has gained a letter, never on the first reading of
+   the wall, and not until the glass over the wall has gone. No ring leaves
+   it: a hairline circle opening over a field of soft discs read as a target
+   drawn on a person, and the crest of the pulse is already the ring. */
 /* Four classes deep on purpose. The opening cascade below puts a `both`
    filled arrival animation on every orb on the page, at the same three-class
    weight this rule would otherwise have, and later in the file — so a name
    arriving during the first three seconds of a session would have had its
    whole entrance eaten by the entrance of the wall. */
 .wl-wallpage .wl-cell.is-new .wl-cell-orb { animation: wl-cell-pop 900ms var(--ease) both; }
-.wl-cell-disc::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 244, 228, 0.75);
-  opacity: 0; pointer-events: none;
-}
-.wl-wallpage .wl-cell.is-new .wl-cell-disc::after { animation: wl-cell-ping 1500ms var(--ease-out) both; }
 @keyframes wl-cell-pop {
   0%   { opacity: 0; transform: scale(0.34); }
   56%  { opacity: 1; transform: scale(1.13); }
   78%  { transform: scale(0.975); }
   100% { opacity: 1; transform: scale(1); }
-}
-@keyframes wl-cell-ping {
-  0%   { opacity: 0.85; transform: scale(0.86); }
-  100% { opacity: 0; transform: scale(2.1); }
 }
 
 /* ── the one name on the field ──
@@ -1508,6 +1572,22 @@
 .wl-sheet-wrap.is-from-disc.is-flying .wl-sheet,
 .wl-sheet-wrap.is-from-disc.is-flying .wl-sheet-in { overflow: visible; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
+
+/* ── and the way back into the disc ──
+   screens/Letter.jsx `closing`. Closed by the mark, the scrim or the key, a
+   letter with a disc to go back to flies back into it: the card shrinks to
+   the disc's circle and dissolves over it, the glass fades in place rather
+   than dropping, and the head, the foot and the chevrons go first. The
+   sheet's own drop is what plays when it was dragged down or when the name
+   has no disc on the glass. Four classes deep, so it beats the drop and the
+   dialog's own way out at every width. */
+.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet { animation: wl-glass-out 440ms var(--ease-out) both; }
+.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet,
+.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet-in { overflow: visible; }
+.wl-sheet-wrap.is-to-disc.is-closing .wl-head,
+.wl-sheet-wrap.is-to-disc.is-closing .wl-foot,
+.wl-sheet-wrap.is-to-disc.is-closing .wl-turn { animation: wl-fade 180ms var(--ease-out) reverse both; }
+@keyframes wl-glass-out { from { opacity: 1; } to { opacity: 0; } }
 
 /* ── the opening ──
    Plays once per session. The masthead rises on the veil, and the field
@@ -1664,30 +1744,69 @@
 }
 
 /* ── what the flag opens ──
-   Two rows in the sheet's foot, standing where the primary stood, each one
-   sentence and an arrow: both lead to a screen that says what it does before
-   anything happens, so nothing has to be explained here in small type. The
-   quiet line under them is the way back. */
-.wl-flag-opts {
-  width: 100%; display: flex; flex-direction: column; gap: 8px;
-  animation: wl-fade 260ms var(--ease) both;
+   One pane of glass in the sheet's foot, standing where the primary stood,
+   and two rows in it: a glyph in a disc, the act, and under it what the act
+   does, in one line, with the chevron at the end of the row. It used to be
+   two bare outlined rows with an arrow each, at one weight, which is a form
+   drawn in a hurry; a pane is one object, the rows are parts of it, and the
+   consequence beside each act is what tells the reversible one from the one
+   nobody can undo, before either is pressed. The quiet line under the pane
+   is the way back. */
+.wl-acts {
+  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.wl-opt {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; min-height: 50px; padding: 12px 18px;
-  text-align: left;
-  border-radius: var(--r-field); border: 1px solid var(--hair);
-  font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
-  color: var(--chalk);
-  transition: border-color 220ms var(--ease), background 220ms var(--ease);
+.wl-acts-pane {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(244, 241, 234, 0.075), rgba(244, 241, 234, 0.035));
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.05),
+              0 22px 44px -28px rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  animation: wl-acts-in 380ms var(--ease) both;
 }
-.wl-opt:hover { border-color: rgba(244, 241, 234, 0.24); background: rgba(244, 241, 234, 0.04); }
-.wl-opt-go {
-  flex: 0 0 auto; color: var(--ash-dim); font-size: 14px; line-height: 1;
+.wl-act {
+  display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; column-gap: 14px;
+  width: 100%; padding: 13px 16px 13px 13px;
+  text-align: left; color: var(--chalk);
+  transition: background 200ms var(--ease);
+  animation: wl-act-in 460ms var(--ease) both;
+}
+.wl-act + .wl-act { box-shadow: inset 0 1px 0 var(--hair); animation-delay: 70ms; }
+.wl-act:hover { background: rgba(244, 241, 234, 0.045); }
+.wl-act:active { background: rgba(244, 241, 234, 0.07); }
+.wl-act:focus-visible { outline: none; background: rgba(244, 241, 234, 0.07); }
+.wl-act-glyph {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(244, 241, 234, 0.06); color: var(--chalk);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: background 200ms var(--ease), transform 320ms var(--ease);
+}
+.wl-act:hover .wl-act-glyph { background: rgba(244, 241, 234, 0.1); transform: scale(1.04); }
+.wl-act-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wl-act-h {
+  font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: 0.004em; line-height: 1.2;
+}
+.wl-act-say {
+  font-family: var(--f-util); font-size: 12px; line-height: 1.4; color: var(--ash);
+  text-wrap: pretty;
+}
+.wl-act-say .wl-h, .wl-act-say .wl-at { font-family: var(--f-id); font-size: 0.92em; }
+/* the chevron is the back glyph turned round: one stroke weight across the set */
+.wl-act-go {
+  color: var(--ash-dim); display: grid; place-items: center;
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.wl-opt:hover .wl-opt-go { transform: translateX(4px); color: var(--chalk); }
-.wl-flag-opts > .wl-quiet { margin-top: 2px; }
+.wl-act-go .wl-icon { transform: scaleX(-1); }
+.wl-act:hover .wl-act-go { transform: translateX(3px); color: var(--chalk); }
+.wl-acts > .wl-quiet { margin-top: 2px; }
+@keyframes wl-acts-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-act-in {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
    Letter.jsx `Hearts`, in the paper's foot. The glyph is a control on its
@@ -1761,8 +1880,30 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-/* one line under the card, whether the letter is too short or has tripped the
-   screen — to the person writing, both are the same fact */
+/* the card and the line under it, in one frame, and the frame is what shakes
+   when a press is refused (Write.jsx `shake`): a short travel, side to side,
+   losing amplitude, the way a locked handle answers a hand. Under half a
+   second, so it is a refusal and not a scolding. */
+.wl-write-card { position: relative; }
+.wl-write-card.is-shaking { animation: wl-shake 460ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.wl-write-card.is-shaking .wl-write-caught { animation: wl-caught-pulse 460ms var(--ease-out) both; }
+@keyframes wl-shake {
+  0%, 100% { transform: none; }
+  15%  { transform: translate3d(-9px, 0, 0); }
+  30%  { transform: translate3d(8px, 0, 0); }
+  45%  { transform: translate3d(-6px, 0, 0); }
+  60%  { transform: translate3d(4px, 0, 0); }
+  75%  { transform: translate3d(-2px, 0, 0); }
+  90%  { transform: translate3d(1px, 0, 0); }
+}
+@keyframes wl-caught-pulse {
+  0%   { opacity: 1; }
+  30%  { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+/* one line under the card, when the screen has caught something or the
+   server has said no: to the person writing, both are the one thing to
+   change */
 .wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
 .wl-write-caught { color: var(--ember); text-align: right; }
 .wl-write-foot {
@@ -1797,79 +1938,6 @@
 /* the week's line: the label's own face, in ash rather than the accent,
    because a limit met is a fact about the week and not an alarm about it */
 .wl-allow.is-week { display: block; color: var(--ash); letter-spacing: 0.12em; animation: wl-fade 320ms var(--ease) both; }
-
-/* ═══ PUTTING IT UP ═════════════════════════════════════════════════════════════
-   Four beats. Each stage is a class on the page and every element reads its
-   own visibility off it, so the whole sequence is one state machine rather
-   than nine overlapping transitions racing each other. */
-.wl-posted-air { height: 12vh; min-height: 48px; flex: 0 0 auto; }
-.wl-posted-stage { position: relative; min-height: 210px; display: grid; place-items: center; flex: 0 0 auto; }
-.wl-posted-bloom { top: 48%; }
-
-.wl-posted-card {
-  width: 100%; max-width: 340px;
-  transition: transform 900ms var(--ease), opacity 900ms var(--ease), filter 900ms var(--ease);
-}
-.wl-posted.is-b1 .wl-posted-card { transform: scale(0.82) translateY(-6px); opacity: 0.55; filter: blur(1px); }
-.wl-posted.is-b2 .wl-posted-card { transform: scale(0.62) translateY(-30px); opacity: 0; filter: blur(6px); }
-
-/* the convergence — six sparkles falling in on the centre, once */
-.wl-converge { position: absolute; inset: 0; pointer-events: none; }
-.wl-conv {
-  position: absolute; left: 50%; top: 50%; opacity: 0; color: var(--glow);
-  --tx: 0px; --ty: 0px;
-}
-.wl-conv.c0 { --tx: -108px; --ty: -64px; }
-.wl-conv.c1 { --tx:  114px; --ty: -42px; }
-.wl-conv.c2 { --tx:  -84px; --ty:  70px; }
-.wl-conv.c3 { --tx:   96px; --ty:  78px; }
-.wl-conv.c4 { --tx:   -8px; --ty: -96px; }
-.wl-conv.c5 { --tx:   22px; --ty: 100px; }
-.wl-posted.is-b1 .wl-conv,
-.wl-posted.is-b2 .wl-conv { animation: wl-converge 1050ms var(--ease) both; }
-.wl-conv.c1 { animation-delay: 60ms; }
-.wl-conv.c2 { animation-delay: 120ms; }
-.wl-conv.c3 { animation-delay: 40ms; }
-.wl-conv.c4 { animation-delay: 160ms; }
-.wl-conv.c5 { animation-delay: 100ms; }
-@keyframes wl-converge {
-  0%   { opacity: 0; transform: translate3d(calc(var(--tx) - 50%), calc(var(--ty) - 50%), 0) scale(0.5); }
-  38%  { opacity: 1; }
-  100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.5); }
-}
-
-.wl-posted-land { flex: 0 0 auto; opacity: 0; transform: translate3d(0, 16px, 0); transition: opacity 800ms var(--ease), transform 800ms var(--ease); }
-.wl-posted.is-b2 .wl-posted-land { opacity: 1; transform: none; }
-.wl-posted-count { margin-top: 14px; }
-/* the one control that leaves, carrying the page's own bottom edge rather
-   than the .wl-page padding — this screen is not docked and never was */
-.wl-posted-foot { flex: 0 0 auto; padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px)); }
-
-/* the strip: your name, among the four nearest it on the wall */
-.wl-strip { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 22px; align-items: baseline; }
-.wl-strip-n { font-family: var(--f-id); font-size: 12.5px; color: rgba(244,241,234,0.24); letter-spacing: -0.012em; }
-.wl-strip-n.is-mine {
-  font-size: 16px; color: var(--glow); text-shadow: 0 0 20px rgba(255,244,228,0.55);
-  animation: wl-land 1000ms var(--ease) 200ms both;
-}
-@keyframes wl-land {
-  0%   { opacity: 0; transform: translate3d(0, -14px, 0) scale(1.3); }
-  100% { opacity: 1; transform: none; }
-}
-
-/* ── beat 0, the reading ──
-   The one second a real build spends calling the classifier, drawn rather than
-   hidden. A wall that screens every letter before publishing it has made a
-   promise to the person the letter is about, and the second where that promise
-   is visibly kept is worth what it costs. It rides on the card because it is
-   about the card, and it leaves with the card. */
-.wl-posted-screen {
-  display: flex; align-items: center; justify-content: center; gap: 11px;
-  padding-top: 18px;
-  transition: opacity 500ms var(--ease);
-}
-.wl-posted.is-b1 .wl-posted-screen,
-.wl-posted.is-b2 .wl-posted-screen { opacity: 0; }
 
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
@@ -2299,7 +2367,6 @@
    have to wrap as hard. */
 @media (min-width: 720px) {
   .wl-page { padding-bottom: 56px; }
-  .wl-mast { padding: 40px 0 36px; }
 }
 
 /* A row's capsule is an affordance, not a control — the row is the target —
@@ -2311,38 +2378,52 @@
 /* ═══ THE TAB ══════════════════════════════════════════════════════════════
    The one door out of the wall, and it does not exist until somebody has put
    a letter up. It rises out of the dock's gradient rather than appearing over
-   it — a panel that is already there when the screen arrives is a banner, and
+   it: a panel that is already there when the screen arrives is a banner, and
    a banner is the thing people have learned to look past.
 
-   It is a tab and not a button: a grip along its top edge, a corner radius on
-   the top corners only, and it sits UNDER the primary action rather than in
-   place of it. Nothing about it interrupts the wall. */
+   It is a card now, the same pane the account sheet draws the person on: a
+   step up from the void with the light caught along its top edge, the faces
+   of the names this device wrote to at the head of the sentence, and the way
+   through at its end. Under it one quiet line puts it away, and it comes back
+   after a few days, or at once after another letter goes up (screens/Wall.jsx
+   `tabDue`). It used to be a drawer with a grip on it, docked under the
+   composer's pill; the pill is in the bar now and the drawer had nothing to
+   hang from. */
 .wl-tab {
   position: relative;
-  display: block; width: 100%;
-  margin: 0 0 10px;
-  padding: 0 0 2px;
-  border-radius: 16px 16px 0 0;
-  /* two layers: the light along its top edge, over a ground that is actually
-     opaque. A tab you can read the wall through is a scrim, not a drawer. */
-  background:
-    linear-gradient(180deg, rgba(255,244,228,0.075) 0%, rgba(255,244,228,0.022) 42%, rgba(255,244,228,0) 100%),
-    linear-gradient(180deg, rgba(8,7,11,0.94) 0%, var(--void) 38%);
-  box-shadow: 0 -1px 0 rgba(255,244,228,0.16) inset;
-  text-align: left;
+  display: flex; flex-direction: column; align-items: stretch; gap: 0;
+  width: 100%;
+  margin: 0 0 2px;
   animation: wl-tab-rise 900ms var(--ease) both;
-  transition: background 300ms var(--ease);
 }
-.wl-tab:hover {
-  background:
-    linear-gradient(180deg, rgba(255,244,228,0.12) 0%, rgba(255,244,228,0.04) 42%, rgba(255,244,228,0) 100%),
-    linear-gradient(180deg, rgba(8,7,11,0.94) 0%, var(--void) 38%);
+.wl-tab.is-going { animation: wl-tab-drop 320ms var(--ease-in) both; pointer-events: none; }
+.wl-tab-main {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 14px 14px 16px;
+  border-radius: var(--r-card);
+  text-align: left;
+  background: linear-gradient(168deg, rgba(244, 241, 234, 0.07) 0%, rgba(244, 241, 234, 0.036) 55%, rgba(244, 241, 234, 0.022) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.09),
+    0 24px 50px -30px rgba(0, 0, 0, 0.9);
+  transition: background 300ms var(--ease), box-shadow 300ms var(--ease);
 }
-.wl-tab-grip {
-  display: block; width: 34px; height: 3px; border-radius: 2px;
-  margin: 9px auto 0; background: rgba(255,244,228,0.30);
+.wl-tab-main:hover {
+  background: linear-gradient(168deg, rgba(244, 241, 234, 0.1) 0%, rgba(244, 241, 234, 0.05) 55%, rgba(244, 241, 234, 0.03) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.16),
+    0 24px 50px -30px rgba(0, 0, 0, 0.9);
 }
-.wl-tab-body { display: flex; align-items: center; gap: 12px; padding: 12px 4px 14px 8px; }
+/* the people the sentence is about: the faces of the names written to,
+   overlapping the way a row of people stands, each ringed in the void so
+   one face is not cut into the next */
+.wl-tab-faces { display: flex; align-items: center; flex: 0 0 auto; }
+.wl-tab-faces .wl-spark { color: var(--glow); }
+.wl-face.wl-tab-face { box-shadow: inset 0 0 0 1px var(--hair), 0 0 0 2px var(--void); }
+.wl-tab-face + .wl-tab-face { margin-left: -9px; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
@@ -2356,11 +2437,57 @@
   border: 1px solid rgba(255,244,228,0.22); color: var(--glow);
   transition: transform 300ms var(--ease), background 300ms var(--ease);
 }
-.wl-tab:hover .wl-tab-go { transform: translateX(3px); background: rgba(255,244,228,0.07); }
+.wl-tab-main:hover .wl-tab-go { transform: translateX(3px); background: rgba(255,244,228,0.07); }
+.wl-tab-hide { padding: 9px 10px 5px; }
 @keyframes wl-tab-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
   to   { opacity: 1; transform: none; }
 }
+@keyframes wl-tab-drop {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translate3d(0, 18px, 0); }
+}
+/* the wall's dock holds the card and nothing else now, so it carries the
+   floor the composer's pill used to */
+.wl-wallpage .wl-dock { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+
+/* ═══ THE NOTICE ═══════════════════════════════════════════════════════════
+   screens/Wall.jsx `Down`. A letter this person put up has come down since:
+   the same pane as the tab, standing in its place, with the face of the name
+   it was written to, the fact in the display face, the reason in one line of
+   the reading face, and the one thing worth doing about it. It rises the way
+   the tab rises and it stands until it is answered. */
+.wl-down {
+  position: relative;
+  display: flex; flex-direction: column; gap: 12px;
+  width: 100%; margin: 0 0 2px; padding: 16px 16px 14px;
+  border-radius: var(--r-card);
+  background: linear-gradient(168deg, rgba(244, 241, 234, 0.07) 0%, rgba(244, 241, 234, 0.036) 55%, rgba(244, 241, 234, 0.022) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.09),
+    0 24px 50px -30px rgba(0, 0, 0, 0.9);
+  animation: wl-tab-rise 900ms var(--ease) both;
+}
+.wl-down-in { display: flex; align-items: flex-start; gap: 13px; }
+.wl-down-face { margin-top: 2px; }
+.wl-down-text { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.wl-down-h {
+  margin: 0;
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  font-size: 17px; line-height: 1.24; color: var(--chalk);
+  overflow-wrap: anywhere;
+}
+.wl-down-h .wl-h { font-family: var(--f-id); font-weight: 400; font-size: 0.84em; letter-spacing: -0.012em; }
+.wl-down-why {
+  margin: 0;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 14.5px; line-height: 1.5; color: var(--ash);
+}
+.wl-down-acts { display: flex; align-items: center; gap: 10px; padding-left: 49px; }
+.wl-down-acts .wl-pill { min-height: 36px; padding: 0 16px; font-size: 13px; }
+.wl-down-acts .wl-quiet { padding: 8px 6px; }
 /* On the wall the bottom of the screen is already dark: `.wl-shade.is-bottom`
    pours the void back over the field on a much longer ramp than this one, and
    two gradients over each other put a visible waist across the field where
@@ -2407,19 +2534,10 @@
   .wl-ear { grid-row: 1; padding: 14px 0 12px; }
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
   /* the veil's type keeps the column while the field, which is the whole
-     window at every width, does not */
-  .wl-veil { justify-content: center; }
-  .wl-veil-in { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 40px 24px; }
-  /* the type is on the left of the field here, so the scrim runs across
-     rather than down: deep under the type, gone past the middle */
-  .wl-veil-scrim {
-    background: linear-gradient(90deg,
-      rgba(8, 7, 11, 0.88) 0%,
-      rgba(8, 7, 11, 0.80) 26%,
-      rgba(8, 7, 11, 0.46) 52%,
-      rgba(8, 7, 11, 0.10) 78%,
-      rgba(8, 7, 11, 0) 100%);
-  }
+     window at every width, does not: the block stands in the middle of the
+     glass here as it does on a phone, with the crowd showing round it */
+  .wl-veil-in { max-width: 1080px; margin: 0 auto; padding: 0 40px 6vh; }
+  .wl-mast { max-width: 560px; }
   .wl-mast-sub { max-width: 40ch; font-size: 18px; }
   /* a spread is wider than it is tall, so the corners are further out and the
      sides are what the mask has to work on */
@@ -2492,7 +2610,7 @@
   .wl-letter .wl-foot, .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
   /* ── the standalone screens keep the column, and gain air ── */
-  .wl-join, .wl-posted { max-width: 640px; }
+  .wl-join { max-width: 640px; }
   .wl-join-fig { margin: 40px 0 30px; }
 }
 
@@ -2534,7 +2652,7 @@
      right column's whole height with the veil over it */
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
   .wl-ear { grid-column: 1; grid-row: 1; padding: 6px 0 0; }
-  .wl-veil-in { padding: 6px 18px 0; }
+  .wl-veil-in { padding: 0 18px 2vh; }
   .wl-wallpage .wl-dock {
     grid-column: 1 / -1; grid-row: 4;
     align-self: end; justify-self: center;
@@ -2552,7 +2670,8 @@
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
   .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: 15px; }
-  .wl-mast-go { margin-top: 12px; }
+  .wl-mast-go { margin-top: 10px; }
+  .wl-mast-go-pill { min-height: 40px; font-size: 13.5px; }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
@@ -2560,7 +2679,7 @@
   .wl-grip { display: none; }
   .wl-sheet-in { padding: 18px 22px 22px; }
 
-  .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
+  .wl-join-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
   .wl-join-fig .wl-circuit { max-width: 190px; }
   /* ── the core service, lying down ──
@@ -2586,7 +2705,6 @@
   .wl-sill { min-height: 40px; padding-top: 12px; }
   .wl-pips { padding-top: 11px; }
   .wl-core .wl-say { font-size: 12px; }
-  .wl-posted-stage { min-height: 150px; }
 }
 
 /* ── the very wide screen ──────────────────────────────────────────────────
@@ -3083,6 +3201,17 @@
   from { opacity: 0; transform: scale(0.72); }
   to   { opacity: 1; transform: none; }
 }
+/* the disc's own box, which is what flies: out of the small face and back
+   into it (parts.jsx FaceViewer). Given a face to come from, the box's own
+   pop is not played, and the name arrives a beat behind the picture; on the
+   way out the room's scrim goes with the picture and the name goes first. */
+.wl-viewer-disc { display: block; line-height: 0; transform-origin: 50% 50%; will-change: transform; }
+.wl-viewer.is-from .wl-viewer-in { animation: none; }
+.wl-viewer.is-from .wl-viewer-who { animation: wl-fade 320ms var(--ease) 200ms both; }
+.wl-viewer.is-closing { pointer-events: none; }
+.wl-viewer.is-closing .wl-viewer-scrim { animation: wl-fade 320ms var(--ease-out) reverse both; }
+.wl-viewer.is-closing .wl-viewer-who { animation: wl-fade 160ms var(--ease-out) reverse both; }
+.wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-in 260ms var(--ease-out) reverse both; }
 .wl-face.wl-viewer-face {
   --s: min(72vw, 300px);
   background: rgba(244, 241, 234, 0.08);
@@ -3278,8 +3407,11 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
-  .wl-wallpage.is-arriving .wl-iconbtn, .wl-wallpage.is-arriving .wl-dock-in { animation: none !important; }
+  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
+  .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
+  .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
+  .wl-mast-go-ring { display: none; }
+  .wl-tab, .wl-down { animation: none !important; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-card { animation: none; }
   .wl-light-beam { animation: none !important; opacity: 0.35; offset-distance: 50%; }

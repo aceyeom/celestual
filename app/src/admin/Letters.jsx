@@ -3,12 +3,18 @@
 // Spec section 10's "moderation queue and rejection reasons" and "wall
 // submissions", which are one table read two ways.
 //
-// ── WHY HELD COMES FIRST ────────────────────────────────────────────────────
-// A letter is written at pending and renders nowhere until all three layers of
-// celestual-wall-moderate pass. Layer 3 is a person, and this screen is that
-// person. Anything the classifier returned 'review' for sits here until
-// somebody moves it or it expires, so the tab that opens is the one with work
-// in it rather than the one with the most rows in it.
+// ── WHY FLAGGED COMES FIRST ─────────────────────────────────────────────────
+// Since migration 0050 a letter the classifier is unsure of goes up at once,
+// flagged, and a person reads it while it stands. Layer 3 is that person, and
+// this screen is where they sit. Anything the classifier returned 'review'
+// for is in the flagged queue until somebody decides about it, so the tab
+// that opens is the one with work in it rather than the one with the most
+// rows in it. "looks fine" is a decision too: it leaves the letter exactly
+// where it is and takes it out of the queue.
+//
+// It used to open on `held`: letters written at pending that rendered nowhere
+// until a person moved them. That tab is still here, because the desk can
+// still hold a letter back by hand, and nothing lands in it on its own now.
 //
 // ── AND WHY THE REJECTED ONES ARE HERE AT ALL ───────────────────────────────
 // Spec section 9: rejected content is stored with a rejection reason so it
@@ -21,14 +27,15 @@ import { Search, useDebounced, Tabs, Paging, Empty, Fault, When, State, Btn, Arm
 
 const LIMIT = 50
 const TABS = [
-  { value: 'pending', label: 'held' },
+  { value: 'flagged', label: 'flagged' },
   { value: 'live', label: 'live' },
+  { value: 'pending', label: 'held' },
   { value: 'rejected', label: 'rejected' },
   { value: 'removed', label: 'down' },
   { value: '', label: 'all' },
 ]
 
-export default function Letters({ password, initialStatus = 'pending', onChanged, onLock }) {
+export default function Letters({ password, initialStatus = 'flagged', onChanged, onLock }) {
   const [status, setStatus] = useState(initialStatus)
   const [query, setQuery] = useState('')
   const q = useDebounced(query)
@@ -90,7 +97,7 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
       <div className="ad-head">
         <h1>the wall</h1>
         <span className="ad-head-note">
-          a letter renders nowhere until it is live. publishing one from here is the third layer of the screen.
+          a flagged letter is on the wall while it waits for you. looks fine keeps it there; take it down takes it off.
         </span>
         <div className="ad-head-acts">
           <Tabs value={status} onChange={setStatus} options={TABS} />
@@ -102,7 +109,8 @@ export default function Letters({ password, initialStatus = 'pending', onChanged
 
       {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
         <Empty>
-          {status === 'pending' ? 'nothing is waiting to be read.'
+          {status === 'flagged' ? 'nothing is waiting to be read.'
+            : status === 'pending' ? 'nothing is held back.'
             : q ? 'nothing matches that.'
               : 'nothing here yet.'}
         </Empty>
@@ -148,7 +156,7 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
   return (
     <>
       <tr className={open ? 'is-open' : ''}>
-        <td><State>{l.status}</State></td>
+        <td><State>{l.flagged ? 'flagged' : l.status}</State></td>
         <td><span className="ad-id">@{l.target_handle}</span></td>
         <td className="is-wide">
           <p className="ad-body-text is-quote" style={{ margin: 0 }}>{l.body}</p>
@@ -201,6 +209,13 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
               ) : null}
 
               <div className="ad-btns" style={{ justifyContent: 'flex-start' }}>
+                {/* A flagged letter is already up: the decision that keeps it
+                    is a decision, and it is what takes it out of the queue. */}
+                {l.flagged && !l.reports_open ? (
+                  <Arm tone="go" armed="keep it up" busy={acting} onAct={() => onDecide(l.id, 'live')}>
+                    looks fine
+                  </Arm>
+                ) : null}
                 {l.status !== 'live' && !l.reports_open ? (
                   <Arm tone="go" armed="publish it" busy={acting} onAct={() => onDecide(l.id, 'live')}>
                     put it on the wall

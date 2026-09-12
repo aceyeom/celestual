@@ -107,10 +107,10 @@
 // pulses: the field is still, the lens still applies, and a pull moves it and
 // leaves it.
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Face, Label } from './parts.jsx'
 import { atHandle } from './data.js'
-import { takeOff } from './morph.js'
+import { takeOff, setLocator } from './morph.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
 // At most this many names in the field. Past it the rest are a search away,
@@ -173,6 +173,31 @@ const PHONE = { rim: 0.46, fall: 1.05, open: 0.16, air: 0.72, side: 0.74 }
 // of discs round it; how much of the wave is lost by the far corner; and
 // how much light the crest puts on a face as it passes.
 const PULSE = { width: 1.7, swell: 0.28, fill: 0.6, push: 0.75, back: 0.25, decay: 0.45, light: 0.5 }
+// ── the tap ──
+// A press on a disc is answered the way the veil's tap is answered: a pulse
+// sent out from the disc through the crowd, and the disc brought into the
+// light, and only then does its letter open out of it. `OPEN_AFTER` is how
+// long the letter waits, which is long enough for the crest to have left the
+// disc and for the disc to be most of the way to the middle, and short
+// enough that nobody is waiting on an animation to read. `CENTRE_K` is the
+// travel's time constant. The pulse's own clock is the veil's, shortened: it
+// has less glass to cross and it should be seen to go rather than to crawl,
+// and its tail runs out under the sheet's glass once the letter is up.
+const OPEN_AFTER = 520
+const CENTRE_K = 300
+// A pulse the wall sends from a name that is off the glass travels first and
+// pulses second: this long after the travel starts, the disc is most of the
+// way in and the wave is seen to leave a person rather than to arrive from
+// nowhere.
+const TRAVEL_FIRST_MS = 360
+const TAP_MIN = 1100
+const TAP_MAX = 1700
+const TAP_BASE = 800
+const TAP_PER_PX = 0.55
+const TAP_POW = 1.45
+const TAP_RISE = 0.12
+const TAP_TAIL_FROM = 0.86
+const TAP_TAIL_TO = 1.3
 // The pointer's own light: how wide it reaches (in pitches), how much it adds
 // to a disc under it, and how hard it parts the crowd to make the room.
 //
@@ -269,6 +294,62 @@ function readWave(m, wave, el) {
   v.amp = w.amp
   v.rmax = Math.max(1, w.rmax)
   return v
+}
+
+// The tap's pulse, this frame. It is the field's own, so it lives in the
+// lattice rather than on the glass: its origin is a point in world units and
+// is put back on the screen every frame from where the field is now, which
+// is what keeps the ring centred on the person it left as they travel to
+// the middle. The front runs the same shallow ease the veil's does and lets
+// its amplitude go over a tail; when nothing is left of it, it is gone.
+function readTap(m, now) {
+  const t = m.tap
+  if (!t) return null
+  const p = (now - t.t0) / t.ms
+  if (p >= TAP_TAIL_TO) { m.tap = null; return null }
+  const front = 1 - Math.pow(1 - Math.min(1, p), TAP_POW)
+  t.R = t.rmax * front
+  t.amp = p < TAP_RISE ? p / TAP_RISE
+    : p < TAP_TAIL_FROM ? 1
+    : Math.max(0, 1 - (p - TAP_TAIL_FROM) / (TAP_TAIL_TO - TAP_TAIL_FROM))
+  t.x = t.wx + m.o.x
+  t.y = t.wy + m.o.y
+  return t
+}
+
+// The crest of a wave, on one disc. A disc ahead of the front is pushed out
+// ahead of it, swells as the crest reaches it, is drawn back a little behind
+// it, and settles; the shove is largest at the crest's shoulders and nothing
+// at the crest itself, so the discs under it are spread apart exactly where
+// they are largest. The swell is the crest's where there is room for it and
+// the gap's where there is not: at the light, where the crowd is packed, a
+// disc lifts a little; out toward the rim, where the discs are small and far
+// apart, it swells whole. The draw back behind the crest is a fraction of the
+// shove, and let go altogether within a few pitches of the origin, because an
+// inward pull there closes the ring of neighbours over the disc that was
+// touched. The wave is weaker the further it has come, and a face under the
+// crest catches some light. One function for the veil's wave and the tap's,
+// so the two pulses on this field are one kind of thing.
+function crest(wv, ax, ay, S, W, open, d, z) {
+  const wx = ax - wv.x
+  const wy = ay - wv.y
+  const wr = Math.sqrt(wx * wx + wy * wy)
+  const wq = (wr - wv.R) / W
+  if (wq <= -2.6 || wq >= 2.6) return null
+  const g = Math.exp(-wq * wq)
+  const a = wv.amp * g * (1 - PULSE.decay * Math.min(1, wr / wv.rmax))
+  const gap = Math.max(0, S * open - d * z)
+  const zCap = z + (gap * PULSE.fill) / d
+  const z2 = Math.min(z * (1 + PULSE.swell * a), Math.max(z, zCap))
+  let dx = 0
+  let dy = 0
+  if (wr > 0.01) {
+    const back = wq < 0 ? PULSE.back * Math.min(1, wr / (3 * S)) : 1
+    const dd = PULSE.push * S * a * wq * back
+    dx = (wx / wr) * dd
+    dy = (wy / wr) * dd
+  }
+  return { z: z2, dx, dy, lift: PULSE.light * a }
 }
 
 // A stable scatter per lattice cell. The same name at two repeats of the torus
@@ -388,7 +469,7 @@ const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, o
   )
 })
 
-export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', wave = null, onOpen, onPeek }) {
+export default function Hive({ tiles, reduce = false, veiled = false, paused = false, opening = false, mine = [], none = '', wave = null, onOpen, onPeek, ref = null }) {
   const names = useMemo(() => tiles.slice(0, CAP), [tiles])
   // The last seating, carried forward so a new reading of the index does not
   // move anybody who was already on the wall. Written during the memo rather
@@ -421,20 +502,38 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // there the next time you look. The first reading of all is not an arrival —
   // everything is new on an empty wall, and a wall that pops sixty times on
   // load is a wall having a seizure.
+  //
+  // Behind a sheet or under the veil the arrival waits. The index moves while
+  // the composer is still up over the wall, and a disc that rose behind the
+  // glass rose for nobody: it rises when the glass has gone, which is the
+  // beat the wall sends its pulse out from the same disc (`pulse`, below).
   const seen = useRef(null)
+  const held = useRef(null)
+  const freshT = useRef(0)
   const [fresh, setFresh] = useState(null)
+  const show = useCallback((up) => {
+    clearTimeout(freshT.current)
+    setFresh(up)
+    freshT.current = window.setTimeout(() => setFresh(null), FRESH_MS)
+  }, [])
+  useEffect(() => () => clearTimeout(freshT.current), [])
   useEffect(() => {
     const was = seen.current
     const now = new Map(names.map((t) => [t.handle, t.count]))
     seen.current = now
-    if (!was || !was.size || reduce) return undefined
+    if (!was || !was.size || reduce) return
     const up = new Set()
     for (const [h, n] of now) { const had = was.get(h); if (had === undefined || n > had) up.add(h) }
-    if (!up.size) return undefined
-    setFresh(up)
-    const t = setTimeout(() => setFresh(null), FRESH_MS)
-    return () => clearTimeout(t)
-  }, [names, reduce])
+    if (!up.size) return
+    if (paused || veiled) { held.current = new Set([...(held.current || []), ...up]); return }
+    show(up)
+  }, [names, reduce, paused, veiled, show])
+  useEffect(() => {
+    if (paused || veiled || !held.current) return
+    const up = held.current
+    held.current = null
+    show(up)
+  }, [paused, veiled, show])
 
   const motion = useRef({
     o: { x: 0, y: 0 },        // where the field's origin is on the screen
@@ -443,22 +542,25 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     S: 70, rowH: 70 * ROW,    // the lattice pitch, set from the window
     wL: 0, hL: 0,             // the window the lens is drawn for (RESHAPE_PX)
     lens: lensFor(0, 0),      // the four ramps, for this window's shape
-    wave: null,               // the pulse, placed in this frame
+    wave: null,               // the veil's pulse, placed in this frame
+    tap: null,                // a disc's pulse, in the lattice (readTap)
     bloom: 0,                 // 0 under the veil, 1 with the field at full
     v: { x: 0, y: 0 },        // the field's velocity, px/s
     heading: 0.6,             // where the drift is going
     drag: null, moved: 0,
     over: false, on: -1, kbd: false,
     px: 0, py: 0, pa: 0,      // the pointer, and how much of it is here
-    goal: null,               // where a keyboard asked the field to go
+    goal: null,               // where a keyboard or a tap asked the field to go
+    goalK: 170,               // and how quickly it goes there, in ms
     focus: null,              // { I, J, nd }
     slots: [], used: null, Mx: 0, My: 0,
     sayW: 0, sayOn: 0,
-    veiled, reduce,
+    veiled, reduce, paused,
     ready: false,
   })
   motion.current.veiled = veiled
   motion.current.reduce = reduce
+  motion.current.paused = paused
 
   // ── the lattice, in world units ──
   const worldX = useCallback((I, J, S) => (I + (J & 1) * 0.5) * S, [])
@@ -575,8 +677,14 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   }, [reading])
 
   // ── the loop ──
+  // It runs while the field is on the screen. Under a sheet it idles: the
+  // frame is asked for and nothing is drawn, so the crowd is where it was
+  // when the sheet comes down. The one exception is a pulse or a travel
+  // that is still going when the sheet rises, which is what a tap on a disc
+  // leaves behind: those run out under the glass, because a crowd frozen in
+  // the middle of a wave is a crowd that jumps when the sheet goes.
   useEffect(() => {
-    if (paused || !grid) return undefined
+    if (!grid) return undefined
     let raf = 0
     let last = 0
 
@@ -585,6 +693,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const m = motion.current
       const { w, h } = size.current
       if (!w || !h || !m.ready) return
+      if (m.paused && !m.tap && !m.goal) { last = 0; return }
       const dt = last ? Math.min(64, now - last) : 16
       last = now
       const sec = dt / 1000
@@ -607,7 +716,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       // rather than stopping. A keyboard's goal overrides all of it.
       if (!m.drag) {
         if (m.goal) {
-          const k = 1 - Math.exp(-dt / 170)
+          const k = 1 - Math.exp(-dt / (m.goalK || 170))
           m.o.x += (m.goal.x - m.o.x) * k
           m.o.y += (m.goal.y - m.o.y) * k
           m.v.x = 0; m.v.y = 0
@@ -662,8 +771,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const Rx = Math.max(m.c.x + S * 0.3, Ry * lens.side)
       const reach = S * TOUCH.reach
       const pa = m.pa
-      // the pulse, if one is crossing the field, and how wide its crest is
+      // the pulses, if any are crossing the field, and how wide a crest is:
+      // the veil's, sent from the tap that opened it, and a disc's, sent
+      // from a name that was pressed
       const wv = m.reduce ? null : readWave(m, wave, stage.current)
+      const tp = m.reduce ? null : readTap(m, now)
       const W = S * PULSE.width
       const I0 = Math.floor((-pad - m.o.x) / S - 0.5)
       const I1 = Math.ceil((w + pad - m.o.x) / S)
@@ -700,13 +812,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           // one outside it, over the width of the crest, so the lens is seen
           // to arrive with the light rather than on a clock of its own
           let bl = m.bloom
-          let wx = 0, wy = 0, wr = 0, wq = 0
-          if (wv) {
-            wx = ax - wv.x; wy = ay - wv.y
-            wr = Math.sqrt(wx * wx + wy * wy)
-            wq = (wr - wv.R) / W
-            bl = clamp01(0.5 - wq)
-          }
+          if (wv) bl = clamp01(0.5 - (Math.hypot(ax - wv.x, ay - wv.y) - wv.R) / W)
           const L = LENS.veiled + (1 - LENS.veiled) * bl
           let z = 1 + (zL - 1) * L
 
@@ -760,34 +866,17 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             }
           }
 
-          // THE PULSE: the crest passes through. A disc ahead of the front is
-          // pushed out ahead of it, swells as the crest reaches it, is drawn
-          // back a little behind it, and settles; the shove is largest at the
-          // crest's shoulders and nothing at the crest itself, so the discs
-          // under it are spread apart exactly where they are largest. The
-          // swell is the crest's where there is room for it and the gap's
-          // where there is not: at the light, where the crowd is packed, a
-          // disc lifts a little; out toward the rim, where the discs are
-          // small and far apart, it swells whole. The draw back behind the
-          // crest is a fraction of the shove, and let go altogether within a
-          // few pitches of the tap, because an inward pull there closes the
-          // ring of neighbours over the disc that was touched. The wave is
-          // weaker the further it has come, and a face under the crest
-          // catches some light.
+          // THE PULSES: a crest passes through (`crest`, above). The veil's,
+          // and a pressed disc's, and when both are on the field a disc
+          // under both is moved by both.
           let lift = 0
-          if (wv && wq > -2.6 && wq < 2.6) {
-            const g = Math.exp(-wq * wq)
-            const a = wv.amp * g * (1 - PULSE.decay * Math.min(1, wr / wv.rmax))
-            const gap = Math.max(0, S * open - d * z)
-            const zCap = z + (gap * PULSE.fill) / d
-            z = Math.min(z * (1 + PULSE.swell * a), Math.max(z, zCap))
-            if (wr > 0.01) {
-              const back = wq < 0 ? PULSE.back * Math.min(1, wr / (3 * S)) : 1
-              const dd = PULSE.push * S * a * wq * back
-              px += (wx / wr) * dd
-              py += (wy / wr) * dd
-            }
-            lift = PULSE.light * a
+          if (wv) {
+            const c = crest(wv, ax, ay, S, W, open, d, z)
+            if (c) { z = c.z; px += c.dx; py += c.dy; lift = c.lift }
+          }
+          if (tp) {
+            const c = crest(tp, ax, ay, S, W, open, d, z)
+            if (c) { z = c.z; px += c.dx; py += c.dy; lift = Math.max(lift, c.lift) }
           }
 
           if (!slot.shown) { slot.shown = true; if (slot.el) slot.el.style.visibility = '' }
@@ -863,16 +952,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf) }
-  }, [paused, grid, names, tileAt, worldX, discOf, wave])
+  }, [grid, names, tileAt, worldX, discOf, wave])
 
   // ── the pull ──
   // Listeners go on the window rather than through pointer capture. Capture
   // would redirect the click to the element that captured it, and every disc
   // in here is a button whose whole job is to be tapped.
+  const pending = useRef(0)
+  useEffect(() => () => clearTimeout(pending.current), [])
   const onDown = useCallback((e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const m = motion.current
     if (!m.ready) return
+    // a new press ends a tap that was still waiting to open its letter
+    if (pending.current) { clearTimeout(pending.current); pending.current = 0 }
     m.drag = { x: e.clientX, y: e.clientY, t: e.timeStamp || performance.now(), vx: 0, vy: 0 }
     m.moved = 0
     m.goal = null
@@ -978,6 +1071,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     const slot = m.slots[s]
     if (!slot || Number.isNaN(slot.I)) return
     m.goal = { x: m.c.x - worldX(slot.I, slot.J, m.S), y: m.c.y - slot.J * m.rowH }
+    m.goalK = 170
     if (m.reduce) { m.o = { ...m.goal }; m.goal = null }
   }, [worldX])
   const onFocusOut = useCallback((e) => {
@@ -986,18 +1080,134 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     m.kbd = false
   }, [])
 
+  // ── the pulse from a disc ──
+  // The same wave the veil's tap sends through the crowd, sent from one
+  // disc, and the field travelling to put that disc in the light. The origin
+  // is the cell's own place in the lattice, so the ring stays on the person
+  // as they come to the middle; the reach is to the farthest corner of the
+  // glass from where they stand now. By cell rather than by slot, because
+  // the wall sends one from a name that may not have a slot yet.
+  const tapCell = useCallback((I, J) => {
+    const m = motion.current
+    const { w, h } = size.current
+    if (!m.ready || !w || !h) return false
+    const wx = worldX(I, J, m.S)
+    const wy = J * m.rowH
+    const x = wx + m.o.x
+    const y = wy + m.o.y
+    const rmax = Math.hypot(Math.max(x, w - x), Math.max(y, h - y))
+    const now = performance.now()
+    m.tap = {
+      wx, wy, x, y, R: 0, amp: 0, rmax, t0: now,
+      ms: clamp(TAP_BASE + rmax * TAP_PER_PX, TAP_MIN, TAP_MAX),
+    }
+    m.goal = { x: m.c.x - wx, y: m.c.y - wy }
+    m.goalK = CENTRE_K
+    m.v = { x: 0, y: 0 }
+    return true
+  }, [worldX])
+  const tapAt = useCallback((slot) => (
+    slot && !Number.isNaN(slot.I) ? tapCell(slot.I, slot.J) : false
+  ), [tapCell])
+
   // ── the press ──
   // A press that travelled swallows the tap it would have ended in, because
   // every disc is a target and nothing is worse than a surface that opens a
-  // letter because you tried to look past it. The disc that is opened hands
-  // its own circle to the letter, which opens out of it (morph.js,
-  // screens/Letter.jsx).
+  // letter because you tried to look past it. A press that did not sends the
+  // pulse out from the disc and brings it to the light, and a beat later the
+  // disc hands its own circle, where it is standing then, to the letter,
+  // which opens out of it (morph.js, screens/Letter.jsx). Under reduced
+  // motion nothing travels: the letter opens at once.
   const open = useCallback((handle, e) => {
-    if (motion.current.moved > SLOP) return
-    const disc = e && e.currentTarget ? e.currentTarget.querySelector('.wl-cell-disc') : null
-    if (disc) takeOff(handle, disc.getBoundingClientRect())
-    if (onOpen) onOpen(handle)
-  }, [onOpen])
+    const m = motion.current
+    if (m.moved > SLOP) return
+    const btn = e && e.currentTarget ? e.currentTarget : null
+    const disc = btn ? btn.querySelector('.wl-cell-disc') : null
+    const slot = btn ? m.slots[Number(btn.dataset.slot)] : null
+    const fire = () => {
+      pending.current = 0
+      if (disc) takeOff(handle, disc.getBoundingClientRect())
+      if (onOpen) onOpen(handle)
+    }
+    if (pending.current) { clearTimeout(pending.current); pending.current = 0 }
+    if (m.reduce || !tapAt(slot)) { fire(); return }
+    pending.current = window.setTimeout(fire, OPEN_AFTER)
+  }, [onOpen, tapAt])
+
+  // ── the wall's own hand on the field ──
+  // `pulse(handle)`: the same pulse and the same travel, sent from a name's
+  // disc by the screen rather than by a finger. The wall sends one for the
+  // name a letter was just put up to, once the composer's glass has gone,
+  // wherever on the field that name sits: its seat is found in the tile, at
+  // the repeat of the torus nearest the middle of the glass, and if that is
+  // off the glass the field travels there first and the pulse leaves the
+  // disc once it is on. Nothing is opened.
+  const late = useRef(0)
+  useEffect(() => () => clearTimeout(late.current), [])
+  const pulse = useCallback((handle) => {
+    const m = motion.current
+    const h = String(handle || '')
+    if (!h || m.veiled || m.reduce || !m.ready) return false
+    const k = names.findIndex((t) => t.handle === h)
+    if (k < 0) return false
+    const { w, h: hh } = size.current
+    const { C, R, at } = lay
+    const cx = m.c.x - m.o.x
+    const cy = m.c.y - m.o.y
+    const PX = C * m.S
+    const PY = R * m.rowH
+    let best = null
+    for (let j = 0; j < R; j++) {
+      for (let i = 0; i < C; i++) {
+        if (at[j * C + i] !== k) continue
+        // R is even, so J has j's parity and the row's half-pitch offset holds
+        const J = j + R * Math.round((cy - j * m.rowH) / PY)
+        const I = i + C * Math.round((cx - worldX(i, J, m.S)) / PX)
+        const d = Math.hypot(worldX(I, J, m.S) - cx, J * m.rowH - cy)
+        if (!best || d < best.d) best = { I, J, d }
+      }
+    }
+    if (!best) return false
+    clearTimeout(late.current)
+    const x = worldX(best.I, best.J, m.S) + m.o.x
+    const y = best.J * m.rowH + m.o.y
+    if (x > -m.S && x < w + m.S && y > -m.S && y < hh + m.S) return tapCell(best.I, best.J)
+    m.goal = { x: m.c.x - worldX(best.I, best.J, m.S), y: m.c.y - best.J * m.rowH }
+    m.goalK = CENTRE_K
+    m.v = { x: 0, y: 0 }
+    late.current = window.setTimeout(() => { late.current = 0; tapCell(best.I, best.J) }, TRAVEL_FIRST_MS)
+    return true
+  }, [names, lay, worldX, tapCell])
+  useImperativeHandle(ref, () => ({ pulse }), [pulse])
+
+  // ── where a name's disc is standing ──
+  // For the letter on its way out (morph.js `locate`): the disc's rectangle
+  // on the glass, if that name is drawn and inside the glass by its own
+  // width, so a card never closes into a disc that is dissolving at the rim
+  // or standing under the bar. Left in morph.js while the field is mounted,
+  // taken back when it is not.
+  useEffect(() => {
+    setLocator((handle) => {
+      const m = motion.current
+      const h = String(handle || '')
+      if (!h || m.veiled || !stage.current) return null
+      const { w, h: hh } = size.current
+      const sr = stage.current.getBoundingClientRect()
+      for (const slot of m.slots) {
+        if (!slot.shown || slot.k < 0 || !slot.disc) continue
+        const t = names[slot.k]
+        if (!t || t.handle !== h) continue
+        const r = slot.disc.getBoundingClientRect()
+        if (!r.width) return null
+        const cx = r.left + r.width / 2 - sr.left
+        const cy = r.top + r.height / 2 - sr.top
+        if (cx < r.width || cx > w - r.width || cy < r.height || cy > hh - r.height) return null
+        return { x: r.left, y: r.top, w: r.width, h: r.height }
+      }
+      return null
+    })
+    return () => setLocator(null)
+  }, [names])
 
   // Nothing to draw: the line the caller gives, which is empty while the
   // index is still loading or did not load, since either of those said so

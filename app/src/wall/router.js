@@ -48,7 +48,6 @@ export function parse(pathname) {
     case 'gate':   return { name: 'gate' }         // the door on the LETTERS, not on the wall
     case 'remove': return { name: 'remove', id }   // a whole name coming off, once it is proven
     case 'report': return id ? { name: 'report', id } : { name: 'wall' }   // one letter coming down, now
-    case 'posted': return { name: 'posted' }       // it is up, and the wall took it
     case 'join':   return { name: 'join' }         // the door to the core service, which is Main
     // /berkeley/orbit was a drawn stand-in for the core service with a seeded
     // ledger in it, reachable by anybody who typed the address. The core

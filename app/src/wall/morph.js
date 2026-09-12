@@ -58,3 +58,17 @@ export function land(handle) {
 
 // Thrown away without being claimed: a press that ended somewhere else.
 export function drop() { PENDING = null }
+
+// ── and the way back ────────────────────────────────────────────────────────
+// The card closes into the disc it came out of, or into the disc of whichever
+// name the deck was turned to, if that name is on the screen. The hive is the
+// only thing that knows where a name's disc is standing, and it is on the
+// other side of the same two trees, so it leaves a way of asking here while
+// it is mounted (Hive.jsx `setLocator`) and the letter asks on the way out
+// (screens/Letter.jsx). Nothing found is an ordinary close: the sheet drops.
+let LOCATE = null
+export function setLocator(fn) { LOCATE = fn }
+export function locate(handle) {
+  if (!LOCATE || !handle) return null
+  try { return LOCATE(handle) } catch { return null }
+}

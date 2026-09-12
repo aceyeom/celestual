@@ -5,9 +5,8 @@
 // Q10 was already renaming the tables underneath it.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  This is now the ONLY path a letter reaches the wall by. It screens, and  ║
-// ║  it writes. Both, in one request, because a screen whose verdict somebody ║
-// ║  else has to act on is a screen with a gap in it.                         ║
+// ║  This is the ONLY path a letter reaches the wall by. It writes the letter ║
+// ║  at once, answers, and then reads it.                                     ║
 // ║                                                                           ║
 // ║  Deploy:  supabase functions deploy celestual-wall-moderate               ║
 // ║  Secrets: MODERATION_API_KEY, optionally MODERATION_MODEL                 ║
@@ -15,39 +14,54 @@
 //
 // Contract:
 //   POST { token, target, body, sealedLine?, source?, campus? }
-//     { ok:true,  status:'live',     id }        published
-//     { ok:true,  status:'pending',  id }        held for a person to look at
-//     { ok:true,  status:'rejected', id, reasons }  stored, and visible only in admin
-//     { ok:false, error }                        the write itself was refused
+//     { ok:true,  status:'live',     id }           on the wall, now
+//     { ok:true,  status:'rejected', id, reasons }  caught by layer 1: stored,
+//                                                   never shown, and the app
+//                                                   says it is inappropriate
+//     { ok:false, error }                           the write itself was refused
 //     { ok:false, error:'cap', limit, used, resets_at }
-//                                                three in any seven days, spent
+//                                                   three in any seven days, spent
 //
-// A REJECT IS STILL A WRITE. Spec section 9: rejected content is stored with a
-// rejection reason so it appears in admin, not silently dropped. A letter
-// nobody can see is still a letter somebody wrote, and being unable to read
-// what the screen caught is being unable to tell whether the screen works.
-//
-// ── WHY PRE-PUBLICATION, AND WHY THAT IS NOT NEGOTIABLE ─────────────────────
-// The obvious cheap design is: publish immediately, let people report, take
-// things down fast. That is the design every wall-shaped product reaches for
-// and it does not work here, for one reason that has nothing to do with
-// engineering: THE SCREENSHOT EXISTS BEFORE YOU DELETE IT. By the time a
-// takedown runs, the letter has been seen, saved and forwarded, and the person
-// it was about has already had the day it gave them. A ninety-second exposure
-// window is not a small version of the harm. It is the whole harm.
-//
-// So a letter is written at status='pending', renders nowhere (the public view
-// filters status='live'), and becomes visible only after all three layers pass.
+// ── THE LETTER GOES UP FIRST, AND IS READ WHERE IT STANDS ───────────────────
+// Two layers stand between a person typing and a name on a public wall, and
+// since migration 0050 only the first one stands BEFORE the letter is up:
 //
 //   1  DETERMINISTIC   regex. slurs, phones, addresses, room numbers, URLs,
-//                      emails. mirrored from app/src/wall/moderate.js, and
-//                      re-run HERE because a client-side check is a courtesy
-//                      to the writer, not a control on the writer.
-//   2  CLASSIFIER      one model call, explicit categories, below.
-//   3  HUMAN           anything returning 'review' stays pending. A person
-//                      moves it or it expires. Nobody is told which.
+//                      emails. Mirrored from app/src/wall/moderate.js, where it
+//                      runs at the keyboard and shakes the card, and re-run
+//                      HERE because a client-side check is a courtesy to the
+//                      writer, not a control on the writer. A catch is stored
+//                      at rejected (spec section 9) and never published.
+//   2  CLASSIFIER      one model call, explicit categories, below, run AFTER
+//                      the letter has been written at live and the writer has
+//                      been answered. A reject takes the letter down
+//                      (`wall_screened`), and the wall tells the writer it came
+//                      down for going against the terms and hands their words
+//                      back. A review leaves it up, flagged for a person at
+//                      the desk. A pass is recorded and nothing moves.
 //
-// Contract:  POST → { verdict: 'pass'|'review'|'reject', reasons: string[] }
+// It used to read before it wrote, and hold what it was unsure of: a writer
+// waited on the model for every letter, and a letter the model could not
+// place sat at pending for hours with no word about why. Now the wait is
+// gone with the hold. What a reject costs is the seconds a letter stands
+// before the model answers, and that is the trade this campus has chosen:
+// the worst of it is still caught before anything is published, by layer 1,
+// and the rest is caught within a breath of it.
+//
+// ── and when the classifier does not answer ─────────────────────────────────
+// A missing key, a timeout, a provider that is down. The letter is already
+// up. It is marked flagged with the failure as its reason, so the desk sees a
+// run of `unscreened` rows and knows the classifier is off, and nothing
+// about the wall stops.
+//
+// ── how the reading runs after the answer ───────────────────────────────────
+// `EdgeRuntime.waitUntil` keeps the classifier call alive after the response
+// has gone, which is what the platform provides for exactly this. Where that
+// is not there (a local runtime), the call is awaited after the write instead:
+// the letter is still on the wall before the model is asked, and the writer
+// waits one call longer.
+//
+// Classifier contract:  → { verdict: 'pass'|'review'|'reject', reasons: string[] }
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -114,16 +128,16 @@ function deterministic(text: string) {
 // "locate", and held anything it was unsure of for a person to look at. On a
 // live wall that was most letters. The composer's own example letters, the
 // ones it prints under the empty card, would not have passed it: they name
-// Wheeler, Dwinelle, Moffitt and the 51B. A screen that holds the product's
-// own examples is not a screen, it is a closed door with a queue in front of
-// it, and a letter held for a person to look at is a letter the writer
-// watches not appear.
+// Wheeler, Dwinelle, Moffitt and the 51B.
 //
-// So the list is short and the bar is harm, not tone. A letter goes up
+// So the list is short and the bar is harm, not tone. A letter stays up
 // unless it is one of the six things below, and review is for a letter the
 // model genuinely cannot place on one side of one of them, not for a letter
-// it merely would not have written. Two of the categories are still the ones
-// a generic safety filter will not catch, and they are still the two that
+// it merely would not have written. The letter is already up when the model
+// reads it, so a REJECT is a takedown: the model is told that, and told that
+// a review changes nothing on the wall, so a letter it is confident about is
+// a reject and not a review. Two of the categories are still the ones a
+// generic safety filter will not catch, and they are still the two that
 // matter most here:
 //
 //   · A PHYSICAL DESCRIPTION WITH A ROUTINE. "You sit in Dwinelle" is a
@@ -134,13 +148,13 @@ function deterministic(text: string) {
 //   · CONTEMPT DRESSED AS AFFECTION. Teasing is fine; a letter written so
 //     that the person it is about is the joke, on a public wall, with their
 //     handle on it, is not, whatever the framing.
-const SYSTEM_PROMPT = `You screen short anonymous letters before they are published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle. The person it is about did not write it and will read it.
+const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle. The person it is about did not write it and will read it.
 
 Return ONLY JSON: {"verdict":"pass"|"review"|"reject","reasons":[string]}
 
 The wall is for longing, admiration, gratitude, regret, apology, inside jokes and warm memories. Most letters are fine, and your default is PASS. Ordinary campus detail is fine: a class, a building, a bus line, a library, a party, a place somebody was once seen. Flirting is fine. Teasing is fine. Awkward, sad, short, clumsy or lukewarm letters are fine.
 
-REJECT only if one of these is clearly true:
+REJECT if one of these is clearly true:
 1. sexual: explicit sexual content, or sexualised description of the person's body.
 2. threat: a threat, intimidation, stalking, "I know where you live", or any promised consequence.
 3. locate: a physical description of the person COMBINED WITH a recurring schedule or route, precise enough to find them at a predictable time. A place on its own is not this. A memory of one day is not this.
@@ -148,7 +162,7 @@ REJECT only if one of these is clearly true:
 5. minor: the person is stated or clearly implied to be under 18.
 6. contact: a phone number, a street address, a room number, a link or an email address.
 
-REVIEW only when you genuinely cannot tell which side of one of those six a letter falls on. Do not review a letter for being sarcastic, blunt, unromantic, mentioning a third person, or referring to a private moment: those pass.
+The letter is already on the wall. A REJECT takes it down at once; a REVIEW leaves it up and asks a person to read it; a PASS leaves it up. So a letter you are confident is one of the six is a REJECT, never a review. REVIEW only when you genuinely cannot tell which side of one of those six a letter falls on. Do not review a letter for being sarcastic, blunt, unromantic, mentioning a third person, or referring to a private moment: those pass.
 
 Judge the letter and the sealed line together; the sealed line is private until the recipient asks for it.
 
@@ -161,21 +175,17 @@ async function classify(body: string, sealedLine: string | null) {
   // than nuance, and the list is what carries the judgement rather than the
   // model's opinion about strangers.
   const model = Deno.env.get('MODERATION_MODEL') || 'claude-haiku-4-5-20251001'
-  // No key, no publication. Failing open here would mean the one control that
-  // stands between this wall and its worst day is a missing environment
-  // variable away from being off.
-  if (!key) return { verdict: 'review', reasons: ['unconfigured'] }
+  // No key is not a verdict on the letter. It is a fact about the deploy,
+  // and it is written down as one so the desk can see it.
+  if (!key) return { verdict: 'review', reasons: ['unconfigured'], model }
 
-  // Bounded, and short. A classifier that hangs used to hang the request
-  // until the platform killed it, and the letter was never written, not even
-  // as pending. A short letter against a short list is a one second call;
-  // ten seconds is a provider that is not answering, and the writer has been
-  // watching "read before it goes up" for all of them. A timeout is a
-  // verdict of review: a person looks at it.
+  // Bounded. The letter is up and the writer has been answered, so nobody is
+  // waiting on this; the bound is so a provider that is not answering does
+  // not hold the function's own slot for a minute per letter.
   let res: Response
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(15_000),
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -196,19 +206,49 @@ async function classify(body: string, sealedLine: string | null) {
     }),
     })
   } catch {
-    return { verdict: 'review', reasons: ['classifier_timeout'] }
+    return { verdict: 'review', reasons: ['classifier_timeout'], model }
   }
-  if (!res.ok) return { verdict: 'review', reasons: ['classifier_error'] }
+  if (!res.ok) return { verdict: 'review', reasons: ['classifier_error'], model }
 
   const data = await res.json()
   const text = (data?.content?.[0]?.text || '').trim()
   try {
     const out = JSON.parse(text.replace(/^```json\s*|\s*```$/g, ''))
     const v = out.verdict === 'pass' || out.verdict === 'reject' ? out.verdict : 'review'
-    return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6) : [] }
+    return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6) : [], model }
   } catch {
-    return { verdict: 'review', reasons: ['unparsed'] }
+    return { verdict: 'review', reasons: ['unparsed'], model }
   }
+}
+
+// The reading, after the answer: the model's verdict written onto the letter
+// where it stands, and the letter taken down if the verdict is a reject
+// (migration 0050 `wall_screened`). Nothing here can throw its way out of the
+// function: a failure to record is logged and the letter stays as it was,
+// which is up and unread, and the desk's live list still shows it.
+// deno-lint-ignore no-explicit-any
+async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null) {
+  let out: { verdict: string; reasons: string[]; model: string }
+  try {
+    out = await classify(body, sealed)
+  } catch {
+    out = { verdict: 'review', reasons: ['unreachable'], model: '' }
+  }
+  const { error } = await supabase.rpc('wall_screened', {
+    p_letter: id,
+    p_verdict: out.verdict,
+    p_reasons: out.reasons,
+    p_model: out.model || null,
+  })
+  if (error) console.error('wall_screened failed', id, error.message)
+}
+
+// Work that outlives the response, where the runtime offers it.
+function after(work: Promise<unknown>): Promise<unknown> | undefined {
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime
+  if (rt && typeof rt.waitUntil === 'function') { rt.waitUntil(work); return undefined }
+  return work
 }
 
 Deno.serve(async (req: Request) => {
@@ -241,51 +281,18 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // ── the allowance, asked before anything is spent on the letter ────────────
-  // Three in any seven days (migration 0044). wall_write is the authority and
-  // refuses the fourth whatever this says, because a check here and a write
-  // there is two requests that can both pass. This is only so a person who has
-  // none left does not wait on a model call to be told so, and so nobody pays
-  // for one.
-  //
-  // A read that fails is not a refusal. wall_write will ask again in the same
-  // statement that inserts, so a flaky moment here costs nothing but the
-  // classifier call this was trying to save.
-  const { data: quota } = await supabase.rpc('wall_quota', { p_token: token })
-  if (quota?.ok === true && Number(quota.left) <= 0) {
-    return json({ ok: false, error: 'cap', limit: quota.limit, used: quota.used, resets_at: quota.resets_at })
-  }
-
   // ── layer 1 ────────────────────────────────────────────────────────────────
-  // Short-circuit on reject: there is no reason to spend a model call on a
-  // letter with a phone number in it. It is still WRITTEN, at status rejected,
-  // with the pattern that caught it.
-  let verdict = 'review'
-  let reasons: string[] = []
-
+  // A catch is written at rejected, with the pattern that caught it, and never
+  // published. The app caught it at the keyboard first and shook the card;
+  // this is the same list where nobody can edit it out.
   const layer1 = deterministic(`${body}\n${sealed || ''}`)
-  if (layer1.verdict === 'reject') {
-    verdict = 'reject'
-    reasons = layer1.reasons
-  } else {
-    // ── layer 2 ──────────────────────────────────────────────────────────────
-    try {
-      const out = await classify(body, sealed)
-      verdict = out.verdict
-      reasons = out.reasons
-    } catch {
-      // Layer 3 by default. An unreachable classifier means the letter sits at
-      // pending and renders nowhere. The wall going quiet for an afternoon is a
-      // far better outcome than the wall publishing something nobody looked at.
-      verdict = 'review'
-      reasons = ['unreachable']
-    }
-  }
+  const caught = layer1.verdict === 'reject'
 
-  // 'review' is layer 3: the letter stays pending, a person moves it or
-  // wall_expire() closes it out after seven days, and nobody is told which.
-  const status = verdict === 'pass' ? 'live' : verdict === 'reject' ? 'rejected' : 'pending'
-
+  // ── the write ──────────────────────────────────────────────────────────────
+  // wall_write is the authority on the gate, the name and the allowance: a
+  // person outside the campus is told so, a name that came off the wall stays
+  // off it, and the fourth letter in a week is refused in the same statement
+  // that would have inserted it.
   const { data, error } = await supabase.rpc('wall_write', {
     p_token: token,
     p_target: target,
@@ -293,8 +300,11 @@ Deno.serve(async (req: Request) => {
     p_seal: sealed,
     p_source: source,
     p_campus: campus,
-    p_status: status,
-    p_moderation: { verdict, reasons, at: new Date().toISOString(), model_layer: verdict === 'reject' && layer1.verdict === 'reject' ? 1 : 2 },
+    p_status: caught ? 'rejected' : 'live',
+    p_moderation: caught
+      ? { verdict: 'reject', reasons: layer1.reasons, flagged: false, at: new Date().toISOString(), model_layer: 1 }
+      // up, and not yet read: the classifier writes its verdict over this
+      : { verdict: 'unread', reasons: [], flagged: false, at: new Date().toISOString(), model_layer: 0 },
   })
 
   if (error) {
@@ -303,12 +313,14 @@ Deno.serve(async (req: Request) => {
   }
   if (!data?.ok) return json({ ok: false, error: String(data?.error ?? 'write') })
 
-  // The writer is told the truth about a reject and nothing about a review.
-  // "Held" and "published" have to read the same to the person who wrote it,
-  // or the screen becomes a way to find out what gets through.
-  return json(
-    status === 'rejected'
-      ? { ok: true, status, id: data.id, reasons }
-      : { ok: true, status: 'live', id: data.id },
-  )
+  if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons })
+
+  // ── layer 2, after the answer ──────────────────────────────────────────────
+  // The letter is on the wall. The writer hears so now, and the model reads
+  // it where it stands.
+  const reading = readWhereItStands(supabase, String(data.id), body, sealed)
+  const inline = after(reading)
+  if (inline) await inline
+
+  return json({ ok: true, status: 'live', id: data.id })
 })

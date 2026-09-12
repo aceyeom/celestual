@@ -242,6 +242,20 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0050_the_letter_goes_up_first.sql`: **the letter goes up
+  first.** The screen's hold is gone, and so is its wait:
+  `celestual-wall-moderate` writes every letter the list lets through at
+  `live`, answers, and reads it after. Adds `wall_screened(letter, verdict,
+  reasons, model)`, service role only, which lands the classifier's verdict on
+  the row after the fact: a pass changes nothing, a review sets
+  `moderation.flagged`, a reject sets `rejected` unless a person at the desk
+  already decided; `wall_mine(token)`, the caller's own letters and whose hand
+  took one down (`down_by`: screen, desk, report, shut, lapsed), which is what
+  the wall's notice to a writer draws from; teaches `celestual_desk_letters`
+  the status `'flagged'`; renames the standing `celestual_desk_overview` to
+  `celestual_desk_overview_0039` and puts a wrapper under the old name that
+  adds `counts.letters_flagged`. Nothing about `wall_letters` changes.
+  **Tested by `scripts/sql/test-flagged.sql`, 38 assertions.**
 - `migrations/0049_eight_before_the_door.sql` (**applied 12 September 2026**): **eight
   letters, then the door.** One function, `wall_free_allowance()`, from five
   to eight. Everything 0045 built reads its ceiling from that function, so
@@ -465,7 +479,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 | `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`, so nobody waits on a model call to be told they have none left), layer 1 (the same list the browser runs), layer 2 (one classifier call, bounded at twenty seconds, a timeout is a review) and the write, in one request, through the service-role `wall_write`. A letter the classifier is unsure about waits at pending for a person at the desk | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050) | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
 | `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |

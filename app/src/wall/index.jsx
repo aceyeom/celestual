@@ -53,7 +53,6 @@ import Wall from './screens/Wall.jsx'
 import Letter from './screens/Letter.jsx'
 import Find from './screens/Find.jsx'
 import Write from './screens/Write.jsx'
-import Posted from './screens/Posted.jsx'
 import Join from './screens/Join.jsx'
 import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
@@ -68,7 +67,6 @@ const FIELD = {
   letter: 'slow',
   find:   'slow',
   write:  'drift',
-  posted: 'drift',
   join:   'slow',
   gate:   'slow',
   remove: 'still',   // the room stops moving where the act cannot be undone
@@ -297,7 +295,6 @@ export default function WallApp() {
 
   let base
   switch (route.name) {
-    case 'posted': base = <Posted {...shared} />; break
     case 'join':   base = <Join {...shared} />; break
     default:       base = <Wall {...shared} />   // and everything a sheet sits on
   }

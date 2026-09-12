@@ -20,15 +20,16 @@
 // again. The one OFFER of it is the tab at the bottom of this screen, and that
 // tab does not exist until you have put a letter up yourself. Nothing else on
 // the wall points at the product: the brand in the bar goes to the front, and
-// that is the whole of it. There was a quiet line under the composer's pill
-// once, "the rest of celestual", and it went: a sign on the road is still a
-// sign, and the wall is not a road.
+// that is the whole of it.
 //
-// Nor is the way off on the wall itself any more. "take your name off the
-// wall" stood as a capsule under the names on every visit; it stands under
-// the flag on every letter now, which is where a person who has found their
-// name is standing when they want it gone. On the wall it was a control
-// about a consequence nobody had met yet.
+// Nor is the composer's capsule at the foot any more. "write anonymously"
+// stood docked over the bottom of the field on every visit, a wide chalk plate
+// on the faces it was about, while a bare nib in the bar pointed at the same
+// door and read as a glyph. The act is one control now, in the bar, as a word:
+// a small capsule reading "write" between the glass and the person
+// (parts.jsx TopBar). The field keeps its bottom edge, and the dock at the
+// foot carries only what is ABOUT this person: the tab, and the notice when a
+// letter of theirs has come down.
 //
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  THE HIVE, AND THE VEIL OVER IT                                          ║
@@ -38,32 +39,36 @@
 // hexagonal lattice that never ends and then, by one continuous function of
 // how far a face is from the light, made large and nearly touching at the
 // middle and small, far apart and scattered toward the rim. One name is
-// written on it — the handle of whoever the lens is reading, on one glass
-// plate, and never two — and everything else about a person is behind the
-// tap. The field drifts, every disc in it breathes on its own clock, it can
-// be pulled in any direction, and under a mouse it swells where the pointer
-// is. It replaced three lanes of handles crawling left and right, which said
-// the wall was alive and nothing else about anybody on it.
+// written on it, the handle of whoever the lens is reading, on one glass
+// plate, and never two; everything else about a person is behind the tap.
+// The field drifts, every disc in it breathes on its own clock, it can be
+// pulled in any direction, and under a mouse it swells where the pointer is.
 //
 // ── the field is the screen, and the screen has no margins ──────────────────
-// It is not a panel between the bar and the pill. It runs corner to corner,
-// behind the bar, behind the ear, behind the pill, out past the column's own
-// gutters to the edges of the glass, and it dissolves at every edge rather
-// than stopping at one. What keeps the type over it legible is not a box
-// around the field but two gradients over it — THE SHADES — which pour the
-// void back in at the top and the bottom and are gone by the middle. A field
-// of faces inside a margin is a widget on a page; this is the room the page
-// is standing in.
+// It is not a panel between the bar and the foot. It runs corner to corner,
+// behind the bar, behind the ear, out past the column's own gutters to the
+// edges of the glass, and it dissolves at every edge rather than stopping at
+// one. What keeps the type over it legible is not a box around the field but
+// two gradients over it, THE SHADES, which pour the void back in at the top
+// and the bottom and are gone by the middle.
 //
 // ── the veil, and what is under it ──────────────────────────────────────────
 // On a fresh load the whole screen is the field, greyed, with the title, the
-// one line and the way in laid over it: THE VEIL. And that is the whole
-// screen. There is no pill under it, no foot under that and no glyphs in the
-// bar: a poster with one door on it, over a field that is plainly alive, and
-// the brand in the corner as the way home. Everything else is built after
-// the door has been opened, because a person reading the title has not
-// decided anything yet and a screen that is already offering them three
-// controls and a footer has decided for them.
+// one line and the way in laid over it: THE VEIL. The type stands in the
+// middle of the glass, centred, the way a poster's title block stands in the
+// middle of a poster; it used to hang off the top left under the ear, and on
+// a phone that put the wall's one headline in the corner of the one screen
+// built to be looked at. Under it there is no dock, no foot and no glyphs in
+// the bar: a poster with one door on it, over a field that is plainly alive,
+// and the brand in the corner as the way home.
+//
+// The door is the capsule under the line, "view the wall", and it is not
+// still: the running light rides inside it, and a ring leaves it every so
+// often and opens out into the field, the same shape the tap on it will
+// send through the crowd. A control that says what it does before it is
+// pressed needs no sentence beside it. It replaced an arrow link, which is
+// the poster's nav voice and reads as a link to elsewhere rather than as the
+// way into the thing under it.
 //
 // ── and it opens where it was touched ───────────────────────────────────────
 // A tap anywhere on the veil lifts it, and it lifts FROM THE TAP, as a pulse
@@ -72,43 +77,52 @@
 // field under it: every disc it reaches swells, is pushed out ahead of it,
 // drawn back a hair behind it and settles, and the lens arrives with the
 // light, so the faces are seen to come up as the wave crosses them (Hive.jsx,
-// the pulse). Nothing is drawn on the edge of the light: the edge is the
-// crowd moving. The title is not faded on a clock of its own: the circle
-// takes it as it reaches it, over a soft shoulder, so a tap under the title
-// clears the title first and a tap in the far corner clears it last. It is
-// slow, on purpose — the better part of two seconds to cross a phone, longer
-// on a spread, and the wave dies out at the far corner a beat after that.
-// When the circle has cleared the screen the rest of the wall arrives — the
-// bar's glyphs, then the pill, then the foot — a beat apart. One line stays
-// exactly where it was through all of it, THE EAR: the campus and the count,
-// set the way the front door sets its own ear above its headline, so the
-// veil and the field share one masthead element and nothing at the top
-// changes shape when the type goes.
+// the pulse). The title is not faded on a clock of its own: the circle takes
+// it as it reaches it. It is slow, on purpose, the better part of two seconds
+// to cross a phone, and when the circle has cleared the screen the rest of
+// the wall arrives, the bar's glyphs and then the dock, a beat apart. One
+// line stays exactly where it was through all of it, THE EAR: the campus and
+// the count, under the bar.
 //
-// It used to fade, and then it was a circle with a hairline ring running
-// out on its edge. A fade is the screen changing its mind; a ring is a line
-// drawn over the crowd; a wave through the crowd is the person touching it.
 // The veil is up once per tab: coming back from a letter lands on the field.
 // Under reduced motion it goes without travelling.
 //
 // ── and a name opens into the letter it carries ─────────────────────────────
-// Pressing a disc does not cut to a sheet. The letter's own card opens out of
-// the circle that was pressed, its words on it from the first frame, and the
-// glass of the sheet comes up under it (morph.js, screens/Letter.jsx). One
-// object, one movement, and nowhere in it the moment where the wall was
-// replaced by a screen.
+// Pressing a disc sends the same pulse out from that person and brings them
+// into the light, and then the letter's own card opens out of their disc,
+// its words on it from the first frame (Hive.jsx, morph.js,
+// screens/Letter.jsx). One object, one movement, and nowhere in it the moment
+// where the wall was replaced by a screen. The card closes back into the same
+// disc on the way out.
 //
-// The tower came off, and so did the count on flaps. The Campanile stood in
-// the masthead's corner and then on the count as its plinth, and it never
-// stopped reading as a thing put there; the flaps under it were a board, and
-// a board is furniture. The wall's one fact is a line of type now, and the
-// wall's own light is in its field, on the person in the lens.
+// ── and it receives the letter ──────────────────────────────────────────────
+// The composer is a sheet over this screen, and when its letter is up the
+// sheet goes and the wall is what is left: the name it was written to sends
+// one pulse out through the crowd and comes into the light, and its disc
+// rises among the others (Hive.jsx `pulse`, and `fresh`). There is no page
+// between the sending and the seeing. The reading happens after: the
+// classifier reads the letter once it is up (celestual-wall-moderate), and
+// this screen asks after this person's own letters a few times over the next
+// half minute, so a letter the reading took down is said here, within the
+// minute, in the notice below, rather than on the next visit.
+//
+// ── the foot of the wall is about the person looking ────────────────────────
+// Two things can stand in the dock, and never both: the notice, when a letter
+// this person put up has since been taken down, saying so in one sentence and
+// handing them their own words back to change; and the tab, the one door out
+// of the wall, which asks the one question a person who has just named
+// somebody is carrying. The tab can be put away, and it comes back: after a
+// few days, and at once after another letter goes up, because that is the
+// moment its question is fresh again. A door that cannot be closed is a
+// banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle } from '../data.js'
+import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill } from '../parts.jsx'
+import { Sparkle } from '../art.jsx'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, atHandle } from '../data.js'
 import { getState, patch } from '../store.js'
-import { toWrite } from '../auth.js'
+import { isMember } from '../auth.js'
+import { whyDown } from '../moderate.js'
 import Hive from '../Hive.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -146,6 +160,28 @@ const ARRIVE_MS = 1400
 // travel that much further to clear the top of the glass (wall.css --ramp).
 const RAMP = 110
 
+// ── the tab's clock ──
+// How long the tab stays away once it has been put away. It rises again on a
+// visit after this, and at once after another letter goes up, whatever the
+// clock says: a person who has just named somebody else is carrying the
+// question again.
+const TAB_AGAIN_MS = 3 * 86400000
+// how long the tab takes to go when it is put away (wall.css wl-tab-drop)
+const TAB_OUT_MS = 320
+// how long it waits to rise after a letter has just gone up: past the pulse
+// the wall sends out from the new name, so the offer follows the arrival
+// rather than competing with it
+const TAB_AFTER_LETTER_MS = 3200
+
+// ── the arrival's clock ──
+// How long after the composer's glass has gone the wall sends its pulse out
+// from the new name: a beat, so the sheet's last frame and the travel's
+// first are not the same frame. And when this person's letters are asked
+// about again after one goes up, since the reading lands on a letter a few
+// seconds after it is written and a takedown is owed to its writer at once.
+const ARRIVE_AFTER_MS = 160
+const READ_AGAIN_MS = [3000, 8000, 16000, 32000]
+
 function rippleMs(r) {
   return Math.round(Math.max(RIPPLE_MIN, Math.min(RIPPLE_MAX, RIPPLE_BASE + r * RIPPLE_PER_PX)))
 }
@@ -158,6 +194,17 @@ function heldRipple() {
   if (!import.meta.env.DEV) return null
   const v = new URLSearchParams(window.location.search).get('rp')
   return v === null ? null : Math.max(0, Math.min(1, Number(v) || 0))
+}
+
+// Whether the tab is due: this device has put a letter up, and the tab has
+// not been put away, or was put away long enough ago, or another letter has
+// gone up since.
+function tabDue(state) {
+  const n = (state.written || []).length
+  if (!n) return false
+  if (!state.tabHid) return true
+  if (n > (state.tabHidFor || 0)) return true
+  return Date.now() - state.tabHid > TAB_AGAIN_MS
 }
 
 // ── the ear ─────────────────────────────────────────────────────────────────
@@ -201,19 +248,83 @@ function Ear({ letters }) {
   )
 }
 
+// ── the tab ─────────────────────────────────────────────────────────────────
+// THE ONLY DOOR OUT OF THE WALL, and it is not here until somebody has put a
+// letter up. Offering an account to a person who has not written anything is
+// asking them to register for a result they have not earned and cannot
+// receive; offering it thirty seconds after they have named somebody is
+// asking the one question they are now actually carrying. So it waits, and
+// then it rises.
+//
+// It is a card now, and it says who "they" are: the faces of the names this
+// device wrote to stand at the head of the sentence, so the offer is about
+// the people this person actually named and not about a pronoun. It says the
+// same sentence the screen it opens says, word for word. A door and the room
+// behind it that describe themselves differently is a door somebody has to
+// decide about twice. Under it, one quiet line puts it away.
+function Tab({ faces, onGo, onHide, going }) {
+  return (
+    <div className={`wl-tab${going ? ' is-going' : ''}`}>
+      <button type="button" className="wl-tab-main" onClick={onGo}>
+        <span className="wl-tab-faces" aria-hidden="true">
+          {faces.length
+            ? faces.map((h) => <Face key={h} handle={h} size={28} className="wl-tab-face" />)
+            : <Sparkle size={12} />}
+        </span>
+        <span className="wl-tab-text">
+          Get notified if they<br />put you up too.
+        </span>
+        <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
+      </button>
+      <button type="button" className="wl-quiet wl-tab-hide" onClick={onHide}>not now</button>
+    </div>
+  )
+}
+
+// ── the notice ──────────────────────────────────────────────────────────────
+// A letter this person put up has been taken down since: the reading took it
+// down after it went up, or a person at a desk did, or the name it was
+// written to came off the wall. One card, at the foot of the wall, saying
+// which letter, that it went against the terms (moderate.js `whyDown`: the
+// fact and the way back, never a machine explaining itself), and offering the
+// one thing worth doing about it: their own words back, on the composer, to
+// change. Nothing about a report is said here: a letter a reader took down is
+// a matter between the reader and a desk, and telling the writer would be
+// pointing them at the person who is likeliest to have done it.
+//
+// It stands until it is answered, once, and then it is remembered as read.
+function Down({ letter: l, onChange, onLeave }) {
+  const again = l.downBy !== 'shut'
+  return (
+    <div className="wl-down" role="status">
+      <div className="wl-down-in">
+        <Face handle={l.to} size={36} className="wl-down-face" />
+        <div className="wl-down-text">
+          <p className="wl-down-h">Your letter to <span className="wl-h">{atHandle(l.to)}</span> was taken down.</p>
+          <p className="wl-down-why">{whyDown(l.downBy)}</p>
+        </div>
+      </div>
+      <div className="wl-down-acts">
+        {again ? <Pill tone="light" onClick={onChange}>change it</Pill> : null}
+        <button type="button" className="wl-quiet" onClick={onLeave}>{again ? 'leave it' : 'ok'}</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Wall({ go, reduce, rev, under = false }) {
   // `rev` is the corpus's revision, and the wall is read fresh when it moves.
   const tiles = useMemoTiles(rev)
   const letters = liveCount()
   const state = getState()
   const written = state.written
-  const wroteTo = state.wroteTo
+  const wroteTo = state.wroteTo || []
 
   // The opening cascade. It is a state rather than a constant because the
   // class that carries it has to come back off: while `is-opening` is on the
   // page every disc in the field is under a `both`-filled arrival animation,
-  // and an arrival animation on an element is an animation a later one — a
-  // name that has just been written to, say — has to out-specify to be seen
+  // and an arrival animation on an element is an animation a later one, a
+  // name that has just been written to, say, has to out-specify to be seen
   // at all. It plays, and then it is over.
   const [playing, setPlaying] = useState(() => !OPENED && !getState().seen && !reduce)
   const [armed, setArmed] = useState(() => OPENED || getState().seen || reduce)
@@ -226,9 +337,9 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // the stylesheet reads all three and the loop below drives the growth.
   const [veil, setVeil] = useState(() => (OPENED ? 'down' : 'up'))
   const [tap, setTap] = useState(null)
-  // The beat after the veil has gone, while the pill, the glyphs and the
-  // foot arrive. A class on the page for that long, and then nothing: the
-  // arrival is an entrance, not a state.
+  // The beat after the veil has gone, while the glyphs and the dock arrive.
+  // A class on the page for that long, and then nothing: the arrival is an
+  // entrance, not a state.
   const [arriving, setArriving] = useState(false)
   const veilEl = useRef(null)
   const timers = useRef([])
@@ -305,11 +416,6 @@ export default function Wall({ go, reduce, rev, under = false }) {
     wave.current = null
   }, [])
 
-  // The tab is not on the screen the instant you land back from posting: it
-  // rises a beat later, once the wall has settled. A panel that is already
-  // there when the screen arrives is a banner.
-  const [tab, setTab] = useState(() => written.length > 0 && reduce)
-
   useEffect(() => {
     if (armed) return undefined
     const t = setTimeout(() => { OPENED = true; patch({ seen: true }); setArmed(true) }, 2000)
@@ -324,11 +430,44 @@ export default function Wall({ go, reduce, rev, under = false }) {
     return () => clearTimeout(t)
   }, [playing])
 
+  // ── the tab ──
+  // Not on the screen the instant a letter is up: it rises once the wall has
+  // received the name and the pulse has gone through the crowd, and on a
+  // later visit a beat after the wall has settled. A panel that is already
+  // there when the screen arrives is a banner. `going` is the beat it takes
+  // to leave when it is put away, so it is seen to go rather than to vanish.
+  const [tab, setTab] = useState(() => tabDue(getState()) && reduce)
+  const [going, setGoing] = useState(false)
   useEffect(() => {
-    if (!written.length || tab) return undefined
-    const t = setTimeout(() => setTab(true), reduce ? 0 : 900)
+    if (tab || !tabDue(getState())) return undefined
+    const wait = reduce ? 0 : getState().justPosted ? TAB_AFTER_LETTER_MS : 900
+    const t = setTimeout(() => setTab(true), wait)
     return () => clearTimeout(t)
   }, [written.length, tab, reduce])
+  const hideTab = useCallback(() => {
+    patch({ tabHid: Date.now(), tabHidFor: (getState().written || []).length })
+    if (reduce) { setTab(false); return }
+    setGoing(true)
+    timers.current.push(window.setTimeout(() => { setGoing(false); setTab(false) }, TAB_OUT_MS))
+  }, [reduce])
+
+  // ── the notice ──
+  // This person's own letters are asked about on every landing by a device
+  // that can write, since a person at a desk can take one down at any hour.
+  // The first that has come down and has not been answered is the notice.
+  const member = isMember()
+  useEffect(() => { if (member) loadMine() }, [member, rev])
+  const noticed = state.noticed || {}
+  const down = (mine() || []).find((l) =>
+    (l.downBy === 'screen' || l.downBy === 'desk' || l.downBy === 'shut') && !noticed[l.id]) || null
+  const answer = useCallback((l) => {
+    patch({ noticed: { ...(getState().noticed || {}), [l.id]: true } })
+  }, [])
+  const changeDown = useCallback((l) => {
+    answer(l)
+    patch({ draft: { to: l.to, body: l.body } })
+    go('write', l.to)
+  }, [answer, go])
 
   // The name, not a letter id. A tile is a person written to, the letter
   // screen resolves a handle to the letters under it, and going by name means
@@ -343,22 +482,65 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // to full light inside the circle as it grows rather than after it.
   const veiled = veil === 'up'
   const lifted = veil === 'down'
+
+  // ── the arrival, rippled ──
+  // The composer goes the moment its letter is up, and the wall under it
+  // receives the name: one pulse out through the crowd from that person's
+  // disc, the disc brought into the light, and the disc itself rising among
+  // the others (Hive.jsx `pulse`, and `fresh`), so the wall is seen to
+  // receive the letter rather than merely to carry it. It waits for the glass
+  // to have gone and the veil to be down, since a pulse sent under either is
+  // a pulse nobody sees, and a beat more. Once: the name is taken out of the
+  // store the moment it is read.
+  const hive = useRef(null)
+  const [sentAt, setSentAt] = useState(0)
+  useEffect(() => {
+    if (under || !lifted) return undefined
+    const h = getState().justPosted
+    if (!h) return undefined
+    patch({ justPosted: '' })
+    setSentAt(Date.now())
+    if (reduce) return undefined
+    const t = setTimeout(() => { if (hive.current) hive.current.pulse(h) }, ARRIVE_AFTER_MS)
+    return () => clearTimeout(t)
+    // and on `rev`: a letter that went up after its sheet was closed over it
+    // is written to the store when the index has moved, which is this
+  }, [under, lifted, reduce, rev])
+
+  // ── the reading, after ──
+  // The letter is read once it is up, and the verdict lands on it a few
+  // seconds later. So this device's letters are asked about again, a few
+  // times over the half minute after one goes up: a letter the reading took
+  // down raises the notice below within the minute, and the index is read
+  // again with it, so the name comes off the field if that was its only
+  // letter.
+  useEffect(() => {
+    if (!sentAt) return undefined
+    const ts = READ_AGAIN_MS.map((ms) => window.setTimeout(async () => {
+      await loadMine(true)
+      const read = getState().noticed || {}
+      if ((mine() || []).some((l) => l.downBy === 'screen' && !read[l.id])) loadWall(true)
+    }, ms))
+    return () => ts.forEach(clearTimeout)
+  }, [sentAt])
   const veilStyle = tap
     ? { '--rx': `${tap.x.toFixed(1)}px`, '--ry': `${tap.y.toFixed(1)}px`, '--rmax': `${tap.r.toFixed(1)}px` }
     : undefined
+  const docked = lifted && (!!down || tab)
 
   return (
     <>
-    <div className={`wl-page wl-wallpage is-${veil}${playing ? ' is-opening' : ''}${tab ? ' has-tab' : ''}${arriving ? ' is-arriving' : ''}`}>
+    <div className={`wl-page wl-wallpage is-${veil}${playing ? ' is-opening' : ''}${docked ? ' has-tab' : ''}${arriving ? ' is-arriving' : ''}`}>
       {/* ── the stage ──
           The field, and it is the whole screen: corner to corner, behind the
-          bar, behind the ear, behind the pill, out past the column's own
-          gutters to the edges of the glass. A field of faces inside a margin
-          is a widget on a page, and this is not a widget — it is the room the
-          page is standing in. What keeps the type on top of it legible is not
-          a box around the field but two gradients over it, below. */}
+          bar, behind the ear, out past the column's own gutters to the edges
+          of the glass. A field of faces inside a margin is a widget on a
+          page, and this is not a widget: it is the room the page is standing
+          in. What keeps the type on top of it legible is not a box around the
+          field but two gradients over it, below. */}
       <div className="wl-stage">
         <Hive
+          ref={hive}
           tiles={tiles} reduce={reduce} veiled={veiled} paused={under}
           opening={playing} mine={wroteTo} wave={wave} onOpen={open} onPeek={peek}
           none={wallLoaded() && !wallError() ? 'nobody has been written to yet' : ''}
@@ -367,17 +549,16 @@ export default function Wall({ go, reduce, rev, under = false }) {
 
       {/* ── the two shades ──
           The bar has to be readable over whatever face happens to be under it
-          and so does the pill, and the answer is not a plate behind either of
+          and so does the dock, and the answer is not a plate behind either of
           them: a plate is a bar sitting ON a picture, and these have to be IN
           it. So the void is poured back over the field at the top and the
           bottom, deepest at the two edges and gone by the time it reaches the
-          middle of the screen — the same fade the field's own mask has at its
-          rim, running the other way. Neither takes a pointer: the faces under
-          them are still names you can press. */}
+          middle of the screen. Neither takes a pointer: the faces under them
+          are still names you can press. */}
       <div className="wl-shade is-top" aria-hidden="true" />
       <div className="wl-shade is-bottom" aria-hidden="true" />
 
-      {/* the bar keeps its brand throughout and gains its glyphs when the
+      {/* the bar keeps its brand throughout and gains its controls when the
           veil has gone: under the veil the poster has one door and the way
           home, and nothing else to press */}
       <TopBar go={go} at="wall" acts={lifted} />
@@ -398,7 +579,7 @@ export default function Wall({ go, reduce, rev, under = false }) {
                 masked layer, so one edge cuts through both */}
             <div className="wl-veil-mask">
               {/* the grey over the field is itself the way in: a tap anywhere
-                  on it opens it from there, and the arrow link below says so
+                  on it opens it from there, and the capsule below says so
                   in words */}
               <button type="button" className="wl-veil-scrim" onClick={lift} aria-label="view the wall" tabIndex={-1} />
               <div className="wl-veil-in">
@@ -412,7 +593,20 @@ export default function Wall({ go, reduce, rev, under = false }) {
                       line of the mechanic under its own headline (hero.css
                       .hm-read). */}
                   <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
-                  <ArrowLink className="wl-mast-go" onClick={lift}>view the wall</ArrowLink>
+                  {/* ── the way in ──
+                      The product's own capsule, with the light running inside
+                      it, and a ring leaving it every few seconds and opening
+                      out into the field: the shape of the pulse the tap will
+                      send through the crowd, shown before it is pressed. */}
+                  <button type="button" className="wl-mast-go" onClick={lift}>
+                    <span className="wl-mast-go-ring" aria-hidden="true" />
+                    <span className="wl-mast-go-ring is-late" aria-hidden="true" />
+                    <span className="wl-mast-go-pill">
+                      <Light plate="chalk" />
+                      <span className="wl-mast-go-t">view the wall</span>
+                      <span className="wl-mast-go-g" aria-hidden="true">&#8594;</span>
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -421,50 +615,19 @@ export default function Wall({ go, reduce, rev, under = false }) {
       </div>
 
       {/* ── the dock ──
-          The gradient that rises off the bottom edge. It is the reason the
-          composer never has to be advertised: it is already half on screen,
-          under everything, the whole time — once the veil has gone. Under
-          the veil there is no dock: the poster has one door. */}
-      {lifted && (
+          What stands at the foot of the wall is about the person looking, and
+          it is one thing at a time: the notice when a letter of theirs has
+          come down, else the tab. Nothing at all under the veil, and nothing
+          at all for a person who has not put anything up: the field runs to
+          the bottom edge and the shade is the whole of the foot. */}
+      {docked && (
       <div className="wl-dock">
         <div className="wl-dock-veil" aria-hidden="true" />
-
-        {/* ── the tab ──
-            THE ONLY DOOR OUT OF THE WALL, and it is not here until somebody
-            has put a letter up. Offering an account to a person who has not
-            written anything is asking them to register for a result they have
-            not earned and cannot receive; offering it thirty seconds after
-            they have named somebody is asking the one question they are now
-            actually carrying. So it waits, and then it rises.
-
-            It says the same sentence the screen it opens says, word for word.
-            A door and the room behind it that describe themselves differently
-            is a door somebody has to decide about twice. */}
-        {tab && (
-          <button type="button" className="wl-tab" onClick={() => go('join')}>
-            <span className="wl-tab-grip" aria-hidden="true" />
-            <span className="wl-tab-body">
-              <span className="wl-tab-text">
-                Get notified if they<br />put you down too.
-              </span>
-              <span className="wl-tab-go" aria-hidden="true"><Icon name="join" size={19} /></span>
-            </span>
-          </button>
+        {down ? (
+          <Down letter={down} onChange={() => changeDown(down)} onLeave={() => answer(down)} />
+        ) : (
+          <Tab faces={wroteTo.slice(0, 3)} onGo={() => go('join')} onHide={hideTab} going={going} />
         )}
-
-        {/* ── the way in ──
-            The composer's pill, and nothing under it. The word on it is the
-            one fact a person hesitating over it wants, said before they have
-            pressed anything: the wall is anonymous by shape, and the button
-            says so in the same two words the composer's own act does. */}
-        <div className="wl-dock-in">
-          {/* Straight to the campus gate for anybody not through it yet
-              (auth.js toWrite): the first thing the press asks for is the
-              address, and the composer is where the gate opens onto. */}
-          <Pill tone="light" wide onClick={() => toWrite(go)}>
-            write anonymously
-          </Pill>
-        </div>
       </div>
       )}
     </div>

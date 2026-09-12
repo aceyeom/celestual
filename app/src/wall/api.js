@@ -280,14 +280,17 @@ function shapeLetter(l) {
 // writes it in one request, because a screen whose verdict somebody else has to
 // act on is a screen with a gap in it.
 //
-// Three outcomes, and two of them read identically to the writer on purpose:
+// Two outcomes since migration 0050, and one of them covers two cases on
+// purpose:
 //
-//   live      it is on the wall
-//   pending   a person will look at it. Reported back as 'live'.
-//   rejected  it is not going up, and the reasons say why
+//   live      it is on the wall. A letter the screen passed, and a letter it
+//             was unsure of, which is up too and flagged for a person to read
+//             while it stands. Reported back the same.
+//   rejected  it is not going up, and the reasons say what the screen read it
+//             as, in the category words the app says as a sentence
 //
-// "Held" and "published" must read the same, or the screen becomes a way to
-// find out what gets through by writing until something does.
+// "Flagged" and "published" must read the same, or the screen becomes a way
+// to find out what gets through by writing until something does.
 //
 // One more refusal since 0044: `cap`, when three letters are already spent in
 // the last seven days. It carries `resets_at`, so the screen can say when one
@@ -310,6 +313,37 @@ export async function write({ to, body, sealedLine, source }) {
     return data ?? { ok: false, error: 'network' }
   } catch {
     return { ok: false, error: 'network' }
+  }
+}
+
+// ── this device's own letters ────────────────────────────────────────────────
+// What this person put up and where each letter stands now: live, or down, and
+// if it is down, by whose hand and for what (migration 0050 `wall_mine`). It
+// answers about the CALLER's own rows and takes no argument for anybody else,
+// for the same reason the allowance does. It is how the wall tells a writer
+// that a letter of theirs came down after it went up, and hands them their own
+// words back to change.
+//
+//   downBy   null while the letter is up; 'screen' when the screen refused it
+//            on the way in; 'desk' when a person took it down after; 'report'
+//            when a reader did; 'shut' when the name itself came off the wall;
+//            'lapsed' when it aged out
+//   reasons  the screen's own category words, when it named any
+export async function mine() {
+  const out = await call('wall_mine', { p_token: sessionToken() })
+  if (!out?.ok) return { ok: false, error: out?.error || 'network', letters: [] }
+  return {
+    ok: true,
+    letters: (out.letters ?? []).map((l) => ({
+      id: l.id,
+      to: l.handle,
+      body: l.body ?? '',
+      status: l.status,
+      downBy: l.down_by || null,
+      reasons: Array.isArray(l.reasons) ? l.reasons.map(String) : [],
+      flagged: !!l.flagged,
+      at: new Date(l.at).getTime(),
+    })),
   }
 }
 
