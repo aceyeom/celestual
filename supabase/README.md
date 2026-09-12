@@ -242,7 +242,7 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
-- `migrations/0049_eight_before_the_door.sql` (**not yet applied**): **eight
+- `migrations/0049_eight_before_the_door.sql` (**applied 12 September 2026**): **eight
   letters, then the door.** One function, `wall_free_allowance()`, from five
   to eight. Everything 0045 built reads its ceiling from that function, so
   the reads, the key and the meter are untouched, and a browser that spent
