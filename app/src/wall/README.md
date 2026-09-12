@@ -31,22 +31,23 @@ The wall carries two different things and they cannot have the same rule.
 | | |
 | --- | --- |
 | **the index** | sixty-six handles, the count against each one, and nothing else. **Open to everybody.** It is what somebody who has just scanned a code off a card has to be able to see in four seconds without answering anything, and it is how a person finds their own name in order to ask for it to come off. |
-| **the letters** | what was actually written, who may write one, and who may take one down. **Five to anybody, then a proof.** |
+| **the letters** | what was actually written, who may write one, and who may take one down. **Eight to anybody, then a proof.** |
 
-Every browser is handed **five whole letters** before it is asked for anything
-(migration 0045). After those, a letter arrives **blurred** — the real letter,
-at its real length, with nothing readable in the document — and a proof brings
-it back into focus. The five are not drawn: they stood as five marks under
-every card, one struck per letter read, and a meter over a letter is a
-countdown whatever it is called. The sixth card arrives sealed and says so on
-its own rule, which is the moment the fact is worth having. The index does not move: the names, the counts and the
-search stay open to everybody, forever, and the first time anybody is asked for
-anything is the moment they reach for a sixth letter, or for one of the two
+Every browser is handed **eight whole letters** before it is asked for anything
+(migration 0045, raised from five in 0049). After those, a letter arrives
+**blurred** — the real letter, at its real length, with nothing readable in
+the document — and a proof brings it back into focus. The eight are not
+drawn: they stood as marks under every card, one struck per letter read, and
+a meter over a letter is a countdown whatever it is called. The ninth card
+arrives sealed and says so on its own rule, which is the moment the fact is
+worth having. The index does not move: the names, the counts and the search
+stay open to everybody, forever, and the first time anybody is asked for
+anything is the moment they reach for a ninth letter, or for one of the two
 acts that CHANGE what is on the wall.
 
-The five are counted by the database, not by the browser, for the same reason
+The eight are counted by the database, not by the browser, for the same reason
 the redaction is performed there: a count the client keeps is a count the
-reader owns. What that costs is one row per (browser, letter), at most five per
+reader owns. What that costs is one row per (browser, letter), at most eight per
 browser, carrying no identity, keyed on a hash that cannot be joined to a
 session, never listed by anything, and deleted outright the moment its browser
 passes the gate.
@@ -61,7 +62,7 @@ the letters" on a surface they had signed in to.
 
 | | | |
 | --- | --- | --- |
-| **reading** | the first five are free to anybody. After that, either proof: a `berkeley.edu` address, or a handle verified by the DM code | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
+| **reading** | the first eight are free to anybody. After that, either proof: a `berkeley.edu` address, or a handle verified by the DM code | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
 | **reporting** | either proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
 | **writing** | the `berkeley.edu` address, and three letters in any seven days | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
 

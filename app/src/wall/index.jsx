@@ -45,6 +45,7 @@ import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
 import { revision, subscribe, warmWall } from './data.js'
+import { ensureFaces, warmType } from './type.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
 
@@ -58,13 +59,6 @@ import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
 import Intro from './Intro.jsx'
-
-// The four faces, from this origin. They were fetched from Google until Phase
-// 6b, which meant the wall's type depended on a third party being reachable and
-// was the only cross-origin request the surface made. scripts/fetch-faces.mjs
-// wrote them into app/public/fonts in Phase 2 and spec 7.2 wanted them self
-// hosted anyway.
-const FONTS = '/fonts/faces.css'
 
 // What the field is doing under each screen. A screen may override its own
 // transiently; the override is cleared by the next route change rather than by
@@ -121,12 +115,14 @@ export default function WallApp() {
   // With a ceiling, because a wall of monograms after four seconds is a wall
   // and a logo after four seconds is a stall. A tab that has already booted
   // is ready by definition.
+  // And the faces (type.js): the wall's first frame is set in its own type
+  // or not drawn yet, so nothing on it reflows when the faces land.
   const [ready, setReady] = useState(() => BOOTED)
   useEffect(() => {
     let alive = true
     let t = 0
     const up = () => { clearTimeout(t); if (alive) setReady(true) }
-    warmWall().then(up, up)
+    Promise.all([warmWall(), warmType()]).then(up, up)
     t = setTimeout(up, READY_CEILING_MS)
     return () => { alive = false; clearTimeout(t) }
   }, [])
@@ -144,16 +140,13 @@ export default function WallApp() {
   useEffect(() => { refreshMember().then(() => setMemberRev((n) => n + 1)) }, [])
 
   // ── the faces ──
-  // app/index.html fetches the three production faces on every route, and this
-  // build needs four different ones. Adding them to the shared document would
-  // put four extra font files in front of every visitor to the hero page to
-  // serve an address reached by scanning a piece of paper.
+  // The four faces, from this origin, through the one module both shells
+  // share (type.js). They were fetched from Google until Phase 6b, which
+  // meant the wall's type depended on a third party being reachable and was
+  // the only cross-origin request the surface made. Not in the shared
+  // document: the desk sets its own type and should not pay for these.
   useEffect(() => {
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = FONTS
-    link.dataset.wall = 'faces'
-    document.head.appendChild(link)
+    ensureFaces()
 
     // ── the icon ──
     // The mark, in the tab, drawn from the same constants the mark on the
@@ -179,7 +172,6 @@ export default function WallApp() {
     const title = document.title
     document.title = 'celestual · berkeley · someone here wrote something they never sent'
     return () => {
-      link.remove()
       icon.remove()
       was.forEach((el) => document.head.appendChild(el))
       document.title = title

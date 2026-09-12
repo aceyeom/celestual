@@ -8,9 +8,10 @@
 // one edit in one file rather than nine inline objects that drifted apart.
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Sparkle } from './art.jsx'
-import { member, isReader, verified } from './auth.js'
+import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 
@@ -355,7 +356,7 @@ export function TopBar({ go, at = 'wall', acts = true }) {
       {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
         <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
-        <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => go('write')} />
+        <IconButton name="write" label="write a letter" on={at === 'write'} onClick={() => toWrite(go)} />
         {/* The fourth target, and the only one that changes what it draws. A
             keyhole while the letters are shut, and once they are open, the
             constellation of the address that opened them — the same figure the
@@ -1120,7 +1121,7 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
           onClick={() => pick(t)}
           onPointerEnter={() => setActive(i)}
         >
-          <Who handle={t.handle} size={34} meta={t.count === 1 ? 'one letter' : `${t.count} letters`} className="wl-suggest-who" />
+          <Who handle={t.handle} size={34} meta={t.count > 1 ? `${t.count} letters` : null} className="wl-suggest-who" />
         </button>
       ))}
     </div>
@@ -1176,6 +1177,87 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
         />
       ) : null}
     </span>
+  )
+}
+
+// ── the addressee ───────────────────────────────────────────────────────────
+// Who a letter is for, at the head of its paper: the word "for", the name the
+// resolver has for them, and the handle under it. It used to be the handle
+// alone, set large, and a card that opened on "@sofiaaa.reyes" read as a
+// card ABOUT a handle; "for Sofia Reyes" is a letter to a person. When the
+// resolver has no name the handle stands in the name's place, after the same
+// word, and there is no second line. `id` lands on the name, so a sheet can
+// be labelled by it. Drawn on the letter, on the composer's preview and on
+// the posted card, so what is written on is what goes up.
+export function Addressee({ handle, id, className = '' }) {
+  const p = useProfile(handle)
+  const name = p?.name || ''
+  const h = atHandle(handle)
+  return (
+    <span className={`wl-addressee ${className}`}>
+      <span className="wl-addressee-line">
+        <span className="wl-addressee-for" aria-hidden="true">for</span>
+        <span className={`wl-addressee-name${name ? '' : ' is-h'}`} id={id}>
+          {name || h || '\u00a0'}
+          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+        </span>
+      </span>
+      {name ? <span className="wl-addressee-at">{h}</span> : null}
+    </span>
+  )
+}
+
+// ── the face, opened ────────────────────────────────────────────────────────
+// A face on a letter can be pressed, and it opens the way a profile picture
+// opens on Instagram: the picture, large, over a dimmed room, with the name
+// and the handle under it, and a tap anywhere puts it away. Rendered at the
+// body, because a sheet's glass is a containing block for anything fixed
+// inside it and the picture has to stand over the whole screen.
+export function FaceViewer({ handle, onClose }) {
+  const p = useProfile(handle)
+  const name = p?.name || ''
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onClose() } }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div className="wl-viewer" role="dialog" aria-modal="true" aria-label={`${name || atHandle(handle)}, the picture`}>
+      <button type="button" className="wl-viewer-scrim" aria-label="close" onClick={onClose} />
+      <div className="wl-viewer-in" onClick={onClose}>
+        <Face handle={handle} size={280} className="wl-viewer-face" />
+        <span className="wl-viewer-who">
+          <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
+            {name || atHandle(handle)}
+            {p?.verified ? <Sparkle size={11} className="wl-who-badge" /> : null}
+          </span>
+          {name ? <span className="wl-viewer-at">{atHandle(handle)}</span> : null}
+        </span>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+// The face as a control: press it and it opens (FaceViewer). One element on
+// the paper, so the crest of a letter is the same disc it always was with a
+// press on it, and the viewer rides on the caller's tree.
+export function OpenFace({ handle, size = 34, className = '' }) {
+  const [open, setOpen] = useState(false)
+  const close = useCallback(() => setOpen(false), [])
+  const h = normHandle(handle)
+  return (
+    <>
+      <button
+        type="button" className={`wl-face-open ${className}`}
+        onClick={() => { if (h) setOpen(true) }}
+        aria-label={`see ${atHandle(h) || 'their'} picture larger`} title="see it larger"
+      >
+        <Face handle={h} size={size} />
+      </button>
+      {open ? <FaceViewer handle={h} onClose={close} /> : null}
+    </>
   )
 }
 

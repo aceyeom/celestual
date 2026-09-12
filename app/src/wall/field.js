@@ -172,7 +172,7 @@ float vnoise(vec2 p) {
 const mat2 ROT = mat2(0.80, 0.60, -0.60, 0.80);
 float fbm(vec2 p) {
   float v = 0.0, a = 0.5;
-  for (int i = 0; i < 5; i++) { v += a * vnoise(p); p = ROT * p * 2.02 + vec2(1.7, 9.2); a *= 0.5; }
+  for (int i = 0; i < 4; i++) { v += a * vnoise(p); p = ROT * p * 2.02 + vec2(1.7, 9.2); a *= 0.5; }
   return v;
 }
 // The 8x8 ordered dither threshold, 0..1, from its bit reversed form.
@@ -254,8 +254,14 @@ void main() {
 }`
 
 // The sky renders at one pixel per CSS pixel and no more than this many of
-// them. There is nothing sharp in a cloud.
-const SKY_MAX_PX = 900_000
+// them. There is nothing sharp in a cloud, and the dither that posterises it
+// is two pixels wide already: at a phone's full resolution the fragment
+// shader above was the single most expensive thing on every screen, five
+// warped noise fields a pixel across most of a megapixel, sixty times a
+// second, on the same GPU as the field and the faces. Under half that, and
+// drawn on alternate frames (below), it is the same sky at a third of the
+// cost and nobody can tell the two apart.
+const SKY_MAX_PX = 420_000
 
 // The two lights in the cloud, per surface: the body of it and the veins
 // along the warp. Linear RGB, 0..1.
@@ -635,7 +641,10 @@ export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: sk
     if (sky) {
       if (avFrame++ % AVOID_EVERY === 0) measureAvoid()
       easeAvoid(dt)
-      sky.draw(still ? 0 : t, ptr, hand, av)
+      // On alternate frames. The clouds cross the screen in eighty seconds
+      // and the hand is eased over a third of one, so nothing in them can be
+      // seen to change between two frames, and the canvas keeps its last one.
+      if ((avFrame & 1) === 0) sky.draw(still ? 0 : t, ptr, hand, av)
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT)

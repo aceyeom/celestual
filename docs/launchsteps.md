@@ -1176,6 +1176,17 @@ The test of the whole path: put a letter up to a spare handle at
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
 
+## Eight before the door (migration 0049)
+
+The free reads go from five to eight. One migration, and no app change: the
+allowance is one function (`wall_free_allowance()`) and everything 0045 built
+reads its ceiling from it, so the meter, the key and the reads are as they
+were and a browser that has spent five has three left.
+
+1. **Apply `0049_eight_before_the_door.sql`.** Applied 12 September 2026, and the
+   moderation function redeployed the same day. `supabase db push`, or paste it
+   into the SQL editor. Re-runnable. Nothing else has to move.
+
 ## Five before the door (migration 0045)
 
 The first five letters anybody reads are free, whoever they are, and the sixth

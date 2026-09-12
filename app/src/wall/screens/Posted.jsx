@@ -32,12 +32,15 @@
 // is one tap away and does not chase anybody down here to make its case.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Display, Label, Pill, Paper, Prose, Face } from '../parts.jsx'
+import { Display, Label, Pill, Paper, Prose, OpenFace, Addressee } from '../parts.jsx'
 import { Sparkle, Bloom } from '../art.jsx'
 import { write, wall, liveCount, atHandle, dateline } from '../data.js'
 import { getState, patch } from '../store.js'
 
-const BEATS = [0, 1100, 2150]
+// Shorter than they were. The reading beat is real now (the request is out
+// for as long as it is out), so the two after it no longer have to stand in
+// for a wait, and a person who has just pressed send wants to see it land.
+const BEATS = [0, 560, 1300]
 
 export default function Posted({ go, reduce }) {
   const draft = getState().draft
@@ -208,8 +211,8 @@ export default function Posted({ go, reduce }) {
         <div className="wl-posted-card">
           <Paper
             dateline={dateline(row.at)}
-            crest={<Face handle={row.to} size={30} />}
-            title={<span className="wl-letter-to">{atHandle(row.to)}</span>}
+            crest={<span className="wl-letter-crest"><OpenFace handle={row.to} size={34} /></span>}
+            title={<Addressee handle={row.to} />}
           >
             <Prose>{row.body}</Prose>
           </Paper>

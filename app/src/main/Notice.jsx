@@ -62,7 +62,12 @@ export default function WallNotice({ className = '', style }) {
   // one place a person who did not scan a flyer can find it from; hiding
   // the line until the first letter would hide the wall exactly when it
   // most needs somebody to be first.
-  if (!p || !p.ok || !p.open) return null
+  // Not answered yet: the line's own height, with nothing on it, so the
+  // headline under it does not drop by a line when the answer lands. It
+  // used to mount on the answer, and the whole type block moved down a
+  // moment after the door had drawn. Answered and shut, the line goes.
+  if (!p) return <span className={`hm-ear is-hold ${className}`} style={style} aria-hidden="true" />
+  if (!p.ok || !p.open) return null
 
   const n = p.letters
   const count = p.names < 1 ? 'open now' : `${n} ${n === 1 ? 'letter' : 'letters'}`

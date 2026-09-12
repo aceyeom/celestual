@@ -44,6 +44,7 @@ import Signin from './Signin.jsx'
 import NotFound from './NotFound.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
+import { ensureFaces, warmType } from '../wall/type.js'
 
 export function prefersReducedMotion() {
   return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -76,41 +77,19 @@ export default function MainApp() {
   const still = useRef(prefersReducedMotion()).current
 
   // ── the faces ──
-  // Local, and the display face preloaded rather than merely linked: a serif
-  // arriving two hundred milliseconds after the layout is a page that visibly
-  // changes its mind, and this is the first thing a person sees of the product.
+  // Local, fetched by main.jsx beside this chunk, and linked here through the
+  // one module both shells share (type.js). The intro holds its lift until
+  // they have landed: a serif arriving two hundred milliseconds after the
+  // layout is a page that visibly changes its mind, and this is the first
+  // thing a person sees of the product.
+  useEffect(() => { ensureFaces() }, [])
+  const [ready, setReady] = useState(() => BOOTED || route.name !== 'hero')
   useEffect(() => {
-    const added = []
-    const pre = document.createElement('link')
-    pre.rel = 'preload'
-    pre.as = 'font'
-    pre.type = 'font/woff2'
-    pre.crossOrigin = 'anonymous'
-    pre.href = '/fonts/newsreader-normal-200-800-latin.woff2'
-    document.head.appendChild(pre)
-    added.push(pre)
-
-    const css = document.createElement('link')
-    css.rel = 'stylesheet'
-    css.href = '/fonts/faces.css'
-    css.dataset.main = 'faces'
-    document.head.appendChild(css)
-    added.push(css)
-
-    // The liquid mark's texture, for the intro, which has the mark on screen
-    // at 180ms. A hundred and forty kilobytes fetched with the face rather than
-    // after the shader mounts.
-    if (route.name === 'hero') {
-      const tex = document.createElement('link')
-      tex.rel = 'preload'
-      tex.as = 'image'
-      tex.href = '/liquid-mark.png'
-      document.head.appendChild(tex)
-      added.push(tex)
-    }
-
-    return () => { for (const el of added) el.remove() }
-  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+    if (ready) return undefined
+    let alive = true
+    warmType().then(() => { if (alive) setReady(true) })
+    return () => { alive = false }
+  }, [ready])
 
   // ── who this is ──
   // Asked once. Somebody who proved their handle on the wall, or their campus
@@ -164,7 +143,7 @@ export default function MainApp() {
           : <Hero {...shared} />
       )}
 
-      {boot < 2 && <Intro reduce={still} onReveal={handOff} onDone={settle} />}
+      {boot < 2 && <Intro reduce={still} ready={ready} onReveal={handOff} onDone={settle} />}
     </div>
   )
 }

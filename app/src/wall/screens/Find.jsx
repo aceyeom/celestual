@@ -39,7 +39,7 @@ export default function Find({ go, back, rev }) {
   // carrying the most letters, the wall's own heaviest rows. A search sheet
   // that opens onto a void teaches somebody that there is nothing to find,
   // which is the exact opposite of what this surface is for.
-  const top = useMemo(() => wall().slice().sort((a, b) => b.count - a.count || b.at - a.at).slice(0, 6), [rev])
+  const top = useMemo(() => wall().slice().sort((a, b) => b.count - a.count || b.at - a.at).slice(0, 6), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The search is the server's now, so it is a request rather than a filter.
   // Debounced, because a request per keystroke over a handle field is a request
@@ -113,7 +113,7 @@ export default function Find({ go, back, rev }) {
               lit={t.handle === q}
               handle={t.handle}
               size={36}
-              meta={t.count === 1 ? 'one letter' : `${t.count} letters`}
+              meta={t.count > 1 ? `${t.count} letters` : null}
               action={<PillTag tone="ghost">read</PillTag>}
               onClick={() => go('letter', t.handle)}
             />

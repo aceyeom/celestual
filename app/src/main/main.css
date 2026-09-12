@@ -10,7 +10,7 @@
    question from the wall's (a surface with sheets over it) and from the hero's
    (one composition with a great deal of room). ══════════════════════════════ */
 
-.mn-root { min-height: 100dvh; }
+.mn-root { min-height: 100vh; min-height: 100svh; }
 
 /* ── the page ──
    The same column and the same gutters as the hero, so walking from the front
@@ -25,7 +25,7 @@
   max-width: 460px;
   margin: 0 auto;
   padding: 0 22px 0;
-  min-height: 100dvh;
+  min-height: 100vh; min-height: 100svh;
   display: flex;
   flex-direction: column;
 }

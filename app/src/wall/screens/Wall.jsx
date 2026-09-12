@@ -108,6 +108,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Display, Pill, TopBar, Icon, SiteFoot, ArrowLink } from '../parts.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle } from '../data.js'
 import { getState, patch } from '../store.js'
+import { toWrite } from '../auth.js'
 import Hive from '../Hive.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
@@ -457,7 +458,10 @@ export default function Wall({ go, reduce, rev, under = false }) {
             pressed anything: the wall is anonymous by shape, and the button
             says so in the same two words the composer's own act does. */}
         <div className="wl-dock-in">
-          <Pill tone="light" wide onClick={() => go('write')}>
+          {/* Straight to the campus gate for anybody not through it yet
+              (auth.js toWrite): the first thing the press asks for is the
+              address, and the composer is where the gate opens onto. */}
+          <Pill tone="light" wide onClick={() => toWrite(go)}>
             write anonymously
           </Pill>
         </div>
