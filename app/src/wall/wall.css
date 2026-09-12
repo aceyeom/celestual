@@ -1490,30 +1490,23 @@
 /* ── a name that has just arrived ──
    A letter goes up, the index moves, and the person it was written to rises
    into the field rather than being there the next time you look: the disc
-   comes up past its own size and settles, and one ring leaves it and opens
-   out into the crowd. It plays for a name that is new and for a name that has
-   gained a letter, and never on the first reading of the wall. */
+   comes up past its own size and settles, while the pulse the wall sends out
+   from it crosses the crowd (Hive.jsx `pulse`). It plays for a name that is
+   new and for a name that has gained a letter, never on the first reading of
+   the wall, and not until the glass over the wall has gone. No ring leaves
+   it: a hairline circle opening over a field of soft discs read as a target
+   drawn on a person, and the crest of the pulse is already the ring. */
 /* Four classes deep on purpose. The opening cascade below puts a `both`
    filled arrival animation on every orb on the page, at the same three-class
    weight this rule would otherwise have, and later in the file — so a name
    arriving during the first three seconds of a session would have had its
    whole entrance eaten by the entrance of the wall. */
 .wl-wallpage .wl-cell.is-new .wl-cell-orb { animation: wl-cell-pop 900ms var(--ease) both; }
-.wl-cell-disc::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 244, 228, 0.75);
-  opacity: 0; pointer-events: none;
-}
-.wl-wallpage .wl-cell.is-new .wl-cell-disc::after { animation: wl-cell-ping 1500ms var(--ease-out) both; }
 @keyframes wl-cell-pop {
   0%   { opacity: 0; transform: scale(0.34); }
   56%  { opacity: 1; transform: scale(1.13); }
   78%  { transform: scale(0.975); }
   100% { opacity: 1; transform: scale(1); }
-}
-@keyframes wl-cell-ping {
-  0%   { opacity: 0.85; transform: scale(0.86); }
-  100% { opacity: 0; transform: scale(2.1); }
 }
 
 /* ── the one name on the field ──
@@ -1751,30 +1744,69 @@
 }
 
 /* ── what the flag opens ──
-   Two rows in the sheet's foot, standing where the primary stood, each one
-   sentence and an arrow: both lead to a screen that says what it does before
-   anything happens, so nothing has to be explained here in small type. The
-   quiet line under them is the way back. */
-.wl-flag-opts {
-  width: 100%; display: flex; flex-direction: column; gap: 8px;
-  animation: wl-fade 260ms var(--ease) both;
+   One pane of glass in the sheet's foot, standing where the primary stood,
+   and two rows in it: a glyph in a disc, the act, and under it what the act
+   does, in one line, with the chevron at the end of the row. It used to be
+   two bare outlined rows with an arrow each, at one weight, which is a form
+   drawn in a hurry; a pane is one object, the rows are parts of it, and the
+   consequence beside each act is what tells the reversible one from the one
+   nobody can undo, before either is pressed. The quiet line under the pane
+   is the way back. */
+.wl-acts {
+  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
 }
-.wl-opt {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  width: 100%; min-height: 50px; padding: 12px 18px;
-  text-align: left;
-  border-radius: var(--r-field); border: 1px solid var(--hair);
-  font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
-  color: var(--chalk);
-  transition: border-color 220ms var(--ease), background 220ms var(--ease);
+.wl-acts-pane {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(244, 241, 234, 0.075), rgba(244, 241, 234, 0.035));
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.05),
+              0 22px 44px -28px rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  animation: wl-acts-in 380ms var(--ease) both;
 }
-.wl-opt:hover { border-color: rgba(244, 241, 234, 0.24); background: rgba(244, 241, 234, 0.04); }
-.wl-opt-go {
-  flex: 0 0 auto; color: var(--ash-dim); font-size: 14px; line-height: 1;
+.wl-act {
+  display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; column-gap: 14px;
+  width: 100%; padding: 13px 16px 13px 13px;
+  text-align: left; color: var(--chalk);
+  transition: background 200ms var(--ease);
+  animation: wl-act-in 460ms var(--ease) both;
+}
+.wl-act + .wl-act { box-shadow: inset 0 1px 0 var(--hair); animation-delay: 70ms; }
+.wl-act:hover { background: rgba(244, 241, 234, 0.045); }
+.wl-act:active { background: rgba(244, 241, 234, 0.07); }
+.wl-act:focus-visible { outline: none; background: rgba(244, 241, 234, 0.07); }
+.wl-act-glyph {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(244, 241, 234, 0.06); color: var(--chalk);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: background 200ms var(--ease), transform 320ms var(--ease);
+}
+.wl-act:hover .wl-act-glyph { background: rgba(244, 241, 234, 0.1); transform: scale(1.04); }
+.wl-act-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wl-act-h {
+  font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: 0.004em; line-height: 1.2;
+}
+.wl-act-say {
+  font-family: var(--f-util); font-size: 12px; line-height: 1.4; color: var(--ash);
+  text-wrap: pretty;
+}
+.wl-act-say .wl-h, .wl-act-say .wl-at { font-family: var(--f-id); font-size: 0.92em; }
+/* the chevron is the back glyph turned round: one stroke weight across the set */
+.wl-act-go {
+  color: var(--ash-dim); display: grid; place-items: center;
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.wl-opt:hover .wl-opt-go { transform: translateX(4px); color: var(--chalk); }
-.wl-flag-opts > .wl-quiet { margin-top: 2px; }
+.wl-act-go .wl-icon { transform: scaleX(-1); }
+.wl-act:hover .wl-act-go { transform: translateX(3px); color: var(--chalk); }
+.wl-acts > .wl-quiet { margin-top: 2px; }
+@keyframes wl-acts-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-act-in {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
    Letter.jsx `Hearts`, in the paper's foot. The glyph is a control on its
@@ -1848,8 +1880,30 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-/* one line under the card, whether the letter is too short or has tripped the
-   screen — to the person writing, both are the same fact */
+/* the card and the line under it, in one frame, and the frame is what shakes
+   when a press is refused (Write.jsx `shake`): a short travel, side to side,
+   losing amplitude, the way a locked handle answers a hand. Under half a
+   second, so it is a refusal and not a scolding. */
+.wl-write-card { position: relative; }
+.wl-write-card.is-shaking { animation: wl-shake 460ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.wl-write-card.is-shaking .wl-write-caught { animation: wl-caught-pulse 460ms var(--ease-out) both; }
+@keyframes wl-shake {
+  0%, 100% { transform: none; }
+  15%  { transform: translate3d(-9px, 0, 0); }
+  30%  { transform: translate3d(8px, 0, 0); }
+  45%  { transform: translate3d(-6px, 0, 0); }
+  60%  { transform: translate3d(4px, 0, 0); }
+  75%  { transform: translate3d(-2px, 0, 0); }
+  90%  { transform: translate3d(1px, 0, 0); }
+}
+@keyframes wl-caught-pulse {
+  0%   { opacity: 1; }
+  30%  { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+/* one line under the card, when the screen has caught something or the
+   server has said no: to the person writing, both are the one thing to
+   change */
 .wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
 .wl-write-caught { color: var(--ember); text-align: right; }
 .wl-write-foot {
@@ -1884,174 +1938,6 @@
 /* the week's line: the label's own face, in ash rather than the accent,
    because a limit met is a fact about the week and not an alarm about it */
 .wl-allow.is-week { display: block; color: var(--ash); letter-spacing: 0.12em; animation: wl-fade 320ms var(--ease) both; }
-
-/* ═══ PUTTING IT UP ═════════════════════════════════════════════════════════════
-   screens/Posted.jsx. Three beats. Each is a class on the page and every
-   element reads its own state off it, so the whole sequence is one state
-   machine rather than nine overlapping transitions racing each other. The
-   card's own flight into the disc is the one movement written by the screen
-   (a transform measured against the disc it lands in); everything else is
-   here. */
-.wl-posted-air { height: 7vh; min-height: 28px; flex: 0 0 auto; }
-/* one cell for the stage and the landing: the stage at its head, the
-   landing at its foot, so the little wall stands a short drop under the
-   card and, once the card has closed into it, the headline stands where the
-   card was. On the refusal both are shown, so there they stack instead. */
-.wl-posted-body { display: grid; flex: 0 0 auto; }
-.wl-posted-body > * { grid-area: 1 / 1; min-width: 0; }
-.wl-posted-stage {
-  position: relative; align-self: start; z-index: 1;
-  display: flex; flex-direction: column; align-items: center;
-  /* the landing's height at least, so a short letter's cell still has room
-     for the headline, the count and the little wall under where it stood */
-  padding-bottom: 170px;
-  transition: height 900ms var(--ease), padding-bottom 900ms var(--ease);
-}
-.wl-posted-land { align-self: end; }
-/* settled: the room the card was read in closes, and the landing comes up
-   under the mark. The screen gives the stage its measured height first, so
-   there is a number to close from. */
-.wl-posted.is-settled .wl-posted-stage { height: 0 !important; padding-bottom: 0; overflow: hidden; }
-.wl-posted.is-refused .wl-posted-body { display: flex; flex-direction: column; }
-.wl-posted.is-refused .wl-posted-stage { padding-bottom: 0; }
-
-/* ── the mark, over the card, and then over the wall ──
-   The metal, poured, at the size the seal on a mutual is drawn, with the
-   product's one bloom behind it: low while the letter is read, up when the
-   screen passes, and quiet once the letter is up, when it stands over the
-   little wall as the light the wall is under. */
-.wl-posted-mark {
-  position: relative; width: 92px; height: 92px; margin: 0 auto 22px;
-  display: grid; place-items: center; flex: 0 0 auto;
-  transition: transform 720ms var(--ease), opacity 620ms var(--ease);
-}
-.wl-posted-mark > .wl-liquid, .wl-posted-mark > .wl-ecl { position: relative; z-index: 1; }
-.wl-posted-bloom { z-index: 0; }
-.wl-posted.is-b1 .wl-posted-mark { transform: scale(1.14); }
-.wl-posted.is-b2 .wl-posted-mark { opacity: 0.9; }
-.wl-posted.is-refused .wl-posted-mark { opacity: 0.5; }
-
-/* ── the card ──
-   Drawn from the draft while the answer is out, so it is on the screen from
-   the first frame. Its flight is the screen's (Posted.jsx, the seal). */
-.wl-posted-card {
-  position: relative; width: 100%; max-width: 340px;
-  transform-origin: 50% 50%; will-change: transform;
-}
-/* ── the reading: a light passing over the paper ──
-   A soft band of light crossing the card every couple of seconds, blended
-   into the paper rather than laid on it, so it reads as light on a surface
-   and not as a bar over the words. Clipped to the card's own corner; the
-   card's shadow stays outside it. */
-.wl-posted-sheen {
-  position: absolute; inset: 0; border-radius: var(--r-card); overflow: hidden;
-  pointer-events: none; mix-blend-mode: soft-light;
-  transition: opacity 320ms var(--ease);
-}
-.wl-posted-sheen::before {
-  content: ''; position: absolute; top: -40%; bottom: -40%; left: -70%; width: 60%;
-  background: linear-gradient(100deg,
-    rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.62) 50%, rgba(255, 255, 255, 0) 100%);
-  transform: skewX(-12deg);
-  animation: wl-sheen 2600ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-@keyframes wl-sheen {
-  0%        { transform: translateX(0) skewX(-12deg); }
-  62%, 100% { transform: translateX(330%) skewX(-12deg); }
-}
-.wl-posted.is-b1 .wl-posted-sheen,
-.wl-posted.is-b2 .wl-posted-sheen,
-.wl-posted.is-refused .wl-posted-sheen { opacity: 0; }
-.wl-posted.is-b1 .wl-posted-sheen::before,
-.wl-posted.is-b2 .wl-posted-sheen::before,
-.wl-posted.is-refused .wl-posted-sheen::before { animation: none; }
-/* landed, the card is the disc on the wall and nothing else */
-.wl-posted.is-b2 .wl-posted-card { visibility: hidden; }
-
-/* ── the screen, said under the card ──
-   Three sparkles and a sentence in the reading face, set quiet: a status,
-   not a spinner. It rides under the card because it is about the card, and
-   it leaves as the card seals. */
-.wl-posted-screen {
-  display: flex; align-items: center; justify-content: center; gap: 11px;
-  padding-top: 20px;
-  transition: opacity 400ms var(--ease);
-}
-.wl-posted-screen .wl-spark { color: var(--ash); }
-.wl-posted-screen-say {
-  font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 14.5px; line-height: 1.4; color: var(--ash);
-}
-.wl-posted.is-b1 .wl-posted-screen,
-.wl-posted.is-b2 .wl-posted-screen { opacity: 0; }
-
-/* ── the landing ──
-   In the document from the first frame, at nothing, because the disc the
-   card flies to is in it and has to be standing where it will land. It
-   fades up as the disc arrives; the headline alone rises into place. */
-.wl-posted-land {
-  flex: 0 0 auto; opacity: 0; text-align: center;
-  transition: opacity 700ms var(--ease);
-}
-.wl-posted-land.is-in, .wl-posted.is-b2 .wl-posted-land { opacity: 1; }
-/* landed, the headline is on top of the room the card left */
-.wl-posted.is-b2 .wl-posted-land { z-index: 2; }
-.wl-posted-h { transform: translate3d(0, 14px, 0); transition: transform 800ms var(--ease); }
-.wl-posted.is-b2 .wl-posted-h { transform: none; }
-.wl-posted-count, .wl-posted-why { margin: 12px auto 0; }
-/* the one control that leaves, carrying the page's own bottom edge rather
-   than the .wl-page padding: this screen is not docked and never was. It is
-   dark until the letter has landed, and a second control under it on the
-   refusal is the quiet line. */
-.wl-posted-foot {
-  flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px;
-  padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
-}
-.wl-posted-foot > .wl-quiet { margin-top: 2px; }
-
-/* ── the little wall ──
-   This name among the four nearest it on the wall, as faces: two before,
-   this one larger, two after. The neighbours stand at half light. When the
-   disc lands the name comes up past its size and settles and one ring
-   leaves it (the wall's own arrival, wl-cell-pop and wl-cell-ping), and the
-   neighbours are nudged away from it and close back, each a beat after the
-   one nearer, which is the ripple a new name sends through the crowd at the
-   size of a card. */
-.wl-strip {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
-  margin-top: 26px; min-height: 60px;
-}
-.wl-strip-side { display: flex; align-items: center; gap: 16px; min-width: 0; }
-.wl-strip-side.is-l { justify-content: flex-end; }
-.wl-strip-side.is-r { justify-content: flex-start; }
-.wl-strip-n { position: relative; display: grid; place-items: center; opacity: 0.5; }
-.wl-strip-n .wl-face { box-shadow: inset 0 0 0 1px var(--hair), 0 0 0 1px rgba(8, 7, 11, 0.6); }
-.wl-strip-n.is-mine { opacity: 1; }
-.wl-strip-n.is-mine .wl-face {
-  box-shadow: inset 0 0 0 1px rgba(255, 244, 228, 0.6), 0 0 0 1px rgba(8, 7, 11, 0.6);
-}
-.wl-strip-n.is-mine::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 244, 228, 0.75);
-  opacity: 0; pointer-events: none;
-}
-.wl-posted.is-b2 .wl-strip-n.is-mine .wl-face { animation: wl-cell-pop 900ms var(--ease) both; }
-.wl-posted.is-b2 .wl-strip-n.is-mine::after { animation: wl-cell-ping 1500ms var(--ease-out) both; }
-.wl-strip-n[data-side='l'] { --dir: -1; }
-.wl-strip-n[data-side='r'] { --dir: 1; }
-.wl-posted.is-b2 .wl-strip-n:not(.is-mine) {
-  animation: wl-nudge 900ms var(--ease) both;
-  animation-delay: calc(var(--k, 1) * 110ms + 120ms);
-}
-@keyframes wl-nudge {
-  0%   { transform: none; }
-  32%  { transform: translateX(calc(var(--dir, 1) * 8px)) scale(1.05); opacity: 0.8; }
-  100% { transform: none; }
-}
-/* the refusal: the card stands, the mark is quiet, and the landing block
-   carries the sentence instead of the count. It is in the page's own column
-   here rather than in the cell, so it takes the column's width. */
-.wl-posted.is-refused .wl-posted-land { align-self: stretch; margin-top: 26px; }
 
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
@@ -2724,7 +2610,7 @@
   .wl-letter .wl-foot, .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
   /* ── the standalone screens keep the column, and gain air ── */
-  .wl-join, .wl-posted { max-width: 640px; }
+  .wl-join { max-width: 640px; }
   .wl-join-fig { margin: 40px 0 30px; }
 }
 
@@ -2793,7 +2679,7 @@
   .wl-grip { display: none; }
   .wl-sheet-in { padding: 18px 22px 22px; }
 
-  .wl-join-air, .wl-posted-air { height: 8px; min-height: 0; }
+  .wl-join-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
   .wl-join-fig .wl-circuit { max-width: 190px; }
   /* ── the core service, lying down ──
@@ -2819,7 +2705,6 @@
   .wl-sill { min-height: 40px; padding-top: 12px; }
   .wl-pips { padding-top: 11px; }
   .wl-core .wl-say { font-size: 12px; }
-  .wl-posted-stage { min-height: 150px; }
 }
 
 /* ── the very wide screen ──────────────────────────────────────────────────
@@ -3522,7 +3407,8 @@
 .wl-card.is-unknown .wl-card-name { font-weight: 400; color: var(--ash); }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb, .wl-cell-disc::after { animation: none !important; }
+  .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
+  .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-mast-go-ring { display: none; }
   .wl-tab, .wl-down { animation: none !important; }

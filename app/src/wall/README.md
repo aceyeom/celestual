@@ -82,14 +82,17 @@ both: the screenshot exists before the decision does.
                           Runs at the keyboard (moderate.js) and again on the
                           server, because a client-side check is a courtesy to
                           the writer, not a control on the writer.
-                 layer 2  one Haiku call, against explicit categories. A pass
-                          goes up. A refusal is stored, never shown, and the
-                          writer is told what the screen read it as and handed
-                          their words back to change.
-                 layer 3  anything ambiguous goes up AT ONCE, flagged, and a
-                          person reads it at the desk while it stands. If that
-                          person takes it down, the writer is told so on the
-                          wall, with the reason and their words back.
+                          The ONLY thing that stops a letter going up: the
+                          card shakes, the line under it says what was
+                          caught, and nothing is sent.
+                 layer 2  one Haiku call, against explicit categories, AFTER
+                          the letter is on the wall. A pass and a review leave
+                          it up. Only a letter it reads as severely malicious
+                          comes down, and the writer is told on the wall that
+                          it went against the terms, with their words back.
+                 layer 3  anything ambiguous stays up, flagged, and a person
+                          reads it at the desk while it stands. If that person
+                          takes it down, the writer is told the same way.
 
   reporting      the tap  off the wall, the search and the count. Immediately.
                  the box  optional, three lines. Why.
@@ -103,23 +106,27 @@ complaint was fair has protected the wrong person. And a takedown that destroys
 what it took down is one no review can ever be right about — which matters most
 for the writer, since any signed-in reader can report any letter.
 
-**It used to hold.** Anything the classifier answered `review` on sat at
-`pending`, rendering nowhere, until a person at the desk moved it, and on a
-live wall that was a writer watching their letter not appear, for hours, with
-no word about why. Since migration 0050 the hold is gone: a review goes up
-flagged (`moderation.flagged`), the desk's letters screen opens on the flagged
-queue, and "looks fine" there is a decision that changes nothing but the
-queue. A letter a person takes down after it stood tells its writer so, on the
-wall: `wall_mine` answers a device about its own letters and whose hand took
-one down, and the notice at the foot of the wall says which letter, why in one
-sentence (`moderate.js whyDown`), and offers the words back on the composer.
-The notice is never raised for a reader's report, because telling the writer
-would point them at the person likeliest to have filed it. A refusal was
-always final and silent; it is final and spoken now, on the posted screen, for
-the same reason. What still stands before anything is published is the part
-that catches the worst of it, and a classifier that does not answer publishes
-flagged rather than holding (`HOLD_WHEN_UNSCREENED` in the function puts the
-old rule back).
+**It used to hold, and then it used to read first.** Anything the classifier
+answered `review` on sat at `pending`, rendering nowhere, until a person at
+the desk moved it, and on a live wall that was a writer watching their letter
+not appear, for hours, with no word about why. Then every letter waited on
+the model before it went up, behind a screen drawn to hold the wait. Since
+migration 0050 the order is turned round: the function runs the list, writes
+the letter `live` and answers, and the classifier reads it after the answer
+has gone back (`EdgeRuntime.waitUntil`). Its verdict lands on the row through
+`wall_screened`: a pass changes nothing; a review flags it
+(`moderation.flagged`) for the desk's flagged queue, where "looks fine" is a
+decision that changes nothing but the queue; a reject takes it down, unless a
+person at the desk has already decided about it. A letter taken down after it
+went up, by the reading or by a person, tells its writer so, on the wall:
+`wall_mine` answers a device about its own letters and whose hand took one
+down, the wall asks it a few times over the half minute after a letter goes
+up, and the notice at the foot of the wall says which letter, that it went
+against the terms (`moderate.js whyDown`, which names the terms and never the
+hand), and offers the words back on the composer. The notice is never raised
+for a reader's report, because telling the writer would point them at the
+person likeliest to have filed it. A classifier that does not answer leaves
+the letter up, flagged `unscreened`.
 
 ### 2 · Getting a letter down is free. Emptying a whole name is the one thing that asks.
 
@@ -130,7 +137,7 @@ the same act:
 
 | | |
 | --- | --- |
-| **one letter** | the flag in the corner of the letter, then `Report letter`. Off the wall on the tap, with no category, no severity and no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
+| **one letter** | the flag in the corner of the letter, then `Report this letter`. Off the wall on the tap, with no category, no severity and no case to make. Reversible by a person at a desk, and nothing is destroyed. This is the fast door and it is the one almost everybody wants, including the person the letter is about. |
 | **a whole name** | `/berkeley/remove`. The handle goes, **every** letter written to it goes with it, and no desk can reverse it. It is the only irreversible thing on this surface, so it is the only one that asks who is asking — through Instagram, where the handle actually lives. One question, answered once, thrown away. |
 
 There is a third, and it is not a wall control at all: the product's opt out
@@ -151,8 +158,9 @@ nowhere else, and the person who just wants a letter about them gone is never
 sent through it.
 
 They are reachable from three places, none of them a footer: the flag at the
-foot of any letter, which opens both of them, `Take my @ down` and
-`Report letter`, standing where the sheet's primary stood; under the names on
+foot of any letter, which opens both of them on one pane of glass standing
+where the sheet's primary stood, `Report this letter` and `Take my name off
+the wall`, each with what it does in one line under it; under the names on
 the wall itself; and from the search.
 
 The flag replaced a pair of bare capsules — `this is me` and `report it` — that
@@ -164,8 +172,11 @@ void at the bottom of the sheet, which is where a control goes when nothing has
 been decided about what it belongs to. It belongs to the letter: a flag is left
 ON a thing. So it stands on the card now, at the end of its foot opposite the
 heart, struck in the paper's ink at the heart's size, and the two acts it opens
-carry no small print, because each leads to a screen that says what it does
-before anything happens.
+each carry one line saying what they do, the reversible one first, because the
+one decision on this surface that must not be made by guessing at a label is
+the one between them. They were two bare outlined rows with an arrow each,
+which is a form drawn in a hurry; the pane is one object and the rows are
+parts of it.
 
 The core service is the opposite of all of it — accounts, identity, pings,
 mutuals — and it is somewhere else. There is exactly one door between them, and
@@ -241,11 +252,10 @@ front too, and always has.
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
 | `/berkeley/find` | the search. Opens on the names carrying the most letters |
-| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself |
+| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/posted` | three beats — the reading, with the mark poured over the card and a light passing over the paper; the seal, the card closing into a disc and falling; the landing, among the names nearest it, rippled. Or the refusal, with the screen's reason and the words handed back |
 | `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `register` leaves for Main at `/` |
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
@@ -916,9 +926,8 @@ which is what keeps the two surfaces one product.
   frame later. There is no server here to tell, and a build that mimed either
   would be the one thing on this surface it is least acceptable to fake.
 - **Three things are drawn on a timer and every one of them says so on the
-  glass.** The gate's six digits (any six pass), the classifier beat on
-  `/berkeley/posted`, the report's reading, and the Instagram handoff (any handle
-  comes back proven). Each is the shape of the real thing with the round trip
+  glass.** The gate's six digits (any six pass), the report's reading, and the
+  Instagram handoff (any handle comes back proven). Each is the shape of the real thing with the round trip
   left out, labelled rather than disguised, because a screen that mimes an OAuth
   handshake without saying so is teaching the wrong thing about what this build
   does with what it is given. Each label comes off the day its round trip is

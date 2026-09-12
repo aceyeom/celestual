@@ -7,7 +7,7 @@
 // prop and no `size` in pixels — so changing what a ghost pill looks like is
 // one edit in one file rather than nine inline objects that drifted apart.
 
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search } from './data.js'
 import { Ecliptic, Sparkle } from './art.jsx'
@@ -581,12 +581,15 @@ export function LetterField({ value, onChange, max = 260, placeholder = '', auto
 // `onClosing` is told the moment the way out is taken, and by what: the
 // letter uses it to fly its card back into the disc it came out of, and
 // declines when the sheet was dragged down, since a sheet already half off
-// the glass is not a sheet a card flies home from.
+// the glass is not a sheet a card flies home from. A `ref` gets the same
+// `dismiss`, for a screen that has to leave without anybody pressing
+// anything: the composer goes the moment its letter is up, and the wall
+// under it receives the name.
 const SheetCtx = createContext(null)
 export function useSheet() { return useContext(SheetCtx) }
 
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '' }) {
+export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '', ref = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
@@ -604,6 +607,9 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
     if (onClosingRef.current) onClosingRef.current(by)
   }, [])
   const ctx = useMemo(() => ({ dismiss }), [dismiss])
+  // and the same way out in the hand of the screen on the sheet, for the one
+  // that leaves on its own: the composer, once the letter is up
+  useImperativeHandle(ref, () => ({ dismiss }), [dismiss])
 
   useEffect(() => {
     if (!closing) return undefined

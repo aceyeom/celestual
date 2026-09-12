@@ -636,13 +636,13 @@ still nobody's decision; see `docs/deletions.md` group D.
       somebody else has to act on is a screen with a gap in it.
 
 - [ ] Set `MODERATION_API_KEY` as a Supabase edge function secret. An Anthropic
-      API key. **Without it every letter goes up flagged as `unconfigured`**
+      API key. **Without it every letter goes up and is flagged `unconfigured`**
       (migration 0050): the desk's letters screen opens on a run of them, which
       is how you find out the key is missing. It used to hold every letter at
       pending instead, and that rule made the wall's one control a single
-      environment variable away from silently stopping the wall.
-      `HOLD_WHEN_UNSCREENED` in the function puts the old rule back if that
-      trade is ever wrong for a campus.
+      environment variable away from silently stopping the wall. The letter
+      goes up before the model is asked at all now, so the key decides only
+      whether anything is read after.
 - [ ] `MODERATION_MODEL` is optional and defaults to
       `claude-haiku-4-5-20251001`, which is what spec section 9 asks for.
       Confirm the model id is still current when you deploy.
@@ -1181,42 +1181,54 @@ again should be refused.
 
 ## The letter goes up first (migration 0050)
 
-The screen's hold is gone. A letter the classifier is unsure of goes up the
-moment it is written and is flagged for a person to read while it stands; a
-refusal is still a refusal, stored and never shown, and the writer is now
-told what the screen read it as and handed the words back. One migration,
-the moderation function, the app and the desk.
+The screen's hold is gone, and so is its wait. Every letter the list at the
+keyboard lets through goes up the moment it is sent, and the classifier reads
+it after it is on the wall: a pass and a review leave it up, the review
+flagged for a person to read while it stands, and only a letter read as
+severely malicious comes down, which the wall tells its writer in a card at
+its foot, with the words back to change. One migration, the moderation
+function, the app and the desk.
 
 **Why.** Anything the classifier answered `review` on used to sit at
 `pending`, rendering nowhere, until somebody sat at the desk. On a live wall
 that was a writer watching their letter not appear, for hours, with no word
-about why.
+about why. Then every letter waited on the model before it went up, behind a
+screen drawn to hold the wait, and the wait was the whole of what that screen
+had to say.
 
 1. **Apply `0050_the_letter_goes_up_first.sql`.** `supabase db push`, or paste
-   it into the SQL editor. Re-runnable. It adds `wall_mine(token)` (a device's
-   own letters and whose hand took one down, the only function that returns a
-   body to its author), teaches `celestual_desk_letters` the status
-   `'flagged'`, and wraps `celestual_desk_overview` so its counts carry
+   it into the SQL editor. Re-runnable. It adds `wall_screened(letter, verdict,
+   reasons, model)`, service role only, which lands the classifier's verdict
+   on a letter that is already up (a review flags it, a reject takes it down
+   unless a person at the desk already decided); `wall_mine(token)` (a
+   device's own letters and whose hand took one down, the only function that
+   returns a body to its author); teaches `celestual_desk_letters` the status
+   `'flagged'`; and wraps `celestual_desk_overview` so its counts carry
    `letters_flagged` (the standing function is renamed once, to
    `celestual_desk_overview_0039`, and called by the wrapper). Verified end to
-   end by `scripts/verify-migrations.sh --test` (`test-flagged.sql`, 25
+   end by `scripts/verify-migrations.sh --test` (`test-flagged.sql`, 38
    assertions; the three older tests that still asserted five free reads were
    brought up to eight in the same change).
 2. **Redeploy `celestual-wall-moderate`.** `supabase functions deploy
-   celestual-wall-moderate`. It writes a review at `live` with
-   `moderation.flagged`, and a classifier that does not answer publishes
-   flagged as `unscreened` rather than holding; `HOLD_WHEN_UNSCREENED` in the
-   function puts the old rule back if that trade is ever wrong.
-3. **Deploy the app.** Vercel, as usual. The desk's letters screen opens on the
-   flagged queue with a "looks fine" decision on each row, the posted screen
-   says what a refused letter was read as and offers the words back, and the
-   wall raises a notice to a writer whose letter came down by the desk's hand.
+   celestual-wall-moderate`. It runs the list, writes the letter at `live`,
+   answers, and reads it after the answer has gone back
+   (`EdgeRuntime.waitUntil`), landing the verdict through `wall_screened`. A
+   classifier that does not answer, or has no key, leaves the letter up,
+   flagged `unscreened` or `unconfigured`. Deploy it AFTER the migration: a
+   function that calls `wall_screened` before it exists logs the failure and
+   the letter stays up unread, which is not wrong, only unread.
+3. **Deploy the app.** Vercel, as usual. The composer sends from the card and
+   closes onto the wall, where the name pulses and rises (the posted screen is
+   gone); a letter the list catches shakes the card and says so; the desk's
+   letters screen opens on the flagged queue with a "looks fine" decision on
+   each row; and the wall asks after a writer's own letters for half a minute
+   after one goes up, so a takedown by the reading or by the desk is said
+   there within the minute.
 
-Order matters in one direction only: the function deployed before the
-migration still works (`wall_write` takes `live`, and `flagged` is a key in
-the record it already writes), but the desk asks for `'flagged'` and
-`letters_flagged` and gets `bad_status` and no count until the migration has
-run. Apply first.
+Order matters in both directions now, and gently: the desk asks for
+`'flagged'` and `letters_flagged` and gets `bad_status` and no count until the
+migration has run; the function reads through `wall_screened` and logs a
+failure until it has. Apply first, then deploy the function, then the app.
 
 ## Eight before the door (migration 0049)
 

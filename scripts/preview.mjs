@@ -122,9 +122,6 @@ let NOTE = ''
 // Whether the week's three letters are spent (0044): the composer's act goes
 // dark and one line says why. Off, the fixture browser has one left.
 let SPENT = false
-// What the screen says to the letter the posted screen sends: up, or refused
-// with the screen's own word for why, so the refusal can be looked at.
-let REFUSE = false
 // Whether a letter this browser put up has since come down (0050 wall_mine):
 // the notice at the foot of the wall, in the tab's place.
 let DOWN = false
@@ -538,13 +535,14 @@ const RPC = {
   // 0042: a heart on, or off, and the count back
   wall_heart: (b) => ({ ok: true, letter: b.p_letter, hearts: b.p_on ? 4 : 3, hearted: !!b.p_on }),
   // 0050: this browser's own letters and where each stands. One of them has
-  // come down by a person's hand when the route asks for it.
+  // been taken down by the reading, after it went up, when the route asks
+  // for it: the notice at the foot of the wall.
   wall_mine: () => ({
     ok: true,
     letters: DOWN ? [{
       id: '11110111-2222-4333-8444-555566660000', handle: 'ren.tanaka',
       body: 'you were the one singing on the 51B that night. i wanted the song to be about me.',
-      status: 'removed', down_by: 'desk', reasons: ['locate'], flagged: false,
+      status: 'rejected', down_by: 'screen', reasons: ['threat'], flagged: false,
       at: new Date(now - 2 * 3600000).toISOString(),
     }] : [],
   }),
@@ -644,14 +642,15 @@ async function fulfil(route) {
     return route.fulfill({ json: fn ? fn(b) : { ok: true } })
   }
 
-  // The screen the composer posts through: a letter is up at once, or it is
-  // refused with the category the screen read it as (celestual-wall-moderate).
+  // The screen the composer posts through: the letter is up at once
+  // (celestual-wall-moderate writes it live and reads it after), and the
+  // index carries it on the next read, so the wall under the sheet has a
+  // name to receive. The count is put back at the start of every route.
   if (url.includes('/functions/v1/celestual-wall-moderate')) {
-    return route.fulfill({
-      json: REFUSE
-        ? { ok: true, status: 'rejected', id: 'eeee0111-2222-4333-8444-555566660000', reasons: ['locate'] }
-        : { ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000' },
-    })
+    const b = req.postData() ? JSON.parse(req.postData()) : {}
+    const row = INDEX.find((r) => r.target_handle === String(b.target || '').toLowerCase())
+    if (row) { row.letters += 1; row.last_at = new Date().toISOString() }
+    return route.fulfill({ json: { ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000' } })
   }
 
   // Every other edge function.
@@ -781,19 +780,19 @@ const ROUTES = [
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
   { label: 'join',          path: '/berkeley/join' },
-  // the letter going up, in its three beats: read, with the mark poured over
-  // the card and the light passing over the paper; sealing, the card on its
-  // way into the disc; and landed, among the names nearest it on the wall
-  // (the screen mounts as the intro lifts and the reading holds for 1.3s
-  // after the answer; by the time the page has settled enough to be driven
-  // the seal is about two seconds out, and the landing a second after that)
-  { label: 'posted-reading', path: '/berkeley/posted', settle: 1100 },
-  { label: 'posted-seal',    path: '/berkeley/posted', settle: 2350 },
-  { label: 'posted-landed',  path: '/berkeley/posted', settle: 3200 },
-  { label: 'posted',         path: '/berkeley/posted', settle: 5200 },
-  // and refused: the card stays, the mark goes quiet, the screen's word for
-  // why, and the words handed back to change
-  { label: 'posted-refused', path: '/berkeley/posted', refuse: true, settle: 1400 },
+  // the letter caught at the keyboard: a street address in it, the button
+  // pressed anyway, and the card shaking under the press with the line under
+  // it saying what was caught (Write.jsx `shake`)
+  { label: 'write-caught', path: '/berkeley/write/sofiaaa.reyes',
+    body: 'you can find me most nights at 2650 durant ave if you ever want to talk.',
+    acts: [['click', '.wl-write-foot .wl-pill.is-light', null, 240]], settle: 0 },
+  // and the letter going up, from the wall: a name pressed, "write to" on
+  // its letter, the letter sent, and the sheet gone, with the wall receiving
+  // the name under it, the pulse out from its disc and the disc coming to
+  // the light (Wall.jsx, the arrival; there is no screen between)
+  { label: 'write-sent', path: '/berkeley',
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400],
+      ['click', '.wl-foot .wl-pill.is-light'], ['wait', 900], ['click', '.wl-write-foot .wl-pill.is-light', null, 1000]], settle: 0 },
 
   // Phase 7. The desk, and the states worth looking at: what it opens on, the
   // queue with something held in it, a report whose letter is already down, the
@@ -841,9 +840,10 @@ for (const r of list) {
   SLOW = r.slow === true
   NOTE = r.note || ''
   SPENT = r.spent === true
-  REFUSE = r.refuse === true
   DOWN = r.down === true
   for (const v of VIEWPORTS) {
+    // a letter sent on the last pass moved the index; it is put back
+    INDEX.forEach((row, i) => { row.letters = COUNTS[i]; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
       deviceScaleFactor: v.scale,
@@ -864,11 +864,11 @@ for (const r of list) {
       return fulfil(route)
     })
 
-    // The wall's composer keeps a draft, and the posted screen reads one. Both
-    // are localStorage, so they are seeded rather than clicked through.
+    // The wall's composer keeps a draft, in localStorage, so it is seeded
+    // rather than typed; a route can bring its own words (`write-caught`).
     const DRAFT = r.draft === null
       ? null
-      : { to: 'sofiaaa.reyes', body: 'you sat two rows ahead all semester and i never once said anything.' }
+      : { to: 'sofiaaa.reyes', body: r.body || 'you sat two rows ahead all semester and i never once said anything.' }
     // The desk holds its password in sessionStorage and the server re-checks it
     // on every call. Seeding it here is what puts the screenshot behind the
     // door rather than on it; `admin-gate` deliberately does not, because the

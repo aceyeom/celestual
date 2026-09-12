@@ -95,9 +95,20 @@
 // where the wall was replaced by a screen. The card closes back into the same
 // disc on the way out.
 //
+// ── and it receives the letter ──────────────────────────────────────────────
+// The composer is a sheet over this screen, and when its letter is up the
+// sheet goes and the wall is what is left: the name it was written to sends
+// one pulse out through the crowd and comes into the light, and its disc
+// rises among the others (Hive.jsx `pulse`, and `fresh`). There is no page
+// between the sending and the seeing. The reading happens after: the
+// classifier reads the letter once it is up (celestual-wall-moderate), and
+// this screen asks after this person's own letters a few times over the next
+// half minute, so a letter the reading took down is said here, within the
+// minute, in the notice below, rather than on the next visit.
+//
 // ── the foot of the wall is about the person looking ────────────────────────
 // Two things can stand in the dock, and never both: the notice, when a letter
-// this person put up has since come down, saying why in one sentence and
+// this person put up has since been taken down, saying so in one sentence and
 // handing them their own words back to change; and the tab, the one door out
 // of the wall, which asks the one question a person who has just named
 // somebody is carrying. The tab can be put away, and it comes back: after a
@@ -157,6 +168,19 @@ const RAMP = 110
 const TAB_AGAIN_MS = 3 * 86400000
 // how long the tab takes to go when it is put away (wall.css wl-tab-drop)
 const TAB_OUT_MS = 320
+// how long it waits to rise after a letter has just gone up: past the pulse
+// the wall sends out from the new name, so the offer follows the arrival
+// rather than competing with it
+const TAB_AFTER_LETTER_MS = 3200
+
+// ── the arrival's clock ──
+// How long after the composer's glass has gone the wall sends its pulse out
+// from the new name: a beat, so the sheet's last frame and the travel's
+// first are not the same frame. And when this person's letters are asked
+// about again after one goes up, since the reading lands on a letter a few
+// seconds after it is written and a takedown is owed to its writer at once.
+const ARRIVE_AFTER_MS = 160
+const READ_AGAIN_MS = [3000, 8000, 16000, 32000]
 
 function rippleMs(r) {
   return Math.round(Math.max(RIPPLE_MIN, Math.min(RIPPLE_MAX, RIPPLE_BASE + r * RIPPLE_PER_PX)))
@@ -258,11 +282,12 @@ function Tab({ faces, onGo, onHide, going }) {
 }
 
 // ── the notice ──────────────────────────────────────────────────────────────
-// A letter this person put up has come down since: the screen refused it, or
-// a person at a desk took it down after it stood, or the name it was written
-// to came off the wall. One card, at the foot of the wall, saying which
-// letter, why in one sentence (moderate.js `whyDown`), and offering the one
-// thing worth doing about it: their own words back, on the composer, to
+// A letter this person put up has been taken down since: the reading took it
+// down after it went up, or a person at a desk did, or the name it was
+// written to came off the wall. One card, at the foot of the wall, saying
+// which letter, that it went against the terms (moderate.js `whyDown`: the
+// fact and the way back, never a machine explaining itself), and offering the
+// one thing worth doing about it: their own words back, on the composer, to
 // change. Nothing about a report is said here: a letter a reader took down is
 // a matter between the reader and a desk, and telling the writer would be
 // pointing them at the person who is likeliest to have done it.
@@ -275,8 +300,8 @@ function Down({ letter: l, onChange, onLeave }) {
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
-          <p className="wl-down-h">Your letter to <span className="wl-h">{atHandle(l.to)}</span> came down.</p>
-          <p className="wl-down-why">{whyDown(l.downBy, l.reasons)}</p>
+          <p className="wl-down-h">Your letter to <span className="wl-h">{atHandle(l.to)}</span> was taken down.</p>
+          <p className="wl-down-why">{whyDown(l.downBy)}</p>
         </div>
       </div>
       <div className="wl-down-acts">
@@ -406,15 +431,17 @@ export default function Wall({ go, reduce, rev, under = false }) {
   }, [playing])
 
   // ── the tab ──
-  // Not on the screen the instant you land back from posting: it rises a
-  // beat later, once the wall has settled. A panel that is already there when
-  // the screen arrives is a banner. `going` is the beat it takes to leave
-  // when it is put away, so it is seen to go rather than to vanish.
+  // Not on the screen the instant a letter is up: it rises once the wall has
+  // received the name and the pulse has gone through the crowd, and on a
+  // later visit a beat after the wall has settled. A panel that is already
+  // there when the screen arrives is a banner. `going` is the beat it takes
+  // to leave when it is put away, so it is seen to go rather than to vanish.
   const [tab, setTab] = useState(() => tabDue(getState()) && reduce)
   const [going, setGoing] = useState(false)
   useEffect(() => {
     if (tab || !tabDue(getState())) return undefined
-    const t = setTimeout(() => setTab(true), reduce ? 0 : 900)
+    const wait = reduce ? 0 : getState().justPosted ? TAB_AFTER_LETTER_MS : 900
+    const t = setTimeout(() => setTab(true), wait)
     return () => clearTimeout(t)
   }, [written.length, tab, reduce])
   const hideTab = useCallback(() => {
@@ -450,26 +477,52 @@ export default function Wall({ go, reduce, rev, under = false }) {
   const open = useCallback((handle) => go('letter', handle), [go])
   const peek = useCallback((handle) => { loadHandle(handle) }, [])
 
-  // ── the arrival, rippled ──
-  // Back from the posted screen, the name that was just written to sends one
-  // pulse out through the crowd and comes into the light, so the wall is seen
-  // to receive the letter rather than merely to carry it. Once, a beat after
-  // the cut has landed.
-  const hive = useRef(null)
-  useEffect(() => {
-    const h = getState().justPosted
-    if (!h) return undefined
-    patch({ justPosted: '' })
-    if (reduce) return undefined
-    const t = setTimeout(() => { if (hive.current) hive.current.pulse(h) }, 700)
-    return () => clearTimeout(t)
-  }, [reduce])
-
   // Under the veil nothing is being read and nothing can be pulled; the
   // moment the circle starts to open the field is the field, so it comes up
   // to full light inside the circle as it grows rather than after it.
   const veiled = veil === 'up'
   const lifted = veil === 'down'
+
+  // ── the arrival, rippled ──
+  // The composer goes the moment its letter is up, and the wall under it
+  // receives the name: one pulse out through the crowd from that person's
+  // disc, the disc brought into the light, and the disc itself rising among
+  // the others (Hive.jsx `pulse`, and `fresh`), so the wall is seen to
+  // receive the letter rather than merely to carry it. It waits for the glass
+  // to have gone and the veil to be down, since a pulse sent under either is
+  // a pulse nobody sees, and a beat more. Once: the name is taken out of the
+  // store the moment it is read.
+  const hive = useRef(null)
+  const [sentAt, setSentAt] = useState(0)
+  useEffect(() => {
+    if (under || !lifted) return undefined
+    const h = getState().justPosted
+    if (!h) return undefined
+    patch({ justPosted: '' })
+    setSentAt(Date.now())
+    if (reduce) return undefined
+    const t = setTimeout(() => { if (hive.current) hive.current.pulse(h) }, ARRIVE_AFTER_MS)
+    return () => clearTimeout(t)
+    // and on `rev`: a letter that went up after its sheet was closed over it
+    // is written to the store when the index has moved, which is this
+  }, [under, lifted, reduce, rev])
+
+  // ── the reading, after ──
+  // The letter is read once it is up, and the verdict lands on it a few
+  // seconds later. So this device's letters are asked about again, a few
+  // times over the half minute after one goes up: a letter the reading took
+  // down raises the notice below within the minute, and the index is read
+  // again with it, so the name comes off the field if that was its only
+  // letter.
+  useEffect(() => {
+    if (!sentAt) return undefined
+    const ts = READ_AGAIN_MS.map((ms) => window.setTimeout(async () => {
+      await loadMine(true)
+      const read = getState().noticed || {}
+      if ((mine() || []).some((l) => l.downBy === 'screen' && !read[l.id])) loadWall(true)
+    }, ms))
+    return () => ts.forEach(clearTimeout)
+  }, [sentAt])
   const veilStyle = tap
     ? { '--rx': `${tap.x.toFixed(1)}px`, '--ry': `${tap.y.toFixed(1)}px`, '--rmax': `${tap.r.toFixed(1)}px` }
     : undefined

@@ -185,6 +185,11 @@ const PULSE = { width: 1.7, swell: 0.28, fill: 0.6, push: 0.75, back: 0.25, deca
 // and its tail runs out under the sheet's glass once the letter is up.
 const OPEN_AFTER = 520
 const CENTRE_K = 300
+// A pulse the wall sends from a name that is off the glass travels first and
+// pulses second: this long after the travel starts, the disc is most of the
+// way in and the wave is seen to leave a person rather than to arrive from
+// nowhere.
+const TRAVEL_FIRST_MS = 360
 const TAP_MIN = 1100
 const TAP_MAX = 1700
 const TAP_BASE = 800
@@ -497,20 +502,38 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // there the next time you look. The first reading of all is not an arrival —
   // everything is new on an empty wall, and a wall that pops sixty times on
   // load is a wall having a seizure.
+  //
+  // Behind a sheet or under the veil the arrival waits. The index moves while
+  // the composer is still up over the wall, and a disc that rose behind the
+  // glass rose for nobody: it rises when the glass has gone, which is the
+  // beat the wall sends its pulse out from the same disc (`pulse`, below).
   const seen = useRef(null)
+  const held = useRef(null)
+  const freshT = useRef(0)
   const [fresh, setFresh] = useState(null)
+  const show = useCallback((up) => {
+    clearTimeout(freshT.current)
+    setFresh(up)
+    freshT.current = window.setTimeout(() => setFresh(null), FRESH_MS)
+  }, [])
+  useEffect(() => () => clearTimeout(freshT.current), [])
   useEffect(() => {
     const was = seen.current
     const now = new Map(names.map((t) => [t.handle, t.count]))
     seen.current = now
-    if (!was || !was.size || reduce) return undefined
+    if (!was || !was.size || reduce) return
     const up = new Set()
     for (const [h, n] of now) { const had = was.get(h); if (had === undefined || n > had) up.add(h) }
-    if (!up.size) return undefined
-    setFresh(up)
-    const t = setTimeout(() => setFresh(null), FRESH_MS)
-    return () => clearTimeout(t)
-  }, [names, reduce])
+    if (!up.size) return
+    if (paused || veiled) { held.current = new Set([...(held.current || []), ...up]); return }
+    show(up)
+  }, [names, reduce, paused, veiled, show])
+  useEffect(() => {
+    if (paused || veiled || !held.current) return
+    const up = held.current
+    held.current = null
+    show(up)
+  }, [paused, veiled, show])
 
   const motion = useRef({
     o: { x: 0, y: 0 },        // where the field's origin is on the screen
@@ -1062,13 +1085,14 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // disc, and the field travelling to put that disc in the light. The origin
   // is the cell's own place in the lattice, so the ring stays on the person
   // as they come to the middle; the reach is to the farthest corner of the
-  // glass from where they stand now.
-  const tapAt = useCallback((slot) => {
+  // glass from where they stand now. By cell rather than by slot, because
+  // the wall sends one from a name that may not have a slot yet.
+  const tapCell = useCallback((I, J) => {
     const m = motion.current
     const { w, h } = size.current
-    if (!m.ready || !slot || Number.isNaN(slot.I) || !w || !h) return false
-    const wx = worldX(slot.I, slot.J, m.S)
-    const wy = slot.J * m.rowH
+    if (!m.ready || !w || !h) return false
+    const wx = worldX(I, J, m.S)
+    const wy = J * m.rowH
     const x = wx + m.o.x
     const y = wy + m.o.y
     const rmax = Math.hypot(Math.max(x, w - x), Math.max(y, h - y))
@@ -1082,6 +1106,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     m.v = { x: 0, y: 0 }
     return true
   }, [worldX])
+  const tapAt = useCallback((slot) => (
+    slot && !Number.isNaN(slot.I) ? tapCell(slot.I, slot.J) : false
+  ), [tapCell])
 
   // ── the press ──
   // A press that travelled swallows the tap it would have ended in, because
@@ -1110,19 +1137,47 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // ── the wall's own hand on the field ──
   // `pulse(handle)`: the same pulse and the same travel, sent from a name's
   // disc by the screen rather than by a finger. The wall sends one for the
-  // name a letter was just put up to, on the way back from posting, if that
-  // name is on the glass. Nothing is opened.
+  // name a letter was just put up to, once the composer's glass has gone,
+  // wherever on the field that name sits: its seat is found in the tile, at
+  // the repeat of the torus nearest the middle of the glass, and if that is
+  // off the glass the field travels there first and the pulse leaves the
+  // disc once it is on. Nothing is opened.
+  const late = useRef(0)
+  useEffect(() => () => clearTimeout(late.current), [])
   const pulse = useCallback((handle) => {
     const m = motion.current
     const h = String(handle || '')
-    if (!h || m.veiled) return false
-    for (const slot of m.slots) {
-      if (!slot.shown || slot.k < 0 || Number.isNaN(slot.I)) continue
-      const t = names[slot.k]
-      if (t && t.handle === h) return tapAt(slot)
+    if (!h || m.veiled || m.reduce || !m.ready) return false
+    const k = names.findIndex((t) => t.handle === h)
+    if (k < 0) return false
+    const { w, h: hh } = size.current
+    const { C, R, at } = lay
+    const cx = m.c.x - m.o.x
+    const cy = m.c.y - m.o.y
+    const PX = C * m.S
+    const PY = R * m.rowH
+    let best = null
+    for (let j = 0; j < R; j++) {
+      for (let i = 0; i < C; i++) {
+        if (at[j * C + i] !== k) continue
+        // R is even, so J has j's parity and the row's half-pitch offset holds
+        const J = j + R * Math.round((cy - j * m.rowH) / PY)
+        const I = i + C * Math.round((cx - worldX(i, J, m.S)) / PX)
+        const d = Math.hypot(worldX(I, J, m.S) - cx, J * m.rowH - cy)
+        if (!best || d < best.d) best = { I, J, d }
+      }
     }
-    return false
-  }, [names, tapAt])
+    if (!best) return false
+    clearTimeout(late.current)
+    const x = worldX(best.I, best.J, m.S) + m.o.x
+    const y = best.J * m.rowH + m.o.y
+    if (x > -m.S && x < w + m.S && y > -m.S && y < hh + m.S) return tapCell(best.I, best.J)
+    m.goal = { x: m.c.x - worldX(best.I, best.J, m.S), y: m.c.y - best.J * m.rowH }
+    m.goalK = CENTRE_K
+    m.v = { x: 0, y: 0 }
+    late.current = window.setTimeout(() => { late.current = 0; tapCell(best.I, best.J) }, TRAVEL_FIRST_MS)
+    return true
+  }, [names, lay, worldX, tapCell])
   useImperativeHandle(ref, () => ({ pulse }), [pulse])
 
   // ── where a name's disc is standing ──

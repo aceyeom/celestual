@@ -705,22 +705,35 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
 
         {/* ── the foot ──
             One primary, and while the flag is on, the two things somebody who
-            came looking for THEMSELVES needs, standing where the primary was.
+            came looking for THEMSELVES needs, standing where the primary was:
+            one pane of glass, two rows in it, each a glyph, the act and what
+            it does in one line, so the reversible act and the irreversible
+            one are told apart before either is pressed. The fast door first.
             While the words are still on their way the foot holds its height
             with nothing on it, so the card does not move when they land. */}
         <SheetFoot>
           {!one ? (
             <div className="wl-foot-hold" aria-hidden="true" />
           ) : flagged ? (
-            <div className="wl-flag-opts" id="wl-flag-opts">
-              <button type="button" className="wl-opt" onClick={() => go('remove', one.to)}>
-                <span>Take my @ down</span>
-                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
-              </button>
-              <button type="button" className="wl-opt" onClick={() => go('report', one.id)}>
-                <span>Report letter</span>
-                <span className="wl-opt-go" aria-hidden="true">&#8594;</span>
-              </button>
+            <div className="wl-acts" id="wl-flag-opts">
+              <div className="wl-acts-pane" role="group" aria-label="take this off the wall">
+                <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
+                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
+                  <span className="wl-act-text">
+                    <span className="wl-act-h">Report this letter</span>
+                    <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
+                  </span>
+                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                </button>
+                <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
+                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
+                  <span className="wl-act-text">
+                    <span className="wl-act-h">Take my name off the wall</span>
+                    <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
+                  </span>
+                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                </button>
+              </div>
               <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
             </div>
           ) : open ? (

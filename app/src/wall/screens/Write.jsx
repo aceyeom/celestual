@@ -42,21 +42,35 @@
 // person is asked for is a domain, once, on the way in; what the wall records
 // is a handle, a body and a time.
 //
-// ── the screen, before the wall sees it ────────────────────────────────────
+// ── the screen, at the keyboard ────────────────────────────────────────────
 // Layer 1 of the moderation runs against every keystroke of the letter
-// (moderate.js) — slurs, links, phone numbers, addresses, room numbers. It
-// refuses HERE, at the keyboard, naming the thing, rather than after somebody
-// has committed forty words and pressed the button. Layers 2 and 3 run on the
-// next screen, where the letter is read before it is published rather than
-// after.
+// (moderate.js) — slurs, links, phone numbers, addresses, room numbers. It is
+// the ONE thing that stops a letter going up, and it says so here, naming the
+// thing: the line under the card says what was caught while it is typed, and
+// a press on the button with that line still there shakes the card and sends
+// nothing. Everything else goes up the moment it is sent. The classifier
+// reads the letter AFTER it is on the wall (celestual-wall-moderate), and
+// only a letter it reads as severely malicious comes down, which the wall
+// says in a card at its foot, with the words handed back to change
+// (screens/Wall.jsx `Down`).
+//
+// ── and there is no screen after this one ──────────────────────────────────
+// The press sends, the answer is the id, and the sheet goes: the wall under
+// it receives the name, one pulse out from its disc and the disc rising among
+// the others (screens/Wall.jsx, the arrival; Hive.jsx `pulse`). There used
+// to be a page between the sending and the seeing, where the card was read
+// under the mark, sealed into a disc and dropped onto a little wall of five
+// faces. It was a room the letter had to be walked through to reach the wall
+// it was already on, and the one thing in it worth keeping, the letter being
+// seen to land, is on the wall now, which is where the landing actually is.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Display, Label, Pill, Locked, Allowance, OpenFace, Addressee,
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots } from '../art.jsx'
-import { normHandle, validHandle, dateline, hash, allowance, loadQuota } from '../data.js'
+import { normHandle, validHandle, dateline, hash, allowance, loadQuota, write } from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -69,8 +83,8 @@ import { getState, patch, setAfterGate } from '../store.js'
 // written, and the screen (moderate.js) and the reader do the rest.
 //
 // The server's ceiling (wall_letters_body_ck, and wall_write's left(…, 280)).
-// This said 320, so the last forty characters of a full letter were shown on
-// the posted screen and cut off the wall without a word to the writer.
+// This said 320, so the last forty characters of a full letter were cut off
+// the wall without a word to the writer.
 const MAX_BODY = 280
 
 // The example under the empty card, and it is set on that campus: a place a
@@ -83,7 +97,13 @@ const EXAMPLES = [
   'You were the one singing on the 51B that night. I wanted the song to be about me.',
 ]
 
-export default function Write({ to: prefill, go, back }) {
+// What the card says when the server's copy of the list caught what this
+// browser's did not, and what this browser's own catch of a slur says
+// (moderate.js `fault`): the same sentence, since to the writer it is the
+// same fact.
+const INAPPROPRIATE = 'that’s inappropriate for the wall.'
+
+export default function Write({ to: prefill, go, back, reduce = false }) {
   const draft = getState().draft || {}
   const [to, setTo] = useState(() => prefill || draft.to || '')
   const [body, setBody] = useState(() => draft.body || '')
@@ -91,6 +111,8 @@ export default function Write({ to: prefill, go, back }) {
   // first question.
   const [step, setStep] = useState(() => (prefill ? 1 : 0))
   const first = useRef(true)
+  // the sheet's own way out, taken by this screen once the letter is up
+  const sheet = useRef(null)
 
   const h = normHandle(to)
   // The first thing layer 1 objects to, said in words. One at a time: a list of
@@ -99,11 +121,34 @@ export default function Write({ to: prefill, go, back }) {
   //
   // This is the courtesy to the writer, not the control on the writer. The same
   // list runs again in celestual-wall-moderate, where it cannot be edited out
-  // with a devtools console, and the classifier runs after it.
+  // with a devtools console.
   const caught = body.trim() ? fault(body) : ''
-  const ok = [validHandle(h), body.trim().length > 0 && !caught]
+  // The button is live from the first word, caught or not. A press with the
+  // line still under the card is answered by the card (it shakes, below)
+  // rather than by a button that will not press, which is a refusal with no
+  // moment in it.
+  const ok = [validHandle(h), body.trim().length > 0]
   const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
+
+  // ── the sending ──
+  // `sending` while the request is out, which since the reading moved to
+  // after the write is the write itself and nothing else. `said` is what the
+  // server answered when it answered no, on the line under the card where the
+  // screen's own word stands; a keystroke ends it, because it was about the
+  // letter as it was. `shaking` is the card refusing a press.
+  const [sending, setSending] = useState(false)
+  const [said, setSaid] = useState('')
+  const [shaking, setShaking] = useState(false)
+  // Set on the way in as well as cleared on the way out, and a ref rather
+  // than a closure variable: StrictMode mounts, unmounts and remounts every
+  // component in development, and a flag captured in an effect's closure is
+  // set false by the first cleanup and never true again.
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false }
+  }, [])
 
   // The allowance. Asked once on mount and drawn out of the cache during
   // render like everything else on this surface; `null` until it lands, and
@@ -117,6 +162,7 @@ export default function Write({ to: prefill, go, back }) {
   useEffect(() => {
     if (first.current) { first.current = false; return }
     patch({ draft: { to: h, body } })
+    setSaid('')
   }, [h, body])
 
   // The card under the handle field: peeks while typing, asks on the press.
@@ -129,8 +175,68 @@ export default function Write({ to: prefill, go, back }) {
     exclude: h,
     onPick: (t) => setTo(t.handle),
   })
+
+  // The card refusing the press: it shakes, once, and the line under it is
+  // the reason. Under reduced motion the line is the whole answer.
+  const shake = useCallback(() => {
+    if (reduce) return
+    setShaking(true)
+    try { if (navigator.vibrate) navigator.vibrate(24) } catch { /* not a phone */ }
+  }, [reduce])
+
+  // ── the press that sends ──
+  // The letter goes to celestual-wall-moderate, which runs the list again,
+  // writes it live and answers with the id; the classifier reads it after
+  // this request has returned. So the answer is quick, and it is one of: up;
+  // caught by the list, when the server's copy of it saw something this one
+  // did not, which is the shake again; or not written, with a reason. The
+  // store is written whether or not this sheet is still up, since a letter
+  // that went up while somebody closed the sheet over it is still up.
+  async function send() {
+    if (sending) return
+    setSending(true)
+    setSaid('')
+    // The flyer code this session arrived with rides along, so the desk can
+    // say which piece of paper a letter came off.
+    const out = await write({ to: h, body: body.trim(), source: getState().source || null })
+    if (alive.current) setSending(false)
+    if (!out?.ok) {
+      if (!alive.current) return
+      const e = out?.error || 'network'
+      if (e === 'gate' || e === 'no_session') { setAfterGate({ name: 'write', id: h }); go('gate'); return }
+      // a cap is said by the foot (Allowance), which the write refreshed
+      setSaid(e === 'removed' ? 'that name has come off the wall. nobody can write to it now.'
+        : e === 'cap' ? ''
+        : 'it did not go through. try again.')
+      return
+    }
+    if (out.status === 'rejected') {
+      // remembered as answered here, so the wall raises no notice about a
+      // letter that never went up
+      if (out.id) patch({ noticed: { ...(getState().noticed || {}), [out.id]: true } })
+      if (!alive.current) return
+      setSaid(INAPPROPRIATE)
+      shake()
+      return
+    }
+    const was = getState()
+    patch({
+      draft: null,
+      written: [out.id, ...was.written].slice(0, 12),
+      // and the name, so the account sheet can still list it after a reload
+      // has taken the letter itself out of memory
+      wroteTo: [h, ...(was.wroteTo || []).filter((x) => x !== h)].slice(0, 12),
+      // and the wall sends one pulse out from this name once the glass has
+      // gone (screens/Wall.jsx)
+      justPosted: h,
+    })
+    if (!alive.current) return
+    if (sheet.current) sheet.current.dismiss('sent')
+    else back()
+  }
+
   async function next() {
-    if (!ok[step] || asking || spent) return
+    if (!ok[step] || asking || spent || sending) return
     if (step === 0) {
       if (!them.settled) {
         // An answer draws the card and waits for the second press; no answer
@@ -144,8 +250,8 @@ export default function Write({ to: prefill, go, back }) {
       setStep(1)
       return
     }
-    patch({ draft: { to: h, body: body.trim() } })
-    go('posted')
+    if (caught) { shake(); return }
+    send()
   }
 
   // ── the door ──
@@ -168,7 +274,7 @@ export default function Write({ to: prefill, go, back }) {
   }
 
   return (
-    <Sheet onClose={back} tall labelledBy="wl-write-h">
+    <Sheet ref={sheet} onClose={back} tall labelledBy="wl-write-h">
       <div className="wl-sheet-in wl-write">
         <SheetHead onClose={back} label="back to the wall"
           lead={<Dots n={2} at={step} onGo={setStep} />} />
@@ -190,35 +296,44 @@ export default function Write({ to: prefill, go, back }) {
                 person is the same act as the pill below. */}
             {/* A name that has come off the wall is refused by the schema
                 rather than by this screen: wall_write returns 'removed' and
-                the posting step says so. Guessing here would mean asking the
-                server about every handle anybody types. */}
+                the line under the card says so. Guessing here would mean
+                asking the server about every handle anybody types. */}
             <HandleCard at={them.at} onSelect={next} />
             <Suggest sug={sug} />
           </div>
         ) : (
           <div className="wl-write-step">
-            {/* The same card the wall shows, letterhead included: the face
-                at the head of the paper beside the name, at the size the
-                letter sets it, so what is being written on is what goes up
-                and not a plainer copy of it. */}
-            <Paper
-              dateline={dl}
-              crest={<span className="wl-letter-crest"><OpenFace handle={h} size={34} /></span>}
-              title={<Addressee handle={h} />}
-              tone={body.trim() ? '' : 'empty'}
+            {/* The card and the line under it, in one frame, because the
+                frame is what shakes: a press the screen refuses is refused by
+                the letter, not by the sheet round it. */}
+            <div
+              className={`wl-write-card${shaking ? ' is-shaking' : ''}`}
+              onAnimationEnd={(e) => { if (e.animationName === 'wl-shake') setShaking(false) }}
             >
-              <LetterField
-                value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
-                placeholder={EXAMPLES[hash(h || 'wheeler') % EXAMPLES.length]}
-              />
-            </Paper>
-            {/* One line under the card, and only when the screen has caught
-                something: the one thing to change, named. There is no count
-                under the card and no "more characters" line, because the box
-                is not a form field with a floor. It is a letter, and a letter
-                goes up the moment there is one. */}
-            <div className="wl-write-floor" aria-live="polite">
-              {caught ? <Label className="wl-write-caught">{caught}</Label> : null}
+              {/* The same card the wall shows, letterhead included: the face
+                  at the head of the paper beside the name, at the size the
+                  letter sets it, so what is being written on is what goes up
+                  and not a plainer copy of it. */}
+              <Paper
+                dateline={dl}
+                crest={<span className="wl-letter-crest"><OpenFace handle={h} size={34} /></span>}
+                title={<Addressee handle={h} />}
+                tone={body.trim() ? '' : 'empty'}
+              >
+                <LetterField
+                  value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
+                  placeholder={EXAMPLES[hash(h || 'wheeler') % EXAMPLES.length]}
+                />
+              </Paper>
+              {/* One line under the card, and only when there is something to
+                  say: the one thing the screen caught, named, or what the
+                  server answered. There is no count under the card and no
+                  "more characters" line, because the box is not a form field
+                  with a floor. It is a letter, and a letter goes up the moment
+                  there is one. */}
+              <div className="wl-write-floor" aria-live="polite">
+                {caught || said ? <Label className="wl-write-caught">{caught || said}</Label> : null}
+              </div>
             </div>
           </div>
         )}
@@ -234,9 +349,11 @@ export default function Write({ to: prefill, go, back }) {
           {/* "send anonymously", not "put it up": the word on the button is
               the one fact a person hesitating over it wants, said at the
               moment they are deciding. The wall is anonymous by shape and
-              the button says so in the writer's own frame. */}
-          <Pill tone="light" onClick={next} disabled={!ok[step] || spent}>
-            {step === 0 ? 'next' : 'send anonymously'}
+              the button says so in the writer's own frame. While the request
+              is out it says so, and stays lit: the light running round it is
+              the wait. */}
+          <Pill tone="light" onClick={next} disabled={!ok[step] || spent} aria-busy={sending || undefined}>
+            {step === 0 ? 'next' : sending ? 'sending' : 'send anonymously'}
           </Pill>
         </div>
       </div>

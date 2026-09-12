@@ -1,48 +1,51 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE SCREEN — what runs before anything is published, and after a report ║
+// ║  THE SCREEN — what runs at the keyboard, and after a report              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // Three layers stand between a person typing and a name appearing on a public
 // wall. This module is the browser's half of them, and it is deliberately the
 // WEAKEST half: everything here is a courtesy to the writer, and the control
-// on the writer is the same three layers re-run on the server
+// on the writer is the same layers re-run on the server
 // (supabase/functions/celestual-wall-moderate) where they cannot be edited out
 // with a devtools console.
 //
 //   1  DETERMINISTIC   regex — slurs, phone numbers, addresses, room numbers,
 //                      links, email. Mirrored from the Edge Function so a
 //                      writer is told at the keyboard rather than after they
-//                      have committed forty words and pressed the button.
-//   2  CLASSIFIER      one Haiku call per letter, against explicit categories.
-//                      Not a vibe check: a decision against a list somebody
-//                      can be held to.
-//   3  HUMAN           anything the classifier calls ambiguous goes up at
-//                      once, flagged, and a person reads it at the desk
-//                      while it stands (migration 0050). Nobody is told
-//                      which letters those are.
+//                      have committed forty words and pressed the button. It
+//                      is the ONLY thing that stops a letter going up: the
+//                      composer shakes and says so, and nothing is sent.
+//   2  CLASSIFIER      one Haiku call per letter, against explicit categories,
+//                      and it runs AFTER the letter is on the wall. Not a
+//                      vibe check: a decision against a list somebody can be
+//                      held to. Only a letter it reads as severely malicious
+//                      comes down, and the writer is told on the wall.
+//   3  HUMAN           anything the classifier calls ambiguous stays up,
+//                      flagged, and a person reads it at the desk while it
+//                      stands (migration 0050). Nobody is told which letters
+//                      those are.
 //
 // ── the two clocks, and why they are different ──────────────────────────────
-// PUBLISHING is screened on the way in and refused on the way in: a letter
-// the screen refuses is stored and never shown, and the writer is told what
-// it was read as (`said`, below) and handed the words back. The screenshot
-// exists before you delete it, so a ninety-second exposure of a letter the
-// screen could fault is the whole harm. What the screen merely cannot place
-// is not held any more: it goes up flagged, because a letter held for hours
-// with no word about why was its own harm, to the writer.
+// PUBLISHING is instant. A letter goes up the moment it is written, and the
+// reading happens to a letter that is already on the wall: a letter held for
+// seconds with a spinner over it, or for hours with no word about why, was
+// its own harm, to the writer, and the worst of what a letter can carry is
+// caught by the list at the keyboard before anything is sent. What the
+// classifier then reads as severely malicious comes down within the minute,
+// and the writer is told, in one card at the foot of the wall, with their own
+// words back to change.
 //
 // REPORTING is the opposite and for the same reason: the letter comes down on
 // the tap, before anybody reasons about anything, and the reasoning happens to
 // a letter nobody can see. A report queue that leaves the letter up while a
 // model thinks about it has understood the asymmetry backwards.
 //
-// ── where each layer actually is, as of Phase 6b ────────────────────────────
+// ── where each layer actually is ────────────────────────────────────────────
 // Layer 1 runs here AND in the edge function. Layers 2 and 3 are the edge
-// function's alone, and neither has a client half any more: `screen` and
-// `triage` used to return the real endpoints' shape on a timer, and the screens
-// that showed them printed a note saying so. Both stubs are gone. The composer
-// posts to celestual-wall-moderate, which screens and writes in one request,
-// and the report screen files a row for a person rather than drawing a model
-// deliberating over it.
+// function's alone, and neither has a client half: the composer posts to
+// celestual-wall-moderate, which runs the list, writes the letter live and
+// answers, and reads it after; the wall asks `wall_mine` a few times over the
+// next half minute and raises the notice if the reading took it down.
 
 // ── layer 1 ─────────────────────────────────────────────────────────────────
 // Kept byte-identical in spirit to the Edge Function's list. A slur that is
@@ -86,7 +89,7 @@ function fold(s) {
 export function fault(text) {
   const folded = fold(text)
   for (const s of SLURS) {
-    if (new RegExp(`\\b${s}\\b`).test(folded)) return 'that word does not go on the wall'
+    if (new RegExp(`\\b${s}\\b`).test(folded)) return 'that\u2019s inappropriate for the wall.'
   }
   for (const p of PATTERNS) {
     const m = String(text || '').match(p.re)
@@ -99,57 +102,19 @@ export function fault(text) {
 
 export function clean(text) { return !fault(text) }
 
-// ── what the screen said, in words ──────────────────────────────────────────
-// The classifier answers in category words (celestual-wall-moderate's six, and
-// layer 1's pattern ids), and a writer whose letter came down is owed the
-// reason in a sentence rather than a slug. One sentence, for the first reason
-// the screen gave: the writer only has to change one thing to find out whether
-// the next one was real, which is the same rule the composer's floor follows.
-// Written here beside layer 1 because these are the screen's own words on the
-// other side of the same decision.
-const SAID = {
-  sexual:  'the screen read it as sexual.',
-  threat:  'the screen read it as a threat.',
-  locate:  'the screen read it as a way to find them.',
-  hate:    'the screen read it as cruelty.',
-  minor:   'the screen read it as about somebody under eighteen.',
-  contact: 'it has a way to reach them in it, and that cannot go on a public wall.',
-  slur:    'a word in it does not go on the wall.',
-  url:     'links do not go on the wall.',
-  email:   'it has an email address in it, and that cannot go on a public wall.',
-  phone:   'it has a phone number in it, and that cannot go on a public wall.',
-  address: 'it has a street address in it, and that cannot go on a public wall.',
-  room:    'it has a room number in it, and that cannot go on a public wall.',
-}
-
-export function said(reasons) {
-  for (const r of reasons || []) {
-    const key = String(r || '').toLowerCase().trim()
-    if (SAID[key]) return SAID[key]
-    // the model sometimes answers in a phrase rather than a word; the first
-    // category named inside it is the one
-    for (const k of Object.keys(SAID)) if (key.includes(k)) return SAID[k]
-  }
-  return ''
-}
-
-// Why a letter of this person's is not on the wall, as one sentence for the
-// notice at the foot of the wall and for the screen after sending. `downBy`
-// is the server's word for whose hand it was (api.js `mine`).
-export function whyDown(downBy, reasons) {
-  const s = said(reasons)
+// ── why a letter of this person's is not on the wall ───────────────────────
+// One sentence for the notice at the foot of the wall. `downBy` is the
+// server's word for whose hand it was (api.js `mine`). It names the terms
+// and not the hand: a writer whose letter came down is owed the fact and the
+// way back, not a machine explaining itself, and "the screen read it as" was
+// a machine explaining itself. The category the reading gave is kept on the
+// row for the desk, and never printed here.
+export function whyDown(downBy) {
   switch (downBy) {
-    case 'screen': return s || 'the screen held it back.'
-    case 'desk':   return s ? `${s.replace(/\.$/, '')}, and a person agreed.` : 'a person read it and took it down.'
+    case 'screen':
+    case 'desk':   return 'it went against the terms of the wall. you can change it and put it up again.'
     case 'shut':   return 'the name has come off the wall, and nothing can be written to it now.'
     case 'lapsed': return 'it stood for its thirty days.'
-    default:       return s || 'it is not on the wall.'
+    default:       return 'it is not on the wall.'
   }
 }
-
-// ── layer 2, drawn ──────────────────────────────────────────────────────────
-// The shape the real endpoint returns — { verdict, reasons } — on the timing a
-// real one takes. It is a timer and not a model, the screens that call it say
-// so on the glass, and it exists so the SEQUENCE is walkable at a demo table:
-// the beat where a letter is read before it is published is a product decision
-// somebody has to be able to see, not a paragraph in a doc.

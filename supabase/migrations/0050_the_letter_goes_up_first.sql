@@ -1,23 +1,24 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 0050: the letter goes up first.
 --
--- The screen used to have three outcomes, and the middle one was a hold: a
--- letter the classifier passed went up, a letter it refused was stored
--- refused, and a letter it was unsure of sat at `pending`, rendering nowhere,
--- until a person at the desk moved it. On a live wall that middle outcome was
--- a writer watching their letter not appear, for hours, with no word about
--- why, and a desk that had to be sat at before the wall could move.
+-- The screen used to read before it wrote, and to hold what it was unsure of:
+-- a writer waited on the classifier for every letter, and a letter the model
+-- could not place sat at `pending`, rendering nowhere, until a person at the
+-- desk moved it. On a live wall that was a writer watching their letter not
+-- appear, for hours, with no word about why, and a desk that had to be sat at
+-- before the wall could move.
 --
--- So the hold is gone. celestual-wall-moderate now publishes a letter the
--- classifier is unsure of at once and FLAGS it: `moderation.flagged` is true,
--- `moderation.verdict` is 'review', and a person reads it at the desk while it
--- stands. A refusal is still a refusal, stored and never published, and the
--- writer is now told what the screen read it as and handed their words back.
+-- So the order turns round. celestual-wall-moderate writes a letter at `live`
+-- the moment layer 1 (the regex: slurs, contact details) lets it through,
+-- answers the writer, and only then asks the model, which writes its verdict
+-- onto the letter where it stands (`wall_screened`, below): a reject takes it
+-- down, a review leaves it up flagged for a person, a pass leaves it up. A
+-- letter layer 1 catches is still stored refused and never published.
 --
 -- Nothing about the letters table changes: `pending` stays a status the desk
 -- can put a letter into by hand ("hold it back"), and wall_expire still closes
--- out anything left there. What this migration adds is the three things the
--- new shape needs to be seen:
+-- out anything left there. What this migration adds is the four things the
+-- new shape needs:
 --
 --   1  wall_mine(token)                this person's own letters, and where
 --                                      each stands: live, or down, and by
@@ -26,10 +27,13 @@
 --                                      down after it went up, and the only
 --                                      function that returns a body to its
 --                                      own author.
---   2  celestual_desk_letters('flagged') the desk's queue, which used to be
+--   2  wall_screened(letter, verdict)  the model's verdict, written onto a
+--                                      letter that is already up, and the
+--                                      takedown when the verdict is a reject.
+--   3  celestual_desk_letters('flagged') the desk's queue, which used to be
 --                                      the held letters and is now the live
 --                                      ones a person has not looked at.
---   3  celestual_desk_overview()        counts the flagged, so the desk's
+--   4  celestual_desk_overview()        counts the flagged, so the desk's
 --                                      rail and its first screen can say how
 --                                      many are waiting to be read.
 --
@@ -113,7 +117,65 @@ grant execute on function wall_mine(text) to anon, authenticated;
 comment on function wall_mine(text) is
   '0050: the caller''s own letters and where each stands, with whose hand took it down. The only function that returns a body to its author, and it answers about the caller only.';
 
--- ── 2. the desk's queue is the flagged letters ───────────────────────────────
+-- ── 2. wall_screened(letter, verdict, reasons, model) ────────────────────────
+-- SERVICE ROLE ONLY. The classifier's verdict, written onto a letter that is
+-- already on the wall, by celestual-wall-moderate after it has answered the
+-- writer. The record is the same record the screen always left (`verdict`,
+-- `reasons`, `flagged`, the layer), plus when the reading landed and which
+-- model read it.
+--
+--   reject   the letter comes down: status goes to 'rejected', which is what
+--            the wall tells its writer about as 'screen' (wall_mine), and the
+--            desk sees under rejected with the model's words
+--   review   the letter stays up, flagged: the desk's queue opens on it
+--   pass     the letter stays up, and nothing else moves
+--
+-- A letter a person has already decided about in the seconds between the
+-- write and the reading keeps that person's decision: the verdict is still
+-- recorded, and the status is left alone. A letter that is no longer live
+-- (a report in those seconds) is not made live again by a pass.
+create or replace function wall_screened(
+  p_letter  uuid,
+  p_verdict text,
+  p_reasons jsonb default '[]'::jsonb,
+  p_model   text default null
+) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_l wall_letters;
+  v_verdict text := case when p_verdict in ('pass', 'review', 'reject') then p_verdict else 'review' end;
+  v_decided boolean;
+begin
+  select * into v_l from wall_letters where id = p_letter;
+  if not found then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
+  v_decided := coalesce(v_l.moderation, '{}'::jsonb) ? 'desk';
+
+  update wall_letters
+     set moderation = coalesce(moderation, '{}'::jsonb) || jsonb_build_object(
+           'verdict', v_verdict,
+           'reasons', coalesce(p_reasons, '[]'::jsonb),
+           'flagged', (v_verdict = 'review'),
+           'model_layer', 2,
+           'model', p_model,
+           'screened_at', now()),
+         status = case
+           when v_verdict = 'reject' and status = 'live' and not v_decided then 'rejected'
+           else status
+         end
+   where id = p_letter
+  returning * into v_l;
+
+  return jsonb_build_object('ok', true, 'id', v_l.id, 'status', v_l.status, 'verdict', v_verdict);
+end;
+$$;
+
+revoke all on function wall_screened(uuid, text, jsonb, text) from public, anon, authenticated;
+grant execute on function wall_screened(uuid, text, jsonb, text) to service_role;
+
+comment on function wall_screened(uuid, text, jsonb, text) is
+  '0050: the classifier''s verdict written onto a letter that is already up. A reject takes it down; a review flags it; a pass records it. Service role only.';
+
+-- ── 3. the desk's queue is the flagged letters ───────────────────────────────
 -- As 0033 wrote it, plus one more word `p_status` takes: 'flagged', which is
 -- a live letter the classifier answered 'review' on and no person has yet
 -- decided about. A decision of any kind writes `moderation.desk`, and that is
@@ -190,7 +252,7 @@ grant execute on function celestual_desk_letters(text, text, integer, integer) t
 comment on function celestual_desk_letters(text, text, integer, integer) is
   '0033, 0050: the wall''s submissions, by status. ''flagged'' is the queue: live letters the classifier was unsure of that no person has decided about.';
 
--- ── 3. the overview counts the flagged ───────────────────────────────────────
+-- ── 4. the overview counts the flagged ───────────────────────────────────────
 -- celestual_desk_overview is a hundred and thirty lines the desk opens on, and
 -- one more count is not a reason to write them out a third time. The function
 -- that stands is renamed once, to say which sitting wrote it, and the name the
@@ -234,6 +296,7 @@ comment on function celestual_desk_overview() is
 -- wall_write still takes 'pending', 'live' and 'rejected', and still refuses
 -- 'removed'. wall_expire still closes out a hold after seven days. The public
 -- index and every read still filter on status = 'live', so a flagged letter
--- is on the wall exactly as a passed one is, and a person deciding "take it
--- down" at the desk takes it down the way a report does. The writer's notice
--- about that is wall_mine, above.
+-- is on the wall exactly as a passed one is, a letter the model rejects is
+-- off it the moment wall_screened runs, and a person deciding "take it down"
+-- at the desk takes it down the way a report does. The writer's notice about
+-- any of those is wall_mine, above.

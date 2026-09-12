@@ -125,7 +125,58 @@ end $$;
 select wall_report('token-fg-reader-0000000', (select id from fg_ids where which = 'flagged'), 'no thanks');
 select fg_ok('a reported letter is down by a report', fg_mine('flagged', 'down_by') = 'report');
 
--- ── 4. the grants ───────────────────────────────────────────────────────────
+-- ── 4. the reading, after the letter is up ──────────────────────────────────
+-- What celestual-wall-moderate does since the order turned round: the letter
+-- is written live and unread, and the model's verdict lands on it afterwards.
+insert into fg_ids
+select 'unread_a', (wall_write('token-fg-writer-0000000', 'fg_target_d', 'written first, read after', null, null,
+  'berkeley', 'live', '{"verdict":"unread","reasons":[],"flagged":false}')->>'id')::uuid;
+select fg_ok('an unread letter is up',
+  (select count(*) from wall_index where target_handle = 'fg_target_d' and letters = 1) = 1);
+select fg_ok('and not in the queue',
+  (celestual_desk_letters('flagged', null, 50, 0)->>'total')::int = 0);
+
+-- a review: still up, and now in the queue
+select wall_screened((select id from fg_ids where which = 'unread_a'), 'review', '["locate"]', 'test-model');
+select fg_ok('a review leaves it on the wall',
+  (select count(*) from wall_index where target_handle = 'fg_target_d' and letters = 1) = 1);
+select fg_ok('and puts it in the queue',
+  (celestual_desk_letters('flagged', null, 50, 0)->>'total')::int = 1);
+select fg_ok('with the model''s words and which model',
+  (select moderation->>'model' from wall_letters where id = (select id from fg_ids where which = 'unread_a')) = 'test-model'
+  and (select moderation->'reasons' from wall_letters where id = (select id from fg_ids where which = 'unread_a')) ? 'locate');
+
+-- a pass: up, out of the queue, nothing else moves
+select wall_screened((select id from fg_ids where which = 'unread_a'), 'pass', '[]', 'test-model');
+select fg_ok('a pass leaves it up and out of the queue',
+  (select status from wall_letters where id = (select id from fg_ids where which = 'unread_a')) = 'live'
+  and (celestual_desk_letters('flagged', null, 50, 0)->>'total')::int = 0);
+
+-- a reject: down, and the writer is told it was the screen
+select wall_screened((select id from fg_ids where which = 'unread_a'), 'reject', '["threat"]', 'test-model');
+select fg_ok('a reject takes it off the wall',
+  (select count(*) from wall_index where target_handle = 'fg_target_d') = 0
+  and (select status from wall_letters where id = (select id from fg_ids where which = 'unread_a')) = 'rejected');
+select fg_ok('and the writer is told it was the screen', fg_mine('unread_a', 'down_by') = 'screen');
+select fg_ok('a verdict the function does not know is a review',
+  (wall_screened((select id from fg_ids where which = 'unread_a'), 'nonsense', '[]', null)->>'verdict') = 'review');
+select fg_ok('a letter that is not there is said so',
+  (wall_screened('00000000-0000-4000-8000-000000000000', 'pass', '[]', null)->>'error') = 'not_found');
+
+-- a person decided first: the verdict is recorded, the decision stands
+insert into fg_ids
+select 'unread_b', (wall_write('token-fg-other-00000000', 'fg_target_e', 'a person got there first', null, null,
+  'berkeley', 'live', '{"verdict":"unread","reasons":[],"flagged":false}')->>'id')::uuid;
+select celestual_desk_letter_set((select id from fg_ids where which = 'unread_b'), 'live', 'read it, fine');
+select wall_screened((select id from fg_ids where which = 'unread_b'), 'reject', '["hate"]', null);
+select fg_ok('a reject after a person''s decision does not take it down',
+  (select status from wall_letters where id = (select id from fg_ids where which = 'unread_b')) = 'live');
+select fg_ok('but the verdict is on the record',
+  (select moderation->>'verdict' from wall_letters where id = (select id from fg_ids where which = 'unread_b')) = 'reject');
+
+-- ── 5. the grants ───────────────────────────────────────────────────────────
+select fg_ok('anon may not write a verdict',
+  not has_function_privilege('anon', 'wall_screened(uuid, text, jsonb, text)', 'EXECUTE'));
 select fg_ok('anon may ask about its own letters',
   has_function_privilege('anon', 'wall_mine(text)', 'EXECUTE'));
 select fg_ok('anon may not read the desk''s queue',
