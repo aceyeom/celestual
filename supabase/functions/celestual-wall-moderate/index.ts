@@ -20,7 +20,8 @@
 //                                                   says it is inappropriate
 //     { ok:false, error }                           the write itself was refused
 //     { ok:false, error:'cap', limit, used, resets_at }
-//                                                   three in any seven days, spent
+//                                                   three in any five days, spent
+//                                                   (seven until 0051)
 //
 // ── THE LETTER GOES UP FIRST, AND IS READ WHERE IT STANDS ───────────────────
 // Two layers stand between a person typing and a name on a public wall, and

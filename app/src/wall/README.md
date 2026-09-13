@@ -64,7 +64,7 @@ the letters" on a surface they had signed in to.
 | --- | --- | --- |
 | **reading** | the first eight are free to anybody. After that, either proof: a `berkeley.edu` address, or a handle verified by the DM code | a wall of things students wrote about each other, readable by the open internet, is a different object from one readable by people the product has actually proved. But a person asked to answer for something before they have read a sentence of it has been asked one decision too early, and the wall's own words are the only argument for signing in that was ever going to work |
 | **reporting** | either proof, with reading | the subject of a letter is the likeliest reader to want it down and the least likely to hold a campus address at the moment they find their name. A one-tap control still has to cost *something*, and a proof is that |
-| **writing** | the `berkeley.edu` address, and three letters in any seven days | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
+| **writing** | the `berkeley.edu` address, and three letters in any five days (seven until migration 0051). The number is never drawn; once they are spent the composer says only how many days to wait before drafting more | an anonymous letter about a named student, publishable by anybody on earth with a browser, is not anonymity. It is an open relay pointed at a person who never agreed to any of it. And a wall whose contents are decided by whoever writes the most is a wall about its most prolific writer |
 
 **Being let in is not being known.** The address is never attached to a letter,
 the composer never reads it, and a letter still has three fields with no fourth
@@ -442,6 +442,14 @@ thirteen pixels sliding past is a handle nobody reads.
   wheel or a trackpad pans it. Under a mouse the drift slows over the field
   and rests over a disc, so a name can be pressed. A keyboard walking the
   names brings each into the light as it lands on it.
+- **And it can be opened out and closed up, within reason.** A pinch on a
+  phone, the trackpad's pinch or a ctrl+wheel on a desktop, changes the
+  pitch of the lattice about the point under the fingers, from about seven
+  tenths of the window's own pitch to about half again (`Hive.jsx ZOOM`).
+  Past either end the pinch is rubber banded and eases back when it is let
+  go. The discs are laid out at the window's pitch and the zoom rides on the
+  loop's transform, so a pinch re-renders nothing and no slot changes hands;
+  the pool is cut for the field at its most open.
 - **A pull is not a tap.** A press that travels more than 6px swallows the
   click it would have ended in. Every disc is a target.
 - **A name that has just arrived rises into the field.** A letter goes up, the
@@ -468,18 +476,22 @@ thirteen pixels sliding past is a handle nobody reads.
 
 ### A name opens into the letter it carries
 
-Pressing a disc does not cut to a sheet. First the wall answers the press the
-way it answers the tap that opens the veil: the same pulse is sent out from
-the disc through the crowd, and the field travels to bring that disc into the
-light (`Hive.jsx tapAt`, half a second, on the same wave and the same crest
-the veil runs). Then the letter's own card opens out of the circle that was
-pressed: the wall leaves the disc's rectangle behind on the way out
-(`morph.js`), the card claims it on the way in, and one transform puts the
-real card — words, crest, dateline and all — where the disc was, at the
-disc's size, with the paper's corner a circle's, and runs it out to where it
-stands on the travelling curve the sheets move on (`screens/Letter.jsx`). The
-pulse's tail runs out under the sheet's glass, because a crowd frozen in the
-middle of a wave is a crowd that jumps when the sheet goes. And it closes the
+Pressing a disc does not cut to a sheet, and it does not wait. On the frame
+of the press the letter's own card opens out of the circle that was pressed:
+the wall leaves the disc's rectangle behind on the way out (`morph.js`), the
+card claims it on the way in, and one transform puts the real card — words,
+crest, dateline and all — where the disc was, at the disc's size, with the
+paper's corner a circle's, and runs it out to where it stands on the
+travelling curve the sheets move on (`screens/Letter.jsx`, 440ms). At the
+same moment the wall answers the press the way it answers the tap that opens
+the veil: the same pulse is sent out from the disc through the crowd and the
+field travels to bring that disc into the light (`Hive.jsx tapAt`), both
+running out under the sheet's glass, so the name is in the light when the
+sheet comes down. It used to wait half a second for the crest to leave the
+disc before the card opened, and half a second between a finger and anything
+readable is the moment a surface stops feeling touched. The pulse's tail
+runs out under the sheet's glass, because a crowd frozen in the middle of a
+wave is a crowd that jumps when the sheet goes. And it closes the
 same way: the mark, the scrim or the key sends the card back into the disc of
 whichever name the deck is showing, if that disc is on the glass
 (`morph.js locate`), while the glass fades in place instead of dropping.
@@ -573,11 +585,13 @@ glass, centred, the way a poster's title block does; it used to hang off the
 top left under the ear, and on a phone that put the wall's one headline in
 the corner of the one screen built to be looked at. The scrim is itself the
 way in, and the capsule under the line says so in words: `view the wall`,
-the product's own primary with the running light inside it, and a hairline
-ring leaving it every sixteen hundred milliseconds and opening out into the
-field, the shape of the pulse the tap will send through the crowd. It
-replaced an arrow link, which is the poster's nav voice and read as a link
-to somewhere else rather than as the door into the thing under it.
+the product's own primary with the running light inside it and nothing
+drawn round it. It replaced an arrow link, which is the poster's nav voice
+and read as a link to somewhere else rather than as the door into the thing
+under it; and for a while a hairline ring left it every sixteen hundred
+milliseconds and opened out into the field, which came off, because a ring
+on a loop is a line drawn over the crowd on a screen whose whole job is to
+be calm, and the light inside the capsule already says the door is live.
 
 And that is the whole screen. Under the veil there is no composer's pill, no
 foot under that and no glyphs in the bar: a poster with one door on it, over

@@ -20,7 +20,7 @@ flyer: short anonymous letters, each addressed to one handle. The list of
 handles is public, and so are the first eight letters anybody reads. After
 those, reading needs one of the product's two proofs, a verified
 `berkeley.edu` address or a verified Instagram handle, and everything else
-arrives blurred; writing needs the address, three in any seven days. Every
+arrives blurred; writing needs the address, three in any five days. Every
 letter is screened before it appears, the person a letter is about can take it
 down from a verified handle, and the author is never disclosed unless they are
 asked and say yes.
@@ -46,7 +46,7 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0050, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0051, in order. 0029 onward is the rebuild; 0038 is the audit
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook

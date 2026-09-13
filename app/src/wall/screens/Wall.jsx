@@ -62,13 +62,14 @@
 // the bar: a poster with one door on it, over a field that is plainly alive,
 // and the brand in the corner as the way home.
 //
-// The door is the capsule under the line, "view the wall", and it is not
-// still: the running light rides inside it, and a ring leaves it every so
-// often and opens out into the field, the same shape the tap on it will
-// send through the crowd. A control that says what it does before it is
-// pressed needs no sentence beside it. It replaced an arrow link, which is
-// the poster's nav voice and reads as a link to elsewhere rather than as the
-// way into the thing under it.
+// The door is the capsule under the line, "view the wall", with the running
+// light riding inside it and nothing drawn round it. A control that says
+// what it does before it is pressed needs no sentence beside it. It replaced
+// an arrow link, which is the poster's nav voice and reads as a link to
+// elsewhere rather than as the way into the thing under it; and for a while
+// two hairline rings left it in turn and opened out into the field, which
+// was a line drawn over the crowd every second and a half on a screen whose
+// whole job is to be calm.
 //
 // ── and it opens where it was touched ───────────────────────────────────────
 // A tap anywhere on the veil lifts it, and it lifts FROM THE TAP, as a pulse
@@ -595,12 +596,12 @@ export default function Wall({ go, reduce, rev, under = false }) {
                   <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
                   {/* ── the way in ──
                       The product's own capsule, with the light running inside
-                      it, and a ring leaving it every few seconds and opening
-                      out into the field: the shape of the pulse the tap will
-                      send through the crowd, shown before it is pressed. */}
+                      it, and nothing round it. Two hairline rings used to
+                      leave it in turn and open out into the field; a ring is
+                      a line drawn over the crowd, and the pulse the tap sends
+                      is the crowd itself moving, so the capsule stands still
+                      and the light inside it is the whole of the invitation. */}
                   <button type="button" className="wl-mast-go" onClick={lift}>
-                    <span className="wl-mast-go-ring" aria-hidden="true" />
-                    <span className="wl-mast-go-ring is-late" aria-hidden="true" />
                     <span className="wl-mast-go-pill">
                       <Light plate="chalk" />
                       <span className="wl-mast-go-t">view the wall</span>

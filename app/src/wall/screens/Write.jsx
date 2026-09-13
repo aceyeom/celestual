@@ -26,14 +26,15 @@
 // anybody on earth with a browser, is not anonymity. It is an open relay
 // pointed at a person who never agreed to any of it.
 //
-// ── and three of them in any seven days ────────────────────────────────────
+// ── and three of them in any five days ─────────────────────────────────────
 // A wall whose contents are decided by whoever writes the most is a wall about
 // its most prolific writer, and the cheapest way to stop that is a number
-// everybody can hold in their head. The number itself is not drawn: while any
-// letter is left the foot says nothing about it, and when none is, one line
-// stands where the act was and the act goes dark (parts.jsx `Allowance`). The
-// count is the server's, from `wall_quota`, so the letter somebody is refused
-// on is the one the server refuses.
+// everybody can hold in their head. The number itself is never drawn, here or
+// anywhere: while any letter is left the foot says nothing about it, and when
+// none is, one line stands opposite the act saying how many days to wait
+// before drafting more, and the act goes dark (parts.jsx `Allowance`). The
+// count and the date are the server's, from `wall_quota` (migrations 0044 and
+// 0051), so the letter somebody is refused on is the one the server refuses.
 //
 // The address does not follow the letter anywhere. It is not read on this
 // screen, it is not passed to `write`, and there is no author field in the
@@ -339,10 +340,10 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
         )}
 
         <div className="wl-write-foot">
-          {/* Nothing at the left of the foot while the week has letters in
-              it. When it does not, the one line stands opposite the act,
-              which is dark, and says why. */}
-          {left ? <Allowance left={left.left} limit={left.limit} /> : null}
+          {/* Nothing at the left of the foot while any letter is left. When
+              none is, the one line stands opposite the act, which is dark,
+              and says how many days to wait. */}
+          {left ? <Allowance left={left.left} limit={left.limit} resets={left.resets} /> : null}
           {step === 1 && (
             <Pill tone="ghost" onClick={() => setStep(0)}>a different name</Pill>
           )}

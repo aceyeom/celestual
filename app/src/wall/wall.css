@@ -148,6 +148,10 @@
    (0,1,0), which ties with the roles and hands the decision to source order:
    the reset is here, and every role that wants a tone is below it. */
 .wl-root :where(button) { font: inherit; color: inherit; background: none; border: 0; }
+/* No grey flash under a finger. Every pressable in the build answers a press
+   itself, on the way down (`:active` below, on each role), and a phone's own
+   highlight on top of that is two answers to one press. */
+.wl-root :where(button, a, [role='button']) { -webkit-tap-highlight-color: transparent; }
 
 .wl-sr {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -388,9 +392,15 @@
   will-change: transform;
 }
 .wl-arrow-t { border-bottom: 1px solid transparent; transition: border-color 200ms var(--ease); }
-.wl-arrow:hover { color: var(--chalk); }
-.wl-arrow:hover .wl-arrow-g { transform: translateX(5px); color: var(--chalk); }
-.wl-arrow:hover .wl-arrow-t { border-bottom-color: var(--hair); }
+/* Hover is a pointer's, not a finger's: a phone fires it on the tap and
+   leaves it there, so anything that MOVES on hover is gated to a device
+   that actually has one. The press itself answers on every device. */
+@media (hover: hover) and (pointer: fine) {
+  .wl-arrow:hover { color: var(--chalk); }
+  .wl-arrow:hover .wl-arrow-g { transform: translateX(5px); color: var(--chalk); }
+  .wl-arrow:hover .wl-arrow-t { border-bottom-color: var(--hair); }
+}
+.wl-arrow:active:not(:disabled) .wl-arrow-g { transform: translateX(2px); transition-duration: 120ms; }
 .wl-arrow:disabled { color: var(--ash-dim); }
 .wl-arrow:disabled .wl-arrow-g { color: var(--ash-dim); }
 
@@ -406,7 +416,10 @@
   transition: transform 220ms var(--ease), background 220ms var(--ease),
               border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
 }
-.wl-pill:active:not(:disabled) { transform: scale(0.975); }
+/* the press: down in the time a press takes, and back on the pill's own
+   clock, so the release is the slower of the two and reads as the button
+   coming back rather than snapping */
+.wl-pill:active:not(:disabled) { transform: scale(0.97); transition-duration: 120ms; }
 
 .wl-pill.is-light { background: var(--chalk); color: #14131A; }
 .wl-pill.is-light:hover:not(:disabled) { background: #FFFDF8; }
@@ -446,9 +459,13 @@
   width: 38px; height: 38px; border-radius: var(--r-pill);
   color: var(--ash);
   border: 1px solid transparent;
-  transition: color 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease);
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease),
+              transform 200ms var(--ease);
 }
-.wl-iconbtn:hover { color: var(--chalk); border-color: var(--hair); background: rgba(244,241,234,0.03); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-iconbtn:hover { color: var(--chalk); border-color: var(--hair); background: rgba(244,241,234,0.03); }
+}
+.wl-iconbtn:active { transform: scale(0.94); transition-duration: 120ms; }
 /* where you are, said without a word: the glyph keeps its shape and the
    ground behind it lights. A dot beside the icon read as part of the icon. */
 .wl-iconbtn { position: relative; }
@@ -470,16 +487,22 @@
   border: 1px solid var(--hair);
   background: rgba(244, 241, 234, 0.014);
   transition: color 240ms var(--ease), border-color 240ms var(--ease),
-              background 240ms var(--ease), transform 420ms var(--ease);
+              background 240ms var(--ease), transform 300ms var(--ease);
 }
 .wl-close svg { display: block; }
-.wl-close:hover {
-  color: var(--chalk);
-  border-color: rgba(244, 241, 234, 0.26);
-  background: rgba(244, 241, 234, 0.05);
-  transform: rotate(90deg);
+@media (hover: hover) and (pointer: fine) {
+  .wl-close:hover {
+    color: var(--chalk);
+    border-color: rgba(244, 241, 234, 0.26);
+    background: rgba(244, 241, 234, 0.05);
+    transform: rotate(90deg);
+  }
+  .wl-close:active { transform: rotate(90deg) scale(0.94); transition-duration: 120ms; }
 }
-.wl-close:active { transform: rotate(90deg) scale(0.94); }
+/* under a finger there is no quarter turn to add to: the mark gives */
+@media not ((hover: hover) and (pointer: fine)) {
+  .wl-close:active { transform: scale(0.94); transition-duration: 120ms; }
+}
 
 /* the quiet control — a sentence that is a control, set so it never competes
    with the pill above it. Used for the second option under a primary action
@@ -490,7 +513,10 @@
   color: var(--ash-dim);
   transition: color 200ms var(--ease);
 }
-.wl-quiet:hover { color: var(--ash); text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-quiet:hover { color: var(--ash); text-decoration: underline; text-underline-offset: 3px; }
+}
+.wl-quiet:active { color: var(--chalk); transition-duration: 100ms; }
 
 /* the way off the wall, under the names on the wall itself. Set as a hairline
    capsule rather than as a link, because it is a control with a consequence and
@@ -609,8 +635,10 @@
   background: none;
   transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
 }
-.wl-pen:hover { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
-.wl-pen:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-pen:hover { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
+}
+.wl-pen:active { transform: scale(0.94); transition-duration: 120ms; }
 .wl-pen:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; }
 
 /* the @handle set as a card's title, in the identity face. It is the SUBJECT
@@ -641,7 +669,7 @@
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(90deg, var(--chalk), rgba(244,241,234,0.25));
   transform: scaleX(0); transform-origin: 0 50%;
-  transition: transform 520ms var(--ease);
+  transition: transform 360ms var(--ease);
 }
 .wl-field:focus-within .wl-field-line::after { transform: scaleX(1); }
 .wl-field:focus-within .wl-at { color: var(--ash); }
@@ -750,7 +778,10 @@
   transition: background 220ms var(--ease), border-color 220ms var(--ease);
 }
 .wl-row + .wl-row { margin-top: 2px; }
-.wl-row:hover { background: rgba(244,241,234,0.032); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-row:hover { background: rgba(244,241,234,0.032); }
+}
+.wl-row:active { background: rgba(244,241,234,0.06); transition-duration: 100ms; }
 .wl-row.is-lit { background: linear-gradient(100deg, rgba(255,244,228,0.055), rgba(255,244,228,0.012)); border-color: var(--hair); }
 .wl-row-mark { flex: 0 0 auto; display: grid; place-items: center; }
 .wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -884,9 +915,13 @@
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 0;
   color: var(--ash);
   text-decoration: none;
-  transition: color 200ms var(--ease);
+  transform-origin: 0 50%;
+  transition: color 200ms var(--ease), transform 200ms var(--ease);
 }
-.wl-brand:hover { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-brand:hover { color: var(--chalk); }
+}
+.wl-brand:active { transform: scale(0.97); transition-duration: 120ms; }
 .wl-brand .wl-spark { color: currentColor; }
 .wl-brand > .wl-icon { margin-right: -2px; }
 .wl-brand-mark {
@@ -1247,17 +1282,19 @@
 }
 /* ── the way in ──
    The product's primary capsule, with the running light riding inside it,
-   and two rings that leave it in turn and open out into the field: the
-   shape of the pulse a tap will send through the crowd, shown before it is
-   pressed. The button's own padding is the room the rings travel in, so
-   nothing clips them. It replaced an arrow link, which is the poster's nav
-   voice and read as a link to somewhere else rather than as the door into
-   the thing under it. */
+   and nothing round it. The button's own padding is a generous target on a
+   phone and no more; two hairline rings used to leave the capsule in turn
+   and open out into the field, and they came off, because a ring is a line
+   drawn over the crowd on a loop and the light inside the capsule already
+   says the door is live. It replaced an arrow link, which is the poster's
+   nav voice and read as a link to somewhere else rather than as the door
+   into the thing under it. */
 .wl-mast-go {
   --room: 14px;
   position: relative; margin-top: 30px; padding: var(--room);
   border: 0; background: none; pointer-events: auto; cursor: pointer;
   display: inline-grid; place-items: center;
+  -webkit-tap-highlight-color: transparent;
 }
 .wl-mast-go-pill {
   position: relative; isolation: isolate; overflow: hidden;
@@ -1273,27 +1310,14 @@
   color: rgba(20, 19, 26, 0.55);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.wl-mast-go:hover .wl-mast-go-g { transform: translateX(4px); color: #14131A; }
-.wl-mast-go:active .wl-mast-go-pill { transform: scale(0.975); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-mast-go:hover .wl-mast-go-g { transform: translateX(4px); color: #14131A; }
+}
+/* the press answers on the way down, in the time a press takes */
+.wl-mast-go:active .wl-mast-go-pill { transform: scale(0.97); transition-duration: 120ms; }
 .wl-mast-go:focus-visible { outline: none; }
 .wl-mast-go:focus-visible .wl-mast-go-pill {
   box-shadow: 0 0 0 2px var(--void), 0 0 0 3px rgba(244, 241, 234, 0.55);
-}
-/* the rings. A hairline capsule the size of the pill, leaving it and going
-   out, one every sixteen hundred milliseconds, on the same shallow ease the
-   veil opens on, and gone before it reaches the type. */
-.wl-mast-go-ring {
-  position: absolute; inset: var(--room); border-radius: var(--r-pill);
-  box-shadow: 0 0 0 1px rgba(244, 241, 234, 0.6);
-  opacity: 0; pointer-events: none;
-  animation: wl-mast-ring 3200ms cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
-}
-.wl-mast-go-ring.is-late { animation-delay: 1600ms; }
-@keyframes wl-mast-ring {
-  0%   { opacity: 0; transform: scale(1); }
-  8%   { opacity: 0.55; }
-  62%  { opacity: 0; transform: scale(1.62); }
-  100% { opacity: 0; transform: scale(1.62); }
 }
 
 /* ── lifting ──
@@ -1435,7 +1459,7 @@
 .wl-cell-orb {
   position: absolute; inset: 0; display: block; border-radius: 50%;
   transform-origin: 50% 50%;
-  transition: transform 460ms var(--ease);
+  transition: transform 320ms var(--ease);
 }
 /* ── the light on whoever is being read ──
    A soft warm halo behind the disc the lens is on, drawn as a gradient and
@@ -1444,7 +1468,7 @@
 .wl-cell-orb::before {
   content: ''; position: absolute; inset: -44%; border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 244, 228, 0.24) 0%, rgba(255, 244, 228, 0.06) 44%, rgba(255, 244, 228, 0) 70%);
-  opacity: 0; transition: opacity 560ms var(--ease);
+  opacity: 0; transition: opacity 320ms var(--ease);
   pointer-events: none;
 }
 /* ── and the rim of glass round it ──
@@ -1459,7 +1483,7 @@
     inset 0 1px 0 0 rgba(255, 255, 255, 0.10),
     0 0 0 1px rgba(8, 7, 11, 0.55);
   opacity: 0; transform: scale(0.96);
-  transition: opacity 300ms var(--ease), transform 460ms var(--ease);
+  transition: opacity 240ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
 }
 .wl-cell.is-focus .wl-cell-orb { transform: scale(1.04); }
@@ -1565,10 +1589,13 @@
    beat behind the card, and while the card is on its way it is let stand
    outside the glass, because it starts wherever the disc was. `is-closing`
    takes the sheet back, so the way out is the sheet's own. */
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-sheet { animation: wl-fade 380ms var(--ease-out) both; }
+.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-sheet { animation: wl-fade 300ms var(--ease-out) both; }
 .wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-sheet-in { animation: none; }
+/* the head and the foot land a beat behind the card and settle on the same
+   clock it does (Letter.jsx OPEN_MS), so nothing on the sheet is still
+   moving once the card has stopped */
 .wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-head,
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-foot { animation: wl-rise 560ms var(--ease) 220ms both; }
+.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-foot { animation: wl-rise 360ms var(--ease) 120ms both; }
 .wl-sheet-wrap.is-from-disc.is-flying .wl-sheet,
 .wl-sheet-wrap.is-from-disc.is-flying .wl-sheet-in { overflow: visible; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
@@ -1581,12 +1608,12 @@
    sheet's own drop is what plays when it was dragged down or when the name
    has no disc on the glass. Four classes deep, so it beats the drop and the
    dialog's own way out at every width. */
-.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet { animation: wl-glass-out 440ms var(--ease-out) both; }
+.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet { animation: wl-glass-out 340ms var(--ease-out) both; }
 .wl-sheet-wrap.is-to-disc.is-closing .wl-sheet,
 .wl-sheet-wrap.is-to-disc.is-closing .wl-sheet-in { overflow: visible; }
 .wl-sheet-wrap.is-to-disc.is-closing .wl-head,
 .wl-sheet-wrap.is-to-disc.is-closing .wl-foot,
-.wl-sheet-wrap.is-to-disc.is-closing .wl-turn { animation: wl-fade 180ms var(--ease-out) reverse both; }
+.wl-sheet-wrap.is-to-disc.is-closing .wl-turn { animation: wl-fade 160ms var(--ease-out) reverse both; }
 @keyframes wl-glass-out { from { opacity: 1; } to { opacity: 0; } }
 
 /* ── the opening ──
@@ -1705,10 +1732,16 @@
   border: 0; background: none; color: var(--ash);
   transition: color 200ms var(--ease), opacity 200ms var(--ease);
 }
+.wl-turn .wl-icon { transition: transform 200ms var(--ease); }
 .wl-turn.is-prev { left: calc(-1 * var(--gutter)); }
 .wl-turn.is-next { right: calc(-1 * var(--gutter)); }
 .wl-turn.is-next .wl-icon { transform: scaleX(-1); }
-.wl-turn:hover:not(:disabled) { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-turn:hover:not(:disabled) { color: var(--chalk); }
+}
+/* the press moves the chevron the way the deck is about to go */
+.wl-turn.is-prev:active:not(:disabled) .wl-icon { transform: translateX(-2px) scale(0.92); transition-duration: 120ms; }
+.wl-turn.is-next:active:not(:disabled) .wl-icon { transform: translateX(2px) scaleX(-1) scale(0.92); transition-duration: 120ms; }
 .wl-turn:disabled { opacity: 0.22; cursor: default; }
 .wl-turn:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -4px; border-radius: 8px; }
 
@@ -1730,9 +1763,12 @@
   border: 1px solid transparent; background: none;
   color: var(--paper-ink-2);
   transition: color 220ms var(--ease), border-color 220ms var(--ease),
-              background 220ms var(--ease);
+              background 220ms var(--ease), transform 220ms var(--ease);
 }
-.wl-flag:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-flag:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+}
+.wl-flag:active { transform: scale(0.92); transition-duration: 120ms; }
 .wl-flag:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
 /* Open, it is the thing the two options belong to rather than a control
    waiting to be pressed again: a ring in the head rule's own ink, and the
@@ -1762,26 +1798,30 @@
   box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.05),
               0 22px 44px -28px rgba(0, 0, 0, 0.75);
   -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  animation: wl-acts-in 380ms var(--ease) both;
+  animation: wl-acts-in 300ms var(--ease) both;
 }
 .wl-act {
   display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; column-gap: 14px;
   width: 100%; padding: 13px 16px 13px 13px;
   text-align: left; color: var(--chalk);
   transition: background 200ms var(--ease);
-  animation: wl-act-in 460ms var(--ease) both;
+  animation: wl-act-in 320ms var(--ease) both;
 }
-.wl-act + .wl-act { box-shadow: inset 0 1px 0 var(--hair); animation-delay: 70ms; }
-.wl-act:hover { background: rgba(244, 241, 234, 0.045); }
-.wl-act:active { background: rgba(244, 241, 234, 0.07); }
+.wl-act + .wl-act { box-shadow: inset 0 1px 0 var(--hair); animation-delay: 60ms; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-act:hover { background: rgba(244, 241, 234, 0.045); }
+  .wl-act:hover .wl-act-glyph { background: rgba(244, 241, 234, 0.1); transform: scale(1.04); }
+  .wl-act:hover .wl-act-go { transform: translateX(3px); color: var(--chalk); }
+}
+.wl-act:active { background: rgba(244, 241, 234, 0.07); transition-duration: 100ms; }
+.wl-act:active .wl-act-glyph { transform: scale(0.94); transition-duration: 120ms; }
 .wl-act:focus-visible { outline: none; background: rgba(244, 241, 234, 0.07); }
 .wl-act-glyph {
   width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
   background: rgba(244, 241, 234, 0.06); color: var(--chalk);
   box-shadow: inset 0 0 0 1px var(--hair);
-  transition: background 200ms var(--ease), transform 320ms var(--ease);
+  transition: background 200ms var(--ease), transform 240ms var(--ease);
 }
-.wl-act:hover .wl-act-glyph { background: rgba(244, 241, 234, 0.1); transform: scale(1.04); }
 .wl-act-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .wl-act-h {
   font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: 0.004em; line-height: 1.2;
@@ -1797,7 +1837,6 @@
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
 .wl-act-go .wl-icon { transform: scaleX(-1); }
-.wl-act:hover .wl-act-go { transform: translateX(3px); color: var(--chalk); }
 .wl-acts > .wl-quiet { margin-top: 2px; }
 @keyframes wl-acts-in {
   from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
@@ -1824,8 +1863,10 @@
   color: var(--paper-ink-2);
   transition: color 220ms var(--ease), background 220ms var(--ease), transform 220ms var(--ease);
 }
-.wl-heart:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
-.wl-heart:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-heart:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+}
+.wl-heart:active { transform: scale(0.92); transition-duration: 120ms; }
 .wl-heart:disabled { cursor: default; }
 .wl-heart:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
 .wl-heart.is-on { color: var(--paper-ink); }
@@ -1849,7 +1890,7 @@
 .wl-find-field { margin: 22px 0 10px; }
 .wl-find-results { flex: 1 1 auto; min-height: 180px; padding: 8px 0 4px; }
 .wl-find-hint { padding: 2px 2px 12px; }
-.wl-find-results .wl-row { animation: wl-fade 320ms var(--ease) both; }
+.wl-find-results .wl-row { animation: wl-fade 240ms var(--ease) both; }
 
 .wl-find-empty { padding: 26px 2px 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .wl-find-echo {
@@ -1873,12 +1914,13 @@
   transition: background 160ms var(--ease), border-color 160ms var(--ease);
 }
 .wl-suggest-row.is-active { background: rgba(244, 241, 234, 0.045); border-color: var(--hair-soft); }
+.wl-suggest-row:active { background: rgba(244, 241, 234, 0.07); transition-duration: 100ms; }
 .wl-suggest-who { width: 100%; }
 
 /* ═══ THE COMPOSER ═════════════════════════════════════════════════════════ */
 .wl-write { padding-top: 4px; }
 .wl-write-h { margin-bottom: 22px; }
-.wl-write-step { flex: 1 1 auto; animation: wl-fade 340ms var(--ease) both; }
+.wl-write-step { flex: 1 1 auto; animation: wl-fade 260ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
 /* the card and the line under it, in one frame, and the frame is what shakes
    when a press is refused (Write.jsx `shake`): a short travel, side to side,
@@ -2205,12 +2247,18 @@
   font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--ash-dim);
 }
-.wl-vacant:hover .wl-vacant-paper, .wl-vacant:focus-visible .wl-vacant-paper { opacity: 1; transform: none; }
-.wl-vacant:hover .wl-vacant-shadow, .wl-vacant:focus-visible .wl-vacant-shadow { opacity: 0; }
-.wl-vacant:hover .wl-vacant-blank, .wl-vacant:focus-visible .wl-vacant-blank { border-bottom-color: rgba(23,21,15,0.28); }
-.wl-vacant:hover .wl-vacant-at, .wl-vacant:focus-visible .wl-vacant-at { color: var(--paper-ink); }
-.wl-vacant:hover .wl-vacant-ph, .wl-vacant:focus-visible .wl-vacant-ph,
-.wl-vacant:hover .wl-vacant-note, .wl-vacant:focus-visible .wl-vacant-note { color: var(--paper-ink-2); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-vacant:hover .wl-vacant-paper { opacity: 1; transform: none; }
+  .wl-vacant:hover .wl-vacant-shadow { opacity: 0; }
+  .wl-vacant:hover .wl-vacant-blank { border-bottom-color: rgba(23,21,15,0.28); }
+  .wl-vacant:hover .wl-vacant-at { color: var(--paper-ink); }
+  .wl-vacant:hover .wl-vacant-ph, .wl-vacant:hover .wl-vacant-note { color: var(--paper-ink-2); }
+}
+.wl-vacant:focus-visible .wl-vacant-paper { opacity: 1; transform: none; }
+.wl-vacant:focus-visible .wl-vacant-shadow { opacity: 0; }
+.wl-vacant:focus-visible .wl-vacant-blank { border-bottom-color: rgba(23,21,15,0.28); }
+.wl-vacant:focus-visible .wl-vacant-at { color: var(--paper-ink); }
+.wl-vacant:focus-visible .wl-vacant-ph, .wl-vacant:focus-visible .wl-vacant-note { color: var(--paper-ink-2); }
 
 /* ── the sill ── */
 .wl-sill {
@@ -2408,15 +2456,19 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.10),
     inset 0 0 0 1px rgba(244, 241, 234, 0.09),
     0 24px 50px -30px rgba(0, 0, 0, 0.9);
-  transition: background 300ms var(--ease), box-shadow 300ms var(--ease);
+  transition: background 240ms var(--ease), box-shadow 240ms var(--ease), transform 240ms var(--ease);
 }
-.wl-tab-main:hover {
-  background: linear-gradient(168deg, rgba(244, 241, 234, 0.1) 0%, rgba(244, 241, 234, 0.05) 55%, rgba(244, 241, 234, 0.03) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 0 0 1px rgba(244, 241, 234, 0.16),
-    0 24px 50px -30px rgba(0, 0, 0, 0.9);
+@media (hover: hover) and (pointer: fine) {
+  .wl-tab-main:hover {
+    background: linear-gradient(168deg, rgba(244, 241, 234, 0.1) 0%, rgba(244, 241, 234, 0.05) 55%, rgba(244, 241, 234, 0.03) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 0 0 1px rgba(244, 241, 234, 0.16),
+      0 24px 50px -30px rgba(0, 0, 0, 0.9);
+  }
+  .wl-tab-main:hover .wl-tab-go { transform: translateX(3px); background: rgba(255,244,228,0.07); }
 }
+.wl-tab-main:active { transform: scale(0.985); transition-duration: 120ms; }
 /* the people the sentence is about: the faces of the names written to,
    overlapping the way a row of people stands, each ringed in the void so
    one face is not cut into the next */
@@ -2435,9 +2487,8 @@
   flex: 0 0 auto; display: grid; place-items: center;
   width: 34px; height: 34px; border-radius: 50%;
   border: 1px solid rgba(255,244,228,0.22); color: var(--glow);
-  transition: transform 300ms var(--ease), background 300ms var(--ease);
+  transition: transform 240ms var(--ease), background 240ms var(--ease);
 }
-.wl-tab-main:hover .wl-tab-go { transform: translateX(3px); background: rgba(255,244,228,0.07); }
 .wl-tab-hide { padding: 9px 10px 5px; }
 @keyframes wl-tab-rise {
   from { opacity: 0; transform: translate3d(0, 26px, 0); }
@@ -3172,7 +3223,9 @@
   line-height: 0; cursor: pointer;
   transition: transform 220ms var(--ease);
 }
-.wl-face-open:hover { transform: scale(1.04); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-face-open:hover { transform: scale(1.04); }
+}
 .wl-face-open:active { transform: scale(0.94); transition-duration: 90ms; }
 .wl-face-open:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; border-radius: 50%; }
 
@@ -3265,7 +3318,7 @@
   padding: 9px 14px 9px 9px;
   border: 0; border-radius: var(--r-card);
   background: none; color: var(--chalk); text-align: left;
-  animation: wl-card-in 420ms var(--ease) both;
+  animation: wl-card-in 300ms var(--ease) both;
   transition: transform 220ms var(--ease);
 }
 @keyframes wl-card-in {
@@ -3281,15 +3334,18 @@
    other children sit above the light (`> :not(.wl-light)`), so the light is
    the ground and the content is the content.
 
-   Two grounds. `is-star` is the card's: a dark plate with star shaped holes
-   under a hairline, clipped to the frame, with the light behind it twinkling
-   through. `is-chalk` is the pill's: an opaque chalk plate, so the light
-   shows AROUND the capsule as a soft warm halo and nothing else changes. */
+   Two grounds. `is-star` is the card's: a plain dark plate under a hairline,
+   clipped to the frame, with the light riding over it as a soft warm point
+   round the inside of the edge. It used to be cut with a scatter of holes
+   the light twinkled through, and on a card about a person the scatter read
+   as polka dots on the card. `is-chalk` is the pill's: an opaque chalk
+   plate, so the light shows on the capsule as a soft bloom and nothing else
+   changes. */
 .wl-light {
   position: absolute; inset: 0; z-index: 0;
   border-radius: inherit; pointer-events: none;
+  overflow: hidden;
 }
-.wl-light.is-star { overflow: hidden; }
 .wl-light-beam {
   position: absolute; left: 0; top: 0;
   width: var(--light-w, 132px); height: var(--light-w, 132px); border-radius: 50%;
@@ -3306,18 +3362,23 @@
 }
 @keyframes wl-light-run { from { offset-distance: 0%; } to { offset-distance: 100%; } }
 
-/* the star plate: a hairline, and a dark ground with the holes cut in it */
+/* the plate: a hairline, and a dark ground, and nothing cut in it */
 .wl-plate {
   position: absolute; inset: 0; z-index: 1;
   border-radius: inherit; overflow: hidden;
   pointer-events: none;
   transition: border-color 240ms var(--ease), background 220ms var(--ease);
 }
-.wl-plate.is-star { border: var(--bw, 1px) solid var(--hair); }
-.wl-plate.is-star svg {
-  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-  color: var(--void-1);
-  transition: color 240ms var(--ease);
+.wl-plate.is-star {
+  border: var(--bw, 1px) solid var(--hair);
+  background: var(--void-1);
+}
+/* the light rides over the plain plate, softened, and never past the frame */
+.wl-light.is-star .wl-light-beam {
+  z-index: 2;
+  background: radial-gradient(circle at center,
+    rgba(244, 241, 234, 0.22) 0%, rgba(244, 241, 234, 0.09) 26%, rgba(244, 241, 234, 0) 56%);
+  filter: blur(6px);
 }
 /* the chalk plate: the pill's fill, as a layer, with the light running ON it
    and the whole thing clipped to the capsule. The light used to orbit the
@@ -3362,7 +3423,7 @@
 .wl-card-id > * {
   grid-area: 1 / 1; min-width: 0;
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
-  transition: opacity 360ms var(--ease);
+  transition: opacity 260ms var(--ease);
 }
 .wl-card-skel { gap: 7px; opacity: 0; }
 .wl-card.is-looking .wl-card-skel { opacity: 1; }
@@ -3395,10 +3456,11 @@
 .wl-card.is-looking .wl-card-go { opacity: 0; }
 .wl-card.is-pick { cursor: pointer; }
 .wl-card.is-pick:disabled { cursor: default; }
-.wl-card.is-pick:not(:disabled):hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); }
-.wl-card.is-pick:not(:disabled):hover .wl-plate svg { color: var(--void-2); }
-.wl-card.is-pick:not(:disabled):hover .wl-card-go { transform: translateX(4px); color: var(--chalk); }
-.wl-card.is-pick:active:not(:disabled) { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-card.is-pick:not(:disabled):hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); background: var(--void-2); }
+  .wl-card.is-pick:not(:disabled):hover .wl-card-go { transform: translateX(4px); color: var(--chalk); }
+}
+.wl-card.is-pick:active:not(:disabled) { transform: scale(0.985); transition-duration: 120ms; }
 
 /* missing: not an error and not drawn as one. The act still goes through, so
    the card stays the same object at the same weight and only the words change.
@@ -3410,7 +3472,6 @@
   .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
   .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
-  .wl-mast-go-ring { display: none; }
   .wl-tab, .wl-down { animation: none !important; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-card { animation: none; }

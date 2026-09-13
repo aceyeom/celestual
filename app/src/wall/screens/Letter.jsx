@@ -170,15 +170,19 @@ const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 // the sheets move on (wall.css --ease-sheet): a straight run through the
 // middle and a settle over the last third, so the distance is actually
 // crossed on the screen. The paper's corner is the card's own radius at the
-// end and a circle's at the start.
-const OPEN_MS = 560
+// end and a circle's at the start. It starts on the frame of the press, so
+// the whole of the wait between a finger and the words is this number; it
+// was 560, and the words were readable before it finished, but a card that
+// is still growing under a reader is a card they wait for.
+const OPEN_MS = 440
 const EASE_TRAVEL = 'cubic-bezier(0.32, 0.72, 0, 1)'
 const RADIUS = 18          // wall.css --r-card
 // ── and the closing ─────────────────────────────────────────────────────────
 // How long the card takes to go back into its disc, on the same curve: it
 // leaves quickly and settles onto the face, dissolving over the last part of
 // the way so what is left on the field is the disc and not a small paper.
-const CLOSE_MS = 420
+// Shorter than the opening: the system's answer to a dismissal snaps.
+const CLOSE_MS = 340
 
 // ── the address takes two shapes ────────────────────────────────────────────
 // /berkeley/letter/<uuid>    one letter, which is what a shared link points at
@@ -245,6 +249,11 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // the card is the server's, and this is one control deciding whether it is
   // showing itself or the two things it opens.
   const [flagged, setFlagged] = useState(false)
+  // `silent` says the next address change is the strip landing on a
+  // neighbour that is already on the glass, so the leaf that takes over
+  // must not make an entrance. Declared up here because the render-phase
+  // update below reads it.
+  const silentRef = useRef(false)
   const byId = UUID.test(String(param || ''))
   const handle = byId ? null : normHandle(param)
 
@@ -254,11 +263,19 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // as a ref: a render can be thrown away without being committed, and a ref
   // moved during one of those leaves a key that has already changed by the
   // time the commit comes. The flag closes with the card it was opened on.
+  //
+  // Whether the leaf ARRIVES, with a beat of fade, or takes over silently is
+  // decided here too, once, on the render that changes the key, and kept
+  // with the key. It used to be read off `silent` on every render, and
+  // `silent` is put back the moment the leaf lands (`landed`, below): the
+  // next render, a frame later, found it false and put the fade on a card
+  // that was already standing on the glass, which sent the card to nothing
+  // and faded it back in. That was the flicker on every turn of the deck.
   const [seen, setSeen] = useState(param)
-  const [leafKey, setLeafKey] = useState(0)
+  const [leaf, setLeaf] = useState({ key: 0, fade: false })
   if (seen !== param) {
     setSeen(param)
-    setLeafKey(leafKey + 1)
+    setLeaf({ key: leaf.key + 1, fade: !silentRef.current })
     setFlagged(false)
   }
 
@@ -340,7 +357,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // the card's height when the strip started to move, which is where the
   // track's height is measured from while it moves
   const hBase = useRef(0)
-  const silent = useRef(false)
+  const silent = silentRef
   const busy = useRef(false)
   const timers = useRef([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
@@ -545,7 +562,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     a.onfinish = end
     // a tab that goes to the background stops handing out frames, and a
     // sheet left with its glass open is worse than no opening at all
-    const bail = setTimeout(end, OPEN_MS + 400)
+    const bail = setTimeout(end, OPEN_MS + 300)
     return () => {
       clearTimeout(bail)
       try { a.cancel(); b.cancel() } catch { /* gone */ }
@@ -649,7 +666,9 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   const showNext = move && (move.kind === 'drag' || move.dir > 0)
   // an arrival that is not the strip landing: a back button, a link. A
   // beat of fade, and none at all on the first leaf, which is the sheet's.
-  const came = leafKey > 0 && !silent.current ? ' is-arrived' : ''
+  // Decided with the key (above), so it cannot change under a leaf that is
+  // already on the glass.
+  const came = leaf.fade ? ' is-arrived' : ''
 
   return (
     /* Not `tall`. The floor exists so a bottom sheet does not read as a
@@ -684,7 +703,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           <div className="wl-letter-track" ref={track}>
             {showPrev ? slot(prevCard, -1, prevSlot) : null}
             <div className="wl-letter-card" ref={cardBox}>
-              <Leaf className={`wl-letter-leaf${came}`} key={leafKey} onMount={landed}>
+              <Leaf className={`wl-letter-leaf${came}`} key={leaf.key} onMount={landed}>
                 <Card
                   l={one || null} handle={one ? null : handle} seed={String(param)}
                   id="wl-letter-to" foot={one ? marks(one, true) : null}

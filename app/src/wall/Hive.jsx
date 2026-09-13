@@ -50,7 +50,9 @@
 // own amount, in its own direction. A field that translates as one block is a
 // picture being panned. A pull takes the field with the finger in any
 // direction, a throw coasts on friction and eases back into the drift rather
-// than stopping, and a wheel or a trackpad pans it.
+// than stopping, and a wheel or a trackpad pans it. A pinch opens it out or
+// closes it up, within limits (ZOOM): the pitch of the lattice is what
+// changes, about the point between the fingers, and nothing is re-laid out.
 //
 // ── and it answers the pointer ──────────────────────────────────────────────
 // A mouse is a second, smaller light. The discs under it swell, part around
@@ -176,14 +178,16 @@ const PULSE = { width: 1.7, swell: 0.28, fill: 0.6, push: 0.75, back: 0.25, deca
 // ── the tap ──
 // A press on a disc is answered the way the veil's tap is answered: a pulse
 // sent out from the disc through the crowd, and the disc brought into the
-// light, and only then does its letter open out of it. `OPEN_AFTER` is how
-// long the letter waits, which is long enough for the crest to have left the
-// disc and for the disc to be most of the way to the middle, and short
-// enough that nobody is waiting on an animation to read. `CENTRE_K` is the
-// travel's time constant. The pulse's own clock is the veil's, shortened: it
-// has less glass to cross and it should be seen to go rather than to crawl,
-// and its tail runs out under the sheet's glass once the letter is up.
-const OPEN_AFTER = 520
+// light. The letter opens out of the disc ON THE SAME FRAME: the card claims
+// the disc's circle where it is standing at the press and the pulse and the
+// travel run out under the sheet's glass, so the crowd is where the letter
+// left it when the sheet comes down. It used to wait half a second for the
+// crest to leave the disc before opening, and half a second between a
+// finger landing on a name and anything readable arriving is the moment
+// the surface stops feeling like a thing being touched (a press is answered
+// on the way down, not after an animation). `CENTRE_K` is the travel's time
+// constant. The pulse's own clock is the veil's, shortened: it has less
+// glass to cross and it should be seen to go rather than to crawl.
 const CENTRE_K = 300
 // A pulse the wall sends from a name that is off the glass travels first and
 // pulses second: this long after the travel starts, the disc is most of the
@@ -229,6 +233,18 @@ const BREATH = { slow: 17, fast: 31, amp: 0.34 }
 const RELAX = 0.94
 const FLING = 2400
 const SLOP = 6
+// ── the zoom ──
+// The field can be opened out and closed up, by a pinch on a phone and by
+// the trackpad's pinch or a ctrl+wheel on a desktop, and only to a
+// reasonable degree: down to about seven tenths of its pitch, where the
+// crowd is a crowd and every face is still a face, and up to about half
+// again, where the light holds five or six names. Past either end a pinch
+// is rubber banded, the way a scroll is at the end of a list, and let go it
+// eases back to the limit. The zoom is a factor on the lattice pitch and on
+// nothing else: the discs are laid out in the DOM at the window's own pitch
+// and scaled by the loop, so a pinch costs no re-render and no slot changes
+// hands. `wheel` is how much a wheel notch zooms, per pixel of delta.
+const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55 }
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
 // ── the window, and the window's bar ──
@@ -250,6 +266,20 @@ const HEADROOM = 220
 const mod = (v, m) => ((v % m) + m) % m
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v)
+
+// A zoom a pinch is asking for, held inside its limits by a rubber band: in
+// log space, so a pinch in and a pinch out resist the same way, the
+// overshoot is let through at a falling fraction of itself and never past
+// a bound of its own. Apple's own curve, from the fluid interfaces talk.
+function bandZoom(raw) {
+  const lz = Math.log(Math.max(1e-3, raw))
+  const lo = Math.log(ZOOM.min)
+  const hi = Math.log(ZOOM.max)
+  const rb = (over) => (over * ZOOM.band) / (1 + ZOOM.band * Math.abs(over))
+  if (lz > hi) return Math.exp(hi + rb(lz - hi))
+  if (lz < lo) return Math.exp(lo - rb(lo - lz))
+  return raw
+}
 
 // ── the pitch ───────────────────────────────────────────────────────────────
 // The lattice's column spacing, and through it every size on the screen. It
@@ -539,7 +569,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     o: { x: 0, y: 0 },        // where the field's origin is on the screen
     c: { x: 0, y: 0 },        // the centre of the window
     lx: 0, ly: 0,             // where the light actually is, eased
-    S: 70, rowH: 70 * ROW,    // the lattice pitch, set from the window
+    S0: 70,                   // the lattice pitch the window sets (pitchFor)
+    S: 70, rowH: 70 * ROW,    // and the pitch the field is drawn at: S0 × zoom
+    zoom: 1,                  // how far the field is opened out (ZOOM)
+    zoomGoal: null,           // { z, fx, fy }: a zoom the loop is easing to
+    pointers: new Map(),      // the fingers on the field, by pointer id
+    pinch: null,              // two of them: { d0, z0, mx, my }
     wL: 0, hL: 0,             // the window the lens is drawn for (RESHAPE_PX)
     lens: lensFor(0, 0),      // the four ramps, for this window's shape
     wave: null,               // the veil's pulse, placed in this frame
@@ -596,18 +631,25 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         || Math.abs(w - m.wL) > 40
       if (reshaped) { m.wL = w; m.hL = h }
       const hL = m.hL
-      const S = pitchFor(w, hL)
+      // the window's pitch, and the pitch the field is drawn at: the same
+      // thing until somebody pinches (ZOOM)
+      const S0 = pitchFor(w, hL)
+      const S = S0 * m.zoom
       const rowH = S * ROW
-      const pad = S * 0.6
-      const Mx = Math.ceil((w + 2 * pad) / S) + 3
-      const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / rowH) + 3
+      // The pool is cut for the field at its most open, so a pinch out never
+      // needs a slot the pool does not have: cutting a new one hands every
+      // disc to a different slot, which is a reshuffle the eye sees.
+      const Sm = S0 * ZOOM.min
+      const pad = Sm * 0.6
+      const Mx = Math.ceil((w + 2 * pad) / Sm) + 3
+      const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / (Sm * ROW)) + 3
       const was = { ...m.c }
       size.current = { w, h }
       m.c = { x: w / 2, y: hL / 2 }
       m.lens = lensFor(w, hL)
       if (!m.ready) {
         // the tile's middle cell starts in the light
-        m.S = S; m.rowH = rowH
+        m.S0 = S0; m.S = S; m.rowH = rowH
         m.o = { x: m.c.x - worldX(lay.ic, lay.jc, S), y: m.c.y - lay.jc * rowH }
         m.lx = m.c.x; m.ly = m.c.y
         // A pointer that has been noticed but never located is at the middle
@@ -618,10 +660,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         // name on the field, into the corner.
         m.px = m.c.x; m.py = m.c.y
         m.ready = true
-      } else if (m.S !== S) {
+      } else if (m.S0 !== S0) {
         // a new pitch: keep the same cell in the light
         const f = m.focus
-        m.S = S; m.rowH = rowH
+        m.S0 = S0; m.S = S; m.rowH = rowH
         if (f) m.o = { x: m.c.x - worldX(f.I, f.J, S), y: m.c.y - f.J * rowH }
       } else {
         // the same field, a different window: the light stays on what it had
@@ -655,6 +697,26 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     if (!slot) return
     slot.el = el
     slot.disc = el ? el.querySelector('.wl-cell-disc') : null
+  }, [])
+
+  // ── the zoom, applied ──
+  // One factor on the pitch, changed about a point on the glass so whatever
+  // is under the fingers stays under them: the world scales with the pitch,
+  // so the origin moves toward the focus by the same ratio. Anything the
+  // field is carrying in world units, a travel's goal or a pulse's origin,
+  // is scaled with it, so a pinch in the middle of either leaves it whole.
+  const applyZoom = useCallback((z, fx, fy) => {
+    const m = motion.current
+    const k = z / m.zoom
+    if (!(k > 0) || k === 1) return
+    m.o.x = fx - (fx - m.o.x) * k
+    m.o.y = fy - (fy - m.o.y) * k
+    m.zoom = z
+    m.S = m.S0 * z
+    m.rowH = m.S * ROW
+    if (m.goal) m.goal = { x: fx - (fx - m.goal.x) * k, y: fy - (fy - m.goal.y) * k }
+    const t = m.tap
+    if (t) { t.wx *= k; t.wy *= k; t.R *= k; t.rmax *= k }
   }, [])
 
   // ── the name on the plate ──
@@ -693,11 +755,21 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const m = motion.current
       const { w, h } = size.current
       if (!w || !h || !m.ready) return
-      if (m.paused && !m.tap && !m.goal) { last = 0; return }
+      if (m.paused && !m.tap && !m.goal && !m.zoomGoal) { last = 0; return }
       const dt = last ? Math.min(64, now - last) : 16
       last = now
       const sec = dt / 1000
       const t = now / 1000
+
+      // ── the zoom, settling ──
+      // A pinch let go past a limit eases back to it, about the point it was
+      // let go at. Under reduced motion it is simply there.
+      if (m.zoomGoal) {
+        const g = m.zoomGoal
+        let nz = m.reduce ? g.z : m.zoom + (g.z - m.zoom) * (1 - Math.exp(-dt / 110))
+        if (Math.abs(g.z - nz) < 0.0015) { nz = g.z; m.zoomGoal = null }
+        applyZoom(nz, g.fx, g.fy)
+      }
 
       // the field comes up to full over about a second as the veil lifts —
       // or, while the pulse is crossing it, disc by disc as the front
@@ -710,11 +782,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       }
 
       // ── the motion ──
-      // Not while a finger is on it. Otherwise the velocity relaxes toward the
-      // drift, which is slow, wanders, and rests under a mouse; a throw is the
-      // same velocity started high, so it coasts and eases back into the drift
-      // rather than stopping. A keyboard's goal overrides all of it.
-      if (!m.drag) {
+      // Not while a finger is on it, or two. Otherwise the velocity relaxes
+      // toward the drift, which is slow, wanders, and rests under a mouse; a
+      // throw is the same velocity started high, so it coasts and eases back
+      // into the drift rather than stopping. A keyboard's goal overrides all
+      // of it.
+      if (!m.drag && !m.pinch) {
         if (m.goal) {
           const k = 1 - Math.exp(-dt / (m.goalK || 170))
           m.o.x += (m.goal.x - m.o.x) * k
@@ -830,7 +903,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             slot.delay = Math.round(500 + Math.min(1.4, u) * 620)
             ;(changed || (changed = [])).push(s)
           }
-          const d = discOf(k, S)
+          // the disc's size on the glass. The element is laid out at the
+          // window's own pitch (`--d`, from S0) and the zoom rides on the
+          // transform below, so a pinch never touches layout.
+          const d = discOf(k, m.S0) * m.zoom
 
           // SLACK: what the packing left over, and the two ways a disc spends
           // it. Half the gap to the next disc, times how much of it we allow.
@@ -882,7 +958,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           if (!slot.shown) { slot.shown = true; if (slot.el) slot.el.style.visibility = '' }
           const isFocus = f && f.I === I && f.J === J
           if (slot.disc) {
-            slot.disc.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${z.toFixed(3)})`
+            slot.disc.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${(z * m.zoom).toFixed(3)})`
             // ── air ──
             // The far discs are not only smaller, they are further away, and
             // the one thing distance does to a face that scale alone does not
@@ -928,7 +1004,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       // the veil, off while the field is being thrown, and off on a disc so
       // far from the light that naming it would be pointing at nothing.
       if (say.current) {
-        const on = !m.veiled && bestAt && best && best.nd < 1.6 && !m.drag ? 1 : 0
+        const on = !m.veiled && bestAt && best && best.nd < 1.6 && !m.drag && !m.pinch ? 1 : 0
         if (bestAt) {
           const half = m.sayW / 2 + 10
           const x = clamp(bestAt.x, half, Math.max(half, w - half))
@@ -952,26 +1028,71 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf) }
-  }, [grid, names, tileAt, worldX, discOf, wave])
+  }, [grid, names, tileAt, worldX, discOf, wave, applyZoom])
 
-  // ── the pull ──
+  // ── the pull, and the pinch ──
   // Listeners go on the window rather than through pointer capture. Capture
   // would redirect the click to the element that captured it, and every disc
-  // in here is a button whose whole job is to be tapped.
-  const pending = useRef(0)
-  useEffect(() => () => clearTimeout(pending.current), [])
+  // in here is a button whose whole job is to be tapped. One set of them,
+  // put on when the first finger lands and taken off when the last one
+  // lifts, so a second finger joins the gesture instead of starting one.
+  //
+  // One finger pulls. A second finger turns the pull into a pinch: the field
+  // is opened out or closed up about the point between the two, by the ratio
+  // of the distance between them to what it was when the second landed, and
+  // it goes on following the midpoint, so a pinch that drifts is a pan as
+  // well. Past a limit the pinch is rubber banded (bandZoom), and when it is
+  // let go the zoom eases back to the limit. Lift one finger and the other
+  // is a pull again, from where it is. A pinch is never a tap.
   const onDown = useCallback((e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const m = motion.current
     if (!m.ready) return
-    // a new press ends a tap that was still waiting to open its letter
-    if (pending.current) { clearTimeout(pending.current); pending.current = 0 }
-    m.drag = { x: e.clientX, y: e.clientY, t: e.timeStamp || performance.now(), vx: 0, vy: 0 }
-    m.moved = 0
-    m.goal = null
-    if (stage.current) stage.current.classList.add('is-held')
+    const pts = m.pointers
+    const first = pts.size === 0
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (pts.size === 1) {
+      m.drag = { x: e.clientX, y: e.clientY, t: e.timeStamp || performance.now(), vx: 0, vy: 0 }
+      m.moved = 0
+      m.goal = null
+      m.zoomGoal = null
+      if (stage.current) stage.current.classList.add('is-held')
+    } else if (pts.size === 2 && e.pointerType !== 'mouse') {
+      const [a, b] = [...pts.values()]
+      m.pinch = {
+        d0: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), z0: m.zoom,
+        mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2,
+      }
+      m.drag = null
+      m.moved = SLOP + 1
+      m.v = { x: 0, y: 0 }
+      m.goal = null
+      m.zoomGoal = null
+    }
+    if (!first) return
 
+    const focal = (x, y) => {
+      const r = stage.current ? stage.current.getBoundingClientRect() : { left: 0, top: 0 }
+      return { fx: x - r.left, fy: y - r.top }
+    }
     const move = (ev) => {
+      const p = pts.get(ev.pointerId)
+      if (p) { p.x = ev.clientX; p.y = ev.clientY }
+      const pinch = m.pinch
+      if (pinch) {
+        if (pts.size < 2) return
+        const [a, b] = [...pts.values()]
+        const dist = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y))
+        const mx = (a.x + b.x) / 2
+        const my = (a.y + b.y) / 2
+        // the pan first, so the zoom is taken about where the fingers are now
+        m.o.x += mx - pinch.mx
+        m.o.y += my - pinch.my
+        pinch.mx = mx; pinch.my = my
+        const { fx, fy } = focal(mx, my)
+        applyZoom(bandZoom(pinch.z0 * (dist / pinch.d0)), fx, fy)
+        return
+      }
       const d = m.drag
       if (!d) return
       const dx = ev.clientX - d.x
@@ -986,13 +1107,37 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       d.vy = d.vy * 0.7 + (dy / dt) * 1000 * 0.3
       d.x = ev.clientX; d.y = ev.clientY; d.t = t
     }
-    const up = () => {
+    const up = (ev) => {
+      pts.delete(ev.pointerId)
+      const done = pts.size === 0
+      if (done) {
+        window.removeEventListener('pointermove', move)
+        window.removeEventListener('pointerup', up)
+        window.removeEventListener('pointercancel', up)
+        if (stage.current) stage.current.classList.remove('is-held')
+      }
+      if (m.pinch) {
+        if (pts.size >= 2) return
+        // the pinch ends: back inside the limits if it was let go past them,
+        // and the finger that is left, if one is, has the field
+        const pinch = m.pinch
+        m.pinch = null
+        const z = clamp(m.zoom, ZOOM.min, ZOOM.max)
+        if (z !== m.zoom) {
+          const { fx, fy } = focal(pinch.mx, pinch.my)
+          if (m.reduce) applyZoom(z, fx, fy)
+          else m.zoomGoal = { z, fx, fy }
+        }
+        m.v = { x: 0, y: 0 }
+        if (!done) {
+          const [rest] = [...pts.values()]
+          m.drag = { x: rest.x, y: rest.y, t: ev.timeStamp || performance.now(), vx: 0, vy: 0 }
+        }
+        return
+      }
+      if (!done) return
       const d = m.drag
       m.drag = null
-      if (stage.current) stage.current.classList.remove('is-held')
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-      window.removeEventListener('pointercancel', up)
       if (m.reduce || !d) { m.v = { x: 0, y: 0 }; return }
       // the throw: the gesture's own velocity, and the loop eases it back
       // into the drift
@@ -1001,27 +1146,56 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', up)
-  }, [])
+  }, [applyZoom])
 
-  // A wheel or a trackpad pans the field, in both axes, the way a map pans.
-  // Attached again when the names arrive, because the empty wall is a
-  // different element.
+  // A wheel or a trackpad pans the field, in both axes, the way a map pans;
+  // with ctrl held, which is also what a trackpad's pinch arrives as, it
+  // zooms about the pointer, inside the limits. Safari sends its trackpad
+  // pinch as its own gesture events and would zoom the page with them, so
+  // those are taken too. Attached again when the names arrive, because the
+  // empty wall is a different element.
   const has = names.length > 0
   useEffect(() => {
     const el = stage.current
     if (!el || !has) return undefined
+    const at = (e) => {
+      const r = el.getBoundingClientRect()
+      return { fx: e.clientX - r.left, fy: e.clientY - r.top }
+    }
     const onWheel = (e) => {
       const m = motion.current
       if (m.veiled || !m.ready) return
       e.preventDefault()
+      if (e.ctrlKey || e.metaKey) {
+        const { fx, fy } = at(e)
+        m.zoomGoal = null
+        applyZoom(clamp(m.zoom * Math.exp(-e.deltaY * ZOOM.wheel), ZOOM.min, ZOOM.max), fx, fy)
+        return
+      }
       const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? size.current.h : 1
       m.o.x -= e.deltaX * k
       m.o.y -= e.deltaY * k
       m.goal = null
     }
+    let gz = 1
+    const onGestureStart = (e) => { e.preventDefault(); gz = motion.current.zoom }
+    const onGestureChange = (e) => {
+      const m = motion.current
+      e.preventDefault()
+      if (m.veiled || !m.ready) return
+      const { fx, fy } = at(e)
+      m.zoomGoal = null
+      applyZoom(clamp(gz * (e.scale || 1), ZOOM.min, ZOOM.max), fx, fy)
+    }
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [has])
+    el.addEventListener('gesturestart', onGestureStart, { passive: false })
+    el.addEventListener('gesturechange', onGestureChange, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('gesturestart', onGestureStart)
+      el.removeEventListener('gesturechange', onGestureChange)
+    }
+  }, [has, applyZoom])
 
   // ── the pointer ──
   // Where it is, in the stage's own coordinates, every move. A finger never
@@ -1113,25 +1287,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // ── the press ──
   // A press that travelled swallows the tap it would have ended in, because
   // every disc is a target and nothing is worse than a surface that opens a
-  // letter because you tried to look past it. A press that did not sends the
-  // pulse out from the disc and brings it to the light, and a beat later the
-  // disc hands its own circle, where it is standing then, to the letter,
-  // which opens out of it (morph.js, screens/Letter.jsx). Under reduced
-  // motion nothing travels: the letter opens at once.
+  // letter because you tried to look past it. A press that did not hands
+  // the disc's own circle, where it is standing now, to the letter, which
+  // opens out of it at once (morph.js, screens/Letter.jsx), and sends the
+  // pulse out from the disc under the glass so the name is in the light
+  // when the sheet comes down. Under reduced motion nothing travels.
   const open = useCallback((handle, e) => {
     const m = motion.current
     if (m.moved > SLOP) return
     const btn = e && e.currentTarget ? e.currentTarget : null
     const disc = btn ? btn.querySelector('.wl-cell-disc') : null
     const slot = btn ? m.slots[Number(btn.dataset.slot)] : null
-    const fire = () => {
-      pending.current = 0
-      if (disc) takeOff(handle, disc.getBoundingClientRect())
-      if (onOpen) onOpen(handle)
-    }
-    if (pending.current) { clearTimeout(pending.current); pending.current = 0 }
-    if (m.reduce || !tapAt(slot)) { fire(); return }
-    pending.current = window.setTimeout(fire, OPEN_AFTER)
+    if (disc) takeOff(handle, disc.getBoundingClientRect())
+    if (!m.reduce) tapAt(slot)
+    if (onOpen) onOpen(handle)
   }, [onOpen, tapAt])
 
   // ── the wall's own hand on the field ──
@@ -1220,7 +1389,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     )
   }
 
-  const S = motion.current.S
+  // the pitch the cells are laid out at: the window's own, whatever the
+  // zoom, which rides on the loop's transform (applyZoom)
+  const S = motion.current.S0
   return (
     <div
       className={`wl-hive${veiled ? ' is-veiled' : ''}`}

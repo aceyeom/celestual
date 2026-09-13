@@ -242,6 +242,14 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0051_five_days_between.sql`: **five days between.** The three
+  letters stay three and the window they are counted over shortens from seven
+  days to five: `wall_letter_window()` is redefined and nothing else moves,
+  since `wall_letters_spent`, `wall_write` and `wall_quota` all read it. The
+  composer draws no number at all now, and once the three are spent says only
+  how many days to wait, off `resets_at`. **Tested by
+  `scripts/sql/test-reading-room.sql`**, which asserts the window and that the
+  three come back six days on.
 - `migrations/0050_the_letter_goes_up_first.sql`: **the letter goes up
   first.** The screen's hold is gone, and so is its wait:
   `celestual-wall-moderate` writes every letter the list lets through at
@@ -336,7 +344,7 @@ Idempotent migrations, applied in order:
   unchanged and is now the WRITE gate alone. Reporting follows reading on
   purpose: the subject of a letter is the likeliest reader to want it down and
   the least likely to hold a campus address at that moment. Writing also gets
-  an allowance of three letters in any seven days, held in
+  an allowance of three letters in any seven days (five since 0051), held in
   `wall_letter_allowance()` and `wall_letter_window()` and counted by
   `wall_letters_spent(user)`: `wall_write` refuses the fourth with `cap` and
   `wall_quota(token)` answers the caller (and only ever the caller) with

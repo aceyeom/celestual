@@ -186,7 +186,7 @@
 
 /* The one row on this screen that is news. Set apart from the standing rows
    by ground rather than by colour: it stands on the result card's plate, the
-   dark one with the star shaped holes, with the running light behind it
+   plain dark one under a hairline, with the running light riding over it
    (wall.css `.wl-light`), and it wears the seal: the mark as a material,
    which is what a mutual is drawn as everywhere it is drawn. The light runs
    slower here than on the card, because nothing is being waited for. */
@@ -209,9 +209,10 @@
   transition: transform 220ms var(--ease);
 }
 .mn-mutual > :not(.wl-light) { position: relative; z-index: 2; }
-.mn-mutual:hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); }
-.mn-mutual:hover .wl-plate svg { color: var(--void-2); }
-.mn-mutual:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) {
+  .mn-mutual:hover .wl-plate { border-color: rgba(244, 241, 234, 0.24); background: var(--void-2); }
+}
+.mn-mutual:active { transform: scale(0.985); transition-duration: 120ms; }
 .mn-mutual > .wl-who { flex: 1 1 auto; min-width: 0; }
 .mn-mutual .wl-who-at { color: var(--chalk); }
 .mn-mutual-seal { flex: 0 0 auto; display: block; width: 44px; height: 44px; }
