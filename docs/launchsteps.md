@@ -1188,8 +1188,10 @@ are spent it says only how many days to wait before drafting more, counted
 from the server's `resets_at`. One migration and the app; the moderation
 function needs no change, since it reads the window through `wall_quota`.
 
-1. **Apply `0051_five_days_between.sql`.** `supabase db push`, or paste it into
-   the SQL editor. Re-runnable. It redefines `wall_letter_window()` as five
+1. **Apply `0051_five_days_between.sql`.** Applied 13 September 2026, through
+   the Supabase MCP, and recorded in the migration history under that name;
+   `wall_letter_window()` answers five days and `wall_quota` carries the new
+   comment. Re-runnable. It redefines `wall_letter_window()` as five
    days; `wall_letters_spent`, `wall_write` and `wall_quota` read it and
    change nothing of their own. Verified by `scripts/verify-migrations.sh
    --test` (`test-reading-room.sql`, which now asserts the window and that

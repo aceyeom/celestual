@@ -242,7 +242,7 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
-- `migrations/0051_five_days_between.sql`: **five days between.** The three
+- `migrations/0051_five_days_between.sql` (**applied 13 September 2026**): **five days between.** The three
   letters stay three and the window they are counted over shortens from seven
   days to five: `wall_letter_window()` is redefined and nothing else moves,
   since `wall_letters_spent`, `wall_write` and `wall_quota` all read it. The
