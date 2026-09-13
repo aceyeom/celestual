@@ -448,8 +448,12 @@ thirteen pixels sliding past is a handle nobody reads.
   tenths of the window's own pitch to about half again (`Hive.jsx ZOOM`).
   Past either end the pinch is rubber banded and eases back when it is let
   go. The discs are laid out at the window's pitch and the zoom rides on the
-  loop's transform, so a pinch re-renders nothing and no slot changes hands;
-  the pool is cut for the field at its most open.
+  loop's transform, so a pinch re-renders nothing. The pool of slots is cut a
+  little past the window's own pitch, and the first pinch that opens the
+  field past that cuts it once for the field at its most open (`ZOOM.pool`):
+  it used to be cut for the most open field from the start, so that no pinch
+  could ever need a slot it did not have, and that was every phone carrying
+  twice the discs it showed for a gesture most visits never make.
 - **A pull is not a tap.** A press that travels more than 6px swallows the
   click it would have ended in. Every disc is a target.
 - **A name that has just arrived rises into the field.** A letter goes up, the
@@ -565,9 +569,38 @@ search away.
 
 The DOM holds a pool of slots the size of the screen and no more, however
 many names the wall carries: each slot owns one cell of the visible window
-and is handed a new name when the field scrolls a cell across. About a
-hundred and fifty slots on a phone and two hundred and fifty on a desktop,
-and the loop's own cost is about a millisecond a frame on either.
+and is handed a new name when the field scrolls a cell across. About two
+hundred and sixty slots on a phone and three hundred on a desktop, of which
+a hundred and seventy and a hundred and ninety are on the glass at once, and
+the loop's own cost is under a millisecond a frame on either.
+
+Three things keep it there as the wall grows, and all three are about what
+is NOT done on a frame:
+
+- **The index is shaped once per reading** (`data.js wall`). It answers the
+  same array until the index is read again, and a name that has not moved
+  between two readings is the same object it was; so a revision of the corpus
+  that did not touch the index, a letter's words landing, a heart, this
+  person's own letters read again, costs the field nothing. It used to build
+  sixty new objects on every call and the screen called it on every revision,
+  which re-rendered every disc on the field for each of them: a press on a
+  name, which asks for its letters, was answered with a hitch on the frame
+  the card was opening.
+- **A slot is handed a name and a count**, not the index's row, so a new
+  reading of the index re-renders only the discs whose names actually moved.
+- **The disc's layer is the size of the disc.** Every disc is its own
+  compositor layer, and a layer is as large as everything painted in it,
+  transparent or not. The halo behind the disc the lens is reading was drawn
+  at nearly twice the disc's width on every disc, at nought opacity, which
+  made every disc's layer three times the disc's area, all of it blank, for
+  a glow on one person; it is held at half its size until it is lit and
+  opens out as it comes up. Positions and opacities are written to
+  the elements only when they have moved.
+- **A name the index says the resolver never saw is not asked about again**
+  for ten minutes (`api/handles.js learnHandle`). Every disc drawn as a
+  monogram used to send a peek on mount and again a minute later, and a wall
+  of three hundred names was a steady trickle of requests for faces the index
+  had already said were not there.
 
 ### The veil, and the ear
 
@@ -833,7 +866,7 @@ product opened on two different logos.
 | | |
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`): the index carries every face since migration 0048, so the pictures are the next request and not the one after a peek |
-| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close |
+| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close. Not before the metal is there: the held frame stretches, up to 760ms from mount, until the shader has drawn a frame behind the cover (`LiquidMark onReady`), and the swap from the flat mark to the metal is instant while the cover is over it (`cut`). It used to run on the clock alone, and on a phone, where the compile takes longer than the held frame, the circuit was cut open over the chalk mark and the metal arrived a moment later on a ring already on the screen, which was a blink. Past the ceiling the sequence runs on the chalk mark and the metal fades in over it, gently, the designed state for a driver that is slow or never answers |
 | `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out |
 | `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
 | `1560ms` | **the lift**, after a hold, and not before the wall is ready. The lift waits on the index and the first screen's faces having landed, with a ceiling at 4200ms from mount so a dead network is a wall of monograms and not a logo forever; on an ordinary connection they are there long before the clock is. The mark is the one thing in the product built to be looked at while something else finishes, and a wall drawn with sixty grey discs that fill in a second later is a wall that arrived too early. Then the mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone, every face on it a picture from its first frame. One movement, not two screens |

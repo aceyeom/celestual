@@ -49,6 +49,21 @@
 //                underneath by the time the black is half gone.
 //     · 2280ms   the black is gone.
 //
+// ── and the metal is there before the first cut ─────────────────────────────
+// The held frame is at least 180ms and it is longer when the metal needs
+// longer: the shader is compiled and its first frame drawn behind the cover,
+// and beat 1 waits for LiquidMark to say so (`onReady`), up to HOLD_MAX from
+// mount. It used to start on the clock alone, and on a phone, where the
+// compile takes longer than the held frame, the circuit was cut open over
+// the flat chalk mark and the metal arrived a moment later on a ring already
+// on the screen: the ring was seen to blink from chalk to metal. Now the
+// sequence uncovers the metal from its first pixel, and the swap under the
+// cover is instant (`cut`), since nothing under a cover can be seen changing
+// and a fade still running when the cover opens is a fade seen on the ring.
+// Past the ceiling the sequence runs on the chalk mark and the metal fades in
+// over it, gently, which is the designed state for a driver that is slow or
+// never answers.
+//
 // ── what it refuses to do ───────────────────────────────────────────────────
 // It plays once per tab: walking back to the front from the sky, or back to
 // the wall from a letter, does not replay it; a refresh does. It is skippable
@@ -67,7 +82,7 @@
 // and not a logo forever; and a tap still lifts it at once, because a brand
 // animation that cannot be got out of is a toll gate.
 
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { ECL, ECL_SPINE, ringPath, starPath } from './mark.js'
 import LiquidMark from './LiquidMark.jsx'
 import './intro.css'
@@ -77,6 +92,10 @@ const BEATS = [0, 180, 520, 1180, 1560]
 const LIFT = 4
 // How long the black takes to leave. 1560 + 720 = 2280.
 const OUT = 720
+// The most the held frame is stretched waiting for the metal, from mount. A
+// shader that has not drawn by then is a slow driver, and the mark it gets is
+// the chalk one, which is a mark and not a hole.
+const HOLD_MAX = 760
 
 // The band, dilated a hair, so the sweep's cut clears the metal's own edge.
 const BAND = ringPath(1.6)
@@ -99,33 +118,62 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
   // `ready`, so a page that is slow to arrive holds the assembled mark and a
   // page that is quick changes nothing about the two seconds.
   const [due, setDue] = useState(false)
+  // Whether the sequence has started: beat 1 has been scheduled, and from
+  // here the metal's swap is a fade rather than a cut, because from here the
+  // cover is opening and a cut would be seen.
+  const [started, setStarted] = useState(false)
   const timers = useRef([])
   const done = useRef(false)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
+
+  // The start of the sequence: beat 1 and everything after it, on the clock,
+  // measured from the moment the metal is there or the ceiling is reached,
+  // whichever is first, and never before the held frame is over. Called by
+  // the metal (`onReady`, below) or by the ceiling, and only the first call
+  // counts.
+  const start = useRef(() => {})
 
   const skip = useRef(() => {})
   skip.current = () => {
     if (at >= LIFT) return
     timers.current.forEach(clearTimeout)
     timers.current = []
+    // and the metal arriving after this must not start the beats over
+    start.current = () => {}
+    setStarted(true)
     setAt(LIFT)
   }
 
   useEffect(() => {
     if (hold !== null) return undefined
     if (reduce) {
+      setStarted(true)
       setAt(3)
       timers.current.push(setTimeout(() => setDue(true), 560))
       return () => timers.current.forEach(clearTimeout)
     }
-    // Geometry only, so every beat can start on the first frame: there is no
-    // face to wait for.
-    BEATS.forEach((ms, i) => {
-      if (i === 0) return
-      timers.current.push(setTimeout(() => (i === LIFT ? setDue(true) : setAt(i)), ms))
-    })
-    return () => timers.current.forEach(clearTimeout)
+    const t0 = performance.now()
+    let begun = false
+    start.current = () => {
+      if (begun) return
+      begun = true
+      const elapsed = performance.now() - t0
+      // where beat 1 lands, from mount: the held frame, or now if the metal
+      // took longer than that
+      const from = Math.max(BEATS[1], elapsed)
+      setStarted(true)
+      BEATS.forEach((ms, i) => {
+        if (i === 0) return
+        const at = from + (ms - BEATS[1])
+        // a beat never takes the sequence backwards: a skip may have put it
+        // at the lift already
+        timers.current.push(setTimeout(() => (i === LIFT ? setDue(true) : setAt((a) => Math.max(a, i))), Math.max(0, at - elapsed)))
+      })
+    }
+    timers.current.push(setTimeout(() => start.current(), HOLD_MAX))
+    return () => { timers.current.forEach(clearTimeout); start.current = () => {} }
   }, [reduce, hold])
+  const metalReady = useCallback(() => start.current(), [])
 
   useEffect(() => {
     if (due && ready) setAt((a) => (a < LIFT ? LIFT : a))
@@ -157,7 +205,7 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
       <div className="hi-veil" />
       <div className="hi-stage">
         <div className="hi-mark">
-          <LiquidMark size="100%" speed={at >= LIFT ? 0.35 : 0.8} still={reduce} />
+          <LiquidMark size="100%" speed={at >= LIFT ? 0.35 : 0.8} still={reduce} cut={!started} onReady={metalReady} />
           {/* the cover. Black on black, and the mask is where the sequence
               lives: white keeps the cover, black cuts it away. */}
           <svg className="hi-cover" viewBox="0 0 100 100" aria-hidden="true" focusable="false">

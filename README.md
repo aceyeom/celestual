@@ -130,6 +130,7 @@ order to apply what is left.
 | [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md) | The product direction |
+| [docs/WALL-FEATURES.md](./docs/WALL-FEATURES.md) | What goes on the wall and what does not: the nine gates, the attacks by name, the proposals weighed, and what the wall needs next |
 | [app/README.md](./app/README.md) | Front end architecture |
 | [app/src/wall/README.md](./app/src/wall/README.md) | The wall, in detail |
 | [supabase/README.md](./supabase/README.md) | Schema, RPCs, RLS, edge functions, the operator playbook |

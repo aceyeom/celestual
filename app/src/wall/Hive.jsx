@@ -76,10 +76,12 @@
 // The DOM holds a pool of slots the size of the screen and no more, however
 // many names the wall carries: each slot owns one cell of the visible window
 // and is handed a new name when the field scrolls a cell across. Positions and
-// scales are written straight to the elements from one requestAnimationFrame;
-// React is told only when a slot changes hands or the lens moves to another
-// person. The disc is scaled and the plate is not, so the type stays sharp
-// whatever the lens is doing to the picture.
+// scales are written straight to the elements from one requestAnimationFrame,
+// and only when they have moved; React is told only when a slot changes hands
+// or the lens moves to another person, and a slot is handed a name and a
+// count rather than the index's row, so a new reading of the index re-renders
+// only the discs whose names actually moved. The disc is scaled and the plate
+// is not, so the type stays sharp whatever the lens is doing to the picture.
 //
 // ── the pulse ───────────────────────────────────────────────────────────────
 // The veil opens from the finger, and what opens it is not a line drawn over
@@ -242,9 +244,21 @@ const SLOP = 6
 // is rubber banded, the way a scroll is at the end of a list, and let go it
 // eases back to the limit. The zoom is a factor on the lattice pitch and on
 // nothing else: the discs are laid out in the DOM at the window's own pitch
-// and scaled by the loop, so a pinch costs no re-render and no slot changes
-// hands. `wheel` is how much a wheel notch zooms, per pixel of delta.
-const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55 }
+// and scaled by the loop, so a pinch costs no re-render. `wheel` is how much
+// a wheel notch zooms, per pixel of delta.
+//
+// `pool` is the zoom the slot pool is cut for on the first seating: a little
+// past the window's own pitch, so a pinch that barely moves needs no slot the
+// pool does not have, and no further. It was cut for the field at its most
+// open, so that no pinch could ever need a new pool, and that was the wall
+// carrying twice the discs the screen showed for a gesture most visits never
+// make: on a phone, three hundred and fifty buttons, each its own layer with
+// a picture in it, for a hundred and seventy on the glass, and the memory
+// that costs is the memory a phone runs out of. A pinch that opens the field
+// past this cuts the pool for the most open field once (`applyZoom`), and
+// every disc changes hands under a gesture that is already moving the whole
+// crowd.
+const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55, pool: 0.9 }
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
 // ── the window, and the window's bar ──
@@ -471,9 +485,11 @@ function tileUp(tiles, was) {
 // scaled by the loop; the orb inside it is the CSS's, so an arrival, a press
 // and a new letter can be animated without the loop and the stylesheet
 // writing to the same transform. Memoised so a slot re-renders only when its
-// name changes or the lens arrives on it or leaves it.
-const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, onOpen, onHover, onPeek }) {
-  if (!tile) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
+// name changes or the lens arrives on it or leaves it: it is handed the name
+// and the count as two values rather than the index's row, so a new reading
+// of the index that did not move this name does not touch this disc.
+const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay, bind, onOpen, onHover, onPeek }) {
+  if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
       type="button"
@@ -481,18 +497,18 @@ const Cell = memo(function Cell({ s, tile, d, focus, mine, fresh, delay, bind, o
       style={{ '--d': `${d}px`, '--in': `${delay}ms` }}
       data-slot={s}
       ref={(el) => bind(s, el)}
-      onClick={(e) => onOpen(tile.handle, e)}
+      onClick={(e) => onOpen(handle, e)}
       /* the letters under this name are asked for on the way down, so a tap
          that turns into an open has a head start on the words */
-      onPointerDown={onPeek ? () => onPeek(tile.handle) : undefined}
+      onPointerDown={onPeek ? () => onPeek(handle) : undefined}
       onPointerEnter={(e) => onHover(s, e)}
       onPointerLeave={(e) => onHover(-1, e)}
-      aria-label={`${atHandle(tile.handle)}, ${tile.count === 1 ? 'one letter' : `${tile.count} letters`}`}
+      aria-label={`${atHandle(handle)}, ${count === 1 ? 'one letter' : `${count} letters`}`}
       draggable={false}
     >
       <span className="wl-cell-disc" aria-hidden="true">
         <span className="wl-cell-orb">
-          <Face handle={tile.handle} size={d} lit={mine} />
+          <Face handle={handle} size={d} lit={mine} />
         </span>
       </span>
     </button>
@@ -573,6 +589,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     S: 70, rowH: 70 * ROW,    // and the pitch the field is drawn at: S0 × zoom
     zoom: 1,                  // how far the field is opened out (ZOOM)
     zoomGoal: null,           // { z, fx, fy }: a zoom the loop is easing to
+    poolZoom: ZOOM.pool,      // the zoom the slot pool is cut for (measure)
     pointers: new Map(),      // the fingers on the field, by pointer id
     pinch: null,              // two of them: { d0, z0, mx, my }
     wL: 0, hL: 0,             // the window the lens is drawn for (RESHAPE_PX)
@@ -615,7 +632,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
 
   // ── the window ──
   // Measured, and re-measured on resize, because everything here turns on it:
-  // the pitch, how many slots there are, and where the light is.
+  // the pitch, how many slots there are, and where the light is. The measure
+  // is left in a ref as well, for the one pinch that opens the field past
+  // the pool it was cut with (applyZoom).
+  const remeasure = useRef(null)
   useLayoutEffect(() => {
     const el = stage.current
     if (!el) return undefined
@@ -636,10 +656,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const S0 = pitchFor(w, hL)
       const S = S0 * m.zoom
       const rowH = S * ROW
-      // The pool is cut for the field at its most open, so a pinch out never
-      // needs a slot the pool does not have: cutting a new one hands every
-      // disc to a different slot, which is a reshuffle the eye sees.
-      const Sm = S0 * ZOOM.min
+      // The pool is cut for the field a little more open than the window
+      // draws it (ZOOM.pool), and again for the field at its most open the
+      // first time a pinch takes it past that (applyZoom): a pool the screen
+      // never uses is a pool the phone still pays for.
+      const Sm = S0 * m.poolZoom
       const pad = Sm * 0.6
       const Mx = Math.ceil((w + 2 * pad) / Sm) + 3
       const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / (Sm * ROW)) + 3
@@ -678,7 +699,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         const NX = Math.max(Mx, m.Mx), NY = Math.max(My, m.My)
         m.Mx = NX; m.My = NY
         m.slots = Array.from({ length: NX * NY }, () => ({
-          I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true,
+          I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true, tf: '', op: '',
         }))
         m.used = new Uint8Array(NX * NY)
         m.focus = null
@@ -687,9 +708,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       }
     }
     measure()
+    remeasure.current = measure
     const ro = window.ResizeObserver ? new ResizeObserver(measure) : null
     if (ro) ro.observe(el)
-    return () => { if (ro) ro.disconnect() }
+    return () => { if (ro) ro.disconnect(); remeasure.current = null }
   }, [lay, worldX])
 
   const bind = useCallback((s, el) => {
@@ -697,6 +719,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     if (!slot) return
     slot.el = el
     slot.disc = el ? el.querySelector('.wl-cell-disc') : null
+    // a new element has no transform on it yet, whatever the slot last wrote
+    slot.tf = ''; slot.op = ''
   }, [])
 
   // ── the zoom, applied ──
@@ -717,6 +741,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     if (m.goal) m.goal = { x: fx - (fx - m.goal.x) * k, y: fy - (fy - m.goal.y) * k }
     const t = m.tap
     if (t) { t.wx *= k; t.wy *= k; t.R *= k; t.rmax *= k }
+    // opened past what the pool was cut for: cut it for the most open field,
+    // once, so no later pinch needs a slot it does not have
+    if (z < m.poolZoom && m.poolZoom > ZOOM.min) {
+      m.poolZoom = ZOOM.min
+      if (remeasure.current) remeasure.current()
+    }
   }, [])
 
   // ── the name on the plate ──
@@ -958,7 +988,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           if (!slot.shown) { slot.shown = true; if (slot.el) slot.el.style.visibility = '' }
           const isFocus = f && f.I === I && f.J === J
           if (slot.disc) {
-            slot.disc.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${(z * m.zoom).toFixed(3)})`
+            // written only when it has moved: every inline write is a style
+            // recalculation for that element on the frame, and the far discs
+            // barely move between two frames
+            const tf = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0) scale(${(z * m.zoom).toFixed(3)})`
+            if (tf !== slot.tf) { slot.tf = tf; slot.disc.style.transform = tf }
             // ── air ──
             // The far discs are not only smaller, they are further away, and
             // the one thing distance does to a face that scale alone does not
@@ -967,7 +1001,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             // way into the room. Without it the rim reads as small faces on
             // the same plane as the near ones, which is a diagram.
             const air = Math.min(1, lens.air + (1 - lens.air) * clamp01((z - lens.rim) / (1 - lens.rim)) + lift)
-            slot.disc.style.opacity = air > 0.995 ? '1' : air.toFixed(3)
+            const op = air > 0.995 ? '1' : air.toFixed(2)
+            if (op !== slot.op) { slot.op = op; slot.disc.style.opacity = op }
           }
           // how far the pointer is from this disc, in its own drawn place: the
           // plate goes on whoever is nearest it, and on a phone, where there is
@@ -1420,7 +1455,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           <Cell
             key={s}
             s={s}
-            tile={t}
+            handle={t ? t.handle : ''}
+            count={t ? t.count : 0}
             d={t ? Math.round(S * fracOf(a.k)) : 0}
             /* nobody is being read while the masthead is over the field:
                the ring and the halo are the mark of the one person the wall
