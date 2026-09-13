@@ -293,9 +293,10 @@ function shapeLetter(l) {
 // to find out what gets through by writing until something does.
 //
 // One more refusal since 0044: `cap`, when three letters are already spent in
-// the last seven days. It carries `resets_at`, so the screen can say when one
-// comes back rather than only that none is left. A rejected letter never
-// spends one, so a person who has been screened is not also charged for it.
+// the last five days (the window was seven until 0051). It carries
+// `resets_at`, so the screen can say how long to wait rather than only that
+// none is left. A rejected letter never spends one, so a person who has been
+// screened is not also charged for it.
 export async function write({ to, body, sealedLine, source }) {
   if (!hasSupabase) return OFFLINE
   try {

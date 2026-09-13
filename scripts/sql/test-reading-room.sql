@@ -1,9 +1,10 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- test-reading-room.sql: exercises 0044_the_reading_room_and_the_three.sql.
+-- test-reading-room.sql: exercises 0044_the_reading_room_and_the_three.sql,
+-- and the window 0051_five_days_between.sql shortens.
 --
 -- Two claims, and both are properties of the schema rather than of a screen:
 -- a person this product has PROVED may read a letter, whichever proof they
--- hold; and only a campus address may write one, three times in seven days.
+-- hold; and only a campus address may write one, three times in five days.
 -- Run through scripts/verify-migrations.sh --test. Self contained: its cast is
 -- its own, so it does not depend on the order the tests run in.
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -138,9 +139,10 @@ select rr_ok('a proved handle may report what it can read',
     (wall_letters_for('rr-token-handle-000000', 'rrreported')->'letters'->0->>'id')::uuid, 'no reason')
    ->>'ok')::boolean);
 
--- ── 4. three in seven days ──────────────────────────────────────────────────
+-- ── 4. three in five days ───────────────────────────────────────────────────
 -- The writer has spent two already (the two letters above), so one is left.
 select rr_ok('the allowance is three', wall_letter_allowance() = 3);
+select rr_ok('and the window is five days (0051)', wall_letter_window() = interval '5 days');
 select rr_ok('two spent, one left',
   (wall_quota('rr-token-writer-000000')->>'left')::int = 1);
 select rr_ok('and it says when one comes back',
@@ -169,16 +171,21 @@ select rr_ok('and it does not spend one',
 
 -- A letter taken down still counts: a report must not hand its author a fresh
 -- slot. The reported letter above is one of the three already counted.
-select rr_ok('a letter taken down still counts against the week',
+select rr_ok('a letter taken down still counts against the window',
   (select count(*) from wall_letters
     where author_id = (select id from celestual_users where edu_email='rr-writer@berkeley.edu')
       and status = 'removed') = 1);
 
--- The window is a rolling one. Backdate the three and the allowance is whole
--- again, without anybody having deleted anything.
-update wall_letters set created_at = now() - interval '8 days'
+-- The window is a rolling one. Backdate the three to four days ago and they
+-- still count; to six and the allowance is whole again, without anybody
+-- having deleted anything.
+update wall_letters set created_at = now() - interval '4 days'
  where author_id = (select id from celestual_users where edu_email='rr-writer@berkeley.edu');
-select rr_ok('a week later the three come back',
+select rr_ok('four days on, the three still stand',
+  (wall_quota('rr-token-writer-000000')->>'left')::int = 0);
+update wall_letters set created_at = now() - interval '6 days'
+ where author_id = (select id from celestual_users where edu_email='rr-writer@berkeley.edu');
+select rr_ok('six days on, the three come back',
   (wall_quota('rr-token-writer-000000')->>'left')::int = 3);
 select rr_ok('and with nothing spent there is nothing to reset',
   (wall_quota('rr-token-writer-000000')->>'resets_at') is null);

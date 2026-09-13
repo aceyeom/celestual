@@ -754,11 +754,11 @@ const ROUTES = [
   // the glass fading in place around it
   { label: 'letter-close-disc', path: '/berkeley',
     acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc'], ['wait', 1400], ['click', '.wl-close', null, 150]], settle: 0 },
-  // a disc pressed on the wall: the pulse leaving it through the crowd and
-  // the crowd travelling to bring it into the light, caught before the
-  // letter opens out of it
+  // a disc pressed on the wall: the letter's card opening out of it on the
+  // frame of the press, caught mid flight, with the pulse leaving the disc
+  // through the crowd under the glass
   { label: 'berkeley-tap',  path: '/berkeley',
-    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 330]], settle: 0 },
+    acts: [['click', '.wl-mast-go'], ['wait', 3600], ['click', '.wl-cell[aria-label^="@ren.tanaka"] .wl-cell-disc', null, 180]], settle: 0 },
   // "write", in the bar, pressed by a browser not through the gate: the gate,
   // with the composer set as where it opens onto
   { label: 'berkeley-write-gate', path: '/berkeley', open: false,

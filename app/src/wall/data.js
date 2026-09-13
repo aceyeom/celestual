@@ -133,10 +133,12 @@ export function gated() { return GATED }
 export function freeReads() { return FREE }
 
 // ── the allowance ───────────────────────────────────────────────────────────
-// Three letters in any seven days (migration 0044). Cached the way everything
-// else here is, so the composer can draw the meter during render and the
+// Three letters in any five days (migrations 0044 and 0051). Cached the way
+// everything else here is, so the composer can read it during render and the
 // server stays the one that decides. `null` before it has been asked, which
-// the composer reads as "do not draw a number yet" rather than as zero.
+// the composer reads as "say nothing yet" rather than as zero. No number in
+// it is ever drawn; what the composer says, once they are spent, is how many
+// days until `resets` (parts.jsx `Allowance`).
 let QUOTA = null
 export function allowance() { return QUOTA }
 
@@ -240,9 +242,9 @@ export function warmWall() {
   return loadWall().then(() => warmFaces(TILES.slice(0, WARM_FIRST).map((t) => t.handle)))
 }
 
-// How many letters are left this week. Asked by the composer on mount and
-// again after one goes up, because the number the writer is looking at has to
-// be the number the server would refuse them on.
+// How many letters are left, and when one comes back. Asked by the composer
+// on mount and again after one goes up, because the wait the writer is told
+// has to be the wait the server would refuse them on.
 export function loadQuota(force = false) {
   if (!force && QUOTA) return Promise.resolve()
   return once('quota', async () => {

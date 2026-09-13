@@ -1179,6 +1179,31 @@ The test of the whole path: put a letter up to a spare handle at
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
 
+## Five days between (migration 0051)
+
+The three letters stay three, and the window they are counted over shortens
+from seven days to five. The composer stops drawing anything about the
+number: while any letter is left its foot says nothing, and once the three
+are spent it says only how many days to wait before drafting more, counted
+from the server's `resets_at`. One migration and the app; the moderation
+function needs no change, since it reads the window through `wall_quota`.
+
+1. **Apply `0051_five_days_between.sql`.** Applied 13 September 2026, through
+   the Supabase MCP, and recorded in the migration history under that name;
+   `wall_letter_window()` answers five days and `wall_quota` carries the new
+   comment. Re-runnable. It redefines `wall_letter_window()` as five
+   days; `wall_letters_spent`, `wall_write` and `wall_quota` read it and
+   change nothing of their own. Verified by `scripts/verify-migrations.sh
+   --test` (`test-reading-room.sql`, which now asserts the window and that
+   the three come back six days on).
+2. **Deploy the app.** Vercel, as usual.
+
+Order does not matter: an app deployed first says "wait N days" off a
+seven-day `resets_at` until the migration lands, which is a longer wait said
+honestly; a migration applied first refuses the fourth letter on the shorter
+window and the old composer says "wait a week", which is the one wrong word
+this change removes.
+
 ## The letter goes up first (migration 0050)
 
 The screen's hold is gone, and so is its wait. Every letter the list at the
@@ -1315,8 +1340,9 @@ The test of the whole path: sign in on Main with the DM code, open
 `/berkeley`, and read a letter without ever giving an address. Then open the
 composer: it should still say the letters are written by Berkeley. On a campus
 address, write three letters: the composer's foot says nothing about the
-count while any are left, and after the third it says the limit is reached
-and the act goes dark; a fourth press is refused before it is written.
+count while any are left, and after the third it says how many days to wait
+before drafting more (five from the first, since 0051) and the act goes
+dark; a fourth press is refused before it is written.
 
 ## The pass list (migration 0043)
 
