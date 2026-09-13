@@ -848,20 +848,31 @@
    The flat mark stands under the shader from the first frame, and the metal
    fades in over it once its first frame is drawn. Same silhouette, so what
    the eye sees is the mark lighting; a driver that never answers leaves the
-   mark, not a hole. The fade is the length of a bloom. */
+   mark, not a hole. The fade is the length of a bloom.
+
+   It is a fade IN, not a crossfade. The flat stays whole under the metal
+   until the metal is opaque, and only then leaves, quickly, because the two
+   fading against each other on one clock dipped to three quarters halfway
+   and came back, and on the hard-start curve that was a blink on the logo
+   (LiquidMark.jsx, the swap). `--ease-out` rather than `--ease` on the metal,
+   so the material is seen to set over the whole fade rather than to land in
+   its first hundred milliseconds. `is-cut` is the swap made instant, for a
+   mark that is still under the intro's cover. */
 .wl-liquid { position: relative; display: block; flex: 0 0 auto; }
 .wl-liquid-flat {
   position: absolute; inset: 0; width: 100%; height: 100%;
   color: var(--chalk);
-  transition: opacity 900ms var(--ease);
+  transition: opacity 320ms var(--ease-out) 900ms;
 }
 .wl-liquid-metal {
   position: absolute; inset: 0; width: 100%; height: 100%;
   opacity: 0;
-  transition: opacity 900ms var(--ease);
+  transition: opacity 900ms var(--ease-out);
 }
 .wl-liquid.is-ready .wl-liquid-metal { opacity: 1; }
 .wl-liquid.is-ready .wl-liquid-flat { opacity: 0; }
+.wl-liquid.is-cut .wl-liquid-metal,
+.wl-liquid.is-cut .wl-liquid-flat { transition: none; }
 
 /* the bloom — the whole accent system, spent once per screen */
 .wl-bloom {
@@ -1464,11 +1475,22 @@
 /* ── the light on whoever is being read ──
    A soft warm halo behind the disc the lens is on, drawn as a gradient and
    not cast as a shadow. It is the wall's one bright thing and it is on the
-   one person the wall is naming. */
+   one person the wall is naming.
+
+   It is held at half its size until it is lit. The disc is its own
+   compositor layer (`will-change`, below), and a layer is as large as
+   everything painted in it, transparent or not: a halo drawn at nearly twice
+   the disc's width on every disc made every layer on the field three times
+   the disc's area, all of it blank, for a glow on one disc, and on a phone
+   at three pixels to the point that is most of what a hundred and seventy
+   discs cost. Scaled to half it sits inside the disc's own box and the
+   layer is the disc; lit, it opens out to its full size as it comes up,
+   which is what a light coming on looks like anyway. */
 .wl-cell-orb::before {
   content: ''; position: absolute; inset: -44%; border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 244, 228, 0.24) 0%, rgba(255, 244, 228, 0.06) 44%, rgba(255, 244, 228, 0) 70%);
-  opacity: 0; transition: opacity 320ms var(--ease);
+  opacity: 0; transform: scale(0.5);
+  transition: opacity 320ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
 }
 /* ── and the rim of glass round it ──
@@ -1487,7 +1509,7 @@
   pointer-events: none;
 }
 .wl-cell.is-focus .wl-cell-orb { transform: scale(1.04); }
-.wl-cell.is-focus .wl-cell-orb::before { opacity: 1; }
+.wl-cell.is-focus .wl-cell-orb::before { opacity: 1; transform: none; }
 .wl-cell.is-focus .wl-cell-orb::after { opacity: 1; transform: none; }
 .wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the

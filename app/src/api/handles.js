@@ -293,9 +293,23 @@ export function avatarUrl(path) {
   return p && STORAGE ? `${STORAGE}/storage/v1/object/public/avatars/${p}` : '';
 }
 
+//
+// A row that says `known: false` is learned too, as a miss: the index and the
+// search answer out of the same table a peek would ask, so a name they have
+// just said the resolver never saw is not asked about again for a while. It
+// used to be asked: every disc on the field with a monogram sent a peek on
+// mount and again a minute later, and a wall of three hundred names was a
+// steady trickle of requests for faces the index had already said were not
+// there. A commit (resolveHandle) still runs the real lookup.
+const INDEX_MISS_MS = 10 * 60_000;
+
 export function learnHandle(r) {
   const handle = normHandle(r?.handle);
-  if (!handle || !r?.known || memo.has(handle)) return;
+  if (!handle || memo.has(handle)) return;
+  if (!r?.known) {
+    if (r && r.known === false) missed.set(handle, Date.now() + INDEX_MISS_MS);
+    return;
+  }
   memo.set(handle, {
     state: 'found',
     handle,

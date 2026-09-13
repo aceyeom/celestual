@@ -314,8 +314,11 @@ function Down({ letter: l, onChange, onLeave }) {
 }
 
 export default function Wall({ go, reduce, rev, under = false }) {
-  // `rev` is the corpus's revision, and the wall is read fresh when it moves.
-  const tiles = useMemoTiles(rev)
+  // The index, shaped (data.js `wall`). The same array until the index is
+  // read again, whatever else the corpus does, so the hive under it, which
+  // keys its layout off the array's identity, is laid out once per reading
+  // of the index and not once per revision of the corpus.
+  const tiles = wall()
   const letters = liveCount()
   const state = getState()
   const written = state.written
@@ -646,13 +649,4 @@ export default function Wall({ go, reduce, rev, under = false }) {
     )}
     </>
   )
-}
-
-// The tiles, read once per revision of the corpus. `wall()` builds a new
-// array on every call and the hive keys its layout off the array's identity,
-// so it is read when the corpus moves and not on every render.
-function useMemoTiles(rev) {
-  const held = useRef({ rev: -1, tiles: [] })
-  if (held.current.rev !== rev) held.current = { rev, tiles: wall() }
-  return held.current.tiles
 }

@@ -376,12 +376,35 @@ export async function removeLetter(id) {
 // the server. They are a drawing decision, they have to be identical on every
 // device so two people looking at the same wall see the same wall, and a hash
 // of the handle gives that for free.
-export function wall() {
-  return TILES.map((t) => ({
+//
+// ── and it is answered from a memo ──────────────────────────────────────────
+// The shape is built once per reading of the index, and a name that has not
+// changed between two readings is the same object it was. The hive hands each
+// disc its name and its count and re-renders a disc only when those move, and
+// the wall's screen keys its whole layout off this array's identity; so a
+// revision that did not touch the index (a letter's words landing, a heart,
+// this person's own letters being read again) costs the field nothing. It used
+// to build sixty new objects on every call, the screen called it on every
+// revision, and every disc on the field was re-rendered for each of them: a
+// press on a name, which asks for its letters, was answered with a hitch on
+// the frame the card was opening.
+function shapeTile(t, was) {
+  if (was && was.count === t.count && was.at === t.at && was.known === t.known
+    && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar) return was
+  return {
     ...t,
     weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
     seed: hash(t.handle),
-  }))
+  }
+}
+let SHAPED = { of: null, tiles: [] }
+let SHAPES = new Map()
+export function wall() {
+  if (SHAPED.of === TILES) return SHAPED.tiles
+  const tiles = TILES.map((t) => shapeTile(t, SHAPES.get(t.handle)))
+  SHAPES = new Map(tiles.map((t) => [t.handle, t]))
+  SHAPED = { of: TILES, tiles }
+  return tiles
 }
 
 // The masthead's number. The sum off the index rather than a second count, so

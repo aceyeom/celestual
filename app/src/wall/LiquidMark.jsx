@@ -62,6 +62,33 @@
 //   milliseconds, so a screen can run its entrance on a flat mark and pay
 //   for the compile once nothing else is moving.
 //
+//   AND IT SAYS WHEN IT HAS ARRIVED. `onReady` fires once the metal has drawn
+//   a frame, so a caller with a sequence that should be run on the metal (the
+//   intro) can hold that sequence for it. "Arrived" is a frame after the
+//   canvas is in the tree, not the moment it is: the package inserts the
+//   canvas before its first frame is drawn, and a mark handed over on that
+//   frame is a mark handed over to a blank canvas.
+//
+// ── the swap, and why it is not a crossfade ─────────────────────────────────
+// The metal fades in OVER the flat mark, and the flat mark leaves only once
+// the metal is wholly there. It used to fade out on the same clock the metal
+// faded in, which is a crossfade, and a crossfade of two opaque shapes of the
+// same silhouette on a black ground dips: halfway through, half of one over
+// half of the other is three quarters of either, so the mark dimmed and came
+// back. Worse, the curve every transition here runs on has a hard start, so
+// that dip was a fifty millisecond step. On a laptop the swap landed under the
+// intro's cover and nobody saw it; on a phone the shader takes longer to
+// compile than the cover takes to open, the swap landed on a ring already on
+// the screen, and the ring was seen to blink. With the metal on top and the
+// flat held underneath until the metal is opaque, the luminance can only move
+// one way, over the whole fade, and where the metal's soft edge does not
+// quite cover the flat the last thing to go is a hairline of chalk.
+//
+// `cut` makes the swap instant instead. The intro asks for that while its
+// cover is still over the mark: nothing under the cover can be seen changing,
+// and a nine hundred millisecond fade that is still running when the cover
+// opens is a fade seen on the ring.
+//
 // The mask is fetched and decoded once per page and handed to every mount as
 // the same image element, rather than each mount loading the URL again.
 //
@@ -142,14 +169,18 @@ export function warmLiquidMark() {
 }
 
 export default function LiquidMark({
-  size = 64, speed = 0.7, still = false, quality = 'full', defer = 0, className = '', style,
+  size = 64, speed = 0.7, still = false, quality = 'full', defer = 0, cut = false, onReady = null,
+  className = '', style,
 }) {
   const ok = useMemo(hasWebGL2, [])
   const host = useRef(null)
-  // Whether the shader's canvas exists yet: the mount is asynchronous behind
-  // the texture, and until it lands the flat mark is the whole drawing.
+  // Whether the metal has drawn a frame yet: the mount is asynchronous behind
+  // the texture and the compile, and until it lands the flat mark is the
+  // whole drawing.
   const [ready, setReady] = useState(false)
   const [mounted, setMounted] = useState(defer <= 0)
+  const arrived = useRef(onReady)
+  arrived.current = onReady
 
   useEffect(() => {
     if (!ok || mounted) return undefined
@@ -158,18 +189,34 @@ export default function LiquidMark({
   }, [ok, mounted, defer])
 
   // The canvas arrives as a child of the mount's own element, prepended by the
-  // package once the texture has loaded and the program is linked, which is
-  // also the moment its first frame is drawn. Watched rather than assumed.
+  // package once the texture is decoded and the program is linked. Its first
+  // frame is drawn on the next animation frame, when the package's resize
+  // observer sizes it, so the metal is declared ready one frame after that:
+  // watched rather than assumed, and a frame late rather than a frame early.
   useEffect(() => {
     if (!ok || !mounted) return undefined
     const el = host.current
     if (!el) return undefined
-    if (el.querySelector('canvas')) { setReady(true); return undefined }
-    const mo = new MutationObserver(() => {
-      if (el.querySelector('canvas')) { setReady(true); mo.disconnect() }
-    })
-    mo.observe(el, { childList: true })
-    return () => mo.disconnect()
+    let raf = 0
+    let mo = null
+    const drawn = () => {
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(() => {
+          setReady(true)
+          if (arrived.current) arrived.current()
+        })
+      })
+    }
+    if (el.querySelector('canvas')) drawn()
+    else {
+      mo = new MutationObserver(() => {
+        if (!el.querySelector('canvas')) return
+        mo.disconnect(); mo = null
+        drawn()
+      })
+      mo.observe(el, { childList: true })
+    }
+    return () => { if (mo) mo.disconnect(); cancelAnimationFrame(raf) }
   }, [ok, mounted])
 
   // One uniforms object per mount, carrying the shared decoded mask.
@@ -179,7 +226,7 @@ export default function LiquidMark({
   const box = { width: size, height: size, ...style }
   if (!ok) return <Ecliptic size={size} className={className} style={style} />
   return (
-    <span className={`wl-liquid${ready ? ' is-ready' : ''} ${className}`} style={box} aria-hidden="true">
+    <span className={`wl-liquid${ready ? ' is-ready' : ''}${cut ? ' is-cut' : ''} ${className}`} style={box} aria-hidden="true">
       <Ecliptic size="100%" className="wl-liquid-flat" />
       {mounted && (
         <ShaderMount
