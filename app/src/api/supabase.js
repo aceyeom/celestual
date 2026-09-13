@@ -16,6 +16,16 @@ export const hasSupabase = !!(url && key);
 // Instagram DM (api/igverify.js) and pings restore via celestual_my_pings, both
 // gated by that proof. So the client needs no session persistence; every RPC is
 // an anon call carrying the DM proof where ownership matters.
+//
+// Realtime is used for one thing, the wall's nudge (wall/api.js subscribeWall),
+// and a socket that cannot be opened (a network that blocks it, a project
+// with Realtime off) must cost nothing: after a few quick tries the client
+// tries once a minute, since the wall re-reads its index on a clock anyway.
+const backoff = (tries) => (tries > 5 ? 60_000 : [1000, 2000, 5000, 10000][tries - 1] || 10000);
+
 export const supabase = hasSupabase
-  ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+  ? createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { reconnectAfterMs: backoff },
+    })
   : null;

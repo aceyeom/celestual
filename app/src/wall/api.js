@@ -142,6 +142,38 @@ export async function wallSearch(query) {
   }))
 }
 
+// ── the wall, moving ─────────────────────────────────────────────────────────
+// A letter going up on another phone is a broadcast on this campus's channel,
+// sent by celestual-wall-moderate after the write and after a takedown by the
+// reading. The message says the index moved and nothing else; what the
+// browser does with it is read the public index again, the same read it made
+// on landing (data.js watchWall). Realtime here is a nudge and never a feed:
+// no letter, no name and no count travels on it, so a channel anybody can
+// join discloses nothing the index does not.
+//
+// A channel that will not open is let go after a few refusals rather than
+// asked for again every few seconds forever: the clock is the floor, and a
+// project with Realtime off should not spend a phone's battery finding out.
+const NUDGE_TRIES = 4
+export function subscribeWall(onMoved) {
+  if (!hasSupabase || typeof supabase.channel !== 'function') return () => {}
+  let ch = null
+  let refused = 0
+  const drop = () => { if (ch) { const c = ch; ch = null; try { supabase.removeChannel(c) } catch { /* already gone */ } } }
+  try {
+    ch = supabase
+      .channel(`wall:${CAMPUS}`, { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'moved' }, () => onMoved())
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') refused = 0
+        else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && ++refused >= NUDGE_TRIES) drop()
+      })
+  } catch {
+    return () => {}
+  }
+  return drop
+}
+
 // ── the pulse ────────────────────────────────────────────────────────────────
 // Whether this campus's wall is open and how much is on it, in one row. The
 // front door pins the wall's poster up off this and takes it down when the
