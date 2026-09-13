@@ -74,14 +74,23 @@
 //
 // ── what is drawn, and what is not ──────────────────────────────────────────
 // The DOM holds a pool of slots the size of the screen and no more, however
-// many names the wall carries: each slot owns one cell of the visible window
-// and is handed a new name when the field scrolls a cell across. Positions and
-// scales are written straight to the elements from one requestAnimationFrame,
-// and only when they have moved; React is told only when a slot changes hands
-// or the lens moves to another person, and a slot is handed a name and a
-// count rather than the index's row, so a new reading of the index re-renders
-// only the discs whose names actually moved. The disc is scaled and the plate
-// is not, so the type stays sharp whatever the lens is doing to the picture.
+// many names the wall carries. A cell of the lattice that comes onto the glass
+// takes a free slot and keeps it for as long as it is on the glass; a cell
+// that leaves gives its slot back; and when no slot is free the pool grows by
+// one, for good. So no disc ever changes hands while it is on the screen, at
+// any zoom, and the pool is exactly as large as the most the screen has ever
+// needed. It used to be a fixed grid of slots addressed by the cell's
+// coordinates modulo the grid, which was the right size only for the zoom it
+// was cut for: past that, two cells shared a slot and one of them was not
+// drawn, and re-cutting the grid for a pinch handed every disc on the field
+// to a different element under the fingers, which is what a pinch pulled hard
+// looked like. Positions and scales are written straight to the elements from
+// one requestAnimationFrame, and only when they have moved; React is told only
+// when a slot changes hands or the lens moves to another person, and a slot
+// is handed a name and a count rather than the index's row, so a new reading
+// of the index re-renders only the discs whose names actually moved. The disc
+// is scaled and the plate is not, so the type stays sharp whatever the lens is
+// doing to the picture.
 //
 // ── the pulse ───────────────────────────────────────────────────────────────
 // The veil opens from the finger, and what opens it is not a line drawn over
@@ -248,17 +257,20 @@ const SLOP = 6
 // a wheel notch zooms, per pixel of delta.
 //
 // `pool` is the zoom the slot pool is cut for on the first seating: a little
-// past the window's own pitch, so a pinch that barely moves needs no slot the
-// pool does not have, and no further. It was cut for the field at its most
-// open, so that no pinch could ever need a new pool, and that was the wall
-// carrying twice the discs the screen showed for a gesture most visits never
-// make: on a phone, three hundred and fifty buttons, each its own layer with
-// a picture in it, for a hundred and seventy on the glass, and the memory
-// that costs is the memory a phone runs out of. A pinch that opens the field
-// past this cuts the pool for the most open field once (`applyZoom`), and
-// every disc changes hands under a gesture that is already moving the whole
-// crowd.
-const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55, pool: 0.9 }
+// past the window's own pitch, so the first frames need no slot the pool does
+// not have. Past that the pool grows on demand and never shrinks (the slots,
+// below). `over` is how far past either limit a pinch can be dragged, in log
+// units of the zoom: about fifteen percent. The band used to let a pinch
+// through to nearly three times the limit, and a field at a third of its
+// pitch is fourteen times the discs of the field at rest, which is a DOM
+// nobody's phone can grow inside one gesture.
+const ZOOM = { min: 0.72, max: 1.45, wheel: 0.0022, band: 0.55, over: 0.15, pool: 0.9 }
+// The most cells handed a slot on one frame. A pinch pulled hard brings
+// dozens of cells onto the glass at once, every one a disc for React to
+// mount, and mounting them all on the frame they arrive is the frame that
+// drops; the ones past this wait a frame, at the rim, where they are small
+// and arriving anyway.
+const ASSIGN_PER_FRAME = 28
 // How long a name that has just arrived on the wall is drawn as new.
 const FRESH_MS = 2200
 // ── the window, and the window's bar ──
@@ -284,15 +296,26 @@ const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v)
 // A zoom a pinch is asking for, held inside its limits by a rubber band: in
 // log space, so a pinch in and a pinch out resist the same way, the
 // overshoot is let through at a falling fraction of itself and never past
-// a bound of its own. Apple's own curve, from the fluid interfaces talk.
+// a bound of its own (ZOOM.over). Apple's own curve, from the fluid
+// interfaces talk, with the bound set for a zoom rather than for a scroll.
 function bandZoom(raw) {
   const lz = Math.log(Math.max(1e-3, raw))
   const lo = Math.log(ZOOM.min)
   const hi = Math.log(ZOOM.max)
-  const rb = (over) => (over * ZOOM.band) / (1 + ZOOM.band * Math.abs(over))
+  const rb = (over) => (over * ZOOM.band) / (1 + (ZOOM.band / ZOOM.over) * Math.abs(over))
   if (lz > hi) return Math.exp(hi + rb(lz - hi))
   if (lz < lo) return Math.exp(lo - rb(lo - lz))
   return raw
+}
+
+// A cell's key in the slot map: two lattice indices folded into one integer,
+// since a Map keyed on integers is a hash and one keyed on strings is a
+// string built and hashed for every cell on every frame.
+const KEY_OFF = 1 << 20
+const KEY_ROW = 1 << 21
+const cellKey = (I, J) => (J + KEY_OFF) * KEY_ROW + (I + KEY_OFF)
+function newSlot() {
+  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', n: 0, delay: 0 }
 }
 
 // ── the pitch ───────────────────────────────────────────────────────────────
@@ -427,10 +450,24 @@ function cellNoise(I, J) {
 // the ranked order only decides where somebody sits the first time. What the
 // wall then shows when a letter goes up is one disc rising in place, which is
 // the truth (Hive `fresh`, wall.css `.wl-cell.is-new`).
+//
+// ── and nobody moves when the tile grows, either ────────────────────────────
+// A seat is a cell, (i, j), and not a rank. The tile is cut larger as names
+// arrive, and when it is, every cell of the old tile is a cell of the new one,
+// so a name keeps the cell it had and only the names that have just arrived
+// take cells: the free ones nearest the middle, in the index's order. It used
+// to keep seats only while the tile's size held, and re-seat the whole wall
+// by rank when it grew, which on a live wall was every disc on the field
+// moving to show one letter arriving. The tile also has a floor, four by
+// four, so a wall of a handful of names, which is every wall on its first
+// day, is not re-cut for each of its first dozen letters; the cells past the
+// names are filled from the heaviest names, in turn, which is what they
+// always were.
+const TILE_MIN = 4
 function tileUp(tiles, was) {
   const n = tiles.length
-  const C = Math.max(2, Math.ceil(Math.sqrt(n * 1.15)))
-  let R = Math.max(2, Math.ceil(n / C))
+  const C = Math.max(TILE_MIN, Math.ceil(Math.sqrt(n * 1.15)))
+  let R = Math.max(TILE_MIN, Math.ceil(n / C))
   if (R % 2) R += 1
   const ic = Math.floor(C / 2)
   const jc = Math.floor(R / 2)
@@ -445,39 +482,42 @@ function tileUp(tiles, was) {
   cells.sort((p, q) => p.d - q.d || p.a - q.a)
 
   // ── the seating ──
-  // A seat is a rank: 0 is the middle cell of the tile and n-1 is the far
-  // corner of it. Names that already had one keep it; the rest take the
-  // lowest seats still free, in the index's own order, so a new name sits as
-  // near the middle as the wall has room for.
+  const at = new Int32Array(C * R).fill(-1)
   const seats = new Map()
-  const taken = new Uint8Array(n)
-  const keep = was && was.C === C && was.R === R ? was.seats : null
+  // names that had a cell keep it, if the tile still has that cell and
+  // nobody else has been given it
+  const keep = was && was.seats
   if (keep) {
     for (let k = 0; k < n; k++) {
-      const r = keep.get(tiles[k].handle)
-      if (r === undefined || r >= n || taken[r]) continue
-      seats.set(tiles[k].handle, r)
-      taken[r] = 1
+      const seat = keep.get(tiles[k].handle)
+      if (!seat) continue
+      const [i, j] = seat
+      if (i >= C || j >= R || at[j * C + i] >= 0) continue
+      at[j * C + i] = k
+      seats.set(tiles[k].handle, seat)
     }
   }
-  let free = 0
-  const byRank = new Int32Array(n)
+  // the rest take the free cells nearest the middle, in the index's own
+  // order, so a new name sits as near the light as the wall has room for
+  let next = 0
   for (let k = 0; k < n; k++) {
-    const h = tiles[k].handle
-    let r = seats.get(h)
-    if (r === undefined) {
-      while (free < n && taken[free]) free++
-      r = free < n ? free : 0
-      seats.set(h, r)
-      taken[r] = 1
-    }
-    byRank[r] = k
+    if (seats.has(tiles[k].handle)) continue
+    while (next < cells.length && at[cells[next].j * C + cells[next].i] >= 0) next++
+    if (next >= cells.length) break
+    const c = cells[next]
+    at[c.j * C + c.i] = k
+    seats.set(tiles[k].handle, [c.i, c.j])
   }
-
-  const pool = tiles.map((_, k) => k)
-    .sort((a, b) => tiles[b].count - tiles[a].count || tiles[b].at - tiles[a].at)
-  const at = new Int32Array(C * R)
-  cells.forEach((c, rank) => { at[c.j * C + c.i] = rank < n ? byRank[rank] : pool[(rank - n) % n] })
+  // and the cells left over take the heaviest names, in turn
+  if (n) {
+    const pool = tiles.map((_, k) => k)
+      .sort((a, b) => tiles[b].count - tiles[a].count || tiles[b].at - tiles[a].at)
+    let p = 0
+    for (const c of cells) {
+      const idx = c.j * C + c.i
+      if (at[idx] < 0) at[idx] = pool[p++ % n]
+    }
+  }
   return { C, R, at, ic, jc, seats }
 }
 
@@ -525,7 +565,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   const seating = useRef(null)
   const lay = useMemo(() => {
     const out = tileUp(names, seating.current)
-    seating.current = { C: out.C, R: out.R, seats: out.seats }
+    seating.current = { seats: out.seats }
     return out
   }, [names])
   const wrote = useMemo(() => new Set(mine), [mine])
@@ -533,10 +573,11 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   const stage = useRef(null)
   const say = useRef(null)
   const size = useRef({ w: 0, h: 0 })
-  // The slot grid: how many columns and rows of slots the window is worth.
-  const [grid, setGrid] = useState(null)
-  // Which name each slot holds, as React sees it. The loop keeps its own copy
-  // in `motion.slots` and tells React only when a slot changes hands.
+  // Whether the pool has been cut: the loop starts when it has.
+  const [grid, setGrid] = useState(false)
+  // Which name each slot holds, as React sees it, one entry per slot. The
+  // loop keeps its own copy in `motion.slots` and tells React only when a
+  // slot changes hands or the pool grows.
   const [assign, setAssign] = useState([])
   // The person the lens is reading, by cell.
   const [focusKey, setFocusKey] = useState('')
@@ -589,7 +630,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     S: 70, rowH: 70 * ROW,    // and the pitch the field is drawn at: S0 × zoom
     zoom: 1,                  // how far the field is opened out (ZOOM)
     zoomGoal: null,           // { z, fx, fy }: a zoom the loop is easing to
-    poolZoom: ZOOM.pool,      // the zoom the slot pool is cut for (measure)
     pointers: new Map(),      // the fingers on the field, by pointer id
     pinch: null,              // two of them: { d0, z0, mx, my }
     wL: 0, hL: 0,             // the window the lens is drawn for (RESHAPE_PX)
@@ -605,7 +645,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     goal: null,               // where a keyboard or a tap asked the field to go
     goalK: 170,               // and how quickly it goes there, in ms
     focus: null,              // { I, J, nd }
-    slots: [], used: null, Mx: 0, My: 0,
+    slots: [],                // the pool (newSlot)
+    bySlot: new Map(),        // a cell's key -> the slot it holds
+    free: [],                 // slots holding nothing, by index
+    stamp: 0,                 // the frame, for marking the slots in use
     sayW: 0, sayOn: 0,
     veiled, reduce, paused,
     ready: false,
@@ -632,10 +675,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
 
   // ── the window ──
   // Measured, and re-measured on resize, because everything here turns on it:
-  // the pitch, how many slots there are, and where the light is. The measure
-  // is left in a ref as well, for the one pinch that opens the field past
-  // the pool it was cut with (applyZoom).
-  const remeasure = useRef(null)
+  // the pitch, how many slots there are to begin with, and where the light is.
   useLayoutEffect(() => {
     const el = stage.current
     if (!el) return undefined
@@ -657,10 +697,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const S = S0 * m.zoom
       const rowH = S * ROW
       // The pool is cut for the field a little more open than the window
-      // draws it (ZOOM.pool), and again for the field at its most open the
-      // first time a pinch takes it past that (applyZoom): a pool the screen
-      // never uses is a pool the phone still pays for.
-      const Sm = S0 * m.poolZoom
+      // draws it (ZOOM.pool), so the first frames need no slot it does not
+      // have; from there it grows on demand (the loop, below), a slot at a
+      // time and never handing a disc that is on the glass to another
+      // element, and it never shrinks. A pool the screen never uses is a
+      // pool the phone still pays for.
+      const Sm = S0 * ZOOM.pool
       const pad = Sm * 0.6
       const Mx = Math.ceil((w + 2 * pad) / Sm) + 3
       const My = Math.ceil((Math.max(h, hL) + 2 * pad + HEADROOM) / (Sm * ROW)) + 3
@@ -691,27 +733,21 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         m.o.x += m.c.x - was.x
         m.o.y += m.c.y - was.y
       }
-      // The pool only ever grows, and only when the window has outgrown it:
-      // cutting a new one hands every disc to a different slot, which is a
-      // reshuffle the eye sees, so it is done for a turn of the phone and
-      // never for a bar.
-      if (Mx > m.Mx || My > m.My) {
-        const NX = Math.max(Mx, m.Mx), NY = Math.max(My, m.My)
-        m.Mx = NX; m.My = NY
-        m.slots = Array.from({ length: NX * NY }, () => ({
-          I: NaN, J: NaN, k: -1, el: null, disc: null, shown: true, tf: '', op: '',
-        }))
-        m.used = new Uint8Array(NX * NY)
-        m.focus = null
-        setGrid({ Mx: NX, My: NY })
-        setAssign(new Array(NX * NY).fill(null))
+      // The pool, cut once, all of it free. A turn of the phone that needs
+      // more is answered by the loop growing it, a slot at a time, and no
+      // disc on the glass moves to another element for it.
+      if (!m.slots.length) {
+        const n = Mx * My
+        m.slots = Array.from({ length: n }, newSlot)
+        m.free = Array.from({ length: n }, (_, i) => n - 1 - i)
+        setGrid(true)
+        setAssign(new Array(n).fill(null))
       }
     }
     measure()
-    remeasure.current = measure
     const ro = window.ResizeObserver ? new ResizeObserver(measure) : null
     if (ro) ro.observe(el)
-    return () => { if (ro) ro.disconnect(); remeasure.current = null }
+    return () => { if (ro) ro.disconnect() }
   }, [lay, worldX])
 
   const bind = useCallback((s, el) => {
@@ -741,12 +777,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     if (m.goal) m.goal = { x: fx - (fx - m.goal.x) * k, y: fy - (fy - m.goal.y) * k }
     const t = m.tap
     if (t) { t.wx *= k; t.wy *= k; t.R *= k; t.rmax *= k }
-    // opened past what the pool was cut for: cut it for the most open field,
-    // once, so no later pinch needs a slot it does not have
-    if (z < m.poolZoom && m.poolZoom > ZOOM.min) {
-      m.poolZoom = ZOOM.min
-      if (remeasure.current) remeasure.current()
-    }
   }, [])
 
   // ── the name on the plate ──
@@ -861,7 +891,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       else m.pa += (wantA - m.pa) * (1 - Math.exp(-dt / (wantA ? 150 : 380)))
 
       // ── the draw ──
-      const { S, rowH, Mx, My, slots, used, lens } = m
+      const { S, rowH, slots, bySlot, free, lens } = m
       const pad = S * 0.6
       const lx = m.lx, ly = m.ly
       // The lens reaches the edge of the window and no further: the rim of the
@@ -884,17 +914,76 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const I1 = Math.ceil((w + pad - m.o.x) / S)
       const J0 = Math.floor((-pad - m.o.y) / rowH)
       const J1 = Math.ceil((h + pad - m.o.y) / rowH)
-      used.fill(0)
       let changed = null
       let best = null
       let bestAt = null
       let curNd = 3
       const f = m.focus
+
+      // ── the seating, this frame ──
+      // Every cell on the glass keeps the slot it had. The slots whose cells
+      // have left the glass are given back, and the cells that have arrived
+      // take them, a bounded number a frame, or take new ones if none are
+      // free. So a slot changes hands only for a cell that has actually left
+      // and one that has actually arrived, and nothing on the glass moves.
+      const stamp = ++m.stamp
+      let entering = null
       for (let J = J0; J <= J1; J++) {
         for (let I = I0; I <= I1; I++) {
-          const s = mod(J, My) * Mx + mod(I, Mx)
-          if (used[s]) continue
-          used[s] = 1
+          const s = bySlot.get(cellKey(I, J))
+          if (s === undefined) (entering || (entering = [])).push(I, J)
+          else slots[s].used = stamp
+        }
+      }
+      for (let s = 0; s < slots.length; s++) {
+        const slot = slots[s]
+        if (slot.shown && slot.used !== stamp) {
+          slot.shown = false
+          bySlot.delete(slot.key)
+          free.push(s)
+          if (slot.el) slot.el.style.visibility = 'hidden'
+        }
+      }
+      let grew = false
+      if (entering) {
+        // nearest the light first, so under a pinch the middle of the glass
+        // is seated before the rim
+        const cx = lx - m.o.x, cy = ly - m.o.y
+        const order = []
+        for (let i = 0; i < entering.length; i += 2) {
+          const I = entering[i], J = entering[i + 1]
+          order.push([Math.hypot(worldX(I, J, S) - cx, J * rowH - cy), I, J])
+        }
+        if (order.length > ASSIGN_PER_FRAME) order.sort((p, q) => p[0] - q[0])
+        const n = Math.min(order.length, ASSIGN_PER_FRAME)
+        for (let i = 0; i < n; i++) {
+          const I = order[i][1], J = order[i][2]
+          let s = free.pop()
+          if (s === undefined) { s = slots.length; slots.push(newSlot()); grew = true }
+          const slot = slots[s]
+          const ax = worldX(I, J, S) + m.o.x
+          const ay = J * rowH + m.o.y
+          const u = Math.sqrt(((ax - lx) * (ax - lx)) / (Rx * Rx) + ((ay - ly) * (ay - ly)) / (Ry * Ry))
+          slot.I = I; slot.J = J; slot.key = cellKey(I, J)
+          slot.k = tileAt(I, J)
+          slot.n = cellNoise(I, J)
+          // the opening's ripple: each disc arrives by its distance from the
+          // light, so the field fills from the middle outward
+          slot.delay = Math.round(500 + Math.min(1.4, u) * 620)
+          slot.shown = true
+          slot.used = stamp
+          // the element is reused for a new cell: nothing it last wrote holds
+          slot.tf = ''; slot.op = ''
+          bySlot.set(slot.key, s)
+          ;(changed || (changed = [])).push(s)
+          if (slot.el) slot.el.style.visibility = ''
+        }
+      }
+
+      for (let J = J0; J <= J1; J++) {
+        for (let I = I0; I <= I1; I++) {
+          const s = bySlot.get(cellKey(I, J))
+          if (s === undefined) continue
           const slot = slots[s]
           // where the lattice would put it, and how far that is from the light
           const ax = worldX(I, J, S) + m.o.x
@@ -924,15 +1013,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           let px = lx + dx * open
           let py = ly + dy * open
 
+          // a name re-seated by a new reading of the index changes the disc
+          // in place; the slot is the cell's whatever name the cell carries
           const k = tileAt(I, J)
-          if (slot.I !== I || slot.J !== J || slot.k !== k) {
-            slot.I = I; slot.J = J; slot.k = k
-            slot.n = cellNoise(I, J)
-            // the opening's ripple: each disc arrives by its distance from the
-            // light, so the field fills from the middle outward
-            slot.delay = Math.round(500 + Math.min(1.4, u) * 620)
-            ;(changed || (changed = [])).push(s)
-          }
+          if (slot.k !== k) { slot.k = k; (changed || (changed = [])).push(s) }
           // the disc's size on the glass. The element is laid out at the
           // window's own pitch (`--d`, from S0) and the zoom rides on the
           // transform below, so a pinch never touches layout.
@@ -985,7 +1069,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             if (c) { z = c.z; px += c.dx; py += c.dy; lift = Math.max(lift, c.lift) }
           }
 
-          if (!slot.shown) { slot.shown = true; if (slot.el) slot.el.style.visibility = '' }
           const isFocus = f && f.I === I && f.J === J
           if (slot.disc) {
             // written only when it has moved: every inline write is a style
@@ -1014,11 +1097,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           if (!best || nd < best.nd) { best = { I, J, nd }; bestAt = { x: px, y: py, r: d * z * 0.5 } }
         }
       }
-      for (let s = 0; s < slots.length; s++) {
-        const slot = slots[s]
-        if (!used[s] && slot.shown) { slot.shown = false; if (slot.el) slot.el.style.visibility = 'hidden' }
-      }
-
       // ── the person the lens is reading ──
       // The nearest disc, with a little hysteresis so two at the same distance
       // do not hand the plate back and forth.
@@ -1050,10 +1128,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         if (on !== m.sayOn) { m.sayOn = on; say.current.classList.toggle('is-on', !!on) }
       }
 
-      if (changed) {
+      if (changed || grew) {
         setAssign((prev) => {
-          const next = prev.slice()
-          for (const s of changed) {
+          const next = prev.length < slots.length ? prev.concat(new Array(slots.length - prev.length).fill(null)) : prev.slice()
+          for (const s of changed || []) {
             const slot = slots[s]
             next[s] = { I: slot.I, J: slot.J, k: slot.k, key: `${slot.I},${slot.J}`, delay: slot.delay }
           }

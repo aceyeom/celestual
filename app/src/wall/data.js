@@ -242,6 +242,68 @@ export function warmWall() {
   return loadWall().then(() => warmFaces(TILES.slice(0, WARM_FIRST).map((t) => t.handle)))
 }
 
+// ── and the rest of them, in the idle time after ────────────────────────────
+// The field can draw the first two hundred and forty names (Hive.jsx CAP),
+// and a pull, a pinch or an hour's drift brings any of them onto the glass.
+// A face that is not yet in the browser's memory arrives as a monogram and
+// fades to a picture, which on a pinch is forty faces fading at once at the
+// rim. So once the wall is up the rest are fetched and decoded a couple of
+// dozen at a time, in idle time, spaced out, and a face already warm costs
+// nothing. Once per reading of the index.
+const WARM_ALL = 240
+const WARM_BATCH = 24
+const WARM_GAP_MS = 400
+let WARMED = null
+export function warmRest() {
+  if (typeof window === 'undefined' || WARMED === TILES) return
+  WARMED = TILES
+  const rest = TILES.slice(WARM_FIRST, WARM_ALL).map((t) => t.handle)
+  let i = 0
+  const step = () => {
+    if (WARMED !== TILES) return
+    const part = rest.slice(i, i + WARM_BATCH)
+    i += WARM_BATCH
+    if (!part.length) return
+    warmFaces(part).then(() => window.setTimeout(step, WARM_GAP_MS))
+  }
+  const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 900))
+  idle(() => step())
+}
+
+// ── the wall, watched ───────────────────────────────────────────────────────
+// A letter going up on another phone should be seen going up on this one.
+// Two clocks, and the slower one is the floor: the index is read again every
+// three quarters of a minute while the tab is on the screen, and again the
+// moment the tab comes back to it; and a nudge over Realtime, sent by the
+// edge function after a letter goes up (api.js subscribeWall), reads it at
+// once, at most once every few seconds. The nudge carries nothing: it says
+// the index moved, and the read is the same public read as on landing. A
+// project with Realtime off loses the nudge and keeps the clock. The hive
+// seats a name that has arrived in a free cell and lets it rise there, and
+// moves nobody else (Hive.jsx tileUp).
+const LIVE_MS = 45_000
+const NUDGE_MIN_MS = 4_000
+export function watchWall() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return () => {}
+  let last = 0
+  const again = (force) => {
+    if (document.visibilityState !== 'visible') return
+    const now = Date.now()
+    if (force && now - last < NUDGE_MIN_MS) return
+    last = now
+    loadWall(force)
+  }
+  const tick = window.setInterval(() => again(false), LIVE_MS)
+  const onVis = () => { if (document.visibilityState === 'visible') again(false) }
+  document.addEventListener('visibilitychange', onVis)
+  const off = api.subscribeWall(() => again(true))
+  return () => {
+    window.clearInterval(tick)
+    document.removeEventListener('visibilitychange', onVis)
+    off()
+  }
+}
+
 // How many letters are left, and when one comes back. Asked by the composer
 // on mount and again after one goes up, because the wait the writer is told
 // has to be the wait the server would refuse them on.

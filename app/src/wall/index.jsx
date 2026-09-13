@@ -44,7 +44,7 @@ import { prefersReducedMotion } from './parts.jsx'
 import Ground from './ground.jsx'
 import { getState, patch } from './store.js'
 import { normSource } from './seed.js'
-import { revision, subscribe, warmWall } from './data.js'
+import { revision, subscribe, warmWall, watchWall } from './data.js'
 import { ensureFaces, warmType } from './type.js'
 import { logScan } from './api.js'
 import { refresh as refreshMember } from './auth.js'
@@ -103,6 +103,11 @@ export default function WallApp() {
   // none of them has to know a network exists.
   const [, setRev] = useState(0)
   useEffect(() => subscribe(setRev), [])
+  // ── and the wall, live ──
+  // The index is read again while the tab is on the screen, on a clock and
+  // on a nudge from the campus's channel (data.js watchWall), so a letter
+  // that goes up on another phone rises on this one.
+  useEffect(() => watchWall(), [])
 
   // ── the wall, ready ──
   // The index, and then the pictures of the names that will be in the light

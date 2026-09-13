@@ -446,14 +446,13 @@ thirteen pixels sliding past is a handle nobody reads.
   phone, the trackpad's pinch or a ctrl+wheel on a desktop, changes the
   pitch of the lattice about the point under the fingers, from about seven
   tenths of the window's own pitch to about half again (`Hive.jsx ZOOM`).
-  Past either end the pinch is rubber banded and eases back when it is let
-  go. The discs are laid out at the window's pitch and the zoom rides on the
-  loop's transform, so a pinch re-renders nothing. The pool of slots is cut a
-  little past the window's own pitch, and the first pinch that opens the
-  field past that cuts it once for the field at its most open (`ZOOM.pool`):
-  it used to be cut for the most open field from the start, so that no pinch
-  could ever need a slot it did not have, and that was every phone carrying
-  twice the discs it showed for a gesture most visits never make.
+  Past either end the pinch is rubber banded, to about fifteen percent past
+  the limit and no further, and eases back when it is let go. The discs are
+  laid out at the window's pitch and the zoom rides on the loop's transform,
+  so a pinch re-renders nothing; the cells it brings onto the glass take
+  free slots, a couple of dozen a frame, and the pool grows by one for each
+  it is short, so no disc already on the glass changes hands under the
+  fingers (the pool, below).
 - **A pull is not a tap.** A press that travels more than 6px swallows the
   click it would have ended in. Every disc is a target.
 - **A name that has just arrived rises into the field.** A letter goes up, the
@@ -466,7 +465,21 @@ thirteen pixels sliding past is a handle nobody reads.
   last written to, so one letter posted while somebody is looking would push
   every other name one place along and reshuffle sixty faces to show one
   arrival. A name holds its seat for as long as it is on the wall; the ranked
-  order only decides where somebody sits the first time.
+  order only decides where somebody sits the first time. The seat is a cell
+  of the tile and not a rank, so when the tile is cut larger for names that
+  have arrived, everybody keeps the cell they had and only the arrivals take
+  cells; and the tile is never smaller than four by four, so a wall of a
+  handful of names is not re-cut for each of its first dozen letters.
+- **It moves while you look at it.** The index is read again every three
+  quarters of a minute while the tab is on the screen, the moment the tab
+  comes back to it, and at once on a nudge from the campus's Realtime
+  channel, which `celestual-wall-moderate` sends after a letter goes up or
+  the reading takes one down (`data.js watchWall`, `api.js subscribeWall`).
+  The nudge carries nothing: it says the index moved, and the read is the
+  public read the wall makes on landing. A letter from another phone then
+  rises in place, its name's disc coming up past its size and settling, and
+  the count in the ear turns up one. A project with Realtime off keeps the
+  clock and loses the nudge.
 - **The disc is placed by the loop and animated by the stylesheet, and they
   are two elements.** Two owners on one transform is how these end up fighting
   each other at 60Hz.
@@ -568,11 +581,20 @@ repeats only at a distance nobody sees twice. Past 240 names the rest are a
 search away.
 
 The DOM holds a pool of slots the size of the screen and no more, however
-many names the wall carries: each slot owns one cell of the visible window
-and is handed a new name when the field scrolls a cell across. About two
-hundred and sixty slots on a phone and three hundred on a desktop, of which
-a hundred and seventy and a hundred and ninety are on the glass at once, and
-the loop's own cost is under a millisecond a frame on either.
+many names the wall carries. A cell of the lattice that comes onto the glass
+takes a free slot and keeps it for as long as it is on the glass; a cell that
+leaves gives its slot back; and when no slot is free the pool grows by one,
+for good. So a disc changes hands only for a cell that has actually left and
+one that has actually arrived, whatever the zoom, and the pool is exactly as
+large as the most the screen has ever needed. It was a fixed grid of slots
+addressed by the cell's coordinates modulo the grid, which was the right
+size only for the zoom it was cut for: past that two cells shared a slot and
+one of them was not drawn, and re-cutting the grid for a pinch handed every
+disc on the field to a different element under the fingers, which is what a
+pinch pulled hard looked like. About two hundred and sixty slots on a phone
+and three hundred on a desktop to begin with, of which a hundred and seventy
+and a hundred and ninety are on the glass at once, and the loop's own cost is
+under a millisecond a frame on either.
 
 Three things keep it there as the wall grows, and all three are about what
 is NOT done on a frame:
@@ -601,6 +623,11 @@ is NOT done on a frame:
   monogram used to send a peek on mount and again a minute later, and a wall
   of three hundred names was a steady trickle of requests for faces the index
   had already said were not there.
+- **The rest of the faces are fetched in idle time** once the field is up
+  (`data.js warmRest`): the first thirty-two before the intro lifts, and the
+  other two hundred a couple of dozen at a time, spaced out, so a pull, a
+  pinch or an hour's drift brings pictures onto the glass and not forty
+  monograms fading to faces at the rim.
 
 ### The veil, and the ear
 
@@ -679,12 +706,20 @@ and the wall's own light is in its field, on the person being read.
 
 ### The count
 
-The one fact about this wall worth printing: `19 letters`, in the ear. An
-open wall with nothing on it yet says `open now` in its place, the way the
-front door does, and not a nought; one whose index did not load says so in
-the same place, because a wall that has not loaded has no number; and while
-the index is still loading there is no count at all, since a wall that has
-not answered is not a wall that is open with nothing on it.
+The one fact about this wall worth printing: `19 letters`, in the ear, and
+now the term beside it: a dateline, the campus in the display face, the
+figure a step larger in chalk with the word after it at the label's size,
+and `fall 2026` at the end of the line, dimmer, because a wall is a thing
+that happens in a term. The figure turns (`parts.jsx Roll`): each digit is a
+window over a column of the ten, and a letter arriving, from this phone or
+another, slides the last figure up one where it stands. It is drawn still at
+the number it is given and moves only when the number does, so a figure
+moving means a letter went up. An open wall with nothing on it yet says
+`open now` in its place, the way the front door does, and not a nought; one
+whose index did not load says so in the same place, because a wall that has
+not loaded has no number; and while the index is still loading there is no
+count at all, since a wall that has not answered is not a wall that is open
+with nothing on it.
 
 ### What is not on the wall any more
 

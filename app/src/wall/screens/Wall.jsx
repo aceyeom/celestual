@@ -118,9 +118,9 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, atHandle } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, atHandle, warmRest, term } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -209,16 +209,24 @@ function tabDue(state) {
 }
 
 // ── the ear ─────────────────────────────────────────────────────────────────
-// The campus and the count, on one line under the bar. Two faces and no
+// The campus, the count and the term, on one line under the bar: a dateline,
+// the way the paper carries one across its own top rule. Two faces and no
 // punctuation: the campus in the display face, small, the way the brand sets
-// its own word, and the count beside it in the identifier face at the size
-// every dateline is set at. The two faces are the hierarchy, so the line
-// needs no sparkle in front of it and no dot between its halves; it used to
-// carry both, and eleven pixels of uppercase mono with two ornaments in it
-// was the busiest object on a screen whose whole job is to be calm. The
-// count is the one fact about this wall worth printing. While the index is
-// still loading there is no count, because a wall that has not loaded has no
-// number; when it did not load the line says so, in the count's place.
+// its own word; the count beside it in the identifier face, the figure a
+// step larger and in chalk, the word after it at the label's size in ash;
+// and the term at the end of the line, dimmer still, because a wall is a
+// thing that happens in a term and that is the one honest date it has. The
+// two faces and the three weights are the hierarchy, so the line needs no
+// sparkle in front of it and no dot between its parts; it used to carry
+// both, and eleven pixels of uppercase mono with two ornaments in it was the
+// busiest object on a screen whose whole job is to be calm.
+//
+// The figure turns (parts.jsx `Roll`): a letter arriving, from this phone or
+// any other, turns the last digit up one where it stands, and nothing else
+// on the line moves. It is the one fact about this wall worth printing, and
+// now it is seen to be kept. While the index is still loading there is no
+// count, because a wall that has not loaded has no number; when it did not
+// load the line says so, in the count's place.
 function Ear({ letters }) {
   const err = wallError()
   const loaded = wallLoaded()
@@ -235,7 +243,7 @@ function Ear({ letters }) {
   } else if (letters > 0) {
     meta = (
       <span className="wl-ear-meta">
-        <span className="wl-ear-n">{letters}</span> {letters === 1 ? 'letter' : 'letters'}
+        <Roll value={letters} className="wl-ear-n" /> {letters === 1 ? 'letter' : 'letters'}
       </span>
     )
   } else if (loaded) {
@@ -245,6 +253,7 @@ function Ear({ letters }) {
     <div className="wl-ear" aria-live="polite">
       <span className="wl-ear-name">berkeley</span>
       {meta}
+      {loaded && !err ? <span className="wl-ear-term">{term()}</span> : null}
     </div>
   )
 }
@@ -486,6 +495,10 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // to full light inside the circle as it grows rather than after it.
   const veiled = veil === 'up'
   const lifted = veil === 'down'
+
+  // the rest of the faces, once the field is up and again when the index
+  // moves, in idle time (data.js warmRest)
+  useEffect(() => { if (lifted) warmRest() }, [lifted, rev])
 
   // ── the arrival, rippled ──
   // The composer goes the moment its letter is up, and the wall under it

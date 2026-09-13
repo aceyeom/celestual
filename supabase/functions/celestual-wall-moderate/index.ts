@@ -222,13 +222,41 @@ async function classify(body: string, sealedLine: string | null) {
   }
 }
 
+// ── the wall, told ───────────────────────────────────────────────────────────
+// A letter is up, or has come down: every browser on this campus's wall is
+// told the index moved, over Realtime's broadcast, and reads the public index
+// again (app/src/wall/data.js watchWall). The message carries nothing but the
+// fact: no letter, no name, no count, so the channel, which anybody can join,
+// discloses nothing the index does not. Sent from here over the REST endpoint
+// rather than from the database, so a project with Realtime off loses the
+// nudge and nothing else: the wall re-reads its index on a clock regardless,
+// and a refusal here is a line in the log.
+async function nudge(campus: string): Promise<void> {
+  const url = Deno.env.get('SUPABASE_URL')
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) return
+  try {
+    const res = await fetch(`${url}/realtime/v1/api/broadcast`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ topic: `wall:${campus}`, event: 'moved', payload: { at: new Date().toISOString() } }],
+      }),
+    })
+    if (!res.ok) console.warn('wall nudge refused', res.status)
+  } catch (e) {
+    console.warn('wall nudge failed', String(e))
+  }
+}
+
 // The reading, after the answer: the model's verdict written onto the letter
 // where it stands, and the letter taken down if the verdict is a reject
 // (migration 0050 `wall_screened`). Nothing here can throw its way out of the
 // function: a failure to record is logged and the letter stays as it was,
-// which is up and unread, and the desk's live list still shows it.
+// which is up and unread, and the desk's live list still shows it. A letter
+// the reading takes down moves the index, so the wall is told again.
 // deno-lint-ignore no-explicit-any
-async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null) {
+async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null, campus: string) {
   let out: { verdict: string; reasons: string[]; model: string }
   try {
     out = await classify(body, sealed)
@@ -242,6 +270,7 @@ async function readWhereItStands(supabase: any, id: string, body: string, sealed
     p_model: out.model || null,
   })
   if (error) console.error('wall_screened failed', id, error.message)
+  else if (out.verdict === 'reject') await nudge(campus)
 }
 
 // Work that outlives the response, where the runtime offers it.
@@ -317,10 +346,11 @@ Deno.serve(async (req: Request) => {
   if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons })
 
   // ── layer 2, after the answer ──────────────────────────────────────────────
-  // The letter is on the wall. The writer hears so now, and the model reads
-  // it where it stands.
-  const reading = readWhereItStands(supabase, String(data.id), body, sealed)
-  const inline = after(reading)
+  // The letter is on the wall. The writer hears so now, every wall on the
+  // campus is told the index moved, and the model reads the letter where it
+  // stands.
+  const work = Promise.all([nudge(campus), readWhereItStands(supabase, String(data.id), body, sealed, campus)])
+  const inline = after(work)
   if (inline) await inline
 
   return json({ ok: true, status: 'live', id: data.id })

@@ -332,6 +332,14 @@ export function Brand({ onClick, href, back = false, label = 'celestual, the fro
 // way home, and a bar offering three more things to press over a title
 // nobody has read yet is three decisions before the first one. They arrive
 // with the pill once the veil has gone (screens/Wall.jsx).
+// ── the row is one size ──
+// Three targets on the right, at one height: the glass and the person are
+// forty pixel rings, and the capsule between them stands thirty-six tall on
+// the same centre line. The face on the person's ring fills it, at thirty
+// pixels inside the forty, the way a face fills a ring anywhere else on the
+// product; it was drawn at twenty-two, the size of the glyphs beside it, and
+// a face is not a glyph: at the glyphs' size it read as a dot on the end of
+// the row, and the row read as heavy on the left and light on the right.
 export function TopBar({ go, at = 'wall', acts = true }) {
   const who = member()
   // Whether the letters are open, which is not the same question as whether
@@ -391,8 +399,8 @@ export function TopBar({ go, at = 'wall', acts = true }) {
           aria-current={at === 'gate' ? 'page' : undefined}
         >
           {who || reads
-            ? <Face handle={mine} size={22} resolve={!who && !!mine} />
-            : <Icon name="key" />}
+            ? <Face handle={mine} size={30} resolve={!who && !!mine} />
+            : <Icon name="key" size={22} />}
         </button>
       </nav>
       )}
@@ -1481,6 +1489,40 @@ export function Me({ who, onClick, className = '' }) {
       {on ? <Face handle={who.handle} size={18} /> : null}
       <span className={on ? 'wl-me-h' : undefined}>{on ? atHandle(who.handle) : 'sign in'}</span>
     </button>
+  )
+}
+
+// ── the roll ────────────────────────────────────────────────────────────────
+// A count set in the identifier face whose figures turn when it changes: each
+// digit is a column of the ten, slid to the one it shows, so a letter arriving
+// on the wall turns the last figure up one and a hundredth letter mounts a
+// column at the head. It is drawn still on mount, at the number it is given,
+// and moves only when the number does, so a figure moving means a letter went
+// up. Under reduced motion the columns do not slide. The columns are keyed
+// from the right, so a count going from 99 to 100 keeps the two it had.
+// Read as one number: the digits are hidden from the tree and the roll
+// carries the figure as its label.
+function RollDigit({ digit }) {
+  return (
+    <span className="wl-roll-d">
+      <span className="wl-roll-col" style={{ transform: `translate3d(0, ${-digit}em, 0)` }}>
+        {DIGITS.map((d) => <span key={d}>{d}</span>)}
+      </span>
+    </span>
+  )
+}
+const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+export function Roll({ value, className = '' }) {
+  const n = Math.max(0, Math.floor(Number(value) || 0))
+  const digits = String(n).split('').map(Number)
+  const len = digits.length
+  return (
+    <span className={`wl-roll ${className}`} role="img" aria-label={String(n)}>
+      <span className="wl-roll-in" aria-hidden="true">
+        {digits.map((d, i) => <RollDigit key={len - i} digit={d} />)}
+      </span>
+    </span>
   )
 }
 
