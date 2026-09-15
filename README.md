@@ -115,6 +115,7 @@ order to apply what is left.
 
 | | |
 | --- | --- |
+| [docs/DECISION-2026-09.md](./docs/DECISION-2026-09.md) | **Read first.** The 15 September decision: stop dispersing the cards, stop the paid "trending" creators, cancel the 200-person night, run one house of 40-70 instead, and publish the letters with the handle stripped. Supersedes the campaign and corrects three things in the master plan. [`decision-memo.html`](./docs/decision-memo.html) is the same document, set |
 | [docs/MASTER-PLAN.md](./docs/MASTER-PLAN.md) | **What happens next.** The Berkeley room, autumn 2026 to autumn 2027: what the September operating manual got right, the five things that break it, the corrected money, and what has to be built. [`docs/master-plan.html`](./docs/master-plan.html) is the same document, set |
 | [docs/rebuild-spec.md](./docs/rebuild-spec.md) | The rebuild: the phases, the visual bar, the definition of done |
 | [docs/plan.md](./docs/plan.md) | What each phase did, and the nine things the audit found |
