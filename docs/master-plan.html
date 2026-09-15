@@ -1,0 +1,675 @@
+<title>Celestual Master Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Inter+Tight:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* design/DESIGN.md §2. Nothing here names a hue that the system does not. */
+  --void:#08070B; --void-1:#0D0C12; --void-2:#131219; --void-3:#1A1922;
+  --hair:rgba(244,241,234,.09); --hair-soft:rgba(244,241,234,.05);
+  --chalk:#F4F1EA; --ash:#9C978E; --ash-dim:#605C55;
+  --accent:#74C7DE; --accent-soft:rgba(116,199,222,.13);
+  --gold:#FDB515;
+  --paper:#F4F1EA; --paper-ink:#17150F; --paper-ink-2:#6A6357; --paper-edge:#E3DFD6;
+  /* Document-only. The system has no severity token; this is the one addition,
+     desaturated so it never competes with the accent. */
+  --rust:#A8705E; --rust-soft:rgba(168,112,94,.14);
+
+  --f-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-letter:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-util:"Inter Tight",system-ui,-apple-system,sans-serif;
+  --f-id:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --w-display:500; --track-display:-.022em;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;background:var(--void);color:var(--chalk);
+  font-family:var(--f-letter);font-size:17px;line-height:1.62;font-weight:400;
+  font-optical-sizing:auto;
+}
+.page{max-width:820px;margin:0 auto;padding-inline:28px;padding-block:0 140px}
+
+/* ── type ─────────────────────────────────────────────────────────────── */
+h1,h2,h3,.disp{
+  font-family:var(--f-display);font-weight:var(--w-display);
+  letter-spacing:var(--track-display);text-wrap:balance;margin:0;
+}
+h1{font-size:clamp(38px,7vw,64px);line-height:1.04}
+h2{font-size:clamp(27px,4.4vw,38px);line-height:1.14}
+h3{font-size:21px;line-height:1.3;margin:38px 0 10px}
+h4{font-family:var(--f-util);font-size:13px;font-weight:600;letter-spacing:.07em;
+   text-transform:uppercase;color:var(--ash);margin:30px 0 10px}
+p{margin:0 0 17px;max-width:66ch}
+em{font-style:italic}
+strong{font-weight:600;color:var(--chalk)}
+a{color:var(--chalk);text-decoration:none;border-bottom:1px solid var(--accent-soft)}
+a:hover,a:focus-visible{border-bottom-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+code,.id,.num{font-family:var(--f-id);font-variant-numeric:tabular-nums}
+code{font-size:.88em;color:var(--accent)}
+
+/* ── masthead ─────────────────────────────────────────────────────────── */
+.mast{padding-block:86px 52px;display:flex;flex-direction:column;gap:30px}
+.brandrow{display:flex;align-items:center;gap:11px;color:var(--chalk)}
+.brandrow svg{width:26px;height:26px;flex:none}
+.brandrow span{font-family:var(--f-display);font-size:19px;letter-spacing:-.02em}
+.stamp{font-family:var(--f-id);font-size:12.5px;color:var(--ash-dim);letter-spacing:.02em}
+.thesis{font-family:var(--f-display);font-size:clamp(20px,3.2vw,27px);
+  line-height:1.38;max-width:26ch;color:var(--ash);margin:0}
+.thesis b{color:var(--chalk);font-weight:var(--w-display)}
+
+/* ── contents ─────────────────────────────────────────────────────────── */
+nav{border-block:1px solid var(--hair);padding-block:24px;margin-top:8px}
+nav ol{margin:0;padding:0;list-style:none;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:8px 30px}
+nav li{font-family:var(--f-util);font-size:15px;display:flex;gap:11px}
+nav li .n{font-family:var(--f-id);font-size:12.5px;color:var(--ash-dim);padding-top:3px}
+nav a{color:var(--ash);border-bottom:1px solid transparent}
+nav a:hover,nav a:focus-visible{color:var(--chalk);border-bottom-color:var(--accent)}
+
+/* ── sections ─────────────────────────────────────────────────────────── */
+section{padding-block:56px;border-top:1px solid var(--hair)}
+.secnum{font-family:var(--f-id);font-size:12.5px;color:var(--ash-dim);margin-bottom:12px}
+.lede{color:var(--ash);font-size:19px;max-width:60ch;margin-bottom:22px}
+
+/* ── the correction device: struck, then standing ─────────────────────── */
+.ledger{display:flex;flex-direction:column;gap:0;margin:28px 0;
+  border-top:1px solid var(--hair)}
+.fix{display:grid;grid-template-columns:1fr auto;gap:6px 26px;align-items:baseline;
+  padding-block:17px;border-bottom:1px solid var(--hair-soft)}
+.fix .what{font-family:var(--f-util);font-size:15.5px;color:var(--chalk)}
+.fix .why{grid-column:1/-1;font-size:15px;color:var(--ash);max-width:64ch;margin:0}
+.fix .pair{font-family:var(--f-id);font-size:15px;white-space:nowrap;
+  font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:10px}
+.fix .was{color:var(--ash-dim);text-decoration:line-through;
+  text-decoration-color:var(--rust);text-decoration-thickness:1px}
+.fix .now{color:var(--accent)}
+.fix .now.bad{color:var(--rust)}
+
+/* ── verdict rows ─────────────────────────────────────────────────────── */
+.verdict{border-top:1px solid var(--hair);margin:26px 0}
+.vrow{display:grid;grid-template-columns:104px 1fr;gap:4px 22px;
+  padding-block:15px;border-bottom:1px solid var(--hair-soft)}
+.tag{font-family:var(--f-util);font-size:11.5px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;padding-top:4px}
+.tag.keep{color:var(--accent)}
+.tag.kill{color:var(--rust)}
+.tag.fix{color:var(--gold)}
+.tag.new{color:var(--chalk)}
+.vrow .b{font-family:var(--f-util);font-size:15.5px;color:var(--chalk)}
+.vrow .s{grid-column:2;font-size:15px;color:var(--ash);max-width:60ch}
+
+/* ── tables ───────────────────────────────────────────────────────────── */
+.scroll{overflow-x:auto;margin:24px 0}
+table{width:100%;border-collapse:collapse;font-size:15px;font-family:var(--f-util)}
+th{text-align:left;font-weight:500;color:var(--ash);padding:0 18px 10px 0;
+  border-bottom:1px solid var(--hair);vertical-align:bottom;white-space:nowrap;
+  font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+td{padding:13px 18px 13px 0;border-bottom:1px solid var(--hair-soft);
+  vertical-align:top;color:var(--ash)}
+td:first-child{color:var(--chalk)}
+tr:last-child td{border-bottom:none}
+.n{font-family:var(--f-id);font-variant-numeric:tabular-nums;white-space:nowrap;
+  text-align:right}
+th.n{text-align:right}
+.tot td{border-top:1px solid var(--hair);color:var(--chalk);font-weight:500}
+.pos{color:var(--accent)}
+.neg{color:var(--rust)}
+
+/* ── callout ──────────────────────────────────────────────────────────── */
+.call{border-left:2px solid var(--accent);padding:2px 0 2px 22px;margin:30px 0}
+.call p{margin:0;font-family:var(--f-display);font-size:20px;line-height:1.42;
+  color:var(--chalk);max-width:52ch}
+.call.warn{border-left-color:var(--rust)}
+
+/* ── paper: the one bright surface, where a person's words are set ────── */
+.paper{background:linear-gradient(176deg,#FFFDF8,var(--paper) 42%,var(--paper-edge));
+  color:var(--paper-ink);padding:26px 28px;margin:26px 0;max-width:460px;
+  border-radius:2px;box-shadow:0 18px 40px -22px rgba(0,0,0,.85)}
+.paper .who{font-family:var(--f-util);font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--paper-ink-2);margin-bottom:14px}
+.paper p{margin:0 0 11px;font-size:16px;line-height:1.55;max-width:none}
+.paper p:last-child{margin:0}
+.paper .mk{display:block;margin:0 auto 16px;width:22px;height:22px;color:var(--paper-ink)}
+.paper.card{text-align:center;max-width:330px;padding:34px 28px 30px}
+.paper.card p{font-family:var(--f-display);font-size:19px;line-height:1.34}
+.paper.card .addr{font-family:var(--f-id);font-size:12.5px;color:var(--paper-ink-2);
+  margin-top:20px}
+
+/* ── figure ───────────────────────────────────────────────────────────── */
+figure{margin:32px 0 10px}
+figcaption{font-family:var(--f-util);font-size:14px;color:var(--ash);margin-top:14px;
+  max-width:60ch;line-height:1.5}
+svg.chart{display:block;width:100%;height:auto}
+
+/* ── cells ────────────────────────────────────────────────────────────── */
+.cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));
+  gap:1px;background:var(--hair);border:1px solid var(--hair);margin:28px 0}
+.cell{background:var(--void-1);padding:21px 22px;display:flex;flex-direction:column;gap:6px}
+.cell .k{font-family:var(--f-util);font-size:11.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ash-dim)}
+.cell .v{font-family:var(--f-display);font-size:25px;color:var(--accent);
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.cell .v.bad{color:var(--rust)}
+.cell h5{margin:0;font-family:var(--f-util);font-size:15.5px;font-weight:500;color:var(--chalk)}
+.cell p{margin:0;font-size:14.5px;color:var(--ash);max-width:none}
+
+/* ── timeline ─────────────────────────────────────────────────────────── */
+.time{border-top:1px solid var(--hair);margin:26px 0}
+.when{display:grid;grid-template-columns:118px 1fr;gap:4px 22px;
+  padding-block:16px;border-bottom:1px solid var(--hair-soft)}
+.when .d{font-family:var(--f-id);font-size:13px;color:var(--accent);padding-top:3px}
+.when .d.past{color:var(--ash-dim)}
+.when .t{font-family:var(--f-util);font-size:15.5px;color:var(--chalk)}
+.when .x{grid-column:2;font-size:15px;color:var(--ash);max-width:60ch}
+
+ul{margin:0 0 18px;padding-left:19px;max-width:66ch}
+li{margin-bottom:9px}
+li::marker{color:var(--ash-dim)}
+
+footer{padding-block:46px 0;border-top:1px solid var(--hair);color:var(--ash);font-size:15px}
+footer p{max-width:64ch}
+footer .sig{font-family:var(--f-id);font-size:12.5px;color:var(--ash-dim);margin-top:26px}
+
+@media (prefers-reduced-motion:no-preference){
+  html{scroll-behavior:smooth}
+}
+@media (max-width:640px){
+  .page{padding-inline:18px;padding-block:0 96px}
+  .mast{padding-block:56px 40px}
+  body{font-size:16px}
+  .vrow,.when{grid-template-columns:1fr;gap:3px}
+  .vrow .s,.when .x{grid-column:1}
+  .fix{grid-template-columns:1fr}
+  .fix .pair{justify-content:flex-start}
+}
+</style>
+
+<div class="page">
+
+<!-- ── masthead ────────────────────────────────────────────────────────── -->
+<header class="mast">
+  <div class="brandrow">
+    <svg viewBox="-60 -60 120 120" aria-hidden="true" fill="none">
+      <g transform="rotate(-19)">
+        <path d="M-42 0 A42 21 0 0 1 42 0" stroke="currentColor" stroke-width="3.2" fill="none"/>
+      </g>
+      <path d="M0-47 Q4.8-9.4 24 0 Q4.8 9.4 0 47 Q-4.8 9.4 -24 0 Q-4.8-9.4 0-47 Z" fill="currentColor"/>
+      <g transform="rotate(-19)">
+        <path d="M42 0 A42 21 0 0 1 -42 0" stroke="currentColor" stroke-width="3.2" fill="none"/>
+      </g>
+    </svg>
+    <span>celestual</span>
+  </div>
+
+  <div class="stamp">master plan · berkeley · autumn 2026 → autumn 2027</div>
+
+  <h1>The room is<br>the missing half.</h1>
+
+  <p class="thesis">The operating manual found the right mechanism and attached it to the wrong purpose. <b>Run the room at break-even and everything else falls into place.</b></p>
+
+  <nav aria-label="Contents">
+    <ol>
+      <li><span class="n">00</span><a href="#verdict">The verdict</a></li>
+      <li><span class="n">01</span><a href="#keep">The one idea worth keeping</a></li>
+      <li><span class="n">02</span><a href="#hour">The arithmetic that kills it</a></li>
+      <li><span class="n">03</span><a href="#built">What is actually built</a></li>
+      <li><span class="n">04</span><a href="#breaks">Five things that break it</a></li>
+      <li><span class="n">05</span><a href="#money">The money, honestly</a></li>
+      <li><span class="n">06</span><a href="#build">What to build</a></li>
+      <li><span class="n">07</span><a href="#night">The campaign and the night</a></li>
+      <li><span class="n">08</span><a href="#calendar">The calendar</a></li>
+      <li><span class="n">09</span><a href="#guess">What is still a guess</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ── 00 verdict ──────────────────────────────────────────────────────── -->
+<section id="verdict">
+  <div class="secnum">00</div>
+  <h2>The verdict</h2>
+  <p class="lede">The manual is right about one large thing and wrong about five expensive ones. Every correction below is arithmetic or law, not taste.</p>
+
+  <div class="ledger">
+    <div class="fix">
+      <div class="what">Mutual pairs at the hour, one letter each</div>
+      <div class="pair"><span class="was">the room</span><span class="now bad">0.5</span></div>
+      <p class="why">Simulated over 4,000 nights. Under the manual's own design, one couple gets a reveal and a third of the floor holds a phone that does nothing. Not an enforcement failure — arithmetic.</p>
+    </div>
+    <div class="fix">
+      <div class="what">Berkeley undergraduates who can legally stand in a bar</div>
+      <div class="pair"><span class="was">all</span><span class="now bad">40%</span></div>
+      <p class="why">A Type 48 licence bars under-21s from the premises entirely. Sixty percent of Berkeley's 33,122 undergraduates are 18–21, and the manual's own sponsor email says average age 20.</p>
+    </div>
+    <div class="fix">
+      <div class="what">What the venue pays per head</div>
+      <div class="pair"><span class="was">$2,000</span><span class="now">$595</span></div>
+      <p class="why">A bar pays per head because it earns it back at the bar. A crowd that cannot buy a drink funds nothing, so the deal only ever applies to the 21+ subset walking over.</p>
+    </div>
+    <div class="fix">
+      <div class="what">Net on the first night</div>
+      <div class="pair"><span class="was">+$800</span><span class="now bad">−$3,925</span></div>
+      <p class="why">The manual's $875 omits insurance, which is blocking; the campaign, which is in its own section; and rent, which only a bar absorbs.</p>
+    </div>
+    <div class="fix">
+      <div class="what">Named people the invitation actually reaches</div>
+      <div class="pair"><span class="was">75%</span><span class="now">55%</span></div>
+      <p class="why">A DM from someone you do not follow lands in Message Requests with no push notification, and eighty each over three days trips Instagram's action blocks.</p>
+    </div>
+    <div class="fix">
+      <div class="what">Charged to anyone inside the app</div>
+      <div class="pair"><span class="was">$7 · $2</span><span class="now">$0</span></div>
+      <p class="why">The $7 charges the person who was written about, whom this product's own constitution calls a stakeholder with a veto and never a customer. The $2 is NGL Pro's structure with the deception removed.</p>
+    </div>
+    <div class="fix">
+      <div class="what">Monthly, four cities, at steady state</div>
+      <div class="pair"><span class="was">$23,000</span><span class="now">$10,600</span></div>
+      <p class="why">The error is almost entirely the venue line. Correct that one number and the business corrects itself — into a good small business rather than a venture-scale one.</p>
+    </div>
+  </div>
+
+  <div class="call">
+    <p>Free to write. Free to read. Free to be answered. Paid only at a door, by somebody who chose to come.</p>
+  </div>
+</section>
+
+<!-- ── 01 keep ─────────────────────────────────────────────────────────── -->
+<section id="keep">
+  <div class="secnum">01</div>
+  <h2>The one idea worth keeping</h2>
+  <p class="lede">A dated room is the answer to the failure mode this product's own framework names as its most likely killer.</p>
+
+  <p>The framework is candid about where this dies: <em>most users' complete experience is that they entered someone and heard nothing, forever.</em> Marriage Pact beats that by guaranteeing a payoff — fill in the survey, receive a name. Celestual has never had one, and every mitigation on offer is a consolation rather than a cure.</p>
+
+  <p>A room fixes it exactly. Trace what changes for the person writing.</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th>&nbsp;</th><th>Before the room</th><th>With the room</th></tr>
+    <tr><td>What writing buys</td><td>a chance, of unknown size, at an unknown time</td><td>a named person invited to a place, on a date, where you will be</td></tr>
+    <tr><td>When you find out</td><td>possibly never</td><td>a date you can count down to</td></tr>
+    <tr><td>What you can tell a friend</td><td>nothing, without confessing</td><td>“the thing on the 8th”</td></tr>
+    <tr><td>Whether the act is social</td><td>private, and slightly lonely</td><td>an act inside a shared campus event</td></tr>
+  </table>
+  </div>
+
+  <p>That is the Marriage Pact property, obtained without a survey and without promising anybody a match. It converts the product's worst structural feature — that the outcome is probabilistic — into a scheduling problem, which is a solvable kind of problem.</p>
+
+  <div class="call">
+    <p>The room is not a side business. It is the missing half of the product, and it should be funded and measured as product.</p>
+  </div>
+</section>
+
+<!-- ── 02 the hour ─────────────────────────────────────────────────────── -->
+<section id="hour">
+  <div class="secnum">02</div>
+  <h2>The arithmetic that kills the hour</h2>
+  <p class="lede">The 01:00 unlock is the reason people are supposed to come. It does not work, and the reason is arithmetic rather than execution.</p>
+
+  <p>Take a room of <span class="id">n</span> people. Each writes <span class="id">m</span> letters aimed at someone in the room. Write <span class="id">r</span> for the real chance that the person you wrote about independently wrote about you — the assortative rate, well above the random baseline, because people write about people they are actually drawn to.</p>
+
+  <p>Expected mutual pairs ≈ <span class="id">(n · m · r) / 2</span>, and under pure chance it collapses to <strong><span class="id">m² / 2</span> — independent of room size</strong>. A bigger room does not help. Only more letters do.</p>
+
+  <figure>
+    <svg class="chart" viewBox="0 0 800 300" role="img" aria-labelledby="ct cd">
+      <title id="ct">Mutual pairs and blank phones, by letters written per person</title>
+      <desc id="cd">In a room of 200: one letter each yields half a mutual pair at chance and leaves 37 percent of the room with no letter; two letters yields two pairs and 13 percent blank; three letters yields four and a half pairs and 5 percent blank. With real reciprocity of 5 to 12 percent, three letters yields 34 to 74 pairs.</desc>
+
+      <!-- axis -->
+      <line x1="196" y1="30" x2="196" y2="228" stroke="#1A1922" stroke-width="1"/>
+      <line x1="196" y1="228" x2="770" y2="228" stroke="rgba(244,241,234,.09)" stroke-width="1"/>
+
+      <g font-family="Inter Tight, system-ui, sans-serif" font-size="12" fill="#605C55" letter-spacing=".05em">
+        <text x="0" y="24">LETTERS EACH</text>
+        <text x="228" y="24">CHANCE</text>
+        <text x="368" y="24">r = 0.05</text>
+        <text x="508" y="24">r = 0.08</text>
+        <text x="648" y="24">r = 0.12</text>
+      </g>
+
+      <!-- row 1: m=1, the manual's design -->
+      <g>
+        <rect x="0" y="42" width="790" height="52" fill="rgba(168,112,94,.09)"/>
+        <text x="10" y="66" font-family="Geist Mono, monospace" font-size="15" fill="#F4F1EA">1</text>
+        <text x="10" y="84" font-family="Inter Tight, system-ui, sans-serif" font-size="11.5" fill="#A8705E">THE MANUAL</text>
+        <text x="292" y="73" font-family="Geist Mono, monospace" font-size="21" fill="#A8705E" text-anchor="end">0.5</text>
+        <text x="432" y="73" font-family="Geist Mono, monospace" font-size="21" fill="#9C978E" text-anchor="end">10.5</text>
+        <text x="572" y="73" font-family="Geist Mono, monospace" font-size="21" fill="#9C978E" text-anchor="end">16.5</text>
+        <text x="712" y="73" font-family="Geist Mono, monospace" font-size="21" fill="#9C978E" text-anchor="end">24.4</text>
+        <text x="790" y="73" font-family="Geist Mono, monospace" font-size="14" fill="#A8705E" text-anchor="end">37%</text>
+      </g>
+
+      <!-- row 2: m=2 -->
+      <g>
+        <text x="10" y="128" font-family="Geist Mono, monospace" font-size="15" fill="#F4F1EA">2</text>
+        <text x="292" y="128" font-family="Geist Mono, monospace" font-size="21" fill="#9C978E" text-anchor="end">2.0</text>
+        <text x="432" y="128" font-family="Geist Mono, monospace" font-size="21" fill="#F4F1EA" text-anchor="end">21.8</text>
+        <text x="572" y="128" font-family="Geist Mono, monospace" font-size="21" fill="#F4F1EA" text-anchor="end">33.5</text>
+        <text x="712" y="128" font-family="Geist Mono, monospace" font-size="21" fill="#F4F1EA" text-anchor="end">49.2</text>
+        <text x="790" y="128" font-family="Geist Mono, monospace" font-size="14" fill="#9C978E" text-anchor="end">13%</text>
+      </g>
+
+      <!-- row 3: m=3, the target -->
+      <g>
+        <rect x="0" y="146" width="790" height="52" fill="rgba(116,199,222,.08)"/>
+        <text x="10" y="170" font-family="Geist Mono, monospace" font-size="15" fill="#F4F1EA">3</text>
+        <text x="10" y="188" font-family="Inter Tight, system-ui, sans-serif" font-size="11.5" fill="#74C7DE">THE TARGET</text>
+        <text x="292" y="177" font-family="Geist Mono, monospace" font-size="21" fill="#9C978E" text-anchor="end">4.6</text>
+        <text x="432" y="177" font-family="Geist Mono, monospace" font-size="21" fill="#74C7DE" text-anchor="end">34.0</text>
+        <text x="572" y="177" font-family="Geist Mono, monospace" font-size="21" fill="#74C7DE" text-anchor="end">51.4</text>
+        <text x="712" y="177" font-family="Geist Mono, monospace" font-size="21" fill="#74C7DE" text-anchor="end">74.2</text>
+        <text x="790" y="177" font-family="Geist Mono, monospace" font-size="14" fill="#74C7DE" text-anchor="end">5%</text>
+      </g>
+
+      <g font-family="Inter Tight, system-ui, sans-serif" font-size="12" fill="#605C55" letter-spacing=".05em">
+        <text x="196" y="248">MUTUAL PAIRS IN A ROOM OF 200, MEAN OF 4,000 NIGHTS</text>
+        <text x="790" y="248" text-anchor="end">GOT NOTHING</text>
+      </g>
+
+      <line x1="0" y1="268" x2="800" y2="268" stroke="rgba(244,241,234,.09)"/>
+      <text x="0" y="292" font-family="Newsreader, Georgia, serif" font-size="17" fill="#F4F1EA">One letter each is half a couple in the whole room — and a third of the floor watching.</text>
+    </svg>
+    <figcaption>Run it yourself: <code>node scripts/mutual-yield.mjs</code>. The manual anticipates the symptom and diagnoses it as an enforcement failure. Enforcing one letter perfectly still yields half a pair.</figcaption>
+  </figure>
+
+  <h3>The two fixes, both required</h3>
+
+  <p><strong>Three letters at the door, aimed at the room.</strong> Going from one to three moves chance-only pairs from 0.5 to 4.6 and — the number that matters more — takes the share of the room receiving nothing from 37% to 5%. The composer must suggest from the people actually present: a letter about somebody who is not in the building cannot resolve tonight.</p>
+
+  <p><strong>Stop making the mutual the payoff.</strong> Even at three letters, the reveal fires for a minority, and a ceremony whose payoff reaches a minority teaches the majority they were extras in somebody else's evening.</p>
+
+  <div class="call">
+    <p>The count, then the reveal. Every phone lights at the same second with one true sentence — <em>tonight, N people in this room wrote about you</em> — which fires for nine in ten. Then the pairs resolve.</p>
+  </div>
+
+  <p>A guaranteed floor and a rare ceiling. It is the Marriage Pact structure exactly, and it is the difference between a ceremony and a raffle.</p>
+
+  <h3>Why it passes the wall's own gates</h3>
+  <p>Gate 2 — <em>silence in, silence out</em> — forbids telling a specific person that something was done about them. Three things make the count pass, and all three must hold: the information is already theirs, since anyone can search their own handle; it is a count and never a name; and it is <strong>consented at the door</strong>, because writing is opting in. The count fires only for people who wrote that night. No exceptions, enforced in the data model rather than in the run of show.</p>
+</section>
+
+<!-- ── 03 built ────────────────────────────────────────────────────────── -->
+<section id="built">
+  <div class="secnum">03</div>
+  <h2>What is actually built</h2>
+  <p class="lede">The manual is written as though the wall is a sketch. The app is further along than it credits, and the room is further behind.</p>
+
+  <div class="verdict">
+    <div class="vrow"><div class="tag keep">Shipped</div><div class="b">Handle search, live resolution, the permanent cache</div><div class="s">Apify resolver with three caps and a stored face. The manual is right that this exists.</div></div>
+    <div class="vrow"><div class="tag fix">Superseded</div><div class="b">“Nothing appears until an LLM clears it”</div><div class="s">Deliberately reversed in migration 0050: regex refuses at the keyboard and on the server, the letter goes up, the classifier reads after and can take it down. Holding was tried and it was a writer watching nothing appear for hours. Do not reinstate it.</div></div>
+    <div class="vrow"><div class="tag keep">Shipped, free</div><div class="b">The reply the manual wants to charge $7 for</div><div class="s">Claim, then one ask per letter ever, then the writer answers or does not, then the sealed line opens on a yes. Consented at both ends, nobody watching.</div></div>
+    <div class="vrow"><div class="tag keep">Shipped, free</div><div class="b">The notification the manual wants to charge $2 for</div><div class="s">The tab at the foot of the wall, and the table behind it — whose own migration comment calls it “commercially the most valuable table here.” It is valuable because those people come back.</div></div>
+    <div class="vrow"><div class="tag kill">Not built</div><div class="b">The mutual reveal, in any form</div><div class="s">There is no mutual-letter object, no pairing function, nothing. Mutuality belongs to Main's pings. The ceremony's engine is unbuilt.</div></div>
+    <div class="vrow"><div class="tag kill">Not true today</div><div class="b">“Everyone writes at the door, sixty seconds”</div><div class="s">Writing calls the campus gate, which needs a verified berkeley.edu address: enter, receive mail, enter six digits, write. Three to five minutes on venue wifi — and the three-in-five-days allowance is spent in one night.</div></div>
+    <div class="vrow"><div class="tag kill">Not built</div><div class="b">An event, a guest list, an RSVP, a door</div><div class="s">Zero tables, zero routes. Everything the room needs is unbuilt — which is a smaller job than it sounds, because four of the five pieces extend mechanisms that already exist.</div></div>
+    <div class="vrow"><div class="tag fix">Written, unapplied</div><div class="b">The opt-out reaching the wall</div><div class="s">Today, taking a handle off leaves every letter <em>about</em> that person standing under their name. The worst thing in the repo, and one apply away from fixed. Do this before anything else in this document.</div></div>
+  </div>
+</section>
+
+<!-- ── 04 breaks ───────────────────────────────────────────────────────── -->
+<section id="breaks">
+  <div class="secnum">04</div>
+  <h2>Five things that break it</h2>
+
+  <h3>1 · Sixty percent of the population cannot enter the venue</h3>
+  <p>A California Type 48 licence — the ordinary bar and nightclub licence — bars anyone under 21 <em>from the premises</em>, not merely from drinking. A Type 47, held by a bona fide eating place, admits them. Sixty percent of Berkeley's 33,122 undergraduates are 18–21, and the manual's own sponsor email says <em>average age 20</em>. An average of 20 in a room that requires 21 is a contradiction sitting in the pitch.</p>
+
+  <p>The second half is worse. <strong>A bar pays per head because it makes the money back at the bar.</strong> A crowd that cannot legally buy a drink generates no bar revenue, so there is nothing to pay you out of. Venues that run 18+ nights profitably do it on the cover charge instead — which makes an 18+ deal a door split, never a per-head payment.</p>
+
+  <div class="cells">
+    <div class="cell">
+      <div class="k">Leg one · 20:00–22:45 · all ages</div>
+      <h5>The product</h5>
+      <p>The wall, the writing, the projection, the count, the reveals, the film. A room you rent or partner into, with no licence problem. The whole population is eligible.</p>
+    </div>
+    <div class="cell">
+      <div class="k">Leg two · 23:00–close · 21+</div>
+      <h5>The money</h5>
+      <p>The subset that can drink walks five minutes to a bar on a per-head deal. They arrive as one group, pre-warmed, at the hour a Tuesday bar is dying — which is more attractive to a bar than a trickle.</p>
+    </div>
+  </div>
+
+  <p>Night one runs leg one only. The bar leg is added at night two, once there is a head count to sell.</p>
+
+  <h3>2 · The invitation does not arrive</h3>
+  <p>The manual's highest-leverage step delivers its message into a folder with no doorbell. <strong>A DM from someone you do not follow lands in Message Requests, and Instagram sends no push notification</strong> — it sits silently until the person happens to look, and anything read as bulk is routed one level deeper into Hidden Requests. Safe cold-DM throughput is 10–50 a day on an established account; eighty each over three days is right at the edge where action blocks start.</p>
+
+  <p>Then the last leg: free events lose 28–50% of confirmed RSVPs to no-shows, at roughly 1.5× the rate of paid ones.</p>
+
+  <ul>
+    <li><strong>Follow first, DM second.</strong> A DM from a follower lands in the primary inbox with a notification. This one change is worth more than doubling the DM count.</li>
+    <li><strong>Prefer the reachable.</strong> Named people who already hold a verified address are reachable by mail, which arrives. Rank the list by that.</li>
+    <li><strong>Make the wall do the reaching.</strong> On a dense campus, “go search your @ on that thing” travels faster than 400 DMs and costs nothing. Word of mouth is the reach channel; the DM is the closer.</li>
+    <li><strong>Cap it honestly.</strong> Forty each over five days, from accounts six months old, never from the brand. Five ambassadors reaching 200 well beats 400 badly.</li>
+  </ul>
+
+  <h3>3 · The wall of faces turns commercial the day there is a cover charge</h3>
+  <p>The hive draws one disc per person written to, carrying the profile picture the resolver scraped, of people who consented to none of it. Today that is defensible: a public wall of anonymous letters is expressive content. <strong>A cover charge changes its character.</strong> California Civil Code §3344 creates liability for knowingly using a readily identifiable person's photograph for purposes of advertising or soliciting purchases of services, at <span class="id">$750</span> statutory damages per plaintiff plus fees — with several hundred identifiable plaintiffs available.</p>
+
+  <div class="call warn">
+    <p>The faces come off the field before the first ticketed night, and nothing commercial ever appears on the wall. Not the sponsor, not the ticket, not the price, not the date.</p>
+  </div>
+
+  <p>Both are cheap. The hive already renders a monogram whenever the resolver has no picture, so the first is a flag rather than a rewrite, and the field's whole design is a function of distance from the light — untouched by what sits inside a disc. The second widens a rule the repo already holds for the sponsor. Keeping the wall expressive is what keeps it protected, and it is the same rule the design already wanted for its own reasons.</p>
+
+  <h3>4 · The campaign as written cannot legally run</h3>
+  <p>Berkeley campus regulations: nothing may be left unattended on campus grounds or in classrooms, nothing attached to doors or buildings, flyers on bulletin boards and kiosks only, chalking is defacement, and a table must be staffed by a member of the sponsoring organisation. Cafeteria tables, library carrels and under dorm doors — the manual's three placements — are, in order: unattended on campus grounds, unattended on campus grounds, and affixed to doors.</p>
+
+  <p>The obvious remedy is closed. Becoming a registered student organisation is a <strong>semester-long programme with deadlines of 1 July or 1 December</strong>. There is no path to RSO status this autumn — and RSO status is what carries Sproul tabling, room reservation, free on-campus event insurance, and the right to post flyers at all.</p>
+
+  <div class="call">
+    <p>Partner with an RSO that already exists. Berkeley has over a thousand; one wants a free event with a film crew. They book, table and post. You bring the product, the campaign and the money.</p>
+  </div>
+
+  <p>It converts every blocked row above into a routine one, and it is available this week. Everything else runs off campus property: Telegraph, Bancroft and Durant are city right-of-way, and a card handed to a person beats a card left on a surface anyway.</p>
+
+  <h3>5 · The cost model is missing most of the costs</h3>
+  <p>Three whole categories are absent from the manual's $875. <strong>Insurance</strong>, without which no venue confirms a booking — typically $1M per occurrence and $2M aggregate with the venue named, at $250–400 dry. <strong>The campaign</strong>: twenty seed posters at $50–200 appears in the manual's own section 3 and in none of its P&amp;Ls, and neither do the cards, the wall, or the ambassadors who are asked for its highest-leverage labour. And <strong>rent</strong>, which only a bar absorbs.</p>
+</section>
+
+<!-- ── 05 money ────────────────────────────────────────────────────────── -->
+<section id="money">
+  <div class="secnum">05</div>
+  <h2>The money, honestly</h2>
+  <p class="lede">Night one is a $3,925 investment in a proof. The cash trough is $6,000 and it arrives before the first profitable night.</p>
+
+  <div class="scroll">
+  <table>
+    <tr><th>Night one · Berkeley · all ages · one leg</th><th class="n">Out</th><th class="n">In</th></tr>
+    <tr><td>Venue — partner room or small private space</td><td class="n">$400</td><td class="n">—</td></tr>
+    <tr><td>Insurance — general liability $1M / $2M, dry</td><td class="n">$250</td><td class="n">—</td></tr>
+    <tr><td>Door ×2, writing station ×1, floor lead</td><td class="n">$325</td><td class="n">—</td></tr>
+    <tr><td>Camera</td><td class="n">$150</td><td class="n">—</td></tr>
+    <tr><td>Print, projector hire, contingency</td><td class="n">$350</td><td class="n">—</td></tr>
+    <tr><td>Cards — 3,000 across six variants</td><td class="n">$220</td><td class="n">—</td></tr>
+    <tr><td>Physical wall — two weekends</td><td class="n">$180</td><td class="n">—</td></tr>
+    <tr><td>Twenty seed posters</td><td class="n">$1,500</td><td class="n">—</td></tr>
+    <tr><td>Five ambassadors</td><td class="n">$750</td><td class="n">—</td></tr>
+    <tr><td>Cover — 20 walk-ups at $10</td><td class="n">—</td><td class="n">$200</td></tr>
+    <tr class="tot"><td>Night one</td><td class="n">$4,125</td><td class="n neg">−$3,925</td></tr>
+  </table>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <tr><th>&nbsp;</th><th class="n">Heads</th><th class="n">Cover</th><th class="n">Bar leg</th><th class="n">Sponsor</th><th class="n">Out</th><th class="n">Net</th></tr>
+    <tr><td>1 · all ages, one leg</td><td class="n">200</td><td class="n">$200</td><td class="n">—</td><td class="n">$0</td><td class="n">$4,125</td><td class="n neg">−$3,925</td></tr>
+    <tr><td>2 · bar leg added</td><td class="n">250</td><td class="n">$720</td><td class="n">$595</td><td class="n">$750</td><td class="n">$2,400</td><td class="n neg">−$335</td></tr>
+    <tr><td>3 · first real sponsor</td><td class="n">280</td><td class="n">$840</td><td class="n">$665</td><td class="n">$2,000</td><td class="n">$2,400</td><td class="n pos">+$1,105</td></tr>
+    <tr class="tot"><td>5 · steady state</td><td class="n">300</td><td class="n">$900</td><td class="n">$750</td><td class="n">$3,000</td><td class="n">$2,000</td><td class="n pos">+$2,650</td></tr>
+  </table>
+  </div>
+
+  <p>One city, one night a month, tops out near <span class="id">$2,650</span>. Four cities is about <span class="id">$10,600</span> a month, and each needs a person physically present on a Tuesday — the one thing that does not scale, as the manual correctly says.</p>
+
+  <div class="call">
+    <p>So do not run this for the margin. The compounding asset is not the night; it is what the night leaves behind — verified students, letters, film, and a campus where the reflex is installed.</p>
+  </div>
+
+  <h3>Why nothing inside the app is for sale</h3>
+
+  <p>The $7 reply charges the person who was written about, whom this product's own persona document calls <em>“not a customer — a stakeholder with veto power over the product's existence.”</em> Beyond the constitution, the decisive objection is structural:</p>
+
+  <div class="call warn">
+    <p>It inverts the safety incentive. Revenue would scale with the number of people written about without their consent — and every one of the wall's nine gates would then stand against the direction the money pulls.</p>
+  </div>
+
+  <p>A cover charge has the opposite property: it pays you for people who <em>chose to come</em>, which is exactly why it is safe to take. Three more, briefly: it taxes the emotional payoff, which is the moment somebody tells their friends; a better version is already shipped and free; and the mechanism does not hold, because an uncaptured Stripe hold is cancelled seven days after creation, which is the manual's refund window with no margin at all.</p>
+
+  <p>The $2 notification is NGL Pro's structure with the deception removed — a payment taken at the most emotionally invested moment for an outcome that may never arrive. Ours would involve no fake messages, no false reveal and no hidden renewals, and it would still be the same shape, sold to the same demographic, by a product whose only real moat is that it can be trusted.</p>
+
+  <p>Worth knowing where the category stands: <strong>Marriage Pact has 600,000 students across 109 schools, a $5M seed from Bain Capital Ventures, and no revenue.</strong> The closest comparable that exists has not found a way to charge students and has decided not to force it.</p>
+
+  <div class="cells">
+    <div class="cell"><div class="k">Cover</div><div class="v">$10–12</div><p>Somebody who chose to come and was not written about.</p></div>
+    <div class="cell"><div class="k">Second guest</div><div class="v">$10</div><p>The third person in a group. The first +1 is always free.</p></div>
+    <div class="cell"><div class="k">Bar leg, per head</div><div class="v">$5–10</div><p>Paid by the venue, to you, for the 21+ walk-over.</p></div>
+    <div class="cell"><div class="k">Partnership</div><div class="v">$750–3,000</div><p>Paid by a brand. Pre-sell one small local one before night one.</p></div>
+  </div>
+</section>
+
+<!-- ── 06 build ────────────────────────────────────────────────────────── -->
+<section id="build">
+  <div class="secnum">06</div>
+  <h2>What to build</h2>
+  <p class="lede">Five things. Two tables, three screens, none more than a week — and the first is the strongest growth object this product has ever had.</p>
+
+  <h3>The Named Card</h3>
+  <p>Not in the manual at all. The framework's existing share object asks somebody to make a claim about themselves. The wall produces something far stronger, because it is <strong>a fact conferred by somebody else</strong>: a person who searches their handle and finds a letter has just received the most flattering piece of information a person can receive. Give them a card that says so.</p>
+
+  <div class="paper card">
+    <svg class="mk" viewBox="-60 -60 120 120" aria-hidden="true" fill="none">
+      <g transform="rotate(-19)"><path d="M-42 0 A42 21 0 0 1 42 0" stroke="currentColor" stroke-width="3.2"/></g>
+      <path d="M0-47 Q4.8-9.4 24 0 Q4.8 9.4 0 47 Q-4.8 9.4 -24 0 Q-4.8-9.4 0-47 Z" fill="currentColor"/>
+      <g transform="rotate(-19)"><path d="M42 0 A42 21 0 0 1 -42 0" stroke="currentColor" stroke-width="3.2"/></g>
+    </svg>
+    <p>somebody at berkeley wrote about you.</p>
+    <p>you're on the list for the 8th. +1.</p>
+    <div class="addr">celestual.us</div>
+  </div>
+
+  <p>Never who. Never a word of the letter. Only the fact, which is already theirs, and the door. It is receiver-side by construction, so it confesses nothing; it is a flex that is true and unearned by the poster, which is the strongest social currency available; and it is aimed — it reaches the poster's Berkeley followers, who go and search their own handle, and most find nothing, which routes them to the free notification, which is the front door.</p>
+
+  <p>It passes all nine gates. The named attack is <em>a card that says “someone wrote to @them”</em>; this says <em>someone wrote about me</em>, posted by me, carrying no third-party handle, no count about anyone else and nothing a takedown must reach.</p>
+
+  <h3>The night pass, and three letters</h3>
+  <p>One table, modelled on the pass list that already exists — a short code handed out at the door that grants write access for that night, on that campus, with its own allowance of three letters separate from the rolling window. The door has already verified them by a better method than email: a human looked at them and let them in.</p>
+  <ul>
+    <li><strong>Aim at the room.</strong> The composer suggests from the night's attendee list, not the wall at large.</li>
+    <li><strong>Consent, on the same screen.</strong> <em>At 22:45 you'll see how many people here wrote about you tonight.</em></li>
+    <li><strong>Screening unchanged.</strong> A night pass changes who may write. It changes nothing about what may be written.</li>
+  </ul>
+
+  <h3>The hour, the list, and two migrations</h3>
+  <p>A pairing function that, for everybody who wrote that night, returns their count and any pair where each wrote about the other, fired once over the Realtime channel the wall already uses. A pair is disclosed <strong>only to the two people in it, simultaneously</strong> — the double-blind, applied to letters. A person who did not write receives nothing: not a count, not a zero, not a “no one this time.”</p>
+
+  <p>Then the guest list, whose arrival column is what turns an anecdote into a sponsor deck and cannot be collected retroactively. And before anybody is invited: apply the opt-out migration, and add the per-name ceiling the attack ledger says is missing — five letters to one name in a day, the sixth held for the desk. The allowance today is on the writer, never the receiver, so twenty writers with one letter each is twenty letters to one person in a night.</p>
+</section>
+
+<!-- ── 07 night ────────────────────────────────────────────────────────── -->
+<section id="night">
+  <div class="secnum">07</div>
+  <h2>The campaign and the night</h2>
+  <p class="lede">Twenty-one days from the day the RSO partner says yes. Not before — the partner is what makes the first week legal.</p>
+
+  <div class="time">
+    <div class="when"><div class="d">D −7</div><div class="t">Find the partner</div><div class="x">One existing RSO. They book, table, post and carry on-campus insurance. Everything downstream is blocked on this.</div></div>
+    <div class="when"><div class="d">D 1–7</div><div class="t">Only the wall exists</div><div class="x">Cards, one line, a QR, no explanation and no party. Handed to people on Telegraph, Bancroft and Durant; on boards and kiosks through the partner; in coffee shops and the co-ops with a yes. Never left unattended on campus grounds.</div></div>
+    <div class="when"><div class="d">D 8–10</div><div class="t">Seed, and build the wall</div><div class="x">Twenty posters chosen for social capital, posting a letter card and not their own participation. The physical wall goes up Saturday, printed and posted live, filmed. That footage is the ad for week two and for every city after.</div></div>
+    <div class="when"><div class="d">D 11</div><div class="t">The rule</div><div class="x">One line, everywhere: <em>if somebody wrote about you, you're on the list.</em> The wall stops being an art project and becomes a guest list.</div></div>
+    <div class="when"><div class="d">D 12–17</div><div class="t">Volume</div><div class="x">The steepest part of the curve, because writing now has a consequence. Second installation. Ambassadors begin <strong>following</strong> the named, not DMing them.</div></div>
+    <div class="when"><div class="d">D 18–20</div><div class="t">Reach</div><div class="x">Forty DMs each, from six-month-old personal accounts, to people already followed back. Mail to anybody with a verified address.</div></div>
+    <div class="when"><div class="d">D 21</div><div class="t">The night</div><div class="x">List closes at noon. Confirm in the morning, one line. Publish the count, never a ticket link.</div></div>
+  </div>
+
+  <div class="paper">
+    <div class="who">The card — front, then back</div>
+    <p>somebody at berkeley wrote about you and never sent it.</p>
+    <p style="color:var(--paper-ink-2);font-family:var(--f-id);font-size:14px">celestual.us — search your @</p>
+  </div>
+
+  <p>Six variants, six QR paths through the code hop that already logs the scan and already judges a card on whether somebody <em>joined</em> rather than on scans. The manual asks how to track this. It is shipped.</p>
+
+  <h3>The two clocks</h3>
+  <p>Letters lapse in thirty days, and nothing in the manual accounts for it. On a monthly cadence that is the difference between a wall that compounds and a wall that empties: run it naively and every cycle starts thinner than the last, and the search-to-found rate — which is what drives word of mouth — falls every month.</p>
+  <p>So the night sits on day 21, when the wall is at its fullest, and <strong>the letters written at the door are the next cycle's seed</strong>. The room refills the wall it just emptied, which is the compounding loop and it is free. Never extend the thirty days to make a wall look busier: the lapse is doing privacy work, and a thin wall is information.</p>
+
+  <h3>The night itself</h3>
+  <div class="time">
+    <div class="when"><div class="d">20:00</div><div class="t">Doors, two lanes, writing station</div><div class="x">On the list — named, wrote, or worked — free plus one guest, checked against handle. Not on the list, $10. Everybody writes three letters, aimed at the room.</div></div>
+    <div class="when"><div class="d">21:30</div><div class="t">The room fills</div><div class="x">Projection cycles new letters as they are written. No announcements. It should feel like a party, not an activation.</div></div>
+    <div class="when"><div class="d">22:30</div><div class="t">One announcement</div><div class="x">The only time anybody speaks into a microphone. What happens at 22:45, and that they need their phone in their hand.</div></div>
+    <div class="when"><div class="d">22:45</div><div class="t">The count, then the reveal</div><div class="x">Every phone lights at once. Then the pairs resolve. Music drops for exactly the length of it.</div></div>
+    <div class="when"><div class="d">22:50</div><div class="t">Back to the party</div><div class="x">Do not stretch it. The ceremony is short and then it is a party again.</div></div>
+    <div class="when"><div class="d">23:00</div><div class="t">The 21+ leg</div><div class="x">Whoever can, walks five minutes to the bar. One ambassador leads the walk; the bar counts heads at its own door.</div></div>
+  </div>
+
+  <p>The manual puts the hour at 01:00. <strong>Move it to 22:45.</strong> An all-ages room does not hold a Tuesday until one in the morning; the film is better with a full room than a thinned one; the bar leg needs the dying hour, which is 23:00; and a Tuesday that ends at 23:00 is one people come back to.</p>
+</section>
+
+<!-- ── 08 calendar ─────────────────────────────────────────────────────── -->
+<section id="calendar">
+  <div class="secnum">08</div>
+  <h2>The calendar</h2>
+  <p class="lede">The framework already reached this conclusion from the other direction. The manual tries to compress it into twenty-one days. Both can be true.</p>
+
+  <div class="time">
+    <div class="when"><div class="d">→ 30 Sep 26</div><div class="t">Clear the blockers</div><div class="x">Apply the opt-out migration. Faces off the field. Named Card built. Per-name ceiling. Find the RSO partner. Nothing is announced.</div></div>
+    <div class="when"><div class="d">Oct 26</div><div class="t">Night one</div><div class="x">Night pass, the hour, the list. One 21-day campaign. All ages, one leg. Proof, not profit: −$3,900.</div></div>
+    <div class="when"><div class="d">Nov 26</div><div class="t">Night two</div><div class="x">Bar leg added, first local sponsor at $750. Roughly break-even.</div></div>
+    <div class="when"><div class="d">1 Dec 26</div><div class="t">File the RSO application</div><div class="x">The deadline, and there is not another until 1 July. It unlocks the spring.</div></div>
+    <div class="when"><div class="d">Spring 27</div><div class="t">Campus rights</div><div class="x">Sproul, campus rooms, free on-campus insurance, legal flyering. Nights three and four. First regional sponsor. First profitable nights.</div></div>
+    <div class="when"><div class="d">Apr 27</div><div class="t">The founder returns</div><div class="x">The constraint lifts.</div></div>
+    <div class="when"><div class="d">Autumn 27</div><div class="t">The second campus</div><div class="x">A body on the ground for each. The offensive the framework always pointed at.</div></div>
+  </div>
+
+  <div class="call">
+    <p>Autumn 2026 has one job: prove that a room fills off the back of letters, and that the hour fires. Two numbers — heads, and pairs.</p>
+  </div>
+
+  <h3>Kill criteria, set now</h3>
+  <p>Criteria decided after the result is known are not criteria.</p>
+  <ul>
+    <li><strong>Under 200 letters by day 18.</strong> The room has no material. Stop, do not book, do not spend the night budget.</li>
+    <li><strong>Under 120 heads on night one.</strong> The room does not fill and the app is a hobby.</li>
+    <li><strong>Under 25% of reached people open their letter.</strong> The wall is not landing and nothing downstream matters.</li>
+    <li><strong>Fewer than five pairs at the hour, with three letters each confirmed.</strong> The ceremony does not exist. This kills the <em>room</em>, not the product — the wall survives it.</li>
+    <li><strong>Ten venue conversations with no all-ages room under $600.</strong> There is no room business at Berkeley.</li>
+  </ul>
+
+  <h3>Who owns what</h3>
+  <p>The room needs a body in America on a Tuesday, and the founder is in Korea until April 2027. That is not a scheduling inconvenience; it is a structural fact about which layers can be personally owned.</p>
+
+  <div class="cells">
+    <div class="cell"><div class="k">The engine</div><h5>Ace</h5><p>The wall, verification, the Named Card, the night pass, the hour, moderation, the desk, the numbers. All remote-buildable, and all of it decides how many people walk through a door.</p></div>
+    <div class="cell"><div class="k">The room</div><h5>Tristan and David</h5><p>The RSO partner, the venue, the door, staffing, the sponsor, the film. None of it doable from Korea.</p></div>
+    <div class="cell"><div class="k">The campaign</div><h5>The ambassadors</h5><p>Seven, not five. Paid. Named in the credits of the first film. The most fragile asset in the plan, and the manual does not mention them.</p></div>
+  </div>
+
+  <p>This also settles the gap-year asymmetry. If the revenue is room revenue and the rooms fill because of an engine built remotely, that contribution has a number attached — heads delivered per night, traceable through the night's invite list to the letters that produced them, which the list records for exactly this reason. Put that measurement into whatever is signed, alongside ownership of the codebase and the verification infrastructure.</p>
+</section>
+
+<!-- ── 09 guess ────────────────────────────────────────────────────────── -->
+<section id="guess">
+  <div class="secnum">09</div>
+  <h2>What is still a guess</h2>
+  <p class="lede">Five numbers are estimates rather than findings. The first night measures four of them.</p>
+
+  <div class="verdict">
+    <div class="vrow"><div class="tag new">400</div><div class="b">Letters written in a 21-day cold campaign</div><div class="s">Everything downstream is a ratio applied to it.</div></div>
+    <div class="vrow"><div class="tag new">55%</div><div class="b">Named people actually reached</div><div class="s">Against the manual's 75%. The number most likely to disappoint.</div></div>
+    <div class="vrow"><div class="tag new">28%</div><div class="b">Attendance from reached</div><div class="s">High for an event, low for a personally-addressed one.</div></div>
+    <div class="vrow"><div class="tag fix">5–12%</div><div class="b">r — the reciprocity rate</div><div class="s">How often the person you wrote about wrote about you. <strong>There is no comparable for this number and it decides whether the hour exists.</strong> Night one is the experiment that runs it, and it is the most interesting thing this product will learn.</div></div>
+    <div class="vrow"><div class="tag new">$7</div><div class="b">What a Berkeley venue pays per head</div><div class="s">For a 21+ walk-over arriving as one group at the dying hour.</div></div>
+  </div>
+
+  <p>The sixth is not measurable on night one and should be said anyway: whether a room, once it has happened, makes people write letters <em>without</em> a room being scheduled. If it does, this is a product. If it does not, it is an events company with a very good flyer.</p>
+</section>
+
+<footer>
+  <p>Treat every figure above as a hypothesis with a date attached, and rewrite this document the morning after. The canonical version, with sources and the full argument under each correction, is <code>docs/MASTER-PLAN.md</code>; the simulation behind section 02 is <code>scripts/mutual-yield.mjs</code> and it runs in a second.</p>
+  <p class="sig">supersedes the operating manual, september 2026</p>
+</footer>
+
+</div>
