@@ -133,12 +133,14 @@ export function gated() { return GATED }
 export function freeReads() { return FREE }
 
 // ── the allowance ───────────────────────────────────────────────────────────
-// Three letters in any five days (migrations 0044 and 0051). Cached the way
-// everything else here is, so the composer can read it during render and the
-// server stays the one that decides. `null` before it has been asked, which
-// the composer reads as "say nothing yet" rather than as zero. No number in
-// it is ever drawn; what the composer says, once they are spent, is how many
-// days until `resets` (parts.jsx `Allowance`).
+// Three letters in any five days (migrations 0044 and 0051), unless the desk
+// has the cap switched off (0052), in which case `left` is `Infinity` and
+// nothing about it is ever drawn. Cached the way everything else here is, so
+// the composer can read it during render and the server stays the one that
+// decides. `null` before it has been asked, which the composer reads as "say
+// nothing yet" rather than as zero. No number in it is ever drawn; what the
+// composer says, once they are spent, is how many days until `resets`
+// (parts.jsx `Allowance`).
 let QUOTA = null
 export function allowance() { return QUOTA }
 

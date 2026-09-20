@@ -806,6 +806,11 @@ export function Locked({ children, onOpen, cta = 'sign in' }) {
 // this browser's arithmetic. A count the client keeps is a count the reader
 // owns. `resets` is the server's too: when the oldest spent letter falls out
 // of the window, which is the moment one comes back.
+//
+// A ration that is not being counted at all — the desk's switch off, migration
+// 0052 — arrives as an infinity, and the first line below is what draws it:
+// nothing. A meter with no end on it is not a quieter meter, it is a number
+// nobody can act on.
 export function Allowance({ left, limit, resets = 0, kind = 'week', reading = false, className = '' }) {
   if (!Number.isFinite(left) || !Number.isFinite(limit) || limit <= 0) return null
   const spent = Math.max(0, Math.min(limit, limit - left))

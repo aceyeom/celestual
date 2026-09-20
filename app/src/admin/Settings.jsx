@@ -8,6 +8,7 @@
 //
 //   the release gate    whether placing a ping needs the DM proof on the server
 //   the resolver        on or off, and the four caps that bound the apify bill
+//   the letters         whether the writer's allowance is counted, and at what
 //   the campuses        which walls are open
 //   the log             what the desk did, and when
 //
@@ -43,6 +44,7 @@ export default function Settings({ password, overview, onChanged, onLock }) {
       setCaps({
         cap_global: String(s.settings.cap_global), cap_user: String(s.settings.cap_user),
         cap_device: String(s.settings.cap_device), cap_ip: String(s.settings.cap_ip),
+        wall_letter_allowance: String(s.settings.wall_letter_allowance),
       })
     }
     setLog(l && l.ok ? l : { rows: [], error: l?.error || 'network' })
@@ -141,6 +143,65 @@ export default function Settings({ password, overview, onChanged, onLock }) {
                 onChange={(v) => set('resolver_enabled', v ? 'true' : 'false')}
                 words={['on. new handles are looked up', 'off. only the cache answers']}
               />
+            </div>
+          </div>
+
+          {/* ── the letters ──
+              The writer's ration, and the switch under it (migration 0052).
+              Off, anybody inside the campus gate may write as many letters as
+              they like: nothing is counted, nothing is refused and the
+              composer says nothing about it. It is the only thing on this
+              screen that changes what a person on the wall may do, so the
+              sentence beside it says what it costs rather than what it is. */}
+          <div className="ad-head is-sub">
+            <h2>the letters</h2>
+            <span className="ad-head-note">the writer&rsquo;s allowance. the window is five days and is not set from here.</span>
+          </div>
+          <div className="ad-rows">
+            <div className="ad-row">
+              <div className="ad-row-l">
+                <div className="ad-row-t">the cap</div>
+                <Note>
+                  on, a writer gets {s.wall_letter_allowance} letters in any five days and the composer tells them
+                  how long to wait once they are spent. off, nobody is counted and nobody is refused. the campus
+                  gate, the screen and the classifier all stay exactly where they are. leave it off only while the
+                  people writing are the people building it.
+                </Note>
+              </div>
+              <Toggle
+                on={s.wall_letter_cap !== 'false'}
+                busy={saving === 'wall_letter_cap'}
+                onChange={(v) => set('wall_letter_cap', v ? 'true' : 'false')}
+                words={['on. the allowance is counted', 'off. as many as they like']}
+              />
+            </div>
+            <div className="ad-row">
+              <div className="ad-row-l">
+                <div className="ad-row-t">letters in five days</div>
+                <Note>
+                  how many, while the cap is on. a number a person can hold in their head: more than anybody with
+                  something to say uses, fewer than somebody working through a list. it takes on the next letter,
+                  not on a deploy, and it cannot be nought. closing a wall is the switch under the walls below.
+                </Note>
+              </div>
+              <div className="ad-row-r">
+                <Field
+                  label="" value={caps.wall_letter_allowance ?? ''}
+                  onChange={(v) => setCaps((c) => ({ ...c, wall_letter_allowance: v.replace(/[^0-9]/g, '') }))}
+                  id="cap-wall_letter_allowance"
+                  hint={String(data.defaults.wall_letter_allowance) !== String(s.wall_letter_allowance)
+                    ? `default ${data.defaults.wall_letter_allowance}` : 'the default'}
+                />
+                <Btn
+                  tone="key"
+                  disabled={saving === 'wall_letter_allowance'
+                    || String(caps.wall_letter_allowance) === String(s.wall_letter_allowance)
+                    || !caps.wall_letter_allowance}
+                  onClick={() => set('wall_letter_allowance', caps.wall_letter_allowance)}
+                >
+                  {saving === 'wall_letter_allowance' ? 'saving' : 'save'}
+                </Btn>
+              </div>
             </div>
           </div>
 
