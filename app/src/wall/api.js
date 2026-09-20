@@ -191,7 +191,7 @@ export async function wallPulse() {
 }
 
 // ── the allowance ────────────────────────────────────────────────────────────
-// Three letters in any seven days, and this is the only way to ask how many are
+// Three letters in any five days, and this is the only way to ask how many are
 // left. It answers about the CALLER and takes no argument for anybody else:
 // how much somebody has written is a fact about them, and a function that could
 // be asked it about a handle would be a way to ask whether a particular person
@@ -200,15 +200,25 @@ export async function wallPulse() {
 // A browser with no session is told the whole allowance rather than nothing, so
 // the meter under the composer has a number to draw before it knows who is
 // holding the phone.
+//
+// `capped` false is the desk's switch off (migration 0052): there is nothing
+// to spend and nothing to wait for, so the allowance is INFINITE here rather
+// than large. Everything that draws it already asks `Number.isFinite` first
+// (parts.jsx `Allowance`), so an infinity is drawn as nothing at all, and the
+// one thing that must not happen — a number the client reads as nought and a
+// composer that goes dark — cannot. A schema from before 0052 says nothing
+// about `capped`, which is read as capped, which is what it was.
 export async function quota() {
   const out = await call('wall_quota', { p_token: sessionToken() })
-  if (!out?.ok) return { ok: false, error: out?.error || 'network', limit: 3, used: 0, left: 3, resets: 0 }
+  if (!out?.ok) return { ok: false, error: out?.error || 'network', capped: true, limit: 3, used: 0, left: 3, resets: 0 }
+  const capped = out.capped !== false
   return {
     ok: true,
     signedIn: !!out.signed_in,
-    limit: Number(out.limit) || 0,
+    capped,
+    limit: capped ? Number(out.limit) || 0 : Infinity,
     used: Number(out.used) || 0,
-    left: Number(out.left) || 0,
+    left: capped ? Number(out.left) || 0 : Infinity,
     resets: out.resets_at ? new Date(out.resets_at).getTime() : 0,
   }
 }

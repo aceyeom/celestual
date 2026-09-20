@@ -36,6 +36,12 @@
 // count and the date are the server's, from `wall_quota` (migrations 0044 and
 // 0051), so the letter somebody is refused on is the one the server refuses.
 //
+// The desk can switch the whole ration off (0052), and while it is off the
+// server answers with an infinite allowance: `spent` is never true, the foot
+// says nothing, and this screen needs no case of its own for it. Nothing else
+// about writing moves — the campus gate, the screen at the keyboard and the
+// classifier are all where they were.
+//
 // The address does not follow the letter anywhere. It is not read on this
 // screen, it is not passed to `write`, and there is no author field in the
 // corpus for it to land in (data.js) — so being let in and being known are

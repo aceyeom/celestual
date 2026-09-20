@@ -1179,6 +1179,53 @@ The test of the whole path: put a letter up to a spare handle at
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
 
+## The cap comes off (migration 0052)
+
+The writer's ration — three letters in any five days — becomes a row the desk
+holds rather than a number in a function, and this migration seeds it OFF so
+the wall can be filled by the people building it without a five-day wait every
+third letter. Nothing else about writing moves: the `berkeley.edu` gate, the
+list at the keyboard and again on the server, the classifier reading the
+letter where it stands, and a name that has come off the wall are all exactly
+where they were. The eight free reads are a different allowance and are not on
+this switch.
+
+1. **Apply `0052_the_cap_comes_off.sql`.** Applied 20 September 2026, through
+   the Supabase MCP, and recorded in the migration history as
+   `the_cap_comes_off`. `wall_letter_cap_on()` answers false, the allowance
+   row reads 3 and the window is still five days, and `wall_quota` answers a
+   stranger `capped: false`. It adds `wall_letter_cap_on()`, re-emits
+   `wall_letter_allowance()` off `celestual_setting_int` (`stable` rather than
+   `immutable` now, the same change `handle_search_limit` made in 0039), puts
+   `wall_letter_cap` and `wall_letter_allowance` on the desk's whitelist, and
+   re-emits `wall_write` to skip the count while the switch is off and
+   `wall_quota` to say `capped` and hand back an allowance that never runs
+   down. Re-runnable, and the seed is `on conflict do nothing`, so re-applying
+   it never turns the cap back off under a desk that has turned it on.
+   Verified by `scripts/verify-migrations.sh --test`
+   (`test-reading-room.sql`, section 7).
+2. **Deploy the app.** Vercel, as usual. It carries the desk's two new rows on
+   the settings screen, under `the letters`. Nothing waits on it: the cap is
+   already off in the database, and until the deploy the switch is one call to
+   `celestual_desk_setting_set` in the SQL editor. `celestual-wall-moderate`
+   needs no redeploy at all — it asks `wall_write`, which is where the count
+   was and where the switch now is.
+
+Order does not matter, and that is the point of the shape `wall_quota`
+answers in. A migration applied before the app leaves the old composer reading
+`limit`, `used`, `left` and `resets_at` exactly as it always has, and seeing a
+writer who is nowhere near their limit — which is what the switch means — so
+the cap is off for everybody the moment the SQL lands. An app deployed before
+the migration reads no `capped` at all, treats the wall as capped, and is
+right, because it is.
+
+**Putting it back is a tap**, not a migration: the desk, settings, `the
+letters`, the cap on. Or `select celestual_desk_setting_set('wall_letter_cap',
+'true');`. Either takes on the next letter written. Turn it back on before the
+cards go out — three letters in five days is the answer to a wall being
+decided by whoever writes the most, and that problem starts the day strangers
+can write.
+
 ## Five days between (migration 0051)
 
 The three letters stay three, and the window they are counted over shortens

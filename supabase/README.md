@@ -242,6 +242,26 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0052_the_cap_comes_off.sql` (**applied 20 September 2026**, in
+  the history as `the_cap_comes_off`): **the writer's allowance is a row
+  now, and the desk holds the switch.** The three and the number behind it
+  move out of the function body into `celestual_settings`, where the resolver
+  and the apify caps have lived since 0039: `wall_letter_cap` ('true' /
+  'false') and `wall_letter_allowance` (3), both on the desk's whitelist and
+  both read on every call, so lifting the ration is a tap rather than a
+  migration. `wall_letter_cap_on()` is the switch, `wall_letter_allowance()`
+  reads the row and is `stable` rather than `immutable` for it, `wall_write`
+  skips the count while it is off, and `wall_quota` gains `capped` and answers
+  with an allowance that never runs down — `used` still true, `resets_at`
+  null — so an app built before this migration reads the same four fields and
+  sees a writer nowhere near their limit rather than one at nought. The window
+  stays five days and stays in `wall_letter_window()`. Nothing else about
+  writing is on the switch: the campus gate, the screen at the keyboard, the
+  classifier and a name that has come off the wall are all where they were,
+  and so are the eight free reads. **Seeded OFF**, which is what it was
+  written for; `on conflict do nothing`, so re-running it never turns the cap
+  back off under a desk that has turned it on. **Tested by
+  `scripts/sql/test-reading-room.sql`**, section 7.
 - `migrations/0051_five_days_between.sql` (**applied 13 September 2026**): **five days between.** The three
   letters stay three and the window they are counted over shortens from seven
   days to five: `wall_letter_window()` is redefined and nothing else moves,
@@ -344,7 +364,8 @@ Idempotent migrations, applied in order:
   unchanged and is now the WRITE gate alone. Reporting follows reading on
   purpose: the subject of a letter is the likeliest reader to want it down and
   the least likely to hold a campus address at that moment. Writing also gets
-  an allowance of three letters in any seven days (five since 0051), held in
+  an allowance of three letters in any seven days (five since 0051, and a
+  settings row the desk can switch off since 0052), held in
   `wall_letter_allowance()` and `wall_letter_window()` and counted by
   `wall_letters_spent(user)`: `wall_write` refuses the fourth with `cap` and
   `wall_quota(token)` answers the caller (and only ever the caller) with

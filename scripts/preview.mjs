@@ -487,8 +487,12 @@ const RPC = {
   celestual_whoami: () => whoami(),
   // 0044: the week's allowance, about the caller. Without this the composer
   // read the RPC's absence as a limit of nought and drew its act dark.
+  // `capped` is 0052's switch, and the fixture keeps it on: the shot this
+  // exists for is the composer with its allowance spent, which is a state the
+  // cap has to be on to reach.
   wall_quota: () => ({
-    ok: true, signed_in: true, limit: 3, used: SPENT ? 3 : 2, left: SPENT ? 0 : 1,
+    ok: true, signed_in: true, capped: true,
+    limit: 3, used: SPENT ? 3 : 2, left: SPENT ? 0 : 1,
     resets_at: new Date(now + 4 * DAY).toISOString(),
   }),
   // 0040: from the first character, exact then prefix then contains, with the

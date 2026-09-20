@@ -141,6 +141,13 @@ select rr_ok('a proved handle may report what it can read',
 
 -- ── 4. three in five days ───────────────────────────────────────────────────
 -- The writer has spent two already (the two letters above), so one is left.
+--
+-- 0052 seeds the cap OFF, so the allowance is asserted with the switch turned
+-- on and the off state gets a section of its own at the end. Turned on
+-- through the desk's own function rather than by writing the row, so the
+-- whitelist is exercised where the switch is.
+select rr_ok('the cap is the desk''s to turn on',
+  (celestual_desk_setting_set('wall_letter_cap', 'true')->>'ok')::boolean);
 select rr_ok('the allowance is three', wall_letter_allowance() = 3);
 select rr_ok('and the window is five days (0051)', wall_letter_window() = interval '5 days');
 select rr_ok('two spent, one left',
@@ -210,3 +217,62 @@ select rr_ok('a proved handle with no campus address cannot write',
 select rr_ok('and neither can a session with nothing proved on it',
   (wall_write('rr-token-neither-00000', 'rrsubject', 'a letter from nobody',
               null, null, 'berkeley', 'live', '{}')->>'error') = 'gate');
+
+-- ── 7. the cap comes off, and goes back on (0052) ───────────────────────────
+-- The writer's three were backdated out of the window in section 4, so this
+-- section starts them whole and spends them again, which is the only state
+-- the switch is visible from.
+select wall_write('rr-token-writer-000000', 'rrcapa', 'one', null, null, 'berkeley', 'live', '{}');
+select wall_write('rr-token-writer-000000', 'rrcapb', 'two', null, null, 'berkeley', 'live', '{}');
+select wall_write('rr-token-writer-000000', 'rrcapc', 'three', null, null, 'berkeley', 'live', '{}');
+select rr_ok('with the cap on, the fourth is still refused',
+  (wall_write('rr-token-writer-000000', 'rrcapd', 'four',
+              null, null, 'berkeley', 'live', '{}')->>'error') = 'cap');
+
+select rr_ok('the desk turns it off',
+  (celestual_desk_setting_set('wall_letter_cap', 'false')->>'ok')::boolean);
+select rr_ok('and the quota says it is not counting',
+  (wall_quota('rr-token-writer-000000')->>'capped')::boolean = false);
+select rr_ok('the allowance never runs down while it is off',
+  (wall_quota('rr-token-writer-000000')->>'left')::int = wall_letter_allowance());
+select rr_ok('nothing is waiting to come back',
+  (wall_quota('rr-token-writer-000000')->>'resets_at') is null);
+select rr_ok('but what was written is still counted honestly',
+  (wall_quota('rr-token-writer-000000')->>'used')::int = 3);
+select rr_ok('and the fourth goes up',
+  (wall_write('rr-token-writer-000000', 'rrcapd', 'four',
+              null, null, 'berkeley', 'live', '{}')->>'ok')::boolean);
+select rr_ok('and so does the fifth',
+  (wall_write('rr-token-writer-000000', 'rrcape', 'five',
+              null, null, 'berkeley', 'live', '{}')->>'ok')::boolean);
+
+-- Nothing else about writing moved: the campus gate is still the campus gate
+-- with the cap off, which is the one thing this switch must not touch.
+select rr_ok('the gate is not on the switch',
+  (wall_write('rr-token-handle-000000', 'rrcapf', 'from outside the campus',
+              null, null, 'berkeley', 'live', '{}')->>'error') = 'gate');
+
+select rr_ok('the desk turns it back on',
+  (celestual_desk_setting_set('wall_letter_cap', 'true')->>'ok')::boolean);
+select rr_ok('and the five already written are counted again',
+  (wall_write('rr-token-writer-000000', 'rrcapg', 'six',
+              null, null, 'berkeley', 'live', '{}')->>'error') = 'cap');
+
+-- The number is the desk's too, and one is the smallest it can take: a nought
+-- would shut the composer for the whole campus while the switch still said
+-- the cap was on.
+select rr_ok('the number is the desk''s',
+  (celestual_desk_setting_set('wall_letter_allowance', '9')->>'ok')::boolean);
+select rr_ok('and it is read on the next letter',
+  wall_letter_allowance() = 9 and (wall_quota('rr-token-writer-000000')->>'left')::int = 4);
+select rr_ok('a nought allowance is refused',
+  (celestual_desk_setting_set('wall_letter_allowance', '0')->>'error') = 'bad_value');
+select rr_ok('and so is a word',
+  (celestual_desk_setting_set('wall_letter_allowance', 'lots')->>'error') = 'bad_value');
+select rr_ok('the switch takes true or false and nothing else',
+  (celestual_desk_setting_set('wall_letter_cap', 'off')->>'error') = 'bad_value');
+
+-- Left as 0052 seeds it, so nothing later in the run meets a cap this file
+-- turned on.
+select celestual_desk_setting_set('wall_letter_allowance', '3');
+select celestual_desk_setting_set('wall_letter_cap', 'false');
