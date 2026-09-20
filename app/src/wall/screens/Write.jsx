@@ -73,14 +73,15 @@
 //
 // ── the look (0055) ────────────────────────────────────────────────────────
 // The pen at the end of the card's letterhead opens the look panel under it
-// (Look.jsx): the paper, its colour, its type. The card is the preview,
-// because the card is the real card and a look is its tokens moved, and
-// what goes up is what was seen. The look rides with the letter and is kept
-// in the draft with the words, so it survives the sheet being closed over
-// it. The name on the card is the way back to the first question, and so
-// are the dots in the head; the capsule that used to stand beside the act
-// for it, "a different name", is gone, and the act stands alone in the
-// middle of the foot.
+// (Look.jsx): a rail with the three things a paper can be changed about —
+// texture, color, type — one grid under it for the one being changed, and a
+// line naming the choice. The card is the preview, because the card is the
+// real card and a look is its tokens moved, and what goes up is what was
+// seen. The look rides with the letter and is kept in the draft with the
+// words, so it survives the sheet being closed over it. The name on the
+// card is the way back to the first question, and so are the dots in the
+// head; the capsule that used to stand beside the act for it, "a different
+// name", is gone, and the act stands alone in the middle of the foot.
 //
 // ── the screen, at the keyboard ────────────────────────────────────────────
 // Layer 1 of the moderation runs against every keystroke of the letter
@@ -446,8 +447,9 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
                 {caught || said ? <Label className="wl-write-caught">{caught || said}</Label> : null}
               </div>
             </div>
-            {/* the look, under the card, while the pen is on: the paper, its
-                colour and its type, and the card above is the preview */}
+            {/* the look, under the card, while the pen is on: its texture,
+                its colour and its type, one at a time, and the card above
+                is the preview */}
             {styling ? <LookPanel look={look} onChange={setLook} /> : null}
           </div>
         )}

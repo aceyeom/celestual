@@ -15,11 +15,26 @@
 // that tune the one chosen. The THEME is the big choice and it is whole: a
 // ground, an ink, a face, a corner, a texture. The TINT recolours it, and
 // the FACE resets its type, and either can be left as the theme brought it.
-// Nine themes, twelve tints and six faces are a few hundred letters that
+//
+// The panel calls the three by what a writer is actually choosing — TEXTURE,
+// COLOR, TYPE (Look.jsx) — while the row keeps the three keys the schema
+// admits, `theme`, `tint`, `face`. The words are the interface's and the
+// keys are the column's, and neither has to move for the other.
+//
+// Five textures, eleven colours and six faces are a few hundred letters that
 // look different from each other, which is the freedom, and every one of
 // them is a choice from a menu that every writer shares, which is what keeps
 // a look from being a signature (docs/WALL-FEATURES.md, G3). Nothing here
 // takes a colour a person typed, a picture, or a word.
+//
+// ── and it is shorter than it was ───────────────────────────────────────────
+// It was nine themes and twelve colours, on three rows that each scrolled
+// sideways under the card. Four of the nine came off (y2k, receipt,
+// notebook, terminal): each was a costume rather than a paper — a gloss, a
+// dashed till roll, a ruled page, a green screen — and a menu whose job is
+// to be a MASK works better short and plainly drawn than long and
+// characterful. What is left is five papers that differ in the one way
+// paper differs: how it takes light.
 //
 // ── one set of tokens ───────────────────────────────────────────────────────
 // A look is drawn as custom properties on the paper (`lookVars`): the ground,
@@ -51,16 +66,26 @@ export const FACES = [
 ]
 
 // ── the tints ───────────────────────────────────────────────────────────────
-// Twelve grounds with the ink that reads on each. The first is the plain
-// paper's own chalk; eight are light and three are dark. The lit edge and the
+// Eleven grounds with the ink that reads on each. The first is the plain
+// paper's own chalk; seven are light and four are dark. The lit edge and the
 // shadowed foot of each are derived, the way the plain paper's are declared.
+//
+// Eleven and not twelve because `mint` sat between `sage` and `sky` and read
+// as neither: a swatch nobody can tell from its neighbour is a swatch that
+// makes the grid longer without making a letter more its own. With the
+// paper's own ground standing first as a choice, the grid is twelve cells,
+// which is two even rows of six and no ragged last line.
+//
+// A letter already written on `mint` keeps the slug in its row and draws its
+// paper's own ground, the same way a letter on one of the four dropped
+// themes draws the plain paper: nothing is rewritten in the corpus to take
+// a row off a menu, here or in the list above.
 export const TINTS = [
   { slug: 'chalk',  paper: '#F4F1EA', ink: '#17150F' },
   { slug: 'rose',   paper: '#F5D5DD', ink: '#4A1B2B' },
   { slug: 'peach',  paper: '#F9D8C2', ink: '#4E2812' },
   { slug: 'butter', paper: '#F6E7AE', ink: '#45380D' },
   { slug: 'sage',   paper: '#D5E1C6', ink: '#20311A' },
-  { slug: 'mint',   paper: '#CAECDF', ink: '#11392B' },
   { slug: 'sky',    paper: '#D2E3F5', ink: '#122A47' },
   { slug: 'lilac',  paper: '#E2D7F4', ink: '#301F4D' },
   { slug: 'slate',  paper: '#2A2D37', ink: '#E9EAF0' },
@@ -76,17 +101,17 @@ export const TINTS = [
 // wrong (gold on black). `texture` names a rule in wall.css drawn under the
 // type by `data-look`; `radius` is the corner. The first is the plain paper
 // and is never stored: it is what a null look draws.
+//
+// Five, in the order the panel draws them: the three light papers, then the
+// two that are lit from the other side. A letter written on a theme this
+// build no longer carries keeps its slug in the row and draws the plain
+// paper here, which is what `cleanLook` keeping an unknown slug is for.
 export const THEMES = [
   { slug: 'paper',    name: 'paper',    paper: '#F4F1EA', ink: '#17150F', face: 'serif', radius: 18 },
-  { slug: 'night',    name: 'night',    paper: '#0F0E14', ink: '#F4F1EA', face: 'serif', radius: 18 },
-  { slug: 'y2k',      name: 'y2k',      paper: '#DCE3FF', ink: '#3A2A6B', face: 'round', radius: 24,
-    ground: 'linear-gradient(135deg, #EAE5FF 0%, #CDF3F2 36%, #FFD6F0 70%, #D6E1FF 100%)', texture: 'gloss' },
-  { slug: 'nokia',    name: 'nokia',    paper: '#C3CFA3', ink: '#1C2418', face: 'pixel', radius: 10, texture: 'lcd' },
-  { slug: 'receipt',  name: 'receipt',  paper: '#FBFAF3', ink: '#33332E', face: 'mono',  radius: 4,  texture: 'dashed' },
-  { slug: 'notebook', name: 'notebook', paper: '#FDFCF6', ink: '#1F3480', face: 'hand',  radius: 6,  texture: 'ruled' },
-  { slug: 'terminal', name: 'terminal', paper: '#050B07', ink: '#72F09C', face: 'mono',  radius: 12, texture: 'scan' },
   { slug: 'candy',    name: 'candy',    paper: '#FFDCE6', ink: '#7C2A52', face: 'round', radius: 26,
     ground: 'linear-gradient(160deg, #FFD3E6 0%, #FFE8D2 56%, #FFF3C4 100%)' },
+  { slug: 'nokia',    name: 'nokia',    paper: '#C3CFA3', ink: '#1C2418', face: 'pixel', radius: 10, texture: 'lcd' },
+  { slug: 'night',    name: 'night',    paper: '#0F0E14', ink: '#F4F1EA', face: 'serif', radius: 18 },
   { slug: 'gold',     name: 'gold',     paper: '#110F15', ink: '#F0B429', ink2: '#A98A3C', face: 'serif', radius: 18 },
 ]
 

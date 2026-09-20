@@ -218,13 +218,18 @@ signature by another name (G3); each is a thing the list at the keyboard
 cannot read (G4); and each is a picture or a second bright surface (G7). That
 ruling stands, on the row above, and it always will.
 
-What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of nine
-papers, one of twelve colours and one of six faces, from a menu that every
+What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of five
+papers, one of eleven colours and one of six faces, from a menu that every
 writer on the wall shares, stored as three slugs and drawn by the browser.
+(Nine papers and twelve colours when it shipped. The menu was shortened and
+the panel rebuilt as one rail over one grid — `Look.jsx` — which changes
+none of the reasoning below: a shorter menu is a menu more writers share.)
 Through the gates:
 
 - **G3.** A look is a choice from a short menu, the same menu for everybody,
-  and the nokia screen is on a hundred letters by the end of the week. It is
+  and the nokia screen is on a hundred letters by the end of the week. The
+  shorter the menu, the more letters each paper carries, and the less any one
+  of them can point at a person. It is
   no more a signature than writing in lower case is. What would be one is a
   colour typed by hand or a face uploaded, and neither exists: the schema
   admits three slugs and refuses a fourth key, a colour and a sentence
