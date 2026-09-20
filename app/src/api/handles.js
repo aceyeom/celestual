@@ -65,6 +65,16 @@ export const resolveEnabled = RESOLVE_ENABLED && hasSupabase;
 // the rewrite, at the cost of the cookie going third party there.
 const ENDPOINT = import.meta.env.VITE_RESOLVE_ENDPOINT || '/api/resolve';
 
+// ── a name is not a handle ───────────────────────────────────────────────────
+// A letter to a first name is keyed on the wall by a tilde and the folded
+// name, `~sofia` (migration 0053). Nothing in this module may ever look one
+// up: normHandle would strip the tilde and the resolver would answer with
+// @sofia's face and name for a letter that is about somebody else entirely.
+// Every door into the memo checks this first.
+export function isNameKey(raw) {
+  return String(raw || '').trim().startsWith('~');
+}
+
 // ── the four answers ─────────────────────────────────────────────────────────
 // Everything downstream branches on `state`, and there are exactly four:
 //
@@ -203,6 +213,7 @@ async function flushPeeks() {
 // is "nothing to draw yet" and never "no account by that name". Called while
 // somebody is typing, so a known handle lands as a card before they commit.
 export async function peekServer(raw) {
+  if (isNameKey(raw)) return null;
   const handle = normHandle(raw);
   if (handle.length < 2 || !resolveEnabled) return null;
   if (memo.has(handle)) return memo.get(handle);
@@ -219,6 +230,7 @@ export async function peekServer(raw) {
 // nowhere else. Never throws, never blocks: every failure path answers
 // 'unknown', which the UI draws as nothing at all.
 export async function resolveHandle(raw) {
+  if (isNameKey(raw)) return { state: 'idle', handle: '' };
   const handle = normHandle(raw);
   if (handle.length < 2) return { state: 'idle', handle };
   if (!resolveEnabled) return { state: 'unknown', handle };
@@ -265,6 +277,7 @@ export async function resolveHandle(raw) {
 // this tab is answered instantly, and the caller uses this to skip straight to
 // the answer rather than flashing a spinner over a fact it already has.
 export function peekHandle(raw) {
+  if (isNameKey(raw)) return null;
   const handle = normHandle(raw);
   return memo.get(handle) || null;
 }
@@ -304,6 +317,9 @@ export function avatarUrl(path) {
 const INDEX_MISS_MS = 10 * 60_000;
 
 export function learnHandle(r) {
+  // a first name's row carries no resolver answer and must not be filed as
+  // one under the handle of the same spelling
+  if (isNameKey(r?.handle) || r?.kind === 'name') return;
   const handle = normHandle(r?.handle);
   if (!handle || memo.has(handle)) return;
   if (!r?.known) {
@@ -351,6 +367,7 @@ export function markWarm(url) {
 export function warmFaces(handles) {
   const urls = [];
   for (const raw of handles || []) {
+    if (isNameKey(raw)) continue;
     const p = memo.get(normHandle(raw));
     const url = p && p.state === 'found' ? p.avatar : '';
     if (url && !WARM.has(url) && !urls.includes(url)) urls.push(url);

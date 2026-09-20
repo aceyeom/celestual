@@ -37,11 +37,16 @@ const EMPTY = {
   draft: null,        // the composer's in-flight letter
   written: [],        // letters put up in this session, newest first. This is
                       // the ONLY thing that opens the tab to the core service.
-  wroteTo: [],        // the HANDLES those letters were addressed to, newest
+  names: {},          // key -> the name as written, for the letters this
+                      // device put up to a first name (0053): a `~sofia` key
+                      // cannot be printed as "Sofia" without it, and after a
+                      // reload the letters themselves are out of memory
+  wroteTo: [],        // the KEYS those letters were addressed to, newest
                       // first. Held beside the ids rather than derived from
                       // them because the letters themselves live in memory and
                       // a reload loses them, while the account sheet still has
-                      // to be able to say who this device has written to. It is
+                      // to be able to say who this device has written to. A
+                      // key is a handle, or a tilde and a folded first name. It is
                       // a record of the READER, never of a writer: it is on
                       // this device, it is cleared with everything else, and
                       // nothing on a letter points back at it.

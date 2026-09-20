@@ -159,7 +159,7 @@ function RowPair({ u, open, detail, onOpen, go }) {
                           <li key={l.id}>
                             <div>
                               <State>{l.status}</State>{' '}
-                              <span className="ad-id is-dim">to @{l.target_handle}</span>{' '}
+                              <span className="ad-id is-dim">to {String(l.target_handle).startsWith('~') ? String(l.target_handle).slice(1) : `@${l.target_handle}`}</span>{' '}
                               <When at={l.created_at} />
                             </div>
                             <p className="ad-body-text is-quote" style={{ margin: '4px 0 0' }}>{l.body}</p>

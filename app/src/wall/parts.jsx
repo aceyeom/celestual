@@ -9,7 +9,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { atHandle, normHandle, search } from './data.js'
+import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './data.js'
 import { Ecliptic, Sparkle } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
@@ -363,7 +363,13 @@ export function TopBar({ go, at = 'wall', acts = true }) {
       />
       {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
-        <IconButton name="find" label="look for a name" on={at === 'find'} onClick={() => go('find')} />
+        {/* ── the glass is gone from the bar ──
+            The search stood here as a 40px ring with a glass in it, the
+            hardest corner of a phone to reach, and read as settings. It is
+            the wall's own question now, a field under the ear on the wall
+            itself (screens/Wall.jsx `Seek`), which is where the one in
+            twenty who came looking for a name actually finds it. The bar
+            keeps the act and the person. */}
         {/* ── the composer, as a word ──
             The one act on the wall, and it stands in the bar between the glass
             and the person: a small chalk capsule carrying the nib and the word
@@ -479,11 +485,28 @@ export function Pen({ onClick, label = 'change it', className = '' }) {
 // value, and cannot be backspaced away. Handles are stored bare and shown with
 // one, and this is where that stops being a convention and starts being
 // enforced.
-export function HandleField({ value, onChange, onSubmit, autoFocus = false, locked = false,
+//
+// ── and a name, since 0053 ──
+// `kind="name"` is the same field asking for a first name instead of a
+// handle: the painted @ goes, the input sets in the display face because a
+// name is something a person means and a handle is an identifier, and the
+// keyboard capitalises the way a name is written. Nothing else moves, so the
+// switch between the two is seen as the @ going out and the type changing
+// its voice, which is the whole explanation.
+//
+// `focusOnTouch` is for the one field a person has already asked for with
+// their thumb: the search, which opens from a tap on a field on the wall,
+// so the keyboard that tap raised is the keyboard this field keeps.
+export function HandleField({ value, onChange, onSubmit, autoFocus = false, focusOnTouch = false, locked = false,
   placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null,
-  onKeyDown = null }) {
+  onKeyDown = null, kind = 'handle', onFocus = null }) {
   const ref = useRef(null)
   const id = useId()
+  const named = kind === 'name'
+  // `kind="search"` is the wall's own question: a glass in the place of the
+  // @, because a name is as good an answer as a handle since 0054, and a
+  // painted @ would say otherwise.
+  const seeking = kind === 'search'
   // The caller's own handle on the input, for "not them? change it": a
   // control that sends the person back to the field has to reach the field.
   const setRef = useCallback((el) => {
@@ -495,19 +518,22 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, lock
     if (!autoFocus || !ref.current) return
     // On a phone, focusing on mount throws the keyboard up over the wall
     // before anybody has seen the wall — and the wall is the thing that makes
-    // the next thirty seconds work. So: pointer devices only.
+    // the next thirty seconds work. So: pointer devices only, unless the
+    // person's own tap on a field is what opened this one.
     const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
-    if (fine) ref.current.focus()
-  }, [autoFocus])
+    if (fine || focusOnTouch) ref.current.focus()
+  }, [autoFocus, focusOnTouch])
 
   return (
-    <div className={`wl-field${size ? ` is-${size}` : ''}${locked ? ' is-locked' : ''}${busy ? ' is-busy' : ''}`}>
-      <span className="wl-at" aria-hidden="true">@</span>
+    <div className={`wl-field${size ? ` is-${size}` : ''}${locked ? ' is-locked' : ''}${busy ? ' is-busy' : ''}${named ? ' is-name' : ''}${seeking ? ' is-search' : ''}`}>
+      {named ? null
+        : seeking ? <span className="wl-at wl-field-glass" aria-hidden="true"><Icon name="find" size={size === 'lg' ? 24 : 20} /></span>
+        : <span className="wl-at" aria-hidden="true">@</span>}
       <input
         ref={setRef} id={id} aria-label={label} type="text" value={value}
         readOnly={locked} placeholder={placeholder}
-        autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck="false"
-        inputMode="text" enterKeyHint="go"
+        autoComplete="off" autoCapitalize={named ? 'words' : 'none'} autoCorrect="off" spellCheck="false"
+        inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'} onFocus={onFocus || undefined}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           // A list under the field (Suggest) takes the arrows, escape, and
@@ -1168,8 +1194,10 @@ const SUGGEST_MAX = 4
 const suggested = new Map()
 
 export function useSuggest(query, { onPick = null, skip = false, exclude = '' } = {}) {
-  const q = normHandle(query)
-  const ex = normHandle(exclude)
+  // as typed (0054): a space or an accent is the server's to hear, and a
+  // first name is not a handle to normalise
+  const q = String(query || '').trim().replace(/\s+/g, ' ').slice(0, 60)
+  const ex = targetKey(exclude)
   const [got, setGot] = useState(() => (q && suggested.get(q)) || [])
   const [asking, setAsking] = useState(false)
   const [active, setActive] = useState(-1)
@@ -1242,10 +1270,18 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 // the picture, so a face that never arrives is a designed state and a face
 // that fails to load is the same state. `resolve` off draws the monogram only,
 // for the one identity in the product that is not an Instagram handle.
+//
+// A first name's key (`~sofia`, 0053) is never resolved: it draws the
+// monogram of the name as written, and asks nothing, because the resolver
+// would answer with a stranger of the same spelling.
 export function Face({ handle, size = 30, resolve = true, lit = false, className = '', style }) {
-  const p = useProfile(resolve ? handle : '')
+  const named = isNameKey(handle)
+  const p = useProfile(resolve && !named ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
-  const mono = p ? monogram(p) : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
+  const said = named ? (nameFor(handle) || raw.slice(1)) : ''
+  const mono = p ? monogram(p)
+    : named ? (size >= 40 || said.includes(' ') ? monogram({ name: said }) : said.slice(0, 1).toUpperCase())
+    : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
   // Which src has actually arrived, and which one failed — held as the URL
   // rather than as two booleans reset by an effect. The effect version had a
   // race the whole product could hit: a picture already in the browser's cache
@@ -1297,10 +1333,14 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
 // word, and there is no second line. `id` lands on the name, so a sheet can
 // be labelled by it. Drawn on the letter, on the composer's preview and on
 // the posted card, so what is written on is what goes up.
+//
+// A letter to a first name (0053) reads "for Sofia" and nothing under it:
+// the name branch, with no handle to set on the second line.
 export function Addressee({ handle, id, className = '' }) {
-  const p = useProfile(handle)
-  const name = p?.name || ''
-  const h = atHandle(handle)
+  const named = isNameKey(handle)
+  const p = useProfile(named ? '' : handle)
+  const name = named ? (nameFor(handle) || String(handle || '').trim().slice(1)) : (p?.name || '')
+  const h = named ? '' : atHandle(handle)
   return (
     <span className={`wl-addressee ${className}`}>
       <span className="wl-addressee-line">
@@ -1310,7 +1350,7 @@ export function Addressee({ handle, id, className = '' }) {
           {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
         </span>
       </span>
-      {name ? <span className="wl-addressee-at">{h}</span> : null}
+      {name && h ? <span className="wl-addressee-at">{h}</span> : null}
     </span>
   )
 }
@@ -1414,12 +1454,19 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
 // The face as a control: press it and it opens (FaceViewer) out of itself.
 // One element on the paper, so the crest of a letter is the same disc it
 // always was with a press on it, and the viewer rides on the caller's tree.
+//
+// A first name (0053) has no account and so no picture: its disc stands on
+// the card as a monogram and is not a control.
 export function OpenFace({ handle, size = 34, className = '' }) {
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState(null)
   const btn = useRef(null)
   const close = useCallback(() => setOpen(false), [])
-  const h = normHandle(handle)
+  const named = isNameKey(handle)
+  const h = named ? String(handle || '').trim() : normHandle(handle)
+  if (named) {
+    return <span className={`wl-face-open is-still ${className}`}><Face handle={h} size={size} /></span>
+  }
   const press = () => {
     if (!h) return
     const el = btn.current ? (btn.current.querySelector('.wl-face') || btn.current) : null
@@ -1446,10 +1493,15 @@ export function OpenFace({ handle, size = 34, className = '' }) {
 // handle stands as the name, in its own face, and the line under it carries
 // whatever the caller had to say (`meta`). The badge is the product's own
 // sparkle: redrawing somebody else's trust mark would be claiming it is ours.
+//
+// A first name's key (0053) prints the name as written, in the name's own
+// face, with no handle under it: the row for "Sofia" is a monogram, the
+// word, and how many letters.
 export function Who({ handle, size = 40, meta = null, className = '' }) {
-  const p = useProfile(handle)
-  const name = p?.name || ''
-  const under = [name ? atHandle(handle) : '', meta].filter(Boolean).join(' · ')
+  const named = isNameKey(handle)
+  const p = useProfile(named ? '' : handle)
+  const name = named ? (nameFor(handle) || String(handle || '').trim().slice(1)) : (p?.name || '')
+  const under = [!named && name ? atHandle(handle) : '', meta].filter(Boolean).join(' · ')
   return (
     <span className={`wl-who ${className}`}>
       <Face handle={handle} size={size} />

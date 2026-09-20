@@ -102,6 +102,15 @@ proposal can be checked against each one by name.
 | shareables: the wall | | | | | | | | | | **yes**. The poster, as a card |
 | customisable letters | | | no | | | | no | | | **no** on the card. The words are the freedom |
 | GIFs, pictures, stickers | no | | | no | | | no | | no | **no** |
+| the search as a field on the wall, under the ear | | | | | | | | | | **yes**. Unlit, a question and not a door. The council of 20 September |
+| the search as a lit capsule at the centre | | | | | | | no | | | **no**. A second bright thing, on the faces |
+| "leave your @ and we will tell you" at a search miss | | no | | | | | | | | **no**. A watcher list, and the notification by another name |
+| share the wall from a search miss | | | | | | | | | | **no**, not there. It reads as "write to me". The card keeps its place after a letter |
+| an incentive for being written about, or for sharing | | | | | no | no | no | | | **no** |
+| a letter to a first name or nickname | | | | | | | | | | **yes**. Keyed so no handle can claim or empty it. Migration 0053 |
+| a private @ stored beside a letter to a first name | no | no | | | | | | no | | **no**, plain or hashed. The @ is asked on Main, as the ping's target |
+| the search hears names, accents and misspellings | | | | | | | | | | **yes**, over the public index only. Migration 0054 |
+| a nickname table (Alex finds Alexandra) | no | | | | | | | | | **no**. An inference about a person, not a fact about a string |
 
 What follows is the argument behind each row, because a table is a verdict and
 not a reason.
@@ -210,6 +219,59 @@ letter is for can ever open, with the writer's consent. That is a great deal
 of freedom, and it is the only kind that cannot be used to find out who wrote
 it.
 
+### The search, the miss, and a letter to a first name
+
+Ruled on 20 September by a council of six seats, recorded in full in
+[THE-COUNCIL.md](./THE-COUNCIL.md). The short form, against the gates:
+
+**The search on the wall.** A field under the ear, the glass in the place a
+field paints its @, unlit. It passes every gate because it changes nothing
+about what is said or shown about anybody: the same public index, reached
+sooner. The lit capsule at the centre that was floated fails G7 twice: a
+second bright thing beside `write`, and a plate standing on the faces, which
+is the reason `write anonymously` came off the foot once already. The list
+the search opens on before anything is typed is the six names most recently
+written to, under `on the wall`. It was the six carrying the most letters
+under `written to most`, and with the search promoted to the first thing on
+the wall that was the first list everybody saw: a top six by count with the
+word "most" on it is the rank with a label this section's own edge case says
+the wall must never cross.
+
+**The miss.** `nothing on the wall under @x`, then `write a letter`, then,
+quieter, `write to @x`. A fact about the index, the composer on its own first
+question, and the letter to the name typed for the one who searched a
+friend. The quiet line is left out only when the handle is one this browser
+has itself proved through the DM code, which is the one fact about the
+searcher the wall holds; nobody is asked "is this you" and nothing is
+recorded. What is refused there, and why: a waitlist or "we will tell you"
+(G2, and a watcher list indexed by identity); "yet" or "check back" (implied
+activity, G5); an incentive (G6); a door to Main from a miss (pursuit, and
+the wall's one door is the tab after a letter); and the share. The door card
+is the wall's one shareable and it carries no person, and offered as the
+answer to "nobody has written to you" it still reads as "please write to
+me", which no confident person posts. It keeps the place item 2 below gives
+it, after a letter.
+
+**A letter to a first name.** The handle stays the default; one quiet line
+under the field turns it into a name field. On the wall the letter is keyed
+by a tilde and the folded name, `~sofia`, a string no handle can be, so
+every Sofia shares one disc and no handle proof can claim, seal or empty it
+(G8 holds: the report tap is unchanged, and only the desk shuts a name; an
+opted out @sofia does not shut the first name, since they are not the same
+person). Nothing about a handle is stored beside it, plain or hashed: a
+hidden handle is a list of named people who cannot find their own entry by
+the only key they own, the raw material for the notification the wall never
+sends (G2), and a fact the report tap cannot reach (G8). The name passes the
+same list as the body, at the keyboard and on the server, and the classifier
+is told the addressee (G4). The paper is the same paper (G3). The resolver
+is never asked about a name key, or a letter to Sofia would carry @sofia's
+face (G1). Where the @ matters is the ping, and Main asks for it there:
+`/berkeley/join` leaves for `/place/<handle>` when the letter carried a
+handle and for `/place` when it carried a name, and `Who's on your mind.` is
+the ask. A first name shared by forty people can gather forty letters in a
+night, which is one more reason item 1 below counts name keys when it is
+built.
+
 ### GIFs, pictures, stickers, "like Instagram"
 
 No, and the comparison is the wrong one. Instagram is a broadcast surface
@@ -242,7 +304,8 @@ Ranked. Each passes the nine, and each is shaped so it stays inside them.
    gets a reader first. And a name that gathers two reports in a day goes on
    hold the same way. This is the one control the attack ledger says is missing,
    it is a few lines of SQL, and it protects the person the wall is least able
-   to ask.
+   to ask. Since 0053 a key can be a first name shared by many; the ceiling
+   counts those keys exactly as it counts handles.
 
 2. **The door, as a card.** The wall's one shareable, from section 4: the
    poster's title, line and address, drawn on the void with the mark, sized for

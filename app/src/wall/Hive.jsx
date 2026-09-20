@@ -122,7 +122,7 @@
 
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Face, Label } from './parts.jsx'
-import { atHandle } from './data.js'
+import { labelFor, isNameKey } from './data.js'
 import { takeOff, setLocator } from './morph.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
@@ -543,7 +543,7 @@ const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay
       onPointerDown={onPeek ? () => onPeek(handle) : undefined}
       onPointerEnter={(e) => onHover(s, e)}
       onPointerLeave={(e) => onHover(-1, e)}
-      aria-label={`${atHandle(handle)}, ${count === 1 ? 'one letter' : `${count} letters`}`}
+      aria-label={`${labelFor(handle)}, ${count === 1 ? 'one letter' : `${count} letters`}`}
       draggable={false}
     >
       <span className="wl-cell-disc" aria-hidden="true">
@@ -784,11 +784,13 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // key, and what the slot holding it was handed — rather than off the loop's
   // own `focus`, which is a frame ahead of both. Anything else and the plate
   // can name the disc beside the one it is pointing at.
+  // A first name (0053) is written on the plate as the name, in the name's
+  // face rather than the identifier's, the rule the rows and the card follow.
   const reading = useMemo(() => {
-    if (!focusKey) return ''
+    if (!focusKey) return { text: '', named: false }
     const a = assign.find((x) => x && x.key === focusKey)
     const t = a ? names[a.k] || null : null
-    return t ? atHandle(t.handle) : ''
+    return t ? { text: labelFor(t.handle), named: isNameKey(t.handle) } : { text: '', named: false }
   }, [focusKey, assign, names])
 
   // the plate's width, measured when the name in it changes, so the loop can
@@ -796,7 +798,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   useLayoutEffect(() => {
     const el = say.current
     motion.current.sayW = el ? el.offsetWidth : 0
-  }, [reading])
+  }, [reading.text])
 
   // ── the loop ──
   // It runs while the field is on the screen. Under a sheet it idles: the
@@ -1555,7 +1557,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           Not sixty plates fading past each other under a moving pointer: one
           element, moved, carrying whoever the lens is reading. */}
       <div className="wl-hive-say" ref={say} aria-hidden="true">
-        <span className="wl-hive-say-h">{reading}</span>
+        <span className={`wl-hive-say-h${reading.named ? ' is-name' : ''}`}>{reading.text}</span>
       </div>
     </div>
   )

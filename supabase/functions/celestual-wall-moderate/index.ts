@@ -13,7 +13,10 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // Contract:
-//   POST { token, target, body, sealedLine?, source?, campus? }
+//   POST { token, target, body, sealedLine?, source?, campus?, kind?, name? }
+//     kind is 'handle' (the default) or 'name' (0053): a letter to a first
+//     name, with `name` as the writer typed it and `target` ignored. No
+//     handle travels with a name letter, and none is stored beside one.
 //     { ok:true,  status:'live',     id }           on the wall, now
 //     { ok:true,  status:'rejected', id, reasons }  caught by layer 1: stored,
 //                                                   never shown, and the app
@@ -149,7 +152,7 @@ function deterministic(text: string) {
 //   · CONTEMPT DRESSED AS AFFECTION. Teasing is fine; a letter written so
 //     that the person it is about is the joke, on a public wall, with their
 //     handle on it, is not, whatever the framing.
-const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle. The person it is about did not write it and will read it.
+const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle, or to a first name or nickname. The person it is about did not write it and will read it. The addressee is given with the letter; a first name that is itself a slur, a description of a body, or contact information is a REJECT like anything else.
 
 Return ONLY JSON: {"verdict":"pass"|"review"|"reject","reasons":[string]}
 
@@ -169,7 +172,7 @@ Judge the letter and the sealed line together; the sealed line is private until 
 
 Reasons: one or two words each, from the category names above, or [] on a pass.`
 
-async function classify(body: string, sealedLine: string | null) {
+async function classify(body: string, sealedLine: string | null, addressee = '') {
   const key = Deno.env.get('MODERATION_API_KEY')
   // Spec section 9: use the cheapest available model. This is bulk filtering
   // of short letters against an explicit list, so cost per call matters more
@@ -202,7 +205,7 @@ async function classify(body: string, sealedLine: string | null) {
       system: SYSTEM_PROMPT,
       messages: [{
         role: 'user',
-        content: `<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
+        content: `<addressee>${addressee}</addressee>\n<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
       }],
     }),
     })
@@ -256,10 +259,10 @@ async function nudge(campus: string): Promise<void> {
 // which is up and unread, and the desk's live list still shows it. A letter
 // the reading takes down moves the index, so the wall is told again.
 // deno-lint-ignore no-explicit-any
-async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null, campus: string) {
+async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null, campus: string, addressee = '') {
   let out: { verdict: string; reasons: string[]; model: string }
   try {
-    out = await classify(body, sealed)
+    out = await classify(body, sealed, addressee)
   } catch {
     out = { verdict: 'review', reasons: ['unreachable'], model: '' }
   }
@@ -292,6 +295,8 @@ Deno.serve(async (req: Request) => {
     sealedLine?: string | null
     source?: string | null
     campus?: string | null
+    kind?: string | null
+    name?: string | null
   }
   try { payload = await req.json() } catch { return json({ ok: false, error: 'malformed' }, 400) }
 
@@ -301,9 +306,16 @@ Deno.serve(async (req: Request) => {
   const sealed = payload.sealedLine ? String(payload.sealedLine).slice(0, 90) : null
   const source = payload.source ? String(payload.source).slice(0, 32) : null
   const campus = String(payload.campus || 'berkeley')
+  // ── a name, or a handle (0053) ──
+  // The kind decides which of the two the letter is addressed to. A name is
+  // taken as typed and cut at thirty; wall_name_clean is the authority on
+  // whether it is a name at all, and answers 'name' when it is not.
+  const kind = payload.kind === 'name' ? 'name' : 'handle'
+  const name = kind === 'name' ? String(payload.name || '').replace(/\s+/g, ' ').trim().slice(0, 30) : null
 
   if (!body.trim()) return json({ ok: false, error: 'empty' })
-  if (!target.trim()) return json({ ok: false, error: 'handle' })
+  if (kind === 'name' && !name) return json({ ok: false, error: 'name' })
+  if (kind === 'handle' && !target.trim()) return json({ ok: false, error: 'handle' })
   if (token.length < 16 || token.length > 256) return json({ ok: false, error: 'no_session' })
 
   const supabase = createClient(
@@ -315,7 +327,9 @@ Deno.serve(async (req: Request) => {
   // A catch is written at rejected, with the pattern that caught it, and never
   // published. The app caught it at the keyboard first and shook the card;
   // this is the same list where nobody can edit it out.
-  const layer1 = deterministic(`${body}\n${sealed || ''}`)
+  // The name goes through the list with the words (G4): an addressee that
+  // is a slur, a number or a link is caught here, before anything is up.
+  const layer1 = deterministic(`${name || ''}\n${body}\n${sealed || ''}`)
   const caught = layer1.verdict === 'reject'
 
   // ── the write ──────────────────────────────────────────────────────────────
@@ -323,7 +337,7 @@ Deno.serve(async (req: Request) => {
   // person outside the campus is told so, a name that came off the wall stays
   // off it, and the fourth letter in a week is refused in the same statement
   // that would have inserted it.
-  const { data, error } = await supabase.rpc('wall_write', {
+  const args = {
     p_token: token,
     p_target: target,
     p_body: body,
@@ -335,7 +349,17 @@ Deno.serve(async (req: Request) => {
       ? { verdict: 'reject', reasons: layer1.reasons, flagged: false, at: new Date().toISOString(), model_layer: 1 }
       // up, and not yet read: the classifier writes its verdict over this
       : { verdict: 'unread', reasons: [], flagged: false, at: new Date().toISOString(), model_layer: 0 },
-  })
+  }
+  // The ten argument write (0053) carries the kind and the name. A database
+  // that is a migration behind has only the eight argument one, and answers
+  // that the function does not exist; a handle letter then goes through the
+  // call it always went through, and a name letter is refused, because there
+  // is nowhere for it to go yet.
+  let { data, error } = await supabase.rpc('wall_write', { ...args, p_kind: kind, p_name: name })
+  if (error && kind === 'handle') {
+    console.warn('wall_write with a kind refused, trying the eight argument write', error.message)
+    ;({ data, error } = await supabase.rpc('wall_write', args))
+  }
 
   if (error) {
     console.error('wall_write failed', error.message)
@@ -343,15 +367,21 @@ Deno.serve(async (req: Request) => {
   }
   if (!data?.ok) return json({ ok: false, error: String(data?.error ?? 'write') })
 
-  if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons })
+  // What the letter is filed under, said back: the key (a handle, or a tilde
+  // and the folded name), the kind and the name as it will be printed, so the
+  // browser can light the disc it is about without deriving the key itself.
+  const filed = { handle: data.handle ?? (kind === 'handle' ? target : null), kind: data.kind ?? kind, name: data.name ?? name }
+
+  if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons, ...filed })
 
   // ── layer 2, after the answer ──────────────────────────────────────────────
   // The letter is on the wall. The writer hears so now, every wall on the
   // campus is told the index moved, and the model reads the letter where it
   // stands.
-  const work = Promise.all([nudge(campus), readWhereItStands(supabase, String(data.id), body, sealed, campus)])
+  const addressee = kind === 'name' ? String(name) : `@${target}`
+  const work = Promise.all([nudge(campus), readWhereItStands(supabase, String(data.id), body, sealed, campus, addressee)])
   const inline = after(work)
   if (inline) await inline
 
-  return json({ ok: true, status: 'live', id: data.id })
+  return json({ ok: true, status: 'live', id: data.id, ...filed })
 })

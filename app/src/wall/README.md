@@ -245,18 +245,93 @@ pill's own height: two verbs on one row, in two vocabularies, and the second
 one a word nobody who scanned a flyer had met. The brand in the bar goes to the
 front too, and always has.
 
+## The search, on the wall
+
+The one in twenty who came here looking for themselves, and the nineteen who
+came looking for one other name, are nearly everybody who scans the wall off a
+flyer, and the way to look was a 40px glass in the corner of the bar a thumb
+reaches last. It is the wall's own question now: one bare baseline under the
+ear, the glass in the place a field paints its @, `look for a name` in the
+placeholder, the column's full width, in the top shade where type already
+stands without a plate (`screens/Wall.jsx` `Seek`, `parts.jsx` `HandleField
+kind="search"`). It is not lit and it is not a capsule: `write` in the bar is
+the wall's one bright thing, and a second lit capsule over the faces would
+have stood on the disc the lens is reading. It is a real field, so the tap
+that lands on it raises the keyboard, its focus opens the sheet, and the
+sheet's field takes the focus on mount, so the keyboard the tap raised is the
+keyboard the sheet keeps.
+
+The sheet hears what a person actually types (migration 0054): the query goes
+to the server as typed, and the server matches the handle, the handle with
+its dots out, and the folded name, which is the resolver's display name for a
+handle and the name as written for a letter to a first name, then, from the
+third character, a misspelling by trigram and a sound alike by metaphone.
+Every candidate is a row of the public index and nothing else, so a profile
+the resolver holds for a handle nobody has written to is never listed by any
+spelling. Before anybody has typed, the six names most recently written to
+stand under `on the wall`: it used to be the six carrying the most letters,
+and a top six by count with "most" on it is a rank of people with a label.
+
+A miss states a fact about the index and offers the one thing the wall can
+honestly offer: `nothing on the wall under @x`, then `write a letter`, which
+opens the composer on its own first question, and under it, quieter, `write
+to @x`, for the one who searched a friend. The quiet line is left out only
+when the handle is one this browser has itself proved through the DM code.
+Nobody is asked "is this you", nothing is recorded, nothing is shared from
+here and nobody is offered a place on a list: the wall has no accounts and
+cannot tell anybody anything later. The council that ruled all of this is
+recorded in [../../../docs/THE-COUNCIL.md](../../../docs/THE-COUNCIL.md).
+
+## A letter to a first name
+
+The handle stays the default. Under the field, one quiet line, `a first name
+instead`, turns the same field into a name field (migration 0053): the
+painted @ goes, the type changes to the display face, the resolver's card
+stands down, and the line reads `their @ instead`. No second field and no
+hidden one.
+
+On the wall a letter to a first name is keyed by a tilde and the folded name,
+`~sofia`, a string no handle can be, so every Sofia anybody wrote to shares
+one disc, a handle spelled the same is a different disc, and every comparison
+in the schema that reads a verified handle against a target stays correct by
+construction: no handle proof can claim, seal or empty a first name, because a
+first name is not one person's to prove. The name as written is kept to
+print, and nothing else is stored, not a handle in plain text and not a hash
+of one. The name goes through the same list as the body, at the keyboard and
+on the server, and the classifier is told the addressee.
+
+It is drawn as every letter is drawn. In the hive a monogram disc, the plate
+reading `Sofia` in the name's face rather than the identifier's; on the card
+`for Sofia` with nothing under it, the branch the addressee already had for a
+handle the resolver never saw; in the search and the suggestions a monogram,
+the name and the count. The resolver is never asked about a name key
+(`api/handles.js` `isNameKey`), or a letter to Sofia would carry @sofia's
+face.
+
+Reporting a letter to a name is one tap, as for any letter. `Take my name
+off the wall` is not offered on a name letter, since a first name is nobody's
+to empty; only the desk shuts a name, and `wall_name_shut` applies only its
+desk branch to a tilde key, so one Sofia's takedown does not shut every Sofia
+and an opted out @sofia does not shut the first name either.
+
+Where the @ matters is the ping, and Main asks for it there. The tab after a
+letter is unchanged; `/berkeley/join` leaves for `/place/<handle>` when the
+letter carried a handle and for `/place` when it carried a name, and `Who's
+on your mind.` is the ask, made by the writer, on the surface where a ping
+lives.
+
 ## The screens
 
 | Route | What it is |
 | --- | --- |
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
-| `/berkeley/find` | the search. Opens on the names carrying the most letters |
-| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises. There is no screen after it |
+| `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
+| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks for a handle by default and, on one quiet line, a first name or a nickname instead (migration 0053). It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
-| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `register` leaves for Main at `/` |
+| `/berkeley/join` | **the one door to the product** — three lines and one ornament, and `place a ping` leaves for Main: at `/place/<handle>` when the letter this device wrote last carried a handle, so the ping's target is already in the field, and at `/place` when it carried a first name, so Main asks `Who's on your mind.` with its own painted @. That field is where the @ is asked, and the only place |
 
 `/berkeley/orbit`, `/berkeley/orbit/place` and `/berkeley/orbit/:id` are gone
 (the audit of 4 September). They were a drawn stand-in for the core service
@@ -287,13 +362,14 @@ line: the heaviest object on the screen, sitting on the emptiest row.
 
 ## Navigation
 
-Three targets, in the same two places, on every screen of the wall, and the only
-words among them are the name and the one act:
+Two targets on the right of the bar, in the same place on every screen of the
+wall, and the only words among them are the name and the one act. The search
+is not in the bar any more: it is the wall's own question, a field under the
+ear (below):
 
 | | |
 | --- | --- |
 | ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
-| ⌕ | **look for a name** |
 | write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: a small chalk capsule carrying the nib and the word, with the running light inside it, between the glass and the person. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
 
@@ -346,7 +422,8 @@ data.js      handles, the deterministic hash everything derives from, the
              removals
 seed.js      the printed sources and nothing else now: the corpus and the
              seeded ledger went with the orbit stand-in
-screens/     one file per screen
+screens/     one file per screen. Wall.jsx carries `Seek`, the search on the
+             wall; Find.jsx the sheet it raises
 ```
 
 ## The hive
@@ -706,11 +783,11 @@ and the wall's own light is in its field, on the person being read.
 
 ### The count
 
-The one fact about this wall worth printing: `19 letters`, in the ear, and
-now the term beside it: a dateline, the campus in the display face, the
-figure a step larger in chalk with the word after it at the label's size,
-and `fall 2026` at the end of the line, dimmer, because a wall is a thing
-that happens in a term. The figure turns (`parts.jsx Roll`): each digit is a
+The one fact about this wall worth printing: `19 letters`, in the ear: a
+dateline, the campus in the display face, the figure a step larger in chalk
+with the word after it at the label's size. The term stood at the end of the
+line for a while, dimmer, and came off, so the line above the search stays
+quiet. The figure turns (`parts.jsx Roll`): each digit is a
 window over a column of the ten, and a letter arriving, from this phone or
 another, slides the last figure up one where it stands. It is drawn still at
 the number it is given and moves only when the number does, so a figure

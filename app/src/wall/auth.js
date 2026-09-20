@@ -71,7 +71,7 @@
 
 import { getState, patch, push, setAfterGate } from './store.js'
 import { cardStep } from './seed.js'
-import { normHandle, forgetLetters } from './data.js'
+import { normHandle, targetKey, forgetLetters } from './data.js'
 import { whoamiStrict, bindHandle, forgetSession } from '../api/identity.js'
 import { getSession, markVerified, signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../api/igverify.js'
@@ -135,7 +135,8 @@ export function isReader() { return !!getState().reader }
 // screen is the address, not a greyed composer with a sentence beside it
 // explaining that the address comes first.
 export function toWrite(go, handle = '') {
-  const h = normHandle(handle)
+  // a handle, or a first name's tilde key, which opens the composer in name mode
+  const h = targetKey(handle)
   if (isMember()) { go('write', h || undefined); return }
   setAfterGate({ name: 'write', id: h })
   go('gate')

@@ -1,48 +1,88 @@
 // ── /berkeley/find — THE SEARCH ─────────────────────────────────────────────
 //
-// The corner button, for the one person in twenty who came here looking for
-// themselves rather than browsing. It is a sheet over the wall, not a screen
-// instead of it, so the names stay visible behind the results the whole time —
-// which quietly says that the thing you are searching is right there.
+// For the one person in twenty who came here looking for themselves, and
+// the nineteen who came looking for one other name: which between them is
+// nearly everybody who scans the wall off a flyer. It is a sheet over the
+// wall, not a screen instead of it, so the names stay visible behind the
+// results the whole time — which quietly says that the thing you are
+// searching is right there.
 //
-// Two behaviours worth naming:
+// It used to open from a 40px glass in the corner of the bar. It opens from
+// the wall's own field now, under the ear (screens/Wall.jsx `Seek`): the
+// tap that raised the keyboard there is the tap that opened this, and the
+// field here takes the focus on mount so the keyboard stays. There is no
+// heading over the field any more: "Look for a name." stood in the Didone
+// over a field whose placeholder said the same thing, one sentence twice,
+// and on a phone with the keyboard up those fifty pixels are a row of
+// results.
+//
+// Four behaviours worth naming:
 //
 //   · It answers from the FIRST CHARACTER, the way a search box on a social
-//     app does, and it matches on CONTAINS, not on equals: somebody who
-//     half-remembers a handle, or types the name without the dots, still
-//     lands somewhere. The server ranks it (0040): an exact hit first, then
-//     the names that start with what was typed, then the rest, so a person
-//     who types their own handle precisely gets their own row and not a list
-//     of near-misses above it. Each row arrives with the resolver's name and
+//     app does, and since 0054 it hears a NAME as well as a handle: the
+//     query goes to the server as typed, spaces and accents and all, and the
+//     server matches the handle, the handle with its dots out, the
+//     resolver's display name and the name a letter was written to (0053),
+//     then, from the third character, a misspelling by trigram and a sound
+//     alike by metaphone. The server ranks it: an exact hit first, then a
+//     prefix, then a contains, then the near misses, so a person who types
+//     their own handle precisely gets their own row and not a list of
+//     near-misses above it. Each row arrives with the resolver's name and
 //     face already on it, one request for the whole list.
-//   · Finding nothing is not a dead end and it is not a sign-up. Nobody is
-//     asked to leave a handle, register an interest or wait for a
-//     notification: the wall has no accounts and cannot tell anybody anything
-//     later. What it offers instead is the only thing it can honestly offer —
-//     that name is free, be the first to put a letter under it.
+//   · Before anybody has typed, the sheet shows the names most recently
+//     written to, in the index's own order, under the word "on the wall". A
+//     search sheet that opens onto a void teaches somebody that there is
+//     nothing to find. It used to show the six names carrying the most
+//     letters, under "written to most", and with the search promoted to the
+//     first thing on the wall that list was the first list everybody saw,
+//     which is a rank of people with a label on it (docs/WALL-FEATURES.md,
+//     G6). Recency is a fact about a letter; "most" is a claim about a
+//     person.
+//   · Finding nothing is not a dead end, it is not a sign-up, and it is not a
+//     letter to yourself. Nobody is asked to leave a handle, register an
+//     interest, share anything or wait for a notification: the wall has no
+//     accounts and cannot tell anybody anything later, and a person who has
+//     just found nothing under their own name is the last person who should
+//     be handed the door to share. What stands there is a fact about the
+//     index, and the one thing the wall can honestly offer: the composer,
+//     open on its own first question, "Someone at Berkeley you can't
+//     forget." Under it, quieter, the letter TO the name that was typed, for
+//     the one who was looking for a friend. That line is left out when the
+//     name is a handle this browser has itself proved through the DM code,
+//     which is the only fact about the searcher the wall honestly holds:
+//     nobody is asked "is this you", and nothing is recorded.
 //   · It ends on the results. Two capsules used to stand under them on a
 //     hairline, "write instead" and "take a name off", and both were doors
-//     to other rooms on a sheet whose one job is to find a name: the nib in
-//     the bar is the composer, and the way off the wall stands under the flag
-//     on every letter, which is where a person who has found their name is
-//     standing when they want it gone.
+//     to other rooms on a sheet whose one job is to find a name: the word in
+//     the bar is the composer, and the way off the wall stands under the
+//     flag on every letter, which is where a person who has found their name
+//     is standing when they want it gone.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag, Display } from '../parts.jsx'
-import { search, wall, loadWall, normHandle, validHandle, atHandle } from '../data.js'
+import { Sheet, SheetHead, HandleField, Label, PersonRow, Pill, PillTag } from '../parts.jsx'
+import { search, wall, loadWall, normHandle, validHandle, atHandle, nameKey } from '../data.js'
 import { getState, patch } from '../store.js'
+import { toWrite, verified } from '../auth.js'
+
+const FRESH = 6
 
 export default function Find({ go, back, rev }) {
   const [value, setValue] = useState(() => getState().query || '')
-  const q = normHandle(value)
-  // Empty is not blank. Before anybody has typed, the sheet shows the names
-  // carrying the most letters, the wall's own heaviest rows. A search sheet
-  // that opens onto a void teaches somebody that there is nothing to find,
-  // which is the exact opposite of what this surface is for.
-  const top = useMemo(() => wall().slice().sort((a, b) => b.count - a.count || b.at - a.at).slice(0, 6), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
+  // as typed, trimmed: what the server hears (0054)
+  const q = value.trim().replace(/\s+/g, ' ')
+  // and the handle shape of it, for the exact check and the letter's address
+  const h = normHandle(value)
+  // whether what was typed could only be a name: a space, or a character no
+  // handle carries. It decides how the echo is set and whether the quiet
+  // line offers a letter to a handle
+  const nameShaped = q.length > 0 && (q.includes(' ') || normHandle(q).length < q.replace(/^@+/, '').length)
 
-  // The search is the server's now, so it is a request rather than a filter.
-  // Debounced, because a request per keystroke over a handle field is a request
+  // The names most recently written to: the index's own order, newest
+  // first, and no rank in it.
+  const fresh = useMemo(() => wall().slice(0, FRESH), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The search is the server's, so it is a request rather than a filter.
+  // Debounced, because a request per keystroke over a field is a request
   // per keystroke, and the last one in is the only one that may set state: a
   // slow answer for "sof" must never land on top of a fast one for "sofia".
   const [found, setFound] = useState(null)
@@ -62,55 +102,56 @@ export default function Find({ go, back, rev }) {
     return () => clearTimeout(t)
   }, [q])
 
-  // The wall's heaviest rows are what the empty state draws, so it has to be
+  // The wall's newest rows are what the empty state draws, so it has to be
   // loaded even when somebody opened this sheet directly off a link.
   useEffect(() => { loadWall() }, [])
 
-  const hits = q.length >= 1 ? (found || []) : top
-  const exact = q.length >= 1 && hits.length > 0 && hits[0].handle === q
+  const hits = q.length >= 1 ? (found || []) : fresh
+  const exact = q.length >= 1 && hits.length > 0
+    && (hits[0].handle === h || (hits[0].kind === 'name' && hits[0].handle === nameKey(q)))
 
   useEffect(() => { patch({ query: q }) }, [q])
 
-  // Enter opens the exact match if there is one, and otherwise starts a letter
-  // to whatever was typed. Both are one keystroke, and neither asks who anybody
-  // is.
+  // The one fact about the searcher this browser holds: a handle it proved
+  // itself, through the DM code. Nothing is asked and nothing is written.
+  const own = !!h && verified().some((x) => normHandle(x) === h)
+
+  // Enter opens the exact match if there is one, and otherwise the first
+  // row. Both are one keystroke, and neither asks who anybody is.
   const commit = () => {
-    if (!validHandle(q)) return
-    if (exact) { go('letter', hits[0].handle); return }
-    go('write', q)
+    if (hits.length) go('letter', hits[0].handle)
   }
+  // The composer, on its own first question, with nothing filled in.
+  const writeNew = () => { patch({ draft: null }); toWrite(go) }
+  // And the letter to the name that was typed, for the one who searched a friend.
+  const writeTo = () => toWrite(go, h)
 
   return (
     <Sheet onClose={back} tall labelledBy="wl-find-h">
       <div className="wl-sheet-in wl-find">
-        {/* The same header row every sheet opens on. It used to set the
-            heading and the close mark on one line, which put a 26px Didone and
-            a 36px circle on the same baseline and made the title read as a
-            label on the button. The title now stands under the row, at full
-            size, with nothing beside it. */}
         <SheetHead onClose={back} label="back to the wall" />
-
-        <Display size="s" as="h2" id="wl-find-h" className="wl-find-h">Look for a name.</Display>
+        <h2 id="wl-find-h" className="wl-sr">look for a name</h2>
 
         <div className="wl-find-field">
           <HandleField
-            value={value} onChange={setValue} onSubmit={commit}
-            autoFocus size="lg" placeholder="yourhandle"
+            kind="search" value={value} onChange={setValue} onSubmit={commit}
+            autoFocus focusOnTouch size="lg" placeholder="look for a name" label="look for a name"
           />
         </div>
 
         <div className="wl-find-results" role="region" aria-live="polite">
-          {q.length < 1 && (
-            <Label tone="dim" className="wl-find-hint">written to most</Label>
+          {q.length < 1 && hits.length > 0 && (
+            <Label tone="dim" className="wl-find-hint">on the wall</Label>
           )}
 
-          {/* A person per row: the face and the name the resolver has, the
-              handle under it with how many letters, and the way in. The same
-              row the sky draws, so a person looks the same on both surfaces. */}
+          {/* A person per row: the face and the name the resolver has, or the
+              name a letter was written to, the key under it with how many
+              letters, and the way in. The same row the sky draws, so a person
+              looks the same on both surfaces. */}
           {hits.map((t) => (
             <PersonRow
               key={t.handle}
-              lit={t.handle === q}
+              lit={exact && t === hits[0]}
               handle={t.handle}
               size={36}
               meta={t.count > 1 ? `${t.count} letters` : null}
@@ -125,13 +166,12 @@ export default function Find({ go, back, rev }) {
 
           {q.length >= 1 && !asking && !hits.length && (
             <div className="wl-find-empty">
-              <Label tone="dim">nobody has written to</Label>
-              <p className="wl-find-echo">{atHandle(q)}</p>
-              {validHandle(q) && (
-                <Pill tone="light" wide onClick={commit}>
-                  be the first
-                </Pill>
-              )}
+              <Label tone="dim">nothing on the wall under</Label>
+              <p className={`wl-find-echo${nameShaped ? ' is-name' : ''}`}>{nameShaped ? q : (atHandle(h) || q)}</p>
+              <Pill tone="light" wide onClick={writeNew}>write a letter</Pill>
+              {!nameShaped && validHandle(h) && !own ? (
+                <button type="button" className="wl-quiet wl-find-to" onClick={writeTo}>write to {atHandle(h)}</button>
+              ) : null}
             </div>
           )}
         </div>
