@@ -1179,6 +1179,51 @@ The test of the whole path: put a letter up to a spare handle at
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
 
+## A letter to a first name, and the search hears a name (migrations 0053 and 0054)
+
+Ruled by the council of 20 September ([THE-COUNCIL.md](./THE-COUNCIL.md)).
+Three things change for a person on the wall, and two of them need the
+database: the search stands on the wall as a field under the ear and hears
+names, accents and misspellings, not only the exact handle; a search that
+finds nothing offers a letter to somebody else and nothing else; and a
+letter can be addressed to a first name or a nickname instead of a handle,
+keyed on the wall by a tilde and the folded name so no handle proof can ever
+claim or empty it. Nothing about a handle is stored beside a name letter.
+
+1. **Apply `0053_a_letter_to_a_first_name.sql`.** Not yet applied. It adds
+   `target_kind` and `target_name` to `wall_letters`, widens the handle check
+   to admit the tilde key for `target_kind = 'name'`, appends `kind` and
+   `name` to `wall_index`, adds `wall_fold`, `wall_name_key`,
+   `wall_name_clean` and `wall_target_key`, adds a ten argument `wall_write`
+   with `p_kind` and `p_name` (the eight argument one stays and calls it, so
+   every existing caller and test is untouched), re-emits `wall_letters_for`,
+   `wall_letter`, `wall_mine` and `celestual_desk_letters` to carry the kind
+   and the name, and guards `wall_name_shut` so a name key is shut only by
+   the desk. Re-runnable. Verified by `scripts/verify-migrations.sh --test`
+   (`test-names.sql`).
+2. **Apply `0054_the_search_hears_a_name.sql`.** Not yet applied. It creates
+   `pg_trgm` and `fuzzystrmatch` in `extensions` if they are not there (both
+   are on the platform's list) and re-emits `wall_search` over `wall_index`
+   only: the handle, the dotless handle and the folded name, then trigram
+   nearness and double metaphone from the third character. Twelve rows. The
+   test pins that a profile not on the wall is never returned by any
+   spelling. Re-runnable.
+3. **Redeploy `celestual-wall-moderate`.** `supabase functions deploy
+   celestual-wall-moderate`. It accepts `kind` and `name`, runs layer 1 over
+   the name with the body, calls the ten argument `wall_write`, and, for a
+   handle letter against a database that does not have it yet, falls back to
+   the eight argument call. The classifier is told the addressee.
+4. **Deploy the app.** Vercel, as usual.
+
+Order. The app first is safe: the index read steps down a column tier when
+the view lacks `kind` and `name`, every row defaults to a handle, and the
+search text the browser now sends as typed is normalised by the old
+`wall_search` exactly as it was. The function first is safe through its
+fallback. The migrations first are safe because nothing old reads the new
+columns and the eight argument write still exists. Until all three are up,
+a letter to a first name answers `it did not go through` and a handle
+letter goes through as before.
+
 ## The cap comes off (migration 0052)
 
 The writer's ration — three letters in any five days — becomes a row the desk

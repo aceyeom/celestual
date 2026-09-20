@@ -38,7 +38,8 @@
 // what the meter draws, and neither of them decides anything.
 
 import * as api from './api.js'
-import { learnHandle, warmFaces } from '../api/handles.js'
+import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
+import { getState } from './store.js'
 
 const DAY = 86400000
 
@@ -62,6 +63,67 @@ export function atHandle(raw) {
 export function validHandle(raw) {
   const h = normHandle(raw)
   return h.length >= 3 && h.length <= 30 && !h.startsWith('.') && !h.endsWith('.')
+}
+
+// ── names ───────────────────────────────────────────────────────────────────
+// A letter can be addressed to a first name or a nickname instead of a handle
+// (migration 0053). On the wall it is keyed by a tilde and the folded name,
+// `~sofia`, a string that can never be a handle, so every Sofia anybody wrote
+// to shares one disc and no handle proof can ever claim or empty it. These
+// mirror the server's wall_fold, wall_name_key and wall_name_clean, so the
+// key this browser lights is the key the server filed the letter under.
+export { isNameKey }
+
+export function foldName(raw) {
+  return String(raw || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim().replace(/\s+/g, ' ')
+}
+
+export function nameKey(raw) {
+  const k = foldName(raw).replace(/[^a-z0-9]/g, '')
+  return k.length >= 2 ? `~${k.slice(0, 40)}` : ''
+}
+
+// A tilde string is a name key; anything else is a handle. Every reader in
+// this module normalises a target through this and not through normHandle,
+// which would strip the tilde and turn a letter to Sofia into @sofia.
+export function targetKey(raw) {
+  const s = String(raw || '').trim()
+  return s.startsWith('~') ? nameKey(s.slice(1)) : normHandle(s)
+}
+
+// The name as it will stand on the wall, or ''. Two to thirty characters, at
+// most three words, and none of the characters that make a string a handle,
+// a number or a link. The server's wall_name_clean is the authority; this is
+// the fail fast that keeps an obviously wrong entry from costing a round trip.
+export function cleanName(raw) {
+  const n = String(raw || '').replace(/\s+/g, ' ').trim()
+  if (n.length < 2 || n.length > 30) return ''
+  if (n.split(' ').length > 3) return ''
+  if (/[0-9@#$%^&*_=+<>{}[\]|\\/:;"`~]/.test(n)) return ''
+  if (!nameKey(n)) return ''
+  return n
+}
+
+export function validName(raw) { return !!cleanName(raw) }
+
+// What a key is called, for anything that prints one: the name as written
+// for a first name, the handle with its @ otherwise. The spelling comes from
+// wherever this browser last saw the key (the index, a search, a letter, or
+// what it wrote itself), because a key alone cannot be printed as a name.
+const NAMES = new Map()
+export function learnName(key, name) {
+  if (isNameKey(key) && name) NAMES.set(key, String(name))
+}
+export function nameFor(key) {
+  if (!isNameKey(key)) return ''
+  return NAMES.get(key) || (getState().names || {})[key] || ''
+}
+export function labelFor(key) {
+  return isNameKey(key) ? (nameFor(key) || String(key).slice(1)) : atHandle(key)
 }
 
 // ── determinism ─────────────────────────────────────────────────────────────
@@ -219,6 +281,7 @@ export function loadWall(force = false) {
       // rows are, so every disc on the field draws its picture off this one
       // read and no face costs a request of its own.
       out.tiles.forEach(learnHandle)
+      out.tiles.forEach((t) => { if (t.kind === 'name') learnName(t.handle, t.name) })
       TILES = out.tiles
       TILES_AT = Date.now()
       TILES_ERROR = null
@@ -336,7 +399,7 @@ export function loadMine(force = false) {
 }
 
 export function loadHandle(raw, force = false) {
-  const h = normHandle(raw)
+  const h = targetKey(raw)
   if (!h) return Promise.resolve()
   if (!force && BY_HANDLE.has(h)) return Promise.resolve()
   return once(`h:${h}`, async () => {
@@ -345,6 +408,7 @@ export function loadHandle(raw, force = false) {
     OPEN = out.open
     GATED = out.gated
     if (out.free) FREE = out.free
+    if (out.kind === 'name') learnName(h, out.name)
     BY_HANDLE.set(h, out.letters)
     for (const l of out.letters) BY_ID.set(l.id, l)
     bump()
@@ -367,6 +431,7 @@ export function loadLetter(id, force = false) {
     OPEN = out.open
     GATED = out.gated
     if (out.free) FREE = out.free
+    if (out.letter?.kind === 'name') learnName(out.letter.to, out.letter.name)
     BY_ID.set(id, out.letter)
     bump()
   })
@@ -484,7 +549,7 @@ export function handleCount() { return TILES.length }
 // the matching loader first, or renders the empty state and lets the
 // subscription bring it back.
 export function lettersFor(handle) {
-  return BY_HANDLE.get(normHandle(handle)) || []
+  return BY_HANDLE.get(targetKey(handle)) || []
 }
 
 // Three states, and screens need all three:
@@ -503,7 +568,7 @@ export function letter(id) {
 // question as whether it has letters. A screen that cannot tell those apart
 // draws "nobody wrote to you" while the request is still open.
 export function knowsHandle(handle) {
-  return BY_HANDLE.has(normHandle(handle))
+  return BY_HANDLE.has(targetKey(handle))
 }
 
 // The search. The server orders it: exact handle first, then anything
@@ -514,9 +579,13 @@ export function knowsHandle(handle) {
 // Every row the resolver already knew is learned by the resolver's own memo
 // on the way through (api/handles.js learnHandle), so the faces and names in
 // the list draw at once and cost no request of their own.
+//
+// The query goes as typed (0054): the server hears a name, a space, an accent
+// and a misspelling, and this module no longer strips them on the way out.
 export async function search(query) {
   const rows = await api.wallSearch(query)
   rows.forEach(learnHandle)
+  rows.forEach((t) => { if (t.kind === 'name') learnName(t.handle, t.name) })
   return rows.map((t) => ({
     ...t,
     weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
@@ -545,10 +614,15 @@ export function term(ts = Date.now()) {
 // Flagged and published read the same on purpose. A screen that distinguished
 // them would be a way to find out what gets through by writing until something
 // does.
-export async function write({ to, body, sealedLine, source }) {
-  const out = await api.write({ to, body, sealedLine, source })
+//
+// `kind` is 'handle' or 'name' (0053). The key the letter was filed under
+// comes back on the answer; it is derived here only when an older function
+// did not say.
+export async function write({ to, body, sealedLine, source, kind = 'handle', name = '' }) {
+  const out = await api.write({ to, body, sealedLine, source, kind, name })
   if (out?.ok && out.status === 'live') {
-    const h = normHandle(to)
+    const h = out.handle || (kind === 'name' ? nameKey(name) : normHandle(to))
+    if (kind === 'name') learnName(h, out.name || cleanName(name))
     BY_HANDLE.delete(h)
     TILES_AT = 0
     await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true), loadMine(true)])

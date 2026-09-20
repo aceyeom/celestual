@@ -36,7 +36,7 @@
 
 import { useEffect, useState } from 'react'
 import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Face, Icon, Allowance } from '../parts.jsx'
-import { atHandle, allowance, loadQuota } from '../data.js'
+import { labelFor, allowance, loadQuota } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
 import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
@@ -230,7 +230,7 @@ export default function Gate({ go, back }) {
                   {wrote.map((h) => (
                     <span className="wl-profile-chip" key={h}>
                       <Face handle={h} size={22} />
-                      <span>{atHandle(h)}</span>
+                      <span>{labelFor(h)}</span>
                     </span>
                   ))}
                 </div>

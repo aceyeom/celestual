@@ -674,6 +674,24 @@
 .wl-field:focus-within .wl-field-line::after { transform: scaleX(1); }
 .wl-field:focus-within .wl-at { color: var(--ash); }
 .wl-field.is-locked input { color: var(--ash); }
+/* ── the field, asking for a name (0053) ──
+   The same baseline with the @ gone and the type in the display face: a
+   name is something a person means, a handle is an identifier, and the field
+   changing its voice is the whole explanation of the switch. The keyboard
+   capitalises the way a name is written (parts.jsx HandleField). */
+.wl-field.is-name input {
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display);
+  letter-spacing: var(--track-display);
+}
+.wl-field.is-name input::placeholder { letter-spacing: var(--track-display); }
+/* ── the field, as the search (0054) ──
+   The glass in the @'s place, because a name is as good an answer as a
+   handle and a painted @ would say otherwise. Centred on the input's line
+   rather than sat on its baseline, since a glyph has no baseline. */
+.wl-field.is-search { align-items: center; }
+.wl-field.is-search .wl-at { display: block; line-height: 0; }
+.wl-field.is-search .wl-at .wl-icon { display: block; }
 
 /* the letter's own field, which lives on the paper */
 .wl-letterfield { position: relative; }
@@ -1182,6 +1200,18 @@
 }
 .wl-ear, .wl-veil { pointer-events: auto; }
 
+/* ═══ THE SEARCH, ON THE WALL ══════════════════════════════════════════════
+   screens/Wall.jsx `Seek`: the wall's own question, under the ear, once the
+   veil has gone. One bare baseline at the field's large size, the glass in
+   the place a field paints its @, the column's full width, in the top shade
+   where type already stands without a plate. Unlit and not a capsule: the
+   chalk `write` in the bar is the wall's one bright thing, and the search
+   is a question rather than a door. The room hands the pointer back to the
+   faces; this takes it again, like the ear. */
+.wl-seek { pointer-events: auto; padding: 8px 0 0; }
+.wl-seek .wl-field { padding-bottom: 9px; }
+.wl-seek .wl-field input::placeholder { color: rgba(156, 151, 142, 0.72); }
+
 /* ═══ THE STAGE ════════════════════════════════════════════════════════════
    The field, and it is the whole screen. Not a band between the bar and the
    pill with the void either side of it — corner to corner, out past the
@@ -1386,7 +1416,7 @@
    than to have been furnished all along behind a curtain. */
 .wl-wallpage.is-arriving .wl-top-acts > * { animation: wl-rise 620ms var(--ease) both; }
 .wl-wallpage.is-arriving .wl-top-acts > :nth-child(2) { animation-delay: 70ms; }
-.wl-wallpage.is-arriving .wl-top-acts > :nth-child(3) { animation-delay: 140ms; }
+.wl-wallpage.is-arriving .wl-seek { animation: wl-rise 620ms var(--ease) 110ms both; }
 .wl-wallpage.is-arriving .wl-dock { animation: wl-rise 700ms var(--ease) 160ms both; }
 
 /* ── the composer, in the bar ──
@@ -1624,6 +1654,11 @@
   transition: opacity 180ms var(--ease), transform 320ms var(--ease);
 }
 .wl-hive-say.is-on .wl-hive-say-h { opacity: 1; transform: none; }
+/* a first name (0053) is written in the name's face, the rule the rows and
+   the card follow: mono is for identifiers, and a name is not one */
+.wl-hive-say-h.is-name {
+  font-family: var(--f-util); font-weight: 500; font-size: 12px; letter-spacing: -0.005em;
+}
 
 /* ═══ THE OPENING ══════════════════════════════════════════════════════════
    screens/Letter.jsx: a letter opened from a disc opens OUT OF the disc. The
@@ -1945,6 +1980,14 @@
   color: var(--chalk);
 }
 .wl-find-empty .wl-pill { margin-top: 4px; }
+/* a name as typed is set in the display face; a handle keeps the identifier's */
+.wl-find-echo.is-name {
+  font-family: var(--f-display); font-weight: var(--w-display);
+  font-variation-settings: var(--opsz-display); letter-spacing: var(--track-display);
+  font-size: 28px;
+}
+/* the quieter second under the primary: the letter to the name that was typed */
+.wl-find-to { padding: 6px 2px 2px; align-self: flex-start; }
 
 /* ═══ THE SUGGESTIONS ══════════════════════════════════════════════════════
    parts.jsx `Suggest`: names off the wall's public index, under a field, as
@@ -1968,6 +2011,9 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 260ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
+/* the one quiet line under the field that turns it from a handle to a first
+   name and back (0053) */
+.wl-write-kind { display: inline-block; margin-top: 12px; padding: 6px 2px; }
 /* the card and the line under it, in one frame, and the frame is what shakes
    when a press is refused (Write.jsx `shake`): a short travel, side to side,
    losing amplitude, the way a locked handle answers a hand. Under half a
@@ -2629,7 +2675,10 @@
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
   .wl-ear { grid-row: 1; padding: 14px 0 12px; }
-  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto auto 1fr; }
+  /* the search keeps the phone's column under the ear while the field runs
+     the whole window behind it */
+  .wl-seek { grid-row: 2; width: 100%; max-width: 460px; padding-top: 6px; }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
      glass here as it does on a phone, with the crowd showing round it */
@@ -2747,8 +2796,10 @@
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
   /* the ear stands in the left column over the dock, and the field takes the
      right column's whole height with the veil over it */
-  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
   .wl-ear { grid-column: 1; grid-row: 1; padding: 6px 0 0; }
+  .wl-seek { grid-column: 1; grid-row: 2; padding-top: 4px; }
+  .wl-seek .wl-field.is-lg input, .wl-seek .wl-field.is-lg .wl-at { font-size: 22px; }
   .wl-veil-in { padding: 0 18px 2vh; }
   .wl-wallpage .wl-dock {
     grid-column: 1 / -1; grid-row: 4;
@@ -3275,6 +3326,8 @@
   .wl-face-open:hover { transform: scale(1.04); }
 }
 .wl-face-open:active { transform: scale(0.94); transition-duration: 90ms; }
+/* a first name has no picture to open (0053): the disc stands still */
+.wl-face-open.is-still { cursor: default; pointer-events: none; }
 .wl-face-open:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; border-radius: 50%; }
 
 /* ── the face, opened ──
@@ -3519,7 +3572,7 @@
 @media (prefers-reduced-motion: reduce) {
   .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
   .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
-  .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
+  .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-roll-col { transition: none; }

@@ -81,39 +81,52 @@ async function call(fn, args) {
 // slower wall, never a blank one.
 const INDEX_COLS = 'target_handle, letters, last_at'
 const INDEX_FACES = `${INDEX_COLS}, known, display_name, is_verified, avatar_path`
-let indexCols = INDEX_FACES
+// and since 0053 the kind and the name: whether a row is a handle or a first
+// name, and for a first name, the name as the writer spelled it
+const INDEX_NAMED = `${INDEX_FACES}, kind, name`
+const INDEX_TIERS = [INDEX_NAMED, INDEX_FACES, INDEX_COLS]
+let indexTier = 0
+
+// ── one shape for a name on the wall ─────────────────────────────────────────
+// Every row the index and the search answer with becomes this. `handle` is
+// the KEY: a handle, or a tilde and the folded name for a letter to a first
+// name (0053). `name` is what to print beside the face: the resolver's
+// display name for a handle, the writer's spelling for a first name, and
+// '' when there is neither, in which case the key stands as the name.
+function shapeRow(r) {
+  const kind = r.kind === 'name' ? 'name' : 'handle'
+  return {
+    handle: r.target_handle ?? r.handle,
+    kind,
+    count: r.letters,
+    at: new Date(r.last_at).getTime(),
+    known: kind === 'handle' && !!r.known,
+    name: kind === 'name' ? String(r.name || '') : String(r.display_name || ''),
+    verified: kind === 'handle' && !!r.is_verified,
+    avatar: kind === 'handle' ? avatarUrl(r.avatar_path) : '',
+  }
+}
 
 export async function wallIndex() {
   if (!hasSupabase) return { ok: false, error: 'offline', tiles: [] }
   try {
-    let { data, error } = await supabase
+    const read = () => supabase
       .from('wall_index')
-      .select(indexCols)
+      .select(INDEX_TIERS[indexTier])
       .eq('campus', CAMPUS)
       .order('last_at', { ascending: false })
       .limit(500)
-    if (error && indexCols !== INDEX_COLS) {
-      indexCols = INDEX_COLS
-      ;({ data, error } = await supabase
-        .from('wall_index')
-        .select(indexCols)
-        .eq('campus', CAMPUS)
-        .order('last_at', { ascending: false })
-        .limit(500))
+    let { data, error } = await read()
+    // A database a migration behind answers a column it does not have with
+    // an error rather than a narrower row, so the read steps down a tier and
+    // asks again: a deploy that lands before the migration is a wall without
+    // the faces or the names, never a blank one.
+    while (error && indexTier < INDEX_TIERS.length - 1) {
+      indexTier += 1
+      ;({ data, error } = await read())
     }
     if (error) return { ok: false, error: 'network', tiles: [] }
-    return {
-      ok: true,
-      tiles: (data ?? []).map((r) => ({
-        handle: r.target_handle,
-        count: r.letters,
-        at: new Date(r.last_at).getTime(),
-        known: !!r.known,
-        name: String(r.display_name || ''),
-        verified: !!r.is_verified,
-        avatar: avatarUrl(r.avatar_path),
-      })),
-    }
+    return { ok: true, tiles: (data ?? []).map(shapeRow) }
   } catch {
     return { ok: false, error: 'network', tiles: [] }
   }
@@ -128,18 +141,14 @@ export async function wallIndex() {
 // Each row carries the resolver's answer for that name when there is one:
 // `known` says whether there is, and the name, the badge and the face come
 // with it, so a list of eight people is one request and not nine.
+//
+// Since 0054 the query travels AS TYPED, trimmed and nothing else: the server
+// folds it two ways itself, as a handle and as a name, so a space, an accent
+// or a capital is heard rather than stripped before it arrives.
 export async function wallSearch(query) {
-  const rows = await call('wall_search', { p_query: String(query || '') })
+  const rows = await call('wall_search', { p_query: String(query || '').trim().slice(0, 60) })
   if (!Array.isArray(rows)) return []
-  return rows.map((r) => ({
-    handle: r.handle,
-    count: r.letters,
-    at: new Date(r.last_at).getTime(),
-    known: !!r.known,
-    name: String(r.display_name || ''),
-    verified: !!r.is_verified,
-    avatar: avatarUrl(r.avatar_path),
-  }))
+  return rows.map(shapeRow)
 }
 
 // ── the wall, moving ─────────────────────────────────────────────────────────
@@ -247,6 +256,9 @@ export async function lettersFor(handle) {
     gated: !!out.gated,
     free: shapeFree(out.free),
     handle: out.handle,
+    // a first name's key, kind and spelling ride on the read (0053)
+    kind: out.kind === 'name' ? 'name' : 'handle',
+    name: String(out.name || ''),
     letters: (out.letters ?? []).map(shapeLetter),
   }
 }
@@ -295,6 +307,9 @@ function shapeLetter(l) {
   return {
     id: l.id,
     to: l.handle,
+    // a handle, or a first name, and for a first name the spelling (0053)
+    kind: l.kind === 'name' ? 'name' : 'handle',
+    name: String(l.name || ''),
     // Null when the reader is outside the gate. Not an empty string: the screen
     // has to be able to tell "withheld" from "somebody wrote nothing".
     body: l.body ?? null,
@@ -339,7 +354,12 @@ function shapeLetter(l) {
 // `resets_at`, so the screen can say how long to wait rather than only that
 // none is left. A rejected letter never spends one, so a person who has been
 // screened is not also charged for it.
-export async function write({ to, body, sealedLine, source }) {
+//
+// And a kind, since 0053: 'handle', the default, or 'name', a letter to a
+// first name, with `name` as the writer typed it and no handle at all. The
+// answer carries `handle` (the key the letter is filed under), `kind` and
+// `name`, so the wall can light the right disc without deriving the key.
+export async function write({ to, body, sealedLine, source, kind = 'handle', name = '' }) {
   if (!hasSupabase) return OFFLINE
   try {
     const { data, error } = await supabase.functions.invoke('celestual-wall-moderate', {
@@ -350,6 +370,8 @@ export async function write({ to, body, sealedLine, source }) {
         sealedLine: sealedLine ? String(sealedLine) : null,
         source: source ? String(source) : null,
         campus: CAMPUS,
+        kind: kind === 'name' ? 'name' : 'handle',
+        name: kind === 'name' ? String(name || '') : null,
       },
     })
     if (error) return { ok: false, error: 'network' }
@@ -380,6 +402,8 @@ export async function mine() {
     letters: (out.letters ?? []).map((l) => ({
       id: l.id,
       to: l.handle,
+      kind: l.kind === 'name' ? 'name' : 'handle',
+      name: String(l.name || ''),
       body: l.body ?? '',
       status: l.status,
       downBy: l.down_by || null,

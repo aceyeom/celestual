@@ -49,6 +49,21 @@
 // person is asked for is a domain, once, on the way in; what the wall records
 // is a handle, a body and a time.
 //
+// ── a first name, instead (0053) ───────────────────────────────────────────
+// The handle stays the default: on this campus everybody knows everybody's
+// @, and a letter to a handle is a letter one person can find. Under the
+// field one quiet line, "a first name instead", turns the same field into a
+// name field: the painted @ goes, the type changes to the display face
+// because a name is something a person means and a handle is an identifier,
+// the resolver's card stands down, and the line reads "their @ instead". No
+// second field and no hidden one: a writer who chose a name over the @ made
+// a choice, and the wall never asks for the @ beside it, in the composer or
+// anywhere. The letter is keyed by a tilde and the folded name (`~sofia`),
+// which every Sofia written to shares, and the name as typed is kept to
+// print. The name goes through the same list as the body, here and on the
+// server. Where the @ matters is the ping, and Main asks for it there
+// (screens/Join.jsx).
+//
 // ── the screen, at the keyboard ────────────────────────────────────────────
 // Layer 1 of the moderation runs against every keystroke of the letter
 // (moderate.js) — slurs, links, phone numbers, addresses, room numbers. It is
@@ -77,7 +92,10 @@ import {
   HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest,
 } from '../parts.jsx'
 import { Dots } from '../art.jsx'
-import { normHandle, validHandle, dateline, hash, allowance, loadQuota, write } from '../data.js'
+import {
+  normHandle, validHandle, dateline, hash, allowance, loadQuota, write,
+  isNameKey, nameKey, cleanName, nameFor, learnName,
+} from '../data.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
 import { getState, patch, setAfterGate } from '../store.js'
@@ -112,7 +130,12 @@ const INAPPROPRIATE = 'that’s inappropriate for the wall.'
 
 export default function Write({ to: prefill, go, back, reduce = false }) {
   const draft = getState().draft || {}
-  const [to, setTo] = useState(() => prefill || draft.to || '')
+  // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
+  // letter) opens the composer on the name, in name mode.
+  const named = !!prefill && isNameKey(prefill)
+  const [kind, setKind] = useState(() => (named ? 'name' : prefill ? 'handle' : (draft.kind === 'name' ? 'name' : 'handle')))
+  const [to, setTo] = useState(() => (named ? '' : prefill || draft.to || ''))
+  const [name, setName] = useState(() => (named ? nameFor(prefill) : draft.name || ''))
   const [body, setBody] = useState(() => draft.body || '')
   // Somebody who tapped "write to @them" on a letter already answered the
   // first question.
@@ -122,6 +145,10 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   const sheet = useRef(null)
 
   const h = normHandle(to)
+  // the name as it will stand on the wall, or '' while it is not one yet
+  const nm = cleanName(name)
+  // what the letter is filed under: the handle, or the tilde key of the name
+  const key = kind === 'name' ? nameKey(nm) : h
   // The first thing layer 1 objects to, said in words. One at a time: a list of
   // five complaints under a text box is a wall, and the writer only has to fix
   // one of them to find out whether the next one is real.
@@ -134,7 +161,7 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   // line still under the card is answered by the card (it shakes, below)
   // rather than by a button that will not press, which is a refusal with no
   // moment in it.
-  const ok = [validHandle(h), body.trim().length > 0]
+  const ok = [kind === 'name' ? !!nm : validHandle(h), body.trim().length > 0]
   const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
 
@@ -168,20 +195,25 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   // not cost somebody the forty words they just wrote.
   useEffect(() => {
     if (first.current) { first.current = false; return }
-    patch({ draft: { to: h, body } })
+    patch({ draft: { to: h, body, kind, name } })
     setSaid('')
-  }, [h, body])
+  }, [h, body, kind, name])
 
   // The card under the handle field: peeks while typing, asks on the press.
-  const them = useResolver(to)
+  // Never for a name: looking a person up by first name is an inference.
+  const them = useResolver(kind === 'name' ? '' : to)
   // And under that, the names already on the wall that match what is typed,
   // until the card has the person: a list under a settled card would list
-  // them twice. Pressing a row types that handle.
-  const sug = useSuggest(to, {
-    skip: step !== 0 || (them.at.state === 'found' && them.at.handle === h),
-    exclude: h,
-    onPick: (t) => setTo(t.handle),
+  // them twice. Pressing a row takes that name, in whichever kind it is.
+  const sug = useSuggest(kind === 'name' ? name : to, {
+    skip: step !== 0 || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
+    exclude: key,
+    onPick: (t) => {
+      if (t.kind === 'name') { setKind('name'); setName(t.name || nameFor(t.handle)) }
+      else { setKind('handle'); setTo(t.handle) }
+    },
   })
+  const flip = () => { setKind((k) => (k === 'name' ? 'handle' : 'name')); setSaid('') }
 
   // The card refusing the press: it shakes, once, and the line under it is
   // the reason. Under reduced motion the line is the whole answer.
@@ -204,16 +236,19 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
     setSending(true)
     setSaid('')
     // The flyer code this session arrived with rides along, so the desk can
-    // say which piece of paper a letter came off.
-    const out = await write({ to: h, body: body.trim(), source: getState().source || null })
+    // say which piece of paper a letter came off. And the kind: a handle, or
+    // a first name with its spelling, and never both.
+    if (kind === 'name') learnName(key, nm)
+    const out = await write({ to: h, body: body.trim(), source: getState().source || null, kind, name: nm })
     if (alive.current) setSending(false)
     if (!out?.ok) {
       if (!alive.current) return
       const e = out?.error || 'network'
-      if (e === 'gate' || e === 'no_session') { setAfterGate({ name: 'write', id: h }); go('gate'); return }
+      if (e === 'gate' || e === 'no_session') { setAfterGate({ name: 'write', id: key }); go('gate'); return }
       // a cap is said by the foot (Allowance), which the write refreshed
       setSaid(e === 'removed' ? 'that name has come off the wall. nobody can write to it now.'
         : e === 'cap' ? ''
+        : e === 'name' ? 'that is not a name the wall can carry. a first name, or a nickname.'
         : 'it did not go through. try again.')
       return
     }
@@ -227,15 +262,19 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
       return
     }
     const was = getState()
+    // the key the server filed it under, which for a name is the tilde key
+    const filed = out.handle || key
     patch({
       draft: null,
       written: [out.id, ...was.written].slice(0, 12),
-      // and the name, so the account sheet can still list it after a reload
-      // has taken the letter itself out of memory
-      wroteTo: [h, ...(was.wroteTo || []).filter((x) => x !== h)].slice(0, 12),
+      // and the key, so the account sheet can still list it after a reload
+      // has taken the letter itself out of memory; and for a first name, its
+      // spelling, since a key alone cannot be printed as a name
+      wroteTo: [filed, ...(was.wroteTo || []).filter((x) => x !== filed)].slice(0, 12),
+      names: kind === 'name' ? { ...(was.names || {}), [filed]: out.name || nm } : (was.names || {}),
       // and the wall sends one pulse out from this name once the glass has
       // gone (screens/Wall.jsx)
-      justPosted: h,
+      justPosted: filed,
     })
     if (!alive.current) return
     if (sheet.current) sheet.current.dismiss('sent')
@@ -245,6 +284,9 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   async function next() {
     if (!ok[step] || asking || spent || sending) return
     if (step === 0) {
+      // a name has nothing to look up: the card is skipped and the letter is
+      // the next thing. Its spelling is remembered before the card draws it.
+      if (kind === 'name') { learnName(key, nm); setStep(1); return }
       if (!them.settled) {
         // An answer draws the card and waits for the second press; no answer
         // at all (offline, capped, provider down) draws nothing and the same
@@ -292,21 +334,35 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
 
         {step === 0 ? (
           <div className="wl-write-step">
+            {/* One field, in one of two kinds. The handle by default, with the
+                painted @; or a first name, with the @ gone and the type in the
+                display face (parts.jsx HandleField `kind`). */}
             <HandleField
-              value={to} onChange={setTo} onSubmit={next}
-              autoFocus size="lg" placeholder="theirhandle"
+              kind={kind}
+              value={kind === 'name' ? name : to}
+              onChange={kind === 'name' ? (v) => setName(v.slice(0, 40)) : setTo}
+              onSubmit={next}
+              autoFocus size="lg"
+              placeholder={kind === 'name' ? 'their first name' : 'theirhandle'}
+              label={kind === 'name' ? 'their first name or nickname' : 'Instagram handle'}
               onKeyDown={sug.keyDown}
             />
             {/* the account, under the line. A letter addressed to a mistyped
                 handle is a letter about somebody that nobody can ever find, and
                 this is the only step where that is still fixable. Pressing the
-                person is the same act as the pill below. */}
+                person is the same act as the pill below. Not for a name. */}
             {/* A name that has come off the wall is refused by the schema
                 rather than by this screen: wall_write returns 'removed' and
                 the line under the card says so. Guessing here would mean
                 asking the server about every handle anybody types. */}
-            <HandleCard at={them.at} onSelect={next} />
+            {kind === 'handle' ? <HandleCard at={them.at} onSelect={next} /> : null}
             <Suggest sug={sug} />
+            {/* the one quiet line that turns the field: no second field, no
+                hidden one, and no explanation, because the @ going out and the
+                type changing its voice is the explanation */}
+            <button type="button" className="wl-quiet wl-write-kind" onClick={flip}>
+              {kind === 'name' ? 'their @ instead' : 'a first name instead'}
+            </button>
           </div>
         ) : (
           <div className="wl-write-step">
@@ -323,13 +379,13 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
                   and not a plainer copy of it. */}
               <Paper
                 dateline={dl}
-                crest={<span className="wl-letter-crest"><OpenFace handle={h} size={34} /></span>}
-                title={<Addressee handle={h} />}
+                crest={<span className="wl-letter-crest"><OpenFace handle={key} size={34} /></span>}
+                title={<Addressee handle={key} />}
                 tone={body.trim() ? '' : 'empty'}
               >
                 <LetterField
                   value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
-                  placeholder={EXAMPLES[hash(h || 'wheeler') % EXAMPLES.length]}
+                  placeholder={EXAMPLES[hash(key || 'wheeler') % EXAMPLES.length]}
                 />
               </Paper>
               {/* One line under the card, and only when there is something to

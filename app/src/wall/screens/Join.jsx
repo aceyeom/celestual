@@ -79,6 +79,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Display, Pill, Close } from '../parts.jsx'
 import { Bloom, eclipticHalves, ECL, ringPath, starPath } from '../art.jsx'
 import { cardStep } from '../seed.js'
+import { getState } from '../store.js'
+import { isNameKey, validHandle } from '../data.js'
 
 // Every part of the mark, straight off the mark. Move a constant in art.jsx and
 // this figure moves with it, because it is not a drawing of the logo: it is the
@@ -248,7 +250,23 @@ export default function Join({ go, setField, reduce }) {
   // The last step a card can be credited with, and the furthest one: out of the
   // wall and into the product. Written down before the navigation, because
   // after it this shell is gone (migration 0047).
-  const register = () => { cardStep('handoff'); window.location.assign('/') }
+  //
+  // ── and it lands on the person ──
+  // It used to land on the hero, and a person who had just named somebody
+  // met an empty field on the far side of the door. Main's /place/<handle>
+  // opens with the ping's target already in it and the resolver's card drawn
+  // against a face, so the handle this device wrote to last is handed over
+  // when the letter carried one. A letter to a first name (0053) carried no
+  // handle, so it lands on /place with the field open: "Who's on your mind."
+  // is where Main asks for the @, and that field IS the ask. The wall never
+  // asked for it and never held it; the writer types it themselves, as the
+  // ping's own object, on the surface where a ping lives.
+  const place = () => {
+    cardStep('handoff')
+    const k = (getState().wroteTo || [])[0] || ''
+    const h = k && !isNameKey(k) && validHandle(k) ? k : ''
+    window.location.assign(h ? `/place/${encodeURIComponent(h)}` : '/place')
+  }
 
   // The same escape the overture has, for the same reason: this runs three and
   // a half seconds and the second person at a demo table has already seen it.
@@ -323,8 +341,8 @@ export default function Join({ go, setField, reduce }) {
             production are two different apps behind one document (main.jsx) and
             pushing a production path into this history stack would leave the
             wall trying to render a screen it does not have. */}
-        <Pill tone="light" wide onClick={register}>
-          register
+        <Pill tone="light" wide onClick={place}>
+          place a ping
         </Pill>
       </div>
     </div>

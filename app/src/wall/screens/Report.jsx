@@ -55,7 +55,7 @@ import {
   Sheet, SheetHead, SheetFoot, Display, Label, Pill, ClosePill, CloseQuiet, Prose,
   ReasonField, Locked,
 } from '../parts.jsx'
-import { letter, loadLetter, report, atHandle, ago } from '../data.js'
+import { letter, loadLetter, report, labelFor, ago } from '../data.js'
 import { setAfterGate } from '../store.js'
 
 export default function Report({ id, go, back }) {
@@ -154,7 +154,7 @@ export default function Report({ id, go, back }) {
 
           <div className="wl-report-what">
             <Label tone="dim">
-              the letter under <span className="wl-h">{atHandle(one.to)}</span> · {ago(one.at)}
+              the letter under <span className="wl-h">{labelFor(one.to)}</span> · {ago(one.at)}
             </Label>
             {/* The words themselves, quoted short. Somebody about to take a
                 letter off a public wall should be looking at the letter while
@@ -201,7 +201,7 @@ export default function Report({ id, go, back }) {
           {head}
           <Display size="s" as="h2" id="wl-rep-h">It&rsquo;s down.</Display>
           <Label tone="dim" className="wl-report-done">
-            off the wall · <span className="wl-h">{atHandle(one.to)}</span>
+            off the wall · <span className="wl-h">{labelFor(one.to)}</span>
           </Label>
 
           <Prose className="wl-gate-copy">Saying why is optional.</Prose>

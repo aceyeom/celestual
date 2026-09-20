@@ -100,8 +100,8 @@ import {
   Pill, ClosePill, Icon, Label, OpenFace, Addressee, Heart,
 } from '../parts.jsx'
 import {
-  letter, lettersFor, loadLetter, loadHandle, knowsHandle, normHandle,
-  sinceline, atHandle, heart, wall, liveCount,
+  letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
+  sinceline, atHandle, labelFor, heart, wall, liveCount,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
@@ -255,7 +255,8 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // update below reads it.
   const silentRef = useRef(false)
   const byId = UUID.test(String(param || ''))
-  const handle = byId ? null : normHandle(param)
+  // a handle, or a first name's tilde key (0053): the same address either way
+  const handle = byId ? null : targetKey(param)
 
   // ── which card this is ──
   // The address changes on every turn and on nothing else, so it is what
@@ -744,6 +745,11 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
                   </span>
                   <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
                 </button>
+                {/* A first name is nobody's to empty: forty people share it,
+                    and no handle proof can stand for it (0053). The tap above
+                    takes a letter to a name down like any other, and only the
+                    desk shuts the name itself. */}
+                {isNameKey(one.to) ? null : (
                 <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
                   <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
                   <span className="wl-act-text">
@@ -752,12 +758,13 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
                   </span>
                   <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
                 </button>
+                )}
               </div>
               <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
             </div>
           ) : open ? (
             <Pill tone="light" wide onClick={() => toWrite(go, one.to)}>
-              write to {atHandle(one.to)}
+              write to {labelFor(one.to)}
             </Pill>
           ) : (
             /* The gate. It names no policy and gives no reasons: the card

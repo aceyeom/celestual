@@ -118,9 +118,9 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll, HandleField } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, atHandle, warmRest, term } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, term } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -258,6 +258,48 @@ function Ear({ letters }) {
   )
 }
 
+// ── the search, on the wall ─────────────────────────────────────────────────
+// Most people who scan the wall off a flyer are looking for one name, and
+// usually their own. The way to look for it was a 40px ring with a glass in
+// it, in the corner of the bar a thumb reaches last, and it read as
+// settings. So the search is the wall's own question now, and it stands
+// where the eye lands after the veil goes: one bare baseline under the ear,
+// the glass in the place a field paints its @, the placeholder saying what
+// it is for, the column's full width, in the top shade where type already
+// stands without a plate. It is not lit and it is not a capsule. The chalk
+// `write` in the bar is the one bright thing on the wall and stays so; a
+// second lit capsule over the faces would be the screen every generated
+// interface has, and it would stand on the disc the lens is reading.
+//
+// It is a real field and not a button drawn as one, for the keyboard's
+// sake: the tap that lands on it raises the keyboard, the focus opens the
+// search sheet over the wall, and the sheet's own field takes the focus on
+// mount (parts.jsx HandleField `focusOnTouch`), so the keyboard the tap
+// raised is the keyboard the sheet keeps. One tap, no dead half second, and
+// the names stay visible behind the results the whole time. Anything typed
+// in the beat before the sheet mounts rides along in the store.
+//
+// The council that placed it here (docs/THE-COUNCIL.md) weighed the founder's
+// large glowing pill at the centre, a field on the veil, and a capsule in the
+// dock, and turned each down: the first for being a second bright thing on
+// the faces, the second for putting a keyboard over a crowd nobody has seen
+// yet, the third for taking the one slot the tab needs.
+function Seek({ go }) {
+  const [v, setV] = useState('')
+  const open = useCallback(() => {
+    patch({ query: v })
+    go('find')
+  }, [go, v])
+  return (
+    <div className="wl-seek">
+      <HandleField
+        kind="search" size="lg" value={v} onChange={setV} onFocus={open} onSubmit={open}
+        placeholder="look for a name" label="look for a name"
+      />
+    </div>
+  )
+}
+
 // ── the tab ─────────────────────────────────────────────────────────────────
 // THE ONLY DOOR OUT OF THE WALL, and it is not here until somebody has put a
 // letter up. Offering an account to a person who has not written anything is
@@ -310,7 +352,7 @@ function Down({ letter: l, onChange, onLeave }) {
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
-          <p className="wl-down-h">Your letter to <span className="wl-h">{atHandle(l.to)}</span> was taken down.</p>
+          <p className="wl-down-h">Your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.</p>
           <p className="wl-down-why">{whyDown(l.downBy)}</p>
         </div>
       </div>
@@ -586,6 +628,11 @@ export default function Wall({ go, reduce, rev, under = false }) {
           the ear stands above the scrim and does not move when it goes. */}
       <div className="wl-room">
         <Ear letters={letters} />
+
+        {/* the wall's own question, under the ear, once the veil has gone.
+            It arrives with the bar's controls, a beat after the circle has
+            cleared the glass (wall.css `.is-arriving .wl-seek`). */}
+        {lifted && <Seek go={go} />}
 
         {!lifted && (
           <div
