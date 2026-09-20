@@ -8,12 +8,14 @@ secrets, environment variables, or production data.
 Each phase appends to this file as it completes. A step that is not yet written
 is marked `PENDING <phase>`.
 
-**Status: every phase is complete, and most of the schema is live.** This line
-used to say nothing in the repository had been applied. That is no longer true
-and had stopped being true some time ago: the database carries every migration
-through 0045 and, since 9 September 2026, 0047.
+**Status: every phase is complete, and the schema is live through 0055.** This
+line used to say nothing in the repository had been applied. That is no longer
+true and had stopped being true some time ago: the database carries every
+migration through 0045, 0047 since 9 September 2026, and 0049 through 0055
+since 20 September 2026, the last three (0053, 0054, 0055) applied through the
+Supabase MCP that day.
 
-Two are NOT recorded as applied, and this is the first place to look when
+One is NOT recorded as applied, and this is the first place to look when
 something in here does not match the database:
 
 - **0038, the audit.** Not in the migration history, and yet part of it is
@@ -21,9 +23,9 @@ something in here does not match the database:
   0038 line 33 and nothing else. So the history is a record of what was pushed,
   not a complete record of what was run. Read the database, not this file, when
   the answer matters.
-- **0046, the opt out reaching the wall.** Not applied. Until it is, taking a
-  handle off at `/optout` still leaves every letter written ABOUT that person
-  standing on the wall under their name.
+
+0046, the opt out reaching the wall, used to be listed here as not applied. It
+is in the history as `the_opt_out_reaches_the_wall` since 10 September 2026.
 
 The migrations are written and verified against a bare PostgreSQL; section 2
 says in what order to apply them, and section 11 is the checklist to work
@@ -1179,6 +1181,46 @@ The test of the whole path: put a letter up to a spare handle at
 should be gone from the inscription and from the search, and writing to it
 again should be refused.
 
+## The letter has a look, and a name can be anything (migration 0055)
+
+Two things, both the composer's, and both need the database. A letter can
+choose its paper: one of nine looks the browser draws (the plain paper, the
+night, the y2k gloss, the nokia screen, a receipt, a notebook page, a
+terminal, candy, gold), a colour for it and a face for the type, kept as
+three slugs in one `look` column and drawn on the wall's disc for the name.
+And the second answer on the composer's rail, `anything else`, admits
+whatever the writer calls the person: a first name, a nickname, one letter, a
+number, five words. The ruling that reverses the earlier no on customisable
+letters is in [WALL-FEATURES.md](./WALL-FEATURES.md).
+
+1. **Apply `0055_the_letter_has_a_look.sql`.** Applied 20 September 2026,
+   through the Supabase MCP, and recorded in the migration history as
+   `0055_the_letter_has_a_look`. It widens `wall_fold`, `wall_name_key` and
+   `wall_name_clean` (one to thirty characters, five words, digits and any
+   alphabet) and the two checks on `wall_letters` with them, adds
+   `wall_look_clean` and the `look` column held to it by a constraint, appends
+   `look` to `wall_index`, adds an eleven argument `wall_write` with `p_look`
+   (the ten and the eight argument forms stay and call it), and re-emits
+   `wall_letters_for`, `wall_letter`, `wall_mine`, `wall_search` and
+   `celestual_desk_letters` to carry the look. Re-runnable. Verified by
+   `scripts/verify-migrations.sh --test` (`test-looks.sql`, and four
+   assertions in `test-names.sql` turned for the wider name).
+2. **Redeploy `celestual-wall-moderate`.** Done 20 September 2026, from the
+   Supabase MCP, as version 11 with `verify_jwt` on. It accepts `look`, cleans
+   it to the same three slugs the schema admits, calls the eleven argument
+   `wall_write`, and steps down to the ten argument write, and for a handle
+   letter to the eight argument one, against a database a migration behind.
+3. **Deploy the app.** Vercel, as usual. Until it is up the wall draws every
+   letter on the plain paper and the composer has neither the rail nor the
+   pen; nothing already written moves.
+
+Checked on the live project after the three went up: `wall_letters` carries
+`target_kind`, `target_name` and `look`; `wall_index` carries `kind`, `name`
+and `look`; `wall_write` has its eight, ten and eleven argument forms;
+`pg_trgm` and `fuzzystrmatch` are installed; `wall_look_clean` drops a fourth
+key and refuses a bare string; `wall_name_clean` admits `J`, `51B` and `the
+girl on the 51B` and refuses `@sofia`.
+
 ## A letter to a first name, and the search hears a name (migrations 0053 and 0054)
 
 Ruled by the council of 20 September ([THE-COUNCIL.md](./THE-COUNCIL.md)).
@@ -1190,7 +1232,9 @@ letter can be addressed to a first name or a nickname instead of a handle,
 keyed on the wall by a tilde and the folded name so no handle proof can ever
 claim or empty it. Nothing about a handle is stored beside a name letter.
 
-1. **Apply `0053_a_letter_to_a_first_name.sql`.** Not yet applied. It adds
+1. **Apply `0053_a_letter_to_a_first_name.sql`.** Applied 20 September 2026,
+   through the Supabase MCP, and recorded in the migration history as
+   `0053_a_letter_to_a_first_name`. It adds
    `target_kind` and `target_name` to `wall_letters`, widens the handle check
    to admit the tilde key for `target_kind = 'name'`, appends `kind` and
    `name` to `wall_index`, adds `wall_fold`, `wall_name_key`,
@@ -1201,18 +1245,20 @@ claim or empty it. Nothing about a handle is stored beside a name letter.
    and the name, and guards `wall_name_shut` so a name key is shut only by
    the desk. Re-runnable. Verified by `scripts/verify-migrations.sh --test`
    (`test-names.sql`).
-2. **Apply `0054_the_search_hears_a_name.sql`.** Not yet applied. It creates
+2. **Apply `0054_the_search_hears_a_name.sql`.** Applied 20 September 2026,
+   the same way, as `0054_the_search_hears_a_name`. It creates
    `pg_trgm` and `fuzzystrmatch` in `extensions` if they are not there (both
    are on the platform's list) and re-emits `wall_search` over `wall_index`
    only: the handle, the dotless handle and the folded name, then trigram
    nearness and double metaphone from the third character. Twelve rows. The
    test pins that a profile not on the wall is never returned by any
    spelling. Re-runnable.
-3. **Redeploy `celestual-wall-moderate`.** `supabase functions deploy
-   celestual-wall-moderate`. It accepts `kind` and `name`, runs layer 1 over
-   the name with the body, calls the ten argument `wall_write`, and, for a
-   handle letter against a database that does not have it yet, falls back to
-   the eight argument call. The classifier is told the addressee.
+3. **Redeploy `celestual-wall-moderate`.** Done 20 September 2026, as
+   version 11, in the same deploy that carried 0055. It accepts `kind` and
+   `name`, runs layer 1 over the name with the body, calls the widest
+   `wall_write` the database has, and, for a handle letter against a database
+   that has only the eight argument one, falls back to that call. The
+   classifier is told the addressee.
 4. **Deploy the app.** Vercel, as usual.
 
 Order. The app first is safe: the index read steps down a column tier when
@@ -1223,6 +1269,13 @@ fallback. The migrations first are safe because nothing old reads the new
 columns and the eight argument write still exists. Until all three are up,
 a letter to a first name answers `it did not go through` and a handle
 letter goes through as before.
+
+That is what happened between the council and 20 September. The app went up
+with the first name choice, the database had neither migration, and the
+function was version 10 from 13 September, which answers `handle` to a letter
+with no handle: a letter to a first name was refused before it reached a row,
+so there was nothing on the wall to show. All three are up now, and such a
+letter has to be written again.
 
 ## The cap comes off (migration 0052)
 

@@ -63,7 +63,33 @@ const INDEX = HANDLES.map(([h, name, verified], i) => ({
   display_name: name,
   is_verified: verified,
   avatar_path: null,
+  kind: 'handle',
+  name: null,
+  look: null,
 }))
+
+// ── the looks (0055), and the names (0053) ──
+// Three handles carry the paper of their newest letter, and three names stand
+// on the wall: a first name on the nokia screen, one letter on candy, and a
+// number on the plain paper, so the field is shot with a disc of each kind.
+const LOOKS = {
+  'ren.tanaka': { theme: 'y2k' },
+  'm.okonkwo': { theme: 'terminal' },
+  'aya.nakamura': { theme: 'notebook', tint: 'rose' },
+}
+for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
+const NAMES = [
+  ['~sofia', 'Sofia', 2, { theme: 'nokia' }],
+  ['~j', 'J', 1, { theme: 'candy', face: 'hand' }],
+  ['~51b', '51B', 1, null],
+]
+NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
+  target_handle: key, campus: 'berkeley', letters,
+  last_at: new Date(now - (i * 7 + 3) * 3600000).toISOString(),
+  known: false, display_name: '', is_verified: false, avatar_path: null,
+  kind: 'name', name, look,
+}))
+const COUNT_OF = new Map(INDEX.map((r) => [r.target_handle, r.letters]))
 
 // The second line runs long on purpose: a deck of letters of one height
 // never shows what the sheet does when the next card is taller, which is
@@ -76,12 +102,19 @@ const LINES = [
 ]
 
 function lettersFor(handle, open) {
-  const n = COUNTS[HANDLES.findIndex(([h]) => h === handle)] || 1
+  const n = COUNT_OF.get(handle) || 1
+  const row = INDEX.find((r) => r.target_handle === handle)
   return Array.from({ length: n }, (_, i) => {
     const body = LINES[i % LINES.length]
     return {
       id: `1111${i}111-2222-4333-8444-55556666${String(i).padStart(4, '0')}`,
       handle,
+      kind: row ? row.kind : 'handle',
+      name: row ? row.name : null,
+      // the newest letter carries the key's look; an older one under the
+      // same name is on the plain paper, which is what a deck of two papers
+      // looks like when it is turned
+      look: row && i === 0 ? row.look : null,
       body: open ? body : null,
       words: body.split(/\s+/).length,
       chars: body.length,
@@ -498,11 +531,12 @@ const RPC = {
   // 0040: from the first character, exact then prefix then contains, with the
   // resolver's answer joined on for the names the fixture resolver knows.
   wall_search: (b) => {
-    const q = String(b.p_query || '').toLowerCase().replace(/^@/, '')
+    const q = String(b.p_query || '').toLowerCase().replace(/^@/, '').trim()
     if (!q) return []
-    const rank = (h) => (h === q ? 0 : h.startsWith(q) ? 1 : 2)
-    return INDEX.filter((r) => r.target_handle.includes(q))
-      .sort((a, c) => rank(a.target_handle) - rank(c.target_handle) || c.letters - a.letters)
+    const fold = (r) => `${r.target_handle} ${(r.name || r.display_name || '').toLowerCase()}`
+    const rank = (r) => (r.target_handle === q || (r.name || '').toLowerCase() === q ? 0 : fold(r).includes(` ${q}`) || r.target_handle.startsWith(q) ? 1 : 2)
+    return INDEX.filter((r) => fold(r).includes(q))
+      .sort((a, c) => rank(a) - rank(c) || c.letters - a.letters)
       .slice(0, 12)
       .map((r) => {
         const row = HANDLES.find(([x]) => x === r.target_handle)
@@ -510,6 +544,7 @@ const RPC = {
           handle: r.target_handle, letters: r.letters, last_at: r.last_at, campus: 'berkeley',
           known: !!row, display_name: row ? row[1] : null, is_verified: row ? !!row[2] : false,
           avatar_path: row && FACES[r.target_handle] ? `ig/${r.target_handle}.jpg` : null,
+          kind: r.kind, name: r.name, look: r.look,
         }
       })
   },
@@ -526,11 +561,16 @@ const RPC = {
     names: INDEX.length, letters: INDEX.reduce((n, r) => n + r.letters, 0),
     last_at: INDEX[0] ? INDEX[0].last_at : null,
   }),
-  wall_letters_for: (b) => ({
-    ok: true, open: OPEN, handle: b.p_handle,
-    letters: lettersFor(String(b.p_handle || '').replace(/^@/, ''), OPEN),
-    ...faceOf(String(b.p_handle || '').replace(/^@/, '')),
-  }),
+  wall_letters_for: (b) => {
+    const key = String(b.p_handle || '').replace(/^@/, '')
+    const row = INDEX.find((r) => r.target_handle === key)
+    return {
+      ok: true, open: OPEN, handle: key,
+      kind: row ? row.kind : 'handle', name: row ? row.name : null,
+      letters: lettersFor(key, OPEN),
+      ...faceOf(key),
+    }
+  },
   wall_letter: () => ({
     ok: true, open: OPEN,
     letter: { ...lettersFor('pilar.echevarria', OPEN)[0], mine: VERIFIED },
@@ -652,9 +692,22 @@ async function fulfil(route) {
   // name to receive. The count is put back at the start of every route.
   if (url.includes('/functions/v1/celestual-wall-moderate')) {
     const b = req.postData() ? JSON.parse(req.postData()) : {}
-    const row = INDEX.find((r) => r.target_handle === String(b.target || '').toLowerCase())
-    if (row) { row.letters += 1; row.last_at = new Date().toISOString() }
-    return route.fulfill({ json: { ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000' } })
+    const named = b.kind === 'name'
+    const key = named
+      ? `~${String(b.name || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`
+      : String(b.target || '').toLowerCase()
+    let row = INDEX.find((r) => r.target_handle === key)
+    if (row) { row.letters += 1; row.last_at = new Date().toISOString(); row.look = b.look || null }
+    else if (key) {
+      row = { target_handle: key, campus: 'berkeley', letters: 1, last_at: new Date().toISOString(),
+        known: false, display_name: '', is_verified: false, avatar_path: null,
+        kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null }
+      INDEX.unshift(row)
+    }
+    return route.fulfill({ json: {
+      ok: true, status: 'live', id: 'dddd0111-2222-4333-8444-555566660000',
+      handle: key, kind: named ? 'name' : 'handle', name: named ? b.name : null, look: b.look || null,
+    } })
   }
 
   // Every other edge function.
@@ -770,6 +823,27 @@ const ROUTES = [
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
+  // 0055: the first question with its two answers on one rail, the handle
+  // on; then the other answer on, with a name that is not a first name in it
+  { label: 'write-who',     path: '/berkeley/write', draft: null },
+  { label: 'write-anything', path: '/berkeley/write', draft: null,
+    acts: [['click', '.wl-seg-opt[data-value="name"]'], ['fill', '.wl-field input', 'the girl on the 51B']], settle: 900 },
+  // the pen on the card, pressed: the look panel under the card, on the
+  // plain paper; then the nokia screen chosen, and the card on it; then a
+  // colour and a face moved off what the look brought
+  { label: 'write-look',    path: '/berkeley/write/sofiaaa.reyes', press: '.wl-pen', settle: 1200 },
+  { label: 'write-look-nokia', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['click', '.wl-pen'], ['wait', 400], ['click', '.wl-look-opt[data-value="nokia"]']], settle: 1200 },
+  { label: 'write-look-tuned', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['click', '.wl-pen'], ['wait', 400], ['click', '.wl-look-opt[data-value="y2k"]'], ['wait', 300],
+      ['click', '.wl-look-opt[data-value="plum"]'], ['wait', 300], ['click', '.wl-look-opt[data-value="hand"]']], settle: 1200 },
+  // a letter to a name, on the nokia screen, read; and the same deck turned
+  // to the older letter under the name, on the plain paper
+  { label: 'letter-name',   path: '/berkeley/letter/~sofia' },
+  { label: 'letter-name-turned', path: '/berkeley/letter/~sofia', press: '.wl-turn.is-next', settle: 1200 },
+  // a handle's letter on the y2k gloss, with its face at the head
+  { label: 'letter-look',   path: '/berkeley/letter/ren.tanaka' },
+  { label: 'letter-look-sealed', path: '/berkeley/letter/m.okonkwo', open: false },
   // the week spent: the act dark, and the one line the foot says about it
   { label: 'write-spent',   path: '/berkeley/write/sofiaaa.reyes', spent: true },
   { label: 'write-name',    path: '/berkeley/write', type: { into: ".wl-field input", text: 'pilar.echevarria' }, draft: null },
@@ -847,7 +921,7 @@ for (const r of list) {
   DOWN = r.down === true
   for (const v of VIEWPORTS) {
     // a letter sent on the last pass moved the index; it is put back
-    INDEX.forEach((row, i) => { row.letters = COUNTS[i]; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
+    INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
     const page = await browser.newPage({
       viewport: { width: v.width, height: v.height },
       deviceScaleFactor: v.scale,

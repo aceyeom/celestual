@@ -157,8 +157,14 @@ function LetterRow({ l, open, note, setNote, onOpen, onDecide, acting }) {
     <>
       <tr className={open ? 'is-open' : ''}>
         <td><State>{l.flagged ? 'flagged' : l.status}</State></td>
-        {/* a first name (0053) prints as written, with no @ */}
-        <td><span className="ad-id">{l.target_kind === 'name' ? (l.target_name || String(l.target_handle).slice(1)) : `@${l.target_handle}`}</span></td>
+        {/* a first name (0053) prints as written, with no @; the paper the
+            letter chose (0055) stands under it, as its slugs */}
+        <td>
+          <span className="ad-id">{l.target_kind === 'name' ? (l.target_name || String(l.target_handle).slice(1)) : `@${l.target_handle}`}</span>
+          {l.look && typeof l.look === 'object' ? (
+            <div className="ad-id is-dim">{['theme', 'tint', 'face'].map((k) => l.look[k]).filter(Boolean).join(' · ')}</div>
+          ) : null}
+        </td>
         <td className="is-wide">
           <p className="ad-body-text is-quote" style={{ margin: 0 }}>{l.body}</p>
           {reasons.length ? (

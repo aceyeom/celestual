@@ -54,7 +54,7 @@ would buy, because each gate protects somebody who cannot be asked.
 | --- | --- | --- | --- |
 | G1 | **The subject's veto** | Does it add to what is said, shown, scored or inferred about a person who did not agree to be here? Their name and the count against it are already public, by the wall's first rule, and that is the whole of their exposure. Anything that ranks them, compares them, times them, or draws more attention to them than a letter does is new exposure they never agreed to. | the Target |
 | G2 | **Silence in, silence out** | Does it tell anybody that a specific person did something, or tell a specific person that something was done about them? Who read, who hearted, who searched, whether the subject has seen their letters, that a letter exists for you. Counts only, never names, and never a nudge aimed at one person. This is the line the FTC took NGL apart for, and a true nudge is still a nudge. | the Target, the reader, the product |
-| G3 | **Anonymity is structural** | Does it open a second channel from the wall back to the writer, or give a writer a way to be recognised by behaviour? A reply, a thread, a signature, a choice of paper, a choice of face, a habit. The author is absent from anything the browser can reach, and every letter looks like every other letter. Uniform paper is a privacy feature. | the writer |
+| G3 | **Anonymity is structural** | Does it open a second channel from the wall back to the writer, or give a writer a way to be recognised by behaviour? A reply, a thread, a signature, a habit, a colour only they use, a face only they have. The author is absent from anything the browser can reach, and every letter is made of the same parts. A paper chosen from a short menu every writer shares is a choice, not a signature; a paper only one writer could produce is a signature (the ruling on customisable letters, below). | the writer |
 | G4 | **The screen covers it** | Can every word or picture it adds go through the same three layers a letter does: the list at the keyboard and on the server, the classifier after it is up, and a person at the desk? Anything the list cannot read is a hole the size of the feature. Today the list reads text and nothing else. | the Target, the campus |
 | G5 | **A door, not a room** | Does it make the wall somewhere to stay rather than somewhere to pass through? A feed to scroll, a thread to return to, a reason to check back. Every minute spent on the wall that is not reading, writing, or taking the tab is a minute taken from the product the wall exists to fill. | the product |
 | G6 | **A fact, never a race** | Does it turn a number into a contest? The count against a name is a fact and it is public. A rank, a chart, a "most", a "trending", a velocity, a weekly winner, a number one: each of those is the same count with a finish line drawn on it, and a finish line is something a group of friends with three campus addresses can run at. | the Target, the wall |
@@ -81,7 +81,7 @@ proposal can be checked against each one by name.
 | --- | --- | --- | --- |
 | **The pile-on** | twenty people write to one name in one night. Some of it is warm, some of it is not, and the name is the biggest disc on the wall by morning. | nothing on the receiving side. The limit is per writer: three letters in any five days, from a campus address. | anything that rewards the biggest disc: a leaderboard, a trending list, a share that spreads "look at @them". |
 | **The leaderboard** | the wall becomes a list of who is most written about, most hearted, or rising fastest. It is a hotness ranking of named students, and it is the Facemash lineage. | the index is ordered by recency, not weight; the search shows six names without ranks; hearts are on letters and never summed per name. | any sort by attention, any per-name total of hearts, any "top" surface. |
-| **The unmasking** | a reader works out who wrote a letter: from a reply, a habit, a style, a choice of paper, the time it went up beside a class schedule. | the author exists nowhere the browser can reach, letters carry three fields and no fourth, and every letter is set on the same paper in the same face. | comments and replies, a signature, any customisation of the card, a visible timestamp finer than "3 weeks ago". |
+| **The unmasking** | a reader works out who wrote a letter: from a reply, a habit, a style, a paper nobody else has, the time it went up beside a class schedule. | the author exists nowhere the browser can reach, letters carry the same fields and no author, and a letter's paper is one of a short menu that every writer shares (0055): the menu is the mask. | comments and replies, a signature, a colour a writer typed, a picture, a face uploaded, a visible timestamp finer than "3 weeks ago". |
 | **The proxy notification** | the wall never tells a subject a letter exists, so somebody else does it for the wall: a share card that says "someone wrote to @you", a button that sends the letter to them. | the wall makes no object with a subject's handle on it that is meant to leave the wall. | any shareable that carries the handle; any "send this to them". |
 | **The picture** | a photo of the subject, a screenshot of a DM, a meme carrying a slur, a phone number or an address in an image, a QR code, a face of somebody under eighteen. | there are no pictures. The list reads text; the classifier reads text. | images, GIFs, stickers, drawings, any upload. |
 | **The outside audience** | a letter leaves the wall and outlives its thirty days somewhere the tap cannot reach, in front of people who were never its readers. | letters lapse in thirty days, a report takes one down on the tap, a name comes off for good; a screenshot is the only way out, and it is not the wall's. | a first-party share of a letter. |
@@ -100,7 +100,8 @@ proposal can be checked against each one by name.
 | more reactions, more emoji | no | | | | | | no | | | **no**. The heart stays the one mark |
 | shareables: a letter | no | no | | | | | | no | | **no** |
 | shareables: the wall | | | | | | | | | | **yes**. The poster, as a card |
-| customisable letters | | | no | | | | no | | | **no** on the card. The words are the freedom |
+| a look for a letter: a paper, a colour and a face from a menu | | | | | | | | | | **yes**, as a menu and never as an input. Migration 0055. The ruling below, which reverses the one it replaced |
+| a colour a writer types, a picture on the card, an uploaded face | | | no | no | | | no | | no | **no**. Each is a signature, or a hole the list cannot read |
 | GIFs, pictures, stickers | no | | | no | | | no | | no | **no** |
 | the search as a field on the wall, under the ear | | | | | | | | | | **yes**. Unlit, a question and not a door. The council of 20 September |
 | the search as a lit capsule at the centre | | | | | | | no | | | **no**. A second bright thing, on the faces |
@@ -205,19 +206,51 @@ is the same object printed and posted.
 
 ### Customisable letters, and to what degree
 
-To no degree on the card. The paper is the product's one bright surface and its
-signature, and its uniformity is doing two jobs at once: it is the design, and
-it is the anonymity. A handwriting face is a fingerprint. A choice of paper is
-a habit somebody recognises. Colour is the one thing the system rations and a
-coloured card spends it on every letter. Stickers and doodles are pictures, and
-pictures are their own row below. A dateline finer than "3 weeks ago" or a place
-line ("Doe, the third floor") is the room number the screen strips out.
+To the degree of a menu, and not one step past it. This ruling reverses the one
+that stood here until 20 September, which said no to the card entirely, and it
+is worth keeping both arguments in view, because the reversal is not a change
+of mind about the gates. It is a change in what was proposed.
 
-The degree of freedom a writer has is the words, two hundred and eighty of
-them, and the sealed line: up to ninety characters that only the person the
-letter is for can ever open, with the writer's consent. That is a great deal
-of freedom, and it is the only kind that cannot be used to find out who wrote
-it.
+The old ruling was against customisation as an INPUT: a colour a writer types,
+a face they upload, a doodle, a sticker. Each of those is a fingerprint, since
+a colour only one person picks and a picture only one person has are a
+signature by another name (G3); each is a thing the list at the keyboard
+cannot read (G4); and each is a picture or a second bright surface (G7). That
+ruling stands, on the row above, and it always will.
+
+What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of nine
+papers, one of twelve colours and one of six faces, from a menu that every
+writer on the wall shares, stored as three slugs and drawn by the browser.
+Through the gates:
+
+- **G3.** A look is a choice from a short menu, the same menu for everybody,
+  and the nokia screen is on a hundred letters by the end of the week. It is
+  no more a signature than writing in lower case is. What would be one is a
+  colour typed by hand or a face uploaded, and neither exists: the schema
+  admits three slugs and refuses a fourth key, a colour and a sentence
+  (`wall_look_clean`, and a constraint that holds every row to it).
+- **G4.** A look is structured, not written. The list and the classifier read
+  every word they read before, the name and the body, and there is no new
+  text for them to miss and no picture at all.
+- **G7.** Every texture is a gradient drawn by the stylesheet and every face is
+  a file served from this origin; nothing is downloaded from anywhere and
+  nothing is a picture. The paper stays the one bright thing on its sheet, in
+  the colour the writer chose it, and the system's own accent is not spent.
+- **G8.** The look is a column on the letter's row. A takedown takes it down
+  with the letter, and nothing about it travels anywhere else.
+- **G9.** The desk sees the slugs beside the row and reads nothing more.
+- **G1, G2, G5, G6.** Untouched: a look says nothing about the subject, tells
+  nobody anything, is chosen once while writing, and is not a number.
+
+And the reason to build it at all: a letter is the one thing on the wall a
+person makes, and the paper it is on is the first thing anybody sees of it.
+The freedom the old ruling named, the words and the sealed line, is still the
+whole of what a letter SAYS; the look is how it is dressed, and a menu of
+dresses that everybody shares gives that freedom without giving anything away.
+
+The line the ruling draws, for the next proposal: a look may be chosen and
+never typed, drawn and never uploaded, and the menu is the product's to add to
+and nobody's to extend from a phone.
 
 ### The search, the miss, and a letter to a first name
 

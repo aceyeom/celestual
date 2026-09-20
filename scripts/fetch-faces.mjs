@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// fetch-faces.mjs - pull the four faces down and keep them in the repo.
+// fetch-faces.mjs - pull the faces down and keep them in the repo.
 //
 // design/DESIGN.md section 4 names four faces. Until now they were fetched from
 // fonts.googleapis.com at runtime, which costs a render-blocking round trip to a
@@ -48,6 +48,16 @@ const FACES = [
   { slug: 'newsreader', query: 'Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800' },
   { slug: 'inter-tight', query: 'Inter+Tight:wght@100..900' },
   { slug: 'geist-mono', query: 'Geist+Mono:wght@100..900' },
+  // ── the looks' own faces (0055, app/src/wall/looks.js) ──
+  // Three more, and none of them is one of the system's four jobs: they are
+  // the faces a letter's LOOK can be set in, chosen by the writer, and they
+  // are never used for the product's own type. A pixel face for the nokia
+  // screen, a hand for the notebook page, a round geometric for the y2k
+  // gloss and the candy. Each is declared with font-display: swap and is
+  // fetched by a browser only when a card on the screen is set in it.
+  { slug: 'pixelify-sans', query: 'Pixelify+Sans:wght@400..700' },
+  { slug: 'caveat', query: 'Caveat:wght@400..700' },
+  { slug: 'comfortaa', query: 'Comfortaa:wght@300..700' },
 ]
 
 // Everything the product sets is latin. The other subsets Google returns are

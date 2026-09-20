@@ -232,10 +232,12 @@ function Card({ l, handle, seed, id, foot }) {
   return (
     <Paper
       dateline={sinceline(l.at, open ? '' : 'sealed')}
+      /* the paper the letter chose (0055), or the plain paper */
+      look={l.look}
       /* a letter to a first name (0053) carries no disc at its head: there is
          no picture to stand there, and a monogram beside "for Sofia" was a
          badge on a card that is cleaner without one */
-      crest={isNameKey(l.to) ? null : <span className="wl-letter-crest"><OpenFace handle={l.to} size={34} /></span>}
+      crest={isNameKey(l.to) ? null : <span className="wl-letter-crest"><OpenFace handle={l.to} size={34} look={l.look} /></span>}
       title={<Addressee handle={l.to} id={id} />}
       tone={open ? '' : 'shut'}
       foot={foot}

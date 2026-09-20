@@ -528,7 +528,11 @@ function tileUp(tiles, was) {
 // name changes or the lens arrives on it or leaves it: it is handed the name
 // and the count as two values rather than the index's row, so a new reading
 // of the index that did not move this name does not touch this disc.
-const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay, bind, onOpen, onHover, onPeek }) {
+// `look` is the paper of the newest letter under the name (0055) and `name`
+// the name as written for a first name, both handed as values off the
+// index's row so the disc draws them on its first frame, and both compared
+// by the memo so a name whose paper has not changed is not redrawn.
+const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
   if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
@@ -548,7 +552,7 @@ const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay
     >
       <span className="wl-cell-disc" aria-hidden="true">
         <span className="wl-cell-orb">
-          <Face handle={handle} size={d} lit={mine} />
+          <Face handle={handle} size={d} lit={mine} look={look || null} name={name} />
         </span>
       </span>
     </button>
@@ -1545,6 +1549,8 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             mine={!!t && wrote.has(t.handle)}
             fresh={!!t && !!fresh && fresh.has(t.handle)}
             delay={opening && t ? a.delay : 0}
+            look={t ? t.look : null}
+            name={t && t.kind === 'name' ? t.name : ''}
             bind={bind}
             onOpen={open}
             onHover={onHover}

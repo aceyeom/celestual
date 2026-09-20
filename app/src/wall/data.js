@@ -39,6 +39,7 @@
 
 import * as api from './api.js'
 import { learnHandle, warmFaces, isNameKey } from '../api/handles.js'
+import { learnLook, lookKey } from './looks.js'
 import { getState } from './store.js'
 
 const DAY = 86400000
@@ -66,25 +67,33 @@ export function validHandle(raw) {
 }
 
 // ── names ───────────────────────────────────────────────────────────────────
-// A letter can be addressed to a first name or a nickname instead of a handle
-// (migration 0053). On the wall it is keyed by a tilde and the folded name,
-// `~sofia`, a string that can never be a handle, so every Sofia anybody wrote
-// to shares one disc and no handle proof can ever claim or empty it. These
-// mirror the server's wall_fold, wall_name_key and wall_name_clean, so the
-// key this browser lights is the key the server filed the letter under.
+// A letter can be addressed to anything a writer calls a person instead of
+// a handle: a first name, a nickname, one letter, a number (migrations 0053
+// and 0055). On the wall it is keyed by a tilde and the folded name,
+// `~sofia`, `~j`, `~51b`, a string that can never be a handle, so everybody
+// written to under one spelling shares one disc and no handle proof can ever
+// claim or empty it. These mirror the server's wall_fold, wall_name_key and
+// wall_name_clean, so the key this browser lights is the key the server
+// filed the letter under.
 export { isNameKey }
 
+// the server's own accent table, so `ø` and `ß` fold here the way they fold
+// there; anything the table does not name is decomposed and its marks dropped
+const ACCENTS_FROM = 'àáâãäåāăąçćčďđèéêëēėęěìíîïīįıñńňòóôõöøōőùúûüūůűýÿžźżšśğłřťţÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝ'
+const ACCENTS_TO = 'aaaaaaaaacccddeeeeeeeeiiiiiiinnnoooooooouuuuuuuyyzzzssglrttaaaaaaceeeeiiiinoooooouuuuy'
+const ACCENTS = new Map([...ACCENTS_FROM].map((c, i) => [c, ACCENTS_TO[i]]))
+
 export function foldName(raw) {
-  return String(raw || '')
+  return [...String(raw || '')].map((c) => ACCENTS.get(c) || c).join('')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim().replace(/\s+/g, ' ')
 }
 
 export function nameKey(raw) {
-  const k = foldName(raw).replace(/[^a-z0-9]/g, '')
-  return k.length >= 2 ? `~${k.slice(0, 40)}` : ''
+  const k = foldName(raw).replace(/[^\p{L}\p{N}]/gu, '')
+  return k.length >= 1 ? `~${k.slice(0, 40)}` : ''
 }
 
 // A tilde string is a name key; anything else is a handle. Every reader in
@@ -95,15 +104,17 @@ export function targetKey(raw) {
   return s.startsWith('~') ? nameKey(s.slice(1)) : normHandle(s)
 }
 
-// The name as it will stand on the wall, or ''. Two to thirty characters, at
-// most three words, and none of the characters that make a string a handle,
-// a number or a link. The server's wall_name_clean is the authority; this is
-// the fail fast that keeps an obviously wrong entry from costing a round trip.
+// The name as it will stand on the wall, or ''. One to thirty characters, at
+// most five words, any letter or digit, and none of the characters that make
+// a string a handle, a link or a command. The server's wall_name_clean is
+// the authority; this is the fail fast that keeps an obviously wrong entry
+// from costing a round trip.
 export function cleanName(raw) {
   const n = String(raw || '').replace(/\s+/g, ' ').trim()
-  if (n.length < 2 || n.length > 30) return ''
-  if (n.split(' ').length > 3) return ''
-  if (/[0-9@#$%^&*_=+<>{}[\]|\\/:;"`~]/.test(n)) return ''
+  if (n.length < 1 || n.length > 30) return ''
+  if (n.split(' ').length > 5) return ''
+  if (/[@#$%^&*_=+<>{}[\]|\\/:;"`~]/.test(n)) return ''
+  if (/\p{Cc}/u.test(n)) return ''
   if (!nameKey(n)) return ''
   return n
 }
@@ -282,6 +293,9 @@ export function loadWall(force = false) {
       // read and no face costs a request of its own.
       out.tiles.forEach(learnHandle)
       out.tiles.forEach((t) => { if (t.kind === 'name') learnName(t.handle, t.name) })
+      // and the paper of the newest letter under each key, so every disc
+      // on the field draws it off this one read (looks.js learnLook)
+      out.tiles.forEach((t) => learnLook(t.handle, t.look))
       TILES = out.tiles
       TILES_AT = Date.now()
       TILES_ERROR = null
@@ -409,6 +423,7 @@ export function loadHandle(raw, force = false) {
     GATED = out.gated
     if (out.free) FREE = out.free
     if (out.kind === 'name') learnName(h, out.name)
+    if (out.letters.length) learnLook(h, out.letters[0].look)
     BY_HANDLE.set(h, out.letters)
     for (const l of out.letters) BY_ID.set(l.id, l)
     bump()
@@ -519,7 +534,8 @@ export async function removeLetter(id) {
 // the frame the card was opening.
 function shapeTile(t, was) {
   if (was && was.count === t.count && was.at === t.at && was.known === t.known
-    && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar) return was
+    && was.name === t.name && was.verified === t.verified && was.avatar === t.avatar
+    && lookKey(was.look) === lookKey(t.look)) return { ...was, look: was.look }
   return {
     ...t,
     weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
@@ -586,6 +602,7 @@ export async function search(query) {
   const rows = await api.wallSearch(query)
   rows.forEach(learnHandle)
   rows.forEach((t) => { if (t.kind === 'name') learnName(t.handle, t.name) })
+  rows.forEach((t) => learnLook(t.handle, t.look))
   return rows.map((t) => ({
     ...t,
     weight: t.count > 2 ? 2 : t.count > 1 ? 1 : rand(t.handle, 7) > 0.72 ? 1 : 0,
@@ -607,12 +624,14 @@ export async function search(query) {
 //
 // `kind` is 'handle' or 'name' (0053). The key the letter was filed under
 // comes back on the answer; it is derived here only when an older function
-// did not say.
-export async function write({ to, body, sealedLine, source, kind = 'handle', name = '' }) {
-  const out = await api.write({ to, body, sealedLine, source, kind, name })
+// did not say. `look` is the paper (0055), and the key learns it at once so
+// the disc the wall lights is already on that paper.
+export async function write({ to, body, sealedLine, source, kind = 'handle', name = '', look = null }) {
+  const out = await api.write({ to, body, sealedLine, source, kind, name, look })
   if (out?.ok && out.status === 'live') {
     const h = out.handle || (kind === 'name' ? nameKey(name) : normHandle(to))
     if (kind === 'name') learnName(h, out.name || cleanName(name))
+    learnLook(h, out.look === undefined ? look : out.look)
     BY_HANDLE.delete(h)
     TILES_AT = 0
     await Promise.all([loadWall(true), loadHandle(h, true), loadQuota(true), loadMine(true)])

@@ -32,12 +32,13 @@ insert into celestual_settings (key, value) values ('handle_salt', 'test-salt')
 select n_ok('fold lowers, strips accents and punctuation', wall_fold('Sofía Ñoño-Pérez') = 'sofia nono perez');
 select n_ok('fold handles uppercase accents', wall_fold('SOFÍA') = 'sofia');
 select n_ok('a name key is a tilde and the folded name', wall_name_key('Sofía Reyes') = '~sofiareyes');
-select n_ok('a one letter name has no key', wall_name_key('S') is null);
+-- 0055 widened the name: one letter is a key, a digit is a name, five words are
+select n_ok('a one letter name has a key (0055)', wall_name_key('S') = '~s');
 select n_ok('a tilde string is a name key', wall_target_key('~Sofia Reyes') = '~sofiareyes');
 select n_ok('anything else is a handle', wall_target_key('@Sofia.Reyes') = 'sofia.reyes');
 select n_ok('a clean name keeps its case', wall_name_clean('  Sofía   Reyes ') = 'Sofía Reyes');
-select n_ok('a digit is not a name', wall_name_clean('the girl in row 3') is null);
-select n_ok('four words are not a name', wall_name_clean('a b c d') is null);
+select n_ok('a digit is a name (0055)', wall_name_clean('the girl in row 3') = 'the girl in row 3');
+select n_ok('six words are not a name (0055)', wall_name_clean('a b c d e f') is null);
 select n_ok('an @ is not a name', wall_name_clean('@sofia') is null);
 select n_ok('thirty one characters are not a name', wall_name_clean(repeat('a', 31)) is null);
 
@@ -84,8 +85,8 @@ select n_ok('the index carries the name row with its kind',
 select n_ok('the index carries the handle row apart from it',
   (select kind = 'handle' and letters = 1 from wall_index where target_handle = 'sofiareyes'));
 
-select n_ok('a name with a digit is refused',
-  (wall_write('token-n-author-000000000', '', 'a letter.', null, null, 'berkeley', 'live', '{}', 'name', 'the girl in row 3'))->>'error' = 'name');
+select n_ok('a name with a digit goes up (0055)',
+  ((wall_write('token-n-author-000000000', '', 'a letter.', null, null, 'berkeley', 'live', '{}', 'name', 'the girl in row 3'))->>'ok')::boolean);
 select n_ok('a name with an @ is refused',
   (wall_write('token-n-author-000000000', '', 'a letter.', null, null, 'berkeley', 'live', '{}', 'name', '@sofia'))->>'error' = 'name');
 

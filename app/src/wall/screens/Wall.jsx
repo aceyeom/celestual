@@ -120,7 +120,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll, HandleField } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, learnName, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -518,9 +518,13 @@ export default function Wall({ go, reduce, rev, under = false }) {
   const answer = useCallback((l) => {
     patch({ noticed: { ...(getState().noticed || {}), [l.id]: true } })
   }, [])
+  // The words back, with the kind they were addressed by and the paper they
+  // were on: a letter to a name reopens on the name, not on the key read as
+  // a handle, and a letter on the nokia screen reopens on it.
   const changeDown = useCallback((l) => {
     answer(l)
-    patch({ draft: { to: l.to, body: l.body } })
+    if (l.kind === 'name' && l.name) learnName(l.to, l.name)
+    patch({ draft: { to: l.kind === 'name' ? '' : l.to, body: l.body, kind: l.kind, name: l.kind === 'name' ? l.name : '', look: l.look || null } })
     go('write', l.to)
   }, [answer, go])
 

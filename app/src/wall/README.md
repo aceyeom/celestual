@@ -282,31 +282,44 @@ here and nobody is offered a place on a list: the wall has no accounts and
 cannot tell anybody anything later. The council that ruled all of this is
 recorded in [../../../docs/THE-COUNCIL.md](../../../docs/THE-COUNCIL.md).
 
-## A letter to a first name
+## Who a letter is for: an @, or anything else
 
-The handle stays the default. Under the field, one quiet line, `a first name
-instead`, turns the same field into a name field (migration 0053): the
-painted @ goes, the type changes to the display face, the resolver's card
-stands down, and the line reads `their @ instead`. No second field and no
-hidden one.
+The first question has two answers, and both stand over the field on one
+rail (`parts.jsx` `Segmented`): `instagram`, on when the composer opens,
+because on this campus everybody knows everybody's @ and a letter to a
+handle is a letter one person can find; and `anything else`, which is
+whatever the writer calls the person. A first name, a nickname, one letter,
+a number, the girl on the 51B (migrations 0053 and 0055). The field is the
+same field in either case: with the @ painted beside it and the identifier's
+face, or with the @ gone and the display face, because a name is something a
+person means and a handle is an identifier. The resolver's card stands down
+for a name. No second field and no hidden one.
 
-On the wall a letter to a first name is keyed by a tilde and the folded name,
-`~sofia`, a string no handle can be, so every Sofia anybody wrote to shares
-one disc, a handle spelled the same is a different disc, and every comparison
-in the schema that reads a verified handle against a target stays correct by
-construction: no handle proof can claim, seal or empty a first name, because a
-first name is not one person's to prove. The name as written is kept to
-print, and nothing else is stored, not a handle in plain text and not a hash
-of one. The name goes through the same list as the body, at the keyboard and
-on the server, and the classifier is told the addressee.
+It used to be one quiet line under the field, `a first name instead`, which
+named one of the two choices, hid the other behind a sentence, and said
+"first name" about a choice that was never only that. A person deciding who
+a letter is for should see both answers before they type, and the one that
+is on should be lit from behind, which is how the bar says where you are.
 
-It is drawn as every letter is drawn. In the hive a monogram disc, the plate
-reading `Sofia` in the name's face rather than the identifier's; on the card
-`for Sofia` with nothing under it, the branch the addressee already had for a
-handle the resolver never saw; in the search and the suggestions a monogram,
-the name and the count. The resolver is never asked about a name key
-(`api/handles.js` `isNameKey`), or a letter to Sofia would carry @sofia's
-face.
+On the wall a letter to a name is keyed by a tilde and the folded name,
+`~sofia`, `~j`, `~51b`, a string no handle can be, so everybody written to
+under one spelling shares one disc, a handle spelled the same is a different
+disc, and every comparison in the schema that reads a verified handle
+against a target stays correct by construction: no handle proof can claim,
+seal or empty a name, because a name is not one person's to prove. The name
+as written is kept to print, one to thirty characters and five words, and
+nothing else is stored, not a handle in plain text and not a hash of one.
+The name goes through the same list as the body, at the keyboard and on the
+server, and the classifier is told the addressee.
+
+It is drawn as every letter is drawn. In the hive a disc with the name
+written on it whole when it fits and its monogram when it does not, the
+plate reading `Sofia` in the name's face rather than the identifier's; on
+the card `for Sofia` with nothing under it, the branch the addressee already
+had for a handle the resolver never saw; in the search and the suggestions a
+monogram, the name and the count. The resolver is never asked about a name
+key (`api/handles.js` `isNameKey`), or a letter to Sofia would carry
+@sofia's face.
 
 Reporting a letter to a name is one tap, as for any letter. `Take my name
 off the wall` is not offered on a name letter, since a first name is nobody's
@@ -320,6 +333,61 @@ letter carried a handle and for `/place` when it carried a name, and `Who's
 on your mind.` is the ask, made by the writer, on the surface where a ping
 lives.
 
+## The look of a letter
+
+A letter chooses its paper (migration 0055, `looks.js`, `Look.jsx`). The pen
+at the end of the card's letterhead on the composer opens a panel under the
+card, and the card is the preview, because the card is the real card
+(`parts.jsx` `Paper`) and a look is its tokens moved: whatever is picked is
+on the letter before the finger has lifted, and what goes up is what was
+seen. Three rows, in the lock screen's own shape, a gallery of whole looks
+and then two dials on the one chosen:
+
+| | |
+| --- | --- |
+| **paper** | nine looks, each a small paper in its own tokens: the plain paper, the night, the y2k gloss, the nokia screen, a receipt, a notebook page, a terminal, candy, gold. Picking one resets the two rows under it to what the look brought |
+| **colour** | twelve grounds, and the paper's own first. A tint recolours the look and keeps its texture and its type |
+| **type** | six faces: the system's serif, sans and mono at the letter's job, and a pixel face, a hand and a round geometric fetched for the looks and used for nothing else |
+
+What the row keeps is three slugs, `{ theme, tint, face }`, or nothing for
+the plain paper, cleaned to that shape by the browser, by the function and
+by the schema (`wall_look_clean`, and a constraint that holds every row to
+what it answers). What a slug DRAWS is the browser's: every theme is a set
+of custom properties on the paper (`--lk-ground`, `--lk-ink`, the strengths
+of the ink the card's own rules already use for its rule, its stamp, its
+foot and its marks, the face, the corner) and a texture the stylesheet
+draws under the type by the theme's slug. Nothing is downloaded and nothing
+is a picture: the LCD is a pixel grid, the gloss is a highlight, the
+notebook is ruled, the terminal has scanlines, and each is a gradient. A new
+look is a row in `looks.js` and a rule in `wall.css`, never a migration, and
+a slug this build does not know draws the plain paper.
+
+**The paper of a letter is the paper of its name on the field.** The index
+carries the look of the newest letter under each key, so a name's disc on
+the wall draws that look's ground, and the name on it in the look's ink and
+face, whole when it fits and as a monogram when it does not (`parts.jsx`
+`Face`, `looks.js` `nameOnDisc`). A disc that carries a picture keeps the
+picture, since a face is the strongest name there is, and wears the look as
+a rim. The search rows, the suggestions, the tab at the foot and the notice
+draw the same disc. Every letter under a name is read on its own paper, so
+a deck turned from a letter on the nokia screen to an older one on the plain
+paper is two papers.
+
+**And what it does not change.** A look is a choice from a menu that every
+writer shares, structured and not written, so it is not a signature; the
+list at the keyboard and the classifier still read every word; a takedown
+takes the look with the letter; the desk sees the slugs beside the row; and
+the paper stays the one bright thing on a sheet, in whatever colour the
+writer chose it. [../../../docs/WALL-FEATURES.md](../../../docs/WALL-FEATURES.md)
+records the ruling, which reverses the one the document made before there
+was a menu.
+
+Two things came off the composer with it. `a different name`, the capsule
+that stood beside the act in the foot, is gone: the way back to the first
+question is the name on the card itself, which is a press, and the dots in
+the head. And the act, `send anonymously`, stands alone in the middle of the
+foot, at a width a thumb finds.
+
 ## The screens
 
 | Route | What it is |
@@ -327,7 +395,7 @@ lives.
 | `/berkeley` | **the wall**: the hive, the names as a crowd of faces bent by a lens, edge to edge and drifting, and the veil over it |
 | `/berkeley/letter/:id` | a letter over the dimmed wall. Whole, or redacted, the heart on its foot with the count beside it, and under it the edges of the deck: every letter on the wall is one card in one deck, turned where the card is, by a swipe on the card, a chevron in each gutter or the arrow keys, and the header keeps the count over the whole wall |
 | `/berkeley/find` | the search, raised by the field under the ear. It hears a name, a nickname, an accent and a misspelling as well as a handle (migration 0054), opens on the names most recently written to, and a miss offers the composer for somebody else and, quieter, a letter to the name typed |
-| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks for a handle by default and, on one quiet line, a first name or a nickname instead (migration 0053). It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises. There is no screen after it |
+| `/berkeley/write` · `/berkeley/write/:handle` | the composer, two steps, written on the card itself. The first step asks who, by two answers on one rail: an Instagram handle, on by default, or anything else the writer calls the person (migrations 0053 and 0055). The second is the letter, on the paper it chose: the pen on the card opens the look under it. It sends from the card: a letter the list catches shakes it and goes nowhere, and one that goes up closes the sheet onto the wall, where the name pulses and rises on its paper. There is no screen after it |
 | `/berkeley/gate` | **the door on the wall** — an address and six digits, or the account |
 | `/berkeley/report/:id` | **one letter, down** — the tap, the small box, the reading |
 | `/berkeley/remove` · `/berkeley/remove/:handle` | **a whole name, off** — the Instagram handoff, then the tap |
@@ -411,6 +479,10 @@ router.js    ten routes, no dependency
 art.jsx      ECLIPTIC (the mark, the lockup, the favicon string) and the
              ornaments: sparkle, halftone sphere, THE ORRERY, bloom,
              per-handle constellation (with its countdown gauge), the field
+looks.js     the looks: the themes, the tints and the faces a letter's paper
+             can be, the tokens each sets on a paper or a disc, and the memo
+             of which paper each name on the wall was last written on
+Look.jsx     the look panel under the composer's card: paper, colour, type
 parts.jsx    display · label · prose · redaction · pill · paper · fields ·
              sheet · row · icons · the close mark · the bar · step dots
 auth.js      the domain check, what it does and does not buy, and the
