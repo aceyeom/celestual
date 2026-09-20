@@ -379,7 +379,7 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
                   and not a plainer copy of it. */}
               <Paper
                 dateline={dl}
-                crest={<span className="wl-letter-crest"><OpenFace handle={key} size={34} /></span>}
+                crest={kind === 'name' ? null : <span className="wl-letter-crest"><OpenFace handle={key} size={34} /></span>}
                 title={<Addressee handle={key} />}
                 tone={body.trim() ? '' : 'empty'}
               >

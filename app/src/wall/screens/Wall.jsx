@@ -120,7 +120,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll, HandleField } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest, term } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -209,17 +209,18 @@ function tabDue(state) {
 }
 
 // ── the ear ─────────────────────────────────────────────────────────────────
-// The campus, the count and the term, on one line under the bar: a dateline,
-// the way the paper carries one across its own top rule. Two faces and no
+// The campus and the count, on one line under the bar: a dateline, the way
+// the paper carries one across its own top rule. Two faces and no
 // punctuation: the campus in the display face, small, the way the brand sets
 // its own word; the count beside it in the identifier face, the figure a
-// step larger and in chalk, the word after it at the label's size in ash;
-// and the term at the end of the line, dimmer still, because a wall is a
-// thing that happens in a term and that is the one honest date it has. The
-// two faces and the three weights are the hierarchy, so the line needs no
+// step larger and in chalk, the word after it at the label's size in ash.
+// The two faces and the two weights are the hierarchy, so the line needs no
 // sparkle in front of it and no dot between its parts; it used to carry
 // both, and eleven pixels of uppercase mono with two ornaments in it was the
-// busiest object on a screen whose whole job is to be calm.
+// busiest object on a screen whose whole job is to be calm. The term stood
+// at the end of the line for a while, dimmer still, and came off: a wall is
+// a thing that happens in a term, and the search under the ear needs the
+// line above it quiet.
 //
 // The figure turns (parts.jsx `Roll`): a letter arriving, from this phone or
 // any other, turns the last digit up one where it stands, and nothing else
@@ -253,7 +254,6 @@ function Ear({ letters }) {
     <div className="wl-ear" aria-live="polite">
       <span className="wl-ear-name">berkeley</span>
       {meta}
-      {loaded && !err ? <span className="wl-ear-term">{term()}</span> : null}
     </div>
   )
 }

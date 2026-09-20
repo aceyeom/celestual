@@ -783,11 +783,11 @@ and the wall's own light is in its field, on the person being read.
 
 ### The count
 
-The one fact about this wall worth printing: `19 letters`, in the ear, and
-now the term beside it: a dateline, the campus in the display face, the
-figure a step larger in chalk with the word after it at the label's size,
-and `fall 2026` at the end of the line, dimmer, because a wall is a thing
-that happens in a term. The figure turns (`parts.jsx Roll`): each digit is a
+The one fact about this wall worth printing: `19 letters`, in the ear: a
+dateline, the campus in the display face, the figure a step larger in chalk
+with the word after it at the label's size. The term stood at the end of the
+line for a while, dimmer, and came off, so the line above the search stays
+quiet. The figure turns (`parts.jsx Roll`): each digit is a
 window over a column of the ten, and a letter arriving, from this phone or
 another, slides the last figure up one where it stands. It is drawn still at
 the number it is given and moves only when the number does, so a figure

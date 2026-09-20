@@ -593,16 +593,6 @@ export async function search(query) {
   }))
 }
 
-// The term the wall is up in, for its masthead: the season and the year. A
-// wall is a thing that happens in a term, and saying which one is the one
-// honest date it has.
-export function term(ts = Date.now()) {
-  const d = new Date(ts)
-  const m = d.getMonth()
-  const season = m >= 7 ? 'fall' : m >= 5 ? 'summer' : 'spring'
-  return `${season} ${d.getFullYear()}`
-}
-
 // ── writing ─────────────────────────────────────────────────────────────────
 // Not an insert. The letter goes to celestual-wall-moderate, which screens it
 // and writes it in one request, and comes back with one of two answers:

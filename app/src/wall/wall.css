@@ -1079,12 +1079,6 @@
 /* the figure: a step larger than the word after it, in chalk, its digits
    turning when a letter goes up (parts.jsx `Roll`, `.wl-roll` below) */
 .wl-ear-n { font-size: 14.5px; letter-spacing: 0.04em; color: var(--chalk); }
-/* the term, at the end of the line, dimmer than the word: the third weight */
-.wl-ear-term {
-  margin-left: auto; padding-left: 12px;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--ash-dim); white-space: nowrap;
-}
 .wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
 
 /* ── the roll ──

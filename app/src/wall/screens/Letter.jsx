@@ -220,7 +220,7 @@ function Card({ l, handle, seed, id, foot }) {
     return (
       <Paper
         dateline={{ lead: 'reading' }}
-        crest={handle ? <span className="wl-letter-crest"><OpenFace handle={handle} size={34} /></span> : null}
+        crest={handle && !isNameKey(handle) ? <span className="wl-letter-crest"><OpenFace handle={handle} size={34} /></span> : null}
         title={<Addressee handle={handle || ''} id={id} />}
         tone="waiting"
       >
@@ -232,7 +232,10 @@ function Card({ l, handle, seed, id, foot }) {
   return (
     <Paper
       dateline={sinceline(l.at, open ? '' : 'sealed')}
-      crest={<span className="wl-letter-crest"><OpenFace handle={l.to} size={34} /></span>}
+      /* a letter to a first name (0053) carries no disc at its head: there is
+         no picture to stand there, and a monogram beside "for Sofia" was a
+         badge on a card that is cleaner without one */
+      crest={isNameKey(l.to) ? null : <span className="wl-letter-crest"><OpenFace handle={l.to} size={34} /></span>}
       title={<Addressee handle={l.to} id={id} />}
       tone={open ? '' : 'shut'}
       foot={foot}
