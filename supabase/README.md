@@ -242,6 +242,47 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
+- `migrations/0054_reveal_night.sql`: **reveal night.** A mutual no longer
+  opens the instant the second ping lands; it opens on the next reveal night,
+  Saturday 21:00 America/Los_Angeles by default, one instant for everybody.
+  A second timestamp beside `matched_at`, `reveal_at` (on `celestual_entries`
+  and `celestual_matches`), and one rule written once in
+  `celestual_revealed(matched_at, reveal_at)` and used by every reader: null
+  reads as open, so every match already in the database stays open. Until
+  the night a held pair looks like two standing pings to both people:
+  `celestual_my_pings`, `celestual_counterpart_card`, `celestual_ping_status`
+  say standing and hand over no card; `celestual_standing_count` (new) counts
+  it, so the meter does not move; `celestual_renew` renews it; `celestual_withdraw`
+  puts the other side quietly back to unmatched without touching its
+  `expires_at`; `celestual_submit` answers a held match as an ordinary
+  placement, moves a lapse in its last week out to the night, and writes the
+  mail and the DM only when the night is already now (the switch off). The
+  four settings on the desk's whitelist: `reveal_night`, `reveal_dow`,
+  `reveal_hour`, `reveal_tz` (validated by the server); `celestual_next_reveal()`
+  does the arithmetic on the zone's wall clock; `celestual_reveal_night()` is
+  the one public read (the same answer for everyone). On the night
+  `celestual_reveal_sweep()` writes the `celestual_notifications` and
+  `celestual_dm_outbox` rows for every pair whose night has come, once
+  (`celestual_matches.queued_at`), scheduled with `pg_cron` every five minutes
+  where it exists; `celestual-notify` and `celestual-mutual-dm` run it first
+  thing as well. `celestual_desk_pings` lists a held pair as mutual with its
+  night and `open` false. **Tested by `scripts/sql/test-reveal.sql`, 58
+  assertions**, with `test-doors.sql` and `test-desk2.sql` still green.
+  **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** (it shipped
+  with the paid door).
+- `migrations/0053_the_paid_door.sql`: **the paid door, and the desk holds
+  the switch.** Two rows on the desk's whitelist, `billing_enabled` and
+  `billing_plan_enabled`, both off by default, read by `celestual_billing_on()`
+  / `celestual_billing_plan_on()`. `celestual_billing_status` carries `enabled`
+  and `plan_offered` on every branch (not secrets, so a signed out browser
+  can draw the right door), and `celestual_billing_begin` refuses with `'off'`
+  before it reads a thing; both check the proof whatever the release gate
+  says, the hardening 0038 gave every other read of a person's own rows.
+  "unlimited" is literal: `celestual_cap_for` answers null on a live pass,
+  which is never full, and `begin` refuses a slot to a pass holder with
+  `has_plan`. Nothing else in 0021 moves. **Tested by
+  `scripts/sql/test-billing.sql`, 40 assertions.**
+  **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)**
 - `migrations/0052_the_cap_comes_off.sql` (**applied 20 September 2026**, in
   the history as `the_cap_comes_off`): **the writer's allowance is a row
   now, and the desk holds the switch.** The three and the number behind it

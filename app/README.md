@@ -20,8 +20,9 @@ src/
 │                      twice in two designs. Every surface is a dynamic import,
 │                      so the entry chunk is small
 ├── main/              MAIN, at `/`. The product: hero, place, sky, reveal,
-│                      optout, copy, signin, the not found. router.js is the
-│                      route table; data.js shapes the ping RPCs for the screens
+│                      optout, copy, signin, paid (back from Stripe), the not
+│                      found. router.js is the route table; data.js shapes the
+│                      ping RPCs for the screens
 ├── wall/              THE WALL, at `/berkeley`. Its own shell, router, store,
 │                      data cache, api module and ten screens. parts.jsx is the
 │                      shared component set BOTH surfaces draw from, and
@@ -33,7 +34,9 @@ src/
 ├── api/               every call to Supabase, one module per concern:
 │   ├── supabase.js    the client, and the no-backend fallback flag
 │   ├── identity.js    one session token across both surfaces (0030)
-│   ├── celestual.js   the ping RPCs (submit, my_pings, renew, withdraw, opt out)
+│   ├── celestual.js   the ping RPCs (submit, my_pings, renew, withdraw, opt out,
+│   │                  reveal night)
+│   ├── billing.js     the paid door: the status read, checkout, the two prices
 │   ├── igverify.js    the Instagram DM proof: mint, poll, the pending record
 │   ├── auth.js        the device's copy of a proven handle and its proof
 │   ├── eduverify.js   the campus code, through celestual-edu-verify

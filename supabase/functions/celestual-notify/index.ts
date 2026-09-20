@@ -26,6 +26,11 @@
 // Requires migration 0038 (celestual_notify_take). Against an older database
 // the RPC is missing and this answers 500 with the message naming it.
 //
+// Since 0054 a match is held until reveal night and its mail is written on
+// the night by celestual_reveal_sweep(). pg_cron runs that every five minutes
+// where it exists; this function runs it first thing as well, so a project
+// without the cron still mails on the night, one webhook late at most.
+//
 // Required secrets (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY        — your Resend API key
 //   CELESTUAL_FROM_EMAIL  — verified sender, e.g. "celestual <hello@celestual.us>"
@@ -102,6 +107,15 @@ async function sendEmail(to: string, other: string, hasCard: boolean) {
 }
 
 Deno.serve(async () => {
+  // Reveal night: write the rows for any pair whose night has come (0054).
+  // A missing function (an older database) is not a reason to stop draining.
+  try {
+    const { error: sweepErr } = await supabase.rpc('celestual_reveal_sweep');
+    if (sweepErr) console.error('reveal sweep', sweepErr.message);
+  } catch (e) {
+    console.error('reveal sweep threw', String(e));
+  }
+
   // The rows are CLAIMED, not selected. celestual_notify_take (0038) takes the
   // due rows under skip locked and pushes their next attempt ten minutes out,
   // so a webhook firing once per insert (celestual_submit queues two rows per

@@ -1018,11 +1018,11 @@ which is what keeps the two surfaces one product.
   Placing, renewing and letting go write through the same one key as
   everything else, so a ping placed at a demo table survives a reload and the
   ring for it is drawn at the front of its circuit. There is no server here.
-- **The paid third slot is deliberately not drawn.** Production carries one
-  behind a flag (`VITE_STRIPE_ENABLED`, one slot, bought once). The slots-full
-  door here offers one thing, `let it go`, because a surface that shows somebody
-  a price before it has shown them a mutual has taught them the wrong thing
-  about what this is.
+- **The paid slot is deliberately not drawn.** Production draws one on the
+  letter and the sky behind the desk's switch (migration 0053: an extra slot,
+  bought once). The slots-full door here offers one thing, `let it go`, because
+  a surface that shows somebody a price before it has shown them a mutual has
+  taught them the wrong thing about what this is.
 - **The core service's clock is fixed, and it is not the wall's.** `orbit.js`
   derives one epoch from the printed date (`seed.js TODAY`) and every day,
   dateline and countdown on that surface comes off it. The wall keeps

@@ -46,7 +46,8 @@ app/                the SPA. Vite + React, no router library
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0051, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0054, in order. 0029 onward is the rebuild; 0038 is the audit;
+                    0053 is the paid door and 0054 is reveal night
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook
@@ -102,9 +103,11 @@ everything that has to happen outside the repo, and
 deletions.
 
 Most of the schema is live. The database carries every migration through 0045,
-and 0047; **0038 and 0046 are not recorded as applied**, and
+and 0047 to 0052; **0038 and 0046 are not recorded as applied**, and
 [docs/launchsteps.md](./docs/launchsteps.md) says what that means and in what
-order to apply what is left.
+order to apply what is left. **0053 (the paid door) and 0054 (reveal night) are
+in the tree and not yet applied**; [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md)
+is the order to apply them in, with everything else money needs.
 
 ---
 
@@ -126,8 +129,8 @@ order to apply what is left.
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
-| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live, and turning it back off. Dormant |
-| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture: nothing, deliberately |
+| [docs/STRIPE-SETUP.md](./docs/STRIPE-SETUP.md) | Wiring Stripe live, reveal night, and turning either back off. The runbook |
+| [docs/PRICING-REVENUE.md](./docs/PRICING-REVENUE.md) | The monetization posture, and the wake: an extra slot, once |
 | [docs/PERSONAS.md](./docs/PERSONAS.md) | The seven people the design is scored against |
 | [docs/ULTIMATE-PRODUCT-FRAMEWORK.md](./docs/ULTIMATE-PRODUCT-FRAMEWORK.md) | The product direction |
 | [docs/WALL-FEATURES.md](./docs/WALL-FEATURES.md) | What goes on the wall and what does not: the nine gates, the attacks by name, the proposals weighed, and what the wall needs next |

@@ -66,6 +66,16 @@
 
 .mn-h { margin: 0; }
 
+/* ── the meters ──
+   Two lines in the identifier face under the sky's heading: what this person
+   holds against their cap, and when the next reveal night is (0053, 0054).
+   The second is the same line for everybody who is signed in, whether or not
+   anything is waiting for them, which is what makes it safe to draw. */
+.mn-meters { display: flex; flex-direction: column; gap: 5px; margin-top: -6px; }
+
+/* the quiet paid line under the standing list, and its one line of news */
+.mn-slotline { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 2px; }
+
 /* The reading face, in ash. This used to be the UI face, on the argument that
    the serif was reserved for what people wrote to each other. The front door
    sets every explanation in the reading face now (hero.css `.hm-read`), because

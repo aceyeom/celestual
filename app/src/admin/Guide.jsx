@@ -18,7 +18,7 @@ const SCREENS = [
   ['the cards', 'cards', 'the five printed cards. what each one was scanned, read, and joined off, best first, and the address that goes in its QR.'],
   ['the resolver', 'cache', 'the face and name under a typed handle, the apify switch, and who has spent what against the caps.'],
   ['access', 'access', 'the pass list: an address that gets the wall\'s code at any inbox, a handle that skips the DM. and a link that signs one browser in.'],
-  ['settings', 'settings', 'the release gate, the resolver switch, the four caps, the walls, and the log of what the desk did.'],
+  ['settings', 'settings', 'the release gate, the resolver switch, the paid door, reveal night, the four caps, the walls, and the log of what the desk did.'],
 ]
 
 const WHEN = [
@@ -66,6 +66,16 @@ const WHEN = [
     t: 'the wall should open, or close',
     say: 'settings, the walls. closed, nobody can write, report or join the waitlist; the names already on it stay readable.',
     to: ['settings'],
+  },
+  {
+    t: 'somebody paid and the slot never arrived',
+    say: 'stripe is the truth for the payment and celestual_purchases is the truth for what it granted; they should agree row for row. if the purchase never turned paid, the webhook did not land: stripe, developers, webhooks, the endpoint, and press resend on the event. docs/STRIPE-SETUP.md section 7 has the rest. the paid door itself is the switch on settings.',
+    to: ['settings'],
+  },
+  {
+    t: 'somebody says it should have been mutual by now',
+    say: 'a match opens on reveal night, not the instant it happens. the pings screen lists a held pair as mutual with the night it opens on; until then both people see two standing pings and are told nothing, on purpose. the night itself is set on settings.',
+    to: ['pings', 'settings'],
   },
   {
     t: 'a merge stopped and asked',

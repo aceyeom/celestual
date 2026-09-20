@@ -18,6 +18,22 @@
 // somebody types, so the person you placed a ping on looks here like the
 // person you confirmed against.
 //
+// ── the meter, and the night ────────────────────────────────────────────────
+// Two lines under the heading, in the identifier face. What this person holds
+// against their cap ("2 of 2 standing"; "3 standing · unlimited" on the pass),
+// and when the next reveal night is (migration 0054), shown in California's
+// clock and, when the viewer's differs, in theirs. The second line is the
+// same for everybody who is signed in whether or not anything is waiting for
+// them, which is the only way it can be drawn: a line that appeared when a
+// match was held would be the reveal, early. If the night arrives while the
+// tab is open the sky reads itself again and the mutual rows appear.
+//
+// ── the paid door, quietly ──────────────────────────────────────────────────
+// One quiet line under the list, only for a person holding their cap and only
+// while the desk's switch is on (migration 0053): an extra slot, $2.99, once.
+// The pill stays "place a ping". The letter is where the two doors are drawn
+// in full; this is the same door, seen from what they already hold.
+//
 // ── the card can be opened ──────────────────────────────────────────────────
 // Tapping a standing row raises the card: the line you wrote, on the paper it
 // was written on, with the two things you can do to it. Sixty more days, which
@@ -43,7 +59,11 @@ import { atHandle, dateline } from '../wall/data.js'
 import { heldProof, signOut as leaveWall } from '../wall/auth.js'
 import { signOut as dropProof } from '../api/auth.js'
 import { clearPending } from '../wall/handoff.js'
-import { myPings, forgetPings, renew, release, daysLeft, daysLeftWords } from './data.js'
+import {
+  myPings, forgetPings, renew, release, daysLeft, daysLeftWords,
+  revealNight, forgetRevealNight, revealNightWords,
+} from './data.js'
+import { fetchBilling, startCheckout, SLOT_PRICE } from '../api/billing.js'
 import LiquidMark, { warmLiquidMark } from '../wall/LiquidMark.jsx'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
@@ -57,6 +77,12 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
   // keeps the same card open with the new number on it.
   const [open, setOpen] = useState(null)
   const [rev, setRev] = useState(0)
+  // What this person holds against their cap, and whether the door is on.
+  const [billing, setBilling] = useState(null)
+  // When the next reveal night is. The same answer for everyone.
+  const [night, setNight] = useState(null)
+  const [buying, setBuying] = useState(false)
+  const [said, setSaid] = useState('')
   const avoid = useSkyAvoid()
 
   useEffect(() => {
@@ -70,9 +96,51 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
       // A mutual on the sky means the reveal is one tap away, and its seal is
       // the mark poured: have the texture decoded before the tap.
       if (out.pings.some((p) => p.state === 'mutual')) warmLiquidMark()
+      // The meter, off the same proof. Re-read with the list, so a return
+      // through /paid lands on the new cap.
+      if (out.ok) fetchBilling({ handle: who.handle, proof: heldProof(who.handle) }).then((b) => { if (alive) setBilling(b) })
     })
     return () => { alive = false }
   }, [who.handle, who.handleVerified, known, rev])
+
+  // The night. Asked once per tab, and if it comes while the tab is open the
+  // sky reads itself again a beat after, so the rows change without a reload.
+  useEffect(() => {
+    let alive = true
+    let timer = 0
+    revealNight().then((n) => {
+      if (!alive) return
+      setNight(n)
+      if (n?.enabled && n.next > Date.now()) {
+        timer = setTimeout(() => {
+          if (!alive) return
+          forgetRevealNight()
+          setRev((k) => k + 1)
+        }, Math.min(n.next - Date.now() + 1500, 2147483647))
+      }
+    })
+    return () => { alive = false; clearTimeout(timer) }
+  }, [rev])
+
+  // The quiet door. The letter is stashed nowhere from here: there is no
+  // letter, and /paid will offer the sky.
+  const buySlot = async () => {
+    if (buying) return
+    setBuying(true)
+    setSaid('')
+    clearPending()
+    const r = await startCheckout({ handle: who.handle, proof: heldProof(who.handle), kind: 'slot' })
+    if (r.ok) return   // the page is leaving for Stripe
+    setBuying(false)
+    if (r.error === 'unverified') dropProof()
+    setSaid(
+      r.error === 'off' ? 'that door is not open'
+        : r.error === 'unverified' ? 'that proof has lapsed. one more DM proves it again'
+        : r.error === 'at_cap' ? 'you are holding all ten already'
+        : r.error === 'has_plan' ? 'unlimited already covers this'
+        : 'that did not open. nothing was charged.',
+    )
+  }
 
   // The way out of this device. Both halves of the one session: the identity
   // token and the wall's copy of it, and the DM proof, which is a bearer
@@ -157,6 +225,20 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
               : <>Nothing out<br />yet.</>}
           </Display>
 
+          {/* ── the meter, and the night ── */}
+          {(billing?.ok || night?.enabled) && !state.loading ? (
+            <div className="mn-meters">
+              {billing?.ok ? (
+                <Label tone="dim">
+                  {billing.cap == null
+                    ? `${billing.standing} standing · unlimited`
+                    : `${billing.standing} of ${billing.cap} standing`}
+                </Label>
+              ) : null}
+              {night?.enabled ? <Label tone="dim">reveal night · {revealNightWords(night)}</Label> : null}
+            </div>
+          ) : null}
+
           {/* ── the mutuals ──
               First, and set apart, because it is the only thing on this
               screen that is news: it wears the running light, the one the
@@ -195,6 +277,19 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
               place one on somebody. if they place one back, you both find out.
             </Prose>
           ) : null}
+
+          {/* ── the quiet door ──
+              Only at the cap, only with a cap to raise, only with the desk's
+              switch on. Never on the pass: there is nothing to sell. */}
+          {!state.loading && billing?.enabled && billing.cap != null
+            && billing.standing >= billing.cap && billing.cap < 10 ? (
+              <div className="mn-slotline">
+                <button type="button" className="wl-quiet" disabled={buying} onClick={buySlot}>
+                  {buying ? 'one moment' : `extra slot · ${SLOT_PRICE}, once`}
+                </button>
+                {said ? <p className="mn-said" role="status" aria-live="polite">{said}</p> : null}
+              </div>
+            ) : null}
         </div>
 
         <div className="mn-foot">
@@ -219,8 +314,10 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
 // ── the card ────────────────────────────────────────────────────────────────
 // The line, on the paper it was written on, dated the day it was placed and
 // stamped with what is left of the sixty. Renewing is free and reversible, so
-// it is the pill; letting go is the only irreversible act on this screen, so
-// it is the quiet control and it asks once. The confirmation swaps the foot
+// it is the pill, and the pill says so: nothing is spent by it, no slot and no
+// money, and a button that did not say that would leave somebody wondering
+// what it cost. Letting go is the only irreversible act on this screen, so it
+// is the quiet control and it asks once. The confirmation swaps the foot
 // and nothing else: the words are the whole content of the decision.
 function CardSheet({ ping: p, who, onClose, onChange }) {
   const [asking, setAsking] = useState(false)
@@ -278,7 +375,7 @@ function CardSheet({ ping: p, who, onClose, onChange }) {
           ) : (
             <>
               <Pill tone="light" wide disabled={busy || renewed} onClick={keep}>
-                {renewed ? 'renewed' : n >= 60 ? 'standing' : 'sixty more days'}
+                {renewed ? 'renewed' : n >= 60 ? 'standing' : 'sixty more days · free'}
               </Pill>
               <button type="button" className="wl-quiet" onClick={() => setAsking(true)}>let it go</button>
             </>

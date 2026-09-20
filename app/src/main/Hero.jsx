@@ -20,13 +20,14 @@
 // and carry no handle, because a front door that fakes activity is the pattern
 // this product exists to not be.
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Pill, HandleField, HandleCard, Me, Brand, SiteFoot, useResolver, useLookingWords, confirmWord,
 } from '../wall/parts.jsx'
 import { normHandle, validHandle } from '../wall/data.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import Scene from './Scene.jsx'
+import { revealNight, revealNightPhrase } from './data.js'
 import WallNotice from './Notice.jsx'
 import './hero.css'
 
@@ -38,6 +39,15 @@ export default function Hero({ go, who, still = false }) {
   // field is the same act: press the person, place the ping.
   const [to, setTo] = useState('')
   const [said, setSaid] = useState('')
+  // When a mutual opens (migration 0054): the tail of the one mechanic
+  // sentence. Nothing until the answer is in, so the sentence never says a
+  // thing it does not know yet.
+  const [night, setNight] = useState(null)
+  useEffect(() => {
+    let alive = true
+    revealNight().then((n) => { if (alive) setNight(n) })
+    return () => { alive = false }
+  }, [])
   // The headline is what the sky parts round on this screen.
   const avoid = useSkyAvoid()
   // ── the card under the field, and the two presses ──
@@ -115,7 +125,7 @@ export default function Hero({ go, who, still = false }) {
 
           <p className="hm-read hm-mech hm-in" style={{ '--d': '220ms' }}>
             place a ping on somebody&rsquo;s instagram. <b>they are never told.</b> if
-            they place one on you, you both find out at once.
+            they place one on you, you both find out{revealNightPhrase(night)}.
           </p>
 
           <form className="hm-ask hm-in" style={{ '--d': '340ms' }} onSubmit={(e) => { e.preventDefault(); submit() }}>

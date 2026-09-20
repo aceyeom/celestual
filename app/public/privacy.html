@@ -104,6 +104,10 @@
             <dd>Timestamps, rate limit counters, the IP address a request came from, and the record of a screening, a report or a takedown.</dd>
           </div>
           <div>
+            <dt>a purchase</dt>
+            <dd>If you buy an extra slot or the monthly pass: that a purchase happened, its amount, Stripe's own identifiers for it, and the handle it was for. The card goes to Stripe and never to us. Erasing your handle takes it off the purchase record; the amount stays, because accounting needs the number and does not need the person.</dd>
+          </div>
+          <div>
             <dt>a bar</dt>
             <dd>If a handle is taken off, the salted hash of it, so the refusal holds. It contains nothing else.</dd>
           </div>
@@ -135,7 +139,7 @@
           </div>
           <div>
             <dt>a mutual</dt>
-            <dd>While both people hold it. It goes when either of them takes their handle off.</dd>
+            <dd>While both people hold it. It goes when either of them takes their handle off. A mutual opens on the next reveal night, and until then it reads as a standing ping to both people and is told to nobody.</dd>
           </div>
           <div>
             <dt>a letter</dt>
@@ -204,6 +208,7 @@
           <li><strong>Supabase</strong>, the database, the server functions and the file storage.</li>
           <li><strong>Vercel</strong>, which serves the site.</li>
           <li><strong>Resend</strong>, which sends the mail.</li>
+          <li><strong>Stripe</strong>, which takes the payment if you buy an extra slot or the monthly pass. Stripe sees your card, on its own page, and a purchase number. It is never sent your handle, and nothing about any ping exists in what we send it.</li>
           <li><strong>Apify</strong>, for the public profile lookups above.</li>
           <li><strong>Anthropic</strong>, which screens wall letters before they are published. A letter is sent to be read by a model and is not used to train one.</li>
           <li><strong>Meta and ManyChat</strong>, for the Instagram direct messages that prove a handle and carry a mutual. Your use of Instagram stays under Instagram's own terms.</li>

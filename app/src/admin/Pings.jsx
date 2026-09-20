@@ -69,6 +69,7 @@ export default function Pings({ password, go, onLock }) {
         <Ledger>
           <Figure n={c.standing} of="standing now" />
           <Figure n={c.pairs} of="mutual pairs" live={!!c.pairs} />
+          <Figure n={c.held} of="held for the night" live={!!c.held} />
           <Figure n={c.placed_7d} of="placed this week" />
           <Figure n={c.mutual_7d} of="mutual this week" live={!!c.mutual_7d} />
           <Figure n={c.lapsing_7d} of="lapse within a week" />
@@ -81,7 +82,9 @@ export default function Pings({ password, go, onLock }) {
       <Note>
         a standing ping stands sixty days and then lapses; the hourly sweep clears lapsed
         ones, so a lapsed row here is one the sweep has not reached. a mutual is the only
-        row that names two people, and it names them because both already know.
+        row that names two people, and it names them because both already know, or will on
+        the night: a held pair opens on reveal night and reads as standing to both of them
+        until then. this desk is the one place that can see it early.
       </Note>
 
       {busy && !page ? <Empty>reading</Empty> : page?.error ? <Fault error={page.error} /> : rows.length === 0 ? (
@@ -97,7 +100,7 @@ export default function Pings({ password, go, onLock }) {
                 <th>line</th>
                 <th className="is-num">days left</th>
                 <th>placed</th>
-                <th>mutual since</th>
+                <th>mutual</th>
               </tr>
             </thead>
             <tbody>
@@ -117,7 +120,12 @@ export default function Pings({ password, go, onLock }) {
                   <td>{p.has_line ? <State tone="is-live">a line</State> : <None />}</td>
                   <td className="is-num">{p.state === 'standing' ? p.days_left : ''}</td>
                   <td><When at={p.created_at} /></td>
-                  <td><When at={p.matched_at} /></td>
+                  <td>
+                    {p.state !== 'mutual' ? ''
+                      : p.open === false
+                        ? <span className="ad-id is-dim">opens <When at={p.reveal_at} exact /></span>
+                        : <When at={p.matched_at} />}
+                  </td>
                 </tr>
               ))}
             </tbody>

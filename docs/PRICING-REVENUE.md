@@ -37,14 +37,16 @@ runs out of slots there, it previews a realistic one-time fourth-slot checkout
 so the eventual shape is visible without waking anything real (no card is read,
 nothing is charged, the sandbox says so on its face). Production stays dormant.
 
-**Where the plumbing now stands (migration 0021).** "Plumbed and dormant" is
-literal as of the Stripe build: the entitlement layer, the two edge functions and
-Screen 9's second door all exist and are all **off**, behind
-`VITE_STRIPE_ENABLED=0`. Production still shows one door and still mentions money
-nowhere. Turning the flag on is the wake decision below, taken deliberately and
-recorded here; turning it back off is one variable and a redeploy, and costs
-nobody what they already bought. The step-by-step is
-[STRIPE-SETUP.md](./STRIPE-SETUP.md).
+**Where the plumbing now stands (migrations 0021 and 0053).** The entitlement
+layer and the two edge functions have stood since 0021. The client half was
+deleted with the September rebuild and rebuilt on 20 September 2026 in
+`app/src/main/` (the two doors on the letter, the quiet line on the sky, the
+`/paid` return), behind a switch at the desk rather than a build flag:
+`billing_enabled`, read by the server on every request, off by default. Turning
+it on is the wake decision below, taken at `/admin → settings → the money` and
+recorded in the desk's log; turning it back off is the same tap, and costs nobody
+what they already bought. The step-by-step is [STRIPE-SETUP.md](./STRIPE-SETUP.md).
+The wake itself is recorded in §7.
 
 ## §2 — What is free, explicitly, forever
 
@@ -90,9 +92,10 @@ one time, repeatable to a ceiling of ten. The free cap is 2, which is what the
 client had always shown. Runbook: [STRIPE-SETUP.md](./STRIPE-SETUP.md).
 
 **The one place the shipped shape argues with §1 and §5: the monthly plan.**
-`$12.99/month` for ten standing pings, each held six months, has been in the
-`/demo` sandbox for a while and is now buildable in production behind its own
-second flag (`VITE_STRIPE_PLAN`, default `0`). §1 argues against exactly this and
+`$12.99/month`, sold as **unlimited** (no cap on standing pings, each held six
+months; the pacing rule against sweeping still applies), is built in production
+behind its own second switch at the desk (`billing_plan_enabled`, off by
+default). §1 argues against exactly this and
 §5 rejects "any subscription" outright, on grounds that have not changed: an
 episodic product does not fit a recurring charge, and churn on a few-moments-a-year
 product is a resentment machine. So the plan is **not** endorsed by this
@@ -140,6 +143,26 @@ No paid staff assumed. The architecture (SPA + Supabase, no app servers) makes
 | Ads | Torches intimacy for pennies; Meta-adjacent data optics |
 | Urgency mechanics, pay-to-reveal-early | Poisons sincerity; banned at the copy level (VOICE §5) |
 | Charging the Target for anything (incl. opt-out) | Existential violation |
+
+## §7 — The wake (20 September 2026)
+
+The founder turned the door on. What is sold, by the names people read:
+
+| Name | What it is | Price | Switch |
+| --- | --- | --- | --- |
+| **extra slot** | one more standing ping at once, kept for good, repeatable to ten | $2.99, once | `billing_enabled` |
+| **unlimited** | no cap on standing pings, each held six months | $12.99 a month | `billing_plan_enabled` (off at launch, and §5 still argues against it) |
+
+Where the door is, and only there: the letter, the moment a placement is refused
+for want of a slot ("let one go" is the pill, the paid line sits under it), and
+one quiet line on the sky for a person holding their cap. The `/paid` return
+resumes the letter. Nothing on the front door, the reveal, the opt out, renewal
+or the wall; the §5 rejections stand.
+
+In the same pass the reveal moved to **reveal night** (migration 0054): a mutual
+opens at the next Saturday 9 pm Pacific, one instant for everybody, and until then
+looks like two standing pings to both people. That is a product decision rather
+than a pricing one, and it is recorded here because the two shipped together.
 
 ## §6 — What to measure instead of revenue
 

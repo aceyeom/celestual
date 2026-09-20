@@ -12,13 +12,14 @@
 // No routing library. App.jsx matches location.pathname by hand and the wall
 // does the same, so this does too and adds nothing to a dependency tree the
 // rest of the product is judged from.
-export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin']
+export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin', 'paid']
 
 // The addresses Main does not draw. The wall's, the old printed address that
 // rewrites onto it, the signature preview, the desk, and the three legal pages
 // that a Vercel rewrite serves as static HTML before this bundle is reached.
 // `paid` was on this list while the retired design still served the Stripe
-// return; both went on 4 September, and anything not claimed by another shell
+// return; both went on 4 September. It is Main's own address again since the
+// paid door came back (Paid.jsx), and anything not claimed by another shell
 // draws the not found below.
 export const NOT_OURS = new Set([
   'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
@@ -51,6 +52,9 @@ export function parse(pathname) {
     case 'optout': return { name: 'optout' }
     case 'copy':   return { name: 'copy' }
     case 'signin': return { name: 'signin' }
+    // Back from Stripe's page, paid or not. The session id rides the query,
+    // and Paid.jsx takes it out of the address bar on arrival.
+    case 'paid':   return { name: 'paid' }
     default:       return null
   }
 }

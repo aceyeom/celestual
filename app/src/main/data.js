@@ -6,7 +6,7 @@
 // months. So this module is thin on purpose. It shapes what those RPCs return
 // into what these screens draw, and it does not reimplement any of it.
 //
-import { placePing, fetchMyPings, renewPing, retirePing, normHandle, PING_DAYS } from '../api/celestual.js'
+import { placePing, fetchMyPings, renewPing, retirePing, fetchRevealNight, normHandle, PING_DAYS } from '../api/celestual.js'
 import { heldProof } from '../wall/auth.js'
 import { whoami, ANON } from '../api/identity.js'
 import { getSession } from '../api/auth.js'
@@ -117,6 +117,8 @@ function shapePing(p) {
     state: p.mutual ? 'mutual' : 'standing',
     at: Number(p.time) || 0,
     expires: Date.parse(p.expires_at || 0) || 0,
+    // When it opened (0054). Only on a mutual row.
+    revealedAt: Date.parse(p.revealedAt || 0) || 0,
     line: p.card?.words || '',
     theirLine: p.theirCard?.words || '',
     // The moment it opened is not on the wire either. A mutual opens when the
@@ -182,6 +184,87 @@ export async function release({ me: mine, them }) {
   } catch {
     return false
   }
+}
+
+// ── reveal night ────────────────────────────────────────────────────────────
+// When the next night is (migration 0054), and the words the sky says about
+// it. Asked once per tab: the night does not move while somebody looks at it.
+let NIGHT = null
+let ASKING = null
+
+export function revealNight() {
+  if (NIGHT) return Promise.resolve(NIGHT)
+  if (!ASKING) ASKING = fetchRevealNight().then((r) => { NIGHT = r; return r })
+  return ASKING
+}
+
+// The night has come while a tab was open: the next ask is for the next one.
+export function forgetRevealNight() {
+  NIGHT = null
+  ASKING = null
+}
+
+const partsIn = (ms, timeZone) => {
+  try {
+    const f = new Intl.DateTimeFormat('en-US', {
+      timeZone, weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: true,
+    })
+    return Object.fromEntries(
+      f.formatToParts(new Date(ms)).filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]),
+    )
+  } catch {
+    return null
+  }
+}
+
+// "9 pm", "9:30 pm", "midnight", "noon". The product's clocks read like this
+// everywhere a person is told a time.
+const clock = (p) => {
+  const h = p.hour, m = p.minute, ap = String(p.dayPeriod || '').toLowerCase()
+  const t = m === '00' ? `${h} ${ap}` : `${h}:${m} ${ap}`
+  return t === '12 am' ? 'midnight' : t === '12 pm' ? 'noon' : t
+}
+
+// The zone as a person would say it. Los Angeles is "pacific" because that is
+// what the product is set to and what a campus says; anything else is its
+// city, which is what the setting names.
+const zoneWord = (tz) => (tz === 'America/Los_Angeles' ? 'pacific'
+  : String(tz || '').split('/').pop().replace(/_/g, ' ').toLowerCase())
+
+// "saturday 9 pm pacific · midnight your time". The second half only when the
+// viewer's clock is not California's, and its weekday only when that differs
+// too, because "saturday 9 pm pacific · sunday 5 am your time" is the true
+// sentence for somebody in London and "saturday midnight your time" is the
+// true one for somebody in New York.
+export function revealNightWords({ next, tz } = {}) {
+  if (!next) return ''
+  const there = partsIn(next, tz)
+  if (!there) return ''
+  let s = `${String(there.weekday || '').toLowerCase()} ${clock(there)} ${zoneWord(tz)}`
+  let mine
+  try { mine = Intl.DateTimeFormat().resolvedOptions().timeZone || '' } catch { mine = '' }
+  if (mine && mine !== tz) {
+    const here = partsIn(next, mine)
+    if (here) {
+      const day = String(here.weekday || '').toLowerCase()
+      const sameDay = day === String(there.weekday || '').toLowerCase()
+      s += ` · ${sameDay ? '' : `${day} `}${clock(here)} your time`
+    }
+  }
+  return s
+}
+
+// The tail of "you both find out": " on saturday night" while reveal night is
+// on, " at once" when it is off, and nothing at all until the answer is in,
+// so a sentence never says a thing it does not know yet.
+export function revealNightPhrase(n) {
+  if (!n) return ''
+  if (!n.enabled || !n.next) return ' at once'
+  const there = partsIn(n.next, n.tz)
+  if (!there) return ''
+  const day = String(there.weekday || '').toLowerCase()
+  const h = Number(n.hour)
+  return h >= 17 || h < 4 ? ` on ${day} night` : ` on ${day} at ${clock(there)} ${zoneWord(n.tz)}`
 }
 
 // ── time, in words ──────────────────────────────────────────────────────────

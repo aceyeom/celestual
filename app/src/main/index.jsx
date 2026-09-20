@@ -41,6 +41,7 @@ import Reveal from './Reveal.jsx'
 import Optout from './Optout.jsx'
 import Copy from './Copy.jsx'
 import Signin from './Signin.jsx'
+import Paid from './Paid.jsx'
 import NotFound from './NotFound.jsx'
 import { me as whoAmI } from './data.js'
 import { ANON } from '../api/identity.js'
@@ -139,6 +140,7 @@ export default function MainApp() {
           : route.name === 'optout' ? <Optout {...shared} />
           : route.name === 'copy' ? <Copy {...shared} />
           : route.name === 'signin' ? <Signin {...shared} />
+          : route.name === 'paid' ? <Paid {...shared} />
           : route.name === 'missing' ? <NotFound {...shared} />
           : <Hero {...shared} />
       )}

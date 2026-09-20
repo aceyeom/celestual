@@ -9,6 +9,9 @@
 //   the release gate    whether placing a ping needs the DM proof on the server
 //   the resolver        on or off, and the four caps that bound the apify bill
 //   the letters         whether the writer's allowance is counted, and at what
+//   the money           the paid door and the monthly pass (0053)
+//   reveal night        when a mutual opens: the switch, the day, the hour,
+//                       the zone (0054)
 //   the campuses        which walls are open
 //   the log             what the desk did, and when
 //
@@ -45,6 +48,9 @@ export default function Settings({ password, overview, onChanged, onLock }) {
         cap_global: String(s.settings.cap_global), cap_user: String(s.settings.cap_user),
         cap_device: String(s.settings.cap_device), cap_ip: String(s.settings.cap_ip),
         wall_letter_allowance: String(s.settings.wall_letter_allowance),
+        reveal_dow: String(s.settings.reveal_dow ?? 6),
+        reveal_hour: String(s.settings.reveal_hour ?? 21),
+        reveal_tz: String(s.settings.reveal_tz ?? 'America/Los_Angeles'),
       })
     }
     setLog(l && l.ok ? l : { rows: [], error: l?.error || 'network' })
@@ -59,7 +65,12 @@ export default function Settings({ password, overview, onChanged, onLock }) {
     const r = await deskSettingSet(password, key, value)
     setSaving('')
     if (!r?.ok) {
-      setSaid(r?.error === 'bad_value' ? 'that is not a number the cap can take' : failWord(r))
+      setSaid(r?.error === 'bad_value'
+        ? (key === 'reveal_tz' ? 'that is not a zone the server knows'
+          : key === 'reveal_dow' ? 'a day is 0 for sunday through 6 for saturday'
+            : key === 'reveal_hour' ? 'an hour is 0 through 23'
+              : 'that is not a number the cap can take')
+        : failWord(r))
       if (r?.error === 'password') onLock && onLock()
       return
     }
@@ -203,6 +214,110 @@ export default function Settings({ password, overview, onChanged, onLock }) {
                 </Btn>
               </div>
             </div>
+          </div>
+
+          {/* ── the money ──
+              The paid door (migration 0053). Off, nothing in the product
+              mentions money and the server refuses to begin a checkout; on,
+              a person holding their cap sees a second door under "let one
+              go". The pass is its own switch and its own argument. */}
+          <div className="ad-head is-sub">
+            <h2>the money</h2>
+            <span className="ad-head-note">the paid door. off, nothing in the product mentions money.</span>
+          </div>
+          <div className="ad-rows">
+            <div className="ad-row">
+              <div className="ad-row-l">
+                <div className="ad-row-t">the paid door</div>
+                <Note>
+                  on, a person holding their cap sees a second door under &ldquo;let one go&rdquo;: an extra slot,
+                  $2.99, once, and the server will begin a checkout. off, the letter and the sky show the free door
+                  only and the server refuses to begin one. it changes no price and takes back nothing already
+                  bought. the stripe secrets and the two functions have to be live first (docs/STRIPE-SETUP.md).
+                </Note>
+              </div>
+              <Toggle
+                on={s.billing_enabled === 'true'}
+                busy={saving === 'billing_enabled'}
+                onChange={(v) => set('billing_enabled', v ? 'true' : 'false')}
+                words={['on. the paid door is drawn', 'off. let one go is the only door']}
+              />
+            </div>
+            <div className="ad-row">
+              <div className="ad-row-l">
+                <div className="ad-row-t">unlimited</div>
+                <Note>
+                  the monthly pass, $12.99: no cap on standing pings, each held six months. its own decision, and
+                  docs/PRICING-REVENUE.md still argues against it. needs the paid door on and STRIPE_PRICE_STEADY set
+                  on the function. off, the slot is the only thing for sale.
+                </Note>
+              </div>
+              <Toggle
+                on={s.billing_plan_enabled === 'true'}
+                busy={saving === 'billing_plan_enabled'}
+                onChange={(v) => set('billing_plan_enabled', v ? 'true' : 'false')}
+                words={['on. the pass is offered', 'off. the slot only']}
+              />
+            </div>
+          </div>
+
+          {/* ── reveal night ──
+              When a mutual opens (migration 0054). On, a pair that becomes
+              mutual is held until the next night and both people find out at
+              once; off, it opens the instant the second ping lands, as it
+              used to. A change takes for matches made after it; a pair
+              already scheduled keeps its night. */}
+          <div className="ad-head is-sub">
+            <h2>reveal night</h2>
+            <span className="ad-head-note">
+              {data.next_reveal ? <>the next one is <When at={data.next_reveal} exact /></> : 'off. a mutual opens at once.'}
+            </span>
+          </div>
+          <div className="ad-rows">
+            <div className="ad-row">
+              <div className="ad-row-l">
+                <div className="ad-row-t">the night</div>
+                <Note>
+                  on, a match is held until the night and looks like two standing pings to both people until then:
+                  the sky, the meter, renewing and letting go all behave as if nothing happened, and the mail and the
+                  DM go out on the night. off, a match opens and mails the instant it happens. a pair already
+                  scheduled keeps its night either way.
+                </Note>
+              </div>
+              <Toggle
+                on={s.reveal_night !== 'false'}
+                busy={saving === 'reveal_night'}
+                onChange={(v) => set('reveal_night', v ? 'true' : 'false')}
+                words={['on. mutuals open on the night', 'off. mutuals open at once']}
+              />
+            </div>
+            {[
+              ['reveal_dow', 'the day', '0 is sunday, 6 is saturday. the night is the next one after a match, in the zone below.'],
+              ['reveal_hour', 'the hour', '0 through 23, on the wall clock of the zone below. 21 is nine in the evening.'],
+              ['reveal_tz', 'the zone', 'an IANA name the server knows, like America/Los_Angeles. the sky shows this clock and, when the viewer\'s differs, theirs too.'],
+            ].map(([key, word, why]) => (
+              <div className="ad-row" key={key}>
+                <div className="ad-row-l">
+                  <div className="ad-row-t">{word}</div>
+                  <Note>{why}</Note>
+                </div>
+                <div className="ad-row-r">
+                  <Field
+                    label="" value={caps[key] ?? ''}
+                    onChange={(v) => setCaps((c) => ({ ...c, [key]: key === 'reveal_tz' ? v.replace(/[^A-Za-z0-9_+/-]/g, '') : v.replace(/[^0-9]/g, '') }))}
+                    id={`cap-${key}`}
+                    hint={String(data.defaults[key]) !== String(s[key]) ? `default ${data.defaults[key]}` : 'the default'}
+                  />
+                  <Btn
+                    tone="key"
+                    disabled={saving === key || String(caps[key]) === String(s[key]) || !caps[key]}
+                    onClick={() => set(key, caps[key])}
+                  >
+                    {saving === key ? 'saving' : 'save'}
+                  </Btn>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* ── the caps ── */}

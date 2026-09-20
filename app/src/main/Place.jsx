@@ -48,6 +48,17 @@
 // ping under a name the person did not sign. A handle on the desk's pass
 // list (0043) is proved on the spot and the door is never drawn.
 //
+// ── the paid door ───────────────────────────────────────────────────────────
+// A placement refused for want of a slot used to be one line. With the desk's
+// switch on (migration 0053) it is a screen with two doors: "let one go", the
+// pill, free and first, and under it the quiet line that adds a slot for
+// $2.99, once (api/billing.js). Before the browser leaves for Stripe's page the
+// letter is stashed under `use: 'paid'`, the same slot the DM code uses, so
+// /paid can hand the person back to this screen with the name, the words and
+// the signature where they were. Nothing here changes what the server
+// enforces: the cap is read in celestual_submit, and the refusal is where the
+// door is drawn.
+//
 // ── what this screen never does ─────────────────────────────────────────────
 // It does not say whether the person is on celestual. It does not say whether
 // they have pinged anybody. It does not say whether anybody has pinged them.
@@ -65,7 +76,8 @@ import { startHandoff, pollHandoff, savePending, loadPending, clearPending } fro
 import { heldProof } from '../wall/auth.js'
 import { getState, patch } from '../wall/store.js'
 import { signOut as dropProof } from '../api/auth.js'
-import { place } from './data.js'
+import { place, revealNight, revealNightPhrase } from './data.js'
+import { fetchBilling, startCheckout, SLOT_PRICE, PLAN_PRICE } from '../api/billing.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
 
@@ -94,6 +106,18 @@ function resume(prefill) {
   return p
 }
 
+// The letter a person left for Stripe's page (the paid door below), resumed
+// when /paid hands them back. Only for the name it was written to, like a
+// live code: a fresh /@handle link is a different ping and wins.
+function resumeLetter(prefill) {
+  const p = loadPending()
+  if (!p || p.use !== 'paid' || !p.to) return null
+  if (prefill && normHandle(p.to) !== normHandle(prefill)) return null
+  return p
+}
+
+const WORDS = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
 // The one line under the paper, and only when there is one: the thing that
 // stops the letter going. Nothing when it would go.
 function floorFor(line) {
@@ -107,13 +131,21 @@ function floorFor(line) {
 export default function Place({ go, who, refreshWho, to: prefill }) {
   const wrote = getState().wroteTo || []
   const [held] = useState(() => resume(prefill))
-  const [to, setTo] = useState(() => prefill || held?.to || '')
-  const [line, setLine] = useState(() => held?.line || '')
+  const [letter] = useState(() => resumeLetter(prefill))
+  const [to, setTo] = useState(() => prefill || held?.to || letter?.to || '')
+  const [line, setLine] = useState(() => held?.line || letter?.line || '')
   // The signature. Prefilled from the identity row when the browser already
   // has one, and never seeded off the recipient.
-  const [mine, setMine] = useState(() => held?.mine || who.handle || '')
-  const [step, setStep] = useState(() => (held || prefill ? 1 : 0))
+  const [mine, setMine] = useState(() => held?.mine || letter?.mine || who.handle || '')
+  const [step, setStep] = useState(() => (held || letter || prefill ? 1 : 0))
+  // The DM door resumes a live code and nothing else: a stashed letter has
+  // no code on it, and drawing the door over one would draw it empty.
   const [dm, setDm] = useState(() => held)
+  // The slots are full and the desk's switch is on: the two doors, with what
+  // the person holds and which door is offered. Null is the one line refusal.
+  const [full, setFull] = useState(null)
+  // What the next reveal night is, for the one sentence after it is out.
+  const [night, setNight] = useState(null)
   // Set when the DM came from an account other than the one signed. The
   // webhook's answer is the identity (0012), so the choice is not whether to
   // believe it: it is whether to place THIS ping under a name the person did
@@ -136,6 +168,12 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   useEffect(() => {
     alive.current = true
     return () => { alive.current = false }
+  }, [])
+
+  useEffect(() => {
+    let on = true
+    revealNight().then((n) => { if (on) setNight(n) })
+    return () => { on = false }
   }, [])
 
   // whoami lands after the first paint, so the signature fills in when it
@@ -181,9 +219,24 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       // and the letter asks for the DM again rather than saying "prove it
       // again" over a screen with no way to.
       if (out.error === 'unverified') dropProof()
+      // Full. With the desk's switch on this is the two door screen; with it
+      // off, or with no ceiling left to raise, the one line it always was.
+      if (out.error === 'no_slots' || out.error === 'cap') {
+        const b = await fetchBilling({ handle: mineNow, proof: proof || heldProof(mineNow) })
+        if (!alive.current) return
+        const cap = typeof out.slots?.cap === 'number' ? out.slots.cap : b.cap
+        if (b.enabled && typeof cap === 'number' && cap < 10) {
+          setFull({
+            standing: typeof out.slots?.standing === 'number' ? out.slots.standing : b.standing,
+            cap, plan: b.planOffered, from: mineNow, proof: proof || null,
+          })
+          return
+        }
+        setSaid('you have as many out as you can hold')
+        return
+      }
       setSaid(
-        out.error === 'no_slots' || out.error === 'cap' ? 'you have as many out as you can hold'
-          : out.error === 'self' ? 'you cannot place one on yourself'
+        out.error === 'self' ? 'you cannot place one on yourself'
           : out.error === 'suppressed' ? 'that name has asked to be left alone'
           : out.error === 'unverified' ? 'that proof has lapsed. one more DM proves it again'
           : out.error === 'rate_limited' ? 'that is a lot of pings for one month. give it time'
@@ -240,6 +293,40 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
   }
 
   const drop = () => { clearPending(); setDm(null); setAdopted(null); setNote('') }
+
+  // ── the paid door ──
+  // The letter, kept for the way back. The record has to satisfy the same
+  // gates a DM code record does (api/igverify.js: a token, a proof, a hash,
+  // an expiry), so it carries placeholders: nothing reads them off a 'paid'
+  // record, and the real proof already lives where it always has.
+  const stash = (kind) => {
+    savePending({
+      use: 'paid', token: 'paid', proof: 'paid', proofHash: 'paid',
+      expiresAt: new Date(Date.now() + 2 * 3600e3).toISOString(),
+      to: h, line: line.trim(), mine: full?.from || me, kind: kind || null,
+    })
+  }
+  const buy = async (kind) => {
+    if (busy || !full) return
+    setBusy(true)
+    setSaid('')
+    stash(kind)
+    const r = await startCheckout({ handle: full.from, proof: full.proof || heldProof(full.from), kind })
+    if (!alive.current) return
+    if (r.ok) return   // the page is leaving for Stripe
+    clearPending()
+    setBusy(false)
+    if (r.error === 'unverified') dropProof()
+    setSaid(
+      r.error === 'off' ? 'that door is not open'
+        : r.error === 'unverified' ? 'that proof has lapsed. one more DM proves it again'
+        : r.error === 'at_cap' ? 'you are holding all ten already'
+        : r.error === 'has_plan' ? 'unlimited already covers this'
+        : r.error === 'suppressed' ? 'that name has asked to be left alone'
+        : r.error === 'rate' ? 'too many tries. give it an hour'
+        : 'that did not open. nothing was charged.',
+    )
+  }
 
   useEffect(() => {
     if (!dm) return undefined
@@ -333,7 +420,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
           <Display size="m" as="h1" ref={avoid}>It&rsquo;s out.</Display>
           <Prose className="mn-copy">
             sixty days on <span className="sg-h">{atHandle(done.to)}</span>. if they place
-            one back, you both find out.
+            one back, you both find out{revealNightPhrase(night)}.
           </Prose>
           <div className="mn-placed-mark"><Face handle={done.to} size={64} /></div>
         </div>
@@ -343,10 +430,44 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             // The address still carried the last person. A refresh here used
             // to reopen them at the letter under "place another".
             window.history.replaceState(window.history.state, '', '/place')
-            setDone(null); setTo(''); setLine(''); setStep(0); setAdopted(null)
+            clearPending()
+            setDone(null); setTo(''); setLine(''); setStep(0); setAdopted(null); setFull(null)
           }}>
             place another
           </button>
+        </div>
+      </main>
+    )
+  }
+
+  // ── full, and the two doors ──
+  // "let one go" is the pill and it is free, always. The paid line sits under
+  // it, quiet, and the plan under that when the desk offers it. Both stash
+  // the letter first: the sky and Stripe's page are both a trip away from it.
+  if (full) {
+    return (
+      <main className="mn-page mn-place">
+        <TopBar go={go} who={who} />
+        <div className="mn-mid">
+          <Display size="m" as="h1" ref={avoid}>
+            You&rsquo;re holding<br />{WORDS[full.standing] || full.standing}.
+          </Display>
+          <Prose className="mn-copy">
+            that&rsquo;s as many as you can hold at once. let one go and this one goes out
+            today, or add a slot.
+          </Prose>
+          <p className="mn-said" role="status" aria-live="polite">{said}</p>
+        </div>
+        <div className="mn-foot">
+          <Pill tone="light" wide disabled={busy} onClick={() => { stash(null); go('sky') }}>let one go</Pill>
+          <button type="button" className="wl-quiet" disabled={busy} onClick={() => buy('slot')}>
+            {busy ? 'one moment' : `extra slot · ${SLOT_PRICE}, once`}
+          </button>
+          {full.plan ? (
+            <button type="button" className="wl-quiet" disabled={busy} onClick={() => buy('steady')}>
+              unlimited · {PLAN_PRICE} a month
+            </button>
+          ) : null}
         </div>
       </main>
     )

@@ -770,8 +770,8 @@ were flagged as being `0` in production and all three are load bearing now:
 Turn the first two on with the rebuild. Turn the third on after the billing
 pilot in section 3b.
 | `VITE_EDU_VERIFY_ENABLED` | 0 | must become 1. Spec section 3 requires a verified `.edu` for the Wall. |
-| `VITE_STRIPE_ENABLED` | 0 | blocked on Q3 |
-| `VITE_STRIPE_PLAN` | 0 | blocked on Q3 |
+| `VITE_STRIPE_ENABLED` | gone | the paid door is a desk switch since 0053 (`/admin → settings → the money`), not a build flag. docs/STRIPE-SETUP.md |
+| `VITE_STRIPE_PLAN` | gone | same: `billing_plan_enabled` at the desk |
 
 Three of these being `0` in production is worth flagging now: the Instagram DM
 verification, the `.edu` gate, and the handle resolver are all currently off.

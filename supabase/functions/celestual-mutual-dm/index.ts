@@ -28,6 +28,11 @@
 // safe to invoke by pg_cron, a Database Webhook on insert to
 // celestual_dm_outbox, or by hand. Nothing is sent twice.
 //
+// Since 0054 a match is held until reveal night and its rows are written on
+// the night by celestual_reveal_sweep(). This function runs the sweep first
+// thing, before the token check, so a project with no ManyChat token and no
+// cron still writes the night's mail rows for celestual-notify.
+//
 // Required secret (Supabase → Edge Functions → Secrets):
 //   MANYCHAT_API_TOKEN    — ManyChat → Settings → API → your API key (Pro plan).
 //                           This is the ONLY thing that can send a DM without
@@ -56,6 +61,15 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === 'GET') {
     return json({ ok: true, service: 'celestual-mutual-dm', configured: MANYCHAT_API_TOKEN !== '' });
+  }
+
+  // Reveal night: write the rows for any pair whose night has come (0054).
+  // A missing function (an older database) is not a reason to stop draining.
+  try {
+    const { error: sweepErr } = await supabase.rpc('celestual_reveal_sweep');
+    if (sweepErr) console.error('reveal sweep', sweepErr.message);
+  } catch (e) {
+    console.error('reveal sweep threw', String(e));
   }
 
   // No token, no push — and that is a working configuration, not a broken one:

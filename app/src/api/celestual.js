@@ -2,8 +2,9 @@
 //
 // The mechanism: placePing records a one-way ping at @them. It resolves ONLY
 // if they independently ping you back, and then both of you learn at the same
-// instant. Two standing pings; each stands sixty days unless renewed; letting
-// one go frees the slot. Matching and suppression run on salted hashes, and
+// instant, on the next reveal night (migration 0054). Two standing pings free,
+// more with an extra slot (0053); each stands sixty days unless renewed;
+// letting one go frees the slot. Matching and suppression run on salted hashes, and
 // since migration 0010 the server also keeps the normalised target so the
 // owner's pings restore BY NAME on any device they verify on.
 //
@@ -84,6 +85,9 @@ export async function fetchMyPings({ handle, proof } = {}) {
         time: Number(p.time) || Date.now(),
         expires_at: p.expires_at || null,
         mutual: !!p.mutual,
+        // When it opened (0054): the night, or the match for a pair from
+        // before there were nights. Only ever on a mutual row.
+        revealedAt: p.revealed_at || null,
         card: p.card || null,
         theirCard: p.their_card || null,
         // The resolver's answer for the handle, when it has one (0042), so
@@ -96,6 +100,29 @@ export async function fetchMyPings({ handle, proof } = {}) {
     };
   } catch {
     return { ok: false, error: 'network', pings: [] };
+  }
+}
+
+// ── reveal night (migration 0054) ────────────────────────────────────────────
+// When the next night is. The same answer for everyone, whether or not
+// anything is waiting for them, which is what makes it safe to draw: nothing
+// personal rides on it. Returns { enabled, next (ms), tz, dow, hour }, or
+// enabled:false when nothing answers, so the sky draws nothing rather than a
+// guess.
+export async function fetchRevealNight() {
+  if (!hasSupabase) return { enabled: false, next: 0, tz: 'America/Los_Angeles', dow: 6, hour: 21 };
+  try {
+    const { data, error } = await supabase.rpc('celestual_reveal_night');
+    if (error || !data || !data.enabled) return { enabled: false, next: 0, tz: 'America/Los_Angeles', dow: 6, hour: 21 };
+    return {
+      enabled: true,
+      next: Date.parse(data.next || 0) || 0,
+      tz: String(data.tz || 'America/Los_Angeles'),
+      dow: Number(data.dow) || 0,
+      hour: Number(data.hour) || 0,
+    };
+  } catch {
+    return { enabled: false, next: 0, tz: 'America/Los_Angeles', dow: 6, hour: 21 };
   }
 }
 
