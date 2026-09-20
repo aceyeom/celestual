@@ -242,7 +242,8 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
-- `migrations/0052_the_cap_comes_off.sql`: **the writer's allowance is a row
+- `migrations/0052_the_cap_comes_off.sql` (**applied 20 September 2026**, in
+  the history as `the_cap_comes_off`): **the writer's allowance is a row
   now, and the desk holds the switch.** The three and the number behind it
   move out of the function body into `celestual_settings`, where the resolver
   and the apify caps have lived since 0039: `wall_letter_cap` ('true' /

@@ -1190,8 +1190,11 @@ letter where it stands, and a name that has come off the wall are all exactly
 where they were. The eight free reads are a different allowance and are not on
 this switch.
 
-1. **Apply `0052_the_cap_comes_off.sql`.** Through the Supabase MCP, or paste
-   it into the SQL editor. It adds `wall_letter_cap_on()`, re-emits
+1. **Apply `0052_the_cap_comes_off.sql`.** Applied 20 September 2026, through
+   the Supabase MCP, and recorded in the migration history as
+   `the_cap_comes_off`. `wall_letter_cap_on()` answers false, the allowance
+   row reads 3 and the window is still five days, and `wall_quota` answers a
+   stranger `capped: false`. It adds `wall_letter_cap_on()`, re-emits
    `wall_letter_allowance()` off `celestual_setting_int` (`stable` rather than
    `immutable` now, the same change `handle_search_limit` made in 0039), puts
    `wall_letter_cap` and `wall_letter_allowance` on the desk's whitelist, and
@@ -1202,7 +1205,11 @@ this switch.
    Verified by `scripts/verify-migrations.sh --test`
    (`test-reading-room.sql`, section 7).
 2. **Deploy the app.** Vercel, as usual. It carries the desk's two new rows on
-   the settings screen, under `the letters`.
+   the settings screen, under `the letters`. Nothing waits on it: the cap is
+   already off in the database, and until the deploy the switch is one call to
+   `celestual_desk_setting_set` in the SQL editor. `celestual-wall-moderate`
+   needs no redeploy at all — it asks `wall_write`, which is where the count
+   was and where the switch now is.
 
 Order does not matter, and that is the point of the shape `wall_quota`
 answers in. A migration applied before the app leaves the old composer reading
