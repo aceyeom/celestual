@@ -242,9 +242,31 @@ Idempotent migrations, applied in order:
   the cache in one call, service role only, for the edge function's batched
   peek. **Tested by `scripts/sql/test-hearts.sql`, 31 assertions.**
 
-- `migrations/0054_the_search_hears_a_name.sql`: **the search hears a
-  name.** `wall_search` re-emitted over `wall_index` and nothing else: the
-  handle (exact, prefix, contains), the handle with its dots out, and the
+- `migrations/0055_the_letter_has_a_look.sql` (**applied 20 September 2026**,
+  through the Supabase MCP): **the letter has a look, and a name can be
+  anything.** `wall_letters` gains `look`, one jsonb of up to three slugs,
+  `{theme, tint, face}`, null for the plain paper, held by
+  `wall_letters_look_ck` to what `wall_look_clean` answers, so a row can never
+  hold a string, a colour, a link or a fourth key. The catalogue of what a
+  slug draws is the browser's (`app/src/wall/looks.js`), so a new look is a
+  client change and a slug an old build does not know draws the plain paper.
+  `wall_index` appends `look`, the newest letter's under the key, which is the
+  paper the name's disc draws; `wall_write` gains an eleven argument overload
+  with `p_look` (the ten and the eight argument forms stay and call it);
+  `wall_letters_for`, `wall_letter`, `wall_mine`, `wall_search` and
+  `celestual_desk_letters` carry it. The name is widened with it: `wall_fold`
+  admits any letter, `wall_name_key` needs one character, `wall_name_clean`
+  admits one to thirty characters, five words and digits and refuses only the
+  characters that make a string a handle, a link or a command, and the two
+  checks on `wall_letters` are re-emitted to match. What the wall discloses
+  does not change: a look is a choice from a menu every writer shares, and a
+  takedown takes it with the letter (docs/WALL-FEATURES.md records the
+  ruling). **Tested by `scripts/sql/test-looks.sql`**, and four assertions in
+  `test-names.sql` turned for the wider name.
+- `migrations/0054_the_search_hears_a_name.sql` (**applied 20 September 2026**,
+  through the Supabase MCP): **the search hears a name.** `wall_search`
+  re-emitted over `wall_index` and nothing else: the handle (exact, prefix,
+  contains), the handle with its dots out, and the
   folded name, which is the resolver's display name for a handle and the
   name as written for a first name letter (0053), exact, word prefix and
   contains; from the third character, `pg_trgm` nearness and `fuzzystrmatch`
@@ -254,9 +276,10 @@ Idempotent migrations, applied in order:
   spelling (docs/SECURITY.md §suggest, pinned by `test-names.sql`). Creates
   the two extensions in `extensions` if they are not there.
   Ruled by the council of 20 September (docs/THE-COUNCIL.md).
-- `migrations/0053_a_letter_to_a_first_name.sql`: **a letter to a first
-  name.** `wall_letters` gains `target_kind` and `target_name`; a letter to
-  a first name is keyed by a tilde and the folded name (`~sofia`,
+- `migrations/0053_a_letter_to_a_first_name.sql` (**applied 20 September 2026**,
+  through the Supabase MCP): **a letter to a first name.** `wall_letters`
+  gains `target_kind` and `target_name`; a letter to a first name is keyed by
+  a tilde and the folded name (`~sofia`,
   `wall_name_key`), a string no handle can be, so the index groups every
   Sofia under one disc and every `instagram_handle = target_handle`
   comparison in the schema stays correct by construction: `wall_claim`,
@@ -537,7 +560,7 @@ Re-running is safe (`if not exists` / `create or replace` / guarded alters).
 | `functions/celestual-ig-webhook` | alternative: receives Instagram DMs from Meta's Messaging webhook directly (verifies `X-Hub-Signature-256`, re-fetches the sender username, adopts it as the identity, DMs verified/already-verified/expired feedback back — `IG_CONFIRM_DM`, on by default) | `IG_APP_SECRET`, `IG_VERIFY_TOKEN`, `IG_ACCESS_TOKEN` |
 
 | `functions/celestual-edu-verify` | the campus gate: `send` mails a six digit code (hash stored, six tries, the try spent before the code is compared) to an address under the campus domain; `verify` checks it and binds the address to the browser's identity row through `celestual_user_bind_edu` (0030). **Runbook: [../docs/EDU-VERIFICATION.md](../docs/EDU-VERIFICATION.md)** | `RESEND_API_KEY`, `CELESTUAL_FROM_EMAIL`, `CELESTUAL_SITE_URL` |
-| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a first name and a fall back to the eight argument write against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeploy after pulling this | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
+| `functions/celestual-wall-moderate` | the wall's composer posts here: the allowance (`wall_quota`), layer 1 (the same list the browser runs, over the name as well as the words since 0053; a catch is the one refusal, and it is answered at once) and the write at `live` through the service-role `wall_write`, in one request, with `kind` and `name` for a letter to a name and `look` for the paper it chose (0055, cleaned here to the three slugs the schema admits), through the eleven argument write, stepping down to the ten argument one and, for a handle letter, to the eight argument one against a database a migration behind. Then, after the answer has gone back (`EdgeRuntime.waitUntil`), one classifier call, bounded at fifteen seconds, whose verdict lands on the row through `wall_screened`: a review flags it for the desk, a reject takes it down and the wall tells the writer, and a timeout or a missing key leaves it up, flagged (0050). After a letter goes up, and after the reading takes one down, it posts one message to the campus's Realtime channel (`wall:<campus>`, event `moved`, over `/realtime/v1/api/broadcast`) carrying nothing but the fact, and every open wall on the campus reads the public index again (`app/src/wall/data.js watchWall`); with Realtime off the wall keeps its clock and loses the nudge. Redeployed 20 September 2026 as version 11, carrying 0053 to 0055; redeploy after pulling this | `MODERATION_API_KEY` (optional: `MODERATION_MODEL`) |
 | `functions/celestual-admin` | the desk behind `/admin`: every request carries the password, checked here against `CELESTUAL_ADMIN_PASSWORD` and nothing else (there is no fallback: with the secret unset the desk refuses everybody); wrong tries rate limited per IP; fronts the service-role `celestual_desk_*` RPCs (0033 and 0039: people, the wall, reports, the resolution cache, the waitlist, merge conflicts, the growth series, the ping ledger, the sign in link, the settings, the campuses, the log) and the legacy `celestual_admin_*` ones (the DM flow's records: overview, delete, ban, unban, handle status, clear pending, verify by hand). Every write that goes through is written to `celestual_desk_log` here | `CELESTUAL_ADMIN_PASSWORD` |
 | `functions/celestual-stripe` | the paid door's front half: `checkout` proves the @ through `celestual_billing_begin`, then opens a Stripe-hosted Checkout Session carrying only an opaque purchase id; `confirm` re-reads a session for a returning browser so the meter is right immediately. No card ever reaches us and no @ ever reaches Stripe. **Runbook: [../docs/STRIPE-SETUP.md](../docs/STRIPE-SETUP.md)** | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_SLOT`, `STRIPE_PRICE_STEADY` (optional), `CELESTUAL_SITE_URL` |
 | `functions/celestual-stripe-webhook` | **the only thing that grants a paid slot.** Verifies Stripe's signature by hand (HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time, five-minute tolerance) before reading a field, guards replays on the event id, then calls `celestual_billing_complete` / `_plan_sync` / `_revoke`. Deploy with `--no-verify-jwt` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |

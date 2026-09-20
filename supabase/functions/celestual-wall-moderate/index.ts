@@ -13,10 +13,16 @@
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
 // Contract:
-//   POST { token, target, body, sealedLine?, source?, campus?, kind?, name? }
+//   POST { token, target, body, sealedLine?, source?, campus?, kind?, name?, look? }
 //     kind is 'handle' (the default) or 'name' (0053): a letter to a first
-//     name, with `name` as the writer typed it and `target` ignored. No
-//     handle travels with a name letter, and none is stored beside one.
+//     name, a nickname, a letter, a number, whatever the writer calls the
+//     person (0055), with `name` as the writer typed it and `target`
+//     ignored. No handle travels with a name letter, and none is stored
+//     beside one.
+//     look is the paper the letter chose (0055): `{ theme, tint, face }`,
+//     each a short slug, or nothing. It is cleaned here to the same three
+//     slugs the schema admits, and cleaned again by wall_write, so a fourth
+//     key, a colour or a sentence never reaches a row.
 //     { ok:true,  status:'live',     id }           on the wall, now
 //     { ok:true,  status:'rejected', id, reasons }  caught by layer 1: stored,
 //                                                   never shown, and the app
@@ -225,6 +231,25 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
   }
 }
 
+// ── the look (0055) ──────────────────────────────────────────────────────────
+// Three keys, each a short lower case slug, or nothing. The same rule
+// wall_look_clean applies in the schema, so what leaves here is what the
+// row will hold; `paper` is the plain paper and is nothing.
+const SLUG = /^[a-z][a-z0-9-]{0,23}$/
+function cleanLook(raw: unknown): Record<string, string> | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  const pick = (k: string) => (typeof r[k] === 'string' && SLUG.test(r[k] as string) ? (r[k] as string) : '')
+  const out: Record<string, string> = {}
+  const theme = pick('theme')
+  if (theme && theme !== 'paper') out.theme = theme
+  const tint = pick('tint')
+  if (tint) out.tint = tint
+  const face = pick('face')
+  if (face) out.face = face
+  return Object.keys(out).length ? out : null
+}
+
 // ── the wall, told ───────────────────────────────────────────────────────────
 // A letter is up, or has come down: every browser on this campus's wall is
 // told the index moved, over Realtime's broadcast, and reads the public index
@@ -297,6 +322,7 @@ Deno.serve(async (req: Request) => {
     campus?: string | null
     kind?: string | null
     name?: string | null
+    look?: unknown
   }
   try { payload = await req.json() } catch { return json({ ok: false, error: 'malformed' }, 400) }
 
@@ -312,6 +338,8 @@ Deno.serve(async (req: Request) => {
   // whether it is a name at all, and answers 'name' when it is not.
   const kind = payload.kind === 'name' ? 'name' : 'handle'
   const name = kind === 'name' ? String(payload.name || '').replace(/\s+/g, ' ').trim().slice(0, 30) : null
+  // ── and the paper (0055) ──
+  const look = cleanLook(payload.look)
 
   if (!body.trim()) return json({ ok: false, error: 'empty' })
   if (kind === 'name' && !name) return json({ ok: false, error: 'name' })
@@ -350,12 +378,18 @@ Deno.serve(async (req: Request) => {
       // up, and not yet read: the classifier writes its verdict over this
       : { verdict: 'unread', reasons: [], flagged: false, at: new Date().toISOString(), model_layer: 0 },
   }
-  // The ten argument write (0053) carries the kind and the name. A database
-  // that is a migration behind has only the eight argument one, and answers
-  // that the function does not exist; a handle letter then goes through the
-  // call it always went through, and a name letter is refused, because there
-  // is nowhere for it to go yet.
-  let { data, error } = await supabase.rpc('wall_write', { ...args, p_kind: kind, p_name: name })
+  // The eleven argument write (0055) carries the kind, the name and the
+  // look; the ten argument one (0053) the kind and the name. A database that
+  // is a migration behind answers that the function does not exist, and the
+  // write steps down: to the ten argument one, which loses the look and
+  // nothing else, and for a handle letter to the eight argument one it always
+  // went through. A name letter against a database with neither is refused,
+  // because there is nowhere for it to go yet.
+  let { data, error } = await supabase.rpc('wall_write', { ...args, p_kind: kind, p_name: name, p_look: look })
+  if (error) {
+    console.warn('wall_write with a look refused, trying the ten argument write', error.message)
+    ;({ data, error } = await supabase.rpc('wall_write', { ...args, p_kind: kind, p_name: name }))
+  }
   if (error && kind === 'handle') {
     console.warn('wall_write with a kind refused, trying the eight argument write', error.message)
     ;({ data, error } = await supabase.rpc('wall_write', args))
@@ -370,7 +404,13 @@ Deno.serve(async (req: Request) => {
   // What the letter is filed under, said back: the key (a handle, or a tilde
   // and the folded name), the kind and the name as it will be printed, so the
   // browser can light the disc it is about without deriving the key itself.
-  const filed = { handle: data.handle ?? (kind === 'handle' ? target : null), kind: data.kind ?? kind, name: data.name ?? name }
+  const filed = {
+    handle: data.handle ?? (kind === 'handle' ? target : null),
+    kind: data.kind ?? kind,
+    name: data.name ?? name,
+    // the look as the row holds it, or none on a database without 0055
+    look: data.look === undefined ? null : data.look,
+  }
 
   if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons, ...filed })
 

@@ -14,6 +14,7 @@ import { Ecliptic, Sparkle } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
+import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc } from './looks.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -435,9 +436,24 @@ export function TopBar({ go, at = 'wall', acts = true }) {
 // weight and read as none of them.
 // `aside` stands at the end of the crest row: the one control a card may
 // carry beside its title, which today is the pen on Main's letter.
-export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', className = '', style, ...rest }) {
+// ── and a look (0055) ──
+// `look` is the letter's own paper, `{ theme, tint, face }` or nothing:
+// the look's tokens go on the card inline (looks.js `lookVars`), the
+// theme's slug goes on it for the textures the stylesheet keys on the slug,
+// and every rule on the card reads the tokens, so a themed letter is this
+// card with its tokens moved and not a second card. A card handed no look
+// is the plain paper, as every card was.
+export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', look = null, className = '', style, ...rest }) {
+  const lk = cleanLook(look)
+  const vars = lk ? lookVars(lk) : null
+  const attrs = lk ? lookAttrs(lk) : {}
   return (
-    <article className={`wl-paper${tone ? ` is-${tone}` : ''} ${className}`} style={style} {...rest}>
+    <article
+      className={`wl-paper${tone ? ` is-${tone}` : ''}${lk ? ' has-look wl-looked' : ''} ${className}`}
+      style={vars ? { ...vars, ...style } : style}
+      {...attrs}
+      {...rest}
+    >
       <div className="wl-paper-grain" aria-hidden="true" />
       {dateline && (
         <header className="wl-paper-head">
@@ -472,11 +488,61 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
 // the same stroke, so it is one glyph in two materials rather than an icon
 // set's pencil beside the product's own pen. A word ("change") stood where it
 // stands, and a word on a letter is a word in the letter.
-export function Pen({ onClick, label = 'change it', className = '' }) {
+// `on` is for the pen that is a toggle: the composer's, which opens and
+// closes the look panel under the card, and stands lit while it is open.
+export function Pen({ onClick, label = 'change it', on = null, className = '' }) {
   return (
-    <button type="button" className={`wl-pen ${className}`} onClick={onClick} aria-label={label} title={label}>
+    <button
+      type="button" className={`wl-pen${on ? ' is-on' : ''} ${className}`}
+      onClick={onClick} aria-label={label} title={label}
+      aria-pressed={on === null ? undefined : !!on}
+    >
       <Icon name="write" size={15} />
     </button>
+  )
+}
+
+// ── the switch ──────────────────────────────────────────────────────────────
+// Two or three words on one rail, one of them on, and the ground lit behind
+// the one that is: the way the bar says where you are (design/DESIGN.md
+// 8.2), as a control. The thumb is one element that slides to the choice
+// on the sheet's own travelling curve, so the choice is seen to move rather
+// than to swap. It is a radio group to a screen reader and to a keyboard,
+// and the arrow keys move it.
+//
+// It replaced a quiet line under the composer's field, "a first name
+// instead", which named one of the two choices and hid the other; a person
+// deciding who a letter is for should see both before they type.
+export function Segmented({ value, onChange, options, label, className = '' }) {
+  const at = Math.max(0, options.findIndex((o) => o.value === value))
+  const keys = (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    e.preventDefault()
+    const dir = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1
+    const next = options[(at + dir + options.length) % options.length]
+    onChange(next.value)
+    const el = e.currentTarget.querySelector(`[data-value="${next.value}"]`)
+    if (el) el.focus()
+  }
+  return (
+    <div
+      className={`wl-seg ${className}`} role="radiogroup" aria-label={label}
+      style={{ '--n': options.length, '--i': at }}
+      onKeyDown={keys}
+    >
+      <span className="wl-seg-thumb" aria-hidden="true" />
+      {options.map((o, i) => (
+        <button
+          type="button" role="radio" key={o.value} data-value={o.value}
+          className="wl-seg-opt" aria-checked={i === at}
+          tabIndex={i === at ? 0 : -1}
+          onClick={() => onChange(o.value)}
+        >
+          {o.glyph ? <span className="wl-seg-glyph" aria-hidden="true">{o.glyph}</span> : null}
+          <span>{o.label}</span>
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -1274,14 +1340,30 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 // A first name's key (`~sofia`, 0053) is never resolved: it draws the
 // monogram of the name as written, and asks nothing, because the resolver
 // would answer with a stranger of the same spelling.
-export function Face({ handle, size = 30, resolve = true, lit = false, className = '', style }) {
+//
+// ── and the look on it (0055) ──
+// A disc draws the paper of the letter under its name: the look handed to
+// it (a letter's own, on that letter's card), or, when none is, the look
+// the wall last saw under the key (looks.js `lookFor`, learned from the
+// index, the search and every read), which is the newest letter's. On a
+// looked disc the name is written whole when it fits and the monogram
+// stands when it does not; on a disc with a picture the picture stays and
+// the look is a rim. `name` is the name as written, for a key the memo has
+// not learned yet.
+export function Face({ handle, size = 30, resolve = true, lit = false, look, name = '', className = '', style }) {
   const named = isNameKey(handle)
   const p = useProfile(resolve && !named ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
-  const said = named ? (nameFor(handle) || raw.slice(1)) : ''
-  const mono = p ? monogram(p)
+  const said = named ? (name || nameFor(handle) || raw.slice(1)) : ''
+  const lk = cleanLook(look === undefined ? lookFor(String(handle || '').trim()) : look)
+  // a name's disc is its name, whole, whenever the name fits the disc, on
+  // any paper; the monogram stands when it does not
+  const whole = named ? nameOnDisc(said, size) : null
+  const mono = whole ? whole.text
+    : p ? monogram(p)
     : named ? (size >= 40 || said.includes(' ') ? monogram({ name: said }) : said.slice(0, 1).toUpperCase())
     : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
+  const vars = lk ? lookVars(lk) : null
   // Which src has actually arrived, and which one failed — held as the URL
   // rather than as two booleans reset by an effect. The effect version had a
   // race the whole product could hit: a picture already in the browser's cache
@@ -1303,10 +1385,12 @@ export function Face({ handle, size = 30, resolve = true, lit = false, className
   const landed = () => { markWarm(src); setGot(src) }
   return (
     <span
-      className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''} ${className}`}
-      style={{ '--s': `${size}px`, ...style }} aria-hidden="true"
+      className={`wl-face${lit ? ' is-lit' : ''}${shown ? ' has-img' : ''}${lk ? ' has-look wl-looked' : ''} ${className}`}
+      style={{ '--s': `${size}px`, ...(vars || null), ...(whole ? { '--lk-name': `${whole.px}px` } : null), ...style }}
+      aria-hidden="true"
+      {...(lk ? lookAttrs(lk) : null)}
     >
-      <span className="wl-face-mono">{mono}</span>
+      <span className={`wl-face-mono${whole ? ' is-name' : ''}`}>{mono}</span>
       {/* Eager, not lazy. A face is thirty pixels and it is almost always in
           the first screen; `loading="lazy"` held every one of them back until
           layout had settled, which on a phone was the visible beat between
@@ -1457,7 +1541,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
 //
 // A first name (0053) has no account and so no picture: its disc stands on
 // the card as a monogram and is not a control.
-export function OpenFace({ handle, size = 34, className = '' }) {
+export function OpenFace({ handle, size = 34, look, className = '' }) {
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState(null)
   const btn = useRef(null)
@@ -1465,7 +1549,7 @@ export function OpenFace({ handle, size = 34, className = '' }) {
   const named = isNameKey(handle)
   const h = named ? String(handle || '').trim() : normHandle(handle)
   if (named) {
-    return <span className={`wl-face-open is-still ${className}`}><Face handle={h} size={size} /></span>
+    return <span className={`wl-face-open is-still ${className}`}><Face handle={h} size={size} look={look} /></span>
   }
   const press = () => {
     if (!h) return
@@ -1482,7 +1566,7 @@ export function OpenFace({ handle, size = 34, className = '' }) {
         onClick={press}
         aria-label={`see ${atHandle(h) || 'their'} picture larger`} title="see it larger"
       >
-        <Face handle={h} size={size} />
+        <Face handle={h} size={size} look={look} />
       </button>
       {open ? <FaceViewer handle={h} onClose={close} from={from} source={btn} /> : null}
     </>

@@ -130,6 +130,20 @@ disagree on them. The build wins on both: `--ash` is `#9C978E` and `--hair` is
 
 Changing the accent is two lines. Nothing else in the build names a hue.
 
+### 2.5 The looks
+
+One exception to the sentence above, and it is fenced. A letter can choose its
+paper (migration 0055, `app/src/wall/looks.js`): nine themes and twelve tints,
+each a ground and the ink that reads on it, are the only other hues in the
+product, they live in that one file and in the theme rules of `wall.css` keyed
+on `data-look`, and they are drawn only on a paper, its tile in the panel and
+the disc of the name it was written to. They are the writer's choice for one
+letter and never the product's: no bar, sheet, control or line of the system's
+own type is ever set in one. A looked paper is still the one bright thing on
+its sheet, in the colour the writer chose it. The ban list's fourth added
+check, *the accent appears more than once*, reads the system's accent and not
+a letter's paper.
+
 ---
 
 ## 3. The mark
@@ -312,6 +326,17 @@ it fits and hands the type back to the browser where it does not.
 
 All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: balance`.
 
+### 4.0a The faces a letter may be set in
+
+The four faces above are the system's and carry its four jobs. Three more
+are in `app/public/fonts/` and they are not the system's: Pixelify Sans, Caveat
+and Comfortaa are the pixel, the hand and the round a letter's LOOK may be set
+in (`app/src/wall/looks.js` `FACES`, with the serif, the sans and the mono at
+the letter's job), chosen by the writer for one letter and used for nothing
+else in the product. None of them is ever a headline, a label, a control or an
+identifier. They are fetched by `scripts/fetch-faces.mjs` with the others and
+a browser downloads one only when a card set in it is on the screen.
+
 ### 4.2 The rest
 
 | Role | Face | Size | Tracking |
@@ -476,6 +501,8 @@ Every one of these is on `design/components.html` in each of its states.
 | Close | `.wl-close` | 36px hairline ring, turns a quarter under the pointer |
 | Quiet control | `.wl-quiet` | a sentence that is a control. Second option under a primary, and nothing else |
 | Claim | `.wl-mine` | hairline capsule. A control with a consequence, so not a link |
+| Switch | `.wl-seg`, `Segmented` | two or three words on one rail, the ground lit behind the one that is on, the way the bar says where you are. The thumb is one element that slides on the sheet's own curve. A radio group to a keyboard. The composer's first question, `instagram` or `anything else` |
+| Pen | `.wl-pen` | the nib in a hairline ring, struck in the paper's ink, at the end of a line that can be changed. `is-on` while the panel it opens is up, the way the flag stands open |
 
 There were four pill roles. The filled saturated one had one caller in the whole
 build and it was spending the entire colour ration on a word beside a date that
@@ -485,7 +512,8 @@ had already said it. The role went with the caller.
 
 | Component | Class | Notes |
 | --- | --- | --- |
-| Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot |
+| Paper | `.wl-paper` | the cream card. Variants `is-empty`, `is-theirs`. Its own grain, its own crest, a head of two cells and a foot. Every ink on it is one of its look tokens (`--lk-ground`, `--lk-ink`, `--lk-ink-2`, `--lk-rule`, the strengths of the ink, `--lk-face`, `--lk-radius`), declared at the plain paper's values on the card itself; a look (`has-look`, `wl-looked`, `data-look`) sets the same tokens inline and the card is the same card. See the looks, below |
+| Look panel | `.wl-look`, `Look.jsx` | under the composer's card while its pen is on: a row of small papers (`.wl-look-tile`, the real tokens on a tile with the two letters and a few bars), a row of colours (`.wl-look-dot`) and a row of faces (`.wl-look-chip`), each a radio group that scrolls sideways out to the sheet's edges. The chosen one is ringed the way a disc under the lens is ringed. The card above is the preview |
 | Sheet | `.wl-sheet` | rises off the bottom edge over a wall that stays mounted, dimmed and slightly out of focus behind it. A centred dialog at 900px |
 | Row | `.wl-row`, `PersonRow` | a person: the face, the name, the handle and a line under it, and the way in at the end. The sky's standing pings and the wall's search are the same row. `is-lit` for the one that matters. A letter to a first name draws the name as written in the name's face, a monogram, and no handle line |
 | Who | `.wl-who` | the face with the name and the handle beside it. On the void and on paper |
@@ -518,7 +546,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | --- | --- |
 | `Sparkle` | the four point star. `twinkle` and `delay` |
 | `Ecliptic` | the mark. `size`, `sweep` |
-| `Face` | the disc beside a handle. The picture, or a monogram. See 3.4 |
+| `Face` | the disc beside a handle. The picture, or a monogram. See 3.4. With a look (`has-look`): the look's ground and its texture, the name written whole in the look's face when it fits the disc, and on a picture a rim in the look's paper (`::after`). A name's disc writes the name whole on any paper |
 | `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
 | `Halftone` | the dotted sphere. Off the wall's masthead since the Campanile; kept |
 | `Campanile` | a front elevation of Sather Tower in hairlines, from a handful of numbers, with the lantern lit in `--gold`. `width` (the height is three times it, or 2.84 standing), `lit`, `twinkle`, `stands`. It stood in the wall's masthead corner and then on the count as its plinth, and it came off with the hive: a drawing beside a headline that had already said which campus this was. Kept, and drawn by nothing |

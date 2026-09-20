@@ -356,14 +356,18 @@
 /* a handle inside a label keeps its case. Handles are lower-case identifiers;
    uppercasing one turns it into a different string from the one on the wall. */
 .wl-label .wl-h { text-transform: none; letter-spacing: 0.03em; }
-.wl-label.is-ink { color: var(--paper-ink-2); }
+.wl-label.is-ink { color: var(--lk-ink-2, var(--paper-ink-2)); }
 
 .wl-prose {
   margin: 0;
-  font-family: var(--f-letter);
-  font-size: 17px;
+  /* the look's tokens where there is a look, and the plain paper's where
+     there is not: a paper declares them (below) and a look overrides them,
+     so a letter's words are set in the paper's own face and ink */
+  font-family: var(--lk-face, var(--f-letter));
+  font-weight: var(--lk-face-w, 400);
+  font-size: calc(17px * var(--lk-size, 1));
   line-height: 1.5;
-  color: var(--paper-ink);
+  color: var(--lk-ink, var(--paper-ink));
   letter-spacing: 0;
 }
 
@@ -543,6 +547,29 @@
    without it the card is a beige rectangle, and with it the card is a
    material. */
 .wl-paper {
+  /* ── the look's tokens, at the plain paper's values ──
+     Every ink on the card is one of these, and nothing below names a colour
+     of its own: the head's rule, the stamp, the foot, the pen, the flag,
+     the heart, the face and the addressee all read a token. A LOOK
+     (looks.js lookVars, migration 0055) sets the same tokens inline on the
+     card, so a themed letter is this card with its tokens moved and not a
+     second card. `--lk-face` carries the type and `--lk-size` scales it,
+     since a hand at 16px is smaller than a serif at 16px. */
+  --lk-ground: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
+  --lk-paper: var(--paper);
+  --lk-ink: var(--paper-ink);
+  --lk-ink-2: var(--paper-ink-2);
+  --lk-rule: rgba(23, 21, 15, 0.16);
+  --lk-ink-faint: rgba(23, 21, 15, 0.05);
+  --lk-ink-soft: rgba(23, 21, 15, 0.07);
+  --lk-ink-mid: rgba(23, 21, 15, 0.3);
+  --lk-ink-strong: rgba(23, 21, 15, 0.55);
+  --lk-face: var(--f-letter);
+  --lk-face-w: 400;
+  --lk-title-w: var(--w-display);
+  --lk-size: 1;
+  --lk-title-size: 1;
+  --lk-radius: var(--r-card);
   position: relative;
   /* its own group. The grain under it multiplies, and without this the
      blend reaches past the card to whatever is behind it, which is a live
@@ -550,9 +577,9 @@
      the room back through it on every frame. The paper is opaque, so the
      blend only ever had the paper to multiply with, and now it only can. */
   isolation: isolate;
-  border-radius: var(--r-card);
-  background: linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 34%, var(--paper-edge) 100%);
-  color: var(--paper-ink);
+  border-radius: var(--lk-radius);
+  background: var(--lk-ground);
+  color: var(--lk-ink);
   padding: 20px 20px 18px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
@@ -561,8 +588,8 @@
     0 4px 14px -6px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
-.wl-paper.is-empty { background: linear-gradient(168deg, #EBE8E1 0%, #E1DED6 100%); }
-.wl-paper.is-theirs { background: linear-gradient(168deg, var(--paper-hi) 0%, #EFECE5 40%, #E6E2DA 100%); }
+.wl-paper.is-empty:not(.has-look) { --lk-ground: linear-gradient(168deg, #EBE8E1 0%, #E1DED6 100%); }
+.wl-paper.is-theirs { --lk-ground: linear-gradient(168deg, var(--paper-hi) 0%, #EFECE5 40%, #E6E2DA 100%); }
 
 .wl-paper-grain {
   position: absolute; inset: 0; pointer-events: none; opacity: 0.16; border-radius: inherit;
@@ -580,18 +607,18 @@
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   min-height: 22px;
   font-family: var(--f-id); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2);
   padding-bottom: 11px; margin-bottom: 15px;
-  border-bottom: 1px solid rgba(23, 21, 15, 0.16);
+  border-bottom: 1px solid var(--lk-rule);
 }
 /* the state of the card, stamped rather than typeset — so the eye reads it as
    a mark somebody put on the document and not as the second half of a date */
 .wl-paper-stamp {
   flex: 0 0 auto;
   padding: 3px 9px 2px; border-radius: var(--r-pill);
-  border: 1px solid rgba(23, 21, 15, 0.20);
+  border: 1px solid var(--lk-ink-mid);
   font-size: 8.5px; letter-spacing: 0.17em;
-  color: rgba(23, 21, 15, 0.5);
+  color: var(--lk-ink-2);
 }
 
 /* the letterhead: the constellation standing beside the name it belongs to.
@@ -605,9 +632,9 @@
 .wl-paper-crest > .wl-mark { flex: 0 0 auto; }
 .wl-paper-title {
   margin: 0; min-width: 0;
-  font-family: var(--f-display); font-weight: var(--w-display); font-size: 22px; line-height: 1.1;
+  font-family: var(--lk-face); font-weight: var(--lk-title-w); font-size: calc(22px * var(--lk-title-size)); line-height: 1.1;
   font-variation-settings: var(--opsz-display);
-  letter-spacing: -0.01em; color: var(--paper-ink);
+  letter-spacing: -0.01em; color: var(--lk-ink);
   overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -622,7 +649,7 @@
 .wl-paper .wl-mark.is-lit .wl-mark-line { stroke: rgba(23,21,15,0.42); }
 .wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
 .wl-paper-body { min-height: 20px; }
-.wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid rgba(23, 21, 15, 0.16); }
+.wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--lk-rule); }
 
 /* the pen, at the end of the crest row. Ink on paper: the ring is the same
    hairline the head rule is drawn in, and the nib is the wall's own glyph. */
@@ -630,21 +657,101 @@
   flex: 0 0 auto; margin-left: auto;
   display: grid; place-items: center; padding: 0;
   width: 32px; height: 32px; border-radius: 50%;
-  color: var(--paper-ink-2);
-  border: 1px solid rgba(23, 21, 15, 0.18);
+  color: var(--lk-ink-2);
+  border: 1px solid var(--lk-rule);
   background: none;
-  transition: color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease), transform 200ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .wl-pen:hover { color: var(--paper-ink); border-color: rgba(23, 21, 15, 0.42); }
+  .wl-pen:hover { color: var(--lk-ink); border-color: var(--lk-ink-mid); }
 }
 .wl-pen:active { transform: scale(0.94); transition-duration: 120ms; }
-.wl-pen:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; }
+.wl-pen:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; }
+/* the pen, on: the composer's is a toggle, and while the look panel it opens
+   is up it stands the way the flag stands when its pane is open, a ring in
+   the paper's ink with the glyph at full strength */
+.wl-pen.is-on { color: var(--lk-ink); border-color: var(--lk-ink-mid); background: var(--lk-ink-soft); }
 
 /* the @handle set as a card's title, in the identity face. It is the SUBJECT
    of the sheet and it is now set like one: bigger than the body it sits over,
    on its own line, with the crest beside it and nothing else in the row. */
 .wl-letter-to { font-family: var(--f-id); font-size: 20px; letter-spacing: -0.012em; }
+
+/* the name on the composer's card is the way back to the first question:
+   the addressee as it stands on every letter, with a press on it, and an
+   underline that arrives under the pointer so it is known to be one */
+.wl-paper-to {
+  display: block; padding: 0; margin: 0; min-width: 0; max-width: 100%;
+  background: none; border: 0; border-radius: 6px; text-align: left; color: inherit; cursor: pointer;
+}
+.wl-paper-to .wl-addressee-name {
+  text-decoration: underline; text-decoration-color: transparent;
+  text-decoration-thickness: 1px; text-underline-offset: 4px;
+  transition: text-decoration-color 200ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-paper-to:hover .wl-addressee-name { text-decoration-color: var(--lk-ink-mid); }
+}
+.wl-paper-to:active { opacity: 0.72; }
+.wl-paper-to:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; }
+
+/* ═══ THE LOOKS ════════════════════════════════════════════════════════════
+   looks.js, migration 0055. A look sets the paper's tokens inline; what a
+   token cannot say it says here, keyed on the theme's slug: a texture drawn
+   under the type, a gloss, a bloom on the letters. `.wl-looked` is on a
+   paper with a look, on a disc with one, and on the panel's tiles, so one
+   rule draws the nokia screen on all three. Every texture is a gradient:
+   nothing is downloaded and nothing is a picture. The layer sits under
+   everything on the card (the card's children are positioned, so they
+   paint after it) and over the ground. */
+.wl-looked::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit; z-index: 0;
+}
+/* the nokia screen: a pixel grid, faint, so the type reads as pixels on a
+   screen and not as a photograph of one */
+.wl-looked[data-look="nokia"]::before {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(20, 30, 16, 0.09) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(20, 30, 16, 0.07) 0 1px, transparent 1px 3px);
+}
+.wl-paper[data-look="nokia"] .wl-paper-head { letter-spacing: 0.15em; }
+/* the y2k gloss: one highlight lying across the card the way light lies on
+   a pearl button, a second in its far corner, and a chrome hairline round
+   the edge */
+.wl-looked[data-look="y2k"]::before {
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.62) 41%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(110% 70% at 100% 100%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 62%);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.8), inset 0 0 0 2.5px rgba(120, 100, 190, 0.16);
+}
+/* on a dark colour the same gloss is a mirror, and the words under the
+   highlight went; it is laid lighter there, and the chrome edge with it */
+.wl-looked[data-look="y2k"][data-lit="dark"]::before {
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.22) 41%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(110% 70% at 100% 100%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 62%);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.34), inset 0 0 0 2.5px rgba(255, 255, 255, 0.06);
+}
+/* the receipt: dashed rules, the head tracked wider */
+.wl-paper[data-look="receipt"] .wl-paper-head { border-bottom-style: dashed; letter-spacing: 0.16em; }
+.wl-paper[data-look="receipt"] .wl-paper-foot { border-top-style: dashed; }
+/* the notebook: ruled, in a blue a step lighter than its ink */
+.wl-looked[data-look="notebook"]::before {
+  background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(31, 52, 128, 0.15) 27px 28px);
+  background-position: 0 7px;
+}
+/* the terminal: scanlines, a little phosphor bloom on the letters */
+.wl-looked[data-look="terminal"]::before {
+  background-image:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.24) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse 90% 60% at 50% 20%, rgba(114, 240, 156, 0.09), transparent 70%);
+}
+.wl-paper[data-look="terminal"] { text-shadow: 0 0 7px rgba(114, 240, 156, 0.3); }
+/* the dark grounds: the grain multiplies to nothing on a near black, so on
+   a dark paper it is laid as light instead, a little, and adds its texture
+   the other way up */
+.wl-paper[data-lit="dark"] .wl-paper-grain { mix-blend-mode: screen; opacity: 0.09; }
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
@@ -698,15 +805,16 @@
 .wl-letterfield textarea {
   width: 100%; display: block;
   background: none; border: 0; padding: 0; resize: none; overflow: hidden;
-  font-family: var(--f-letter); font-size: 16.5px; line-height: 1.52;
-  color: var(--paper-ink);
+  font-family: var(--lk-face, var(--f-letter)); font-weight: var(--lk-face-w, 400);
+  font-size: calc(16.5px * var(--lk-size, 1)); line-height: 1.52;
+  color: var(--lk-ink, var(--paper-ink));
 }
 .wl-letterfield textarea:focus { outline: none; }
-.wl-letterfield textarea::placeholder { color: rgba(106, 99, 87, 0.5); }
+.wl-letterfield textarea::placeholder { color: var(--lk-ink-2, var(--paper-ink-2)); opacity: 0.62; }
 .wl-count {
   position: absolute; right: 0; bottom: -18px;
   font-family: var(--f-id); font-size: 10px; letter-spacing: 0.08em;
-  color: rgba(106, 99, 87, 0.6);
+  color: var(--lk-ink-2, var(--paper-ink-2)); opacity: 0.8;
   transition: color 240ms var(--ease);
 }
 .wl-count.is-near { color: var(--ember); }
@@ -774,8 +882,9 @@
 .wl-grip span { width: 34px; height: 3px; border-radius: 2px; background: rgba(244,241,234,0.18); display: block; }
 
 .wl-sheet-in {
+  --sheet-pad: 22px;
   flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
-  padding: 4px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding: 4px var(--sheet-pad) calc(22px + env(safe-area-inset-bottom, 0px));
   display: flex; flex-direction: column;
   /* what is on the sheet arrives a beat after the sheet does, so the glass
      is seen to rise and the words to settle on it, rather than a finished
@@ -1836,22 +1945,22 @@
   margin: -6px -8px -6px 0; border-radius: 50%;
   display: grid; place-items: center;
   border: 1px solid transparent; background: none;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2);
   transition: color 220ms var(--ease), border-color 220ms var(--ease),
               background 220ms var(--ease), transform 220ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .wl-flag:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+  .wl-flag:hover { color: var(--lk-ink); background: var(--lk-ink-faint); }
 }
 .wl-flag:active { transform: scale(0.92); transition-duration: 120ms; }
-.wl-flag:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
+.wl-flag:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 2px; }
 /* Open, it is the thing the two options belong to rather than a control
    waiting to be pressed again: a ring in the head rule's own ink, and the
    glyph at full strength. */
 .wl-flag.is-on {
-  color: var(--paper-ink);
-  border-color: rgba(23, 21, 15, 0.28);
-  background: rgba(23, 21, 15, 0.06);
+  color: var(--lk-ink);
+  border-color: var(--lk-ink-mid);
+  background: var(--lk-ink-soft);
 }
 
 /* ── what the flag opens ──
@@ -1935,16 +2044,16 @@
   display: grid; place-items: center; padding: 0;
   width: 34px; height: 34px; margin: -6px 0 -6px -8px;
   border: 0; border-radius: 50%; background: none;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2);
   transition: color 220ms var(--ease), background 220ms var(--ease), transform 220ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .wl-heart:hover { color: var(--paper-ink); background: rgba(23, 21, 15, 0.05); }
+  .wl-heart:hover { color: var(--lk-ink); background: var(--lk-ink-faint); }
 }
 .wl-heart:active { transform: scale(0.92); transition-duration: 120ms; }
 .wl-heart:disabled { cursor: default; }
-.wl-heart:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 2px; }
-.wl-heart.is-on { color: var(--paper-ink); }
+.wl-heart:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 2px; }
+.wl-heart.is-on { color: var(--lk-ink); }
 .wl-heart.is-on .wl-heart-glyph { animation: wl-heart-strike 420ms var(--ease) both; }
 @keyframes wl-heart-strike {
   0%   { transform: scale(0.78); }
@@ -1954,10 +2063,10 @@
 .wl-hearts-n {
   font-family: var(--f-id); font-size: 12px; letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2);
   transition: color 220ms var(--ease);
 }
-.wl-hearts.is-on .wl-hearts-n { color: var(--paper-ink); }
+.wl-hearts.is-on .wl-hearts-n { color: var(--lk-ink); }
 
 /* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
 .wl-find { padding-top: 4px; }
@@ -2005,9 +2114,130 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 260ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-/* the one quiet line under the field that turns it from a handle to a first
-   name and back (0053) */
-.wl-write-kind { display: inline-block; margin-top: 12px; padding: 6px 2px; }
+/* the switch over the field: the handle, or anything else (0055). It stood
+   under the field as one quiet line, "a first name instead", which named
+   one of the two choices and hid the other; the two stand side by side now
+   and the one that is on is lit from behind (parts.jsx `Segmented`) */
+.wl-write-kind { margin: 0 0 22px; }
+/* the look panel under the card keeps the card's measure on a spread */
+.wl-write .wl-look { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+
+/* ═══ THE SWITCH ═══════════════════════════════════════════════════════════
+   parts.jsx `Segmented`: two or three words on one rail, and the ground
+   lighting behind the one that is on, which is how the bar says where you
+   are (DESIGN.md 8.2). The thumb is one element that slides on the sheet's
+   own travelling curve, so the choice is seen to move rather than to swap,
+   and the words change colour with it. Not a lit capsule: the one bright
+   thing on the composer is the act at its foot. */
+.wl-seg {
+  --n: 2; --i: 0;
+  position: relative; isolation: isolate;
+  display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  padding: 3px; border-radius: var(--r-pill);
+  background: rgba(244, 241, 234, 0.035);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.wl-seg-thumb {
+  position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0;
+  width: calc((100% - 6px) / var(--n));
+  border-radius: var(--r-pill);
+  background: rgba(244, 241, 234, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translate3d(calc(100% * var(--i)), 0, 0);
+  transition: transform 300ms var(--ease-sheet);
+  pointer-events: none;
+}
+.wl-seg-opt {
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 38px; padding: 0 12px; border-radius: var(--r-pill);
+  font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  color: var(--ash); white-space: nowrap;
+  transition: color 220ms var(--ease), transform 220ms var(--ease);
+}
+.wl-seg-opt[aria-checked="true"] { color: var(--chalk); }
+.wl-seg-opt:active { transform: scale(0.97); transition-duration: 120ms; }
+.wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: var(--r-pill); }
+.wl-seg-glyph { display: inline-grid; place-items: center; color: var(--ash-dim); transition: color 220ms var(--ease); }
+.wl-seg-opt[aria-checked="true"] .wl-seg-glyph { color: var(--chalk); }
+.wl-seg-at { font-family: var(--f-id); font-size: 15px; line-height: 1; }
+@media (max-width: 359px) {
+  .wl-seg-opt { padding: 0 8px; font-size: 13px; gap: 5px; }
+}
+
+/* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
+   Look.jsx, under the composer's card while its pen is on: three rows, a
+   gallery of papers, a ring of colours and a row of faces, and the card
+   above is the preview. The lock screen's own shape: the big choice whole,
+   then two dials on it. Every tile is the real look's tokens on a small
+   element with a few bars for type, so a tile is drawn by the same rules
+   as the card it stands for and cannot drift from it. The chosen one is
+   ringed the way a disc on the field is ringed when the lens is on it. */
+.wl-look { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; animation: wl-look-in 320ms var(--ease) both; }
+@keyframes wl-look-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+.wl-look-row { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.wl-look-lab { padding: 0 2px; }
+/* a row that scrolls sideways, out to the sheet's edges, with no bar: the
+   gutters are the room a row runs into, and the tile half seen at the edge
+   is how a row says there is more */
+.wl-look-scroll {
+  display: flex; gap: 10px; align-items: flex-start;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x proximity; scroll-padding: 0 var(--sheet-pad, 22px);
+  padding: 5px var(--sheet-pad, 22px) 6px; margin: -5px calc(-1 * var(--sheet-pad, 22px)) -6px;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+}
+.wl-look-scroll::-webkit-scrollbar { display: none; }
+.wl-look-opt {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 0; background: none; border: 0; color: var(--ash-dim);
+  scroll-snap-align: start;
+}
+.wl-look-opt:focus-visible { outline: none; }
+.wl-look-opt:focus-visible > :first-child { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
+.wl-look-opt-name {
+  font-family: var(--f-id); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase;
+  transition: color 200ms var(--ease);
+}
+.wl-look-opt[aria-checked="true"] .wl-look-opt-name { color: var(--ash); }
+.wl-look-opt:active > :first-child { transform: scale(0.95); transition-duration: 100ms; }
+/* a tile: a small paper in the look's own tokens, with the two letters in
+   its face and a few lines of type */
+.wl-look-tile {
+  position: relative; display: block; width: 58px; height: 74px; overflow: hidden;
+  border-radius: 9px;
+  background: var(--lk-ground);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.wl-look-tile-in { position: absolute; inset: 9px 8px; display: flex; flex-direction: column; gap: 5px; }
+.wl-look-aa { font-family: var(--lk-face); font-weight: var(--lk-title-w); font-size: 13px; line-height: 1; color: var(--lk-ink); margin-bottom: 3px; }
+.wl-look-bar { height: 3px; border-radius: 2px; background: var(--lk-ink); opacity: 0.5; }
+.wl-look-opt[aria-checked="true"] .wl-look-tile {
+  box-shadow: 0 0 0 1.5px var(--chalk), 0 0 0 5px rgba(244, 241, 234, 0.12), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+}
+/* a colour: a disc of the ground, the way a name is a disc */
+.wl-look-dot {
+  display: block; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--lk-ground);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 1px rgba(244, 241, 234, 0.06);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.wl-look-opt[aria-checked="true"] .wl-look-dot {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), 0 0 0 2px var(--void), 0 0 0 3.5px var(--chalk);
+}
+/* a face: two letters in it, on a capsule */
+.wl-look-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 36px; min-width: 52px; padding: 0 14px; border-radius: var(--r-pill);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  color: var(--ash);
+  transition: background 220ms var(--ease), box-shadow 220ms var(--ease), color 220ms var(--ease), transform 220ms var(--ease);
+}
+.wl-look-chip-aa { font-family: var(--chip-face); font-weight: 500; font-size: 15px; line-height: 1; }
+.wl-look-opt[aria-checked="true"] .wl-look-chip {
+  background: rgba(244, 241, 234, 0.1); box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.14); color: var(--chalk);
+}
 /* the card and the line under it, in one frame, and the frame is what shakes
    when a press is refused (Write.jsx `shake`): a short travel, side to side,
    losing amplitude, the way a locked handle answers a hand. Under half a
@@ -2035,15 +2265,17 @@
 .wl-write-floor { min-height: 20px; margin-top: 26px; display: flex; justify-content: flex-end; }
 .wl-write-caught { color: var(--ember); text-align: right; }
 .wl-write-foot {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
   padding: 24px 0 calc(6px + env(safe-area-inset-bottom, 0px));
   flex: 0 0 auto;
 }
-.wl-write-foot .wl-pill { margin-left: auto; min-width: 128px; }
-/* the week's one line, on its own row over the two capsules, and only when
-   the week is spent. Beside them it had a third of a phone's width and
-   broke into five lines of uppercase mono; a whole row is one line. */
-.wl-write-foot .wl-allow { flex: 1 1 100%; margin-bottom: -2px; }
+/* one act, in the middle of the foot. It stood at the right of a row it
+   shared with "a different name", and that capsule is gone: the way back to
+   the first question is the name on the card itself, and the dots in the
+   head. So the act is centred, at a width a thumb finds, and the foot is a
+   column: the week's one line, when it is spent, stands over it. */
+.wl-write-foot .wl-pill { min-width: min(100%, 236px); max-width: 100%; }
+.wl-write-foot .wl-allow { justify-content: center; }
 
 /* ── the two allowances ──
    The reads are drawn as marks: one struck for each free letter read, one
@@ -2726,7 +2958,7 @@
   }
   .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-dialog-out 300ms var(--ease-in) both; }
   .wl-grip { display: none; }
-  .wl-sheet-in { padding: 26px 30px 30px; }
+  .wl-sheet-in { --sheet-pad: 30px; padding: 26px var(--sheet-pad) 30px; }
   .wl-letter .wl-paper, .wl-write .wl-paper { max-width: 460px; margin: 0 auto; }
   /* ── the letter's dialog is wider than the card in it ──
      The card keeps its measure and the dialog grows round it, so the two
@@ -2819,7 +3051,7 @@
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
   .wl-sheet { min-height: 0; max-width: 620px; max-height: 94dvh; border-radius: 18px; }
   .wl-grip { display: none; }
-  .wl-sheet-in { padding: 18px 22px 22px; }
+  .wl-sheet-in { --sheet-pad: 22px; padding: 18px var(--sheet-pad) 22px; }
 
   .wl-join-air { height: 8px; min-height: 0; }
   .wl-join-fig { margin: 12px 0 12px; min-height: 92px; }
@@ -2946,7 +3178,7 @@
   width: calc(var(--n) * 0.5em);
   height: 0.68em;
   border-radius: 2px;
-  background: var(--paper-ink);
+  background: var(--lk-ink, var(--paper-ink));
   opacity: 0.7;
 }
 /* A card still waiting on its first answer draws the same block, and there the
@@ -2954,8 +3186,12 @@
 .wl-paper.is-waiting .wl-redacted { filter: none; opacity: 0.5; }
 /* the card, shut. A hair flatter and cooler than the open one, so a redacted
    letter and a whole one are not the same object with the words swapped. */
-.wl-paper.is-shut,
-.wl-paper.is-waiting { background: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
+.wl-paper.is-shut:not(.has-look),
+.wl-paper.is-waiting:not(.has-look) { --lk-ground: linear-gradient(168deg, #E4DFD3 0%, #DBD5C7 42%, #D2CBBB 100%); }
+/* a looked letter, shut: its own paper, with the light taken off it a little,
+   so a sealed card and an open one are not the same object with the words
+   swapped, on any paper */
+.wl-paper.has-look.is-shut { filter: saturate(0.6) contrast(0.94); }
 
 /* ── the door, wherever it is met ──
    Reading, writing and reporting are behind one address, and all three used to
@@ -3255,9 +3491,40 @@
 }
 .wl-face.has-img img { opacity: 1; }
 .wl-face.is-lit { box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.28); }
+
+/* ── the face, with a look ──
+   The paper of a letter is the paper of its name on the field (0055): a
+   disc with a look draws the look's ground and the name on it in the look's
+   ink and face, whole when it fits in the disc and as a monogram when it
+   does not (looks.js `nameOnDisc`). A disc that carries a picture keeps the
+   picture, since a face is the strongest name there is, and wears the look
+   as a rim. The disc is its own stacking context so its layers, the
+   texture, the letters, the picture and the rim, stack among themselves. */
+.wl-face { isolation: isolate; }
+.wl-face-mono { position: relative; z-index: 1; }
+.wl-face img { z-index: 2; }
+.wl-face.has-look { background: var(--lk-ground); box-shadow: none; }
+.wl-face.has-look .wl-face-mono {
+  color: var(--lk-ink); font-family: var(--lk-face); font-weight: var(--lk-title-w); letter-spacing: 0.02em;
+}
+/* a name written whole on its disc, on any paper: in the name's face (the
+   rule the rows and the plate follow) on the plain one, and in the look's
+   face on a looked one */
+.wl-face-mono.is-name {
+  font-family: var(--f-util); font-weight: 500;
+  font-size: var(--lk-name); letter-spacing: -0.01em; white-space: nowrap;
+}
+.wl-face.has-look .wl-face-mono.is-name { font-family: var(--lk-face); font-weight: var(--lk-title-w); }
+.wl-face.has-look::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 0 0 1px var(--lk-rule);
+}
+.wl-face.has-look.has-img::after { box-shadow: inset 0 0 0 2.5px var(--lk-paper), inset 0 0 0 3.5px rgba(8, 7, 11, 0.35); }
+/* on paper the disc stands in the paper's own ink, as the plain face does */
+.wl-paper .wl-face.has-look { background: var(--lk-ink-soft); }
 /* on paper, struck in the paper's own ink */
-.wl-paper .wl-face { background: rgba(23, 21, 15, 0.06); box-shadow: inset 0 0 0 1px rgba(23, 21, 15, 0.16); }
-.wl-paper .wl-face-mono { color: var(--paper-ink-2); }
+.wl-paper .wl-face { background: var(--lk-ink-soft); box-shadow: inset 0 0 0 1px var(--lk-rule); }
+.wl-paper .wl-face-mono { color: var(--lk-ink-2); }
 
 .wl-who { display: inline-flex; align-items: center; gap: 11px; min-width: 0; }
 .wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
@@ -3274,8 +3541,8 @@
   font-family: var(--f-id); font-size: 11px; letter-spacing: 0.03em; color: var(--ash);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.wl-paper .wl-who-name { color: var(--paper-ink); }
-.wl-paper .wl-who-at { color: var(--paper-ink-2); }
+.wl-paper .wl-who-name { color: var(--lk-ink); }
+.wl-paper .wl-who-at { color: var(--lk-ink-2); }
 
 /* ── the addressee ──
    parts.jsx `Addressee`, at the head of a letter's paper: "for", the name,
@@ -3290,20 +3557,24 @@
   flex: 0 0 auto;
   font-family: var(--f-letter); font-style: italic; font-weight: 400;
   font-size: 15px; line-height: 1; letter-spacing: 0;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2);
 }
+/* on a looked paper the word is set in the look's face, upright: half the
+   faces a look can be set in have no italic to lend it */
+.wl-paper.has-look .wl-addressee-for { font-family: var(--lk-face); font-style: normal; font-size: calc(14px * var(--lk-title-size)); }
 .wl-addressee-name {
   display: inline-flex; align-items: center; gap: 6px; min-width: 0;
-  font-family: var(--f-display); font-weight: var(--w-display); font-size: 21px; line-height: 1.1;
+  font-family: var(--lk-face, var(--f-display)); font-weight: var(--lk-title-w, var(--w-display));
+  font-size: calc(21px * var(--lk-title-size, 1)); line-height: 1.1;
   font-variation-settings: var(--opsz-display); letter-spacing: -0.012em;
-  color: var(--paper-ink);
+  color: var(--lk-ink, var(--paper-ink));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-addressee-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: 19px; letter-spacing: -0.012em; }
-.wl-addressee-name .wl-who-badge { color: var(--paper-ink-2); }
+.wl-addressee-name .wl-who-badge { color: var(--lk-ink-2, var(--paper-ink-2)); }
 .wl-addressee-at {
   font-family: var(--f-id); font-size: 11.5px; letter-spacing: 0.02em; line-height: 1.3;
-  color: var(--paper-ink-2);
+  color: var(--lk-ink-2, var(--paper-ink-2));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -3322,7 +3593,7 @@
 .wl-face-open:active { transform: scale(0.94); transition-duration: 90ms; }
 /* a first name has no picture to open (0053): the disc stands still */
 .wl-face-open.is-still { cursor: default; pointer-events: none; }
-.wl-face-open:focus-visible { outline: 1px solid rgba(23, 21, 15, 0.55); outline-offset: 3px; border-radius: 50%; }
+.wl-face-open:focus-visible { outline: 1px solid var(--lk-ink-strong, rgba(23, 21, 15, 0.55)); outline-offset: 3px; border-radius: 50%; }
 
 /* ── the face, opened ──
    parts.jsx `FaceViewer`. The picture large over a dimmed room, the name and
@@ -3568,6 +3839,8 @@
   .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
+  .wl-look { animation: none !important; }
+  .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-roll-col { transition: none; }
   .wl-card { animation: none; }

@@ -37,6 +37,7 @@
 import { supabase, hasSupabase } from '../api/supabase.js'
 import { sessionToken } from '../api/identity.js'
 import { avatarUrl, learnHandle } from '../api/handles.js'
+import { cleanLook } from './looks.js'
 
 // One campus is open. Q11: berkeley for launch, and the schema is shaped so a
 // second one is a row in wall_campuses rather than a migration. It is a
@@ -84,7 +85,9 @@ const INDEX_FACES = `${INDEX_COLS}, known, display_name, is_verified, avatar_pat
 // and since 0053 the kind and the name: whether a row is a handle or a first
 // name, and for a first name, the name as the writer spelled it
 const INDEX_NAMED = `${INDEX_FACES}, kind, name`
-const INDEX_TIERS = [INDEX_NAMED, INDEX_FACES, INDEX_COLS]
+// and since 0055 the look: the paper of the newest letter under the key
+const INDEX_LOOKED = `${INDEX_NAMED}, look`
+const INDEX_TIERS = [INDEX_LOOKED, INDEX_NAMED, INDEX_FACES, INDEX_COLS]
 let indexTier = 0
 
 // ── one shape for a name on the wall ─────────────────────────────────────────
@@ -93,6 +96,7 @@ let indexTier = 0
 // name (0053). `name` is what to print beside the face: the resolver's
 // display name for a handle, the writer's spelling for a first name, and
 // '' when there is neither, in which case the key stands as the name.
+// `look` is the paper of the newest letter under the key (0055), or null.
 function shapeRow(r) {
   const kind = r.kind === 'name' ? 'name' : 'handle'
   return {
@@ -104,6 +108,7 @@ function shapeRow(r) {
     name: kind === 'name' ? String(r.name || '') : String(r.display_name || ''),
     verified: kind === 'handle' && !!r.is_verified,
     avatar: kind === 'handle' ? avatarUrl(r.avatar_path) : '',
+    look: cleanLook(r.look),
   }
 }
 
@@ -310,6 +315,8 @@ function shapeLetter(l) {
     // a handle, or a first name, and for a first name the spelling (0053)
     kind: l.kind === 'name' ? 'name' : 'handle',
     name: String(l.name || ''),
+    // the paper the letter is on (0055), or null for the plain paper
+    look: cleanLook(l.look),
     // Null when the reader is outside the gate. Not an empty string: the screen
     // has to be able to tell "withheld" from "somebody wrote nothing".
     body: l.body ?? null,
@@ -359,7 +366,9 @@ function shapeLetter(l) {
 // first name, with `name` as the writer typed it and no handle at all. The
 // answer carries `handle` (the key the letter is filed under), `kind` and
 // `name`, so the wall can light the right disc without deriving the key.
-export async function write({ to, body, sealedLine, source, kind = 'handle', name = '' }) {
+// And a look, since 0055: three slugs or nothing, cleaned here, on the
+// server and in the schema, the same way each time.
+export async function write({ to, body, sealedLine, source, kind = 'handle', name = '', look = null }) {
   if (!hasSupabase) return OFFLINE
   try {
     const { data, error } = await supabase.functions.invoke('celestual-wall-moderate', {
@@ -372,6 +381,7 @@ export async function write({ to, body, sealedLine, source, kind = 'handle', nam
         campus: CAMPUS,
         kind: kind === 'name' ? 'name' : 'handle',
         name: kind === 'name' ? String(name || '') : null,
+        look: cleanLook(look),
       },
     })
     if (error) return { ok: false, error: 'network' }
@@ -404,6 +414,7 @@ export async function mine() {
       to: l.handle,
       kind: l.kind === 'name' ? 'name' : 'handle',
       name: String(l.name || ''),
+      look: cleanLook(l.look),
       body: l.body ?? '',
       status: l.status,
       downBy: l.down_by || null,
