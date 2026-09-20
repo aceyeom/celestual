@@ -778,6 +778,96 @@ is NOT done on a frame:
   pinch or an hour's drift brings pictures onto the glass and not forty
   monograms fading to faces at the rim.
 
+### And it turns over while you are looking at it
+
+Which follows from the section above. The wall carries more names than the
+glass holds, and every one of them is somebody a letter was actually written
+to, so the field does not hold one arrangement of them for as long as it is
+looked at. Every couple of seconds one disc shrinks away and somebody else on
+the same wall comes up in its place: about a second, the gap jittered between
+two and five so it is never a beat, and the first one not until the wall has
+been standing still long enough to be read. The wall is a crowd larger than
+the screen rather than a photograph of the sixty people who happened to fit,
+and a person who looks at it for a minute has seen a good deal more of the
+campus than a person who looks at it for two seconds.
+
+**It is not the arrival, and the difference is the point.** An arrival is a
+CLAIM: a letter went up, to this person, just now. The only thing entitled to
+make that claim is a letter that actually went up, and the wall makes it
+loudly when one does — the disc pops past its own size, and a pulse goes out
+through the crowd from it. A turn claims nothing, so it is drawn as nothing: it
+recedes on the curve for travel that does not overshoot, the next face comes
+up with no overshoot at all, and no ring, no light and no pulse go with it.
+Nobody's seat in the tile moves, no count changes, no letter is implied, and
+the index is not touched. Implied activity is the one lever this product does
+not pull (`design/VOICE.md` §6 bans the words for it, and this is the same
+rule drawn instead of written), and a field that faked arrivals to look busy
+would be pulling it sixty times a minute.
+
+Three questions, and the care over each of them is why it reads as a crowd
+rather than as a glitch:
+
+- **Who goes.** Never the disc the lens is reading, never one under the
+  pointer, never the one a keyboard is standing on (a name that changes under
+  somebody who is about to press it is the one thing here that would be worse
+  than no movement at all), never a name this browser wrote to (that one is
+  lit, and it is the one thing on the field that is about the person looking),
+  never one that has just been written to, and never one already turning. Weighted into a band
+  out of the light and in off the rim: nothing turns over dead centre, where
+  the eye rests and the plate is standing, and nothing turns over at the rim,
+  where it would be a movement nobody sees.
+- **Who comes.** Somebody not on the glass at all, so the turn actually shows
+  a face the screen did not have. On a wall small enough that everybody is
+  already up, somebody whose nearest other disc stands at least three pitches
+  away, so a face never arrives beside its own twin. And on a wall so small
+  that the torus repeats inside three pitches — twenty names or so, where
+  every name already has a twin three discs away wherever you stand —
+  whoever stands farthest from themselves, because holding out for a distance
+  the packing cannot offer means a small wall never turns over at all, and
+  the honest rule is not to put a face nearer its own twin than the wall
+  already puts it. Under a hard floor of about two and a half pitches it does
+  not turn at all: two of one face with a disc between them reads as a fault,
+  whatever the tile is doing, which on a wall of eight names or fewer is
+  every pair on the field, and is why a wall that small stands still. Only ever a face the browser is
+  already holding, too (`data.js warmRest`): a disc that came up as a monogram
+  and faded to a picture a beat later is exactly the seam this movement exists
+  to hide.
+- **When.** Not under the veil, not under a sheet, not during the opening
+  cascade, not while a pulse is crossing the field or the field is being
+  pulled or thrown, and not at all under reduced motion. After any of those
+  the wall stands still for longer than the ordinary gap, because a surface
+  that starts moving again the instant a finger comes off it is a surface that
+  was waiting for you to stop.
+
+The face itself is changed at the one moment the disc is not on the glass —
+inside the stretch of the animation where the orb is at nought opacity, which
+is a hundred and fifty milliseconds wide so a commit landing a frame or two
+late still lands inside it. What is written down is the cell's new name, by
+handle and never by the index's row number (the index is ordered by when each
+name was last written to, so one letter renumbers every row in it), and the
+loop's own seating carries it from there: the person who arrives arrives with
+their own picture, their own paper, their own letter count and the disc size
+that count earns them. The name a turn covered is still on the wall, still at
+its own seat in the tile, and comes back the next time that seat is drawn.
+
+Two things follow from it, and both were already half broken.
+
+The pulse the wall sends out when a letter lands (`Hive.jsx pulse`) used to
+find a name only by its seat in the tile. The cycle can seat somebody where
+the tile did not, so it looks first for a disc that is actually DRAWING that
+name; without that, the wave travelled to one disc while the arrival played
+on another a screen away, and if the field had to travel to the tile's own
+seat, the cycle comes off that cell first so the disc it arrives on is them.
+
+And the way both that and the locator a closing card comes home by (`morph.js
+locate`) found a disc: through the slot's own row number. A slot keeps the row
+number it was given on the last frame, and a pulse arrives on the one frame a
+new reading of the index has just landed — the frame that letter moved its
+name to the front and shifted every row behind it by one. Reading the index at
+that row on that frame names the wrong person on every disc on the field, by
+exactly one place. Both go through the cell now, which resolves the same way
+the draw does.
+
 ### The veil, and the ear
 
 The masthead is over the field, not above it. On a fresh load the whole

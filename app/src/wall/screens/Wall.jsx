@@ -43,6 +43,12 @@
 // plate, and never two; everything else about a person is behind the tap.
 // The field drifts, every disc in it breathes on its own clock, it can be
 // pulled in any direction, and under a mouse it swells where the pointer is.
+// And it turns over as it is looked at: every couple of seconds one disc, out
+// of the light and in off the rim, recedes and somebody else on the same wall
+// comes up in its place, because the wall carries more names than the glass
+// holds and holding one arrangement of them would be a photograph of the few
+// who happened to fit. It is not an arrival and it is not drawn as one
+// (Hive.jsx, the cycle).
 //
 // ── the field is the screen, and the screen has no margins ──────────────────
 // It is not a panel between the bar and the foot. It runs corner to corner,
