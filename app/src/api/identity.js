@@ -206,11 +206,3 @@ export async function setEmail(email) {
     return { ok: false, error: 'network' }
   }
 }
-
-// The two surface rules, said once. Spec section 3.
-//
-// The campus wall wants a campus and does not care about the @. Main wants
-// the @ and does not care about the campus. A screen that reimplements either
-// of these is a screen that will disagree with the other one eventually.
-export const canReadWall = (u) => !!u?.eduVerified
-export const canPlacePing = (u) => !!u?.handleVerified

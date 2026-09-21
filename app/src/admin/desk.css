@@ -86,20 +86,20 @@
 .ad-nav-group + .ad-nav-group { border-top: 1px solid var(--hair-soft); margin-top: 4px; }
 .ad-nav-gl {
   padding: 6px 18px 4px;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--ash-dim);
 }
 .ad-nav button {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 7px 18px;
-  font-family: var(--f-util); font-size: 13.5px; letter-spacing: 0.01em;
+  font-family: var(--f-util); font-size: var(--t-ctrl); letter-spacing: var(--tr-normal);
   color: var(--ash); text-align: left;
   border-left: 2px solid transparent;
   transition: color 160ms var(--ease), border-color 160ms var(--ease),
               background 160ms var(--ease);
 }
 .ad-nav-w { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1 1 auto; }
-.ad-nav-w small { font-size: 11px; color: var(--ash-dim); letter-spacing: 0.004em; line-height: 1.3; }
+.ad-nav-w small { font-size: var(--t-meta); color: var(--ash-dim); letter-spacing: var(--tr-normal); line-height: 1.3; }
 .ad-nav button:hover { color: var(--chalk); background: var(--void-1); }
 .ad-nav button.is-on {
   color: var(--chalk);
@@ -109,7 +109,7 @@
 .ad-nav button.is-on .ad-nav-w small { color: var(--ash); }
 .ad-nav-n {
   margin-left: auto; flex: none;
-  font-family: var(--f-id); font-size: 11px; font-variant-numeric: tabular-nums;
+  font-family: var(--f-id); font-size: var(--t-meta); font-variant-numeric: tabular-nums;
   color: var(--ash-dim);
 }
 .ad-nav button.is-on .ad-nav-n { color: var(--ash); }
@@ -162,8 +162,8 @@
 
 /* ── the head of a section ── */
 .ad-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 16px; }
-.ad-head h1 { margin: 0; font-family: var(--f-display); font-weight: var(--w-display, 500); font-variation-settings: var(--opsz-display, normal); font-size: 27px; letter-spacing: -0.015em; color: var(--chalk); }
-.ad-head-note { font-family: var(--f-util); font-size: 12.5px; color: var(--ash-dim); }
+.ad-head h1 { margin: 0; font-family: var(--f-display); font-weight: var(--w-display, 500); font-variation-settings: var(--opsz-display, normal); font-size: var(--t-value-lg); letter-spacing: var(--tr-tight); color: var(--chalk); }
+.ad-head-note { font-family: var(--f-util); font-size: var(--t-small); color: var(--ash-dim); }
 .ad-head-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ── a sub head ──
@@ -174,7 +174,7 @@
 .ad-head.is-sub h2 {
   margin: 0; font-family: var(--f-display); font-weight: var(--w-display, 500);
   font-variation-settings: var(--opsz-display, normal);
-  font-size: 20px; letter-spacing: -0.01em; color: var(--chalk);
+  font-size: var(--t-subject); letter-spacing: var(--tr-snug); color: var(--chalk);
 }
 
 /* ── a paragraph of explanation ──
@@ -182,7 +182,7 @@
    and never the dim tone: it is a sentence somebody has to read. */
 .ad-note-p {
   margin: 8px 0 0; max-width: 62ch;
-  font-family: var(--f-util); font-size: 13px; line-height: 1.55; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.55; color: var(--ash);
 }
 
 /* ── what is waiting ──
@@ -204,13 +204,13 @@ button.ad-wait:hover { background: var(--void-1); }
   flex: none; min-width: 30px;
   font-family: var(--f-display); font-weight: var(--w-display, 500);
   font-variation-settings: var(--opsz-display, normal);
-  font-size: 25px; line-height: 0.9;
+  font-size: var(--t-value-lg); line-height: 0.9;
   color: var(--chalk); font-variant-numeric: tabular-nums;
 }
-.ad-wait-t { flex: 1 1 auto; font-family: var(--f-util); font-size: 13.5px; line-height: 1.45; color: var(--ash); }
+.ad-wait-t { flex: 1 1 auto; font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.45; color: var(--ash); }
 .ad-wait-t b { font-weight: 400; color: var(--chalk); }
 .ad-wait-go {
-  flex: none; font-family: var(--f-util); font-size: 12.5px; color: var(--accent);
+  flex: none; font-family: var(--f-util); font-size: var(--t-small); color: var(--accent);
   transition: color 160ms var(--ease);
 }
 button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
@@ -242,7 +242,7 @@ button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
   border-bottom: 1px solid var(--hair-soft);
 }
 .ad-fig-n {
-  font-family: var(--f-id); font-size: 17px; font-variant-numeric: tabular-nums;
+  font-family: var(--f-id); font-size: var(--t-read); font-variant-numeric: tabular-nums;
   color: var(--chalk); line-height: 1;
 }
 .ad-fig-n.is-zero { color: var(--ash-dim); }
@@ -250,7 +250,7 @@ button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
 /* A cell that closes the rectangle and says nothing. */
 .ad-fig.is-pad { min-height: 39px; }
 .ad-fig-t {
-  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.012em;
+  font-family: var(--f-util); font-size: var(--t-meta); letter-spacing: var(--tr-normal);
   color: var(--ash); line-height: 1.25;
 }
 
@@ -261,10 +261,10 @@ button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
 .ad-scroll { overflow-x: auto; margin: 0 -24px; padding: 0 24px; }
 @media (max-width: 900px) { .ad-scroll { margin: 0 -16px; padding: 0 16px; } }
 
-.ad-table { width: 100%; border-collapse: collapse; font-family: var(--f-util); font-size: 13px; }
+.ad-table { width: 100%; border-collapse: collapse; font-family: var(--f-util); font-size: var(--t-ctrl); }
 .ad-table th {
-  font-family: var(--f-id); font-size: 10px; font-weight: 400;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim);
+  font-family: var(--f-id); font-size: var(--t-label); font-weight: 400;
+  letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--ash-dim);
   text-align: left; padding: 0 14px 8px 0; white-space: nowrap;
   border-bottom: 1px solid var(--hair);
 }
@@ -290,24 +290,24 @@ button.ad-wait:hover .ad-wait-go { color: var(--chalk); }
 /* An identifier is a monospace string and it is never uppercased, because a
    handle is a lower case identifier and uppercasing one makes it a different
    string from the one on the wall. */
-.ad-id { font-family: var(--f-id); font-size: 12.5px; color: var(--chalk); letter-spacing: 0.01em; }
+.ad-id { font-family: var(--f-id); font-size: var(--t-small); color: var(--chalk); letter-spacing: var(--tr-normal); }
 /* A handle you can act on. It reads as the identifier it is until the pointer
    is on it, rather than as a link scattered through a table of plain text. */
 button.ad-id { text-align: left; transition: color 160ms var(--ease); }
 button.ad-id:hover { color: var(--accent); }
-.ad-id.is-dim { color: var(--ash-dim); font-size: 11.5px; }
-.ad-uuid { font-family: var(--f-id); font-size: 10.5px; color: var(--ash-dim); letter-spacing: 0.02em; }
+.ad-id.is-dim { color: var(--ash-dim); font-size: var(--t-meta); }
+.ad-uuid { font-family: var(--f-id); font-size: var(--t-label); color: var(--ash-dim); letter-spacing: var(--tr-open); }
 button.ad-uuid { text-align: left; transition: color 160ms var(--ease); }
 button.ad-uuid:hover { color: var(--accent); }
-.ad-when { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ad-when { font-family: var(--f-id); font-size: var(--t-meta); color: var(--ash-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ad-body-text { color: var(--ash); line-height: 1.5; }
-.ad-body-text.is-quote { font-family: var(--f-letter); font-size: 15px; color: var(--chalk); line-height: 1.45; }
+.ad-body-text.is-quote { font-family: var(--f-letter); font-size: var(--t-wide); color: var(--chalk); line-height: 1.45; }
 /* A note under the thing it is about, rather than beside it. */
 .ad-meta { margin: 3px 0 0; line-height: 1.4; }
 
 /* ── state ──
    Printed ink, not a chip: a dot and a word, the way a ledger marks a line. */
-.ad-state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); }
+.ad-state { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-loose); text-transform: uppercase; color: var(--ash); }
 .ad-state::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
 .ad-state.is-live { color: var(--ad-go); }
 .ad-state.is-hold { color: var(--ad-hold); }
@@ -317,7 +317,7 @@ button.ad-uuid:hover { color: var(--accent); }
 /* An absence is not a state. It was drawn with the same dot as `live` and
    `removed`, which made an empty column read as a flag on four rows out of
    four. It is a quiet word now and it carries no mark. */
-.ad-none { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); }
+.ad-none { font-family: var(--f-id); font-size: var(--t-meta); color: var(--ash-dim); }
 
 /* ── controls ──
    Small, because a desk is dense, and never gradient filled. Destructive
@@ -325,9 +325,9 @@ button.ad-uuid:hover { color: var(--accent); }
    says what it is about to do rather than turning red and hoping. */
 .ad-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 30px; padding: 0 12px;
+  min-height: var(--c-sm); padding: 0 12px;
   border: 1px solid var(--hair); border-radius: var(--r-field);
-  font-family: var(--f-util); font-size: 12px; letter-spacing: 0.012em;
+  font-family: var(--f-util); font-size: var(--t-small); letter-spacing: var(--tr-normal);
   color: var(--ash); background: var(--void-1);
   text-decoration: none;
   transition: color 160ms var(--ease), border-color 160ms var(--ease), background 160ms var(--ease);
@@ -346,22 +346,22 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-search {
   display: flex; align-items: center; gap: 9px;
   border: 1px solid var(--hair); border-radius: var(--r-field);
-  padding: 0 12px; min-height: 34px; background: var(--void-1);
+  padding: 0 12px; min-height: var(--c-sm); background: var(--void-1);
   min-width: 244px;
 }
 @media (max-width: 480px) { .ad-search { min-width: 0; flex: 1 1 100%; } }
 .ad-search input {
   flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 0;
-  font-family: var(--f-id); font-size: 13px; color: var(--chalk);
+  font-family: var(--f-id); font-size: var(--t-ctrl); color: var(--chalk);
 }
 .ad-search input:focus { outline: none; }
 .ad-search input::placeholder { color: var(--ash-dim); }
-.ad-search-k { font-family: var(--f-id); font-size: 12px; color: var(--ash-dim); }
+.ad-search-k { font-family: var(--f-id); font-size: var(--t-small); color: var(--ash-dim); }
 
 .ad-tabs { display: inline-flex; gap: 2px; border: 1px solid var(--hair); border-radius: var(--r-field); padding: 2px; flex-wrap: wrap; }
 .ad-tabs button {
   padding: 5px 11px; border-radius: 9px;
-  font-family: var(--f-util); font-size: 12px; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
   transition: color 160ms var(--ease), background 160ms var(--ease);
 }
 .ad-tabs button:hover { color: var(--chalk); }
@@ -370,7 +370,7 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-note {
   width: 100%; background: var(--void-1); color: var(--chalk);
   border: 1px solid var(--hair); border-radius: var(--r-field);
-  padding: 9px 11px; font-family: var(--f-util); font-size: 13px; line-height: 1.45;
+  padding: 9px 11px; font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.45;
   resize: vertical; min-height: 62px;
 }
 .ad-note:focus { outline: none; border-color: rgba(244, 241, 234, 0.28); }
@@ -380,7 +380,7 @@ button.ad-uuid:hover { color: var(--accent); }
    alone. On is the accent, one of its two uses on the desk. */
 .ad-toggle {
   display: inline-flex; align-items: center; gap: 10px; padding: 4px 6px 4px 2px;
-  font-family: var(--f-util); font-size: 12.5px; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
   border-radius: var(--r-field);
   transition: color 160ms var(--ease);
 }
@@ -403,21 +403,21 @@ button.ad-uuid:hover { color: var(--accent); }
 
 /* ── a field with a label ── */
 .ad-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.ad-field-l { font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim); min-height: 12px; }
+.ad-field-l { font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--ash-dim); min-height: 12px; }
 .ad-field-box {
   display: flex; align-items: center; gap: 8px;
   border: 1px solid var(--hair); border-radius: var(--r-field);
-  padding: 0 11px; min-height: 34px; background: var(--void-1);
+  padding: 0 11px; min-height: var(--c-sm); background: var(--void-1);
 }
 .ad-field-box input {
   flex: 1 1 auto; min-width: 0; width: 100%; background: none; border: 0; padding: 0;
-  font-family: var(--f-id); font-size: 13px; color: var(--chalk);
+  font-family: var(--f-id); font-size: var(--t-ctrl); color: var(--chalk);
 }
 .ad-field-box.is-util input { font-family: var(--f-util); }
 .ad-field-box input:focus { outline: none; }
 .ad-field-box input::placeholder { color: var(--ash-dim); }
 .ad-field-box:focus-within { border-color: rgba(244, 241, 234, 0.28); }
-.ad-field-hint { font-family: var(--f-util); font-size: 11.5px; color: var(--ash-dim); line-height: 1.35; }
+.ad-field-hint { font-family: var(--f-util); font-size: var(--t-meta); color: var(--ash-dim); line-height: 1.35; }
 .ad-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 14px; align-items: start; max-width: 900px; margin-top: 12px; }
 .ad-form > .ad-btn { margin-top: 17px; }
 .ad-form > .ad-btn { justify-self: start; }
@@ -432,7 +432,7 @@ button.ad-uuid:hover { color: var(--accent); }
 }
 .ad-panel-row { display: flex; flex-wrap: wrap; gap: 16px 40px; align-items: flex-start; }
 .ad-panel-fig { display: flex; align-items: baseline; gap: 9px; padding-top: 22px; }
-.ad-panel-fig .ad-fig-n { font-size: 22px; }
+.ad-panel-fig .ad-fig-n { font-size: var(--t-value); }
 
 /* ── rows of a setting or a screen: the thing on the left, its control on the
    right, a hairline between rows ── */
@@ -442,7 +442,7 @@ button.ad-uuid:hover { color: var(--accent); }
   padding: 14px 0; border-bottom: 1px solid var(--hair-soft);
 }
 .ad-row-l { flex: 1 1 320px; min-width: 0; }
-.ad-row-t { font-family: var(--f-util); font-size: 14px; color: var(--chalk); }
+.ad-row-t { font-family: var(--f-util); font-size: var(--t-name); color: var(--chalk); }
 .ad-row-l .ad-note-p { margin-top: 4px; }
 .ad-row-r { display: flex; align-items: flex-end; gap: 8px; flex: 0 0 auto; }
 .ad-row-r .ad-field { width: 120px; }
@@ -451,7 +451,7 @@ button.ad-uuid:hover { color: var(--accent); }
 /* ── the sign in link ── */
 .ad-link { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hair-soft); }
 .ad-link-url {
-  display: block; font-family: var(--f-id); font-size: 12px; line-height: 1.5; color: var(--chalk);
+  display: block; font-family: var(--f-id); font-size: var(--t-small); line-height: 1.5; color: var(--chalk);
   word-break: break-all; padding: 10px 12px; background: var(--void-2); border-radius: var(--r-field);
 }
 
@@ -466,7 +466,7 @@ button.ad-uuid:hover { color: var(--accent); }
   background: var(--void-2); overflow: hidden;
 }
 .ad-rate-fill { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-.ad-rate-n { font-family: var(--f-id); font-size: 12px; color: var(--chalk); flex: 0 0 auto; }
+.ad-rate-n { font-family: var(--f-id); font-size: var(--t-small); color: var(--chalk); flex: 0 0 auto; }
 
 /* minmax(0, 1fr) rather than the implicit auto column: an auto column is
    sized to its contents, and the form inside carries a 210px minimum per
@@ -480,7 +480,7 @@ button.ad-uuid:hover { color: var(--accent); }
 /* ── the guide: a situation, three sentences, and the way to the screen ── */
 .ad-guide { max-width: 760px; border-top: 1px solid var(--hair); }
 .ad-guide-row { padding: 14px 0 16px; border-bottom: 1px solid var(--hair-soft); }
-.ad-guide-t { font-family: var(--f-util); font-size: 14px; color: var(--chalk); }
+.ad-guide-t { font-family: var(--f-util); font-size: var(--t-name); color: var(--chalk); }
 .ad-guide-row .ad-note-p { margin: 4px 0 10px; }
 
 /* ── the graph ── */
@@ -489,7 +489,7 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 8px; }
 .ad-legend-k {
   display: inline-flex; align-items: center; gap: 7px; padding: 4px 6px 4px 2px;
-  font-family: var(--f-util); font-size: 12.5px; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-small); color: var(--ash);
   border-radius: 8px;
   transition: color 160ms var(--ease), opacity 160ms var(--ease);
 }
@@ -500,13 +500,13 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-chart-box.is-busy svg { opacity: 0.55; }
 .ad-chart-box svg { display: block; width: 100%; height: auto; touch-action: pan-y; transition: opacity 200ms var(--ease); }
 .ad-grid { stroke: var(--hair); stroke-width: 1; }
-.ad-axis { font-family: var(--f-id); font-size: 10px; fill: var(--ash-dim); letter-spacing: 0.02em; }
+.ad-axis { font-family: var(--f-id); font-size: var(--t-label); fill: var(--ash-dim); letter-spacing: var(--tr-open); }
 .ad-axis.is-end { fill: var(--ash); }
 .ad-dot { stroke: var(--void); stroke-width: 2; }
 .ad-cross { stroke: rgba(244, 241, 234, 0.28); stroke-width: 1; }
 .ad-chart-empty {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
-  font-family: var(--f-util); font-size: 13px; color: var(--ash-dim);
+  font-family: var(--f-util); font-size: var(--t-ctrl); color: var(--ash-dim);
 }
 .ad-tip {
   position: absolute; top: 8px; transform: translateX(-50%);
@@ -514,10 +514,10 @@ button.ad-uuid:hover { color: var(--accent); }
   background: var(--void-2); border: 1px solid var(--hair); border-radius: var(--r-field);
   pointer-events: none;
 }
-.ad-tip-t { font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ash-dim); margin-bottom: 5px; }
-.ad-tip-row { display: flex; align-items: center; gap: 7px; font-family: var(--f-util); font-size: 12px; color: var(--ash); line-height: 1.5; }
+.ad-tip-t { font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-loose); text-transform: uppercase; color: var(--ash-dim); margin-bottom: 5px; }
+.ad-tip-row { display: flex; align-items: center; gap: 7px; font-family: var(--f-util); font-size: var(--t-small); color: var(--ash); line-height: 1.5; }
 .ad-tip-row strong { font-family: var(--f-id); font-weight: 400; color: var(--chalk); font-variant-numeric: tabular-nums; min-width: 3ch; }
-.ad-chart-note { margin: 10px 0 0; max-width: 62ch; font-family: var(--f-util); font-size: 11.5px; line-height: 1.5; color: var(--ash-dim); }
+.ad-chart-note { margin: 10px 0 0; max-width: 62ch; font-family: var(--f-util); font-size: var(--t-meta); line-height: 1.5; color: var(--ash-dim); }
 
 /* ── the drawer ──
    One row opened in place, under itself, rather than in a modal. A modal on a
@@ -528,13 +528,13 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-drawer-in { padding: 4px 0 16px; display: grid; gap: 16px; }
 .ad-def { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 12px 22px; }
 .ad-def div { min-width: 0; }
-.ad-def dt { font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ash-dim); margin: 0 0 3px; }
-.ad-def dd { margin: 0; font-family: var(--f-id); font-size: 12.5px; color: var(--chalk); word-break: break-word; }
+.ad-def dt { font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--ash-dim); margin: 0 0 3px; }
+.ad-def dd { margin: 0; font-family: var(--f-id); font-size: var(--t-small); color: var(--chalk); word-break: break-word; }
 .ad-sub { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
 .ad-sub li { border-left: 1px solid var(--hair); padding: 0 0 0 12px; }
 
 .ad-json {
-  margin: 0; font-family: var(--f-id); font-size: 11.5px; line-height: 1.55;
+  margin: 0; font-family: var(--f-id); font-size: var(--t-meta); line-height: 1.55;
   color: var(--ash); white-space: pre-wrap; word-break: break-word;
   background: var(--void-2); border-radius: var(--r-field); padding: 10px 12px;
   max-height: 220px; overflow: auto;
@@ -542,9 +542,9 @@ button.ad-uuid:hover { color: var(--accent); }
 
 /* ── page states ── */
 .ad-empty { padding: 40px 0; text-align: center; }
-.ad-empty p { margin: 0; font-family: var(--f-util); font-size: 13.5px; color: var(--ash-dim); }
+.ad-empty p { margin: 0; font-family: var(--f-util); font-size: var(--t-ctrl); color: var(--ash-dim); }
 .ad-paging { display: flex; align-items: center; gap: 12px; padding: 16px 0 0; }
-.ad-paging .ad-count { font-family: var(--f-id); font-size: 11.5px; color: var(--ash-dim); font-variant-numeric: tabular-nums; margin-right: auto; }
+.ad-paging .ad-count { font-family: var(--f-id); font-size: var(--t-meta); color: var(--ash-dim); font-variant-numeric: tabular-nums; margin-right: auto; }
 
 /* ── the door ──
    One field on an otherwise empty ground. Nothing about the desk is named on
@@ -556,11 +556,11 @@ button.ad-uuid:hover { color: var(--accent); }
 .ad-gate form { display: grid; gap: 14px; }
 .ad-gate input {
   width: 100%; background: none; border: 0; border-bottom: 1px solid var(--hair);
-  padding: 0 0 10px; font-family: var(--f-id); font-size: 19px; color: var(--chalk);
-  letter-spacing: 0.14em;
+  padding: 0 0 10px; font-family: var(--f-id); font-size: var(--t-subject); color: var(--chalk);
+  letter-spacing: var(--tr-label);
 }
 .ad-gate input:focus { outline: none; border-bottom-color: rgba(244, 241, 234, 0.4); }
-.ad-gate-fault { font-family: var(--f-util); font-size: 12.5px; color: var(--ad-stop); margin: 0; }
+.ad-gate-fault { font-family: var(--f-util); font-size: var(--t-small); color: var(--ad-stop); margin: 0; }
 
 /* ── reduced motion ── */
 @media (prefers-reduced-motion: reduce) {

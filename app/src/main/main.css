@@ -76,7 +76,7 @@
   max-width: 36ch;
   font-family: var(--f-letter);
   font-optical-sizing: auto;
-  font-size: 16.5px;
+  font-size: var(--t-read);
   line-height: 1.55;
   letter-spacing: 0;
   color: var(--ash);
@@ -92,7 +92,7 @@
 .mn-said {
   min-height: 18px;
   font-family: var(--f-util);
-  font-size: 12.5px;
+  font-size: var(--t-small);
   color: var(--ash);
 }
 
@@ -109,7 +109,7 @@
 }
 .mn-quiet-link {
   font-family: var(--f-util);
-  font-size: 12.5px;
+  font-size: var(--t-small);
   color: var(--ash);
   text-decoration: none;
 }
@@ -144,14 +144,14 @@
 .mn-letter .wl-paper-head { margin-bottom: 14px; }
 .mn-letter .wl-paper-crest { gap: 11px; margin-bottom: 12px; }
 .mn-letter .wl-paper-title { flex: 0 1 auto; }
-.mn-letter .wl-letterfield textarea { font-size: 17px; line-height: 1.55; min-height: calc(5 * 1.55 * 17px); }
+.mn-letter .wl-letterfield textarea { font-size: var(--t-read); line-height: 1.55; min-height: calc(5 * 1.55 * 17px); }
 .mn-letter .wl-letterfield { padding-bottom: 20px; }
 .mn-letter .wl-count { bottom: 2px; }
 .mn-letter .wl-paper-foot { margin-top: 12px; padding-top: 12px; }
 
 .mn-lab {
   flex: 0 0 auto; min-width: 34px;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--paper-ink-2);
 }
 
@@ -159,9 +159,9 @@
    name once it is known. The field keeps the bare baseline every field in
    the product has, struck in the paper's ink rather than in chalk. */
 .mn-sign { display: flex; align-items: center; gap: 11px; min-height: 32px; }
-.mn-sign-h { font-family: var(--f-id); font-size: 17px; letter-spacing: -0.012em; color: var(--paper-ink); }
+.mn-sign-h { font-family: var(--f-id); font-size: var(--t-read); letter-spacing: var(--tr-tight); color: var(--paper-ink); }
 .mn-sign .wl-field { flex: 1 1 auto; min-width: 0; align-items: baseline; padding-bottom: 5px; }
-.mn-sign .wl-field input, .mn-sign .wl-at { font-size: 18px; }
+.mn-sign .wl-field input, .mn-sign .wl-at { font-size: var(--t-subject); }
 .mn-sign .wl-field input { color: var(--paper-ink); }
 .mn-sign .wl-field input::placeholder { color: rgba(106, 99, 87, 0.5); }
 .mn-sign .wl-at { color: var(--paper-ink-2); }

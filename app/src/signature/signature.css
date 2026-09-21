@@ -51,7 +51,7 @@
 /* ═══ THE HERO ═════════════════════════════════════════════════════════════ */
 
 .sg-top { padding-bottom: 6px; }
-.sg-lockup { font-size: 22px; color: var(--chalk); }
+.sg-lockup { font-size: var(--t-value); color: var(--chalk); }
 /* Not a link. There is one door to the wall on this page and it is the gate at
    the foot; a second and a third in the bar and the dock were three ways to the
    same room dressed as three destinations. This says where you are. */
@@ -89,10 +89,10 @@
   margin: 20px 0 0;
   max-width: 34ch;
   font-family: var(--f-util);
-  font-size: 15px;
+  font-size: var(--t-wide);
   line-height: 1.62;
   color: var(--ash);
-  letter-spacing: 0.004em;
+  letter-spacing: var(--tr-normal);
 }
 
 /* The object sits off the right gutter rather than centred under the type. A
@@ -140,19 +140,19 @@
 .sg-gate-h {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 21px; line-height: 1.22;
-  letter-spacing: -0.012em; color: var(--chalk);
+  font-size: var(--t-value); line-height: 1.22;
+  letter-spacing: var(--tr-tight); color: var(--chalk);
 }
 /* A sentence, so it is set in the sentence face. Only the handle inside it is
    an identifier, and only the handle is monospaced, which is the same rule
    wall.css applies to a handle sitting inside a label. */
 .sg-gate-m {
-  font-family: var(--f-util); font-size: 12px; letter-spacing: 0.004em;
+  font-family: var(--f-util); font-size: var(--t-small); letter-spacing: var(--tr-normal);
   line-height: 1.5; color: var(--ash-dim);
 }
-.sg-gate-m .sg-h { font-family: var(--f-id); font-size: 11.5px; letter-spacing: -0.008em; }
+.sg-gate-m .sg-h { font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-snug); }
 .sg-gate-g {
-  flex: 0 0 auto; font-family: var(--f-util); font-size: 17px; color: var(--ash-dim);
+  flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-read); color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
 .sg-gate:hover .sg-gate-g { transform: translateX(5px); color: var(--chalk); }
@@ -202,25 +202,25 @@
    avatar at all. */
 .sg-who { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
 .sg-disc {
-  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%;
+  flex: 0 0 auto; width: var(--c-round); height: var(--c-round); border-radius: 50%;
   display: grid; place-items: center; overflow: hidden;
   background: rgba(23, 21, 15, 0.06);
   box-shadow: 0 0 0 1px rgba(23, 21, 15, 0.14) inset;
 }
 .sg-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .sg-mono {
-  font-family: var(--f-id); font-size: 14px; letter-spacing: 0.02em;
+  font-family: var(--f-id); font-size: var(--t-name); letter-spacing: var(--tr-open);
   color: var(--paper-ink-2);
 }
 .sg-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .sg-who-name {
   display: flex; align-items: center; gap: 6px; min-width: 0;
-  font-family: var(--f-util); font-size: 15px; font-weight: 500;
-  color: var(--paper-ink); letter-spacing: 0.002em;
+  font-family: var(--f-util); font-size: var(--t-wide); font-weight: 500;
+  color: var(--paper-ink); letter-spacing: var(--tr-normal);
 }
 .sg-ver { flex: 0 0 auto; color: var(--paper-ink); }
 .sg-who-at {
-  font-family: var(--f-id); font-size: 12.5px; letter-spacing: -0.008em;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-snug);
   color: var(--paper-ink-2);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -248,10 +248,10 @@
   .sg-hero-say { flex: 1 1 0; min-width: 0; max-width: 560px; }
   .sg-hero-stage { flex: 0 0 auto; align-self: center; margin: 0 -20px 0 0; }
   .sg-hero-stage .sg-align { width: min(42vh, 400px) !important; height: min(42vh, 400px) !important; }
-  .sg-mech { font-size: 16px; max-width: 42ch; }
+  .sg-mech { font-size: var(--t-wide); max-width: 42ch; }
 
   .sg-gate { padding: 20px 4px 20px 0; }
-  .sg-gate-h { font-size: 24px; }
+  .sg-gate-h { font-size: var(--t-value); }
 
   .sg-dock { margin: 0 -40px; padding: 0 40px; }
 

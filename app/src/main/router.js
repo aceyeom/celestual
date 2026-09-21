@@ -1,34 +1,8 @@
-// ── Main's route table ──────────────────────────────────────────────────────
-//
-// Phase 6b. Main is the product the wall hands off into: a ping placed on
-// somebody, standing for sixty days, revealed only if they place one back.
-//
-// It is mounted at `/` and it is a small table on purpose. The old landing at
-// App.jsx has about twenty routes on it, most of which are a campaign, a
-// sandbox or a competition, and none of which spec section 8 puts in scope.
-// What is in scope is the hero, the flow that follows it, and the reveal, so
-// those are what is here.
-//
-// No routing library. App.jsx matches location.pathname by hand and the wall
-// does the same, so this does too and adds nothing to a dependency tree the
-// rest of the product is judged from.
-export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin']
-
 // ── the front door moved ────────────────────────────────────────────────────
 // The root of the site is the wall for everybody now (wall/campus.js), and
 // the ping's own front door, the hero with its two sealed cards, stands at
 // /ping: the page the wall's tab hands people to, and the one the foot of
 // every page links to as the rest of the product.
-
-// The addresses Main does not draw. The wall's, the old printed address that
-// rewrites onto it, the signature preview, the desk, and the three legal pages
-// that a Vercel rewrite serves as static HTML before this bundle is reached.
-// `paid` was on this list while the retired design still served the Stripe
-// return; both went on 4 September, and anything not claimed by another shell
-// draws the not found below.
-export const NOT_OURS = new Set([
-  'admin', 'privacy', 'terms', 'data-deletion', 'berkeley', 'beta', 'signature',
-])
 
 function decode(s) {
   try { return decodeURIComponent(s) } catch { return s }

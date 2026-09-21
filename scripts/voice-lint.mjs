@@ -118,6 +118,40 @@ const DASH = /[—–]|&[mn]dash;/
 // the phrase is anchored.
 const bannedRe = (phrase) => new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i')
 
+// ── design/VOICE.md section 1: "Product copy is lowercase, including sentence
+//    starts. Legal pages and proper nouns keep their case." ─────────────────
+//
+// This was judgment until sixteen capitalised strings shipped on the wall —
+// "Sign in to write.", "Your information will stay anonymous.", "And what makes
+// them so." — beside a product that says "write a letter", "look for a name"
+// and "send anonymously". Mixed case is not a small thing here: it is the
+// register changing halfway down a screen, and it reads as two products.
+//
+// Only JSX TEXT is checked: the words between the tags, which is where a
+// headline or a sentence actually lives. Strings in props are left alone
+// because most of them are not copy at all (a class, a key, an aria-role),
+// and a lint that cries about `className` is a lint people switch off.
+//
+// What is allowed to keep its case: a proper noun, an all-caps label (`NOW`,
+// `SEALED`), a single letter, and anything starting with an interpolation or a
+// tag, since the case then belongs to whatever is being interpolated. The
+// legal pages under app/public are exempt, as section 1 says.
+const PROPER = /^(Celestual|CELESTUAL|Instagram|Google|Meta|Berkeley|Apify|Supabase|Stripe|ManyChat|Resend|Vercel|Sather|Campanile|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/
+
+function casedCopy(line) {
+  const out = []
+  // text between a closing > and an opening <, with no braces in it
+  for (const m of line.matchAll(/>([^<>{}]+)</g)) {
+    const t = m[1].trim()
+    if (!t) continue
+    if (!/^[A-Z][a-z]/.test(t)) continue      // not sentence case: a label, a glyph, lower case already
+    if (t.length <= 2) continue               // a type specimen ("Aa"), not a sentence
+    if (PROPER.test(t)) continue
+    out.push(t)
+  }
+  return out
+}
+
 let failures = 0
 for (const file of files) {
   const text = stripComments(readFileSync(file, 'utf8'))
@@ -142,6 +176,12 @@ for (const file of files) {
     if (DASH.test(line)) {
       console.error(`✗ ${where} dash in copy (use a full stop): ${line.trim().slice(0, 90)}`)
       failures++
+    }
+    if (!file.includes('/app/public/')) {
+      for (const t of casedCopy(line)) {
+        console.error(`✗ ${where} copy starts capitalised (VOICE.md 1): "${t.slice(0, 60)}"`)
+        failures++
+      }
     }
   })
 }

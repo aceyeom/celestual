@@ -112,7 +112,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
         <div className="mn-mid">
           <Prove
             who={who} refreshWho={refreshWho} onProved={() => setRev((n) => n + 1)} headRef={avoid}
-            title={lapsed ? <>One message,<br />and it is back.</> : <>Your sky is<br />behind your @.</>}
+            title={lapsed ? <>one message,<br />and it is back.</> : <>your sky is<br />behind your @.</>}
           />
         </div>
         <div className="mn-foot">
@@ -130,7 +130,7 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
       <main className="mn-page mn-sky">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1" ref={avoid}>Your sky did<br />not load.</Display>
+          <Display size="m" as="h1" ref={avoid}>your sky did<br />not load.</Display>
           <Prose className="mn-copy">nothing about it has changed. check the connection and try again.</Prose>
         </div>
         <div className="mn-foot">
@@ -152,9 +152,9 @@ export default function Sky({ go, who, known = true, refreshWho, still = false }
         <div className="mn-mid">
           <Display size="m" as="h1" className="mn-h" ref={avoid}>
             {state.loading ? <>&nbsp;</>
-              : mutuals.length ? <>It&rsquo;s mutual.</>
-              : standing.length ? <>Standing.</>
-              : <>Nothing out<br />yet.</>}
+              : mutuals.length ? <>it&rsquo;s mutual.</>
+              : standing.length ? <>standing.</>
+              : <>nothing out<br />yet.</>}
           </Display>
 
           {/* ── the mutuals ──

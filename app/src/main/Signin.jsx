@@ -120,7 +120,7 @@ export default function Signin({ go, who, refreshWho }) {
           <>
             <Label><Sparkle size={11} />done</Label>
             <Display size="m" as="h1" ref={avoid}>
-              {handle ? <>You are in,<br />@{handle}.</> : <>You are in.</>}
+              {handle ? <>you are in,<br />@{handle}.</> : <>you are in.</>}
             </Display>
             <Prose className="mn-copy">
               {handle ? 'everything you have out is where you left it.' : 'the wall is open to you.'}
@@ -128,17 +128,17 @@ export default function Signin({ go, who, refreshWho }) {
           </>
         ) : phase === 'lapsed' ? (
           <>
-            <Display size="m" as="h1" ref={avoid}>That link<br />has lapsed.</Display>
+            <Display size="m" as="h1" ref={avoid}>that link<br />has lapsed.</Display>
             <Prose className="mn-copy">it works once, and not for long. ask for another.</Prose>
           </>
         ) : phase === 'offline' ? (
           <>
-            <Display size="m" as="h1" ref={avoid}>Nothing<br />answered.</Display>
+            <Display size="m" as="h1" ref={avoid}>nothing<br />answered.</Display>
             <Prose className="mn-copy">check the connection, then press the link again.</Prose>
           </>
         ) : (
           <>
-            <Display size="m" as="h1" ref={avoid}>This link is<br />missing its token.</Display>
+            <Display size="m" as="h1" ref={avoid}>this link is<br />missing its token.</Display>
             <Prose className="mn-copy">open the message again and press the link there.</Prose>
           </>
         )}

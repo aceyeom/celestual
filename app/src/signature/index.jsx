@@ -35,11 +35,6 @@ import Reveal from './Reveal.jsx'
 
 export const BASE = '/signature'
 
-export function isSignaturePath(pathname) {
-  const p = String(pathname || '').replace(/\/+$/, '')
-  return p === BASE || p.startsWith(BASE + '/')
-}
-
 function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '')
   return p === BASE + '/reveal' ? 'reveal' : 'hero'

@@ -119,8 +119,6 @@ export function cleanName(raw) {
   return n
 }
 
-export function validName(raw) { return !!cleanName(raw) }
-
 // What a key is called, for anything that prints one: the name as written
 // for a first name, the handle with its @ otherwise. The spelling comes from
 // wherever this browser last saw the key (the index, a search, a letter, or
@@ -186,11 +184,6 @@ export function wallLoaded() { return TILES_AT > 0 || !!TILES_ERROR }
 const BY_HANDLE = new Map()
 const BY_ID = new Map()
 
-// The gate's last answer, as the server gave it. `null` before anything has
-// been asked, which the screens read as "not yet" rather than as "no".
-let OPEN = null
-export function gateOpen() { return OPEN }
-
 // ── the five ────────────────────────────────────────────────────────────────
 // Every browser reads five whole letters before it is asked for anything
 // (migration 0045). These two are the server's last word on that, updated by
@@ -237,7 +230,6 @@ export function mine() { return MINE }
 export function forgetLetters() {
   BY_HANDLE.clear()
   BY_ID.clear()
-  OPEN = null
   GATED = null
   FREE = null
   QUOTA = null
@@ -419,7 +411,6 @@ export function loadHandle(raw, force = false) {
   return once(`h:${h}`, async () => {
     const out = await api.lettersFor(h)
     if (!out.ok) return
-    OPEN = out.open
     GATED = out.gated
     if (out.free) FREE = out.free
     if (out.kind === 'name') learnName(h, out.name)
@@ -443,7 +434,6 @@ export function loadLetter(id, force = false) {
       if (out.error === 'gone') { BY_ID.set(id, null); bump() }
       return
     }
-    OPEN = out.open
     GATED = out.gated
     if (out.free) FREE = out.free
     if (out.letter?.kind === 'name') learnName(out.letter.to, out.letter.name)
@@ -557,8 +547,6 @@ export function wall() {
 export function liveCount() {
   return TILES.reduce((n, t) => n + t.count, 0)
 }
-
-export function handleCount() { return TILES.length }
 
 // ── reading ─────────────────────────────────────────────────────────────────
 // Both of these answer out of the cache. A caller that wants them filled calls

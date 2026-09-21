@@ -282,23 +282,6 @@ export function Icon({ name, size = 20, className = '' }) {
   )
 }
 
-// Every icon carries a label. It is never drawn — on a pointer device it
-// arrives as a tooltip after a beat, and a screen reader reads it always — so
-// the bar is legible without a word on it and still navigable without sight.
-export function IconButton({ name, label, onClick, tone = '', on = false, className = '', ...rest }) {
-  return (
-    <button
-      type="button"
-      className={`wl-iconbtn${tone ? ` is-${tone}` : ''}${on ? ' is-on' : ''} ${className}`}
-      onClick={onClick} aria-label={label} title={label}
-      aria-current={on ? 'page' : undefined}
-      {...rest}
-    >
-      <Icon name={name} />
-    </button>
-  )
-}
-
 // ── the brand ───────────────────────────────────────────────────────────────
 // The mark and the name, locked, and it is the way home on every bar in the
 // product: the front door's, Main's flow screens', the wall's. It used to be
