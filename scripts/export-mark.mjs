@@ -114,6 +114,20 @@ for (const g of GROUNDS) {
   made.push(lockFile)
 }
 
+
+// ── the mark a MAIL can draw ─────────────────────────────────────────────────
+// _shared/mail.ts signed every mail with the wordmark in type and nothing else,
+// because the SVG data URI it used to carry rendered in almost no client: Gmail
+// does not draw SVG in an <img> and proxies every image through a cache that
+// drops `data:`. A raster at a public URL is the one thing all of them draw, so
+// the mail points at this file and it is written from the same constants as
+// every other export. 256 because a mail draws it at 26 to 30 CSS pixels and a
+// retina client asks for two of those; anything larger is bytes in an inbox.
+const mailMark = await browser.newPage({ viewport: { width: 256, height: 256 }, deviceScaleFactor: 1 })
+await mailMark.setContent(page(`<div class="m">${svg(CHALK, 256)}</div>`, 'none'))
+await mailMark.locator('.m').screenshot({ path: join(root, 'app/public/mark-chalk-256.png'), omitBackground: true })
+await mailMark.close()
+
 await browser.close()
 
 // The lockup as markup, for anywhere the face is available.

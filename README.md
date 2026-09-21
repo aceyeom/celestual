@@ -159,7 +159,8 @@ order to apply what is left.
 | `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
 | `/c/<code>` | what the five printed cards carry in their QR. Logs the scan, then hands the visitor to wherever that card is pointed |
 | `/optout` | take a handle off, permanently, proved with one DM, no account |
-| `/copy`, `/signin` | the two links a mail sends somebody to |
+| `/signin` | the link a mail sends somebody to |
+| `/copy` | the code off a mail, on the clipboard. Nothing sends anybody here any more: the code is copied out of the mail itself, and the page is kept for the mails already in inboxes |
 | `/admin` | the desk. Password checked server side. `#reports`, `#cards`, `#people=@handle` and the other section names in the fragment open a screen directly |
 | `/signature`, `/signature/reveal` | where the two signature surfaces were approved |
 | `/terms`, `/privacy`, `/data-deletion` | static, served by a rewrite |

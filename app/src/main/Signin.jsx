@@ -108,7 +108,9 @@ export default function Signin({ go, who, refreshWho }) {
   return (
     <main className="mn-page">
       <TopBar go={go} who={who} />
-      <div className="mn-mid">
+      {/* the door's axis (main.css `.mn-mid.is-door`): this is the auth flow
+          standing on Main's shell, and it is centred the way the gate is */}
+      <div className="mn-mid is-door">
         {phase === 'working' ? (
           <>
             <Label><Sparkle size={11} />signing you in</Label>

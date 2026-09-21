@@ -516,6 +516,58 @@
     </p>
   </section>
 
+  <!-- ── THE DOOR ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>The door</h2>
+    <p class="why">
+      Every sign in screen in the product, on one shape, and the only thing in the build
+      that is centred. The argument for the axis is in DESIGN.md 8.5: a centred paragraph
+      moves its own left edge on every line, which is about reading, and there is no
+      paragraph on a door — there is a symmetrical mark, one sentence, and two or three
+      ways through. The account screen on the same sheet stays left aligned, because that
+      one is a record of what somebody wrote.
+    </p>
+
+    <div class="grid is-two">
+      <div class="bed is-col">
+        <div class="spec" style="width:100%"><span class="cap">the head · mark, title, one line</span>
+          <div class="wl-door" style="max-width:none">
+            <div class="wl-door-head">
+              <span class="wl-door-mark" id="door-mark"></span>
+              <h2 class="wl-display is-s wl-door-title">Sign in to read<br>and write.</h2>
+              <p class="wl-door-say">your information will stay anonymous.</p>
+            </div>
+          </div>
+        </div>
+        <div class="spec" style="width:100%"><span class="cap">or · two segments, no masked hole</span>
+          <div class="wl-or"><span class="wl-or-word">or</span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">the legal line</span>
+          <div class="wl-door-foot">by signing in you agree to the <a href="#">terms</a> and the <a href="#">privacy policy</a>.</div></div>
+      </div>
+
+      <div class="bed is-col">
+        <div class="spec" style="width:100%"><span class="cap">code box · empty. six places, drawn</span>
+          <div class="wl-codebox"><input class="wl-codebox-in" placeholder="······" value=""></div></div>
+        <div class="spec" style="width:100%"><span class="cap">code box · typed</span>
+          <div class="wl-codebox"><input class="wl-codebox-in" value="481920"></div></div>
+        <div class="spec" style="width:100%"><span class="cap">code box · shown, not asked for (/copy)</span>
+          <div class="wl-codebox is-shown"><div class="wl-codebox-digits">481920</div></div></div>
+        <div class="spec" style="width:100%"><span class="cap">resend · counting, then a control</span>
+          <p class="wl-resend">no code yet? <span class="wl-resend-clock">27s</span></p>
+          <button type="button" class="wl-quiet wl-resend-go">send another code</button></div>
+      </div>
+    </div>
+    <p class="note">
+      <b>The code box is drawn twice</b>, and the second one is in an inbox:
+      <code>supabase/functions/_shared/mail.ts</code> holds the same ground, corner, size
+      and tracking. A person reads six characters off one screen and types them into
+      another ten seconds later, and a code that is one shape in the mail and another in
+      the field is a code they have to check twice. It is also why nothing glows on it —
+      a mail cannot carry a text shadow, so a lit code would light on one of the two
+      screens it appears on.
+    </p>
+  </section>
+
   <!-- ── DRAWN ──────────────────────────────────────────────────────────── -->
   <section>
     <h2>Drawn things</h2>
@@ -654,6 +706,7 @@ document.querySelectorAll('.wl-light').forEach((frame) => {
   const f = (v) => Math.round(v * 100) / 100
   beam.style.setProperty('--path', `path('M ${f(k)} 0 H ${f(w - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w)} ${f(k)} V ${f(h - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w - k)} ${f(h)} H ${f(k)} A ${f(k)} ${f(k)} 0 0 1 0 ${f(h - k)} V ${f(k)} A ${f(k)} ${f(k)} 0 0 1 ${f(k)} 0 Z')`)
 })
+$('door-mark').innerHTML = at(38, 'chalk')
 $('art-bloom-mark').innerHTML = at(66, 'chalk')
 
 $('mark-void').innerHTML = at(132, 'chalk')

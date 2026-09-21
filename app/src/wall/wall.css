@@ -4142,20 +4142,183 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-locked .wl-pill { margin-top: 5px; }
 
+/* ═══ THE DOOR ═════════════════════════════════════════════════════════════
+   parts.jsx `DoorHead`, `Or`, `CodeBox`, `Resend`, and the gate that stands
+   them up. Every sign in screen in the product is this block: the mark, one
+   line, and the ways through, stacked on one centred axis.
+
+   ── centred, and it is the only thing here that is ──
+   DESIGN.md is emphatic that this build is left aligned, and the argument
+   there is about READING: a centred paragraph moves its own left edge on
+   every line, so the eye hunts for the start of the next one. None of that
+   is true of a door. There is no paragraph on it — there is a symmetrical
+   mark, one sentence, and two or three ways through, and a symmetrical
+   drawing pushed hard left with a stack of capsules under it reads as a form
+   to be filled in rather than as a way in. The axis changes at the door and
+   changes back behind it, and that change is itself the signal that this
+   sheet is not part of the wall.
+
+   The measure is held at 22rem so the ways in do not stretch into a row of
+   wide grey bars on a spread; the sheet may be 460px and the door is not. */
+.wl-door {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  width: 100%; max-width: 22rem; margin: 0 auto;
+  text-align: center;
+}
+.wl-door-head { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
+/* the signature, at the head of the door and nowhere else on the sheet: the
+   one moment somebody is deciding whether to hand this product an address is
+   the one moment it has to say who it is */
+.wl-door-mark {
+  color: var(--chalk); margin-bottom: 18px;
+  animation: wl-rise 520ms var(--ease) both;
+}
+.wl-door-title { margin: 0; }
+/* the reading face, like every other explanation in the build (DESIGN.md 4):
+   at 15px in the util face this read as chrome, and it is the one sentence on
+   the screen that is making a case */
+.wl-door-say {
+  margin: 12px 0 0; max-width: 30ch;
+  font-family: var(--f-letter); font-optical-sizing: auto;
+  font-size: 15.5px; line-height: 1.5; color: var(--ash);
+  text-wrap: pretty;
+}
+/* what stands under the head: the ways through, at the door's own measure */
+.wl-door-ways { width: 100%; display: flex; flex-direction: column; gap: 12px; padding-top: 26px; }
+.wl-door-ways .wl-acts-pane { text-align: left; }
+.wl-door-ways > .wl-lq { align-self: stretch; }
+
+/* the hairline with one word in it, between the tap and the two that are not.
+   TWO segments either side of the word rather than one line with the word
+   masking a hole in it: the sheet is a piece of glass with the room blurred
+   through it (`.wl-sheet`), so a word carrying an opaque swatch of `--void-1`
+   to cover the rule under it reads as a patch stuck on the glass. Nothing is
+   covered here; the line simply stops and starts. */
+.wl-or { width: 100%; display: flex; align-items: center; gap: 12px; padding: 2px 0; }
+.wl-or::before, .wl-or::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--hair-soft); }
+.wl-or-word {
+  flex: 0 0 auto;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ash-dim);
+}
+
+/* the legal line, at the foot of the door and outside it, quieter than
+   anything in it: it is the one thing here nobody reads before they act and
+   everybody has the right to read afterwards */
+.wl-door-foot {
+  flex: 0 0 auto; width: 100%; max-width: 24rem; margin: 0 auto;
+  padding: 22px 0 calc(4px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  font-family: var(--f-util); font-size: 11.5px; line-height: 1.7; color: var(--ash-dim);
+}
+.wl-door-foot a {
+  color: var(--ash); text-decoration: underline;
+  text-decoration-color: var(--hair); text-underline-offset: 3px;
+  transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease);
+}
+.wl-door-foot a:hover { color: var(--chalk); text-decoration-color: var(--ash-dim); }
+
+/* ── THE CODE BOX ──────────────────────────────────────────────────────────
+   Held to the same values as supabase/functions/_shared/mail.ts `code()`,
+   which is the mail the digits arrive in, so the six characters somebody
+   reads off one screen are the same object in the field they type them into
+   ten seconds later. Change one and change the other.
+
+   Nothing glows on it, and that is the same rule rather than an omission: the
+   mail cannot carry a text shadow (Outlook renders through Word and drops it),
+   so a lit code here would be a code that only lights on one of the two
+   screens it appears on. The DM code (`.wl-dm-digits`) keeps its bloom — that
+   one is never drawn in a mail, and it is a code you send rather than one you
+   are given. */
+.wl-codebox {
+  width: 100%;
+  background: var(--void-2);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 24px 20px 22px;
+  transition: border-color 240ms var(--ease), background 240ms var(--ease);
+}
+/* focus moves the EDGE and not the fill. The fill is the one value this box
+   shares with the mail that a person is looking at while they type — they are
+   holding the phone with the code on it beside the field — and a box that
+   lightens the moment it is tapped stops matching at exactly the moment the
+   two are being compared. The rim carries the state instead, and the field's
+   own caret is already saying where the focus is. */
+.wl-codebox:focus-within { border-color: rgba(244, 241, 234, 0.3); }
+.wl-codebox-in, .wl-codebox-digits {
+  display: block; width: 100%;
+  background: none; border: 0; margin: 0;
+  /* the tracking is on the right of every glyph, the last one included, so a
+     centred string sits one space left of centre; the padding puts it back */
+  padding: 0 0 0 0.14em;
+  font-family: var(--f-id); font-size: 38px; font-weight: 500;
+  letter-spacing: 0.14em; line-height: 1.1;
+  color: var(--chalk); text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.wl-codebox-in:focus { outline: none; }
+/* the six places, drawn rather than written: middle dots, dim, so the empty
+   field says how long the code is without putting six zeroes in front of
+   somebody who then has to work out whether they are already typed */
+.wl-codebox-in::placeholder { color: rgba(96, 92, 85, 0.55); }
+/* shown rather than asked for (/copy): one press takes the whole of it, which
+   is the affordance the mail offers for the same digits */
+.wl-codebox.is-shown .wl-codebox-digits { user-select: all; -webkit-user-select: all; }
+
+/* ── asking for another one ────────────────────────────────────────────────
+   One line under the box, in the same place whether it is counting or
+   offering, so nothing moves under the thumb that is about to press it. */
+.wl-resend {
+  margin: 0; min-height: 20px; align-self: center; padding: 10px 4px;
+  font-family: var(--f-util); font-size: 12.5px; letter-spacing: 0.01em;
+  color: var(--ash-dim);
+}
+.wl-resend-clock { font-family: var(--f-id); font-size: 0.94em; font-variant-numeric: tabular-nums; }
+.wl-resend-go { min-height: 20px; }
+
 /* ═══ THE GATE ═════════════════════════════════════════════════════════════
    Two fields across two steps, and the second half of the address is painted
    beside the box rather than typed into it — the same rule the handle field
    holds to, for the same reason: the constant part of an identifier is not
    something a person should be able to get wrong. */
 .wl-gate { padding-top: 4px; }
-/* the three ways in, on the wall at the root: the same pane the flag opens
-   on a letter, three rows in it, the first with its reason under it */
-.wl-gate-ways { padding-top: 2px; }
+/* ── the sheet, when it is a door ──
+   `is-door` is every state of this sheet except the signed-in one: the ways
+   in, the handle, the address and the code. It centres the axis (see THE DOOR
+   above for why a door is the one centred thing in the build) and the profile
+   card below deliberately does not take it — that screen is a record of what
+   somebody wrote, it is reading matter, and it stays left aligned like the
+   rest of the product. */
+.wl-gate.is-door { text-align: center; }
+.wl-gate.is-door .wl-gate-fault { text-align: center; }
+/* the address, on the door's axis. The field is a baseline carrying an
+   editable half and a painted half, and it is sized to what is in it, so
+   centring is the row's own justification rather than a text alignment. */
+.wl-gate.is-door .wl-addr { justify-content: center; }
+.wl-gate.is-door .wl-addr-in { text-align: right; }
+.wl-gate.is-door .wl-addr.is-whole .wl-addr-in { text-align: center; }
+/* the handle: the @ and what is typed after it are one string, centred as a
+   pair (parts.jsx `HandleField` `centred` sizes the input to its contents).
+   The text inside stays on its own left edge — it is being typed, and a caret
+   that walks out from the middle of a field is a caret nobody can follow. */
+.wl-gate.is-door .wl-field.is-centred { justify-content: center; }
+/* a full-width capsule on the door may not spill its label off the axis */
+.wl-door-ways > .wl-pill.is-wide { max-width: 100%; overflow: hidden; }
+.wl-door-ways > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the other ways in, under the capsule: the same pane the flag opens on a
+   letter, its rows left aligned inside the centred column because a row is a
+   glyph, a label and a chevron and those belong on a rail */
+.wl-gate-ways { width: 100%; }
 .wl-gate-ways .wl-act:disabled { opacity: 0.4; cursor: default; }
-/* the campus's own google, under the address's act, as the quieter way */
-.wl-gate-google { align-self: center; gap: 8px; padding: 0 16px 0 13px; min-height: 36px; font-size: 13px; }
-.wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
-.wl-gate-note { padding-bottom: 16px; }
+/* the campus's own google, under the address and its capsule, as the quieter
+   way: a full-width ghost capsule rather than a small centred one, so it
+   stands as an alternative to the primary above it and not as an aside */
+.wl-gate-google { gap: 8px; font-size: 13px; }
+/* where the code was sent, over the box it is typed into */
+.wl-door-sentto { padding-bottom: 2px; }
+.wl-door-sentto .wl-h { font-family: var(--f-id); color: var(--ash); text-transform: none; letter-spacing: -0.01em; }
+
 
 /* ── the account: the profile card ─────────────────────────────────────────
    Gate.jsx, signed in. One object on the sheet that is the person, the way
@@ -4260,8 +4423,8 @@ a.wl-lq { text-decoration: none; }
   max-width: 42ch;
 }
 /* the address. One baseline carrying an editable half and a fixed half. */
-.wl-addr, .wl-code { position: relative; display: flex; align-items: baseline; gap: 2px; padding-bottom: 11px; }
-.wl-addr-in, .wl-code-in {
+.wl-addr { position: relative; display: flex; align-items: baseline; gap: 2px; padding-bottom: 11px; }
+.wl-addr-in {
   min-width: 0; background: none; border: 0; padding: 0;
   font-family: var(--f-id); font-size: 24px; line-height: 1.18;
   color: var(--chalk); letter-spacing: -0.014em;
@@ -4270,16 +4433,14 @@ a.wl-lq { text-decoration: none; }
 /* typed whole, with its own @: the painted domain comes off and the field
    takes the line. An address on the desk's pass list gets in this way. */
 .wl-addr.is-whole .wl-addr-in { flex: 1 1 auto; max-width: none; width: auto; }
-.wl-addr-in::placeholder, .wl-code-in::placeholder { color: rgba(96, 92, 85, 0.62); }
-.wl-addr-in:focus, .wl-code-in:focus { outline: none; }
+.wl-addr-in::placeholder { color: rgba(96, 92, 85, 0.62); }
+.wl-addr-in:focus { outline: none; }
 .wl-addr-fix {
   flex: 0 0 auto;
   font-family: var(--f-id); font-size: 24px; line-height: 1.18;
   color: var(--ash-dim); letter-spacing: -0.014em;
 }
-.wl-addr:focus-within .wl-field-line::after,
-.wl-code:focus-within .wl-field-line::after { transform: scaleX(1); }
-.wl-code-in { width: 100%; letter-spacing: 0.32em; font-size: 30px; }
+.wl-addr:focus-within .wl-field-line::after { transform: scaleX(1); }
 
 /* ═══ COMING OFF THE WALL ══════════════════════════════════════════════════
    The one screen that asks for nothing. It is styled to look like the rest of

@@ -29,6 +29,7 @@ const js = ts
   .replace(/\{ kicker, inner \}: \{[^}]*\}/, '{ kicker, inner }')
   .replace(/export function (\w+)\(([^)]*)\)/g, (m, n, a) => `export function ${n}(${a.replace(/:\s*[\w.<>|[\] ]+/g, '')})`)
 writeFileSync(join(tmp, 'mail.mjs'), js)
+
 const mail = await import(pathToFileURL(join(tmp, 'mail.mjs')).href)
 
 const SITE = 'https://celestual.us'
@@ -51,13 +52,11 @@ const MAILS = {
       )}`,
   }),
   code: () => mail.frame({
-    kicker: 'your code',
     inner: `
       ${mail.title('You are at UC Berkeley.')}
       ${mail.body('type this back into celestual and the wall opens.')}
-      ${mail.code('4819')}
-      ${mail.plate(`${SITE}/copy#c=4819`, 'copy the code')}
-      ${mail.tick('it lasts 15 minutes.')}
+      ${mail.code('481920')}
+      ${mail.tick('press and hold it to copy · it lasts 15 minutes')}
       ${mail.colophon(
         `you are reading this because somebody entered this address on celestual. ` +
         `if that was not you, ignore it and nothing happens. ${SITE}`,
@@ -101,6 +100,13 @@ for (const key of list) {
   const html = MAILS[key]()
   for (const v of VIEWPORTS) {
     const page = await browser.newPage({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: v.scale })
+    // The mark, from this checkout rather than off the live site. mail.ts points
+    // it at `<origin>/mark-chalk-256.png` and that is what ships, so the HTML is
+    // left exactly as it is sent and only the FETCH is answered locally: before
+    // the file is deployed the mail would otherwise preview with a broken image
+    // at its head, and after it is, a change to the mark would be shot against
+    // production's copy of it instead of the one in the repository.
+    await page.route('**/mark-chalk-256.png', (r) => r.fulfill({ path: join(root, 'app/public/mark-chalk-256.png') }))
     await page.setContent(html, { waitUntil: 'load' })
     const file = join(out, `mail-${key}-${v.name}.png`)
     await page.screenshot({ path: file, fullPage: true })

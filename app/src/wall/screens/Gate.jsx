@@ -38,10 +38,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Display, Label, Pill, Face, Icon, Allowance, Heart,
-  HandleField, DmCode, VerifyHead,
+  Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart,
+  HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or, CodeBox, Resend,
 } from '../parts.jsx'
-import { Provider } from '../art.jsx'
+import { Ecliptic, Provider } from '../art.jsx'
 import { labelFor, allowance, loadQuota, mine, loadMine, sinceline, normHandle, validHandle } from '../data.js'
 import { getState, takeAfterGate, peekAfterGate, setAfterGate } from '../store.js'
 import {
@@ -85,22 +85,6 @@ function AddressField({ value, onChange, onSubmit, domain = '' }) {
         autoCapitalize="none" autoCorrect="off" spellCheck="false" enterKeyHint="next"
       />
       {whole ? null : <span className="wl-addr-fix" aria-hidden="true">@{domain}</span>}
-      <span className="wl-field-line" aria-hidden="true" />
-    </div>
-  )
-}
-
-function CodeField({ value, onChange, onSubmit }) {
-  return (
-    <div className="wl-code">
-      <input
-        className="wl-code-in" value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit() } }}
-        aria-label="the code from the mail" placeholder="000000"
-        type="text" inputMode="numeric" autoComplete="one-time-code"
-        autoCorrect="off" spellCheck="false" enterKeyHint="go"
-      />
       <span className="wl-field-line" aria-hidden="true" />
     </div>
   )
@@ -311,11 +295,12 @@ export default function Gate({ go, back }) {
   // six digit code, stores only its hash, and mails it. The code rides the
   // subject line too, so the notification alone is enough to read it.
   const sendCampus = async () => {
-    if (!ok || busy) return
+    if (!ok || busy) return false
+    const again = step === 1
     setBusy(true)
     setSaid('')
     const out = await sendCampusCode(email)
-    if (!alive.current) return
+    if (!alive.current) return false
     setBusy(false)
     if (!out.ok) {
       setSaid(
@@ -323,16 +308,21 @@ export default function Gate({ go, back }) {
           : out.error === 'domain' || out.error === 'email' ? `that is not a ${c.domain} address`
           : 'the mail did not go out. try again',
       )
-      return
+      return false
     }
+    // The correlation id the new code was minted against, and an empty field:
+    // whatever was typed was for the code this one just replaced.
     setToken(out.token)
+    setCode('')
     setStep(1)
     // The step before the proof: somebody gave an address and asked for a code.
     // Logged here rather than when this sheet opens, because the sheet is also
     // the account screen and a person reading their own address on it has not
     // done anything. It says which card produced intent, and the 'joined' step
-    // in auth.js says which produced a proof.
-    cardStep('gate')
+    // in auth.js says which produced a proof. Once per address: a resend
+    // because the first one went to spam is not a second intent.
+    if (!again) cardStep('gate')
+    return true
   }
 
   // On a match the address is bound to this browser's identity row, which is
@@ -362,12 +352,17 @@ export default function Gate({ go, back }) {
   // Supabase Auth mails the code and checks it; the session it hands back is
   // spent against this browser's row (api/login.js).
   const anyOk = anyEmail(normEmail(local))
+  // Returns whether a code actually went out. `Resend` reads it: a send that
+  // failed says so through the fault line under the box, and the line that
+  // offers another one must not start its clock again and tell somebody a
+  // code is coming when none is.
   const sendAny = async () => {
-    if (!anyOk || busy) return
+    if (!anyOk || busy) return false
+    const again = step === 1
     setBusy(true)
     setSaid('')
     const out = await sendEmailCode(normEmail(local))
-    if (!alive.current) return
+    if (!alive.current) return false
     setBusy(false)
     if (!out.ok) {
       setSaid(
@@ -376,10 +371,17 @@ export default function Gate({ go, back }) {
           : out.error === 'offline' ? 'not connected here'
           : 'the mail did not go out. try again',
       )
-      return
+      return false
     }
+    // The old code is dead the moment a new one is minted, so what is in the
+    // field is wrong whatever it is.
+    setCode('')
     setStep(1)
-    cardStep('gate')
+    // The step before the proof: somebody gave an address and asked for a
+    // code. Once per address, not once per code — asking again because the
+    // first one went to spam is not a second intent.
+    if (!again) cardStep('gate')
+    return true
   }
   const finishAny = async () => {
     if (code.length < 6 || busy) return
@@ -521,49 +523,81 @@ export default function Gate({ go, back }) {
   const registering = mode === 'register'
   const canLogin = loginEnabled()
 
-  // ── the wall at the root: three ways in ──
-  // One pane, three rows, each a glyph, the way and one line under it; the
-  // instagram first and the line under it saying why. Choosing one opens
-  // that door in the same sheet.
+  // ── THE DOOR ────────────────────────────────────────────────────────────
+  //
+  // Four screens below and one shape across all of them (parts.jsx `DoorHead`,
+  // wall.css `THE DOOR`): the mark, the line that says what is being asked,
+  // one sentence, the ways through, and the legal line at the foot. They used
+  // to be four arrangements of the same parts — a heading here, a dim label
+  // there, a capsule docked at the bottom of a sheet nine hundred pixels tall
+  // on one and standing in the middle of the content on the next — and a
+  // person who tries google, comes back and tries the address walked through
+  // two different products to do it.
+  //
+  // ── the primary stands IN the door, not in the sheet's foot ─────────────
+  // Everywhere else in the build the primary is docked (parts.jsx `SheetFoot`:
+  // a control that moves between screens is a control somebody has to find
+  // twice). A door is the exception and the exception is the point: the ways
+  // in ARE the content here, there is nothing else on the sheet for them to be
+  // docked away from, and a "continue with google" capsule parked at the
+  // bottom edge with two feet of void between it and the two rows it is an
+  // alternative TO reads as a different question. So the acts stand together,
+  // in the order they are meant to be weighed, and the foot carries the one
+  // thing that is genuinely not a step: the terms.
+  //
+  // ── google first ────────────────────────────────────────────────────────
+  // The row order changed with the layout, and it is a claim about cost, not
+  // about worth: google is one tap and nothing to type, so it is the capsule.
+  // Instagram still says what only instagram can do, on its own row, because
+  // it is the only proof that lets the product tell somebody a ping of theirs
+  // is mutual — that sentence moved off "recommended" and onto the reason
+  // itself, which is the part somebody can actually weigh.
+
+  // ── the wall at the root: the ways in ──
   if (!campusWall && !way) {
     return (
       <Sheet onClose={back} tall labelledBy="wl-gate-h">
-        <div className="wl-sheet-in wl-gate">
+        <div className="wl-sheet-in wl-gate is-door">
           <SheetHead onClose={back} label="back to the wall" />
-          <Display size="s" as="h2" id="wl-gate-h">
-            {reads ? <>Sign in to write.</> : <>Sign in to read<br />and write.</>}
-          </Display>
-          <div className="wl-gate-step">
-            <Label tone="dim" className="wl-gate-note">your information will stay anonymous</Label>
-            <div className="wl-acts wl-gate-ways" role="group" aria-label="how to sign in">
-              <div className="wl-acts-pane">
-                <button type="button" className="wl-act" onClick={() => setWay('instagram')} disabled={!igVerifyEnabled()}>
-                  <span className="wl-act-glyph" aria-hidden="true"><Provider size={17} /></span>
-                  <span className="wl-act-text">
-                    <span className="wl-act-h">continue with instagram</span>
-                    <span className="wl-act-say">recommended. it is how we can tell you when a ping is mutual.</span>
-                  </span>
-                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                </button>
-                <button type="button" className="wl-act" onClick={google} disabled={!canLogin || busy}>
-                  <span className="wl-act-glyph" aria-hidden="true"><GoogleGlyph size={17} /></span>
-                  <span className="wl-act-text">
-                    <span className="wl-act-h">continue with google</span>
-                  </span>
-                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                </button>
-                <button type="button" className="wl-act" onClick={() => setWay('email')} disabled={!canLogin}>
-                  <span className="wl-act-glyph" aria-hidden="true"><MailGlyph size={17} /></span>
-                  <span className="wl-act-text">
-                    <span className="wl-act-h">continue with email</span>
-                  </span>
-                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                </button>
+          <div className="wl-push" />
+          <div className="wl-door">
+            <DoorHead
+              id="wl-gate-h"
+              title={reads ? <>Sign in to write.</> : <>Sign in to read<br />and write.</>}
+              say="your information will stay anonymous."
+            />
+            <div className="wl-door-ways">
+              <Pill
+                tone="light" wide icon={<GoogleGlyph size={17} />}
+                onClick={google} disabled={!canLogin || busy}
+              >
+                {busy ? 'one moment' : 'continue with google'}
+              </Pill>
+              <Or />
+              <div className="wl-acts wl-gate-ways" role="group" aria-label="the other ways in">
+                <div className="wl-acts-pane">
+                  <button type="button" className="wl-act" onClick={() => setWay('instagram')} disabled={!igVerifyEnabled()}>
+                    <span className="wl-act-glyph" aria-hidden="true"><Provider size={17} /></span>
+                    <span className="wl-act-text">
+                      <span className="wl-act-h">continue with instagram</span>
+                      <span className="wl-act-say">it is how we can tell you when a ping is mutual.</span>
+                    </span>
+                    <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                  </button>
+                  <button type="button" className="wl-act" onClick={() => setWay('email')} disabled={!canLogin}>
+                    <span className="wl-act-glyph" aria-hidden="true"><MailGlyph size={17} /></span>
+                    <span className="wl-act-text">
+                      <span className="wl-act-h">continue with email</span>
+                    </span>
+                    <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+                  </button>
+                </div>
               </div>
             </div>
             <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
           <div className="wl-push" />
+          <DoorFoot />
         </div>
       </Sheet>
     )
@@ -573,42 +607,60 @@ export default function Gate({ go, back }) {
   if (way === 'instagram') {
     return (
       <Sheet onClose={back} tall labelledBy="wl-gate-h">
-        <div className="wl-sheet-in wl-gate">
+        <div className="wl-sheet-in wl-gate is-door">
           <SheetHead onClose={back} label="back to the wall" />
+          <div className="wl-push" />
           {dm ? (
             <>
-              <VerifyHead size="s" as="h2" id="wl-gate-h" />
-              <div className="wl-gate-step">
-                <DmCode
-                  code={dm.code}
-                  status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
-                    : note === 'expired_code' ? 'that code had lapsed. send this one.'
-                    : ''}
-                />
+              <div className="wl-door">
+                {/* the signature over the heading, as on every other state of
+                    this sheet. The heading itself is `VerifyHead`, which is the
+                    ONE wording of this step wherever it is drawn — Main's proof,
+                    the sky's sign in, the opt out, the takedown — so it is
+                    reused rather than restated inside a `DoorHead`. */}
+                <div className="wl-door-head">
+                  <Ecliptic size={38} className="wl-door-mark" />
+                  <VerifyHead size="s" as="h2" id="wl-gate-h" className="wl-door-title" />
+                </div>
+                <div className="wl-door-ways">
+                  <DmCode
+                    code={dm.code}
+                    status={note === 'wrong_code' ? 'that code didn’t match. send this one.'
+                      : note === 'expired_code' ? 'that code had lapsed. send this one.'
+                      : ''}
+                  />
+                </div>
               </div>
               <div className="wl-push" />
               <SheetFoot>
                 <button type="button" className="wl-quiet" onClick={dropIg}>start over</button>
               </SheetFoot>
+              <DoorFoot />
             </>
           ) : (
             <>
-              <Display size="s" as="h2" id="wl-gate-h">Your instagram,<br />proved by one DM.</Display>
-              <div className="wl-gate-step">
-                <Label tone="dim" className="wl-gate-note">your information will stay anonymous</Label>
-                <HandleField
-                  value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={askIg}
-                  autoFocus size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
+              <div className="wl-door">
+                <DoorHead
+                  id="wl-gate-h"
+                  title={<>Your instagram,<br />proved by one DM.</>}
+                  say="your information will stay anonymous."
                 />
+                <div className="wl-door-ways">
+                  <HandleField
+                    value={mine} onChange={(v) => { setMine(v); setSaid('') }} onSubmit={askIg}
+                    autoFocus centred size="lg" placeholder="yourhandle" label="your instagram handle" busy={busy}
+                  />
+                  <Pill tone="light" wide onClick={askIg} disabled={busy || !validHandle(me)} icon={<Provider size={17} />}>
+                    {busy ? 'one moment' : 'prove it with one DM'}
+                  </Pill>
+                </div>
                 <div className="wl-gate-fault" aria-live="polite">{said}</div>
               </div>
               <div className="wl-push" />
               <SheetFoot>
-                <Pill tone="light" wide onClick={askIg} disabled={busy || !validHandle(me)} icon={<Provider size={17} />}>
-                  {busy ? 'one moment' : 'prove it with one DM'}
-                </Pill>
                 <button type="button" className="wl-quiet" onClick={() => { setWay(''); setSaid('') }}>another way in</button>
               </SheetFoot>
+              <DoorFoot />
             </>
           )}
         </div>
@@ -620,47 +672,48 @@ export default function Gate({ go, back }) {
   if (way === 'email') {
     return (
       <Sheet onClose={back} tall labelledBy="wl-gate-h">
-        <div className="wl-sheet-in wl-gate">
+        <div className="wl-sheet-in wl-gate is-door">
           <SheetHead onClose={back} label="back to the wall" />
-          <Display size="s" as="h2" id="wl-gate-h">
-            {step === 0 ? <>An address, and<br />a code mailed to it.</> : <>The code from<br />the mail, and you&rsquo;re in.</>}
-          </Display>
-          {step === 0 ? (
-            <div className="wl-gate-step">
-              <Label tone="dim" className="wl-gate-note">your information will stay anonymous</Label>
-              <AddressField value={local} onChange={setLocal} onSubmit={sendAny} />
-              <div className="wl-gate-fault" aria-live="polite">{said}</div>
-            </div>
-          ) : (
-            <div className="wl-gate-step">
-              <Label tone="dim" className="wl-gate-note">
-                sent to <span className="wl-h">{normEmail(local)}</span>
-              </Label>
-              <CodeField value={code} onChange={setCode} onSubmit={finishAny} />
-              <div className="wl-gate-fault" aria-live="polite">{said}</div>
-            </div>
-          )}
+          <div className="wl-push" />
+          <div className="wl-door">
+            <DoorHead
+              id="wl-gate-h"
+              title={step === 0 ? <>An address, and<br />a code mailed to it.</> : <>The code from<br />the mail.</>}
+              say={step === 0 ? 'your information will stay anonymous.' : null}
+            />
+            {step === 0 ? (
+              <div className="wl-door-ways">
+                <AddressField value={local} onChange={setLocal} onSubmit={sendAny} />
+                <Pill tone="light" wide disabled={!anyOk || busy} onClick={sendAny}>
+                  {busy ? 'sending' : 'send me a code'}
+                </Pill>
+              </div>
+            ) : (
+              <div className="wl-door-ways">
+                <Label tone="dim" className="wl-door-sentto">
+                  sent to <span className="wl-h">{normEmail(local)}</span>
+                </Label>
+                <CodeBox value={code} onChange={setCode} onSubmit={finishAny} autoFocus />
+                <Pill tone="light" wide disabled={code.length < 6 || busy} onClick={finishAny}>
+                  {busy ? 'checking' : 'sign in'}
+                </Pill>
+                <Resend onSend={sendAny} />
+              </div>
+            )}
+            <div className="wl-gate-fault" aria-live="polite">{said}</div>
+          </div>
           <div className="wl-push" />
           <SheetFoot>
             {step === 0 ? (
-              <>
-                <Pill tone="light" wide disabled={!anyOk || busy} onClick={sendAny}>
-                  {busy ? 'sending…' : 'send me a code'}
-                </Pill>
-                <button type="button" className="wl-quiet" onClick={() => { setWay(''); setSaid('') }}>another way in</button>
-              </>
+              <button type="button" className="wl-quiet" onClick={() => { setWay(''); setSaid('') }}>another way in</button>
             ) : (
-              <>
-                <Pill tone="light" wide disabled={code.length < 6 || busy} onClick={finishAny}>
-                  {busy ? 'checking…' : 'sign in'}
-                </Pill>
-                <button type="button" className="wl-quiet"
-                  onClick={() => { setCode(''); setSaid(''); setStep(0) }}>
-                  use a different address
-                </button>
-              </>
+              <button type="button" className="wl-quiet"
+                onClick={() => { setCode(''); setSaid(''); setStep(0) }}>
+                use a different address
+              </button>
             )}
           </SheetFoot>
+          <DoorFoot />
         </div>
       </Sheet>
     )
@@ -669,78 +722,81 @@ export default function Gate({ go, back }) {
   // ── the campus wall: the address, the code, or the campus google ──
   return (
     <Sheet onClose={back} tall labelledBy="wl-gate-h">
-      <div className="wl-sheet-in wl-gate">
+      <div className="wl-sheet-in wl-gate is-door">
         <SheetHead onClose={back} label="back to the wall" />
-
-        {/* ── the heading names the act, not the wall ──
-            It used to open on "The wall is for Berkeley", which is a statement
-            about the room and leaves the person in front of it to work out what
-            is being asked of them. What is being asked of them is one thing, so
-            it says that thing. */}
-        <Display size="s" as="h2" id="wl-gate-h">
-          {step === 0
-            ? (!registering ? <>Come back in.</>
-              : reads ? <>{c.place} only.</>
-              : <>Verify you&rsquo;re<br />at {c.place}.</>)
-            : <>The code from<br />the mail, and you&rsquo;re in.</>}
-        </Display>
-
-        {step === 0 ? (
-          <div className="wl-gate-step">
-            {/* The rule, in one line, said where somebody is deciding whether
-                to answer for it. */}
-            <Label tone="dim" className="wl-gate-note">
-              your information will stay anonymous
-            </Label>
-            <AddressField value={local} onChange={setLocal} onSubmit={sendCampus} domain={c.domain || DOMAIN} />
-            <div className="wl-gate-fault" aria-live="polite">{said}</div>
-          </div>
-        ) : (
-          <div className="wl-gate-step">
-            <Label tone="dim" className="wl-gate-note">
-              sent to <span className="wl-h">{email}</span>
-            </Label>
-            <CodeField value={code} onChange={setCode} onSubmit={finishCampus} />
-            <div className="wl-gate-fault" aria-live="polite">{said}</div>
-          </div>
-        )}
-
         <div className="wl-push" />
 
-        <SheetFoot>
+        <div className="wl-door">
+          {/* ── the heading names the act, not the wall ──
+              It used to open on "The wall is for Berkeley", which is a statement
+              about the room and leaves the person in front of it to work out what
+              is being asked of them. What is being asked of them is one thing, so
+              it says that thing. */}
+          <DoorHead
+            id="wl-gate-h"
+            title={step === 0
+              ? (!registering ? <>Come back in.</>
+                : reads ? <>{c.place} only.</>
+                : <>Verify you&rsquo;re<br />at {c.place}.</>)
+              : <>The code from<br />the mail.</>}
+            /* The rule, in one line, said where somebody is deciding whether
+               to answer for it. */
+            say={step === 0 ? 'your information will stay anonymous.' : null}
+          />
+
           {step === 0 ? (
-            <>
+            <div className="wl-door-ways">
+              <AddressField value={local} onChange={setLocal} onSubmit={sendCampus} domain={c.domain || DOMAIN} />
               <Pill tone="light" wide disabled={!ok || busy} onClick={sendCampus}>
-                {busy ? 'sending…' : registering ? 'register' : 'send me a code'}
+                {busy ? 'sending' : registering ? 'register' : 'send me a code'}
               </Pill>
               {/* ── or the campus's own google ──
                   The same proof by a shorter road: the address Google
                   vouches for is at the campus, so it opens writing the way
                   the mailed code does, with no code to type. */}
               {canLogin ? (
-                <Pill tone="ghost" className="wl-gate-google" icon={<GoogleGlyph size={15} />} onClick={google} disabled={busy}>
-                  {`sign in with your ${c.domain} google`}
-                </Pill>
+                <>
+                  <Or />
+                  <Pill tone="ghost" wide className="wl-gate-google" icon={<GoogleGlyph size={15} />} onClick={google} disabled={busy}>
+                    {`continue with your ${c.domain} google`}
+                  </Pill>
+                </>
               ) : null}
-              <button
-                type="button" className="wl-quiet"
-                onClick={() => setMode(registering ? 'signin' : 'register')}
-              >
-                {registering ? 'already registered? sign in' : 'new here? register'}
-              </button>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="wl-door-ways">
+              <Label tone="dim" className="wl-door-sentto">
+                sent to <span className="wl-h">{email}</span>
+              </Label>
+              <CodeBox value={code} onChange={setCode} onSubmit={finishCampus} autoFocus />
               <Pill tone="light" wide disabled={!validCode(code) || busy} onClick={finishCampus}>
-                {busy ? 'checking…' : registering ? 'finish' : 'sign in'}
+                {busy ? 'checking' : registering ? 'finish' : 'sign in'}
               </Pill>
-              <button type="button" className="wl-quiet"
-                onClick={() => { setCode(''); setToken(null); setSaid(''); setStep(0) }}>
-                use a different address
-              </button>
-            </>
+              <Resend onSend={sendCampus} />
+            </div>
+          )}
+
+          <div className="wl-gate-fault" aria-live="polite">{said}</div>
+        </div>
+
+        <div className="wl-push" />
+
+        <SheetFoot>
+          {step === 0 ? (
+            <button
+              type="button" className="wl-quiet"
+              onClick={() => setMode(registering ? 'signin' : 'register')}
+            >
+              {registering ? 'already registered? sign in' : 'new here? register'}
+            </button>
+          ) : (
+            <button type="button" className="wl-quiet"
+              onClick={() => { setCode(''); setToken(null); setSaid(''); setStep(0) }}>
+              use a different address
+            </button>
           )}
         </SheetFoot>
+        <DoorFoot />
       </div>
     </Sheet>
   )
