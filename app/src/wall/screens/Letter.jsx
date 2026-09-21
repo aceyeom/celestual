@@ -215,7 +215,7 @@ function Card({ l, handle, seed, id, foot }) {
   )
 }
 
-export default function Letter({ id: param, go, back, reduce = false, rev = 0 }) {
+export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
   // Whether the flag has been opened. Nothing else on this sheet holds state:
   // the card is the server's, and this is one control deciding whether it is
   // showing itself or the two things it opens.
@@ -489,16 +489,16 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={back} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label="back to the wall" />}>
+      <Sheet onClose={up} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
         <div className="wl-sheet-in wl-letter">
           <Paper
             dateline={{ lead: 'not on the wall' }}
             title={<span id="wl-letter-h" className="wl-letter-to">gone</span>}
           >
-            <Prose>That letter has come down.</Prose>
+            <Prose>that letter has come down.</Prose>
           </Paper>
           <SheetFoot>
-            <ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill>
+            <ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill>
           </SheetFoot>
         </div>
       </Sheet>
@@ -568,7 +568,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
             <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
             <span className="wl-act-text">
-              <span className="wl-act-h">Report this letter</span>
+              <span className="wl-act-h">report this letter</span>
               <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
             </span>
             <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
@@ -581,7 +581,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
             <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
             <span className="wl-act-text">
-              <span className="wl-act-h">Take my name off the wall</span>
+              <span className="wl-act-h">take my name off the wall</span>
               <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
             </span>
             <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
@@ -600,7 +600,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     )
 
   return (
-    <Sheet onClose={back} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label="back to the wall" />}>
+    <Sheet onClose={up} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it

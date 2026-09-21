@@ -227,6 +227,26 @@ export default function WallApp() {
   // underneath, which onPop then renders. A sheet arrived at by deep link has
   // no depth and closes the old way.
   const leaving = useRef(false)
+  // ── a sheet arrived at from outside ──
+  // A deep link lands ON a sheet without the shell ever having pushed the
+  // wall entry under it, so `wallDepth` is absent and the sheet counts as
+  // depth zero. A sheet opened from THAT one then came out at depth one,
+  // which `up` reads as "there is nothing under me" and closes to the wall —
+  // so somebody who followed a link to a letter, tapped report, and closed
+  // the report lost the letter they had been sent to read.
+  //
+  // Seating the entry point at depth one fixes it at the root: the sheet
+  // somebody arrived on is a sheet, the one over it is depth two, and `up`
+  // steps back onto the first. `up` still falls through to the wall at depth
+  // one, which is right — there is genuinely no entry behind the one the
+  // browser opened on, and stepping back there would leave the product.
+  useEffect(() => {
+    const st = window.history.state
+    if (st && Number(st.wallDepth)) return
+    if (!SHEETS.has(parse(window.location.pathname).name)) return
+    window.history.replaceState({ ...(st || {}), wall: parse(window.location.pathname).name, wallDepth: 1 }, '')
+  }, [])
+
   const go = useCallback((name, id) => {
     if (leaving.current) return
     const to = href(name, id)
@@ -277,6 +297,9 @@ export default function WallApp() {
   }, [])
 
   const setField = useCallback((m) => setOverride(m), [])
+  // all the way out: to the wall, whatever is stacked over it. The one
+  // screen that wants this is the composer once its letter is up, because
+  // the letter is ON the wall and the wall is what there is to see.
   const back = useCallback(() => go('wall'), [go])
   // ── one step up ──
   // A sheet raised over another sheet closes onto the one under it, not
@@ -290,6 +313,14 @@ export default function WallApp() {
     if (depth > 1) { leaving.current = true; setOverride(null); window.history.go(-1); return }
     go('wall')
   }, [go])
+  // ── and whether there IS something under this sheet ──
+  // Read at render, which for this component is every route change, so a
+  // sheet knows on its first frame whether its way out is the wall or the
+  // screen it was opened from. It is what lets the close mark say where it
+  // actually goes: a mark labelled "back to the wall" that lands on the
+  // composer is a mark that lied, and a screen reader hears the lie.
+  const nested = (Number(window.history.state?.wallDepth) || 0) > 1
+  const upLabel = nested ? 'back' : 'back to the wall'
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
@@ -301,7 +332,7 @@ export default function WallApp() {
   const onSheet = SHEETS.has(route.name)
   // `under` is whether a sheet is up over the wall: the hive stops moving and
   // stops writing to the DOM while it is dimmed and blurred behind one.
-  const shared = { go, back, up, setField, reduce, rev: revision(), under: onSheet }
+  const shared = { go, back, up, nested, upLabel, setField, reduce, rev: revision(), under: onSheet }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />

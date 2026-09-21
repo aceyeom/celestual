@@ -1047,28 +1047,30 @@ export function SheetFoot({ children, className = '' }) {
   return <div className={`wl-foot ${className}`}>{children}</div>
 }
 
-// ── the door, stated where it stands ────────────────────────────────────────
-// Reading, writing and reporting each stand behind a door (auth.js), and all
-// three used to say so in their own words in their own place. This is the one
-// wording, in the one shape, wherever somebody has walked into one: the
-// sentence that names what is shut, and the pill that opens it. Nothing else.
-// No explanation of the policy, no second argument for it. A person who has
-// just tapped a control they cannot use wants the key, not the reasoning.
+// ── a screen that is shut ──────────────────────────────────────────────────
+// The composer, met by somebody the product has not proved yet. It used to be
+// its own thing entirely: left aligned, no mark, one sentence in sentence
+// case and a bare "sign in" capsule — standing four hundred pixels away from
+// `/gate`, which asks the SAME question, centred, under the mark, with three
+// ways through and the legal line at its foot. Two screens for one question,
+// in two alignments, with two casings, and the one a person hits first was
+// the one that did not look like the product.
 //
-// The pill goes to the campus gate in every case, because that is the door
-// this surface owns. It is not the only way through the reading door since
-// 0044 (a handle proved on Main opens it too), but a person standing here has
-// not proved anything yet, and offering them two doors at once is offering
-// them a decision instead of a way in.
-//
-// The word on it is "sign in" and nothing more. It used to read "sign in with
-// berkeley", under a heading that had just said Berkeley in larger type: the
-// button repeated the room's name back at somebody standing in it.
-export function Locked({ children, onOpen, cta = 'sign in' }) {
+// DESIGN.md 8.5 already says what this is: "Every sign in screen in the
+// product, on one shape." So it is the door, with one way through instead of
+// three, and the axis changes here and changes back behind it exactly as it
+// does on the gate. What is behind the single capsule is still the gate —
+// this screen does not duplicate the three ways, it is the one door that
+// leads to them.
+export function Locked({ children, onOpen, cta = 'sign in', title, id }) {
   return (
-    <div className="wl-locked">
-      <p className="wl-locked-say">{children}</p>
-      <Pill tone="light" wide onClick={onOpen}>{cta}</Pill>
+    <div className="wl-door">
+      <DoorHead title={title} say={children} id={id} />
+      <div className="wl-door-ways">
+        <Pill tone="light" wide onClick={onOpen}>{cta}</Pill>
+      </div>
+      <div className="wl-push" />
+      <DoorFoot />
     </div>
   )
 }

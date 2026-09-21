@@ -234,7 +234,7 @@ const LINES = [
 const BEATS = [650, 1750, 2900, 3400]
 const LAST = 4
 
-export default function Join({ go, setField, reduce }) {
+export default function Join({ go, up, upLabel = 'back to the wall', setField, reduce }) {
   const [at, setAt] = useState(reduce ? LAST : 0)
   const timers = useRef([])
   useEffect(() => { setField('slow') }, [setField])
@@ -296,7 +296,7 @@ export default function Join({ go, setField, reduce }) {
             the page — so it was not identification, it was the logo twice. The
             X keeps the right-hand slot it holds on every screen. */}
         <span aria-hidden="true" />
-        <Close onClick={() => go('wall')} label="back to the wall" />
+        <Close onClick={up} label={upLabel} />
       </header>
 
       <div className="wl-join-air" />
