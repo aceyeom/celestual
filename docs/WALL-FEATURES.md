@@ -268,12 +268,14 @@ about what is said or shown about anybody: the same public index, reached
 sooner. The lit capsule at the centre that was floated fails G7 twice: a
 second bright thing beside `write`, and a plate standing on the faces, which
 is the reason `write anonymously` came off the foot once already. The list
-the search opens on before anything is typed is the six names most recently
-written to, under `on the wall`. It was the six carrying the most letters
-under `written to most`, and with the search promoted to the first thing on
-the wall that was the first list everybody saw: a top six by count with the
-word "most" on it is the rank with a label this section's own edge case says
-the wall must never cross.
+the search sheet opens on before anything is typed is the six names most
+recently written to. It was the six carrying the most letters under `written
+to most`, and with the search promoted to the first thing on the wall that
+was the first list everybody saw: a top six by count with the word "most" on
+it is the rank with a label this section's own edge case says the wall must
+never cross. The caption `on the wall` that stood over those rows has gone
+too — on the wall, under the wall's own field, over names the wall had just
+answered with, it was three words to say where you already are.
 
 **The miss.** `nothing on the wall under @x`, then `write a letter`, then,
 quieter, `write to @x`. A fact about the index, the composer on its own first

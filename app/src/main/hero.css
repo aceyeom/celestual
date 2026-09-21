@@ -97,7 +97,7 @@
 .hm-ask .wl-field { padding-bottom: 12px; }
 .hm-ask .wl-field input::placeholder { color: rgba(156, 151, 142, 0.5); }
 .hm-ask-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.hm-ask-row .wl-pill.is-light { flex: 0 0 auto; min-height: 48px; padding: 0 24px; font-size: 14.5px; }
+.hm-ask-row .wl-pill.wl-lq { flex: 0 0 auto; min-height: 48px; padding: 0 24px; font-size: 14.5px; }
 /* A plain sentence, in place, next to what failed. Empty almost always. In
    its quiet tone it is what the resolver is doing, in ash: nothing failed. */
 .hm-said {
@@ -365,7 +365,7 @@
   .hm-mech { margin-top: 10px; font-size: 15px; max-width: 40ch; }
   .hm-ask { margin-top: 12px; gap: 8px; }
   .hm-ask .wl-field.is-lg input, .hm-ask .wl-field.is-lg .wl-at { font-size: 22px; }
-  .hm-ask-row .wl-pill.is-light { min-height: 40px; padding: 0 18px; font-size: 13.5px; }
+  .hm-ask-row .wl-pill.wl-lq { min-height: 40px; padding: 0 18px; font-size: 13.5px; }
   .hm-stage {
     display: flex; flex: 0 0 auto; width: min(38vw, 340px);
     margin: 0; padding: 0; overflow: visible;

@@ -7,11 +7,13 @@
 // results the whole time — which quietly says that the thing you are
 // searching is right there.
 //
-// It used to open from a 40px glass in the corner of the bar. It opens from
-// the wall's own field now, under the ear (screens/Wall.jsx `Seek`): the
-// tap that raised the keyboard there is the tap that opened this, and the
-// field here takes the focus on mount so the keyboard stays. There is no
-// heading over the field any more: "Look for a name." stood in the Didone
+// It used to open from a 40px glass in the corner of the bar, and then from
+// the wall's own field under the ear. That field answers in place now
+// (screens/Wall.jsx `Seek`): it opens downward into its own glass panel, so
+// the common case — one name, found and pressed — never leaves the wall.
+// This sheet is what `/find` still is: a link straight into the search, and
+// the fuller answer for somebody who arrived looking rather than browsing.
+// There is no heading over the field: "Look for a name." stood in the Didone
 // over a field whose placeholder said the same thing, one sentence twice,
 // and on a phone with the keyboard up those fifty pixels are a row of
 // results.
@@ -30,14 +32,18 @@
 //     near-misses above it. Each row arrives with the resolver's name and
 //     face already on it, one request for the whole list.
 //   · Before anybody has typed, the sheet shows the names most recently
-//     written to, in the index's own order, under the word "on the wall". A
-//     search sheet that opens onto a void teaches somebody that there is
-//     nothing to find. It used to show the six names carrying the most
-//     letters, under "written to most", and with the search promoted to the
-//     first thing on the wall that list was the first list everybody saw,
-//     which is a rank of people with a label on it (docs/WALL-FEATURES.md,
-//     G6). Recency is a fact about a letter; "most" is a claim about a
-//     person.
+//     written to, in the index's own order. A search sheet that opens onto a
+//     void teaches somebody that there is nothing to find. It used to show
+//     the six names carrying the most letters, under "written to most", and
+//     with the search promoted to the first thing on the wall that list was
+//     the first list everybody saw, which is a rank of people with a label on
+//     it (docs/WALL-FEATURES.md, G6). Recency is a fact about a letter;
+//     "most" is a claim about a person.
+//
+//     The caption over it has gone too. "on the wall" stood at the head of
+//     the list, on the wall, under the wall's own field, over names the wall
+//     had just answered with — three words to say where you already are. The
+//     rows are people and they say so themselves.
 //   · Finding nothing is not a dead end, it is not a sign-up, and it is not a
 //     letter to yourself. Nobody is asked to leave a handle, register an
 //     interest, share anything or wait for a notification: the wall has no
@@ -140,10 +146,6 @@ export default function Find({ go, back, rev }) {
         </div>
 
         <div className="wl-find-results" role="region" aria-live="polite">
-          {q.length < 1 && hits.length > 0 && (
-            <Label tone="dim" className="wl-find-hint">on the wall</Label>
-          )}
-
           {/* A person per row: the face and the name the resolver has, or the
               name a letter was written to, the key under it with how many
               letters, and the way in. The same row the sky draws, so a person
