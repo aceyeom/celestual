@@ -136,7 +136,39 @@ const bannedRe = (phrase) => new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]
 // `SEALED`), a single letter, and anything starting with an interpolation or a
 // tag, since the case then belongs to whatever is being interpolated. The
 // legal pages under app/public are exempt, as section 1 says.
+// An initialism is not sentence case: "DM the code to" opens with a word
+// that has no lower case form.
+const ACRONYM = /^[A-Z]{2,}\b/
 const PROPER = /^(Celestual|CELESTUAL|Instagram|Google|Meta|Berkeley|Apify|Supabase|Stripe|ManyChat|Resend|Vercel|Sather|Campanile|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|January|February|March|April|May|June|July|August|September|October|November|December)\b/
+
+// The same rule, for copy that is not a text node. campus.js kept the wall's
+// own masthead, the composer's first question and its four example letters in
+// a plain object, so none of it was between tags and the check above walked
+// straight past it — which is how "A wall of unforgettable berkeley bears."
+// stayed capitalised on the masthead of the surface the product is named for.
+// Only these keys are read: they are the ones that hold a sentence somebody
+// reads, and a rule that looked at every string in the build would trip on
+// half the identifiers in it.
+const COPY_KEY = /\b(title|sub|say|says|cta|label|prompt|placeholder|someone|hint|note|blurb|lines?|examples?|heading|answer|reason)\s*:/
+
+function casedStrings(line) {
+  if (!COPY_KEY.test(line)) return []
+  // a CSS font stack is not copy, and the face names inside one are quoted
+  // exactly like a sentence is (looks.js FACES)
+  if (/\bfamily\s*:/.test(line)) return []
+  const out = []
+  for (const m of line.matchAll(/'([^'\\]{3,200})'/g)) {
+    const t = m[1].trim()
+    if (!/^[A-Z]/.test(t)) continue
+    if (t === t.toUpperCase()) continue        // an all-caps label keeps its case
+    if (ACRONYM.test(t)) continue
+    if (t.length <= 2) continue
+    if (PROPER.test(t)) continue
+    if (!/\s/.test(t) && !/[.?!]$/.test(t)) continue   // one bare word is a slug, not a sentence
+    out.push(t)
+  }
+  return out
+}
 
 function casedCopy(line) {
   const out = []
@@ -144,7 +176,9 @@ function casedCopy(line) {
   for (const m of line.matchAll(/>([^<>{}]+)</g)) {
     const t = m[1].trim()
     if (!t) continue
-    if (!/^[A-Z][a-z]/.test(t)) continue      // not sentence case: a label, a glyph, lower case already
+    if (!/^[A-Z]/.test(t)) continue           // lower case already, or a glyph
+    if (t === t.toUpperCase()) continue       // an all-caps label keeps its case
+    if (ACRONYM.test(t)) continue             // an initialism has no lower case form
     if (t.length <= 2) continue               // a type specimen ("Aa"), not a sentence
     if (PROPER.test(t)) continue
     out.push(t)
@@ -178,7 +212,7 @@ for (const file of files) {
       failures++
     }
     if (!file.includes('/app/public/')) {
-      for (const t of casedCopy(line)) {
+      for (const t of [...casedCopy(line), ...casedStrings(line)]) {
         console.error(`✗ ${where} copy starts capitalised (VOICE.md 1): "${t.slice(0, 60)}"`)
         failures++
       }

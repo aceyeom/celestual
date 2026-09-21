@@ -227,26 +227,6 @@ export default function WallApp() {
   // underneath, which onPop then renders. A sheet arrived at by deep link has
   // no depth and closes the old way.
   const leaving = useRef(false)
-  // ── a sheet arrived at from outside ──
-  // A deep link lands ON a sheet without the shell ever having pushed the
-  // wall entry under it, so `wallDepth` is absent and the sheet counts as
-  // depth zero. A sheet opened from THAT one then came out at depth one,
-  // which `up` reads as "there is nothing under me" and closes to the wall —
-  // so somebody who followed a link to a letter, tapped report, and closed
-  // the report lost the letter they had been sent to read.
-  //
-  // Seating the entry point at depth one fixes it at the root: the sheet
-  // somebody arrived on is a sheet, the one over it is depth two, and `up`
-  // steps back onto the first. `up` still falls through to the wall at depth
-  // one, which is right — there is genuinely no entry behind the one the
-  // browser opened on, and stepping back there would leave the product.
-  useEffect(() => {
-    const st = window.history.state
-    if (st && Number(st.wallDepth)) return
-    if (!SHEETS.has(parse(window.location.pathname).name)) return
-    window.history.replaceState({ ...(st || {}), wall: parse(window.location.pathname).name, wallDepth: 1 }, '')
-  }, [])
-
   const go = useCallback((name, id) => {
     if (leaving.current) return
     const to = href(name, id)
@@ -267,7 +247,12 @@ export default function WallApp() {
 
     const swap = () => {
       const nextDepth = SHEETS.has(target.name) ? (SHEETS.has(from.name) ? depth + 1 : 1) : 0
-      window.history.pushState({ wall: name, wallDepth: nextDepth }, '', to)
+      // `wallPushed` marks an entry THIS shell put on the stack, which is the
+      // one fact `up` needs and the one `wallDepth` cannot carry: a sheet the
+      // browser opened on directly is depth zero AND has nothing behind it,
+      // while a sheet at depth one that the shell pushed has the wall behind
+      // it. Reading depth alone confuses the two in both directions.
+      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true }, '', to)
       setOverride(null)
       setRoute(target)
       if (!sheetMove) window.scrollTo(0, 0)
@@ -302,24 +287,37 @@ export default function WallApp() {
   // the letter is ON the wall and the wall is what there is to see.
   const back = useCallback(() => go('wall'), [go])
   // ── one step up ──
-  // A sheet raised over another sheet closes onto the one under it, not
-  // onto the wall: the composer opened from the pen on a letter comes back
-  // to that letter. Each sheet entry carries its depth, so one step back in
-  // the history is the sheet underneath, which onPop then renders; a sheet
-  // at depth one, or one arrived at by deep link, closes onto the wall.
+  // A sheet closes onto whatever it was opened FROM, not onto the wall: the
+  // report opened on a letter comes back to that letter, the gate opened
+  // part way through the composer comes back to the composer, and a sheet
+  // opened from the wall comes back to the wall.
+  //
+  // The question is only ever "did this shell push the entry I am standing
+  // on", and `wallPushed` answers it. If it did, the entry underneath is one
+  // the shell wrote and one step back renders it, whatever it is. If it did
+  // not — the browser opened directly on this address — then there is
+  // nothing behind it at all and stepping back would leave the product, so
+  // the way out is to push the wall.
+  //
+  // Depth is the wrong question here and reading it got this wrong twice
+  // over. A deep-linked sheet is depth zero with nothing behind it; a report
+  // opened on a deep-linked letter is depth one WITH something behind it;
+  // and a letter opened from the wall is also depth one. No threshold on
+  // depth separates those three, which is why this asks about the push.
   const up = useCallback(() => {
     if (leaving.current) return
-    const depth = Number(window.history.state?.wallDepth) || 0
-    if (depth > 1) { leaving.current = true; setOverride(null); window.history.go(-1); return }
+    if (window.history.state?.wallPushed) {
+      leaving.current = true; setOverride(null); window.history.go(-1); return
+    }
     go('wall')
   }, [go])
-  // ── and whether there IS something under this sheet ──
+  // ── and what is under this sheet, so the close mark can say so ──
   // Read at render, which for this component is every route change, so a
-  // sheet knows on its first frame whether its way out is the wall or the
-  // screen it was opened from. It is what lets the close mark say where it
-  // actually goes: a mark labelled "back to the wall" that lands on the
-  // composer is a mark that lied, and a screen reader hears the lie.
-  const nested = (Number(window.history.state?.wallDepth) || 0) > 1
+  // sheet knows on its first frame where its way out actually goes. A mark
+  // labelled "back to the wall" that lands on the composer is a mark that
+  // lied, and a screen reader hears the lie.
+  const st = window.history.state
+  const nested = !!(st?.wallPushed && Number(st.wallDepth) > 1)
   const upLabel = nested ? 'back' : 'back to the wall'
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])

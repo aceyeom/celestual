@@ -225,9 +225,9 @@ function Circuit({ at }) {
 }
 
 const LINES = [
-  'You put their name up.',
-  'They put yours up.',
-  'You both find out. At once.',
+  'you put their name up.',
+  'they put yours up.',
+  'you both find out. at once.',
 ]
 
 //              1     2     3     4

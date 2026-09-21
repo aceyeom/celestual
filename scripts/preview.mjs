@@ -912,6 +912,13 @@ const ROUTES = [
   { label: 'find-letter-back', path: '/berkeley/find',
     acts: [['wait', 700], ['click', '.wl-find-results .wl-row'], ['wait', 1200],
            ['click', '.wl-close'], ['wait', 1000]], settle: 600 },
+  // and the case the two above do NOT cover: a browser that opened DIRECTLY on
+  // a sheet, with nothing behind it in its own history. The close mark has to
+  // land on the wall and the visitor has to still be in the product — an `up`
+  // that reads depth instead of asking whether this shell pushed the entry
+  // walks them off the site, back to whatever tab the link came from.
+  { label: 'letter-close-out', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['wait', 900], ['click', '.wl-close'], ['wait', 1400]], settle: 600 },
   { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
     acts: [['wait', 900], ['click', '.wl-flag'], ['wait', 600], ['click', '.wl-acts-pane .wl-act'], ['wait', 900],
            ['click', '.wl-close'], ['wait', 900]], settle: 600 },

@@ -209,8 +209,8 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
             <Label tone="dim"><span className="wl-h">{atHandle(gone.handle)}</span></Label>
             <Prose className="wl-gate-copy">
               {gone.n === 0
-                ? 'There was nothing under it. A name with no letters is not on the wall.'
-                : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
+                ? 'there was nothing under it. a name with no letters is not on the wall.'
+                : `${gone.n === 1 ? 'the one letter' : `all ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
             </Prose>
             {/* The wall is one of two surfaces, and this control is only the
                 wall's. Somebody who wants the handle out of the product
@@ -253,7 +253,7 @@ export default function Remove({ handle: prefill, up, upLabel = 'back to the wal
                 beside it. */}
             <Prose className="wl-gate-copy">
               {proven
-                ? 'Every letter under it goes too.'
+                ? 'every letter under it goes too.'
                 : 'permanent. to take down one letter, report that one instead.'}
             </Prose>
 
