@@ -26,6 +26,10 @@
 // shape, so the metal arrives in the order the mark assembles in, and out of
 // the same nine constants.
 //
+// Both cuts are FEATHERED, which is the difference between a mark that lights
+// and a mark that is wiped on. See `FEATHER` below for what a hard edge over a
+// material did to this.
+//
 // ── the cover leaves before the lift does ───────────────────────────────────
 // The cover is a black square a fifth wider than the mark, and once the mark
 // is assembled every cut in it is open, so the square is doing nothing but
@@ -83,7 +87,7 @@
 // animation that cannot be got out of is a toll gate.
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { ECL, ECL_SPINE, ringPath, starPath } from './mark.js'
+import { ECL, ECL_SPINE, f2, rad, ringPath, starPath } from './mark.js'
 import LiquidMark from './LiquidMark.jsx'
 import './intro.css'
 
@@ -99,9 +103,72 @@ const HOLD_MAX = 760
 
 // The band, dilated a hair, so the sweep's cut clears the metal's own edge.
 const BAND = ringPath(1.6)
-// The star, a little fuller than the mark's, for the same reason: the hole
-// has to be at least the shape it uncovers.
-const STAR = starPath({ up: ECL.up + 1.6, down: ECL.down + 1.6, side: ECL.side + 1.6, thick: 0.96 })
+
+// ── the cuts are feathered, and that is the whole of the polish ─────────────
+// Both holes in the cover used to be hard-edged shapes, and a hard edge over a
+// material is an edge the material did not ask for. The sweep is a thick
+// butt-capped stroke clipped to the band, so its head was a STRAIGHT CHORD
+// across the ring: wherever the metal happened to be bright under it, the mark
+// was drawn in with a blunt white wedge on the end of it, and the last of the
+// orbit closed as a notch with two square corners — a bite out of the logo,
+// with nothing in it belonging to the logo's own curves. The star had the same
+// problem more quietly: a crisp silhouette held at a third of its opacity is a
+// crisp outline of the star, drawn in grey.
+//
+// So the cover's cuts carry a blur (`FEATHER`, `STAR_FEATHER`). The sweep's
+// goes on the stroke and the band clips the group ABOVE it, so the blur is
+// taken on a 26-wide stroke and then cut back to a band under ten: the ring's
+// own silhouette lands as sharp as it is drawn, and the only soft thing in the
+// frame is the front of the reveal. The metal lights along the orbit now,
+// rather than being wiped by a rectangle.
+//
+// Every hole is dilated by the blur it carries, so that when the sequence is
+// assembled — while the cover is still up, before beat 3 fades it — the cuts
+// are open past the mark on every side and no soft edge is resting on the
+// metal. `feather()` is that reach in one place, since a blur that grew
+// without its dilation growing with it would dim the mark's own rim.
+const FEATHER = 2.4
+const STAR_FEATHER = 1.6
+const feather = (sd) => sd * 2.2
+
+// The star, fuller than the mark's, so the hole is at least the shape it
+// uncovers and its own feather falls outside the metal.
+const STAR_GROW = 1.6 + feather(STAR_FEATHER)
+const STAR = starPath({
+  up: ECL.up + STAR_GROW, down: ECL.down + STAR_GROW, side: ECL.side + STAR_GROW, thick: 0.96,
+})
+
+// ── and each filter is given the box it actually needs ──────────────────────
+// A filter region is a surface the browser rasterises, and this one is
+// re-rasterised on every frame of the sweep, in the two seconds where the
+// shader is also compiling and the page under it is mounting. The lazy box is
+// the whole 100-unit square with a margin, which is about twice the area
+// either shape occupies. So each region is measured off the same constants the
+// shapes are: the ring's own half-extents at its tilt, the star's arms, and
+// the feather's reach around both.
+//
+// `filterUnits="userSpaceOnUse"` means these are the coordinates the cover's
+// viewBox is in, and the region is read in the space the FILTERED ELEMENT
+// stands in rather than the one its own transform sets up — so the star's box
+// is the star at full size, and the scale it opens from only ever asks for
+// less of it.
+function box(hx, hy, pad) {
+  return { x: f2(50 - hx - pad), y: f2(50 - hy - pad), width: f2(2 * (hx + pad)), height: f2(2 * (hy + pad)) }
+}
+const TILT = rad(ECL.tilt)
+// the band at its tilt: the projection of a tilted ellipse onto each axis
+const BAND_RX = ECL.rx + ECL.w + 1.6
+const BAND_RY = BAND_RX * ECL.flat
+const SWEEP_BOX = box(
+  Math.hypot(BAND_RX * Math.cos(TILT), BAND_RY * Math.sin(TILT)),
+  Math.hypot(BAND_RX * Math.sin(TILT), BAND_RY * Math.cos(TILT)),
+  feather(FEATHER),
+)
+const STAR_BOX = box(
+  ECL.side + STAR_GROW,
+  Math.max(ECL.up, ECL.down) + STAR_GROW,
+  feather(STAR_FEATHER),
+)
 
 // A beat to hold on, for the screenshot loop only. `/?beat=3` draws the intro
 // assembled and leaves it there; nothing in production reads the query string.
@@ -210,18 +277,39 @@ export default function Intro({ reduce, ready = true, onReveal, onDone }) {
               lives: white keeps the cover, black cuts it away. */}
           <svg className="hi-cover" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
             <defs>
+              {/* The band the sweep is cut back to, dilated past the metal's
+                  own edge so the clip never shaves the ring. */}
               <clipPath id={`${uid}b`}>
                 <path d={BAND} clipRule="evenodd" />
               </clipPath>
+              {/* The two feathers. sRGB, not the filter default: a mask is
+                  read as luminance and a ramp computed in linear light reads
+                  as a hard edge with a smudge on it rather than as a fade. */}
+              <filter id={`${uid}fs`} filterUnits="userSpaceOnUse" {...SWEEP_BOX} colorInterpolationFilters="sRGB">
+                <feGaussianBlur stdDeviation={FEATHER} />
+              </filter>
+              <filter id={`${uid}ft`} filterUnits="userSpaceOnUse" {...STAR_BOX} colorInterpolationFilters="sRGB">
+                <feGaussianBlur stdDeviation={STAR_FEATHER} />
+              </filter>
               <mask id={`${uid}m`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120">
                 <rect x="-10" y="-10" width="120" height="120" fill="#fff" />
-                <path
-                  className="hi-sweep" d={ECL_SPINE} pathLength="100"
-                  fill="none" stroke="#000" strokeWidth="26"
-                  strokeDasharray="100" strokeDashoffset="100"
-                  clipPath={`url(#${uid}b)`}
-                />
-                <g className="hi-star">
+                {/* The circuit. The nesting is the whole trick and it only
+                    reads one way round: the STROKE is blurred, and the band
+                    clips what comes out of the blur. The stroke is 26 wide
+                    against a band under ten, so its lateral feather is thrown
+                    away by the clip and the ring's own silhouette lands as
+                    sharp as it is drawn — only the head and tail of the sweep,
+                    which is where the chord was, come through soft. Blur the
+                    clipped band instead and the ring loses its edges. */}
+                <g clipPath={`url(#${uid}b)`}>
+                  <path
+                    className="hi-sweep" d={ECL_SPINE} pathLength="100"
+                    fill="none" stroke="#000" strokeWidth="26"
+                    strokeDasharray="100" strokeDashoffset="100"
+                    filter={`url(#${uid}fs)`}
+                  />
+                </g>
+                <g className="hi-star" filter={`url(#${uid}ft)`}>
                   <path d={STAR} transform="translate(50 50)" fill="#000" />
                 </g>
               </mask>
