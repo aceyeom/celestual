@@ -595,7 +595,8 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | The result card | `.wl-card`, under a handle field, on Main. The resolver's answer while somebody is still typing: the face, the name, the badge, the handle, and no fifth thing. While it is looking a point of light runs round the card's own edge; given a handler it is a button from the first frame, disabled while looking and live the moment the answer lands, one element throughout so the light going out and the arrow arriving are one transition |
 | The answer in the field's place | `.wl-settled`, `Addressed`, inside the composer's `.wl-write-body`. The same answer, standing where the handle was typed rather than under it: the same measure, the same ground, the same height, and no plate and no frame of its own, because it is not a second object arriving under the field — it IS the field, answered. One element in every state: while the resolver is out the disc is empty, two bars breathe where the words will land, and the running light goes round the BODY'S edge (`Light plate="none"`, since the body brought its own ground), and nothing is said in words beside it. That wait is the result card's wait and not a copy of it: the beam resolves identical in every property (`is-none` shares `is-star`'s rule), and the disc, the bars and their breath are the card's own numbers and its own keyframe. The way out of it is the close mark at its end and not an arrow: an arrow says the row is the way on, and the way on is the capsule at the foot of the sheet |
 | Letter field | `.wl-letterfield`, on paper, with `.wl-count` under it |
-| Address and code | `.wl-addr`, `.wl-code` |
+| Address | `.wl-addr`. One baseline carrying an editable half and a painted half (`@berkeley.edu`), sized to what is typed so the two read as one address |
+| Code | `.wl-codebox`. The one field in the build that is a BOX rather than a baseline, and 8.5 says why |
 | Reason | `.wl-reason` |
 
 ### 8.4 Drawn things
@@ -605,6 +606,8 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Sparkle` | the four point star. `twinkle` and `delay` |
 | `Verified` | Instagram's badge: twelve lobes on one radius, twelve valleys on another, a quadratic between each pair, and a check cut through in the ground (`ink`). It is the one glyph in the build that is another service's mark, and it is drawn here for the same reason everything else is — and because a claim about somebody's Instagram account has to read as that service's claim. The sparkle stood here and was this product's own mark doing another product's job. Struck in `--accent`, never in Instagram's blue: nothing outside the tokens names a hue, and the shape is what says whose badge it is |
 | `Ecliptic` | the mark. `size`, `sweep` |
+| `Provider`, `Google` | Instagram's mark and Google's, on the buttons that go to them, and both are the service's own mark rather than a drawing that resembles it. `Verified` is the precedent: a claim about another service reads as that service's claim, and a person scanning three sign in buttons is looking for the mark they know rather than reading the words. `Provider` was a hairline camera on the icon set's grid, which beside a four-colour G redrawn as a single arc read as a product that could not get the logos right. Still not pasted assets: both are paths in `art.jsx`, taking `currentColor`, so they wear the build's chalk and never a brand's blue or a four-colour fill |
+| `Envelope` | the third glyph on the same door, and solid for that reason alone. An address is not a brand and there is no logo for one, but an outline between two filled marks is the odd one out. The flap is cut through the body with `evenodd` rather than drawn over it in the button's colour, so it carries no ground |
 | `Face` | the disc beside a handle. The picture, or a monogram. See 3.4. With a look (`has-look`): the look's ground and its texture, the name written whole in the look's face when it fits the disc, and on a picture a rim in the look's paper (`::after`). A name's disc writes the name whole on any paper |
 | `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
 | `Halftone` | the dotted sphere. Off the wall's masthead since the Campanile; kept |
@@ -617,6 +620,77 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Roll` | a count whose figures turn: each digit a window one figure tall over a column of the ten, slid to the figure it shows, 640ms on `--ease` when the number changes and still on mount. Keyed from the right so a hundredth letter mounts a column at the head and keeps the two it had. The wall's count in the ear. Under reduced motion the columns do not slide (`.wl-roll`) |
 | `LiquidMark` | the mark as a material. A liquid metal fragment shader cut to the mark's silhouette, on `app/public/liquid-mark.png`, which `scripts/export-liquid.mjs` writes from the geometry. Spent on the intro, the seal on the hero's scene, a mutual on the sky, and the reveal. The flat mark stands under it until the metal is opaque and leaves after, 900ms on `--ease-out` then 320ms: a fade in over the flat, never a crossfade, because two opaque shapes of one silhouette crossfading on black dip to three quarters halfway and blink. `onReady` says when the metal has drawn a frame; `cut` makes the swap instant for a mark under a cover. See 3.5 |
 | `Orbits` | the mark's states for a ledger: one ring, two rings apart. The third state is `Ecliptic` itself |
+
+### 8.5 The door
+
+Every sign in screen in the product, on one shape: the mark, the line that says
+what is being asked, at most one sentence, the ways through, and the legal line
+at the foot. `parts.jsx` `DoorHead`, `Or`, `CodeBox`, `Resend` and `DoorFoot`;
+`wall.css` `THE DOOR`; stood up by `screens/Gate.jsx` on both walls and by
+`main/Copy.jsx` and `main/Signin.jsx` on Main.
+
+| Component | Class | Notes |
+| --- | --- | --- |
+| Door head | `.wl-door-head` | the mark at 38px, the title in the display face at `is-s`, and one sentence in the reading face under it. The mark is `Ecliptic`, flat: 3.5 rations the poured metal to the product's own events and a sign in is not one |
+| The ways | `.wl-door-ways` | one capsule per way in, stacked, at a 22rem measure so a door does not stretch into a row of wide grey bars on a spread. The default is the metal capsule, the rest are ghosts at the door's scale (48px, a little fill under the hairline). NOT a pane of rows: see below |
+| The reason | `.wl-door-why` | one line under the default, in the util face at 12.5px in ash, saying why it is the default. Under the control it is about and never inside it |
+| Or | `.wl-or` | a hairline with one word in it, in TWO segments either side of the word rather than one line with the word masking a hole in it — the sheet is glass with the room blurred through it, and a word carrying an opaque swatch to cover the rule reads as a patch stuck on the glass |
+| Code box | `.wl-codebox` | `--void-2` behind a hairline, the field's 14px corner, and the digits in the identifier face at 38px tracked `0.14em`, centred, tabular. Six middle dots for the empty state. Focus moves the EDGE and not the fill, for the reason below |
+| Resend | `.wl-resend` | one line under the box, counting down in the identifier face before it becomes a control. It waits because a resend offered at once is a button people press three times in eight seconds, which mails three codes, invalidates two and walks somebody into the rate limit |
+| Legal line | `.wl-door-foot` | the terms and the privacy policy, as real anchors, quieter than anything above them |
+
+**It is centred, and it is the only thing in the build that is.** Section 0 and
+the rest of this file are emphatic that this product is left aligned, and the
+argument is about READING: a centred paragraph moves its own left edge on every
+line, so the eye hunts for the start of the next one. None of that is true of a
+door. There is no paragraph on one. There is a symmetrical mark, one sentence
+and two or three ways through, and that block pushed hard left with a stack of
+capsules under it reads as a form to be filled in rather than as a way in. The
+axis changes at the door and changes back behind it, and the change is itself
+the signal that this sheet is not part of the wall. The account screen on the
+same sheet (`.wl-profile`) does NOT take it: that screen is a record of what
+somebody wrote, it is reading matter, and it stays left aligned.
+
+**Every way in is the same shape, and only the material differs.** The ways
+were a capsule with a PANE of rows under it — a glyph in a circle, a label, a
+line of reason and a chevron, on a tinted plate. That put two component
+languages on one screen and it made the rows unreadable *as choices*: somebody
+weighing three doors was reading one button and two list items, and the list
+items lost every time for reasons that had nothing to do with the doors. Three
+capsules now, one height, one shape, and the one difference between them is the
+one that matters — the default is the metal, the alternatives are hairline. A
+reason that used to sit inside a row sits under the capsule it is about, because
+a capsule carrying a sentence is a row again.
+
+**Which way is the default is the surface's answer, not a ranking.** On the wall
+at the root it is **instagram**, because it is the only proof that lets the
+product tell somebody a ping of theirs is mutual — that is the one thing about
+those three doors that is not interchangeable, and google and the mailed code
+stand under the rule as what they are. On the wall at Berkeley it is the
+**campus address**, because that address is the only thing that opens writing
+there; the campus's own google is the same proof by a shorter road and stands
+under the rule as `sign in with google`.
+
+**The primary stands in the door, not in the sheet's foot.** Everywhere else
+the primary is docked (8.1, and `SheetFoot`: a control that moves between
+screens is a control somebody has to find twice). The door is the exception and
+the exception is the point — the ways in ARE the content here, and a
+`continue with google` capsule parked at the bottom edge with two feet of void
+between it and the two rows it is an alternative TO is a different question.
+The foot carries the one thing that is not a step: the terms.
+
+**The code box is drawn twice, and the second one is in an inbox.**
+`supabase/functions/_shared/mail.ts` `code()` holds the same values: the same
+ground, the same corner, the same size, the same tracking, centred. A person
+reads six characters off one screen and types them into another about ten
+seconds later, and a code that is one shape in the mail and another in the
+field is a code they have to check twice. The one thing that cannot match is
+the face — no mail client loads a web font, so the mail falls back to SF Mono
+and Courier where this is Geist Mono — and everything a client CAN hold is
+held. It is also why nothing glows on it: a mail cannot carry a text shadow
+(Outlook renders through Word), so a lit code here would be a code that lights
+on one of the two screens it appears on. `.wl-dm-digits`, the code you SEND
+rather than the one you are given, keeps its bloom; it is never drawn in a mail.
 
 ---
 

@@ -119,21 +119,23 @@ function sixDigit(): string {
 // the code in the mono face at the size of a thing you read off one device and
 // type into another.
 //
-// The copy button stays and matters. An email cannot reach the clipboard, so it
-// opens the app's one tap /copy page instead, and the code travels in the URL
-// FRAGMENT so it never appears in a request line or a server log.
+// Nothing here links out. The code used to carry a capsule under it that opened
+// /copy on the site with the digits in the fragment, and that page put them on
+// the clipboard: a tab and a page load between somebody and six characters they
+// were already looking at. A mail cannot run script, so the code is made easy to
+// TAKE instead — `user-select: all` on the digits, so one long press or one
+// double click selects the whole code and the client's own copy does the rest —
+// and the line under it says so. mail.ts `code()` carries the argument in full.
 //
 // Phase 8: what a campus address opens is the WALL now, not a community sky.
 // Communities are retired (Q15) and the .edu gate is the Berkeley Wall's.
 function codeEmailHtml(code: string, schoolName: string) {
   return mail.frame({
-    kicker: 'your code',
     inner: `
       ${mail.title(`You are at ${schoolName}.`)}
       ${mail.body('type this back into celestual and the wall opens.')}
       ${mail.code(code)}
-      ${mail.plate(`${SITE}/copy#c=${code}`, 'copy the code')}
-      ${mail.tick(`it lasts ${CODE_TTL_MIN} minutes.`)}
+      ${mail.tick(`press and hold it to copy · it lasts ${CODE_TTL_MIN} minutes`)}
       ${mail.colophon(
         `you are reading this because somebody entered this address on celestual. ` +
         `if that was not you, ignore it and nothing happens. ${SITE}`,

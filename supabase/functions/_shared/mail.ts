@@ -44,17 +44,26 @@
 // never carried by the typefaces. It is carried by the value scale and by what
 // is absent.
 //
-// ── WHY THERE IS NO MARK IMAGE ───────────────────────────────────────────────
-// There used to be one, as an inline SVG data URI, and it rendered in almost
-// nothing. Gmail does not render SVG in an <img> at all, and it proxies every
-// image through its own cache, which drops data: URIs; Outlook.com strips them
-// too. So the sigil at the head of every mail this product has ever sent was, in
-// the two clients most of its readers use, a broken image icon or a blank.
+// ── THE MARK, AND WHY IT IS A PNG AT A URL ───────────────────────────────────
+// It was an inline SVG data URI once and it rendered in almost nothing: Gmail
+// does not draw SVG in an <img> at all, and it proxies every image through its
+// own cache, which drops `data:`; Outlook.com strips them too. So the sigil at
+// the head of every mail this product sent was, in the two clients most of its
+// readers use, a broken image icon. It came off, and for a while the mail
+// signed itself with the wordmark in type alone.
 //
-// A raster at a public URL would work, and there is nowhere to serve one from
-// yet. So the mail signs itself the way it can: the wordmark, as type, tracked
-// wide. It renders identically everywhere and it cannot break.
-// docs/launchsteps.md section 6 carries what a hosted mark would need.
+// A raster at a public URL is the one thing every client draws, and there is
+// one to serve now: `app/public/mark-chalk-256.png`, written by
+// scripts/export-mark.mjs from the same nine constants as every other export
+// (design/DESIGN.md 3.2), so the mark in an inbox is the mark on the wall and
+// cannot drift from it. It is drawn at 26px beside the word, the lockup's own
+// proportion (DESIGN.md 3.3: the mark is 1.13 times the word's size).
+//
+// It still cannot be the ONLY signature. An image blocked, still loading or
+// refused is a mail with nothing at its head, so the word stands beside it in
+// type and carries the mail on its own; the mark's `alt` is empty because the
+// word is already there and a client drawing "celestual celestual" is worse
+// than one drawing the word once.
 
 // ── the tokens ───────────────────────────────────────────────────────────────
 // The same values as app/src/wall/wall.css. Kept as literals rather than
@@ -86,6 +95,15 @@ export const C = {
 // says, because a mail is forwarded, screenshotted and left open on a desk, and
 // none of that is a thing we get to do to somebody else's message. If a mail
 // ever does carry one, it needs the letter face and this is where it goes.
+
+// The mark, as a file this origin serves. The origin is the same
+// CELESTUAL_SITE_URL every sender reads, so a staging deploy draws its own copy
+// rather than production's. Reached through `globalThis` because this module is
+// also imported by scripts/mail-preview.mjs, which runs it under Node to
+// screenshot the templates, and a bare `Deno` there is a ReferenceError at load.
+const SITE = globalThis.Deno?.env?.get?.('CELESTUAL_SITE_URL') || 'https://celestual.us'
+const MARK = `${SITE}/mark-chalk-256.png`
+
 const DISPLAY = "Didot, 'Bodoni MT', 'Playfair Display', Georgia, 'Times New Roman', serif"
 const UTIL = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const MONO = "'SF Mono', Menlo, Consolas, 'Courier New', Courier, monospace"
@@ -133,13 +151,32 @@ export function plate(href: string, text: string) {
   </div>`
 }
 
-// A one time code. It is the only thing on the screen it is on, so it is set at
-// the size of a thing you read off one device and type into another, in the
-// mono face, where no glyph can be mistaken for another one.
+// ── the code ────────────────────────────────────────────────────────────────
+// The same object the app draws, to the pixel: wall.css `.wl-codebox`, which is
+// the box a person types this code back into ten seconds after reading it here.
+// That is the whole argument for the values below — a code that is one shape in
+// the inbox and another in the field is two codes, and somebody checking their
+// six digits against the screen has to do it twice. So: `--void-2` behind a
+// hairline, the field's own 14px corner, and the digits in the identifier face
+// at 38px tracked 0.14em, which is what the app sets.
+//
+// ── and it is COPIED FROM HERE, not from a page ─────────────────────────────
+// The code used to carry a capsule under it that opened /copy on the site with
+// the digits in the fragment, and that page put them on the clipboard. It was a
+// button that answered "copy this" by opening a browser: a tab, a page load and
+// a second screen between somebody and six characters already in front of them.
+//
+// A mail cannot run script, so there is no button here that can write to a
+// clipboard. What a mail CAN do is be easy to take: `user-select: all` makes one
+// long press on a phone, or one double click on a desktop, select the whole code
+// and nothing around it, and every mail client offers copy on that selection.
+// The digits are the target and the line under them says so. /copy still stands
+// for the mails already sitting in inboxes; nothing sent from here points at it.
 export function code(value: string) {
   return `
-  <div style="margin:26px 0 0;background:${C.void2};border:1px solid ${C.hair};border-radius:14px;padding:22px 22px 20px">
-    <div style="font-family:${MONO};font-size:38px;letter-spacing:10px;line-height:1;color:${C.chalk};white-space:nowrap">${value}</div>
+  <div style="margin:26px 0 0;background:${C.void2};border:1px solid ${C.hair};border-radius:14px;padding:24px 22px 22px;text-align:center">
+    <div style="font-family:${MONO};font-size:38px;font-weight:500;letter-spacing:5.3px;padding-left:5.3px;line-height:1.1;color:${C.chalk};white-space:nowrap;
+      -webkit-user-select:all;-moz-user-select:all;-ms-user-select:all;user-select:all">${value}</div>
   </div>`
 }
 
@@ -163,9 +200,21 @@ export function frame({ kicker, inner }: { kicker?: string; inner: string }) {
 <body style="margin:0;padding:0;background:${C.void}">
   <div style="background:${C.void};padding:34px 14px 60px;margin:0">
     <div style="max-width:480px;margin:0 auto;background:${C.void1};border:1px solid ${C.hairSoft};border-radius:22px;padding:34px 28px 36px;text-align:left">
-      <!-- The signature. A hairline under it rather than beside it, so it reads
-           as the head of a sheet rather than as a caption floating over one. -->
-      <div style="font-family:${UTIL};font-size:12px;font-weight:500;letter-spacing:3.4px;text-transform:uppercase;color:${C.chalk};margin:0 0 16px">celestual</div>
+      <!-- The signature: the mark and the word, on one baseline, with a hairline
+           under them rather than beside them, so it reads as the head of a sheet
+           rather than as a caption floating over one. A table because this is the
+           one row in the mail that has to hold two things side by side, and a
+           table is the only horizontal layout Outlook renders the same way twice. -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 0 16px">
+        <tr>
+          <td style="padding:0 9px 0 0;vertical-align:middle;line-height:0">
+            <img src="${MARK}" width="26" height="26" alt="" style="display:block;width:26px;height:26px;border:0;outline:none;text-decoration:none" />
+          </td>
+          <td style="vertical-align:middle">
+            <div style="font-family:${UTIL};font-size:12px;font-weight:500;letter-spacing:3.4px;text-transform:uppercase;color:${C.chalk};line-height:1">celestual</div>
+          </td>
+        </tr>
+      </table>
       ${rule('100%')}
       ${kicker ? `<div style="margin:30px 0 0">${label(kicker)}</div>` : '<div style="height:12px;font-size:0;line-height:0">&nbsp;</div>'}
       ${inner}

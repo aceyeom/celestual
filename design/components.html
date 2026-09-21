@@ -516,6 +516,70 @@
     </p>
   </section>
 
+  <!-- ── THE DOOR ───────────────────────────────────────────────────────── -->
+  <section>
+    <h2>The door</h2>
+    <p class="why">
+      Every sign in screen in the product, on one shape, and the only thing in the build
+      that is centred. The argument for the axis is in DESIGN.md 8.5: a centred paragraph
+      moves its own left edge on every line, which is about reading, and there is no
+      paragraph on a door — there is a symmetrical mark, one sentence, and two or three
+      ways through. The account screen on the same sheet stays left aligned, because that
+      one is a record of what somebody wrote.
+    </p>
+
+    <div class="grid is-two">
+      <div class="bed is-col">
+        <div class="spec" style="width:100%"><span class="cap">the head · mark, title, one line</span>
+          <div class="wl-door" style="max-width:none">
+            <div class="wl-door-head">
+              <span class="wl-door-mark" id="door-mark"></span>
+              <h2 class="wl-display is-s wl-door-title">Sign in to read<br>and write.</h2>
+              <p class="wl-door-say">your information will stay anonymous.</p>
+            </div>
+          </div>
+        </div>
+        <div class="spec" style="width:100%"><span class="cap">or · two segments, no masked hole</span>
+          <div class="wl-or"><span class="wl-or-word">or</span></div></div>
+        <div class="spec" style="width:100%"><span class="cap">the alternatives · one shape, hairline</span>
+          <div class="wl-door-ways" style="padding-top:0">
+            <button type="button" class="wl-pill is-ghost is-wide">
+              <svg class="wl-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.386-7.439-7.574s3.344-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.85l3.25-3.138C18.189 1.186 15.479 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.885 0 11.954-4.823 11.954-12.015 0-.795-.084-1.588-.239-2.356H12.24z"/></svg>
+              <span>continue with google</span>
+            </button>
+            <button type="button" class="wl-pill is-ghost is-wide">
+              <svg class="wl-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm.9 2L12 11.2 19.1 6H4.9ZM20 8.35l-7.42 5.44a1 1 0 0 1-1.18 0L4 8.35V18h16V8.35Z"/></svg>
+              <span>continue with email</span>
+            </button>
+          </div>
+          <p class="wl-door-why" style="align-self:flex-start;text-align:left">the default above them is the metal capsule (Controls). The reason a default is the default goes under it, never inside it.</p></div>
+        <div class="spec" style="width:100%"><span class="cap">the legal line</span>
+          <div class="wl-door-foot">by signing in you agree to the <a href="#">terms</a> and the <a href="#">privacy policy</a>.</div></div>
+      </div>
+
+      <div class="bed is-col">
+        <div class="spec" style="width:100%"><span class="cap">code box · empty. six places, drawn</span>
+          <div class="wl-codebox"><input class="wl-codebox-in" placeholder="······" value=""></div></div>
+        <div class="spec" style="width:100%"><span class="cap">code box · typed</span>
+          <div class="wl-codebox"><input class="wl-codebox-in" value="481920"></div></div>
+        <div class="spec" style="width:100%"><span class="cap">code box · shown, not asked for (/copy)</span>
+          <div class="wl-codebox is-shown"><div class="wl-codebox-digits">481920</div></div></div>
+        <div class="spec" style="width:100%"><span class="cap">resend · counting, then a control</span>
+          <p class="wl-resend">no code yet? <span class="wl-resend-clock">27s</span></p>
+          <button type="button" class="wl-quiet wl-resend-go">send another code</button></div>
+      </div>
+    </div>
+    <p class="note">
+      <b>The code box is drawn twice</b>, and the second one is in an inbox:
+      <code>supabase/functions/_shared/mail.ts</code> holds the same ground, corner, size
+      and tracking. A person reads six characters off one screen and types them into
+      another ten seconds later, and a code that is one shape in the mail and another in
+      the field is a code they have to check twice. It is also why nothing glows on it —
+      a mail cannot carry a text shadow, so a lit code would light on one of the two
+      screens it appears on.
+    </p>
+  </section>
+
   <!-- ── DRAWN ──────────────────────────────────────────────────────────── -->
   <section>
     <h2>Drawn things</h2>
@@ -654,6 +718,7 @@ document.querySelectorAll('.wl-light').forEach((frame) => {
   const f = (v) => Math.round(v * 100) / 100
   beam.style.setProperty('--path', `path('M ${f(k)} 0 H ${f(w - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w)} ${f(k)} V ${f(h - k)} A ${f(k)} ${f(k)} 0 0 1 ${f(w - k)} ${f(h)} H ${f(k)} A ${f(k)} ${f(k)} 0 0 1 0 ${f(h - k)} V ${f(k)} A ${f(k)} ${f(k)} 0 0 1 ${f(k)} 0 Z')`)
 })
+$('door-mark').innerHTML = at(38, 'chalk')
 $('art-bloom-mark').innerHTML = at(66, 'chalk')
 
 $('mark-void').innerHTML = at(132, 'chalk')

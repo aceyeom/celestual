@@ -305,14 +305,17 @@
    screen and type into another one. Mono, because every glyph has to be
    unambiguous: a proportional face puts 1 and l a hair apart at the exact
    moment that costs somebody the attempt. */
-.mn-copyscreen { gap: 18px; align-items: flex-start; }
-.mn-code {
-  font-family: var(--f-id);
-  font-size: clamp(38px, 13vw, 54px);
-  letter-spacing: 0.16em;
-  padding-left: 0.16em;
-  line-height: 1;
-  color: var(--chalk);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+/* ── the door's axis, on Main ──
+   /copy and /signin are the auth flow standing on Main's shell rather than on
+   the wall's sheet, and they take the same centred axis the gate does
+   (wall.css `THE DOOR`, which carries the argument): a door is a thing you
+   stand square in front of, and the product behind it is left aligned.
+   `.mn-mid` is otherwise deliberately top-weighted and stays that way — the
+   question does not move to the middle of the glass where a keyboard covers
+   it — so this changes the axis and not the vertical rhythm. */
+.mn-mid.is-door { align-items: center; text-align: center; }
+.mn-mid.is-door .mn-copy { max-width: 32ch; }
+.mn-copyscreen { gap: 18px; }
+/* the code box is the door's, at the door's measure, so the digits on this
+   screen are the digits in the mail and in the gate's field */
+.mn-copyscreen .wl-codebox { max-width: 22rem; }

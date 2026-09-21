@@ -743,6 +743,20 @@ async function fulfil(route) {
     return route.fulfill({ json: { ok: true } })
   }
 
+  // Supabase Auth, for the door that mails a code to any address (api/login.js
+  // `sendEmailCode`, `checkEmailCode`). signInWithOtp posts to /auth/v1/otp and
+  // answers with an empty object; verifyOtp posts to /auth/v1/verify and answers
+  // with a session. Without both, the catch-all below 404s and every shot of the
+  // code step is a shot of the ADDRESS step with a fault line under it.
+  if (url.includes('/auth/v1/otp')) return route.fulfill({ json: {} })
+  if (url.includes('/auth/v1/verify')) {
+    return route.fulfill({ json: {
+      access_token: 'preview', token_type: 'bearer', expires_in: 3600, refresh_token: 'preview',
+      user: { id: '00000000-0000-4000-8000-000000000001', email: 'you@anywhere.com' },
+    } })
+  }
+  if (url.includes('/auth/v1/')) return route.fulfill({ json: {} })
+
   return route.fulfill({ status: 404, body: '' })
 }
 
@@ -794,8 +808,34 @@ const ROUTES = [
   { label: 'home',            path: '/', settle: 6000 },
   { label: 'home-lifted',     path: '/', press: '.wl-mast-go', settle: 5200 },
   { label: 'home-gate',       path: '/gate', anon: true },
-  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:first-child' },
-  { label: 'home-gate-email', path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:last-child' },
+  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '[data-way="instagram"]' },
+  { label: 'home-gate-email', path: '/gate', anon: true, press: '[data-way="email"]' },
+  // The code step, on both walls: the address typed, the code asked for, and
+  // the box it comes back into. The one screen in the door nobody had ever
+  // looked at, because reaching it needs a mail to have gone out.
+  { label: 'home-gate-code', path: '/gate', anon: true, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'you@anywhere.com'],
+    ['click', '.wl-door-ways .wl-lq'],
+  ] },
+  { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
+    ['click', '[data-way="email"]'],
+    ['fill', '.wl-addr-in', 'you@anywhere.com'],
+    ['click', '.wl-door-ways .wl-lq'],
+    ['fill', '.wl-codebox-in', '481920'],
+  ] },
+  // the DM code, on the door: the one screen whose success depends on what
+  // somebody does after they have left the product
+  { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
+    ['click', '[data-way="instagram"]'],
+    ['fill', '.wl-field input', 'ace03d'],
+    ['click', '.wl-door-ways .wl-lq'],
+  ] },
+  { label: 'berkeley-gate-code', path: '/berkeley/gate', anon: true, acts: [
+    ['fill', '.wl-addr-in', 'you'],
+    ['click', '.wl-door-ways .wl-lq'],
+    ['fill', '.wl-codebox-in', '481920'],
+  ] },
   { label: 'home-write',      path: '/write/sofiaaa.reyes' },
   { label: 'home-letter',     path: '/letter/pilar.echevarria' },
   { label: 'berkeley-gate-google', path: '/berkeley/gate', anon: true },

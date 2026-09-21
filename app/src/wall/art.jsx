@@ -302,20 +302,64 @@ export function eclipticHalves() {
   return { left, right, high: arc(left, right), low: arc(right, left) }
 }
 
-// ── the provider's mark ─────────────────────────────────────────────────────
-// Drawn on the same 24-unit grid at the same stroke weight as the seven glyphs
-// in parts.jsx, because on this surface it is a destination and not a logo: the
-// button it sits in says where the next tap goes, and a pasted brand asset
-// would be the one object in the build at a different weight, a different
-// radius and a different optical size from everything around it.
+// ── THE TWO MARKS THAT ARE NOT OURS ─────────────────────────────────────────
+//
+// Instagram's and Google's, on the buttons that go to them, and both are the
+// service's own mark rather than this product's drawing of it.
+//
+// That is a reversal, and `Verified` above is the precedent for it: it is drawn
+// here for the same reason everything else is, AND because a claim about
+// somebody's Instagram account has to read as that service's claim. The same
+// argument runs on a door. A sign in button is a promise about where the next
+// tap lands, and a person scanning three of them is not reading the words —
+// they are looking for the mark they already know. `Provider` used to be a
+// hairline camera on the icon set's 24-unit grid, on the argument that a pasted
+// brand asset would be the one object in the build at a different weight; what
+// that produced was a row of approximations, and beside Google's four-colour G
+// redrawn as a single arc it read as a product that could not get the logos
+// right. It is still not a pasted asset: both are paths in this file, at this
+// file's sizes, taking `currentColor` like every other glyph here, so they sit
+// in the build's own chalk and never in a brand's blue or a four-colour fill.
+//
+// They are SOLID, where the icon set is hairline, and that is the whole reason
+// they are together in one block: two filled marks beside each other are a set,
+// and a filled Google beside a hairline Instagram is the inconsistency this
+// replaced. The envelope on the same door is a stroke glyph no longer — see
+// `Envelope` below — for exactly that reason.
 export function Provider({ size = 18, className = '' }) {
   return (
     <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-      aria-hidden="true" focusable="false">
-      <rect x="3.3" y="3.3" width="17.4" height="17.4" rx="5.2" />
-      <circle cx="12" cy="12" r="4.05" />
-      <circle cx="17.05" cy="6.95" r="1.05" fill="currentColor" stroke="none" />
+      fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23a3.7 3.7 0 0 1-.9 1.38c-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.13 1.38A5.9 5.9 0 0 0 .63 4.14c-.3.76-.5 1.64-.56 2.91C.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.13a5.9 5.9 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.9 5.9 0 0 0 2.13-1.38 5.9 5.9 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.38-2.13A5.9 5.9 0 0 0 19.86.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0Z" />
+      <path d="M12 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32Zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" />
+      <circle cx="18.41" cy="5.59" r="1.44" />
+    </svg>
+  )
+}
+
+// Google's, as the single path the brand publishes for a monochrome placement,
+// so it is the real G and not an arc that resembles one. `currentColor`, so it
+// wears the button's chalk.
+export function Google({ size = 18, className = '' }) {
+  return (
+    <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
+      fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.386-7.439-7.574s3.344-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.85l3.25-3.138C18.189 1.186 15.479 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.885 0 11.954-4.823 11.954-12.015 0-.795-.084-1.588-.239-2.356H12.24z" />
+    </svg>
+  )
+}
+
+// And the envelope beside them, solid rather than hairline. It is OURS — an
+// address is not a brand and there is no logo for one — but it stands third in
+// a row of three and an outline between two filled marks is the odd one out.
+// The flap is cut through the body with `evenodd` rather than drawn over it in
+// the button's own colour, so the glyph carries no ground and works on any.
+export function Envelope({ size = 18, className = '' }) {
+  return (
+    <svg className={`wl-icon ${className}`} width={size} height={size} viewBox="0 0 24 24"
+      fill="currentColor" aria-hidden="true" focusable="false">
+      <path fillRule="evenodd" clipRule="evenodd"
+        d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm.9 2L12 11.2 19.1 6H4.9ZM20 8.35l-7.42 5.44a1 1 0 0 1-1.18 0L4 8.35V18h16V8.35Z" />
     </svg>
   )
 }

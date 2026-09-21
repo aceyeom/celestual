@@ -741,7 +741,7 @@ export function Segmented({ value, onChange, options, label, className = '' }) {
 // so the keyboard that tap raised is the keyboard this field keeps.
 export function HandleField({ value, onChange, onSubmit, autoFocus = false, focusOnTouch = false, locked = false,
   placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null,
-  onKeyDown = null, kind = 'handle', onFocus = null, onBlur = null }) {
+  onKeyDown = null, kind = 'handle', onFocus = null, onBlur = null, centred = false }) {
   const ref = useRef(null)
   const id = useId()
   const named = kind === 'name'
@@ -766,14 +766,27 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
     if (fine || focusOnTouch) ref.current.focus()
   }, [autoFocus, focusOnTouch])
 
+  // ── centred: the @ and what is typed after it stay one string ─────────────
+  // On the door (screens/Gate.jsx) the field sits on a centred axis, and an
+  // input that fills the row centres its TEXT inside itself — which leaves the
+  // painted @ stranded at the far left with a hand's width of nothing between
+  // it and the handle it belongs to. So the input is sized to what is in it,
+  // the way the gate's address field already sizes itself, and the row centres
+  // the pair. Floored at the placeholder's width so an empty field is not a
+  // caret alone, and capped so a long handle scrolls inside the field rather
+  // than pushing the @ off the axis.
+  const fit = centred
+    ? { width: `${Math.min(20, Math.max((placeholder || '').length || 11, value.length + 1))}ch`, flex: '0 1 auto' }
+    : undefined
+
   return (
-    <div className={`wl-field${size ? ` is-${size}` : ''}${locked ? ' is-locked' : ''}${busy ? ' is-busy' : ''}${named ? ' is-name' : ''}${seeking ? ' is-search' : ''}`}>
+    <div className={`wl-field${size ? ` is-${size}` : ''}${locked ? ' is-locked' : ''}${busy ? ' is-busy' : ''}${named ? ' is-name' : ''}${seeking ? ' is-search' : ''}${centred ? ' is-centred' : ''}`}>
       {named ? null
         : seeking ? <span className="wl-at wl-field-glass" aria-hidden="true"><Icon name="find" size={size === 'lg' ? 24 : 20} /></span>
         : <span className="wl-at" aria-hidden="true">@</span>}
       <input
         ref={setRef} id={id} aria-label={label} type="text" value={value}
-        readOnly={locked} placeholder={placeholder}
+        readOnly={locked} placeholder={placeholder} style={fit}
         autoComplete="off" autoCapitalize={named ? 'words' : 'none'} autoCorrect="off" spellCheck="false"
         inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'}
         onFocus={onFocus || undefined} onBlur={onBlur || undefined}
@@ -1204,6 +1217,201 @@ export function Waiting({ label = 'looking' }) {
       <Sparkle size={11} twinkle delay={480} />
       <span className="wl-sr">{label}</span>
     </div>
+  )
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  THE DOOR                                                                ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+//
+// Three parts, and between them they are every sign in screen the product has:
+// the head a door opens on, the box a mailed code is typed into, and the line
+// that asks for another one. They are here rather than on a screen because
+// there are FOUR doors — the wall at the root, the wall at Berkeley, the link
+// in a mail and the code page — and four screens each inventing a heading, a
+// field and a way to ask again is how one product comes to have four sign ins.
+//
+// ── and the door is the one centred thing in the build ──────────────────────
+// Everything else is left aligned, and design/DESIGN.md is emphatic about why:
+// a rag on the right is what says a person set the page, and a centred
+// paragraph moves its own left edge on every line so the eye hunts for the
+// start of the next one. That argument is about READING, and none of it is
+// true of a door. There is no paragraph here to track down a column: there is
+// a mark, one sentence, and the two or three ways through. A door is a thing
+// you stand square in front of, its objects are stacked on one axis, and the
+// mark at the head of it is a symmetrical drawing — put that block hard left
+// and the sheet reads as a form somebody has to fill in rather than as a way
+// in. So the door is centred, the product behind it is not, and the change of
+// axis is itself the signal that this screen is not part of the wall.
+
+// ── the head ────────────────────────────────────────────────────────────────
+// The mark, the one line that says what is being asked, and at most one
+// sentence under it. Nothing else has ever belonged here: the gate used to
+// open straight onto a heading with no signature over it at all, on four
+// different screens, so the one moment somebody is deciding whether to hand
+// this product an address was also the one moment it did not say who it was.
+//
+// The mark is `Ecliptic`, flat, and not `LiquidMark`. DESIGN.md 3.5 rations
+// the poured metal to the product's own events — the intro, a mutual, the
+// reveal — and a sign in is not one of them. Here it is a glyph.
+export function DoorHead({ title, say = null, id, className = '', ref }) {
+  return (
+    <div className={`wl-door-head ${className}`}>
+      <Ecliptic size={38} className="wl-door-mark" />
+      <Display size="s" as="h2" id={id} ref={ref} className="wl-door-title">{title}</Display>
+      {say ? <p className="wl-door-say">{say}</p> : null}
+    </div>
+  )
+}
+
+// ── "or" ────────────────────────────────────────────────────────────────────
+// A hairline with one word sitting in it, between the way in that is one tap
+// and the ways in that are not. It is drawn rather than written because the
+// alternative is a third heading, and a screen with three headings on it has
+// none.
+export function Or({ children = 'or', className = '' }) {
+  return (
+    <div className={`wl-or ${className}`} role="separator">
+      <span className="wl-or-word">{children}</span>
+    </div>
+  )
+}
+
+// ── the legal line ──────────────────────────────────────────────────────────
+// At the foot of every door, quieter than anything on it. It is the one thing
+// here nobody reads before they act and everybody has the right to read
+// afterwards, so it is present, plain, and never in the way: real anchors, so
+// a person can open either in a new tab and come back to a sheet that has not
+// lost the address they were halfway through typing.
+export function DoorFoot({ className = '' }) {
+  return (
+    <div className={`wl-door-foot ${className}`}>
+      by signing in you agree to the <a href="/terms">terms</a> and
+      the <a href="/privacy">privacy policy</a>.
+    </div>
+  )
+}
+
+// ── THE CODE ────────────────────────────────────────────────────────────────
+//
+// One object, drawn twice: here, and in supabase/functions/_shared/mail.ts,
+// which is the mail the digits arrive in. The two are held to the same values
+// on purpose — `--void-2` behind a hairline, the field's own 14px corner, the
+// identifier face at 38px tracked 0.14em, centred — because a person reads six
+// characters off one screen and types them into another about ten seconds
+// later, and a code that is one shape in the inbox and another in the field is
+// a code they have to check twice. The one thing that cannot match is the
+// face: no mail client loads a web font, so the mail falls back to SF Mono and
+// Courier while this is Geist Mono. Everything a client CAN hold is held.
+//
+// ── one input, not six ──────────────────────────────────────────────────────
+// Six boxes with a digit each is the fashionable drawing of this and it is six
+// inputs: six focus states to move between, a backspace rule to write, and an
+// autofill that lands the whole code in the first box on half the browsers
+// that offer it. This is one field. `autocomplete="one-time-code"` works,
+// paste works, the mail's own selection pastes in whole, and a person who
+// wants to fix the third digit uses the caret they already know how to use.
+//
+// ── static, when nobody is typing ───────────────────────────────────────────
+// Without `onChange` it is the same box drawn around a code being SHOWN rather
+// than asked for: /copy, where the code came in on the address and the only
+// thing to do with it is take it. `user-select: all` there, so one press has
+// the whole of it, which is the same affordance the mail offers.
+export function CodeBox({
+  value, onChange = null, onSubmit = null, length = 6,
+  autoFocus = false, label = 'the code from the mail', className = '',
+}) {
+  const dots = '·'.repeat(length)
+  if (!onChange) {
+    return (
+      <div className={`wl-codebox is-shown ${className}`}>
+        <div className="wl-codebox-digits" aria-label={`your code is ${String(value).split('').join(' ')}`}>
+          {value}
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`wl-codebox ${className}`}>
+      <input
+        className="wl-codebox-in"
+        value={value}
+        // Digits only, and never more than the code is long: a paste that
+        // brought a space, a newline or the sentence around it off a mail
+        // client's selection lands as the code and nothing else.
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, length))}
+        onKeyDown={(e) => { if (e.key === 'Enter' && onSubmit) { e.preventDefault(); onSubmit() } }}
+        aria-label={label} placeholder={dots}
+        type="text" inputMode="numeric" autoComplete="one-time-code"
+        autoFocus={autoFocus} autoCorrect="off" spellCheck="false" enterKeyHint="go"
+        maxLength={length}
+      />
+    </div>
+  )
+}
+
+// ── asking for another one ──────────────────────────────────────────────────
+//
+// The screen that had no answer for the commonest thing that happens on it.
+// A mailed code goes missing — a slow relay, a spam folder, an address typed
+// with one wrong character — and the only way forward the gate offered was
+// "use a different address", which is not what happened and not what anybody
+// wants to do about it.
+//
+// It waits before it offers, and that is the whole design. A resend put up the
+// moment the first code is sent is a button people press three times in eight
+// seconds, which mails three codes, invalidates two of them and walks somebody
+// into the rate limit that then locks the address for an hour. So the line
+// counts down first, in the identifier face because it is a number being read
+// off a clock, and only then becomes a control.
+export function Resend({ onSend, wait = 30, className = '' }) {
+  const [left, setLeft] = useState(wait)
+  const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (left <= 0) return undefined
+    const t = setTimeout(() => setLeft((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [left])
+
+  // `alive` rather than a bare setState after the await: this line sits on a
+  // sheet somebody can close while the mail is going out, and React's
+  // development StrictMode mounts and unmounts every component once before it
+  // settles. Same trap Signin.jsx documents at length.
+  const alive = useRef(true)
+  useEffect(() => {
+    alive.current = true
+    return () => { alive.current = false }
+  }, [])
+
+  const go = async () => {
+    if (left > 0 || busy) return
+    setBusy(true)
+    const out = await onSend()
+    if (!alive.current) return
+    setBusy(false)
+    // A send that failed says so through the screen's own fault line, which is
+    // already under this one. What it must not do is start the clock again and
+    // tell somebody a code is coming.
+    if (out === false) return
+    setSent(true)
+    setLeft(wait)
+  }
+
+  if (busy) return <p className={`wl-resend ${className}`}>sending</p>
+  if (left > 0) {
+    return (
+      <p className={`wl-resend ${className}`} role="status" aria-live="polite">
+        {sent ? 'a new code is on its way' : 'no code yet?'}{' '}
+        <span className="wl-resend-clock">{left}s</span>
+      </p>
+    )
+  }
+  return (
+    <button type="button" className={`wl-quiet wl-resend-go ${className}`} onClick={go}>
+      send another code
+    </button>
   )
 }
 
