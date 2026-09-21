@@ -10,7 +10,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './data.js'
-import { Ecliptic, Sparkle } from './art.jsx'
+import { Ecliptic, Sparkle, Verified } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
@@ -669,17 +669,27 @@ export function Pen({ onClick, label = 'change it', on = null, className = '' })
   )
 }
 
-// ── the switch ──────────────────────────────────────────────────────────────
-// Two or three words on one rail, one of them on, and the ground lit behind
-// the one that is: the way the bar says where you are (design/DESIGN.md
-// 8.2), as a control. The thumb is one element that slides to the choice
-// on the sheet's own travelling curve, so the choice is seen to move rather
-// than to swap. It is a radio group to a screen reader and to a keyboard,
-// and the arrow keys move it.
+// ── the bookmarks ───────────────────────────────────────────────────────────
+// Two or three words on a rail, one of them open, and the open one sits on
+// the rail as a tab does on a page: a soft ground rounded at the head, square
+// at the foot, and a lit spine along the line under it. The rail is the top
+// edge of the thing it changes — the field under it, the panel under it — so
+// the tab and what it opens are ONE object with a bookmark in it rather than
+// a control floating above a second control.
 //
-// It replaced a quiet line under the composer's field, "a first name
-// instead", which named one of the two choices and hid the other; a person
-// deciding who a letter is for should see both before they type.
+// It was a filled capsule with an inset ring round both words and a glyph
+// beside each of them: a heavy object standing over a bare baseline field,
+// which on the composer's first question made three stacked boxes out of one
+// question. The ring came off, the ground came off, and the glyphs came off —
+// an `@` beside the word "instagram" and a star beside "anything else" say
+// nothing the words had not already said, and the product does not wear an
+// icon set (DESIGN.md 1.3).
+//
+// The tab is one element that slides to the choice on the sheet's own
+// travelling curve, so the choice is seen to move rather than to swap. It is
+// a radio group to a screen reader and to a keyboard, and the arrow keys move
+// it. `Look.jsx` wears the same rail as a tablist, which is why the markup is
+// a grid of equal columns with `--n` and `--i` on it and nothing measured.
 export function Segmented({ value, onChange, options, label, className = '' }) {
   const at = Math.max(0, options.findIndex((o) => o.value === value))
   const keys = (e) => {
@@ -705,7 +715,6 @@ export function Segmented({ value, onChange, options, label, className = '' }) {
           tabIndex={i === at ? 0 : -1}
           onClick={() => onChange(o.value)}
         >
-          {o.glyph ? <span className="wl-seg-glyph" aria-hidden="true">{o.glyph}</span> : null}
           <span>{o.label}</span>
         </button>
       ))}
@@ -1610,7 +1619,7 @@ export function Addressee({ handle, id, className = '' }) {
         <span className="wl-addressee-for" aria-hidden="true">for</span>
         <span className={`wl-addressee-name${name ? '' : ' is-h'}`} id={id}>
           {name || h || '\u00a0'}
-          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+          {p?.verified ? <Verified size={11} className="wl-who-badge" /> : null}
         </span>
       </span>
       {name && h ? <span className="wl-addressee-at">{h}</span> : null}
@@ -1704,7 +1713,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
         <span className="wl-viewer-who">
           <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
             {name || atHandle(handle)}
-            {p?.verified ? <Sparkle size={11} className="wl-who-badge" /> : null}
+            {p?.verified ? <Verified size={13} className="wl-who-badge" /> : null}
           </span>
           {name ? <span className="wl-viewer-at">{atHandle(handle)}</span> : null}
         </span>
@@ -1771,7 +1780,7 @@ export function Who({ handle, size = 40, meta = null, className = '' }) {
       <span className="wl-who-id">
         <span className={`wl-who-name${name ? '' : ' is-h'}`}>
           {name || atHandle(handle)}
-          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+          {p?.verified ? <Verified size={11} className="wl-who-badge" /> : null}
         </span>
         {under ? <span className="wl-who-at">{under}</span> : null}
       </span>
@@ -1868,6 +1877,10 @@ export function Roll({ value, className = '' }) {
 //           light riding over it and clipped to the capsule: a soft rose bloom
 //           travelling round the inside of the button's edge, and nothing
 //           outside it.
+//   none    no plate at all, for a host that already has a ground of its own:
+//           the composer's body, which is the tabbed sheet the bookmark is
+//           attached to and cannot have a second surface laid inside it. The
+//           beam alone, clipped to the host's radius.
 //
 // `on` is whether it is running. Off, the light fades and holds still, and
 // the plate stays: the plate is the element's ground in every state.
@@ -1906,7 +1919,9 @@ export function Light({ on = true, plate = 'star', className = '' }) {
   return (
     <span className={`wl-light is-${plate}${on ? ' is-on' : ''} ${className}`} aria-hidden="true">
       <span className="wl-light-beam" ref={beam} />
-      {plate === 'star' ? <StarPlate /> : <span className="wl-plate is-chalk" aria-hidden="true" />}
+      {plate === 'star' ? <StarPlate />
+        : plate === 'chalk' ? <span className="wl-plate is-chalk" aria-hidden="true" />
+        : null}
     </span>
   )
 }
@@ -2012,13 +2027,84 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
         <span className="wl-card-real">
           <span className="wl-card-name">
             {name}
-            {!looking && at.verified ? <Sparkle size={10} className="wl-card-badge" /> : null}
+            {!looking && at.verified ? <Verified size={13} className="wl-card-badge" /> : null}
           </span>
           {under ? <span className="wl-card-at">{under}</span> : null}
         </span>
       </span>
       {pick ? <span className="wl-card-go" aria-hidden="true">&#8594;</span> : null}
     </Tag>
+  )
+}
+
+// ── THE ANSWER, IN THE FIELD'S PLACE ────────────────────────────────────────
+// What the resolver found, standing exactly where the handle was typed, inside
+// the same body the field lives in (wall.css `.wl-write-body`): the same
+// measure, the same ground, the same height. The field is not a field any more
+// once the person has committed to a handle — it is a person — and a screen
+// that draws the answer as a THIRD object under the tab and the field is a
+// screen with three stacked boxes on it answering one question.
+//
+// ── it is one element in every state ────────────────────────────────────────
+// Looking, found, and no-account are the same row, so the light going out and
+// the answer arriving are one transition rather than a swap. While it is out,
+// the point of light runs the body's own edge (`Light`) and two bars breathe
+// where the name and the handle will land: not a spinner, which promises a
+// computation, and not a shimmer, which is a pattern from a different product.
+// The frame holds the height the answer takes, so nothing moves when it lands.
+// Nothing is said in words beside it, because the light is the saying.
+//
+// The way back is an X and not an arrow. An arrow at the end of a row is a
+// door: it says the row is the way on, and the way on is the capsule at the
+// foot of the sheet, which is where every other act on this surface lives.
+// What a person actually wants from this row is OUT of it — "that is not
+// them, let me type again" — so the mark at its end is the close mark, the one
+// this product already uses for exactly that, and pressing it hands the field
+// back with the handle still in it.
+//
+// It draws, it does not ask: `at` comes from `useResolver` and nothing here
+// reaches a server. `unknown` never gets here — the composer walks straight
+// past an answer it could not get rather than telling somebody their friend
+// does not exist.
+export function Addressed({ at, onClear, looking = false, label = 'change who it is for', className = '' }) {
+  const h = normHandle(at.handle)
+  const missing = !looking && at.state !== 'found'
+  const mono = looking ? '' : missing ? h.slice(0, 1).toUpperCase() : monogram(at)
+  const name = missing ? 'no account by that name' : (at.name || `@${h}`)
+  const under = missing || at.name ? `@${h}` : ''
+  return (
+    <div
+      className={`wl-settled${looking ? ' is-looking' : ''}${missing ? ' is-missing' : ''} ${className}`}
+      aria-live="polite" aria-busy={looking || undefined}
+    >
+      <span className="wl-settled-disc" aria-hidden="true">
+        <span className="wl-settled-mono">{mono}</span>
+        {!looking && at.avatar ? (
+          <img
+            src={at.avatar} alt="" loading="lazy" decoding="async"
+            /* a picture that fails to load falls through to the monogram under
+               it rather than to a broken-image glyph in the middle of a field */
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        ) : null}
+      </span>
+      {/* the two states share one cell and cross fade: the words land where
+          the bars were, and nothing moves */}
+      <span className="wl-settled-id">
+        <span className="wl-settled-skel" aria-hidden="true">
+          <span className="wl-settled-bar" />
+          <span className="wl-settled-bar is-short" />
+        </span>
+        <span className="wl-settled-real">
+          <span className="wl-settled-name">
+            {name}
+            {!looking && at.verified ? <Verified size={15} className="wl-settled-badge" /> : null}
+          </span>
+          {under ? <span className="wl-settled-at">{under}</span> : null}
+        </span>
+      </span>
+      {looking ? null : <Close onClick={onClear} label={label} className="wl-settled-clear" />}
+    </div>
   )
 }
 

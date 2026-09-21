@@ -10,7 +10,8 @@
     "lint:voice": "node scripts/voice-lint.mjs",
     "shots": "node scripts/shots.mjs",
     "mark": "node scripts/export-mark.mjs",
-    "faces": "node scripts/fetch-faces.mjs"
+    "faces": "node scripts/fetch-faces.mjs",
+    "shots:composer": "node scripts/shots-composer.mjs"
   },
   "devDependencies": {
     "playwright": "^1.62.1"

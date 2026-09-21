@@ -1232,6 +1232,88 @@ a.wl-lq { text-decoration: none; }
 .wl-field:focus-within .wl-field-line::after { transform: scaleX(1); }
 .wl-field:focus-within .wl-at { color: var(--ash); }
 .wl-field.is-locked input { color: var(--ash); }
+
+/* ── THE ANSWER, IN THE FIELD'S PLACE (parts.jsx `Addressed`) ──
+   Once a handle has been committed the field is not a field any more, it is a
+   person, so the person stands where the field stood, inside the same body:
+   the same measure, the same ground, the same height. No plate and no frame
+   of its own — the row is not a second object arriving under the field, it IS
+   the field, answered.
+
+   One element in every state. While the resolver is out the disc is empty,
+   two bars breathe where the name and the handle will land, and the point of
+   light runs the BODY'S edge (`Light`, with no plate of its own, since the
+   body already has a ground). When the answer lands the bars cross fade to
+   the words in the same cell, so nothing moves and the light going out and
+   the answer arriving are one transition. That is the animation the result
+   card has always waited with.
+
+   The way out of it is the close mark at its end and not an arrow. An arrow
+   says "the way on is through this row", and the way on is the capsule at the
+   foot of the sheet like every other act on this surface. What somebody
+   actually wants from this row is out of it. */
+.wl-settled {
+  display: flex; align-items: center; gap: 11px;
+  animation: wl-settled-in 320ms var(--ease) both;
+}
+@keyframes wl-settled-in {
+  from { opacity: 0; transform: translate3d(0, 4px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.wl-settled.is-looking { animation: none; }
+.wl-settled-disc {
+  position: relative; flex: 0 0 auto;
+  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
+  background: rgba(244, 241, 234, 0.05);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  display: grid; place-items: center;
+  transition: background 360ms var(--ease);
+}
+.wl-settled.is-looking .wl-settled-disc { background: rgba(244, 241, 234, 0.035); }
+.wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.wl-settled-mono {
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.06em;
+  color: var(--ash); user-select: none;
+}
+/* the two states share one cell and cross fade: the words land where the bars
+   were, and nothing moves */
+.wl-settled-id { min-width: 0; flex: 1 1 auto; display: grid; }
+.wl-settled-id > * {
+  grid-area: 1 / 1; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  transition: opacity 260ms var(--ease);
+}
+.wl-settled-skel { gap: 7px; opacity: 0; }
+.wl-settled.is-looking .wl-settled-skel { opacity: 1; }
+.wl-settled.is-looking .wl-settled-real { opacity: 0; }
+.wl-settled-bar {
+  display: block; height: 9px; width: 128px; max-width: 46vw; border-radius: 3px;
+  background: rgba(244, 241, 234, 0.07);
+  /* the result card's own breath, by name: two keyframes with the same body
+     and different names are two things to keep in step, and this one has to
+     stay in step with the card by definition */
+  animation: wl-card-breathe 1600ms var(--ease-out) infinite;
+}
+.wl-settled-bar.is-short { width: 74px; height: 8px; animation-delay: 180ms; }
+.wl-settled-name {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--f-util); font-size: 17px; font-weight: 500; letter-spacing: -0.008em;
+  color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-settled-name .wl-settled-badge { color: var(--accent); flex: 0 0 auto; }
+.wl-settled-at {
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.04em; color: var(--ash);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* no account by that name: not an error and not drawn as one, because the
+   letter still goes up and somebody who knows their friend's handle is right */
+.wl-settled.is-missing .wl-settled-name { font-weight: 400; font-size: 15px; color: var(--ash); }
+.wl-settled.is-missing .wl-settled-at { color: var(--chalk); }
+/* the close mark, at the field's scale rather than a sheet's */
+.wl-settled-clear { width: 32px; height: 32px; }
+.wl-settled-clear svg { width: 18px; height: 18px; }
+
 /* ── the field, asking for a name (0053) ──
    The same baseline with the @ gone and the type in the display face: a
    name is something a person means, a handle is an identifier, and the field
@@ -2799,55 +2881,129 @@ a.wl-lq { text-decoration: none; }
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 260ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-/* the switch over the field: the handle, or anything else (0055). It stood
-   under the field as one quiet line, "a first name instead", which named
-   one of the two choices and hid the other; the two stand side by side now
-   and the one that is on is lit from behind (parts.jsx `Segmented`) */
-.wl-write-kind { margin: 0 0 22px; }
+/* ── the first question, as ONE object ──
+   A bookmark, and the body it is attached to. The tab and the body are the
+   same sheet of paper: the same ground a step up from the void, the same
+   hairline round both, and no line between them — the rail's hairline is the
+   body's top edge and the open tab sits over it, opaque, interrupting it the
+   way a tab interrupts the edge of the page it is on.
+
+   The body holds the field, or, once a handle has been committed, the person
+   it resolved to (parts.jsx `Addressed`), and it holds the same height for
+   both, so nothing under it moves when the answer lands. It is the element
+   the running light runs round while the resolver is out.
+
+   The field inside it has no baseline of its own: a rule inside a box is a
+   second edge saying the same thing, so the box is the field's edge and the
+   focus is the box coming up a step. */
+.wl-write-tabs { margin: 0; }
+/* One ground and one hairline, named once and read by the tab and by the
+   body, so there is no pair of numbers to drift apart. The focused values
+   are set on the wrapper (`.wl-write-who:focus-within`), which is what both
+   of them live in: a tab drawn a step darker than the field it opens, with a
+   dimmer outline, is not a tab on that sheet, it is a different object
+   standing next to it. */
+.wl-write-who { --sheet: var(--void-1); --sheet-edge: var(--hair); }
+.wl-write-who:focus-within { --sheet: var(--void-2); --sheet-edge: rgba(244, 241, 234, 0.17); }
+.wl-write-body {
+  position: relative; isolation: isolate;
+  display: flex; align-items: center;
+  --light-w: 132px;
+  min-height: 64px; padding: 11px 15px;
+  border: 1px solid var(--sheet-edge);
+  /* Square where a tab is standing on it, rounded everywhere else: the head
+     of the sheet keeps its left corner only while the first tab is the open
+     one, and gets it back the moment the tab moves off it (`--i`, set by the
+     screen). */
+  border-radius: calc(var(--r-field) * min(var(--i, 0), 1)) var(--r-field) var(--r-field) var(--r-field);
+  background: var(--sheet);
+  transition: border-color 240ms var(--ease), background 240ms var(--ease);
+}
+.wl-write-body > :not(.wl-light) { position: relative; z-index: 2; width: 100%; min-width: 0; }
+/* the field, inside the body: the baseline goes, the painted @ and the type
+   stay, and the box is what the eye reads as the edge */
+.wl-write-body .wl-field { padding-bottom: 0; }
+.wl-write-body .wl-field-line { display: none; }
 /* the look panel under the card keeps the card's measure on a spread */
 .wl-write .wl-look { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
-/* ═══ THE SWITCH ═══════════════════════════════════════════════════════════
-   parts.jsx `Segmented`: two or three words on one rail, and the ground
-   lighting behind the one that is on, which is how the bar says where you
-   are (DESIGN.md 8.2). The thumb is one element that slides on the sheet's
-   own travelling curve, so the choice is seen to move rather than to swap,
-   and the words change colour with it. Not a lit capsule: the one bright
-   thing on the composer is the act at its foot. */
+/* ═══ THE BOOKMARKS ════════════════════════════════════════════════════════
+   parts.jsx `Segmented`: two or three words on a rail, and the one that is
+   open sitting on the rail the way a bookmark sits on a page. The tab and the
+   body under it are ONE sheet — the same ground, the same hairline, no line
+   between them — so the tab is not a control floating over a control, it is
+   the edge of the thing it opens.
+
+   The rail's hairline is the body's top edge, and the open tab is opaque and
+   sits over it, interrupting it exactly as a tab interrupts the edge of the
+   page it is attached to. That is the whole join: no seam to hide, because
+   there is no second surface.
+
+   It sizes to its words and sits at the left, rather than stretching two
+   words across the column: a tab as wide as half the sheet is a switch, and
+   a switch is what this stopped being.
+
+   It was a filled capsule with an inset ring round all of it and a glyph
+   beside each word. Three problems in one control: it was a second box
+   standing over a bare baseline field, it spent a lit ground on a choice
+   while the act at the foot of the sheet is the screen's one bright thing,
+   and the glyphs — an `@` beside the word "instagram", a star beside the
+   other — were an icon set the product does not have (DESIGN.md 1.3, and the
+   ban list).
+
+   One element slides to the choice on the sheet's own travelling curve, so
+   the choice is seen to move rather than to swap, and the words change colour
+   with it. */
 .wl-seg {
   --n: 2; --i: 0;
   position: relative; isolation: isolate;
   display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  padding: 3px; border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.035);
-  box-shadow: inset 0 0 0 1px var(--hair);
+  width: max-content; max-width: 100%;
 }
+/* The line under the tabs is not the rail's: it is the BODY'S TOP BORDER,
+   which runs the full measure of the page whether the tabs are three words
+   wide or the whole column. The rail is pulled down one pixel so the open
+   tab's opaque ground stands over that border and interrupts it — which is
+   the join, and the reason there is no seam to hide. */
+.wl-seg { margin-bottom: -1px; z-index: 2; }
+/* the tab itself: the body's ground and the body's hairline, open at the
+   foot, so it and the page below it are one sheet */
 .wl-seg-thumb {
-  position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0;
-  width: calc((100% - 6px) / var(--n));
-  border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: absolute; top: 0; bottom: 0; left: 0; z-index: 1;
+  width: calc(100% / var(--n));
+  border: 1px solid var(--sheet-edge, var(--hair)); border-bottom: 0;
+  border-radius: 11px 11px 0 0;
+  background: var(--sheet, var(--void-1));
   transform: translate3d(calc(100% * var(--i)), 0, 0);
-  transition: transform 300ms var(--ease-sheet);
+  transition: transform 340ms var(--ease-sheet),
+              border-color 240ms var(--ease), background 240ms var(--ease);
   pointer-events: none;
 }
+/* The word sits at the tab's left edge and not in the middle of it, so it
+   lines up with what is under the tab — the `@` in the field, the first tile
+   in the grid — at the same fifteen pixels. The columns are equal and sized
+   to the longest word, so a centred label on the short one floats away from
+   the only thing it could line up with. */
 .wl-seg-opt {
-  position: relative; z-index: 1;
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 38px; padding: 0 12px; border-radius: var(--r-pill);
-  font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  /* sixteen, not fifteen: the tab's own hairline is inside the thumb and the
+     word is not, so the word needs the border back to stand on the same
+     vertical as the field's @ */
+  min-height: 33px; padding: 0 16px;
+  font-family: var(--f-util); font-size: 12.5px; font-weight: 500; letter-spacing: 0.008em;
   color: var(--ash); white-space: nowrap;
-  transition: color 220ms var(--ease), transform 220ms var(--ease);
+  transition: color 220ms var(--ease);
 }
 .wl-seg-opt[aria-checked="true"], .wl-seg-opt[aria-selected="true"] { color: var(--chalk); }
-.wl-seg-opt:active { transform: scale(0.97); transition-duration: 120ms; }
-.wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: var(--r-pill); }
-.wl-seg-glyph { display: inline-grid; place-items: center; color: var(--ash-dim); transition: color 220ms var(--ease); }
-.wl-seg-opt[aria-checked="true"] .wl-seg-glyph, .wl-seg-opt[aria-selected="true"] .wl-seg-glyph { color: var(--chalk); }
-.wl-seg-at { font-family: var(--f-id); font-size: 15px; line-height: 1; }
+.wl-seg-opt:active > span { transform: scale(0.97); transition: transform 120ms var(--ease); }
+.wl-seg-opt > span { display: block; transition: transform 220ms var(--ease); }
+.wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: 9px 9px 2px 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-seg-opt:not([aria-checked="true"]):not([aria-selected="true"]):hover { color: var(--chalk); }
+}
 @media (max-width: 359px) {
-  .wl-seg-opt { padding: 0 8px; font-size: 13px; gap: 5px; }
+  .wl-seg-opt { padding: 0 12px; font-size: 12px; }
 }
 
 /* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
@@ -2867,17 +3023,25 @@ a.wl-lq { text-decoration: none; }
    and cannot drift from it. The chosen one is ringed the way a disc on the
    field is ringed when the lens is on it. */
 .wl-look {
-  display: flex; flex-direction: column; gap: 12px;
-  margin-top: 14px; padding: 12px 12px 10px;
-  border-radius: 20px;
-  background: rgba(244, 241, 234, 0.022);
-  box-shadow: inset 0 0 0 1px var(--hair);
+  --sheet: var(--void-1); --sheet-edge: var(--hair);
+  display: flex; flex-direction: column;
+  margin-top: 14px;
   animation: wl-look-in 320ms var(--ease) both;
+}
+/* the panel the rail's open tab is attached to: the composer's body, one
+   size up — the same ground, the same hairline, open at the top where the
+   tab stands on it */
+.wl-look-sheet {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--sheet-edge);
+  border-radius: calc(var(--r-field) * min(var(--i, 0), 1)) var(--r-field) var(--r-field) var(--r-field);
+  background: var(--sheet);
 }
 @keyframes wl-look-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
 
 /* the rail is the composer's own switch (`.wl-seg`), wearing tabs */
-.wl-look-rail { width: 100%; }
+.wl-look-rail { flex: 0 0 auto; }
 
 /* One height for all three, so switching between them does not shove the
    card up and down the sheet. The tallest is now the colour grid's four rows
@@ -4543,7 +4707,12 @@ a.wl-lq { text-decoration: none; }
   border: var(--bw, 1px) solid var(--hair);
   background: var(--void-1);
 }
-/* the light rides over the plain plate, softened, and never past the frame */
+/* the light rides over the plain plate, softened, and never past the frame.
+   `is-none` is the same light on a host that brought its own ground — the
+   composer's body — and it has to be the same light, since it is the same
+   wait. Without this it falls through to the bare beam above and blooms
+   white over the corner it is passing. */
+.wl-light.is-none .wl-light-beam,
 .wl-light.is-star .wl-light-beam {
   z-index: 2;
   background: radial-gradient(circle at center,
@@ -4645,6 +4814,14 @@ a.wl-lq { text-decoration: none; }
   .wl-tab, .wl-down { animation: none !important; }
   .wl-look, .wl-look-grid { animation: none !important; }
   .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
+  /* the answer arrives where the field was without travelling to get there,
+     and the rule under a lookup holds still: the words under it are the
+     account of the wait under this preference */
+  /* the answer arrives where the field was without travelling to get there,
+     and the bars hold still: the light the body waits with is already handled
+     by `.wl-light-beam` above */
+  .wl-settled { animation: none; }
+  .wl-settled-bar { animation: none; opacity: 0.6; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-roll-col { transition: none; }
   .wl-card { animation: none; }

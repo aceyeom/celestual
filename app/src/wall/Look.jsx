@@ -75,12 +75,13 @@ function arrows(e, values, current, pick) {
 }
 
 // ── the rail ────────────────────────────────────────────────────────────────
-// Which of the three is being chosen. It wears the switch's clothes
-// (wall.css `.wl-seg`, the sliding thumb and all), because on the step
-// before this one the same object asks who the letter is for, and a product
-// with two rails that look different has two rails to learn. It is a tablist
-// rather than a radio group: what it switches is the panel under it, not a
-// value on the letter.
+// Which of the three is being chosen. It wears the bookmarks' clothes
+// (wall.css `.wl-seg`, the sliding tab and all), because on the step before
+// this one the same object asks who the letter is for, and a product with two
+// rails that look different has two rails to learn. It is a tablist rather
+// than a radio group: what it switches is the panel under it, not a value on
+// the letter — and the panel is literally under it, joined to the open tab as
+// one sheet.
 function Rail({ at, onGo, ids }) {
   const keys = (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
@@ -163,9 +164,20 @@ export function LookPanel({ look, onChange }) {
   const now = axis === 'texture' ? theme.name : axis === 'color' ? (tint || 'as is') : face
 
   return (
-    <div className="wl-look" role="group" aria-label="the look of the letter">
+    <div
+      className="wl-look" role="group" aria-label="the look of the letter"
+      /* which tab is open, for the one corner the sheet keeps square: the
+         one the tab is standing on (wall.css `.wl-look-sheet`) */
+      style={{ '--i': Math.max(0, AXES.findIndex((a) => a.key === axis)) }}
+    >
+      {/* The rail stands OUTSIDE the panel, because the tab is the panel's
+          top edge: the open one is the same ground and the same hairline as
+          the sheet under it and interrupts the line between them, which is
+          the same join the composer's first question is built on. A tab drawn
+          inside the box it opens is a tab attached to nothing. */}
       <Rail at={axis} onGo={setAxis} ids={ids} />
 
+      <div className="wl-look-sheet">
       <div className="wl-look-body" role="tabpanel" id={ids.panel} aria-labelledby={ids.tab(axis)}>
         {axis === 'texture' && (
           <div
@@ -224,6 +236,7 @@ export function LookPanel({ look, onChange }) {
           where a row's label used to, under the grid rather than over it,
           because it is an answer and not a heading. */}
       <p className="wl-look-now" aria-live="polite">{now}</p>
+      </div>
     </div>
   )
 }

@@ -50,6 +50,58 @@ export function Sparkle({ size = 18, tone = 'chalk', twinkle = false, delay = 0,
   )
 }
 
+// ── the verified seal ───────────────────────────────────────────────────────
+// Instagram's badge, drawn here from twelve lobes and a check, because that is
+// what the badge means and a four point sparkle does not mean it. The sparkle
+// stood here for a while and it was this product's own mark doing another
+// service's job: on a row about somebody's Instagram account, the thing beside
+// their name is a claim about THAT account, and it has to be legible as that
+// service's claim rather than as our ornament.
+//
+// It is still ours to draw. Twelve lobes on one radius and twelve valleys on
+// another, a quadratic between each pair, so the seal comes off the same kind
+// of numbers as everything else in this file and there is no icon set in the
+// build (DESIGN.md 1.3).
+//
+// It is struck in `--accent` and not in Instagram's blue: section 2 says
+// nothing outside the tokens names a hue, and the SHAPE is what says whose
+// badge this is. `ink` is the ground the check is cut in, since a check inside
+// a filled seal is the ground showing through — every caller today is on the
+// void, and a caller on paper passes its own.
+const SEAL = (() => {
+  const n = 12
+  const tip = 50   // how far out a lobe reaches
+  const cut = 39   // and how far in the valley between two of them comes
+  const at = (a, r) => [50 + Math.cos(a) * r, 50 + Math.sin(a) * r]
+  const turn = (i) => (i / n) * Math.PI * 2 - Math.PI / 2
+  // The control point sits further out than the lobe itself: a quadratic
+  // through its own peak would only reach halfway to it.
+  const pull = tip + (tip - cut) * 0.9
+  let d = `M ${at(turn(0.5), cut).map((v) => v.toFixed(2)).join(' ')}`
+  for (let i = 1; i <= n; i++) {
+    const c = at(turn(i - 0.5 + 0.5), pull)
+    const e = at(turn(i + 0.5), cut)
+    d += ` Q ${c[0].toFixed(2)} ${c[1].toFixed(2)} ${e[0].toFixed(2)} ${e[1].toFixed(2)}`
+  }
+  return `${d} Z`
+})()
+
+const SEAL_CHECK = 'M34.5 50.5 45 61 66 39.5'
+
+export function Verified({ size = 13, ink = 'var(--void-1)', className = '', label = 'verified on instagram' }) {
+  return (
+    <svg
+      className={`wl-verified ${className}`}
+      width={size} height={size} viewBox="0 0 100 100"
+      role="img" aria-label={label}
+      focusable="false"
+    >
+      <path d={SEAL} fill="currentColor" />
+      <path d={SEAL_CHECK} fill="none" stroke={ink} strokeWidth="10.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // ── the flaps ───────────────────────────────────────────────────────────────
 // The count on the masthead, on split flaps. The lanes under it already move
 // at the speed of a departures board, and this is that board's number: one
