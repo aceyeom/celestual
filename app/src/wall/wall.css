@@ -586,7 +586,14 @@
   border-radius: var(--lk-radius);
   background: var(--lk-ground);
   color: var(--lk-ink);
-  padding: 20px 20px 18px;
+  /* the inset, as tokens. A paper may change them — the nokia is a shell
+     nine pixels thick, the letterpress wants a wide margin — and the foot
+     below reads them back so the reader's three marks land in the same
+     place on all eight whatever the letter did. `--lk-foot-clear` is the
+     room a paper's own furniture needs under the marks, which today is the
+     chalkboard's rail and nothing else. */
+  --lk-pad-x: 20px; --lk-pad-t: 20px; --lk-pad-b: 18px; --lk-foot-clear: 0px;
+  padding: var(--lk-pad-t) var(--lk-pad-x) var(--lk-pad-b);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
     0 0 0 1px var(--lk-edge),
@@ -661,6 +668,19 @@
 .wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--lk-rule); }
+/* THE MARKS STAND IN ONE PLACE. The foot is the reader's slot, not the
+   letter's (parts.jsx `Paper`), and the heart, the pen and the flag are the
+   same three controls on every card in the deck — so they are positioned
+   against the card's edge and not against the paper's inset. Without this
+   the marks drifted between six and sixteen pixels from the edge depending
+   on which paper somebody else had chosen, and a control that moves is a
+   control to be found again on every letter.
+     left/right   always 20px from the card's edge
+     bottom       always 18px, plus whatever furniture stands under it */
+.wl-paper > .wl-paper-foot {
+  margin-inline: calc(20px - var(--lk-pad-x));
+  margin-bottom: calc(18px + var(--lk-foot-clear) - var(--lk-pad-b));
+}
 
 /* the pen, at the end of the crest row. Ink on paper: the ring is the same
    hairline the head rule is drawn in, and the nib is the wall's own glyph. */
@@ -834,7 +854,7 @@
 .wl-fx-stamp .wl-mark-star { fill: var(--lk-ink-strong); }
 
 /* ── the nokia, which is a screen in a shell ─────────────────────────────── */
-.wl-paper[data-look="nokia"] { padding: 9px 9px 4px; }
+.wl-paper[data-look="nokia"] { --lk-pad-x: 9px; --lk-pad-t: 9px; --lk-pad-b: 9px; }
 .wl-paper-screen {
   border-radius: 5px; padding: 13px 13px 14px; overflow: hidden;
   background: var(--lk-ground); color: var(--lk-ink);
@@ -853,7 +873,7 @@
    a phone, and one that is nearly charged reads as a phone somebody is
    holding. */
 .wl-nk-bar {
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; justify-content: space-between; gap: 7px;
   padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--lk-rule);
   font-family: var(--lk-face); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--lk-ink-2);
@@ -864,7 +884,6 @@
 .wl-nk-sig i:nth-child(2) { height: 5px; }
 .wl-nk-sig i:nth-child(3) { height: 7px; }
 .wl-nk-sig i:nth-child(4) { height: 9px; opacity: 0.26; }
-.wl-nk-carrier { flex: 1 1 auto; min-width: 0; text-align: center; }
 .wl-nk-batt {
   flex: 0 0 auto; position: relative; display: flex; align-items: stretch; gap: 1px;
   width: 17px; height: 9px; padding: 1.5px;
@@ -876,16 +895,42 @@
 }
 .wl-nk-batt i { flex: 1 1 auto; background: var(--lk-ink); }
 .wl-nk-batt i:last-child { opacity: 0.22; }
-/* the softkeys, on the plastic under the screen. They are chalk rather than
-   a token because the shell is the shell whatever colour the screen is. */
-.wl-nk-keys {
-  display: flex; justify-content: space-between; padding: 9px 6px 6px;
-  font-family: var(--lk-face); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(244, 241, 234, 0.46);
+/* ── the foot, which is the reader's and not the letter's ──
+   It is the last child of the card on every paper (parts.jsx `Paper`), so
+   the heart, the pen and the flag never move between one letter and the
+   next. On these two it stands on the FRAME rather than on the letter, so
+   it takes the frame's ink: the screen's ink and the picture's belong to
+   the words, and against the shell around them they would vanish. */
+.wl-paper[data-look="nokia"] > .wl-paper-foot {
+  --lk-ink: rgba(244, 241, 234, 0.9);
+  --lk-ink-2: rgba(244, 241, 234, 0.52);
+  --lk-ink-faint: rgba(244, 241, 234, 0.07);
+  --lk-ink-soft: rgba(244, 241, 234, 0.09);
+  --lk-ink-mid: rgba(244, 241, 234, 0.3);
+  --lk-ink-strong: rgba(244, 241, 234, 0.6);
+  color: var(--lk-ink-2);
+  border-top: 0; margin-top: 11px; padding-top: 0;
 }
+.wl-paper[data-look="polaroid"] > .wl-paper-foot,
+.wl-paper[data-look="polaroid"] .wl-paper-chin {
+  --lk-ink: #23201A;
+  --lk-ink-2: rgba(35, 32, 26, 0.55);
+  --lk-ink-faint: rgba(35, 32, 26, 0.06);
+  --lk-ink-soft: rgba(35, 32, 26, 0.08);
+  --lk-ink-mid: rgba(35, 32, 26, 0.3);
+  --lk-ink-strong: rgba(35, 32, 26, 0.55);
+  --lk-rule: rgba(35, 32, 26, 0.16);
+  color: var(--lk-ink);
+}
+.wl-paper[data-look="polaroid"] > .wl-paper-foot {
+  border-top: 0; margin-top: 2px; padding-top: 0;
+}
+/* the postcard's foot left the address column with the rest of the marks:
+   it runs the width of the card under the divided back, not down one side */
+.wl-paper[data-look="postcard"] > .wl-paper-foot { margin-top: 15px; }
 
 /* ── the polaroid, which is a picture with a chin ─────────────────────────── */
-.wl-paper[data-look="polaroid"] { padding: 11px 11px 0; }
+.wl-paper[data-look="polaroid"] { --lk-pad-x: 11px; --lk-pad-t: 11px; --lk-pad-b: 0px; }
 .wl-paper-plate {
   padding: 16px 15px 17px; overflow: hidden;
   background: var(--lk-ground); color: var(--lk-ink);
@@ -898,15 +943,27 @@
 .wl-paper-plate > * { position: relative; z-index: 1; }
 /* The chin is on the FRAME, which is white whatever the picture is, so its
    ink is the frame's and not the emulsion's — otherwise a letter on a dark
-   photograph writes its name in cream on white and disappears. */
+   photograph writes its name in cream on white and disappears. The ink
+   itself is declared with the foot's, below, since both stand on the frame. */
 .wl-paper[data-look="polaroid"] .wl-paper-chin {
-  --lk-ink: #23201A; --lk-ink-2: rgba(35, 32, 26, 0.55);
-  --lk-rule: rgba(35, 32, 26, 0.18); --lk-ink-mid: rgba(35, 32, 26, 0.3);
-  --lk-ink-soft: rgba(35, 32, 26, 0.07); --lk-ink-strong: rgba(35, 32, 26, 0.55);
   display: flex; align-items: center; gap: 10px;
-  min-height: 50px; padding: 9px 5px 12px; color: var(--lk-ink);
+  min-height: 44px; padding: 10px 5px 4px;
 }
-.wl-paper-chin .wl-paper-title { font-size: calc(21px * var(--lk-title-size)); }
+/* The chin is one line of frame under a picture, so the name written on it
+   has to fit the frame rather than run off it: the title is a flex item and
+   without a floor of zero it refuses to shrink, which cut the last letters
+   off any name longer than about twelve characters. */
+.wl-paper-chin .wl-paper-title { min-width: 0; flex: 1 1 auto; }
+/* The name is written across the chin, so it WRAPS rather than being cut.
+   Everywhere else the addressee is a title on one line with an ellipsis, and
+   a chin is not a title bar: it is the white strip under a print, and a hand
+   that runs out of room there carries on underneath. The size comes down a
+   step too, since the strip is furniture and not a heading. */
+.wl-paper-chin .wl-addressee-line { flex-wrap: wrap; }
+.wl-paper-chin .wl-addressee-name {
+  font-size: calc(18px * var(--lk-title-size));
+  white-space: normal; overflow: visible; overflow-wrap: anywhere;
+}
 .wl-paper-chin .wl-pen { margin-left: auto; }
 
 /* ── the postcard, which is divided ──────────────────────────────────────── */
@@ -950,25 +1007,31 @@
 
 /* ── the rest of the eight, which only dress the card ─────────────────────── */
 /* letterpress: the crest and the addressee are struck the way the deboss is */
-.wl-paper[data-look="letterpress"] { padding: 25px 24px 22px; }
+.wl-paper[data-look="letterpress"] { --lk-pad-x: 24px; --lk-pad-t: 25px; --lk-pad-b: 22px; }
 .wl-paper[data-look="letterpress"] .wl-paper-title,
 .wl-paper[data-look="letterpress"] .wl-paper-head { text-shadow: 0 1px 0 var(--lk-paper-hi); }
 .wl-paper[data-look="letterpress"] .wl-paper-head { letter-spacing: 0.2em; }
 /* telegram: the convention is upper case, and it is a DISPLAY choice — the
    words in the row are the words the writer typed, and the list at the
    keyboard and the classifier after it read exactly what they always read */
-.wl-paper[data-look="telegram"] { padding: 21px 20px 19px; }
-.wl-paper[data-look="telegram"] .wl-paper-body,
-.wl-paper[data-look="telegram"] .wl-paper-title { text-transform: uppercase; letter-spacing: 0.03em; }
+.wl-paper[data-look="telegram"] { --lk-pad-x: 20px; --lk-pad-t: 21px; --lk-pad-b: 19px; }
+.wl-paper[data-look="telegram"] .wl-paper-body { text-transform: uppercase; letter-spacing: 0.03em; }
+/* and the addressee is NOT uppercased with it. A handle is a lower-case
+   identifier and uppercasing one turns it into a different string from the
+   one on the wall — the same rule `.wl-label .wl-h` already holds the labels
+   to. The form's voice belongs to the words the writer typed, not to the
+   name of the person they are for. */
+.wl-paper[data-look="telegram"] .wl-paper-title { letter-spacing: 0.01em; }
 .wl-paper[data-look="telegram"] .wl-paper-head { letter-spacing: 0.17em; }
 /* chalkboard: the halo chalk leaves, and the room the rail needs */
-.wl-paper[data-look="chalkboard"] { padding-bottom: 27px; }
+/* the rail is eleven pixels of wood, and the marks clear it */
+.wl-paper[data-look="chalkboard"] { --lk-foot-clear: 11px; }
 .wl-paper[data-look="chalkboard"] .wl-paper-body,
 .wl-paper[data-look="chalkboard"] .wl-paper-title {
   text-shadow: 0 0 1.5px var(--lk-ink-soft), 0 0 5px var(--lk-ink-faint);
 }
 /* velvet: the deboss wants a little more room than the plain card gives */
-.wl-paper[data-look="velvet"] { padding: 22px 21px 20px; }
+.wl-paper[data-look="velvet"] { --lk-pad-x: 21px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
 .wl-paper[data-look="velvet"] .wl-paper-head { letter-spacing: 0.2em; }
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════

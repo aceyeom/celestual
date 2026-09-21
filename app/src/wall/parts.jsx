@@ -459,16 +459,20 @@ function Furniture({ chrome }) {
   return null
 }
 
-// The nokia's status row, which is where its dateline lives: the signal, the
-// carrier and the battery, struck in the screen's ink on the screen's own
-// lattice. Three of the four signal bars are lit and two of the three battery
-// segments are, because a full battery and full signal read as a picture of a
-// phone and a phone that is nearly charged reads as one somebody is holding.
+// The nokia's status row: the signal at one end and the battery at the other,
+// struck in the screen's ink on the screen's own lattice. Three of the four
+// signal bars are lit and two of the three battery segments are, because a
+// full battery and full signal read as a picture of a phone and a phone that
+// is nearly charged reads as one somebody is holding.
+//
+// A carrier word stood between them and it said "celestual", which is the one
+// thing a letter must never do: the product does not sign the letters. The
+// wall is the product's and the paper is the writer's, and a letter carrying
+// a brand across its top has a second author on it.
 function NokiaBar() {
   return (
     <span className="wl-nk-bar" aria-hidden="true">
       <span className="wl-nk-sig"><i /><i /><i /><i /></span>
-      <span className="wl-nk-carrier">celestual</span>
       <span className="wl-nk-batt"><i /><i /><i /></span>
     </span>
   )
@@ -511,9 +515,8 @@ function NokiaBar() {
 // MOVE the slots, because the thing they are a picture of moves them, and
 // each is one branch below and nothing more:
 //
-//   screen    the nokia. Head, crest, body and foot are recessed into a
-//             screen inside the shell, with the status row above them and
-//             the two softkeys on the plastic underneath
+//   screen    the nokia. Head, crest and body are recessed into a screen
+//             inside the shell, with the status row above them
 //   framed    the polaroid. The picture holds the head, the letterhead and
 //             the words; the addressee is written on the chin below it,
 //             which is where a name goes on a print
@@ -523,6 +526,16 @@ function NokiaBar() {
 //
 // The slots are the same objects in every branch — the same header, the same
 // title, the same body — so nothing here is a second card either.
+//
+// ── and the foot is outside all three ──
+// The foot is the last child of the card on every paper, whatever the layout
+// above it did. It is the one slot that is not the letter: the heart, the pen
+// and the flag are the READER's three marks (screens/Letter.jsx `marks`), and
+// a control that moves to a different corner depending on what paper somebody
+// else chose is a control to be found again on every card. So the paper is
+// themed and the controls are not, and they stand in one place down the whole
+// deck. The nokia's softkeys stood there and are gone: the marks row is the
+// row of controls under that screen now, and two of them was one too many.
 export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', look = null, className = '', style, ...rest }) {
   const lk = cleanLook(look)
   const vars = lk ? lookVars(lk) : null
@@ -557,16 +570,12 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
   let inner
   if (layout === 'screen') {
     inner = (
-      <>
-        <div className="wl-paper-screen">
-          <NokiaBar />
-          {headEl}
-          {crestEl}
-          {bodyEl}
-          {footEl}
-        </div>
-        <span className="wl-nk-keys" aria-hidden="true"><span>Read</span><span>Back</span></span>
-      </>
+      <div className="wl-paper-screen">
+        <NokiaBar />
+        {headEl}
+        {crestEl}
+        {bodyEl}
+      </div>
     )
   } else if (layout === 'framed') {
     inner = (
@@ -575,7 +584,6 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
           {headEl}
           {crest ? <div className="wl-paper-crest is-bare">{crest}</div> : null}
           {bodyEl}
-          {footEl}
         </div>
         {titleEl ? <div className="wl-paper-chin">{titleEl}{aside}</div> : null}
       </>
@@ -587,12 +595,11 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
         <div className="wl-paper-addr">
           {crestEl}
           <span className="wl-paper-lines" aria-hidden="true"><i /><i /><i /></span>
-          {footEl}
         </div>
       </div>
     )
   } else {
-    inner = <>{headEl}{crestEl}{bodyEl}{footEl}</>
+    inner = <>{headEl}{crestEl}{bodyEl}</>
   }
 
   return (
@@ -605,6 +612,7 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
       <div className="wl-paper-grain" aria-hidden="true" />
       <Furniture chrome={chrome} />
       {inner}
+      {footEl}
     </article>
   )
 }

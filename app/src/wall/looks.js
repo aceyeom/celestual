@@ -196,15 +196,17 @@ export const TINTS = [
 // a chosen tint replaces. `ink2` is the secondary ink where the derived one
 // would be wrong.
 //
-// `radius` is the corner, and it is one of four (design/DESIGN.md 5.2):
+// `radius` is the corner, and every paper takes the same one: `--r-card`,
+// 18px, the system's own (design/DESIGN.md 5.2). A paper may be a pressed
+// sheet, a slate or a moulded shell and it is still a LETTER on the wall,
+// and the thing that says so is the shape it is cut to. Eight papers with
+// eight corners read as eight components; eight papers with one corner read
+// as one card wearing eight materials, which is what they are.
 //
-//   2   print      a sheet that came off a press or out of a form
-//   6   cut        a card that was trimmed — a postcard, a print, a slate
-//   12  device     a thing with a moulded shell
-//   18  card       the system's own, which the plain paper keeps
-//
-// It was 18 / 26 / 10 / 18 / 18, where 26 is `--r-sheet` — a SHEET's corner,
-// not a card's — and 10 was not a token at all.
+// It was 18 / 26 / 10 / 18 / 18, which was not a scale at all: 26 is
+// `--r-sheet`, a SHEET's corner and not a card's, and 10 was not a token.
+// The token stays, so a paper that one day has a reason can say a number —
+// but it needs the reason, and being made of paper is not one.
 //
 // `grain` names the one surface layer the paper carries and the theme owns
 // it; `chrome` names its drawn parts (parts.jsx `Furniture`); `layout` is
@@ -225,13 +227,13 @@ export const THEMES = [
   // same way. The grain is coarser and slower than the plain paper's, because
   // cotton has a tooth and wood pulp has a grain.
   { slug: 'letterpress', name: 'letterpress', paper: '#F1ECE0', ink: '#211E18',
-    face: 'serif', radius: 2, grain: 'tooth', chrome: 'deboss' },
+    face: 'serif', radius: 18, grain: 'tooth', chrome: 'deboss' },
 
   // The divided back, which is the whole of what a postcard is: the message
   // on the left of a rule, the address on the right of it, and a stamp box
   // in the corner with the constellation where the sovereign's head goes.
   { slug: 'postcard', name: 'postcard', paper: '#F2EADA', ink: '#33291C',
-    face: 'hand', radius: 6, grain: 'fibre', chrome: 'stamp', layout: 'divided' },
+    face: 'hand', radius: 18, grain: 'fibre', chrome: 'stamp', layout: 'divided' },
 
   // Form stock, printed in a single pass: a double rule struck round the
   // sheet and a faint ruling under the words, both in the form's own brown.
@@ -240,7 +242,7 @@ export const THEMES = [
   // list at the keyboard and the classifier after it read exactly what they
   // read on any other paper.
   { slug: 'telegram', name: 'telegram', paper: '#F3E3A4', ink: '#2E2410',
-    face: 'typewriter', radius: 2, grain: 'fibre', chrome: 'form' },
+    face: 'typewriter', radius: 18, grain: 'fibre', chrome: 'form' },
 
   // ── the four objects ──
   // The picture and the chin under it. The frame is the white border and it
@@ -250,7 +252,7 @@ export const THEMES = [
   // the hand, which is where a name goes on a print.
   { slug: 'polaroid', name: 'polaroid', paper: '#F3EBDC', ink: '#231F18',
     frame: 'linear-gradient(168deg, #FFFFFD 0%, #FAFAF7 46%, #EDECE6 100%)',
-    face: 'hand', radius: 6, grain: 'none', chrome: 'chin', layout: 'framed' },
+    face: 'hand', radius: 18, grain: 'none', chrome: 'chin', layout: 'framed' },
 
   // The one that was already here, and the one that was only ever a lattice.
   // It is an object now: a moulded shell, a screen recessed into it, the
@@ -259,14 +261,14 @@ export const THEMES = [
   // thing on the screen — the grain is off, so nothing is multiplied over it.
   { slug: 'nokia', name: 'nokia', paper: '#C3CFA3', ink: '#1B2416',
     frame: 'linear-gradient(170deg, #3C4038 0%, #24261F 58%, #171812 100%)',
-    face: 'pixel', radius: 12, grain: 'none', chrome: 'nokia', layout: 'screen' },
+    face: 'pixel', radius: 18, grain: 'none', chrome: 'nokia', layout: 'screen' },
 
   // Slate, dust and a wooden rail along the bottom edge. The dark paper that
   // is not the void: `night` was the void with a serif on it, and a letter
   // that looks like the wall it is pinned to is a letter with no paper.
   { slug: 'chalkboard', name: 'chalkboard', paper: '#26342C', ink: '#EFEFE6',
     ground: 'linear-gradient(168deg, #2E3D34 0%, #26342C 48%, #1D2A23 100%)',
-    face: 'hand', radius: 6, grain: 'dust', chrome: 'rail' },
+    face: 'hand', radius: 18, grain: 'dust', chrome: 'rail' },
 
   // Deep pile with a bloom off the top left and a debossed border. Where
   // `gold` spent a second saturated colour on a hairline frame, this one is

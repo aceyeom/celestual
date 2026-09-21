@@ -430,15 +430,27 @@ reference poster has no boxes at all.
 A row uses 14px, which is the one exception, because a 18px radius on a 60px tall
 row reads as a card and a row is not one.
 
-A letter's paper picks its corner off the same family, and a theme may only say
-one of four (`looks.js` `radius`): **2** for print, a sheet that came off a
-press or out of a form; **6** for a card that was trimmed, a postcard or a
-slate; **12** for a thing with a moulded shell; **18** for the system's own
-card, which the plain paper keeps. It was 18 / 26 / 10 / 18 / 18 across five
-themes, where 26 is `--r-sheet` — a *sheet's* corner and not a card's — and 10
-was not a token at all. The panel's tile scales whichever value the theme
-carries, so the swatch draws the corner being chosen instead of a flat 10px for
-every one of them.
+A letter's paper takes `--r-card` and nothing else, on all eight
+(`looks.js` `radius`). A paper may be a pressed sheet, a slate or a moulded
+shell and it is still a LETTER on the wall, and the thing that says so is the
+shape it is cut to: eight papers with eight corners read as eight components,
+and eight papers with one corner read as one card wearing eight materials,
+which is what they are. It was 18 / 26 / 10 / 18 / 18 across five themes, which
+was not a scale at all — 26 is `--r-sheet`, a *sheet's* corner and not a
+card's, and 10 was not a token. The token stays on the theme so a paper that
+one day has a reason can say a number, but it needs the reason, and being made
+of paper is not one. The panel's tile scales whichever value the theme carries,
+so the swatch draws the corner being chosen rather than a flat 10px.
+
+Three more things hold across all eight, for the same reason the corner does.
+The card's hairline is derived from the paper's own ink (`--lk-edge`), so every
+paper carries one weight of edge where a fixed black one drew hard on cream and
+nothing at all on near-black. The inset is three tokens (`--lk-pad-x`,
+`--lk-pad-t`, `--lk-pad-b`) rather than a padding each theme re-states. And the
+foot — the reader's three marks — is laid out against the CARD and not against
+the paper's inset, so the heart, the pen and the flag sit 20px from the edge and
+18px from the bottom on every letter in the deck, whatever paper somebody else
+chose. A control that moves is a control to be found again on every card.
 
 ### 5.3 Rhythm
 

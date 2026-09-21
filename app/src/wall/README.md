@@ -383,9 +383,24 @@ and most carry `chrome`, the parts drawn for that paper and no other
 | **velvet** | a pile that lies one way, a bloom off the top left, and a debossed border |
 
 Three of them move the card's own slots rather than only dressing them
-(`looks.js` `layout`): the nokia wraps its four into a screen, the polaroid
-puts the addressee on the chin, the postcard divides the back. The slots are
-the same objects in every branch, so none of them is a second card.
+(`looks.js` `layout`): the nokia wraps its head, crest and body into a screen,
+the polaroid puts the addressee on the chin, the postcard divides the back.
+The slots are the same objects in every branch, so none of them is a second
+card.
+
+And four things do not move on any of the eight, because they are the
+PRODUCT's and not the writer's:
+
+| | |
+| --- | --- |
+| the corner | `--r-card` on all eight. A paper may be a pressed sheet or a moulded shell and it is still a letter on the wall, and the shape it is cut to is what says so |
+| the edge | derived from the paper's own ink (`--lk-edge`), so every paper carries one weight of hairline |
+| the addressee | `for`, the display name, and the handle under it — the same three parts in the same order, on the crest row, the chin or the address side |
+| the foot | the heart, the pen and the flag, laid out against the CARD rather than the paper's inset: 20px from the edge and 18px from the bottom on every letter in the deck. A control that moves is a control to be found again on every card |
+
+The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
+it: the gate under a sealed card says `read it` and not a word of policy,
+because the card beside it has already said what it is.
 
 The three used to be three rows stacked under the card, each scrolling
 sideways, each with a label over it and a caption under every tile: half
