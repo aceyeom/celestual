@@ -1,0 +1,455 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CELESTUAL · THE WALL — THE SCALES                                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝
+
+   wall.css is the reading of four reference sheets. This file is the thing
+   that reading was missing: the SCALES underneath it, and the handful of
+   switches that retune them all at once.
+
+   ── what was wrong ─────────────────────────────────────────────────────────
+   Nothing in wall.css was wrong on its own. Every number in it was chosen
+   for the object it was on, against the objects beside it, and looks right
+   in that frame. The trouble is what you get when you add them up. Counted
+   across the file as it stood:
+
+     29  distinct hard-coded font sizes, from 8.5px to 30px, in half-pixel
+         steps for most of the middle of that range
+     26  distinct letter-spacing values
+     17  distinct border radii, against four radius TOKENS that between them
+         were read 29 times — so most corners in the build were a number
+         somebody typed at the corner rather than a decision the system made
+     17  distinct gap values
+     91  distinct padding shorthands
+
+   A person moving between two screens cannot name any one of those as the
+   problem, which is exactly why it reads as "the whole thing is slightly
+   off": a label at 10.5px on one screen and 11px on the next, a row at 14px
+   radius beside a card at 13px, a control 40px tall next to one at 42px.
+   None of it is a bug and all of it is noise, and noise is what consistency
+   is the absence of.
+
+   The four font ROLES had the same problem from the other direction. Four
+   faces, assigned per object rather than per job: the identifier face (mono)
+   was the single most-used family in the file at 46 calls, doing labels,
+   meta, counts, codes, handles, placeholders and the search's own question —
+   so the surface read as a terminal wearing a Didone hat.
+
+   ── what this file is ──────────────────────────────────────────────────────
+   Five scales and four roles, declared once. Every primitive in wall.css
+   reads them and names no raw number of its own:
+
+     the type scale      nine steps, each a decision about a JOB (a micro
+                         label, a row's meta, a control's word, a line of
+                         prose) rather than a size somebody liked
+     the tracking scale  six, tied to the type scale's steps
+     the spacing scale   twelve, on a 4px base with the two small half-steps
+                         a dense row actually needs
+     the radius scale    six, and the three old aliases point into it so
+                         nothing that already reads --r-card has to change
+     the control metrics three heights, three paddings, three word sizes, so
+                         a pill, a field, a tag and a row agree on what
+                         "small" means
+
+     the four roles      display, body, label, id — what a face is FOR, not
+                         which face it is. A preset remaps the role and every
+                         object doing that job moves together.
+
+   ── and what makes it customisable ─────────────────────────────────────────
+   Because every primitive reads a token, retuning the whole surface is
+   retuning this file's values — which is what the two data attributes on
+   `.wl-root` do (design.js):
+
+     data-style   the VOICE: which face plays which role, how tight the
+                  corners are, how loud the labels are, how much colour
+     data-layout  the ARRANGEMENT: where the type block sits, how the sheets
+                  align, how dense the vertical rhythm is
+
+   Both are free-standing. Any style reads correctly under any layout, which
+   is the test that says the two are really separate axes and not one axis
+   with a label on it.
+
+   Three continuous knobs ride on top of them, for the tuning that wants a
+   slider rather than a menu, and they are what the design workbench drives:
+
+     --tune-type     multiplies the whole type scale
+     --tune-space    multiplies the whole spacing scale
+     --tune-round    multiplies the whole radius scale
+
+   All three default to 1, so a build that never touches them is the build
+   the presets describe. */
+
+.wl-root {
+  /* ── the three knobs ──
+     Every scale below is a base value times its knob, so one number moves a
+     whole family and the RELATIONSHIPS inside that family survive the move.
+     A type scale that is tuned by editing nine numbers is a type scale that
+     stops being a scale the first time somebody is in a hurry. */
+  --tune-type:  1;
+  --tune-space: 1;
+  --tune-round: 1;
+
+  /* ═══ THE TYPE SCALE ══════════════════════════════════════════════════════
+     Nine steps, and each one is named for the JOB it does. That naming is
+     the point: `--t-meta` is answerable ("is this a row's second line?")
+     where `13.5px` is not, and two objects doing the same job cannot drift
+     apart by half a pixel if they are both asking the same question.
+
+     The ratio is a shade over 1.12 through the middle — close enough that
+     adjacent steps are usefully different and far enough that nothing in
+     here is a rounding error away from its neighbour. Half-pixels are gone:
+     they were never a decision, they were the residue of nudging one object
+     while looking at it. */
+  --t-micro:    calc(10.5px * var(--tune-type));  /* the caps label, and only that */
+  --t-meta:     calc(12px   * var(--tune-type));  /* a row's second line, a footnote */
+  --t-fine:     calc(13px   * var(--tune-type));  /* a tag, a ghost capsule */
+  --t-small:    calc(14px   * var(--tune-type));  /* a control's word, an identifier in a row */
+  --t-base:     calc(15px   * var(--tune-type));  /* util body, a wide capsule */
+  --t-lead:     calc(17px   * var(--tune-type));  /* prose, a letter, the line under a title */
+  --t-title:    calc(21px   * var(--tune-type));  /* an arrow link, a section's head */
+  --t-field:    calc(22px   * var(--tune-type));  /* what somebody is typing */
+  --t-field-lg: calc(28px   * var(--tune-type));  /* ...on a screen whose whole job is the field */
+
+  /* the display steps, which stay fluid: a headline is the one thing on the
+     surface that has to be measured against the GLASS and not against the
+     objects near it. Each is a clamp, and the knob rides all three ends so a
+     tuned scale stays fluid rather than flattening to a fixed size. */
+  --d-s:  clamp(calc(21px * var(--tune-type)), 5.8vw,  calc(26px * var(--tune-type)));
+  --d-m:  clamp(calc(26px * var(--tune-type)), 7.4vw,  calc(33px * var(--tune-type)));
+  --d-l:  clamp(calc(30px * var(--tune-type)), 8.8vw,  calc(39px * var(--tune-type)));
+  --d-xl: clamp(calc(34px * var(--tune-type)), 10.4vw, calc(46px * var(--tune-type)));
+
+  /* the leading that goes with each band. A scale without one is a scale
+     that gets overridden per object on the third screen. */
+  --lh-display: 1.06;
+  --lh-title:   1.2;
+  --lh-prose:   1.5;
+  --lh-ui:      1.35;
+  --lh-flat:    1;
+
+  /* ═══ THE TRACKING SCALE ══════════════════════════════════════════════════
+     Six, and they are tied to the type scale rather than to objects: type
+     tightens as it grows and opens as it shrinks, which is one rule, and the
+     twenty-six values it replaces were twenty-six readings of that rule. */
+  --tr-display: -0.022em;  /* the display band */
+  --tr-tight:   -0.012em;  /* a field, an identifier, anything monospaced and large */
+  --tr-flat:     0;        /* prose */
+  --tr-wide:     0.008em;  /* a control's word */
+  --tr-caps:     0.15em;   /* the caps label */
+  --tr-caps-lg:  0.2em;    /* ...where it is smaller still, or printed on paper */
+
+  /* ═══ THE SPACING SCALE ═══════════════════════════════════════════════════
+     A 4px base, with 2 and 6 kept because a row's inner gaps genuinely live
+     there and rounding them to 4 and 8 moves every dense object in the
+     build. Above 24 it opens up: those are the steps BETWEEN things, and
+     between things is where a surface gets its air. */
+  --sp-1:  calc(2px  * var(--tune-space));
+  --sp-2:  calc(4px  * var(--tune-space));
+  --sp-3:  calc(6px  * var(--tune-space));
+  --sp-4:  calc(8px  * var(--tune-space));
+  --sp-5:  calc(12px * var(--tune-space));
+  --sp-6:  calc(16px * var(--tune-space));
+  --sp-7:  calc(20px * var(--tune-space));
+  --sp-8:  calc(24px * var(--tune-space));
+  --sp-9:  calc(32px * var(--tune-space));
+  --sp-10: calc(40px * var(--tune-space));
+  --sp-11: calc(56px * var(--tune-space));
+  --sp-12: calc(72px * var(--tune-space));
+
+  /* ═══ THE RADIUS SCALE ════════════════════════════════════════════════════
+     Six. The seventeen it replaces were mostly one object's corner answered
+     twice — a row at 14, a seek row at 14, a card at 13, a plate at 12,
+     a panel at 16, a glass at 24, a sheet at 26. */
+  --r-xs:   calc(6px  * var(--tune-round));
+  --r-sm:   calc(10px * var(--tune-round));
+  --r-md:   calc(14px * var(--tune-round));
+  --r-lg:   calc(18px * var(--tune-round));
+  --r-xl:   calc(26px * var(--tune-round));
+  --r-pill: 999px;
+
+  /* the three names wall.css already reads, pointed into the scale. Nothing
+     that says --r-card has to learn a new word, and the corner it draws is
+     now a step on a scale rather than a number of its own. */
+  --r-field: var(--r-md);
+  --r-card:  var(--r-lg);
+  --r-sheet: var(--r-xl);
+
+  /* ═══ THE CONTROL METRICS ═════════════════════════════════════════════════
+     Three sizes, and every pressable thing is one of them. This is the scale
+     that does the most visible work: a ghost capsule at 32px beside a tag at
+     30px beside a row's action at 34px is three objects claiming to be the
+     same size and missing, and it is the single loudest thing on a screen
+     with a list on it. */
+  --ctl-h-sm:  32px;   --ctl-px-sm: var(--sp-5);  --ctl-t-sm: var(--t-fine);
+  --ctl-h-md:  40px;   --ctl-px-md: var(--sp-7);  --ctl-t-md: var(--t-small);
+  --ctl-h-lg:  50px;   --ctl-px-lg: var(--sp-8);  --ctl-t-lg: var(--t-base);
+  /* the weight a control's word is set at, once, so a primary and a ghost
+     are the same voice at different volumes */
+  --ctl-w: 500;
+
+  /* the page's own gutter, which several screens each had a copy of */
+  --gutter: var(--sp-7);
+
+  /* ═══ THE FOUR ROLES ══════════════════════════════════════════════════════
+     A face is assigned a JOB here and read by that job's name everywhere
+     else. That indirection is the whole customisation story: a preset that
+     wants the labels out of the mono face changes one line, and the fourteen
+     objects wearing a caps label move together.
+
+     · display   headlines, and the arrow link that speaks in the same voice
+     · body      prose, controls, meta — everything a person reads as language
+     · label     the small caps label over a block
+     · id        a handle, a code, a count, a date — anything that is a STRING
+                 rather than a word, where the character shapes have to be
+                 unambiguous and the columns have to line up */
+  --role-display: var(--f-display);
+  --role-body:    var(--f-util);
+  --role-label:   var(--f-id);
+  --role-id:      var(--f-id);
+
+  /* the label's own three settings, because "the label" is a compound of a
+     face, a case and a tracking, and a preset that changes the face almost
+     always has to change the other two with it */
+  --label-case:   uppercase;
+  --label-track:  var(--tr-caps);
+  --label-size:   var(--t-micro);
+  --label-weight: 400;
+
+  /* the display face's two variable settings, kept here so a preset can swap
+     a serif for a sans without leaving an optical-size axis behind that the
+     new face does not have */
+  --w-display:    500;
+  --opsz-display: normal;
+  --track-display: var(--tr-display);
+
+  /* ═══ THE SURFACE ═════════════════════════════════════════════════════════
+     How hard the edges are and how much light sits on them. Three numbers
+     that most of the presets spend their difference on. */
+  --edge:     1px solid var(--hair);
+  --edge-soft: 1px solid var(--hair-soft);
+  --blur-glass: 22px;
+  --blur-sheet: 30px;
+  /* how far a pressed control travels, and how long the whole surface takes
+     to answer. A preset that wants to feel crisper turns one number down. */
+  --press: 0.97;
+  --dur:   220ms;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE STYLES — the voice
+   ══════════════════════════════════════════════════════════════════════════
+   Five, and each is a complete position rather than a colour swap. The test
+   every one of them has to pass: name the four roles, and no object on any
+   screen is set in a face that is not one of them.
+
+   They are written as attribute selectors so they beat the plain `.wl-root`
+   block above whatever order the two files load in, and so a style can be
+   changed at runtime by setting one attribute — which is what makes the
+   workbench possible and what makes this a system rather than a rewrite. */
+
+/* ── EDITORIAL ── the house voice, tuned rather than replaced.
+   The Didone leads, the mono is demoted to what it is actually good at
+   (strings: handles, codes, counts), and the caps label comes out of the
+   mono into the body face, which is the single change that stops the surface
+   reading as a terminal. Soft corners, quiet edges. */
+.wl-root[data-style='editorial'] {
+  --role-display: var(--f-display);
+  --role-body:    var(--f-util);
+  --role-label:   var(--f-util);
+  --role-id:      var(--f-id);
+  --label-track:  0.13em;
+  --label-weight: 500;
+  --tune-round:   1;
+}
+
+/* ── ARCHIVE ── the quietest of the five, and the most consistent by
+   construction: ONE face does everything except the headline. No caps
+   tracking to speak of, no mono anywhere, small corners, hairlines instead
+   of fills. This is what the surface looks like when nothing is competing —
+   the reference the other four are judged against. */
+.wl-root[data-style='archive'] {
+  --role-display: var(--f-display);
+  --role-body:    var(--f-util);
+  --role-label:   var(--f-util);
+  --role-id:      var(--f-util);
+  --label-case:   none;
+  --label-track:  0.02em;
+  --label-size:   var(--t-meta);
+  --label-weight: 500;
+  --tune-round:   0.62;
+  --tr-tight:     -0.006em;
+  --edge:         1px solid var(--hair-soft);
+  --press:        0.985;
+  --dur:          180ms;
+}
+
+/* ── POSTER ── the reference sheet this brand came off, taken literally.
+   The display band goes up, the labels go loud and wide, the corners go
+   nearly square, and the type does the structural work that borders do
+   elsewhere. It is the loudest of the five and it is still one system,
+   because the loudness is in the scales rather than in the objects. */
+.wl-root[data-style='poster'] {
+  --role-display: var(--f-display);
+  --role-body:    var(--f-util);
+  --role-label:   var(--f-id);
+  --role-id:      var(--f-id);
+  --label-case:   uppercase;
+  --label-track:  var(--tr-caps-lg);
+  --label-size:   var(--t-micro);
+  --tune-type:    1.06;
+  --tune-round:   0.22;
+  --w-display:    600;
+  --track-display: -0.03em;
+  --lh-display:   0.98;
+  --edge:         1px solid rgba(244, 241, 234, 0.14);
+  --ctl-w:        600;
+}
+
+/* ── SOFT ── no serif at all, and no mono: one sans in every role, big
+   corners, generous air. The furthest from the house voice and the easiest
+   to read on a phone, which is the argument for having it on the list. */
+.wl-root[data-style='soft'] {
+  --role-display: var(--f-util);
+  --role-body:    var(--f-util);
+  --role-label:   var(--f-util);
+  --role-id:      var(--f-util);
+  --label-case:   none;
+  --label-track:  0.01em;
+  --label-size:   var(--t-meta);
+  --label-weight: 600;
+  --tune-round:   1.35;
+  --tune-space:   1.1;
+  --w-display:    600;
+  --track-display: -0.028em;
+  --lh-display:   1.1;
+  --press:        0.955;
+}
+
+/* ── TERMINAL ── the opposite extreme, and on the list for the same reason
+   the archive is: one face everywhere, including the headline, is trivially
+   consistent, and seeing it makes the cost of the other four legible. Square
+   corners, flat leading, tracking opened everywhere because a monospace at
+   small sizes needs it. */
+.wl-root[data-style='terminal'] {
+  --role-display: var(--f-id);
+  --role-body:    var(--f-id);
+  --role-label:   var(--f-id);
+  --role-id:      var(--f-id);
+  --label-case:   uppercase;
+  --label-track:  0.18em;
+  --tune-round:   0.14;
+  --tune-type:    0.94;
+  --w-display:    500;
+  --track-display: -0.04em;
+  --lh-display:   1.1;
+  --tr-wide:      0.02em;
+  --ctl-w:        400;
+  --press:        1;
+  --dur:          120ms;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE LAYOUTS — the arrangement
+   ══════════════════════════════════════════════════════════════════════════
+   Four, and they are about WHERE things sit and how much room is between
+   them, never about what face anything is set in. Each is readable under any
+   of the five styles.
+
+   They work through three variables the primitives read — the alignment of a
+   block, the measure it is set in, and the spacing knob — plus a small
+   number of rules on the two places where arrangement is genuinely
+   structural: the poster on the wall, and the head of a sheet. */
+
+/* ── CENTRED ── the poster's own block, in the middle of the glass. The
+   build's default, and the right answer for a surface whose first screen is
+   a title and one door. */
+.wl-root[data-layout='centered'] {
+  --block-align: center;
+  --block-items: center;
+  --block-measure: 460px;
+  --block-margin: auto;
+  --sheet-align: left;
+}
+
+/* ── COLUMN ── everything flush left in one measure, top to bottom, on every
+   screen. The most ordinary of the four and the one that scales best to
+   screens with a lot on them: a person's eye returns to one left edge
+   instead of finding a new centre per block. */
+.wl-root[data-layout='column'] {
+  --block-align: left;
+  --block-items: flex-start;
+  --block-measure: 620px;
+  --block-margin: 0;
+  --sheet-align: left;
+}
+.wl-root[data-layout='column'] .wl-mast-mark { margin-left: 0; margin-right: auto; }
+.wl-root[data-layout='column'] .wl-mast-sub { margin-left: 0; margin-right: 0; max-width: 34ch; }
+
+/* ── SPLIT ── the title on one side and everything that answers it on the
+   other, once there is width for it. Under the breakpoint it is the column,
+   because a split on a phone is two columns of four words. */
+.wl-root[data-layout='split'] {
+  --block-align: left;
+  --block-items: flex-start;
+  --block-measure: 980px;
+  --block-margin: 0;
+  --sheet-align: left;
+}
+.wl-root[data-layout='split'] .wl-mast-mark { margin-left: 0; margin-right: auto; }
+.wl-root[data-layout='split'] .wl-mast-sub { margin-left: 0; margin-right: 0; }
+@media (min-width: 900px) {
+  .wl-root[data-layout='split'] .wl-mast {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    align-items: end;
+    column-gap: var(--sp-10);
+  }
+  .wl-root[data-layout='split'] .wl-mast-mark { grid-column: 1; }
+  .wl-root[data-layout='split'] .wl-mast-title { grid-column: 1; }
+  .wl-root[data-layout='split'] .wl-mast-sub { grid-column: 2; margin-top: 0; max-width: 32ch; }
+  .wl-root[data-layout='split'] .wl-mast-go { grid-column: 2; margin-top: var(--sp-7); justify-self: start; }
+}
+
+/* ── COMPACT ── the column, with the air taken out and the display band
+   brought down a step. For the screens that are genuinely lists, and for
+   anybody looking at this on a small phone. */
+.wl-root[data-layout='compact'] {
+  --block-align: left;
+  --block-items: flex-start;
+  --block-measure: 560px;
+  --block-margin: 0;
+  --sheet-align: left;
+  --tune-space: 0.82;
+  --tune-type: 0.95;
+  --lh-prose: 1.42;
+}
+.wl-root[data-layout='compact'] .wl-mast-mark { margin-left: 0; margin-right: auto; width: 88px; height: 74px; }
+.wl-root[data-layout='compact'] .wl-mast-sub { margin-left: 0; margin-right: 0; max-width: 34ch; }
+
+/* ── the poster reads the three block variables ──
+   One rule, and the four layouts move it. It is written here rather than in
+   wall.css because the defaults in wall.css are the centred layout's values,
+   and a build with no attribute set has to keep drawing exactly what it drew
+   before this file existed. */
+.wl-root[data-layout] .wl-mast {
+  align-items: var(--block-items);
+  max-width: var(--block-measure);
+  margin-inline: var(--block-margin);
+  text-align: var(--block-align);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SEARCH, UNDER EVERY LAYOUT
+   ══════════════════════════════════════════════════════════════════════════
+   The one behaviour that is not a preference: a field reads from the left,
+   always, under every style and every layout. It is stated here as well as
+   in wall.css so that no preset can take it back by accident. */
+.wl-root input,
+.wl-root textarea { text-align: left; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ══════════════════════════════════════════════════════════════════════════
+   The press is a transform, so it is the one token this has to reach. */
+@media (prefers-reduced-motion: reduce) {
+  .wl-root { --press: 1; }
+}

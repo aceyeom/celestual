@@ -37,6 +37,11 @@
 // sheet is a surface that just navigated.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+// The scales first, then the surface that reads them. Load order does not
+// decide which value wins — a custom property is resolved where it is USED,
+// not where it is declared — but it is the order the two files are meant to
+// be read in, and a stylesheet is also a document.
+import './system.css'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
@@ -59,6 +64,8 @@ import Gate from './screens/Gate.jsx'
 import Remove from './screens/Remove.jsx'
 import Report from './screens/Report.jsx'
 import Intro from './Intro.jsx'
+import Workbench from './Workbench.jsx'
+import { current as currentDesign, apply as applyDesign, panelWanted } from './design.js'
 
 // What the field is doing under each screen. A screen may override its own
 // transiently; the override is cleared by the next route change rather than by
@@ -96,6 +103,21 @@ export default function WallApp() {
   const [lit, setLit] = useState(false)
   const cut = useRef(0)
   const reduce = useRef(prefersReducedMotion()).current
+
+  // ── the design ──
+  // Which scales the surface is drawn at (design.js, system.css). It is state
+  // rather than a value read once, because the workbench turns it while the
+  // wall is on the screen and every primitive has to move together when it
+  // does. The address decides it first, then what this browser last chose,
+  // then the defaults — so a link can carry a design and a reload can keep
+  // one.
+  const [design, setDesign] = useState(currentDesign)
+  const rootRef = useRef(null)
+  useEffect(() => { applyDesign(rootRef.current, design) }, [design])
+  // The panel is not part of the product. `?design` in the address asks for
+  // it; nothing else does, and a person who scanned a card off a table never
+  // sees it. Read once: it is a decision about this visit, not a route.
+  const bench = useRef(panelWanted()).current
 
   // ── the corpus ──
   // One subscription for the whole surface. data.js is a cache now: the getters
@@ -318,7 +340,8 @@ export default function WallApp() {
   }
 
   return (
-    <div className="wl-root" data-route={route.name}>
+    <div className="wl-root" ref={rootRef} data-route={route.name}
+         data-style={design.style} data-layout={design.layout}>
       <Ground pace={mode} lit={lit} still={reduce} tint="berkeley" />
 
       {/* Nothing is mounted under the intro until it starts to lift, and
@@ -335,6 +358,9 @@ export default function WallApp() {
       )}
 
       {boot < 2 && <Intro reduce={reduce} ready={ready} onReveal={handOff} onDone={settle} />}
+
+      {/* the knobs, over everything, and only when they were asked for */}
+      {bench && boot > 0 && <Workbench design={design} onChange={setDesign} />}
 
       <div className={`wl-cut${veil ? ' is-down' : ''}`} aria-hidden="true" />
     </div>
