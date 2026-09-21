@@ -1,0 +1,154 @@
+/* ── THE WORKBENCH ──────────────────────────────────────────────────────────
+   Every value in this file is a literal, and that is deliberate. See the note
+   at the head of Workbench.jsx: a control surface that restyles itself as you
+   turn the style is a control surface you cannot read while making the
+   comparison it exists for. So it reads nothing from system.css, borrows
+   nothing from wall.css, and holds still while the wall behind it moves.
+
+   It is a development surface. It is mounted only under `?design`, so none of
+   this is on a screen anybody reaches off a printed card. */
+
+.wb {
+  position: fixed; z-index: 70;
+  right: 16px; top: 16px; bottom: 16px;
+  width: 320px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column;
+  border-radius: 16px;
+  background: rgba(10, 9, 14, 0.9);
+  border: 1px solid rgba(244, 241, 234, 0.13);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.95);
+  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+  backdrop-filter: blur(26px) saturate(1.2);
+  font-family: 'Inter Tight', Inter, system-ui, -apple-system, sans-serif;
+  color: #F4F1EA;
+  overflow: hidden;
+}
+
+.wb-head {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 10px 12px 16px;
+  border-bottom: 1px solid rgba(244, 241, 234, 0.09);
+}
+.wb-h {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #9C978E;
+}
+.wb-x {
+  width: 28px; height: 28px; border: 0; border-radius: 8px;
+  background: none; color: #9C978E; font-size: 18px; line-height: 1;
+  cursor: pointer;
+}
+.wb-x:hover { background: rgba(244, 241, 234, 0.07); color: #F4F1EA; }
+
+.wb-body { flex: 1 1 auto; overflow-y: auto; padding: 4px 16px 18px; overscroll-behavior: contain; }
+
+.wb-sec { padding: 14px 0; border-bottom: 1px solid rgba(244, 241, 234, 0.07); }
+.wb-sec:last-child { border-bottom: 0; }
+
+.wb-lab {
+  margin: 0 0 9px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.13em;
+  text-transform: uppercase; color: #605C55;
+}
+
+.wb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+
+.wb-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 8px 10px; min-height: 40px;
+  border-radius: 9px;
+  border: 1px solid rgba(244, 241, 234, 0.1);
+  background: none; color: #9C978E;
+  text-align: left; cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.wb-opt:hover { border-color: rgba(244, 241, 234, 0.2); color: #F4F1EA; }
+.wb-opt.is-on {
+  background: rgba(116, 199, 222, 0.12);
+  border-color: rgba(116, 199, 222, 0.5);
+  color: #F4F1EA;
+}
+.wb-opt-n { font-size: 12.5px; font-weight: 500; }
+/* which face plays which role, as three words. It is the fastest way to say
+   what a style actually IS, and it is the thing the swatch cannot show. */
+.wb-opt-r {
+  font-size: 9.5px; letter-spacing: 0.02em; color: #605C55;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+}
+.wb-opt.is-on .wb-opt-r { color: #9C978E; }
+
+.wb-note {
+  margin: 9px 0 0;
+  font-size: 11.5px; line-height: 1.5; color: #9C978E;
+}
+
+.wb-knob {
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  gap: 2px 8px; padding: 5px 0;
+}
+.wb-knob-n { font-size: 11.5px; color: #9C978E; }
+.wb-knob-v {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px; color: #605C55; text-align: right; min-width: 42px;
+}
+.wb-knob input[type='range'] {
+  grid-column: 1 / -1;
+  width: 100%; height: 18px; margin: 0;
+  accent-color: #74C7DE; cursor: pointer;
+}
+
+.wb-acts { display: flex; flex-wrap: wrap; gap: 5px; }
+.wb-act {
+  flex: 1 1 auto;
+  min-height: 32px; padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 241, 234, 0.14);
+  background: none; color: #F4F1EA;
+  font-size: 11.5px; font-weight: 500; white-space: nowrap;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.wb-act:hover { background: rgba(244, 241, 234, 0.07); }
+.wb-act.is-quiet { color: #9C978E; flex: 0 0 auto; }
+
+.wb-css {
+  margin: 9px 0 0; padding: 10px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(244, 241, 234, 0.07);
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px; line-height: 1.55; color: #9C978E;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 180px; overflow-y: auto;
+}
+
+/* ── put away ──
+   A tab on the edge, because a panel that can only be closed by editing the
+   address is a panel that is in the way of the thing it is for. */
+.wb-tab {
+  position: fixed; z-index: 70; right: 0; top: 50%;
+  transform: translateY(-50%);
+  padding: 12px 9px;
+  border: 1px solid rgba(244, 241, 234, 0.13); border-right: 0;
+  border-radius: 10px 0 0 10px;
+  background: rgba(10, 9, 14, 0.88);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  color: #9C978E; cursor: pointer;
+  font-family: 'Inter Tight', Inter, system-ui, sans-serif;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase;
+  writing-mode: vertical-rl;
+}
+.wb-tab:hover { color: #F4F1EA; }
+
+/* On a phone the panel is the bottom third rather than a column down the
+   side: the wall it is judging needs the top two thirds, and 320px of side
+   panel on a 390px screen is not a comparison, it is a panel. */
+@media (max-width: 640px) {
+  .wb {
+    right: 8px; left: 8px; top: auto; bottom: 8px;
+    width: auto; max-height: 56vh;
+  }
+  .wb-tab { top: auto; bottom: 12px; transform: none; }
+}

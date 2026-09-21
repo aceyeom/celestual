@@ -281,11 +281,31 @@ field, which is one question, two fields, a route and a keyboard handed
 between them. The glass itself opens now: it is the head of a panel that
 grows downward as the answers arrive, over the crowd, and folds back to a
 capsule when the field is emptied or left. The head does not move while it
-opens — not its height, not the lens, not the measure the question is centred
-in — so what is seen is one thing growing. A name is found and pressed from
+opens — not its height, not the lens, not the measure — so what is seen is one
+thing growing. A name is found and pressed from
 the surface the names are on, which is the whole argument for the wall being
 the landing. The sheet is still there at `/find`: a link into the search, and
 the fuller answer for somebody who arrived looking rather than browsing.
+
+**It reads from the left.** The lens and the question used to be one group
+centred in the glass, in a box measured at `16ch`, with the input centred
+inside that. It looked composed and it typed wrong: a name grew out from the
+middle in both directions, so every character added shifted every character
+already there, and the cursor never held still. Nobody has ever used a search
+field that behaves that way, and the one moment this field has to feel
+ordinary is the moment somebody is typing their own name into it. The lens is
+at the head now, the input takes the rest of the glass, the type sets from the
+left edge and runs right — which is where the answers under it are aligned —
+and the capsule keeps its width, so it is still the same object before and
+after the first keystroke.
+
+It is also set in the **body** face rather than the identifier's. Every other
+field on the surface takes an `@handle`, which is a string, and the mono is
+the right face for one. This one has taken a NAME since 0054 and its own
+question is a sentence: `look for a name`, letterspaced across a piece of
+glass in a monospace at 17.5px, was the loudest wrong note on the wall. It
+made the one control everybody touches read as a terminal prompt on a surface
+whose whole voice is a letter.
 
 The sheet hears what a person actually types (migration 0054): the query goes
 to the server as typed, and the server matches the handle, the handle with
@@ -1266,6 +1286,79 @@ load-bearing word on it. The role went with the caller.
 Nothing is downloaded. No icon set, no illustration, no stock anything — every
 ornament in `art.jsx` is a path or a loop, and most are derived from a handle,
 which an icon library cannot do because it does not know what it is next to.
+
+## The scales, and the two attributes that retune them
+
+Everything above is the reading of the four sheets. What it was missing is the
+thing underneath it: the SCALES. Counted across `wall.css` before
+`system.css` existed:
+
+| | was | is |
+| --- | --- | --- |
+| font sizes | 29 hard-coded px values, in half-pixel steps | 9 named steps |
+| letter-spacings | 26 | 6 |
+| corner radii | 17 raw values, against 4 tokens read 29 times | 6, and the old names alias into them |
+| gap values | 17 | the 12-step spacing scale |
+| padding shorthands | 91 distinct | the same 12 steps |
+| font roles | 4 faces assigned per object | 4 roles assigned per **job** |
+
+None of it was a bug and every number in it was chosen for the object it was
+on. That is exactly why it read as "the whole thing is slightly off" rather
+than as anything nameable: a label at 10.5px on one screen and 11px on the
+next, a row at 14px radius beside a card at 13px, a control 40px tall next to
+one at 42px. Noise is what consistency is the absence of.
+
+The roles had the same problem from the other direction. The identifier face
+was the single most-used family in the file at 46 calls, doing labels, meta,
+counts, codes, handles, placeholders and the search's own question — so the
+surface read as a terminal wearing a Didone hat. A face is assigned a **job**
+now (`--role-display`, `--role-body`, `--role-label`, `--role-id`) and read by
+that job's name everywhere else, which is the whole customisation story: a
+style that wants the labels out of the mono changes one line and the fourteen
+objects wearing a caps label move together.
+
+`system.css` holds the scales and the presets. `design.js` holds what a design
+IS as a value, where it is read from, and how it gets back out as CSS a person
+can paste. A design is five fields:
+
+- **style** — the VOICE. `editorial` (the house voice, tuned), `archive` (one
+  face for everything but the headline, and the reference the others are
+  judged against), `poster` (the display band up, labels loud and wide,
+  corners nearly square), `soft` (no serif and no mono, big corners, air),
+  `terminal` (one face everywhere, headline included).
+- **layout** — the ARRANGEMENT. `centered` (what the build already drew),
+  `column`, `split`, `compact`.
+- **type**, **space**, **round** — a multiplier each, on the whole type,
+  spacing and radius scale, so a scale's internal relationships survive being
+  tuned.
+
+Both preset axes are free-standing: any style reads correctly under any
+layout, which is the test that says they are two axes and not one axis with a
+second label on it. Both reach the DOM as one attribute each on `.wl-root`,
+and the three knobs as three custom properties, so there is no second code
+path where a design is half-applied.
+
+**A letter is the one thing none of it reaches.** A letter chooses its own
+paper (`looks.js`) and that choice belongs to whoever wrote it; a look is not
+a style, and a letter on the velvet paper is identical under all five.
+
+### Turning them
+
+`/berkeley?design` mounts the workbench (`Workbench.jsx`): the five styles,
+the four layouts and the three knobs, over the live wall, so a choice is made
+against the real type at the real size over the real crowd rather than against
+a swatch. It is mounted only under that flag, so a person who scanned a card
+off a table never sees it. Its own stylesheet reads no token from
+`system.css` and that is deliberate: a control surface that restyled itself as
+you turned the style is one you cannot read while making the comparison it
+exists for.
+
+Two things leave the tab. `?style=poster&layout=split` is a design somebody
+can **send** to somebody else, which is the difference between iterating on a
+build and describing one; the panel keeps the address true as you turn, so the
+bar is always copyable. And `copy the css` is the same design as the four
+lines that put it in the build, so "I like that one" ends in a paste rather
+than in a conversation about where a slider was.
 
 ## Three layouts
 

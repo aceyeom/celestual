@@ -319,79 +319,92 @@
    a 22px card title the 22 cut, each drawn for its size; pinning it was only
    ever a correction for a face that had no good cut for the void. Tracking
    tightens a little at display size, as a transitional serif expects. */
+/* The display face's three variable settings live in system.css now, with
+   the scales, because a style that swaps the serif for a sans has to move
+   the weight and the tracking with it or the swap reads as a mistake. They
+   are re-declared here at their built values so this file still draws
+   correctly on its own. */
 .wl-root {
   --w-display: 500;
   --opsz-display: normal;
-  --track-display: -0.022em;
+  --track-display: var(--tr-display, -0.022em);
 }
 .wl-display {
   margin: 0;
-  font-family: var(--f-display);
+  font-family: var(--role-display, var(--f-display));
   font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
   font-optical-sizing: auto;
   letter-spacing: var(--track-display);
-  line-height: 1.06;
+  line-height: var(--lh-display, 1.06);
   color: var(--chalk);
   text-wrap: balance;
 }
-.wl-display.is-xl { font-size: clamp(34px, 10.4vw, 46px); }
-.wl-display.is-l  { font-size: clamp(30px, 8.8vw, 39px); }
-.wl-display.is-m  { font-size: clamp(26px, 7.4vw, 33px); }
-.wl-display.is-s  { font-size: clamp(21px, 5.8vw, 26px); line-height: 1.14; }
+.wl-display.is-xl { font-size: var(--d-xl); }
+.wl-display.is-l  { font-size: var(--d-l); }
+.wl-display.is-m  { font-size: var(--d-m); }
+.wl-display.is-s  { font-size: var(--d-s); line-height: calc(var(--lh-display, 1.06) + 0.08); }
 
+/* ── the label ──
+   Four settings, and they move together: the face, the case, the tracking
+   and the size. They were a face and three numbers typed at this one rule,
+   which is why a style could not take the labels out of the mono without
+   also leaving them uppercase at 0.15em — a monospace's tracking on a
+   proportional face, which reads as a mistake rather than as a choice. */
 .wl-label {
-  font-family: var(--f-id);
-  font-size: 10.5px;
-  font-weight: 400;
-  letter-spacing: 0.15em;
-  line-height: 1.5;
-  text-transform: uppercase;
+  font-family: var(--role-label, var(--f-id));
+  font-size: var(--label-size, var(--t-micro));
+  font-weight: var(--label-weight, 400);
+  letter-spacing: var(--label-track, var(--tr-caps));
+  line-height: var(--lh-prose);
+  text-transform: var(--label-case, uppercase);
   color: var(--ash);
   display: block;
 }
 /* a sparkle set into a label sits on the line rather than beside the block */
-.wl-label .wl-spark { display: inline-block; vertical-align: -1px; margin-right: 7px; }
-.wl-label.is-dim { color: var(--ash-dim); letter-spacing: 0.13em; }
+.wl-label .wl-spark { display: inline-block; vertical-align: -1px; margin-right: var(--sp-3); }
+.wl-label.is-dim { color: var(--ash-dim); }
 /* a handle inside a label keeps its case. Handles are lower-case identifiers;
    uppercasing one turns it into a different string from the one on the wall. */
-.wl-label .wl-h { text-transform: none; letter-spacing: 0.03em; }
+.wl-label .wl-h { text-transform: none; letter-spacing: var(--tr-wide); font-family: var(--role-id, var(--f-id)); }
 .wl-label.is-ink { color: var(--lk-ink-2, var(--paper-ink-2)); }
 
 .wl-prose {
   margin: 0;
   /* the look's tokens where there is a look, and the plain paper's where
      there is not: a paper declares them (below) and a look overrides them,
-     so a letter's words are set in the paper's own face and ink */
+     so a letter's words are set in the paper's own face and ink. A letter is
+     the one thing on the surface the style does NOT reach: the paper was
+     chosen by whoever wrote it. */
   font-family: var(--lk-face, var(--f-letter));
   font-weight: var(--lk-face-w, 400);
-  font-size: calc(17px * var(--lk-size, 1));
-  line-height: 1.5;
+  font-size: calc(var(--t-lead) * var(--lk-size, 1));
+  line-height: var(--lh-prose);
   color: var(--lk-ink, var(--paper-ink));
-  letter-spacing: 0;
+  letter-spacing: var(--tr-flat);
 }
 
-.wl-rule { height: 1px; background: var(--hair); margin: 22px 0; flex: 0 0 auto; }
+.wl-rule { height: 1px; background: var(--hair); margin: var(--sp-8) 0; flex: 0 0 auto; }
 .wl-rule.is-soft { background: var(--hair-soft); }
 
 /* ═══ THE ARROW LINK ═══════════════════════════════════════════════════════
    The poster's nav. The arrow travels on hover and the word does not, so the
    word is what you read and the arrow is what you follow. */
 .wl-arrow {
-  display: inline-flex; align-items: baseline; gap: 11px;
-  font-family: var(--f-display);
+  display: inline-flex; align-items: baseline; gap: var(--sp-5);
+  font-family: var(--role-display, var(--f-display));
   font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 21px; line-height: 1.3;
+  font-size: var(--t-title); line-height: var(--lh-title);
   color: var(--chalk);
-  padding: 5px 0;
+  padding: var(--sp-2) 0;
   transition: color 200ms var(--ease), opacity 200ms var(--ease);
   text-decoration: none;
 }
-.wl-arrow.is-s { font-size: 16px; gap: 8px; }
+.wl-arrow.is-s { font-size: var(--t-lead); gap: var(--sp-4); }
 .wl-arrow.is-quiet { color: var(--ash); }
 .wl-arrow-g {
-  color: var(--ash-dim); font-family: var(--f-util);
+  color: var(--ash-dim); font-family: var(--role-body, var(--f-util));
   transition: transform 280ms var(--ease), color 200ms var(--ease);
   will-change: transform;
 }
@@ -410,20 +423,25 @@
 
 /* ═══ THE PILL ═════════════════════════════════════════════════════════════
    Three roles and no fourth. */
+/* Three sizes and no fourth, and all three come off the control metrics in
+   system.css — the same three a field, a tag and a row's action read. A
+   ghost capsule at 32px beside a tag at 30px beside an action at 34px was
+   three objects claiming to be the same size and missing, and on a screen
+   that is a list it is the loudest thing on it. */
 .wl-pill {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 40px; padding: 0 20px;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-4);
+  min-height: var(--ctl-h-md); padding: 0 var(--ctl-px-md);
   border-radius: var(--r-pill);
-  font-family: var(--f-util);
-  font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  font-family: var(--role-body, var(--f-util));
+  font-size: var(--ctl-t-md); font-weight: var(--ctl-w); letter-spacing: var(--tr-wide);
   white-space: nowrap;
-  transition: transform 220ms var(--ease), background 220ms var(--ease),
-              border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease), color var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
 /* the press: down in the time a press takes, and back on the pill's own
    clock, so the release is the slower of the two and reads as the button
    coming back rather than snapping */
-.wl-pill:active:not(:disabled) { transform: scale(0.97); transition-duration: 120ms; }
+.wl-pill:active:not(:disabled) { transform: scale(var(--press)); transition-duration: 120ms; }
 
 /* `is-light` was the chalk fill, and on a CONTROL it is gone with it: the
    primary is the liquid metal capsule now, which keeps `.wl-pill` for its
@@ -436,8 +454,8 @@
 .wl-pill.is-light.is-tag { background: var(--chalk); color: #14131A; }
 
 .wl-pill.is-ghost {
-  border: 1px solid var(--hair); color: var(--ash);
-  min-height: 32px; padding: 0 13px; font-size: 12px;
+  border: var(--edge); color: var(--ash);
+  min-height: var(--ctl-h-sm); padding: 0 var(--ctl-px-sm); font-size: var(--ctl-t-sm);
 }
 .wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
 
@@ -449,7 +467,7 @@
 
 /* a size, declared after the roles so it wins over whatever min-height and
    font-size the role set */
-.wl-pill.is-wide { width: 100%; min-height: 50px; padding: 0 22px; font-size: 15px; }
+.wl-pill.is-wide { width: 100%; min-height: var(--ctl-h-lg); padding: 0 var(--ctl-px-lg); font-size: var(--ctl-t-lg); }
 
 /* ── lit ──
    The running light on the capsule (parts.jsx `Light`, and the rules under
@@ -883,7 +901,7 @@ a.wl-lq { text-decoration: none; }
    underline that arrives under the pointer so it is known to be one */
 .wl-paper-to {
   display: block; padding: 0; margin: 0; min-width: 0; max-width: 100%;
-  background: none; border: 0; border-radius: 6px; text-align: left; color: inherit; cursor: pointer;
+  background: none; border: 0; border-radius: var(--r-xs); text-align: left; color: inherit; cursor: pointer;
 }
 .wl-paper-to .wl-addressee-name {
   text-decoration: underline; text-decoration-color: transparent;
@@ -1207,16 +1225,21 @@ a.wl-lq { text-decoration: none; }
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
    the value, and cannot be backspaced away. */
-.wl-field { position: relative; display: flex; align-items: baseline; gap: 8px; padding-bottom: 11px; }
-.wl-at { font-family: var(--f-id); font-size: 22px; color: var(--ash-dim); line-height: 1; transition: color 240ms var(--ease); }
-.wl-field.is-lg .wl-at { font-size: 28px; }
+.wl-field { position: relative; display: flex; align-items: baseline; gap: var(--sp-4); padding-bottom: var(--sp-5); }
+.wl-at { font-family: var(--role-id, var(--f-id)); font-size: var(--t-field); color: var(--ash-dim); line-height: var(--lh-flat); transition: color 240ms var(--ease); }
+.wl-field.is-lg .wl-at { font-size: var(--t-field-lg); }
+/* The value is set in the ID role, not the body role: what is typed into one
+   of these is a handle or a name, which is a STRING — the character shapes
+   have to be unambiguous and an l has to be tellable from a 1. A style that
+   maps the ID role onto the body face (archive, soft) gets a proportional
+   field, and that is that style's position, taken deliberately. */
 .wl-field input {
   flex: 1 1 auto; min-width: 0;
   background: none; border: 0; padding: 0;
-  font-family: var(--f-id); font-size: 22px; line-height: 1.18;
-  color: var(--chalk); letter-spacing: -0.012em;
+  font-family: var(--role-id, var(--f-id)); font-size: var(--t-field); line-height: 1.18;
+  color: var(--chalk); letter-spacing: var(--tr-tight);
 }
-.wl-field.is-lg input { font-size: 28px; }
+.wl-field.is-lg input { font-size: var(--t-field-lg); }
 .wl-field input::placeholder { color: rgba(96, 92, 85, 0.62); }
 .wl-field input:focus { outline: none; }
 .wl-field-line {
@@ -1320,7 +1343,7 @@ a.wl-lq { text-decoration: none; }
    changing its voice is the whole explanation of the switch. The keyboard
    capitalises the way a name is written (parts.jsx HandleField). */
 .wl-field.is-name input {
-  font-family: var(--f-display); font-weight: var(--w-display);
+  font-family: var(--role-display, var(--f-display)); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
   letter-spacing: var(--track-display);
 }
@@ -1328,7 +1351,21 @@ a.wl-lq { text-decoration: none; }
 /* ── the field, as the search (0054) ──
    The glass in the @'s place, because a name is as good an answer as a
    handle and a painted @ would say otherwise. Centred on the input's line
-   rather than sat on its baseline, since a glyph has no baseline. */
+   rather than sat on its baseline, since a glyph has no baseline.
+
+   And it is set in the BODY role, not the identifier's. The other fields on
+   the surface take an @handle, which is a string: the character shapes have
+   to be unambiguous and the identifier face is the right one for it. This
+   one has taken a NAME since 0054, and its own question — "look for a name"
+   — is a sentence. A sentence set in a monospace at 17.5px, letterspaced
+   across a piece of glass, was the single loudest wrong note on the wall:
+   it made the one control everybody touches read as a terminal prompt on a
+   surface whose whole voice is a letter. */
+.wl-field.is-search input,
+.wl-field.is-search input::placeholder {
+  font-family: var(--role-body, var(--f-util));
+  letter-spacing: var(--tr-wide);
+}
 .wl-field.is-search { align-items: center; }
 .wl-field.is-search .wl-at { display: block; line-height: 0; }
 .wl-field.is-search .wl-at .wl-icon { display: block; }
@@ -1430,27 +1467,28 @@ a.wl-lq { text-decoration: none; }
    The journey list, with the constellation standing where the reference puts
    a photograph. */
 .wl-row {
-  display: flex; align-items: center; gap: 13px; width: 100%;
-  padding: 12px 12px 12px 10px;
-  border-radius: 14px;
+  display: flex; align-items: center; gap: var(--sp-5); width: 100%;
+  padding: var(--sp-5) var(--sp-5) var(--sp-5) var(--sp-4);
+  border-radius: var(--r-md);
   text-align: left;
   border: 1px solid transparent;
-  transition: background 220ms var(--ease), border-color 220ms var(--ease);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.wl-row + .wl-row { margin-top: 2px; }
+.wl-row + .wl-row { margin-top: var(--sp-1); }
 @media (hover: hover) and (pointer: fine) {
   .wl-row:hover { background: rgba(244,241,234,0.032); }
 }
 .wl-row:active { background: rgba(244,241,234,0.06); transition-duration: 100ms; }
 .wl-row.is-lit { background: linear-gradient(100deg, rgba(255,244,228,0.055), rgba(255,244,228,0.012)); border-color: var(--hair); }
 .wl-row-mark { flex: 0 0 auto; display: grid; place-items: center; }
-.wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
 .wl-row-handle {
-  font-family: var(--f-id); font-size: 14px; color: var(--chalk); letter-spacing: -0.012em;
+  font-family: var(--role-id, var(--f-id)); font-size: var(--t-small); color: var(--chalk); letter-spacing: var(--tr-tight);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-row-meta {
-  font-size: 11.5px; color: var(--ash-dim); letter-spacing: 0.004em;
+  font-family: var(--role-body, var(--f-util));
+  font-size: var(--t-meta); color: var(--ash-dim); letter-spacing: var(--tr-wide);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-row-action { flex: 0 0 auto; }
@@ -1922,8 +1960,8 @@ a.wl-lq { text-decoration: none; }
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
     0 22px 48px -28px rgba(0, 0, 0, 0.95);
-  -webkit-backdrop-filter: blur(22px) saturate(1.25);
-  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.25);
+  backdrop-filter: blur(var(--blur-glass)) saturate(1.25);
   transition: background 260ms var(--ease), box-shadow 260ms var(--ease),
               border-radius 260ms var(--ease);
 }
@@ -1932,42 +1970,55 @@ a.wl-lq { text-decoration: none; }
    under it goes from the hint that seats a capsule to the one that says the
    panel is over the crowd rather than in it. */
 .wl-seek-glass.is-open {
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   background: rgba(244, 241, 234, 0.085);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 28px 64px -24px rgba(0, 0, 0, 0.96);
-  -webkit-backdrop-filter: blur(30px) saturate(1.3);
-  backdrop-filter: blur(30px) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--blur-sheet)) saturate(1.3);
+  backdrop-filter: blur(var(--blur-sheet)) saturate(1.3);
 }
 /* ── the head ──
    The field itself is bare: the glass under it is the surface, and a field
    with its own plate inside a plate is two boxes for one question.
 
    And it does not move when the panel opens. Nothing about it changes — not
-   its height, not the lens's place, not the measure the question is centred
-   in — so what a person sees is one thing: the glass growing downward under
-   the line they are typing. Every version where the field also relaxed its
+   its height, not the lens's place, not the measure the question is set in —
+   so what a person sees is one thing: the glass growing downward under the
+   line they are typing. Every version where the field also relaxed its
    measure or gave back four pixels of height moved the letters under the
-   cursor at the moment the first answer landed. */
+   cursor at the moment the first answer landed.
+
+   ── and it reads from the left ──
+   The lens and the question used to be one group centred in the glass, in a
+   box measured at 16ch, with the input itself centred inside that. It looked
+   composed and it typed wrong: a name grew out from the middle in both
+   directions, so every character a person added shifted every character they
+   had already typed, and the cursor never held still. Nobody has ever used a
+   search field that behaves that way, and the one moment this field has to
+   feel ordinary is the moment somebody is typing their own name into it.
+
+   So: the lens is at the head, the input takes the rest of the glass, and the
+   type sets from the left edge and runs right, which is also where the
+   answers under it are aligned. The capsule keeps its width — it is the same
+   object before and after the first keystroke, which was the whole reason the
+   measure was frozen in the first place. */
 .wl-seek .wl-field {
   cursor: text; background: none; box-shadow: none;
   width: 100%;
-  align-items: center; justify-content: center; gap: 12px;
+  align-items: center; justify-content: flex-start; gap: 12px;
   min-height: 54px; padding: 0 20px;
   border-radius: inherit;
 }
 /* the glass is the edge; the baseline under the type would be a second one */
 .wl-seek .wl-field-line { display: none; }
 .wl-seek .wl-at { color: rgba(244, 241, 234, 0.72); }
-/* The lens and the question are one group in the middle of the glass, under
-   the middle of the ear, rather than a glyph against the left edge with ten
-   characters after it and a hundred pixels of nothing to the right. The box
-   is measured in `ch` of its own mono face, so it is the question's own
-   length at whatever size the breakpoint sets. */
+/* The lens is the head of the line and the input is the rest of it: full
+   width, flush left, and the caret sits where the first character will land
+   before anybody has typed one. */
 .wl-seek .wl-field input {
-  flex: 0 1 auto; width: 16ch;
-  font-size: 17.5px; letter-spacing: -0.004em; text-align: center;
+  flex: 1 1 auto; width: auto; min-width: 0;
+  font-size: 17.5px; letter-spacing: -0.004em; text-align: left;
 }
 .wl-seek .wl-at { font-size: 19px; }
 /* the question itself is ash, not the field's own near-void placeholder:
@@ -1985,8 +2036,8 @@ a.wl-lq { text-decoration: none; }
    is a seam between two parts of one surface rather than a border round
    either. The rows are the same person the sky and the sheet draw. */
 .wl-seek-found {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 6px; padding-top: 0;
+  display: flex; flex-direction: column; gap: var(--sp-1);
+  padding: var(--sp-3); padding-top: 0;
   max-height: min(52vh, 380px); overflow-y: auto;
   overscroll-behavior: contain;
   animation: wl-seek-open 260ms var(--ease) both;
@@ -1997,8 +2048,8 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-seek-row {
   display: flex; align-items: center;
-  padding: 7px 10px;
-  border-radius: 14px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
   border: 1px solid transparent;
   text-align: left;
   transition: background 160ms var(--ease), border-color 160ms var(--ease);
@@ -2010,9 +2061,9 @@ a.wl-lq { text-decoration: none; }
    this screen, and a door to an account is not what somebody who has just
    failed to find their own name is owed */
 .wl-seek-none {
-  margin: 0; padding: 10px 12px 14px;
-  font-family: var(--f-util); font-size: 13px; line-height: 1.45;
-  color: var(--ash); text-align: center;
+  margin: 0; padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  font-family: var(--role-body, var(--f-util)); font-size: var(--t-fine); line-height: var(--lh-ui);
+  color: var(--ash); text-align: var(--sheet-align, left);
 }
 /* the seam: drawn on the list and not on the field, so it is only ever there
    while there is something under it */
@@ -2169,12 +2220,19 @@ a.wl-lq { text-decoration: none; }
    line under its own headline (hero.css .hm-read): the reading face at
    seventeen pixels in ash. */
 .wl-mast-sub {
-  margin: 16px auto 0; max-width: 30ch;
+  margin: var(--sp-6) auto 0; max-width: 30ch;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 17px; line-height: 1.5; letter-spacing: 0;
+  font-size: var(--t-lead); line-height: var(--lh-prose); letter-spacing: var(--tr-flat);
   color: var(--ash);
   text-wrap: balance;
 }
+/* The line under the title is set in the READING face rather than the
+   display role, on every style, because it is a sentence and not a heading —
+   except where the style has taken the serif off the surface entirely, in
+   which case a lone serif line under a sans headline is the inconsistency
+   the style exists to remove. */
+.wl-root[data-style='soft'] .wl-mast-sub,
+.wl-root[data-style='terminal'] .wl-mast-sub { font-family: var(--role-body); }
 /* ── the way in ──
    The product's primary capsule, with the running light riding inside it,
    and nothing round it. The button's own padding is a generous target on a
@@ -2193,11 +2251,11 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-mast-go-pill {
   position: relative; isolation: isolate; overflow: hidden;
-  display: inline-flex; align-items: center; gap: 10px;
-  min-height: 46px; padding: 0 22px 0 24px; border-radius: var(--r-pill);
-  font-family: var(--f-util); font-size: 14.5px; font-weight: 500; letter-spacing: 0.008em;
+  display: inline-flex; align-items: center; gap: var(--sp-4);
+  min-height: 46px; padding: 0 var(--ctl-px-lg); border-radius: var(--r-pill);
+  font-family: var(--role-body, var(--f-util)); font-size: var(--ctl-t-lg); font-weight: var(--ctl-w); letter-spacing: var(--tr-wide);
   color: #14131A;
-  transition: transform 220ms var(--ease);
+  transition: transform var(--dur) var(--ease);
 }
 .wl-mast-go-pill > :not(.wl-light) { position: relative; z-index: 2; }
 .wl-mast-go-g {
@@ -2744,7 +2802,7 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-acts-pane {
   display: flex; flex-direction: column; overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: linear-gradient(180deg, rgba(244, 241, 234, 0.075), rgba(244, 241, 234, 0.035));
   box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.05),
               0 22px 44px -28px rgba(0, 0, 0, 0.75);
@@ -2838,15 +2896,15 @@ a.wl-lq { text-decoration: none; }
 /* ═══ THE SEARCH ═══════════════════════════════════════════════════════════ */
 .wl-find { padding-top: 4px; }
 .wl-find-h { margin-bottom: 2px; }
-.wl-find-field { margin: 22px 0 10px; }
+.wl-find-field { margin: var(--sp-8) 0 var(--sp-4); }
 .wl-find-results { flex: 1 1 auto; min-height: 180px; padding: 8px 0 4px; }
 .wl-find-hint { padding: 2px 2px 12px; }
 .wl-find-results .wl-row { animation: wl-fade 240ms var(--ease) both; }
 
-.wl-find-empty { padding: 26px 2px 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.wl-find-empty { padding: var(--sp-8) var(--sp-1) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); align-items: flex-start; }
 .wl-find-echo {
-  margin: 0 0 8px;
-  font-family: var(--f-id); font-size: 26px; letter-spacing: -0.02em;
+  margin: 0 0 var(--sp-4);
+  font-family: var(--role-id, var(--f-id)); font-size: var(--t-field-lg); letter-spacing: var(--tr-display);
   color: var(--chalk);
 }
 .wl-find-empty .wl-pill { margin-top: 4px; }
@@ -2867,8 +2925,8 @@ a.wl-lq { text-decoration: none; }
 .wl-suggest-lab { display: block; padding: 2px 4px 6px; }
 .wl-suggest-row {
   display: flex; align-items: center; width: 100%;
-  padding: 7px 10px 7px 7px;
-  border: 1px solid transparent; border-radius: 14px;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-3);
+  border: 1px solid transparent; border-radius: var(--r-md);
   background: none; color: var(--chalk); text-align: left; cursor: pointer;
   transition: background 160ms var(--ease), border-color 160ms var(--ease);
 }
@@ -2972,7 +3030,7 @@ a.wl-lq { text-decoration: none; }
   position: absolute; top: 0; bottom: 0; left: 0; z-index: 1;
   width: calc(100% / var(--n));
   border: 1px solid var(--sheet-edge, var(--hair)); border-bottom: 0;
-  border-radius: 11px 11px 0 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
   background: var(--sheet, var(--void-1));
   transform: translate3d(calc(100% * var(--i)), 0, 0);
   transition: transform 340ms var(--ease-sheet),
@@ -3134,7 +3192,7 @@ a.wl-lq { text-decoration: none; }
    caption under it */
 .wl-look-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 100%; min-height: 46px; padding: 0 8px; border-radius: 13px;
+  width: 100%; min-height: 46px; padding: 0 var(--sp-4); border-radius: var(--r-md);
   box-shadow: inset 0 0 0 1px var(--hair);
   font-family: var(--chip-face); font-weight: var(--chip-w, 500);
   font-size: calc(15px * var(--chip-size, 1)); line-height: 1;
@@ -3619,9 +3677,9 @@ a.wl-lq { text-decoration: none; }
   padding: 2px 0 6px;
 }
 .wl-full-row {
-  display: flex; align-items: center; gap: 13px;
-  padding: 11px 4px 11px 2px;
-  border-radius: 14px;
+  display: flex; align-items: center; gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-2) var(--sp-5) var(--sp-1);
+  border-radius: var(--r-md);
   transition: background 220ms var(--ease);
 }
 .wl-full-row.is-asking { background: rgba(244,241,234,0.032); }
@@ -3660,7 +3718,10 @@ a.wl-lq { text-decoration: none; }
    and it is always the small one. `is-light` is sized as a primary action
    because that is what it is in a dock; the same tone standing in a 60px
    ledger row is a 40px white slab with two rows of type beside it. */
-.wl-pill.is-tag { pointer-events: none; min-height: 30px; padding: 0 14px; font-size: 12px; }
+/* The tag is not a control — it is an affordance printed on a row, the size
+   of a word and never pressed — but it stands beside controls, so it takes
+   the small size's metrics rather than a set of its own two pixels off. */
+.wl-pill.is-tag { pointer-events: none; min-height: var(--ctl-h-sm); padding: 0 var(--ctl-px-sm); font-size: var(--ctl-t-sm); }
 
 /* ═══ THE TAB ══════════════════════════════════════════════════════════════
    The one door out of the wall, and it does not exist until somebody has put
