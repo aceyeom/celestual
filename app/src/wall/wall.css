@@ -775,7 +775,7 @@
    foot of the sheet like every other act on this surface. What somebody
    actually wants from this row is out of it. */
 .wl-settled {
-  display: flex; align-items: center; gap: 13px;
+  display: flex; align-items: center; gap: 11px;
   animation: wl-settled-in 320ms var(--ease) both;
 }
 @keyframes wl-settled-in {
@@ -785,7 +785,7 @@
 .wl-settled.is-looking { animation: none; }
 .wl-settled-disc {
   position: relative; flex: 0 0 auto;
-  width: 42px; height: 42px; border-radius: 999px; overflow: hidden;
+  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
   background: rgba(244, 241, 234, 0.05);
   box-shadow: inset 0 0 0 1px var(--hair);
   display: grid; place-items: center;
@@ -794,7 +794,7 @@
 .wl-settled.is-looking .wl-settled-disc { background: rgba(244, 241, 234, 0.035); }
 .wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .wl-settled-mono {
-  font-family: var(--f-id); font-size: 13px; letter-spacing: 0.06em;
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.06em;
   color: var(--ash); user-select: none;
 }
 /* the two states share one cell and cross fade: the words land where the bars
@@ -805,16 +805,18 @@
   display: flex; flex-direction: column; justify-content: center; gap: 3px;
   transition: opacity 260ms var(--ease);
 }
-.wl-settled-skel { gap: 8px; opacity: 0; }
+.wl-settled-skel { gap: 7px; opacity: 0; }
 .wl-settled.is-looking .wl-settled-skel { opacity: 1; }
 .wl-settled.is-looking .wl-settled-real { opacity: 0; }
 .wl-settled-bar {
-  display: block; height: 10px; width: 136px; max-width: 46vw; border-radius: 3px;
+  display: block; height: 9px; width: 128px; max-width: 46vw; border-radius: 3px;
   background: rgba(244, 241, 234, 0.07);
-  animation: wl-settled-breathe 1600ms var(--ease-out) infinite;
+  /* the result card's own breath, by name: two keyframes with the same body
+     and different names are two things to keep in step, and this one has to
+     stay in step with the card by definition */
+  animation: wl-card-breathe 1600ms var(--ease-out) infinite;
 }
-.wl-settled-bar.is-short { width: 78px; height: 9px; animation-delay: 180ms; }
-@keyframes wl-settled-breathe { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+.wl-settled-bar.is-short { width: 74px; height: 8px; animation-delay: 180ms; }
 .wl-settled-name {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--f-util); font-size: 17px; font-weight: 500; letter-spacing: -0.008em;
@@ -2331,21 +2333,29 @@
    second edge saying the same thing, so the box is the field's edge and the
    focus is the box coming up a step. */
 .wl-write-tabs { margin: 0; }
+/* One ground and one hairline, named once and read by the tab and by the
+   body, so there is no pair of numbers to drift apart. The focused values
+   are set on the wrapper (`.wl-write-who:focus-within`), which is what both
+   of them live in: a tab drawn a step darker than the field it opens, with a
+   dimmer outline, is not a tab on that sheet, it is a different object
+   standing next to it. */
+.wl-write-who { --sheet: var(--void-1); --sheet-edge: var(--hair); }
+.wl-write-who:focus-within { --sheet: var(--void-2); --sheet-edge: rgba(244, 241, 234, 0.17); }
 .wl-write-body {
   position: relative; isolation: isolate;
   display: flex; align-items: center;
+  --light-w: 132px;
   min-height: 64px; padding: 11px 15px;
-  border: 1px solid var(--hair);
+  border: 1px solid var(--sheet-edge);
   /* Square where a tab is standing on it, rounded everywhere else: the head
      of the sheet keeps its left corner only while the first tab is the open
      one, and gets it back the moment the tab moves off it (`--i`, set by the
      screen). */
   border-radius: calc(var(--r-field) * min(var(--i, 0), 1)) var(--r-field) var(--r-field) var(--r-field);
-  background: var(--void-1);
+  background: var(--sheet);
   transition: border-color 240ms var(--ease), background 240ms var(--ease);
 }
 .wl-write-body > :not(.wl-light) { position: relative; z-index: 2; width: 100%; min-width: 0; }
-.wl-write-body:focus-within { border-color: rgba(244, 241, 234, 0.2); background: var(--void-2); }
 /* the field, inside the body: the baseline goes, the painted @ and the type
    stay, and the box is what the eye reads as the edge */
 .wl-write-body .wl-field { padding-bottom: 0; }
@@ -2397,17 +2407,26 @@
 .wl-seg-thumb {
   position: absolute; top: 0; bottom: 0; left: 0; z-index: 1;
   width: calc(100% / var(--n));
-  border: 1px solid var(--hair); border-bottom: 0;
+  border: 1px solid var(--sheet-edge, var(--hair)); border-bottom: 0;
   border-radius: 11px 11px 0 0;
-  background: var(--void-1);
+  background: var(--sheet, var(--void-1));
   transform: translate3d(calc(100% * var(--i)), 0, 0);
-  transition: transform 340ms var(--ease-sheet);
+  transition: transform 340ms var(--ease-sheet),
+              border-color 240ms var(--ease), background 240ms var(--ease);
   pointer-events: none;
 }
+/* The word sits at the tab's left edge and not in the middle of it, so it
+   lines up with what is under the tab — the `@` in the field, the first tile
+   in the grid — at the same fifteen pixels. The columns are equal and sized
+   to the longest word, so a centred label on the short one floats away from
+   the only thing it could line up with. */
 .wl-seg-opt {
   position: relative; z-index: 2;
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 33px; padding: 0 15px;
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  /* sixteen, not fifteen: the tab's own hairline is inside the thumb and the
+     word is not, so the word needs the border back to stand on the same
+     vertical as the field's @ */
+  min-height: 33px; padding: 0 16px;
   font-family: var(--f-util); font-size: 12.5px; font-weight: 500; letter-spacing: 0.008em;
   color: var(--ash); white-space: nowrap;
   transition: color 220ms var(--ease);
@@ -2420,7 +2439,7 @@
   .wl-seg-opt:not([aria-checked="true"]):not([aria-selected="true"]):hover { color: var(--chalk); }
 }
 @media (max-width: 359px) {
-  .wl-seg-opt { padding: 0 11px; font-size: 12px; }
+  .wl-seg-opt { padding: 0 12px; font-size: 12px; }
 }
 
 /* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
@@ -2440,6 +2459,7 @@
    and cannot drift from it. The chosen one is ringed the way a disc on the
    field is ringed when the lens is on it. */
 .wl-look {
+  --sheet: var(--void-1); --sheet-edge: var(--hair);
   display: flex; flex-direction: column;
   margin-top: 14px;
   animation: wl-look-in 320ms var(--ease) both;
@@ -2450,9 +2470,9 @@
 .wl-look-sheet {
   display: flex; flex-direction: column; gap: 12px;
   padding: 12px 12px 10px;
-  border: 1px solid var(--hair);
+  border: 1px solid var(--sheet-edge);
   border-radius: calc(var(--r-field) * min(var(--i, 0), 1)) var(--r-field) var(--r-field) var(--r-field);
-  background: var(--void-1);
+  background: var(--sheet);
 }
 @keyframes wl-look-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
 
