@@ -128,7 +128,27 @@ disagree on them. The build wins on both: `--ash` is `#9C978E` and `--hair` is
 
 `--void` and `--chalk` are identical in both files, so nothing was decided there.
 
-Changing the accent is two lines. Nothing else in the build names a hue.
+Changing the accent is two lines. Nothing else on the PRODUCT's surfaces names
+a hue.
+
+### 2.4a The desk's own palette
+
+One more exception, and like the looks it is fenced and declared in one place.
+`app/src/admin/desk.css` opens with eight tokens of its own — `--ad-hold`,
+`--ad-stop` and `--ad-go` for a state, and `--ad-s1` to `--ad-s5` for the five
+series on the growth chart. They are scoped to `.ad-root` and nothing outside
+the desk reads one.
+
+They exist because rule 1 is an argument about a PUBLIC surface: a saturated
+accent everywhere is the most recognisable machine-made look on the web and the
+product cannot afford it. The desk is an operator tool that four people will
+ever open, and the two things it has to do — say whether something is live,
+held or stopped, and draw five lines that can be told apart — are the two jobs
+a single rationed accent cannot do. A chart whose series are five strengths of
+one blue is a chart nobody can read.
+
+It is written down here because the sentence above used to say "nothing else in
+the build names a hue", and eight tokens in the build named one.
 
 ### 2.5 The looks
 
