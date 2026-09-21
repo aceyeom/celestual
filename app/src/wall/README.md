@@ -1,8 +1,25 @@
-# `/berkeley` — the wall
+# `/` and `/berkeley` — the wall
 
-The campus surface. It lived at `/beta` while it was one; `main.jsx` still
-rewrites that prefix onto this one at boot, because the cards already printed
-with it cannot be redeployed.
+One tree, drawn for two walls (`campus.js`). The wall at the root of the site
+is the wall for everybody: no campus, and anybody the product has proved may
+write, by their instagram, a google account or a mailed code (migration 0057,
+`screens/Gate.jsx`). The wall at `/berkeley` is the campus surface it was
+built as, where a `berkeley.edu` address writes; it lived at `/beta` while it
+was one, and `main.jsx` still rewrites that prefix onto it at boot, because the
+cards already printed with it cannot be redeployed. Everything below that
+names a campus, a domain or a printed card is about that wall; everything
+about the field, the sheets and the letters is about both.
+
+Four things below are recorded as they were and are no longer so. **The bar**
+carries the brand and the person; the act, `write a letter`, is a capsule at
+the foot, and the campus and the count are one small caption over the search
+plate rather than an ear of their own. **The letter** is a centred card with
+one close mark in the corner of the glass, a pen beside the heart for writing
+to the person, and no count; it rises and fades rather than opening out of
+the disc (`morph.js` is gone). **The field names nobody**: the plate and the
+ring on the disc nearest the middle came off. **Every disc on the glass turns
+over on its own clock**, ten to forty seconds by its distance from the light,
+a few at a time, rather than one disc every few seconds.
 
 **As of Phase 6b of the rebuild it reaches a server.** The letters, the campus
 gate, the handle proof, the reports and the takedowns are in the schema

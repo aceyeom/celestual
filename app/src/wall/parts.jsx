@@ -15,6 +15,7 @@ import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc } from './looks.js'
+import { campus } from './campus.js'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -353,14 +354,18 @@ export function TopBar({ go, at = 'wall', acts = true }) {
   // even has a face the resolver can draw.
   const mine = who || verified()[0] || ''
   const onWall = at === 'wall'
+  // On the campus wall the brand goes to the front, which is the wall for
+  // everybody at the root; on that wall it is home already, and stands
+  // without the chevron.
+  const home = onWall && !!campus().base
   return (
     <header className="wl-top">
       <Brand
-        back
-        href={onWall ? '/' : undefined}
-        onClick={onWall ? undefined : () => go('wall')}
-        label={onWall ? 'celestual, the front' : 'back to the wall'}
-        title={onWall ? 'the front' : 'the wall'}
+        back={!onWall || home}
+        href={home ? '/' : undefined}
+        onClick={home ? undefined : () => go('wall')}
+        label={home ? 'celestual, the front' : onWall ? 'celestual' : 'back to the wall'}
+        title={home ? 'the front' : 'the wall'}
       />
       {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
@@ -1880,7 +1885,7 @@ export const COMPANY = {
 // The addresses on Main. Given the shell's `go`, a plain click on one of these
 // stays inside the shell rather than reloading the app; a modified click, a
 // middle click and a copy still get a real anchor.
-const IN_SHELL = { '/': 'hero', '/place': 'place', '/sky': 'sky', '/optout': 'optout' }
+const IN_SHELL = { '/ping': 'hero', '/place': 'place', '/sky': 'sky', '/optout': 'optout' }
 function inShell(go, href) {
   const name = IN_SHELL[href]
   if (!go || !name) return undefined
@@ -1896,11 +1901,16 @@ export function SiteFoot({ go = null, className = '' }) {
   return (
     <footer className={`wl-colophon ${className}`}>
       <div className="wl-colophon-brand">
-        <Brand href="/" onClick={inShell(go, '/')} />
+        <Brand href="/" />
         <p className="wl-colophon-line">you both find out, or neither of you does.</p>
       </div>
 
       <nav className="wl-colophon-cols" aria-label="the rest of it">
+        <div className="wl-colophon-col">
+          <Label tone="dim">celestual</Label>
+          {link('/ping', 'place a ping')}
+          {link('/berkeley', 'the wall at berkeley')}
+        </div>
         <div className="wl-colophon-col">
           <Label tone="dim">legal</Label>
           {link('/terms', 'terms')}

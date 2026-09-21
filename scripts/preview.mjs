@@ -161,6 +161,9 @@ let DOWN = false
 // Whether this browser has put up more letters than the account sheet shows
 // at once, so the list's fade and its "see more" are drawn.
 let MANY = false
+// Whether the fixture browser is nobody at all: signed in to nothing, so the
+// gates draw their doors rather than the account.
+let ANON = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -173,6 +176,7 @@ const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swa
 for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.target_handle}.jpg`
 
 function whoami() {
+  if (ANON) return { ok: true, signed_in: false }
   return {
     ok: true,
     signed_in: true,
@@ -183,6 +187,10 @@ function whoami() {
       email: null,
       edu_verified: OPEN,
       campus: OPEN ? 'berkeley.edu' : null,
+      // 0057: the two logins. Neither is held by the fixture browser.
+      google_verified: false,
+      email_verified: false,
+      login_email: null,
     },
   }
 }
@@ -770,6 +778,17 @@ const ROUTES = [
   // Flap), so the wall is shot once they have landed; then the field with
   // the veil lifted, once the lens has bloomed and the walk has taken its
   // first step and come to rest on a person
+  // ── the wall at the root (0057): the same wall for everybody, with the
+  //    mark on its poster, and the door with three ways in ──
+  { label: 'home',            path: '/', settle: 6000 },
+  { label: 'home-lifted',     path: '/', press: '.wl-mast-go', settle: 5200 },
+  { label: 'home-gate',       path: '/gate', anon: true },
+  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:first-child' },
+  { label: 'home-gate-email', path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:last-child' },
+  { label: 'home-write',      path: '/write/sofiaaa.reyes' },
+  { label: 'home-letter',     path: '/letter/pilar.echevarria' },
+  { label: 'berkeley-gate-google', path: '/berkeley/gate', anon: true },
+  { label: 'ping',            path: '/ping?nointro=1' },
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   // the veil opening from the tap, held at four tenths of its reach
   // (Wall.jsx `heldRipple`): the circle, the crest of the pulse running
@@ -935,6 +954,7 @@ for (const r of list) {
   SPENT = r.spent === true
   DOWN = r.down === true
   MANY = r.many === true
+  ANON = r.anon === true
   for (const v of VIEWPORTS) {
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
@@ -976,11 +996,12 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: 'someone@berkeley.edu',
-          verified: VERIFIED ? ['ace03d'] : [],
+          member: ANON ? null : 'someone@berkeley.edu',
+          reader: !ANON,
+          verified: VERIFIED && !ANON ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
@@ -992,7 +1013,7 @@ for (const r of list) {
         // a verified handle with no proof to spend, `celestual_my_pings` is
         // never asked, and the reveal draws "nothing here" over a fixture that
         // has a mutual in it.
-        if (VERIFIED) {
+        if (VERIFIED && !ANON) {
           localStorage.setItem('celestual:auth', JSON.stringify({
             verified: true, handle: 'ace03d', proof: 'a'.repeat(64), at: Date.now(),
           }))
@@ -1000,7 +1021,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON })
 
     await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)

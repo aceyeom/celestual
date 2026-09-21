@@ -130,7 +130,10 @@ import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loa
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
+import { campus } from '../campus.js'
 import Hive from '../Hive.jsx'
+import LiquidMark from '../LiquidMark.jsx'
+import { Bloom } from '../art.jsx'
 
 // The opening plays once per session and never again. Coming back to the wall
 // from a letter should land on the wall, not on a title.
@@ -272,7 +275,7 @@ function Ear({ letters }) {
   }
   return (
     <div className="wl-ear" aria-live="polite">
-      <span className="wl-ear-name">berkeley</span>
+      <span className="wl-ear-name">{campus().name}</span>
       {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
       {meta}
     </div>
@@ -702,15 +705,30 @@ export default function Wall({ go, reduce, rev, under = false }) {
               <button type="button" className="wl-veil-scrim" onClick={lift} aria-label="view the wall" tabIndex={-1} />
               <div className="wl-veil-in">
                 <div className="wl-mast">
+                  {/* ── the mark, on the wall at the root ──
+                      The front door used to open on the mark as a material,
+                      the metal with a current under it, over its own title.
+                      The wall is the front door now, so the poster carries
+                      it: the same object the intro poured, at the size of a
+                      seal, with the bloom behind it, over the title. The
+                      campus wall keeps its poster as it was (campus.js). */}
+                  {campus().mark ? (
+                    <div className="wl-mast-mark" aria-hidden="true">
+                      <Bloom size={210} opacity={0.34} className="wl-mast-bloom" />
+                      <LiquidMark size={78} speed={0.55} still={reduce} quality="row" />
+                    </div>
+                  ) : null}
                   <Display size="xl" as="h1" className="wl-mast-title">
-                    A wall of<br />unforgettable<br />berkeley bears.
+                    {campus().title.map((line, i) => (
+                      <span key={line}>{i ? <br /> : null}{line}</span>
+                    ))}
                   </Display>
                   {/* ── what it is, in one line ──
                       The title names the wall and this says what is on it,
                       in the reading face, the way the front door runs one
                       line of the mechanic under its own headline (hero.css
                       .hm-read). */}
-                  <p className="wl-mast-sub">anonymous letters to the one you never told.</p>
+                  <p className="wl-mast-sub">{campus().sub}</p>
                   {/* ── the way in ──
                       The product's own capsule, with the light running inside
                       it, and nothing round it. Two hairline rings used to

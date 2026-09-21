@@ -12,21 +12,25 @@ be.
 
 ## The two surfaces
 
-**Main**, at `/`. The product above: place a ping, hold two at a time, sixty
-days each, and a reveal that happens to both people or to neither.
+**The wall**, at `/`. The front door is the wall for everybody: short anonymous
+letters, each addressed to one Instagram handle or to a first name. The list
+of names is public, and so are the first eight letters anybody reads. After
+those, reading needs a proof of a person, any of the four the product takes: a
+verified Instagram handle, a Google account, an address a code was mailed to,
+or a campus address. Writing there needs the same. Every letter goes up at
+once and is read where it stands, and what comes down is a letter with a
+consequence in it, never a tone (`supabase/functions/celestual-wall-moderate`).
 
-**The wall**, at `/berkeley`. A campus surface reached by scanning a code off a
-flyer: short anonymous letters, each addressed to one handle. The list of
-handles is public, and so are the first eight letters anybody reads. After
-those, reading needs one of the product's two proofs, a verified
-`berkeley.edu` address or a verified Instagram handle, and everything else
-arrives blurred; writing needs the address, three in any five days. Every
-letter is screened before it appears, the person a letter is about can take it
-down from a verified handle, and the author is never disclosed unless they are
-asked and say yes.
+**The wall at Berkeley**, at `/berkeley`. The same wall for one campus, reached
+by scanning a code off a flyer. Reading is the same; writing needs a
+`berkeley.edu` address, proved by a mailed code or by the campus's own Google
+account.
 
-They are one session. Proving a campus address on the wall or a handle on Main
-signs you in to both.
+**Main**, at `/ping`. The product the wall hands off into: place a ping, hold
+two at a time, sixty days each, and a reveal that happens to both people or to
+neither.
+
+They are one session. Any proof, on any surface, signs you in to all of them.
 
 ---
 
@@ -38,15 +42,19 @@ app/                the SPA. Vite + React, no router library
                     anything mounts, so a route is never rendered twice
   src/cards.js      the five printed cards, and where each one lands. Read by
                     the fork above, and by the desk
-  src/main/         Main. hero, place, sky, reveal, optout, copy, signin
-  src/wall/         the wall. ten screens, its own art and its own store
+  src/main/         Main. hero (at /ping), place, sky, reveal, optout, copy,
+                    signin
+  src/wall/         the wall, drawn for two walls (campus.js): the one at /
+                    and the one at /berkeley. ten screens, its own art and
+                    its own store
   src/signature/    where the two signature surfaces were approved. static
   src/admin/        the desk at /admin
   src/api/          every call to Supabase, one module per concern
   public/           the legal pages, the faces, the mark, the share card
 
 supabase/
-  migrations/       0001 to 0051, in order. 0029 onward is the rebuild; 0038 is the audit
+  migrations/       0001 to 0057, in order. 0029 onward is the rebuild; 0038 is
+                    the audit; 0057 is the wall at the root and the login
   functions/        the edge functions. celestual-resolve, -admin,
                     -wall-moderate, -edu-verify, -ig-webhook, -manychat,
                     -mutual-dm, -notify, -stripe, -stripe-webhook
@@ -123,6 +131,7 @@ order to apply what is left.
 | [docs/SECURITY.md](./docs/SECURITY.md) | The privacy model: hashed targets, the slot rule, the purge, the opt out |
 | [docs/HANDLE-RESOLVER.md](./docs/HANDLE-RESOLVER.md) | The resolver: Apify, the permanent cache, the three caps, the stored face |
 | [docs/EDU-VERIFICATION.md](./docs/EDU-VERIFICATION.md) | The campus email gate, wired live |
+| [docs/GOOGLE-AUTH-SETUP.md](./docs/GOOGLE-AUTH-SETUP.md) | Google sign in and the mailed code, step by step, for a first time |
 | [docs/DEBUG-IG-WEBHOOK.md](./docs/DEBUG-IG-WEBHOOK.md) | Debugging the Instagram DM verification relay |
 | [docs/MANYCHAT-SETUP.md](./docs/MANYCHAT-SETUP.md) | The DM relay |
 | [docs/MANYCHAT-MUTUAL-DM.md](./docs/MANYCHAT-MUTUAL-DM.md) | Telling somebody on Instagram that it is mutual, inside Meta's rules |
@@ -141,11 +150,12 @@ order to apply what is left.
 
 | | |
 | --- | --- |
-| `/` | Main. The hero |
+| `/` | the wall for everybody, and its sheets under it: `/letter/<id>`, `/find`, `/write`, `/gate`, `/report/<id>`, `/remove/<handle>`, `/join` |
+| `/ping` | Main. The hero, the ping's own front door |
 | `/place`, `/place/<handle>`, `/@handle` | placing one |
 | `/sky` | what you have out |
 | `/reveal/<handle>` | a mutual, opened |
-| `/berkeley` | the wall, and eight addresses under it |
+| `/berkeley` | the wall at Berkeley, and the same eight addresses under it |
 | `/beta` | the wall's printed address. Rewritten onto `/berkeley` at boot |
 | `/c/<code>` | what the five printed cards carry in their QR. Logs the scan, then hands the visitor to wherever that card is pointed |
 | `/optout` | take a handle off, permanently, proved with one DM, no account |

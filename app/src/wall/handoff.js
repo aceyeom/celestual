@@ -29,10 +29,11 @@ import {
 import { sendEduCode, verifyEduCode, eduVerifyEnabled } from '../api/eduverify.js'
 import { sessionToken } from '../api/identity.js'
 import { verifyHandle, signIn, DOMAIN } from './auth.js'
+import { campus } from './campus.js'
 
-// The school this wall is about, as celestual-edu-verify knows it. One campus
-// today; wall_campuses is what makes a second one a row rather than a rewrite.
-export const CAMPUS_SLUG = 'uc-berkeley'
+// The school this wall is about, as celestual-edu-verify knows it. The wall
+// at the root has no school and never sends a code (campus.js).
+const CAMPUS_SLUG = () => campus().eduSlug
 
 export { igDeepLink, igWebLink, igUsername, dmCode, igVerifyEnabled, eduVerifyEnabled, DOMAIN }
 export { savePending, loadPending, clearPending }
@@ -43,7 +44,7 @@ export { savePending, loadPending, clearPending }
 // words to it.
 export async function sendCampusCode(email) {
   try {
-    const out = await sendEduCode({ email, slug: CAMPUS_SLUG })
+    const out = await sendEduCode({ email, slug: CAMPUS_SLUG() })
     return { ok: true, token: out.token, expiresAt: out.expiresAt }
   } catch (e) {
     return { ok: false, error: e?.code || 'send' }

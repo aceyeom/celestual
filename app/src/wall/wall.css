@@ -1515,6 +1515,22 @@
   text-align: center;
 }
 .wl-mast-title { margin: 0; }
+/* ── the mark over the title, on the wall at the root ──
+   The front door's seal, the metal with the current under it, with the bloom
+   behind it: the one place on a wall the light is spent, and only on the
+   poster, once. The campus wall's poster has no mark (campus.js). */
+.wl-mast-mark {
+  position: relative; display: grid; place-items: center;
+  width: 120px; height: 100px; margin: 0 auto 14px;
+  color: var(--chalk);
+}
+.wl-mast-mark > * { position: relative; z-index: 1; }
+.wl-mast-mark .wl-mast-bloom {
+  position: absolute; z-index: 0; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.wl-wallpage.is-opening .wl-mast-mark { animation: wl-fade 900ms var(--ease) 120ms both; }
 /* ── the line under the title ──
    What the wall is, in one sentence, set the way the front door sets the
    line under its own headline (hero.css .hm-read): the reading face at
@@ -3372,6 +3388,12 @@
    holds to, for the same reason: the constant part of an identifier is not
    something a person should be able to get wrong. */
 .wl-gate { padding-top: 4px; }
+/* the three ways in, on the wall at the root: the same pane the flag opens
+   on a letter, three rows in it, the first with its reason under it */
+.wl-gate-ways { padding-top: 2px; }
+.wl-gate-ways .wl-act:disabled { opacity: 0.4; cursor: default; }
+/* the campus's own google, under the address's act, as the quieter way */
+.wl-gate-google { align-self: center; gap: 8px; padding: 0 16px 0 13px; min-height: 36px; font-size: 13px; }
 .wl-gate-step { flex: 0 0 auto; padding-top: 26px; animation: wl-fade 340ms var(--ease) both; }
 .wl-gate-note { padding-bottom: 16px; }
 

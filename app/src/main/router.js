@@ -14,6 +14,12 @@
 // rest of the product is judged from.
 export const ROUTES = ['hero', 'place', 'sky', 'reveal', 'optout', 'copy', 'signin']
 
+// ── the front door moved ────────────────────────────────────────────────────
+// The root of the site is the wall for everybody now (wall/campus.js), and
+// the ping's own front door, the hero with its two sealed cards, stands at
+// /ping: the page the wall's tab hands people to, and the one the foot of
+// every page links to as the rest of the product.
+
 // The addresses Main does not draw. The wall's, the old printed address that
 // rewrites onto it, the signature preview, the desk, and the three legal pages
 // that a Vercel rewrite serves as static HTML before this bundle is reached.
@@ -30,7 +36,7 @@ function decode(s) {
 
 export function parse(pathname) {
   const p = String(pathname || '/').replace(/\/+$/, '') || '/'
-  if (p === '/') return { name: 'hero' }
+  if (p === '/' || p === '/ping') return { name: 'hero' }
 
   const [rawHead, rawId = ''] = p.slice(1).split('/')
   const head = decode(rawHead)
@@ -56,6 +62,6 @@ export function parse(pathname) {
 }
 
 export function href(name, id) {
-  if (name === 'hero') return '/'
+  if (name === 'hero') return '/ping'
   return id ? `/${name}/${id}` : `/${name}`
 }

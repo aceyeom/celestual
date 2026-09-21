@@ -38,11 +38,12 @@ import { supabase, hasSupabase } from '../api/supabase.js'
 import { sessionToken } from '../api/identity.js'
 import { avatarUrl, learnHandle } from '../api/handles.js'
 import { cleanLook } from './looks.js'
+import { campus } from './campus.js'
 
-// One campus is open. Q11: berkeley for launch, and the schema is shaped so a
-// second one is a row in wall_campuses rather than a migration. It is a
-// constant here rather than a hardcoded string in nine call sites.
-export const CAMPUS = 'berkeley'
+// Which wall this is: the campus wall, or the one at the root (campus.js).
+// The schema files every letter under a campus row, and the one at the root
+// is a row like any other, with no domain on it (migration 0057).
+const CAMPUS = () => campus().slug
 
 const OFFLINE = { ok: false, error: 'offline' }
 
@@ -118,7 +119,7 @@ export async function wallIndex() {
     const read = () => supabase
       .from('wall_index')
       .select(INDEX_TIERS[indexTier])
-      .eq('campus', CAMPUS)
+      .eq('campus', CAMPUS())
       .order('last_at', { ascending: false })
       .limit(500)
     let { data, error } = await read()
@@ -176,7 +177,7 @@ export function subscribeWall(onMoved) {
   const drop = () => { if (ch) { const c = ch; ch = null; try { supabase.removeChannel(c) } catch { /* already gone */ } } }
   try {
     ch = supabase
-      .channel(`wall:${CAMPUS}`, { config: { broadcast: { self: false } } })
+      .channel(`wall:${CAMPUS()}`, { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'moved' }, () => onMoved())
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') refused = 0
@@ -193,7 +194,7 @@ export function subscribeWall(onMoved) {
 // front door pins the wall's poster up off this and takes it down when the
 // campus closes. Anything short of an answer reads as closed.
 export async function wallPulse() {
-  const out = await call('wall_pulse', { p_campus: CAMPUS })
+  const out = await call('wall_pulse', { p_campus: CAMPUS() })
   if (!out || out.ok !== true) return { ok: false, error: out?.error || 'network', open: false, names: 0, letters: 0 }
   return {
     ok: true,
@@ -378,7 +379,7 @@ export async function write({ to, body, sealedLine, source, kind = 'handle', nam
         body: String(body || ''),
         sealedLine: sealedLine ? String(sealedLine) : null,
         source: source ? String(source) : null,
-        campus: CAMPUS,
+        campus: CAMPUS(),
         kind: kind === 'name' ? 'name' : 'handle',
         name: kind === 'name' ? String(name || '') : null,
         look: cleanLook(look),
@@ -451,12 +452,12 @@ export const heart = (id, on) =>
 export const joinWaitlist = (handle, source) =>
   call('wall_waitlist_add', {
     p_handle: String(handle || ''),
-    p_campus: CAMPUS,
+    p_campus: CAMPUS(),
     p_source: source ? String(source) : null,
   })
 
 export const logScan = (source) =>
-  call('wall_scan', { p_source: String(source || ''), p_campus: CAMPUS })
+  call('wall_scan', { p_source: String(source || ''), p_campus: CAMPUS() })
 
 // ── and how far they got ─────────────────────────────────────────────────────
 // The four steps between a scan and a letter (migration 0047). Nothing reads
@@ -470,7 +471,7 @@ export const logStep = (source, name) =>
   call('wall_card_step', {
     p_code: String(source || ''),
     p_step: String(name || ''),
-    p_campus: CAMPUS,
+    p_campus: CAMPUS(),
   })
 
 // ── coming down ──────────────────────────────────────────────────────────────

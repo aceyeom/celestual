@@ -15,12 +15,20 @@
 //                      have committed forty words and pressed the button. It
 //                      is the ONLY thing that stops a letter going up: the
 //                      composer shakes and says so, and nothing is sent.
-//   2  CLASSIFIER      one Haiku call per letter, against explicit categories,
-//                      and it runs AFTER the letter is on the wall. Not a
-//                      vibe check: a decision against a list somebody can be
-//                      held to. Only a letter it reads as severely malicious
-//                      comes down, and the writer is told on the wall.
-//   3  HUMAN           anything the classifier calls ambiguous stays up,
+//   2  THE LEXICON     a wide, cheap list of the words a letter with a
+//                      consequence in it nearly always carries: violence,
+//                      sex, a minor, a routine, exposure. A letter matching
+//                      none of them is passed without a model call, which is
+//                      most letters. Server side only.
+//   3  CLASSIFIER      one call to the cheapest model, for the letters the
+//                      lexicon flagged, against a short list of CONSEQUENCES
+//                      and never of tones: a threat, a way to find somebody,
+//                      sexual content, a minor, a private fact exposed, hate
+//                      by group, contact details. Heartbreak, anger, cruelty,
+//                      roasting and profanity are the wall, and they pass. It
+//                      runs AFTER the letter is on the wall; a reject takes
+//                      it down and the writer is told on the wall.
+//   4  HUMAN           anything the classifier calls ambiguous stays up,
 //                      flagged, and a person reads it at the desk while it
 //                      stands (migration 0050). Nobody is told which letters
 //                      those are.
@@ -51,7 +59,9 @@
 // Kept byte-identical in spirit to the Edge Function's list. A slur that is
 // caught in the browser and not on the server is a slur that ships; a slur
 // caught on the server and not in the browser is a person who wrote a letter
-// and was refused with no idea why.
+// and was refused with no idea why. Profanity is not on this list and never
+// will be: a slur against a group is a consequence for the person named, and
+// a swear word is a feeling.
 const SLURS = [
   'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'retard', 'retarded', 'kike',
   'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',

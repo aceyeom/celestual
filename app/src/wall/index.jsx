@@ -38,7 +38,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './wall.css'
-import { parse, href, isWallPath, SHEETS, BASE } from './router.js'
+import { parse, href, isWallPath, SHEETS } from './router.js'
+import { campus } from './campus.js'
 import { eclipticSVG, INK, CHALK } from './art.jsx'
 import { prefersReducedMotion } from './parts.jsx'
 import Ground from './ground.jsx'
@@ -173,7 +174,7 @@ export default function WallApp() {
     document.head.appendChild(icon)
 
     const title = document.title
-    document.title = 'celestual · berkeley · someone here wrote something they never sent'
+    document.title = campus().docTitle
     return () => {
       icon.remove()
       was.forEach((el) => document.head.appendChild(el))
@@ -340,4 +341,3 @@ export default function WallApp() {
   )
 }
 
-export { BASE }
