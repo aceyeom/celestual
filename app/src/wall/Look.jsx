@@ -6,17 +6,18 @@
 // and a look is its tokens moved: whatever is picked here is on the letter
 // before the finger has lifted, and what goes up is what was seen.
 //
-//   texture   eight papers, whole, each in its own tokens with the two
-//             letters in its face (looks.js THEMES). The big choice, and
-//             since the eight it is a choice of OBJECT and not of fill:
-//             the nokia brings a shell, a screen and a battery, the
-//             chalkboard brings a rail, the postcard divides its own back.
-//             Picking one resets the other two to what it brought
-//   color     the paper's own ground, and twenty-three grounds (TINTS),
-//             which with "as is" is four even rows of six
-//   type      twelve faces, each with its own name set in itself (FACES)
+//   texture   forty-two papers, whole, each in its own tokens with the two
+//             letters in its face and its own furniture drawn on it
+//             (looks.js THEMES). The big choice, and it is a choice of
+//             OBJECT and not of fill: the synthwave brings a sun and a
+//             grid, the corkboard brings a pin, the receipt is torn off
+//             the roll. Picking one resets the other two to what it brought
+//   color     the paper's own ground, and twenty-nine grounds (TINTS),
+//             which with "as is" is five even rows of six
+//   type      twenty-four faces, each with its own name set in itself
+//             (FACES)
 //
-// ── why it is one row and not three ─────────────────────────────────────────
+// ── why it is one rail and not three rows ───────────────────────────────────
 // It was three rows stacked under the card, each scrolling sideways, each
 // with a label over it and a name under every tile: three scrollbars, two
 // dozen captions in nine-pixel mono, and half the options past the right
@@ -28,15 +29,24 @@
 // A person choosing a paper for forty words is doing ONE of three things at
 // a time. So the panel asks which, on a rail (the composer's own switch,
 // parts.jsx `Segmented`, in tab clothes), and then gives that one thing the
-// whole width: a grid that fits without scrolling, tiles big enough to be
-// looked at, and one line under it naming what is chosen. Nothing is hidden
-// that is not one tap away, nothing scrolls sideways, and the panel's height
-// hardly moves between the three, so switching does not shove the card.
+// whole width: one window, tiles big enough to be looked at, and one line
+// under it naming what is chosen. Nothing scrolls sideways, and the panel's
+// height does not move between the three at all, so switching cannot shove
+// the card.
 //
-// The menu tripled and the shape did not have to change: eight is two rows
-// of four, twenty-four colour cells are four rows of six, twelve faces are
-// four rows of three. Every grid still fits the sheet's width, and the one
-// number that moved is the body's height, which is set once for all three.
+// ── and why it is a gallery ─────────────────────────────────────────────────
+// The menu was eight papers and fitted in two rows. It is forty-two and does
+// not, and the answer is not a longer panel: it is the window staying
+// exactly where it was and being WALKED, which is the model a lock screen's
+// own gallery uses. The three axes share one scroller of one height, and the
+// texture axis is grouped into the seven families (looks.js FAMILIES) with
+// the caption of each standing on the sheet while its six papers go past
+// under it. A writer who wants a machine goes to the machines.
+//
+// Every tile draws the real furniture at a third of the size (`Tile`, and
+// wall.css `--fx`), which is the other half of the same problem: with eight
+// papers a writer could afford to try them all, and with forty-two they
+// cannot, so the picker has to show the thing rather than stand for it.
 //
 // The words on the rail are what a writer is choosing — texture, color,
 // type — not what the row stores. The schema's three keys are `theme`,
@@ -51,7 +61,8 @@
 // tabs over a panel is walked anywhere else.
 
 import { useCallback, useId, useState } from 'react'
-import { THEMES, TINTS, FACES, themeOf, tokensOf, lookAttrs, normaliseLook } from './looks.js'
+import { THEMES, TINTS, FACES, FAMILY_THEMES, themeOf, tokensOf, lookAttrs, chromeOf, normaliseLook } from './looks.js'
+import { Furniture } from './parts.jsx'
 
 // The three, in the order they are asked: the paper first because it brings
 // the other two with it, then the two dials on it.
@@ -130,11 +141,24 @@ function Option({ value, on, name, pick, children }) {
   )
 }
 
-// a small paper: the look's tokens on a tile, with the two letters and a
-// few lines, drawn by the same rules as the card it stands for
+// A small paper: the look's tokens on a tile, with the two letters and a few
+// lines, drawn by the same rules as the card it stands for — and, since the
+// forty-two papers, THE SAME FURNITURE. It is the real `Furniture` element
+// under the real theme rules, at a third of the size (`--fx`, wall.css), so
+// the synthwave tile has the sun on it, the corkboard tile has the pin, and
+// the terminal tile has its window bar with the type starting under it.
+//
+// It was a rectangle in the paper's colour with a border round it for three
+// of the eight and nothing for the other five, which is a picker to guess
+// in: with eight papers a writer could afford to try them all, and with
+// forty-two they cannot.
 function Tile({ look }) {
   return (
     <span className="wl-look-tile wl-looked" style={tokensOf(look)} {...lookAttrs(look)} aria-hidden="true">
+      {/* the same two layers the card lays under its words, in the same
+          order: the theme's surface, then the theme's drawn parts */}
+      <span className="wl-paper-grain" />
+      <Furniture chrome={chromeOf(look)} />
       <span className="wl-look-tile-in">
         <span className="wl-look-aa">Aa</span>
         <span className="wl-look-bar" style={{ width: '92%' }} />
@@ -180,14 +204,27 @@ export function LookPanel({ look, onChange }) {
       <div className="wl-look-sheet">
       <div className="wl-look-body" role="tabpanel" id={ids.panel} aria-labelledby={ids.tab(axis)}>
         {axis === 'texture' && (
+          /* The seven families, down one scroller, each with its six papers
+             under a caption that stands on the sheet while they go past.
+             It is ONE radio group across all forty-two and not seven of
+             them: the arrows walk the whole menu in order, families and
+             all, because what is being chosen is a paper and the groups are
+             how it is found rather than what it is. */
           <div
-            className="wl-look-grid is-texture" role="radiogroup" aria-label="texture"
+            className="wl-look-fams" role="radiogroup" aria-label="texture"
             onKeyDown={(e) => arrows(e, THEMES.map((t) => t.slug), theme.slug, pickTheme)}
           >
-            {THEMES.map((t) => (
-              <Option key={t.slug} value={t.slug} on={t.slug === theme.slug} name={t.name} pick={pickTheme}>
-                <Tile look={{ theme: t.slug }} />
-              </Option>
+            {FAMILY_THEMES.map((f) => (
+              <section key={f.key} className="wl-look-fam">
+                <h3 className="wl-look-fam-h"><span>{f.name}</span><i>{f.note}</i></h3>
+                <div className="wl-look-grid is-texture">
+                  {f.themes.map((t) => (
+                    <Option key={t.slug} value={t.slug} on={t.slug === theme.slug} name={t.name} pick={pickTheme}>
+                      <Tile look={{ theme: t.slug }} />
+                    </Option>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}

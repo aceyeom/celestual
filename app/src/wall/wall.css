@@ -743,7 +743,7 @@ a.wl-lq { text-decoration: none; }
   /* the hairline round the card. It was `rgba(0,0,0,0.22)` written into the
      box-shadow below and never varied, which drew a hard line on a cream
      paper and nothing at all on a near black one; a look derives it off its
-     own ink (looks.js `--lk-edge`) so all eight papers read at one weight. */
+     own ink (looks.js `--lk-edge`) so all forty-two read at one weight. */
   --lk-edge: rgba(23, 21, 15, 0.22);
   --lk-frame: var(--lk-ground);
   position: relative;
@@ -763,6 +763,12 @@ a.wl-lq { text-decoration: none; }
      room a paper's own furniture needs under the marks, which today is the
      chalkboard's rail and nothing else. */
   --lk-pad-x: 20px; --lk-pad-t: 20px; --lk-pad-b: 18px; --lk-foot-clear: 0px;
+  /* the one number every piece of furniture below is written against.
+     The card draws its parts at full size; the picker's tile sets it to
+     a fraction and draws THE SAME PARTS smaller, which is how a writer
+     sees the synthwave's sun before the letter is on the wall rather
+     than a rectangle with a border round it (`.wl-look-tile`). */
+  --fx: 1;
   padding: var(--lk-pad-t) var(--lk-pad-x) var(--lk-pad-b);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
@@ -897,7 +903,7 @@ a.wl-lq { text-decoration: none; }
 .wl-paper-to:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; }
 
 /* ═══ THE LOOKS ════════════════════════════════════════════════════════════
-   looks.js, migration 0055, and the eight papers. A look sets the paper's
+   looks.js and migration 0055. A look sets the paper's
    tokens inline; what a token cannot say it says here, keyed on the theme's
    slug. `.wl-looked` is on a paper with a look, on a disc with one, and on
    the panel's tiles, so one rule draws the nokia screen on all three.
@@ -922,24 +928,27 @@ a.wl-lq { text-decoration: none; }
    texture drew it through a fractal noise field and came out as moiré. A
    theme names its own surface now and `none` is a real answer. */
 
-/* ── the grain, and it is the theme's ────────────────────────────────────── */
+/* ── the grain, and it is the theme's ──────────────────────────────────────
+   Keyed on `.wl-looked` and not on `.wl-paper`, so the picker's tile carries
+   the same surface the card does: a marble with no vein in it and a
+   corkboard with no cork are two beige rectangles in the grid. */
 /* nothing at all: the four papers that carry their own texture, or none */
-.wl-paper[data-grain="none"] .wl-paper-grain { display: none; }
+.wl-looked[data-grain="none"] .wl-paper-grain { display: none; }
 /* cotton has a tooth where wood pulp has a grain: coarser, slower, stronger */
-.wl-paper[data-grain="tooth"] .wl-paper-grain {
+.wl-looked[data-grain="tooth"] .wl-paper-grain {
   opacity: 0.26;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.34' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23t)'/%3E%3C/svg%3E");
   background-size: 96px 96px;
 }
 /* chalk dust, which is not a noise: two soft blooms where a hand has been */
-.wl-paper[data-grain="dust"] .wl-paper-grain {
+.wl-looked[data-grain="dust"] .wl-paper-grain {
   opacity: 1; mix-blend-mode: normal; background-image: none;
   background:
     radial-gradient(58% 42% at 26% 22%, var(--lk-ink-soft), transparent 72%),
     radial-gradient(46% 32% at 78% 70%, var(--lk-ink-faint), transparent 72%);
 }
 /* the pile of a velvet, which lies one way and catches the light across it */
-.wl-paper[data-grain="pile"] .wl-paper-grain {
+.wl-looked[data-grain="pile"] .wl-paper-grain {
   opacity: 1; mix-blend-mode: normal; background-image: none;
   background:
     repeating-linear-gradient(94deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px),
@@ -949,8 +958,8 @@ a.wl-lq { text-decoration: none; }
    fibre is laid as light instead, a little, and adds its texture the other
    way up. The two grains that are already drawn in the ink are exempt —
    they are correct on a dark ground because they are made of it. */
-.wl-paper[data-lit="dark"][data-grain="fibre"] .wl-paper-grain,
-.wl-paper[data-lit="dark"][data-grain="tooth"] .wl-paper-grain {
+.wl-looked[data-lit="dark"][data-grain="fibre"] .wl-paper-grain,
+.wl-looked[data-lit="dark"][data-grain="tooth"] .wl-paper-grain {
   mix-blend-mode: screen; opacity: 0.09;
 }
 
@@ -994,37 +1003,38 @@ a.wl-lq { text-decoration: none; }
    line is the paper's own highlight, so it comes out right on the velvet
    without a second declaration. */
 .wl-fx-deboss {
-  inset: 9px; border-radius: max(1px, calc(var(--lk-radius) - 7px));
+  inset: calc(9px * var(--fx)); border-radius: max(1px, calc(var(--lk-radius) - 7px));
   border: 1px solid var(--lk-ink-soft);
   box-shadow: inset 0 1px 0 var(--lk-paper-hi), 0 1px 0 var(--lk-paper-hi);
 }
 .wl-fx-deboss::after {
-  content: ''; position: absolute; inset: 3px; border-radius: inherit;
+  content: ''; position: absolute; inset: calc(3px * var(--fx)); border-radius: inherit;
   border: 1px solid var(--lk-ink-faint);
 }
 /* the chalkboard's rail: the wooden lip the chalk sits on */
 .wl-fx-rail {
-  left: 0; right: 0; bottom: 0; height: 11px;
+  left: 0; right: 0; bottom: 0; height: calc(11px * var(--fx));
   background: linear-gradient(180deg, #8A6238 0%, #6B4A2C 44%, #4E351E 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 /* the telegram's printed border: struck twice, in one pass, in the form's
    own ink — the second rule is the gap plus the line, cast outward */
 .wl-fx-form {
-  inset: 7px; border: 1px solid var(--lk-ink-mid); border-radius: 1px;
-  box-shadow: 0 0 0 2px var(--lk-paper), 0 0 0 3px var(--lk-ink-mid);
+  inset: calc(7px * var(--fx)); border: 1px solid var(--lk-ink-mid); border-radius: 1px;
+  box-shadow: 0 0 0 calc(2px * var(--fx)) var(--lk-paper), 0 0 0 calc(3px * var(--fx)) var(--lk-ink-mid);
 }
 /* the postcard's stamp box, where the sovereign's head goes */
 .wl-fx-stamp {
-  top: 13px; right: 13px; width: 33px; height: 40px;
-  border: 1.5px dashed var(--lk-ink-mid); border-radius: 2px;
+  top: calc(13px * var(--fx)); right: calc(13px * var(--fx));
+  width: calc(33px * var(--fx)); height: calc(40px * var(--fx));
+  border: calc(1.5px * var(--fx)) dashed var(--lk-ink-mid); border-radius: 2px;
   display: grid; place-items: center; color: var(--lk-ink);
 }
 .wl-fx-stamp .wl-mark-line { stroke: var(--lk-ink-mid); stroke-width: 5; fill: none; }
 .wl-fx-stamp .wl-mark-star { fill: var(--lk-ink-strong); }
 
 /* ── the nokia, which is a screen in a shell ─────────────────────────────── */
-.wl-paper[data-look="nokia"] { --lk-pad-x: 9px; --lk-pad-t: 9px; --lk-pad-b: 9px; }
+.wl-looked[data-look="nokia"] { --lk-pad-x: 9px; --lk-pad-t: 9px; --lk-pad-b: 9px; }
 .wl-paper-screen {
   border-radius: 5px; padding: 13px 13px 14px; overflow: hidden;
   background: var(--lk-ground); color: var(--lk-ink);
@@ -1100,7 +1110,7 @@ a.wl-lq { text-decoration: none; }
 .wl-paper[data-look="postcard"] > .wl-paper-foot { margin-top: 15px; }
 
 /* ── the polaroid, which is a picture with a chin ─────────────────────────── */
-.wl-paper[data-look="polaroid"] { --lk-pad-x: 11px; --lk-pad-t: 11px; --lk-pad-b: 0px; }
+.wl-looked[data-look="polaroid"] { --lk-pad-x: 11px; --lk-pad-t: 11px; --lk-pad-b: 0px; }
 .wl-paper-plate {
   padding: 16px 15px 17px; overflow: hidden;
   background: var(--lk-ground); color: var(--lk-ink);
@@ -1175,16 +1185,16 @@ a.wl-lq { text-decoration: none; }
   .wl-paper[data-look="postcard"] .wl-paper-head { padding-right: 52px; }
 }
 
-/* ── the rest of the eight, which only dress the card ─────────────────────── */
+/* ── the first eight, where the ones that only dress the card start ──────── */
 /* letterpress: the crest and the addressee are struck the way the deboss is */
-.wl-paper[data-look="letterpress"] { --lk-pad-x: 24px; --lk-pad-t: 25px; --lk-pad-b: 22px; }
+.wl-looked[data-look="letterpress"] { --lk-pad-x: 24px; --lk-pad-t: 25px; --lk-pad-b: 22px; }
 .wl-paper[data-look="letterpress"] .wl-paper-title,
 .wl-paper[data-look="letterpress"] .wl-paper-head { text-shadow: 0 1px 0 var(--lk-paper-hi); }
 .wl-paper[data-look="letterpress"] .wl-paper-head { letter-spacing: 0.2em; }
 /* telegram: the convention is upper case, and it is a DISPLAY choice — the
    words in the row are the words the writer typed, and the list at the
    keyboard and the classifier after it read exactly what they always read */
-.wl-paper[data-look="telegram"] { --lk-pad-x: 20px; --lk-pad-t: 21px; --lk-pad-b: 19px; }
+.wl-looked[data-look="telegram"] { --lk-pad-x: 20px; --lk-pad-t: 21px; --lk-pad-b: 19px; }
 .wl-paper[data-look="telegram"] .wl-paper-body { text-transform: uppercase; letter-spacing: 0.03em; }
 /* and the addressee is NOT uppercased with it. A handle is a lower-case
    identifier and uppercasing one turns it into a different string from the
@@ -1201,8 +1211,954 @@ a.wl-lq { text-decoration: none; }
   text-shadow: 0 0 1.5px var(--lk-ink-soft), 0 0 5px var(--lk-ink-faint);
 }
 /* velvet: the deboss wants a little more room than the plain card gives */
-.wl-paper[data-look="velvet"] { --lk-pad-x: 21px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
+.wl-looked[data-look="velvet"] { --lk-pad-x: 21px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
 .wl-paper[data-look="velvet"] .wl-paper-head { letter-spacing: 0.2em; }
+
+
+/* ═══ THE FORTY-TWO PAPERS ═════════════════════════════════════════════════
+   looks.js, and the seven families. Everything below is a theme rule keyed
+   on `data-look`, `data-grain` or `data-tint`, which is where design/DESIGN.md
+   2.5 puts a look's own colour, and every mark in it is a gradient, a border
+   or the wall's own constellation (docs/WALL-FEATURES.md, G7).
+
+   ── the four things a paper may move, and the four it may not ──
+   MAY:  its ground, its grain, its furniture, and the inset its content
+         takes (`--lk-pad-*`, so a bezel or a tab has somewhere to stand)
+   MAY NOT: the corner it is cut to, the order of its four slots, the size of
+         its type relative to the card, and WHERE THE READER'S THREE MARKS
+         ARE. The heart, the pen and the flag are positioned against the
+         card's edge and not against the paper's inset (`.wl-paper >
+         .wl-paper-foot`, above), so they stand in one place down all
+         forty-two.
+
+   ── the scale, and why the picker is honest ──
+   `--fx` is one number and it is what lets a paper's furniture be DRAWN in
+   the panel rather than hinted at. The card sets it to 1 and the tile in the
+   picker sets it to a fraction, and every inset, bar and disc below is
+   written `calc(Npx * var(--fx))` — so the tile draws the real furniture at
+   the real proportions instead of a rectangle with a border round it, and a
+   writer picking a synthwave can see the sun before the letter is on the
+   wall.
+
+   ── a colour, and what it is allowed to take ──
+   A handful of these papers are drawn in hues that ARE the paper: the
+   airmail's red and blue stripe, the aurora's curtain, the gilt's foil, the
+   vapor's pink to cyan. Every one of those is written TWICE — the ink
+   version first as the plain rule, the paper's own hues under
+   `:not([data-tint])` over the top — so the moment a writer picks a colour,
+   the card is drawn in that colour's ink and nothing on it is a hue they did
+   not choose. */
+
+/* ── the grains, and every one of them is the theme's ─────────────────────── */
+/* weather, not colour: three layers of the paper's own tone drifting over it */
+.wl-looked[data-grain="haze"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    linear-gradient(180deg, var(--lk-ink-faint) 0%, transparent 36%),
+    radial-gradient(118% 40% at 18% 74%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(92% 34% at 86% 28%, var(--lk-ink-faint), transparent 74%);
+}
+/* woven, and lit across the weave */
+.wl-looked[data-grain="sheen"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(62deg, var(--lk-ink-faint) 0 1px, transparent 1px 5px),
+    linear-gradient(118deg, transparent 16%, var(--lk-ink-soft) 44%, transparent 68%);
+}
+/* light through a petal: two blooms and a third coming up off the foot */
+.wl-looked[data-grain="petal"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    radial-gradient(44% 30% at 18% 76%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(38% 26% at 84% 20%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(62% 40% at 50% 106%, var(--lk-ink-faint), transparent 74%);
+}
+/* a star field, and it is DUST and not the wall's own: two tiled dots at two
+   strengths, on two prime spacings so the eye never finds the tile */
+.wl-looked[data-grain="star"] .wl-paper-grain {
+  opacity: 0.85; mix-blend-mode: normal;
+  background-image:
+    radial-gradient(circle, var(--lk-ink-mid) 0.6px, transparent 0.8px),
+    radial-gradient(circle, var(--lk-ink-soft) 0.5px, transparent 0.7px);
+  background-size: 47px 61px, 29px 37px;
+  background-position: 7px 11px, 19px 3px;
+}
+/* stone: three veins across the slab at three angles, and the light on it */
+.wl-looked[data-grain="vein"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    linear-gradient(104deg, transparent 27%, var(--lk-ink-soft) 29%, transparent 30.5%),
+    linear-gradient(97deg, transparent 51%, var(--lk-ink-faint) 53%, transparent 55%),
+    linear-gradient(113deg, transparent 65%, var(--lk-ink-soft) 66.5%, transparent 68%),
+    radial-gradient(120% 86% at 28% 16%, var(--lk-ink-faint), transparent 64%);
+}
+/* lacquer: one specular across the card and the light it is standing under */
+.wl-looked[data-grain="gloss"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    linear-gradient(126deg, transparent 28%, var(--lk-ink-soft) 43%, var(--lk-ink-faint) 53%, transparent 64%),
+    radial-gradient(88% 58% at 78% 98%, var(--lk-ink-faint), transparent 72%);
+}
+/* a dot screen, through the middle of the card and nowhere near its edges */
+.wl-looked[data-grain="halftone"] .wl-paper-grain {
+  opacity: 0.55; mix-blend-mode: normal;
+  background-image: radial-gradient(circle, var(--lk-ink-mid) 0.9px, transparent 1.1px);
+  background-size: 7px 7px;
+  -webkit-mask-image: linear-gradient(176deg, transparent 18%, #000 52%, transparent 90%);
+  mask-image: linear-gradient(176deg, transparent 18%, #000 52%, transparent 90%);
+}
+/* diffraction: the ruling that makes a foil iridescent rather than shiny */
+.wl-looked[data-grain="prism"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(74deg, var(--lk-ink-faint) 0 1.5px, transparent 1.5px 6px),
+    linear-gradient(128deg, var(--lk-ink-soft) 0%, transparent 34%, var(--lk-ink-soft) 68%, transparent 100%);
+}
+/* and the hues it is actually made of, when nobody has chosen one instead */
+.wl-looked[data-grain="prism"]:not([data-tint]) .wl-paper-grain {
+  background:
+    repeating-linear-gradient(74deg, rgba(255, 255, 255, 0.5) 0 1.5px, transparent 1.5px 6px),
+    conic-gradient(from 196deg at 34% 24%,
+      rgba(255, 138, 196, 0.5) 0deg, rgba(255, 214, 128, 0.42) 62deg,
+      rgba(148, 240, 190, 0.46) 130deg, rgba(126, 196, 255, 0.5) 206deg,
+      rgba(196, 150, 255, 0.46) 278deg, rgba(255, 138, 196, 0.5) 360deg);
+}
+/* a tube, scanned: the lines across it and the darkness at its corners. A
+   scanline is a line the beam did not reach, so it is BLACK and never the
+   ink — and on a light phosphor it has to come most of the way off, because
+   the same black that is a texture on a near black screen is a set of bars
+   across the words on a rose one. */
+.wl-looked[data-grain="scan"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0 1px, transparent 1px 3px),
+    radial-gradient(122% 92% at 50% 42%, transparent 48%, rgba(0, 0, 0, 0.46) 100%);
+}
+.wl-looked[data-lit="light"][data-grain="scan"] .wl-paper-grain {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.08) 0 1px, transparent 1px 3px),
+    radial-gradient(122% 92% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.13) 100%);
+}
+/* cork: granules, coarse and slow, with the board's own shading under them */
+.wl-looked[data-grain="cork"] .wl-paper-grain {
+  opacity: 0.42;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.28' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0.4'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23c)'/%3E%3C/svg%3E");
+  background-size: 118px 118px;
+  mix-blend-mode: multiply;
+}
+/* tissue: the quilting pressed into it, two ways, and nothing else */
+.wl-looked[data-grain="tissue"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(45deg, var(--lk-ink-faint) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(-45deg, var(--lk-ink-faint) 0 1px, transparent 1px 12px);
+}
+
+/* ── the textures the flat sheets carry ───────────────────────────────────── */
+/* `.wl-looked::before` is the one texture layer and it is on the card, the
+   picker's tile and the disc alike, which is how a grid drawn once is drawn
+   in all three. A paper whose texture belongs to a surface INSIDE the card
+   turns it off there and draws it on that surface instead, the way the nokia
+   already does. */
+/* the engineer's grid: a millimetre rule with every fifth line struck harder */
+.wl-looked[data-look="graph"]::before {
+  background-image:
+    repeating-linear-gradient(0deg, var(--lk-ink-soft) 0 1px, transparent 1px 25px),
+    repeating-linear-gradient(90deg, var(--lk-ink-soft) 0 1px, transparent 1px 25px),
+    repeating-linear-gradient(0deg, var(--lk-ink-faint) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, var(--lk-ink-faint) 0 1px, transparent 1px 5px);
+}
+/* the ledger's bands: the pale stripe that keeps an eye on the right line */
+.wl-looked[data-look="ledger"]::before {
+  background-image: repeating-linear-gradient(0deg, var(--lk-ink-soft) 0 24px, transparent 24px 48px);
+}
+/* the index card the scrapbook's page is: ruled, and nothing more */
+.wl-looked[data-look="scrapbook"]::before {
+  background-image: repeating-linear-gradient(0deg, transparent 0 23px, var(--lk-ink-soft) 23px 24px);
+}
+/* the washi's dotted grid, which is the paper a page is planned on */
+.wl-looked[data-look="washi"]::before {
+  background-image: radial-gradient(circle, var(--lk-ink-mid) 0.7px, transparent 0.9px);
+  background-size: 16px 16px;
+}
+/* cyanotype: the drawing grid, white on blue, at two strengths */
+.wl-looked[data-look="blueprint"]::before {
+  background-image:
+    repeating-linear-gradient(0deg, var(--lk-ink-soft) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(90deg, var(--lk-ink-soft) 0 1px, transparent 1px 40px),
+    repeating-linear-gradient(0deg, var(--lk-ink-faint) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, var(--lk-ink-faint) 0 1px, transparent 1px 8px);
+}
+/* the board: traces running off the corners at forty five degrees */
+.wl-looked[data-look="circuit"]::before {
+  background-image:
+    repeating-linear-gradient(45deg, var(--lk-ink-soft) 0 1px, transparent 1px 38px),
+    repeating-linear-gradient(-45deg, var(--lk-ink-faint) 0 1px, transparent 1px 54px);
+}
+/* the terminal's phosphor is on its SCREEN and not on its window frame */
+.wl-looked[data-look="terminal"]::before {
+  background-image: repeating-linear-gradient(0deg, var(--lk-ink-faint) 0 1px, transparent 1px 3px);
+}
+
+/* ── paper: the sheet, pressed, ruled and printed ─────────────────────────── */
+
+/* airmail. The barber stripe is a border painted with the stripe and masked
+   to the border box, which is the one way to rule a gradient round a corner
+   without a second element. The ink version is the rule; the red and the
+   blue are over the top of it and only while nobody has chosen a colour. */
+.wl-looked[data-look="airmail"] { --lk-pad-x: 26px; --lk-pad-t: 26px; --lk-pad-b: 24px; }
+.wl-fx-airmail {
+  inset: 0; border-radius: inherit;
+  border: calc(7px * var(--fx)) solid transparent;
+  background:
+    repeating-linear-gradient(45deg,
+      var(--lk-ink-mid) 0 calc(9px * var(--fx)),
+      transparent calc(9px * var(--fx)) calc(18px * var(--fx)),
+      var(--lk-ink-soft) calc(18px * var(--fx)) calc(27px * var(--fx)),
+      transparent calc(27px * var(--fx)) calc(36px * var(--fx)));
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.wl-paper[data-look="airmail"]:not([data-tint]) .wl-fx-airmail,
+.wl-looked[data-look="airmail"]:not([data-tint]) .wl-fx-airmail {
+  background:
+    repeating-linear-gradient(45deg,
+      #B8372C 0 calc(9px * var(--fx)),
+      transparent calc(9px * var(--fx)) calc(18px * var(--fx)),
+      #1E4C99 calc(18px * var(--fx)) calc(27px * var(--fx)),
+      transparent calc(27px * var(--fx)) calc(36px * var(--fx)));
+}
+/* and the hairline inside the stripe, which is what a light sheet has
+   instead of an edge */
+.wl-fx-airmail::after {
+  content: ''; position: absolute; inset: 0;
+  border-radius: max(1px, calc(var(--lk-radius) - 7px));
+  border: 1px solid var(--lk-ink-faint);
+}
+.wl-paper[data-look="airmail"] .wl-paper-head { letter-spacing: 0.18em; }
+
+/* ledger. The double red margin down the left of the bands, and the columns'
+   own rule across the head. The margin sits inside the card's edge and the
+   words start to the right of it, which is what the wider inset is for. */
+.wl-looked[data-look="ledger"] { --lk-pad-x: 26px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
+.wl-fx-ledger { inset: 0; }
+.wl-fx-ledger::before {
+  content: ''; position: absolute; top: 0; bottom: 0;
+  left: calc(13px * var(--fx)); width: calc(4px * var(--fx));
+  border-left: 1px solid var(--lk-ink-mid); border-right: 1px solid var(--lk-ink-mid);
+}
+.wl-fx-ledger::after {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(9px * var(--fx));
+  height: calc(4px * var(--fx));
+  border-top: 1px solid var(--lk-ink-mid); border-bottom: 1px solid var(--lk-ink-soft);
+}
+.wl-paper[data-look="ledger"]:not([data-tint]) .wl-fx-ledger::before {
+  border-left-color: rgba(178, 62, 50, 0.6); border-right-color: rgba(178, 62, 50, 0.6);
+}
+
+/* graph. A ruler down two edges of the drawing: ticks every five millimetres
+   on the grid the sheet is already ruled to, struck a little harder every
+   fifth one — which is the whole of what an engineer's margin is. */
+.wl-looked[data-look="graph"] { --lk-pad-x: 24px; --lk-pad-t: 24px; --lk-pad-b: 21px; }
+.wl-fx-graph {
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, var(--lk-ink-mid) 0 1px, transparent 1px 25px),
+    repeating-linear-gradient(0deg, var(--lk-ink-mid) 0 1px, transparent 1px 25px);
+  background-size: 100% calc(7px * var(--fx)), calc(7px * var(--fx)) 100%;
+  background-position: 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat;
+}
+.wl-fx-graph::after {
+  content: ''; position: absolute; inset: calc(7px * var(--fx));
+  border-top: 1px solid var(--lk-ink-soft); border-left: 1px solid var(--lk-ink-soft);
+}
+
+/* ── post: carried by hand, and handled ──────────────────────────────────── */
+
+/* scrapbook. Two strips of tape over the top corners, translucent, and the
+   only thing on any of the forty-two that is not square to the card. They
+   are clipped by the card's own corner, which is what makes them read as
+   stuck OVER it rather than printed on it. */
+.wl-looked[data-look="scrapbook"] { --lk-pad-x: 22px; --lk-pad-t: 26px; --lk-pad-b: 20px; }
+.wl-fx-tape {
+  inset: 0;
+  background: linear-gradient(0deg, var(--lk-ink-soft) 0, transparent calc(9px * var(--fx)));
+}
+.wl-fx-tape::before, .wl-fx-tape::after {
+  content: ''; position: absolute; top: calc(-7px * var(--fx));
+  width: calc(66px * var(--fx)); height: calc(21px * var(--fx));
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px calc(5px * var(--fx))),
+    linear-gradient(170deg, rgba(255, 255, 255, 0.72), rgba(222, 214, 198, 0.5));
+  box-shadow: inset 0 0 0 1px var(--lk-ink-soft), 0 calc(2px * var(--fx)) calc(5px * var(--fx)) var(--lk-ink-soft);
+}
+.wl-fx-tape::before { left: calc(-16px * var(--fx)); transform: rotate(-38deg); }
+.wl-fx-tape::after { right: calc(-16px * var(--fx)); transform: rotate(38deg); }
+/* on a dark sheet a white tape is a white tape, and on this one it would be
+   the brightest thing on the card, so it is struck in the paper's light */
+.wl-paper[data-lit="dark"][data-look="scrapbook"] .wl-fx-tape::before,
+.wl-paper[data-lit="dark"][data-look="scrapbook"] .wl-fx-tape::after {
+  background: linear-gradient(180deg, var(--lk-ink-soft), var(--lk-ink-faint));
+}
+
+/* washi. One printed tape across the head of the card, a degree and a half
+   off square, with its own stripe on it. The inset above it is the room it
+   needs, so the dateline starts under the tape and not behind it. */
+.wl-looked[data-look="washi"] { --lk-pad-x: 22px; --lk-pad-t: 46px; --lk-pad-b: 20px; }
+.wl-fx-washi {
+  top: calc(13px * var(--fx)); left: calc(-12px * var(--fx)); right: calc(-12px * var(--fx));
+  height: calc(23px * var(--fx));
+  transform: rotate(-1.4deg);
+  background:
+    repeating-linear-gradient(118deg,
+      var(--lk-ink-mid) 0 calc(3px * var(--fx)),
+      transparent calc(3px * var(--fx)) calc(11px * var(--fx))),
+    var(--lk-ink-soft);
+  box-shadow: 0 1px 2px var(--lk-ink-soft);
+}
+.wl-fx-washi::before, .wl-fx-washi::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 1px; background: var(--lk-ink-faint);
+}
+.wl-fx-washi::before { top: 0; }
+.wl-fx-washi::after { bottom: 0; }
+
+/* sticker. The white is the CARD and the colour is the field cut into it, so
+   the field is furniture with the card's inset opened out around it. The
+   marks at the foot stand on the field, twenty pixels off the card's edge
+   like every other paper's, which is eleven pixels inside the die cut. */
+.wl-looked[data-look="sticker"] { --lk-pad-x: 28px; --lk-pad-t: 27px; --lk-pad-b: 25px; }
+.wl-fx-diecut {
+  inset: calc(9px * var(--fx)); border-radius: max(2px, calc(var(--lk-radius) - 7px));
+  background: var(--lk-ground);
+  box-shadow: inset 0 0 0 1px var(--lk-edge), 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.wl-fx-diecut::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(126deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.06) 34%, transparent 56%);
+}
+.wl-paper[data-look="sticker"] .wl-paper-head { letter-spacing: 0.16em; }
+
+/* manila. The tab is cut INTO the top edge rather than standing off it,
+   because a paper is the shape of a letter before it is the shape of a
+   folder, and the two prongs of the fastener are beside it. */
+.wl-looked[data-look="manila"] { --lk-pad-x: 22px; --lk-pad-t: 40px; --lk-pad-b: 20px; }
+.wl-fx-folder {
+  inset: 0;
+  background:
+    radial-gradient(circle at calc(100% - 30px * var(--fx)) calc(13px * var(--fx)), var(--lk-ink-mid) 0 calc(2.5px * var(--fx)), transparent calc(3px * var(--fx))),
+    radial-gradient(circle at calc(100% - 20px * var(--fx)) calc(13px * var(--fx)), var(--lk-ink-mid) 0 calc(2.5px * var(--fx)), transparent calc(3px * var(--fx)));
+}
+.wl-fx-folder::before {
+  content: ''; position: absolute; top: 0; left: calc(20px * var(--fx));
+  width: calc(116px * var(--fx)); height: calc(25px * var(--fx));
+  background: var(--lk-ink-faint);
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+}
+.wl-fx-folder::after {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(25px * var(--fx));
+  height: 1px; background: var(--lk-rule);
+}
+
+/* ── ether: light, with no hard edge in it ────────────────────────────────── */
+
+/* aurora. The curtain comes off the top of the card and falls about half way
+   down it, striated across the fall. The greens and the violets are the two
+   hues this paper IS, so they are over the ink version and only while nobody
+   has chosen a colour instead. */
+.wl-fx-veil {
+  inset: 0; border-radius: inherit;
+  background:
+    radial-gradient(62% 56% at 24% -8%, var(--lk-ink-mid), transparent 70%),
+    radial-gradient(50% 48% at 70% -12%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(84% 32% at 50% 2%, var(--lk-ink-faint), transparent 78%);
+}
+.wl-paper[data-look="aurora"]:not([data-tint]) .wl-fx-veil,
+.wl-looked[data-look="aurora"]:not([data-tint]) .wl-fx-veil {
+  background:
+    radial-gradient(62% 56% at 24% -8%, rgba(86, 240, 186, 0.36), transparent 70%),
+    radial-gradient(50% 48% at 70% -12%, rgba(152, 124, 255, 0.34), transparent 72%),
+    radial-gradient(84% 32% at 50% 2%, rgba(120, 226, 226, 0.2), transparent 78%);
+}
+.wl-fx-veil::after {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(96deg, var(--lk-ink-faint) 0 2px, transparent 2px 14px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 56%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 56%);
+}
+
+/* mist. Two bands of the paper's own tone drifting across it, and a head
+   rule that fades out at both ends, because nothing on this paper has an
+   end. `border-image` is the only way to fade a border, and it is worth one
+   declaration: a hard hairline on this card was the one edge in it. */
+.wl-fx-fog {
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 22%, var(--lk-ink-soft) 33%, transparent 45%),
+    linear-gradient(180deg, transparent 56%, var(--lk-ink-mid) 66%, transparent 79%);
+}
+.wl-paper[data-look="mist"] .wl-paper-head,
+.wl-paper[data-look="mist"] .wl-paper-foot {
+  border-image: linear-gradient(90deg, transparent, var(--lk-rule) 24%, var(--lk-rule) 76%, transparent) 1;
+}
+
+/* dawn. The sun still under the line: a half disc on the horizon, the glow
+   it is throwing, and a hairline where the two meet. */
+.wl-fx-sun {
+  inset: 0; border-radius: inherit;
+  background: radial-gradient(46% 28% at 28% 86%, var(--lk-ink-soft), transparent 74%);
+}
+.wl-fx-sun::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: calc(54px * var(--fx)); height: 1px;
+  background: linear-gradient(90deg, transparent, var(--lk-ink-mid) 22%, var(--lk-ink-mid) 78%, transparent);
+}
+.wl-fx-sun::after {
+  content: ''; position: absolute; left: 22%; bottom: calc(54px * var(--fx));
+  width: calc(62px * var(--fx)); height: calc(31px * var(--fx));
+  border-radius: calc(62px * var(--fx)) calc(62px * var(--fx)) 0 0;
+  background: linear-gradient(180deg, var(--lk-ink-mid), var(--lk-ink-soft));
+}
+.wl-paper[data-look="dawn"]:not([data-tint]) .wl-fx-sun::after,
+.wl-looked[data-look="dawn"]:not([data-tint]) .wl-fx-sun::after {
+  background: linear-gradient(180deg, rgba(255, 186, 120, 0.85), rgba(255, 214, 170, 0.3));
+}
+.wl-paper[data-look="dawn"]:not([data-tint]) .wl-fx-sun,
+.wl-looked[data-look="dawn"]:not([data-tint]) .wl-fx-sun {
+  background: radial-gradient(48% 30% at 28% 86%, rgba(255, 198, 140, 0.44), transparent 74%);
+}
+
+/* silk. Two seams down the card where the panels are joined, each a dark
+   hairline with a lit one beside it, which is what a fold in a woven cloth
+   does to the light. */
+.wl-fx-seam { inset: calc(10px * var(--fx)) 0; }
+.wl-fx-seam::before, .wl-fx-seam::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: calc(2px * var(--fx));
+  border-left: 1px solid var(--lk-ink-faint); border-right: 1px solid var(--lk-paper-hi);
+}
+.wl-fx-seam::before { left: 31%; }
+.wl-fx-seam::after { left: 69%; }
+
+/* bloom. One wide ring low on the card with the light standing off it, and
+   nothing else: the softest paper in the menu has the fewest parts. */
+.wl-fx-halo {
+  left: 50%; bottom: calc(-62px * var(--fx));
+  width: calc(238px * var(--fx)); height: calc(238px * var(--fx));
+  transform: translateX(-50%); border-radius: 50%;
+  border: 1px solid var(--lk-ink-soft);
+  box-shadow: 0 0 0 calc(15px * var(--fx)) var(--lk-ink-faint);
+}
+
+/* nebula. An orbit off the top corner with a second ring inside it and one
+   body on the line, lit. Two circles and a dot, which is the whole drawing. */
+.wl-fx-orbit {
+  right: calc(-46px * var(--fx)); top: calc(-50px * var(--fx));
+  width: calc(172px * var(--fx)); height: calc(172px * var(--fx));
+  border-radius: 50%; border: 1px solid var(--lk-ink-mid);
+}
+.wl-fx-orbit::before {
+  content: ''; position: absolute; inset: calc(24px * var(--fx));
+  border-radius: 50%; border: 1px solid var(--lk-ink-soft);
+}
+.wl-fx-orbit::after {
+  content: ''; position: absolute; left: calc(12px * var(--fx)); top: 48%;
+  width: calc(9px * var(--fx)); height: calc(9px * var(--fx)); border-radius: 50%;
+  background: var(--lk-ink);
+  box-shadow: 0 0 calc(11px * var(--fx)) var(--lk-ink-mid);
+}
+
+/* ── luxe: the expensive object ───────────────────────────────────────────── */
+
+/* gilt. A double rule struck inside the edge, and the FOIL, which is the one
+   place in the product a metal is drawn: the addressee's ink is a gradient
+   ACROSS the type rather than a colour under it, which is the difference
+   between a foil and a yellow. `gold` came off the menu in September for
+   spending a saturated hue on a hairline frame; this is the same idea done
+   as a material, and it goes the moment a colour is chosen. */
+.wl-looked[data-look="gilt"] { --lk-pad-x: 26px; --lk-pad-t: 26px; --lk-pad-b: 24px; }
+.wl-fx-gild {
+  inset: calc(10px * var(--fx));
+  border: 1px solid var(--lk-ink-mid);
+  border-radius: max(1px, calc(var(--lk-radius) - 8px));
+}
+.wl-fx-gild::after {
+  content: ''; position: absolute; inset: calc(4px * var(--fx));
+  border: 1px solid var(--lk-ink-faint); border-radius: inherit;
+}
+.wl-paper[data-look="gilt"]:not([data-tint]) .wl-paper-title {
+  background: linear-gradient(104deg, #8A6A26 0%, #F2DCA4 20%, #CBA254 40%, #FFF3CC 56%, #B98E3C 76%, #E9CD84 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.wl-paper[data-look="gilt"] .wl-paper-head { letter-spacing: 0.24em; }
+
+/* atelier. Four rules and nothing else: a hairline frame, and the masthead
+   bar at the head of it, thick over thin. It is the only paper here whose
+   whole design is the arrangement of its rules, and the widest tracking on
+   the wall is part of that. */
+.wl-looked[data-look="atelier"] { --lk-pad-x: 28px; --lk-pad-t: 46px; --lk-pad-b: 26px; }
+.wl-fx-masthead {
+  inset: calc(11px * var(--fx));
+  border: 1px solid var(--lk-ink-soft);
+}
+.wl-fx-masthead::before {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(9px * var(--fx));
+  height: calc(3px * var(--fx)); background: var(--lk-ink);
+}
+.wl-fx-masthead::after {
+  content: ''; position: absolute; left: 0; right: 0; top: calc(16px * var(--fx));
+  height: 1px; background: var(--lk-ink);
+}
+.wl-paper[data-look="atelier"] .wl-paper-head { letter-spacing: 0.3em; }
+.wl-paper[data-look="atelier"] .wl-paper-title { letter-spacing: 0.06em; }
+
+/* marble. The letter cut into the slab rather than laid on it: two broken
+   rules meeting at opposite corners, each a dark line with the stone's own
+   highlight under it, which is a chisel and not a print. */
+.wl-looked[data-look="marble"] { --lk-pad-x: 26px; --lk-pad-t: 26px; --lk-pad-b: 24px; }
+.wl-fx-chisel { inset: calc(13px * var(--fx)); }
+.wl-fx-chisel::before, .wl-fx-chisel::after {
+  content: ''; position: absolute; width: 38%; height: 34%;
+}
+.wl-fx-chisel::before {
+  left: 0; top: 0;
+  border-top: 1px solid var(--lk-ink-mid); border-left: 1px solid var(--lk-ink-mid);
+  box-shadow: inset 1px 1px 0 var(--lk-paper-hi);
+}
+.wl-fx-chisel::after {
+  right: 0; bottom: 0;
+  border-bottom: 1px solid var(--lk-ink-mid); border-right: 1px solid var(--lk-ink-mid);
+  box-shadow: inset -1px -1px 0 var(--lk-paper-hi);
+}
+.wl-paper[data-look="marble"] .wl-paper-head { letter-spacing: 0.22em; }
+
+/* lacquer. One specular across the card, the light it is standing under
+   along its top edge, and a hairline inside the frame. The gloss is the
+   object, so the grain does the work and the furniture only frames it. */
+.wl-fx-sheen {
+  inset: 0; border-radius: inherit;
+  background: linear-gradient(106deg, transparent 34%, rgba(255, 255, 255, 0.11) 45%, rgba(255, 255, 255, 0.03) 52%, transparent 62%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.wl-fx-sheen::after {
+  content: ''; position: absolute; inset: calc(10px * var(--fx));
+  border: 1px solid var(--lk-ink-faint);
+  border-radius: max(1px, calc(var(--lk-radius) - 8px));
+}
+
+/* parchment. Aged at the edges, where it has been held, and sealed at the
+   foot. The seal is a disc of the paper's own ink with the wall's mark
+   PRESSED into it — the only place in the product the constellation is
+   stamped rather than struck, and it is the paper showing through the wax. */
+.wl-looked[data-look="parchment"]::before {
+  background: radial-gradient(114% 86% at 50% 44%, transparent 44%, var(--lk-ink-soft) 76%, var(--lk-ink-mid) 100%);
+}
+/* It stands in the corner the postcard's stamp box stands in, and for the
+   same reason: that corner is where this card puts a mark ON the document,
+   and a seal anywhere else on a sheet this size lands on the words. */
+.wl-looked[data-look="parchment"] { --lk-pad-t: 24px; }
+.wl-paper[data-look="parchment"] .wl-paper-head { padding-right: 54px; }
+.wl-fx-seal {
+  right: calc(14px * var(--fx)); top: calc(12px * var(--fx));
+  width: calc(42px * var(--fx)); height: calc(42px * var(--fx)); border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(66% 66% at 34% 26%, var(--lk-ink-2), var(--lk-ink));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.wl-fx-seal .wl-mark-line { stroke: var(--lk-paper); stroke-width: 5; fill: none; opacity: 0.55; }
+.wl-fx-seal .wl-mark-star { fill: var(--lk-paper); opacity: 0.78; }
+
+/* ── neon: lit from behind ────────────────────────────────────────────────── */
+
+/* synthwave. Three parts and they are one picture: the grid running to a
+   vanishing point below the card, the horizon where it ends, and the sun
+   standing on that line with the slats cut out of its lower half. The slats
+   are a MASK and not a fill, because a stripe painted over the sun in the
+   sky's colour is the wrong colour everywhere the sky is a gradient. */
+.wl-fx-horizon {
+  inset: 0; border-radius: inherit;
+  background:
+    linear-gradient(0deg, transparent 0 calc(68px * var(--fx)), var(--lk-ink-mid) calc(68px * var(--fx)) calc(69px * var(--fx)), transparent calc(69px * var(--fx))),
+    radial-gradient(58% 24% at 68% calc(100% - 68px * var(--fx)), var(--lk-ink-soft), transparent 72%);
+}
+.wl-fx-horizon::before {
+  content: ''; position: absolute; left: 68%; transform: translateX(-50%);
+  bottom: calc(36px * var(--fx));
+  width: calc(78px * var(--fx)); height: calc(78px * var(--fx)); border-radius: 50%;
+  opacity: 0.56;
+  background: linear-gradient(180deg, var(--lk-ink) 0%, var(--lk-ink-strong) 58%, var(--lk-ink-mid) 100%);
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 0 30%, transparent 30%),
+    repeating-linear-gradient(180deg, #000 0 calc(5px * var(--fx)), transparent calc(5px * var(--fx)) calc(8px * var(--fx)));
+  mask-image:
+    linear-gradient(180deg, #000 0 30%, transparent 30%),
+    repeating-linear-gradient(180deg, #000 0 calc(5px * var(--fx)), transparent calc(5px * var(--fx)) calc(8px * var(--fx)));
+  -webkit-mask-composite: source-over; mask-composite: add;
+}
+.wl-paper[data-look="synthwave"]:not([data-tint]) .wl-fx-horizon::before,
+.wl-looked[data-look="synthwave"]:not([data-tint]) .wl-fx-horizon::before {
+  background: linear-gradient(180deg, #FFE27A 0%, #FF7BC4 52%, #C13BE0 100%);
+}
+.wl-fx-horizon::after {
+  content: ''; position: absolute; left: -34%; right: -34%; bottom: 0;
+  height: calc(68px * var(--fx));
+  background:
+    repeating-linear-gradient(90deg, var(--lk-ink-mid) 0 1px, transparent 1px calc(24px * var(--fx))),
+    repeating-linear-gradient(0deg, var(--lk-ink-mid) 0 1px, transparent 1px calc(18px * var(--fx)));
+  transform: perspective(90px) rotateX(58deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(0deg, #000 26%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 26%, transparent 100%);
+}
+.wl-paper[data-look="synthwave"] .wl-paper-head { letter-spacing: 0.2em; }
+.wl-paper[data-look="synthwave"] .wl-paper-title {
+  text-shadow: 0 0 calc(12px * var(--fx)) var(--lk-ink-mid);
+}
+
+/* arcade. The screen is recessed into the moulding, bowed at its corners the
+   way a tube is, and scanned. The shell is the FRAME, so a chosen colour is
+   the phosphor and never the plastic. */
+.wl-looked[data-look="arcade"] { --lk-pad-x: 28px; --lk-pad-t: 27px; --lk-pad-b: 25px; }
+.wl-fx-bezel {
+  inset: calc(10px * var(--fx)); border-radius: calc(10px * var(--fx));
+  background: var(--lk-ground);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 3px 13px rgba(0, 0, 0, 0.52),
+    0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.wl-fx-bezel::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0 1px, transparent 1px 3px),
+    radial-gradient(122% 96% at 50% 42%, transparent 46%, rgba(0, 0, 0, 0.5) 100%);
+}
+/* and the same on a light phosphor, for the reason the grain gives above */
+.wl-paper[data-lit="light"][data-look="arcade"] .wl-fx-bezel::after,
+.wl-looked[data-lit="light"][data-look="arcade"] .wl-fx-bezel::after {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.08) 0 1px, transparent 1px 3px),
+    radial-gradient(122% 96% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.16) 100%);
+}
+.wl-paper[data-look="arcade"] .wl-paper-head { letter-spacing: 0.16em; }
+
+/* vapor. The floor under it, in perspective, and the glow along the line
+   where the floor starts. The pink and the cyan are in the ground, so this
+   is the only part that has to be drawn. */
+.wl-fx-checker {
+  left: 0; right: 0; bottom: 0; height: calc(80px * var(--fx));
+  background:
+    conic-gradient(var(--lk-ink-soft) 0 25%, transparent 0 50%, var(--lk-ink-soft) 0 75%, transparent 0);
+  background-size: calc(26px * var(--fx)) calc(26px * var(--fx));
+  transform: perspective(84px) rotateX(56deg); transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(0deg, #000 22%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 22%, transparent 100%);
+}
+.wl-paper[data-look="vapor"] .wl-paper-head { letter-spacing: 0.22em; }
+
+/* tube. The sign itself: one tube bent round the card, lit at four strengths
+   of its own ink, with the glow thrown on the wall behind it and the type
+   lit the same way. There is no second colour anywhere on it — the light IS
+   the ink, which is why a tinted tube glows in whatever was picked. */
+.wl-looked[data-look="tube"] { --lk-pad-x: 30px; --lk-pad-t: 30px; --lk-pad-b: 28px; }
+.wl-fx-tube {
+  inset: calc(13px * var(--fx));
+  border-radius: max(2px, calc(var(--lk-radius) - 10px));
+  border: calc(2px * var(--fx)) solid var(--lk-ink);
+  box-shadow:
+    0 0 calc(5px * var(--fx)) var(--lk-ink-strong),
+    0 0 calc(15px * var(--fx)) var(--lk-ink-mid),
+    0 0 calc(36px * var(--fx)) var(--lk-ink-soft),
+    inset 0 0 calc(13px * var(--fx)) var(--lk-ink-mid);
+}
+.wl-paper[data-look="tube"] .wl-paper-title,
+.wl-paper[data-look="tube"] .wl-paper-body {
+  text-shadow: 0 0 calc(4px * var(--fx)) var(--lk-ink-mid), 0 0 calc(15px * var(--fx)) var(--lk-ink-soft);
+}
+
+/* hologram. The iridescence is the grain; this is the seal stuck on it — a
+   ring in the corner with the sweep going round inside it, which is the part
+   of a hologram that tells you it is one. */
+.wl-fx-foil {
+  inset: calc(9px * var(--fx));
+  border-radius: max(1px, calc(var(--lk-radius) - 7px));
+  border: 1px solid var(--lk-ink-soft);
+  box-shadow: inset 0 0 0 calc(3px * var(--fx)) var(--lk-ink-faint);
+}
+.wl-fx-foil::after {
+  content: ''; position: absolute; right: calc(11px * var(--fx)); top: calc(11px * var(--fx));
+  width: calc(26px * var(--fx)); height: calc(26px * var(--fx)); border-radius: 50%;
+  border: 1px solid var(--lk-ink-mid);
+  background: conic-gradient(from 140deg, var(--lk-ink-soft), var(--lk-ink-mid) 96deg, var(--lk-ink-faint) 190deg, var(--lk-ink-mid) 286deg, var(--lk-ink-soft));
+}
+
+/* glitch. Three bands where the picture has slipped, and the two channels a
+   pixel and a half apart on the addressee. The channels are the paper's own
+   ink displaced once a colour is chosen, and the cyan and the magenta while
+   nobody has: a channel split with one channel in it is a blur. */
+.wl-fx-split {
+  inset: 0; border-radius: inherit;
+  background:
+    linear-gradient(0deg, transparent 0 21%, var(--lk-ink-soft) 21% 24.5%, transparent 24.5%),
+    linear-gradient(0deg, transparent 0 53%, var(--lk-ink-mid) 53% 55.5%, transparent 55.5%),
+    linear-gradient(0deg, transparent 0 77%, var(--lk-ink-soft) 77% 79%, transparent 79%);
+}
+/* and one slice of the card bodily displaced, which is the thing a band
+   over the top of everything only suggests */
+.wl-fx-split::after {
+  content: ''; position: absolute; left: calc(-11px * var(--fx)); right: calc(11px * var(--fx));
+  top: 36%; height: calc(14px * var(--fx));
+  background: var(--lk-ink-soft);
+  box-shadow: 0 calc(-1px * var(--fx)) 0 var(--lk-ink-mid), 0 calc(1px * var(--fx)) 0 var(--lk-ink-faint);
+}
+.wl-paper[data-look="glitch"] .wl-paper-title {
+  text-shadow: calc(-1.5px * var(--fx)) 0 var(--lk-ink-mid), calc(1.5px * var(--fx)) 0 var(--lk-ink-soft);
+}
+.wl-paper[data-look="glitch"]:not([data-tint]) .wl-paper-title {
+  text-shadow: calc(-1.6px * var(--fx)) 0 rgba(255, 58, 122, 0.72), calc(1.6px * var(--fx)) 0 rgba(56, 224, 255, 0.66);
+}
+.wl-paper[data-look="glitch"] .wl-paper-head { letter-spacing: 0.2em; }
+
+/* ── cyber: the machine ───────────────────────────────────────────────────── */
+
+/* terminal. A window on something: the bar across the head with its three
+   dots and its one box, the phosphor scanned underneath, and the widest
+   inset at the top of any paper here because the bar has to stand somewhere. */
+.wl-looked[data-look="terminal"] { --lk-pad-x: 18px; --lk-pad-t: 44px; --lk-pad-b: 18px; }
+.wl-fx-console {
+  inset: 0; border-radius: inherit;
+  background:
+    linear-gradient(180deg, var(--lk-lift) 0 calc(27px * var(--fx)), transparent calc(27px * var(--fx))),
+    linear-gradient(180deg, transparent 0 calc(27px * var(--fx)), var(--lk-ink-mid) calc(27px * var(--fx)) calc(28px * var(--fx)), transparent calc(28px * var(--fx)));
+}
+.wl-fx-console::before {
+  content: ''; position: absolute; left: calc(12px * var(--fx)); top: calc(9px * var(--fx));
+  width: calc(40px * var(--fx)); height: calc(9px * var(--fx));
+  background:
+    radial-gradient(circle at calc(4.5px * var(--fx)) 50%, var(--lk-ink-mid) 0 calc(4px * var(--fx)), transparent calc(4.4px * var(--fx))),
+    radial-gradient(circle at calc(20px * var(--fx)) 50%, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.4px * var(--fx))),
+    radial-gradient(circle at calc(35.5px * var(--fx)) 50%, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.4px * var(--fx)));
+}
+.wl-fx-console::after {
+  content: ''; position: absolute; right: calc(12px * var(--fx)); top: calc(9px * var(--fx));
+  width: calc(9px * var(--fx)); height: calc(9px * var(--fx));
+  border: 1px solid var(--lk-ink-mid);
+}
+.wl-paper[data-look="terminal"] .wl-paper-head { letter-spacing: 0.14em; }
+
+/* circuit. The traces are the texture; these are the vias where they turn,
+   the silkscreen rule round the board, and the edge connector along the
+   bottom of it. Copper is the paper's ink here and not a hue of its own, so
+   a tinted board is etched in whatever was picked. */
+.wl-looked[data-look="circuit"] { --lk-pad-x: 22px; --lk-pad-t: 22px; --lk-pad-b: 22px; }
+.wl-fx-traces {
+  inset: calc(8px * var(--fx));
+  border: 1px solid var(--lk-ink-soft);
+  border-radius: max(1px, calc(var(--lk-radius) - 6px));
+}
+.wl-fx-traces::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, transparent 0 calc(2px * var(--fx)), var(--lk-ink-mid) calc(2px * var(--fx)) calc(3px * var(--fx)), transparent calc(3.4px * var(--fx)));
+  background-size: calc(78px * var(--fx)) calc(66px * var(--fx));
+  background-position: calc(17px * var(--fx)) calc(13px * var(--fx));
+}
+.wl-fx-traces::after {
+  content: ''; position: absolute; left: 24%; right: 24%; bottom: calc(-6px * var(--fx));
+  height: calc(9px * var(--fx));
+  background: repeating-linear-gradient(90deg, var(--lk-ink-mid) 0 calc(6px * var(--fx)), transparent calc(6px * var(--fx)) calc(11px * var(--fx)));
+}
+
+/* hud. Four corner brackets drawn as eight one-pixel backgrounds, a tick
+   scale down the right edge, and a reticle standing clear of both the
+   dateline and the marks. Nothing on it measures anything, which is the
+   joke, and is also why none of it is ever typed. */
+.wl-looked[data-look="hud"] { --lk-pad-x: 24px; --lk-pad-t: 24px; --lk-pad-b: 22px; }
+.wl-fx-reticle {
+  inset: calc(11px * var(--fx));
+  background:
+    linear-gradient(var(--lk-ink-mid) 0 0) 0 0 / calc(17px * var(--fx)) 1px no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 0 0 / 1px calc(17px * var(--fx)) no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 100% 0 / calc(17px * var(--fx)) 1px no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 100% 0 / 1px calc(17px * var(--fx)) no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 0 100% / calc(17px * var(--fx)) 1px no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 0 100% / 1px calc(17px * var(--fx)) no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 100% 100% / calc(17px * var(--fx)) 1px no-repeat,
+    linear-gradient(var(--lk-ink-mid) 0 0) 100% 100% / 1px calc(17px * var(--fx)) no-repeat;
+}
+.wl-fx-reticle::before {
+  content: ''; position: absolute; right: calc(-5px * var(--fx)); top: 30%; bottom: 30%;
+  width: calc(6px * var(--fx));
+  background: repeating-linear-gradient(0deg, var(--lk-ink-mid) 0 1px, transparent 1px calc(7px * var(--fx)));
+}
+.wl-fx-reticle::after {
+  content: ''; position: absolute; right: calc(15px * var(--fx)); top: calc(34px * var(--fx));
+  width: calc(27px * var(--fx)); height: calc(27px * var(--fx)); border-radius: 50%;
+  border: 1px solid var(--lk-ink-soft);
+  background:
+    linear-gradient(var(--lk-ink-soft) 0 0) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(var(--lk-ink-soft) 0 0) 0 50% / 100% 1px no-repeat;
+}
+.wl-paper[data-look="hud"] .wl-paper-head { letter-spacing: 0.2em; }
+
+/* cassette. The case is the frame and the card inside it is the paper. The
+   spine is folded across the head rather than running down the side, which
+   is where the room is on a card this shape, and the two hubs sit in it. */
+.wl-looked[data-look="cassette"] { --lk-pad-x: 22px; --lk-pad-t: 44px; --lk-pad-b: 20px; }
+.wl-fx-jcard {
+  inset: calc(8px * var(--fx)); border-radius: calc(3px * var(--fx));
+  background: var(--lk-ground);
+  box-shadow: inset 0 0 0 1px var(--lk-edge);
+}
+.wl-fx-jcard::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(23px * var(--fx));
+  background: var(--lk-ink-soft);
+  border-bottom: 1px solid var(--lk-rule);
+}
+.wl-fx-jcard::after {
+  content: ''; position: absolute; right: calc(11px * var(--fx)); top: calc(5px * var(--fx));
+  width: calc(50px * var(--fx)); height: calc(14px * var(--fx));
+  background:
+    radial-gradient(circle at calc(7px * var(--fx)) 50%, transparent 0 calc(3.4px * var(--fx)), var(--lk-ink-mid) calc(3.4px * var(--fx)) calc(4.4px * var(--fx)), transparent calc(4.8px * var(--fx))),
+    radial-gradient(circle at calc(43px * var(--fx)) 50%, transparent 0 calc(3.4px * var(--fx)), var(--lk-ink-mid) calc(3.4px * var(--fx)) calc(4.4px * var(--fx)), transparent calc(4.8px * var(--fx))),
+    linear-gradient(var(--lk-ink-faint) 0 0) 50% 50% / calc(36px * var(--fx)) 1px no-repeat;
+}
+.wl-paper[data-look="cassette"] .wl-paper-head { letter-spacing: 0.15em; }
+
+/* blueprint. The title block runs the width of the drawing at its foot, in
+   three cells, and the reader's three marks stand INSIDE it — which is the
+   one place on any of the forty-two where the furniture and the controls
+   share a box, and they share it because a title block is where a drawing is
+   signed and the marks are the only signature a letter has. */
+.wl-looked[data-look="blueprint"] { --lk-pad-x: 22px; --lk-pad-t: 22px; --lk-pad-b: 30px; }
+.wl-paper[data-look="blueprint"] > .wl-paper-foot { border-top: 0; padding-top: 0; margin-top: 16px; }
+.wl-fx-titleblock {
+  left: calc(10px * var(--fx)); right: calc(10px * var(--fx)); bottom: calc(10px * var(--fx));
+  height: calc(44px * var(--fx));
+  border: 1px solid var(--lk-ink-mid);
+}
+.wl-fx-titleblock::before {
+  content: ''; position: absolute; left: 34%; top: 0; bottom: 0; width: 1px; background: var(--lk-ink-soft);
+}
+.wl-fx-titleblock::after {
+  content: ''; position: absolute; left: 68%; top: 0; bottom: 0; width: 1px; background: var(--lk-ink-soft);
+}
+.wl-paper[data-look="blueprint"] .wl-paper-head { letter-spacing: 0.18em; }
+
+/* the two masked papers declare their inset inside a longer block below, so
+   the tile is told the same two numbers here rather than reading them there */
+.wl-looked[data-look="receipt"] { --lk-pad-x: 22px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
+.wl-looked[data-look="ticket"] { --lk-pad-x: 24px; --lk-pad-t: 30px; --lk-pad-b: 20px; }
+
+/* ── object: a thing that is not a sheet ──────────────────────────────────── */
+
+/* envelope. The flap folded down over the head of the card, with the wall's
+   own seal where its point lands. The flap is a clip path and its hairline
+   is a `drop-shadow`, which is the one filter in the product and is here
+   because a filter follows a clipped shape and a border does not. */
+.wl-looked[data-look="envelope"] { --lk-pad-x: 22px; --lk-pad-t: 56px; --lk-pad-b: 20px; }
+.wl-fx-flap {
+  left: -1px; right: -1px; top: 0; height: calc(70px * var(--fx));
+  background: linear-gradient(180deg, var(--lk-ink-soft), var(--lk-ink-faint));
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  filter: drop-shadow(0 1px 0 var(--lk-rule));
+}
+.wl-looked[data-look="envelope"]::before {
+  background-image: radial-gradient(circle at 50% calc(70px * var(--fx)), var(--lk-ink-mid) 0 calc(8px * var(--fx)), transparent calc(9px * var(--fx)));
+}
+.wl-paper[data-look="envelope"] .wl-paper-head { letter-spacing: 0.16em; }
+
+/* receipt. Torn off the machine rather than cut, and the tear is a MASK on
+   the card: a row of triangles taken out of its bottom edge. A mask clips
+   the box shadow with everything else, so the two papers that are cut —
+   this one and the ticket — carry their depth as a `drop-shadow` filter,
+   which follows the shape the mask left. Nothing else in the product does,
+   and nothing else needs to. */
+.wl-paper[data-look="receipt"] {
+  --lk-pad-x: 22px; --lk-pad-t: 22px; --lk-pad-b: 20px; --lk-foot-clear: 40px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+    conic-gradient(from 135deg at 50% 0, #000 0 90deg, transparent 90deg) bottom left / 14px 7px repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+    conic-gradient(from 135deg at 50% 0, #000 0 90deg, transparent 90deg) bottom left / 14px 7px repeat-x;
+  box-shadow: 0 0 0 1px var(--lk-edge) inset;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.7)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.45));
+}
+.wl-paper[data-look="receipt"] .wl-paper-head { border-bottom-style: dashed; letter-spacing: 0.14em; }
+.wl-paper[data-look="receipt"] > .wl-paper-foot { border-top-style: dashed; }
+.wl-fx-thermal { inset: 0; }
+.wl-fx-thermal::before {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(15px * var(--fx)); width: calc(122px * var(--fx)); height: calc(19px * var(--fx));
+  opacity: 0.82;
+  background: repeating-linear-gradient(90deg,
+    var(--lk-ink) 0 calc(1.5px * var(--fx)), transparent calc(1.5px * var(--fx)) calc(3px * var(--fx)),
+    var(--lk-ink) calc(3px * var(--fx)) calc(4.5px * var(--fx)), transparent calc(4.5px * var(--fx)) calc(8px * var(--fx)));
+}
+.wl-fx-thermal::after {
+  content: ''; position: absolute; left: calc(22px * var(--fx)); right: calc(22px * var(--fx));
+  bottom: calc(40px * var(--fx)); height: 0;
+  border-top: 1px dashed var(--lk-ink-soft);
+}
+
+/* ticket. Two notches bitten out of the sides and a perforation between
+   them, so the foot of the card IS the stub and the reader's marks stand on
+   it. The notches are the same mask idea as the receipt's tear. */
+.wl-paper[data-look="ticket"] {
+  --lk-pad-x: 24px; --lk-pad-t: 24px; --lk-pad-b: 20px;
+  -webkit-mask-image:
+    radial-gradient(circle 10px at 0 64%, transparent 97%, #000 100%),
+    radial-gradient(circle 10px at 100% 64%, transparent 97%, #000 100%);
+  mask-image:
+    radial-gradient(circle 10px at 0 64%, transparent 97%, #000 100%),
+    radial-gradient(circle 10px at 100% 64%, transparent 97%, #000 100%);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+  box-shadow: 0 0 0 1px var(--lk-edge) inset;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.7)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.45));
+}
+.wl-fx-stub { inset: 0; }
+.wl-fx-stub::before {
+  content: ''; position: absolute; left: calc(9px * var(--fx)); right: calc(9px * var(--fx));
+  top: 64%; height: 0;
+  border-top: 1px dashed var(--lk-ink-mid);
+}
+.wl-fx-stub::after {
+  content: ''; position: absolute; left: calc(14px * var(--fx)); right: calc(14px * var(--fx));
+  top: calc(9px * var(--fx)); height: calc(4px * var(--fx));
+  border-top: 2px solid var(--lk-ink-mid); border-bottom: 1px solid var(--lk-ink-soft);
+}
+.wl-looked[data-look="ticket"] { --lk-pad-t: 30px; }
+.wl-paper[data-look="ticket"] .wl-paper-head { letter-spacing: 0.2em; }
+
+/* corkboard. The pin is the only object in the product that stands ON the
+   paper and throws a shadow down it, rather than being struck into it. It is
+   at the head of the card and the inset above the dateline is its room. */
+.wl-looked[data-look="corkboard"] { --lk-pad-x: 22px; --lk-pad-t: 46px; --lk-pad-b: 20px; }
+.wl-fx-pin {
+  left: 50%; top: calc(12px * var(--fx)); transform: translateX(-50%);
+  width: calc(21px * var(--fx)); height: calc(21px * var(--fx)); border-radius: 50%;
+  background: radial-gradient(62% 62% at 34% 26%, rgba(255, 255, 255, 0.82), var(--lk-ink-2) 56%, var(--lk-ink) 100%);
+  box-shadow: 0 calc(3px * var(--fx)) calc(7px * var(--fx)) rgba(0, 0, 0, 0.42);
+}
+.wl-fx-pin::after {
+  content: ''; position: absolute; inset: calc(6px * var(--fx));
+  border-radius: 50%; background: var(--lk-ink); opacity: 0.35;
+}
+
+/* napkin. A scalloped edge all the way round, pressed rather than cut, and
+   the ink bleeding a little into the tissue where it sat. */
+.wl-looked[data-look="napkin"] { --lk-pad-x: 24px; --lk-pad-t: 24px; --lk-pad-b: 22px; }
+.wl-fx-scallop {
+  inset: calc(8px * var(--fx));
+  background:
+    radial-gradient(circle at 50% 100%, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.6px * var(--fx))) top left / calc(12px * var(--fx)) calc(6px * var(--fx)) repeat-x,
+    radial-gradient(circle at 50% 0, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.6px * var(--fx))) bottom left / calc(12px * var(--fx)) calc(6px * var(--fx)) repeat-x,
+    radial-gradient(circle at 100% 50%, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.6px * var(--fx))) top left / calc(6px * var(--fx)) calc(12px * var(--fx)) repeat-y,
+    radial-gradient(circle at 0 50%, var(--lk-ink-soft) 0 calc(4px * var(--fx)), transparent calc(4.6px * var(--fx))) top right / calc(6px * var(--fx)) calc(12px * var(--fx)) repeat-y;
+}
+.wl-paper[data-look="napkin"] .wl-paper-title,
+.wl-paper[data-look="napkin"] .wl-paper-body {
+  text-shadow: 0 0 1.4px var(--lk-ink-soft), 0 0 3.5px var(--lk-ink-faint);
+}
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
@@ -3044,20 +4000,48 @@ a.wl-lq { text-decoration: none; }
 .wl-look-rail { flex: 0 0 auto; }
 
 /* One height for all three, so switching between them does not shove the
-   card up and down the sheet. The tallest is now the colour grid's four rows
-   and the type grid's four, and the two rows of papers are centred in the
-   same height rather than left hanging off the top of it. */
-.wl-look-body { display: grid; align-content: center; min-height: 232px; }
+   card up and down the sheet — and since the forty-two papers, one SCROLLER
+   as well. Forty-two objects, thirty colours and twenty-four faces are a
+   gallery and not a grid: the sheet gives each axis the same window and the
+   window is walked down, which is the model the lock screen's own gallery
+   uses and the one thing that lets the menu grow without the panel growing
+   with it. Nothing scrolls sideways, as nothing did before.
+     The fade at the foot is the only thing that says there is more: a mask
+   on the scroller, which is cheaper than a shadow and never draws a line
+   across a tile. */
+.wl-look-body {
+  display: grid; align-content: start;
+  height: 292px; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 0 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0 calc(100% - 26px), transparent 100%);
+}
+.wl-look-body::-webkit-scrollbar { width: 0; height: 0; }
+/* the seven groups, down the scroller, with the caption of each standing on
+   the sheet while its six papers go past under it. A writer who wants a
+   machine goes to the machines; the papers they will never want are never in
+   the way, which is the whole reason the axis is grouped at all. */
+.wl-look-fams { display: flex; flex-direction: column; gap: 14px; }
+.wl-look-fam-h {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px;
+  padding: 3px 0 5px; background: var(--sheet);
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  font-weight: 400; color: var(--chalk);
+}
+.wl-look-fam-h i { font-style: normal; letter-spacing: 0.04em; text-transform: none; color: var(--ash-dim); font-size: 10.5px; }
 .wl-look-grid {
   display: grid; gap: 10px; align-items: start;
   animation: wl-look-swap 260ms var(--ease) both;
 }
 @keyframes wl-look-swap { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: none; } }
-/* eight papers as two even rows of four; twenty-four colours as four even
-   rows of six, the paper's own ground taking the first cell; twelve faces as
-   four rows of three, which is the room a name needs to be set in its own
-   face and read. No row is ragged and nothing scrolls sideways. */
-.wl-look-grid.is-texture { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 10px; }
+/* six papers per family as two even rows of three, big enough that the sun
+   on the synthwave and the pin on the corkboard are visible in the picker;
+   thirty colours as five even rows of six, the paper's own ground taking the
+   first cell; twenty-four faces as eight rows of three, which is the room a
+   name needs to be set in its own face and read. No row is ragged and
+   nothing scrolls sideways. */
+.wl-look-grid.is-texture { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
 .wl-look-grid.is-color   { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 11px 10px; }
 .wl-look-grid.is-type    { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -3080,7 +4064,14 @@ a.wl-lq { text-decoration: none; }
    its face and a few lines of type */
 .wl-look-tile {
   position: relative; display: block;
-  width: 100%; max-width: 76px; aspect-ratio: 3 / 4; overflow: hidden;
+  width: 100%; max-width: 84px; aspect-ratio: 3 / 4; overflow: hidden;
+  /* THE TILE IS THE CARD, SMALLER. It draws the real furniture — the same
+     `Furniture` element the letter draws, ruled by the same rules — at a
+     third of the size, because every inset and bar of it is written against
+     `--fx` (`.wl-paper`, above). A picker whose swatch is a rectangle with a
+     border round it is a picker to guess in, and with forty-two papers on
+     the menu guessing is most of the work. */
+  --fx: 0.32;
   /* The corner the theme actually has, scaled to the tile (looks.js
      `radius`). It was a flat 10px for every theme, so a person could not see
      that a letterpress is square and a paper is soft until the letter was on
@@ -3091,7 +4082,16 @@ a.wl-lq { text-decoration: none; }
   box-shadow: 0 0 0 1px var(--lk-edge), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
 }
-.wl-look-tile-in { position: absolute; inset: 9px 8px; display: flex; flex-direction: column; gap: 5px; }
+/* and the content stands where the card's content stands: the paper's own
+   inset (`--lk-pad-*`) at the tile's scale, so the washi's type starts under
+   its tape and the terminal's under its window bar */
+.wl-look-tile-in {
+  position: absolute; z-index: 1; display: flex; flex-direction: column; gap: 5px;
+  inset:
+    calc(var(--lk-pad-t, 20px) * var(--fx) + 2px)
+    calc(var(--lk-pad-x, 20px) * var(--fx) + 2px)
+    calc(var(--lk-pad-b, 18px) * var(--fx) + 2px);
+}
 /* the two papers whose letter is written on something inside them: the tile
    shows the screen in the shell and the picture over the chin, because that
    is what is being chosen */
@@ -3102,18 +4102,32 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-look-tile[data-look="nokia"] .wl-look-tile-in { inset: 5px 5px 11px; border-radius: 2px; }
 .wl-look-tile[data-look="polaroid"] .wl-look-tile-in { inset: 5px 5px 15px; }
-/* and the chrome that is still legible at seventy-six pixels, so the four
-   light papers are told apart IN THE GRID and not only once one is on the
-   card: the two that are ruled round the edge are ruled, and the one that
-   divides its back is divided. */
-.wl-look-tile[data-look="letterpress"]::after,
-.wl-look-tile[data-look="telegram"]::after,
+/* the postcard is the one paper whose whole design is a LAYOUT rather than
+   a piece of furniture, so the tile draws the rule it divides its back with.
+   Everything else that was hinted at here is now drawn by the furniture
+   itself, at `--fx`. */
 .wl-look-tile[data-look="postcard"]::after {
   content: ''; position: absolute; pointer-events: none;
+  top: 8px; bottom: 8px; right: 30%; width: 1px; background: var(--lk-rule);
 }
-.wl-look-tile[data-look="letterpress"]::after { inset: 4px; border: 1px solid var(--lk-ink-soft); }
-.wl-look-tile[data-look="telegram"]::after { inset: 4px; border: 1px solid var(--lk-ink-mid); }
-.wl-look-tile[data-look="postcard"]::after { top: 8px; bottom: 8px; right: 30%; width: 1px; background: var(--lk-rule); }
+/* the two papers that are cut rather than printed, cut in the picker too */
+.wl-look-tile[data-look="receipt"] {
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 4px) no-repeat,
+    conic-gradient(from 135deg at 50% 0, #000 0 90deg, transparent 90deg) bottom left / 8px 4px repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 4px) no-repeat,
+    conic-gradient(from 135deg at 50% 0, #000 0 90deg, transparent 90deg) bottom left / 8px 4px repeat-x;
+}
+.wl-look-tile[data-look="ticket"] {
+  -webkit-mask-image:
+    radial-gradient(circle 5px at 0 64%, transparent 97%, #000 100%),
+    radial-gradient(circle 5px at 100% 64%, transparent 97%, #000 100%);
+  mask-image:
+    radial-gradient(circle 5px at 0 64%, transparent 97%, #000 100%),
+    radial-gradient(circle 5px at 100% 64%, transparent 97%, #000 100%);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+}
 .wl-look-aa { font-family: var(--lk-face); font-weight: var(--lk-title-w); font-size: 13px; line-height: 1; color: var(--lk-ink); margin-bottom: 3px; }
 .wl-look-bar { height: 3px; border-radius: 2px; background: var(--lk-ink); opacity: 0.5; }
 .wl-look-opt[aria-checked="true"] .wl-look-tile {
@@ -3155,8 +4169,8 @@ a.wl-lq { text-decoration: none; }
 }
 @media (max-width: 359px) {
   .wl-look { padding: 11px 10px 9px; }
-  .wl-look-grid { gap: 8px; }
-  .wl-look-body { min-height: 214px; }
+  .wl-look-grid { gap: 9px 8px; }
+  .wl-look-body { height: 262px; }
 }
 
 /* the card and the line under it, in one frame, and the frame is what shakes

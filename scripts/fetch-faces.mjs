@@ -83,6 +83,49 @@ const FACES = [
   { slug: 'playfair-display', query: 'Playfair+Display:ital,wght@0,400..900;1,400..900' },
   { slug: 'permanent-marker', query: 'Permanent+Marker' },
   { slug: 'pinyon-script', query: 'Pinyon+Script' },
+  // ── and twelve more, for the thirty-six papers ──
+  // The nine above were fetched for eight papers and were nearly all the
+  // menu could say: a hand, a pixel, a typewriter and a Didone dress a sheet
+  // of paper well and dress a neon sign, a circuit board or a torn scrap
+  // badly. Every one of these twelve is the face ONE family of papers is
+  // actually set in, and the faces already here keep the families they came
+  // for:
+  //
+  //   techno      the geometric square-built face of a dashboard. Carries
+  //               the synthwave, the hud and the hologram
+  //   grotesk     a modern grotesque with the corners cut off its curves.
+  //               Carries the glitch and the cassette
+  //   elegant     an old-style at a high stroke contrast, cut small.
+  //               Carries the mist
+  //   fashion     hairline caps, wide, drawn for one word across a cover.
+  //               Carries the atelier and the silk
+  //   roman       inscriptional capitals, the letter cut in stone. Carries
+  //               the marble and the gilt
+  //   deco        a single-weight geometric with the twenties in it.
+  //               Carries the lacquer, the dawn, the aurora and the nebula
+  //   slab        square serifs, printed on a form that has a total on it.
+  //               Carries the ledger and the ticket
+  //   stencil     cut through a plate, with the bridges left in. Carries
+  //               the airmail
+  //   note        a round fast hand, the one in the margin of a book.
+  //               Carries the scrapbook and the corkboard
+  //   scratch     the same hand pressed too hard, drawn with the paper
+  //               catching. The rawest thing in the menu
+  //   brush       a casual signature script, which is the other kind of
+  //               script the menu had none of
+  //   gothic      blackletter, played straight, the way the script is
+  { slug: 'orbitron', query: 'Orbitron:wght@400..900' },
+  { slug: 'space-grotesk', query: 'Space+Grotesk:wght@300..700' },
+  { slug: 'cormorant-garamond', query: 'Cormorant+Garamond:wght@300..700' },
+  { slug: 'italiana', query: 'Italiana' },
+  { slug: 'cinzel', query: 'Cinzel:wght@400..900' },
+  { slug: 'poiret-one', query: 'Poiret+One' },
+  { slug: 'zilla-slab', query: 'Zilla+Slab:wght@400;600' },
+  { slug: 'saira-stencil-one', query: 'Saira+Stencil+One' },
+  { slug: 'gloria-hallelujah', query: 'Gloria+Hallelujah' },
+  { slug: 'rock-salt', query: 'Rock+Salt' },
+  { slug: 'sacramento', query: 'Sacramento' },
+  { slug: 'unifraktur-maguntia', query: 'UnifrakturMaguntia' },
 ]
 
 // Everything the product sets is latin. The other subsets Google returns are

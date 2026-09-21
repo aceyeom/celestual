@@ -219,54 +219,82 @@ cannot read (G4); and each is a picture or a second bright surface (G7). That
 ruling stands, on the row above, and it always will.
 
 What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of
-eight papers, one of twenty-three colours and one of twelve faces, from a menu
-that every writer on the wall shares, stored as three slugs and drawn by the
-browser. (Nine papers and twelve colours when it shipped; then five, eleven and
-six, with the panel rebuilt as one rail over one grid — `Look.jsx`. The count
-has moved three times and the reasoning below has not: what the gates care
-about is that the menu is SHARED and CLOSED, not how long it is.)
+forty-two papers, one of twenty-nine colours and one of twenty-four faces,
+from a menu that every writer on the wall shares, stored as three slugs and
+drawn by the browser. (Nine papers and twelve colours when it shipped; then
+five, eleven and six, with the panel rebuilt as one rail over one grid —
+`Look.jsx`; then eight, twenty-three and twelve. The count has moved four
+times and the reasoning below has not: what the gates care about is that the
+menu is SHARED and CLOSED, not how long it is.)
 
-The papers grew a second time because the axis was not doing its job. Four of
-the five had no texture in them at all — a ground, a face and a corner, on a
-dial labelled TEXTURE — so a theme now carries furniture: the parts drawn for
-that paper and no other, the nokia's signal and battery, the chalkboard's rail,
-the letterpress's deboss, the postcard's divided back. That is more to look at
-and it is not more to say: the furniture is drawn, never typed, and a writer
-chooses which paper, never what is on it.
+The papers grew a third time because the axis still was not doing its job.
+The eight were well made and they were all one idea — a paper is a surface
+with a grain on it — so half the menu was a cream rectangle at a different
+temperature, and a writer who wanted their forty words to stand on a neon
+sign, a blueprint or a bar napkin had a choice of two creams and a slate. A
+paper is a picture of SOMETHING now, in seven families of six, and the
+furniture is the difference: the synthwave's slatted sun over its grid, the
+receipt torn off the roll with a barcode at its foot, the corkboard's pin,
+the terminal's window bar. That is more to look at and it is not more to
+say: every part of it is drawn, never typed, and a writer chooses which
+paper, never what is on it.
 
 Through the gates:
 
-- **G3.** A look is a choice from a short menu, the same menu for everybody,
-  and the nokia screen is on a hundred letters by the end of the week. The
-  shorter the menu, the more letters each paper carries, and the less any one
-  of them can point at a person. It is
-  no more a signature than writing in lower case is. What would be one is a
-  colour typed by hand or a face uploaded, and neither exists: the schema
-  admits three slugs and refuses a fourth key, a colour and a sentence
-  (`wall_look_clean`, and a constraint that holds every row to it).
-  Eight papers by twenty-four colour cells by twelve faces is a couple of
-  thousand combinations, which is worth stating plainly: a menu long enough
-  that a regular writer could pick the same one twice and be noticed for it is
-  a menu that has started to leak. It is not that yet — the theme is the thing
-  anybody reads first and there are eight of them, so every paper is on
-  hundreds of letters — but the number is the thing to watch when the next
-  proposal asks to lengthen it, and the answer to a menu that has grown too
-  long is to shorten it, never to let a writer add to it.
-  **The line holds where it was drawn: a look may be chosen and never typed,
-  drawn and never uploaded, and the menu is the product's to add to and
-  nobody's to extend from a phone.**
+- **G3.** A look is a choice from a menu, the same menu for everybody, and
+  the panel is a gallery of the whole of it: nothing about it is earned,
+  bought, awarded or held back, so every paper on the wall is a paper anybody
+  could have picked for the letter beside it. It is no more a signature than
+  writing in lower case is. What would be one is a colour typed by hand or a
+  face uploaded, and neither exists: the schema admits three slugs and
+  refuses a fourth key, a colour and a sentence (`wall_look_clean`, and a
+  constraint that holds every row to it).
+
+  **And the menu is longer than it was, which is the thing to be honest
+  about.** Forty-two papers by thirty colour cells by twenty-four faces is
+  about thirty thousand combinations, where the eight papers were two
+  thousand — and the ruling above already named the number as the thing to
+  watch. What it is watching for is a menu long enough that a regular writer
+  could pick the same look twice and be NOTICED for it, and the number that
+  decides that is not the product of the three axes. It is how many letters
+  each paper carries, because the theme is what anybody reads first and the
+  colour and the face are read after it, if at all. Eight papers meant every
+  paper was on hundreds of letters. Forty-two means every paper is on
+  dozens, which is still a crowd and is not a fingerprint; it is also the
+  last time that sentence can be said, and the ruling records it: **the next
+  proposal to lengthen this menu has to argue the same number again, and the
+  answer to a menu that has grown too long is to shorten it, never to let a
+  writer add to it.**
+
+  The line the old ruling drew holds exactly where it was drawn: a look may
+  be chosen and never typed, drawn and never uploaded, and the menu is the
+  product's to add to and nobody's to extend from a phone.
 - **G4.** A look is structured, not written. The list and the classifier read
   every word they read before, the name and the body, and there is no new
-  text for them to miss and no picture at all.
-- **G7.** Every texture is a gradient drawn by the stylesheet and every face is
-  a file served from this origin; nothing is downloaded from anywhere and
+  text for them to miss and no picture at all. The telegram sets its body
+  upper case and the classifier still reads exactly what the writer typed:
+  the case is a display rule and the row is the row.
+- **G7.** Every texture is a gradient drawn by the stylesheet and every face
+  is a file served from this origin; nothing is downloaded from anywhere and
   nothing is a picture. The furniture holds to the same rule, drawn part by
   drawn part: the battery is a border and three boxes, the signal is four
-  rectangles, the rail and the deboss are gradients, the stamp box is a dashed
-  border round the wall's own constellation. The paper stays the one bright
-  thing on its sheet, in the colour the writer chose it, and the system's own
-  accent is not spent — `gold` came off partly for spending a second saturated
-  colour on a hairline frame, and nothing in the eight replaces it.
+  rectangles, the synthwave's sun is a disc with slats masked out of it and
+  its grid is a repeating gradient in perspective, the receipt's torn foot is
+  a row of triangles taken out of the card, the stamp box is a dashed border
+  round the wall's own constellation. The paper stays the one bright thing on
+  its sheet, in the colour the writer chose it, and the system's own accent
+  is not spent — the twenty-nine colours and the forty-two grounds live in
+  `looks.js` and in theme rules keyed on `data-look`, which is where
+  design/DESIGN.md 2.5 puts a look's own colour, and none of them is
+  `--accent`.
+
+  `gold` came off the eight partly for spending a second saturated colour on
+  a hairline frame, and `gilt` is in the forty-two, which is worth explaining
+  rather than glossing: `gold` was a yellow under a border, and this is a
+  FOIL — the ink is a gradient across the type rather than a colour under it,
+  it is the paper's own ink and not a second one, and it goes the moment a
+  writer picks a colour. The rule the old one broke was spending a hue on
+  furniture; this one spends nothing on furniture at all.
 - **G8.** The look is a column on the letter's row. A takedown takes it down
   with the letter, and nothing about it travels anywhere else.
 - **G9.** The desk sees the slugs beside the row and reads nothing more.
@@ -280,8 +308,9 @@ whole of what a letter SAYS; the look is how it is dressed, and a menu of
 dresses that everybody shares gives that freedom without giving anything away.
 
 The line the ruling draws, for the next proposal: a look may be chosen and
-never typed, drawn and never uploaded, and the menu is the product's to add to
-and nobody's to extend from a phone.
+never typed, drawn and never uploaded, the menu is the product's to add to and
+nobody's to extend from a phone, and a proposal to lengthen it has to say how
+many letters each paper will still carry.
 
 ### The search, the miss, and a letter to a first name
 
