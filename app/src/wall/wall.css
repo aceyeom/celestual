@@ -425,9 +425,15 @@
    coming back rather than snapping */
 .wl-pill:active:not(:disabled) { transform: scale(0.97); transition-duration: 120ms; }
 
-.wl-pill.is-light { background: var(--chalk); color: #14131A; }
-.wl-pill.is-light:hover:not(:disabled) { background: #FFFDF8; }
-.wl-pill.is-light:disabled { background: rgba(244, 241, 234, 0.13); color: var(--ash-dim); }
+/* `is-light` was the chalk fill, and on a CONTROL it is gone with it: the
+   primary is the liquid metal capsule now, which keeps `.wl-pill` for its
+   metrics and brings its own surface (`.wl-lq`, below). Every rule that used
+   to key on `.is-light` keys on `.wl-lq` instead, here and in hero.css.
+   What is left of the chalk fill is the tag (parts.jsx `PillTag`), which is
+   not a control at all: an affordance printed on a row, the size of a word
+   and never pressed, and a row that pours metal for a label would be a row
+   with a button in it. */
+.wl-pill.is-light.is-tag { background: var(--chalk); color: #14131A; }
 
 .wl-pill.is-ghost {
   border: 1px solid var(--hair); color: var(--ash);
@@ -448,13 +454,177 @@
 /* ── lit ──
    The running light on the capsule (parts.jsx `Light`, and the rules under
    `.wl-light` below). The fill moves onto the plate so the light can run
-   under it, and every state the fill had, the plate has. */
+   under it.
+
+   Nothing asks for it on a pill any more: it rode on the chalk primary, and
+   the metal has a current of its own — a rose point travelling round the
+   inside of it would be a second one under the same word. The light itself
+   is not gone, it is on the veil's way in (`.wl-mast-go-pill`); the role
+   stays here because a ghost may still take it. */
 .wl-pill.is-lit { position: relative; isolation: isolate; background: none; }
 .wl-pill.is-lit > :not(.wl-light) { position: relative; z-index: 2; }
-.wl-pill.is-light.is-lit:hover:not(:disabled) { background: none; }
-.wl-pill.is-light.is-lit:hover:not(:disabled) .wl-plate { background: #FFFDF8; }
-.wl-pill.is-light.is-lit:disabled { background: none; }
-.wl-pill.is-light.is-lit:disabled .wl-plate { background: rgba(244, 241, 234, 0.13); }
+
+/* ═══ THE PRIMARY, IN LIQUID METAL ═════════════════════════════════════════
+   LiquidButton.jsx. Every `light` pill is this: a dark capsule with a metal
+   rim round it and the word over both. It keeps `.wl-pill`, so every metric
+   and every contextual rule above and below still reaches it — only the
+   surface is here.
+
+   The stack is built on the button's own perspective: the face is pushed out
+   over the rim and is therefore projected a little larger, so the rim reads
+   as a rim around a face rather than as a border drawn on a rectangle.
+
+   ── the shadow is three states and one hook ──
+   The capsule is seated, lifted under a pointer and pressed flat, and a
+   caller that needs the capsule to throw a shadow of its own onto what is
+   behind it — the act at the foot of the wall, over a moving crowd — sets
+   `--lq-lift` and gets it in all three, rather than replacing the stack and
+   losing the seat. */
+.wl-lq {
+  /* The word. #666 grey on near-black was the reference and it is 3.3:1,
+     which is under the floor for the one control a screen is about; this is
+     the same muted metal label struck in the product's own chalk at the
+     weight that clears it. */
+  --lq-ink: rgba(244, 241, 234, 0.64);
+  --lq-lift: 0 0 rgba(0, 0, 0, 0);
+  /* the seat: what makes the capsule sit ON the void rather than in it */
+  --lq-seat:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 36px 14px -8px rgba(0, 0, 0, 0.02),
+    0 20px 12px -6px rgba(0, 0, 0, 0.08),
+    0 9px 9px -4px rgba(0, 0, 0, 0.12),
+    0 2px 5px -1px rgba(0, 0, 0, 0.15);
+  position: relative; isolation: isolate;
+  perspective: 1000px;
+  border: none; background: none; color: var(--lq-ink);
+  cursor: pointer;
+  /* the corners are the clip for four layers, so it is set once here */
+  border-radius: var(--r-pill);
+  box-shadow: var(--lq-seat), var(--lq-lift);
+  transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              transform 220ms var(--ease), color 220ms var(--ease);
+}
+
+/* ── the rim ──
+   The shader, clipped to the capsule. It is the whole capsule and the face
+   sits on top of it, so what is seen of the metal is the two pixels the face
+   does not cover, running all the way round. */
+.wl-lq-rim {
+  position: absolute; inset: 0; z-index: 0;
+  border-radius: inherit; overflow: hidden;
+  transform: translateZ(0);
+  /* the still frame: a drawn metal, for no WebGL2 and for a capsule past the
+     mount budget. The gradient is the shader's own bands at rest */
+  background:
+    linear-gradient(118deg,
+      #8E8E93 0%, #F2F0EB 12%, #6E6E73 26%, #C9C6BF 38%,
+      #4A4A4E 52%, #E4E1D9 66%, #73737A 80%, #BFBCB4 92%, #6B6B70 100%);
+}
+/* and once the metal has poured, the drawn frame goes: two materials under
+   one rim would show as a seam wherever the shader's band and the gradient's
+   disagreed */
+.wl-lq.is-poured .wl-lq-rim { background: none; }
+.wl-lq-metal { position: absolute; inset: 0; border-radius: inherit; display: block; }
+
+/* ── the face ──
+   The plate the word is read against, inset by the rim's width. Pushed out
+   far enough to be a surface over the metal and not a hole cut in it. */
+.wl-lq-face {
+  position: absolute; inset: 2px; z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #202020 0%, #000000 100%);
+  transform: translateZ(10px);
+  transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── the word ──
+   The label and whatever glyph the caller put in front of it, over the face.
+   It carries the pill's own gap, and it is the one layer a pointer never
+   touches: the button is the target, whole.
+
+   It is the one plane in the stack that is NOT pushed out. A two per cent
+   projection is invisible on a capsule and very visible on thirteen-point
+   type: the glyphs come off their own pixel grid, get composited, and the
+   one word on the screen a person has to read goes soft to buy a depth cue
+   nobody can see. The rim and the face carry the depth; the word stays
+   sharp. */
+.wl-lq-ink {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center; gap: inherit;
+  min-width: 0; max-width: 100%;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+/* the word is its own box so a capsule narrower than its label cuts the
+   label and not the glyph beside it (`.wl-foot > .wl-pill.is-wide`) */
+.wl-lq-word { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── the wake ──
+   Where the hand landed, spreading and gone in six hundred milliseconds. It
+   is clipped to the capsule and sits over everything, because a ripple that
+   stops at the face's edge is a ripple in a smaller button than the one that
+   was pressed. */
+.wl-lq-wake {
+  position: absolute; inset: 0; z-index: 3;
+  border-radius: inherit; overflow: hidden;
+  pointer-events: none;
+}
+.wl-lq-ripple {
+  position: absolute; width: 20px; height: 20px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+  animation: wl-lq-ripple 600ms ease-out both;
+}
+@keyframes wl-lq-ripple {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0.6; }
+  to   { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+/* ── the hand ──
+   Hover lifts the word and pulls the shadow in under the capsule, which is
+   the capsule coming up off the void; the press puts it down again, cuts the
+   shadow to nothing and sinks the face into its own inset. Both are gated to
+   a device with a pointer, as everything that moves on hover here is. */
+@media (hover: hover) and (pointer: fine) {
+  .wl-lq:hover:not(:disabled) {
+    color: rgba(244, 241, 234, 0.88);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 12px 6px -4px rgba(0, 0, 0, 0.05),
+      0 8px 5px -3px rgba(0, 0, 0, 0.1),
+      0 4px 4px -2px rgba(0, 0, 0, 0.15),
+      0 1px 2px 0 rgba(0, 0, 0, 0.2),
+      var(--lq-lift);
+  }
+}
+.wl-lq:active:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 1px 2px 0 rgba(0, 0, 0, 0.3),
+    var(--lq-lift);
+}
+.wl-lq:active:not(:disabled) .wl-lq-face {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ── spent ──
+   A capsule that cannot be pressed is not one that is running: no metal is
+   mounted at all (LiquidButton.jsx `may`), the rim's drawn frame goes flat
+   ash, and the word goes down to the dim. */
+.wl-lq:disabled, .wl-lq.is-off {
+  cursor: default; color: var(--ash-dim);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+.wl-lq:disabled .wl-lq-rim, .wl-lq.is-off .wl-lq-rim { background: rgba(244, 241, 234, 0.13); }
+.wl-lq:disabled .wl-lq-face, .wl-lq.is-off .wl-lq-face { background: rgba(20, 19, 26, 0.9); }
+.wl-lq:disabled .wl-lq-ink, .wl-lq.is-off .wl-lq-ink { text-shadow: none; }
+
+/* an <a> in this material is still the act, not a line of type */
+a.wl-lq { text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-lq, .wl-lq-face { transition: none; }
+  .wl-lq-ripple { display: none; }
+}
 
 /* ═══ ICONS ════════════════════════════════════════════════════════════════ */
 .wl-icon { display: block; }
@@ -570,6 +740,12 @@
   --lk-size: 1;
   --lk-title-size: 1;
   --lk-radius: var(--r-card);
+  /* the hairline round the card. It was `rgba(0,0,0,0.22)` written into the
+     box-shadow below and never varied, which drew a hard line on a cream
+     paper and nothing at all on a near black one; a look derives it off its
+     own ink (looks.js `--lk-edge`) so all eight papers read at one weight. */
+  --lk-edge: rgba(23, 21, 15, 0.22);
+  --lk-frame: var(--lk-ground);
   position: relative;
   /* its own group. The grain under it multiplies, and without this the
      blend reaches past the card to whatever is behind it, which is a live
@@ -580,14 +756,26 @@
   border-radius: var(--lk-radius);
   background: var(--lk-ground);
   color: var(--lk-ink);
-  padding: 20px 20px 18px;
+  /* the inset, as tokens. A paper may change them — the nokia is a shell
+     nine pixels thick, the letterpress wants a wide margin — and the foot
+     below reads them back so the reader's three marks land in the same
+     place on all eight whatever the letter did. `--lk-foot-clear` is the
+     room a paper's own furniture needs under the marks, which today is the
+     chalkboard's rail and nothing else. */
+  --lk-pad-x: 20px; --lk-pad-t: 20px; --lk-pad-b: 18px; --lk-foot-clear: 0px;
+  padding: var(--lk-pad-t) var(--lk-pad-x) var(--lk-pad-b);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 0 0 1px var(--lk-edge),
     0 26px 60px -22px rgba(0, 0, 0, 0.85),
     0 4px 14px -6px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
+/* The card is the FRAME on a theme whose letter is written on something
+   inside it — the nokia's shell, the polaroid's border — and the ground then
+   belongs to the screen or the picture. On the other six the two are the
+   same value, so this one declaration serves all eight. */
+.wl-paper.has-look { background: var(--lk-frame); }
 .wl-paper.is-empty:not(.has-look) { --lk-ground: linear-gradient(168deg, #EBE8E1 0%, #E1DED6 100%); }
 .wl-paper.is-theirs { --lk-ground: linear-gradient(168deg, var(--paper-hi) 0%, #EFECE5 40%, #E6E2DA 100%); }
 
@@ -597,7 +785,7 @@
   background-size: 140px 140px;
   mix-blend-mode: multiply;
 }
-.wl-paper > *:not(.wl-paper-grain) { position: relative; }
+.wl-paper > *:not(.wl-paper-grain):not(.wl-fx) { position: relative; }
 
 /* Two cells across the top rule, and each card decides what its two facts
    are. On a LETTER they are how long it has been sitting there unsaid and
@@ -650,6 +838,19 @@
 .wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--lk-rule); }
+/* THE MARKS STAND IN ONE PLACE. The foot is the reader's slot, not the
+   letter's (parts.jsx `Paper`), and the heart, the pen and the flag are the
+   same three controls on every card in the deck — so they are positioned
+   against the card's edge and not against the paper's inset. Without this
+   the marks drifted between six and sixteen pixels from the edge depending
+   on which paper somebody else had chosen, and a control that moves is a
+   control to be found again on every letter.
+     left/right   always 20px from the card's edge
+     bottom       always 18px, plus whatever furniture stands under it */
+.wl-paper > .wl-paper-foot {
+  margin-inline: calc(20px - var(--lk-pad-x));
+  margin-bottom: calc(18px + var(--lk-foot-clear) - var(--lk-pad-b));
+}
 
 /* the pen, at the end of the crest row. Ink on paper: the ring is the same
    hairline the head rule is drawn in, and the nib is the wall's own glyph. */
@@ -696,35 +897,312 @@
 .wl-paper-to:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; }
 
 /* ═══ THE LOOKS ════════════════════════════════════════════════════════════
-   looks.js, migration 0055. A look sets the paper's tokens inline; what a
-   token cannot say it says here, keyed on the theme's slug: a texture drawn
-   under the type, a gloss, a bloom on the letters. `.wl-looked` is on a
-   paper with a look, on a disc with one, and on the panel's tiles, so one
-   rule draws the nokia screen on all three. Every texture is a gradient:
-   nothing is downloaded and nothing is a picture. The layer sits under
-   everything on the card (the card's children are positioned, so they
-   paint after it) and over the ground. */
+   looks.js, migration 0055, and the eight papers. A look sets the paper's
+   tokens inline; what a token cannot say it says here, keyed on the theme's
+   slug. `.wl-looked` is on a paper with a look, on a disc with one, and on
+   the panel's tiles, so one rule draws the nokia screen on all three.
+
+   EVERY mark below is a gradient, a border or the wall's own constellation.
+   Nothing is downloaded and nothing is a picture (docs/WALL-FEATURES.md,
+   G7), and the handful of literal hues here — the chalkboard's wood, the
+   polaroid's frame — are theme rules keyed on `data-look`, which is where
+   design/DESIGN.md 2.5 puts the looks' own colour.
+
+   ── the layers, in the order they paint ──
+   The card's children are positioned, so they paint after everything below
+   them, and the furniture is absolutely placed so it stays under them:
+
+     1  ::before     the theme's texture, where it has one
+     2  .wl-paper-grain   the ONE surface layer, and the theme owns it
+     3  .wl-fx       the drawn parts (parts.jsx `Furniture`)
+     4  the content  head, crest, body, foot
+
+   Two was the bug. The grain was laid unconditionally at one strength over
+   everything, the nokia's lattice included, so the one theme that drew a
+   texture drew it through a fractal noise field and came out as moiré. A
+   theme names its own surface now and `none` is a real answer. */
+
+/* ── the grain, and it is the theme's ────────────────────────────────────── */
+/* nothing at all: the four papers that carry their own texture, or none */
+.wl-paper[data-grain="none"] .wl-paper-grain { display: none; }
+/* cotton has a tooth where wood pulp has a grain: coarser, slower, stronger */
+.wl-paper[data-grain="tooth"] .wl-paper-grain {
+  opacity: 0.26;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.34' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23t)'/%3E%3C/svg%3E");
+  background-size: 96px 96px;
+}
+/* chalk dust, which is not a noise: two soft blooms where a hand has been */
+.wl-paper[data-grain="dust"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    radial-gradient(58% 42% at 26% 22%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(46% 32% at 78% 70%, var(--lk-ink-faint), transparent 72%);
+}
+/* the pile of a velvet, which lies one way and catches the light across it */
+.wl-paper[data-grain="pile"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(94deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px),
+    radial-gradient(66% 46% at 26% 10%, var(--lk-ink-soft), transparent 74%);
+}
+/* the dark grounds: a multiply dies on a near black, so on a dark paper the
+   fibre is laid as light instead, a little, and adds its texture the other
+   way up. The two grains that are already drawn in the ink are exempt —
+   they are correct on a dark ground because they are made of it. */
+.wl-paper[data-lit="dark"][data-grain="fibre"] .wl-paper-grain,
+.wl-paper[data-lit="dark"][data-grain="tooth"] .wl-paper-grain {
+  mix-blend-mode: screen; opacity: 0.09;
+}
+
+/* ── the textures ────────────────────────────────────────────────────────── */
+/* The layer sits under everything on the card and over the ground. It is
+   drawn in the paper's OWN ink at the strengths every other mark reads, so a
+   nokia tinted rose has a rose lattice and not a green one. */
 .wl-looked::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   border-radius: inherit; z-index: 0;
 }
 /* the nokia screen: a pixel grid, faint, so the type reads as pixels on a
-   screen and not as a photograph of one */
-.wl-looked[data-look="nokia"]::before {
+   screen and not as a photograph of one. On the CARD the shell is plastic
+   and the lattice belongs to the screen recessed into it (below); this is
+   what puts it on the panel's tile and on the disc, which have no screen. */
+.wl-looked[data-look="nokia"]::before,
+.wl-paper[data-look="nokia"] .wl-paper-screen::after {
   background-image:
-    repeating-linear-gradient(0deg, rgba(20, 30, 16, 0.09) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(20, 30, 16, 0.07) 0 1px, transparent 1px 3px);
+    repeating-linear-gradient(0deg, var(--lk-ink-soft) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--lk-ink-faint) 0 1px, transparent 1px 3px);
 }
-.wl-paper[data-look="nokia"] .wl-paper-head { letter-spacing: 0.15em; }
-/* The gloss, the dashed till roll, the ruled page and the green screen were
-   here: the four textures that came off the menu with y2k, receipt,
-   notebook and terminal (looks.js). A letter written on one of them keeps
-   its slug in the row and draws the plain paper now, `data-look` and all,
-   so there is nothing left for these rules to key on. */
-/* the dark grounds: the grain multiplies to nothing on a near black, so on
-   a dark paper it is laid as light instead, a little, and adds its texture
-   the other way up */
-.wl-paper[data-lit="dark"] .wl-paper-grain { mix-blend-mode: screen; opacity: 0.09; }
+.wl-paper[data-look="nokia"]::before { background-image: none; }
+/* the telegram's form: the faint ruling a clerk typed onto */
+.wl-looked[data-look="telegram"]::before {
+  background-image: repeating-linear-gradient(0deg, transparent 0 21px, var(--lk-ink-faint) 21px 22px);
+}
+/* the polaroid's emulsion, on the tile and the disc. On the card it belongs
+   to the plate inside the frame (below). */
+.wl-looked[data-look="polaroid"]::before {
+  background: radial-gradient(118% 88% at 50% 38%, transparent 48%, rgba(30, 22, 12, 0.2) 100%);
+}
+.wl-paper[data-look="polaroid"]::before { background: none; }
+
+/* ── the furniture ───────────────────────────────────────────────────────── */
+/* parts.jsx `Furniture`. Absolutely placed, so it sits over the surface and
+   under the type, and out of the rule that positions the card's content. */
+.wl-fx { position: absolute; pointer-events: none; }
+
+/* the blind deboss: a rule with a lit line above it and a shadowed one
+   below, which is what an unlinked plate leaves in a heavy sheet. The lit
+   line is the paper's own highlight, so it comes out right on the velvet
+   without a second declaration. */
+.wl-fx-deboss {
+  inset: 9px; border-radius: max(1px, calc(var(--lk-radius) - 7px));
+  border: 1px solid var(--lk-ink-soft);
+  box-shadow: inset 0 1px 0 var(--lk-paper-hi), 0 1px 0 var(--lk-paper-hi);
+}
+.wl-fx-deboss::after {
+  content: ''; position: absolute; inset: 3px; border-radius: inherit;
+  border: 1px solid var(--lk-ink-faint);
+}
+/* the chalkboard's rail: the wooden lip the chalk sits on */
+.wl-fx-rail {
+  left: 0; right: 0; bottom: 0; height: 11px;
+  background: linear-gradient(180deg, #8A6238 0%, #6B4A2C 44%, #4E351E 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+/* the telegram's printed border: struck twice, in one pass, in the form's
+   own ink — the second rule is the gap plus the line, cast outward */
+.wl-fx-form {
+  inset: 7px; border: 1px solid var(--lk-ink-mid); border-radius: 1px;
+  box-shadow: 0 0 0 2px var(--lk-paper), 0 0 0 3px var(--lk-ink-mid);
+}
+/* the postcard's stamp box, where the sovereign's head goes */
+.wl-fx-stamp {
+  top: 13px; right: 13px; width: 33px; height: 40px;
+  border: 1.5px dashed var(--lk-ink-mid); border-radius: 2px;
+  display: grid; place-items: center; color: var(--lk-ink);
+}
+.wl-fx-stamp .wl-mark-line { stroke: var(--lk-ink-mid); stroke-width: 5; fill: none; }
+.wl-fx-stamp .wl-mark-star { fill: var(--lk-ink-strong); }
+
+/* ── the nokia, which is a screen in a shell ─────────────────────────────── */
+.wl-paper[data-look="nokia"] { --lk-pad-x: 9px; --lk-pad-t: 9px; --lk-pad-b: 9px; }
+.wl-paper-screen {
+  border-radius: 5px; padding: 13px 13px 14px; overflow: hidden;
+  background: var(--lk-ground); color: var(--lk-ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.38), inset 0 2px 7px rgba(0, 0, 0, 0.26);
+}
+.wl-paper-screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+.wl-paper-screen > * { position: relative; z-index: 1; }
+/* One rule across the head of the screen, not two: the status row already
+   draws a line under itself, and the dateline under it drew a second one
+   eight pixels below the first. */
+.wl-paper[data-look="nokia"] .wl-paper-head {
+  letter-spacing: 0.15em; border-bottom: 0; padding-bottom: 0; margin-bottom: 11px;
+}
+/* the status row. Three of the four signal bars are lit and two of the three
+   battery segments are: a full battery and full signal read as a picture of
+   a phone, and one that is nearly charged reads as a phone somebody is
+   holding. */
+.wl-nk-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 7px;
+  padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--lk-rule);
+  font-family: var(--lk-face); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--lk-ink-2);
+}
+.wl-nk-sig { flex: 0 0 auto; display: flex; align-items: flex-end; gap: 1.5px; height: 9px; }
+.wl-nk-sig i { width: 2.5px; border-radius: 0.5px; background: var(--lk-ink); }
+.wl-nk-sig i:nth-child(1) { height: 3px; }
+.wl-nk-sig i:nth-child(2) { height: 5px; }
+.wl-nk-sig i:nth-child(3) { height: 7px; }
+.wl-nk-sig i:nth-child(4) { height: 9px; opacity: 0.26; }
+.wl-nk-batt {
+  flex: 0 0 auto; position: relative; display: flex; align-items: stretch; gap: 1px;
+  width: 17px; height: 9px; padding: 1.5px;
+  border: 1px solid var(--lk-ink); border-radius: 1.5px;
+}
+.wl-nk-batt::after {
+  content: ''; position: absolute; right: -3px; top: 2.5px;
+  width: 2px; height: 3px; border-radius: 0 1px 1px 0; background: var(--lk-ink);
+}
+.wl-nk-batt i { flex: 1 1 auto; background: var(--lk-ink); }
+.wl-nk-batt i:last-child { opacity: 0.22; }
+/* ── the foot, which is the reader's and not the letter's ──
+   It is the last child of the card on every paper (parts.jsx `Paper`), so
+   the heart, the pen and the flag never move between one letter and the
+   next. On these two it stands on the FRAME rather than on the letter, so
+   it takes the frame's ink: the screen's ink and the picture's belong to
+   the words, and against the shell around them they would vanish. */
+.wl-paper[data-look="nokia"] > .wl-paper-foot {
+  --lk-ink: rgba(244, 241, 234, 0.9);
+  --lk-ink-2: rgba(244, 241, 234, 0.52);
+  --lk-ink-faint: rgba(244, 241, 234, 0.07);
+  --lk-ink-soft: rgba(244, 241, 234, 0.09);
+  --lk-ink-mid: rgba(244, 241, 234, 0.3);
+  --lk-ink-strong: rgba(244, 241, 234, 0.6);
+  color: var(--lk-ink-2);
+  border-top: 0; margin-top: 11px; padding-top: 0;
+}
+.wl-paper[data-look="polaroid"] > .wl-paper-foot,
+.wl-paper[data-look="polaroid"] .wl-paper-chin {
+  --lk-ink: #23201A;
+  --lk-ink-2: rgba(35, 32, 26, 0.55);
+  --lk-ink-faint: rgba(35, 32, 26, 0.06);
+  --lk-ink-soft: rgba(35, 32, 26, 0.08);
+  --lk-ink-mid: rgba(35, 32, 26, 0.3);
+  --lk-ink-strong: rgba(35, 32, 26, 0.55);
+  --lk-rule: rgba(35, 32, 26, 0.16);
+  color: var(--lk-ink);
+}
+.wl-paper[data-look="polaroid"] > .wl-paper-foot {
+  border-top: 0; margin-top: 2px; padding-top: 0;
+}
+/* the postcard's foot left the address column with the rest of the marks:
+   it runs the width of the card under the divided back, not down one side */
+.wl-paper[data-look="postcard"] > .wl-paper-foot { margin-top: 15px; }
+
+/* ── the polaroid, which is a picture with a chin ─────────────────────────── */
+.wl-paper[data-look="polaroid"] { --lk-pad-x: 11px; --lk-pad-t: 11px; --lk-pad-b: 0px; }
+.wl-paper-plate {
+  padding: 16px 15px 17px; overflow: hidden;
+  background: var(--lk-ground); color: var(--lk-ink);
+  box-shadow: inset 0 0 0 1px var(--lk-edge);
+}
+.wl-paper-plate::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(118% 88% at 50% 38%, transparent 48%, rgba(30, 22, 12, 0.2) 100%);
+}
+.wl-paper-plate > * { position: relative; z-index: 1; }
+/* The chin is on the FRAME, which is white whatever the picture is, so its
+   ink is the frame's and not the emulsion's — otherwise a letter on a dark
+   photograph writes its name in cream on white and disappears. The ink
+   itself is declared with the foot's, below, since both stand on the frame. */
+.wl-paper[data-look="polaroid"] .wl-paper-chin {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 10px 5px 4px;
+}
+/* The chin is one line of frame under a picture, so the name written on it
+   has to fit the frame rather than run off it: the title is a flex item and
+   without a floor of zero it refuses to shrink, which cut the last letters
+   off any name longer than about twelve characters. */
+.wl-paper-chin .wl-paper-title { min-width: 0; flex: 1 1 auto; }
+/* The name is written across the chin, so it WRAPS rather than being cut.
+   Everywhere else the addressee is a title on one line with an ellipsis, and
+   a chin is not a title bar: it is the white strip under a print, and a hand
+   that runs out of room there carries on underneath. The size comes down a
+   step too, since the strip is furniture and not a heading. */
+.wl-paper-chin .wl-addressee-line { flex-wrap: wrap; }
+.wl-paper-chin .wl-addressee-name {
+  font-size: calc(18px * var(--lk-title-size));
+  white-space: normal; overflow: visible; overflow-wrap: anywhere;
+}
+.wl-paper-chin .wl-pen { margin-left: auto; }
+
+/* ── the postcard, which is divided ──────────────────────────────────────── */
+/* The message on the left of the rule and the addressee on the right of it,
+   which is the whole of what a postcard is. The address side clears the
+   stamp box above it. */
+/* The card is its own container, because what decides whether a back can be
+   divided is the width of the CARD and not the width of the window: the same
+   letter is a wide sheet on the letter screen and a narrow one in a list, at
+   one window size. A media query got the phone right and the list wrong. */
+.wl-paper[data-look="postcard"] { container-type: inline-size; }
+.wl-paper-divided { display: grid; grid-template-columns: 1.45fr 1fr; gap: 14px; align-items: start; }
+.wl-paper-msg { min-width: 0; }
+.wl-paper-addr {
+  min-width: 0; padding-left: 14px; padding-top: 56px;
+  border-left: 1px solid var(--lk-rule);
+}
+/* An address is written across the lines and a title is not, so the one
+   place the addressee wraps is here: `.wl-paper-title` cuts it to one line
+   with an ellipsis everywhere else, which on a column this narrow lost most
+   of the name. */
+.wl-paper-addr .wl-paper-title { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.wl-paper-addr .wl-paper-crest { flex-wrap: wrap; }
+.wl-paper-lines { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 0; }
+.wl-paper-lines i { display: block; height: 1px; background: var(--lk-rule); }
+/* Under that width the two columns leave a letter about twenty characters
+   wide, which is not a postcard, it is a column of syllables. So the back
+   stacks and the rule goes over the address instead of beside it. */
+@container (max-width: 410px) {
+  .wl-paper-divided { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .wl-paper-addr {
+    padding-left: 0; padding-top: 14px; margin-top: 14px;
+    border-left: 0; border-top: 1px solid var(--lk-rule);
+  }
+  /* Stacked, the dateline runs the whole width and arrives under the stamp
+     box, where its own stamp and the box are two marks in one corner. The
+     row gives the box its room rather than the box moving, because the
+     corner is where a stamp goes and the far end of a rule is not. */
+  .wl-paper[data-look="postcard"] .wl-paper-head { padding-right: 52px; }
+}
+
+/* ── the rest of the eight, which only dress the card ─────────────────────── */
+/* letterpress: the crest and the addressee are struck the way the deboss is */
+.wl-paper[data-look="letterpress"] { --lk-pad-x: 24px; --lk-pad-t: 25px; --lk-pad-b: 22px; }
+.wl-paper[data-look="letterpress"] .wl-paper-title,
+.wl-paper[data-look="letterpress"] .wl-paper-head { text-shadow: 0 1px 0 var(--lk-paper-hi); }
+.wl-paper[data-look="letterpress"] .wl-paper-head { letter-spacing: 0.2em; }
+/* telegram: the convention is upper case, and it is a DISPLAY choice — the
+   words in the row are the words the writer typed, and the list at the
+   keyboard and the classifier after it read exactly what they always read */
+.wl-paper[data-look="telegram"] { --lk-pad-x: 20px; --lk-pad-t: 21px; --lk-pad-b: 19px; }
+.wl-paper[data-look="telegram"] .wl-paper-body { text-transform: uppercase; letter-spacing: 0.03em; }
+/* and the addressee is NOT uppercased with it. A handle is a lower-case
+   identifier and uppercasing one turns it into a different string from the
+   one on the wall — the same rule `.wl-label .wl-h` already holds the labels
+   to. The form's voice belongs to the words the writer typed, not to the
+   name of the person they are for. */
+.wl-paper[data-look="telegram"] .wl-paper-title { letter-spacing: 0.01em; }
+.wl-paper[data-look="telegram"] .wl-paper-head { letter-spacing: 0.17em; }
+/* chalkboard: the halo chalk leaves, and the room the rail needs */
+/* the rail is eleven pixels of wood, and the marks clear it */
+.wl-paper[data-look="chalkboard"] { --lk-foot-clear: 11px; }
+.wl-paper[data-look="chalkboard"] .wl-paper-body,
+.wl-paper[data-look="chalkboard"] .wl-paper-title {
+  text-shadow: 0 0 1.5px var(--lk-ink-soft), 0 0 5px var(--lk-ink-faint);
+}
+/* velvet: the deboss wants a little more room than the plain card gives */
+.wl-paper[data-look="velvet"] { --lk-pad-x: 21px; --lk-pad-t: 22px; --lk-pad-b: 20px; }
+.wl-paper[data-look="velvet"] .wl-paper-head { letter-spacing: 0.2em; }
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
@@ -1399,55 +1877,94 @@
    screens/Wall.jsx `Seek`: the wall's own question, centred under the ear
    once the veil has gone, and the second half of the masthead.
 
-   It is a PLATE, because twice it was type alone and twice nobody could
-   read it: a bare baseline at twenty-eight pixels of mono, at the left
-   gutter, over a crowd of pale discs that showed straight through the
-   words. The two shades pour the void back at the top and the bottom of the
-   screen and that is enough for a line or two of chrome; it is not enough
-   for the one control the wall wants found. So the plate makes its own
-   legibility where the type actually is: blurred void, a hairline round it,
-   the glass at its head, the question inside.
+   It is GLASS, because twice it was type alone and twice nobody could read
+   it: a bare baseline at twenty-eight pixels of mono, at the left gutter,
+   over a crowd of pale discs that showed straight through the words. The two
+   shades pour the void back at the top and the bottom of the screen and that
+   is enough for a line or two of chrome; it is not enough for the one control
+   the wall wants found. So the glass makes its own legibility where the type
+   actually is: blurred void, the lens at its head, the question inside.
 
-   Unlit, still. The chalk `write` in the bar is the wall's one bright
-   thing and stays so — this is a question, that is the act, and the
-   difference between them is the difference between a glass capsule and a
-   chalk one. The blur is the only material here: no fill that reads as a
-   box, no second accent, nothing that competes with a face.
+   ── and there is no ring on it ──
+   It carried a hairline of chalk round its edge while it had to read as a
+   button, and it is not a button: it is a field, and since the panel it opens
+   is part of it, it is a field that becomes a surface. A white outline is the
+   one edge on this screen belonging to no object — over a crowd of pale discs
+   it read as a second capsule floating a pixel off the first, and under the
+   panel it would have had to be drawn round a shape that changes height. The
+   blur is the material and the material is the edge. What is left of the ring
+   is the inner top highlight, which is not a line round a box, it is the
+   light catching the near edge of a piece of glass.
 
-   The row is full width so the capsule can be centred in it, and the row
-   takes no pointer — only the capsule does, or a tap on a disc beside the
-   search would open the search. */
+   ── the panel ──
+   The capsule and the answers are ONE piece of glass. The rows are inside the
+   same blurred box, which grows downward as they arrive and folds back to a
+   capsule when the field is emptied or left: one surface changing shape, not
+   a list appearing under a control. The radius goes from the pill to the
+   sheet's own corner over the same travel, because a capsule with a column of
+   rows in it is not a capsule any more.
+
+   The row is full width so the glass can be centred in it, and the row takes
+   no pointer — only the glass does, or a tap on a disc beside the search
+   would open the search. */
 .wl-seek {
   pointer-events: none;
   display: flex; justify-content: center;
   padding: 0 0 2px;
 }
-.wl-seek .wl-field {
-  pointer-events: auto; cursor: text;
+.wl-seek-glass {
+  pointer-events: auto;
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
   width: 100%; max-width: 440px;
-  align-items: center; justify-content: center; gap: 12px;
-  min-height: 54px; padding: 0 20px;
   border-radius: var(--r-pill);
   background: rgba(244, 241, 234, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
     0 22px 48px -28px rgba(0, 0, 0, 0.95);
   -webkit-backdrop-filter: blur(22px) saturate(1.25);
   backdrop-filter: blur(22px) saturate(1.25);
-  transition: background 260ms var(--ease), box-shadow 260ms var(--ease), transform 220ms var(--ease);
+  transition: background 260ms var(--ease), box-shadow 260ms var(--ease),
+              border-radius 260ms var(--ease);
 }
-/* it answers the thumb the way every other control on the wall does */
-.wl-seek .wl-field:active { transform: scale(0.985); transition-duration: 110ms; }
-/* the capsule is the edge; the baseline under the type would be a second one */
+/* Open, the glass is a sheet: a deeper blur, because there is more behind it
+   now and it has to hold six lines of type rather than one, and the shadow
+   under it goes from the hint that seats a capsule to the one that says the
+   panel is over the crowd rather than in it. */
+.wl-seek-glass.is-open {
+  border-radius: 24px;
+  background: rgba(244, 241, 234, 0.085);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 28px 64px -24px rgba(0, 0, 0, 0.96);
+  -webkit-backdrop-filter: blur(30px) saturate(1.3);
+  backdrop-filter: blur(30px) saturate(1.3);
+}
+/* ── the head ──
+   The field itself is bare: the glass under it is the surface, and a field
+   with its own plate inside a plate is two boxes for one question.
+
+   And it does not move when the panel opens. Nothing about it changes — not
+   its height, not the lens's place, not the measure the question is centred
+   in — so what a person sees is one thing: the glass growing downward under
+   the line they are typing. Every version where the field also relaxed its
+   measure or gave back four pixels of height moved the letters under the
+   cursor at the moment the first answer landed. */
+.wl-seek .wl-field {
+  cursor: text; background: none; box-shadow: none;
+  width: 100%;
+  align-items: center; justify-content: center; gap: 12px;
+  min-height: 54px; padding: 0 20px;
+  border-radius: inherit;
+}
+/* the glass is the edge; the baseline under the type would be a second one */
 .wl-seek .wl-field-line { display: none; }
 .wl-seek .wl-at { color: rgba(244, 241, 234, 0.72); }
-/* The glass and the question are one group in the middle of the plate,
-   under the middle of the ear, rather than a glyph against the left edge
-   with ten characters after it and a hundred pixels of nothing to the
-   right. The box is measured in `ch` of its own mono face, so it is the
-   question's own length at whatever size the breakpoint sets, and a name
-   typed into it before the sheet has mounted stays centred in it. */
+/* The lens and the question are one group in the middle of the glass, under
+   the middle of the ear, rather than a glyph against the left edge with ten
+   characters after it and a hundred pixels of nothing to the right. The box
+   is measured in `ch` of its own mono face, so it is the question's own
+   length at whatever size the breakpoint sets. */
 .wl-seek .wl-field input {
   flex: 0 1 auto; width: 16ch;
   font-size: 17.5px; letter-spacing: -0.004em; text-align: center;
@@ -1457,22 +1974,56 @@
    on this surface it is a label that has to be read at a glance, not a hint
    under a cursor */
 .wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.74); }
-.wl-seek .wl-field:focus-within {
-  background: rgba(244, 241, 234, 0.1);
-  box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 20px 44px -26px rgba(0, 0, 0, 0.95);
-}
 .wl-seek .wl-field:focus-within .wl-at { color: var(--chalk); }
 @media (hover: hover) and (pointer: fine) {
-  .wl-seek .wl-field:hover {
-    background: rgba(244, 241, 234, 0.085);
-    box-shadow:
-      inset 0 0 0 1px rgba(244, 241, 234, 0.24),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 20px 44px -26px rgba(0, 0, 0, 0.95);
-  }
+  .wl-seek-glass:hover { background: rgba(244, 241, 234, 0.125); }
+  .wl-seek-glass.is-open:hover { background: rgba(244, 241, 234, 0.085); }
+}
+
+/* ── what it found ──
+   Inside the glass, under a hairline that is the only line drawn in here and
+   is a seam between two parts of one surface rather than a border round
+   either. The rows are the same person the sky and the sheet draw. */
+.wl-seek-found {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px; padding-top: 0;
+  max-height: min(52vh, 380px); overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: wl-seek-open 260ms var(--ease) both;
+}
+@keyframes wl-seek-open {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+.wl-seek-row {
+  display: flex; align-items: center;
+  padding: 7px 10px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: background 160ms var(--ease), border-color 160ms var(--ease);
+}
+.wl-seek-row.is-active { background: rgba(244, 241, 234, 0.06); border-color: var(--hair-soft); }
+.wl-seek-row:active { background: rgba(244, 241, 234, 0.09); transition-duration: 100ms; }
+.wl-seek-who { width: 100%; }
+/* nothing under it, and nothing offered: the act is already at the foot of
+   this screen, and a door to an account is not what somebody who has just
+   failed to find their own name is owed */
+.wl-seek-none {
+  margin: 0; padding: 10px 12px 14px;
+  font-family: var(--f-util); font-size: 13px; line-height: 1.45;
+  color: var(--ash); text-align: center;
+}
+/* the seam: drawn on the list and not on the field, so it is only ever there
+   while there is something under it */
+.wl-seek-found::before {
+  content: ''; display: block; height: 1px; margin: 0 4px 6px;
+  background: var(--hair-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-seek-glass { transition: none; }
+  .wl-seek-found { animation: none; }
 }
 
 /* ═══ THE STAGE ════════════════════════════════════════════════════════════
@@ -1700,21 +2251,34 @@
 
 /* ── the composer, at the foot ──
    parts.jsx `WriteAct`. The primary capsule in the middle of the bottom
-   edge: the nib and the words, with the running light inside it. It is the
-   one act on the wall and the one bright thing at the foot; it stood in the
+   edge: the nib and the words. It is the one act on the wall; it stood in the
    bar as a small capsule beside the person, a hundred pixels over the search
-   plate, and the two capsules read as a crammed head. Compact, not wide, so
-   it stands over the faces rather than on them. */
+   plate, and the two capsules read as a crammed head.
+
+   It is a target as well as a mark, and at its own content's width it was
+   142px of capsule with the words almost touching both ends — the smallest
+   thing on the screen carrying the only act on it. It is given a length now,
+   and a ceiling: never wider than the column it stands in, so the phone is
+   the case that decides and the capsule still floats over the faces rather
+   than ruling a line across them. */
 .wl-dock-act {
   display: flex; justify-content: center;
   padding: 10px 0 0;
 }
+/* The one capsule on the wall that has to throw a shadow onto what is behind
+   it, because what is behind it is a crowd of moving faces. It hands the
+   metal a `--lq-lift` rather than a box-shadow, so the deep drop is ADDED to
+   the capsule's own seat in all three of its states instead of replacing it
+   (`.wl-lq` above). */
 .wl-write-act {
-  min-height: 46px; padding: 0 22px 0 18px; gap: 9px;
+  min-height: 46px; min-width: min(100%, 220px);
+  padding: 0 22px; gap: 9px;
   font-size: 14px;
-  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
+  --lq-lift: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
 }
-.wl-write-act .wl-icon { color: rgba(20, 19, 26, 0.72); }
+/* the nib is struck in the capsule's own ink — it was the paper's while the
+   primary was chalk, and on the metal that ink is a hole */
+.wl-write-act .wl-icon { color: currentColor; opacity: 0.86; }
 /* the notice puts itself away by the mark in its corner */
 .wl-down .wl-down-x { position: absolute; top: 8px; right: 8px; }
 .wl-down .wl-down-in { padding-right: 34px; }
@@ -2480,19 +3044,20 @@
 .wl-look-rail { flex: 0 0 auto; }
 
 /* One height for all three, so switching between them does not shove the
-   card up and down the sheet: the tallest is the colour grid's two rows,
-   and the one row of papers is centred in the same height rather than left
-   hanging off the top of it. */
-.wl-look-body { display: grid; align-content: center; min-height: 104px; }
+   card up and down the sheet. The tallest is now the colour grid's four rows
+   and the type grid's four, and the two rows of papers are centred in the
+   same height rather than left hanging off the top of it. */
+.wl-look-body { display: grid; align-content: center; min-height: 232px; }
 .wl-look-grid {
   display: grid; gap: 10px; align-items: start;
   animation: wl-look-swap 260ms var(--ease) both;
 }
 @keyframes wl-look-swap { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: none; } }
-/* five papers on one line; twelve colours as two even rows of six; six
-   faces as two rows of three, which is the room a name needs to be set in
-   its own face and read */
-.wl-look-grid.is-texture { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* eight papers as two even rows of four; twenty-four colours as four even
+   rows of six, the paper's own ground taking the first cell; twelve faces as
+   four rows of three, which is the room a name needs to be set in its own
+   face and read. No row is ragged and nothing scrolls sideways. */
+.wl-look-grid.is-texture { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 10px; }
 .wl-look-grid.is-color   { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 11px 10px; }
 .wl-look-grid.is-type    { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -2516,12 +3081,39 @@
 .wl-look-tile {
   position: relative; display: block;
   width: 100%; max-width: 76px; aspect-ratio: 3 / 4; overflow: hidden;
-  border-radius: 10px;
-  background: var(--lk-ground);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+  /* The corner the theme actually has, scaled to the tile (looks.js
+     `radius`). It was a flat 10px for every theme, so a person could not see
+     that a letterpress is square and a paper is soft until the letter was on
+     the wall — a picker whose swatch does not draw the thing being picked is
+     a picker to guess in. */
+  border-radius: max(2px, calc(var(--lk-radius) * 0.45));
+  background: var(--lk-frame, var(--lk-ground));
+  box-shadow: 0 0 0 1px var(--lk-edge), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
 }
 .wl-look-tile-in { position: absolute; inset: 9px 8px; display: flex; flex-direction: column; gap: 5px; }
+/* the two papers whose letter is written on something inside them: the tile
+   shows the screen in the shell and the picture over the chin, because that
+   is what is being chosen */
+.wl-look-tile[data-look="nokia"] .wl-look-tile-in,
+.wl-look-tile[data-look="polaroid"] .wl-look-tile-in {
+  inset: 5px; padding: 5px 5px 0; background: var(--lk-ground);
+  box-shadow: inset 0 0 0 1px var(--lk-edge);
+}
+.wl-look-tile[data-look="nokia"] .wl-look-tile-in { inset: 5px 5px 11px; border-radius: 2px; }
+.wl-look-tile[data-look="polaroid"] .wl-look-tile-in { inset: 5px 5px 15px; }
+/* and the chrome that is still legible at seventy-six pixels, so the four
+   light papers are told apart IN THE GRID and not only once one is on the
+   card: the two that are ruled round the edge are ruled, and the one that
+   divides its back is divided. */
+.wl-look-tile[data-look="letterpress"]::after,
+.wl-look-tile[data-look="telegram"]::after,
+.wl-look-tile[data-look="postcard"]::after {
+  content: ''; position: absolute; pointer-events: none;
+}
+.wl-look-tile[data-look="letterpress"]::after { inset: 4px; border: 1px solid var(--lk-ink-soft); }
+.wl-look-tile[data-look="telegram"]::after { inset: 4px; border: 1px solid var(--lk-ink-mid); }
+.wl-look-tile[data-look="postcard"]::after { top: 8px; bottom: 8px; right: 30%; width: 1px; background: var(--lk-rule); }
 .wl-look-aa { font-family: var(--lk-face); font-weight: var(--lk-title-w); font-size: 13px; line-height: 1; color: var(--lk-ink); margin-bottom: 3px; }
 .wl-look-bar { height: 3px; border-radius: 2px; background: var(--lk-ink); opacity: 0.5; }
 .wl-look-opt[aria-checked="true"] .wl-look-tile {
@@ -2564,7 +3156,7 @@
 @media (max-width: 359px) {
   .wl-look { padding: 11px 10px 9px; }
   .wl-look-grid { gap: 8px; }
-  .wl-look-body { min-height: 96px; }
+  .wl-look-body { min-height: 214px; }
 }
 
 /* the card and the line under it, in one frame, and the frame is what shakes
@@ -3235,7 +3827,8 @@
      centred in it, and the capsule keeps a measure of its own */
   .wl-masthead { grid-row: 1; width: 100%; padding-top: 14px; }
   .wl-seek { width: 100%; }
-  .wl-seek .wl-field { max-width: 480px; min-height: 56px; }
+  .wl-seek-glass { max-width: 480px; }
+  .wl-seek .wl-field { min-height: 56px; }
   .wl-seek .wl-field input { font-size: 18px; }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
@@ -3361,9 +3954,12 @@
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
   .wl-masthead { grid-column: 1 / -1; grid-row: 1; padding-top: 0; }
   .wl-ear { padding-top: 6px; }
-  /* 390px of height: the plate gives back what it can and keeps its ring */
-  .wl-seek .wl-field { min-height: 42px; max-width: 420px; }
+  /* 390px of height: the glass gives back what it can, and its panel with
+     it — six rows over a 390px window is the window */
+  .wl-seek-glass { max-width: 420px; }
+  .wl-seek .wl-field { min-height: 42px; }
   .wl-seek .wl-field input { font-size: 16px; }
+  .wl-seek-found { max-height: 44vh; }
   .wl-veil-in { padding: 0 18px 2vh; }
   .wl-wallpage .wl-dock {
     grid-column: 1 / -1; grid-row: 4;

@@ -25,6 +25,7 @@ import { useEffect, useRef } from 'react'
 import Alignment from './Alignment.jsx'
 import { WALL, LETTER, since } from './data.js'
 import { ECL, ringPath, starPath } from '../wall/mark.js'
+import { Pill } from '../wall/parts.jsx'
 
 const MARK = { ring: ringPath(), star: starPath(ECL) }
 
@@ -148,7 +149,7 @@ export default function Hero({ still = false }) {
         <div className="wl-dock sg-dock sg-in" style={{ '--d': '720ms' }}>
           <div className="wl-dock-veil" />
           <div className="wl-dock-in">
-            <button className="wl-pill is-light" type="button">place a ping</button>
+            <Pill tone="light">place a ping</Pill>
           </div>
         </div>
       </div>

@@ -124,7 +124,7 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Light, Roll, HandleField, WriteAct, Close } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Light, Roll, HandleField, WriteAct, Close, Who, useSuggest } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
 import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
@@ -289,62 +289,138 @@ function Ear({ letters }) {
 // directly under the ear, with the bar over it.
 //
 // ── and it stands on something ──
-// Twice now it has been a control nobody could find. It was a 40px ring with
-// a glass in it, in the corner of the bar a thumb reaches last, which read as
-// settings; then it was a bare baseline at the left gutter, twenty-eight
-// pixels of mono with the crowd showing straight through the words — over a
-// field of pale discs the placeholder and the faces behind it were the same
-// brightness, and the one question the wall asks was the least legible thing
-// on it. Type alone cannot hold a surface that moves.
+// Twice it was type alone and twice nobody could find it. It was a 40px ring
+// with a glass in it, in the corner of the bar a thumb reaches last, which
+// read as settings; then it was a bare baseline at the left gutter, twenty-
+// eight pixels of mono with the crowd showing straight through the words —
+// over a field of pale discs the placeholder and the faces behind it were the
+// same brightness, and the one question the wall asks was the least legible
+// thing on it. Type alone cannot hold a surface that moves.
 //
-// It is a plate now: blurred void in a capsule, a hairline round it, the
-// glass at its head and the question inside, centred and capped at the
-// column's measure. The blur is what makes it readable over whatever face
-// happens to be under it — the same argument the two shades make, made
-// locally, where the type actually is. It is still not LIT: the chalk
-// `write` in the bar is the one bright thing on this screen and stays so,
-// and the difference between the two is the difference between the act and
-// the question.
+// It is glass: blurred void in a capsule, the lens at its head and the
+// question inside, centred and capped at the column's measure. The blur is
+// what makes it readable over whatever face happens to be under it — the same
+// argument the two shades make, made locally, where the type actually is.
 //
-// It is a real field and not a button drawn as one, for the keyboard's
-// sake: the tap that lands on it raises the keyboard, the focus opens the
-// search sheet over the wall, and the sheet's own field takes the focus on
-// mount (parts.jsx HandleField `focusOnTouch`), so the keyboard the tap
-// raised is the keyboard the sheet keeps. One tap, no dead half second, and
-// the names stay visible behind the results the whole time. Anything typed
-// in the beat before the sheet mounts rides along in the store.
+// There is no ring round it any more. A hairline of chalk was drawn on it
+// while it was a plate that had to read as a button, and a button is exactly
+// what it is not: a white outline on a piece of glass is the one edge on this
+// screen that belongs to no object, and over a crowd of pale discs it read as
+// a second capsule floating a pixel off the first. The blur is the material
+// and the material is the edge.
 //
-// The whole plate is the target and not just the input inside it, since a
-// capsule with twenty pixels of dead padding round its text is a control
-// that misses the thumb aimed at its edge. The press and the focus both
-// open the sheet, which is two calls for one tap, so a second open inside
-// the same beat is dropped rather than pushed onto the history twice.
+// ── and it answers in place ─────────────────────────────────────────────────
+// It used to be a field that behaved as a door: any touch on it pushed
+// `/find` onto the history and a sheet came up over the wall carrying a
+// second field, which the person then typed into. One question, two fields,
+// a route, and a keyboard handed between them.
+//
+// Now the glass itself opens: the capsule is the head of a panel that grows
+// downward as the answers arrive, over the crowd, and closes back to a
+// capsule when the field is emptied or left. Nothing is navigated to, so
+// nothing has to be navigated back from — a name is found and pressed from
+// the surface the names are on, which is the whole argument for the wall
+// being the landing in the first place.
+//
+// The sheet is still there and still reachable at `/find` (screens/Find.jsx):
+// a link into the search, and the fuller answer for somebody who arrived
+// looking. It is simply no longer the only way to get one.
+//
+// ── what the panel says ──
+// The rows, from the first character, and nothing over them. A caption
+// reading "on the wall" stood at the head of the list — on the wall, under
+// the wall's own field, over names the wall had just answered with. Three
+// words to say where you already are.
+//
+// Finding nothing says so, in one line, and offers nothing: the composer is
+// at the foot of this screen already and the wall has no account to sell to
+// somebody who has just looked for their own name and not found it.
 //
 // The council that placed it here (docs/THE-COUNCIL.md) weighed the founder's
 // large glowing pill at the centre, a field on the veil, and a capsule in the
 // dock, and turned each down: the first for being a second bright thing on
 // the faces, the second for putting a keyboard over a crowd nobody has seen
-// yet, the third for taking the one slot the tab needs. A plate is none of
-// those three: it is not lit, it is not over the crowd's middle, and it is
-// not in the dock.
-const SEEK_AGAIN_MS = 600
+// yet, the third for taking the one slot the tab needs.
+const SEEK_ROWS = 6
 
 function Seek({ go }) {
-  const [v, setV] = useState('')
-  const last = useRef(0)
-  const open = useCallback(() => {
-    const now = Date.now()
-    if (now - last.current < SEEK_AGAIN_MS) return
-    last.current = now
-    patch({ query: v })
-    go('find')
-  }, [go, v])
+  // The question survives the veil and the sheet both: whatever was typed
+  // here is what `/find` opens on, and what this reopens on if it is left and
+  // come back to.
+  const [v, setV] = useState(() => getState().query || '')
+  const [held, setHeld] = useState(false)
+  // Escape puts the panel away without emptying the field, which is the one
+  // way to get the crowd back without losing what was typed. The next
+  // keystroke brings it back.
+  const [shut, setShut] = useState(false)
+  const typed = v.trim().length > 0
+
+  const sug = useSuggest(v, { max: SEEK_ROWS, onPick: (t) => go('letter', t.handle) })
+  const { rows, asking, active, setActive, pick, keyDown } = sug
+
+  // The question is remembered, a beat after the typing stops. The store is
+  // one blob written whole to localStorage (store.js `write`), and a
+  // synchronous write of the whole blob per character, on the one screen
+  // carrying a running shader behind it, is the jank a person feels in their
+  // own typing.
+  useEffect(() => {
+    const t = setTimeout(() => patch({ query: v.trim().replace(/\s+/g, ' ') }), 300)
+    return () => clearTimeout(t)
+  }, [v])
+
+  const change = (next) => { setShut(false); setV(next) }
+
+  // Down while the field is held and there is something in it.
+  //
+  // It is not gated on there BEING rows: a panel that exists only once it has
+  // an answer is a panel that flickers on every third keystroke, and "nothing
+  // under this" is an answer.
+  //
+  // And it is gated on the focus rather than on an overlay. A press on one of
+  // its own rows never takes the focus (the row holds the pointer down,
+  // below), so a press anywhere else is a press outside: the crowd takes it,
+  // the field is left, the panel folds. Nothing invisible is ever laid over
+  // the faces to catch it.
+  const down = held && typed && !shut
+
+  const keys = (e) => {
+    if (e.key === 'Escape' && down) { e.preventDefault(); setShut(true); return true }
+    return keyDown(e)
+  }
+  // Enter goes to the first name under the cursor. The list handles enter
+  // itself while one of its rows is lit.
+  const commit = () => { if (rows.length) go('letter', rows[0].handle) }
+
   return (
-    <div className="wl-seek" onClick={open}>
-      <HandleField
-        kind="search" value={v} onChange={setV} onFocus={open} onSubmit={open}
-        placeholder="look for a name" label="look for a name"
-      />
+    <div className="wl-seek">
+      <div className={`wl-seek-glass${down ? ' is-open' : ''}`}>
+        <HandleField
+          kind="search" value={v} onChange={change} onSubmit={commit} onKeyDown={keys}
+          onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}
+          placeholder="look for a name" label="look for a name"
+        />
+        {down && (
+          <div className="wl-seek-found" role="listbox" aria-label="names on the wall">
+            {rows.map((t, i) => (
+              <button
+                type="button" role="option" aria-selected={i === active} key={t.handle}
+                className={`wl-seek-row${i === active ? ' is-active' : ''}`}
+                /* the field keeps its focus and its keyboard through a press
+                   on a row, so a person on a phone is not thrown back to the
+                   top of their own question */
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => pick(t)}
+                onPointerEnter={() => setActive(i)}
+              >
+                <Who handle={t.handle} size={34} meta={t.count > 1 ? `${t.count} letters` : null} className="wl-seek-who" />
+              </button>
+            ))}
+            {!rows.length && (
+              <p className="wl-seek-none">{asking ? 'looking' : 'no letters under this name yet'}</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -133,16 +133,33 @@ Changing the accent is two lines. Nothing else in the build names a hue.
 ### 2.5 The looks
 
 One exception to the sentence above, and it is fenced. A letter can choose its
-paper (migration 0055, `app/src/wall/looks.js`): nine themes and twelve tints,
-each a ground and the ink that reads on it, are the only other hues in the
-product, they live in that one file and in the theme rules of `wall.css` keyed
-on `data-look`, and they are drawn only on a paper, its tile in the panel and
-the disc of the name it was written to. They are the writer's choice for one
+paper (migration 0055, `app/src/wall/looks.js`): eight themes and twenty-three
+tints, each a ground and the ink that reads on it, are the only other hues in
+the product, they live in that one file and in the theme rules of `wall.css`
+keyed on `data-look`, and they are drawn only on a paper, its tile in the panel
+and the disc of the name it was written to. They are the writer's choice for one
 letter and never the product's: no bar, sheet, control or line of the system's
 own type is ever set in one. A looked paper is still the one bright thing on
 its sheet, in the colour the writer chose it. The ban list's fourth added
 check, *the accent appears more than once*, reads the system's accent and not
 a letter's paper.
+
+A theme is a whole object and not a fill. Beside its ground and its ink it
+carries a `grain` (the ONE surface layer on the card, and `none` is a real
+answer), a `chrome` (the parts drawn for that paper and no other — the nokia's
+signal and battery, the chalkboard's rail, the letterpress's blind deboss, the
+telegram's printed form, the postcard's stamp box), a `layout` where the paper
+moves the card's own slots, and a `frame` where the letter is written on
+something inside the card rather than on the card. Every mark of it is a
+gradient, a border or the wall's own constellation: nothing is downloaded and
+nothing is a picture. The handful of literal hues the furniture needs — the
+chalkboard's wood, the polaroid's white border — are theme rules in `wall.css`
+keyed on `data-look`, which is where this section already puts a look's colour.
+
+`candy`, `night` and `gold` came off with the eight papers, as `y2k`,
+`receipt`, `notebook` and `terminal` did before them. A letter written on any
+of the seven keeps its slug in its row and draws the plain paper: nothing is
+rewritten in the corpus to take a row off a menu.
 
 ---
 
@@ -328,14 +345,31 @@ All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: ba
 
 ### 4.0a The faces a letter may be set in
 
-The four faces above are the system's and carry its four jobs. Three more
-are in `app/public/fonts/` and they are not the system's: Pixelify Sans, Caveat
-and Comfortaa are the pixel, the hand and the round a letter's LOOK may be set
-in (`app/src/wall/looks.js` `FACES`, with the serif, the sans and the mono at
-the letter's job), chosen by the writer for one letter and used for nothing
-else in the product. None of them is ever a headline, a label, a control or an
-identifier. They are fetched by `scripts/fetch-faces.mjs` with the others and
-a browser downloads one only when a card set in it is on the screen.
+The four faces above are the system's and carry its four jobs. Nine more are in
+`app/public/fonts/` and they are not the system's: they are the faces a
+letter's LOOK may be set in (`app/src/wall/looks.js` `FACES`, with the serif,
+the sans and the mono at the letter's job, which makes the writer's menu
+twelve), chosen by the writer for one letter and used for nothing else in the
+product. None of them is ever a headline, a label, a control or an identifier.
+
+| Slug | Face | What it is for |
+| --- | --- | --- |
+| `pixel` | Pixelify Sans | the handheld screen. Carries the nokia |
+| `hand` | Caveat | a hand. Carries the postcard and the polaroid |
+| `round` | Comfortaa | the softest thing a writer can pick |
+| `typewriter` | Special Elite | a struck key with the ink spread. Carries the telegram |
+| `screen` | VT323 | a true bitmap, drawn on a grid rather than rounded onto one |
+| `poster` | Oswald | condensed and upper case, for the letter that is four words long |
+| `display` | Playfair Display | a high-contrast Didone. Carries the velvet |
+| `marker` | Permanent Marker | felt tip, fast, no second thoughts |
+| `script` | Pinyon Script | copperplate, played straight |
+
+They are fetched by `scripts/fetch-faces.mjs` with the others and a browser
+downloads one only when a card set in it is on the screen, so twelve faces cost
+a visitor who never sees one exactly nothing. `size` and `title` in `FACES` are
+the per-face scale that puts each one's lower case on the same optical line as
+the serif's: a hand at 16px is smaller than a serif at 16px, a pixel face is
+larger, and a copperplate is barely there.
 
 ### 4.2 The rest
 
@@ -396,6 +430,28 @@ reference poster has no boxes at all.
 A row uses 14px, which is the one exception, because a 18px radius on a 60px tall
 row reads as a card and a row is not one.
 
+A letter's paper takes `--r-card` and nothing else, on all eight
+(`looks.js` `radius`). A paper may be a pressed sheet, a slate or a moulded
+shell and it is still a LETTER on the wall, and the thing that says so is the
+shape it is cut to: eight papers with eight corners read as eight components,
+and eight papers with one corner read as one card wearing eight materials,
+which is what they are. It was 18 / 26 / 10 / 18 / 18 across five themes, which
+was not a scale at all — 26 is `--r-sheet`, a *sheet's* corner and not a
+card's, and 10 was not a token. The token stays on the theme so a paper that
+one day has a reason can say a number, but it needs the reason, and being made
+of paper is not one. The panel's tile scales whichever value the theme carries,
+so the swatch draws the corner being chosen rather than a flat 10px.
+
+Three more things hold across all eight, for the same reason the corner does.
+The card's hairline is derived from the paper's own ink (`--lk-edge`), so every
+paper carries one weight of edge where a fixed black one drew hard on cream and
+nothing at all on near-black. The inset is three tokens (`--lk-pad-x`,
+`--lk-pad-t`, `--lk-pad-b`) rather than a padding each theme re-states. And the
+foot — the reader's three marks — is laid out against the CARD and not against
+the paper's inset, so the heart, the pen and the flag sit 20px from the edge and
+18px from the bottom on every letter in the deck, whatever paper somebody else
+chose. A control that moves is a control to be found again on every card.
+
 ### 5.3 Rhythm
 
 Vertical spacing is on no strict scale, but the values in use are few and they
@@ -447,7 +503,7 @@ Chosen per element, never a default applied everywhere.
 | `wl-light-run` | the running light, round the edge of the thing it is on |
 | the veil (`.wl-veil`) | the wall's masthead laid over its greyed hive, centred in the glass, lifted once per tab, from the tap: 1600 to 2300ms on a shallow ease out, the grey and the type opened together as a circle from where the veil was touched, while a pulse runs through the crowd under it and the lens arrives with the light (`wall/Hive.jsx`). Then the bar's controls and the dock rise in, 620 to 700ms, a beat apart. The ear does not move. Under reduced motion it goes without travelling |
 | the tap (`Hive.jsx tapAt`) | a disc pressed: the same pulse sent out from it, the field travelling to bring it into the light (a 300ms time constant), and its letter opening out of it 520ms in. The card closes back into the disc on the way out, 420ms, while the glass fades in place |
-| the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. The held frame before the band stretches, up to 760ms, until the metal has drawn a frame behind the cover, so the sequence uncovers metal from its first pixel on a phone as well as on a laptop; past that ceiling it runs on the flat mark and the metal fades in over it. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
+| the intro (`.hi`) | the same two seconds on both surfaces, at `/` and at `/berkeley`, once per tab. 2280ms: the liquid mark, uncovered in the order the mark assembles in, through a black cover whose cuts are FEATHERED — a hard edge over a material is an edge the material did not ask for, and the sweep's used to close the orbit as a notch with two square corners. The sweep's blur is taken on the stroke and the band clips it afterwards, so the ring's silhouette stays sharp and only the front of the reveal is soft. The band round its circuit at 180, the star at 520, assembled at 1180 (and the black cover fades here, under the veil, so nothing but the metal lifts), the lift at 1560. The held frame before the band stretches, up to 760ms, until the metal has drawn a frame behind the cover, so the sequence uncovers metal from its first pixel on a phone as well as on a laptop; past that ceiling it runs on the flat mark and the metal fades in over it. No name, no bloom: the logo and the black it comes out of. Skippable on any tap or key. Under reduced motion it renders assembled and lifts |
 
 Stagger by 60 to 220ms. Two objects entering on the same frame read as one.
 
@@ -494,7 +550,7 @@ Every one of these is on `design/components.html` in each of its states.
 
 | Component | Class | Notes |
 | --- | --- | --- |
-| Primary capsule | `.wl-pill.is-light` | chalk fill, ink type, 40px, 50px at `is-wide`. One per screen. `is-lit` puts the running light on it |
+| Primary capsule | `.wl-pill.wl-lq`, `LiquidButton` | the liquid metal capsule: a near-black face inside a metal rim, poured by the same fragment shader the mark is (`wall/LiquidButton.jsx`), with the word over both, 40px, 50px at `is-wide`. One per screen. It keeps `.wl-pill` for its metrics, so every size and every contextual rule still reaches it, and brings only its own surface. The clock idles at 0.6, doubles under a pointer and is thrown to 2.4 for the length of a press, which leaves a ripple where the hand landed. Mounts are counted and capped at four per page; past the cap, with no WebGL2, and disabled, it draws the still frame of the same material. It was a chalk fill with the running light on it until 21 September |
 | Ghost capsule | `.wl-pill.is-ghost` | hairline, ash type, 32px |
 | Tag capsule | `.wl-pill.is-tag` | not a control. `pointer-events: none` |
 | Arrow link | `.wl-arrow` | display face. The arrow travels on hover, the word does not |
@@ -523,9 +579,9 @@ had already said it. The role went with the caller.
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash. On the wall the one act stands in it as a word: `write`, the primary capsule at the bar's scale with the nib and the running light. The three targets on the right are one height: forty pixel rings for the glass and the person, the capsule thirty-six tall between them, and the person's face fills its ring at thirty |
 | Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and the `view the wall` capsule, centred in the glass, on a scrim that is deep under the words, gone where they are not, and is itself the way in. The capsule carries the running light and a ring leaves it every few seconds. Nothing else is on the screen under it: no dock, no foot, no controls in the bar. It opens as a circle from the tap. Once per tab |
 | Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking, the word in ash and the figure in chalk: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element. The wall's figure is a `Roll`, a step larger than its word, and turns when a letter goes up. The term stood at the end of the line for a while and came off, so the line above the search stays quiet |
-| Seek | `.wl-seek`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: the handle field at its large size with the glass in the place it paints its @ (`HandleField kind="search"`), `look for a name` in the placeholder, the column's full width, in the top shade. Unlit, and not a capsule: the chalk `write` in the bar is the wall's one bright thing, and the search is a question rather than a door. It is a real input, so the tap that lands on it raises the keyboard, its focus opens the search sheet, and the sheet's field takes the focus on mount (`focusOnTouch`), so the keyboard the tap raised is the keyboard the sheet keeps. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
+| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` inside it, capped at the column's measure. No ring on it — a white hairline over a crowd of pale discs is an edge belonging to no object, and the blur is the material and the edge both. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
 | Hive | `.wl-hive`, `Hive` | the wall's names as a crowd of faces on a hexagonal torus, bent by a lens (`wall/Hive.jsx`): one continuous function of distance from the light sets a disc's size, how far the lattice opens around it, and how much of the room left over it is allowed to wander in — so the middle is large, tight and ordered and the rim is small, far apart and scattered. It runs corner to corner behind the bar and the pill, dissolving at every edge under two gradients; it drifts by itself and every disc breathes on its own clock; it can be pulled in any direction, and under a mouse it swells where the pointer is. One handle is on the screen at a time, on one glass plate. A press flies the disc into the letter's card (`wall/Morph.jsx`). `app/src/wall/README.md`, The hive |
-| Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, the pill's own fill, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own — the composer's body — where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the pill that places a ping (`Pill lit`), and on the mutual row on the sky |
+| Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, an opaque chalk plate, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own — the composer's body — where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the composer's body while the resolver is out, on the veil's way in (`.wl-mast-go-pill`), and on the mutual row on the sky. It came off the primary when the primary became metal: a rose point travelling round the inside of a metal capsule is two currents under one word |
 
 ### 8.3 Fields
 

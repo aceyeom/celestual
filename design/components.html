@@ -248,20 +248,31 @@
     </p>
 
     <h3>The capsule</h3>
+    <p class="why">
+      The primary is a material: a dark capsule with a metal rim and the word over both
+      (wall/LiquidButton.jsx), poured by the same fragment shader the mark is. Every
+      specimen below is the STILL FRAME of it &mdash; the drawn gradient a browser with no
+      WebGL2 gets, and what a capsule past the mount budget draws &mdash; because this sheet
+      is a page and not the app, and nothing here mounts a shader.
+    </p>
     <div class="bed statebar">
-      <div class="spec"><span class="cap">is-light · rest</span><button class="wl-pill is-light">put it up</button></div>
-      <div class="spec"><span class="cap">is-light · hover</span><button class="wl-pill is-light" data-state=".wl-pill.is-light:hover:not(:disabled)">put it up</button><span class="nostate">needs a server</span></div>
-      <div class="spec"><span class="cap">is-light · active</span><button class="wl-pill is-light" data-state=".wl-pill:active:not(:disabled)">put it up</button><span class="nostate">needs a server</span></div>
-      <div class="spec"><span class="cap">is-light · disabled</span><button class="wl-pill is-light" disabled>put it up</button></div>
-      <div class="spec"><span class="cap">is-light is-lit · the running light</span><button class="wl-pill is-light is-lit"><span class="wl-light is-chalk is-on"><span class="wl-light-beam"></span><span class="wl-plate is-chalk"></span></span><span>place a ping</span></button></div>
-      <div class="spec"><span class="cap">is-ghost · 32px</span><button class="wl-pill is-ghost">not now</button></div>
-      <div class="spec"><span class="cap">is-ghost · hover</span><button class="wl-pill is-ghost" data-state=".wl-pill.is-ghost:hover:not(:disabled)">not now</button></div>
-      <div class="spec"><span class="cap">is-tag · a size, always on a role</span><span class="wl-pill is-ghost is-tag">sealed</span></div>
-      <div class="spec"><span class="cap">is-light is-tag</span><span class="wl-pill is-light is-tag">open</span></div>
+      <div class="spec"><span class="cap">wl-lq &middot; rest</span>
+        <button class="wl-pill wl-lq"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">put it up</span></span></button></div>
+      <div class="spec"><span class="cap">wl-lq &middot; hover</span>
+        <button class="wl-pill wl-lq" data-state=".wl-lq:hover:not(:disabled)"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">put it up</span></span></button><span class="nostate">needs a server</span></div>
+      <div class="spec"><span class="cap">wl-lq &middot; active</span>
+        <button class="wl-pill wl-lq" data-state=".wl-lq:active:not(:disabled)" data-child-state=".wl-lq:active:not(:disabled) .wl-lq-face|.wl-lq-face"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">put it up</span></span></button><span class="nostate">needs a server</span></div>
+      <div class="spec"><span class="cap">wl-lq &middot; disabled &middot; no metal is mounted</span>
+        <button class="wl-pill wl-lq is-off" disabled><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">put it up</span></span></button></div>
+      <div class="spec"><span class="cap">is-ghost &middot; 32px</span><button class="wl-pill is-ghost">not now</button></div>
+      <div class="spec"><span class="cap">is-ghost &middot; hover</span><button class="wl-pill is-ghost" data-state=".wl-pill.is-ghost:hover:not(:disabled)">not now</button></div>
+      <div class="spec"><span class="cap">is-tag &middot; a size, always on a role</span><span class="wl-pill is-ghost is-tag">sealed</span></div>
+      <div class="spec"><span class="cap">is-light is-tag &middot; the chalk fill, on a label</span><span class="wl-pill is-light is-tag">open</span></div>
+      <div class="spec"><span class="cap">is-lit &middot; the running light, now the veil&rsquo;s alone</span><button class="wl-pill is-ghost is-lit"><span class="wl-light is-chalk is-on"><span class="wl-light-beam"></span><span class="wl-plate is-chalk"></span></span><span>place a ping</span></button></div>
     </div>
     <div class="bed" style="margin-top:12px">
-      <div class="spec" style="width:100%"><span class="cap">is-wide · 50px · one per screen</span>
-        <button class="wl-pill is-light is-wide" style="max-width:420px">write to @jules.k</button></div>
+      <div class="spec" style="width:100%"><span class="cap">is-wide &middot; 50px &middot; one per screen</span>
+        <button class="wl-pill wl-lq is-wide" style="max-width:420px"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">write to @jules.k</span></span></button></div>
     </div>
 
     <h3>The arrow link · the arrow travels on hover, the word does not</h3>
@@ -309,7 +320,7 @@
     <h3>Focus · never removed, on any of them</h3>
     <div class="bed">
       <div class="spec"><span class="cap">1px at 55% · offset 3px</span>
-        <button class="wl-pill is-light" style="outline:1px solid rgba(244,241,234,0.55);outline-offset:3px;border-radius:var(--r-pill)">put it up</button></div>
+        <button class="wl-pill wl-lq" style="outline:1px solid rgba(244,241,234,0.55);outline-offset:3px"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">put it up</span></span></button></div>
       <div class="spec"><span class="cap">on a glyph</span>
         <button class="wl-iconbtn" id="ib4" style="outline:1px solid rgba(244,241,234,0.55);outline-offset:3px"></button></div>
     </div>
@@ -386,7 +397,7 @@
         <div class="wl-dock" style="position:relative">
           <div class="wl-dock-veil"></div>
           <div class="wl-dock-in">
-            <button class="wl-pill is-light is-wide">write</button>
+            <button class="wl-pill wl-lq is-wide"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">write</span></span></button>
             <a class="wl-quiet wl-dock-rest" href="#"><span>the rest of celestual</span><span class="wl-dock-rest-go">&#8594;</span></a>
           </div>
         </div>
@@ -405,7 +416,7 @@
           <div class="wl-head"><span class="wl-head-lead"><span class="wl-label is-dim">the letter</span></span><button class="wl-close" id="cl2"></button></div>
           <p class="wl-display is-s" style="padding:14px 0 4px">Somebody wrote to you.</p>
           <p style="color:var(--ash);font-size:13.5px;line-height:1.6;margin:0 0 16px">it stays shut until you answer it.</p>
-          <button class="wl-pill is-light is-wide">open it</button>
+          <button class="wl-pill wl-lq is-wide"><span class="wl-lq-rim"></span><span class="wl-lq-face"></span><span class="wl-lq-ink"><span class="wl-lq-word">open it</span></span></button>
         </div>
       </div>
       <div>

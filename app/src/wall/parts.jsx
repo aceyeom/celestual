@@ -14,8 +14,9 @@ import { Ecliptic, Sparkle, Verified } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
-import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc } from './looks.js'
+import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc, chromeOf, layoutOf } from './looks.js'
 import { campus } from './campus.js'
+import LiquidButton from './LiquidButton.jsx'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -117,9 +118,14 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 }
 
 // ── the pill ────────────────────────────────────────────────────────────────
-// Two roles and no third. `light` is the reference's white capsule and is the
-// primary action on any screen that has one; `ghost` is the outlined capsule
-// beside a list row.
+// Two roles and no third. `light` is the primary action on any screen that
+// has one; `ghost` is the outlined capsule beside a list row.
+//
+// `light` was the reference's white capsule for the whole of the build and is
+// the liquid metal one now (LiquidButton.jsx): a dark capsule with a metal
+// rim, the same fragment shader the mark is poured in. The role is unchanged
+// and so is every caller — the primary is still one word in one place, it is
+// just made of something else.
 //
 // There was a third, `ember`: a filled saturated capsule, described here as
 // the one saturated object in the build. It had exactly one caller — "today",
@@ -142,12 +148,31 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 // capsule as a soft rose bloom under the word. Never a halo round the outside;
 // that read as a second object circling the button.
 //
-// It is on by default for the light capsule, which is the primary act on
-// every screen that has one: the front door had it and the wall's sheets did
-// not, and the same product answered a press with two different buttons. A
-// ghost pill never carries it. Disabled, the light goes out and the plate
-// stays, so a button that cannot be pressed is not one that is glowing.
+// It was on by default for the light capsule and is now on nothing: the metal
+// has its own current and a rose point travelling round the inside of it
+// would be a second one under the same word. A ghost pill never carried it.
+// The prop and the component stay for the one caller that is not a pill — the
+// veil's "view the wall" (screens/Wall.jsx `.wl-mast-go`).
 export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = tone === 'light', disabled = false, icon = null, className = '', ...rest }) {
+  // ── the primary is a material now ──
+  // Every `light` capsule in the build — "write a letter" at the foot of the
+  // wall, "place a ping" on the front door, the step buttons on the composer,
+  // the gate's, the takedown's — is the liquid metal capsule
+  // (LiquidButton.jsx). The role chose the fill before and it chooses the
+  // material now, which is the same edit in the same place: nothing below
+  // this line and no caller anywhere knows what a primary is made of.
+  //
+  // The running light does not come with it. `Light` is a chalk plate with a
+  // rose point travelling round its inside, and a rose point travelling round
+  // the inside of a metal capsule is two currents under one word.
+  if (tone === 'light') {
+    return (
+      <LiquidButton
+        onClick={onClick} href={href} wide={wide} disabled={disabled}
+        icon={icon} className={className} {...rest}
+      >{children}</LiquidButton>
+    )
+  }
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', lit && 'is-lit', className].filter(Boolean).join(' ')
   const body = <>{lit ? <Light plate="chalk" on={!disabled} /> : null}{icon}<span>{children}</span></>
   if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
@@ -405,22 +430,82 @@ export function TopBar({ go, at = 'wall', acts = true }) {
 }
 
 // ── the act, at the foot ────────────────────────────────────────────────────
-// The one primary on the wall: a chalk capsule carrying the nib and the
-// words, with the running light inside it, standing in the middle of the
-// bottom edge where a thumb already is. It stood in the bar as a small
-// capsule beside the person, which put the act and the question (the search
-// plate under the bar) within a hundred pixels of each other as two capsules
-// of one shape, and the top of the wall read as crammed. Down here it is the
-// one bright thing at the foot, and the plate is the one thing at the head.
+// The one primary on the wall: the metal capsule carrying the nib and the
+// words, standing in the middle of the bottom edge where a thumb already is.
+// It stood in the bar as a small capsule beside the person, which put the act
+// and the question (the search plate under the bar) within a hundred pixels
+// of each other as two capsules of one shape, and the top of the wall read as
+// crammed. Down here it is the one object at the foot, and the plate is the
+// one thing at the head.
+//
+// It was a chalk capsule with the running light inside it until the primary
+// became a material (Pill above, LiquidButton.jsx). The pairing at the two
+// ends of the wall still holds and has turned over: the question at the head
+// is the glass the crowd shows through, and the act at the foot is the one
+// solid thing on the screen.
 export function WriteAct({ go, className = '' }) {
   return (
     <Pill
-      tone="light" lit className={`wl-write-act ${className}`}
+      tone="light" className={`wl-write-act ${className}`}
       onClick={() => toWrite(go)} icon={<Icon name="write" size={15} />}
       aria-label="write a letter" title="write a letter"
     >
       write a letter
     </Pill>
+  )
+}
+
+// ── the furniture ───────────────────────────────────────────────────────────
+// What a paper draws that is not its type: the parts that belong to one
+// theme and to no other (looks.js `chrome`). The letterpress's blind deboss,
+// the chalkboard's rail, the telegram's printed form, the postcard's stamp
+// box. Every one of them is a gradient, a border or the wall's own
+// constellation — nothing is downloaded and nothing is a picture
+// (docs/WALL-FEATURES.md, G7).
+//
+// All of it is aria-hidden, to the last element. A letter's meaning is its
+// words and who it is for; a battery on a screen is a costume, and a costume
+// is not read out.
+function Furniture({ chrome }) {
+  if (!chrome) return null
+  if (chrome === 'deboss' || chrome === 'rail' || chrome === 'form') {
+    return <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true" />
+  }
+  if (chrome === 'stamp') {
+    // the stamp, where the sovereign's head goes: a perforated box with the
+    // constellation in it, struck in the paper's own ink at the strengths
+    // every other mark on the card is struck at
+    return (
+      <span className="wl-fx wl-fx-stamp" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="26" height="26" focusable="false">
+          <path d="M22 66 40 28l20 26 16-20" className="wl-mark-line" />
+          <circle cx="22" cy="66" r="6" className="wl-mark-star" />
+          <circle cx="40" cy="28" r="4.4" className="wl-mark-star" />
+          <circle cx="60" cy="54" r="4.4" className="wl-mark-star" />
+          <circle cx="76" cy="34" r="6" className="wl-mark-star" />
+        </svg>
+      </span>
+    )
+  }
+  return null
+}
+
+// The nokia's status row: the signal at one end and the battery at the other,
+// struck in the screen's ink on the screen's own lattice. Three of the four
+// signal bars are lit and two of the three battery segments are, because a
+// full battery and full signal read as a picture of a phone and a phone that
+// is nearly charged reads as one somebody is holding.
+//
+// A carrier word stood between them and it said "celestual", which is the one
+// thing a letter must never do: the product does not sign the letters. The
+// wall is the product's and the paper is the writer's, and a letter carrying
+// a brand across its top has a second author on it.
+function NokiaBar() {
+  return (
+    <span className="wl-nk-bar" aria-hidden="true">
+      <span className="wl-nk-sig"><i /><i /><i /><i /></span>
+      <span className="wl-nk-batt"><i /><i /><i /></span>
+    </span>
   )
 }
 
@@ -432,7 +517,10 @@ export function WriteAct({ go, className = '' }) {
 // The grain on it is not the page's grain. Paper scatters light and a screen
 // does not, so this one is warmer, coarser and about four times stronger than
 // the grain on the void — without it the card is a beige rectangle, and with
-// it the card is a material.
+// it the card is a material. Which grain it is belongs to the THEME
+// (looks.js, `data-grain`): it was laid unconditionally, so the one theme
+// with a texture of its own drew that texture through a noise field, and
+// four of the eight papers now say `none` and mean it.
 // ── the title block ──
 // `dateline` is two cells across the top rule and each caller decides what its
 // two facts are (data.js `dateline` and `sinceline`). The right-hand one is
@@ -448,14 +536,103 @@ export function WriteAct({ go, className = '' }) {
 // ── and a look (0055) ──
 // `look` is the letter's own paper, `{ theme, tint, face }` or nothing:
 // the look's tokens go on the card inline (looks.js `lookVars`), the
-// theme's slug goes on it for the textures the stylesheet keys on the slug,
+// theme's slug goes on it for the chrome the stylesheet keys on the slug,
 // and every rule on the card reads the tokens, so a themed letter is this
 // card with its tokens moved and not a second card. A card handed no look
 // is the plain paper, as every card was.
+// ── and a layout (the eight papers) ──
+// Five of the eight are that card exactly: four slots, head, crest, body,
+// foot, in that order, dressed by their tokens and their furniture. Three
+// MOVE the slots, because the thing they are a picture of moves them, and
+// each is one branch below and nothing more:
+//
+//   screen    the nokia. Head, crest and body are recessed into a screen
+//             inside the shell, with the status row above them
+//   framed    the polaroid. The picture holds the head, the letterhead and
+//             the words; the addressee is written on the chin below it,
+//             which is where a name goes on a print
+//   divided   the postcard. The message on the left of the rule and the
+//             addressee on the right of it, with the ruled lines under the
+//             name and the stamp box in the corner
+//
+// The slots are the same objects in every branch — the same header, the same
+// title, the same body — so nothing here is a second card either.
+//
+// ── and the foot is outside all three ──
+// The foot is the last child of the card on every paper, whatever the layout
+// above it did. It is the one slot that is not the letter: the heart, the pen
+// and the flag are the READER's three marks (screens/Letter.jsx `marks`), and
+// a control that moves to a different corner depending on what paper somebody
+// else chose is a control to be found again on every card. So the paper is
+// themed and the controls are not, and they stand in one place down the whole
+// deck. The nokia's softkeys stood there and are gone: the marks row is the
+// row of controls under that screen now, and two of them was one too many.
 export function Paper({ dateline, title, crest, aside = null, children, foot, tone = '', look = null, className = '', style, ...rest }) {
   const lk = cleanLook(look)
   const vars = lk ? lookVars(lk) : null
   const attrs = lk ? lookAttrs(lk) : {}
+  const chrome = lk ? chromeOf(lk) : ''
+  const layout = lk ? layoutOf(lk) : ''
+
+  const headEl = dateline ? (
+    <header className="wl-paper-head">
+      <span>{dateline.lead}</span>
+      {dateline.stamp
+        ? <span className="wl-paper-stamp">{dateline.stamp}</span>
+        : dateline.trail ? <span>{dateline.trail}</span> : null}
+    </header>
+  ) : null
+  const titleEl = title ? <h2 className="wl-paper-title">{title}</h2> : null
+  const bodyEl = <div className="wl-paper-body">{children}</div>
+  const footEl = foot ? <footer className="wl-paper-foot">{foot}</footer> : null
+  /* The letterhead stands whether or not the card is titled. On the core
+     service every card is inside something that has already named the
+     handle — the sill under the leaf, or the sheet's own head line — so
+     the crest arrives WITHOUT a title and still belongs: the constellation
+     is a picture of who, and the line above it is the word for who. */
+  const crestEl = (title || crest) ? (
+    <div className={`wl-paper-crest${title ? '' : ' is-bare'}`}>
+      {crest}
+      {titleEl}
+      {aside}
+    </div>
+  ) : null
+
+  let inner
+  if (layout === 'screen') {
+    inner = (
+      <div className="wl-paper-screen">
+        <NokiaBar />
+        {headEl}
+        {crestEl}
+        {bodyEl}
+      </div>
+    )
+  } else if (layout === 'framed') {
+    inner = (
+      <>
+        <div className="wl-paper-plate">
+          {headEl}
+          {crest ? <div className="wl-paper-crest is-bare">{crest}</div> : null}
+          {bodyEl}
+        </div>
+        {titleEl ? <div className="wl-paper-chin">{titleEl}{aside}</div> : null}
+      </>
+    )
+  } else if (layout === 'divided') {
+    inner = (
+      <div className="wl-paper-divided">
+        <div className="wl-paper-msg">{headEl}{bodyEl}</div>
+        <div className="wl-paper-addr">
+          {crestEl}
+          <span className="wl-paper-lines" aria-hidden="true"><i /><i /><i /></span>
+        </div>
+      </div>
+    )
+  } else {
+    inner = <>{headEl}{crestEl}{bodyEl}</>
+  }
+
   return (
     <article
       className={`wl-paper${tone ? ` is-${tone}` : ''}${lk ? ' has-look wl-looked' : ''} ${className}`}
@@ -464,28 +641,9 @@ export function Paper({ dateline, title, crest, aside = null, children, foot, to
       {...rest}
     >
       <div className="wl-paper-grain" aria-hidden="true" />
-      {dateline && (
-        <header className="wl-paper-head">
-          <span>{dateline.lead}</span>
-          {dateline.stamp
-            ? <span className="wl-paper-stamp">{dateline.stamp}</span>
-            : dateline.trail ? <span>{dateline.trail}</span> : null}
-        </header>
-      )}
-      {/* The letterhead stands whether or not the card is titled. On the core
-          service every card is inside something that has already named the
-          handle — the sill under the leaf, or the sheet's own head line — so
-          the crest arrives WITHOUT a title and still belongs: the constellation
-          is a picture of who, and the line above it is the word for who. */}
-      {(title || crest) && (
-        <div className={`wl-paper-crest${title ? '' : ' is-bare'}`}>
-          {crest}
-          {title && <h2 className="wl-paper-title">{title}</h2>}
-          {aside}
-        </div>
-      )}
-      <div className="wl-paper-body">{children}</div>
-      {foot && <footer className="wl-paper-foot">{foot}</footer>}
+      <Furniture chrome={chrome} />
+      {inner}
+      {footEl}
     </article>
   )
 }
@@ -583,7 +741,7 @@ export function Segmented({ value, onChange, options, label, className = '' }) {
 // so the keyboard that tap raised is the keyboard this field keeps.
 export function HandleField({ value, onChange, onSubmit, autoFocus = false, focusOnTouch = false, locked = false,
   placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null,
-  onKeyDown = null, kind = 'handle', onFocus = null }) {
+  onKeyDown = null, kind = 'handle', onFocus = null, onBlur = null }) {
   const ref = useRef(null)
   const id = useId()
   const named = kind === 'name'
@@ -617,7 +775,8 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
         ref={setRef} id={id} aria-label={label} type="text" value={value}
         readOnly={locked} placeholder={placeholder}
         autoComplete="off" autoCapitalize={named ? 'words' : 'none'} autoCorrect="off" spellCheck="false"
-        inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'} onFocus={onFocus || undefined}
+        inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'}
+        onFocus={onFocus || undefined} onBlur={onBlur || undefined}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           // A list under the field (Suggest) takes the arrows, escape, and
@@ -1281,7 +1440,7 @@ const SUGGEST_MS = 120
 const SUGGEST_MAX = 4
 const suggested = new Map()
 
-export function useSuggest(query, { onPick = null, skip = false, exclude = '' } = {}) {
+export function useSuggest(query, { onPick = null, skip = false, exclude = '', max = SUGGEST_MAX } = {}) {
   // as typed (0054): a space or an accent is the server's to hear, and a
   // first name is not a handle to normalise
   const q = String(query || '').trim().replace(/\s+/g, ' ').slice(0, 60)
@@ -1303,15 +1462,18 @@ export function useSuggest(query, { onPick = null, skip = false, exclude = '' } 
     const t = setTimeout(async () => {
       const out = await search(q)
       if (seq !== latest.current) return
-      const top = out.slice(0, SUGGEST_MAX)
-      suggested.set(q, top)
-      setGot(top)
+      // What the server answered, whole. The ceiling is the CALLER'S — the
+      // composer shows four under its field and the wall's own panel shows
+      // more — and a cache that had already been cut to four would hand the
+      // second caller the first caller's ceiling.
+      suggested.set(q, out)
+      setGot(out)
       setAsking(false)
     }, SUGGEST_MS)
     return () => clearTimeout(t)
   }, [q, skip])
 
-  const rows = ex ? got.filter((t) => t.handle !== ex) : got
+  const rows = (ex ? got.filter((t) => t.handle !== ex) : got).slice(0, max)
   const open = !skip && !shut && rows.length > 0
   const pick = useCallback((t) => {
     setShut(true)
@@ -1329,6 +1491,10 @@ export function useSuggest(query, { onPick = null, skip = false, exclude = '' } 
   return { rows, open, asking, active, setActive, pick, keyDown }
 }
 
+// The composer's list, under "who is it to". It keeps its caption: there the
+// words are the fact a person needs — that these names are already on the
+// wall — rather than a label on a wall saying "wall", which is what the same
+// three words were over the wall's own results (screens/Wall.jsx `Seek`).
 export function Suggest({ sug, label = 'on the wall', className = '' }) {
   const { rows, open, active, setActive, pick } = sug
   if (!open) return null

@@ -218,12 +218,22 @@ signature by another name (G3); each is a thing the list at the keyboard
 cannot read (G4); and each is a picture or a second bright surface (G7). That
 ruling stands, on the row above, and it always will.
 
-What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of five
-papers, one of eleven colours and one of six faces, from a menu that every
-writer on the wall shares, stored as three slugs and drawn by the browser.
-(Nine papers and twelve colours when it shipped. The menu was shortened and
-the panel rebuilt as one rail over one grid — `Look.jsx` — which changes
-none of the reasoning below: a shorter menu is a menu more writers share.)
+What is built (migration 0055, `app/src/wall/looks.js`) is a LOOK: one of
+eight papers, one of twenty-three colours and one of twelve faces, from a menu
+that every writer on the wall shares, stored as three slugs and drawn by the
+browser. (Nine papers and twelve colours when it shipped; then five, eleven and
+six, with the panel rebuilt as one rail over one grid — `Look.jsx`. The count
+has moved three times and the reasoning below has not: what the gates care
+about is that the menu is SHARED and CLOSED, not how long it is.)
+
+The papers grew a second time because the axis was not doing its job. Four of
+the five had no texture in them at all — a ground, a face and a corner, on a
+dial labelled TEXTURE — so a theme now carries furniture: the parts drawn for
+that paper and no other, the nokia's signal and battery, the chalkboard's rail,
+the letterpress's deboss, the postcard's divided back. That is more to look at
+and it is not more to say: the furniture is drawn, never typed, and a writer
+chooses which paper, never what is on it.
+
 Through the gates:
 
 - **G3.** A look is a choice from a short menu, the same menu for everybody,
@@ -234,13 +244,29 @@ Through the gates:
   colour typed by hand or a face uploaded, and neither exists: the schema
   admits three slugs and refuses a fourth key, a colour and a sentence
   (`wall_look_clean`, and a constraint that holds every row to it).
+  Eight papers by twenty-four colour cells by twelve faces is a couple of
+  thousand combinations, which is worth stating plainly: a menu long enough
+  that a regular writer could pick the same one twice and be noticed for it is
+  a menu that has started to leak. It is not that yet — the theme is the thing
+  anybody reads first and there are eight of them, so every paper is on
+  hundreds of letters — but the number is the thing to watch when the next
+  proposal asks to lengthen it, and the answer to a menu that has grown too
+  long is to shorten it, never to let a writer add to it.
+  **The line holds where it was drawn: a look may be chosen and never typed,
+  drawn and never uploaded, and the menu is the product's to add to and
+  nobody's to extend from a phone.**
 - **G4.** A look is structured, not written. The list and the classifier read
   every word they read before, the name and the body, and there is no new
   text for them to miss and no picture at all.
 - **G7.** Every texture is a gradient drawn by the stylesheet and every face is
   a file served from this origin; nothing is downloaded from anywhere and
-  nothing is a picture. The paper stays the one bright thing on its sheet, in
-  the colour the writer chose it, and the system's own accent is not spent.
+  nothing is a picture. The furniture holds to the same rule, drawn part by
+  drawn part: the battery is a border and three boxes, the signal is four
+  rectangles, the rail and the deboss are gradients, the stamp box is a dashed
+  border round the wall's own constellation. The paper stays the one bright
+  thing on its sheet, in the colour the writer chose it, and the system's own
+  accent is not spent — `gold` came off partly for spending a second saturated
+  colour on a hairline frame, and nothing in the eight replaces it.
 - **G8.** The look is a column on the letter's row. A takedown takes it down
   with the letter, and nothing about it travels anywhere else.
 - **G9.** The desk sees the slugs beside the row and reads nothing more.
@@ -268,12 +294,14 @@ about what is said or shown about anybody: the same public index, reached
 sooner. The lit capsule at the centre that was floated fails G7 twice: a
 second bright thing beside `write`, and a plate standing on the faces, which
 is the reason `write anonymously` came off the foot once already. The list
-the search opens on before anything is typed is the six names most recently
-written to, under `on the wall`. It was the six carrying the most letters
-under `written to most`, and with the search promoted to the first thing on
-the wall that was the first list everybody saw: a top six by count with the
-word "most" on it is the rank with a label this section's own edge case says
-the wall must never cross.
+the search sheet opens on before anything is typed is the six names most
+recently written to. It was the six carrying the most letters under `written
+to most`, and with the search promoted to the first thing on the wall that
+was the first list everybody saw: a top six by count with the word "most" on
+it is the rank with a label this section's own edge case says the wall must
+never cross. The caption `on the wall` that stood over those rows has gone
+too — on the wall, under the wall's own field, over names the wall had just
+answered with, it was three words to say where you already are.
 
 **The miss.** `nothing on the wall under @x`, then `write a letter`, then,
 quieter, `write to @x`. A fact about the index, the composer on its own first
