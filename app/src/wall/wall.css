@@ -744,6 +744,7 @@
 .wl-field-line {
   position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
   background: var(--hair);
+  overflow: hidden;
 }
 .wl-field-line::after {
   content: ''; position: absolute; inset: 0;
@@ -754,6 +755,93 @@
 .wl-field:focus-within .wl-field-line::after { transform: scaleX(1); }
 .wl-field:focus-within .wl-at { color: var(--ash); }
 .wl-field.is-locked input { color: var(--ash); }
+
+/* ── the field, while the resolver is out ──
+   The light travels along the field's OWN rule rather than round the edge of
+   a card that has appeared under it: the object the eye is already on is the
+   object that says it is working, and nothing arrives on the screen until
+   there is an answer to put there. A cold handle takes six to twenty seconds
+   and sometimes thirty, which is far too long for a rule that only holds
+   still, so the words under the field say what is happening and, after a
+   while, that this is normal (parts.jsx `useLookingWords`). */
+/* while it is out the rule holds one even light, and the beam rides over it:
+   two gradients crossing on a single pixel read as a smear, and the point of
+   the beam is that something is MOVING */
+.wl-field.is-busy .wl-field-line::after {
+  background: rgba(244, 241, 234, 0.2);
+  transform: scaleX(1); transition: none;
+}
+.wl-field-line::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 34%;
+  background: linear-gradient(90deg,
+    rgba(244, 241, 234, 0) 0%, rgba(244, 241, 234, 0.92) 50%, rgba(244, 241, 234, 0) 100%);
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+}
+.wl-field.is-busy .wl-field-line::before {
+  opacity: 1;
+  animation: wl-field-look 1500ms linear infinite;
+}
+/* the parent is 34% of the rule wide, so a full crossing is its own width
+   plus the rule's: (100 / 34 + 1) of itself */
+@keyframes wl-field-look {
+  from { transform: translate3d(-100%, 0, 0); }
+  to   { transform: translate3d(394%, 0, 0); }
+}
+
+/* ── THE ANSWER, IN THE FIELD'S PLACE (parts.jsx `Addressed`) ──
+   Once a handle has been committed the field is not a field any more, it is
+   a person, so the person stands where the field stood: the same measure, the
+   same rule under it, the same left edge for the disc that the painted @ used
+   to hold. No plate, no hairline round it, no card: the row is not a second
+   object arriving under the first one, it IS the first one, answered.
+
+   The way out of it is the close mark at its end and not an arrow. An arrow
+   says "the way on is through this row", and the way on is the capsule at the
+   foot of the sheet like every other act on this surface. What somebody
+   actually wants from this row is out of it. */
+/* It stands at the field's weight, not a list row's: the field it replaced
+   is 28px of mono and the answer to it cannot be a caption. */
+.wl-field.is-settled {
+  align-items: center; gap: 13px;
+  min-height: 53px; padding-bottom: 11px;
+  animation: wl-settled-in 320ms var(--ease) both;
+}
+@keyframes wl-settled-in {
+  from { opacity: 0; transform: translate3d(0, 5px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.wl-settled-disc {
+  position: relative; flex: 0 0 auto;
+  width: 42px; height: 42px; border-radius: 999px; overflow: hidden;
+  background: rgba(244, 241, 234, 0.05);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  display: grid; place-items: center;
+}
+.wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.wl-settled-mono {
+  font-family: var(--f-id); font-size: 13px; letter-spacing: 0.06em;
+  color: var(--ash); user-select: none;
+}
+.wl-settled-id { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+.wl-settled-name {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--f-util); font-size: 17px; font-weight: 500; letter-spacing: -0.008em;
+  color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-settled-name .wl-settled-badge { color: var(--accent); flex: 0 0 auto; margin-top: 1px; }
+.wl-settled-at {
+  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.04em; color: var(--ash);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* no account by that name: not an error and not drawn as one, because the
+   letter still goes up and somebody who knows their friend's handle is right */
+.wl-field.is-settled.is-missing .wl-settled-name { font-weight: 400; color: var(--ash); }
+.wl-field.is-settled.is-missing .wl-settled-at { color: var(--chalk); }
+/* the close mark, at the field's scale rather than a sheet's */
+.wl-settled-clear { width: 32px; height: 32px; }
+.wl-settled-clear svg { width: 18px; height: 18px; }
 /* ── the field, asking for a name (0053) ──
    The same baseline with the @ gone and the type in the display face: a
    name is something a person means, a handle is an identifier, and the field
@@ -2235,55 +2323,94 @@
 .wl-write-h { margin-bottom: 22px; }
 .wl-write-step { flex: 1 1 auto; animation: wl-fade 260ms var(--ease) both; }
 .wl-write-note { margin: 20px 0 0; }
-/* the switch over the field: the handle, or anything else (0055). It stood
-   under the field as one quiet line, "a first name instead", which named
-   one of the two choices and hid the other; the two stand side by side now
-   and the one that is on is lit from behind (parts.jsx `Segmented`) */
-.wl-write-kind { margin: 0 0 22px; }
+/* ── the first question, as ONE object ──
+   The bookmarks on their rail, and under the rail the field — or, once a
+   handle has been committed, the person it resolved to standing in the
+   field's own place (parts.jsx `Addressed`). The rail is the top edge of the
+   field and the field's baseline is the foot of it, so what the eye reads is
+   a single bordered thing with a tab on it rather than a switch, a field and
+   a card stacked three deep down the sheet.
+
+   Fourteen between the tab and the field, not twenty-two: they are one
+   object and the gap inside an object is smaller than the gap around it. */
+.wl-write-tabs { margin: 0 0 14px; }
+/* what the resolver is doing, while it is doing it: a sentence in the util
+   face at --ash, because it is read rather than scanned and a label's
+   uppercase mono at this length is a line nobody finishes. It holds its
+   height whether or not there is anything on it, so the field does not shift
+   when the lookup starts. */
+.wl-write-say {
+  min-height: 18px; margin-top: 12px;
+  font-family: var(--f-util); font-size: 12.5px; line-height: 1.45;
+  color: var(--ash);
+}
+.wl-write-say .wl-h { font-family: var(--f-id); font-size: 0.94em; }
 /* the look panel under the card keeps the card's measure on a spread */
 .wl-write .wl-look { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
-/* ═══ THE SWITCH ═══════════════════════════════════════════════════════════
-   parts.jsx `Segmented`: two or three words on one rail, and the ground
-   lighting behind the one that is on, which is how the bar says where you
-   are (DESIGN.md 8.2). The thumb is one element that slides on the sheet's
-   own travelling curve, so the choice is seen to move rather than to swap,
-   and the words change colour with it. Not a lit capsule: the one bright
-   thing on the composer is the act at its foot. */
+/* ═══ THE BOOKMARKS ════════════════════════════════════════════════════════
+   parts.jsx `Segmented`: two or three words on a rail, and the one that is
+   open sitting on the rail the way a bookmark sits on a page — a soft ground
+   rounded at the head, square at the foot, and a lit spine along the line
+   under it. The rail is the TOP EDGE of the thing the tab changes, so the tab
+   and what it opens read as one object: the composer's field hangs under it,
+   the look panel's grid hangs under it.
+
+   It was a filled capsule with an inset ring round all of it and a glyph
+   beside each word. Three problems in one control: it was a second box
+   standing over a bare baseline field, it spent a lit ground on a choice
+   while the act at the foot of the sheet is the screen's one bright thing,
+   and the glyphs — an `@` beside the word "instagram", a star beside
+   "anything else" — were an icon set the product does not have
+   (DESIGN.md 1.3, and the ban list).
+
+   The tab is one element sliding on the sheet's own travelling curve, so the
+   choice is seen to move rather than to swap, and the words change colour
+   with it. */
 .wl-seg {
   --n: 2; --i: 0;
   position: relative; isolation: isolate;
   display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  padding: 3px; border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.035);
-  box-shadow: inset 0 0 0 1px var(--hair);
+}
+/* the rail: one hairline, the full measure of the thing under it */
+.wl-seg::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--hair); pointer-events: none;
 }
 .wl-seg-thumb {
-  position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0;
-  width: calc((100% - 6px) / var(--n));
-  border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: absolute; top: 0; bottom: 0; left: 0; z-index: 0;
+  width: calc(100% / var(--n));
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(180deg, rgba(244, 241, 234, 0.055), rgba(244, 241, 234, 0.012));
   transform: translate3d(calc(100% * var(--i)), 0, 0);
-  transition: transform 300ms var(--ease-sheet);
+  transition: transform 340ms var(--ease-sheet);
   pointer-events: none;
+}
+/* the spine: the lit part of the rail, under the word and no wider than it
+   needs to be. Ash-bright rather than chalk, because the capsule at the foot
+   of the sheet is the one chalk thing on the screen */
+.wl-seg-thumb::after {
+  content: ''; position: absolute; left: 26%; right: 26%; bottom: 0; height: 1.5px;
+  border-radius: 1px;
+  background: rgba(244, 241, 234, 0.5);
 }
 .wl-seg-opt {
   position: relative; z-index: 1;
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 38px; padding: 0 12px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 0 12px;
   font-family: var(--f-util); font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
   color: var(--ash); white-space: nowrap;
-  transition: color 220ms var(--ease), transform 220ms var(--ease);
+  transition: color 220ms var(--ease);
 }
 .wl-seg-opt[aria-checked="true"], .wl-seg-opt[aria-selected="true"] { color: var(--chalk); }
-.wl-seg-opt:active { transform: scale(0.97); transition-duration: 120ms; }
-.wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: var(--r-pill); }
-.wl-seg-glyph { display: inline-grid; place-items: center; color: var(--ash-dim); transition: color 220ms var(--ease); }
-.wl-seg-opt[aria-checked="true"] .wl-seg-glyph, .wl-seg-opt[aria-selected="true"] .wl-seg-glyph { color: var(--chalk); }
-.wl-seg-at { font-family: var(--f-id); font-size: 15px; line-height: 1; }
+.wl-seg-opt:active > span { transform: scale(0.97); transition: transform 120ms var(--ease); }
+.wl-seg-opt > span { display: block; transition: transform 220ms var(--ease); }
+.wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: 10px 10px 2px 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-seg-opt:not([aria-checked="true"]):not([aria-selected="true"]):hover { color: var(--chalk); }
+}
 @media (max-width: 359px) {
-  .wl-seg-opt { padding: 0 8px; font-size: 13px; gap: 5px; }
+  .wl-seg-opt { padding: 0 8px; font-size: 13px; }
 }
 
 /* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
@@ -4049,6 +4176,11 @@
   .wl-tab, .wl-down { animation: none !important; }
   .wl-look, .wl-look-grid { animation: none !important; }
   .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
+  /* the answer arrives where the field was without travelling to get there,
+     and the rule under a lookup holds still: the words under it are the
+     account of the wait under this preference */
+  .wl-field.is-settled { animation: none; }
+  .wl-field.is-busy .wl-field-line::before { animation: none; opacity: 0; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-roll-col { transition: none; }
   .wl-card { animation: none; }

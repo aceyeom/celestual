@@ -511,17 +511,27 @@ export function Pen({ onClick, label = 'change it', on = null, className = '' })
   )
 }
 
-// ── the switch ──────────────────────────────────────────────────────────────
-// Two or three words on one rail, one of them on, and the ground lit behind
-// the one that is: the way the bar says where you are (design/DESIGN.md
-// 8.2), as a control. The thumb is one element that slides to the choice
-// on the sheet's own travelling curve, so the choice is seen to move rather
-// than to swap. It is a radio group to a screen reader and to a keyboard,
-// and the arrow keys move it.
+// ── the bookmarks ───────────────────────────────────────────────────────────
+// Two or three words on a rail, one of them open, and the open one sits on
+// the rail as a tab does on a page: a soft ground rounded at the head, square
+// at the foot, and a lit spine along the line under it. The rail is the top
+// edge of the thing it changes — the field under it, the panel under it — so
+// the tab and what it opens are ONE object with a bookmark in it rather than
+// a control floating above a second control.
 //
-// It replaced a quiet line under the composer's field, "a first name
-// instead", which named one of the two choices and hid the other; a person
-// deciding who a letter is for should see both before they type.
+// It was a filled capsule with an inset ring round both words and a glyph
+// beside each of them: a heavy object standing over a bare baseline field,
+// which on the composer's first question made three stacked boxes out of one
+// question. The ring came off, the ground came off, and the glyphs came off —
+// an `@` beside the word "instagram" and a star beside "anything else" say
+// nothing the words had not already said, and the product does not wear an
+// icon set (DESIGN.md 1.3).
+//
+// The tab is one element that slides to the choice on the sheet's own
+// travelling curve, so the choice is seen to move rather than to swap. It is
+// a radio group to a screen reader and to a keyboard, and the arrow keys move
+// it. `Look.jsx` wears the same rail as a tablist, which is why the markup is
+// a grid of equal columns with `--n` and `--i` on it and nothing measured.
 export function Segmented({ value, onChange, options, label, className = '' }) {
   const at = Math.max(0, options.findIndex((o) => o.value === value))
   const keys = (e) => {
@@ -547,7 +557,6 @@ export function Segmented({ value, onChange, options, label, className = '' }) {
           tabIndex={i === at ? 0 : -1}
           onClick={() => onChange(o.value)}
         >
-          {o.glyph ? <span className="wl-seg-glyph" aria-hidden="true">{o.glyph}</span> : null}
           <span>{o.label}</span>
         </button>
       ))}
@@ -1853,6 +1862,65 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
       </span>
       {pick ? <span className="wl-card-go" aria-hidden="true">&#8594;</span> : null}
     </Tag>
+  )
+}
+
+// ── THE ANSWER, IN THE FIELD'S PLACE ────────────────────────────────────────
+// What the resolver found, standing exactly where the handle was typed: the
+// same baseline, the same rule under it, the same height. The field is not a
+// field any more once the person has committed to a handle — it is a person —
+// and a screen that draws the answer as a THIRD object under the tab rail and
+// the field is a screen with three stacked boxes on it answering one question.
+//
+// So the field is replaced rather than annotated, which is the one move that
+// takes the composer's first question down to one object: a bookmark on a
+// rail, and under it either the thing being typed or the person it turned out
+// to be.
+//
+// The way back is an X and not an arrow. An arrow at the end of a row is a
+// door: it says the row is the way on, and the way on is the capsule at the
+// foot of the sheet, which is where every other act on this surface lives.
+// What a person actually wants from this row is OUT of it — "that is not
+// them, let me type again" — so the mark at its end is the close mark, the
+// one this product already uses for exactly that, and pressing it hands the
+// field back with the handle still in it.
+//
+// It draws, it does not ask: `at` comes from `useResolver` and nothing here
+// reaches a server. Two states arrive — `found`, the account, and `missing`,
+// no account by that name, which is not an error and is not drawn as one,
+// since our provider is imperfect and somebody who knows their friend's
+// handle is right. `unknown` never gets here: the composer walks straight
+// past an answer it could not get rather than telling somebody their friend
+// does not exist.
+export function Addressed({ at, onClear, label = 'change who it is for', className = '' }) {
+  const h = normHandle(at.handle)
+  const missing = at.state !== 'found'
+  const mono = missing ? h.slice(0, 1).toUpperCase() : monogram(at)
+  const name = missing ? 'no account by that name' : (at.name || `@${h}`)
+  const under = missing || at.name ? `@${h}` : ''
+  return (
+    <div className={`wl-field is-lg is-settled${missing ? ' is-missing' : ''} ${className}`}>
+      <span className="wl-settled-disc" aria-hidden="true">
+        <span className="wl-settled-mono">{mono}</span>
+        {at.avatar ? (
+          <img
+            src={at.avatar} alt="" loading="lazy" decoding="async"
+            /* a picture that fails to load falls through to the monogram under
+               it rather than to a broken-image glyph in the middle of a field */
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        ) : null}
+      </span>
+      <span className="wl-settled-id">
+        <span className="wl-settled-name">
+          {name}
+          {at.verified ? <Sparkle size={10} className="wl-settled-badge" /> : null}
+        </span>
+        {under ? <span className="wl-settled-at">{under}</span> : null}
+      </span>
+      <Close onClick={onClear} label={label} className="wl-settled-clear" />
+      <span className="wl-field-line" aria-hidden="true" />
+    </div>
   )
 }
 

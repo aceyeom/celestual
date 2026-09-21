@@ -50,8 +50,8 @@
 // is a handle, a body and a time.
 //
 // ── who: an @, or anything else (0053, 0055) ───────────────────────────────
-// The first question has two answers and both stand over the field, on one
-// rail (parts.jsx `Segmented`): "instagram", which is on when the composer
+// The first question has two answers and both stand on the rail over the
+// field (parts.jsx `Segmented`): "instagram", which is open when the composer
 // opens, because on this campus everybody knows everybody's @ and a letter
 // to a handle is a letter one person can find; and "anything else", which
 // is whatever the writer calls the person. A first name, a nickname, one
@@ -61,6 +61,26 @@
 // person means and a handle is an identifier. No second field and no
 // hidden one, and the wall never asks for the @ beside a name, here or
 // anywhere: a writer who chose a name over the @ made a choice.
+//
+// ── and the whole question is ONE object ───────────────────────────────────
+// It was three of them, stacked: a filled capsule with a ring round both
+// answers and a glyph beside each, a bare baseline field under that, and —
+// the moment a handle was committed — the resolver's answer as a THIRD
+// framed card under THAT, with an arrow at its end. Three boxes down a sheet
+// to ask one question, and an arrow pointing at a way on that is actually
+// the capsule at the foot.
+//
+// Now the rail is the top edge of the field and the field's own baseline is
+// the foot of it, so the tab and the thing it changes are one object with a
+// bookmark on it. The answer does not arrive under the field, it REPLACES it
+// (parts.jsx `Addressed`): the same measure, the same rule, the disc where
+// the painted @ stood. While the lookup is out nothing new arrives at all —
+// the field holds its place, one light travels its own rule, and a line
+// under it says what is being waited on (`useLookingWords`). And the mark at
+// the end of the answer is the close mark, not an arrow: what somebody wants
+// from that row is out of it, back to the field with the handle still in it,
+// and the way ON is where it is on every other screen here, at the foot,
+// saying which person the press agrees to (`confirmWord`).
 //
 // It used to be one quiet line under the field, "a first name instead",
 // which named one of the two choices, hid the other behind a sentence, and
@@ -108,10 +128,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Pen, Display, Label, Pill, Locked, Allowance, OpenFace, Addressee,
-  HandleField, LetterField, HandleCard, useResolver, useSuggest, Suggest, Segmented,
+  HandleField, LetterField, Addressed, useResolver, useLookingWords, confirmWord,
+  useSuggest, Suggest, Segmented,
 } from '../parts.jsx'
 import { LookPanel } from '../Look.jsx'
-import { Dots, Sparkle } from '../art.jsx'
+import { Dots } from '../art.jsx'
 import {
   normHandle, validHandle, dateline, hash, allowance, loadQuota, write,
   isNameKey, nameKey, cleanName, nameFor, learnName, labelFor,
@@ -148,12 +169,14 @@ const EXAMPLES = () => campus().examples
 // same fact.
 const INAPPROPRIATE = 'that’s inappropriate for the wall.'
 
-// The two answers to the first question. The @ is the identifier's own
-// glyph, painted here the way the field paints it; the sparkle is the
-// product's mark for the open one.
+// The two answers to the first question, as two words and nothing else. Each
+// of them used to carry a glyph — an `@` beside "instagram", a sparkle beside
+// "anything else" — and neither said anything its word had not. The field
+// under the rail paints the @ where an @ is actually being typed, which is
+// the one place it means something.
 const KINDS = [
-  { value: 'handle', label: 'instagram', glyph: <span className="wl-seg-at">@</span> },
-  { value: 'name', label: 'anything else', glyph: <Sparkle size={11} /> },
+  { value: 'handle', label: 'instagram' },
+  { value: 'name', label: 'anything else' },
 ]
 
 export default function Write({ to: prefill, go, back, up = back, reduce = false }) {
@@ -172,6 +195,13 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
   // Somebody who tapped "write to @them" on a letter already answered the
   // first question.
   const [step, setStep] = useState(() => (prefill ? 1 : 0))
+  // Whether the resolver's answer is standing WHERE THE FIELD WAS (parts.jsx
+  // `Addressed`). Set by the press that commits a handle, taken back by the X
+  // on that row, and dropped the moment the handle or the kind changes,
+  // because a person shown under a handle they have since edited is the
+  // wrong person.
+  const [settled, setSettled] = useState(false)
+  const field = useRef(null)
   const first = useRef(true)
   // the sheet's own way out, taken by this screen once the letter is up
   const sheet = useRef(null)
@@ -239,21 +269,47 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
     setSaid('')
   }, [h, body, kind, name, look])
 
-  // The card under the handle field: peeks while typing, asks on the press.
-  // Never for a name: looking a person up by first name is an inference.
+  // The resolver under the handle field: peeks while typing, asks on the
+  // press. Never for a name: looking a person up by first name is an
+  // inference.
   const them = useResolver(kind === 'name' ? '' : to)
+  // What it is doing while it is doing it, on one line under the field. A
+  // cold handle takes six to twenty seconds and sometimes thirty, and a
+  // field that sits there with a light running under it and says nothing for
+  // twenty seconds is a screen that has frozen (parts.jsx `useLookingWords`).
+  const looking = useLookingWords(them.at)
   // And under that, the names already on the wall that match what is typed,
   // until the card has the person: a list under a settled card would list
   // them twice. Pressing a row takes that name, in whichever kind it is.
   const sug = useSuggest(kind === 'name' ? name : to, {
-    skip: step !== 0 || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
+    skip: step !== 0 || settled || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
     exclude: key,
     onPick: (t) => {
       if (t.kind === 'name') { setKind('name'); setName(t.name || nameFor(t.handle)) }
       else { setKind('handle'); setTo(t.handle) }
     },
   })
-  const pickKind = useCallback((k) => { setKind(k); setSaid('') }, [])
+  const pickKind = useCallback((k) => { setKind(k); setSaid(''); setSettled(false) }, [])
+
+  // The handle, edited. Whoever was standing in the field's place was standing
+  // there for the old spelling.
+  const retype = useCallback((v) => { setTo(v); setSettled(false) }, [])
+
+  // The X on that row: the field comes back with the handle still in it, and
+  // the cursor in it, because the one thing a person pressing it wants is to
+  // type. Spatially it is the same object returning to the same place, which
+  // is the whole reason the answer replaced the field rather than stacking
+  // under it.
+  const retry = useCallback(() => {
+    setSettled(false)
+    requestAnimationFrame(() => {
+      const el = field.current
+      if (!el) return
+      el.focus()
+      const n = el.value.length
+      try { el.setSelectionRange(n, n) } catch { /* not a text input */ }
+    })
+  }, [])
 
   // The card refusing the press: it shakes, once, and the line under it is
   // the reason. Under reduced motion the line is the whole answer.
@@ -324,17 +380,21 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
   async function next() {
     if (!ok[step] || asking || spent || sending) return
     if (step === 0) {
-      // a name has nothing to look up: the card is skipped and the letter is
-      // the next thing. Its spelling is remembered before the card draws it.
+      // a name has nothing to look up: nothing stands in the field's place and
+      // the letter is the next thing. Its spelling is remembered first.
       if (kind === 'name') { learnName(key, nm); setStep(1); return }
-      if (!them.settled) {
-        // An answer draws the card and waits for the second press; no answer
-        // at all (offline, capped, provider down) draws nothing and the same
-        // press goes on.
+      if (!settled) {
+        // The first press commits the handle. An answer takes the field's
+        // place and waits for the second press, which is the press that
+        // agrees to a PERSON and says so on the capsule (`confirmWord`). An
+        // answer we could not get — offline, capped, the provider down —
+        // replaces nothing and the same press goes on, because telling
+        // somebody we could not check is not worth a step and is never worth
+        // reading as "no such person".
         setAsking(true)
         const r = await them.ask()
         setAsking(false)
-        if (r && r.state !== 'unknown') return
+        if (r && (r.state === 'found' || r.state === 'missing')) { setSettled(true); return }
       }
       setStep(1)
       return
@@ -376,34 +436,49 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
         </Display>
 
         {step === 0 ? (
-          <div className="wl-write-step">
-            {/* The two answers, on one rail, the handle on by default. The
-                field under it is the same field in either kind: the painted
-                @ and the identifier's face for a handle; the @ gone and the
-                display face for anything else (parts.jsx HandleField `kind`). */}
+          /* ── ONE OBJECT, AND ONE QUESTION ──
+             The bookmark on its rail, and under the rail either the field or
+             the person the field turned out to be. Never both, and never a
+             third thing beside them: the rail is the top edge of the field,
+             the answer arrives IN the field rather than under it, and what is
+             left on the screen is the question, the thing being answered, and
+             the act at the foot. */
+          <div className="wl-write-step wl-write-who">
+            {/* The two answers, as two words on the rail. The field under it
+                is the same field in either kind: the painted @ and the
+                identifier's face for a handle; the @ gone and the display
+                face for anything else (parts.jsx HandleField `kind`). */}
             <Segmented
-              className="wl-write-kind" value={kind} onChange={pickKind} options={KINDS}
+              className="wl-write-tabs" value={kind} onChange={pickKind} options={KINDS}
               label="who the letter is for, by their instagram or by anything else"
             />
-            <HandleField
-              kind={kind}
-              value={kind === 'name' ? name : to}
-              onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : setTo}
-              onSubmit={next}
-              autoFocus size="lg"
-              placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
-              label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
-              onKeyDown={sug.keyDown}
-            />
-            {/* the account, under the line. A letter addressed to a mistyped
-                handle is a letter about somebody that nobody can ever find, and
-                this is the only step where that is still fixable. Pressing the
-                person is the same act as the pill below. Not for a name. */}
-            {/* A name that has come off the wall is refused by the schema
-                rather than by this screen: wall_write returns 'removed' and
-                the line under the card says so. Guessing here would mean
-                asking the server about every handle anybody types. */}
-            {kind === 'handle' ? <HandleCard at={them.at} onSelect={next} /> : null}
+            {/* A letter addressed to a mistyped handle is a letter about
+                somebody nobody can ever find, and this is the only step where
+                that is still fixable — so the handle is committed here, and
+                the person it resolved to stands in the field's own place
+                until the X hands the field back (parts.jsx `Addressed`).
+                A name is never looked up: looking a person up by first name
+                is an inference. And a name that has come off the wall is
+                refused by the schema rather than by this screen — wall_write
+                answers 'removed' and the line under the card says so. */}
+            {settled && kind === 'handle' ? (
+              <Addressed at={them.at} onClear={retry} label="not them. type it again" />
+            ) : (
+              <HandleField
+                kind={kind}
+                value={kind === 'name' ? name : to}
+                onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : retype}
+                onSubmit={next}
+                autoFocus size="lg" inputRef={field} busy={asking}
+                placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
+                label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
+                onKeyDown={sug.keyDown}
+              />
+            )}
+            {/* One line under the field while the lookup is out, and nothing
+                at all the rest of the time. The light travelling along the
+                field's own rule is the clock; this is what it is waiting on. */}
+            <p className="wl-write-say" role="status" aria-live="polite">{looking}</p>
             <Suggest sug={sug} />
           </div>
         ) : (
@@ -469,8 +544,10 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
               the button says so in the writer's own frame. While the request
               is out it says so, and stays lit: the light running round it is
               the wait. Alone, in the middle of the foot. */}
-          <Pill tone="light" onClick={next} disabled={!ok[step] || spent} aria-busy={sending || undefined}>
-            {step === 0 ? 'next' : sending ? 'sending' : 'send anonymously'}
+          <Pill tone="light" onClick={next} disabled={!ok[step] || spent} aria-busy={sending || asking || undefined}>
+            {step === 0
+              ? (settled && kind === 'handle' ? confirmWord(them.at, 'next') : asking ? 'looking' : 'next')
+              : sending ? 'sending' : 'send anonymously'}
           </Pill>
         </div>
       </div>
