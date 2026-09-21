@@ -354,7 +354,11 @@ button.ad-uuid:hover { color: var(--accent); }
   flex: 1 1 auto; min-width: 0; background: none; border: 0; padding: 0;
   font-family: var(--f-id); font-size: var(--t-ctrl); color: var(--chalk);
 }
+/* the box takes the focus, the way .ad-field-box does: the input's outline
+   came off and nothing replaced it, so the desk's search was the one field
+   on that surface with no focus state (DESIGN.md 9) */
 .ad-search input:focus { outline: none; }
+.ad-search:focus-within { border-color: rgba(244, 241, 234, 0.28); }
 .ad-search input::placeholder { color: var(--ash-dim); }
 .ad-search-k { font-family: var(--f-id); font-size: var(--t-small); color: var(--ash-dim); }
 

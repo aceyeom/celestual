@@ -1418,7 +1418,12 @@ a.wl-lq { text-decoration: none; }
   font-size: calc(16.5px * var(--lk-size, 1)); line-height: 1.52;
   color: var(--lk-ink, var(--paper-ink));
 }
+/* DESIGN.md 9: focus is never removed. This took the outline off and put
+   nothing back, so the one field on the sheet somebody is actually writing
+   in was the one control in the build with no focus state — on paper, in the
+   paper's own ink, the way the pen and the addressee link take theirs. */
 .wl-letterfield textarea:focus { outline: none; }
+.wl-letterfield textarea:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; border-radius: 4px; }
 .wl-letterfield textarea::placeholder { color: var(--lk-ink-2, var(--paper-ink-2)); opacity: 0.62; }
 .wl-count {
   position: absolute; right: 0; bottom: -18px;
@@ -3546,8 +3551,11 @@ a.wl-lq { text-decoration: none; }
    round the leaf, not the box it is centred in, or it draws a rectangle in
    the sky above a card. */
 .wl-slide-in:focus { outline: none; }
+/* the system's ring (9), not a 2px accent one: this was the only focus state
+   in the build drawn in a colour, and rule 1 rations the accent to a handful
+   of uses — a ring that appears on every tab stop is not one of them */
 .wl-slide-in:focus-visible > * {
-  outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-card);
+  outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: var(--r-card);
 }
 
 /* what the drag is about to do, said once, only while it is happening */
