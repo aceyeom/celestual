@@ -100,18 +100,25 @@ const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_B
 // a document served from about:blank cannot load a file:// stylesheet, so
 // `setContent` drew forty-two unstyled cards on a black ground and the first
 // contact sheet was a picture of nothing at all.
+// Two passes at two weights. The retina png is what a look is judged on; a
+// contact sheet of forty-two of those is sixteen megabytes, which is a file
+// nobody can send anybody, so `PAPERS_LIGHT=1` shoots the same page at one
+// device pixel as a jpeg for carrying around.
+const LIGHT = process.env.PAPERS_LIGHT === '1'
+
 async function shoot(name, html, width, height) {
   const file = join(tmpdir(), `celestual-papers-${name}.html`)
   writeFileSync(file, html)
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 })
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: LIGHT ? 1 : 2 })
   const p = await ctx.newPage()
   await p.goto(pathToFileURL(file).href, { waitUntil: 'load' })
   await p.evaluate(() => document.fonts.ready)
   await p.waitForTimeout(400)
-  await p.screenshot({ path: join(out, `${name}.png`), fullPage: true })
+  const shot = LIGHT ? `${name}.jpg` : `${name}.png`
+  await p.screenshot({ path: join(out, shot), fullPage: true, ...(LIGHT ? { type: 'jpeg', quality: 86 } : null) })
   await ctx.close()
   rmSync(file, { force: true })
-  console.log(`${name}.png`)
+  console.log(shot)
 }
 
 // ── and the picker ──────────────────────────────────────────────────────────
