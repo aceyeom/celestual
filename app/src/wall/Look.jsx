@@ -6,11 +6,15 @@
 // and a look is its tokens moved: whatever is picked here is on the letter
 // before the finger has lifted, and what goes up is what was seen.
 //
-//   texture   five papers, whole, each in its own tokens with the two
-//             letters in its face (looks.js THEMES). The big choice.
+//   texture   eight papers, whole, each in its own tokens with the two
+//             letters in its face (looks.js THEMES). The big choice, and
+//             since the eight it is a choice of OBJECT and not of fill:
+//             the nokia brings a shell, a screen and a battery, the
+//             chalkboard brings a rail, the postcard divides its own back.
 //             Picking one resets the other two to what it brought
-//   color     the paper's own ground, and eleven grounds (TINTS)
-//   type      six faces, each with its own name set in itself (FACES)
+//   color     the paper's own ground, and twenty-three grounds (TINTS),
+//             which with "as is" is four even rows of six
+//   type      twelve faces, each with its own name set in itself (FACES)
 //
 // ── why it is one row and not three ─────────────────────────────────────────
 // It was three rows stacked under the card, each scrolling sideways, each
@@ -28,6 +32,11 @@
 // looked at, and one line under it naming what is chosen. Nothing is hidden
 // that is not one tap away, nothing scrolls sideways, and the panel's height
 // hardly moves between the three, so switching does not shove the card.
+//
+// The menu tripled and the shape did not have to change: eight is two rows
+// of four, twenty-four colour cells are four rows of six, twelve faces are
+// four rows of three. Every grid still fits the sheet's width, and the one
+// number that moved is the body's height, which is set once for all three.
 //
 // The words on the rail are what a writer is choosing — texture, color,
 // type — not what the row stores. The schema's three keys are `theme`,

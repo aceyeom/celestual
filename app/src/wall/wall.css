@@ -570,6 +570,12 @@
   --lk-size: 1;
   --lk-title-size: 1;
   --lk-radius: var(--r-card);
+  /* the hairline round the card. It was `rgba(0,0,0,0.22)` written into the
+     box-shadow below and never varied, which drew a hard line on a cream
+     paper and nothing at all on a near black one; a look derives it off its
+     own ink (looks.js `--lk-edge`) so all eight papers read at one weight. */
+  --lk-edge: rgba(23, 21, 15, 0.22);
+  --lk-frame: var(--lk-ground);
   position: relative;
   /* its own group. The grain under it multiplies, and without this the
      blend reaches past the card to whatever is behind it, which is a live
@@ -583,11 +589,16 @@
   padding: 20px 20px 18px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 0 0 1px var(--lk-edge),
     0 26px 60px -22px rgba(0, 0, 0, 0.85),
     0 4px 14px -6px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
+/* The card is the FRAME on a theme whose letter is written on something
+   inside it — the nokia's shell, the polaroid's border — and the ground then
+   belongs to the screen or the picture. On the other six the two are the
+   same value, so this one declaration serves all eight. */
+.wl-paper.has-look { background: var(--lk-frame); }
 .wl-paper.is-empty:not(.has-look) { --lk-ground: linear-gradient(168deg, #EBE8E1 0%, #E1DED6 100%); }
 .wl-paper.is-theirs { --lk-ground: linear-gradient(168deg, var(--paper-hi) 0%, #EFECE5 40%, #E6E2DA 100%); }
 
@@ -597,7 +608,7 @@
   background-size: 140px 140px;
   mix-blend-mode: multiply;
 }
-.wl-paper > *:not(.wl-paper-grain) { position: relative; }
+.wl-paper > *:not(.wl-paper-grain):not(.wl-fx) { position: relative; }
 
 /* Two cells across the top rule, and each card decides what its two facts
    are. On a LETTER they are how long it has been sitting there unsaid and
@@ -696,35 +707,269 @@
 .wl-paper-to:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; }
 
 /* ═══ THE LOOKS ════════════════════════════════════════════════════════════
-   looks.js, migration 0055. A look sets the paper's tokens inline; what a
-   token cannot say it says here, keyed on the theme's slug: a texture drawn
-   under the type, a gloss, a bloom on the letters. `.wl-looked` is on a
-   paper with a look, on a disc with one, and on the panel's tiles, so one
-   rule draws the nokia screen on all three. Every texture is a gradient:
-   nothing is downloaded and nothing is a picture. The layer sits under
-   everything on the card (the card's children are positioned, so they
-   paint after it) and over the ground. */
+   looks.js, migration 0055, and the eight papers. A look sets the paper's
+   tokens inline; what a token cannot say it says here, keyed on the theme's
+   slug. `.wl-looked` is on a paper with a look, on a disc with one, and on
+   the panel's tiles, so one rule draws the nokia screen on all three.
+
+   EVERY mark below is a gradient, a border or the wall's own constellation.
+   Nothing is downloaded and nothing is a picture (docs/WALL-FEATURES.md,
+   G7), and the handful of literal hues here — the chalkboard's wood, the
+   polaroid's frame — are theme rules keyed on `data-look`, which is where
+   design/DESIGN.md 2.5 puts the looks' own colour.
+
+   ── the layers, in the order they paint ──
+   The card's children are positioned, so they paint after everything below
+   them, and the furniture is absolutely placed so it stays under them:
+
+     1  ::before     the theme's texture, where it has one
+     2  .wl-paper-grain   the ONE surface layer, and the theme owns it
+     3  .wl-fx       the drawn parts (parts.jsx `Furniture`)
+     4  the content  head, crest, body, foot
+
+   Two was the bug. The grain was laid unconditionally at one strength over
+   everything, the nokia's lattice included, so the one theme that drew a
+   texture drew it through a fractal noise field and came out as moiré. A
+   theme names its own surface now and `none` is a real answer. */
+
+/* ── the grain, and it is the theme's ────────────────────────────────────── */
+/* nothing at all: the four papers that carry their own texture, or none */
+.wl-paper[data-grain="none"] .wl-paper-grain { display: none; }
+/* cotton has a tooth where wood pulp has a grain: coarser, slower, stronger */
+.wl-paper[data-grain="tooth"] .wl-paper-grain {
+  opacity: 0.26;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.34' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23t)'/%3E%3C/svg%3E");
+  background-size: 96px 96px;
+}
+/* chalk dust, which is not a noise: two soft blooms where a hand has been */
+.wl-paper[data-grain="dust"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    radial-gradient(58% 42% at 26% 22%, var(--lk-ink-soft), transparent 72%),
+    radial-gradient(46% 32% at 78% 70%, var(--lk-ink-faint), transparent 72%);
+}
+/* the pile of a velvet, which lies one way and catches the light across it */
+.wl-paper[data-grain="pile"] .wl-paper-grain {
+  opacity: 1; mix-blend-mode: normal; background-image: none;
+  background:
+    repeating-linear-gradient(94deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px),
+    radial-gradient(66% 46% at 26% 10%, var(--lk-ink-soft), transparent 74%);
+}
+/* the dark grounds: a multiply dies on a near black, so on a dark paper the
+   fibre is laid as light instead, a little, and adds its texture the other
+   way up. The two grains that are already drawn in the ink are exempt —
+   they are correct on a dark ground because they are made of it. */
+.wl-paper[data-lit="dark"][data-grain="fibre"] .wl-paper-grain,
+.wl-paper[data-lit="dark"][data-grain="tooth"] .wl-paper-grain {
+  mix-blend-mode: screen; opacity: 0.09;
+}
+
+/* ── the textures ────────────────────────────────────────────────────────── */
+/* The layer sits under everything on the card and over the ground. It is
+   drawn in the paper's OWN ink at the strengths every other mark reads, so a
+   nokia tinted rose has a rose lattice and not a green one. */
 .wl-looked::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   border-radius: inherit; z-index: 0;
 }
 /* the nokia screen: a pixel grid, faint, so the type reads as pixels on a
-   screen and not as a photograph of one */
-.wl-looked[data-look="nokia"]::before {
+   screen and not as a photograph of one. On the CARD the shell is plastic
+   and the lattice belongs to the screen recessed into it (below); this is
+   what puts it on the panel's tile and on the disc, which have no screen. */
+.wl-looked[data-look="nokia"]::before,
+.wl-paper[data-look="nokia"] .wl-paper-screen::after {
   background-image:
-    repeating-linear-gradient(0deg, rgba(20, 30, 16, 0.09) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(20, 30, 16, 0.07) 0 1px, transparent 1px 3px);
+    repeating-linear-gradient(0deg, var(--lk-ink-soft) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--lk-ink-faint) 0 1px, transparent 1px 3px);
 }
-.wl-paper[data-look="nokia"] .wl-paper-head { letter-spacing: 0.15em; }
-/* The gloss, the dashed till roll, the ruled page and the green screen were
-   here: the four textures that came off the menu with y2k, receipt,
-   notebook and terminal (looks.js). A letter written on one of them keeps
-   its slug in the row and draws the plain paper now, `data-look` and all,
-   so there is nothing left for these rules to key on. */
-/* the dark grounds: the grain multiplies to nothing on a near black, so on
-   a dark paper it is laid as light instead, a little, and adds its texture
-   the other way up */
-.wl-paper[data-lit="dark"] .wl-paper-grain { mix-blend-mode: screen; opacity: 0.09; }
+.wl-paper[data-look="nokia"]::before { background-image: none; }
+/* the telegram's form: the faint ruling a clerk typed onto */
+.wl-looked[data-look="telegram"]::before {
+  background-image: repeating-linear-gradient(0deg, transparent 0 21px, var(--lk-ink-faint) 21px 22px);
+}
+/* the polaroid's emulsion, on the tile and the disc. On the card it belongs
+   to the plate inside the frame (below). */
+.wl-looked[data-look="polaroid"]::before {
+  background: radial-gradient(118% 88% at 50% 38%, transparent 48%, rgba(30, 22, 12, 0.2) 100%);
+}
+.wl-paper[data-look="polaroid"]::before { background: none; }
+
+/* ── the furniture ───────────────────────────────────────────────────────── */
+/* parts.jsx `Furniture`. Absolutely placed, so it sits over the surface and
+   under the type, and out of the rule that positions the card's content. */
+.wl-fx { position: absolute; pointer-events: none; }
+
+/* the blind deboss: a rule with a lit line above it and a shadowed one
+   below, which is what an unlinked plate leaves in a heavy sheet. The lit
+   line is the paper's own highlight, so it comes out right on the velvet
+   without a second declaration. */
+.wl-fx-deboss {
+  inset: 9px; border-radius: max(1px, calc(var(--lk-radius) - 7px));
+  border: 1px solid var(--lk-ink-soft);
+  box-shadow: inset 0 1px 0 var(--lk-paper-hi), 0 1px 0 var(--lk-paper-hi);
+}
+.wl-fx-deboss::after {
+  content: ''; position: absolute; inset: 3px; border-radius: inherit;
+  border: 1px solid var(--lk-ink-faint);
+}
+/* the chalkboard's rail: the wooden lip the chalk sits on */
+.wl-fx-rail {
+  left: 0; right: 0; bottom: 0; height: 11px;
+  background: linear-gradient(180deg, #8A6238 0%, #6B4A2C 44%, #4E351E 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+/* the telegram's printed border: struck twice, in one pass, in the form's
+   own ink — the second rule is the gap plus the line, cast outward */
+.wl-fx-form {
+  inset: 7px; border: 1px solid var(--lk-ink-mid); border-radius: 1px;
+  box-shadow: 0 0 0 2px var(--lk-paper), 0 0 0 3px var(--lk-ink-mid);
+}
+/* the postcard's stamp box, where the sovereign's head goes */
+.wl-fx-stamp {
+  top: 13px; right: 13px; width: 33px; height: 40px;
+  border: 1.5px dashed var(--lk-ink-mid); border-radius: 2px;
+  display: grid; place-items: center; color: var(--lk-ink);
+}
+.wl-fx-stamp .wl-mark-line { stroke: var(--lk-ink-mid); stroke-width: 5; fill: none; }
+.wl-fx-stamp .wl-mark-star { fill: var(--lk-ink-strong); }
+
+/* ── the nokia, which is a screen in a shell ─────────────────────────────── */
+.wl-paper[data-look="nokia"] { padding: 9px 9px 4px; }
+.wl-paper-screen {
+  border-radius: 5px; padding: 13px 13px 14px; overflow: hidden;
+  background: var(--lk-ground); color: var(--lk-ink);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.38), inset 0 2px 7px rgba(0, 0, 0, 0.26);
+}
+.wl-paper-screen::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+.wl-paper-screen > * { position: relative; z-index: 1; }
+/* One rule across the head of the screen, not two: the status row already
+   draws a line under itself, and the dateline under it drew a second one
+   eight pixels below the first. */
+.wl-paper[data-look="nokia"] .wl-paper-head {
+  letter-spacing: 0.15em; border-bottom: 0; padding-bottom: 0; margin-bottom: 11px;
+}
+/* the status row. Three of the four signal bars are lit and two of the three
+   battery segments are: a full battery and full signal read as a picture of
+   a phone, and one that is nearly charged reads as a phone somebody is
+   holding. */
+.wl-nk-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--lk-rule);
+  font-family: var(--lk-face); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--lk-ink-2);
+}
+.wl-nk-sig { flex: 0 0 auto; display: flex; align-items: flex-end; gap: 1.5px; height: 9px; }
+.wl-nk-sig i { width: 2.5px; border-radius: 0.5px; background: var(--lk-ink); }
+.wl-nk-sig i:nth-child(1) { height: 3px; }
+.wl-nk-sig i:nth-child(2) { height: 5px; }
+.wl-nk-sig i:nth-child(3) { height: 7px; }
+.wl-nk-sig i:nth-child(4) { height: 9px; opacity: 0.26; }
+.wl-nk-carrier { flex: 1 1 auto; min-width: 0; text-align: center; }
+.wl-nk-batt {
+  flex: 0 0 auto; position: relative; display: flex; align-items: stretch; gap: 1px;
+  width: 17px; height: 9px; padding: 1.5px;
+  border: 1px solid var(--lk-ink); border-radius: 1.5px;
+}
+.wl-nk-batt::after {
+  content: ''; position: absolute; right: -3px; top: 2.5px;
+  width: 2px; height: 3px; border-radius: 0 1px 1px 0; background: var(--lk-ink);
+}
+.wl-nk-batt i { flex: 1 1 auto; background: var(--lk-ink); }
+.wl-nk-batt i:last-child { opacity: 0.22; }
+/* the softkeys, on the plastic under the screen. They are chalk rather than
+   a token because the shell is the shell whatever colour the screen is. */
+.wl-nk-keys {
+  display: flex; justify-content: space-between; padding: 9px 6px 6px;
+  font-family: var(--lk-face); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(244, 241, 234, 0.46);
+}
+
+/* ── the polaroid, which is a picture with a chin ─────────────────────────── */
+.wl-paper[data-look="polaroid"] { padding: 11px 11px 0; }
+.wl-paper-plate {
+  padding: 16px 15px 17px; overflow: hidden;
+  background: var(--lk-ground); color: var(--lk-ink);
+  box-shadow: inset 0 0 0 1px var(--lk-edge);
+}
+.wl-paper-plate::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(118% 88% at 50% 38%, transparent 48%, rgba(30, 22, 12, 0.2) 100%);
+}
+.wl-paper-plate > * { position: relative; z-index: 1; }
+/* The chin is on the FRAME, which is white whatever the picture is, so its
+   ink is the frame's and not the emulsion's — otherwise a letter on a dark
+   photograph writes its name in cream on white and disappears. */
+.wl-paper[data-look="polaroid"] .wl-paper-chin {
+  --lk-ink: #23201A; --lk-ink-2: rgba(35, 32, 26, 0.55);
+  --lk-rule: rgba(35, 32, 26, 0.18); --lk-ink-mid: rgba(35, 32, 26, 0.3);
+  --lk-ink-soft: rgba(35, 32, 26, 0.07); --lk-ink-strong: rgba(35, 32, 26, 0.55);
+  display: flex; align-items: center; gap: 10px;
+  min-height: 50px; padding: 9px 5px 12px; color: var(--lk-ink);
+}
+.wl-paper-chin .wl-paper-title { font-size: calc(21px * var(--lk-title-size)); }
+.wl-paper-chin .wl-pen { margin-left: auto; }
+
+/* ── the postcard, which is divided ──────────────────────────────────────── */
+/* The message on the left of the rule and the addressee on the right of it,
+   which is the whole of what a postcard is. The address side clears the
+   stamp box above it. */
+/* The card is its own container, because what decides whether a back can be
+   divided is the width of the CARD and not the width of the window: the same
+   letter is a wide sheet on the letter screen and a narrow one in a list, at
+   one window size. A media query got the phone right and the list wrong. */
+.wl-paper[data-look="postcard"] { container-type: inline-size; }
+.wl-paper-divided { display: grid; grid-template-columns: 1.45fr 1fr; gap: 14px; align-items: start; }
+.wl-paper-msg { min-width: 0; }
+.wl-paper-addr {
+  min-width: 0; padding-left: 14px; padding-top: 56px;
+  border-left: 1px solid var(--lk-rule);
+}
+/* An address is written across the lines and a title is not, so the one
+   place the addressee wraps is here: `.wl-paper-title` cuts it to one line
+   with an ellipsis everywhere else, which on a column this narrow lost most
+   of the name. */
+.wl-paper-addr .wl-paper-title { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.wl-paper-addr .wl-paper-crest { flex-wrap: wrap; }
+.wl-paper-lines { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 0; }
+.wl-paper-lines i { display: block; height: 1px; background: var(--lk-rule); }
+/* Under that width the two columns leave a letter about twenty characters
+   wide, which is not a postcard, it is a column of syllables. So the back
+   stacks and the rule goes over the address instead of beside it. */
+@container (max-width: 410px) {
+  .wl-paper-divided { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .wl-paper-addr {
+    padding-left: 0; padding-top: 14px; margin-top: 14px;
+    border-left: 0; border-top: 1px solid var(--lk-rule);
+  }
+  /* Stacked, the dateline runs the whole width and arrives under the stamp
+     box, where its own stamp and the box are two marks in one corner. The
+     row gives the box its room rather than the box moving, because the
+     corner is where a stamp goes and the far end of a rule is not. */
+  .wl-paper[data-look="postcard"] .wl-paper-head { padding-right: 52px; }
+}
+
+/* ── the rest of the eight, which only dress the card ─────────────────────── */
+/* letterpress: the crest and the addressee are struck the way the deboss is */
+.wl-paper[data-look="letterpress"] { padding: 25px 24px 22px; }
+.wl-paper[data-look="letterpress"] .wl-paper-title,
+.wl-paper[data-look="letterpress"] .wl-paper-head { text-shadow: 0 1px 0 var(--lk-paper-hi); }
+.wl-paper[data-look="letterpress"] .wl-paper-head { letter-spacing: 0.2em; }
+/* telegram: the convention is upper case, and it is a DISPLAY choice — the
+   words in the row are the words the writer typed, and the list at the
+   keyboard and the classifier after it read exactly what they always read */
+.wl-paper[data-look="telegram"] { padding: 21px 20px 19px; }
+.wl-paper[data-look="telegram"] .wl-paper-body,
+.wl-paper[data-look="telegram"] .wl-paper-title { text-transform: uppercase; letter-spacing: 0.03em; }
+.wl-paper[data-look="telegram"] .wl-paper-head { letter-spacing: 0.17em; }
+/* chalkboard: the halo chalk leaves, and the room the rail needs */
+.wl-paper[data-look="chalkboard"] { padding-bottom: 27px; }
+.wl-paper[data-look="chalkboard"] .wl-paper-body,
+.wl-paper[data-look="chalkboard"] .wl-paper-title {
+  text-shadow: 0 0 1.5px var(--lk-ink-soft), 0 0 5px var(--lk-ink-faint);
+}
+/* velvet: the deboss wants a little more room than the plain card gives */
+.wl-paper[data-look="velvet"] { padding: 22px 21px 20px; }
+.wl-paper[data-look="velvet"] .wl-paper-head { letter-spacing: 0.2em; }
 
 /* ═══ FIELDS ═══════════════════════════════════════════════════════════════
    A bare baseline, not a box. The '@' is painted beside the input, is never in
@@ -2316,19 +2561,20 @@
 .wl-look-rail { width: 100%; }
 
 /* One height for all three, so switching between them does not shove the
-   card up and down the sheet: the tallest is the colour grid's two rows,
-   and the one row of papers is centred in the same height rather than left
-   hanging off the top of it. */
-.wl-look-body { display: grid; align-content: center; min-height: 104px; }
+   card up and down the sheet. The tallest is now the colour grid's four rows
+   and the type grid's four, and the two rows of papers are centred in the
+   same height rather than left hanging off the top of it. */
+.wl-look-body { display: grid; align-content: center; min-height: 232px; }
 .wl-look-grid {
   display: grid; gap: 10px; align-items: start;
   animation: wl-look-swap 260ms var(--ease) both;
 }
 @keyframes wl-look-swap { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: none; } }
-/* five papers on one line; twelve colours as two even rows of six; six
-   faces as two rows of three, which is the room a name needs to be set in
-   its own face and read */
-.wl-look-grid.is-texture { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* eight papers as two even rows of four; twenty-four colours as four even
+   rows of six, the paper's own ground taking the first cell; twelve faces as
+   four rows of three, which is the room a name needs to be set in its own
+   face and read. No row is ragged and nothing scrolls sideways. */
+.wl-look-grid.is-texture { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px 10px; }
 .wl-look-grid.is-color   { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 11px 10px; }
 .wl-look-grid.is-type    { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -2352,12 +2598,39 @@
 .wl-look-tile {
   position: relative; display: block;
   width: 100%; max-width: 76px; aspect-ratio: 3 / 4; overflow: hidden;
-  border-radius: 10px;
-  background: var(--lk-ground);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
+  /* The corner the theme actually has, scaled to the tile (looks.js
+     `radius`). It was a flat 10px for every theme, so a person could not see
+     that a letterpress is square and a paper is soft until the letter was on
+     the wall — a picker whose swatch does not draw the thing being picked is
+     a picker to guess in. */
+  border-radius: max(2px, calc(var(--lk-radius) * 0.45));
+  background: var(--lk-frame, var(--lk-ground));
+  box-shadow: 0 0 0 1px var(--lk-edge), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
 }
 .wl-look-tile-in { position: absolute; inset: 9px 8px; display: flex; flex-direction: column; gap: 5px; }
+/* the two papers whose letter is written on something inside them: the tile
+   shows the screen in the shell and the picture over the chin, because that
+   is what is being chosen */
+.wl-look-tile[data-look="nokia"] .wl-look-tile-in,
+.wl-look-tile[data-look="polaroid"] .wl-look-tile-in {
+  inset: 5px; padding: 5px 5px 0; background: var(--lk-ground);
+  box-shadow: inset 0 0 0 1px var(--lk-edge);
+}
+.wl-look-tile[data-look="nokia"] .wl-look-tile-in { inset: 5px 5px 11px; border-radius: 2px; }
+.wl-look-tile[data-look="polaroid"] .wl-look-tile-in { inset: 5px 5px 15px; }
+/* and the chrome that is still legible at seventy-six pixels, so the four
+   light papers are told apart IN THE GRID and not only once one is on the
+   card: the two that are ruled round the edge are ruled, and the one that
+   divides its back is divided. */
+.wl-look-tile[data-look="letterpress"]::after,
+.wl-look-tile[data-look="telegram"]::after,
+.wl-look-tile[data-look="postcard"]::after {
+  content: ''; position: absolute; pointer-events: none;
+}
+.wl-look-tile[data-look="letterpress"]::after { inset: 4px; border: 1px solid var(--lk-ink-soft); }
+.wl-look-tile[data-look="telegram"]::after { inset: 4px; border: 1px solid var(--lk-ink-mid); }
+.wl-look-tile[data-look="postcard"]::after { top: 8px; bottom: 8px; right: 30%; width: 1px; background: var(--lk-rule); }
 .wl-look-aa { font-family: var(--lk-face); font-weight: var(--lk-title-w); font-size: 13px; line-height: 1; color: var(--lk-ink); margin-bottom: 3px; }
 .wl-look-bar { height: 3px; border-radius: 2px; background: var(--lk-ink); opacity: 0.5; }
 .wl-look-opt[aria-checked="true"] .wl-look-tile {
@@ -2400,7 +2673,7 @@
 @media (max-width: 359px) {
   .wl-look { padding: 11px 10px 9px; }
   .wl-look-grid { gap: 8px; }
-  .wl-look-body { min-height: 96px; }
+  .wl-look-body { min-height: 214px; }
 }
 
 /* the card and the line under it, in one frame, and the frame is what shakes
