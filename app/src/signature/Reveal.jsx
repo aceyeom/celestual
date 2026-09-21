@@ -34,6 +34,7 @@
 
 import Alignment from './Alignment.jsx'
 import { ME, THEM, MUTUAL, monogram, since, apart } from './data.js'
+import { Pill } from '../wall/parts.jsx'
 
 // The verification badge, drawn. Every other product on the phone uses a
 // downloaded glyph for this; this one has a four point star already, so the
@@ -109,14 +110,14 @@ export default function Reveal() {
         </p>
 
         <div className="sg-reveal-acts sg-in" style={{ '--d': '1620ms' }}>
-          <a
-            className="wl-pill is-light"
+          <Pill
+            tone="light"
             href={`https://instagram.com/${THEM.handle}`}
             rel="noreferrer noopener"
             target="_blank"
           >
             open @{THEM.handle}
-          </a>
+          </Pill>
           <button className="wl-quiet" type="button">keep this to yourself</button>
         </div>
       </div>

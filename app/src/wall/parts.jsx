@@ -16,6 +16,7 @@ import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
 import { lookVars, lookAttrs, lookFor, cleanLook, nameOnDisc, chromeOf, layoutOf } from './looks.js'
 import { campus } from './campus.js'
+import LiquidButton from './LiquidButton.jsx'
 
 // ── type ────────────────────────────────────────────────────────────────────
 
@@ -117,9 +118,14 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 }
 
 // ── the pill ────────────────────────────────────────────────────────────────
-// Two roles and no third. `light` is the reference's white capsule and is the
-// primary action on any screen that has one; `ghost` is the outlined capsule
-// beside a list row.
+// Two roles and no third. `light` is the primary action on any screen that
+// has one; `ghost` is the outlined capsule beside a list row.
+//
+// `light` was the reference's white capsule for the whole of the build and is
+// the liquid metal one now (LiquidButton.jsx): a dark capsule with a metal
+// rim, the same fragment shader the mark is poured in. The role is unchanged
+// and so is every caller — the primary is still one word in one place, it is
+// just made of something else.
 //
 // There was a third, `ember`: a filled saturated capsule, described here as
 // the one saturated object in the build. It had exactly one caller — "today",
@@ -142,12 +148,31 @@ export function ArrowLink({ children, onClick, href, tone = '', size = '', disab
 // capsule as a soft rose bloom under the word. Never a halo round the outside;
 // that read as a second object circling the button.
 //
-// It is on by default for the light capsule, which is the primary act on
-// every screen that has one: the front door had it and the wall's sheets did
-// not, and the same product answered a press with two different buttons. A
-// ghost pill never carries it. Disabled, the light goes out and the plate
-// stays, so a button that cannot be pressed is not one that is glowing.
+// It was on by default for the light capsule and is now on nothing: the metal
+// has its own current and a rose point travelling round the inside of it
+// would be a second one under the same word. A ghost pill never carried it.
+// The prop and the component stay for the one caller that is not a pill — the
+// veil's "view the wall" (screens/Wall.jsx `.wl-mast-go`).
 export function Pill({ children, onClick, href, tone = 'ghost', wide = false, lit = tone === 'light', disabled = false, icon = null, className = '', ...rest }) {
+  // ── the primary is a material now ──
+  // Every `light` capsule in the build — "write a letter" at the foot of the
+  // wall, "place a ping" on the front door, the step buttons on the composer,
+  // the gate's, the takedown's — is the liquid metal capsule
+  // (LiquidButton.jsx). The role chose the fill before and it chooses the
+  // material now, which is the same edit in the same place: nothing below
+  // this line and no caller anywhere knows what a primary is made of.
+  //
+  // The running light does not come with it. `Light` is a chalk plate with a
+  // rose point travelling round its inside, and a rose point travelling round
+  // the inside of a metal capsule is two currents under one word.
+  if (tone === 'light') {
+    return (
+      <LiquidButton
+        onClick={onClick} href={href} wide={wide} disabled={disabled}
+        icon={icon} className={className} {...rest}
+      >{children}</LiquidButton>
+    )
+  }
   const cls = ['wl-pill', `is-${tone}`, wide && 'is-wide', lit && 'is-lit', className].filter(Boolean).join(' ')
   const body = <>{lit ? <Light plate="chalk" on={!disabled} /> : null}{icon}<span>{children}</span></>
   if (href && !disabled) return <a className={cls} href={href} onClick={onClick} {...rest}>{body}</a>
@@ -405,17 +430,23 @@ export function TopBar({ go, at = 'wall', acts = true }) {
 }
 
 // ── the act, at the foot ────────────────────────────────────────────────────
-// The one primary on the wall: a chalk capsule carrying the nib and the
-// words, with the running light inside it, standing in the middle of the
-// bottom edge where a thumb already is. It stood in the bar as a small
-// capsule beside the person, which put the act and the question (the search
-// plate under the bar) within a hundred pixels of each other as two capsules
-// of one shape, and the top of the wall read as crammed. Down here it is the
-// one bright thing at the foot, and the plate is the one thing at the head.
+// The one primary on the wall: the metal capsule carrying the nib and the
+// words, standing in the middle of the bottom edge where a thumb already is.
+// It stood in the bar as a small capsule beside the person, which put the act
+// and the question (the search plate under the bar) within a hundred pixels
+// of each other as two capsules of one shape, and the top of the wall read as
+// crammed. Down here it is the one object at the foot, and the plate is the
+// one thing at the head.
+//
+// It was a chalk capsule with the running light inside it until the primary
+// became a material (Pill above, LiquidButton.jsx). The pairing at the two
+// ends of the wall still holds and has turned over: the question at the head
+// is the glass the crowd shows through, and the act at the foot is the one
+// solid thing on the screen.
 export function WriteAct({ go, className = '' }) {
   return (
     <Pill
-      tone="light" lit className={`wl-write-act ${className}`}
+      tone="light" className={`wl-write-act ${className}`}
       onClick={() => toWrite(go)} icon={<Icon name="write" size={15} />}
       aria-label="write a letter" title="write a letter"
     >
@@ -701,7 +732,7 @@ export function Segmented({ value, onChange, options, label, className = '' }) {
 // so the keyboard that tap raised is the keyboard this field keeps.
 export function HandleField({ value, onChange, onSubmit, autoFocus = false, focusOnTouch = false, locked = false,
   placeholder = '', label = 'Instagram handle', size = '', busy = false, inputRef = null,
-  onKeyDown = null, kind = 'handle', onFocus = null }) {
+  onKeyDown = null, kind = 'handle', onFocus = null, onBlur = null }) {
   const ref = useRef(null)
   const id = useId()
   const named = kind === 'name'
@@ -735,7 +766,8 @@ export function HandleField({ value, onChange, onSubmit, autoFocus = false, focu
         ref={setRef} id={id} aria-label={label} type="text" value={value}
         readOnly={locked} placeholder={placeholder}
         autoComplete="off" autoCapitalize={named ? 'words' : 'none'} autoCorrect="off" spellCheck="false"
-        inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'} onFocus={onFocus || undefined}
+        inputMode={seeking ? 'search' : 'text'} enterKeyHint={seeking ? 'search' : 'go'}
+        onFocus={onFocus || undefined} onBlur={onBlur || undefined}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           // A list under the field (Suggest) takes the arrows, escape, and
@@ -1399,7 +1431,7 @@ const SUGGEST_MS = 120
 const SUGGEST_MAX = 4
 const suggested = new Map()
 
-export function useSuggest(query, { onPick = null, skip = false, exclude = '' } = {}) {
+export function useSuggest(query, { onPick = null, skip = false, exclude = '', max = SUGGEST_MAX } = {}) {
   // as typed (0054): a space or an accent is the server's to hear, and a
   // first name is not a handle to normalise
   const q = String(query || '').trim().replace(/\s+/g, ' ').slice(0, 60)
@@ -1421,15 +1453,18 @@ export function useSuggest(query, { onPick = null, skip = false, exclude = '' } 
     const t = setTimeout(async () => {
       const out = await search(q)
       if (seq !== latest.current) return
-      const top = out.slice(0, SUGGEST_MAX)
-      suggested.set(q, top)
-      setGot(top)
+      // What the server answered, whole. The ceiling is the CALLER'S — the
+      // composer shows four under its field and the wall's own panel shows
+      // more — and a cache that had already been cut to four would hand the
+      // second caller the first caller's ceiling.
+      suggested.set(q, out)
+      setGot(out)
       setAsking(false)
     }, SUGGEST_MS)
     return () => clearTimeout(t)
   }, [q, skip])
 
-  const rows = ex ? got.filter((t) => t.handle !== ex) : got
+  const rows = (ex ? got.filter((t) => t.handle !== ex) : got).slice(0, max)
   const open = !skip && !shut && rows.length > 0
   const pick = useCallback((t) => {
     setShut(true)
@@ -1447,6 +1482,10 @@ export function useSuggest(query, { onPick = null, skip = false, exclude = '' } 
   return { rows, open, asking, active, setActive, pick, keyDown }
 }
 
+// The composer's list, under "who is it to". It keeps its caption: there the
+// words are the fact a person needs — that these names are already on the
+// wall — rather than a label on a wall saying "wall", which is what the same
+// three words were over the wall's own results (screens/Wall.jsx `Seek`).
 export function Suggest({ sug, label = 'on the wall', className = '' }) {
   const { rows, open, active, setActive, pick } = sug
   if (!open) return null

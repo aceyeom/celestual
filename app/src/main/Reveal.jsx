@@ -44,7 +44,7 @@
 // the one that has to survive the state.
 
 import { useEffect, useState } from 'react'
-import { Who, useProfile } from '../wall/parts.jsx'
+import { Pill, Who, useProfile } from '../wall/parts.jsx'
 import { normHandle, atHandle } from '../wall/data.js'
 import { heldProof } from '../wall/auth.js'
 import { myPings, heldPings, sinceAgo } from './data.js'
@@ -140,7 +140,7 @@ export default function Reveal({ go, who, known = true, id, still = false }) {
           <h1 className="wl-display is-l">Nothing here.</h1>
         </div>
         <div className="mn-foot">
-          <button className="wl-pill is-light" type="button" onClick={() => go('sky')}>your sky</button>
+          <Pill tone="light" onClick={() => go('sky')}>your sky</Pill>
         </div>
       </main>
     )
@@ -184,14 +184,14 @@ export default function Reveal({ go, who, known = true, id, still = false }) {
         </p>
 
         <div className="sg-reveal-acts sg-in" style={{ '--d': '1520ms' }}>
-          <a
-            className="wl-pill is-light"
+          <Pill
+            tone="light"
             href={`https://instagram.com/${them}`}
             rel="noreferrer noopener"
             target="_blank"
           >
             open {atHandle(them)}
-          </a>
+          </Pill>
           <button className="wl-quiet" type="button" onClick={() => go('sky')}>
             keep this to yourself
           </button>

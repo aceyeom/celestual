@@ -11,7 +11,7 @@ names a campus, a domain or a printed card is about that wall; everything
 about the field, the sheets and the letters is about both.
 
 Four things below are recorded as they were and are no longer so. **The bar**
-carries the brand and the person; the act, `write a letter`, is a capsule at
+carries the brand and the person; the act, `write a letter`, is a metal capsule at
 the foot, and the campus and the count are one small caption over the search
 plate rather than an ear of their own. **The letter** is a centred card with
 one close mark in the corner of the glass, a pen beside the heart for writing
@@ -267,16 +267,25 @@ front too, and always has.
 The one in twenty who came here looking for themselves, and the nineteen who
 came looking for one other name, are nearly everybody who scans the wall off a
 flyer, and the way to look was a 40px glass in the corner of the bar a thumb
-reaches last. It is the wall's own question now: one bare baseline under the
-ear, the glass in the place a field paints its @, `look for a name` in the
-placeholder, the column's full width, in the top shade where type already
-stands without a plate (`screens/Wall.jsx` `Seek`, `parts.jsx` `HandleField
-kind="search"`). It is not lit and it is not a capsule: `write` in the bar is
-the wall's one bright thing, and a second lit capsule over the faces would
-have stood on the disc the lens is reading. It is a real field, so the tap
-that lands on it raises the keyboard, its focus opens the sheet, and the
-sheet's field takes the focus on mount, so the keyboard the tap raised is the
-keyboard the sheet keeps.
+reaches last. It is the wall's own question now: a piece of glass under the
+ear, blurred void in a capsule with the lens in the place a field paints its
+@, `look for a name` inside it, capped at the column's measure (`screens/Wall.jsx`
+`Seek`, `parts.jsx` `HandleField kind="search"`). It carried a chalk hairline
+round its edge while it had to read as a button and does not now: a white
+outline over a crowd of pale discs is an edge belonging to no object, and the
+blur is the material and the edge both.
+
+And it answers in place. It used to behave as a door — any touch pushed
+`/find` onto the history and a sheet came up over the wall carrying a SECOND
+field, which is one question, two fields, a route and a keyboard handed
+between them. The glass itself opens now: it is the head of a panel that
+grows downward as the answers arrive, over the crowd, and folds back to a
+capsule when the field is emptied or left. The head does not move while it
+opens — not its height, not the lens, not the measure the question is centred
+in — so what is seen is one thing growing. A name is found and pressed from
+the surface the names are on, which is the whole argument for the wall being
+the landing. The sheet is still there at `/find`: a link into the search, and
+the fuller answer for somebody who arrived looking rather than browsing.
 
 The sheet hears what a person actually types (migration 0054): the query goes
 to the server as typed, and the server matches the handle, the handle with
@@ -285,9 +294,11 @@ handle and the name as written for a letter to a first name, then, from the
 third character, a misspelling by trigram and a sound alike by metaphone.
 Every candidate is a row of the public index and nothing else, so a profile
 the resolver holds for a handle nobody has written to is never listed by any
-spelling. Before anybody has typed, the six names most recently written to
-stand under `on the wall`: it used to be the six carrying the most letters,
-and a top six by count with "most" on it is a rank of people with a label.
+spelling. Before anybody has typed, the sheet stands the six names most
+recently written to: it used to be the six carrying the most letters, and a
+top six by count with "most" on it is a rank of people with a label. The
+caption over them has gone as well — `on the wall`, on the wall, under the
+wall's own field, over names the wall had just answered with.
 
 A miss states a fact about the index and offers the one thing the wall can
 honestly offer: `nothing on the wall under @x`, then `write a letter`, which
@@ -506,7 +517,7 @@ ear (below):
 | | |
 | --- | --- |
 | ✦ celestual. | **the brand**, top left. `Brand`: the mark at 26px and the name beside it, both chalk while the row around them is ash, and the same lockup every bar on Main carries. On the wall it grows the chevron and goes to the front, at `/`; on a sheet it goes back to the wall under it |
-| write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: a small chalk capsule carrying the nib and the word, with the running light inside it, between the glass and the person. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about |
+| write | **write a letter**. The one word in the bar besides the name, and the one primary on the wall: the metal capsule carrying the nib and the word (`wall/LiquidButton.jsx`), at the foot where a thumb is. It replaced a bare nib here and a wide `write anonymously` capsule docked over the foot of the field, which was a plate standing on the faces it was about; it was chalk with the running light inside it until the primary became a material |
 | ⚷ | **the letters** — a keyhole while they are shut, and once they are open, the constellation of the address that opened them |
 
 There used to be a fourth, a `wall` glyph at the head of the row, lit whenever
@@ -1208,8 +1219,8 @@ product opened on two different logos.
 | | |
 | --- | --- |
 | `0ms` | black. A held frame before anything moves is what makes the first thing that moves land. Behind it the shell has already asked for the index and, off the index, for the pictures of the names that will stand in the light (`data.js warmWall`): the index carries every face since migration 0048, so the pictures are the next request and not the one after a peek |
-| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants. 900ms to close. Not before the metal is there: the held frame stretches, up to 760ms from mount, until the shader has drawn a frame behind the cover (`LiquidMark onReady`), and the swap from the flat mark to the metal is instant while the cover is over it (`cut`). It used to run on the clock alone, and on a phone, where the compile takes longer than the held frame, the circuit was cut open over the chalk mark and the metal arrived a moment later on a ring already on the screen, which was a blink. Past the ceiling the sequence runs on the chalk mark and the metal fades in over it, gently, the designed state for a driver that is slow or never answers |
-| `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out |
+| `180ms` | **the circuit.** A black cover over the liquid metal is cut away along the band's own centreline, so the ring is *uncovered* round its orbit rather than faded up. The cut travels the route the ring actually takes, because the mask path and the ring come out of the same constants, and its head is FEATHERED, so the metal lights along the orbit rather than being wiped by a rectangle: the cut used to be a straight chord across the band, and wherever the metal was bright under it the mark was drawn in with a blunt white wedge on the end of it. The blur is taken on the stroke and the band clips it afterwards, so the ring's own silhouette stays as sharp as it is drawn and only the front of the reveal is soft. 900ms to close. Not before the metal is there: the held frame stretches, up to 760ms from mount, until the shader has drawn a frame behind the cover (`LiquidMark onReady`), and the swap from the flat mark to the metal is instant while the cover is over it (`cut`). It used to run on the clock alone, and on a phone, where the compile takes longer than the held frame, the circuit was cut open over the chalk mark and the metal arrived a moment later on a ring already on the screen, which was a blink. Past the ceiling the sequence runs on the chalk mark and the metal fades in over it, gently, the designed state for a driver that is slow or never answers |
+| `520ms` | **the star**, opening while the circuit is still closing behind it, up off nothing, with a few degrees bleeding out. Its hole in the cover is feathered too, and dilated by what the feather reaches: a crisp silhouette held at a third of its opacity is a crisp outline of the star, drawn in grey |
 | `1180ms` | **assembled.** Nothing moves but the metal. The cover, black on black and doing nothing now, fades out here, while the veil is still opaque, so what lifts is the metal alone |
 | `1560ms` | **the lift**, after a hold, and not before the wall is ready. The lift waits on the index and the first screen's faces having landed, with a ceiling at 4200ms from mount so a dead network is a wall of monograms and not a logo forever; on an ordinary connection they are there long before the clock is. The mark is the one thing in the product built to be looked at while something else finishes, and a wall drawn with sixty grey discs that fill in a second later is a wall that arrived too early. Then the mark drifts up and dissolves while the black goes with it, and the wall is mounted and already cascading underneath by the time the black is half gone, every face on it a picture from its first frame. One movement, not two screens |
 | `2280ms` | the black is gone |
