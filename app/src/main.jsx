@@ -1,7 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
-import { BASE, legacyRewrite } from './wall/router.js'
+import { BERKELEY_BASE, ownsAt, legacyRewrite } from './wall/router.js'
+import { configure as configureWall } from './wall/campus.js'
 import { landing as cardLanding } from './cards.js'
 
 // No OAuth popup/callback to intercept — identity is proven with an Instagram
@@ -66,7 +67,17 @@ if (moved) {
 }
 
 const path = moved || at
-const wallPath = path === BASE || path.startsWith(BASE + '/')
+// ── the two walls ────────────────────────────────────────────────────────────
+// The campus wall owns everything under /berkeley. The wall for everybody
+// owns the root and its own sheets under it (/letter, /find, /write, /gate,
+// /report, /remove, /join); Main keeps its flow (/place, /sky, /reveal, and
+// the three addresses that arrive from outside). Which wall is decided here,
+// once, before anything mounts, and the wall's tree is told which one it is
+// drawing (wall/campus.js) before it builds a single address.
+const wallPath = ownsAt(BERKELEY_BASE, path)
+const homePath = !wallPath && ownsAt('', path)
+if (wallPath) configureWall('berkeley')
+else if (homePath) configureWall('global')
 
 // ── the project, connected early ─────────────────────────────────────────────
 // Every read on either surface goes to the one Supabase project, and every
@@ -164,7 +175,7 @@ if (adminPath) {
       </StrictMode>,
     )
   })
-} else if (wallPath) {
+} else if (wallPath || homePath) {
   import('./wall/index.jsx').then(({ default: WallApp }) => {
     root.render(
       <StrictMode>

@@ -1,58 +1,32 @@
 // ── /berkeley/letter/:id — THE LETTER ───────────────────────────────────────
 //
-// A cream card rising off the bottom edge over a wall that stays visible and
-// dimmed behind it, and on a wide screen a card centred in the middle of it.
-// Both come straight off the reference: the journal's paper card with its
-// dateline, and the modal that dims what is behind it rather than replacing it.
+// The card, in the middle of the glass, over a wall that stays visible and
+// dimmed behind it. Nothing else: no sheet under it, no header row over it,
+// no count, no pill. One mark in the corner of the glass is the way out, and
+// the two chevrons in the gutters turn the deck.
 //
-// ── the rebalance, and what was actually wrong ──────────────────────────────
-// The card was right and everything around it was not. Four things:
+// ── why it is centred, and why the chrome came off ──────────────────────────
+// It was a bottom sheet with a header row (`1 / 23` and the close mark), the
+// card, and a wide pill under the card reading "write to @them". A bottom
+// sheet takes the card's own height, so a short letter stood low on the glass
+// and a long one high, and a swipe from one to the other moved the card under
+// the eye; the count over it answered a question nobody reading a letter was
+// asking; and the pill under it was a plate the width of the screen under a
+// letter that had already said everything. Centred, a card of any height is
+// read from the same place, and the one act the pill carried is a mark on
+// the paper's foot beside the heart, the size of the heart, in the paper's
+// ink (`marks`, below).
 //
-//   1  THE TOP WAS AN EMPTY ROW WITH ONE HEAVY OBJECT ON THE END OF IT. The
-//      close mark floated alone above the card, the single darkest shape on the
-//      screen, sitting on nothing. It is now one half of a real header — what
-//      this sheet is about on the left, the way out on the right — and every
-//      other sheet in the build opens on the same row (parts.jsx `SheetHead`).
-//   2  THE CARD WAS DATED TWICE, IN TWO VOICES, IN TWO PLACES. "7. August 2026
-//      / Friday" across the top rule, and "3 weeks ago" in a strip underneath.
-//      Only one of those is a fact anybody wants about an unsent letter: an
-//      unsent letter has no anniversary, and its weekday means nothing to the
-//      person reading it. The relative age is the whole of it, so it moved onto
-//      the rule and the absolute date is gone (data.js `sinceline`).
-//   3  THE STRIP UNDER THE CARD WAS THREE UNRELATED THINGS AT ONE WEIGHT — a
-//      constellation, a timestamp and a control, side by side, none of them
-//      winning. The constellation went into the card as its letterhead, where
-//      it stands beside the name it belongs to; the timestamp went onto the
-//      rule; and the control went down to the foot with the other control.
-//   4  "LETTERS OPEN FOR BERKELEY.EDU" WAS EXPLAINING A DOOR NOBODY HAD TRIED
-//      YET. It sat above the button in the same grey as everything else and
-//      earned none of the space it took. The card already says SEALED on its
-//      own rule, which is the fact; the gate names the domain, which is the
-//      consequence, at the moment somebody has decided to find out.
-//
-// What is left reads top to bottom in three steps at three weights: the header,
-// the card, and the one thing to do. The flag for the one reader in twenty who
-// came here to get something off the wall stands on the card itself, at the
-// end of its foot, opposite the heart (below).
-//
-// ── who it is for ───────────────────────────────────────────────────────────
-// The card opens on "for", the name the resolver has for the person, and the
-// handle under it (parts.jsx `Addressee`), with their face beside it; the
-// face can be pressed and opens large, the way a profile picture does on
-// Instagram (parts.jsx `OpenFace`). It used to open on the handle alone, set
-// large, which read as a card about a handle rather than a letter to a person.
-//
-// ── it opens out of the disc that was pressed ───────────────────────────────
-// The wall leaves the circle of the disc behind on the way out (morph.js)
-// and the card claims it on the way in: the letter's own card, with its words
-// on it from the first frame, starts as that circle — the paper cut round,
-// the whole card scaled to the disc — and opens out to where it stands, while
-// the sheet's glass comes up under it and the header and the foot arrive a
-// beat behind. One element, one transform, and the real card the whole way.
-//
-// A deep link, a refresh, a back button, a turn of the stack or a reader who
-// has asked for less movement opens the ordinary way, because none of them
-// has a circle to open out of.
+// ── how it opens ────────────────────────────────────────────────────────────
+// It rises a little and fades in, on the system's own curve, and goes the same
+// way (wall.css `wl-letter-in`). It used to open OUT of the disc that was
+// pressed: the wall handed the disc's circle across, the card was put where
+// the disc was at the disc's size with the paper's corner a circle's, and one
+// transform ran it out to where it stands while the corner unrolled. That was
+// a border radius and a transform animating on the real card, words and all,
+// over a sheet with a backdrop blur under it, and it dropped frames on every
+// phone it was tried on. The pulse the press sends through the crowd stays
+// (Hive.jsx `tapAt`): the wall still answers the touch, under the glass.
 //
 // ── the deck, turned like a carousel ────────────────────────────────────────
 // Every letter on the wall is one card in one deck, in the wall's own order:
@@ -66,11 +40,7 @@
 // the NEXT letter comes in from the right; swipe RIGHT and the card goes right
 // while the PREVIOUS letter comes in from the left. The chevron on the right
 // is the next letter and the one on the left is the previous, and the arrow
-// keys do the same. It used to be a stack: the card flew off and the next
-// rose from under it, and a turn back flew the card off to the right while
-// the previous slid in from the left, which is two cards moving away from
-// each other, and on the chevrons it read as the card being sent the wrong
-// way. Now the two cards move together, as one strip, the whole way.
+// keys do the same.
 //
 // The finger has the card. While it is down both neighbours stand beside the
 // card, off the glass, and travel with it, so a drag shows the next letter
@@ -96,17 +66,16 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetHead, SheetFoot, Paper, Prose, Redacted,
-  Pill, ClosePill, Icon, Label, OpenFace, Addressee, Heart,
+  Sheet, SheetFoot, Paper, Prose, Redacted,
+  Pill, ClosePill, Close, Icon, OpenFace, Addressee, Heart, useSheet,
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  sinceline, atHandle, labelFor, heart, wall, liveCount,
+  sinceline, atHandle, labelFor, heart, wall,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
-import { land, locate } from '../morph.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -149,6 +118,13 @@ function Hearts({ letter: l, onGate }) {
   )
 }
 
+// The one mark on the glass: the way out, through the sheet's own dismissal
+// so it leaves the way the scrim and the key do.
+function LetterX({ label }) {
+  const sheet = useSheet()
+  return <Close className="wl-letter-x" onClick={() => sheet && sheet.dismiss('mark')} label={label} />
+}
+
 // ── the swipe ───────────────────────────────────────────────────────────────
 // How far a finger has to travel, or how fast, for the strip to run on rather
 // than spring back; how much of the travel the card follows (all of it: a
@@ -164,25 +140,6 @@ const GAP = 24
 const SLIDE_MS = 320
 const SPRING_MS = 280
 const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
-
-// ── the opening ─────────────────────────────────────────────────────────────
-// How long the card takes to open out of the disc, on the travelling curve
-// the sheets move on (wall.css --ease-sheet): a straight run through the
-// middle and a settle over the last third, so the distance is actually
-// crossed on the screen. The paper's corner is the card's own radius at the
-// end and a circle's at the start. It starts on the frame of the press, so
-// the whole of the wait between a finger and the words is this number; it
-// was 560, and the words were readable before it finished, but a card that
-// is still growing under a reader is a card they wait for.
-const OPEN_MS = 440
-const EASE_TRAVEL = 'cubic-bezier(0.32, 0.72, 0, 1)'
-const RADIUS = 18          // wall.css --r-card
-// ── and the closing ─────────────────────────────────────────────────────────
-// How long the card takes to go back into its disc, on the same curve: it
-// leaves quickly and settles onto the face, dissolving over the last part of
-// the way so what is left on the field is the disc and not a small paper.
-// Shorter than the opening: the system's answer to a dismissal snaps.
-const CLOSE_MS = 340
 
 // ── the address takes two shapes ────────────────────────────────────────────
 // /berkeley/letter/<uuid>    one letter, which is what a shared link points at
@@ -272,11 +229,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   //
   // Whether the leaf ARRIVES, with a beat of fade, or takes over silently is
   // decided here too, once, on the render that changes the key, and kept
-  // with the key. It used to be read off `silent` on every render, and
-  // `silent` is put back the moment the leaf lands (`landed`, below): the
-  // next render, a frame later, found it false and put the fade on a card
-  // that was already standing on the glass, which sent the card to nothing
-  // and faded it back in. That was the flicker on every turn of the deck.
+  // with the key.
   const [seen, setSeen] = useState(param)
   const [leaf, setLeaf] = useState({ key: 0, fade: false })
   if (seen !== param) {
@@ -284,16 +237,6 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     setLeaf({ key: leaf.key + 1, fade: !silentRef.current })
     setFlagged(false)
   }
-
-  // ── the disc that was pressed ──
-  // Claimed once, on the first render, and only ever there: the wall left a
-  // circle behind on the way out of it (morph.js) and the card opens out of
-  // that circle instead of the sheet rising over it. Nothing is claimed on a
-  // deep link, a refresh or a back button, so all three open the ordinary
-  // way. `flying` is the opening itself: while it is on, the sheet's glass
-  // lets the card stand outside it.
-  const [from] = useState(() => land(handle))
-  const [flying, setFlying] = useState(() => !!from && !reduce)
   const cardBox = useRef(null)
 
   // The letters under a name, when that is what the address named.
@@ -311,15 +254,11 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
 
   // ── the deck ──
   // The wall's index, in its own order, read when the corpus moves: which
-  // name this is, how many letters stand before it, and what is either side
-  // of this card. Past the end of a name the deck runs on to the next name's
-  // first letter, and before its start to the last letter of the name before.
+  // name this is, and what is either side of this card. Past the end of a
+  // name the deck runs on to the next name's first letter, and before its
+  // start to the last letter of the name before.
   const tiles = useMemo(() => wall(), [rev]) // eslint-disable-line react-hooks/exhaustive-deps
   const ti = name ? tiles.findIndex((t) => t.handle === name) : -1
-  let before = 0
-  for (let i = 0; i < ti; i++) before += tiles[i].count
-  const total = ti >= 0 ? liveCount() : of
-  const pos = (ti >= 0 ? before : 0) + Math.max(0, at)
   const nextTo = at >= 0 && at < of - 1 ? { id: siblings[at + 1].id }
     : ti >= 0 && tiles[ti + 1] ? { handle: tiles[ti + 1].handle, end: 'first' }
     : null
@@ -380,14 +319,11 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     set(prevSlot.current, beside(-1, x, w))
     set(nextSlot.current, beside(1, x, w))
     // ── the height goes with the strip ──
-    // A short letter beside a long one is a card beside a taller card, and
-    // the glass used to take the new height on the frame the address
-    // changed: everything under the card jumped. The track's height follows
-    // the strip instead, from this card's height toward the neighbour's by
-    // how far the strip has gone, so the sheet is seen to grow or shrink
-    // with the finger, and a turn from a chevron carries its height on the
-    // same clock as its travel. It finishes where the next card stands, and
-    // the next card takes over at exactly that height (`rest`).
+    // A short letter beside a long one is a card beside a taller card. The
+    // track's height follows the strip from this card's height toward the
+    // neighbour's by how far the strip has gone, so the card is seen to grow
+    // or shrink with the finger about its own middle, and the next card
+    // takes over at exactly that height (`rest`).
     const tr = track.current
     if (tr) {
       const h0 = hBase.current
@@ -476,11 +412,10 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
 
   // ── the swipe ──
   // A finger on the card takes the strip sideways. The axis is decided on
-  // the first few pixels and a vertical drag is handed back to the sheet at
-  // once, so the card can still be scrolled past on a long phone;
-  // `touch-action: pan-y` on the stage says the same thing to the browser.
-  // A mouse does not swipe: on a desktop the chevrons and the arrow keys
-  // turn the deck, and a drag over a letter selects its words.
+  // the first few pixels and a vertical drag is handed back to the glass at
+  // once; `touch-action: pan-y` on the stage says the same thing to the
+  // browser. A mouse does not swipe: on a desktop the chevrons and the arrow
+  // keys turn the deck, and a drag over a letter selects its words.
   const drag = useRef(null)
   const onDown = (e) => {
     if (e.pointerType === 'mouse' || busy.current || !canTurn) return
@@ -536,80 +471,6 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
     cardStep('read')
   }, [one])
 
-  // ── the opening ──
-  // Before the first paint: the card is measured where it stands, and one
-  // transform puts it where the disc was, at the disc's size, with the
-  // paper's corner a circle's; then both run out to nothing on the travelling
-  // curve. The card is the real card the whole way, words and all, so if the
-  // letter lands mid-flight it lands on the card that is opening, and the
-  // sheet under it comes up as glass rather than rising (wall.css
-  // `.is-from-disc`).
-  useLayoutEffect(() => {
-    if (!from || reduce) return undefined
-    const el = cardBox.current
-    if (!el || !el.animate) { setFlying(false); return undefined }
-    const paper = el.querySelector('.wl-paper') || el
-    const c = el.getBoundingClientRect()
-    if (!c.width || !c.height) { setFlying(false); return undefined }
-    const s = Math.max(0.05, from.w / c.width)
-    const ox = from.x + from.w / 2 - (c.left + c.width / 2)
-    const oy = from.y + from.h / 2 - (c.top + c.height / 2)
-    const a = el.animate([
-      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})` },
-      { transform: 'none' },
-    ], { duration: OPEN_MS, easing: EASE_TRAVEL, fill: 'backwards' })
-    const b = paper.animate([
-      { borderRadius: '50%' },
-      { borderRadius: '50%', offset: 0.2 },
-      { borderRadius: `${RADIUS}px` },
-    ], { duration: OPEN_MS, easing: EASE_TRAVEL, fill: 'backwards' })
-    let over = false
-    const end = () => { if (over) return; over = true; setFlying(false) }
-    a.onfinish = end
-    // a tab that goes to the background stops handing out frames, and a
-    // sheet left with its glass open is worse than no opening at all
-    const bail = setTimeout(end, OPEN_MS + 300)
-    return () => {
-      clearTimeout(bail)
-      try { a.cancel(); b.cancel() } catch { /* gone */ }
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── the way out, back into the disc ──
-  // Closed by the mark, the scrim or the key, the card goes back to the disc
-  // of the name it is showing, if that disc is on the glass: the same
-  // transform the opening ran, the other way, with the paper's corner going
-  // round and the card dissolving over the last part of the way, while the
-  // glass fades in place instead of dropping (wall.css `.is-to-disc`) and
-  // the wall's light comes back under it. Dragged down, the sheet falls the
-  // way every sheet falls, and with no disc to go to it drops. The disc is
-  // asked for on the way out and not remembered from the way in, because the
-  // deck may have been turned to another name since.
-  const [leaving, setLeaving] = useState(false)
-  const closing = (by) => {
-    if (by === 'drag' || reduce) return
-    const el = cardBox.current
-    const to = locate(name)
-    if (!el || !to || !el.animate) return
-    const paper = el.querySelector('.wl-paper') || el
-    const c = el.getBoundingClientRect()
-    if (!c.width || !c.height) return
-    const s = Math.max(0.05, to.w / c.width)
-    const ox = to.x + to.w / 2 - (c.left + c.width / 2)
-    const oy = to.y + to.h / 2 - (c.top + c.height / 2)
-    el.animate([
-      { transform: 'none', opacity: 1 },
-      { opacity: 1, offset: 0.5 },
-      { transform: `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(4)})`, opacity: 0 },
-    ], { duration: CLOSE_MS, easing: EASE_TRAVEL, fill: 'forwards' })
-    paper.animate([
-      { borderRadius: `${RADIUS}px` },
-      { borderRadius: '50%', offset: 0.7 },
-      { borderRadius: '50%' },
-    ], { duration: CLOSE_MS, easing: EASE_TRAVEL, fill: 'forwards' })
-    setLeaving(true)
-  }
-
   // A letter that was here a moment ago and is not now. It is not an error and
   // it is not framed as one: a report takes a letter down on the tap, and the
   // most likely way somebody lands here is by walking back to one they or
@@ -619,9 +480,8 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={back} labelledBy="wl-letter-h">
+      <Sheet onClose={back} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label="back to the wall" />}>
         <div className="wl-sheet-in wl-letter">
-          <SheetHead onClose={back} label="back to the wall" />
           <Paper
             dateline={{ lead: 'not on the wall' }}
             title={<span id="wl-letter-h" className="wl-letter-to">gone</span>}
@@ -637,19 +497,29 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   }
 
   const open = !!one && one.body !== null
-  const pager = at >= 0 && total > 1
-    ? <Label tone="dim" className="wl-pager" aria-label={`letter ${pos + 1} of ${total}`}>{pos + 1} / {total}</Label>
-    : null
   const toGate = () => { if (one) setAfterGate({ name: 'letter', id: one.id }); go('gate') }
 
-  // ── the two marks a reader can leave ──
-  // The heart at the head of the foot and the flag at its end, both struck in
-  // the paper's ink, because both are marks on the document rather than
-  // controls on the sheet. A flag is left ON a thing, so it stands in the
-  // card's corner, the size of the heart beside it rather than of a button.
+  // ── the three marks a reader can leave ──
+  // The heart at the head of the foot, the pen beside it, and the flag at
+  // its end, all struck in the paper's ink, because all three are marks on
+  // the document rather than controls on the sheet. The pen writes to the
+  // person this letter is for: it opens the composer on their name, and
+  // closing the composer comes back to this letter (index.jsx `up`). A flag
+  // is left ON a thing, so it stands in the card's corner, the size of the
+  // heart beside it rather than of a button.
   const marks = (l, live) => (
     <div className="wl-letter-marks">
-      <Hearts letter={l} onGate={toGate} />
+      <div className="wl-letter-marks-l">
+        <Hearts letter={l} onGate={toGate} />
+        <button
+          type="button" className="wl-pen-to"
+          onClick={live ? () => toWrite(go, l.to) : undefined}
+          aria-label={`write to ${labelFor(l.to)}`} title={`write to ${labelFor(l.to)}`}
+          tabIndex={live ? undefined : -1}
+        >
+          <Icon name="write" size={16} />
+        </button>
+      </div>
       <button
         type="button" className={`wl-flag${live && flagged ? ' is-on' : ''}`}
         onClick={live ? () => setFlagged(!flagged) : undefined}
@@ -676,26 +546,62 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
   // already on the glass.
   const came = leaf.fade ? ' is-arrived' : ''
 
-  return (
-    /* Not `tall`. The floor exists so a bottom sheet does not read as a
-       notification, and this one is never small: a card, a full-width pill and
-       two controls. */
-    <Sheet
-      onClose={back} onClosing={closing} labelledBy="wl-letter-to"
-      className={`${from ? `is-from-disc${flying ? ' is-flying' : ''}` : ''}${leaving ? ' is-to-disc' : ''}`}
-    >
-      <div className="wl-sheet-in wl-letter">
-        <SheetHead onClose={back} label="back to the wall" lead={pager} />
+  // ── what stands under the card ──
+  // Nothing, almost always. While the flag is on, the two things somebody
+  // who came looking for THEMSELVES needs: one pane of glass, two rows in
+  // it, each a glyph, the act and what it does in one line, so the
+  // reversible act and the irreversible one are told apart before either is
+  // pressed. The fast door first. On a sealed letter, the way to the gate.
+  const foot = !one ? null
+    : flagged ? (
+      <div className="wl-acts" id="wl-flag-opts">
+        <div className="wl-acts-pane" role="group" aria-label="take this off the wall">
+          <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
+            <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
+            <span className="wl-act-text">
+              <span className="wl-act-h">Report this letter</span>
+              <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
+            </span>
+            <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+          </button>
+          {/* A first name is nobody's to empty: forty people share it,
+              and no handle proof can stand for it (0053). The tap above
+              takes a letter to a name down like any other, and only the
+              desk shuts the name itself. */}
+          {isNameKey(one.to) ? null : (
+          <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
+            <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
+            <span className="wl-act-text">
+              <span className="wl-act-h">Take my name off the wall</span>
+              <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
+            </span>
+            <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
+          </button>
+          )}
+        </div>
+        <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
+      </div>
+    ) : open ? null : (
+      /* The gate. It names no policy and gives no reasons: the card
+         beside it already says SEALED, and a person who has not decided
+         to open it does not need the argument for why it is shut. */
+      <Pill tone="light" wide onClick={toGate}>
+        read it
+      </Pill>
+    )
 
+  return (
+    <Sheet onClose={back} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label="back to the wall" />}>
+      <div className="wl-sheet-in wl-letter">
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, who it is for, and the words.
             Either side of it, in the gutters, a chevron to the letter before
             and the one after; the card itself takes the finger; and while it
             is moving the neighbours stand beside it on the same strip, clipped
-            at the sheet's edge (wall.css `.wl-letter-track`). */}
+            at the glass's edge (wall.css `.wl-letter-track`). */}
         <div
-          className={`wl-letter-stage${flying || leaving ? '' : ' is-landed'}${move ? ' is-moving' : ''}`}
+          className={`wl-letter-stage is-landed${move ? ' is-moving' : ''}`}
           {...swipe}
         >
           {canTurn ? (
@@ -728,58 +634,7 @@ export default function Letter({ id: param, go, back, reduce = false, rev = 0 })
           ) : null}
         </div>
 
-        {/* ── the foot ──
-            One primary, and while the flag is on, the two things somebody who
-            came looking for THEMSELVES needs, standing where the primary was:
-            one pane of glass, two rows in it, each a glyph, the act and what
-            it does in one line, so the reversible act and the irreversible
-            one are told apart before either is pressed. The fast door first.
-            While the words are still on their way the foot holds its height
-            with nothing on it, so the card does not move when they land. */}
-        <SheetFoot>
-          {!one ? (
-            <div className="wl-foot-hold" aria-hidden="true" />
-          ) : flagged ? (
-            <div className="wl-acts" id="wl-flag-opts">
-              <div className="wl-acts-pane" role="group" aria-label="take this off the wall">
-                <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
-                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
-                  <span className="wl-act-text">
-                    <span className="wl-act-h">Report this letter</span>
-                    <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
-                  </span>
-                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                </button>
-                {/* A first name is nobody's to empty: forty people share it,
-                    and no handle proof can stand for it (0053). The tap above
-                    takes a letter to a name down like any other, and only the
-                    desk shuts the name itself. */}
-                {isNameKey(one.to) ? null : (
-                <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
-                  <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
-                  <span className="wl-act-text">
-                    <span className="wl-act-h">Take my name off the wall</span>
-                    <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
-                  </span>
-                  <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                </button>
-                )}
-              </div>
-              <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
-            </div>
-          ) : open ? (
-            <Pill tone="light" wide onClick={() => toWrite(go, one.to)}>
-              write to {labelFor(one.to)}
-            </Pill>
-          ) : (
-            /* The gate. It names no policy and gives no reasons: the card
-               beside it already says SEALED, and a person who has not decided
-               to open it does not need the argument for why it is shut. */
-            <Pill tone="light" wide onClick={toGate}>
-              read it
-            </Pill>
-          )}
-        </SheetFoot>
+        {foot ? <SheetFoot>{foot}</SheetFoot> : null}
       </div>
     </Sheet>
   )

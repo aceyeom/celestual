@@ -116,6 +116,7 @@ export function patch(fields) { return write({ ...read(), ...fields }) }
 let AFTER = null
 export function setAfterGate(route) { AFTER = route && route.name ? route : null }
 export function takeAfterGate() { const a = AFTER; AFTER = null; return a }
+export function peekAfterGate() { return AFTER }
 
 // Append to one of the list buckets, once. Written here rather than at four
 // call sites so `[...removed(), h]` cannot be spelled two different ways and

@@ -158,6 +158,12 @@ let SPENT = false
 // Whether a letter this browser put up has since come down (0050 wall_mine):
 // the notice at the foot of the wall, in the tab's place.
 let DOWN = false
+// Whether this browser has put up more letters than the account sheet shows
+// at once, so the list's fade and its "see more" are drawn.
+let MANY = false
+// Whether the fixture browser is nobody at all: signed in to nothing, so the
+// gates draw their doors rather than the account.
+let ANON = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -170,6 +176,7 @@ const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swa
 for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.target_handle}.jpg`
 
 function whoami() {
+  if (ANON) return { ok: true, signed_in: false }
   return {
     ok: true,
     signed_in: true,
@@ -180,6 +187,10 @@ function whoami() {
       email: null,
       edu_verified: OPEN,
       campus: OPEN ? 'berkeley.edu' : null,
+      // 0057: the two logins. Neither is held by the fixture browser.
+      google_verified: false,
+      email_verified: false,
+      login_email: null,
     },
   }
 }
@@ -583,7 +594,13 @@ const RPC = {
   // for it: the notice at the foot of the wall.
   wall_mine: () => ({
     ok: true,
-    letters: DOWN ? [{
+    letters: MANY ? ['pilar.echevarria', 'jules.k', 'ren.tanaka', '~sofia', 'm.okonkwo', 'aya.nakamura'].map((h, i) => ({
+      id: `1111${i}111-2222-4333-8444-55556666000${i}`, handle: h, kind: h.startsWith('~') ? 'name' : 'handle',
+      name: h === '~sofia' ? 'Sofia' : null, look: null,
+      body: LINES[i % LINES.length], status: i === 4 ? 'removed' : 'live', down_by: i === 4 ? 'report' : null,
+      hearts: [3, 0, 1, 7, 0, 2][i], reasons: [], flagged: false,
+      at: new Date(now - (i * 2 + 1) * DAY).toISOString(),
+    })) : DOWN ? [{
       id: '11110111-2222-4333-8444-555566660000', handle: 'ren.tanaka',
       body: 'you were the one singing on the 51B that night. i wanted the song to be about me.',
       status: 'rejected', down_by: 'screen', reasons: ['threat'], flagged: false,
@@ -761,6 +778,17 @@ const ROUTES = [
   // Flap), so the wall is shot once they have landed; then the field with
   // the veil lifted, once the lens has bloomed and the walk has taken its
   // first step and come to rest on a person
+  // ── the wall at the root (0057): the same wall for everybody, with the
+  //    mark on its poster, and the door with three ways in ──
+  { label: 'home',            path: '/', settle: 6000 },
+  { label: 'home-lifted',     path: '/', press: '.wl-mast-go', settle: 5200 },
+  { label: 'home-gate',       path: '/gate', anon: true },
+  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:first-child' },
+  { label: 'home-gate-email', path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:last-child' },
+  { label: 'home-write',      path: '/write/sofiaaa.reyes' },
+  { label: 'home-letter',     path: '/letter/pilar.echevarria' },
+  { label: 'berkeley-gate-google', path: '/berkeley/gate', anon: true },
+  { label: 'ping',            path: '/ping?nointro=1' },
   { label: 'berkeley',        path: '/berkeley', settle: 6000 },
   // the veil opening from the tap, held at four tenths of its reach
   // (Wall.jsx `heldRipple`): the circle, the crest of the pulse running
@@ -822,6 +850,11 @@ const ROUTES = [
     acts: [['click', '.wl-mast-go'], ['wait', 3000], ['click', '.wl-top-write']], settle: 1200 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
+  // the pen on the card opens the composer on the name, and the composer's
+  // mark comes back to the letter it was opened from (index.jsx `up`)
+  { label: 'letter-pen',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-pen-to', settle: 1400 },
+  { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-pen-to'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   // 0055: the first question with its two answers on one rail, the handle
   // on; then the other answer on, with a name that is not a first name in it
@@ -854,6 +887,7 @@ const ROUTES = [
   { label: 'gate',          path: '/berkeley/gate', open: false },
   // the same address, through the door: the profile card
   { label: 'gate-in',       path: '/berkeley/gate' },
+  { label: 'gate-in-more',  path: '/berkeley/gate', many: true },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
@@ -919,6 +953,8 @@ for (const r of list) {
   NOTE = r.note || ''
   SPENT = r.spent === true
   DOWN = r.down === true
+  MANY = r.many === true
+  ANON = r.anon === true
   for (const v of VIEWPORTS) {
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })
@@ -960,11 +996,12 @@ for (const r of list) {
     // The tab at the foot of the wall exists once this browser has put a
     // letter up, and `written` is the list of those letters' ids.
     const WRITTEN = r.tab ? ['11110111-2222-4333-8444-555566660000'] : []
-    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN }) => {
+    await page.addInitScript(({ DRAFT, VERIFIED, WRITTEN, ANON }) => {
       try {
         localStorage.setItem('celestual.wall.v5', JSON.stringify({
-          member: 'someone@berkeley.edu',
-          verified: VERIFIED ? ['ace03d'] : [],
+          member: ANON ? null : 'someone@berkeley.edu',
+          reader: !ANON,
+          verified: VERIFIED && !ANON ? ['ace03d'] : [],
           wroteTo: ['pilar.echevarria', 'jules.k', 'ren.tanaka'],
           written: WRITTEN,
           proof: 'a'.repeat(64),
@@ -976,7 +1013,7 @@ for (const r of list) {
         // a verified handle with no proof to spend, `celestual_my_pings` is
         // never asked, and the reveal draws "nothing here" over a fixture that
         // has a mutual in it.
-        if (VERIFIED) {
+        if (VERIFIED && !ANON) {
           localStorage.setItem('celestual:auth', JSON.stringify({
             verified: true, handle: 'ace03d', proof: 'a'.repeat(64), at: Date.now(),
           }))
@@ -984,7 +1021,7 @@ for (const r of list) {
           localStorage.removeItem('celestual:auth')
         }
       } catch { /* private mode */ }
-    }, { DRAFT, VERIFIED, WRITTEN })
+    }, { DRAFT, VERIFIED, WRITTEN, ANON })
 
     await page.goto('http://localhost:5173' + r.path, { waitUntil: 'networkidle' })
     await page.evaluate(() => document.fonts.ready)

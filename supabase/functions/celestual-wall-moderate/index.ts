@@ -1,9 +1,5 @@
 // CELESTUAL: celestual-wall-moderate, the screen the wall publishes through.
 //
-// Renamed from celestual-beta-moderate in Phase 6a. The word "beta" described
-// nothing (the surface is /berkeley), the function had never been deployed, and
-// Q10 was already renaming the tables underneath it.
-//
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  This is the ONLY path a letter reaches the wall by. It writes the letter ║
 // ║  at once, answers, and then reads it.                                     ║
@@ -14,6 +10,10 @@
 //
 // Contract:
 //   POST { token, target, body, sealedLine?, source?, campus?, kind?, name?, look? }
+//     campus is the wall the letter goes on: 'berkeley', or 'global' for the
+//     wall at the root of the site (migration 0057). The gate is the
+//     schema's (wall_write asks wall_gate); this function does not decide
+//     who may write, only what may stand.
 //     kind is 'handle' (the default) or 'name' (0053): a letter to a first
 //     name, a nickname, a letter, a number, whatever the writer calls the
 //     person (0055), with `name` as the writer typed it and `target`
@@ -29,34 +29,50 @@
 //                                                   says it is inappropriate
 //     { ok:false, error }                           the write itself was refused
 //     { ok:false, error:'cap', limit, used, resets_at }
-//                                                   three in any five days, spent
-//                                                   (seven until 0051)
+//                                                   the allowance, spent
 //
-// ── THE LETTER GOES UP FIRST, AND IS READ WHERE IT STANDS ───────────────────
-// Two layers stand between a person typing and a name on a public wall, and
-// since migration 0050 only the first one stands BEFORE the letter is up:
+// ── MODERATE THE CONSEQUENCE, NOT THE EMOTION ───────────────────────────────
+// The wall is where people say the thing they never said, and a good deal
+// of what they never said is unkind. Heartbreak, anger, a grudge, a roast, a
+// letter that calls somebody a coward, a letter with every swear word in it:
+// that is the product, and a screen that took those down would be taking
+// down the wall. What comes down is a letter that can DO something to the
+// person it names off the wall: get them found, get them hurt, out them,
+// sexualise them, or say they are a child. The list is short and it is
+// about consequence. Nothing on it is about tone.
+//
+// ── and it is cheap, because most letters are never read by a model ────────
+// Three layers, and the expensive one runs on a minority of letters:
 //
 //   1  DETERMINISTIC   regex. slurs, phones, addresses, room numbers, URLs,
 //                      emails. Mirrored from app/src/wall/moderate.js, where it
 //                      runs at the keyboard and shakes the card, and re-run
 //                      HERE because a client-side check is a courtesy to the
 //                      writer, not a control on the writer. A catch is stored
-//                      at rejected (spec section 9) and never published.
-//   2  CLASSIFIER      one model call, explicit categories, below, run AFTER
-//                      the letter has been written at live and the writer has
-//                      been answered. A reject takes the letter down
-//                      (`wall_screened`), and the wall tells the writer it came
-//                      down for going against the terms and hands their words
-//                      back. A review leaves it up, flagged for a person at
-//                      the desk. A pass is recorded and nothing moves.
+//                      at rejected and never published. This is the only
+//                      thing that stands BEFORE a letter is up.
+//   2  THE LEXICON     a list of the words and shapes that a letter with a
+//                      consequence in it nearly always carries: violence,
+//                      sex, a minor, a routine, a place, exposure. A letter
+//                      that matches none of them is passed without a model
+//                      call and marked so. Most letters match none of them.
+//                      This is what makes the screen cost a fraction of what
+//                      one call per letter cost: the model reads only what
+//                      the lexicon flagged.
+//   3  CLASSIFIER      one call to the cheapest model, against the short
+//                      list of consequences below, with a small output, run
+//                      AFTER the letter has been written at live and the
+//                      writer has been answered. A reject takes the letter
+//                      down (`wall_screened`), and the wall tells the writer
+//                      it came down for going against the terms and hands
+//                      their words back. A review leaves it up, flagged for
+//                      a person at the desk. A pass is recorded and nothing
+//                      moves.
 //
-// It used to read before it wrote, and hold what it was unsure of: a writer
-// waited on the model for every letter, and a letter the model could not
-// place sat at pending for hours with no word about why. Now the wait is
-// gone with the hold. What a reject costs is the seconds a letter stands
-// before the model answers, and that is the trade this campus has chosen:
-// the worst of it is still caught before anything is published, by layer 1,
-// and the rest is caught within a breath of it.
+// It used to read every letter, before it wrote, against a list that made
+// the tone the crime: lukewarm was a category, sarcasm was a review, and
+// "contempt dressed as affection" was a reject. On a live wall that was most
+// of the letters people wanted to write, and a model call for each of them.
 //
 // ── and when the classifier does not answer ─────────────────────────────────
 // A missing key, a timeout, a provider that is down. The letter is already
@@ -86,6 +102,9 @@ function json(body: unknown, status = 200) {
 }
 
 // ── layer 1 ──────────────────────────────────────────────────────────────────
+// Slurs against a protected class are a consequence, not a tone: on a public
+// wall under somebody's name they are harassment of that person, whatever
+// the framing. Profanity is not on this list and never will be.
 const SLURS = [
   'nigger', 'nigga', 'faggot', 'fag', 'tranny', 'retard', 'retarded', 'kike',
   'spic', 'chink', 'gook', 'wetback', 'coon', 'dyke', 'shemale',
@@ -118,72 +137,79 @@ function deterministic(text: string) {
   for (const p of PATTERNS) {
     const m = text.match(p.re)
     if (!m) continue
-    if (p.digits && (m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0]))) continue
+    if (p.digits && (m[0].replace(/\D/g, '').length < p.digits || /\.\s/.test(m[0])) ) continue
     reasons.push(p.id)
   }
   return { verdict: reasons.length ? 'reject' : 'pass', reasons }
 }
 
-// ── layer 2 ──────────────────────────────────────────────────────────────────
-// The real prompt. Written as explicit categories rather than as a request for
-// judgement, because "is this letter okay?" gets you a model's median opinion
-// about strangers on the internet, and what this wall needs is a decision
-// against a list somebody can be held to.
+// ── layer 2: the lexicon ─────────────────────────────────────────────────────
+// What a letter with a consequence in it nearly always carries, in words.
+// Each row is a category of consequence and the stems that suggest it; a
+// letter matching any row goes to the model, and one matching none is
+// passed here. The list is deliberately WIDE on purpose: its job is to be
+// cheap and to miss nothing, and the model's job is to be right about the
+// ones it sends. A false alarm here costs one small call. A miss here costs
+// a letter standing.
 //
-// ── and it passes by default ────────────────────────────────────────────────
-// The first version of this prompt was written to err toward review: it
-// passed only a letter that was "unambiguously" longing, admiration, regret
-// or apology, rejected anything lukewarm or sarcastic under a category called
-// valence, sent anything that named a place or a class to review as
-// "locate", and held anything it was unsure of for a person to look at. On a
-// live wall that was most letters. The composer's own example letters, the
-// ones it prints under the empty card, would not have passed it: they name
-// Wheeler, Dwinelle, Moffitt and the 51B.
-//
-// So the list is short and the bar is harm, not tone. A letter stays up
-// unless it is one of the six things below, and review is for a letter the
-// model genuinely cannot place on one side of one of them, not for a letter
-// it merely would not have written. The letter is already up when the model
-// reads it, so a REJECT is a takedown: the model is told that, and told that
-// a review changes nothing on the wall, so a letter it is confident about is
-// a reject and not a review. Two of the categories are still the ones a
-// generic safety filter will not catch, and they are still the two that
-// matter most here:
-//
-//   · A PHYSICAL DESCRIPTION WITH A ROUTINE. "You sit in Dwinelle" is a
-//     campus letter. "Tall, red jacket, Dwinelle 155 every Tuesday at ten,
-//     then the Moffitt second floor" is a set of instructions for finding a
-//     specific person at a predictable time, and it reads as a compliment.
-//     The line is the routine: a place is not a schedule.
-//   · CONTEMPT DRESSED AS AFFECTION. Teasing is fine; a letter written so
-//     that the person it is about is the joke, on a public wall, with their
-//     handle on it, is not, whatever the framing.
-const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall at UC Berkeley. Each letter is addressed to a named Instagram handle, or to a first name or nickname. The person it is about did not write it and will read it. The addressee is given with the letter; a first name that is itself a slur, a description of a body, or contact information is a REJECT like anything else.
+// Not on it, on purpose: swearing, insults, "hate", "hurt" in the sense of
+// feelings, "die" in "I could die", break-up words, mockery. Those are the
+// wall.
+const LEXICON: Array<{ id: string; re: RegExp }> = [
+  // a threat or violence promised, or wished on somebody, or a weapon
+  { id: 'threat',   re: /\b(kill|murder|stab|shoot|shot|gun|knife|blade|beat (you|him|her|them) up|hurt (you|him|her|them)|break (your|his|her) (legs|face|neck)|burn (your|his|her)|rape|assault|attack|choke|strangle|drown|poison|bomb|slit|bury you|find you|coming for you|watch(ing)? your back|you('ll| will) (pay|regret)|dead (to me|man|girl|woman)|end you|hunt)\b/i },
+  // sexual content, or a body described that way
+  { id: 'sexual',   re: /\b(sex|sexy|sexual|fuck(ed|ing)? (you|him|her|me)|blow ?job|hand ?job|dick|cock|pussy|cunt|tits?|boobs?|ass(hole)?|nude|naked|nudes|onlyfans|horny|orgasm|cum|slut|whore|hoe|thot|body count|virgin|thicc|thick thighs|rack|bulge|hooked up|hookup|one night|in bed|sleep with|slept with|moan)\b/i },
+  // a minor, stated or implied
+  { id: 'minor',    re: /\b(1[0-7] ?(years|yrs|yo|year old|y\/o)|(you'?re|you are|she'?s|she is|he'?s|he is|they'?re|only|just|turned|turning|is|are) 1[0-7]|1[0-2]th grade|grade 1[0-2]|under ?age|underage|minor|middle school|freshman in high|high school (freshman|sophomore|junior)|child|kid|little (girl|boy)|sixteen|fifteen|fourteen|thirteen|jailbait|loli)\b/i },
+  // a routine, a schedule, a way to find somebody at a time
+  { id: 'locate',   re: /\b(every (monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|night|day|week)|(mon|tues|wednes|thurs|fri|satur|sun)days|at \d{1,2}(:\d{2})? ?(am|pm|o'?clock)|\d{1,2}(:\d{2})? ?(am|pm) (every|each|on)|schedule|routine|(lives?|living|stays?|staying) (at|in|on|near)|(his|her|their|your) (place|apartment|dorm|house|room|address|building|floor|unit)|room ?\d|floor \d|unit \d|parking|license plate|plate number|follow(ed|ing)? (you|her|him|them) (home|back)|(bus|train|route|line) (home|to)|works? at|shift at|gym at|class at|section at)\b/i },
+  // exposing a private fact: outing, health, status, papers, money
+  { id: 'expose',   re: /\b(gay|lesbian|bi(sexual)?|trans(gender)?|queer|closet(ed)?|out (you|him|her|them)|outed|pregnan(t|cy)|abortion|miscarriage|hiv|aids|std|sti|herpes|chlamydia|positive for|diagnos(ed|is)|bipolar|schizo|anorexi|bulimi|eating disorder|rehab|overdose|self.?harm|cutting|suicid|kill (my|your|him|her)self|kys|undocumented|illegal (immigrant|alien)|deport|ice will|visa|green card|owes? money|debt|bankrupt|arrest(ed)?|charged with|felony|criminal record|dui|cheated on|affair|nudes? of|leak|revenge)\b/i },
+  // a slur that the fold missed, or hatred by group
+  { id: 'hate',     re: /\b(n[i1]gg|f[a4]gg?|tr[a4]nn|r[e3]t[a4]rd|k[i1]k[e3]|sp[i1]c|ch[i1]nk|w[e3]tb[a4]ck|towel ?head|sand ?n|go back to (your|ur) country|your kind|(all|every) (jews|muslims|blacks|asians|mexicans|indians|whites|arabs|gays|women|men) (are|should))\b/i },
+]
+
+function needsReading(text: string): string[] {
+  const hits: string[] = []
+  const t = String(text || '')
+  for (const row of LEXICON) if (row.re.test(t)) hits.push(row.id)
+  return hits
+}
+
+// ── layer 3 ──────────────────────────────────────────────────────────────────
+// The real prompt. Written as a short list of consequences rather than as a
+// request for judgement, because "is this letter okay?" gets you a model's
+// median opinion about strangers on the internet, and what this wall needs
+// is a decision against a list somebody can be held to. The list is what
+// carries the judgement; the model applies it. It is told, plainly, what the
+// wall is for, so that cruelty reads as the product and not as a category.
+const SYSTEM_PROMPT = `You screen short anonymous letters that have just been published on a public wall. Each letter is addressed to a named Instagram handle, or to a first name or nickname. The person it is about did not write it and will read it. The addressee is given with the letter.
 
 Return ONLY JSON: {"verdict":"pass"|"review"|"reject","reasons":[string]}
 
-The wall is for longing, admiration, gratitude, regret, apology, inside jokes and warm memories. Most letters are fine, and your default is PASS. Ordinary campus detail is fine: a class, a building, a bus line, a library, a party, a place somebody was once seen. Flirting is fine. Teasing is fine. Awkward, sad, short, clumsy or lukewarm letters are fine.
+THE WALL IS FOR THE THINGS PEOPLE NEVER SAID. Longing, admiration, gratitude, regret, apology, and also heartbreak, anger, grudges, break-ups, roasting, mockery, insults, contempt, and profanity. Cruelty is allowed. Calling somebody pathetic, a liar, a coward, ugly, fat, boring, a bad kisser, a terrible friend: allowed. Swearing at them: allowed. Sarcasm, bitterness, "I hope you're miserable", "you ruined my year": allowed. Ordinary detail is allowed: a class, a building, a bar, a party, a bus line, a job, a place somebody was once seen, a memory of one day. Your default is PASS, and most letters, including most unkind ones, are a PASS.
 
-REJECT if one of these is clearly true:
-1. sexual: explicit sexual content, or sexualised description of the person's body.
-2. threat: a threat, intimidation, stalking, "I know where you live", or any promised consequence.
-3. locate: a physical description of the person COMBINED WITH a recurring schedule or route, precise enough to find them at a predictable time. A place on its own is not this. A memory of one day is not this.
-4. hate: slurs, or contempt for the person's race, ethnicity, religion, disability, body, gender or sexuality. Cruelty at the person's expense, written to humiliate them, whatever the framing.
-5. minor: the person is stated or clearly implied to be under 18.
-6. contact: a phone number, a street address, a room number, a link or an email address.
+Moderate the CONSEQUENCE, not the emotion. REJECT only if one of these is clearly true:
+1. threat: a threat of violence, a wish for their death or injury stated as intent or a promise, intimidation, "I know where you live", stalking, or any promised consequence to their body, home or safety.
+2. locate: a physical description or their name COMBINED WITH a recurring schedule, route, address, workplace shift, or room, precise enough to find them at a predictable time. A place alone is not this. One remembered day is not this.
+3. sexual: explicit sexual content about the person, a sexualised description of their body, or a claim about their sexual history stated as fact to humiliate.
+4. minor: the person is stated or clearly implied to be under 18 in a sexual or romantic letter.
+5. expose: a private fact disclosed about them that costs them something outside the wall: outing their sexuality or gender, a health or pregnancy or immigration or legal status, an addiction, a debt, or a threat to leak images or messages.
+6. hate: a slur, or contempt for the person's race, ethnicity, religion, disability, gender or sexuality as such. Contempt for the PERSON is allowed; contempt for their group is not.
+7. contact: a phone number, a street address, a room number, a link or an email address.
 
-The letter is already on the wall. A REJECT takes it down at once; a REVIEW leaves it up and asks a person to read it; a PASS leaves it up. So a letter you are confident is one of the six is a REJECT, never a review. REVIEW only when you genuinely cannot tell which side of one of those six a letter falls on. Do not review a letter for being sarcastic, blunt, unromantic, mentioning a third person, or referring to a private moment: those pass.
+The letter is already on the wall. A REJECT takes it down at once; a REVIEW leaves it up and asks a person to read it; a PASS leaves it up. So a letter you are confident is one of the seven is a REJECT, never a review. REVIEW only when you genuinely cannot tell which side of one of those seven a letter falls on. Never review or reject a letter for being cruel, crude, sad, angry, sarcastic, unromantic, or embarrassing to the person: those pass.
 
 Judge the letter and the sealed line together; the sealed line is private until the recipient asks for it.
 
-Reasons: one or two words each, from the category names above, or [] on a pass.`
+Reasons: one word each, from the category names above, or [] on a pass.`
 
 async function classify(body: string, sealedLine: string | null, addressee = '') {
   const key = Deno.env.get('MODERATION_API_KEY')
-  // Spec section 9: use the cheapest available model. This is bulk filtering
-  // of short letters against an explicit list, so cost per call matters more
-  // than nuance, and the list is what carries the judgement rather than the
-  // model's opinion about strangers.
+  // The cheapest available model. This is filtering of short letters
+  // against an explicit list, so cost per call matters more than nuance,
+  // and the list is what carries the judgement.
   const model = Deno.env.get('MODERATION_MODEL') || 'claude-haiku-4-5-20251001'
   // No key is not a verdict on the letter. It is a fact about the deploy,
   // and it is written down as one so the desk can see it.
@@ -195,25 +221,27 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
   let res: Response
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {
-    signal: AbortSignal.timeout(15_000),
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 120,
-      // The same letter gets the same answer: a screen that flips a coin on
-      // a borderline letter is a screen somebody can retry their way past.
-      temperature: 0,
-      system: SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: `<addressee>${addressee}</addressee>\n<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
-      }],
-    }),
+      signal: AbortSignal.timeout(15_000),
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        // the answer is a verdict and a word or two: the output is the
+        // expensive half of a call, and this one is kept small
+        max_tokens: 60,
+        // The same letter gets the same answer: a screen that flips a coin on
+        // a borderline letter is a screen somebody can retry their way past.
+        temperature: 0,
+        system: SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `<addressee>${addressee}</addressee>\n<letter>${body}</letter>\n<sealed_line>${sealedLine || ''}</sealed_line>`,
+        }],
+      }),
     })
   } catch {
     return { verdict: 'review', reasons: ['classifier_timeout'], model }
@@ -225,7 +253,7 @@ async function classify(body: string, sealedLine: string | null, addressee = '')
   try {
     const out = JSON.parse(text.replace(/^```json\s*|\s*```$/g, ''))
     const v = out.verdict === 'pass' || out.verdict === 'reject' ? out.verdict : 'review'
-    return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6) : [], model }
+    return { verdict: v, reasons: Array.isArray(out.reasons) ? out.reasons.slice(0, 6).map(String) : [], model }
   } catch {
     return { verdict: 'review', reasons: ['unparsed'], model }
   }
@@ -251,14 +279,11 @@ function cleanLook(raw: unknown): Record<string, string> | null {
 }
 
 // ── the wall, told ───────────────────────────────────────────────────────────
-// A letter is up, or has come down: every browser on this campus's wall is
-// told the index moved, over Realtime's broadcast, and reads the public index
-// again (app/src/wall/data.js watchWall). The message carries nothing but the
+// A letter is up, or has come down: every browser on this wall is told the
+// index moved, over Realtime's broadcast, and reads the public index again
+// (app/src/wall/data.js watchWall). The message carries nothing but the
 // fact: no letter, no name, no count, so the channel, which anybody can join,
-// discloses nothing the index does not. Sent from here over the REST endpoint
-// rather than from the database, so a project with Realtime off loses the
-// nudge and nothing else: the wall re-reads its index on a clock regardless,
-// and a refusal here is a line in the log.
+// discloses nothing the index does not.
 async function nudge(campus: string): Promise<void> {
   const url = Deno.env.get('SUPABASE_URL')
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -277,19 +302,28 @@ async function nudge(campus: string): Promise<void> {
   }
 }
 
-// The reading, after the answer: the model's verdict written onto the letter
-// where it stands, and the letter taken down if the verdict is a reject
-// (migration 0050 `wall_screened`). Nothing here can throw its way out of the
-// function: a failure to record is logged and the letter stays as it was,
-// which is up and unread, and the desk's live list still shows it. A letter
-// the reading takes down moves the index, so the wall is told again.
+// The reading, after the answer: the lexicon first, and the model only for a
+// letter the lexicon flagged; the verdict written onto the letter where it
+// stands, and the letter taken down if the verdict is a reject (migration
+// 0050 `wall_screened`). Nothing here can throw its way out of the function:
+// a failure to record is logged and the letter stays as it was, which is up
+// and unread, and the desk's live list still shows it.
 // deno-lint-ignore no-explicit-any
 async function readWhereItStands(supabase: any, id: string, body: string, sealed: string | null, campus: string, addressee = '') {
   let out: { verdict: string; reasons: string[]; model: string }
-  try {
-    out = await classify(body, sealed, addressee)
-  } catch {
-    out = { verdict: 'review', reasons: ['unreachable'], model: '' }
+  const hits = needsReading(`${addressee}\n${body}\n${sealed || ''}`)
+  if (!hits.length) {
+    // nothing in it that could carry a consequence: passed without a call,
+    // and the row says which layer passed it
+    out = { verdict: 'pass', reasons: [], model: 'lexicon' }
+  } else {
+    try {
+      out = await classify(body, sealed, addressee)
+    } catch {
+      out = { verdict: 'review', reasons: ['unreachable'], model: '' }
+    }
+    // what the lexicon saw, kept beside the model's word, for the desk
+    if (out.verdict !== 'pass') out.reasons = [...new Set([...out.reasons, ...hits.map((h) => `lex:${h}`)])].slice(0, 8)
   }
   const { error } = await supabase.rpc('wall_screened', {
     p_letter: id,
@@ -308,6 +342,8 @@ function after(work: Promise<unknown>): Promise<unknown> | undefined {
   if (rt && typeof rt.waitUntil === 'function') { rt.waitUntil(work); return undefined }
   return work
 }
+
+const CAMPUS_SLUG = /^[a-z0-9-]{2,40}$/
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -331,11 +367,11 @@ Deno.serve(async (req: Request) => {
   const body = String(payload.body || '').slice(0, 280)
   const sealed = payload.sealedLine ? String(payload.sealedLine).slice(0, 90) : null
   const source = payload.source ? String(payload.source).slice(0, 32) : null
-  const campus = String(payload.campus || 'berkeley')
+  // which wall: the campus, or the one at the root (0057). The schema
+  // refuses a slug it does not have a row for.
+  const campusRaw = String(payload.campus || 'berkeley').toLowerCase()
+  const campus = CAMPUS_SLUG.test(campusRaw) ? campusRaw : 'berkeley'
   // ── a name, or a handle (0053) ──
-  // The kind decides which of the two the letter is addressed to. A name is
-  // taken as typed and cut at thirty; wall_name_clean is the authority on
-  // whether it is a name at all, and answers 'name' when it is not.
   const kind = payload.kind === 'name' ? 'name' : 'handle'
   const name = kind === 'name' ? String(payload.name || '').replace(/\s+/g, ' ').trim().slice(0, 30) : null
   // ── and the paper (0055) ──
@@ -354,17 +390,17 @@ Deno.serve(async (req: Request) => {
   // ── layer 1 ────────────────────────────────────────────────────────────────
   // A catch is written at rejected, with the pattern that caught it, and never
   // published. The app caught it at the keyboard first and shook the card;
-  // this is the same list where nobody can edit it out.
-  // The name goes through the list with the words (G4): an addressee that
-  // is a slur, a number or a link is caught here, before anything is up.
+  // this is the same list where nobody can edit it out. The name goes through
+  // the list with the words: an addressee that is a slur, a number or a link
+  // is caught here, before anything is up.
   const layer1 = deterministic(`${name || ''}\n${body}\n${sealed || ''}`)
   const caught = layer1.verdict === 'reject'
 
   // ── the write ──────────────────────────────────────────────────────────────
   // wall_write is the authority on the gate, the name and the allowance: a
-  // person outside the campus is told so, a name that came off the wall stays
-  // off it, and the fourth letter in a week is refused in the same statement
-  // that would have inserted it.
+  // person outside the wall's gate is told so, a name that came off the wall
+  // stays off it, and the fourth letter in a week is refused in the same
+  // statement that would have inserted it.
   const args = {
     p_token: token,
     p_target: target,
@@ -375,16 +411,13 @@ Deno.serve(async (req: Request) => {
     p_status: caught ? 'rejected' : 'live',
     p_moderation: caught
       ? { verdict: 'reject', reasons: layer1.reasons, flagged: false, at: new Date().toISOString(), model_layer: 1 }
-      // up, and not yet read: the classifier writes its verdict over this
+      // up, and not yet read: the reading writes its verdict over this
       : { verdict: 'unread', reasons: [], flagged: false, at: new Date().toISOString(), model_layer: 0 },
   }
   // The eleven argument write (0055) carries the kind, the name and the
   // look; the ten argument one (0053) the kind and the name. A database that
   // is a migration behind answers that the function does not exist, and the
-  // write steps down: to the ten argument one, which loses the look and
-  // nothing else, and for a handle letter to the eight argument one it always
-  // went through. A name letter against a database with neither is refused,
-  // because there is nowhere for it to go yet.
+  // write steps down.
   let { data, error } = await supabase.rpc('wall_write', { ...args, p_kind: kind, p_name: name, p_look: look })
   if (error) {
     console.warn('wall_write with a look refused, trying the ten argument write', error.message)
@@ -408,16 +441,14 @@ Deno.serve(async (req: Request) => {
     handle: data.handle ?? (kind === 'handle' ? target : null),
     kind: data.kind ?? kind,
     name: data.name ?? name,
-    // the look as the row holds it, or none on a database without 0055
     look: data.look === undefined ? null : data.look,
   }
 
   if (caught) return json({ ok: true, status: 'rejected', id: data.id, reasons: layer1.reasons, ...filed })
 
-  // ── layer 2, after the answer ──────────────────────────────────────────────
+  // ── the reading, after the answer ──────────────────────────────────────────
   // The letter is on the wall. The writer hears so now, every wall on the
-  // campus is told the index moved, and the model reads the letter where it
-  // stands.
+  // campus is told the index moved, and the letter is read where it stands.
   const addressee = kind === 'name' ? String(name) : `@${target}`
   const work = Promise.all([nudge(campus), readWhereItStands(supabase, String(data.id), body, sealed, campus, addressee)])
   const inline = after(work)

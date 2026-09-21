@@ -39,6 +39,11 @@ export const ANON = Object.freeze({
   email: null,
   eduVerified: false,
   campus: null,
+  // the login (migration 0057): a google account, or an address a code was
+  // mailed to. Either proves a person, the way the DM proves a handle.
+  googleVerified: false,
+  emailVerified: false,
+  loginEmail: null,
 })
 
 // 32 bytes of crypto randomness as hex. Not a UUID: a UUID is 122 bits with a
@@ -104,7 +109,7 @@ export function forgetSession() {
 
 // The server's shape, flattened into the one this app reads. Kept in one place
 // so a change to celestual_user_public is a change to one function.
-function shape(user) {
+export function shape(user) {
   if (!user) return ANON
   return {
     signedIn: true,
@@ -114,8 +119,16 @@ function shape(user) {
     email: user.email ?? null,
     eduVerified: !!user.edu_verified,
     campus: user.campus ?? null,
+    googleVerified: !!user.google_verified,
+    emailVerified: !!user.email_verified,
+    loginEmail: user.login_email ?? null,
   }
 }
+
+// Whether this row is anybody the product has proved, by any of its four
+// proofs. It is what opens writing on the wall at the root, and reading on
+// every wall (migration 0057).
+export const isProved = (u) => !!(u?.signedIn && (u.handleVerified || u.eduVerified || u.googleVerified || u.emailVerified))
 
 // PostgREST answers a call to a function it does not have with PGRST202 and a
 // message naming it. Nothing else reads as "the schema is behind the client".
@@ -196,8 +209,8 @@ export async function setEmail(email) {
 
 // The two surface rules, said once. Spec section 3.
 //
-// The wall wants a campus and does not care about the @. Main wants the @ and
-// does not care about the campus. A screen that reimplements either of these is
-// a screen that will disagree with the other one eventually.
+// The campus wall wants a campus and does not care about the @. Main wants
+// the @ and does not care about the campus. A screen that reimplements either
+// of these is a screen that will disagree with the other one eventually.
 export const canReadWall = (u) => !!u?.eduVerified
 export const canPlacePing = (u) => !!u?.handleVerified

@@ -119,6 +119,7 @@ import {
 import { normaliseLook } from '../looks.js'
 import { isMember } from '../auth.js'
 import { fault } from '../moderate.js'
+import { campus, needsCampus } from '../campus.js'
 import { getState, patch, setAfterGate } from '../store.js'
 
 // There is no floor. It was sixty characters, then thirty, and both were
@@ -136,14 +137,10 @@ const MAX_BODY = 280
 const MAX_NAME = 30
 
 // The example under the empty card, and it is set on that campus: a place a
-// person there has actually stood. One line per handle rather than a rotation
-// on a clock, so the same name gets the same example twice.
-const EXAMPLES = [
-  'You gave me your umbrella outside Wheeler and walked home in it. I still have it.',
-  'You sat two rows ahead in Dwinelle all semester and never once turned round. I noticed anyway.',
-  'You held the door at Moffitt at two in the morning and asked if I was okay. I was not, and then I was.',
-  'You were the one singing on the 51B that night. I wanted the song to be about me.',
-]
+// person there has actually stood (campus.js `examples`). One line per handle
+// rather than a rotation on a clock, so the same name gets the same example
+// twice.
+const EXAMPLES = () => campus().examples
 
 // What the card says when the server's copy of the list caught what this
 // browser's did not, and what this browser's own catch of a slur says
@@ -159,7 +156,7 @@ const KINDS = [
   { value: 'name', label: 'anything else', glyph: <Sparkle size={11} /> },
 ]
 
-export default function Write({ to: prefill, go, back, reduce = false }) {
+export default function Write({ to: prefill, go, back, up = back, reduce = false }) {
   const draft = getState().draft || {}
   // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
   // letter) opens the composer on the name, in name mode.
@@ -178,6 +175,13 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   const first = useRef(true)
   // the sheet's own way out, taken by this screen once the letter is up
   const sheet = useRef(null)
+  // ── and where the way out lands ──
+  // Closed by the mark, the scrim or the key, the composer goes back to
+  // whatever it was raised over: the wall, or the letter whose pen opened
+  // it (index.jsx `up`). Once the letter is up it goes to the wall, which
+  // receives the name. `by` is how the sheet said it was leaving.
+  const by = useRef('')
+  const leave = () => (by.current === 'sent' ? back() : up())
 
   const h = normHandle(to)
   // the name as it will stand on the wall, or '' while it is not one yet
@@ -348,10 +352,10 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   // they cannot use the thing they are looking at.
   if (!isMember()) {
     return (
-      <Sheet onClose={back} labelledBy="wl-write-h">
+      <Sheet onClose={up} labelledBy="wl-write-h">
         <div className="wl-sheet-in wl-write">
-          <SheetHead onClose={back} label="back to the wall" />
-          <Display size="s" as="h2" id="wl-write-h">Berkeley only.</Display>
+          <SheetHead onClose={up} label="back" />
+          <Display size="s" as="h2" id="wl-write-h">{needsCampus() ? `${campus().place} only.` : 'Sign in to write.'}</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}>
             Your information will stay anonymous.
@@ -362,13 +366,13 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   }
 
   return (
-    <Sheet ref={sheet} onClose={back} tall labelledBy="wl-write-h">
+    <Sheet ref={sheet} onClose={leave} onClosing={(b) => { by.current = b }} tall labelledBy="wl-write-h">
       <div className="wl-sheet-in wl-write">
-        <SheetHead onClose={back} label="back to the wall"
+        <SheetHead onClose={leave} label="back"
           lead={<Dots n={2} at={step} onGo={(i) => (i === 0 ? toWho() : setStep(i))} />} />
 
         <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">
-          {step === 0 ? <>Someone at Berkeley<br />you can&rsquo;t forget.</> : <>And what<br />makes them so.</>}
+          {step === 0 ? <>{campus().someone[0]}<br />{campus().someone[1]}</> : <>And what<br />makes them so.</>}
         </Display>
 
         {step === 0 ? (
@@ -434,7 +438,7 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
               >
                 <LetterField
                   value={body} onChange={setBody} max={MAX_BODY} autoFocus count={false}
-                  placeholder={EXAMPLES[hash(key || 'wheeler') % EXAMPLES.length]}
+                  placeholder={EXAMPLES()[hash(key || 'wheeler') % EXAMPLES().length]}
                 />
               </Paper>
               {/* One line under the card, and only when there is something to
