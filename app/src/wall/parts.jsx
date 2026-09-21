@@ -10,7 +10,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { atHandle, normHandle, search, targetKey, isNameKey, nameFor } from './data.js'
-import { Ecliptic, Sparkle } from './art.jsx'
+import { Ecliptic, Sparkle, Verified } from './art.jsx'
 import { member, isReader, verified, toWrite } from './auth.js'
 import { copyText, openInstagram, igUsername } from './handoff.js'
 import { resolveHandle, peekHandle, peekServer, resolveEnabled, monogram, isWarm, markWarm, IDLE, PEEK_DEBOUNCE_MS } from '../api/handles.js'
@@ -1453,7 +1453,7 @@ export function Addressee({ handle, id, className = '' }) {
         <span className="wl-addressee-for" aria-hidden="true">for</span>
         <span className={`wl-addressee-name${name ? '' : ' is-h'}`} id={id}>
           {name || h || '\u00a0'}
-          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+          {p?.verified ? <Verified size={11} className="wl-who-badge" /> : null}
         </span>
       </span>
       {name && h ? <span className="wl-addressee-at">{h}</span> : null}
@@ -1547,7 +1547,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
         <span className="wl-viewer-who">
           <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
             {name || atHandle(handle)}
-            {p?.verified ? <Sparkle size={11} className="wl-who-badge" /> : null}
+            {p?.verified ? <Verified size={13} className="wl-who-badge" /> : null}
           </span>
           {name ? <span className="wl-viewer-at">{atHandle(handle)}</span> : null}
         </span>
@@ -1614,7 +1614,7 @@ export function Who({ handle, size = 40, meta = null, className = '' }) {
       <span className="wl-who-id">
         <span className={`wl-who-name${name ? '' : ' is-h'}`}>
           {name || atHandle(handle)}
-          {p?.verified ? <Sparkle size={9} className="wl-who-badge" /> : null}
+          {p?.verified ? <Verified size={11} className="wl-who-badge" /> : null}
         </span>
         {under ? <span className="wl-who-at">{under}</span> : null}
       </span>
@@ -1711,6 +1711,10 @@ export function Roll({ value, className = '' }) {
 //           light riding over it and clipped to the capsule: a soft rose bloom
 //           travelling round the inside of the button's edge, and nothing
 //           outside it.
+//   none    no plate at all, for a host that already has a ground of its own:
+//           the composer's body, which is the tabbed sheet the bookmark is
+//           attached to and cannot have a second surface laid inside it. The
+//           beam alone, clipped to the host's radius.
 //
 // `on` is whether it is running. Off, the light fades and holds still, and
 // the plate stays: the plate is the element's ground in every state.
@@ -1749,7 +1753,9 @@ export function Light({ on = true, plate = 'star', className = '' }) {
   return (
     <span className={`wl-light is-${plate}${on ? ' is-on' : ''} ${className}`} aria-hidden="true">
       <span className="wl-light-beam" ref={beam} />
-      {plate === 'star' ? <StarPlate /> : <span className="wl-plate is-chalk" aria-hidden="true" />}
+      {plate === 'star' ? <StarPlate />
+        : plate === 'chalk' ? <span className="wl-plate is-chalk" aria-hidden="true" />
+        : null}
     </span>
   )
 }
@@ -1855,7 +1861,7 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
         <span className="wl-card-real">
           <span className="wl-card-name">
             {name}
-            {!looking && at.verified ? <Sparkle size={10} className="wl-card-badge" /> : null}
+            {!looking && at.verified ? <Verified size={13} className="wl-card-badge" /> : null}
           </span>
           {under ? <span className="wl-card-at">{under}</span> : null}
         </span>
@@ -1866,43 +1872,48 @@ export function HandleCard({ at = IDLE, onSelect = null, className = '' }) {
 }
 
 // ── THE ANSWER, IN THE FIELD'S PLACE ────────────────────────────────────────
-// What the resolver found, standing exactly where the handle was typed: the
-// same baseline, the same rule under it, the same height. The field is not a
-// field any more once the person has committed to a handle — it is a person —
-// and a screen that draws the answer as a THIRD object under the tab rail and
-// the field is a screen with three stacked boxes on it answering one question.
+// What the resolver found, standing exactly where the handle was typed, inside
+// the same body the field lives in (wall.css `.wl-write-body`): the same
+// measure, the same ground, the same height. The field is not a field any more
+// once the person has committed to a handle — it is a person — and a screen
+// that draws the answer as a THIRD object under the tab and the field is a
+// screen with three stacked boxes on it answering one question.
 //
-// So the field is replaced rather than annotated, which is the one move that
-// takes the composer's first question down to one object: a bookmark on a
-// rail, and under it either the thing being typed or the person it turned out
-// to be.
+// ── it is one element in every state ────────────────────────────────────────
+// Looking, found, and no-account are the same row, so the light going out and
+// the answer arriving are one transition rather than a swap. While it is out,
+// the point of light runs the body's own edge (`Light`) and two bars breathe
+// where the name and the handle will land: not a spinner, which promises a
+// computation, and not a shimmer, which is a pattern from a different product.
+// The frame holds the height the answer takes, so nothing moves when it lands.
+// Nothing is said in words beside it, because the light is the saying.
 //
 // The way back is an X and not an arrow. An arrow at the end of a row is a
 // door: it says the row is the way on, and the way on is the capsule at the
 // foot of the sheet, which is where every other act on this surface lives.
 // What a person actually wants from this row is OUT of it — "that is not
-// them, let me type again" — so the mark at its end is the close mark, the
-// one this product already uses for exactly that, and pressing it hands the
-// field back with the handle still in it.
+// them, let me type again" — so the mark at its end is the close mark, the one
+// this product already uses for exactly that, and pressing it hands the field
+// back with the handle still in it.
 //
 // It draws, it does not ask: `at` comes from `useResolver` and nothing here
-// reaches a server. Two states arrive — `found`, the account, and `missing`,
-// no account by that name, which is not an error and is not drawn as one,
-// since our provider is imperfect and somebody who knows their friend's
-// handle is right. `unknown` never gets here: the composer walks straight
+// reaches a server. `unknown` never gets here — the composer walks straight
 // past an answer it could not get rather than telling somebody their friend
 // does not exist.
-export function Addressed({ at, onClear, label = 'change who it is for', className = '' }) {
+export function Addressed({ at, onClear, looking = false, label = 'change who it is for', className = '' }) {
   const h = normHandle(at.handle)
-  const missing = at.state !== 'found'
-  const mono = missing ? h.slice(0, 1).toUpperCase() : monogram(at)
+  const missing = !looking && at.state !== 'found'
+  const mono = looking ? '' : missing ? h.slice(0, 1).toUpperCase() : monogram(at)
   const name = missing ? 'no account by that name' : (at.name || `@${h}`)
   const under = missing || at.name ? `@${h}` : ''
   return (
-    <div className={`wl-field is-lg is-settled${missing ? ' is-missing' : ''} ${className}`}>
+    <div
+      className={`wl-settled${looking ? ' is-looking' : ''}${missing ? ' is-missing' : ''} ${className}`}
+      aria-live="polite" aria-busy={looking || undefined}
+    >
       <span className="wl-settled-disc" aria-hidden="true">
         <span className="wl-settled-mono">{mono}</span>
-        {at.avatar ? (
+        {!looking && at.avatar ? (
           <img
             src={at.avatar} alt="" loading="lazy" decoding="async"
             /* a picture that fails to load falls through to the monogram under
@@ -1911,15 +1922,22 @@ export function Addressed({ at, onClear, label = 'change who it is for', classNa
           />
         ) : null}
       </span>
+      {/* the two states share one cell and cross fade: the words land where
+          the bars were, and nothing moves */}
       <span className="wl-settled-id">
-        <span className="wl-settled-name">
-          {name}
-          {at.verified ? <Sparkle size={10} className="wl-settled-badge" /> : null}
+        <span className="wl-settled-skel" aria-hidden="true">
+          <span className="wl-settled-bar" />
+          <span className="wl-settled-bar is-short" />
         </span>
-        {under ? <span className="wl-settled-at">{under}</span> : null}
+        <span className="wl-settled-real">
+          <span className="wl-settled-name">
+            {name}
+            {!looking && at.verified ? <Verified size={15} className="wl-settled-badge" /> : null}
+          </span>
+          {under ? <span className="wl-settled-at">{under}</span> : null}
+        </span>
       </span>
-      <Close onClick={onClear} label={label} className="wl-settled-clear" />
-      <span className="wl-field-line" aria-hidden="true" />
+      {looking ? null : <Close onClick={onClear} label={label} className="wl-settled-clear" />}
     </div>
   )
 }

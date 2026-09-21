@@ -70,17 +70,24 @@
 // to ask one question, and an arrow pointing at a way on that is actually
 // the capsule at the foot.
 //
-// Now the rail is the top edge of the field and the field's own baseline is
-// the foot of it, so the tab and the thing it changes are one object with a
-// bookmark on it. The answer does not arrive under the field, it REPLACES it
-// (parts.jsx `Addressed`): the same measure, the same rule, the disc where
-// the painted @ stood. While the lookup is out nothing new arrives at all —
-// the field holds its place, one light travels its own rule, and a line
-// under it says what is being waited on (`useLookingWords`). And the mark at
-// the end of the answer is the close mark, not an arrow: what somebody wants
-// from that row is out of it, back to the field with the handle still in it,
-// and the way ON is where it is on every other screen here, at the foot,
-// saying which person the press agrees to (`confirmWord`).
+// Now the bookmark is attached to a BODY (wall.css `.wl-write-body`) and the
+// field lives inside it: one ground, one hairline, one radius, with the tab
+// joined to its top edge, so the tab and the thing it changes are one sheet
+// of paper rather than a control floating over a control. And the answer does
+// not arrive under the field, it REPLACES it inside that body (parts.jsx
+// `Addressed`) — the same measure, the same ground, the same height.
+//
+// The wait is the light and nothing else: the point of light runs the body's
+// own edge and two bars breathe where the answer will land, which is the
+// animation the result card has always waited with. There is no line of words
+// beside it saying that a lookup is happening; the light already says it, and
+// the handle it is looking for is the handle the person just typed.
+//
+// The mark at the end of the answer is the close mark, not an arrow: what
+// somebody wants from that row is out of it, back to the field with the
+// handle still in it, and the way ON is where it is on every other screen
+// here, at the foot, saying which person the press agrees to
+// (`confirmWord`).
 //
 // It used to be one quiet line under the field, "a first name instead",
 // which named one of the two choices, hid the other behind a sentence, and
@@ -128,7 +135,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Sheet, SheetHead, Paper, Pen, Display, Label, Pill, Locked, Allowance, OpenFace, Addressee,
-  HandleField, LetterField, Addressed, useResolver, useLookingWords, confirmWord,
+  HandleField, LetterField, Addressed, Light, useResolver, confirmWord,
   useSuggest, Suggest, Segmented,
 } from '../parts.jsx'
 import { LookPanel } from '../Look.jsx'
@@ -176,7 +183,7 @@ const INAPPROPRIATE = 'that’s inappropriate for the wall.'
 // the one place it means something.
 const KINDS = [
   { value: 'handle', label: 'instagram' },
-  { value: 'name', label: 'anything else' },
+  { value: 'name', label: 'custom name' },
 ]
 
 export default function Write({ to: prefill, go, back, up = back, reduce = false }) {
@@ -233,6 +240,10 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
   const ok = [kind === 'name' ? !!nm : validHandle(h), body.trim().length > 0]
   const dl = useMemo(() => dateline(Date.now()), [])
   const [asking, setAsking] = useState(false)
+  // Whether the BODY holds the resolver rather than the field: while the
+  // lookup is out, and once it has answered. One element across the two, so
+  // the light going out and the answer arriving are one transition.
+  const resolving = kind === 'handle' && (asking || settled)
 
   // ── the sending ──
   // `sending` while the request is out, which since the reading moved to
@@ -273,16 +284,11 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
   // press. Never for a name: looking a person up by first name is an
   // inference.
   const them = useResolver(kind === 'name' ? '' : to)
-  // What it is doing while it is doing it, on one line under the field. A
-  // cold handle takes six to twenty seconds and sometimes thirty, and a
-  // field that sits there with a light running under it and says nothing for
-  // twenty seconds is a screen that has frozen (parts.jsx `useLookingWords`).
-  const looking = useLookingWords(them.at)
   // And under that, the names already on the wall that match what is typed,
   // until the card has the person: a list under a settled card would list
   // them twice. Pressing a row takes that name, in whichever kind it is.
   const sug = useSuggest(kind === 'name' ? name : to, {
-    skip: step !== 0 || settled || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
+    skip: step !== 0 || asking || settled || (kind === 'handle' && them.at.state === 'found' && them.at.handle === h),
     exclude: key,
     onPick: (t) => {
       if (t.kind === 'name') { setKind('name'); setName(t.name || nameFor(t.handle)) }
@@ -443,7 +449,12 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
              the answer arrives IN the field rather than under it, and what is
              left on the screen is the question, the thing being answered, and
              the act at the foot. */
-          <div className="wl-write-step wl-write-who">
+          /* `--i` is which tab is open, and the body reads it for one thing:
+             the corner the tab is standing on stays square and the other
+             three round. A page with a tab on its top left corner does not
+             round that corner, and the same page with the tab moved off it
+             does. */
+          <div className="wl-write-step wl-write-who" style={{ '--i': kind === 'name' ? 1 : 0 }}>
             {/* The two answers, as two words on the rail. The field under it
                 is the same field in either kind: the painted @ and the
                 identifier's face for a handle; the @ gone and the display
@@ -461,24 +472,30 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
                 is an inference. And a name that has come off the wall is
                 refused by the schema rather than by this screen — wall_write
                 answers 'removed' and the line under the card says so. */}
-            {settled && kind === 'handle' ? (
-              <Addressed at={them.at} onClear={retry} label="not them. type it again" />
-            ) : (
-              <HandleField
-                kind={kind}
-                value={kind === 'name' ? name : to}
-                onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : retype}
-                onSubmit={next}
-                autoFocus size="lg" inputRef={field} busy={asking}
-                placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
-                label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
-                onKeyDown={sug.keyDown}
-              />
-            )}
-            {/* One line under the field while the lookup is out, and nothing
-                at all the rest of the time. The light travelling along the
-                field's own rule is the clock; this is what it is waiting on. */}
-            <p className="wl-write-say" role="status" aria-live="polite">{looking}</p>
+            {/* the body the bookmark is attached to: one ground, one hairline
+                and one radius, carrying the field or, once the handle has been
+                committed, the resolver in its place */}
+            <div className={`wl-write-body${resolving ? ' is-answering' : ''}`}>
+              {/* the wait, and the only thing said about it: the point of
+                  light running the body's own edge, with two bars breathing
+                  where the answer will land. The body already has a ground,
+                  so the light brings no plate of its own. */}
+              {resolving ? <Light on={asking} plate="none" /> : null}
+              {resolving ? (
+                <Addressed at={them.at} looking={asking} onClear={retry} label="not them. type it again" />
+              ) : (
+                <HandleField
+                  kind={kind}
+                  value={kind === 'name' ? name : to}
+                  onChange={kind === 'name' ? (v) => setName(v.slice(0, MAX_NAME)) : retype}
+                  onSubmit={next}
+                  autoFocus size="lg" inputRef={field}
+                  placeholder={kind === 'name' ? 'whatever you call them' : 'theirhandle'}
+                  label={kind === 'name' ? 'a name, a nickname, anything' : 'Instagram handle'}
+                  onKeyDown={sug.keyDown}
+                />
+              )}
+            </div>
             <Suggest sug={sug} />
           </div>
         ) : (
@@ -546,7 +563,7 @@ export default function Write({ to: prefill, go, back, up = back, reduce = false
               the wait. Alone, in the middle of the foot. */}
           <Pill tone="light" onClick={next} disabled={!ok[step] || spent} aria-busy={sending || asking || undefined}>
             {step === 0
-              ? (settled && kind === 'handle' ? confirmWord(them.at, 'next') : asking ? 'looking' : 'next')
+              ? (asking ? 'looking' : settled && kind === 'handle' ? confirmWord(them.at, 'next') : 'next')
               : sending ? 'sending' : 'send anonymously'}
           </Pill>
         </div>
