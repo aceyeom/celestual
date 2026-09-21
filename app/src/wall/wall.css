@@ -1861,11 +1861,16 @@ a.wl-lq { text-decoration: none; }
 
 /* ── the composer, at the foot ──
    parts.jsx `WriteAct`. The primary capsule in the middle of the bottom
-   edge: the nib and the words, with the running light inside it. It is the
-   one act on the wall and the one bright thing at the foot; it stood in the
+   edge: the nib and the words. It is the one act on the wall; it stood in the
    bar as a small capsule beside the person, a hundred pixels over the search
-   plate, and the two capsules read as a crammed head. Compact, not wide, so
-   it stands over the faces rather than on them. */
+   plate, and the two capsules read as a crammed head.
+
+   It is a target as well as a mark, and at its own content's width it was
+   142px of capsule with the words almost touching both ends — the smallest
+   thing on the screen carrying the only act on it. It is given a length now,
+   and a ceiling: never wider than the column it stands in, so the phone is
+   the case that decides and the capsule still floats over the faces rather
+   than ruling a line across them. */
 .wl-dock-act {
   display: flex; justify-content: center;
   padding: 10px 0 0;
@@ -1876,7 +1881,8 @@ a.wl-lq { text-decoration: none; }
    the capsule's own seat in all three of its states instead of replacing it
    (`.wl-lq` above). */
 .wl-write-act {
-  min-height: 46px; padding: 0 22px 0 18px; gap: 9px;
+  min-height: 46px; min-width: min(100%, 220px);
+  padding: 0 22px; gap: 9px;
   font-size: 14px;
   --lq-lift: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
 }
