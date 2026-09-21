@@ -1745,6 +1745,44 @@
 }
 .wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
+/* ── the wall, turning over ──
+   The wall carries more names than the glass holds, and every one of them is
+   somebody a letter was actually written to. So the field does not hold one
+   arrangement of them for as long as it is looked at: every couple of seconds
+   one disc, out of the light and in off the rim, shrinks away and somebody
+   else on the same wall comes up in its place (Hive.jsx, the cycle).
+
+   It is deliberately NOT the arrival below. An arrival is a CLAIM — a letter
+   went up, to this person, just now — and it is drawn as one: it pops past its
+   own size and the wall sends a pulse out through the crowd with it. A turn
+   claims nothing, so it overshoots by nothing. It goes on the curve that is
+   in this build for travel that should not overshoot, it takes no ring, no
+   light and no pulse with it, and the face that comes up comes up quietly.
+   That is the whole difference between a page turning and an event, and it is
+   the difference the wall is not allowed to blur.
+
+   The face inside is changed between 33% and 48%, where the orb is at nought
+   opacity and the window is a good hundred and fifty milliseconds wide, so
+   the change itself is never on the glass even if React's commit lands a
+   frame or two late. The animation is on the ORB, like every other movement a
+   cell makes that is not the field's; the disc under it belongs to the loop.
+
+   Four classes deep for the reason the arrival below is, and deliberately
+   BEFORE it: at equal weight the later rule wins, and a letter landing on a
+   name that happens to be mid-turn is the one that has to be seen. */
+.wl-wallpage .wl-cell-disc.is-turning .wl-cell-orb { animation: wl-cell-turn 980ms var(--ease-out) both; }
+@keyframes wl-cell-turn {
+  0%   { opacity: 1; transform: scale(1); }
+  /* gone by a quarter of the way in, and the last of the shrink is unseen */
+  24%  { opacity: 0; transform: scale(0.52); }
+  33%  { opacity: 0; transform: scale(0.34); }
+  /* the window the face is changed in */
+  48%  { opacity: 0; transform: scale(0.34); }
+  /* and the next one up, at size before it is at rest */
+  70%  { opacity: 1; transform: scale(0.88); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* ── a name that has just arrived ──
    A letter goes up, the index moves, and the person it was written to rises
    into the field rather than being there the next time you look: the disc
