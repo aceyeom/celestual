@@ -303,9 +303,22 @@
   color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.hm-ear:hover .hm-ear-go { transform: translateX(4px); color: var(--chalk); }
-.hm-ear:hover .hm-ear-spark { color: var(--chalk); }
-.hm-ear:hover .hm-ear-meta { color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-go { transform: translateX(4px); color: var(--chalk); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-spark { color: var(--chalk); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .hm-ear:hover .hm-ear-meta { color: var(--chalk); }
+}
 .hm-ear:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: 2px; }
 /* the line held open while the pulse is out: the ear's own height, unlit */
 .hm-ear.is-hold { visibility: hidden; min-height: calc(11px * 1.5 + 12px); }

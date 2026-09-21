@@ -515,7 +515,16 @@
   border: 1px solid var(--hair); color: var(--ash);
   min-height: var(--c-sm); padding: 0 13px; font-size: var(--t-small);
 }
-.wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
+}
 
 /* There was a third role here, `is-ember`: a filled saturated capsule. It had
    exactly one caller in the whole build, the "today" pill on the core service,
@@ -780,7 +789,9 @@ a.wl-lq { text-decoration: none; }
   color: var(--ash-dim);
   transition: color 220ms var(--ease), border-color 220ms var(--ease);
 }
-.wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
+}
 .wl-mine.is-wide { padding: 9px 16px; font-size: var(--t-small); }
 
 
@@ -3648,8 +3659,12 @@ a.wl-lq { text-decoration: none; }
   transition: width 620ms cubic-bezier(0.20, 1.24, 0.32, 1), background 300ms var(--ease);
 }
 .wl-days-t { position: relative; }
-.wl-days:hover { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
-.wl-days:hover::before { background: rgba(244, 241, 234, 0.14); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-days:hover { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-days:hover::before { background: rgba(244, 241, 234, 0.14); }
+}
 /* the one saturated thing on the screen, and it is a sliver — because what
    makes it urgent is how LITTLE of the chip is still filled */
 .wl-days.is-near { color: var(--chalk); border-color: var(--accent-soft); }
@@ -4018,7 +4033,9 @@ a.wl-lq { text-decoration: none; }
   }
   .wl-turn.is-prev { left: -62px; }
   .wl-turn.is-next { right: -62px; }
-  .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+  @media (hover: hover) and (pointer: fine) {
+    .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+  }
   .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
   /* the composer's act stands under the card, at the card's measure: a pill
      the width of the dialog under a paper narrower than it is a pill about
@@ -4172,7 +4189,9 @@ a.wl-lq { text-decoration: none; }
   color: var(--ash); text-decoration: none;
   transition: color 200ms var(--ease);
 }
-.wl-colophon-col a:hover { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-colophon-col a:hover { color: var(--chalk); }
+}
 /* an address and a number are identifiers, so they keep the identifier face */
 .wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); }
 .wl-colophon-foot {
@@ -4359,7 +4378,9 @@ a.wl-lq { text-decoration: none; }
   text-decoration-color: var(--hair); text-underline-offset: 3px;
   transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease);
 }
-.wl-door-foot a:hover { color: var(--chalk); text-decoration-color: var(--ash-dim); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-door-foot a:hover { color: var(--chalk); text-decoration-color: var(--ash-dim); }
+}
 
 /* ── THE CODE BOX ──────────────────────────────────────────────────────────
    Held to the same values as supabase/functions/_shared/mail.ts `code()`,
@@ -4542,7 +4563,9 @@ a.wl-lq { text-decoration: none; }
 /* the way out: a capsule carrying its glyph, centred under the primary */
 .wl-profile-out { align-self: center; margin-top: 8px; gap: 7px; padding: 0 15px 0 12px; min-height: 34px; }
 .wl-profile-out .wl-icon { color: var(--ash-dim); transition: color 220ms var(--ease); }
-.wl-profile-out:hover .wl-icon { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-profile-out:hover .wl-icon { color: var(--chalk); }
+}
 .wl-gate-copy { color: var(--ash); font-size: var(--t-wide); line-height: 1.55; padding-top: 16px; max-width: 40ch; }
 .wl-gate-fault {
   min-height: 20px; padding-top: 10px;
@@ -4717,7 +4740,9 @@ a.wl-lq { text-decoration: none; }
   padding-bottom: 1px;
   transition: border-color 200ms var(--ease);
 }
-.wl-a:hover { border-bottom-color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-a:hover { border-bottom-color: var(--chalk); }
+}
 
 /* ═══ WHO THAT IS ══════════════════════════════════════════════════════════
    Four objects, and a person looks the same in all of them: the FACE, which
@@ -4948,7 +4973,9 @@ a.wl-lq { text-decoration: none; }
   border-color: rgba(244, 241, 234, 0.22);
 }
 .wl-me.is-on { padding: 0 12px 0 7px; }
-.wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+}
 .wl-me-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); text-transform: none; }
 
 /* ── the result card ────────────────────────────────────────────────────────

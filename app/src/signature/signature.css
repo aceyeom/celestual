@@ -155,8 +155,19 @@
   flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-read); color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease);
 }
-.sg-gate:hover .sg-gate-g { transform: translateX(5px); color: var(--chalk); }
-.sg-gate:hover .sg-gate-h { color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .sg-gate:hover .sg-gate-g { transform: translateX(5px); color: var(--chalk); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sg-gate:hover .sg-gate-h { color: var(--chalk); }
+}
 
 .sg-dock { margin: 0 -22px; padding: 0 22px; }
 @media (max-width: 359px) { .sg-dock { margin: 0 -16px; padding: 0 16px; } }

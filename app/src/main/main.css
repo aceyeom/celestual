@@ -113,7 +113,16 @@
   color: var(--ash);
   text-decoration: none;
 }
-.mn-quiet-link:hover { color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .mn-quiet-link:hover { color: var(--chalk); }
+}
 
 /* ── the proof, on its own (Prove.jsx) ──
    The sky's sign in and the opt out's: the field, or the code where the
@@ -130,7 +139,9 @@
 .mn-mark-word { color: var(--chalk); }
 .mn-mark .wl-dot { cursor: default; }
 .mn-mark .wl-dot.is-done { cursor: pointer; }
-.mn-mark .wl-dot.is-done:hover { background: rgba(244, 241, 234, 0.7); }
+@media (hover: hover) and (pointer: fine) {
+  .mn-mark .wl-dot.is-done:hover { background: rgba(244, 241, 234, 0.7); }
+}
 .mn-mark .wl-dot:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
 
 /* ── the letter ──
