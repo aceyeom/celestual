@@ -417,6 +417,8 @@ export async function mine() {
       look: cleanLook(l.look),
       body: l.body ?? '',
       status: l.status,
+      // how many hearted it (0056), so the account sheet can say so
+      hearts: Number(l.hearts) || 0,
       downBy: l.down_by || null,
       reasons: Array.isArray(l.reasons) ? l.reasons.map(String) : [],
       flagged: !!l.flagged,

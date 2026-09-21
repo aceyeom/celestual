@@ -1150,26 +1150,48 @@
    with the crowd running past them. */
 .wl-ear {
   position: relative; z-index: 4; flex: 0 0 auto;
-  display: flex; align-items: baseline; justify-content: center; gap: 12px; min-width: 0;
-  padding: 2px 0 11px;
+  display: flex; align-items: baseline; justify-content: center; gap: 8px; min-width: 0;
+  padding: 11px 0 0;
   line-height: 1.4;
   text-align: center;
 }
+/* ── a caption, not a row ──
+   The campus in the display face, small, the way the brand sets its own
+   word; a middot; the count in the identifier face, the figure in chalk. It
+   stands under the plate as the fact about the wall, at a size that reads
+   as a caption under the question rather than as a third row of chrome. */
 .wl-ear-name {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 17px; letter-spacing: var(--track-display);
-  color: var(--chalk); white-space: nowrap;
+  font-size: 15px; letter-spacing: var(--track-display);
+  color: rgba(244, 241, 234, 0.78); white-space: nowrap;
 }
+.wl-ear-dot { color: var(--ash-dim); font-size: 13px; line-height: 1; }
 .wl-ear-meta {
-  display: inline-flex; align-items: baseline; gap: 6px;
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  display: inline-flex; align-items: baseline; gap: 5px;
+  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* the figure: a step larger than the word after it, in chalk, its digits
    turning when a letter goes up (parts.jsx `Roll`, `.wl-roll` below) */
-.wl-ear-n { font-size: 14.5px; letter-spacing: 0.04em; color: var(--chalk); }
+.wl-ear-n { font-size: 13px; letter-spacing: 0.04em; color: var(--chalk); }
+/* ── the masthead ──
+   The question and the caption, one block under the bar. The row takes no
+   pointer; the plate inside it does (`.wl-seek`). */
+.wl-masthead {
+  position: relative; z-index: 4;
+  display: flex; flex-direction: column; align-items: stretch;
+  padding: 0;
+  pointer-events: none;
+}
+/* the caption stands OVER the plate, as a label under the bar, where the
+   top shade is deepest. Under the plate it stood on the faces at the point
+   the shade had thinned to half, and "letters" was cut by whatever disc
+   happened to be there. */
+.wl-masthead .wl-ear { padding: 0 0 9px; }
+.wl-masthead .wl-ear-name { font-size: 13.5px; }
+.wl-masthead .wl-ear-n { font-size: 12px; }
 .wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
 
 /* ── the roll ──
@@ -1320,14 +1342,14 @@
 }
 .wl-seek .wl-field {
   pointer-events: auto; cursor: text;
-  width: 100%; max-width: 420px;
-  align-items: center; justify-content: center; gap: 11px;
-  min-height: 50px; padding: 0 19px;
+  width: 100%; max-width: 440px;
+  align-items: center; justify-content: center; gap: 12px;
+  min-height: 54px; padding: 0 20px;
   border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.09);
+  background: rgba(244, 241, 234, 0.1);
   box-shadow:
-    inset 0 0 0 1px rgba(244, 241, 234, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
     0 22px 48px -28px rgba(0, 0, 0, 0.95);
   -webkit-backdrop-filter: blur(22px) saturate(1.25);
   backdrop-filter: blur(22px) saturate(1.25);
@@ -1346,12 +1368,13 @@
    typed into it before the sheet has mounted stays centred in it. */
 .wl-seek .wl-field input {
   flex: 0 1 auto; width: 16ch;
-  font-size: 17px; letter-spacing: -0.004em; text-align: center;
+  font-size: 17.5px; letter-spacing: -0.004em; text-align: center;
 }
+.wl-seek .wl-at { font-size: 19px; }
 /* the question itself is ash, not the field's own near-void placeholder:
    on this surface it is a label that has to be read at a glance, not a hint
    under a cursor */
-.wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.66); }
+.wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.74); }
 .wl-seek .wl-field:focus-within {
   background: rgba(244, 241, 234, 0.1);
   box-shadow:
@@ -1577,19 +1600,26 @@
 .wl-wallpage.is-arriving .wl-seek { animation: wl-rise 620ms var(--ease) 110ms both; }
 .wl-wallpage.is-arriving .wl-dock { animation: wl-rise 700ms var(--ease) 160ms both; }
 
-/* ── the composer, in the bar ──
-   parts.jsx TopBar. The primary capsule at the bar's own scale, between the
-   glass and the person: the nib and the word, with the running light inside
-   it. It is the one act on the wall and it is drawn as the one primary, the
-   way the wide pill at the foot was, at a size that sits on the bar's line. */
-.wl-top-write {
-  min-height: 36px; padding: 0 15px 0 13px; gap: 7px; margin: 0 3px;
-  font-size: 13px;
+/* ── the composer, at the foot ──
+   parts.jsx `WriteAct`. The primary capsule in the middle of the bottom
+   edge: the nib and the words, with the running light inside it. It is the
+   one act on the wall and the one bright thing at the foot; it stood in the
+   bar as a small capsule beside the person, a hundred pixels over the search
+   plate, and the two capsules read as a crammed head. Compact, not wide, so
+   it stands over the faces rather than on them. */
+.wl-dock-act {
+  display: flex; justify-content: center;
+  padding: 10px 0 0;
 }
-.wl-top-write .wl-icon { color: rgba(20, 19, 26, 0.72); }
-@media (max-width: 359px) {
-  .wl-top-write { padding: 0 12px 0 10px; gap: 6px; margin: 0 1px; }
+.wl-write-act {
+  min-height: 46px; padding: 0 22px 0 18px; gap: 9px;
+  font-size: 14px;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
 }
+.wl-write-act .wl-icon { color: rgba(20, 19, 26, 0.72); }
+/* the notice puts itself away by the mark in its corner */
+.wl-down .wl-down-x { position: absolute; top: 8px; right: 8px; }
+.wl-down .wl-down-in { padding-right: 34px; }
 
 /* ═══ THE HIVE ═════════════════════════════════════════════════════════════
    Hive.jsx. A crowd of faces on a hexagonal lattice that never ends, bent by
@@ -1720,9 +1750,11 @@
   transition: opacity 240ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
 }
-.wl-cell.is-focus .wl-cell-orb { transform: scale(1.04); }
-.wl-cell.is-focus .wl-cell-orb::before { opacity: 1; transform: none; }
-.wl-cell.is-focus .wl-cell-orb::after { opacity: 1; transform: none; }
+/* nothing is lit for being nearest the middle any more: the ring and the
+   halo above are the mark of a name this browser wrote to (`is-mine`), and
+   of the keyboard's focus, and of nothing else. The wall used to pick out
+   whichever disc stood in the middle of a phone, ring it, halo it and name
+   it on a plate, and read as selecting somebody over and over. */
 .wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the
    one movement on this surface that has to answer instantly */
@@ -1736,12 +1768,6 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 244, 228, 0.5),
     0 0 0 1px rgba(8, 7, 11, 0.5);
-}
-.wl-cell.is-mine.is-focus .wl-cell-orb::after {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 244, 228, 0.85),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
-    0 0 0 1px rgba(8, 7, 11, 0.55);
 }
 .wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
@@ -1805,93 +1831,60 @@
   100% { opacity: 1; transform: scale(1); }
 }
 
-/* ── the one name on the field ──
-   ONE plate, moved to whoever the lens is reading — under a mouse the disc
-   the pointer is nearest, and on a phone the disc in the middle. It used to
-   be one tag per cell, sixty of them, each fading itself in and out as a
-   pointer swept past: two were on the screen at once as often as not, they
-   overlapped the faces under them, and at the edge of the field they were cut
-   in half by the mask. There is no arrangement of sixty labels that is not
-   messy, so there is one.
+/* the one plate that named whoever the lens was reading is gone with the
+   focus ring above: nothing is written on the field. */
 
-   It is glass, not a plate: the faces go on under it, blurred, so it belongs
-   to the field rather than sitting on it. The outer element is moved by the
-   loop and the inner one carries every pixel of the look, because a transform
-   written from a rAF and a transform written by a transition cannot be the
-   same transform. */
-.wl-hive-say {
-  position: absolute; left: 0; top: 0; z-index: 3;
-  width: max-content;
-  pointer-events: none;
-  will-change: transform;
-}
-/* ── the plate, and nothing round it ──
-   One small capsule of the void, nearly opaque, and a hairline. It used to
-   be glass: a backdrop blur, and under it a "well" of shadow drawn as a
-   radial gradient over a box thirty pixels wider than the plate. That
-   gradient was sized to the box's corners, which is what a radial gradient
-   does when nobody tells it otherwise, so it reached zero only at the four
-   corners and was still a fifth dark along every straight edge: a soft grey
-   rectangle appeared round every name the pointer touched, over the faces
-   beside it. It is gone, and the blur went with it, because a plate that is
-   opaque needs neither: the type is legible on it whatever is underneath,
-   and it costs the compositor nothing. */
-.wl-hive-say-h {
-  display: block;
-  padding: 5px 10px 6px;
-  border-radius: var(--r-pill);
-  background: rgba(8, 7, 11, 0.88);
-  box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.12);
-  font-family: var(--f-id); font-size: 11.5px; line-height: 1.15; letter-spacing: -0.012em;
-  color: var(--chalk);
-  white-space: nowrap;
-  opacity: 0; transform: translate3d(0, -4px, 0) scale(0.96);
-  transform-origin: 50% 0;
-  transition: opacity 180ms var(--ease), transform 320ms var(--ease);
-}
-.wl-hive-say.is-on .wl-hive-say-h { opacity: 1; transform: none; }
-/* a first name (0053) is written in the name's face, the rule the rows and
-   the card follow: mono is for identifiers, and a name is not one */
-.wl-hive-say-h.is-name {
-  font-family: var(--f-util); font-weight: 500; font-size: 12px; letter-spacing: -0.005em;
-}
+/* ═══ THE LETTER, CENTRED ══════════════════════════════════════════════════
+   screens/Letter.jsx. The letter is not a bottom sheet: it is the card,
+   standing in the middle of the glass over the dimmed wall, at every width.
+   A bottom sheet took the card's own height, so a short letter stood low and
+   a long one high, and turning the deck from one to the other moved the
+   card under the eye. Centred, a card of any height is read from the same
+   place, and the chrome round it is one mark in the corner of the glass and
+   the two chevrons in the gutters.
 
-/* ═══ THE OPENING ══════════════════════════════════════════════════════════
-   screens/Letter.jsx: a letter opened from a disc opens OUT OF the disc. The
-   card itself is put where the disc was, at the disc's size, with the
-   paper's corner a circle's, and runs out to where it stands — a transform
-   on the real card, words and all, and nothing else. What the stylesheet
-   owns is the sheet under it: it does not rise or slide in on top of that
-   movement, its glass comes up in place, its header and its foot arrive a
-   beat behind the card, and while the card is on its way it is let stand
-   outside the glass, because it starts wherever the disc was. `is-closing`
-   takes the sheet back, so the way out is the sheet's own. */
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-sheet { animation: wl-fade 300ms var(--ease-out) both; }
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-sheet-in { animation: none; }
-/* the head and the foot land a beat behind the card and settle on the same
-   clock it does (Letter.jsx OPEN_MS), so nothing on the sheet is still
-   moving once the card has stopped */
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-head,
-.wl-sheet-wrap.is-from-disc:not(.is-closing) .wl-foot { animation: wl-rise 360ms var(--ease) 120ms both; }
-.wl-sheet-wrap.is-from-disc.is-flying .wl-sheet,
-.wl-sheet-wrap.is-from-disc.is-flying .wl-sheet-in { overflow: visible; }
+   The card used to open OUT of the disc that was pressed, its corner warped
+   from a circle to the paper's radius while it flew, and close back into
+   it. That was a border radius and a transform animating on the real card
+   over a blurred sheet, and it dropped frames on every phone it was tried
+   on. It rises a little and fades now, and goes the same way. */
+.wl-sheet-wrap.is-letter { justify-content: center; align-items: center; padding: 0 18px; }
+.wl-sheet-wrap.is-letter .wl-scrim {
+  background: radial-gradient(120% 80% at 50% 50%, rgba(8,7,11,0.6) 0%, rgba(8,7,11,0.74) 60%, rgba(8,7,11,0.82) 100%);
+}
+.wl-sheet-wrap.is-letter .wl-sheet {
+  min-height: 0; max-height: none; max-width: 470px;
+  background: none; box-shadow: none; border-radius: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  overflow: visible;
+  animation: wl-letter-in 380ms var(--ease) both;
+}
+.wl-sheet-wrap.is-letter .wl-grip { display: none; }
+.wl-sheet-wrap.is-letter .wl-sheet-in {
+  padding: 0; overflow: visible;
+  animation: none;
+}
+.wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-fade 220ms var(--ease-in) reverse both; }
+@keyframes wl-letter-in {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes wl-letter-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+}
+/* the one mark on the glass: the way out, in the corner where every sheet
+   keeps it, standing on the scrim rather than on a header row. A sibling of
+   the sheet (parts.jsx Sheet `aside`), because the sheet's entrance is a
+   transform and a transformed ancestor would pin the mark to the card. */
+.wl-letter-x {
+  position: absolute; z-index: 3;
+  top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px;
+  animation: wl-fade 300ms var(--ease) 80ms both;
+}
+.wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-fade 160ms var(--ease-in) reverse both; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
-
-/* ── and the way back into the disc ──
-   screens/Letter.jsx `closing`. Closed by the mark, the scrim or the key, a
-   letter with a disc to go back to flies back into it: the card shrinks to
-   the disc's circle and dissolves over it, the glass fades in place rather
-   than dropping, and the head, the foot and the chevrons go first. The
-   sheet's own drop is what plays when it was dragged down or when the name
-   has no disc on the glass. Four classes deep, so it beats the drop and the
-   dialog's own way out at every width. */
-.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet { animation: wl-glass-out 340ms var(--ease-out) both; }
-.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet,
-.wl-sheet-wrap.is-to-disc.is-closing .wl-sheet-in { overflow: visible; }
-.wl-sheet-wrap.is-to-disc.is-closing .wl-head,
-.wl-sheet-wrap.is-to-disc.is-closing .wl-foot,
-.wl-sheet-wrap.is-to-disc.is-closing .wl-turn { animation: wl-fade 160ms var(--ease-out) reverse both; }
-@keyframes wl-glass-out { from { opacity: 1; } to { opacity: 0; } }
 
 /* ── the opening ──
    Plays once per session. The masthead rises on the veil, and the field
@@ -1951,11 +1944,10 @@
 .wl-foot > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ THE LETTER ═══════════════════════════════════════════════════════════ */
-.wl-letter { --gutter: 22px; padding-top: 4px; }
-
-/* the count, in the header. It is the answer to "where am I", which is what a
-   header is for. The two arrows that stood beside it went to the card. */
-.wl-pager { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.wl-letter { --gutter: 22px; padding: 0; }
+/* the count that stood in the header, `3 / 19`, is gone: a person reading a
+   letter is not asking where in the deck they are, and a number over the
+   card was the busiest thing on the sheet */
 
 /* ── the strip, and turning it ──
    Letter.jsx. Every letter on the wall is a card in one deck, and the deck
@@ -2001,7 +1993,9 @@
 .wl-letter-leaf.is-arrived { animation: wl-fade 260ms var(--ease) both; }
 /* the foot, while the words are on their way: the pill's own height and
    nothing on it, so the card does not move when they land */
-.wl-foot-hold { min-height: 50px; }
+.wl-foot-hold { min-height: 0; }
+.wl-letter .wl-foot { padding-top: 16px; }
+.wl-letter .wl-foot:empty { display: none; }
 .wl-turn {
   position: absolute; top: 50%; z-index: 2;
   width: var(--gutter); height: 72px; margin-top: -36px; padding: 0;
@@ -2033,6 +2027,24 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   min-height: 22px;
 }
+.wl-letter-marks-l { display: flex; align-items: center; gap: 4px; }
+/* the pen beside the heart: write to this person. It stood as a wide pill
+   under the card, "write to @them", which was a plate the width of the sheet
+   under a letter that had said everything; it is a mark on the paper now,
+   the size of the heart, in the paper's ink. */
+.wl-pen-to {
+  flex: 0 0 auto; width: 34px; height: 34px; padding: 0;
+  margin: -6px 0; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid transparent; background: none;
+  color: var(--lk-ink-2);
+  transition: color 220ms var(--ease), background 220ms var(--ease), transform 220ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-pen-to:hover { color: var(--lk-ink); background: var(--lk-ink-faint); }
+}
+.wl-pen-to:active { transform: scale(0.92); transition-duration: 120ms; }
+.wl-pen-to:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 2px; }
 .wl-flag {
   flex: 0 0 auto; width: 34px; height: 34px; padding: 0;
   margin: -6px -8px -6px 0; border-radius: 50%;
@@ -3037,13 +3049,13 @@
     align-content: stretch;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
-  .wl-ear { grid-row: 1; padding: 10px 0 12px; }
-  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto auto 1fr; }
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto 1fr; }
   /* the masthead keeps the middle of the window while the field runs the
      whole of it behind: the row is the window's width so the capsule can be
      centred in it, and the capsule keeps a measure of its own */
-  .wl-seek { grid-row: 2; width: 100%; }
-  .wl-seek .wl-field { max-width: 460px; min-height: 52px; }
+  .wl-masthead { grid-row: 1; width: 100%; padding-top: 14px; }
+  .wl-seek { width: 100%; }
+  .wl-seek .wl-field { max-width: 480px; min-height: 56px; }
   .wl-seek .wl-field input { font-size: 18px; }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
@@ -3104,9 +3116,13 @@
      The card keeps its measure and the dialog grows round it, so the two
      chevrons stand in the room either side of the paper rather than on its
      edge: a ring each, the close mark's own size, centred in the band. */
-  .wl-sheet-wrap:has(.wl-letter) .wl-sheet { max-width: 680px; }
+  .wl-sheet-wrap.is-letter { padding: 32px 80px; }
+  .wl-sheet-wrap.is-letter .wl-sheet { max-width: 460px; animation: wl-letter-in 380ms var(--ease) both; }
+  .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
+  .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
   .wl-letter { --gutter: 30px; }
   .wl-letter-stage { max-width: 460px; margin: 0 auto; }
+  .wl-letter-x { top: 26px; right: 30px; }
   .wl-turn {
     width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
     border: 1px solid var(--hair);
@@ -3116,10 +3132,10 @@
   .wl-turn.is-next { right: -62px; }
   .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
   .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
-  /* the card's own act stands under the card, at the card's measure, on
-     both sheets that carry one: a pill the width of the dialog under a
-     paper narrower than it is a pill about the dialog */
-  .wl-letter .wl-foot, .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+  /* the composer's act stands under the card, at the card's measure: a pill
+     the width of the dialog under a paper narrower than it is a pill about
+     the dialog */
+  .wl-write .wl-write-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
 
   /* ── the standalone screens keep the column, and gain air ── */
   .wl-join { max-width: 640px; }
@@ -3162,9 +3178,9 @@
   .wl-wallpage .wl-top { grid-column: 1 / -1; padding-top: 10px; }
   /* the ear stands in the left column over the dock, and the field takes the
      right column's whole height with the veil over it */
-  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
-  .wl-ear { grid-column: 1 / -1; grid-row: 1; padding: 2px 0 7px; }
-  .wl-seek { grid-column: 1 / -1; grid-row: 2; }
+  .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 40px; }
+  .wl-masthead { grid-column: 1 / -1; grid-row: 1; padding-top: 0; }
+  .wl-ear { padding-top: 6px; }
   /* 390px of height: the plate gives back what it can and keeps its ring */
   .wl-seek .wl-field { min-height: 42px; max-width: 420px; }
   .wl-seek .wl-field input { font-size: 16px; }
@@ -3228,7 +3244,7 @@
    design, and the names simply get more room per line inside a wall column
    that has stopped widening. */
 @media (min-width: 1280px) {
-  .wl-ear { padding-top: 22px; }
+  .wl-masthead { padding-top: 22px; }
 }
 
 /* ═══ THE FOOT OF THE SITE ═════════════════════════════════════════════════
@@ -3402,18 +3418,46 @@
   overflow-wrap: anywhere;
 }
 .wl-profile-sect { padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--hair); }
-.wl-profile-wrote { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 11px; }
-/* a chip, not a row and not a link. This list is a record, and every one of
-   its entries is a name whose letter may have come down since: a tappable
-   row that lands on nothing is worse than a name that was never offered. */
-.wl-profile-chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 4px 12px 4px 4px;
-  border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.055);
-  font-family: var(--f-id); font-size: 12px; letter-spacing: -0.01em;
+/* ── the letters this device put up (screens/Gate.jsx `Wrote`) ──
+   A row per letter: the face, the name and when, and the heart count at the
+   end. The row is the target and opens the letter; a letter that has come
+   down is dimmed and opens nothing. Four rows, and past four the list fades
+   out under a line that opens the rest. */
+.wl-wrote { display: flex; flex-direction: column; gap: 0; padding-top: 6px; margin: 0 -8px; }
+.wl-wrote.is-cut {
+  -webkit-mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 58%, transparent 100%);
+}
+.wl-wrote-row {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 8px 8px;
+  border-radius: 12px; border: 0; background: none;
+  color: var(--chalk); text-align: left;
+  transition: background 200ms var(--ease), transform 200ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-wrote-row:not(:disabled):hover { background: rgba(244, 241, 234, 0.05); }
+}
+.wl-wrote-row:not(:disabled):active { transform: scale(0.99); transition-duration: 120ms; }
+.wl-wrote-row:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.45); outline-offset: -1px; }
+.wl-wrote-row.is-down { opacity: 0.5; cursor: default; }
+.wl-wrote-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wl-wrote-name {
+  font-family: var(--f-id); font-size: 13px; letter-spacing: -0.012em;
+  color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wl-wrote-meta {
+  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.004em;
+  color: var(--ash-dim);
+}
+.wl-wrote-n {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--f-id); font-size: 12.5px; font-variant-numeric: tabular-nums;
   color: var(--ash);
 }
+.wl-wrote-n .wl-heart-glyph { color: var(--ash-dim); }
+.wl-wrote-n .wl-heart-glyph.is-on { color: var(--ash); }
+.wl-wrote-more { align-self: flex-start; margin-top: -2px; padding: 6px 0 0; }
 .wl-profile-none { margin: 10px 0 0; font-family: var(--f-id); font-size: 12.5px; color: var(--ash-dim); }
 /* the week, said once, and only when it is over */
 .wl-profile-cap { padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--hair); }

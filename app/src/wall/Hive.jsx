@@ -145,7 +145,6 @@ import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, use
 import { Face, Label } from './parts.jsx'
 import { labelFor, isNameKey } from './data.js'
 import { peekHandle, isWarm } from '../api/handles.js'
-import { takeOff, setLocator } from './morph.js'
 
 // ── the numbers ─────────────────────────────────────────────────────────────
 // At most this many names in the field. Past it the rest are a search away,
@@ -311,30 +310,43 @@ const FRESH_MS = 2200
 // which is what turning a page looks like next to what an event looks like,
 // and it never moves a name's count, its size or its seat in the tile.
 //
-//   `first`/`firstSpread`  when the first one is due. Long after the opening
-//                          cascade has finished and the faces have been warmed
-//                          (data.js warmRest), because the first thing the
-//                          wall does should be to stand still and be read.
-//   `min`/`spread`         and every one after: a jittered gap, never a beat.
-//   `settle`               and how long the wall stands still after anything
-//                          at all happens on it — a pull, a pulse, a sheet,
-//                          the veil. Longer than the gap, because a surface
-//                          that starts moving again the instant a finger
-//                          comes off it is a surface that was waiting.
+// ── every disc on its own clock ──
+// It used to be one disc at a time, every two to five seconds, drawn from a
+// band out of the light. On a wall of a hundred and seventy faces that was
+// one small movement every few seconds, and the wall read as a photograph
+// with a tic. Now every disc on the glass carries its own clock: the moment
+// it is seated it is given a time to turn, ten to fourteen seconds out for
+// the faces near the light and longer toward the rim (`turnGap`), and when
+// that time comes it turns and takes another. So there is a turn somewhere
+// on the wall a few times a second, near and far, and no beat to any of it.
+//
+//   `first`                the earliest any disc turns after the wall is up:
+//                          the first thing the wall does is stand still and
+//                          be read. Each disc's first time is this plus a
+//                          random part of its own gap, so the first turns
+//                          are spread over the whole field rather than all
+//                          landing on one frame.
+//   `gap`                  the interval a disc waits between turns, by how
+//                          far it stands from the light: near, mid, rim,
+//                          each a floor and a spread.
+//   `settle`               how long the whole wall stands still after
+//                          anything at all happens on it — a pull, a pulse,
+//                          a sheet, the veil — because a surface that starts
+//                          moving again the instant a finger comes off it is
+//                          a surface that was waiting.
 //   `swap`/`all`           the disc's own clock, mirroring wall.css
 //                          `wl-cell-turn`: the face is changed at `swap`,
 //                          inside the stretch where the orb is at nought
 //                          opacity (33% to 48% of `all`), so the change
 //                          itself is never on the glass.
-//   `most`                 how many may be in flight at once. The gap is
-//                          longer than `all`, so this is a floor under a
-//                          tuning mistake rather than a thing that happens.
-//   `near`/`from`/`to`/`far`  the band it happens in, in the same half-screen
-//                          units as the lens. Nothing turns over dead centre,
-//                          where the eye rests and the plate is standing, and
-//                          nothing turns over at the rim, where it would be a
-//                          movement nobody sees. The weight is full between
-//                          `from` and `to` and falls to nothing at either end.
+//   `most`/`stagger`       how many may be in flight at once, and the least
+//                          time between two starting. These are what set
+//                          the wall's pace: a few turns a second, spread
+//                          over the field, and never a burst.
+//   `near`/`far`           the band it happens in, in the same half-screen
+//                          units as the lens: not dead centre, where the eye
+//                          rests, and not past the rim, where it would be a
+//                          movement nobody sees.
 //   `apart`/`hard`         how far the nearest other disc drawing the
 //                          incoming name has to stand, in pitches, so a face
 //                          never arrives beside its own twin — and the floor
@@ -350,13 +362,18 @@ const FRESH_MS = 2200
 //                          disc between them reads as a fault, whatever the
 //                          tile is doing.
 const CYCLE = {
-  first: 7000, firstSpread: 3400,
-  min: 1900, spread: 2900,
-  settle: 2600,
+  first: 5000,
+  gap: { near: [10000, 4000], mid: [16000, 8000], rim: [28000, 18000] },
+  settle: 1800,
   swap: 380, all: 980,
-  most: 2,
-  near: 0.24, from: 0.36, to: 0.9, far: 1.04,
+  most: 5, stagger: 120,
+  near: 0.1, far: 1.35,
   apart: 3.2, hard: 2.4,
+}
+// how long a disc at `u` from the light waits before it turns again
+function turnGap(u) {
+  const g = u < 0.55 ? CYCLE.gap.near : u < 1 ? CYCLE.gap.mid : CYCLE.gap.rim
+  return g[0] + Math.random() * g[1]
 }
 // ── the window, and the window's bar ──
 // A phone's browser bar comes and goes as the page is scrolled, and the
@@ -400,7 +417,7 @@ const KEY_OFF = 1 << 20
 const KEY_ROW = 1 << 21
 const cellKey = (I, J) => (J + KEY_OFF) * KEY_ROW + (I + KEY_OFF)
 function newSlot() {
-  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', n: 0, delay: 0 }
+  return { I: NaN, J: NaN, k: -1, key: -1, el: null, disc: null, shown: false, used: 0, tf: '', op: '', n: 0, delay: 0, due: 0 }
 }
 
 // ── the pitch ───────────────────────────────────────────────────────────────
@@ -617,12 +634,12 @@ function tileUp(tiles, was) {
 // the name as written for a first name, both handed as values off the
 // index's row so the disc draws them on its first frame, and both compared
 // by the memo so a name whose paper has not changed is not redrawn.
-const Cell = memo(function Cell({ s, handle, count, d, focus, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
+const Cell = memo(function Cell({ s, handle, count, d, mine, fresh, delay, look, name, bind, onOpen, onHover, onPeek }) {
   if (!handle) return <button type="button" className="wl-cell" ref={(el) => bind(s, el)} tabIndex={-1} aria-hidden="true" />
   return (
     <button
       type="button"
-      className={`wl-cell${focus ? ' is-focus' : ''}${mine ? ' is-mine' : ''}${fresh ? ' is-new' : ''}`}
+      className={`wl-cell${mine ? ' is-mine' : ''}${fresh ? ' is-new' : ''}`}
       style={{ '--d': `${d}px`, '--in': `${delay}ms` }}
       data-slot={s}
       ref={(el) => bind(s, el)}
@@ -660,7 +677,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   const wrote = useMemo(() => new Set(mine), [mine])
 
   const stage = useRef(null)
-  const say = useRef(null)
   const size = useRef({ w: 0, h: 0 })
   // Whether the pool has been cut: the loop starts when it has.
   const [grid, setGrid] = useState(false)
@@ -668,8 +684,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // loop keeps its own copy in `motion.slots` and tells React only when a
   // slot changes hands or the pool grows.
   const [assign, setAssign] = useState([])
-  // The person the lens is reading, by cell.
-  const [focusKey, setFocusKey] = useState('')
 
   // ── the names that have just arrived ──
   // The index is re-read whenever the corpus moves, and a name that was not on
@@ -738,15 +752,17 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     px: 0, py: 0, pa: 0,      // the pointer, and how much of it is here
     goal: null,               // where a keyboard or a tap asked the field to go
     goalK: 170,               // and how quickly it goes there, in ms
-    focus: null,              // { I, J, nd }
+    focus: null,              // { I, J, nd }: the disc nearest the pointer, or
+                              // the middle. Nothing is drawn for it any more;
+                              // the cycle leaves it alone, and a change of
+                              // pitch keeps it in the light
     slots: [],                // the pool (newSlot)
     bySlot: new Map(),        // a cell's key -> the slot it holds
     free: [],                 // slots holding nothing, by index
     stamp: 0,                 // the frame, for marking the slots in use
-    sayW: 0, sayOn: 0,
     // the cycle (CYCLE): when the next disc is due to turn over, the ones
     // turning now, and who each cell has been turned over TO, by handle
-    cycle: { at: 0, live: [], swaps: new Map() },
+    cycle: { at: 0, last: 0, live: [], swaps: new Map() },
     veiled, reduce, paused, opening,
     ready: false,
   })
@@ -902,37 +918,28 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     if (t) { t.wx *= k; t.wy *= k; t.R *= k; t.rmax *= k }
   }, [])
 
-  // ── the name on the plate ──
-  // Read off the same two things the ring is drawn from — the focused cell's
-  // key, and what the slot holding it was handed — rather than off the loop's
-  // own `focus`, which is a frame ahead of both. Anything else and the plate
-  // can name the disc beside the one it is pointing at.
-  // A first name (0053) is written on the plate as the name, in the name's
-  // face rather than the identifier's, the rule the rows and the card follow.
-  const reading = useMemo(() => {
-    if (!focusKey) return { text: '', named: false }
-    const a = assign.find((x) => x && x.key === focusKey)
-    const t = a ? names[a.k] || null : null
-    return t ? { text: labelFor(t.handle), named: isNameKey(t.handle) } : { text: '', named: false }
-  }, [focusKey, assign, names])
-
-  // the plate's width, measured when the name in it changes, so the loop can
-  // keep it inside the stage without reading layout every frame
-  useLayoutEffect(() => {
-    const el = say.current
-    motion.current.sayW = el ? el.offsetWidth : 0
-  }, [reading.text])
+  // ── nothing is written on the field ──
+  // There used to be one plate, moved to whoever the lens was reading: on a
+  // phone the disc nearest the middle, ringed and haloed and named. Sixty
+  // faces drifting and one of them picked out and captioned at all times read
+  // as the wall selecting somebody, over and over, for no reason a person
+  // could see. The plate, the ring and the halo are gone. The loop still
+  // keeps `focus`, the disc nearest the pointer or the middle, because the
+  // cycle leaves that one alone and a change of pitch keeps it in the light;
+  // nothing draws it.
 
   // ── the cycle ─────────────────────────────────────────────────────────────
-  // One disc at a time, every couple of seconds, turned over to somebody else
-  // on the same wall (CYCLE, above). Three questions, and the care taken over
-  // each of them is the whole of why it reads as a crowd and not as a glitch.
+  // Every disc on the glass on its own clock, turned over to somebody else
+  // on the same wall when its time comes (CYCLE, above). Three questions, and
+  // the care taken over each of them is the whole of why it reads as a crowd
+  // and not as a glitch.
   //
-  //   WHO GOES   Never the disc the lens is reading, never one under the
-  //              pointer, never a name this browser wrote to, never one that
-  //              has just been written to, and never one already turning.
-  //              Weighted into a band out of the light and in off the rim, so
-  //              it happens where it is seen and not where it is stared at.
+  //   WHO GOES   Whichever disc is most overdue, of the ones that may: never
+  //              the disc under the pointer or nearest the middle, never a
+  //              name this browser wrote to, never one that has just been
+  //              written to, and never one already turning. A few at a time
+  //              at most, and never two on the same beat, so the wall turns
+  //              over everywhere and bursts nowhere.
   //   WHO COMES  Somebody not on the glass at all, so the turn shows a face
   //              the screen did not have; on a wall small enough that
   //              everybody is up, somebody standing well away from their own
@@ -1046,19 +1053,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       }
     }
 
-    // ── and whether another is due ──
+    // ── and whether another may start ──
     if (m.reduce || !names.length) return
-    if (!c.at) c.at = now + CYCLE.first + Math.random() * CYCLE.firstSpread
-    if (m.veiled || m.opening || busy || c.live.length >= CYCLE.most) {
+    if (!c.at) c.at = now + CYCLE.first
+    if (m.veiled || m.opening || busy) {
       c.at = Math.max(c.at, now + CYCLE.settle)
       return
     }
-    if (now < c.at) return
+    if (now < c.at || c.live.length >= CYCLE.most || now - c.last < CYCLE.stagger) return
 
     // ── who goes ──
-    // One pass over the discs on the glass, keeping one of them at a
-    // probability that is its own weight over the weight seen so far: a
-    // weighted draw in a single pass and no array built to do it.
+    // One pass over the discs on the glass for the one most overdue of those
+    // that may turn. Every disc's clock was set when it was seated, so the
+    // order the turns come in is the order the clocks were drawn in, and no
+    // array is built to find it.
     const { S, rowH } = m
     const f = m.focus
     const fr = freshNow.current
@@ -1069,10 +1077,12 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     const held = document.activeElement
     let pick = -1
     let kOut = -1
-    let tot = 0
+    let pickU = 0
+    let pickDue = Infinity
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i]
       if (!slot.shown || !slot.disc) continue
+      if (slot.due > now || slot.due >= pickDue) continue
       // resolved the way the draw resolves it, not off `slot.k`, which is a
       // frame behind on the frame a new reading of the index lands
       const k = nameAt(slot.I, slot.J)
@@ -1098,13 +1108,9 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
         const by = ay - m.py
         if (bx * bx + by * by < reach * reach) continue
       }
-      const w = u < CYCLE.from ? (u - CYCLE.near) / (CYCLE.from - CYCLE.near)
-        : u > CYCLE.to ? (CYCLE.far - u) / (CYCLE.far - CYCLE.to)
-          : 1
-      tot += w
-      if (Math.random() * tot < w) { pick = i; kOut = k }
+      pick = i; kOut = k; pickU = u; pickDue = slot.due
     }
-    if (pick < 0) { c.at = now + CYCLE.settle; return }
+    if (pick < 0) return
 
     // ── who comes ──
     // Two readings of the field. WHO IS NEAR is taken off the lattice rather
@@ -1166,7 +1172,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       }
     }
     const from = off || away || best
-    if (!from) { c.at = now + CYCLE.settle; return }
+    // this disc takes its next time now, whether or not anybody comes: with
+    // nobody to come it simply asks again after its own gap
+    slot.due = now + turnGap(pickU)
+    if (!from) return
 
     // ── and the turn ──
     // The stylesheet takes the disc away and brings the next one up
@@ -1175,7 +1184,7 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
     const to = names[from[(Math.random() * from.length) | 0]]
     c.live.push({ s: pick, key: slot.key, t0: now, to: to.handle, swapped: false })
     slot.disc.classList.add('is-turning')
-    c.at = now + CYCLE.min + Math.random() * CYCLE.spread
+    c.last = now
   }, [names, wrote, worldX, nameAt, cycleReady])
 
   // ── the loop ──
@@ -1303,7 +1312,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
       const J1 = Math.ceil((h + pad - m.o.y) / rowH)
       let changed = null
       let best = null
-      let bestAt = null
       let curNd = 3
       const f = m.focus
 
@@ -1357,6 +1365,10 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           // the opening's ripple: each disc arrives by its distance from the
           // light, so the field fills from the middle outward
           slot.delay = Math.round(500 + Math.min(1.4, u) * 620)
+          // and its own clock for turning over (the cycle): its gap from
+          // where it stands, from a random point in it, so the turns are
+          // spread over the field from the first one
+          slot.due = now + CYCLE.first + Math.random() * turnGap(u)
           slot.shown = true
           slot.used = stamp
           // the element is reused for a new cell: nothing it last wrote holds
@@ -1481,45 +1493,22 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             const op = air > 0.995 ? '1' : air.toFixed(2)
             if (op !== slot.op) { slot.op = op; slot.disc.style.opacity = op }
           }
-          // how far the pointer is from this disc, in its own drawn place: the
-          // plate goes on whoever is nearest it, and on a phone, where there is
-          // no pointer, on whoever is nearest the middle
+          // how far the pointer is from this disc, in its own drawn place,
+          // and on a phone, where there is no pointer, how far the middle is
           const sx = px - (pa > 0.5 ? m.px : m.c.x)
           const sy = py - (pa > 0.5 ? m.py : m.c.y)
           const nd = Math.sqrt(sx * sx + sy * sy) / S
           if (isFocus) curNd = nd
-          if (!best || nd < best.nd) { best = { I, J, nd }; bestAt = { x: px, y: py, r: d * z * 0.5 } }
+          if (!best || nd < best.nd) best = { I, J, nd }
         }
       }
-      // ── the person the lens is reading ──
-      // The nearest disc, with a little hysteresis so two at the same distance
-      // do not hand the plate back and forth.
+      // ── the disc nearest the pointer, or the middle ──
+      // Kept, with a little hysteresis, for the cycle to leave alone and for
+      // a change of pitch to keep in the light. Nothing is drawn for it.
       if (best && (!f || curNd > 2.4 || best.nd < curNd - 0.08)) {
-        if (!f || f.I !== best.I || f.J !== best.J) {
-          m.focus = best
-          setFocusKey(`${best.I},${best.J}`)
-        } else {
-          m.focus = best
-        }
+        m.focus = best
       } else if (f) {
         f.nd = curNd
-      }
-
-      // ── the plate ──
-      // One element, under the disc it names, held inside the stage. It is on
-      // when the field is up and there is somebody to name; it is off under
-      // the veil, off while the field is being thrown, and off on a disc so
-      // far from the light that naming it would be pointing at nothing.
-      if (say.current) {
-        const on = !m.veiled && bestAt && best && best.nd < 1.6 && !m.drag && !m.pinch ? 1 : 0
-        if (bestAt) {
-          const half = m.sayW / 2 + 10
-          const x = clamp(bestAt.x, half, Math.max(half, w - half))
-          let y = bestAt.y + bestAt.r + 15
-          if (y > h - 34) y = bestAt.y - bestAt.r - 34
-          say.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translateX(-50%)`
-        }
-        if (on !== m.sayOn) { m.sayOn = on; say.current.classList.toggle('is-on', !!on) }
       }
 
       if (changed || grew) {
@@ -1794,19 +1783,20 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   // ── the press ──
   // A press that travelled swallows the tap it would have ended in, because
   // every disc is a target and nothing is worse than a surface that opens a
-  // letter because you tried to look past it. A press that did not hands
-  // the disc's own circle, where it is standing now, to the letter, which
-  // opens out of it at once (morph.js, screens/Letter.jsx), and sends the
-  // pulse out from the disc under the glass so the name is in the light
-  // when the sheet comes down. Under reduced motion nothing travels.
+  // letter because you tried to look past it. A press that did not opens the
+  // letter (screens/Letter.jsx) and sends the pulse out from the disc under
+  // the glass, so the name is in the light when the sheet comes down. The
+  // card used to open OUT of the disc, the disc's own circle handed across
+  // and the paper's corner warped from a circle to a card while it flew;
+  // that was a border radius and a transform animating on a card with a
+  // blurred sheet under it, and on a phone it dropped frames every time. The
+  // sheet opens the plain way now. Under reduced motion nothing travels.
   const open = useCallback((handle, e) => {
     const m = motion.current
     if (m.moved > SLOP) return
     const btn = e && e.currentTarget ? e.currentTarget : null
-    const disc = btn ? btn.querySelector('.wl-cell-disc') : null
     const slot = btn ? m.slots[Number(btn.dataset.slot)] : null
     if (btn) cycleHold(Number(btn.dataset.slot))
-    if (disc) takeOff(handle, disc.getBoundingClientRect())
     if (!m.reduce) tapAt(slot)
     if (onOpen) onOpen(handle)
   }, [onOpen, tapAt, cycleHold])
@@ -1890,38 +1880,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
   }, [names, lay, worldX, tapCell, nameAt, uncycle])
   useImperativeHandle(ref, () => ({ pulse }), [pulse])
 
-  // ── where a name's disc is standing ──
-  // For the letter on its way out (morph.js `locate`): the disc's rectangle
-  // on the glass, if that name is drawn and inside the glass by its own
-  // width, so a card never closes into a disc that is dissolving at the rim
-  // or standing under the bar. Left in morph.js while the field is mounted,
-  // taken back when it is not.
-  useEffect(() => {
-    setLocator((handle) => {
-      const m = motion.current
-      const h = String(handle || '')
-      if (!h || m.veiled || !stage.current) return null
-      const { w, h: hh } = size.current
-      const sr = stage.current.getBoundingClientRect()
-      for (const slot of m.slots) {
-        if (!slot.shown || !slot.disc) continue
-        // through `nameAt` for the reason `pulse` does it: on the frame a new
-        // reading of the index lands, every slot still holds the row number
-        // it had under the reading before
-        const t = names[nameAt(slot.I, slot.J)]
-        if (!t || t.handle !== h) continue
-        const r = slot.disc.getBoundingClientRect()
-        if (!r.width) return null
-        const cx = r.left + r.width / 2 - sr.left
-        const cy = r.top + r.height / 2 - sr.top
-        if (cx < r.width || cx > w - r.width || cy < r.height || cy > hh - r.height) return null
-        return { x: r.left, y: r.top, w: r.width, h: r.height }
-      }
-      return null
-    })
-    return () => setLocator(null)
-  }, [names, nameAt])
-
   // Nothing to draw: the line the caller gives, which is empty while the
   // index is still loading or did not load, since either of those said so
   // already in the ear and neither is an empty wall.
@@ -1967,10 +1925,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
             handle={t ? t.handle : ''}
             count={t ? t.count : 0}
             d={t ? Math.round(S * fracOf(a.k)) : 0}
-            /* nobody is being read while the masthead is over the field:
-               the ring and the halo are the mark of the one person the wall
-               is naming, and under the veil the wall is naming nobody */
-            focus={!!t && !veiled && a.key === focusKey}
             mine={!!t && wrote.has(t.handle)}
             fresh={!!t && !!fresh && fresh.has(t.handle)}
             delay={opening && t ? a.delay : 0}
@@ -1983,12 +1937,6 @@ export default function Hive({ tiles, reduce = false, veiled = false, paused = f
           />
         )
       })}
-      </div>
-      {/* ── the one name on the field ──
-          Not sixty plates fading past each other under a moving pointer: one
-          element, moved, carrying whoever the lens is reading. */}
-      <div className="wl-hive-say" ref={say} aria-hidden="true">
-        <span className={`wl-hive-say-h${reading.named ? ' is-name' : ''}`}>{reading.text}</span>
       </div>
     </div>
   )

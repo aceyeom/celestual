@@ -364,32 +364,16 @@ export function TopBar({ go, at = 'wall', acts = true }) {
       />
       {acts && (
       <nav className="wl-top-acts" aria-label="the wall">
-        {/* ── the glass is gone from the bar ──
-            The search stood here as a 40px ring with a glass in it, the
-            hardest corner of a phone to reach, and read as settings. It is
-            the wall's own question now, a field under the ear on the wall
-            itself (screens/Wall.jsx `Seek`), which is where the one in
-            twenty who came looking for a name actually finds it. The bar
-            keeps the act and the person. */}
-        {/* ── the composer, as a word ──
-            The one act on the wall, and it stands in the bar between the glass
-            and the person: a small chalk capsule carrying the nib and the word
-            "write", with the running light inside it, so it is the primary on
-            the screen the way the wide pill at the foot used to be. It was a
-            bare nib among two other glyphs, and a wide capsule reading "write
-            anonymously" docked at the bottom edge over the field. The capsule
-            was standing on the faces it was about, and the nib in the bar was
-            a glyph nobody read as the door. One control now, where the eye
-            already goes for the controls, and the field keeps its bottom edge. */}
-        <Pill
-          tone="light" lit className={`wl-top-write${at === 'write' ? ' is-on' : ''}`}
-          onClick={() => toWrite(go)} icon={<Icon name="write" size={15} />}
-          aria-label="write a letter" title="write a letter"
-          aria-current={at === 'write' ? 'page' : undefined}
-        >
-          write
-        </Pill>
-        {/* The fourth target, and the only one that changes what it draws. A
+        {/* ── the bar carries the brand and the person, and nothing else ──
+            The glass stood here once as a 40px ring, and the composer stood
+            here as a chalk capsule beside the person. With the ear and the
+            search plate stacked under it, the top of the wall was three rows
+            of chrome in three vocabularies, and two similar capsules a hundred
+            pixels apart. The search is the wall's own question and it stands
+            alone under the bar now (screens/Wall.jsx `Seek`), and the act is
+            at the foot, where a thumb is (`WriteAct`). The bar keeps the way
+            home and the person. */}
+        {/* The one target here, and the only one that changes what it draws. A
             keyhole while the letters are shut, and once they are open, the
             constellation of the address that opened them — the same figure the
             wall draws beside a handle, so a person's own mark is the same
@@ -412,6 +396,26 @@ export function TopBar({ go, at = 'wall', acts = true }) {
       </nav>
       )}
     </header>
+  )
+}
+
+// ── the act, at the foot ────────────────────────────────────────────────────
+// The one primary on the wall: a chalk capsule carrying the nib and the
+// words, with the running light inside it, standing in the middle of the
+// bottom edge where a thumb already is. It stood in the bar as a small
+// capsule beside the person, which put the act and the question (the search
+// plate under the bar) within a hundred pixels of each other as two capsules
+// of one shape, and the top of the wall read as crammed. Down here it is the
+// one bright thing at the foot, and the plate is the one thing at the head.
+export function WriteAct({ go, className = '' }) {
+  return (
+    <Pill
+      tone="light" lit className={`wl-write-act ${className}`}
+      onClick={() => toWrite(go)} icon={<Icon name="write" size={15} />}
+      aria-label="write a letter" title="write a letter"
+    >
+      write a letter
+    </Pill>
   )
 }
 
@@ -689,7 +693,7 @@ const SheetCtx = createContext(null)
 export function useSheet() { return useContext(SheetCtx) }
 
 const SHEET_OUT_MS = 320
-export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '', ref = null }) {
+export function Sheet({ children, onClose, onClosing = null, tall = false, labelledBy, className = '', aside = null, ref = null }) {
   const [drag, setDrag] = useState(0)
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
@@ -780,6 +784,10 @@ export function Sheet({ children, onClose, onClosing = null, tall = false, label
         ><span /></div>
         {children}
       </section>
+      {/* whatever stands on the glass beside the sheet rather than in it:
+          the letter's close mark, which has to sit in the corner of the
+          window and not in the corner of a card that is moving */}
+      {aside}
     </div>
     </SheetCtx.Provider>
   )

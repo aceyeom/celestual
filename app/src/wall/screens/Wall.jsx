@@ -124,9 +124,9 @@
 // banner, and a door that never reopens is a door somebody missed once.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Display, TopBar, Icon, SiteFoot, Face, Light, Pill, Roll, HandleField } from '../parts.jsx'
+import { Display, TopBar, Icon, SiteFoot, Face, Light, Roll, HandleField, WriteAct, Close } from '../parts.jsx'
 import { Sparkle } from '../art.jsx'
-import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, learnName, warmRest } from '../data.js'
+import { wall, liveCount, wallError, wallLoaded, loadWall, loadHandle, mine, loadMine, labelFor, warmRest } from '../data.js'
 import { getState, patch } from '../store.js'
 import { isMember } from '../auth.js'
 import { whyDown } from '../moderate.js'
@@ -240,6 +240,14 @@ function tabDue(state) {
 // now it is seen to be kept. While the index is still loading there is no
 // count, because a wall that has not loaded has no number; when it did not
 // load the line says so, in the count's place.
+//
+// ── and it is a caption now, over the question ──
+// It stood as a row of its own between the bar and the search, in the
+// display face at the size of a second header, and with the bar's capsules
+// above it and the plate below it the top of the wall was three rows of
+// chrome in three vocabularies. It is one small line now, the campus and
+// the count, standing as the label over the plate where the shade is
+// deepest, so the masthead is one object: the fact, and the question.
 function Ear({ letters }) {
   const err = wallError()
   const loaded = wallLoaded()
@@ -265,6 +273,7 @@ function Ear({ letters }) {
   return (
     <div className="wl-ear" aria-live="polite">
       <span className="wl-ear-name">berkeley</span>
+      {meta ? <span className="wl-ear-dot" aria-hidden="true">&middot;</span> : null}
       {meta}
     </div>
   )
@@ -381,21 +390,21 @@ function Tab({ faces, onGo, onHide, going }) {
 // a matter between the reader and a desk, and telling the writer would be
 // pointing them at the person who is likeliest to have done it.
 //
-// It stands until it is answered, once, and then it is remembered as read.
-function Down({ letter: l, onChange, onLeave }) {
-  const again = l.downBy !== 'shut'
+// It stands until it is put away, once, and then it is remembered as read.
+// One control on it, the close mark in its corner: it used to carry a pill
+// that reopened the composer on the words and a quiet line beside it, and
+// the quiet line changed the store without telling React, so the card
+// stayed where it was under a finger that had just pressed "leave it".
+function Down({ letter: l, onLeave }) {
   return (
     <div className="wl-down" role="status">
+      <Close onClick={onLeave} label="put this away" className="wl-down-x" />
       <div className="wl-down-in">
         <Face handle={l.to} size={36} className="wl-down-face" />
         <div className="wl-down-text">
           <p className="wl-down-h">Your letter to <span className="wl-h">{labelFor(l.to)}</span> was taken down.</p>
           <p className="wl-down-why">{whyDown(l.downBy)}</p>
         </div>
-      </div>
-      <div className="wl-down-acts">
-        {again ? <Pill tone="light" onClick={onChange}>change it</Pill> : null}
-        <button type="button" className="wl-quiet" onClick={onLeave}>{again ? 'leave it' : 'ok'}</button>
       </div>
     </div>
   )
@@ -549,21 +558,17 @@ export default function Wall({ go, reduce, rev, under = false }) {
   // The first that has come down and has not been answered is the notice.
   const member = isMember()
   useEffect(() => { if (member) loadMine() }, [member, rev])
+  // The store is not something React watches, so putting a notice away has
+  // to be turned into a render here or the card stands until the next route
+  // change. That was the bug in "leave it".
+  const [, noticedRev] = useState(0)
   const noticed = state.noticed || {}
   const down = (mine() || []).find((l) =>
     (l.downBy === 'screen' || l.downBy === 'desk' || l.downBy === 'shut') && !noticed[l.id]) || null
   const answer = useCallback((l) => {
     patch({ noticed: { ...(getState().noticed || {}), [l.id]: true } })
+    noticedRev((n) => n + 1)
   }, [])
-  // The words back, with the kind they were addressed by and the paper they
-  // were on: a letter to a name reopens on the name, not on the key read as
-  // a handle, and a letter on the nokia screen reopens on it.
-  const changeDown = useCallback((l) => {
-    answer(l)
-    if (l.kind === 'name' && l.name) learnName(l.to, l.name)
-    patch({ draft: { to: l.kind === 'name' ? '' : l.to, body: l.body, kind: l.kind, name: l.kind === 'name' ? l.name : '', look: l.look || null } })
-    go('write', l.to)
-  }, [answer, go])
 
   // The name, not a letter id. A tile is a person written to, the letter
   // screen resolves a handle to the letters under it, and going by name means
@@ -626,11 +631,15 @@ export default function Wall({ go, reduce, rev, under = false }) {
   const veilStyle = tap
     ? { '--rx': `${tap.x.toFixed(1)}px`, '--ry': `${tap.y.toFixed(1)}px`, '--rmax': `${tap.r.toFixed(1)}px` }
     : undefined
-  const docked = lifted && (!!down || tab)
+  // The dock is up whenever the wall is: it carries the act. The notice or
+  // the tab stand above the act when there is one, and only then does the
+  // dock pour the void under itself (`has-tab`).
+  const docked = lifted
+  const carded = lifted && (!!down || tab)
 
   return (
     <>
-    <div className={`wl-page wl-wallpage is-${veil}${playing ? ' is-opening' : ''}${docked ? ' has-tab' : ''}${arriving ? ' is-arriving' : ''}`}>
+    <div className={`wl-page wl-wallpage is-${veil}${playing ? ' is-opening' : ''}${carded ? ' has-tab' : ''}${arriving ? ' is-arriving' : ''}`}>
       {/* ── the stage ──
           The field, and it is the whole screen: corner to corner, behind the
           bar, behind the ear, out past the column's own gutters to the edges
@@ -664,16 +673,20 @@ export default function Wall({ go, reduce, rev, under = false }) {
       <TopBar go={go} at="wall" acts={lifted} />
 
       {/* ── the room ──
-          The ear, and while it is up the veil. Both stand over the field
+          The masthead, and while it is up the veil. Both stand over the field
           rather than beside it: the veil's scrim runs from the bar down, and
-          the ear stands above the scrim and does not move when it goes. */}
+          the masthead stands where the veil's title stood over the bar. */}
       <div className="wl-room">
-        <Ear letters={letters} />
-
-        {/* the wall's own question, under the ear, once the veil has gone.
-            It arrives with the bar's controls, a beat after the circle has
+        {/* the campus and the count as one small line under the bar, and
+            the wall's own question under it, once the veil has gone. They
+            arrive with the bar's controls, a beat after the circle has
             cleared the glass (wall.css `.is-arriving .wl-seek`). */}
-        {lifted && <Seek go={go} />}
+        {lifted && (
+          <div className="wl-masthead">
+            <Ear letters={letters} />
+            <Seek go={go} />
+          </div>
+        )}
 
         {!lifted && (
           <div
@@ -720,19 +733,21 @@ export default function Wall({ go, reduce, rev, under = false }) {
       </div>
 
       {/* ── the dock ──
-          What stands at the foot of the wall is about the person looking, and
-          it is one thing at a time: the notice when a letter of theirs has
-          come down, else the tab. Nothing at all under the veil, and nothing
-          at all for a person who has not put anything up: the field runs to
-          the bottom edge and the shade is the whole of the foot. */}
+          The act, in the middle of the bottom edge, once the veil has gone.
+          Above it, when there is one, the one thing that is about the person
+          looking: the notice when a letter of theirs has come down, else the
+          tab. Nothing at all under the veil. */}
       {docked && (
       <div className="wl-dock">
         <div className="wl-dock-veil" aria-hidden="true" />
         {down ? (
-          <Down letter={down} onChange={() => changeDown(down)} onLeave={() => answer(down)} />
-        ) : (
+          <Down letter={down} onLeave={() => answer(down)} />
+        ) : tab ? (
           <Tab faces={wroteTo.slice(0, 3)} onGo={() => go('join')} onHide={hideTab} going={going} />
-        )}
+        ) : null}
+        <div className="wl-dock-act">
+          <WriteAct go={go} />
+        </div>
       </div>
       )}
     </div>

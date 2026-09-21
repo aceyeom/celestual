@@ -159,7 +159,7 @@ const KINDS = [
   { value: 'name', label: 'anything else', glyph: <Sparkle size={11} /> },
 ]
 
-export default function Write({ to: prefill, go, back, reduce = false }) {
+export default function Write({ to: prefill, go, back, up = back, reduce = false }) {
   const draft = getState().draft || {}
   // A prefill that is a name key (`~sofia`, from "write to Sofia" on a
   // letter) opens the composer on the name, in name mode.
@@ -178,6 +178,13 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   const first = useRef(true)
   // the sheet's own way out, taken by this screen once the letter is up
   const sheet = useRef(null)
+  // ── and where the way out lands ──
+  // Closed by the mark, the scrim or the key, the composer goes back to
+  // whatever it was raised over: the wall, or the letter whose pen opened
+  // it (index.jsx `up`). Once the letter is up it goes to the wall, which
+  // receives the name. `by` is how the sheet said it was leaving.
+  const by = useRef('')
+  const leave = () => (by.current === 'sent' ? back() : up())
 
   const h = normHandle(to)
   // the name as it will stand on the wall, or '' while it is not one yet
@@ -348,9 +355,9 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   // they cannot use the thing they are looking at.
   if (!isMember()) {
     return (
-      <Sheet onClose={back} labelledBy="wl-write-h">
+      <Sheet onClose={up} labelledBy="wl-write-h">
         <div className="wl-sheet-in wl-write">
-          <SheetHead onClose={back} label="back to the wall" />
+          <SheetHead onClose={up} label="back" />
           <Display size="s" as="h2" id="wl-write-h">Berkeley only.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'write', id: prefill || '' }); go('gate') }}>
@@ -362,9 +369,9 @@ export default function Write({ to: prefill, go, back, reduce = false }) {
   }
 
   return (
-    <Sheet ref={sheet} onClose={back} tall labelledBy="wl-write-h">
+    <Sheet ref={sheet} onClose={leave} onClosing={(b) => { by.current = b }} tall labelledBy="wl-write-h">
       <div className="wl-sheet-in wl-write">
-        <SheetHead onClose={back} label="back to the wall"
+        <SheetHead onClose={leave} label="back"
           lead={<Dots n={2} at={step} onGo={(i) => (i === 0 ? toWho() : setStep(i))} />} />
 
         <Display size="s" as="h2" id="wl-write-h" className="wl-write-h">

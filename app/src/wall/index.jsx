@@ -277,6 +277,18 @@ export default function WallApp() {
 
   const setField = useCallback((m) => setOverride(m), [])
   const back = useCallback(() => go('wall'), [go])
+  // ── one step up ──
+  // A sheet raised over another sheet closes onto the one under it, not
+  // onto the wall: the composer opened from the pen on a letter comes back
+  // to that letter. Each sheet entry carries its depth, so one step back in
+  // the history is the sheet underneath, which onPop then renders; a sheet
+  // at depth one, or one arrived at by deep link, closes onto the wall.
+  const up = useCallback(() => {
+    if (leaving.current) return
+    const depth = Number(window.history.state?.wallDepth) || 0
+    if (depth > 1) { leaving.current = true; setOverride(null); window.history.go(-1); return }
+    go('wall')
+  }, [go])
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
@@ -288,7 +300,7 @@ export default function WallApp() {
   const onSheet = SHEETS.has(route.name)
   // `under` is whether a sheet is up over the wall: the hive stops moving and
   // stops writing to the DOM while it is dimmed and blurred behind one.
-  const shared = { go, back, setField, reduce, rev: revision(), under: onSheet }
+  const shared = { go, back, up, setField, reduce, rev: revision(), under: onSheet }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />

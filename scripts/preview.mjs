@@ -158,6 +158,9 @@ let SPENT = false
 // Whether a letter this browser put up has since come down (0050 wall_mine):
 // the notice at the foot of the wall, in the tab's place.
 let DOWN = false
+// Whether this browser has put up more letters than the account sheet shows
+// at once, so the list's fade and its "see more" are drawn.
+let MANY = false
 
 // A face, for the two handles that have one in the fixture. A flat swatch
 // rather than a photograph, because a fixture face only has to prove the disc
@@ -583,7 +586,13 @@ const RPC = {
   // for it: the notice at the foot of the wall.
   wall_mine: () => ({
     ok: true,
-    letters: DOWN ? [{
+    letters: MANY ? ['pilar.echevarria', 'jules.k', 'ren.tanaka', '~sofia', 'm.okonkwo', 'aya.nakamura'].map((h, i) => ({
+      id: `1111${i}111-2222-4333-8444-55556666000${i}`, handle: h, kind: h.startsWith('~') ? 'name' : 'handle',
+      name: h === '~sofia' ? 'Sofia' : null, look: null,
+      body: LINES[i % LINES.length], status: i === 4 ? 'removed' : 'live', down_by: i === 4 ? 'report' : null,
+      hearts: [3, 0, 1, 7, 0, 2][i], reasons: [], flagged: false,
+      at: new Date(now - (i * 2 + 1) * DAY).toISOString(),
+    })) : DOWN ? [{
       id: '11110111-2222-4333-8444-555566660000', handle: 'ren.tanaka',
       body: 'you were the one singing on the 51B that night. i wanted the song to be about me.',
       status: 'rejected', down_by: 'screen', reasons: ['threat'], flagged: false,
@@ -822,6 +831,11 @@ const ROUTES = [
     acts: [['click', '.wl-mast-go'], ['wait', 3000], ['click', '.wl-top-write']], settle: 1200 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
+  // the pen on the card opens the composer on the name, and the composer's
+  // mark comes back to the letter it was opened from (index.jsx `up`)
+  { label: 'letter-pen',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-pen-to', settle: 1400 },
+  { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-pen-to'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   // 0055: the first question with its two answers on one rail, the handle
   // on; then the other answer on, with a name that is not a first name in it
@@ -854,6 +868,7 @@ const ROUTES = [
   { label: 'gate',          path: '/berkeley/gate', open: false },
   // the same address, through the door: the profile card
   { label: 'gate-in',       path: '/berkeley/gate' },
+  { label: 'gate-in-more',  path: '/berkeley/gate', many: true },
   { label: 'report',        path: '/berkeley/report/11110111-2222-4333-8444-555566660000' },
   { label: 'remove',        path: '/berkeley/remove/ace03d' },
   { label: 'remove-code',   path: '/berkeley/remove/ace03d', verified: false, acts: [['click', '.wl-foot .wl-pill']] },
@@ -919,6 +934,7 @@ for (const r of list) {
   NOTE = r.note || ''
   SPENT = r.spent === true
   DOWN = r.down === true
+  MANY = r.many === true
   for (const v of VIEWPORTS) {
     // a letter sent on the last pass moved the index; it is put back
     INDEX.forEach((row, i) => { row.letters = COUNT_OF.get(row.target_handle) || 1; row.last_at = new Date(now - (i * 9 + 2) * 3600000).toISOString() })

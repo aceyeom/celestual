@@ -35,8 +35,8 @@
 // the first one happens here.
 
 import { useEffect, useState } from 'react'
-import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Face, Icon, Allowance } from '../parts.jsx'
-import { labelFor, allowance, loadQuota } from '../data.js'
+import { Sheet, SheetHead, SheetFoot, Display, Label, Pill, Face, Icon, Allowance, Heart } from '../parts.jsx'
+import { labelFor, allowance, loadQuota, mine, loadMine, sinceline } from '../data.js'
 import { getState, takeAfterGate } from '../store.js'
 import { DOMAIN, anyEmail, isReader, member, memberLabel, normEmail, signOut, validCode, validEmail } from '../auth.js'
 import { sendCampusCode, checkCampusCode } from '../handoff.js'
@@ -86,6 +86,66 @@ function CodeField({ value, onChange, onSubmit }) {
       />
       <span className="wl-field-line" aria-hidden="true" />
     </div>
+  )
+}
+
+// ── the letters this device put up ──────────────────────────────────────────
+// A list, one row per letter: the face and the name it was written to, how
+// long ago, and how many hearted it, and the row opens the letter. It used
+// to be a row of chips, one per name, which was a record that opened
+// nothing and said nothing about how any of it was received. Four rows,
+// and past four the list fades under a line that opens the rest.
+//
+// The rows are the server's (wall_mine): this device's letters of the last
+// thirty days, with the heart count on each (0056). When the server has not
+// answered, or answers nothing, the names this browser remembers writing to
+// stand in, without counts, since those are the only fact left.
+const SHOWN = 4
+
+function Wrote({ go }) {
+  const [more, setMore] = useState(false)
+  useEffect(() => { loadMine() }, [])
+  const own = mine()
+  const rows = own && own.length
+    ? own.map((l) => ({ id: l.id, to: l.to, at: l.at, hearts: l.hearts || 0, down: !!l.downBy, live: !l.downBy }))
+    : (getState().wroteTo || []).map((h) => ({ id: '', to: h, at: 0, hearts: null, down: false, live: true }))
+  if (!rows.length) return <p className="wl-profile-none">nobody yet</p>
+  const cut = !more && rows.length > SHOWN
+  const shown = cut ? rows.slice(0, SHOWN) : rows
+  const open = (r) => {
+    if (!r.live) return
+    go('letter', r.id || r.to)
+  }
+  return (
+    <>
+      <div className={`wl-wrote${cut ? ' is-cut' : ''}`}>
+        {shown.map((r, i) => (
+          <button
+            type="button" key={r.id || `${r.to}-${i}`}
+            className={`wl-wrote-row${r.live ? '' : ' is-down'}`}
+            onClick={() => open(r)} disabled={!r.live}
+            aria-label={`your letter to ${labelFor(r.to)}${r.hearts ? `, ${r.hearts === 1 ? 'one heart' : `${r.hearts} hearts`}` : ''}${r.down ? ', taken down' : ''}`}
+          >
+            <Face handle={r.to} size={30} />
+            <span className="wl-wrote-who">
+              <span className="wl-wrote-name">{labelFor(r.to)}</span>
+              <span className="wl-wrote-meta">{r.down ? 'taken down' : r.at ? sinceline(r.at).lead : 'on the wall'}</span>
+            </span>
+            {r.hearts !== null && r.live ? (
+              <span className="wl-wrote-n" aria-hidden="true">
+                <Heart size={13} on={r.hearts > 0} />
+                <span>{r.hearts || ''}</span>
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+      {cut ? (
+        <button type="button" className="wl-quiet wl-wrote-more" onClick={() => setMore(true)}>
+          see more
+        </button>
+      ) : null}
+    </>
   )
 }
 
@@ -201,7 +261,6 @@ export default function Gate({ go, back }) {
   // door and the arrow out of it, rather than as a grey sentence: it is a
   // real act with a real consequence and it should look like one, quietly.
   if (who) {
-    const wrote = getState().wroteTo || []
     const spent = !!left && left.left <= 0
     const out = () => { signOut(); setWho(null); setMode('signin'); setStep(0) }
     return (
@@ -217,26 +276,15 @@ export default function Gate({ go, back }) {
               </div>
             </div>
 
-            {/* ── who this device has written to ──
+            {/* ── what this device has written ──
                 The letters are anonymous and stay anonymous: nothing on a
-                letter points back here, and this list is read out of this
-                browser rather than out of the wall. It is the one thing an
-                account can honestly show somebody without breaking the thing
-                the account is for. */}
+                letter points back here. The server answers a writer about
+                their OWN letters and nobody else's (wall_mine, 0050), and
+                that is the one thing an account can honestly show somebody
+                without breaking the thing the account is for. */}
             <div className="wl-profile-sect">
               <Label tone="dim">written to</Label>
-              {wrote.length ? (
-                <div className="wl-profile-wrote">
-                  {wrote.map((h) => (
-                    <span className="wl-profile-chip" key={h}>
-                      <Face handle={h} size={22} />
-                      <span>{labelFor(h)}</span>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="wl-profile-none">nobody yet</p>
-              )}
+              <Wrote go={go} />
             </div>
 
             {spent ? (
