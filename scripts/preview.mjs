@@ -808,18 +808,18 @@ const ROUTES = [
   { label: 'home',            path: '/', settle: 6000 },
   { label: 'home-lifted',     path: '/', press: '.wl-mast-go', settle: 5200 },
   { label: 'home-gate',       path: '/gate', anon: true },
-  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:first-child' },
-  { label: 'home-gate-email', path: '/gate', anon: true, press: '.wl-gate-ways .wl-act:last-child' },
+  { label: 'home-gate-ig',    path: '/gate', anon: true, press: '[data-way="instagram"]' },
+  { label: 'home-gate-email', path: '/gate', anon: true, press: '[data-way="email"]' },
   // The code step, on both walls: the address typed, the code asked for, and
   // the box it comes back into. The one screen in the door nobody had ever
   // looked at, because reaching it needs a mail to have gone out.
   { label: 'home-gate-code', path: '/gate', anon: true, acts: [
-    ['click', '.wl-gate-ways .wl-act:last-child'],
+    ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-lq'],
   ] },
   { label: 'home-gate-code-typed', path: '/gate', anon: true, acts: [
-    ['click', '.wl-gate-ways .wl-act:last-child'],
+    ['click', '[data-way="email"]'],
     ['fill', '.wl-addr-in', 'you@anywhere.com'],
     ['click', '.wl-door-ways .wl-lq'],
     ['fill', '.wl-codebox-in', '481920'],
@@ -827,7 +827,7 @@ const ROUTES = [
   // the DM code, on the door: the one screen whose success depends on what
   // somebody does after they have left the product
   { label: 'home-gate-ig-code', path: '/gate', anon: true, acts: [
-    ['click', '.wl-gate-ways .wl-act:first-child'],
+    ['click', '[data-way="instagram"]'],
     ['fill', '.wl-field input', 'ace03d'],
     ['click', '.wl-door-ways .wl-lq'],
   ] },

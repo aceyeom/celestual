@@ -606,6 +606,8 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Sparkle` | the four point star. `twinkle` and `delay` |
 | `Verified` | Instagram's badge: twelve lobes on one radius, twelve valleys on another, a quadratic between each pair, and a check cut through in the ground (`ink`). It is the one glyph in the build that is another service's mark, and it is drawn here for the same reason everything else is — and because a claim about somebody's Instagram account has to read as that service's claim. The sparkle stood here and was this product's own mark doing another product's job. Struck in `--accent`, never in Instagram's blue: nothing outside the tokens names a hue, and the shape is what says whose badge it is |
 | `Ecliptic` | the mark. `size`, `sweep` |
+| `Provider`, `Google` | Instagram's mark and Google's, on the buttons that go to them, and both are the service's own mark rather than a drawing that resembles it. `Verified` is the precedent: a claim about another service reads as that service's claim, and a person scanning three sign in buttons is looking for the mark they know rather than reading the words. `Provider` was a hairline camera on the icon set's grid, which beside a four-colour G redrawn as a single arc read as a product that could not get the logos right. Still not pasted assets: both are paths in `art.jsx`, taking `currentColor`, so they wear the build's chalk and never a brand's blue or a four-colour fill |
+| `Envelope` | the third glyph on the same door, and solid for that reason alone. An address is not a brand and there is no logo for one, but an outline between two filled marks is the odd one out. The flap is cut through the body with `evenodd` rather than drawn over it in the button's colour, so it carries no ground |
 | `Face` | the disc beside a handle. The picture, or a monogram. See 3.4. With a look (`has-look`): the look's ground and its texture, the name written whole in the look's face when it fits the disc, and on a picture a rim in the look's paper (`::after`). A name's disc writes the name whole on any paper |
 | `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
 | `Halftone` | the dotted sphere. Off the wall's masthead since the Campanile; kept |
@@ -630,7 +632,8 @@ at the foot. `parts.jsx` `DoorHead`, `Or`, `CodeBox`, `Resend` and `DoorFoot`;
 | Component | Class | Notes |
 | --- | --- | --- |
 | Door head | `.wl-door-head` | the mark at 38px, the title in the display face at `is-s`, and one sentence in the reading face under it. The mark is `Ecliptic`, flat: 3.5 rations the poured metal to the product's own events and a sign in is not one |
-| The ways | `.wl-door-ways` | the primary capsule, the `or`, and the pane of rows under it. Held at a 22rem measure, so a door does not stretch into a row of wide grey bars on a spread |
+| The ways | `.wl-door-ways` | one capsule per way in, stacked, at a 22rem measure so a door does not stretch into a row of wide grey bars on a spread. The default is the metal capsule, the rest are ghosts at the door's scale (48px, a little fill under the hairline). NOT a pane of rows: see below |
+| The reason | `.wl-door-why` | one line under the default, in the util face at 12.5px in ash, saying why it is the default. Under the control it is about and never inside it |
 | Or | `.wl-or` | a hairline with one word in it, in TWO segments either side of the word rather than one line with the word masking a hole in it — the sheet is glass with the room blurred through it, and a word carrying an opaque swatch to cover the rule reads as a patch stuck on the glass |
 | Code box | `.wl-codebox` | `--void-2` behind a hairline, the field's 14px corner, and the digits in the identifier face at 38px tracked `0.14em`, centred, tabular. Six middle dots for the empty state. Focus moves the EDGE and not the fill, for the reason below |
 | Resend | `.wl-resend` | one line under the box, counting down in the identifier face before it becomes a control. It waits because a resend offered at once is a button people press three times in eight seconds, which mails three codes, invalidates two and walks somebody into the rate limit |
@@ -647,6 +650,26 @@ axis changes at the door and changes back behind it, and the change is itself
 the signal that this sheet is not part of the wall. The account screen on the
 same sheet (`.wl-profile`) does NOT take it: that screen is a record of what
 somebody wrote, it is reading matter, and it stays left aligned.
+
+**Every way in is the same shape, and only the material differs.** The ways
+were a capsule with a PANE of rows under it — a glyph in a circle, a label, a
+line of reason and a chevron, on a tinted plate. That put two component
+languages on one screen and it made the rows unreadable *as choices*: somebody
+weighing three doors was reading one button and two list items, and the list
+items lost every time for reasons that had nothing to do with the doors. Three
+capsules now, one height, one shape, and the one difference between them is the
+one that matters — the default is the metal, the alternatives are hairline. A
+reason that used to sit inside a row sits under the capsule it is about, because
+a capsule carrying a sentence is a row again.
+
+**Which way is the default is the surface's answer, not a ranking.** On the wall
+at the root it is **instagram**, because it is the only proof that lets the
+product tell somebody a ping of theirs is mutual — that is the one thing about
+those three doors that is not interchangeable, and google and the mailed code
+stand under the rule as what they are. On the wall at Berkeley it is the
+**campus address**, because that address is the only thing that opens writing
+there; the campus's own google is the same proof by a shorter road and stands
+under the rule as `sign in with google`.
 
 **The primary stands in the door, not in the sheet's foot.** Everywhere else
 the primary is docked (8.1, and `SheetFoot`: a control that moves between

@@ -4184,10 +4184,52 @@ a.wl-lq { text-decoration: none; }
   font-size: 15.5px; line-height: 1.5; color: var(--ash);
   text-wrap: pretty;
 }
-/* what stands under the head: the ways through, at the door's own measure */
-.wl-door-ways { width: 100%; display: flex; flex-direction: column; gap: 12px; padding-top: 26px; }
-.wl-door-ways .wl-acts-pane { text-align: left; }
+/* ── what stands under the head: the ways through ──────────────────────────
+   One shape per way in, at the door's own measure. The ways used to be a
+   capsule with a PANE of rows under it — a glyph in a circle, a label, a line
+   of reason and a chevron, on a tinted plate — which put two component
+   languages on one screen and made the rows unreadable AS CHOICES: somebody
+   weighing three doors was reading one button and two list items. Three
+   capsules now, one height, one shape, and the only difference between them is
+   the one that matters: the default is the metal (`.wl-lq`), the other ways are
+   hairline. */
+.wl-door-ways { width: 100%; display: flex; flex-direction: column; gap: 10px; padding-top: 26px; }
 .wl-door-ways > .wl-lq { align-self: stretch; }
+/* the ghost capsule, at the door's scale. The role is unchanged (8.1: two pill
+   roles and no third) — this is a contextual size, the way the row's ghost is
+   32px and this one has to stand beside a 50px primary and read as its
+   alternative rather than as a footnote under it. A little fill under the
+   hairline, because a bare outline on the void at this width is a rectangle of
+   nothing with words in it. */
+.wl-door-ways > .wl-pill.is-ghost {
+  align-self: stretch; min-height: 48px; gap: 11px;
+  border-radius: var(--r-pill);
+  background: rgba(244, 241, 234, 0.045);
+  box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  border-color: transparent;
+  font-size: 14px; color: var(--chalk);
+  transition: background 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-door-ways > .wl-pill.is-ghost:not(:disabled):hover {
+    background: rgba(244, 241, 234, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+}
+.wl-door-ways > .wl-pill.is-ghost:not(:disabled):active { background: rgba(244, 241, 234, 0.11); transition-duration: 100ms; }
+.wl-door-ways > .wl-pill.is-ghost:disabled { opacity: 0.4; }
+/* the brand marks ride at the type's own strength rather than the icon set's
+   dim (art.jsx: they are solid, and a solid glyph at `--ash` reads as a hole) */
+.wl-door-ways > .wl-pill .wl-icon { color: currentColor; flex: 0 0 auto; }
+/* the line under the default, saying why it is the default. Under the control
+   it is about, not inside it: a capsule that carries a sentence is a row, and
+   the row is what this replaced. */
+.wl-door-why {
+  margin: -2px 0 2px; max-width: 30ch; align-self: center;
+  font-family: var(--f-util); font-size: 12.5px; line-height: 1.45;
+  letter-spacing: 0.004em; color: var(--ash);
+  text-wrap: pretty;
+}
 
 /* the hairline with one word in it, between the tap and the two that are not.
    TWO segments either side of the word rather than one line with the word
@@ -4306,15 +4348,6 @@ a.wl-lq { text-decoration: none; }
 /* a full-width capsule on the door may not spill its label off the axis */
 .wl-door-ways > .wl-pill.is-wide { max-width: 100%; overflow: hidden; }
 .wl-door-ways > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* the other ways in, under the capsule: the same pane the flag opens on a
-   letter, its rows left aligned inside the centred column because a row is a
-   glyph, a label and a chevron and those belong on a rail */
-.wl-gate-ways { width: 100%; }
-.wl-gate-ways .wl-act:disabled { opacity: 0.4; cursor: default; }
-/* the campus's own google, under the address and its capsule, as the quieter
-   way: a full-width ghost capsule rather than a small centred one, so it
-   stands as an alternative to the primary above it and not as an aside */
-.wl-gate-google { gap: 8px; font-size: 13px; }
 /* where the code was sent, over the box it is typed into */
 .wl-door-sentto { padding-bottom: 2px; }
 .wl-door-sentto .wl-h { font-family: var(--f-id); color: var(--ash); text-transform: none; letter-spacing: -0.01em; }

@@ -41,7 +41,7 @@ import {
   Sheet, SheetHead, SheetFoot, Label, Pill, Face, Icon, Allowance, Heart,
   HandleField, DmCode, VerifyHead, DoorHead, DoorFoot, Or, CodeBox, Resend,
 } from '../parts.jsx'
-import { Ecliptic, Provider } from '../art.jsx'
+import { Ecliptic, Envelope, Google, Provider } from '../art.jsx'
 import { labelFor, allowance, loadQuota, mine, loadMine, sinceline, normHandle, validHandle } from '../data.js'
 import { getState, takeAfterGate, peekAfterGate, setAfterGate } from '../store.js'
 import {
@@ -87,31 +87,6 @@ function AddressField({ value, onChange, onSubmit, domain = '' }) {
       {whole ? null : <span className="wl-addr-fix" aria-hidden="true">@{domain}</span>}
       <span className="wl-field-line" aria-hidden="true" />
     </div>
-  )
-}
-
-// ── the two glyphs that are not the product's ───────────────────────────────
-// Drawn, like every ornament here (design/DESIGN.md rule 3), and in one
-// stroke: a G that is a ring with its bar, and an envelope. Neither is a
-// brand's own mark redrawn; both are the letter and the object.
-function GoogleGlyph({ size = 18 }) {
-  return (
-    <svg className="wl-icon" width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-      aria-hidden="true" focusable="false">
-      <path d="M20 12h-7" />
-      <path d="M20 12a8 8 0 1 1-2.6-5.9" />
-    </svg>
-  )
-}
-function MailGlyph({ size = 18 }) {
-  return (
-    <svg className="wl-icon" width={size} height={size} viewBox="0 0 24 24"
-      fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-      aria-hidden="true" focusable="false">
-      <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
-      <path d="M4.5 7.5l7.5 5.6 7.5-5.6" />
-    </svg>
   )
 }
 
@@ -539,19 +514,27 @@ export default function Gate({ go, back }) {
   // a control that moves between screens is a control somebody has to find
   // twice). A door is the exception and the exception is the point: the ways
   // in ARE the content here, there is nothing else on the sheet for them to be
-  // docked away from, and a "continue with google" capsule parked at the
-  // bottom edge with two feet of void between it and the two rows it is an
-  // alternative TO reads as a different question. So the acts stand together,
-  // in the order they are meant to be weighed, and the foot carries the one
-  // thing that is genuinely not a step: the terms.
+  // docked away from, and a default parked at the bottom edge with two feet of
+  // void between it and the capsules it is an alternative TO reads as a
+  // different question. So the ways stand together, in the order they are
+  // meant to be weighed, and the foot carries the one thing that is genuinely
+  // not a step: the terms.
   //
-  // ── google first ────────────────────────────────────────────────────────
-  // The row order changed with the layout, and it is a claim about cost, not
-  // about worth: google is one tap and nothing to type, so it is the capsule.
-  // Instagram still says what only instagram can do, on its own row, because
-  // it is the only proof that lets the product tell somebody a ping of theirs
-  // is mutual — that sentence moved off "recommended" and onto the reason
-  // itself, which is the part somebody can actually weigh.
+  // ── one shape for every way in ──────────────────────────────────────────
+  // The ways used to be a capsule with a PANE of rows under it: a glyph in a
+  // circle, a label, a line of reason and a chevron, on a tinted plate. Two
+  // component languages stacked on one screen, and the rows lost every
+  // comparison — a person weighing three doors was reading one button and two
+  // list items. They are three capsules now, one per door, the same height and
+  // the same shape, and the only difference between them is the one that
+  // matters: the default is the metal, the other two are hairline.
+  //
+  // ── instagram is the default on the wall at the root ────────────────────
+  // It is the only proof that lets the product tell somebody a ping of theirs
+  // is mutual, because that is where the ping lives, and it is the one thing
+  // about these three doors that is not interchangeable. Google and the
+  // mailed code stand under the rule as what they are: two ways in that cost
+  // less and buy less.
 
   // ── the wall at the root: the ways in ──
   if (!campusWall && !way) {
@@ -566,33 +549,29 @@ export default function Gate({ go, back }) {
               title={reads ? <>Sign in to write.</> : <>Sign in to read<br />and write.</>}
               say="your information will stay anonymous."
             />
-            <div className="wl-door-ways">
+            <div className="wl-door-ways" role="group" aria-label="how to sign in">
               <Pill
-                tone="light" wide icon={<GoogleGlyph size={17} />}
+                tone="light" wide icon={<Provider size={17} />} data-way="instagram"
+                onClick={() => setWay('instagram')} disabled={!igVerifyEnabled()}
+              >
+                continue with instagram
+              </Pill>
+              {/* the one line that says why this one is the default, under the
+                  control it is about rather than inside it */}
+              <p className="wl-door-why">it is how we can tell you when a ping is mutual.</p>
+              <Or />
+              <Pill
+                tone="ghost" wide icon={<Google size={16} />} data-way="google"
                 onClick={google} disabled={!canLogin || busy}
               >
                 {busy ? 'one moment' : 'continue with google'}
               </Pill>
-              <Or />
-              <div className="wl-acts wl-gate-ways" role="group" aria-label="the other ways in">
-                <div className="wl-acts-pane">
-                  <button type="button" className="wl-act" onClick={() => setWay('instagram')} disabled={!igVerifyEnabled()}>
-                    <span className="wl-act-glyph" aria-hidden="true"><Provider size={17} /></span>
-                    <span className="wl-act-text">
-                      <span className="wl-act-h">continue with instagram</span>
-                      <span className="wl-act-say">it is how we can tell you when a ping is mutual.</span>
-                    </span>
-                    <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                  </button>
-                  <button type="button" className="wl-act" onClick={() => setWay('email')} disabled={!canLogin}>
-                    <span className="wl-act-glyph" aria-hidden="true"><MailGlyph size={17} /></span>
-                    <span className="wl-act-text">
-                      <span className="wl-act-h">continue with email</span>
-                    </span>
-                    <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-                  </button>
-                </div>
-              </div>
+              <Pill
+                tone="ghost" wide icon={<Envelope size={16} />} data-way="email"
+                onClick={() => setWay('email')} disabled={!canLogin}
+              >
+                continue with email
+              </Pill>
             </div>
             <div className="wl-gate-fault" aria-live="polite">{said}</div>
           </div>
@@ -757,8 +736,8 @@ export default function Gate({ go, back }) {
               {canLogin ? (
                 <>
                   <Or />
-                  <Pill tone="ghost" wide className="wl-gate-google" icon={<GoogleGlyph size={15} />} onClick={google} disabled={busy}>
-                    {`continue with your ${c.domain} google`}
+                  <Pill tone="ghost" wide icon={<Google size={16} />} onClick={google} disabled={busy}>
+                    sign in with google
                   </Pill>
                 </>
               ) : null}
