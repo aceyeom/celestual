@@ -49,15 +49,40 @@ const FACES = [
   { slug: 'inter-tight', query: 'Inter+Tight:wght@100..900' },
   { slug: 'geist-mono', query: 'Geist+Mono:wght@100..900' },
   // ── the looks' own faces (0055, app/src/wall/looks.js) ──
-  // Three more, and none of them is one of the system's four jobs: they are
-  // the faces a letter's LOOK can be set in, chosen by the writer, and they
-  // are never used for the product's own type. A pixel face for the nokia
-  // screen, a hand for the notebook page, a round geometric for the y2k
-  // gloss and the candy. Each is declared with font-display: swap and is
-  // fetched by a browser only when a card on the screen is set in it.
+  // Nine more, and not one of them is one of the system's own jobs: they are
+  // the faces a letter's LOOK can be set in, chosen by the writer for one
+  // letter, and they are never a headline, a label, a control or an
+  // identifier. Each is declared with font-display: swap, so a browser
+  // fetches one only when a card on the screen is actually set in it — which
+  // is why nine cost a visitor who never sees them nothing at all.
+  //
+  // The three that were here carry the papers they were fetched for: the
+  // pixel is the nokia screen, the hand is the postcard, the round is the
+  // softest thing a writer can pick. The six added with the eight papers are
+  // the characterful half of the menu, since three of the first six are the
+  // system's own working faces doing a second job:
+  //
+  //   typewriter  a struck key with the ink spread around it. The face an
+  //               anonymous letter is actually written in, and the one the
+  //               menu most obviously lacked. Carries the telegram
+  //   screen      a true bitmap terminal face, drawn on a grid rather than
+  //               rounded onto one, so it is not the pixel again
+  //   poster      condensed, upper case, loud. For the letter that is four
+  //               words long
+  //   display     a high contrast Didone: the invitation and the
+  //               announcement. Carries the velvet
+  //   marker      felt tip, fast, no second thoughts
+  //   script      copperplate, played straight. The only face in the menu
+  //               with a real flourish in it
   { slug: 'pixelify-sans', query: 'Pixelify+Sans:wght@400..700' },
   { slug: 'caveat', query: 'Caveat:wght@400..700' },
   { slug: 'comfortaa', query: 'Comfortaa:wght@300..700' },
+  { slug: 'special-elite', query: 'Special+Elite' },
+  { slug: 'vt323', query: 'VT323' },
+  { slug: 'oswald', query: 'Oswald:wght@200..700' },
+  { slug: 'playfair-display', query: 'Playfair+Display:ital,wght@0,400..900;1,400..900' },
+  { slug: 'permanent-marker', query: 'Permanent+Marker' },
+  { slug: 'pinyon-script', query: 'Pinyon+Script' },
 ]
 
 // Everything the product sets is latin. The other subsets Google returns are

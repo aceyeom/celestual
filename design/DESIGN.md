@@ -133,16 +133,33 @@ Changing the accent is two lines. Nothing else in the build names a hue.
 ### 2.5 The looks
 
 One exception to the sentence above, and it is fenced. A letter can choose its
-paper (migration 0055, `app/src/wall/looks.js`): nine themes and twelve tints,
-each a ground and the ink that reads on it, are the only other hues in the
-product, they live in that one file and in the theme rules of `wall.css` keyed
-on `data-look`, and they are drawn only on a paper, its tile in the panel and
-the disc of the name it was written to. They are the writer's choice for one
+paper (migration 0055, `app/src/wall/looks.js`): eight themes and twenty-three
+tints, each a ground and the ink that reads on it, are the only other hues in
+the product, they live in that one file and in the theme rules of `wall.css`
+keyed on `data-look`, and they are drawn only on a paper, its tile in the panel
+and the disc of the name it was written to. They are the writer's choice for one
 letter and never the product's: no bar, sheet, control or line of the system's
 own type is ever set in one. A looked paper is still the one bright thing on
 its sheet, in the colour the writer chose it. The ban list's fourth added
 check, *the accent appears more than once*, reads the system's accent and not
 a letter's paper.
+
+A theme is a whole object and not a fill. Beside its ground and its ink it
+carries a `grain` (the ONE surface layer on the card, and `none` is a real
+answer), a `chrome` (the parts drawn for that paper and no other — the nokia's
+signal and battery, the chalkboard's rail, the letterpress's blind deboss, the
+telegram's printed form, the postcard's stamp box), a `layout` where the paper
+moves the card's own slots, and a `frame` where the letter is written on
+something inside the card rather than on the card. Every mark of it is a
+gradient, a border or the wall's own constellation: nothing is downloaded and
+nothing is a picture. The handful of literal hues the furniture needs — the
+chalkboard's wood, the polaroid's white border — are theme rules in `wall.css`
+keyed on `data-look`, which is where this section already puts a look's colour.
+
+`candy`, `night` and `gold` came off with the eight papers, as `y2k`,
+`receipt`, `notebook` and `terminal` did before them. A letter written on any
+of the seven keeps its slug in its row and draws the plain paper: nothing is
+rewritten in the corpus to take a row off a menu.
 
 ---
 
@@ -328,14 +345,31 @@ All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: ba
 
 ### 4.0a The faces a letter may be set in
 
-The four faces above are the system's and carry its four jobs. Three more
-are in `app/public/fonts/` and they are not the system's: Pixelify Sans, Caveat
-and Comfortaa are the pixel, the hand and the round a letter's LOOK may be set
-in (`app/src/wall/looks.js` `FACES`, with the serif, the sans and the mono at
-the letter's job), chosen by the writer for one letter and used for nothing
-else in the product. None of them is ever a headline, a label, a control or an
-identifier. They are fetched by `scripts/fetch-faces.mjs` with the others and
-a browser downloads one only when a card set in it is on the screen.
+The four faces above are the system's and carry its four jobs. Nine more are in
+`app/public/fonts/` and they are not the system's: they are the faces a
+letter's LOOK may be set in (`app/src/wall/looks.js` `FACES`, with the serif,
+the sans and the mono at the letter's job, which makes the writer's menu
+twelve), chosen by the writer for one letter and used for nothing else in the
+product. None of them is ever a headline, a label, a control or an identifier.
+
+| Slug | Face | What it is for |
+| --- | --- | --- |
+| `pixel` | Pixelify Sans | the handheld screen. Carries the nokia |
+| `hand` | Caveat | a hand. Carries the postcard and the polaroid |
+| `round` | Comfortaa | the softest thing a writer can pick |
+| `typewriter` | Special Elite | a struck key with the ink spread. Carries the telegram |
+| `screen` | VT323 | a true bitmap, drawn on a grid rather than rounded onto one |
+| `poster` | Oswald | condensed and upper case, for the letter that is four words long |
+| `display` | Playfair Display | a high-contrast Didone. Carries the velvet |
+| `marker` | Permanent Marker | felt tip, fast, no second thoughts |
+| `script` | Pinyon Script | copperplate, played straight |
+
+They are fetched by `scripts/fetch-faces.mjs` with the others and a browser
+downloads one only when a card set in it is on the screen, so twelve faces cost
+a visitor who never sees one exactly nothing. `size` and `title` in `FACES` are
+the per-face scale that puts each one's lower case on the same optical line as
+the serif's: a hand at 16px is smaller than a serif at 16px, a pixel face is
+larger, and a copperplate is barely there.
 
 ### 4.2 The rest
 
@@ -395,6 +429,28 @@ reference poster has no boxes at all.
 
 A row uses 14px, which is the one exception, because a 18px radius on a 60px tall
 row reads as a card and a row is not one.
+
+A letter's paper takes `--r-card` and nothing else, on all eight
+(`looks.js` `radius`). A paper may be a pressed sheet, a slate or a moulded
+shell and it is still a LETTER on the wall, and the thing that says so is the
+shape it is cut to: eight papers with eight corners read as eight components,
+and eight papers with one corner read as one card wearing eight materials,
+which is what they are. It was 18 / 26 / 10 / 18 / 18 across five themes, which
+was not a scale at all — 26 is `--r-sheet`, a *sheet's* corner and not a
+card's, and 10 was not a token. The token stays on the theme so a paper that
+one day has a reason can say a number, but it needs the reason, and being made
+of paper is not one. The panel's tile scales whichever value the theme carries,
+so the swatch draws the corner being chosen rather than a flat 10px.
+
+Three more things hold across all eight, for the same reason the corner does.
+The card's hairline is derived from the paper's own ink (`--lk-edge`), so every
+paper carries one weight of edge where a fixed black one drew hard on cream and
+nothing at all on near-black. The inset is three tokens (`--lk-pad-x`,
+`--lk-pad-t`, `--lk-pad-b`) rather than a padding each theme re-states. And the
+foot — the reader's three marks — is laid out against the CARD and not against
+the paper's inset, so the heart, the pen and the flag sit 20px from the edge and
+18px from the bottom on every letter in the deck, whatever paper somebody else
+chose. A control that moves is a control to be found again on every card.
 
 ### 5.3 Rhythm
 

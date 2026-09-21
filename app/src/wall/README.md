@@ -363,17 +363,56 @@ choice:
 
 | | |
 | --- | --- |
-| **texture** | five papers, each a small tile in its own tokens: the plain paper, candy, the nokia screen, the night, gold. The big choice, and picking one resets the other two to what it brought |
-| **color** | eleven grounds and the paper's own first, as two even rows of six. A colour recolours the look and keeps its texture and its type |
-| **type** | six faces, each with its own name set in itself: the system's serif, sans and mono at the letter's job, and a pixel face, a hand and a round geometric fetched for the looks and used for nothing else |
+| **texture** | eight papers, each a small tile in its own tokens, as two even rows of four: the plain paper, the letterpress, the postcard, the telegram, the polaroid, the nokia, the chalkboard, the velvet. The big choice, and picking one resets the other two to what it brought |
+| **color** | twenty-three grounds and the paper's own first, as four even rows of six. A colour recolours the look and keeps its texture and its type |
+| **type** | twelve faces, each with its own name set in itself, as four rows of three: the system's serif, sans and mono at the letter's job, and nine fetched for the looks and used for nothing else |
+
+Since the eight, a paper is an OBJECT and not a fill. Each carries its own
+`grain` — the one surface layer on the card, and `none` is a real answer —
+and most carry `chrome`, the parts drawn for that paper and no other
+(`parts.jsx` `Furniture`, ruled in `wall.css` on `data-look`):
+
+| | |
+| --- | --- |
+| **nokia** | a moulded shell with the screen recessed into it, the dateline standing as a status row with the signal and the battery on it, and the foot standing as two softkeys. The lattice is the only thing on the screen |
+| **polaroid** | the letter on the emulsion inside a white frame, with the addressee written on the chin under it. A colour moves the picture, never the frame |
+| **postcard** | the divided back: the message left of the rule, the addressee and its ruled lines right of it, and a stamp box in the corner with the constellation in it |
+| **letterpress** | a blind deboss round the sheet — a lit line above the rule and a shadowed one below — on a cotton tooth, with the crest and the addressee struck the same way |
+| **telegram** | form stock with a double rule printed round it and a faint ruling under the words. The body is set upper case, which is a display choice: the row holds what the writer typed |
+| **chalkboard** | slate, chalk dust where a hand has been, and a wooden rail along the bottom edge |
+| **velvet** | a pile that lies one way, a bloom off the top left, and a debossed border |
+
+Three of them move the card's own slots rather than only dressing them
+(`looks.js` `layout`): the nokia wraps its head, crest and body into a screen,
+the polaroid puts the addressee on the chin, the postcard divides the back.
+The slots are the same objects in every branch, so none of them is a second
+card.
+
+And four things do not move on any of the eight, because they are the
+PRODUCT's and not the writer's:
+
+| | |
+| --- | --- |
+| the corner | `--r-card` on all eight. A paper may be a pressed sheet or a moulded shell and it is still a letter on the wall, and the shape it is cut to is what says so |
+| the edge | derived from the paper's own ink (`--lk-edge`), so every paper carries one weight of hairline |
+| the addressee | `for`, the display name, and the handle under it — the same three parts in the same order, on the crest row, the chin or the address side |
+| the foot | the heart, the pen and the flag, laid out against the CARD rather than the paper's inset: 20px from the edge and 18px from the bottom on every letter in the deck. A control that moves is a control to be found again on every card |
+
+The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
+it: the gate under a sealed card says `read it` and not a word of policy,
+because the card beside it has already said what it is.
 
 The three used to be three rows stacked under the card, each scrolling
 sideways, each with a label over it and a caption under every tile: half
 the menu was past the right edge of the sheet at any moment and twenty-two
 nine-pixel captions carried most of the ink. A writer is choosing one of
 the three at a time, so the panel asks which and gives that one the whole
-width. Four looks came off the menu with the rewrite — y2k, receipt,
-notebook and terminal — each a costume rather than a paper; a menu whose
+width. Four looks came off the menu with that rewrite — y2k, receipt,
+notebook and terminal — and three more came off with the eight papers —
+candy, night and gold, the first a gradient the colour dial deleted on
+contact and the other two a ground and a face with nothing drawn on them. A
+letter written on any of the seven keeps its slug in its row and draws the
+plain paper. A menu whose
 job is to be a mask is better short and plainly drawn than long and
 characterful. The rail's words are what a writer is choosing; the row's
 keys are still `theme`, `tint` and `face`.

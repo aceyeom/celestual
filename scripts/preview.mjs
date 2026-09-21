@@ -69,18 +69,29 @@ const INDEX = HANDLES.map(([h, name, verified], i) => ({
 }))
 
 // ── the looks (0055), and the names (0053) ──
-// Three handles carry the paper of their newest letter, and three names stand
-// on the wall: a first name on the nokia screen, one letter on candy, and a
-// number on the plain paper, so the field is shot with a disc of each kind.
+// Seven handles carry the paper of their newest letter and three names stand
+// on the wall, so the field is shot with a disc of each kind and every one of
+// the eight papers is on a card somewhere in the loop. The three the panel
+// brings with a tint or a face on it are the ones worth shooting dressed: a
+// look is three dials and a shot of eight themes at their defaults never
+// shows what the other two do.
+//
+// `y2k`, `terminal`, `notebook` and `candy` stood here, and all four are
+// retired slugs (app/src/wall/looks.js): the fixture was drawing the plain
+// paper four times over and calling it four looks.
 const LOOKS = {
-  'ren.tanaka': { theme: 'y2k' },
-  'm.okonkwo': { theme: 'terminal' },
-  'aya.nakamura': { theme: 'notebook', tint: 'rose' },
+  'ren.tanaka': { theme: 'letterpress' },
+  'm.okonkwo': { theme: 'telegram' },
+  'aya.nakamura': { theme: 'postcard', tint: 'bone' },
+  'dani.arroyo': { theme: 'chalkboard' },
+  'thom.iversen': { theme: 'velvet', face: 'script' },
+  'k.villarreal': { theme: 'polaroid' },
+  'nour.haddad': { theme: 'paper', tint: 'sea', face: 'typewriter' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
 const NAMES = [
   ['~sofia', 'Sofia', 2, { theme: 'nokia' }],
-  ['~j', 'J', 1, { theme: 'candy', face: 'hand' }],
+  ['~j', 'J', 1, { theme: 'chalkboard', face: 'marker' }],
   ['~51b', '51B', 1, null],
 ]
 NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {

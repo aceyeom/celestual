@@ -188,6 +188,15 @@ function Card({ l, handle, seed, id, foot }) {
   const open = l.body !== null
   return (
     <Paper
+      /* How long it has been sitting there unsaid, and — on a SHUT letter
+         only — the stamp that says so. An open letter has never carried it
+         and never will: the right-hand cell is empty on every letter
+         anybody can actually read, which is all but the one past the eight.
+         The stamp stays on the shut one because the gate under it is
+         written to lean on it — `read it`, and not a word of policy,
+         because the card beside it already says SEALED (the foot, below).
+         Take the stamp off that card and the gate has to grow a sentence
+         explaining what it is for. */
       dateline={sinceline(l.at, open ? '' : 'sealed')}
       /* the paper the letter chose (0055), or the plain paper */
       look={l.look}
