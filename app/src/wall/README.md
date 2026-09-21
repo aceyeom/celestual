@@ -340,14 +340,26 @@ at the end of the card's letterhead on the composer opens a panel under the
 card, and the card is the preview, because the card is the real card
 (`parts.jsx` `Paper`) and a look is its tokens moved: whatever is picked is
 on the letter before the finger has lifted, and what goes up is what was
-seen. Three rows, in the lock screen's own shape, a gallery of whole looks
-and then two dials on the one chosen:
+seen. One rail with the three things a paper can be changed about, one grid
+under it for the one being changed, and one line under that naming the
+choice:
 
 | | |
 | --- | --- |
-| **paper** | nine looks, each a small paper in its own tokens: the plain paper, the night, the y2k gloss, the nokia screen, a receipt, a notebook page, a terminal, candy, gold. Picking one resets the two rows under it to what the look brought |
-| **colour** | twelve grounds, and the paper's own first. A tint recolours the look and keeps its texture and its type |
-| **type** | six faces: the system's serif, sans and mono at the letter's job, and a pixel face, a hand and a round geometric fetched for the looks and used for nothing else |
+| **texture** | five papers, each a small tile in its own tokens: the plain paper, candy, the nokia screen, the night, gold. The big choice, and picking one resets the other two to what it brought |
+| **color** | eleven grounds and the paper's own first, as two even rows of six. A colour recolours the look and keeps its texture and its type |
+| **type** | six faces, each with its own name set in itself: the system's serif, sans and mono at the letter's job, and a pixel face, a hand and a round geometric fetched for the looks and used for nothing else |
+
+The three used to be three rows stacked under the card, each scrolling
+sideways, each with a label over it and a caption under every tile: half
+the menu was past the right edge of the sheet at any moment and twenty-two
+nine-pixel captions carried most of the ink. A writer is choosing one of
+the three at a time, so the panel asks which and gives that one the whole
+width. Four looks came off the menu with the rewrite — y2k, receipt,
+notebook and terminal — each a costume rather than a paper; a menu whose
+job is to be a mask is better short and plainly drawn than long and
+characterful. The rail's words are what a writer is choosing; the row's
+keys are still `theme`, `tint` and `face`.
 
 What the row keeps is three slugs, `{ theme, tint, face }`, or nothing for
 the plain paper, cleaned to that shape by the browser, by the function and
@@ -357,10 +369,10 @@ of custom properties on the paper (`--lk-ground`, `--lk-ink`, the strengths
 of the ink the card's own rules already use for its rule, its stamp, its
 foot and its marks, the face, the corner) and a texture the stylesheet
 draws under the type by the theme's slug. Nothing is downloaded and nothing
-is a picture: the LCD is a pixel grid, the gloss is a highlight, the
-notebook is ruled, the terminal has scanlines, and each is a gradient. A new
-look is a row in `looks.js` and a rule in `wall.css`, never a migration, and
-a slug this build does not know draws the plain paper.
+is a picture: the LCD is a pixel grid drawn as a gradient. A new look is a
+row in `looks.js` and a rule in `wall.css`, never a migration, and a slug
+this build does not know — one of the four that came off, or one from a
+newer build — keeps its place in the row and draws the plain paper.
 
 **The paper of a letter is the paper of its name on the field.** The index
 carries the look of the newest letter under each key, so a name's disc on

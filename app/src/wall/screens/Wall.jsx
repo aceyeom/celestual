@@ -222,6 +222,12 @@ function tabDue(state) {
 // a thing that happens in a term, and the search under the ear needs the
 // line above it quiet.
 //
+// It stands in the MIDDLE of the column, over the search and under the bar,
+// and the two of them are one masthead: a campus, its count, and the one
+// question the wall is asked. It used to hang off the left gutter, where it
+// was a caption on the corner of a picture; a fact about the whole wall
+// belongs over the middle of it.
+//
 // The figure turns (parts.jsx `Roll`): a letter arriving, from this phone or
 // any other, turns the last digit up one where it stands, and nothing else
 // on the line moves. It is the one fact about this wall worth printing, and
@@ -260,16 +266,27 @@ function Ear({ letters }) {
 
 // ── the search, on the wall ─────────────────────────────────────────────────
 // Most people who scan the wall off a flyer are looking for one name, and
-// usually their own. The way to look for it was a 40px ring with a glass in
-// it, in the corner of the bar a thumb reaches last, and it read as
-// settings. So the search is the wall's own question now, and it stands
-// where the eye lands after the veil goes: one bare baseline under the ear,
-// the glass in the place a field paints its @, the placeholder saying what
-// it is for, the column's full width, in the top shade where type already
-// stands without a plate. It is not lit and it is not a capsule. The chalk
-// `write` in the bar is the one bright thing on the wall and stays so; a
-// second lit capsule over the faces would be the screen every generated
-// interface has, and it would stand on the disc the lens is reading.
+// usually their own. So the search is the wall's own question, and it stands
+// where the eye lands after the veil goes: in the middle of the column,
+// directly under the ear, with the bar over it.
+//
+// ── and it stands on something ──
+// Twice now it has been a control nobody could find. It was a 40px ring with
+// a glass in it, in the corner of the bar a thumb reaches last, which read as
+// settings; then it was a bare baseline at the left gutter, twenty-eight
+// pixels of mono with the crowd showing straight through the words — over a
+// field of pale discs the placeholder and the faces behind it were the same
+// brightness, and the one question the wall asks was the least legible thing
+// on it. Type alone cannot hold a surface that moves.
+//
+// It is a plate now: blurred void in a capsule, a hairline round it, the
+// glass at its head and the question inside, centred and capped at the
+// column's measure. The blur is what makes it readable over whatever face
+// happens to be under it — the same argument the two shades make, made
+// locally, where the type actually is. It is still not LIT: the chalk
+// `write` in the bar is the one bright thing on this screen and stays so,
+// and the difference between the two is the difference between the act and
+// the question.
 //
 // It is a real field and not a button drawn as one, for the keyboard's
 // sake: the tap that lands on it raises the keyboard, the focus opens the
@@ -279,21 +296,35 @@ function Ear({ letters }) {
 // the names stay visible behind the results the whole time. Anything typed
 // in the beat before the sheet mounts rides along in the store.
 //
+// The whole plate is the target and not just the input inside it, since a
+// capsule with twenty pixels of dead padding round its text is a control
+// that misses the thumb aimed at its edge. The press and the focus both
+// open the sheet, which is two calls for one tap, so a second open inside
+// the same beat is dropped rather than pushed onto the history twice.
+//
 // The council that placed it here (docs/THE-COUNCIL.md) weighed the founder's
 // large glowing pill at the centre, a field on the veil, and a capsule in the
 // dock, and turned each down: the first for being a second bright thing on
 // the faces, the second for putting a keyboard over a crowd nobody has seen
-// yet, the third for taking the one slot the tab needs.
+// yet, the third for taking the one slot the tab needs. A plate is none of
+// those three: it is not lit, it is not over the crowd's middle, and it is
+// not in the dock.
+const SEEK_AGAIN_MS = 600
+
 function Seek({ go }) {
   const [v, setV] = useState('')
+  const last = useRef(0)
   const open = useCallback(() => {
+    const now = Date.now()
+    if (now - last.current < SEEK_AGAIN_MS) return
+    last.current = now
     patch({ query: v })
     go('find')
   }, [go, v])
   return (
-    <div className="wl-seek">
+    <div className="wl-seek" onClick={open}>
       <HandleField
-        kind="search" size="lg" value={v} onChange={setV} onFocus={open} onSubmit={open}
+        kind="search" value={v} onChange={setV} onFocus={open} onSubmit={open}
         placeholder="look for a name" label="look for a name"
       />
     </div>

@@ -716,38 +716,11 @@
     repeating-linear-gradient(90deg, rgba(20, 30, 16, 0.07) 0 1px, transparent 1px 3px);
 }
 .wl-paper[data-look="nokia"] .wl-paper-head { letter-spacing: 0.15em; }
-/* the y2k gloss: one highlight lying across the card the way light lies on
-   a pearl button, a second in its far corner, and a chrome hairline round
-   the edge */
-.wl-looked[data-look="y2k"]::before {
-  background:
-    linear-gradient(112deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.62) 41%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0) 60%),
-    radial-gradient(110% 70% at 100% 100%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 62%);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.8), inset 0 0 0 2.5px rgba(120, 100, 190, 0.16);
-}
-/* on a dark colour the same gloss is a mirror, and the words under the
-   highlight went; it is laid lighter there, and the chrome edge with it */
-.wl-looked[data-look="y2k"][data-lit="dark"]::before {
-  background:
-    linear-gradient(112deg, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0.22) 41%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0) 60%),
-    radial-gradient(110% 70% at 100% 100%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 62%);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.34), inset 0 0 0 2.5px rgba(255, 255, 255, 0.06);
-}
-/* the receipt: dashed rules, the head tracked wider */
-.wl-paper[data-look="receipt"] .wl-paper-head { border-bottom-style: dashed; letter-spacing: 0.16em; }
-.wl-paper[data-look="receipt"] .wl-paper-foot { border-top-style: dashed; }
-/* the notebook: ruled, in a blue a step lighter than its ink */
-.wl-looked[data-look="notebook"]::before {
-  background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(31, 52, 128, 0.15) 27px 28px);
-  background-position: 0 7px;
-}
-/* the terminal: scanlines, a little phosphor bloom on the letters */
-.wl-looked[data-look="terminal"]::before {
-  background-image:
-    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.24) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse 90% 60% at 50% 20%, rgba(114, 240, 156, 0.09), transparent 70%);
-}
-.wl-paper[data-look="terminal"] { text-shadow: 0 0 7px rgba(114, 240, 156, 0.3); }
+/* The gloss, the dashed till roll, the ruled page and the green screen were
+   here: the four textures that came off the menu with y2k, receipt,
+   notebook and terminal (looks.js). A letter written on one of them keeps
+   its slug in the row and draws the plain paper now, `data-look` and all,
+   so there is nothing left for these rules to key on. */
 /* the dark grounds: the grain multiplies to nothing on a near black, so on
    a dark paper it is laid as light instead, a little, and adds its texture
    the other way up */
@@ -1166,12 +1139,21 @@
    decoration and disabled things, and the one fact about the wall worth
    printing was the faintest type on the screen: over a field of faces at
    eleven pixels it could not be read at all. It is the front door's own ear
-   now (hero.css .hm-ear): ash for the word, chalk for the figure. */
+   now (hero.css .hm-ear): ash for the word, chalk for the figure.
+
+   ── and it stands in the middle ──
+   The ear and the search under it are one masthead, centred in the column
+   at every width: the campus, its count, and the one question the wall is
+   asked, stacked on the middle line under the bar. Both used to hang off
+   the left gutter, where a fact about the whole wall read as a caption on
+   the corner of a picture, and where on a spread they sat in a 340px lane
+   with the crowd running past them. */
 .wl-ear {
   position: relative; z-index: 4; flex: 0 0 auto;
-  display: flex; align-items: baseline; gap: 13px; min-width: 0;
-  padding: 4px 0 12px;
+  display: flex; align-items: baseline; justify-content: center; gap: 12px; min-width: 0;
+  padding: 2px 0 11px;
   line-height: 1.4;
+  text-align: center;
 }
 .wl-ear-name {
   font-family: var(--f-display); font-weight: var(--w-display);
@@ -1301,19 +1283,92 @@
      left to scroll down to the foot of the site. */
   pointer-events: none;
 }
-.wl-ear, .wl-veil { pointer-events: auto; }
+/* The type takes no pointer at all — only the two things in here that are
+   actually pressed do. The ear is one line across the middle of the column
+   and the search is a capsule inside a full-width row; left solid, both
+   would swallow the faces either side of them, and a tap meant for a disc
+   beside the search would open the search. */
+.wl-veil { pointer-events: auto; }
+.wl-ear-again { pointer-events: auto; }
 
 /* ═══ THE SEARCH, ON THE WALL ══════════════════════════════════════════════
-   screens/Wall.jsx `Seek`: the wall's own question, under the ear, once the
-   veil has gone. One bare baseline at the field's large size, the glass in
-   the place a field paints its @, the column's full width, in the top shade
-   where type already stands without a plate. Unlit and not a capsule: the
-   chalk `write` in the bar is the wall's one bright thing, and the search
-   is a question rather than a door. The room hands the pointer back to the
-   faces; this takes it again, like the ear. */
-.wl-seek { pointer-events: auto; padding: 8px 0 0; }
-.wl-seek .wl-field { padding-bottom: 9px; }
-.wl-seek .wl-field input::placeholder { color: rgba(156, 151, 142, 0.72); }
+   screens/Wall.jsx `Seek`: the wall's own question, centred under the ear
+   once the veil has gone, and the second half of the masthead.
+
+   It is a PLATE, because twice it was type alone and twice nobody could
+   read it: a bare baseline at twenty-eight pixels of mono, at the left
+   gutter, over a crowd of pale discs that showed straight through the
+   words. The two shades pour the void back at the top and the bottom of the
+   screen and that is enough for a line or two of chrome; it is not enough
+   for the one control the wall wants found. So the plate makes its own
+   legibility where the type actually is: blurred void, a hairline round it,
+   the glass at its head, the question inside.
+
+   Unlit, still. The chalk `write` in the bar is the wall's one bright
+   thing and stays so — this is a question, that is the act, and the
+   difference between them is the difference between a glass capsule and a
+   chalk one. The blur is the only material here: no fill that reads as a
+   box, no second accent, nothing that competes with a face.
+
+   The row is full width so the capsule can be centred in it, and the row
+   takes no pointer — only the capsule does, or a tap on a disc beside the
+   search would open the search. */
+.wl-seek {
+  pointer-events: none;
+  display: flex; justify-content: center;
+  padding: 0 0 2px;
+}
+.wl-seek .wl-field {
+  pointer-events: auto; cursor: text;
+  width: 100%; max-width: 420px;
+  align-items: center; justify-content: center; gap: 11px;
+  min-height: 50px; padding: 0 19px;
+  border-radius: var(--r-pill);
+  background: rgba(244, 241, 234, 0.09);
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 22px 48px -28px rgba(0, 0, 0, 0.95);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  backdrop-filter: blur(22px) saturate(1.25);
+  transition: background 260ms var(--ease), box-shadow 260ms var(--ease), transform 220ms var(--ease);
+}
+/* it answers the thumb the way every other control on the wall does */
+.wl-seek .wl-field:active { transform: scale(0.985); transition-duration: 110ms; }
+/* the capsule is the edge; the baseline under the type would be a second one */
+.wl-seek .wl-field-line { display: none; }
+.wl-seek .wl-at { color: rgba(244, 241, 234, 0.72); }
+/* The glass and the question are one group in the middle of the plate,
+   under the middle of the ear, rather than a glyph against the left edge
+   with ten characters after it and a hundred pixels of nothing to the
+   right. The box is measured in `ch` of its own mono face, so it is the
+   question's own length at whatever size the breakpoint sets, and a name
+   typed into it before the sheet has mounted stays centred in it. */
+.wl-seek .wl-field input {
+  flex: 0 1 auto; width: 16ch;
+  font-size: 17px; letter-spacing: -0.004em; text-align: center;
+}
+/* the question itself is ash, not the field's own near-void placeholder:
+   on this surface it is a label that has to be read at a glance, not a hint
+   under a cursor */
+.wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.66); }
+.wl-seek .wl-field:focus-within {
+  background: rgba(244, 241, 234, 0.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(244, 241, 234, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 20px 44px -26px rgba(0, 0, 0, 0.95);
+}
+.wl-seek .wl-field:focus-within .wl-at { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-seek .wl-field:hover {
+    background: rgba(244, 241, 234, 0.085);
+    box-shadow:
+      inset 0 0 0 1px rgba(244, 241, 234, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 20px 44px -26px rgba(0, 0, 0, 0.95);
+  }
+}
 
 /* ═══ THE STAGE ════════════════════════════════════════════════════════════
    The field, and it is the whole screen. Not a band between the bar and the
@@ -2155,57 +2210,83 @@
   color: var(--ash); white-space: nowrap;
   transition: color 220ms var(--ease), transform 220ms var(--ease);
 }
-.wl-seg-opt[aria-checked="true"] { color: var(--chalk); }
+.wl-seg-opt[aria-checked="true"], .wl-seg-opt[aria-selected="true"] { color: var(--chalk); }
 .wl-seg-opt:active { transform: scale(0.97); transition-duration: 120ms; }
 .wl-seg-opt:focus-visible { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: -3px; border-radius: var(--r-pill); }
 .wl-seg-glyph { display: inline-grid; place-items: center; color: var(--ash-dim); transition: color 220ms var(--ease); }
-.wl-seg-opt[aria-checked="true"] .wl-seg-glyph { color: var(--chalk); }
+.wl-seg-opt[aria-checked="true"] .wl-seg-glyph, .wl-seg-opt[aria-selected="true"] .wl-seg-glyph { color: var(--chalk); }
 .wl-seg-at { font-family: var(--f-id); font-size: 15px; line-height: 1; }
 @media (max-width: 359px) {
   .wl-seg-opt { padding: 0 8px; font-size: 13px; gap: 5px; }
 }
 
 /* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
-   Look.jsx, under the composer's card while its pen is on: three rows, a
-   gallery of papers, a ring of colours and a row of faces, and the card
-   above is the preview. The lock screen's own shape: the big choice whole,
-   then two dials on it. Every tile is the real look's tokens on a small
-   element with a few bars for type, so a tile is drawn by the same rules
-   as the card it stands for and cannot drift from it. The chosen one is
-   ringed the way a disc on the field is ringed when the lens is on it. */
-.wl-look { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; animation: wl-look-in 320ms var(--ease) both; }
-@keyframes wl-look-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
-.wl-look-row { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
-.wl-look-lab { padding: 0 2px; }
-/* a row that scrolls sideways, out to the sheet's edges, with no bar: the
-   gutters are the room a row runs into, and the tile half seen at the edge
-   is how a row says there is more */
-.wl-look-scroll {
-  display: flex; gap: 10px; align-items: flex-start;
-  overflow-x: auto; overflow-y: hidden;
-  scroll-snap-type: x proximity; scroll-padding: 0 var(--sheet-pad, 22px);
-  padding: 5px var(--sheet-pad, 22px) 6px; margin: -5px calc(-1 * var(--sheet-pad, 22px)) -6px;
-  scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+   Look.jsx, under the composer's card while its pen is on: a rail with the
+   three things a paper can be changed about, one grid under it for the one
+   being changed, and a line under that naming the choice. The card above is
+   the preview.
+
+   It was three rows stacked, each scrolling sideways, each with a label over
+   it and a caption under every tile — everything on the screen at once, half
+   of it past the right edge, and twenty-two nine-pixel captions carrying
+   most of the ink. One thing at a time, at full width, fits without
+   scrolling and can be looked at.
+
+   Every tile is the real look's tokens on a small element with a few bars
+   for type, so a tile is drawn by the same rules as the card it stands for
+   and cannot drift from it. The chosen one is ringed the way a disc on the
+   field is ringed when the lens is on it. */
+.wl-look {
+  display: flex; flex-direction: column; gap: 12px;
+  margin-top: 14px; padding: 12px 12px 10px;
+  border-radius: 20px;
+  background: rgba(244, 241, 234, 0.022);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  animation: wl-look-in 320ms var(--ease) both;
 }
-.wl-look-scroll::-webkit-scrollbar { display: none; }
+@keyframes wl-look-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+
+/* the rail is the composer's own switch (`.wl-seg`), wearing tabs */
+.wl-look-rail { width: 100%; }
+
+/* One height for all three, so switching between them does not shove the
+   card up and down the sheet: the tallest is the colour grid's two rows,
+   and the one row of papers is centred in the same height rather than left
+   hanging off the top of it. */
+.wl-look-body { display: grid; align-content: center; min-height: 104px; }
+.wl-look-grid {
+  display: grid; gap: 10px; align-items: start;
+  animation: wl-look-swap 260ms var(--ease) both;
+}
+@keyframes wl-look-swap { from { opacity: 0; transform: translate3d(0, 5px, 0); } to { opacity: 1; transform: none; } }
+/* five papers on one line; twelve colours as two even rows of six; six
+   faces as two rows of three, which is the room a name needs to be set in
+   its own face and read */
+.wl-look-grid.is-texture { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.wl-look-grid.is-color   { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 11px 10px; }
+.wl-look-grid.is-type    { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
 .wl-look-opt {
-  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 7px;
+  display: grid; place-items: center; width: 100%;
   padding: 0; background: none; border: 0; color: var(--ash-dim);
-  scroll-snap-align: start;
 }
 .wl-look-opt:focus-visible { outline: none; }
 .wl-look-opt:focus-visible > :first-child { outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; }
-.wl-look-opt-name {
-  font-family: var(--f-id); font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase;
-  transition: color 200ms var(--ease);
+.wl-look-opt:active > :first-child { transform: scale(0.94); transition-duration: 100ms; }
+/* under a pointer the choice comes up to meet it, a little, the way a disc
+   on the field swells under the lens */
+@media (hover: hover) and (pointer: fine) {
+  .wl-look-opt:hover .wl-look-tile { transform: translate3d(0, -2px, 0); }
+  .wl-look-opt:hover .wl-look-dot { transform: scale(1.07); }
+  .wl-look-opt:hover .wl-look-chip { background: rgba(244, 241, 234, 0.05); color: var(--chalk); }
 }
-.wl-look-opt[aria-checked="true"] .wl-look-opt-name { color: var(--ash); }
-.wl-look-opt:active > :first-child { transform: scale(0.95); transition-duration: 100ms; }
+
 /* a tile: a small paper in the look's own tokens, with the two letters in
    its face and a few lines of type */
 .wl-look-tile {
-  position: relative; display: block; width: 58px; height: 74px; overflow: hidden;
-  border-radius: 9px;
+  position: relative; display: block;
+  width: 100%; max-width: 76px; aspect-ratio: 3 / 4; overflow: hidden;
+  border-radius: 10px;
   background: var(--lk-ground);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32), 0 10px 22px -12px rgba(0, 0, 0, 0.85);
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
@@ -2218,7 +2299,7 @@
 }
 /* a colour: a disc of the ground, the way a name is a disc */
 .wl-look-dot {
-  display: block; width: 32px; height: 32px; border-radius: 50%;
+  display: block; width: 100%; max-width: 44px; aspect-ratio: 1; border-radius: 50%;
   background: var(--lk-ground);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 1px rgba(244, 241, 234, 0.06);
   transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
@@ -2226,18 +2307,36 @@
 .wl-look-opt[aria-checked="true"] .wl-look-dot {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28), 0 0 0 2px var(--void), 0 0 0 3.5px var(--chalk);
 }
-/* a face: two letters in it, on a capsule */
+/* a face: its own name, set in itself, at the size the letter would set it
+   (looks.js `size`), which is the type menu's oldest idiom and needs no
+   caption under it */
 .wl-look-chip {
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 36px; min-width: 52px; padding: 0 14px; border-radius: var(--r-pill);
+  width: 100%; min-height: 46px; padding: 0 8px; border-radius: 13px;
   box-shadow: inset 0 0 0 1px var(--hair);
-  color: var(--ash);
+  font-family: var(--chip-face); font-weight: var(--chip-w, 500);
+  font-size: calc(15px * var(--chip-size, 1)); line-height: 1;
+  color: var(--ash); white-space: nowrap; overflow: hidden;
   transition: background 220ms var(--ease), box-shadow 220ms var(--ease), color 220ms var(--ease), transform 220ms var(--ease);
 }
-.wl-look-chip-aa { font-family: var(--chip-face); font-weight: 500; font-size: 15px; line-height: 1; }
 .wl-look-opt[aria-checked="true"] .wl-look-chip {
   background: rgba(244, 241, 234, 0.1); box-shadow: inset 0 0 0 1px rgba(244, 241, 234, 0.14); color: var(--chalk);
 }
+/* The one caption: what is chosen on the axis being shown, under the grid
+   rather than over it, because it is an answer and not a heading — and in
+   CHALK for the same reason the ear sets its count in chalk and its noun in
+   ash (`.wl-ear`). On this surface the bright one of two greys is the fact. */
+.wl-look-now {
+  margin: 0; text-align: center;
+  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--chalk);
+}
+@media (max-width: 359px) {
+  .wl-look { padding: 11px 10px 9px; }
+  .wl-look-grid { gap: 8px; }
+  .wl-look-body { min-height: 96px; }
+}
+
 /* the card and the line under it, in one frame, and the frame is what shakes
    when a press is refused (Write.jsx `shake`): a short travel, side to side,
    losing amplitude, the way a locked handle answers a hand. Under half a
@@ -2900,11 +2999,14 @@
     align-content: stretch;
   }
   .wl-wallpage .wl-top { grid-column: 1 / -1; grid-row: 1; }
-  .wl-ear { grid-row: 1; padding: 14px 0 12px; }
+  .wl-ear { grid-row: 1; padding: 10px 0 12px; }
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 2; display: grid; grid-template-rows: auto auto 1fr; }
-  /* the search keeps the phone's column under the ear while the field runs
-     the whole window behind it */
-  .wl-seek { grid-row: 2; width: 100%; max-width: 460px; padding-top: 6px; }
+  /* the masthead keeps the middle of the window while the field runs the
+     whole of it behind: the row is the window's width so the capsule can be
+     centred in it, and the capsule keeps a measure of its own */
+  .wl-seek { grid-row: 2; width: 100%; }
+  .wl-seek .wl-field { max-width: 460px; min-height: 52px; }
+  .wl-seek .wl-field input { font-size: 18px; }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
      glass here as it does on a phone, with the crowd showing round it */
@@ -3023,9 +3125,11 @@
   /* the ear stands in the left column over the dock, and the field takes the
      right column's whole height with the veil over it */
   .wl-room { grid-column: 1 / -1; grid-row: 2 / span 3; display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
-  .wl-ear { grid-column: 1; grid-row: 1; padding: 6px 0 0; }
-  .wl-seek { grid-column: 1; grid-row: 2; padding-top: 4px; }
-  .wl-seek .wl-field.is-lg input, .wl-seek .wl-field.is-lg .wl-at { font-size: 22px; }
+  .wl-ear { grid-column: 1 / -1; grid-row: 1; padding: 2px 0 7px; }
+  .wl-seek { grid-column: 1 / -1; grid-row: 2; }
+  /* 390px of height: the plate gives back what it can and keeps its ring */
+  .wl-seek .wl-field { min-height: 42px; max-width: 420px; }
+  .wl-seek .wl-field input { font-size: 16px; }
   .wl-veil-in { padding: 0 18px 2vh; }
   .wl-wallpage .wl-dock {
     grid-column: 1 / -1; grid-row: 4;
@@ -3839,7 +3943,7 @@
   .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
-  .wl-look { animation: none !important; }
+  .wl-look, .wl-look-grid { animation: none !important; }
   .wl-seg-thumb, .wl-look-tile, .wl-look-dot, .wl-look-chip { transition: none; }
   .wl-hive-crowd, .wl-hive-say-h, .wl-cell-orb, .wl-cell-orb::before, .wl-cell-orb::after { transition: none; }
   .wl-roll-col { transition: none; }
