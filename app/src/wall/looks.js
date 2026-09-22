@@ -333,19 +333,6 @@ export function faceOf(look) {
   return (look && look.face && byFaceSlug.get(look.face)) || byFaceSlug.get(theme.face) || FACES[0]
 }
 
-// What a look is called, in words, for the desk and for a label: the theme,
-// then the tint and the face when they are not the theme's own.
-export function lookLabel(look) {
-  const l = cleanLook(look)
-  if (!l) return ''
-  const theme = themeOf(l)
-  const parts = [theme.name]
-  const tint = tintOf(l)
-  if (tint) parts.push(tint.slug)
-  if (l.face && l.face !== theme.face) parts.push(l.face)
-  return parts.join(', ')
-}
-
 // ── the arithmetic ──────────────────────────────────────────────────────────
 function rgb(hex) {
   const h = String(hex || '').replace('#', '')

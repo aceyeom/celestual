@@ -72,7 +72,7 @@ import { toWrite, verified } from '../auth.js'
 
 const FRESH = 6
 
-export default function Find({ go, back, rev }) {
+export default function Find({ go, up, upLabel = 'back to the wall', rev }) {
   const [value, setValue] = useState(() => getState().query || '')
   // as typed, trimmed: what the server hears (0054)
   const q = value.trim().replace(/\s+/g, ' ')
@@ -133,9 +133,9 @@ export default function Find({ go, back, rev }) {
   const writeTo = () => toWrite(go, h)
 
   return (
-    <Sheet onClose={back} tall labelledBy="wl-find-h">
+    <Sheet onClose={up} tall labelledBy="wl-find-h">
       <div className="wl-sheet-in wl-find">
-        <SheetHead onClose={back} label="back to the wall" />
+        <SheetHead onClose={up} label={upLabel} />
         <h2 id="wl-find-h" className="wl-sr">look for a name</h2>
 
         <div className="wl-find-field">

@@ -247,7 +247,12 @@ export default function WallApp() {
 
     const swap = () => {
       const nextDepth = SHEETS.has(target.name) ? (SHEETS.has(from.name) ? depth + 1 : 1) : 0
-      window.history.pushState({ wall: name, wallDepth: nextDepth }, '', to)
+      // `wallPushed` marks an entry THIS shell put on the stack, which is the
+      // one fact `up` needs and the one `wallDepth` cannot carry: a sheet the
+      // browser opened on directly is depth zero AND has nothing behind it,
+      // while a sheet at depth one that the shell pushed has the wall behind
+      // it. Reading depth alone confuses the two in both directions.
+      window.history.pushState({ wall: name, wallDepth: nextDepth, wallPushed: true }, '', to)
       setOverride(null)
       setRoute(target)
       if (!sheetMove) window.scrollTo(0, 0)
@@ -277,19 +282,43 @@ export default function WallApp() {
   }, [])
 
   const setField = useCallback((m) => setOverride(m), [])
+  // all the way out: to the wall, whatever is stacked over it. The one
+  // screen that wants this is the composer once its letter is up, because
+  // the letter is ON the wall and the wall is what there is to see.
   const back = useCallback(() => go('wall'), [go])
   // ── one step up ──
-  // A sheet raised over another sheet closes onto the one under it, not
-  // onto the wall: the composer opened from the pen on a letter comes back
-  // to that letter. Each sheet entry carries its depth, so one step back in
-  // the history is the sheet underneath, which onPop then renders; a sheet
-  // at depth one, or one arrived at by deep link, closes onto the wall.
+  // A sheet closes onto whatever it was opened FROM, not onto the wall: the
+  // report opened on a letter comes back to that letter, the gate opened
+  // part way through the composer comes back to the composer, and a sheet
+  // opened from the wall comes back to the wall.
+  //
+  // The question is only ever "did this shell push the entry I am standing
+  // on", and `wallPushed` answers it. If it did, the entry underneath is one
+  // the shell wrote and one step back renders it, whatever it is. If it did
+  // not — the browser opened directly on this address — then there is
+  // nothing behind it at all and stepping back would leave the product, so
+  // the way out is to push the wall.
+  //
+  // Depth is the wrong question here and reading it got this wrong twice
+  // over. A deep-linked sheet is depth zero with nothing behind it; a report
+  // opened on a deep-linked letter is depth one WITH something behind it;
+  // and a letter opened from the wall is also depth one. No threshold on
+  // depth separates those three, which is why this asks about the push.
   const up = useCallback(() => {
     if (leaving.current) return
-    const depth = Number(window.history.state?.wallDepth) || 0
-    if (depth > 1) { leaving.current = true; setOverride(null); window.history.go(-1); return }
+    if (window.history.state?.wallPushed) {
+      leaving.current = true; setOverride(null); window.history.go(-1); return
+    }
     go('wall')
   }, [go])
+  // ── and what is under this sheet, so the close mark can say so ──
+  // Read at render, which for this component is every route change, so a
+  // sheet knows on its first frame where its way out actually goes. A mark
+  // labelled "back to the wall" that lands on the composer is a mark that
+  // lied, and a screen reader hears the lie.
+  const st = window.history.state
+  const nested = !!(st?.wallPushed && Number(st.wallDepth) > 1)
+  const upLabel = nested ? 'back' : 'back to the wall'
   const handOff = useCallback(() => setBoot(1), [])
   const settle = useCallback(() => { BOOTED = true; setBoot(2) }, [])
 
@@ -301,7 +330,7 @@ export default function WallApp() {
   const onSheet = SHEETS.has(route.name)
   // `under` is whether a sheet is up over the wall: the hive stops moving and
   // stops writing to the DOM while it is dimmed and blurred behind one.
-  const shared = { go, back, up, setField, reduce, rev: revision(), under: onSheet }
+  const shared = { go, back, up, nested, upLabel, setField, reduce, rev: revision(), under: onSheet }
 
   let sheet = null
   if (route.name === 'letter') sheet = <Letter id={route.id} {...shared} />

@@ -330,7 +330,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
       <main className="mn-page mn-placed">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <Display size="m" as="h1" ref={avoid}>It&rsquo;s out.</Display>
+          <Display size="m" as="h1" ref={avoid}>it&rsquo;s out.</Display>
           <Prose className="mn-copy">
             sixty days on <span className="sg-h">{atHandle(done.to)}</span>. if they place
             one back, you both find out.
@@ -393,7 +393,7 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
         {step === 0 ? (
           /* ── to ── the name, and who that is */
           <>
-            <Display size="m" as="h1" className="mn-h" ref={avoid}>Who&rsquo;s on<br />your mind.</Display>
+            <Display size="m" as="h1" className="mn-h" ref={avoid}>who&rsquo;s on<br />your mind.</Display>
             <div className="mn-step">
               <HandleField
                 value={to} onChange={setTo} onSubmit={next}

@@ -58,7 +58,7 @@ import {
 import { letter, loadLetter, report, labelFor, ago } from '../data.js'
 import { setAfterGate } from '../store.js'
 
-export default function Report({ id, go, back }) {
+export default function Report({ id, go, up, upLabel = 'back to the wall' }) {
   const [step, setStep] = useState(0)     // 0 the tap · 1 the box · 2 it is filed
   const [why, setWhy] = useState('')
   const [fault, setFault] = useState('')
@@ -87,14 +87,14 @@ export default function Report({ id, go, back }) {
       : out?.error === 'rate_limited' ? 'rate' : 'network')
   }
 
-  const head = <SheetHead onClose={back} label="back to the wall" />
+  const head = <SheetHead onClose={up} label={upLabel} />
 
   if (live === undefined && !one) {
     return (
-      <Sheet onClose={back} labelledBy="wl-rep-h">
+      <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">Reading it.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">reading it.</Display>
           <div className="wl-push" />
         </div>
       </Sheet>
@@ -103,13 +103,13 @@ export default function Report({ id, go, back }) {
 
   if (!one) {
     return (
-      <Sheet onClose={back} labelledBy="wl-rep-h">
+      <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">It is already down.</Display>
-          <Prose className="wl-gate-copy">Nothing here is on the wall any more.</Prose>
+          <Display size="s" as="h2" id="wl-rep-h">it is already down.</Display>
+          <Prose className="wl-gate-copy">nothing here is on the wall any more.</Prose>
           <div className="wl-push" />
-          <SheetFoot><ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill></SheetFoot>
+          <SheetFoot><ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill></SheetFoot>
         </div>
       </Sheet>
     )
@@ -131,10 +131,10 @@ export default function Report({ id, go, back }) {
   // than they hold a berkeley.edu address at the moment they find their name.
   if (one.body === null || fault === 'gate') {
     return (
-      <Sheet onClose={back} labelledBy="wl-rep-h">
+      <Sheet onClose={up} labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">You have to be<br />signed in for this.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">you have to be<br />signed in for this.</Display>
           <div className="wl-push" />
           <Locked onOpen={() => { setAfterGate({ name: 'report', id }); go('gate') }}>
             Sign in to take a letter down.
@@ -147,10 +147,10 @@ export default function Report({ id, go, back }) {
   // ── 0 · the tap ──
   if (step === 0) {
     return (
-      <Sheet onClose={back} tall labelledBy="wl-rep-h">
+      <Sheet onClose={up} tall labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">This comes down<br />when you tap it.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">this comes down<br />when you tap it.</Display>
 
           <div className="wl-report-what">
             <Label tone="dim">
@@ -186,7 +186,7 @@ export default function Report({ id, go, back }) {
             ) : fault === 'rate' ? (
               <Label tone="dim">that is a lot of reports in one hour. give it time</Label>
             ) : null}
-            <CloseQuiet onClose={back}>leave it up</CloseQuiet>
+            <CloseQuiet onClose={up}>leave it up</CloseQuiet>
           </SheetFoot>
         </div>
       </Sheet>
@@ -196,15 +196,15 @@ export default function Report({ id, go, back }) {
   // ── 1 · the small box ──
   if (step === 1) {
     return (
-      <Sheet onClose={back} tall labelledBy="wl-rep-h">
+      <Sheet onClose={up} tall labelledBy="wl-rep-h">
         <div className="wl-sheet-in wl-report">
           {head}
-          <Display size="s" as="h2" id="wl-rep-h">It&rsquo;s down.</Display>
+          <Display size="s" as="h2" id="wl-rep-h">it&rsquo;s down.</Display>
           <Label tone="dim" className="wl-report-done">
             off the wall · <span className="wl-h">{labelFor(one.to)}</span>
           </Label>
 
-          <Prose className="wl-gate-copy">Saying why is optional.</Prose>
+          <Prose className="wl-gate-copy">saying why is optional.</Prose>
 
           <ReasonField
             value={why} onChange={setWhy} autoFocus
@@ -236,19 +236,19 @@ export default function Report({ id, go, back }) {
   // eventually goes. A reporter who learns which words get a faster result is a
   // reporter who has been taught to write them.
   return (
-    <Sheet onClose={back} labelledBy="wl-rep-h">
+    <Sheet onClose={up} labelledBy="wl-rep-h">
       <div className="wl-sheet-in wl-report">
         {head}
-        <Display size="s" as="h2" id="wl-rep-h">Someone will<br />look at it.</Display>
+        <Display size="s" as="h2" id="wl-rep-h">someone will<br />look at it.</Display>
 
         <div className="wl-report-read">
-          <Prose className="wl-gate-copy">Off the wall, and a person reads it from here.</Prose>
+          <Prose className="wl-gate-copy">off the wall, and a person reads it from here.</Prose>
         </div>
 
         <div className="wl-push" />
 
         <SheetFoot>
-          <ClosePill tone="light" wide onClose={back}>back to the wall</ClosePill>
+          <ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill>
         </SheetFoot>
       </div>
     </Sheet>

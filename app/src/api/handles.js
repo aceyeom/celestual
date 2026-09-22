@@ -389,12 +389,6 @@ export function warmFaces(handles) {
   })));
 }
 
-// What a person is about to act on, read back to them. Used by the confirm
-// steps: 'missing' is the one that changes the copy on the button.
-export function isMissing(r) {
-  return !!r && r.state === 'missing';
-}
-
 // The monogram a card draws when there is no face. One or two letters from the
 // display name, or the handle if there is no name. Here rather than in a
 // component so every place that draws a card draws the same one.

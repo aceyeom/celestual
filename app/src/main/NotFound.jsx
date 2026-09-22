@@ -15,7 +15,7 @@ export default function NotFound({ go, who }) {
     <main className="mn-page">
       <TopBar go={go} who={who} />
       <div className="mn-mid">
-        <Display size="m" as="h1">Nothing<br />at this address.</Display>
+        <Display size="m" as="h1">nothing<br />at this address.</Display>
       </div>
       <div className="mn-foot">
         <Pill tone="light" wide onClick={() => go('hero')}>the front page</Pill>

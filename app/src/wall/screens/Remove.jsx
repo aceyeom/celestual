@@ -60,7 +60,7 @@ import { atHandle, lettersFor, loadHandle, normHandle, removeLetter, validHandle
 import { isVerified, forgetVerified } from '../auth.js'
 import { startHandoff, pollHandoff, savePending, loadPending, clearPending } from '../handoff.js'
 
-export default function Remove({ handle: prefill, back }) {
+export default function Remove({ handle: prefill, up, upLabel = 'back to the wall' }) {
   const held = useRef(null)
   if (held.current === null) {
     const p = loadPending()
@@ -193,7 +193,7 @@ export default function Remove({ handle: prefill, back }) {
     setGone({ handle: h, n })
   }
 
-  const head = <SheetHead onClose={back} label="back to the wall" />
+  const head = <SheetHead onClose={up} label={upLabel} />
 
   // ── done ──
   // It has already happened. No confirmation to accept, nothing to check an
@@ -201,16 +201,16 @@ export default function Remove({ handle: prefill, back }) {
   // removal was never real.
   if (gone) {
     return (
-      <Sheet onClose={back} labelledBy="wl-rm-h">
+      <Sheet onClose={up} labelledBy="wl-rm-h">
         <div className="wl-sheet-in wl-remove">
           {head}
-          <Display size="s" as="h2" id="wl-rm-h">It&rsquo;s off the wall.</Display>
+          <Display size="s" as="h2" id="wl-rm-h">it&rsquo;s off the wall.</Display>
           <div className="wl-remove-gone">
             <Label tone="dim"><span className="wl-h">{atHandle(gone.handle)}</span></Label>
             <Prose className="wl-gate-copy">
               {gone.n === 0
-                ? 'There was nothing under it. A name with no letters is not on the wall.'
-                : `${gone.n === 1 ? 'The one letter' : `All ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
+                ? 'there was nothing under it. a name with no letters is not on the wall.'
+                : `${gone.n === 1 ? 'the one letter' : `all ${gone.n} letters`} under it went with it, and the name cannot be written to again.`}
             </Prose>
             {/* The wall is one of two surfaces, and this control is only the
                 wall's. Somebody who wants the handle out of the product
@@ -220,19 +220,19 @@ export default function Remove({ handle: prefill, back }) {
                 of the same act (migration 0046). */}
             <Prose className="wl-gate-copy">
               The rest of celestual is its own door.{' '}
-              <a className="wl-quiet" href="/optout">Take the handle off there</a> and it
+              <a className="wl-quiet" href="/optout">take the handle off there</a> and it
               goes from both, for good.
             </Prose>
           </div>
           <div className="wl-push" />
-          <SheetFoot><ClosePill tone="light" wide onClose={back}>done</ClosePill></SheetFoot>
+          <SheetFoot><ClosePill tone="light" wide onClose={up}>done</ClosePill></SheetFoot>
         </div>
       </Sheet>
     )
   }
 
   return (
-    <Sheet onClose={back} tall labelledBy="wl-rm-h">
+    <Sheet onClose={up} tall labelledBy="wl-rm-h">
       <div className="wl-sheet-in wl-remove">
         {head}
 
@@ -246,15 +246,15 @@ export default function Remove({ handle: prefill, back }) {
         ) : (
           <>
             <Display size="s" as="h2" id="wl-rm-h">
-              {proven ? <>It&rsquo;s yours.<br />Take it down.</> : <>Take your name<br />off the wall.</>}
+              {proven ? <>it&rsquo;s yours.<br />take it down.</> : <>take your name<br />off the wall.</>}
             </Display>
 
             {/* Two lines, not a paragraph. What it costs, and the cheaper door
                 beside it. */}
             <Prose className="wl-gate-copy">
               {proven
-                ? 'Every letter under it goes too.'
-                : 'Permanent. To take down one letter, report that one instead.'}
+                ? 'every letter under it goes too.'
+                : 'permanent. to take down one letter, report that one instead.'}
             </Prose>
 
             <div className="wl-remove-field">

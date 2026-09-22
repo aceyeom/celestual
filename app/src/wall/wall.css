@@ -95,6 +95,82 @@
   --r-pill:  999px;
   --r-field: 12px;
 
+  /* ── the type ladder ────────────────────────────────────────────────────
+     Nine steps and no tenth. The file carried twenty-nine sizes, which is
+     not a scale: it is what happens when every component picks its own
+     number. The damage was never one rule being half a pixel off, it was
+     one ROLE drawn at four sizes — the @ under a name was 11, 11.5, 12.5
+     and 15px in five places, a person's name was 13 and 14, and a small
+     control was 11.5, 12 and 12.5 — so three things doing one job read as
+     three different things.
+
+     A step is a JOB, not a size, which is why they are named for the job.
+     Reach for the step whose name matches what the type is doing; if none
+     of them fits, the type is doing a job the system does not have yet and
+     that is the thing to settle, not the number.
+
+     DESIGN.md section 4.2 is the source: --t-label, --t-meta, --t-ctrl,
+     --t-name, --t-read and --t-value are exactly the sizes it documents.
+     The paper's own furniture is NOT on this ladder and never was: a look's
+     stamp, rail and signal bar are a material's markings, they are keyed on
+     --lk-* and data-look, and they keep their literal numbers for the same
+     reason section 2.5 lets them keep literal hues. */
+  --t-label:    10.5px;  /* a mono uppercase label, and anything at its size */
+  --t-meta:     11.5px;  /* the line under a name: the @, the date, a row's meta */
+  --t-small:    12.5px;  /* a quiet control, a reason, a caption */
+  --t-ctrl:     13.5px;  /* a control's word */
+  --t-name:     14px;    /* a person's name, and a row's handle */
+  --t-wide:     15.5px;  /* a wide control's word, and dense reading */
+  --t-read:     17px;    /* prose. The reading size */
+  --t-subject:  19px;    /* a handle set as the subject of a sheet */
+  --t-value:    22px;    /* what somebody typed, in a field */
+  --t-value-lg: 28px;    /* the same, on a screen whose whole question it is */
+
+  /* ── the tracking ladder ────────────────────────────────────────────────
+     Tracking is size-specific — one value across a whole build is wrong
+     somewhere — so this is a ladder and not a constant. It had twenty-five
+     values, and the top of that list was four ways of writing "very nearly
+     none": 0.004, 0.008, 0.01 and 0.012em are the same tracking to every
+     eye that has ever looked at this product, and a component picking
+     between them was a component picking at random.
+
+     Six steps. Display type is the exception and keeps --track-display,
+     which is set with the display weight and optical size it belongs to;
+     the paper's furniture keeps its literal values for the reason above. */
+  --tr-tight:  -0.012em;  /* an identifier, and display type at size */
+  --tr-snug:   -0.008em;  /* a name, set large */
+  --tr-normal:  0.008em;  /* a control's word, running type */
+  --tr-open:    0.04em;   /* mono at small size, still lower case */
+  --tr-loose:   0.08em;   /* mono, spaced, not yet a label */
+  --tr-label:   0.15em;   /* an uppercase label */
+  --tr-label-2: 0.13em;   /* the same, dimmed: DESIGN.md 4.2 */
+
+  /* ── the control ladder ─────────────────────────────────────────────────
+     Three capsule heights and two round diameters. The build had EIGHT
+     capsule heights — 30, 32, 36, 40, 44, 46, 48 and 50 — at six different
+     word sizes, and three diameters for a round control, 32, 36 and 40.
+     Nothing chose any of them: each was picked once, in the place it was
+     needed, by somebody looking at that screen and no other. The result is
+     what a person actually sees on the wall: buttons that are nearly the
+     same size, which reads worse than buttons that are plainly different
+     sizes, because nearly-the-same looks like a mistake and different looks
+     like a decision.
+
+     A tier is the control's JOB in the screen it is on:
+       sm   an affordance printed on a row, or a tag. Not the point of anything
+       md   a control in a bar, and every round control on the void
+       lg   the ACT: the one thing the screen is asking, and every way
+            through a door, which is the one screen where the ways in ARE
+            the content (DESIGN.md 8.5)
+     The round tier is two because a round control on PAPER is drawn in the
+     paper's ink at the paper's scale, and one on the void is a target on a
+     phone. They are the pen and the close mark, and nothing else. */
+  --c-sm:    32px;
+  --c-md:    40px;
+  --c-lg:    48px;
+  --c-round: 40px;   /* the close mark and the icon button: the bar is one height */
+  --c-round-paper: 32px;  /* the pen, struck in a letter's own ink */
+
   --ease:     cubic-bezier(0.16, 1, 0.30, 1);
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   /* ── the two curves a sheet moves on ──
@@ -342,9 +418,9 @@
 
 .wl-label {
   font-family: var(--f-id);
-  font-size: 10.5px;
+  font-size: var(--t-label);
   font-weight: 400;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tr-label);
   line-height: 1.5;
   text-transform: uppercase;
   color: var(--ash);
@@ -352,10 +428,10 @@
 }
 /* a sparkle set into a label sits on the line rather than beside the block */
 .wl-label .wl-spark { display: inline-block; vertical-align: -1px; margin-right: 7px; }
-.wl-label.is-dim { color: var(--ash-dim); letter-spacing: 0.13em; }
+.wl-label.is-dim { color: var(--ash-dim); letter-spacing: var(--tr-label-2); }
 /* a handle inside a label keeps its case. Handles are lower-case identifiers;
    uppercasing one turns it into a different string from the one on the wall. */
-.wl-label .wl-h { text-transform: none; letter-spacing: 0.03em; }
+.wl-label .wl-h { text-transform: none; letter-spacing: var(--tr-open); }
 .wl-label.is-ink { color: var(--lk-ink-2, var(--paper-ink-2)); }
 
 .wl-prose {
@@ -382,13 +458,13 @@
   font-family: var(--f-display);
   font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 21px; line-height: 1.3;
+  font-size: var(--t-value); line-height: 1.3;
   color: var(--chalk);
   padding: 5px 0;
   transition: color 200ms var(--ease), opacity 200ms var(--ease);
   text-decoration: none;
 }
-.wl-arrow.is-s { font-size: 16px; gap: 8px; }
+.wl-arrow.is-s { font-size: var(--t-wide); gap: 8px; }
 .wl-arrow.is-quiet { color: var(--ash); }
 .wl-arrow-g {
   color: var(--ash-dim); font-family: var(--f-util);
@@ -412,10 +488,10 @@
    Three roles and no fourth. */
 .wl-pill {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 40px; padding: 0 20px;
+  min-height: var(--c-md); padding: 0 20px;
   border-radius: var(--r-pill);
   font-family: var(--f-util);
-  font-size: 13.5px; font-weight: 500; letter-spacing: 0.008em;
+  font-size: var(--t-ctrl); font-weight: 500; letter-spacing: var(--tr-normal);
   white-space: nowrap;
   transition: transform 220ms var(--ease), background 220ms var(--ease),
               border-color 220ms var(--ease), color 220ms var(--ease), opacity 220ms var(--ease);
@@ -437,9 +513,18 @@
 
 .wl-pill.is-ghost {
   border: 1px solid var(--hair); color: var(--ash);
-  min-height: 32px; padding: 0 13px; font-size: 12px;
+  min-height: var(--c-sm); padding: 0 13px; font-size: var(--t-small);
 }
-.wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
+/* ── hover is gated, because a phone has no hover ──
+   A touch device fires :hover on tap and LEAVES it there until something
+   else is tapped, so an ungated hover rule is a control that lights up and
+   stays lit — or, where the rule moves something, a chevron that slides
+   four pixels and never slides back. This product is met almost entirely on
+   a phone, after picking a card up off a table. Most of the build already
+   gates it; these did not. */
+@media (hover: hover) and (pointer: fine) {
+  .wl-pill.is-ghost:hover:not(:disabled) { border-color: rgba(244,241,234,0.24); color: var(--chalk); }
+}
 
 /* There was a third role here, `is-ember`: a filled saturated capsule. It had
    exactly one caller in the whole build, the "today" pill on the core service,
@@ -449,7 +534,7 @@
 
 /* a size, declared after the roles so it wins over whatever min-height and
    font-size the role set */
-.wl-pill.is-wide { width: 100%; min-height: 50px; padding: 0 22px; font-size: 15px; }
+.wl-pill.is-wide { width: 100%; min-height: var(--c-lg); padding: 0 22px; font-size: var(--t-name); }
 
 /* ── lit ──
    The running light on the capsule (parts.jsx `Light`, and the rules under
@@ -459,7 +544,7 @@
    Nothing asks for it on a pill any more: it rode on the chalk primary, and
    the metal has a current of its own — a rose point travelling round the
    inside of it would be a second one under the same word. The light itself
-   is not gone, it is on the veil's way in (`.wl-mast-go-pill`); the role
+   is not gone, it is on the result card while it is looking; the role
    stays here because a ghost may still take it. */
 .wl-pill.is-lit { position: relative; isolation: isolate; background: none; }
 .wl-pill.is-lit > :not(.wl-light) { position: relative; z-index: 2; }
@@ -630,7 +715,7 @@ a.wl-lq { text-decoration: none; }
 .wl-icon { display: block; }
 .wl-iconbtn {
   display: grid; place-items: center; padding: 0;
-  width: 40px; height: 40px; border-radius: var(--r-pill);
+  width: var(--c-round); height: var(--c-round); border-radius: var(--r-pill);
   color: var(--ash);
   border: 1px solid transparent;
   transition: color 200ms var(--ease), border-color 200ms var(--ease), background 200ms var(--ease),
@@ -656,7 +741,7 @@ a.wl-lq { text-decoration: none; }
 .wl-close {
   flex: 0 0 auto;
   display: grid; place-items: center; padding: 0;
-  width: 36px; height: 36px; border-radius: 50%;
+  width: var(--c-round); height: var(--c-round); border-radius: 50%;
   color: var(--ash);
   border: 1px solid var(--hair);
   background: rgba(244, 241, 234, 0.014);
@@ -683,7 +768,7 @@ a.wl-lq { text-decoration: none; }
    and for nothing else. */
 .wl-quiet {
   align-self: center; padding: 10px 4px;
-  font-family: var(--f-util); font-size: 12.5px; letter-spacing: 0.01em;
+  font-family: var(--f-util); font-size: var(--t-small); letter-spacing: var(--tr-normal);
   color: var(--ash-dim);
   transition: color 200ms var(--ease);
 }
@@ -700,12 +785,14 @@ a.wl-lq { text-decoration: none; }
   flex: 0 0 auto;
   padding: 5px 12px; border-radius: var(--r-pill);
   border: 1px solid var(--hair-soft);
-  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.012em;
+  font-family: var(--f-util); font-size: var(--t-meta); letter-spacing: var(--tr-normal);
   color: var(--ash-dim);
   transition: color 220ms var(--ease), border-color 220ms var(--ease);
 }
-.wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
-.wl-mine.is-wide { padding: 9px 16px; font-size: 12px; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-mine:hover { color: var(--chalk); border-color: var(--hair); }
+}
+.wl-mine.is-wide { padding: 9px 16px; font-size: var(--t-small); }
 
 
 /* ═══ THE PAPER ════════════════════════════════════════════════════════════
@@ -794,7 +881,7 @@ a.wl-lq { text-decoration: none; }
 .wl-paper-head {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   min-height: 22px;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label-2); text-transform: uppercase;
   color: var(--lk-ink-2);
   padding-bottom: 11px; margin-bottom: 15px;
   border-bottom: 1px solid var(--lk-rule);
@@ -805,7 +892,7 @@ a.wl-lq { text-decoration: none; }
   flex: 0 0 auto;
   padding: 3px 9px 2px; border-radius: var(--r-pill);
   border: 1px solid var(--lk-ink-mid);
-  font-size: 8.5px; letter-spacing: 0.17em;
+  font-size: 8.5px; letter-spacing: var(--tr-label);
   color: var(--lk-ink-2);
 }
 
@@ -857,7 +944,7 @@ a.wl-lq { text-decoration: none; }
 .wl-pen {
   flex: 0 0 auto; margin-left: auto;
   display: grid; place-items: center; padding: 0;
-  width: 32px; height: 32px; border-radius: 50%;
+  width: var(--c-round-paper); height: var(--c-round-paper); border-radius: 50%;
   color: var(--lk-ink-2);
   border: 1px solid var(--lk-rule);
   background: none;
@@ -876,7 +963,7 @@ a.wl-lq { text-decoration: none; }
 /* the @handle set as a card's title, in the identity face. It is the SUBJECT
    of the sheet and it is now set like one: bigger than the body it sits over,
    on its own line, with the crest beside it and nothing else in the row. */
-.wl-letter-to { font-family: var(--f-id); font-size: 20px; letter-spacing: -0.012em; }
+.wl-letter-to { font-family: var(--f-id); font-size: var(--t-subject); letter-spacing: var(--tr-tight); }
 
 /* the name on the composer's card is the way back to the first question:
    the addressee as it stands on every letter, with a press on it, and an
@@ -1036,7 +1123,7 @@ a.wl-lq { text-decoration: none; }
    draws a line under itself, and the dateline under it drew a second one
    eight pixels below the first. */
 .wl-paper[data-look="nokia"] .wl-paper-head {
-  letter-spacing: 0.15em; border-bottom: 0; padding-bottom: 0; margin-bottom: 11px;
+  letter-spacing: var(--tr-label); border-bottom: 0; padding-bottom: 0; margin-bottom: 11px;
 }
 /* the status row. Three of the four signal bars are lit and two of the three
    battery segments are: a full battery and full signal read as a picture of
@@ -1208,15 +1295,15 @@ a.wl-lq { text-decoration: none; }
    A bare baseline, not a box. The '@' is painted beside the input, is never in
    the value, and cannot be backspaced away. */
 .wl-field { position: relative; display: flex; align-items: baseline; gap: 8px; padding-bottom: 11px; }
-.wl-at { font-family: var(--f-id); font-size: 22px; color: var(--ash-dim); line-height: 1; transition: color 240ms var(--ease); }
-.wl-field.is-lg .wl-at { font-size: 28px; }
+.wl-at { font-family: var(--f-id); font-size: var(--t-value); color: var(--ash-dim); line-height: 1; transition: color 240ms var(--ease); }
+.wl-field.is-lg .wl-at { font-size: var(--t-value-lg); }
 .wl-field input {
   flex: 1 1 auto; min-width: 0;
   background: none; border: 0; padding: 0;
-  font-family: var(--f-id); font-size: 22px; line-height: 1.18;
-  color: var(--chalk); letter-spacing: -0.012em;
+  font-family: var(--f-id); font-size: var(--t-value); line-height: 1.18;
+  color: var(--chalk); letter-spacing: var(--tr-tight);
 }
-.wl-field.is-lg input { font-size: 28px; }
+.wl-field.is-lg input { font-size: var(--t-value-lg); }
 .wl-field input::placeholder { color: rgba(96, 92, 85, 0.62); }
 .wl-field input:focus { outline: none; }
 .wl-field-line {
@@ -1272,7 +1359,7 @@ a.wl-lq { text-decoration: none; }
 .wl-settled.is-looking .wl-settled-disc { background: rgba(244, 241, 234, 0.035); }
 .wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .wl-settled-mono {
-  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.06em;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
   color: var(--ash); user-select: none;
 }
 /* the two states share one cell and cross fade: the words land where the bars
@@ -1297,18 +1384,18 @@ a.wl-lq { text-decoration: none; }
 .wl-settled-bar.is-short { width: 74px; height: 8px; animation-delay: 180ms; }
 .wl-settled-name {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--f-util); font-size: 17px; font-weight: 500; letter-spacing: -0.008em;
+  font-family: var(--f-util); font-size: var(--t-read); font-weight: 500; letter-spacing: var(--tr-snug);
   color: var(--chalk);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-settled-name .wl-settled-badge { color: var(--accent); flex: 0 0 auto; }
 .wl-settled-at {
-  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.04em; color: var(--ash);
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-open); color: var(--ash);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* no account by that name: not an error and not drawn as one, because the
    letter still goes up and somebody who knows their friend's handle is right */
-.wl-settled.is-missing .wl-settled-name { font-weight: 400; font-size: 15px; color: var(--ash); }
+.wl-settled.is-missing .wl-settled-name { font-weight: 400; font-size: var(--t-wide); color: var(--ash); }
 .wl-settled.is-missing .wl-settled-at { color: var(--chalk); }
 /* the close mark, at the field's scale rather than a sheet's */
 .wl-settled-clear { width: 32px; height: 32px; }
@@ -1342,11 +1429,16 @@ a.wl-lq { text-decoration: none; }
   font-size: calc(16.5px * var(--lk-size, 1)); line-height: 1.52;
   color: var(--lk-ink, var(--paper-ink));
 }
+/* DESIGN.md 9: focus is never removed. This took the outline off and put
+   nothing back, so the one field on the sheet somebody is actually writing
+   in was the one control in the build with no focus state — on paper, in the
+   paper's own ink, the way the pen and the addressee link take theirs. */
 .wl-letterfield textarea:focus { outline: none; }
+.wl-letterfield textarea:focus-visible { outline: 1px solid var(--lk-ink-strong); outline-offset: 3px; border-radius: 4px; }
 .wl-letterfield textarea::placeholder { color: var(--lk-ink-2, var(--paper-ink-2)); opacity: 0.62; }
 .wl-count {
   position: absolute; right: 0; bottom: -18px;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.08em;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-loose);
   color: var(--lk-ink-2, var(--paper-ink-2)); opacity: 0.8;
   transition: color 240ms var(--ease);
 }
@@ -1396,11 +1488,46 @@ a.wl-lq { text-decoration: none; }
   animation: wl-rise-sheet 540ms var(--ease-sheet) both;
   overflow: hidden;
 }
+/* ── and it has to LOOK like glass ──
+   It was written as glass and drawn as a panel: a tint at 66 to 80 percent
+   over a fourteen pixel blur, which on a near-black wall is opaque. Nothing
+   came through it — not the clouds, not a star, not the crowd of discs it
+   was raised over — so a sheet read as a black rectangle that had replaced
+   the room, while the search plate twelve pixels above it, at blur 22 and a
+   tenth of a tint, read as the piece of glass it is. Two surfaces on one
+   ground in two materials, which is the thing the wall most obviously gets
+   wrong.
+
+   A sheet is also the BIGGEST surface in the product, and a big translucent
+   surface reads as a thicker one: a heavier blur and a deeper shadow than
+   the small plates, not a lighter one. So the blur goes past the search's
+   and the tint comes down until the room is actually behind the words. The
+   tint still carries the type — it is a quarter darker over the hive's pale
+   discs than plain --void-1 would be — and where there is no backdrop-filter
+   the opaque tint above stands, unchanged. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .wl-sheet {
-    background: linear-gradient(180deg, rgba(13, 12, 18, 0.66) 0%, rgba(8, 7, 11, 0.8) 42%);
-    -webkit-backdrop-filter: blur(14px) saturate(1.2);
-    backdrop-filter: blur(14px) saturate(1.2);
+    background: linear-gradient(180deg, rgba(13, 12, 18, 0.58) 0%, rgba(8, 7, 11, 0.72) 42%);
+    -webkit-backdrop-filter: blur(34px) saturate(1.3);
+    backdrop-filter: blur(34px) saturate(1.3);
+  }
+}
+/* ── somebody who has asked for less of it ──
+   prefers-reduced-transparency is a request to stop reading type through a
+   moving room, and the answer is not a thinner blur, it is no blur: the
+   sheet becomes the opaque surface it always falls back to without
+   backdrop-filter, and the search plate becomes a plate. Nothing moves and
+   nothing is laid out differently; the material is the only thing that
+   changes. */
+@media (prefers-reduced-transparency: reduce) {
+  .wl-sheet {
+    background: linear-gradient(180deg, rgba(13, 12, 18, 0.97) 0%, rgba(8, 7, 11, 0.99) 42%);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .wl-seek-glass, .wl-seek-glass.is-open {
+    background: var(--void-1);
+    box-shadow: inset 0 0 0 1px var(--hair), 0 22px 48px -28px rgba(0, 0, 0, 0.95);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
 }
 .wl-sheet.is-tall { min-height: 62dvh; }
@@ -1446,11 +1573,11 @@ a.wl-lq { text-decoration: none; }
 .wl-row-mark { flex: 0 0 auto; display: grid; place-items: center; }
 .wl-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .wl-row-handle {
-  font-family: var(--f-id); font-size: 14px; color: var(--chalk); letter-spacing: -0.012em;
+  font-family: var(--f-id); font-size: var(--t-name); color: var(--chalk); letter-spacing: var(--tr-tight);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-row-meta {
-  font-size: 11.5px; color: var(--ash-dim); letter-spacing: 0.004em;
+  font-size: var(--t-meta); color: var(--ash-dim); letter-spacing: var(--tr-normal);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-row-action { flex: 0 0 auto; }
@@ -1609,7 +1736,7 @@ a.wl-lq { text-decoration: none; }
 .wl-brand-word {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 22px; line-height: 1; letter-spacing: var(--track-display);
+  font-size: var(--t-value); line-height: 1; letter-spacing: var(--track-display);
   color: var(--chalk); white-space: nowrap;
   transform: translateY(-0.03em);
 }
@@ -1723,19 +1850,19 @@ a.wl-lq { text-decoration: none; }
 .wl-ear-name {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 15px; letter-spacing: var(--track-display);
+  font-size: var(--t-wide); letter-spacing: var(--track-display);
   color: rgba(244, 241, 234, 0.78); white-space: nowrap;
 }
-.wl-ear-dot { color: var(--ash-dim); font-size: 13px; line-height: 1; }
+.wl-ear-dot { color: var(--ash-dim); font-size: var(--t-ctrl); line-height: 1; }
 .wl-ear-meta {
   display: inline-flex; align-items: baseline; gap: 5px;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* the figure: a step larger than the word after it, in chalk, its digits
    turning when a letter goes up (parts.jsx `Roll`, `.wl-roll` below) */
-.wl-ear-n { font-size: 13px; letter-spacing: 0.04em; color: var(--chalk); }
+.wl-ear-n { font-size: var(--t-ctrl); letter-spacing: var(--tr-open); color: var(--chalk); }
 /* ── the masthead ──
    The question and the caption, one block under the bar. The row takes no
    pointer; the plate inside it does (`.wl-seek`). */
@@ -1750,9 +1877,9 @@ a.wl-lq { text-decoration: none; }
    the shade had thinned to half, and "letters" was cut by whatever disc
    happened to be there. */
 .wl-masthead .wl-ear { padding: 0 0 9px; }
-.wl-masthead .wl-ear-name { font-size: 13.5px; }
-.wl-masthead .wl-ear-n { font-size: 12px; }
-.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; align-self: baseline; }
+.wl-masthead .wl-ear-name { font-size: var(--t-ctrl); }
+.wl-masthead .wl-ear-n { font-size: var(--t-small); }
+.wl-ear-again { padding: 0 0 0 2px; font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-label); text-transform: uppercase; align-self: baseline; }
 
 /* ── the roll ──
    parts.jsx `Roll`: a count whose figures turn. Each digit is a window one
@@ -1782,12 +1909,12 @@ a.wl-lq { text-decoration: none; }
 /* the word beside the count */
 .wl-board-say {
   display: block;
-  font-family: var(--f-util); font-size: 13px; font-weight: 500; letter-spacing: 0.06em;
+  font-family: var(--f-util); font-size: var(--t-ctrl); font-weight: 500; letter-spacing: var(--tr-loose);
   line-height: 1;
   color: rgba(244, 241, 234, 0.72);
 }
 /* nothing on the wall yet: a line, and not a nought */
-.wl-board-say.is-open { letter-spacing: 0.13em; }
+.wl-board-say.is-open { letter-spacing: var(--tr-label-2); }
 
 .wl-flaps { display: inline-flex; align-items: center; gap: 3px; }
 /* One plate. Every measure on it is a variable, because the same plate is
@@ -1801,7 +1928,7 @@ a.wl-lq { text-decoration: none; }
   perspective: 260px;
   font-family: var(--f-util); font-weight: 500;
   font-size: var(--flap-type); line-height: var(--flap-h);
-  font-feature-settings: 'tnum' 1; letter-spacing: -0.01em;
+  font-feature-settings: 'tnum' 1; letter-spacing: var(--tr-snug);
   color: var(--gold);
   -webkit-user-select: none; user-select: none;
 }
@@ -1953,23 +2080,35 @@ a.wl-lq { text-decoration: none; }
 .wl-seek .wl-field {
   cursor: text; background: none; box-shadow: none;
   width: 100%;
-  align-items: center; justify-content: center; gap: 12px;
+  align-items: center; justify-content: flex-start; gap: 12px;
   min-height: 54px; padding: 0 20px;
   border-radius: inherit;
 }
 /* the glass is the edge; the baseline under the type would be a second one */
 .wl-seek .wl-field-line { display: none; }
 .wl-seek .wl-at { color: rgba(244, 241, 234, 0.72); }
-/* The lens and the question are one group in the middle of the glass, under
-   the middle of the ear, rather than a glyph against the left edge with ten
-   characters after it and a hundred pixels of nothing to the right. The box
-   is measured in `ch` of its own mono face, so it is the question's own
-   length at whatever size the breakpoint sets. */
+/* ── it reads left to right, because it is a field ──
+   The lens stood against the left edge of nothing and the question was
+   centred in a 16ch box beside it, so the glass had a hundred pixels of
+   dead room on either side of the one thing in it. That is a caption's
+   layout, and this is not a caption: it is a FIELD, and what happens in a
+   centred field is that the first letter lands in the middle of the
+   capsule and then every letter after it shoves the ones already typed
+   sideways. The text a person is reading moves while they are reading it,
+   and the caret never sits still. Nothing else in the build does this —
+   every other field in the product (`.wl-field`, `.wl-addr`, the
+   composer's) is a left-aligned baseline, and the SAME question on the
+   `/find` sheet was left aligned all along.
+
+   So: the lens is at the left of the glass, the question starts beside it,
+   and the input takes the rest of the width. The first character lands
+   where the placeholder's first character was, and the line grows to the
+   right the way every line of type anybody has ever read does. */
 .wl-seek .wl-field input {
-  flex: 0 1 auto; width: 16ch;
-  font-size: 17.5px; letter-spacing: -0.004em; text-align: center;
+  flex: 1 1 auto; width: auto; min-width: 0;
+  font-size: var(--t-read); letter-spacing: var(--tr-snug); text-align: left;
 }
-.wl-seek .wl-at { font-size: 19px; }
+.wl-seek .wl-at { font-size: var(--t-subject); }
 /* the question itself is ash, not the field's own near-void placeholder:
    on this surface it is a label that has to be read at a glance, not a hint
    under a cursor */
@@ -2011,7 +2150,7 @@ a.wl-lq { text-decoration: none; }
    failed to find their own name is owed */
 .wl-seek-none {
   margin: 0; padding: 10px 12px 14px;
-  font-family: var(--f-util); font-size: 13px; line-height: 1.45;
+  font-family: var(--f-util); font-size: var(--t-ctrl); line-height: 1.45;
   color: var(--ash); text-align: center;
 }
 /* the seam: drawn on the list and not on the field, so it is only ever there
@@ -2171,7 +2310,7 @@ a.wl-lq { text-decoration: none; }
 .wl-mast-sub {
   margin: 16px auto 0; max-width: 30ch;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 17px; line-height: 1.5; letter-spacing: 0;
+  font-size: var(--t-read); line-height: 1.5; letter-spacing: 0;
   color: var(--ash);
   text-wrap: balance;
 }
@@ -2185,35 +2324,19 @@ a.wl-lq { text-decoration: none; }
    nav voice and read as a link to somewhere else rather than as the door
    into the thing under it. */
 .wl-mast-go {
-  --room: 14px;
-  position: relative; margin-top: 30px; padding: var(--room);
-  border: 0; background: none; pointer-events: auto; cursor: pointer;
-  display: inline-grid; place-items: center;
-  -webkit-tap-highlight-color: transparent;
+  margin-top: 30px;
+  pointer-events: auto;
+  min-height: var(--c-lg); padding: 0 24px; font-size: var(--t-name);
 }
-.wl-mast-go-pill {
-  position: relative; isolation: isolate; overflow: hidden;
-  display: inline-flex; align-items: center; gap: 10px;
-  min-height: 46px; padding: 0 22px 0 24px; border-radius: var(--r-pill);
-  font-family: var(--f-util); font-size: 14.5px; font-weight: 500; letter-spacing: 0.008em;
-  color: #14131A;
-  transition: transform 220ms var(--ease);
-}
-.wl-mast-go-pill > :not(.wl-light) { position: relative; z-index: 2; }
-.wl-mast-go-g {
-  font-family: var(--f-util); font-size: 16px; line-height: 1;
-  color: rgba(20, 19, 26, 0.55);
-  transition: transform 280ms var(--ease), color 200ms var(--ease);
-}
-@media (hover: hover) and (pointer: fine) {
-  .wl-mast-go:hover .wl-mast-go-g { transform: translateX(4px); color: #14131A; }
-}
-/* the press answers on the way down, in the time a press takes */
-.wl-mast-go:active .wl-mast-go-pill { transform: scale(0.97); transition-duration: 120ms; }
-.wl-mast-go:focus-visible { outline: none; }
-.wl-mast-go:focus-visible .wl-mast-go-pill {
-  box-shadow: 0 0 0 2px var(--void), 0 0 0 3px rgba(244, 241, 234, 0.55);
-}
+/* It was the LAST caller of the retired primary: a chalk plate with a rose
+   point running round the inside of it and an arrow after the word. Every
+   other act in the product became the liquid metal capsule when the primary
+   did (DESIGN.md 8.1), and this one did not — so the single most prominent
+   button on the wall, the one everybody presses first, was the only button
+   in the build still wearing the design that came off. It is the same
+   capsule as "write a letter" now, at the act's tier, and the arrow went
+   with the plate: an arrow inside a capsule is the arrow LINK's voice
+   (`.wl-arrow`) borrowed by a control that is already a door. */
 
 /* ── lifting ──
    The hole: transparent inside the radius, and a long soft shoulder past it
@@ -2273,7 +2396,7 @@ a.wl-lq { text-decoration: none; }
 .wl-write-act {
   min-height: 46px; min-width: min(100%, 220px);
   padding: 0 22px; gap: 9px;
-  font-size: 14px;
+  font-size: var(--t-name);
   --lq-lift: 0 18px 40px -18px rgba(0, 0, 0, 0.9);
 }
 /* the nib is struck in the capsule's own ink — it was the paper's while the
@@ -2775,10 +2898,10 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-act-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .wl-act-h {
-  font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: 0.004em; line-height: 1.2;
+  font-family: var(--f-util); font-size: var(--t-name); font-weight: 500; letter-spacing: var(--tr-normal); line-height: 1.2;
 }
 .wl-act-say {
-  font-family: var(--f-util); font-size: 12px; line-height: 1.4; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.4; color: var(--ash);
   text-wrap: pretty;
 }
 .wl-act-say .wl-h, .wl-act-say .wl-at { font-family: var(--f-id); font-size: 0.92em; }
@@ -2828,7 +2951,7 @@ a.wl-lq { text-decoration: none; }
   100% { transform: none; }
 }
 .wl-hearts-n {
-  font-family: var(--f-id); font-size: 12px; letter-spacing: 0.04em;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-open);
   font-variant-numeric: tabular-nums;
   color: var(--lk-ink-2);
   transition: color 220ms var(--ease);
@@ -2846,7 +2969,7 @@ a.wl-lq { text-decoration: none; }
 .wl-find-empty { padding: 26px 2px 8px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .wl-find-echo {
   margin: 0 0 8px;
-  font-family: var(--f-id); font-size: 26px; letter-spacing: -0.02em;
+  font-family: var(--f-id); font-size: var(--t-value-lg); letter-spacing: var(--tr-tight);
   color: var(--chalk);
 }
 .wl-find-empty .wl-pill { margin-top: 4px; }
@@ -2854,7 +2977,7 @@ a.wl-lq { text-decoration: none; }
 .wl-find-echo.is-name {
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display); letter-spacing: var(--track-display);
-  font-size: 28px;
+  font-size: var(--t-value-lg);
 }
 /* the quieter second under the primary: the letter to the name that was typed */
 .wl-find-to { padding: 6px 2px 2px; align-self: flex-start; }
@@ -2991,7 +3114,7 @@ a.wl-lq { text-decoration: none; }
      word is not, so the word needs the border back to stand on the same
      vertical as the field's @ */
   min-height: 33px; padding: 0 16px;
-  font-family: var(--f-util); font-size: 12.5px; font-weight: 500; letter-spacing: 0.008em;
+  font-family: var(--f-util); font-size: var(--t-small); font-weight: 500; letter-spacing: var(--tr-normal);
   color: var(--ash); white-space: nowrap;
   transition: color 220ms var(--ease);
 }
@@ -3003,7 +3126,7 @@ a.wl-lq { text-decoration: none; }
   .wl-seg-opt:not([aria-checked="true"]):not([aria-selected="true"]):hover { color: var(--chalk); }
 }
 @media (max-width: 359px) {
-  .wl-seg-opt { padding: 0 12px; font-size: 12px; }
+  .wl-seg-opt { padding: 0 12px; font-size: var(--t-small); }
 }
 
 /* ═══ THE LOOK PANEL ═══════════════════════════════════════════════════════
@@ -3150,7 +3273,7 @@ a.wl-lq { text-decoration: none; }
    ash (`.wl-ear`). On this surface the bright one of two greys is the fact. */
 .wl-look-now {
   margin: 0; text-align: center;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--chalk);
 }
 @media (max-width: 359px) {
@@ -3218,7 +3341,7 @@ a.wl-lq { text-decoration: none; }
 .wl-allow.is-spent .wl-allow-say { color: var(--ember); }
 /* the week's line: the label's own face, in ash rather than the accent,
    because a limit met is a fact about the week and not an alarm about it */
-.wl-allow.is-week { display: block; color: var(--ash); letter-spacing: 0.12em; animation: wl-fade 320ms var(--ease) both; }
+.wl-allow.is-week { display: block; color: var(--ash); letter-spacing: var(--tr-label-2); animation: wl-fade 320ms var(--ease) both; }
 
 /* ═══ THE ONE DOOR ═════════════════════════════════════════════════════════ */
 .wl-join-air { height: 8vh; min-height: 26px; flex: 0 0 auto; }
@@ -3269,7 +3392,7 @@ a.wl-lq { text-decoration: none; }
    band read as a door rather than as a break. */
 .wl-circuit-tag {
   font-family: var(--f-id); font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tr-tight);
   fill: var(--ash);
   opacity: 0.55;
   transition: fill 700ms var(--ease), opacity 700ms var(--ease);
@@ -3353,10 +3476,10 @@ a.wl-lq { text-decoration: none; }
    before deciding something. */
 .wl-say {
   margin: 0;
-  font-family: var(--f-util); font-size: 12.5px; line-height: 1.6;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.6;
   color: var(--ash-dim); max-width: 42ch;
 }
-.wl-say.is-lead { font-size: 14px; line-height: 1.62; color: var(--ash); max-width: 38ch; }
+.wl-say.is-lead { font-size: var(--t-name); line-height: 1.62; color: var(--ash); max-width: 38ch; }
 .wl-say .wl-h { font-family: var(--f-id); font-size: 0.95em; color: var(--ash); }
 
 /* ═══ THE CORE SERVICE ═════════════════════════════════════════════════════
@@ -3431,22 +3554,25 @@ a.wl-lq { text-decoration: none; }
    page of letters" problem in miniature. Set at nineteen with the opening at
    twenty-three, the same note fills its page, and the page is something you
    read rather than something you scan. */
-.wl-leaf .wl-prose { font-size: 19px; line-height: 1.46; }
-.wl-open-line { display: block; font-size: 23px; line-height: 1.3; margin-bottom: 9px; }
+.wl-leaf .wl-prose { font-size: var(--t-subject); line-height: 1.46; }
+.wl-open-line { display: block; font-size: var(--t-value); line-height: 1.3; margin-bottom: 9px; }
 .wl-paper-crest.is-bare { margin-bottom: 12px; }
 
 /* The slide you are on is a tab stop, so it needs a ring — and the ring goes
    round the leaf, not the box it is centred in, or it draws a rectangle in
    the sky above a card. */
 .wl-slide-in:focus { outline: none; }
+/* the system's ring (9), not a 2px accent one: this was the only focus state
+   in the build drawn in a colour, and rule 1 rations the accent to a handful
+   of uses — a ring that appears on every tab stop is not one of them */
 .wl-slide-in:focus-visible > * {
-  outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-card);
+  outline: 1px solid rgba(244, 241, 234, 0.55); outline-offset: 3px; border-radius: var(--r-card);
 }
 
 /* what the drag is about to do, said once, only while it is happening */
 .wl-drop-cue {
   position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--chalk); pointer-events: none; transition: opacity 160ms linear;
 }
 
@@ -3480,10 +3606,10 @@ a.wl-lq { text-decoration: none; }
   padding-bottom: 9px; border-bottom: 1px solid rgba(244,241,234,0.18);
   transition: border-color 380ms var(--ease);
 }
-.wl-vacant-at { font-family: var(--f-id); font-size: 17px; color: var(--ember); }
-.wl-vacant-ph { font-family: var(--f-id); font-size: 15px; color: var(--ash-dim); }
+.wl-vacant-at { font-family: var(--f-id); font-size: var(--t-read); color: var(--ember); }
+.wl-vacant-ph { font-family: var(--f-id); font-size: var(--t-wide); color: var(--ash-dim); }
 .wl-vacant-note {
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.14em;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label);
   text-transform: uppercase; color: var(--ash-dim);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -3504,17 +3630,17 @@ a.wl-lq { text-decoration: none; }
   flex: 0 0 auto; display: flex; align-items: baseline; gap: 11px;
   min-height: 46px; padding: 17px 2px 0;
 }
-.wl-sill-h { font-family: var(--f-id); font-size: 14.5px; color: var(--chalk); min-width: 0;
+.wl-sill-h { font-family: var(--f-id); font-size: var(--t-name); color: var(--chalk); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wl-sill-h-quiet { color: var(--ash); }
 .wl-sill-s {
-  font-family: var(--f-id); font-size: 9.5px; letter-spacing: 0.16em;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label);
   text-transform: uppercase; color: var(--ash-dim); flex: 0 0 auto;
 }
 .wl-days {
   position: relative; overflow: hidden;
   margin-left: auto; flex: 0 0 auto; cursor: pointer;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--ash); background: none;
   border: 1px solid var(--hair); border-radius: var(--r-pill);
   padding: 6px 12px; font-variant-numeric: tabular-nums;
@@ -3533,8 +3659,12 @@ a.wl-lq { text-decoration: none; }
   transition: width 620ms cubic-bezier(0.20, 1.24, 0.32, 1), background 300ms var(--ease);
 }
 .wl-days-t { position: relative; }
-.wl-days:hover { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
-.wl-days:hover::before { background: rgba(244, 241, 234, 0.14); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-days:hover { color: var(--chalk); border-color: rgba(244,241,234,0.28); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .wl-days:hover::before { background: rgba(244, 241, 234, 0.14); }
+}
 /* the one saturated thing on the screen, and it is a sliver — because what
    makes it urgent is how LITTLE of the chip is still filled */
 .wl-days.is-near { color: var(--chalk); border-color: var(--accent-soft); }
@@ -3660,7 +3790,7 @@ a.wl-lq { text-decoration: none; }
    and it is always the small one. `is-light` is sized as a primary action
    because that is what it is in a dock; the same tone standing in a 60px
    ledger row is a 40px white slab with two rows of type beside it. */
-.wl-pill.is-tag { pointer-events: none; min-height: 30px; padding: 0 14px; font-size: 12px; }
+.wl-pill.is-tag { pointer-events: none; min-height: var(--c-sm); padding: 0 14px; font-size: var(--t-small); }
 
 /* ═══ THE TAB ══════════════════════════════════════════════════════════════
    The one door out of the wall, and it does not exist until somebody has put
@@ -3719,7 +3849,7 @@ a.wl-lq { text-decoration: none; }
   flex: 1 1 auto; min-width: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 17px; line-height: 1.24;
+  font-size: var(--t-read); line-height: 1.24;
   color: var(--chalk);
 }
 .wl-tab-go {
@@ -3766,17 +3896,17 @@ a.wl-lq { text-decoration: none; }
   margin: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
   font-variation-settings: var(--opsz-display);
-  font-size: 17px; line-height: 1.24; color: var(--chalk);
+  font-size: var(--t-read); line-height: 1.24; color: var(--chalk);
   overflow-wrap: anywhere;
 }
-.wl-down-h .wl-h { font-family: var(--f-id); font-weight: 400; font-size: 0.84em; letter-spacing: -0.012em; }
+.wl-down-h .wl-h { font-family: var(--f-id); font-weight: 400; font-size: 0.84em; letter-spacing: var(--tr-tight); }
 .wl-down-why {
   margin: 0;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 14.5px; line-height: 1.5; color: var(--ash);
+  font-size: var(--t-name); line-height: 1.5; color: var(--ash);
 }
 .wl-down-acts { display: flex; align-items: center; gap: 10px; padding-left: 49px; }
-.wl-down-acts .wl-pill { min-height: 36px; padding: 0 16px; font-size: 13px; }
+.wl-down-acts .wl-pill { min-height: var(--c-md); padding: 0 16px; font-size: var(--t-ctrl); }
 .wl-down-acts .wl-quiet { padding: 8px 6px; }
 /* On the wall the bottom of the screen is already dark: `.wl-shade.is-bottom`
    pours the void back over the field on a much longer ramp than this one, and
@@ -3829,13 +3959,13 @@ a.wl-lq { text-decoration: none; }
   .wl-seek { width: 100%; }
   .wl-seek-glass { max-width: 480px; }
   .wl-seek .wl-field { min-height: 56px; }
-  .wl-seek .wl-field input { font-size: 18px; }
+  .wl-seek .wl-field input { font-size: var(--t-subject); }
   /* the veil's type keeps the column while the field, which is the whole
      window at every width, does not: the block stands in the middle of the
      glass here as it does on a phone, with the crowd showing round it */
   .wl-veil-in { max-width: 1080px; margin: 0 auto; padding: 0 40px 6vh; }
   .wl-mast { max-width: 560px; }
-  .wl-mast-sub { max-width: 40ch; font-size: 18px; }
+  .wl-mast-sub { max-width: 40ch; font-size: var(--t-subject); }
   /* a spread is wider than it is tall, so the corners are further out and the
      sides are what the mask has to work on */
   .wl-hive-crowd {
@@ -3903,7 +4033,9 @@ a.wl-lq { text-decoration: none; }
   }
   .wl-turn.is-prev { left: -62px; }
   .wl-turn.is-next { right: -62px; }
-  .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+  @media (hover: hover) and (pointer: fine) {
+    .wl-turn:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.24); }
+  }
   .wl-turn:focus-visible { outline-offset: 3px; border-radius: 50%; }
   /* the composer's act stands under the card, at the card's measure: a pill
      the width of the dialog under a paper narrower than it is a pill about
@@ -3958,7 +4090,7 @@ a.wl-lq { text-decoration: none; }
      it — six rows over a 390px window is the window */
   .wl-seek-glass { max-width: 420px; }
   .wl-seek .wl-field { min-height: 42px; }
-  .wl-seek .wl-field input { font-size: 16px; }
+  .wl-seek .wl-field input { font-size: var(--t-wide); }
   .wl-seek-found { max-height: 44vh; }
   .wl-veil-in { padding: 0 18px 2vh; }
   .wl-wallpage .wl-dock {
@@ -3977,9 +4109,8 @@ a.wl-lq { text-decoration: none; }
   .wl-display.is-xl { font-size: clamp(23px, 3.4vw, 30px); }
   .wl-display.is-l  { font-size: clamp(21px, 3vw, 27px); }
   .wl-display.is-m  { font-size: clamp(20px, 2.8vw, 25px); }
-  .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: 15px; }
-  .wl-mast-go { margin-top: 10px; }
-  .wl-mast-go-pill { min-height: 40px; font-size: 13.5px; }
+  .wl-mast-sub { margin-top: 8px; padding-right: 0; font-size: var(--t-wide); }
+  .wl-mast-go { margin-top: 10px; min-height: var(--c-md); font-size: var(--t-ctrl); }
   .wl-pill.is-wide { min-height: 44px; }
 
   .wl-sheet-wrap { justify-content: center; align-items: center; padding: 14px; }
@@ -4008,11 +4139,11 @@ a.wl-lq { text-decoration: none; }
      a measure and the sill and the pips keep the same one, or the caption stops
      lining up with the thing it captions. */
   .wl-core .wl-slide-in, .wl-sill, .wl-pips { max-width: 40rem; margin-left: auto; margin-right: auto; }
-  .wl-core .wl-leaf .wl-prose { font-size: 16px; line-height: 1.44; }
-  .wl-core .wl-open-line { font-size: 19px; margin-bottom: 6px; }
+  .wl-core .wl-leaf .wl-prose { font-size: var(--t-wide); line-height: 1.44; }
+  .wl-core .wl-open-line { font-size: var(--t-subject); margin-bottom: 6px; }
   .wl-sill { min-height: 40px; padding-top: 12px; }
   .wl-pips { padding-top: 11px; }
-  .wl-core .wl-say { font-size: 12px; }
+  .wl-core .wl-say { font-size: var(--t-small); }
 }
 
 /* ── the very wide screen ──────────────────────────────────────────────────
@@ -4048,23 +4179,25 @@ a.wl-lq { text-decoration: none; }
 .wl-colophon-line {
   margin: 0; flex: 1 1 200px; min-width: 0;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 13.5px; line-height: 1.4; color: var(--ash);
+  font-size: var(--t-ctrl); line-height: 1.4; color: var(--ash);
 }
 .wl-colophon-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
 .wl-colophon-col { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
 .wl-colophon-col .wl-label { margin-bottom: 1px; }
 .wl-colophon-col a, .wl-colophon-col address {
-  font-family: var(--f-util); font-size: 12.5px; line-height: 1.4; font-style: normal;
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.4; font-style: normal;
   color: var(--ash); text-decoration: none;
   transition: color 200ms var(--ease);
 }
-.wl-colophon-col a:hover { color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-colophon-col a:hover { color: var(--chalk); }
+}
 /* an address and a number are identifiers, so they keep the identifier face */
-.wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em; }
+.wl-colophon-col a.wl-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); }
 .wl-colophon-foot {
   display: flex; flex-wrap: wrap; gap: 3px 16px;
   padding-top: 8px; border-top: 1px solid var(--hair-soft);
-  font-family: var(--f-id); font-size: 10px; letter-spacing: 0.06em; line-height: 1.5;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-loose); line-height: 1.5;
   color: var(--ash-dim);
 }
 @media (min-width: 900px) {
@@ -4073,7 +4206,7 @@ a.wl-lq { text-decoration: none; }
     padding-top: 18px;
   }
   .wl-colophon-brand { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .wl-colophon-line { flex: 0 0 auto; font-size: 14px; }
+  .wl-colophon-line { flex: 0 0 auto; font-size: var(--t-name); }
   .wl-colophon-cols { gap: 10px 40px; }
   .wl-colophon-foot { grid-column: 1 / -1; }
 }
@@ -4091,7 +4224,7 @@ a.wl-lq { text-decoration: none; }
    about a document. */
 .wl-redacted {
   margin: 0;
-  font-family: var(--f-letter); font-size: 16.5px; line-height: 1.52;
+  font-family: var(--f-letter); font-size: var(--t-read); line-height: 1.52;
   display: flex; flex-wrap: wrap; align-items: center;
   gap: 10px 0.36em;
 }
@@ -4127,20 +4260,6 @@ a.wl-lq { text-decoration: none; }
    swapped, on any paper */
 .wl-paper.has-look.is-shut { filter: saturate(0.6) contrast(0.94); }
 
-/* ── the door, wherever it is met ──
-   Reading, writing and reporting are behind one address, and all three used to
-   say so in their own words in their own place. This is the one wording in the
-   one shape: the sentence that names what is shut, and the pill that opens it,
-   and nothing else. */
-.wl-locked {
-  flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 13px;
-  padding: 18px 0 calc(16px + env(safe-area-inset-bottom, 0px));
-}
-.wl-locked-say {
-  margin: 0; max-width: 40ch;
-  font-family: var(--f-letter); font-size: 15.5px; line-height: 1.55; color: var(--ash);
-}
-.wl-locked .wl-pill { margin-top: 5px; }
 
 /* ═══ THE DOOR ═════════════════════════════════════════════════════════════
    parts.jsx `DoorHead`, `Or`, `CodeBox`, `Resend`, and the gate that stands
@@ -4181,7 +4300,7 @@ a.wl-lq { text-decoration: none; }
 .wl-door-say {
   margin: 12px 0 0; max-width: 30ch;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 15.5px; line-height: 1.5; color: var(--ash);
+  font-size: var(--t-wide); line-height: 1.5; color: var(--ash);
   text-wrap: pretty;
 }
 /* ── what stands under the head: the ways through ──────────────────────────
@@ -4202,12 +4321,12 @@ a.wl-lq { text-decoration: none; }
    hairline, because a bare outline on the void at this width is a rectangle of
    nothing with words in it. */
 .wl-door-ways > .wl-pill.is-ghost {
-  align-self: stretch; min-height: 48px; gap: 11px;
+  align-self: stretch; min-height: var(--c-lg); gap: 11px;
   border-radius: var(--r-pill);
   background: rgba(244, 241, 234, 0.045);
   box-shadow: inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255, 255, 255, 0.045);
   border-color: transparent;
-  font-size: 14px; color: var(--chalk);
+  font-size: var(--t-name); color: var(--chalk);
   transition: background 200ms var(--ease), box-shadow 200ms var(--ease);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -4226,8 +4345,8 @@ a.wl-lq { text-decoration: none; }
    the row is what this replaced. */
 .wl-door-why {
   margin: -2px 0 2px; max-width: 30ch; align-self: center;
-  font-family: var(--f-util); font-size: 12.5px; line-height: 1.45;
-  letter-spacing: 0.004em; color: var(--ash);
+  font-family: var(--f-util); font-size: var(--t-small); line-height: 1.45;
+  letter-spacing: var(--tr-normal); color: var(--ash);
   text-wrap: pretty;
 }
 
@@ -4241,7 +4360,7 @@ a.wl-lq { text-decoration: none; }
 .wl-or::before, .wl-or::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--hair-soft); }
 .wl-or-word {
   flex: 0 0 auto;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label); text-transform: uppercase;
   color: var(--ash-dim);
 }
 
@@ -4252,14 +4371,16 @@ a.wl-lq { text-decoration: none; }
   flex: 0 0 auto; width: 100%; max-width: 24rem; margin: 0 auto;
   padding: 22px 0 calc(4px + env(safe-area-inset-bottom, 0px));
   text-align: center;
-  font-family: var(--f-util); font-size: 11.5px; line-height: 1.7; color: var(--ash-dim);
+  font-family: var(--f-util); font-size: var(--t-meta); line-height: 1.7; color: var(--ash-dim);
 }
 .wl-door-foot a {
   color: var(--ash); text-decoration: underline;
   text-decoration-color: var(--hair); text-underline-offset: 3px;
   transition: color 200ms var(--ease), text-decoration-color 200ms var(--ease);
 }
-.wl-door-foot a:hover { color: var(--chalk); text-decoration-color: var(--ash-dim); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-door-foot a:hover { color: var(--chalk); text-decoration-color: var(--ash-dim); }
+}
 
 /* ── THE CODE BOX ──────────────────────────────────────────────────────────
    Held to the same values as supabase/functions/_shared/mail.ts `code()`,
@@ -4295,7 +4416,7 @@ a.wl-lq { text-decoration: none; }
      centred string sits one space left of centre; the padding puts it back */
   padding: 0 0 0 0.14em;
   font-family: var(--f-id); font-size: 38px; font-weight: 500;
-  letter-spacing: 0.14em; line-height: 1.1;
+  letter-spacing: var(--tr-label); line-height: 1.1;
   color: var(--chalk); text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -4313,7 +4434,7 @@ a.wl-lq { text-decoration: none; }
    offering, so nothing moves under the thumb that is about to press it. */
 .wl-resend {
   margin: 0; min-height: 20px; align-self: center; padding: 10px 4px;
-  font-family: var(--f-util); font-size: 12.5px; letter-spacing: 0.01em;
+  font-family: var(--f-util); font-size: var(--t-small); letter-spacing: var(--tr-normal);
   color: var(--ash-dim);
 }
 .wl-resend-clock { font-family: var(--f-id); font-size: 0.94em; font-variant-numeric: tabular-nums; }
@@ -4350,7 +4471,7 @@ a.wl-lq { text-decoration: none; }
 .wl-door-ways > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* where the code was sent, over the box it is typed into */
 .wl-door-sentto { padding-bottom: 2px; }
-.wl-door-sentto .wl-h { font-family: var(--f-id); color: var(--ash); text-transform: none; letter-spacing: -0.01em; }
+.wl-door-sentto .wl-h { font-family: var(--f-id); color: var(--ash); text-transform: none; letter-spacing: var(--tr-snug); }
 
 
 /* ── the account: the profile card ─────────────────────────────────────────
@@ -4387,12 +4508,12 @@ a.wl-lq { text-decoration: none; }
     inset 0 0 0 1px rgba(244, 241, 234, 0.22),
     0 0 0 5px rgba(244, 241, 234, 0.035);
 }
-.wl-profile-face .wl-face-mono { color: var(--chalk); font-size: 17px; letter-spacing: 0.08em; }
+.wl-profile-face .wl-face-mono { color: var(--chalk); font-size: var(--t-read); letter-spacing: var(--tr-loose); }
 .wl-profile-who { min-width: 0; display: flex; flex-direction: column; }
 .wl-profile-addr {
   margin: 0;
   font-family: var(--f-id); font-size: clamp(15px, 4.4vw, 18px); line-height: 1.25;
-  letter-spacing: -0.02em; color: var(--chalk);
+  letter-spacing: var(--tr-tight); color: var(--chalk);
   overflow-wrap: anywhere;
 }
 .wl-profile-sect { padding-top: 16px; margin-top: 18px; border-top: 1px solid var(--hair); }
@@ -4421,46 +4542,48 @@ a.wl-lq { text-decoration: none; }
 .wl-wrote-row.is-down { opacity: 0.5; cursor: default; }
 .wl-wrote-who { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .wl-wrote-name {
-  font-family: var(--f-id); font-size: 13px; letter-spacing: -0.012em;
+  font-family: var(--f-id); font-size: var(--t-ctrl); letter-spacing: var(--tr-tight);
   color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-wrote-meta {
-  font-family: var(--f-util); font-size: 11.5px; letter-spacing: 0.004em;
+  font-family: var(--f-util); font-size: var(--t-meta); letter-spacing: var(--tr-normal);
   color: var(--ash-dim);
 }
 .wl-wrote-n {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--f-id); font-size: 12.5px; font-variant-numeric: tabular-nums;
+  font-family: var(--f-id); font-size: var(--t-small); font-variant-numeric: tabular-nums;
   color: var(--ash);
 }
 .wl-wrote-n .wl-heart-glyph { color: var(--ash-dim); }
 .wl-wrote-n .wl-heart-glyph.is-on { color: var(--ash); }
 .wl-wrote-more { align-self: flex-start; margin-top: -2px; padding: 6px 0 0; }
-.wl-profile-none { margin: 10px 0 0; font-family: var(--f-id); font-size: 12.5px; color: var(--ash-dim); }
+.wl-profile-none { margin: 10px 0 0; font-family: var(--f-id); font-size: var(--t-small); color: var(--ash-dim); }
 /* the week, said once, and only when it is over */
 .wl-profile-cap { padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--hair); }
 /* the way out: a capsule carrying its glyph, centred under the primary */
 .wl-profile-out { align-self: center; margin-top: 8px; gap: 7px; padding: 0 15px 0 12px; min-height: 34px; }
 .wl-profile-out .wl-icon { color: var(--ash-dim); transition: color 220ms var(--ease); }
-.wl-profile-out:hover .wl-icon { color: var(--chalk); }
-.wl-gate-copy { color: var(--ash); font-size: 15px; line-height: 1.55; padding-top: 16px; max-width: 40ch; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-profile-out:hover .wl-icon { color: var(--chalk); }
+}
+.wl-gate-copy { color: var(--ash); font-size: var(--t-wide); line-height: 1.55; padding-top: 16px; max-width: 40ch; }
 .wl-gate-fault {
   min-height: 20px; padding-top: 10px;
-  font-family: var(--f-id); font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase;
+  font-family: var(--f-id); font-size: var(--t-label); letter-spacing: var(--tr-label-2); text-transform: uppercase;
   color: var(--ember);
 }
 .wl-gate-beta {
   margin: 22px 0 0; padding: 13px 15px;
   border: 1px dashed var(--hair); border-radius: var(--r-field);
-  font-size: 12.5px; line-height: 1.5; color: var(--ash-dim);
+  font-size: var(--t-small); line-height: 1.5; color: var(--ash-dim);
   max-width: 42ch;
 }
 /* the address. One baseline carrying an editable half and a fixed half. */
 .wl-addr { position: relative; display: flex; align-items: baseline; gap: 2px; padding-bottom: 11px; }
 .wl-addr-in {
   min-width: 0; background: none; border: 0; padding: 0;
-  font-family: var(--f-id); font-size: 24px; line-height: 1.18;
-  color: var(--chalk); letter-spacing: -0.014em;
+  font-family: var(--f-id); font-size: var(--t-value); line-height: 1.18;
+  color: var(--chalk); letter-spacing: var(--tr-tight);
 }
 .wl-addr-in { flex: 0 0 auto; min-width: 3ch; max-width: 62vw; }
 /* typed whole, with its own @: the painted domain comes off and the field
@@ -4470,8 +4593,8 @@ a.wl-lq { text-decoration: none; }
 .wl-addr-in:focus { outline: none; }
 .wl-addr-fix {
   flex: 0 0 auto;
-  font-family: var(--f-id); font-size: 24px; line-height: 1.18;
-  color: var(--ash-dim); letter-spacing: -0.014em;
+  font-family: var(--f-id); font-size: var(--t-value); line-height: 1.18;
+  color: var(--ash-dim); letter-spacing: var(--tr-tight);
 }
 .wl-addr:focus-within .wl-field-line::after { transform: scaleX(1); }
 
@@ -4513,7 +4636,7 @@ a.wl-lq { text-decoration: none; }
 .wl-report-quote {
   margin: 0; padding: 2px 0 2px 15px;
   border-left: 2px solid var(--hair);
-  font-family: var(--f-letter); font-size: 15.5px; line-height: 1.5;
+  font-family: var(--f-letter); font-size: var(--t-wide); line-height: 1.5;
   color: var(--ash);
 }
 .wl-report-done { padding-top: 14px; }
@@ -4540,7 +4663,7 @@ a.wl-lq { text-decoration: none; }
 .wl-reason textarea {
   width: 100%; display: block; resize: none;
   background: none; border: 0; padding: 0;
-  font-family: var(--f-letter); font-size: 16px; line-height: 1.5;
+  font-family: var(--f-letter); font-size: var(--t-wide); line-height: 1.5;
   color: var(--chalk);
 }
 .wl-reason textarea:focus { outline: none; }
@@ -4574,10 +4697,10 @@ a.wl-lq { text-decoration: none; }
 .wl-dm-to {
   margin: 0 0 2px;
   font-family: var(--f-letter); font-optical-sizing: auto;
-  font-size: 16.5px; line-height: 1.5;
+  font-size: var(--t-read); line-height: 1.5;
   color: var(--ash);
 }
-.wl-dm-to .wl-h { font-family: var(--f-id); font-size: 0.92em; letter-spacing: -0.01em; color: var(--chalk); }
+.wl-dm-to .wl-h { font-family: var(--f-id); font-size: 0.92em; letter-spacing: var(--tr-snug); color: var(--chalk); }
 .wl-dm-code {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 2px 0 4px;
@@ -4586,7 +4709,7 @@ a.wl-lq { text-decoration: none; }
   font-family: var(--f-id);
   font-size: clamp(31px, 10vw, 40px);
   font-weight: 500;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tr-label);
   padding: 2px 0 2px 0.14em;
   line-height: 1.1;
   color: var(--chalk);
@@ -4601,8 +4724,8 @@ a.wl-lq { text-decoration: none; }
   margin: 0;
   min-height: 17px;
   font-family: var(--f-util);
-  font-size: 12.5px;
-  letter-spacing: 0.01em;
+  font-size: var(--t-small);
+  letter-spacing: var(--tr-normal);
   color: var(--ash-dim);
   text-align: center;
   transition: color 240ms var(--ease);
@@ -4617,7 +4740,9 @@ a.wl-lq { text-decoration: none; }
   padding-bottom: 1px;
   transition: border-color 200ms var(--ease);
 }
-.wl-a:hover { border-bottom-color: var(--chalk); }
+@media (hover: hover) and (pointer: fine) {
+  .wl-a:hover { border-bottom-color: var(--chalk); }
+}
 
 /* ═══ WHO THAT IS ══════════════════════════════════════════════════════════
    Four objects, and a person looks the same in all of them: the FACE, which
@@ -4642,7 +4767,7 @@ a.wl-lq { text-decoration: none; }
   vertical-align: middle;
 }
 .wl-face-mono {
-  font-family: var(--f-id); font-size: calc(var(--s, 30px) * 0.36); letter-spacing: 0.04em;
+  font-family: var(--f-id); font-size: calc(var(--s, 30px) * 0.36); letter-spacing: var(--tr-open);
   line-height: 1; color: var(--ash); user-select: none;
 }
 /* under the picture, always: when the face loads it covers this, and when it
@@ -4666,17 +4791,41 @@ a.wl-lq { text-decoration: none; }
 .wl-face-mono { position: relative; z-index: 1; }
 .wl-face img { z-index: 2; }
 .wl-face.has-look { background: var(--lk-ground); box-shadow: none; }
+/* ── a look gives the disc its COLOUR, never its face ──
+   It used to give both, and the wall is where that came apart. A letter's
+   look is the writer's voice and on the card it is exactly right; but the
+   hive puts forty discs on the screen at once, and forty writers' voices
+   is not forty voices, it is noise. The monograms came up in Newsreader,
+   Pinyon Script, Pixelify Sans, Oswald, Special Elite, Caveat, Comfortaa
+   and Playfair at the same time, so the one surface the whole product is
+   named for read as a type specimen sheet — and the thing a person is
+   actually trying to do there is find one name in a crowd.
+
+   The system already answers this and the answer is one line above:
+   section 4 of DESIGN.md puts every handle, count, date and code in the
+   identifier face because those are IDENTIFIERS, and 4.0a says a letter's
+   face is "never a headline, a label, a control or an identifier". A
+   monogram on a disc is an identifier — it is the shortest possible way of
+   writing who somebody is — so it is set in the identifier face, on every
+   disc, at every size, on the void and on paper.
+
+   Nothing else about the look comes off. The disc still draws the look's
+   ground, its ink, its texture and its rim, which is the part that was
+   doing the work: the wall is still cream and maroon and mint and olive,
+   the writer's choice still arrives on the wall, and it now arrives as
+   colour rather than as a competing alphabet. */
 .wl-face.has-look .wl-face-mono {
-  color: var(--lk-ink); font-family: var(--lk-face); font-weight: var(--lk-title-w); letter-spacing: 0.02em;
+  color: var(--lk-ink); letter-spacing: var(--tr-open);
 }
 /* a name written whole on its disc, on any paper: in the name's face (the
    rule the rows and the plate follow) on the plain one, and in the look's
    face on a looked one */
+/* a name written whole on its disc: the same argument, so the same face on
+   a looked paper as on the plain one */
 .wl-face-mono.is-name {
   font-family: var(--f-util); font-weight: 500;
-  font-size: var(--lk-name); letter-spacing: -0.01em; white-space: nowrap;
+  font-size: var(--lk-name); letter-spacing: var(--tr-snug); white-space: nowrap;
 }
-.wl-face.has-look .wl-face-mono.is-name { font-family: var(--lk-face); font-weight: var(--lk-title-w); }
 .wl-face.has-look::after {
   content: ''; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none;
   box-shadow: inset 0 0 0 1px var(--lk-rule);
@@ -4692,15 +4841,15 @@ a.wl-lq { text-decoration: none; }
 .wl-who-id { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
 .wl-who-name {
   display: flex; align-items: center; gap: 6px; min-width: 0;
-  font-family: var(--f-util); font-size: 14px; font-weight: 500; line-height: 1.25;
-  letter-spacing: -0.005em; color: var(--chalk);
+  font-family: var(--f-util); font-size: var(--t-name); font-weight: 500; line-height: 1.25;
+  letter-spacing: var(--tr-snug); color: var(--chalk);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* a handle standing as the name is still an identifier, so it keeps its face */
-.wl-who-name.is-h { font-family: var(--f-id); font-weight: 400; letter-spacing: -0.012em; }
+.wl-who-name.is-h { font-family: var(--f-id); font-weight: 400; letter-spacing: var(--tr-tight); }
 .wl-who-badge { color: var(--accent); flex: 0 0 auto; }
 .wl-who-at {
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.03em; color: var(--ash);
+  font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-open); color: var(--ash);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-paper .wl-who-name { color: var(--lk-ink); }
@@ -4718,7 +4867,7 @@ a.wl-lq { text-decoration: none; }
 .wl-addressee-for {
   flex: 0 0 auto;
   font-family: var(--f-letter); font-style: italic; font-weight: 400;
-  font-size: 15px; line-height: 1; letter-spacing: 0;
+  font-size: var(--t-wide); line-height: 1; letter-spacing: 0;
   color: var(--lk-ink-2);
 }
 /* on a looked paper the word is set in the look's face, upright: half the
@@ -4728,14 +4877,14 @@ a.wl-lq { text-decoration: none; }
   display: inline-flex; align-items: center; gap: 6px; min-width: 0;
   font-family: var(--lk-face, var(--f-display)); font-weight: var(--lk-title-w, var(--w-display));
   font-size: calc(21px * var(--lk-title-size, 1)); line-height: 1.1;
-  font-variation-settings: var(--opsz-display); letter-spacing: -0.012em;
+  font-variation-settings: var(--opsz-display); letter-spacing: var(--tr-tight);
   color: var(--lk-ink, var(--paper-ink));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.wl-addressee-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: 19px; letter-spacing: -0.012em; }
+.wl-addressee-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: var(--t-subject); letter-spacing: var(--tr-tight); }
 .wl-addressee-name .wl-who-badge { color: var(--lk-ink-2, var(--paper-ink-2)); }
 .wl-addressee-at {
-  font-family: var(--f-id); font-size: 11.5px; letter-spacing: 0.02em; line-height: 1.3;
+  font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-open); line-height: 1.3;
   color: var(--lk-ink-2, var(--paper-ink-2));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -4802,13 +4951,13 @@ a.wl-lq { text-decoration: none; }
 .wl-viewer-who { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; max-width: 80vw; }
 .wl-viewer-name {
   display: inline-flex; align-items: center; gap: 7px; min-width: 0;
-  font-family: var(--f-display); font-weight: var(--w-display); font-size: 24px; line-height: 1.1;
-  font-variation-settings: var(--opsz-display); letter-spacing: -0.012em;
+  font-family: var(--f-display); font-weight: var(--w-display); font-size: var(--t-value); line-height: 1.1;
+  font-variation-settings: var(--opsz-display); letter-spacing: var(--tr-tight);
   color: var(--chalk); text-align: center;
   overflow-wrap: anywhere;
 }
-.wl-viewer-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: 20px; }
-.wl-viewer-at { font-family: var(--f-id); font-size: 13px; letter-spacing: 0.02em; color: var(--ash); }
+.wl-viewer-name.is-h { font-family: var(--f-id); font-weight: 400; font-size: var(--t-subject); }
+.wl-viewer-at { font-family: var(--f-id); font-size: var(--t-ctrl); letter-spacing: var(--tr-open); color: var(--ash); }
 
 /* the row that is a person */
 .wl-row.is-person { padding: 9px 12px 9px 9px; gap: 12px; }
@@ -4820,12 +4969,14 @@ a.wl-lq { text-decoration: none; }
    read as a third link. Same chip on every screen. */
 .wl-me {
   min-height: 34px; padding: 0 14px; gap: 8px;
-  font-size: 12.5px; color: var(--chalk);
+  font-size: var(--t-small); color: var(--chalk);
   border-color: rgba(244, 241, 234, 0.22);
 }
 .wl-me.is-on { padding: 0 12px 0 7px; }
-.wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
-.wl-me-h { font-family: var(--f-id); font-size: 12px; letter-spacing: 0.01em; text-transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+}
+.wl-me-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); text-transform: none; }
 
 /* ── the result card ────────────────────────────────────────────────────────
    docs/rebuild-spec.md section 5: the main affordance that makes the product
@@ -4945,7 +5096,7 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-card-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .wl-card-mono {
-  font-family: var(--f-id); font-size: 12.5px; letter-spacing: 0.06em;
+  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
   color: var(--ash); user-select: none;
 }
 .wl-card.is-looking .wl-card-disc { background: rgba(244, 241, 234, 0.035); }
@@ -4963,13 +5114,13 @@ a.wl-lq { text-decoration: none; }
 .wl-card.is-looking .wl-card-real { opacity: 0; }
 .wl-card-name {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--f-util); font-size: 14px; font-weight: 500; letter-spacing: -0.005em;
+  font-family: var(--f-util); font-size: var(--t-name); font-weight: 500; letter-spacing: var(--tr-snug);
   color: var(--chalk);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-card-badge { color: var(--accent); flex: 0 0 auto; }
 .wl-card-at {
-  font-family: var(--f-id); font-size: 11px; letter-spacing: 0.04em; color: var(--ash);
+  font-family: var(--f-id); font-size: var(--t-meta); letter-spacing: var(--tr-open); color: var(--ash);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .wl-card-bar {
@@ -4983,7 +5134,7 @@ a.wl-lq { text-decoration: none; }
 /* the arrow, when the card is a control. It travels on hover, like every
    other arrow in the build, and it is not there while the card is looking. */
 .wl-card-go {
-  flex: 0 0 auto; font-family: var(--f-util); font-size: 17px; color: var(--ash-dim);
+  flex: 0 0 auto; font-family: var(--f-util); font-size: var(--t-read); color: var(--ash-dim);
   transition: transform 280ms var(--ease), color 200ms var(--ease), opacity 360ms var(--ease);
 }
 .wl-card.is-looking .wl-card-go { opacity: 0; }

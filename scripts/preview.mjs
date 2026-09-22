@@ -898,7 +898,30 @@ const ROUTES = [
   // "write", in the bar, pressed by a browser not through the gate: the gate,
   // with the composer set as where it opens onto
   { label: 'berkeley-write-gate', path: '/berkeley', open: false,
-    acts: [['click', '.wl-mast-go'], ['wait', 3000], ['click', '.wl-top-write']], settle: 1200 },
+    acts: [['click', '.wl-mast-go'], ['wait', 3000], ['click', '.wl-write-act']], settle: 1200 },
+
+  // ── the way back out of a process ──
+  // Every sheet used to close to the WALL, whatever it had been opened from,
+  // so "sign in" from the composer and then the close mark landed a person on
+  // the field with the letter they were part way through gone from the screen.
+  // Only the composer honoured the stack. These two shoot the frame AFTER the
+  // close mark on a sheet that was opened from another sheet, so the shot is
+  // the screen underneath or it is the bug: `write-gate-back` must be the
+  // composer's door and not the wall, and `letter-report-back` must be the
+  // letter and not the wall.
+  { label: 'find-letter-back', path: '/berkeley/find',
+    acts: [['wait', 700], ['click', '.wl-find-results .wl-row'], ['wait', 1200],
+           ['click', '.wl-close'], ['wait', 1000]], settle: 600 },
+  // and the case the two above do NOT cover: a browser that opened DIRECTLY on
+  // a sheet, with nothing behind it in its own history. The close mark has to
+  // land on the wall and the visitor has to still be in the product — an `up`
+  // that reads depth instead of asking whether this shell pushed the entry
+  // walks them off the site, back to whatever tab the link came from.
+  { label: 'letter-close-out', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['wait', 900], ['click', '.wl-close'], ['wait', 1400]], settle: 600 },
+  { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
+    acts: [['wait', 900], ['click', '.wl-flag'], ['wait', 600], ['click', '.wl-acts-pane .wl-act'], ['wait', 900],
+           ['click', '.wl-close'], ['wait', 900]], settle: 600 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
   { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
   // the pen on the card opens the composer on the name, and the composer's

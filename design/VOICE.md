@@ -148,10 +148,28 @@ to rather than guessing at one.
 
 ## 9. Enforcement
 
-`scripts/voice-lint.mjs` scans the canonical copy in `app/src/i18n/strings.js`,
-the card's inline copy under `app/src/card/`, and the static legal pages, for
-section 6. It blanks comments first, so a comment explaining a rule cannot trip
-it. It is a tripwire, not a critic.
+`scripts/voice-lint.mjs` scans the three surfaces that write their copy inline
+— `app/src/wall/`, `app/src/wall/screens/`, `app/src/main/` and
+`app/src/admin/` — and the static pages under `app/public/`. It blanks comments
+first, so a comment explaining a rule cannot trip it. It is a tripwire, not a
+critic.
+
+It used to say it scanned `app/src/i18n/strings.js` and the card's copy under
+`app/src/card/`. Both went with the retired design; the lint has read the
+rebuild's own directories since Phase 8 and this paragraph had not caught up,
+which is worth saying because a stale note about what is enforced is worse than
+no note at all.
+
+It checks two things now. **Section 6**, the banned list, emoji, exclamation
+marks and the dash. And **section 1**, the case: a JSX text node that opens in
+sentence case is a failure unless it is a proper noun, an all-caps label or a
+two-character specimen. That half was judgement until thirty-four capitalised
+strings shipped across the wall and Main — "Sign in to write.", "Your
+information will stay anonymous.", "Your sky did not load." — beside a product
+that says "write a letter" and "send anonymously". Mixed case is the register
+changing halfway down a screen, and it reads as two products. Strings in props
+are deliberately not checked: most of them are not copy at all, and a lint that
+cries about `className` is a lint people switch off.
 
 Register, frames, vocabulary and section 7 are judgement, and they belong in
 review with this file open.

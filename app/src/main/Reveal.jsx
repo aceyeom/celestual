@@ -137,7 +137,7 @@ export default function Reveal({ go, who, known = true, id, still = false }) {
       <main className="wl-main sg-page sg-reveal">
         <TopBar go={go} who={who} />
         <div className="mn-mid">
-          <h1 className="wl-display is-l">Nothing here.</h1>
+          <h1 className="wl-display is-l">nothing here.</h1>
         </div>
         <div className="mn-foot">
           <Pill tone="light" onClick={() => go('sky')}>your sky</Pill>
