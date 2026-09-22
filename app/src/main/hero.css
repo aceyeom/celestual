@@ -325,6 +325,14 @@
 /* the narrowest phones keep the name and give the count back */
 @media (max-width: 359px) { .hm-ear-meta, .hm-ear-dot { display: none; } }
 
+/* ═══ THE EARLY NOTE ═══════════════════════════════════════════════════════
+   main/Early.jsx, drawn as the wall's tab (main.css `.mn-early`). It stands
+   UNDER the fold, between the door and the foot of the site, because the
+   screen above it is one composition with exactly the height of the viewport
+   to spend, and a card wedged into that takes the room off the object. A
+   person who has scrolled past the door has read it. */
+.hm-early { margin: 0 0 30px; }
+
 /* ═══ THE FOOT ═════════════════════════════════════════════════════════════
    wall.css `.wl-colophon`. It enters last, after the object. */
 .hm-page > .wl-colophon { --d: 520ms; margin-top: 8px; }
@@ -355,7 +363,13 @@
   .hm-fold { min-height: calc(100vh - 190px); min-height: calc(100svh - 190px); }
   .hm-page > .wl-colophon { margin-top: 0; }
   .hm-ear { margin-bottom: 20px; }
+  /* The page is a thousand pixels wide here and the note is a card, not a
+     banner: it takes the type column's own measure and stands on the type's
+     left edge, so it reads as the next thing in the column the headline is
+     in rather than as a strip laid across the screen. */
+  .hm-early { max-width: 600px; }
 }
+
 
 /* ═══ SIDEWAYS ═════════════════════════════════════════════════════════════
    A phone on its side has about 350px of height and plenty of width, which

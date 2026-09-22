@@ -187,6 +187,50 @@
 /* ── it is out ── */
 .mn-placed-mark { display: flex; justify-content: center; padding: 10px 0 4px; }
 
+/* ── the early note ──
+   main/Early.jsx. The wall's tab, on Main: the same pane, the same sentence
+   in the display face, the same disc and the same quiet line under it
+   (wall.css `THE TAB`), so an offer that stands on two surfaces is one
+   object and not two drawings of one description. What is added here is the
+   second line, because this card has a reason under its sentence and the
+   wall's has none: the wall's tab is answering a question its reader is
+   already carrying, and this one is telling somebody something they have no
+   way of knowing.
+
+   The two lines are the two faces, which is the whole hierarchy: the fact in
+   the display cut, the ask under it in the mechanics cut at the label's size,
+   in ash. Nothing here names a colour or a curve; both are tokens. */
+.mn-early { margin: 0; }
+.mn-early-main { align-items: flex-start; }
+/* the glyph sits on the first line's optical centre rather than on the
+   middle of a two line block, where it reads as a bullet for the second */
+.mn-early-main .wl-tab-faces { padding-top: 2px; }
+.mn-early-main .wl-tab-go { margin-top: 1px; }
+.mn-early-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.mn-early-say {
+  font-family: var(--f-util);
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--ash);
+  text-wrap: pretty;
+}
+/* the address itself, for a browser that would not take the clipboard:
+   selectable whole on one press, the way the code in the mail is */
+.mn-early-link { margin: 0; padding: 9px 16px 0; }
+.mn-early-url {
+  font-family: var(--f-id);
+  font-size: var(--t-small);
+  letter-spacing: var(--tr-tight);
+  color: var(--chalk);
+  overflow-wrap: anywhere;
+  -webkit-user-select: all; user-select: all;
+}
+/* On the screen a ping lands on it, it stands under the face, in the middle
+   block, with the two controls still docked at the foot below it. Where it
+   stands on the front door is hero.css's, since that is the file that owns
+   the front door's measure. */
+.mn-placed-early { margin: 22px 0 0; }
+
 /* ── the sky ──
    A person per row, and the row is the same object the wall's search draws
    (wall.css `.wl-row.is-person`): the face, the name, the handle and the

@@ -2921,6 +2921,36 @@ a.wl-lq { text-decoration: none; }
   to   { opacity: 1; transform: none; }
 }
 
+/* ── the line that says what the seal is ──
+   screens/Letter.jsx `sealSay`. It stands in the SHEET's foot, on the glass
+   over the shut card, and not on the paper: the card is the letter and this
+   is a fact about the reader, which is the same division the marks in the
+   paper's own foot are on the other side of.
+
+   In the mechanics face, at the label's size, in ash, centred over the
+   capsule it is the reason for. Quiet on purpose: it is answering a
+   question somebody just asked by looking, and a sentence set louder than
+   the act under it would be the screen arguing rather than saying. It
+   arrives on the pane's own curve so the reason and the door land together
+   rather than one after the other. */
+.wl-seal {
+  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 13px;
+}
+.wl-seal-say {
+  margin: 0;
+  font-family: var(--f-util);
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--ash);
+  text-align: center;
+  text-wrap: pretty;
+  animation: wl-act-in 320ms var(--ease) both;
+}
+/* the wide capsule is a grandchild of the foot now, so the foot's own rule
+   for one no longer reaches it */
+.wl-seal > .wl-pill.is-wide { max-width: 100%; overflow: hidden; }
+.wl-seal > .wl-pill.is-wide span { overflow: hidden; text-overflow: ellipsis; }
+
 /* ═══ THE HEARTS ═══════════════════════════════════════════════════════════
    Letter.jsx `Hearts`, in the paper's foot. The glyph is a control on its
    own 34px round, struck in the paper's ink: a hairline heart until this
@@ -5154,7 +5184,7 @@ a.wl-lq { text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .wl-veil, .wl-veil .wl-mast, .wl-cell, .wl-cell-orb { animation: none !important; }
-  .wl-write-card, .wl-acts-pane, .wl-act { animation: none !important; }
+  .wl-write-card, .wl-acts-pane, .wl-act, .wl-seal-say { animation: none !important; }
   .wl-wallpage.is-arriving .wl-top-acts > *, .wl-wallpage.is-arriving .wl-seek, .wl-wallpage.is-arriving .wl-dock { animation: none !important; }
   .wl-tab, .wl-down { animation: none !important; }
   .wl-look, .wl-look-grid { animation: none !important; }

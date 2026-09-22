@@ -57,6 +57,11 @@ const EMPTY = {
                       // another letter goes up, because that is the moment the
                       // question it asks is fresh again (screens/Wall.jsx)
   tabHidFor: 0,
+  earlyHid: 0,        // when the note on Main's front door was last put away
+                      // (main/Early.jsx). The same shape as the tab above and
+                      // for the same reason: a thing that cannot be closed is
+                      // a banner, and a thing that never comes back is a
+                      // thing somebody dismissed once by accident
   noticed: {},        // letterId -> true: a letter of this device's that came
                       // down, and whose notice has been read. The notice stands
                       // at the foot of the wall until it is answered, once

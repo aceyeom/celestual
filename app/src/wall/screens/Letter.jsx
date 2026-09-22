@@ -63,6 +63,21 @@
 // address, or a handle proved by the DM code (migration 0044). The first
 // eight are free to anybody (0045, 0049) and are the server's count; nothing
 // here draws a meter over a letter somebody is reading.
+//
+// ── and the shut card says what shut it (`sealSay`) ─────────────────────────
+// It did not, for a while, and the argument for that was that the card
+// already says SEALED and a person who has not decided to open it does not
+// need the argument for why it is shut. That holds for somebody who arrived
+// at a shut letter. It does not hold for the person this actually happens
+// to: they read eight whole letters, were told nothing about eight, and then
+// watched the ninth arrive with its words struck out and one capsule under
+// it reading "read it". A blur nobody was warned about reads as a fault in
+// the page, and the capsule under it reads as the fault's retry. So the seal
+// says the two facts of that moment and stops: the free ones are behind
+// them, and which door opens the rest. It is the server's count and not this
+// browser's, and the first half of it is not said at all when the desk has
+// the free reads switched off (0052), because there was then never a free
+// one to have spent.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -71,11 +86,12 @@ import {
 } from '../parts.jsx'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  sinceline, atHandle, labelFor, heart, wall,
+  sinceline, atHandle, labelFor, heart, wall, freeReads,
 } from '../data.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
+import { campus, needsCampus } from '../campus.js'
 
 // ── the hearts ──────────────────────────────────────────────────────────────
 // The one thing a reader can do to a letter that is not writing, reporting or
@@ -213,6 +229,23 @@ function Card({ l, handle, seed, id, foot }) {
         : <Redacted words={l.words} chars={l.chars} seed={l.id} />}
     </Paper>
   )
+}
+
+// ── the line under a shut card ──────────────────────────────────────────────
+// Two clauses, and each one is only there while it is true. What happened,
+// from the server's own count of the free reads: `limit` is how many this
+// wall gives away and `left` is what is behind after the read that answered,
+// so a limit of nought is the desk's switch off and there is nothing to have
+// spent. Then what opens the rest, which is the only thing that differs
+// between the two walls: the campus wall's door asks for the campus, and the
+// door at the root takes any of the three proofs, so it names neither.
+function sealSay() {
+  const free = freeReads()
+  const spent = !!free && free.limit > 0 && free.left <= 0
+  const opens = needsCampus()
+    ? `sign in with ${campus().place} to read the whole wall.`
+    : 'sign in to read the whole wall.'
+  return spent ? `you have read the free ones. ${opens}` : opens
 }
 
 export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
@@ -591,12 +624,16 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
         <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
       </div>
     ) : open ? null : (
-      /* The gate. It names no policy and gives no reasons: the card
-         beside it already says SEALED, and a person who has not decided
-         to open it does not need the argument for why it is shut. */
-      <Pill tone="light" wide onClick={toGate}>
-        read it
-      </Pill>
+      /* The gate, with the one line that says what it is a gate ON
+         (`sealSay`). The capsule keeps its word: the act is still reading
+         this letter, and the line above it is the reason, not a second
+         name for the same button. */
+      <div className="wl-seal">
+        <p className="wl-seal-say">{sealSay()}</p>
+        <Pill tone="light" wide onClick={toGate}>
+          read it
+        </Pill>
+      </div>
     )
 
   return (
