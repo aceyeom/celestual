@@ -165,6 +165,61 @@ its sheet, in the colour the writer chose it. The ban list's fourth added
 check, *the accent appears more than once*, reads the system's accent and not
 a letter's paper.
 
+### 2.5a One lighting, on the disc
+
+A tint is chosen for a PAPER, and on the paper it is right: one object, at
+reading distance, and its lightness is the writer's voice. The hive is the
+other case, and the tints are not a spread there. Sorted by lightness they are
+two clusters with a hole between them: seven tints between L\* 6.8 (`ink`) and
+31.3 (`graphite`), sixteen between 77.4 (`denim`) and 95.2 (`chalk`), and
+**nothing at all in the forty-six points between**. So every disc on the wall
+was either nearly as dark as the void it stands on (L\* 2.1) or nearly as
+bright as the brightest object in the product, forty at a time, scattered by a
+lattice whose whole job is to disorder them. `chalk` makes it exact: at
+`#F4F1EA` it is the same white as the primary capsule, so a letter written on
+it put a disc on the wall precisely as bright as the one act the screen is
+about, and there were usually several. Rule 2 was not bent there, it was
+inverted — the field was the bright thing and the control was the quiet one.
+
+So the disc is **relit**, and only the disc. The tint's hue is kept exactly,
+its lightness is set to one value for every disc on the wall, and its chroma is
+capped: `--lk-disc`, `--lk-disc-ink` and `--lk-disc-rule` in `looks.js`, off
+`DISC_L` and `DISC_C`. Cream is still cream, wine still wine, mint still mint —
+one crowd under one lamp rather than forty cut-outs. Every disc lands between
+L\* 34.4 and 35.7, and every monogram on one clears 5.3:1. The paper is
+untouched: `--lk-ground` and every other token is the tint exactly as chosen,
+and a letter opened from the wall is the same letter it always was.
+
+The arithmetic is OKLab and not HSL, because HSL's "lightness" is not one:
+setting every tint to the same HSL L leaves yellow reading far brighter than
+blue, which is the same bomb with fewer steps.
+
+This is the ruling above `.wl-face.has-look` finished rather than reversed.
+That comment already won this argument about TYPEFACES — forty writers' voices
+is not forty voices, it is noise, and a monogram is an identifier, so it is set
+in the identifier face — and then kept the colour at full strength. The same
+sentence is true of forty fills, in a channel the eye reads faster than type.
+
+### 2.5b One ring
+
+A disc wears **one** border. It used to wear any of five, and which one
+depended on facts a person looking at the wall cannot see: 1px of `--hair`
+plain, 1px of chalk at 28% under the lens, none at all with a look, 1px of the
+look's `--lk-rule`, and 2.5px of the look's paper with a second line of void
+inside it where a looked disc also carried a picture. Four colours and three
+widths on one object, forty times over, is what reads as static round the
+faces.
+
+Now: `--face-ring` on `.wl-face` is the only thing that varies, the width and
+the geometry never do, and a disc has exactly two states — at rest (`--hair`)
+and under the lens (chalk at 34%). A look tints the disc, never the ring. The
+one exception is a looked disc carrying a photograph, where the picture covers
+the ground and `--lk-disc-rule` on `::after` is the only place the look can
+survive; it is the same 1px in the same place as every other disc's.
+
+The glass rim on `.wl-cell-orb::after` is not one of these. It is outside the
+disc, it is shown for focus and for `is-mine`, and it means something: it stays.
+
 A theme is a whole object and not a fill. Beside its ground and its ink it
 carries a `grain` (the ONE surface layer on the card, and `none` is a real
 answer), a `chrome` (the parts drawn for that paper and no other — the nokia's
@@ -628,7 +683,7 @@ Every one of these is on `design/components.html` in each of its states.
 
 | Component | Class | Notes |
 | --- | --- | --- |
-| Primary capsule | `.wl-pill.wl-lq`, `LiquidButton` | the liquid metal capsule: a near-black face inside a metal rim, poured by the same fragment shader the mark is (`wall/LiquidButton.jsx`), with the word over both, 40px, 50px at `is-wide`. One per screen. It keeps `.wl-pill` for its metrics, so every size and every contextual rule still reaches it, and brings only its own surface. The clock idles at 0.6, doubles under a pointer and is thrown to 2.4 for the length of a press, which leaves a ripple where the hand landed. Mounts are counted and capped at four per page; past the cap, with no WebGL2, and disabled, it draws the still frame of the same material. It was a chalk fill with the running light on it until 21 September |
+| Primary capsule | `.wl-pill.wl-lq`, `LiquidButton` | the liquid metal capsule: a near-black face inside a metal rim, poured by the same fragment shader the mark is (`wall/LiquidButton.jsx`), with the word over both, 40px, 50px at `is-wide`. One per screen. It keeps `.wl-pill` for its metrics, so every size and every contextual rule still reaches it, and brings only its own surface. The clock idles at 0.6, doubles under a pointer and is thrown to 2.4 for the length of a press, which leaves a ripple where the hand landed. Mounts are counted and capped at four per page; past the cap, with no WebGL2, and disabled, it draws the still frame of the same material. It was a chalk fill with the running light on it until 21 September. Its word was chalk at 64% until 22 September, which cleared the contrast floor and left the primary reading as the quietest object on a wall whose background carried forty discs at L\* 90; with the field relit (2.5a) the word is struck at full chalk and the face is lifted off pure black at its foot. The brightening is on the ROLE and not on the wall's capsule: `Pill tone="light"` is this object on every screen, and one surface making an exception for itself is the thing this component exists to stop |
 | Ghost capsule | `.wl-pill.is-ghost` | hairline, ash type, 32px |
 | Tag capsule | `.wl-pill.is-tag` | not a control. `pointer-events: none` |
 | Arrow link | `.wl-arrow` | display face. The arrow travels on hover, the word does not |
@@ -678,7 +733,7 @@ had already said it. The role went with the caller.
 | Top bar | `.wl-top` | the brand is the way home, and it is chalk while everything beside it is ash. On the wall the one act stands in it as a word: `write`, the primary capsule at the bar's scale with the nib and the running light. The three targets on the right are one height: forty pixel rings for the glass and the person, the capsule thirty-six tall between them, and the person's face fills its ring at thirty |
 | Veil | `.wl-veil` | the wall's masthead, over the hive rather than above it: the title, the one line and the `view the wall` capsule, centred in the glass, on a scrim that is deep under the words, gone where they are not, and is itself the way in. The capsule is the product's primary, the same liquid metal object as `write a letter` at the foot of the wall: it was the last caller anywhere of the chalk plate with the running light inside it and an arrow after the word, so the first button anybody pressed was the one button that did not match the product behind it. The arrow went with the plate — an arrow inside a capsule is the arrow LINK's voice borrowed by a control that is already a door. Nothing else is on the screen under it: no dock, no foot, no controls in the bar. It opens as a circle from the tap. Once per tab |
 | Ear | `.wl-ear`, and `.hm-ear` on the front door | one line in the identifier face, at the label's size and tracking, the word in ash and the figure in chalk: on the door, the way to the wall while one is open; on the wall, the campus and the count, under the bar, standing still through the veil's lift so the veil and the field share one masthead element. The wall's figure is a `Roll`, a step larger than its word, and turns when a letter goes up. The term stood at the end of the line for a while and came off, so the line above the search stays quiet |
-| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. No ring on it — a white hairline over a crowd of pale discs is an edge belonging to no object, and the blur is the material and the edge both. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
+| Seek | `.wl-seek-glass`, `Seek` in `screens/Wall.jsx` | the wall's own question, under the ear, once the veil has gone: blurred void in a capsule with the lens in the place a field paints its @ (`HandleField kind="search"`), `look for a name` beside it, capped at the column's measure. It reads LEFT TO RIGHT, because it is a field. The lens stood against the left edge of nothing and the question was centred in a 16ch box beside it, so the glass had a hundred pixels of dead room either side of the one thing in it and the first character typed landed in the middle of the capsule, with every character after it shoving the ones already typed sideways: the text moved while it was being read and the caret never sat still. Every other field in the build is a left-aligned baseline, and the same question on the `/find` sheet was left aligned all along. It carries a hairline, and did not until 22 September: the argument against one was that a white hairline over a crowd of PALE discs is an edge belonging to no object, and that the blur was the material and the edge both. The discs are not pale any more (2.5a), and the plate itself came down with them — it was 440px filled at ten per cent chalk over a ground at L\* 2, under a 48px drop, which made the one object on the wall that is not about a person the heaviest thing on the screen, standing over the densest part of the hive. It is a field and it weighs what a field weighs now: 348px, five and a half per cent, 44px high, seated on `--hair` rather than on a shadow. At that fill the blur can no longer be the edge as well, and the hairline has a dark crowd to sit against. Its `saturate(1.25)` came off with the rest: a backdrop filter saturates what is BEHIND it, and what is behind this is forty faces, so the glass was amplifying the colour of every disc it covered. It ANSWERS IN PLACE: the capsule is the head of a panel that grows downward inside the same glass as the rows arrive (`useSuggest`, six rows) and folds back when the field is emptied or left, with nothing about the head moving while it opens. No caption over the rows. It used to behave as a door, pushing `/find` and a second field onto a sheet; that sheet is still at `/find` as a link into the search. It replaced a 40px glass ring in the bar. The council of 20 September, `docs/THE-COUNCIL.md` |
 | Hive | `.wl-hive`, `Hive` | the wall's names as a crowd of faces on a hexagonal torus, bent by a lens (`wall/Hive.jsx`): one continuous function of distance from the light sets a disc's size, how far the lattice opens around it, and how much of the room left over it is allowed to wander in — so the middle is large, tight and ordered and the rim is small, far apart and scattered. It runs corner to corner behind the bar and the pill, dissolving at every edge under two gradients; it drifts by itself and every disc breathes on its own clock; it can be pulled in any direction, and under a mouse it swells where the pointer is. One handle is on the screen at a time, on one glass plate. A press flies the disc into the letter's card (`wall/Morph.jsx`). `app/src/wall/README.md`, The hive |
 | Running light | `.wl-light`, `Light` | a point of light running the host's own edge, corners and all, on an `offset-path` the component measures. Three grounds: `star`, the dark plate the result card waits on; `chalk`, an opaque chalk plate, so the light shows around the capsule as a halo; and `none`, for a host that already has a ground of its own — the composer's body — where the beam alone is drawn, softened exactly as `star`'s is. Spent on the result card while it is looking, on the composer's body while the resolver is out, on the veil's way in (`.wl-mast-go-pill`), and on the mutual row on the sky. It came off the primary when the primary became metal: a rose point travelling round the inside of a metal capsule is two currents under one word |
 

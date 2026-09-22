@@ -361,6 +361,77 @@ export function isDark(hex) {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 118
 }
 
+// ── one lighting, for the disc ──────────────────────────────────────────────
+// A tint is chosen for a PAPER, and on the paper it is exactly right: it is
+// one object, held at reading distance, and its lightness is the writer's
+// voice. The hive is the other case. Forty discs are on the screen at once,
+// and the twenty-three tints a letter may be written on are not a spread —
+// they are two clusters with a hole between them. Seven sit between L* 6.8
+// (`ink`) and 31.3 (`graphite`); sixteen sit between 77.4 (`denim`) and 95.2
+// (`chalk`); there is nothing at all in the forty-six points between. So
+// every disc on the wall was either nearly as dark as the void it is drawn
+// on (L* 2.1) or nearly as bright as the brightest object in the product,
+// scattered by a lattice whose whole job is to disorder them. `chalk` makes
+// it exact: at #F4F1EA it is the same white as the primary capsule, so a
+// letter written on it put a disc on the wall precisely as bright as the one
+// act the screen is about, and there were usually several.
+//
+// The stylesheet above `.wl-face.has-look` already won this argument once,
+// about typefaces: forty writers' voices is not forty voices, it is noise,
+// and a monogram is an identifier, so it goes in the identifier face. The
+// same sentence is true of forty fills, in a channel the eye reads faster
+// than type. This is that ruling finished rather than a colour taken away.
+//
+// So the disc is relit: the tint's HUE is kept exactly, its lightness is set
+// to one value for every disc on the wall, and its chroma is capped. Cream
+// is still cream and wine is still wine and mint is still mint — one crowd
+// under one lamp rather than forty cut-outs. The paper is untouched; every
+// token above is still the tint as chosen, and only the three added below
+// are relit.
+//
+// The arithmetic is OKLab rather than HSL because HSL's "lightness" is not
+// one: setting every tint to the same HSL L leaves yellow reading far
+// brighter than blue, which is the bomb again with fewer steps.
+const DISC_L = 0.44        // the one lighting, in OKLab L
+const DISC_C = 0.055       // the chroma cap: enough hue to name, never to shout
+const DISC_INK_L = 0.88    // the monogram on it
+const DISC_RULE_L = 0.66   // the ring round it
+
+function srgbToLinear(v) { return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+function linearToSrgb(v) { return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055 }
+
+function toOklch(hex) {
+  const [R, G, B] = rgb(hex).map((v) => srgbToLinear(v / 255))
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B)
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B)
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B)
+  const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+  const b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+  return { L, C: Math.hypot(a, b), h: Math.atan2(b, a) }
+}
+
+function fromOklch(L, C, h) {
+  const a = Math.cos(h) * C
+  const b = Math.sin(h) * C
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+  return toHex(
+    linearToSrgb(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s) * 255,
+    linearToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s) * 255,
+    linearToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s) * 255,
+  )
+}
+
+// A tint, kept as a hue and relit to one lightness. `dL` walks the gradient's
+// three stops off the one value, so the disc is still a lit object and not a
+// flat swatch.
+export function relight(hex, L, C, dL = 0) {
+  const c = toOklch(hex)
+  return fromOklch(Math.max(0, Math.min(1, L + dL)), Math.min(c.C, C), c.h)
+}
+
 // ── the tokens ──────────────────────────────────────────────────────────────
 // What a look sets on a paper, a tile or a disc. Null for the plain paper:
 // the stylesheet's own declarations stand. `tokensOf` is the same
@@ -416,6 +487,16 @@ export function tokensOf(look) {
     // tokens above stay the screen's and the picture's, so a chosen colour
     // moves the surface the words are on and never the shell around it.
     '--lk-frame': theme.frame || ground,
+    // ── the same tint, relit for the hive ──
+    // The three the DISC draws with, and the only relit tokens in the set:
+    // the hue as chosen, the lightness the same for every disc on the wall
+    // (the note above `DISC_L`). A disc carrying a picture keeps the picture
+    // and wears its look on the rule, which is why `--lk-disc-rule` is a
+    // token of its own rather than an alpha of the ink: on a photo it is the
+    // only place the look survives.
+    '--lk-disc': `linear-gradient(168deg, ${relight(paper, DISC_L, DISC_C, 0.035)} 0%, ${relight(paper, DISC_L, DISC_C)} 46%, ${relight(paper, DISC_L, DISC_C, -0.035)} 100%)`,
+    '--lk-disc-ink': relight(paper, DISC_INK_L, DISC_C),
+    '--lk-disc-rule': alpha(relight(paper, DISC_RULE_L, DISC_C), 0.34),
   }
 }
 
