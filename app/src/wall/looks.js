@@ -216,7 +216,7 @@ export function skinOf(colour) {
       top: '#262626', top2: '#1D1D1D', bot: '#070707',
       hi: '#242424', mid: '#161616', lo: '#0A0A0A',
       ink: '#F1F1F1', lit: '#EDEDED', cur: '#F2F2F2',
-      bloom: 'rgba(255, 255, 255, 0.55)', soft: 'rgba(255, 255, 255, 0.55)',
+      bloom: 'rgba(255, 255, 255, 0.3)', soft: 'rgba(255, 255, 255, 0.55)',
       glow: c.hue, k: 0.5,
     }
   } else {
@@ -229,12 +229,15 @@ export function skinOf(colour) {
       ? [multiply(c.a, c.b), c.a, c.b, c.paper]
       : c.stops
     const ink = stops[0]
+    // a copy's bands go to toner at every exposure and its panel to paper,
+    // and its lit words have no bloom for the threshold to turn into blobs
+    const xer = c.kind === 'xerox'
     s = {
       kind: c.kind,
-      top: '#5A5A5A', top2: '#4B4B4B', bot: '#121212',
-      hi: '#D4D4D4', mid: '#A9A9A9', lo: '#8C8C8C',
+      top: xer ? '#1F1F1F' : '#5A5A5A', top2: xer ? '#191919' : '#4B4B4B', bot: xer ? '#0E0E0E' : '#121212',
+      hi: xer ? '#DCDCDC' : '#D4D4D4', mid: xer ? '#BEBEBE' : '#A9A9A9', lo: xer ? '#A0A0A0' : '#8C8C8C',
       ink: '#131313', lit: '#F4F4F4', cur: '#131313',
-      bloom: 'rgba(255, 255, 255, 0.4)', soft: 'rgba(0, 0, 0, 0.3)',
+      bloom: xer ? 'transparent' : 'rgba(255, 255, 255, 0.4)', soft: 'rgba(0, 0, 0, 0.3)',
       glow: c.kind === 'xerox' ? '#ECEAE4' : stops[2], k: c.kind === 'xerox' ? 0.55 : 0.8,
       print: {
         stops,
@@ -375,15 +378,23 @@ export function quirks(seed) {
   const scratchOn = r() < 0.24
   const sa = range(r, 18, 70) * sign()
   const sp = range(r, 20, 80)
+  // a short hairline in one patch of the glass, not a line through all of it
   const scratch = scratchOn
-    ? `linear-gradient(${sa.toFixed(1)}deg, transparent ${(sp - 0.25).toFixed(2)}%, rgba(255,255,255,0.13) ${sp.toFixed(2)}%, transparent ${(sp + 0.25).toFixed(2)}%)`
+    ? `linear-gradient(${sa.toFixed(1)}deg, transparent calc(50% - 0.5px), rgba(255,255,255,0.14) 50%, transparent calc(50% + 0.5px)) ${sp.toFixed(1)}% ${(100 - sp).toFixed(1)}% / 38% 30% no-repeat`
     : 'none'
   // the panel's own faults: a ghost column the driver left on, a dead pixel
   const streak = r() < 0.55
   const streakX = range(r, 58, 90)
+  // the dead pixel is stuck lit, on one of the dark bands: in the words it
+  // read as a full stop
   const deadOn = r() < 0.22
   const dead = deadOn
-    ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)) ${range(r, 14, 86).toFixed(1)}% ${range(r, 20, 86).toFixed(1)}% / 0.9cqw 0.9cqw no-repeat`
+    ? (() => {
+      const x = range(r, 14, 86)
+      const y = range(r, 20, 86)
+      const yy = y < 53 ? 4 + (y - 20) * 0.3 : 88 + (y - 53) * 0.24
+      return `linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)) ${x.toFixed(1)}% ${yy.toFixed(1)}% / 0.9cqw 0.9cqw no-repeat`
+    })()
     : 'none'
   // the model: which battery and which aerial it draws, and whether the
   // name sits in the middle of the top row or beside the aerial

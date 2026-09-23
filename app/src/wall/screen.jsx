@@ -243,8 +243,10 @@ function Press({ id, colour, q }) {
 // ── the screen ──────────────────────────────────────────────────────────────
 // `top` is what the status rows say: `name`, `counter`, `mode` ('abc',
 // 'Abc', 'locked'), `icon` ('pen', 'lock' or none), `handle`, and the
-// letter's `sig` and `bat`. `keys` is the three soft keys, `l`, `c` and
-// `r`, each `{ label, onClick, aria }` or nothing. The body is the children.
+// letter's `sig` and `bat`. `pos` stands where the handle does, a menu's
+// '1/3', hidden from a screen reader, which hears the chosen row itself.
+// `keys` is the three soft keys, `l`, `c` and `r`, each
+// `{ label, onClick, aria }` or nothing. The body is the children.
 //
 // `live` off draws the keys without letting them be pressed or tabbed to:
 // the neighbours on the letter's strip are pictures of the next letter, not
@@ -260,7 +262,7 @@ export function Screen({
   const raw = useId()
   const fid = `wl-press-${raw.replace(/[^a-zA-Z0-9_-]/g, '')}`
   const vars = { ...skinVars(colour), ...q.vars }
-  const { name = '', counter = '', mode = 'abc', icon = 'pen', handle = '', sig = 4, bat = 4 } = top
+  const { name = '', counter = '', mode = 'abc', icon = 'pen', handle = '', pos = '', sig = 4, bat = 4 } = top
   const key = (k, cls) => {
     const d = keys[k]
     if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
@@ -316,7 +318,7 @@ export function Screen({
                   <span className="wl-scr-mode wl-lit" aria-hidden="true">{mode}</span>
                 </>
               ) : null}
-              <span className="wl-scr-hd wl-lit">{handle}</span>
+              <span className="wl-scr-hd wl-lit" aria-hidden={pos ? 'true' : undefined}>{pos || handle}</span>
             </div>
           </div>
           <div className="wl-scr-body">{children}</div>
@@ -407,15 +409,19 @@ function Bar({ of, over }) {
 // last of them. `pic` stands a picture at the head of it, the way a picture
 // message carried one: whatever node the caller hands, which draws its own
 // `.wl-scr-mms` float when it has a picture and nothing when it has none.
-export function ScreenText({ text, pic = null, cursor = true, className = '' }) {
+// `sealed` draws each run of stars as the phone's full pixel star, one per
+// hidden letter, on the line (screen.css `.wl-scr-stars`).
+export function ScreenText({ text, pic = null, cursor = true, sealed = false, className = '' }) {
   const ref = useRef(null)
   // the picture's key, since its float can arrive after the first fit
-  const over = useFit(ref, [text, pic ? pic.key : ''], true)
+  const over = useFit(ref, [text, pic ? pic.key : '', sealed], true)
   return (
     <>
       <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>
         {pic}
-        {text}
+        {sealed
+          ? String(text).split(/(\*+)/).map((p, i) => (/^\*+$/.test(p) ? <span key={i} className="wl-scr-stars">{p}</span> : p))
+          : text}
         {cursor ? <span className="wl-scr-cur" aria-hidden="true" /> : null}
       </div>
       <Bar of={ref} over={over} />

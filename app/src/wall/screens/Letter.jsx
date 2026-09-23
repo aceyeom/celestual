@@ -230,7 +230,7 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     /* `waiting`: the screen is on and nothing has arrived on it yet, which is
        neither shut nor open, so it is only the cursor */
     return (
-      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, icon: '', handle: h }} live={false} nameId={id}>
+      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, handle: h }} live={false} nameId={id}>
         <ScreenText text="" />
       </Screen>
     )
@@ -277,6 +277,14 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
     onView({ kind: 'note', glyph: said[0], title: said[1], text: said[2] || '', done: true })
   }
 
+  // the letter's own status rows, kept under a note, so the band is never
+  // an empty strip and the sheet keeps its name
+  const letterTop = {
+    name: first, handle: h,
+    counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
+    mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
+    sig: signalOf(hearts), bat: chargeOf(l.at),
+  }
   let top
   let body
   let keys
@@ -288,32 +296,30 @@ function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, 
       if (it.how) send(it.how)
       else { onView(null); it.run() }
     }
-    top = { name: at.kind === 'options' ? 'options' : 'send', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    // the menu's name, and where in it the chosen row is, on the right of
+    // the second row, the way the phone counted them
+    const sel = Math.min(at.at || 0, items.length - 1)
+    top = { name: at.kind, pos: `${sel + 1}/${items.length}`, icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
     body = (
       <ScreenMenu
-        items={items.map((x) => x.t)} at={Math.min(at.at || 0, items.length - 1)}
+        items={items.map((x) => x.t)} at={sel}
         onAt={(j) => onView({ ...at, at: j })} onPick={pick} label={at.kind}
         onBack={back}
       />
     )
     keys = {
-      l: { label: 'select', onClick: () => pick(Math.min(at.at || 0, items.length - 1)), aria: `select ${items[at.at || 0]?.t || ''}` },
+      l: { label: 'select', onClick: () => pick(sel), aria: `select ${items[sel]?.t || ''}` },
       r: { label: 'back', onClick: back, aria: 'back to the letter' },
     }
   } else if (at.kind === 'note') {
-    top = { name: '', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    top = letterTop
     body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
     keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
   } else {
-    top = {
-      name: first, handle: h,
-      counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
-      mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
-      sig: signalOf(hearts), bat: chargeOf(l.at),
-    }
+    top = letterTop
     body = (
       <ScreenText
-        text={text}
+        text={text} sealed={!open}
         pic={!isNameKey(l.to) ? <Picture handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
       />
     )
@@ -655,7 +661,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
           <div className="wl-letter-card">
             <Screen
               seed={String(param)} look={null} state={woke}
-              top={{ name: 'not on the wall', icon: '' }}
+              top={{ name: 'not on the wall', icon: 'lock', mode: 'locked' }}
               keys={{ r: { label: 'back', onClick: up, aria: upLabel } }}
               live nameId="wl-letter-h"
             >

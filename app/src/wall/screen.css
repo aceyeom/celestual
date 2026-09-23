@@ -103,6 +103,10 @@
   margin-left: auto; min-width: 0; font-size: 7.4cqw; line-height: 1; opacity: 0.82;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* the words in a row share a baseline, whatever their size; the glyphs
+   beside them stay centred */
+.wl-scr-r1 > .wl-scr-nm, .wl-scr-r1 > .wl-scr-cnt,
+.wl-scr-r2 > .wl-scr-mode, .wl-scr-r2 > .wl-scr-hd { align-self: baseline; }
 .wl-scr-bat.is-low { animation: wl-blink 1.06s steps(1) infinite; }
 .wl-px { display: block; flex: 0 0 auto; fill: currentColor; }
 /* the words on the glass bloom, the way a lit word does in a photograph of
@@ -132,11 +136,26 @@
 }
 .wl-scr-draft::placeholder { color: var(--s-ink); opacity: 0.38; }
 .wl-scr-cur {
-  display: inline-block; width: 0.07em; height: 0.84em; margin-left: 0.06em; vertical-align: -0.06em;
+  /* one pixel of the face wide, from the top of its capitals to the foot
+     of its descenders */
+  display: inline-block; width: 0.107em; height: 0.64em; margin-left: 0.107em; vertical-align: -0.107em;
   background: var(--s-cur); box-shadow: 0 0 1cqw var(--s-bloom);
   animation: wl-blink 1.06s steps(1) infinite; animation-delay: var(--q-blink, 0ms);
 }
 @keyframes wl-blink { 50% { opacity: 0; } }
+/* a sealed letter's stars: the face's '*' is a small raised mark, so each
+   run is set at 4/3, where one star is exactly as wide as an 'x', its ink
+   centred on the x-height and nothing hanging below the line, so the letter
+   keeps its open size and line count */
+.wl-scr-stars {
+  display: inline-block; box-sizing: content-box; /* .wl-root * is border-box */
+  font-size: 1.3333em;      /* at 4/3 the star is as wide as an 'x' */
+  line-height: 0.536em;     /* the star's ink sits at the top of its own line */
+  height: 0.214em;          /* exactly the ink */
+  padding: 0.15em; margin: 0 -0.15em; /* room for the bloom, advance unchanged */
+  overflow: hidden;         /* so useFit reads the true height */
+  vertical-align: -0.096em; /* ink centred on the x-height */
+}
 /* a picture at the head of the message, the way a picture message carried
    one: floated, so the words run down beside it */
 .wl-scr-mms {
@@ -206,13 +225,17 @@
 .wl-scr[data-kind='neg'] .wl-scr-msg,
 .wl-scr[data-kind='neg'] .wl-scr-menu,
 .wl-scr[data-kind='neg'] .wl-scr-note {
-  text-shadow: 0 0 0.25cqw #fff, 0 0 1.6cqw rgba(255,255,255,0.5), 0 0 3.6cqw rgba(255,255,255,0.22);
+  text-shadow: 0 0 0.2cqw rgba(255,255,255,0.85), 0 0 1.2cqw rgba(255,255,255,0.3), 0 0 3cqw rgba(255,255,255,0.14);
 }
 .wl-scr[data-kind='neg'] .wl-scr-fx.is-grid {
   background:
-    repeating-linear-gradient(0deg, rgba(0,0,0,0.4) 0 1px, transparent 1px var(--q-pitch, 3px)),
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.34) 0 1px, transparent 1px var(--q-pitch, 3px));
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.26) 0 1px, transparent 1px var(--q-pitch, 3px)),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0 1px, transparent 1px var(--q-pitch, 3px));
 }
+/* the chosen row is the brightest thing on a dark panel, so it glows too;
+   the body still clips at its own padded edge */
+.wl-scr[data-kind='neg'] .wl-scr-menu { overflow: visible; }
+.wl-scr[data-kind='neg'] .wl-scr-menu li.is-on { box-shadow: 0 0 1.2cqw rgba(255,255,255,0.32), 0 0 3cqw rgba(255,255,255,0.12); }
 
 /* ── the prints ──
    A poster and a riso are the screen's LAYOUT printed flat: one tone edge
@@ -222,10 +245,12 @@
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top,
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-bot { background: none; color: var(--s-ink); }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top { padding-top: calc(var(--q-top-pad, 2.6cqw) + 1cqw); }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-lit { text-shadow: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-lit-g .wl-px,
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-px.wl-lit-g { filter: none; }
-.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-cur { box-shadow: none; }
+/* and nothing blooms on a print or a copy: on a copy the bloom crossed the
+   threshold and turned the status rows into blobs of paper */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit { text-shadow: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-lit-g .wl-px,
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-px.wl-lit-g { filter: none; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) .wl-scr-cur { box-shadow: none; }
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass {
   box-shadow: inset 0 0 0 1.4cqw rgba(0, 0, 0, 0.85);
 }
@@ -238,12 +263,16 @@
 /* ── the copy: the roller's streaks down the sheet, and the grey the lid
    let in along one edge, which the copier's threshold speckles into toner */
 .wl-scr[data-kind='xerox'] .wl-scr-fx.is-streak { opacity: 1; background: var(--q-rollers); -webkit-mask-image: none; mask-image: none; }
+/* the lid's grey stays in the margin, short of the first letter of a line */
 .wl-scr[data-kind='xerox'][data-lid='left'] .wl-scr-fx.is-glare {
-  background: linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.05) 7%, transparent 14%, transparent 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.2), rgba(0,0,0,0.05) 4%, transparent 9%);
 }
 .wl-scr[data-kind='xerox'][data-lid='right'] .wl-scr-fx.is-glare {
-  background: linear-gradient(270deg, rgba(0,0,0,0.2), rgba(0,0,0,0.05) 7%, transparent 14%, transparent 100%);
+  background: linear-gradient(270deg, rgba(0,0,0,0.2), rgba(0,0,0,0.05) 4%, transparent 9%);
 }
+/* a copy's panel is brighter than a print's, so its example is set a
+   shade darker to hold on a cool copy */
+.wl-scr[data-kind='xerox'] .wl-scr-draft::placeholder { opacity: 0.46; }
 
 /* menus and notes, drawn the way the phone drew them: the chosen row
    inverted, and a note in the middle of the panel */
@@ -255,6 +284,8 @@
 .wl-scr-menu li { padding: 0.8cqw 2cqw 0.6cqw; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wl-scr-menu li.is-on { background: var(--s-ink); color: var(--s-mid); text-shadow: none; }
 .wl-scr-menu:focus-visible { outline: 0.5cqw dashed var(--s-ink); outline-offset: -0.5cqw; }
+/* the chosen row stands the same way in from either side of the glass */
+.wl-scr-body:has(> .wl-scr-menu) { padding-left: 2.4cqw; padding-right: 2.4cqw; }
 .wl-scr-note {
   flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw;
   text-align: center; color: var(--s-ink); padding: 0 3cqw; font: 400 8.6cqw/1.05 var(--f-s40);
@@ -272,6 +303,14 @@
   52%  { filter: blur(3px) brightness(0.92); }
   100% { filter: blur(0.35px) brightness(1); }
 }
+/* the light the screen throws wakes with it, dark while it is dark. Low
+   specificity (`:where`), so a close that comes mid-wake still puts it out */
+@keyframes wl-wake-light { 0% { opacity: 0; } 28% { opacity: 0.62; } 38% { opacity: 0.3; } 52% { opacity: 0.92; } 100% { opacity: 1; } }
+:where(.wl-scene:has(.wl-scr.is-waking)) .wl-scene-halo-2,
+:where(.wl-letter:has(.wl-letter-card .wl-scr.is-waking)) .wl-room-light {
+  animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.wl-sheet-wrap.is-closing .wl-scene-halo-2 { animation: none; }
 /* a print does not wake, it is uncovered, and outside the press
    (`.wl-scr-press`), so the inks do not walk while it fades. Nor is a blur
    stacked on the press */
@@ -380,11 +419,17 @@
     repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0 1px, transparent 1px 2.5px);
 }
 .wl-mini:is([data-kind='poster'], [data-kind='riso'])::after { background: radial-gradient(rgba(0,0,0,0.18) 28%, transparent 34%) 0 0 / 2.4px 2.4px; }
+/* a print's thumbnail carries the accent its letter is lit with, in the
+   corner the backlight was */
+.wl-mini:is([data-kind='poster'], [data-kind='riso']) {
+  background: radial-gradient(70% 55% at 80% 72%, var(--t-accent) 0 26%, transparent 70%), var(--t-body);
+}
 .wl-mini-body i { position: absolute; left: 12%; height: 7%; border-radius: 1px; background: var(--t-ink); }
 .wl-mini-body i:nth-child(1) { top: 34%; width: 70%; }
 .wl-mini-body i:nth-child(2) { top: 48%; width: 52%; }
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px { animation: none !important; }
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px,
+  .wl-scene:has(.wl-scr.is-waking) .wl-scene-halo-2, .wl-letter:has(.wl-letter-card .wl-scr.is-waking) .wl-room-light { animation: none !important; }
 }

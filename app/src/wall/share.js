@@ -389,7 +389,8 @@ export function letterFace(l, { name, handle }) {
 // words is in the page (parts.jsx `Redacted` says why).
 export function starred(words = 0, chars = 0, seed = '') {
   const n = Math.max(1, Math.min(120, words | 0))
-  const mean = Math.max(2, Math.min(12, Math.round((chars || n * 5) / n)))
+  // the letters, not the letters and the space after each word
+  const mean = Math.max(2, Math.min(12, Math.round(((chars || n * 5) - (n - 1)) / n)))
   const out = []
   for (let i = 0; i < n; i++) {
     let h = 0x9e3779b9
