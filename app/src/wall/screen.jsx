@@ -284,76 +284,104 @@ export function Screen({
       <span className="wl-scene-halo" aria-hidden="true" />
       <span className="wl-scene-halo-2" aria-hidden="true" />
       {s.print ? <Press id={fid} colour={colour} q={q} /> : null}
+      {/* the press is on this wrapper, which has no transform (screen.css
+          `.wl-scr-press`), and a print is uncovered here. Always drawn, so a
+          screen turned from lit to print keeps the field in it */}
       <div
-        className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
-        data-lid={s.kind === 'xerox' ? q.lid : undefined}
+        className={`wl-scr-press${s.print && state ? ` is-${state}` : ''}`}
         style={s.print ? { filter: `url(#${fid})` } : undefined}
-        role="group" aria-labelledby={nameId}
       >
-        <div className="wl-scr-bg" aria-hidden="true" />
-        <div className="wl-scr-top" data-name={q.nameAt}>
-          <div className="wl-scr-r1">
-            <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
-              <Pix name={q.ant === 't' ? 'antt' : 'anty'} h={7.4} />
-              <Pix name={`sig${sig}`} h={7.4} />
-            </span>
-            <span className="wl-scr-nm wl-lit" id={nameId}>{name}</span>
-            {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
-            <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
-              <Pix name={`bat${q.bat}${bat}`} h={5.4} />
-            </span>
+        <div
+          className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
+          data-lid={s.kind === 'xerox' ? q.lid : undefined}
+          role="group" aria-labelledby={nameId}
+        >
+          <div className="wl-scr-bg" aria-hidden="true" />
+          <div className="wl-scr-top" data-name={q.nameAt}>
+            <div className="wl-scr-r1">
+              <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
+                <Pix name={q.ant === 't' ? 'antt' : 'anty'} h={7.4} />
+                <Pix name={`sig${sig}`} h={7.4} />
+              </span>
+              <span className="wl-scr-nm wl-lit" id={nameId}>{name}</span>
+              {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
+              <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
+                <Pix name={`bat${q.bat}${bat}`} h={5.4} />
+              </span>
+            </div>
+            <div className="wl-scr-r2">
+              {icon ? (
+                <>
+                  <Pix name={icon} h={7} className="wl-lit-g" />
+                  <span className="wl-scr-mode wl-lit" aria-hidden="true">{mode}</span>
+                </>
+              ) : null}
+              <span className="wl-scr-hd wl-lit">{handle}</span>
+            </div>
           </div>
-          <div className="wl-scr-r2">
-            {icon ? (
-              <>
-                <Pix name={icon} h={7} className="wl-lit-g" />
-                <span className="wl-scr-mode wl-lit" aria-hidden="true">{mode}</span>
-              </>
-            ) : null}
-            <span className="wl-scr-hd wl-lit">{handle}</span>
+          <div className="wl-scr-body">{children}</div>
+          <div className="wl-scr-bot">
+            {key('l', 'is-l')}
+            {key('c', 'is-c')}
+            {key('r', 'is-r')}
           </div>
+          <span className="wl-scr-fx is-grid" aria-hidden="true" />
+          <span className="wl-scr-fx is-moire" aria-hidden="true" />
+          <span className="wl-scr-fx is-streak" aria-hidden="true" />
+          <span className="wl-scr-fx is-glass" aria-hidden="true" />
+          <span className="wl-scr-fx is-glare" aria-hidden="true" />
+          <span className="wl-scr-fx is-shine" aria-hidden="true" />
         </div>
-        <div className="wl-scr-body">{children}</div>
-        <div className="wl-scr-bot">
-          {key('l', 'is-l')}
-          {key('c', 'is-c')}
-          {key('r', 'is-r')}
-        </div>
-        <span className="wl-scr-fx is-grid" aria-hidden="true" />
-        <span className="wl-scr-fx is-moire" aria-hidden="true" />
-        <span className="wl-scr-fx is-streak" aria-hidden="true" />
-        <span className="wl-scr-fx is-glass" aria-hidden="true" />
-        <span className="wl-scr-fx is-glare" aria-hidden="true" />
-        <span className="wl-scr-fx is-shine" aria-hidden="true" />
       </div>
     </div>
   )
 }
 
 // ── the words ───────────────────────────────────────────────────────────────
-// Set as large as the screen will hold them, stepping down four sizes the way
-// the phone's own large, medium and small fonts did, and past the smallest
-// the message scrolls, with the phone's own bar down the right to say so.
-const SIZES = [15.4, 12.4, 10, 8.4]
-export function useFit(ref, deps) {
+// Set as large as the screen will hold them, stepping down a ladder of sizes
+// the way the phone's own large, medium and small fonts did. A letter that is
+// read (`fill`) is then set as large as it will go between the step that fits
+// and the one above, so the panel is never a quarter empty; a draft stays on
+// the steps, so typing reflows only at a threshold. Past the smallest size
+// the message scrolls, with the phone's own bar down the right to say so, and
+// is cut to a whole number of lines, so its foot is never a sliced one.
+const SIZES = [15.4, 13.8, 12.4, 11.2, 10, 9.2, 8.4, 7.6]
+export function useFit(ref, deps, fill = false) {
   const [over, setOver] = useState(false)
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return undefined
     const fit = () => {
+      // the room is the body's, measured without its padding: the message
+      // itself may be clamped from the last fit, and is not unclamped mid-fit
+      const box = el.parentElement
+      if (!box) return
+      const bs = getComputedStyle(box)
+      const room = box.clientHeight - parseFloat(bs.paddingTop) - parseFloat(bs.paddingBottom)
       el.style.overflowY = 'hidden'
+      const fits = (s) => { el.style.setProperty('--fs', `${s}cqw`); return el.scrollHeight <= room + 1 }
       let i = 0
-      for (; i < SIZES.length; i++) {
-        el.style.setProperty('--fs', `${SIZES[i]}cqw`)
-        if (el.scrollHeight <= el.clientHeight + 1) break
+      while (i < SIZES.length && !fits(SIZES[i])) i++
+      if (fill && i > 0 && i < SIZES.length) {
+        let lo = SIZES[i]
+        let hi = SIZES[i - 1]
+        while (hi - lo > 0.05) {
+          const m = (lo + hi) / 2
+          if (fits(m)) lo = m
+          else hi = m
+        }
+        fits(lo)
       }
-      const o = el.scrollHeight > el.clientHeight + 1
+      const o = el.scrollHeight > room + 1
+      const lh = parseFloat(getComputedStyle(el).lineHeight)
+      el.style.maxHeight = o && lh > 0 ? `${Math.floor(room / lh + 0.02) * lh}px` : ''
       el.style.overflowY = o ? 'auto' : 'hidden'
       setOver(o)
     }
     fit()
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null
-    if (ro) ro.observe(el)
+    // the body: once clamped, the message alone would never see it grow
+    if (ro) ro.observe(el.parentElement || el)
     let off = false
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!off) fit() })
     return () => { off = true; if (ro) ro.disconnect() }
@@ -381,7 +409,8 @@ function Bar({ of, over }) {
 // `.wl-scr-mms` float when it has a picture and nothing when it has none.
 export function ScreenText({ text, pic = null, cursor = true, className = '' }) {
   const ref = useRef(null)
-  const over = useFit(ref, [text, !!pic])
+  // the picture's key, since its float can arrive after the first fit
+  const over = useFit(ref, [text, pic ? pic.key : ''], true)
   return (
     <>
       <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>

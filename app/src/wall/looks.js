@@ -390,8 +390,9 @@ export function quirks(seed) {
   const bat = pick(r, ['a', 'a', 'b', 'c'])
   const ant = pick(r, ['y', 'y', 't'])
   const nameAt = r() < 0.3 ? 'start' : 'center'
-  // the words: where the lines start and how far down the first one sits
-  const pad = range(r, 1.3, 2.5)
+  // the words: where the lines start and how far down the first one sits.
+  // The start is about in line with the aerial, which stands 3cqw in
+  const pad = range(r, 2.4, 3.4)
   const lift = range(r, 1.1, 2.4)
   const topPad = range(r, 2.2, 3.1)
   // the cursor, so a wall of them is not one metronome

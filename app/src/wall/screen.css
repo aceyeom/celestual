@@ -50,6 +50,16 @@
   animation: wl-fade 700ms var(--ease, ease) both;
 }
 
+/* ── the press ──
+   screen.jsx `Press`: the filter a print is pulled through. Out of the flow,
+   so it is no line box over the screen, and never display: none, since
+   Firefox and some Safari stop resolving url(#id) inside one */
+.wl-press { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+/* the filter is on this wrapper and not on the screen: the screen's
+   transform has perspective() in it, and under that a filter is drawn at 1x
+   and scaled up, a lattice on a phone */
+.wl-scr-press { position: relative; }
+
 /* ── the screen ── */
 .wl-scr {
   position: relative; container-type: inline-size;
@@ -104,7 +114,7 @@
 /* the words */
 .wl-scr-body {
   position: relative; z-index: 1; flex: 1 1 auto; min-height: 0;
-  padding: var(--q-lift, 1.6cqw) 3.6cqw 1cqw var(--q-pad, 1.8cqw);
+  padding: var(--q-lift, 1.6cqw) 3.6cqw 1cqw var(--q-pad, 2.9cqw);
   display: flex; overflow: hidden; overflow: clip;
 }
 .wl-scr-msg {
@@ -219,6 +229,12 @@
 .wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-fx.is-glass {
   box-shadow: inset 0 0 0 1.4cqw rgba(0, 0, 0, 0.85);
 }
+/* a print's words and picture stand clear of its 1.4cqw rule by the same
+   2.4-3.4cqw a lit screen has of glass (keep the 1.4 with the rule above) */
+.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 5cqw; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-top { padding-left: 4cqw; padding-right: 4cqw; }
+.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-sb { right: 2.6cqw; }
+.wl-scr[data-kind='xerox'] .wl-scr-body { padding-left: calc(var(--q-pad, 2.9cqw) + 1.4cqw); padding-right: 4.4cqw; }
 /* ── the copy: the roller's streaks down the sheet, and the grey the lid
    let in along one edge, which the copier's threshold speckles into toner */
 .wl-scr[data-kind='xerox'] .wl-scr-fx.is-streak { opacity: 1; background: var(--q-rollers); -webkit-mask-image: none; mask-image: none; }
@@ -256,12 +272,23 @@
   52%  { filter: blur(3px) brightness(0.92); }
   100% { filter: blur(0.35px) brightness(1); }
 }
-/* a print does not wake, it is uncovered */
-.wl-scr.is-waking:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { animation: wl-uncover 700ms var(--ease, ease) both; }
+/* a print does not wake, it is uncovered, and outside the press
+   (`.wl-scr-press`), so the inks do not walk while it fades. Nor is a blur
+   stacked on the press */
+.wl-scr:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { filter: none; }
+.wl-scr.is-waking:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']),
+.wl-scr.is-dip:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { animation: none; }
+.wl-scr-press.is-waking { animation: wl-uncover 700ms var(--ease, ease) both; }
 @keyframes wl-uncover { from { opacity: 0; } to { opacity: 1; } }
 .wl-scr.is-dip { animation: wl-dip 300ms ease; }
 @keyframes wl-dip { 0% { filter: blur(0.35px) brightness(1); } 45% { filter: blur(1.2px) brightness(0.25); } 100% { filter: blur(0.35px) brightness(1); } }
-.wl-scr.is-dip:is([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) { animation: wl-uncover 300ms ease; }
+.wl-scr-press.is-dip { animation: wl-uncover 300ms ease; }
+/* and put out: the letter's close (wall.css `wl-letter-out`) */
+@keyframes wl-sleep {
+  0%   { filter: blur(0.35px) brightness(1); }
+  30%  { filter: blur(0.6px) brightness(0.32); }
+  100% { filter: blur(3px) brightness(0); }
+}
 
 /* ═══ THE SMALL SCREEN ═════════════════════════════════════════════════════
    A name on the wall (Hive.jsx), in the disc's box: the screen's proportion
@@ -359,5 +386,5 @@
 .wl-mini-body i:nth-child(3) { top: 62%; width: 62%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-cur, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px { animation: none !important; }
+  .wl-scr.is-waking, .wl-scr.is-dip, .wl-scr-press.is-waking, .wl-scr-press.is-dip, .wl-scr-cur, .is-blink, .wl-tile-cur, .wl-scr-bat.is-low, .wl-sk.is-on .wl-px { animation: none !important; }
 }

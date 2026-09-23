@@ -1298,7 +1298,7 @@ a.wl-lq { text-decoration: none; }
 /* the way out: 320ms, and parts.jsx `SHEET_OUT_MS` is the same number, so
    the route changes on the frame the sheet clears the glass */
 .wl-sheet-wrap.is-closing .wl-sheet { animation: wl-drop-sheet 320ms var(--ease-in) both; }
-.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-fade 320ms var(--ease-in) reverse both; }
+.wl-sheet-wrap.is-closing .wl-scrim { animation: wl-unfade 320ms var(--ease-in) both; }
 
 /* the grip — a drag target with a real 24px height around a 4px bar */
 .wl-grip { flex: 0 0 auto; height: 26px; display: grid; place-items: center; touch-action: none; }
@@ -2449,14 +2449,20 @@ a.wl-lq { text-decoration: none; }
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
-/* the screen is as wide as the glass allows and never taller than the room:
-   on a short window it is sized off the height, so the keys are never below
-   the fold */
-.wl-letter-card .wl-scene, .wl-letter-slot .wl-scene {
-  /* a length, never a share of the sheet: the sheet on a wide window is a
-     dialog that takes its width from what is in it */
-  width: min(calc(100vw - 36px), 440px, calc((100svh - 190px) / 1.22)); margin: 0 auto;
+/* ── one width for the letter ──
+   The screen is as wide as the glass allows, up to 520 in a big room, and
+   never taller than the room: on a short window it is sized off the
+   height, so the keys are never below the fold. `--scene-w` is the one
+   number the sheet, the stage and the seal's foot are all sized from. */
+.wl-sheet-wrap.is-letter { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 190px) / 1.22)); }
+@media (max-height: 560px) and (orientation: landscape) {
+  /* an open letter has no seal foot to leave room for */
+  .wl-sheet-wrap.is-letter:not(:has(.wl-seal)) { --scene-w: min(calc(100vw - 36px), 520px, calc((100svh - 120px) / 1.22)); }
 }
+/* a length and not a share: the scene is an inline-size container and adds
+   no width of its own, so min(100%, ...) of a dialog that takes its width
+   from what is in it is nothing. The max-width keeps it inside its card */
+.wl-letter-card .wl-scene, .wl-letter-slot .wl-scene { width: var(--scene-w); max-width: 100%; margin: 0 auto; }
 /* the picture at the head of a message: pressable, the way a face was */
 .wl-root .wl-scr-face {
   display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer;
@@ -2465,7 +2471,7 @@ a.wl-lq { text-decoration: none; }
 .wl-scr-face:active { transform: scale(0.95); transition-duration: 90ms; }
 .wl-scr-face:focus-visible { outline: 0.5cqw solid var(--s-ink); outline-offset: 0.5cqw; }
 .wl-sheet-wrap.is-letter .wl-sheet {
-  min-height: 0; max-height: none; max-width: 470px;
+  min-height: 0; max-height: none; max-width: calc(var(--scene-w) + 30px);
   background: none; box-shadow: none; border-radius: 0;
   -webkit-backdrop-filter: none; backdrop-filter: none;
   overflow: visible;
@@ -2476,8 +2482,6 @@ a.wl-lq { text-decoration: none; }
   padding: 0; overflow: visible;
   animation: none;
 }
-.wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
-.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-fade 220ms var(--ease-in) reverse both; }
 /* ── every other sheet on the wall is the room's black glass ──
    Find, the gate, a report and a removal: black glass over the black room,
    with the letter room's grain behind the words, so a sheet is the same
@@ -2508,14 +2512,33 @@ a.wl-lq { text-decoration: none; }
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
 }
+/* ── on and off ──
+   The card is opaque within the first beat of opening, so the screen is
+   seen to switch on (screen.css `wl-wake`) and not to fade up through the
+   room. Closing, the screen goes to sleep first: a lit screen dims to
+   nothing (screen.css `wl-sleep`), the light it threw goes with it, and
+   only then does the card leave and the room lift. A print is not lit, so
+   it is not put to sleep; it fades with the card, over a room still black.
+   The route changes on parts.jsx Sheet's 580ms floor, since `wl-letter-out`
+   is not a drop it listens for, so the scrim's delay and length stay under
+   it. */
+.wl-sheet-wrap.is-letter .wl-scrim { animation-duration: 320ms; }
 @keyframes wl-letter-in {
   from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.97); }
+  12%  { opacity: 1; }
   to   { opacity: 1; transform: none; }
 }
 @keyframes wl-letter-out {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
+  0%, 60% { opacity: 1; transform: none; }
+  to      { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.985); }
 }
+.wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-letter-card .wl-scr:not([data-kind='poster'], [data-kind='riso'], [data-kind='xerox']) {
+  animation: wl-sleep 220ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.wl-sheet-wrap.is-letter.is-closing .wl-scene-halo-2 { opacity: 0; transition-duration: 200ms; }
+.wl-sheet-wrap.is-letter.is-closing .wl-room-light { animation: wl-unfade 220ms var(--ease-in) both; }
+.wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-unfade 300ms var(--ease-in) 180ms both; }
 /* the one mark on the glass: the way out, in the corner where every sheet
    keeps it, standing on the scrim rather than on a header row. A sibling of
    the sheet (parts.jsx Sheet `aside`), because the sheet's entrance is a
@@ -2525,7 +2548,7 @@ a.wl-lq { text-decoration: none; }
   top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px;
   animation: wl-fade 300ms var(--ease) 80ms both;
 }
-.wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-fade 160ms var(--ease-in) reverse both; }
+.wl-sheet-wrap.is-closing .wl-letter-x { animation: wl-unfade 160ms var(--ease-in) both; }
 .wl-letter-crest { display: block; flex: 0 0 auto; line-height: 0; }
 
 /* ── the opening ──
@@ -2546,6 +2569,10 @@ a.wl-lq { text-decoration: none; }
 
 @keyframes wl-rise { from { opacity: 0; transform: translate3d(0, 22px, 0); } to { opacity: 1; transform: none; } }
 @keyframes wl-fade { from { opacity: 0; } to { opacity: 1; } }
+/* the way out of a fade is its own keyframe: a closing rule that reused
+   wl-fade in reverse kept the opening's name, so it never restarted and
+   the finished animation jumped straight to nothing */
+@keyframes wl-unfade { from { opacity: 1; } to { opacity: 0; } }
 @keyframes wl-rise-sheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
 /* The fall starts from wherever the sheet is: `--drag` is the offset a hand
    left it at (parts.jsx `Sheet`), and nothing when it was dismissed by the
@@ -2600,12 +2627,13 @@ a.wl-lq { text-decoration: none; }
    arrow keys do the same. `pan-y` hands a vertical drag to the sheet, so a
    long letter can still be scrolled past.
 
-   The TRACK is what the strip is clipped by: it reaches out to the sheet's
-   own edge, so a neighbour slides in from the edge of the glass and not from
-   the edge of the paper, and it clips sideways only, so the paper keeps its
-   shadow below. The clip is lifted while a card is opening out of a disc,
-   since the card starts wherever the disc was. The chevrons stand outside
-   the track, on the stage, so the clip never takes them.
+   The GLASS is the only clip (`.wl-sheet-wrap.is-letter`, below). The
+   track clipped the strip to the old sheet's width, and from a tablet up
+   that was a window in the middle of the black room: every swipe sliced
+   both screens and the light between them on two hard vertical lines. A
+   neighbour rests just past the window's edge instead (Letter.jsx `span`)
+   and slides in from there, so nothing is cut in the room. The chevrons go
+   quiet while the strip moves, and still take a press.
 
    The gutter on a phone is the sheet's own 22px, so the chevron is a bare
    stroke and not a ring: a ring in a 22px gutter is a ring on the paper's
@@ -2616,9 +2644,12 @@ a.wl-lq { text-decoration: none; }
   position: relative;
   margin: 0 calc(-1 * var(--gutter));
   padding: 0 var(--gutter);
-  overflow-x: clip; overflow-y: visible;
 }
-.wl-letter-stage:not(.is-landed) .wl-letter-track { overflow: visible; }
+.wl-sheet-wrap.is-letter { overflow: clip; }
+.wl-sheet-wrap.is-letter .wl-letter-track { overflow: visible; }
+/* quiet, but it still takes the click: a second press lands on a turn that
+   is already running, and not on the scrim behind */
+.wl-letter-stage.is-moving .wl-turn { opacity: 0; transition-duration: 120ms; }
 .wl-letter-card {
   position: relative; z-index: 1;
   will-change: transform;
@@ -2673,6 +2704,8 @@ a.wl-lq { text-decoration: none; }
 .wl-seal {
   width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 13px;
 }
+/* the capsule is as wide as the screen over it, and no wider */
+.wl-letter .wl-seal { width: min(100%, var(--scene-w)); margin-inline: auto; }
 .wl-seal-say {
   margin: 0;
   font-family: var(--f-util);
@@ -3649,11 +3682,11 @@ a.wl-lq { text-decoration: none; }
      chevrons stand in the room either side of the paper rather than on its
      edge: a ring each, the close mark's own size, centred in the band. */
   .wl-sheet-wrap.is-letter { padding: 32px 80px; }
-  .wl-sheet-wrap.is-letter .wl-sheet { max-width: 460px; animation: wl-letter-in 380ms var(--ease) both; }
-  .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
+  .wl-sheet-wrap.is-letter .wl-sheet { max-width: calc(var(--scene-w) + 20px); animation: wl-letter-in 380ms var(--ease) both; }
+  .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 260ms var(--ease-in) both; }
   .wl-sheet-wrap.is-letter .wl-sheet-in { padding: 0; }
   .wl-letter { --gutter: 30px; }
-  .wl-letter-stage { max-width: 460px; margin: 0 auto; }
+  .wl-letter-stage { max-width: calc(var(--scene-w) + 20px); margin: 0 auto; }
   .wl-letter-x { top: 26px; right: 30px; }
   .wl-turn {
     width: 36px; height: 36px; margin-top: -18px; border-radius: 50%;
@@ -4513,6 +4546,10 @@ a.wl-lq { text-decoration: none; }
   from { opacity: 0; transform: scale(0.72); }
   to   { opacity: 1; transform: none; }
 }
+@keyframes wl-viewer-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: scale(0.72); }
+}
 /* the disc's own box, which is what flies: out of the small face and back
    into it (parts.jsx FaceViewer). Given a face to come from, the box's own
    pop is not played, and the name arrives a beat behind the picture; on the
@@ -4521,9 +4558,9 @@ a.wl-lq { text-decoration: none; }
 .wl-viewer.is-from .wl-viewer-in { animation: none; }
 .wl-viewer.is-from .wl-viewer-who { animation: wl-fade 320ms var(--ease) 200ms both; }
 .wl-viewer.is-closing { pointer-events: none; }
-.wl-viewer.is-closing .wl-viewer-scrim { animation: wl-fade 320ms var(--ease-out) reverse both; }
-.wl-viewer.is-closing .wl-viewer-who { animation: wl-fade 160ms var(--ease-out) reverse both; }
-.wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-in 260ms var(--ease-out) reverse both; }
+.wl-viewer.is-closing .wl-viewer-scrim { animation: wl-unfade 320ms var(--ease-out) both; }
+.wl-viewer.is-closing .wl-viewer-who { animation: wl-unfade 160ms var(--ease-out) both; }
+.wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-out 260ms var(--ease-out) both; }
 .wl-face.wl-viewer-face {
   --s: min(72vw, 300px);
   box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.24), 0 0 60px -6px rgba(210, 210, 210, 0.34), 0 30px 80px -20px rgba(0, 0, 0, 0.9);

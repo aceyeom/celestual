@@ -184,8 +184,13 @@ const EASE_SLIDE = 'cubic-bezier(0.32, 0.72, 0, 1)'
 // still has its own address.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// How far a neighbour's centre stands from the card's, for a screen `w`
+// wide. It rests just past the edge of the glass and never in the room: on
+// a phone that is the screen and the gap, as it always was, and in a wide
+// room it is half the window and half the screen.
+const span = (w) => Math.max(w + GAP, (document.documentElement.clientWidth + w) / 2 + 6)
 // Where a neighbour stands, relative to the card, while the card is at `dx`.
-const beside = (dir, dx, w) => dx + dir * (w + GAP)
+const beside = (dir, dx, w) => dx + dir * span(w)
 
 // The leaf: the paper and the words, keyed per card so each arrival is its
 // own element. It tells the screen when it is on the glass, before paint, so
@@ -450,7 +455,9 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   const silent = silentRef
   const busy = useRef(false)
   const timers = useRef([])
-  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  // the frame a turn starts the strip on, kept so a late one can be put off
+  const frame = useRef(0)
+  useEffect(() => () => { timers.current.forEach(clearTimeout); cancelAnimationFrame(frame.current) }, [])
   const after = (ms, fn) => { timers.current.push(setTimeout(fn, ms)) }
 
   const place = (x, w, transition, ms = 0) => {
@@ -474,7 +481,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
       const h0 = hBase.current
       const side = x < 0 ? nextSlot.current : x > 0 ? prevSlot.current : null
       const h1 = side ? side.offsetHeight : h0
-      const f = Math.min(1, Math.abs(x) / (w + GAP))
+      const f = Math.min(1, Math.abs(x) / span(w))
       tr.style.transition = ms ? `height ${ms}ms ${EASE_SLIDE}` : 'none'
       if (h0) tr.style.height = `${(h0 + (h1 - h0) * f).toFixed(1)}px`
     }
@@ -498,7 +505,12 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     place(dx.current, move.w, 'none')
   }, [move])
 
-  const width = () => (cardBox.current && cardBox.current.offsetWidth) || 360
+  // the screen's width, and not its card's: the card is the sheet's width
+  const width = () => {
+    const box = cardBox.current
+    const scr = box && box.querySelector('.wl-scene')
+    return (scr && scr.offsetWidth) || (box && box.offsetWidth) || 360
+  }
 
   // Run on to the neighbour in `dir` (1 next, -1 previous), from wherever
   // the finger left the card, then change the address once it has landed.
@@ -512,13 +524,16 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     dx.current = fromX
     if (!hBase.current) measure()
     setMove((m) => (m && m.kind === 'drag' ? { ...m, kind: 'slide', dir } : { kind: 'slide', dir, w }))
-    requestAnimationFrame(() => {
-      place(-dir * (w + GAP), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`, SLIDE_MS)
-    })
-    after(SLIDE_MS + 20, () => {
-      silent.current = true
-      busy.current = false
-      go('letter', side.target)
+    // the landing is timed from the frame the strip starts on, so a frame
+    // that comes late cannot land the address before the strip has moved
+    frame.current = requestAnimationFrame(() => {
+      frame.current = 0
+      place(-dir * span(w), w, `transform ${SLIDE_MS}ms ${EASE_SLIDE}`, SLIDE_MS)
+      after(SLIDE_MS + 20, () => {
+        silent.current = true
+        busy.current = false
+        go('letter', side.target)
+      })
     })
   }
   const slideRef = useRef(slide)
@@ -537,6 +552,13 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // slot was showing is now the card, in the same place, with nothing seen
   // to change.
   const landed = () => {
+    // a leaf that came by another way while a turn's frame was still due
+    if (frame.current) {
+      cancelAnimationFrame(frame.current)
+      frame.current = 0
+      busy.current = false
+      setMove(null)
+    }
     rest()
     if (silent.current) { silent.current = false; setMove(null) }
   }
@@ -595,6 +617,9 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     else spring()
   }
   const onCancel = () => { drag.current = null; spring() }
+  // the way out stops a turn that is under way, so it cannot land on a letter
+  // after the letter has been closed
+  const stop = () => { timers.current.forEach(clearTimeout); cancelAnimationFrame(frame.current) }
   const swipe = canTurn
     ? { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onCancel }
     : null
@@ -625,7 +650,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // card waits rather than announcing a removal that has not happened.
   if (one === null) {
     return (
-      <Sheet onClose={up} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
+      <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
         <div className="wl-sheet-in wl-letter">
           <div className="wl-letter-card">
             <Screen
@@ -676,7 +701,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   )
 
   return (
-    <Sheet onClose={up} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
+    <Sheet onClose={up} onClosing={stop} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
         {one ? <RoomLight key={colourOf(one.look, one.id).slug} l={one} /> : null}
         {/* ── the card, and the two ways past it ──
@@ -684,8 +709,8 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
             has been up, whether it is shut, who it is for, and the words.
             Either side of it, in the gutters, a chevron to the letter before
             and the one after; the card itself takes the finger; and while it
-            is moving the neighbours stand beside it on the same strip, clipped
-            at the glass's edge (wall.css `.wl-letter-track`). */}
+            is moving the neighbours stand beside it on the same strip, just
+            past the edge of the glass, which is the only clip (`span`). */}
         <div
           className={`wl-letter-stage is-landed${move ? ' is-moving' : ''}`}
           {...swipe}
