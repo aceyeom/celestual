@@ -194,31 +194,52 @@ The arithmetic is OKLab and not HSL, because HSL's "lightness" is not one:
 setting every tint to the same HSL L leaves yellow reading far brighter than
 blue, which is the same bomb with fewer steps.
 
+The disc is also slightly translucent (`DISC_A`, 0.86), so the room it stands
+in shows through it and it sits IN the field rather than on top of one. Only
+the ground is: the monogram and the picture stay at full strength, because a
+face read through a veil is a worse face and the letters have to stay legible.
+
 This is the ruling above `.wl-face.has-look` finished rather than reversed.
 That comment already won this argument about TYPEFACES — forty writers' voices
 is not forty voices, it is noise, and a monogram is an identifier, so it is set
 in the identifier face — and then kept the colour at full strength. The same
 sentence is true of forty fills, in a channel the eye reads faster than type.
 
-### 2.5b One ring
+### 2.5b One ring on a sheet, and none in the hive
 
-A disc wears **one** border. It used to wear any of five, and which one
-depended on facts a person looking at the wall cannot see: 1px of `--hair`
-plain, 1px of chalk at 28% under the lens, none at all with a look, 1px of the
-look's `--lk-rule`, and 2.5px of the look's paper with a second line of void
-inside it where a looked disc also carried a picture. Four colours and three
-widths on one object, forty times over, is what reads as static round the
-faces.
+A disc used to wear any of five borders, and which one depended on facts a
+person looking at the wall cannot see: 1px of `--hair` plain, 1px of chalk at
+28% under the lens, none at all with a look, 1px of the look's `--lk-rule`, and
+2.5px of the look's paper with a second line of void inside it where a looked
+disc also carried a picture. Four colours and three widths on one object, forty
+times over, is what reads as static round the faces.
 
-Now: `--face-ring` on `.wl-face` is the only thing that varies, the width and
-the geometry never do, and a disc has exactly two states — at rest (`--hair`)
-and under the lens (chalk at 34%). A look tints the disc, never the ring. The
-one exception is a looked disc carrying a photograph, where the picture covers
-the ground and `--lk-disc-rule` on `::after` is the only place the look can
-survive; it is the same 1px in the same place as every other disc's.
+**On a sheet** — in a row, on a plate, beside a name, in the bar — a disc wears
+one ring: `--face-ring`, the only thing that varies, at one width and one
+geometry, in two states, at rest (`--hair`) and under the lens (chalk at 34%).
+It needs an edge there to be an object on a surface.
 
-The glass rim on `.wl-cell-orb::after` is not one of these. It is outside the
-disc, it is shown for focus and for `is-mine`, and it means something: it stays.
+**In the hive there is no outline at all**, on any disc, in any state. A white
+hairline repeated forty times is forty white marks, and it was doing more to
+say *here are many small objects* than the discs were doing to be faces. The
+discs are shapes of light with nothing drawn round them, which is what a crowd
+at a distance looks like. `.wl-cell .wl-face` sets `--face-ring: transparent`
+and suppresses the look's `::after`; a looked disc carrying a photograph shows
+the photograph, and its look lives on the card.
+
+The glass rim on `.wl-cell-orb::after` came off with them (23 September). It
+was the mark of a name this browser had written to, at glow-white on half
+alpha — the brightest thing on the screen after the capsule, drawn on as many
+discs as that browser had written letters, so on a wall somebody had used it
+was not one mark but a scatter of the loudest ones. `is-mine` is still on the
+cell and still means what it meant; nothing draws it. Anything that marks it
+again wants a quieter channel than a white ring.
+
+**The keyboard's focus ring is not one of these and does not come off.** It is
+drawn on `:focus-visible` only, while somebody is tabbing through the field,
+and it is the one thing telling that person where they are: forty identical
+circles with no focus ring cannot be navigated from a keyboard at all. It is
+not part of the resting picture.
 
 A theme is a whole object and not a fill. Beside its ground and its ink it
 carries a `grain` (the ONE surface layer on the card, and `none` is a real
@@ -683,7 +704,7 @@ Every one of these is on `design/components.html` in each of its states.
 
 | Component | Class | Notes |
 | --- | --- | --- |
-| Primary capsule | `.wl-pill.wl-lq`, `LiquidButton` | the liquid metal capsule: a near-black face inside a metal rim, poured by the same fragment shader the mark is (`wall/LiquidButton.jsx`), with the word over both, 40px, 50px at `is-wide`. One per screen. It keeps `.wl-pill` for its metrics, so every size and every contextual rule still reaches it, and brings only its own surface. The clock idles at 0.6, doubles under a pointer and is thrown to 2.4 for the length of a press, which leaves a ripple where the hand landed. Mounts are counted and capped at four per page; past the cap, with no WebGL2, and disabled, it draws the still frame of the same material. It was a chalk fill with the running light on it until 21 September. Its word was chalk at 64% until 22 September, which cleared the contrast floor and left the primary reading as the quietest object on a wall whose background carried forty discs at L\* 90; with the field relit (2.5a) the word is struck at full chalk and the face is lifted off pure black at its foot. The brightening is on the ROLE and not on the wall's capsule: `Pill tone="light"` is this object on every screen, and one surface making an exception for itself is the thing this component exists to stop |
+| Primary capsule | `.wl-pill.wl-lq`, `LiquidButton` | the liquid metal capsule: a chalk face inside a metal rim, poured by the same fragment shader the mark is (`wall/LiquidButton.jsx`), with the word over both, 40px, 50px at `is-wide`. One per screen. It keeps `.wl-pill` for its metrics, so every size and every contextual rule still reaches it, and brings only its own surface. The clock idles at 0.6, doubles under a pointer and is thrown to 2.4 for the length of a press, which leaves a ripple where the hand landed. Mounts are counted and capped at four per page; past the cap, with no WebGL2, and disabled, it draws the still frame of the same material. **The face is chalk as of 23 September**, in the paper's own three steps and struck in the paper's ink, with no shadow under the word — a dark shadow on white is grime, not depth — and a bloom added to `--lq-seat`, because a chalk capsule on the void throws a little warm light and without it the brightest object on the screen is pasted onto the room rather than standing in it. It was a near-black plate before that, which made the primary a hole in the metal, and a hole cannot be the one bright thing on a screen. This is NOT the chalk fill the primary wore until 21 September: that one had the running light on the FILL, a second current under the word; here the light is the two pixels round the edge and the face is flat, so there is one bright object and one moving one and they are not the same object. The change is on the ROLE: `Pill tone="light"` is this object on every screen, and one surface making an exception for itself is the thing this component exists to stop. Note the cost, and it is deliberate: on a screen where a letter is open the paper and the capsule are both bright, which is rule 2 spent twice — the wall, where no paper is open, is the screen this was decided for |
 | Ghost capsule | `.wl-pill.is-ghost` | hairline, ash type, 32px |
 | Tag capsule | `.wl-pill.is-tag` | not a control. `pointer-events: none` |
 | Arrow link | `.wl-arrow` | display face. The arrow travels on hover, the word does not |

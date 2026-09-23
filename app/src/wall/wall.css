@@ -577,10 +577,15 @@
      on every screen that has a primary, and a wall whose capsule was chalk
      while the composer's stayed metal would be four callers agreeing to
      look alike again, which is the thing this component exists to stop. */
-  --lq-ink: var(--chalk);
+  --lq-ink: var(--paper-ink);
   --lq-lift: 0 0 rgba(0, 0, 0, 0);
   /* the seat: what makes the capsule sit ON the void rather than in it */
   --lq-seat:
+    /* the bloom. A chalk capsule on the void throws a little warm light, and
+       without it the brightest object on the screen is pasted onto the room
+       rather than standing in it (DESIGN 2.4, the bloom is --glow through a
+       heavy blur) */
+    0 0 42px -6px rgba(255, 244, 228, 0.20),
     0 0 0 1px rgba(0, 0, 0, 0.3),
     0 36px 14px -8px rgba(0, 0, 0, 0.02),
     0 20px 12px -6px rgba(0, 0, 0, 0.08),
@@ -624,10 +629,19 @@
 .wl-lq-face {
   position: absolute; inset: 2px; z-index: 1;
   border-radius: inherit;
-  /* lifted a little off pure black at the foot: the plate read as a hole in
-     the metal rather than a surface inside it, and a hole cannot be the
-     brightest thing on a screen */
-  background: linear-gradient(180deg, #2A2A2C 0%, #0B0B0D 100%);
+  /* ── the face is chalk ──
+     It was a near-black plate, which made the primary a hole in the metal,
+     and a hole cannot be the one bright thing on a screen. It is the paper's
+     own three steps now — the same white as the card, the capsule and the
+     type, struck in the paper's ink — and the metal rim is still a rim
+     around it. The wall's act reads as the act from across the room.
+
+     The rim is why this is not simply the chalk fill the primary was until
+     21 September: that one had the running light ON the fill, which is a
+     second current under the word. Here the light is the two pixels round
+     the edge and the face is flat, so there is one bright object and one
+     moving one, and they are not the same object. */
+  background: linear-gradient(180deg, var(--paper-hi) 0%, var(--paper) 46%, var(--paper-edge) 100%);
   transform: translateZ(10px);
   transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -647,7 +661,9 @@
   position: relative; z-index: 2;
   display: inline-flex; align-items: center; gap: inherit;
   min-width: 0; max-width: 100%;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  /* no shadow under the word: it was there to lift chalk off a near-black
+     face, and on the paper's own white a dark shadow under the letters is
+     grime rather than depth */
   pointer-events: none;
 }
 /* the word is its own box so a capsule narrower than its label cuts the
@@ -2562,25 +2578,37 @@ a.wl-lq { text-decoration: none; }
   transition: opacity 240ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
 }
-/* nothing is lit for being nearest the middle any more: the ring and the
-   halo above are the mark of a name this browser wrote to (`is-mine`), and
-   of the keyboard's focus, and of nothing else. The wall used to pick out
-   whichever disc stood in the middle of a phone, ring it, halo it and name
-   it on a plate, and read as selecting somebody over and over. */
+/* nothing is lit for being nearest the middle, and as of 23 September
+   nothing is lit for being a name this browser wrote to either: the rim is
+   the KEYBOARD'S FOCUS and nothing else. The wall used to pick out whichever
+   disc stood in the middle of a phone, ring it, halo it and name it on a
+   plate, and read as selecting somebody over and over.
+
+   The focus ring stays and is not negotiable. It is drawn only while
+   somebody is tabbing through the field, it is the only thing telling that
+   person where they are, and a field of forty identical circles with no
+   focus ring cannot be navigated from a keyboard at all. It is not part of
+   the resting picture. */
 .wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the
    one movement on this surface that has to answer instantly */
 .wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
-/* ── a name this browser wrote to ──
-   Lit on the wall it came back to, and lit the same way the lens lights
-   somebody: the ring, warm, and standing whether or not it is being read. It
-   is the one thing on this field that is about the person looking. */
-.wl-cell.is-mine .wl-cell-orb::after {
-  opacity: 1; transform: none;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 244, 228, 0.5),
-    0 0 0 1px rgba(8, 7, 11, 0.5);
-}
+/* ── a name this browser wrote to: no longer marked ──
+   It used to be lit on the wall it came back to — the rim, warm, standing
+   whether or not it was being read — as the one thing on this field that is
+   about the person looking. It came off on 23 September with every other
+   outline in the hive.
+
+   At glow-white on half alpha it was the brightest thing on the screen
+   after the capsule, and it appeared on as many discs as that browser had
+   written letters, so on a wall somebody had used it was not one mark, it
+   was a scatter of the loudest marks on the field. The field is a crowd of
+   faces and it is now drawn as one: no outline on any disc, in any state,
+   at rest.
+
+   `is-mine` is still on the cell (Hive.jsx) and still means what it meant.
+   Nothing draws it. Anything that marks it again wants a quieter channel
+   than a white ring — the disc's own lighting, or the plate that names it. */
 .wl-cell .wl-face { transition: box-shadow 260ms var(--ease); }
 
 /* ── the wall, turning over ──
@@ -4885,6 +4913,29 @@ a.wl-lq { text-decoration: none; }
    a look, which is the point: the disc being read is marked the same way
    whatever paper its letter was written on */
 .wl-face.is-lit { --face-ring: rgba(244, 241, 234, 0.34); }
+
+/* ── and in the hive, no outline at all ──
+   The ring above is for a disc standing on a SHEET — in a row, on a plate,
+   beside a name — where it needs an edge to be an object. In the field it
+   needed none, and having one was costing twice.
+
+   Once, because a white hairline repeated forty times is forty white marks:
+   the outline was doing more to say "here are many small objects" than the
+   discs themselves were, and the discs are the point.
+
+   And twice, because in the hive `is-lit` is `mine` (Hive.jsx) — a name this
+   browser has written to — which was the same fact `.wl-cell-orb::after`
+   drew as a rim of glass just outside the disc. One fact, two marks, on the
+   one surface that cannot afford a spare one.
+
+   Both are gone. The resting field carries NO outline on any disc, in any
+   state: the discs are shapes of light with nothing drawn round them, which
+   is what a crowd of faces at a distance actually looks like. The only ring
+   left anywhere in the hive is the keyboard's focus, and that one is not
+   part of the picture — it is drawn while somebody is tabbing and at no
+   other time. */
+.wl-cell .wl-face { --face-ring: transparent; }
+.wl-cell .wl-face.has-look.has-img::after { box-shadow: none; }
 /* on paper the disc stands in the paper's own ink, as the plain face does */
 .wl-paper .wl-face.has-look { background: var(--lk-ink-soft); }
 /* on paper, struck in the paper's own ink */

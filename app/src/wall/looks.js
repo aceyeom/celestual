@@ -395,7 +395,12 @@ export function isDark(hex) {
 const DISC_L = 0.44        // the one lighting, in OKLab L
 const DISC_C = 0.055       // the chroma cap: enough hue to name, never to shout
 const DISC_INK_L = 0.88    // the monogram on it
-const DISC_RULE_L = 0.66   // the ring round it
+const DISC_RULE_L = 0.66   // the rule it wears where a picture hides the ground
+// A disc is slightly translucent, so the room it stands in shows through it
+// and it sits IN the field rather than on top of one. Only the ground is:
+// the monogram and the picture stay at full strength, because a face read
+// through a veil is a worse face and the letters have to stay legible.
+const DISC_A = 0.86
 
 function srgbToLinear(v) { return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
 function linearToSrgb(v) { return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055 }
@@ -494,7 +499,7 @@ export function tokensOf(look) {
     // and wears its look on the rule, which is why `--lk-disc-rule` is a
     // token of its own rather than an alpha of the ink: on a photo it is the
     // only place the look survives.
-    '--lk-disc': `linear-gradient(168deg, ${relight(paper, DISC_L, DISC_C, 0.035)} 0%, ${relight(paper, DISC_L, DISC_C)} 46%, ${relight(paper, DISC_L, DISC_C, -0.035)} 100%)`,
+    '--lk-disc': `linear-gradient(168deg, ${alpha(relight(paper, DISC_L, DISC_C, 0.035), DISC_A)} 0%, ${alpha(relight(paper, DISC_L, DISC_C), DISC_A)} 46%, ${alpha(relight(paper, DISC_L, DISC_C, -0.035), DISC_A)} 100%)`,
     '--lk-disc-ink': relight(paper, DISC_INK_L, DISC_C),
     '--lk-disc-rule': alpha(relight(paper, DISC_RULE_L, DISC_C), 0.34),
   }
