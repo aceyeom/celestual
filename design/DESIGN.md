@@ -150,145 +150,75 @@ one blue is a chart nobody can read.
 It is written down here because the sentence above used to say "nothing else in
 the build names a hue", and eight tokens in the build named one.
 
-### 2.5 The looks
+### 2.5 The screens
 
-One exception to the sentence above, and it is fenced. A letter can choose its
-paper (migration 0055, `app/src/wall/looks.js`): forty-two themes and
-twenty-nine tints, each a ground and the ink that reads on it, are the only
-other hues in the product, they live in that one file and in the theme rules
-of `wall.css` keyed on `data-look`, and they are drawn only on a paper, its
-tile in the panel and the disc of the name it was written to — on the disc as
-COLOUR alone, for the reason 4.0a gives. They are the writer's choice for one
-letter and never the product's: no bar, sheet, control or line of the system's
-own type is ever set in one. A looked paper is still the one bright thing on
-its sheet, in the colour the writer chose it. The ban list's fourth added
-check, *the accent appears more than once*, reads the system's accent and not
-a letter's paper.
+One exception to the sentence above, and it is fenced. A letter on the wall
+is a phone screen left on in a dark room (`app/src/wall/looks.js`,
+`screen.jsx`, `screen.css`): an unsent draft, the cursor still after the last
+word. Every letter is the same screen — the status rows across the top (the
+aerial, the signal bars, the name, the characters left, the battery; the pen,
+the mode, the handle), the words, and the three soft keys at the foot
+(`options`, the heart and its count, `send`) — set in one face, Jersey 10, the
+Series 40 grid (`--f-s40`). The only thing a writer chooses is the COLOUR it is
+lit in, and each colour carries its own treatment with it:
 
-### 2.5a One lighting, on the disc
+| kind | colours | what it is |
+| --- | --- | --- |
+| lit | night, green, ice, amber, rose, white | a backlit LCD photographed in the dark: the panel glows, the bands above and below are the phone's dark glass, the lit words bloom |
+| negative | negative | the same screen with the panel dark and the words the bright thing |
+| poster | teal, blush, cobalt, acid, ember, lilac | that photograph screen printed in four flat inks: an SVG filter quantises the screen's greys into the inks, with grain where a press breaks an edge |
+| riso | pink / blue, orange / teal, red / green, violet / yellow | two drum inks on warm paper, the second a hair out of register |
+| xerox | xerox | photocopied and blown out: one threshold between toner and paper, walked by the copier's heat |
 
-A tint is chosen for a PAPER, and on the paper it is right: one object, at
-reading distance, and its lightness is the writer's voice. The hive is the
-other case, and the tints are not a spread there. Sorted by lightness they are
-two clusters with a hole between them: seven tints between L\* 6.8 (`ink`) and
-31.3 (`graphite`), sixteen between 77.4 (`denim`) and 95.2 (`chalk`), and
-**nothing at all in the forty-six points between**. So every disc on the wall
-was either nearly as dark as the void it stands on (L\* 2.1) or nearly as
-bright as the brightest object in the product, forty at a time, scattered by a
-lattice whose whole job is to disorder them. `chalk` makes it exact: at
-`#F4F1EA` it is the same white as the primary capsule, so a letter written on
-it put a disc on the wall precisely as bright as the one act the screen is
-about, and there were usually several. Rule 2 was not bent there, it was
-inverted — the field was the bright thing and the control was the quiet one.
+These eighteen are the only other hues in the product. They live in that one
+file and are drawn only on a screen, its thumbnail in the composer and the
+small screen of the name it was written to; no bar, sheet, control or line of
+the system's own type is ever set in one.
 
-So the disc is **relit**, and only the disc. The tint's hue is kept exactly,
-its lightness is set to one value for every disc on the wall, and its chroma is
-capped: `--lk-disc`, `--lk-disc-ink` and `--lk-disc-rule` in `looks.js`, off
-`DISC_L` and `DISC_C`. Cream is still cream, wine still wine, mint still mint —
-one crowd under one lamp rather than forty cut-outs. Every disc lands between
-L\* 34.4 and 35.7, and every monogram on one clears 5.3:1. The paper is
-untouched: `--lk-ground` and every other token is the tint exactly as chosen,
-and a letter opened from the wall is the same letter it always was.
+**The room is black.** An opened letter is the only lit thing on the glass:
+the wall goes out behind it and the scrim is `#000` with a sensor's grain on
+it. The one light in the room is the screen's own, falling on the dark in the
+screen's colour (`.wl-room-light`, `.wl-scene-halo-2`). A print keeps its own
+ground — a poster is teal — but the room never takes it; it was the print's
+darkest ink in the concept, and one black for every letter is what makes the
+wall one room rather than a paint chart.
 
-The arithmetic is OKLab and not HSL, because HSL's "lightness" is not one:
-setting every tint to the same HSL L leaves yellow reading far brighter than
-blue, which is the same bomb with fewer steps.
+**Every screen is its own phone** (`quirks`, off the letter's id, never
+`Math.random()`): how it is tilted in the photograph, the exact proportion of
+its panel, where its backlight is brightest, the pitch of its pixels and the
+moiré the camera made of them, a speck or two of dust, sometimes a hairline
+scratch or a dead pixel, a column the driver left on, which battery and which
+aerial that model draws, whether the name sits in the middle of the top row
+or beside the aerial, where the first line starts, the cursor's phase; and on
+a print the grain, the drum's slip, the copier's heat, and now and then the
+backlight's hot corner caught as a soft wash of the accent ink. Every value is
+small on purpose. The screen reads as one object on every letter, the way a
+row of phones on a table is one object, and nothing a quirk does moves a key,
+changes a word or makes a letter harder to read.
 
-The disc is also slightly translucent (`DISC_A`, 0.86), so the room it stands
-in shows through it and it sits IN the field rather than on top of one. Only
-the ground is: the monogram and the picture stay at full strength, because a
-face read through a veil is a worse face and the letters have to stay legible.
+The bars and the battery are not decoration: the signal is how many people
+hearted the letter, the battery how long it has been sitting there unsaid,
+and on the wall's small screens the bars are how many letters the name has
+and an envelope blinks on a name that heard from somebody today.
 
-This is the ruling above `.wl-face.has-look` finished rather than reversed.
-That comment already won this argument about TYPEFACES — forty writers' voices
-is not forty voices, it is noise, and a monogram is an identifier, so it is set
-in the identifier face — and then kept the colour at full strength. The same
-sentence is true of forty fills, in a channel the eye reads faster than type.
+**A person is a picture on a screen.** There is no round face anywhere. A
+profile picture is cut square to a few dozen pixels and dithered, Atkinson,
+in four tones of the screen's ink (`PixelPic`), so the same picture is green
+on a green screen and toner on a copy; the monogram in `--f-s40` stands under
+it until it lands and whenever it does not. On a sheet, in a row or in the
+bar, the face is a small square of the night LCD (`.wl-face`).
 
-### 2.5b One ring on a sheet, and none in the hive
+**What the row keeps** is 0055's column: `{ theme, tint, face }`, cleaned by
+`wall_look_clean`. The screens write one key, `{ "tint": "teal" }`. A row with
+anything else draws the colour its id picks, and migration 0058 gave every
+letter already up a colour of its own, keeping the old looks in
+`wall_look_backup_0058`.
 
-A disc used to wear any of five borders, and which one depended on facts a
-person looking at the wall cannot see: 1px of `--hair` plain, 1px of chalk at
-28% under the lens, none at all with a look, 1px of the look's `--lk-rule`, and
-2.5px of the look's paper with a second line of void inside it where a looked
-disc also carried a picture. Four colours and three widths on one object, forty
-times over, is what reads as static round the faces.
-
-**On a sheet** — in a row, on a plate, beside a name, in the bar — a disc wears
-one ring: `--face-ring`, the only thing that varies, at one width and one
-geometry, in two states, at rest (`--hair`) and under the lens (chalk at 34%).
-It needs an edge there to be an object on a surface.
-
-**In the hive there is no outline at all**, on any disc, in any state. A white
-hairline repeated forty times is forty white marks, and it was doing more to
-say *here are many small objects* than the discs were doing to be faces. The
-discs are shapes of light with nothing drawn round them, which is what a crowd
-at a distance looks like. `.wl-cell .wl-face` sets `--face-ring: transparent`
-and suppresses the look's `::after`; a looked disc carrying a photograph shows
-the photograph, and its look lives on the card.
-
-The glass rim on `.wl-cell-orb::after` came off with them (23 September). It
-was the mark of a name this browser had written to, at glow-white on half
-alpha — the brightest thing on the screen after the capsule, drawn on as many
-discs as that browser had written letters, so on a wall somebody had used it
-was not one mark but a scatter of the loudest ones. `is-mine` is still on the
-cell and still means what it meant; nothing draws it. Anything that marks it
-again wants a quieter channel than a white ring.
-
-**The keyboard's focus ring is not one of these and does not come off.** It is
-drawn on `:focus-visible` only, while somebody is tabbing through the field,
-and it is the one thing telling that person where they are: forty identical
-circles with no focus ring cannot be navigated from a keyboard at all. It is
-not part of the resting picture.
-
-A theme is a whole object and not a fill. Beside its ground and its ink it
-carries a `grain` (the ONE surface layer on the card, and `none` is a real
-answer), a `chrome` (the parts drawn for that paper and no other — the
-nokia's signal and battery, the synthwave's slatted sun, the receipt's
-barcode, the corkboard's pin), a `layout` where the paper moves the card's
-own slots, a `frame` where the letter is written on something inside the card
-rather than on the card, and a `family`, which is which of the seven groups
-the panel draws it in: **paper** (pressed, ruled and printed), **post**
-(carried by hand), **ether** (light, with no hard edge in it), **luxe** (the
-expensive object), **neon** (lit from behind), **cyber** (the machine),
-**object** (a thing that is not a sheet). Six papers each.
-
-Every mark of it is a gradient, a border, a mask or the wall's own
-constellation: nothing is downloaded and nothing is a picture. The literal
-hues the furniture needs — the airmail's red and blue barber stripe, the
-aurora's curtain, the gilt's foil, the chalkboard's wood, the polaroid's
-white border — are theme rules in `wall.css` keyed on `data-look`, which is
-where this section already puts a look's own colour, and every one of them is
-written TWICE: once in the paper's own ink and once under `:not([data-tint])`
-in its own hues. Pick a colour and the card is drawn in that colour's ink,
-top to bottom, so nothing on it is a hue the writer did not choose.
-
-What a chosen colour does to a ground follows the same line and is decided by
-the string rather than by a flag. A ground written in the paper's tokens
-(`var(--lk-lift)`, `var(--lk-paper)`, `var(--lk-deep)`) is a SHAPE — where
-the light falls on this object — and it survives a tint, so the velvet's
-bloom, the lacquer's specular and the tube's glow come out in whatever was
-picked. A ground written in hues IS the colour and a tint replaces it, which
-is what a writer asking for a rose synthwave is asking for.
-
-Two papers are CUT rather than printed: the receipt's torn foot and the
-ticket's notches are masks on the card, and since a mask clips a box shadow
-along with everything else, those two carry their depth as a `drop-shadow`
-filter instead. They are the only two, and the envelope's flap is the only
-other filter in the product.
-
-`candy`, `night` and `gold` came off with the eight papers, as `y2k`,
-`receipt`, `notebook` and `terminal` did before them. A letter written on any
-of the seven keeps its slug in its row and draws the plain paper: nothing is
-rewritten in the corpus to take a row off a menu. `receipt` and `terminal`
-are back under those names as objects with furniture on them, which changes
-nothing about the rule — what a slug draws has always been this build's
-answer and never the row's.
-
-Everything in the menu is drawn by `npm run papers`, which puts all
-forty-two on real cards with the reader's three marks in the foot, and the
-same forty-two under one chosen colour. It is the only way to see whether a
-paper is a neon sign or a dark rectangle with a border round it.
+`send` makes a picture of the letter with a canvas (`share.js`), from the same
+table and the same quirks, at 1080 by 1350 on black with the address under it,
+and hands it to the share sheet, saves it, or copies the letter's link.
+`npm run screens` draws that picture for every colour on five letter ids, which
+is the check on the quirks: five phones, and none of them a different design.
 
 ---
 
@@ -472,56 +402,18 @@ it fits and hands the type back to the browser where it does not.
 
 All four at `--w-display`, tracking `--track-display`, line 1.06, `text-wrap: balance`.
 
-### 4.0a The faces a letter may be set in
+### 4.0a The face a letter is set in
 
-The four faces above are the system's and carry its four jobs. Twenty-one
-more are in `app/public/fonts/` and they are not the system's: they are the
-faces a letter's LOOK may be set in (`app/src/wall/looks.js` `FACES`, with
-the serif, the sans and the mono at the letter's job, which makes the
-writer's menu twenty-four), chosen by the writer for one letter and used for
-nothing else in the product. None of them is ever a headline, a label, a
-control or an identifier.
+The four faces above are the system's and carry its four jobs. One more is in
+`app/public/fonts/` and it is not the system's: Jersey 10, drawn on the ten
+pixel grid the Series 40 phones set their messages on (`--f-s40`). Every word
+on a letter's screen is set in it — the status rows, the words, the soft keys,
+the menus — and so is the monogram on a small screen and on a face. It is
+never a headline, a label or a control anywhere outside a screen.
 
-| Slug | Face | What it is for |
-| --- | --- | --- |
-| `pixel` | Pixelify Sans | the handheld screen. Carries the nokia |
-| `hand` | Caveat | a hand. Carries the postcard, the polaroid and the chalkboard |
-| `round` | Comfortaa | the softest thing a writer can pick. Carries the washi |
-| `typewriter` | Special Elite | a struck key with the ink spread. Carries the telegram and the manila |
-| `screen` | VT323 | a true bitmap, drawn on a grid rather than rounded onto one. Carries the terminal and the arcade |
-| `poster` | Oswald | condensed and upper case, for the letter that is four words long. Carries the sticker and the vapor |
-| `display` | Playfair Display | a high-contrast Didone. Carries the velvet |
-| `marker` | Permanent Marker | felt tip, fast, no second thoughts |
-| `script` | Pinyon Script | copperplate, played straight. Carries the bloom and the envelope |
-| `techno` | Orbitron | square built and wide, drawn for a dashboard. Carries the synthwave, the hud and the hologram |
-| `grotesk` | Space Grotesk | a modern grotesque with its curves cut off. Carries the glitch and the cassette |
-| `elegant` | Cormorant Garamond | an old style cut small at a high stroke contrast. Carries the mist |
-| `fashion` | Italiana | hairline capitals, wide, drawn for one word across a cover. Carries the atelier and the silk |
-| `roman` | Cinzel | inscriptional capitals, the letter cut into stone. Carries the marble and the gilt |
-| `deco` | Poiret One | one weight, geometric, with the twenties in it. Carries the lacquer, the dawn, the aurora and the nebula |
-| `slab` | Zilla Slab | square serifs on a form with a total at the bottom. Carries the ledger and the ticket |
-| `stencil` | Saira Stencil One | cut through a plate with the bridges left in. Carries the airmail |
-| `note` | Gloria Hallelujah | a round fast hand, the one in the margin of a book. Carries the scrapbook and the corkboard |
-| `scratch` | Rock Salt | the same hand pressed far too hard. Carries the napkin |
-| `brush` | Sacramento | a casual signature script. Carries the neon tube |
-| `gothic` | UnifrakturMaguntia | blackletter, played straight. Carries the parchment |
-
-A letter's face is set on the letter, and on the letter alone. Its tile in the
-look panel is a preview of the letter, so it takes the face too. The DISC of the
-name it was written to does NOT: a monogram is the shortest way of writing who
-somebody is, it is therefore an identifier, and the rule above is that none of
-these faces is ever one. The hive puts forty discs on the screen at once and
-eight writers' faces there is not variety, it is the surface the product is
-named for read as a type specimen while somebody is trying to find a name in it.
-A disc takes the look's ground, its ink, its texture and its rim — the colour,
-which is the part carrying the writer's choice — and the identifier face.
-
-They are fetched by `scripts/fetch-faces.mjs` with the others and a browser
-downloads one only when a card set in it is on the screen, so twenty-four
-faces cost a visitor who never sees one exactly nothing. `size` and `title`
-in `FACES` are the per-face scale that puts each one's lower case on the same
-optical line as the serif's: a hand at 16px is smaller than a serif at 16px,
-a pixel face is larger, and a copperplate is barely there.
+It was twenty-four faces a writer chose between, one menu per paper. The
+screen took the choice away with the papers (2.5): a phone has one font, and
+the font is part of what makes it that phone.
 
 ### 4.2 The rest
 
@@ -629,29 +521,10 @@ reference poster has no boxes at all.
 A row uses 14px, which is the one exception, because a 18px radius on a 60px tall
 row reads as a card and a row is not one.
 
-A letter's paper takes `--r-card` and nothing else, on all forty-two
-(`looks.js` `radius`). A paper may be a pressed sheet, a neon sign, a
-blueprint or a strip of magnetic tape and it is still a LETTER on the wall,
-and the thing that says so is the shape it is cut to: forty-two papers with
-forty-two corners read as forty-two components, and forty-two papers with one
-corner read as one card wearing forty-two materials, which is what they
-are. It was 18 / 26 / 10 / 18 / 18 across five themes, which
-was not a scale at all — 26 is `--r-sheet`, a *sheet's* corner and not a
-card's, and 10 was not a token. The token stays on the theme so a paper that
-one day has a reason can say a number, but it needs the reason, and being made
-of paper is not one. The panel's tile scales whichever value the theme carries,
-so the swatch draws the corner being chosen rather than a flat 10px.
-
-Three more things hold across all forty-two, for the same reason the corner
-does.
-The card's hairline is derived from the paper's own ink (`--lk-edge`), so every
-paper carries one weight of edge where a fixed black one drew hard on cream and
-nothing at all on near-black. The inset is three tokens (`--lk-pad-x`,
-`--lk-pad-t`, `--lk-pad-b`) rather than a padding each theme re-states. And the
-foot — the reader's three marks — is laid out against the CARD and not against
-the paper's inset, so the heart, the pen and the flag sit 20px from the edge and
-18px from the bottom on every letter in the deck, whatever paper somebody else
-chose. A control that moves is a control to be found again on every card.
+A letter is not a paper any more (2.5), so `--r-card` is Main's ping card and
+the plain cream sheet. A screen's corner is its own quirk, between 0.8% and
+1.9% of its width, which is a pixel or two on every phone: the corner of an
+LCD, never a card's.
 
 ### 5.3 Rhythm
 
@@ -830,7 +703,7 @@ rule in 520ms and the `@` lifts from `--ash-dim` to `--ash`.
 | `Ecliptic` | the mark. `size`, `sweep` |
 | `Provider`, `Google` | Instagram's mark and Google's, on the buttons that go to them, and both are the service's own mark rather than a drawing that resembles it. `Verified` is the precedent: a claim about another service reads as that service's claim, and a person scanning three sign in buttons is looking for the mark they know rather than reading the words. `Provider` was a hairline camera on the icon set's grid, which beside a four-colour G redrawn as a single arc read as a product that could not get the logos right. Still not pasted assets: both are paths in `art.jsx`, taking `currentColor`, so they wear the build's chalk and never a brand's blue or a four-colour fill |
 | `Envelope` | the third glyph on the same door, and solid for that reason alone. An address is not a brand and there is no logo for one, but an outline between two filled marks is the odd one out. The flap is cut through the body with `evenodd` rather than drawn over it in the button's colour, so it carries no ground |
-| `Face` | the disc beside a handle. The picture, or a monogram. See 3.4. With a look (`has-look`): the look's ground and its texture, and on a picture a rim in the look's paper (`::after`). The look gives the disc its COLOUR and never its face — the monogram and the whole name are set in the system's own faces on every paper, because a disc is an identifier (4.0a). A name's disc writes the name whole on any paper |
+| `Face` | a small square of the night LCD beside a handle: the picture dithered into the screen's ink (`PixelPic`), or the monogram in `--f-s40`. Never round (2.5) |
 | `Mark` | the constellation, seeded from a handle. Retired from the product, kept on this page |
 | `Halftone` | the dotted sphere. Off the wall's masthead since the Campanile; kept |
 | `Campanile` | a front elevation of Sather Tower in hairlines, from a handful of numbers, with the lantern lit in `--gold`. `width` (the height is three times it, or 2.84 standing), `lit`, `twinkle`, `stands`. It stood in the wall's masthead corner and then on the count as its plinth, and it came off with the hive: a drawing beside a headline that had already said which campus this was. Kept, and drawn by nothing |

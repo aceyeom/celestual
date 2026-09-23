@@ -1,700 +1,153 @@
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  THE LOOKS: what a letter's paper can be                                 ║
+// ║  THE LOOKS: what colour a letter's screen is lit in                      ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 //
-// A letter chooses its paper (migration 0055). What the row keeps is three
-// slugs, `{ theme, tint, face }`, or nothing for the plain paper; what a slug
-// DRAWS is decided here and nowhere else. The schema's whole opinion is
-// `wall_look_clean`: an object, three keys, each a short lower case slug. So
-// a new look is a row in one of the three lists below and a rule or two in
-// wall.css, never a migration, and a slug this build does not know draws the
-// plain paper rather than nothing.
+// A letter on the wall is a phone screen, left on in a dark room: an unsent
+// draft, the cursor still blinking after the last word. Every letter is that
+// one screen, set in one face (Jersey 10, the Series 40 grid), with the same
+// three rows on it — the status across the top, the words, the soft keys —
+// and the only thing a writer chooses is the COLOUR it is lit in.
 //
-// ── the three axes, and why three ───────────────────────────────────────────
-// The lock screen's own model: a gallery of complete looks, then two dials
-// that tune the one chosen. The THEME is the big choice and it is whole: a
-// ground, an ink, a face, a corner, a grain, and — since the eight papers —
-// FURNITURE, which is the part of it that is not a fill.
+// It was forty-two papers in seven families, twenty-nine tints and
+// twenty-four faces. Now it is one list, and each colour carries its own
+// treatment with it, because on a real screen the two are the same fact:
 //
-// The panel calls the three by what a writer is actually choosing — TEXTURE,
-// COLOR, TYPE (Look.jsx) — while the row keeps the three keys the schema
-// admits, `theme`, `tint`, `face`. The words are the interface's and the
-// keys are the column's, and neither has to move for the other.
+//   lit       a backlit LCD photographed in the dark. The panel glows, the
+//             bands above and below it are the phone's own dark glass, and
+//             the words bloom a little. night, green, ice, amber, rose, white
+//   negative  the same screen with the panel dark and the words the bright
+//             thing
+//   poster    that photograph screen printed in four flat inks, the paper
+//             the colour. teal, blush, cobalt, acid, ember, lilac
+//   riso      two drum inks laid a hair out of register on warm paper
+//   xerox     photocopied, and blown out: the toner exposure is the effect
 //
-// Forty-two papers, twenty-nine colours and twenty-four faces are thirty
-// thousand letters that look different from each other, which is the
-// freedom, and every one of them is a choice from a menu that every writer
-// shares, which is what keeps a look from being a signature
-// (docs/WALL-FEATURES.md, G3). Nothing here takes a colour a person typed,
-// a picture, or a word.
+// The prints keep their own ground: a poster is teal, whatever room it is
+// in. The room is not theirs. Every screen, lit or printed, stands in the
+// same black (`.wl-room`), so the wall is one dark room and not a paint
+// chart.
 //
-// ── what a paper is, and what it was ────────────────────────────────────────
-// It was eight, and eight was a set of MATERIALS: a cotton stock, a slate, a
-// pile of velvet, a moulded shell. They were well made and they were all the
-// same idea, which is that a paper is a surface with a grain on it. Half the
-// menu was a cream rectangle at a different temperature.
+// ── what the row keeps ──────────────────────────────────────────────────────
+// The column is 0055's: `{ theme, tint, face }`, three slugs, cleaned by
+// `wall_look_clean`. A letter now writes ONE of them, `{ tint: 'teal' }`,
+// and never a face: there is one. A row written before the screens (a theme,
+// a face, a tint this list does not have) is not an error. It draws the
+// colour its own id picks (`colourOf`), so an old letter is still a lit
+// screen and never a blank one — and migration 0058 has already given every
+// letter on the wall a colour of its own.
 //
-// A paper is a PICTURE OF SOMETHING now, and there are forty-two of them in
-// seven families, because the thing a writer is actually choosing is what
-// their forty words are standing on: a neon sign at two in the morning, a
-// blueprint, a strip of magnetic tape, a bar napkin, the back of an
-// envelope. Each family is six, each is a different reason to pick one, and
-// the panel draws them in these seven groups and in this order:
-//
-//   paper     the sheet, pressed and printed
-//   post      carried by hand and handled
-//   ether     light and air, and no hard edges in it
-//   luxe      the expensive object
-//   neon      lit from behind
-//   cyber     the machine
-//   object    a thing that is not a sheet at all
-//
-// What did NOT move is the shape of a letter. Every one of the forty-two is
-// the same card at the same corner with the same four slots in it — the
-// dateline across the top, the crest and the addressee, the words, and the
-// reader's three marks at the foot — and the heart, the pen and the flag
-// stand in exactly the same place on all forty-two (wall.css, the rule that
-// sets the foot's margins off the card's edge and not the paper's inset).
-// A writer chooses what the letter is MADE OF; nobody chooses where the
-// controls are, what the card says, or how big it is.
-//
-// ── the five things a theme carries ─────────────────────────────────────────
-//   grain      the surface, and the theme owns it. One layer, ever: the
-//              plain paper's fibre is no longer laid over a theme that has
-//              a texture of its own, and `none` is a real answer
-//   chrome     the drawn parts that belong to this paper and no other: the
-//              nokia's signal and battery, the synthwave's sun, the
-//              receipt's barcode, the corkboard's pin. Drawn by parts.jsx
-//              `Furniture` and ruled in wall.css, every one of them a
-//              gradient or a border (docs/WALL-FEATURES.md, G7)
-//   layout     the three papers that do not just dress the card but MOVE
-//              it: the nokia wraps its head and body in a screen, the
-//              polaroid puts the addressee on the chin under the picture,
-//              the postcard divides the back. Everything else is the same
-//              four slots in the same order — including the fifteen papers
-//              that look like they have moved something, which have not:
-//              an inner surface (the arcade's screen, the sticker's field,
-//              the cassette's card) is FURNITURE with the padding opened
-//              out around it, so it is one card wearing a shell and never
-//              a second component
-//   frame      what the card itself is when the letter is not written on
-//              it: the nokia's plastic, the polaroid's border, the
-//              sticker's die cut. The tint then recolours the SCREEN or the
-//              PICTURE, which is the surface a writer means, and never the
-//              shell around it
-//   family     which of the seven groups the panel draws it in
-//
-// None of it is a column. The row still keeps three slugs, `wall_look_clean`
-// still admits exactly three keys, and forty-two papers needed no migration.
-//
-// ── the ground, and what a chosen colour does to it ─────────────────────────
-// Two kinds of ground, told apart by what they are written in, and the rule
-// is worth stating because it is the whole of how a colour behaves:
-//
-//   written in TOKENS    `var(--lk-lift)`, `var(--lk-paper)`, `var(--lk-deep)`
-//                        — a SHAPE and not a colour: where the light falls on
-//                        this object. A chosen colour keeps it, and the
-//                        velvet's bloom, the lacquer's specular and the
-//                        mist's layers come out in the colour that was picked
-//   written in HUES      `#5A2340` — the ground IS the colour, and that is
-//                        the point of it: the synthwave's sky, the aurora's
-//                        curtains, the nebula. A chosen colour replaces it,
-//                        because a writer who picks rose on a synthwave is
-//                        asking for the sky to be rose
-//
-// Nothing declares which it is. `tokenGround` reads the string for a `var(`
-// and the answer falls out, so a theme cannot be written one way and
-// declared the other.
-//
-// The same question comes back in the stylesheet for a paper whose FURNITURE
-// is a literal hue — the aurora's greens, the gilt's foil, the airmail's red
-// and blue barber stripe — and it is answered the same way: `data-tint` is on
-// the card when a colour was chosen, so `:not([data-tint])` draws the paper's
-// own hues and `[data-tint]` draws the same parts in the paper's ink. Nothing
-// on a tinted card is a colour the writer did not pick.
-//
-// ── one set of tokens ───────────────────────────────────────────────────────
-// A look is drawn as custom properties on the paper (`lookVars`): the ground,
-// the ink and the four strengths of it that the paper's own rules already
-// use for its rule, its stamp, its foot and its marks, the face and its
-// weights, the corner, and the EDGE. The plain paper declares the same
-// properties at the system's values (wall.css `.wl-paper`), so every rule on
-// the card reads one token and a look changes the token. The disc on the wall
-// reads the same tokens (`Face`), which is how the paper of a letter becomes
-// the paper of its name on the field.
-//
-// Nothing here names a hue outside the two lists, and the derived strengths
-// are arithmetic on the ink, so a tint's rule, stamp and foot come out at
-// the same relative weights the plain paper's do.
+// ── and what makes each one its own (`quirks`) ──────────────────────────────
+// Two screens of the same colour are still two phones. Out of the letter's
+// id comes a handful of small facts that no two letters share and nobody
+// chose: how the phone is tilted in the photograph, the exact proportion of
+// its panel, where its backlight is brightest, the pitch of its pixels and
+// the moiré the camera made of them, a speck of dust, a dead pixel, a
+// hairline scratch, which battery glyph that model draws, how far a riso
+// drum slipped, how hot the copier ran. Each is small on its own and none
+// changes what the screen says or where its keys are. Nothing is
+// Math.random(): the same letter is the same photograph on every phone.
 
-// ── the faces ───────────────────────────────────────────────────────────────
-// Twenty-four. The first three are the system's own (design/DESIGN.md
-// section 4) at the letter's job, and they are free: a browser that has drawn
-// any screen in this product already has them. The other twenty-one are
-// fetched for the looks and used for nothing else in the build — never a
-// headline, a label, a control or an identifier (scripts/fetch-faces.mjs).
-//
-// `size` scales the body's type and `title` the addressee's, because a hand
-// at 16px is smaller than a serif at 16px, a pixel face at 16px is larger,
-// and a copperplate at 16px is barely there. Every number below is the one
-// that puts that face's LOWER CASE on the same optical line as the serif's.
-//
-// Twelve were added with the forty-two papers, and the reason is a paper like
-// the circuit board or the neon tube: nine faces cut for a SHEET OF PAPER
-// were being asked to dress a machine, a stone and a torn scrap, and a hand
-// on a blueprint is a hand on the wrong drawing. Every one of the twelve is
-// the face one family is actually set in, and the family it carries is named
-// in scripts/fetch-faces.mjs beside the file it fetches.
-export const FACES = [
-  { slug: 'serif',      name: 'serif',      family: "'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif", weight: 400, titleWeight: 500, size: 1, title: 1 },
-  { slug: 'sans',       name: 'sans',       family: "'Inter Tight', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", weight: 400, titleWeight: 600, size: 0.96, title: 0.94 },
-  { slug: 'mono',       name: 'mono',       family: "'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace", weight: 400, titleWeight: 500, size: 0.88, title: 0.86 },
-  { slug: 'pixel',      name: 'pixel',      family: "'Pixelify Sans', 'Geist Mono', ui-monospace, monospace", weight: 400, titleWeight: 500, size: 1.04, title: 1 },
-  { slug: 'hand',       name: 'hand',       family: "'Caveat', 'Newsreader', 'Iowan Old Style', cursive", weight: 500, titleWeight: 600, size: 1.24, title: 1.2 },
-  { slug: 'round',      name: 'round',      family: "'Comfortaa', 'Inter Tight', system-ui, sans-serif", weight: 500, titleWeight: 700, size: 0.92, title: 0.9 },
-  // A struck key with the ink spread around it, and the one the menu most
-  // obviously lacked: it is what an unsigned letter is actually written in.
-  // One weight only, so the title takes the same 400 the body does.
-  { slug: 'typewriter', name: 'typewriter', family: "'Special Elite', 'Geist Mono', ui-monospace, monospace", weight: 400, titleWeight: 400, size: 0.94, title: 0.92 },
-  // Drawn ON a grid rather than rounded onto one, which is what keeps it
-  // from being the pixel again. It sets very small, hence the scale.
-  { slug: 'screen',     name: 'screen',     family: "'VT323', 'Geist Mono', ui-monospace, monospace", weight: 400, titleWeight: 400, size: 1.38, title: 1.3 },
-  { slug: 'poster',     name: 'poster',     family: "'Oswald', 'Inter Tight', system-ui, sans-serif", weight: 400, titleWeight: 600, size: 1, title: 1.02 },
-  { slug: 'display',    name: 'display',    family: "'Playfair Display', 'Newsreader', Georgia, serif", weight: 400, titleWeight: 600, size: 0.98, title: 1 },
-  { slug: 'marker',     name: 'marker',     family: "'Permanent Marker', 'Caveat', cursive", weight: 400, titleWeight: 400, size: 0.98, title: 0.94 },
-  // The only face in the menu with a real flourish in it. Its x height is
-  // about half the serif's, so it is scaled further than anything else here.
-  { slug: 'script',     name: 'script',     family: "'Pinyon Script', 'Caveat', cursive", weight: 400, titleWeight: 400, size: 1.45, title: 1.4 },
-  // ── the twelve the forty-two papers needed ──
-  // Square built, wide, drawn for a dashboard rather than a page: it carries
-  // the synthwave, the hud and the hologram, which are the three papers that
-  // are a readout of something.
-  { slug: 'techno',     name: 'techno',     family: "'Orbitron', 'Inter Tight', system-ui, sans-serif", weight: 400, titleWeight: 600, size: 0.92, title: 0.9 },
-  // A modern grotesque with the corners taken off its curves. The plain
-  // voice of the machine papers, where the sans would be the product's: the
-  // glitch and the cassette.
-  { slug: 'grotesk',    name: 'grotesk',    family: "'Space Grotesk', 'Inter Tight', system-ui, sans-serif", weight: 400, titleWeight: 600, size: 0.96, title: 0.94 },
-  // An old style cut small and at a high stroke contrast, and the one that
-  // makes forty words look like a paragraph somebody set rather than typed.
-  // Carries the mist.
-  { slug: 'elegant',    name: 'elegant',    family: "'Cormorant Garamond', 'Newsreader', Georgia, serif", weight: 400, titleWeight: 600, size: 1.16, title: 1.12 },
-  // Hairline capitals, wide, drawn for one word across a cover. It carries
-  // the atelier and the silk, and it is the thinnest thing in the menu.
-  { slug: 'fashion',    name: 'fashion',    family: "'Italiana', 'Playfair Display', Georgia, serif", weight: 400, titleWeight: 400, size: 1.14, title: 1.1 },
-  // Inscriptional capitals: the letter cut into stone rather than laid on
-  // paper. Its lower case is small capitals, so it sets larger than a serif
-  // at the same size and comes down rather than up.
-  { slug: 'roman',      name: 'roman',      family: "'Cinzel', 'Newsreader', Georgia, serif", weight: 400, titleWeight: 600, size: 0.9, title: 0.88 },
-  // One weight, geometric, with the twenties in it. The lacquer, the dawn,
-  // the aurora and the nebula, and the only face here whose capitals and
-  // lower case are nearly the same drawing.
-  { slug: 'deco',       name: 'deco',       family: "'Poiret One', 'Comfortaa', system-ui, sans-serif", weight: 400, titleWeight: 400, size: 1.06, title: 1.04 },
-  // Square serifs, printed on a form with a total at the bottom of it: the
-  // ledger and the ticket.
-  { slug: 'slab',       name: 'slab',       family: "'Zilla Slab', 'Newsreader', Georgia, serif", weight: 400, titleWeight: 600, size: 0.94, title: 0.92 },
-  // Cut through a plate with the bridges left in, which is what a stencil
-  // is. The airmail, and nothing else would be right on it.
-  { slug: 'stencil',    name: 'stencil',    family: "'Saira Stencil One', 'Oswald', system-ui, sans-serif", weight: 400, titleWeight: 400, size: 0.94, title: 0.92 },
-  // A round fast hand, the one in the margin of a book, on the scrapbook and
-  // the corkboard. Distinct from the hand above, which is a pen: this is a
-  // pencil somebody is pressing.
-  { slug: 'note',       name: 'note',       family: "'Gloria Hallelujah', 'Caveat', cursive", weight: 400, titleWeight: 400, size: 0.9, title: 0.88 },
-  // The same hand pressed far too hard, with the paper catching under it.
-  // The rawest thing in the menu and the widest, so it is scaled furthest
-  // down of anything here.
-  { slug: 'scratch',    name: 'scratch',    family: "'Rock Salt', 'Permanent Marker', cursive", weight: 400, titleWeight: 400, size: 0.8, title: 0.78 },
-  // A casual signature script, which is the other kind of script the menu
-  // had none of: the copperplate is an invitation and this is a name signed
-  // fast at the end of one.
-  { slug: 'brush',      name: 'brush',      family: "'Sacramento', 'Caveat', cursive", weight: 400, titleWeight: 400, size: 1.3, title: 1.26 },
-  // Blackletter, played straight, the way the script is. On the parchment
-  // it is the only face that is not a costume.
-  { slug: 'gothic',     name: 'gothic',     family: "'UnifrakturMaguntia', 'Newsreader', Georgia, serif", weight: 400, titleWeight: 400, size: 1.18, title: 1.14 },
+// ── the colours ─────────────────────────────────────────────────────────────
+// `hue` is the one colour a lit screen is made from; the bands, the ink, the
+// glow and the bloom are arithmetic on it (`skinOf`). A print carries its
+// four inks, darkest first, because a print IS its inks.
+export const COLOURS = [
+  { slug: 'night', name: 'night', kind: 'lit', hue: '#9D9D9D' },
+  { slug: 'green', name: 'green', kind: 'lit', hue: '#A3BB6B' },
+  { slug: 'ice', name: 'ice', kind: 'lit', hue: '#8FB8DC' },
+  { slug: 'amber', name: 'amber', kind: 'lit', hue: '#E0A95A' },
+  { slug: 'rose', name: 'rose', kind: 'lit', hue: '#DF93AF' },
+  { slug: 'white', name: 'white', kind: 'lit', hue: '#D7DDE3' },
+  { slug: 'negative', name: 'negative', kind: 'neg', hue: '#BDBDBD' },
+  { slug: 'teal', name: 'teal', kind: 'poster', stops: ['#101412', '#3D6257', '#7EA494', '#E3A58C'] },
+  { slug: 'blush', name: 'blush', kind: 'poster', stops: ['#1A0E12', '#6D3346', '#D38AA0', '#F6E2B2'] },
+  { slug: 'cobalt', name: 'cobalt', kind: 'poster', stops: ['#0A0F25', '#1E3E98', '#6E9AE8', '#F4B45B'] },
+  { slug: 'acid', name: 'acid', kind: 'poster', stops: ['#0F1104', '#4A580C', '#C2E13A', '#FFF5A6'] },
+  { slug: 'ember', name: 'ember', kind: 'poster', stops: ['#130905', '#782912', '#DF663A', '#FFD59E'] },
+  { slug: 'lilac', name: 'lilac', kind: 'poster', stops: ['#130F20', '#4A3C79', '#A799D7', '#F0D86D'] },
+  { slug: 'pink-blue', name: 'pink / blue', kind: 'riso', paper: '#F2EEE6', a: '#2C4BC8', b: '#FF5C98' },
+  { slug: 'orange-teal', name: 'orange / teal', kind: 'riso', paper: '#F1ECE0', a: '#1B6E74', b: '#FF7A2E' },
+  { slug: 'red-green', name: 'red / green', kind: 'riso', paper: '#F3EFE7', a: '#1E7A50', b: '#EC3F33' },
+  { slug: 'violet-yellow', name: 'violet / yellow', kind: 'riso', paper: '#F4F0E4', a: '#5A3DA8', b: '#F7C200' },
+  { slug: 'xerox', name: 'xerox', kind: 'xerox', stops: ['#0D0D0C', '#0D0D0C', '#ECEAE4', '#ECEAE4'] },
 ]
 
-// ── the tints ───────────────────────────────────────────────────────────────
-// Twenty-nine grounds with the ink that reads on each. The lit edge, the
-// shadowed foot and the hairline of every one of them are derived, the way
-// the plain paper's are declared: a colour here is two hex values and the
-// arithmetic below does the rest.
-//
-// It was eleven, and eleven was one band — seven light pastels at almost the
-// same chroma and four darks — so a writer choosing COLOR was choosing how
-// much pink. The list is now five bands, in this order, which is also the
-// order the panel's five rows of six draw them in:
-//
-//   near white   chalk, bone, oat, dust        the letter barely dressed
-//   warm         blush → clay                  where seven of the eleven were
-//   cool         sage → lilac                  four steps apart, not two
-//   deep         graphite → ink                seven where there were four,
-//                                              and a mid grey there was none of
-//   lit          flare → steel                 a saturated band, for the six
-//                                              papers that are lit from
-//                                              behind rather than printed on
-//
-// The last band is the newest and it exists because of the neon family. A
-// synthwave whose only colours were four pastels and seven near blacks was a
-// paper with the one thing it is made of taken off it, and a hot magenta on
-// a cream sheet is a perfectly good letter too. They are stronger than
-// anything else on the list, which is the point: the ban list's rule about a
-// second saturated colour reads the SYSTEM's accent, and a letter's paper
-// has never been the system's (design/DESIGN.md 2.5).
-//
-// The rule that cut `mint` still stands and is the reason the list is spread
-// rather than merely longer: a swatch nobody can tell from its neighbour is
-// a swatch that makes the grid longer without making a letter more its own.
-// Nothing here is within a step of the thing beside it.
-//
-// Twenty-nine and not thirty because the paper's own ground stands first in
-// the grid as a choice ("as is"), which makes it thirty cells, five even
-// rows of six and no ragged last line.
-//
-// A letter already written on `mint` — or on any slug a later build drops —
-// keeps that slug in its row and draws its paper's own ground.
-export const TINTS = [
-  // near white
-  { slug: 'chalk',    paper: '#F4F1EA', ink: '#17150F' },
-  { slug: 'bone',     paper: '#EDE4D2', ink: '#2E2717' },
-  { slug: 'oat',      paper: '#E2D6BC', ink: '#352B17' },
-  { slug: 'dust',     paper: '#D9D5CD', ink: '#26241E' },
-  // warm
-  { slug: 'blush',    paper: '#F9E4E6', ink: '#4A2129' },
-  { slug: 'rose',     paper: '#F5D5DD', ink: '#4A1B2B' },
-  { slug: 'coral',    paper: '#F9C8B7', ink: '#57241A' },
-  { slug: 'peach',    paper: '#F9D8C2', ink: '#4E2812' },
-  { slug: 'amber',    paper: '#F3CA8C', ink: '#48310D' },
-  { slug: 'butter',   paper: '#F6E7AE', ink: '#45380D' },
-  { slug: 'clay',     paper: '#D9B9A4', ink: '#3B2317' },
-  // cool
-  { slug: 'sage',     paper: '#D5E1C6', ink: '#20311A' },
-  { slug: 'sea',      paper: '#C2E0D8', ink: '#0F332B' },
-  { slug: 'sky',      paper: '#D2E3F5', ink: '#122A47' },
-  { slug: 'denim',    paper: '#ABC1DF', ink: '#17283F' },
-  { slug: 'lilac',    paper: '#E2D7F4', ink: '#301F4D' },
-  // deep
-  { slug: 'graphite', paper: '#494952', ink: '#EFEFF4' },
-  { slug: 'slate',    paper: '#2A2D37', ink: '#E9EAF0' },
-  { slug: 'teal',     paper: '#17352F', ink: '#CFE7DF' },
-  { slug: 'forest',   paper: '#1D3227', ink: '#DBEADE' },
-  { slug: 'plum',     paper: '#3A1E3F', ink: '#F3DDF5' },
-  { slug: 'wine',     paper: '#3C1620', ink: '#F3D6DC' },
-  { slug: 'ink',      paper: '#17150F', ink: '#F4F1EA' },
-  // lit
-  { slug: 'flare',    paper: '#E8318E', ink: '#FFEAF6' },
-  { slug: 'laser',    paper: '#22C7D9', ink: '#04282E' },
-  { slug: 'acid',     paper: '#B6E02A', ink: '#1E2A05' },
-  { slug: 'ultra',    paper: '#4426C4', ink: '#E7E0FF' },
-  { slug: 'ember',    paper: '#E8541B', ink: '#FFEDE3' },
-  { slug: 'steel',    paper: '#8E97A3', ink: '#12161C' },
+// The panel's groups, in order: the words are the panel's and the kinds are
+// this file's.
+export const GROUPS = [
+  { key: 'lit', label: 'lit', kinds: ['lit', 'neg'] },
+  { key: 'print', label: 'printed', kinds: ['poster', 'riso'] },
+  { key: 'copy', label: 'copied', kinds: ['xerox'] },
 ]
 
-// ── the families ────────────────────────────────────────────────────────────
-// Seven groups of six. The panel draws the texture axis as a gallery with
-// these captions down it (Look.jsx), which is the only way forty-two objects
-// can be looked THROUGH rather than scrolled past: a writer who wants a
-// machine goes to the machines, and the four papers they never want are
-// never in the way. The word under each is what the six have in common and
-// is drawn in the panel, so it is copy and holds the voice.
-export const FAMILIES = [
-  { key: 'paper',  name: 'paper',  note: 'pressed, ruled and printed' },
-  { key: 'post',   name: 'post',   note: 'carried by hand, and handled' },
-  { key: 'ether',  name: 'ether',  note: 'light, with no hard edge in it' },
-  { key: 'luxe',   name: 'luxe',   note: 'the expensive object' },
-  { key: 'neon',   name: 'neon',   note: 'lit from behind' },
-  { key: 'cyber',  name: 'cyber',  note: 'the machine' },
-  { key: 'object', name: 'object', note: 'a thing that is not a sheet' },
-]
-
-// ── the themes ──────────────────────────────────────────────────────────────
-// Each is whole. `paper` and `ink` are its own tint — and on a theme with a
-// `frame`, they are the SCREEN's or the PICTURE's, not the shell's, because
-// the surface a writer means when they pick a colour is the one the words
-// are on. `ink2` is the secondary ink where the derived one would be wrong.
-//
-// `radius` is the corner, and every paper takes the same one: `--r-card`,
-// 18px, the system's own (design/DESIGN.md 5.2). A paper may be a pressed
-// sheet, a slate, a neon sign or a strip of magnetic tape and it is still a
-// LETTER on the wall, and the thing that says so is the shape it is cut to.
-// Forty-two papers with forty-two corners read as forty-two components;
-// forty-two papers with one corner read as one card wearing forty-two
-// materials, which is what they are. The token stays, so a paper that one
-// day has a reason can say a number — but it needs the reason, and being
-// made of something is not one.
-//
-// A letter written on a theme this build no longer carries keeps its slug in
-// the row and draws the plain paper here, which is what `cleanLook` keeping
-// an unknown slug is for.
-export const THEMES = [
-  // ══ paper ══ the sheet, pressed, ruled and printed ═══════════════════════
-
-  { slug: 'paper', name: 'paper', family: 'paper', paper: '#F4F1EA', ink: '#17150F',
-    face: 'serif', radius: 18, grain: 'fibre' },
-
-  // Cotton stock, pressed. The chrome is a blind deboss — a rule with a lit
-  // line above it and a shadowed one below, which is what an unlinked plate
-  // leaves in a heavy sheet. The grain is coarser and slower than the plain
-  // paper's, because cotton has a tooth and wood pulp has a grain.
-  { slug: 'letterpress', name: 'letterpress', family: 'paper', paper: '#F1ECE0', ink: '#211E18',
-    face: 'serif', radius: 18, grain: 'tooth', chrome: 'deboss' },
-
-  // Form stock, printed in a single pass: a double rule struck round the
-  // sheet and a faint ruling under the words, both in the form's own brown.
-  // The body is set upper case, which is the convention and is a DISPLAY
-  // choice — the words in the row are the words the writer typed, and the
-  // list at the keyboard and the classifier after it read exactly what they
-  // read on any other paper.
-  { slug: 'telegram', name: 'telegram', family: 'paper', paper: '#F3E3A4', ink: '#2E2410',
-    face: 'typewriter', radius: 18, grain: 'fibre', chrome: 'form' },
-
-  // The lightest sheet anybody posts, with the barber stripe round it. The
-  // red and the blue are the two hues this paper IS, so they are literal and
-  // they are keyed on `:not([data-tint])`: pick a colour and the stripe is
-  // struck in that colour's ink instead, at two strengths.
-  { slug: 'airmail', name: 'airmail', family: 'paper', paper: '#F7F3E8', ink: '#1E2740',
-    face: 'stencil', radius: 18, grain: 'fibre', chrome: 'airmail' },
-
-  // Accounting stock: the green bands that keep an eye on the right line, a
-  // red margin rule down the left of them, and a double rule under the head
-  // where the columns would be named.
-  { slug: 'ledger', name: 'ledger', family: 'paper', paper: '#EDF1E4', ink: '#1F2A1C',
-    face: 'slab', radius: 18, grain: 'fibre', chrome: 'ledger' },
-
-  // Engineer's paper: a millimetre grid with every fifth line struck harder,
-  // and a tick block in the corner. The one paper in the family with no
-  // fibre on it at all, because a grid through a noise field is moiré.
-  { slug: 'graph', name: 'graph', family: 'paper', paper: '#EFF3F0', ink: '#18321F',
-    face: 'mono', radius: 18, grain: 'none', chrome: 'graph' },
-
-  // ══ post ══ carried by hand, and handled ═════════════════════════════════
-
-  // The divided back, which is the whole of what a postcard is: the message
-  // on the left of a rule, the address on the right of it, and a stamp box
-  // in the corner with the constellation where the sovereign's head goes.
-  { slug: 'postcard', name: 'postcard', family: 'post', paper: '#F2EADA', ink: '#33291C',
-    face: 'hand', radius: 18, grain: 'fibre', chrome: 'stamp', layout: 'divided' },
-
-  // The picture and the chin under it. The frame is the white border and it
-  // is not the paper: a chosen colour moves the EMULSION, so `ink` on a
-  // polaroid is a dark photograph in a white frame rather than a black
-  // rectangle with a black chin. The addressee is written on the chin, in
-  // the hand, which is where a name goes on a print.
-  { slug: 'polaroid', name: 'polaroid', family: 'post', paper: '#F3EBDC', ink: '#231F18',
-    frame: 'linear-gradient(168deg, #FFFFFD 0%, #FAFAF7 46%, #EDECE6 100%)',
-    face: 'hand', radius: 18, grain: 'none', chrome: 'chin', layout: 'framed' },
-
-  // A page out of a book somebody keeps: the sheet stuck down under two
-  // strips of tape at the top corners, ruled like an index card, and torn
-  // along the foot rather than cut. The tape is translucent and it is the
-  // only thing on the card that is not square to it.
-  { slug: 'scrapbook', name: 'scrapbook', family: 'post', paper: '#F8F2E4', ink: '#2A2318',
-    face: 'note', radius: 18, grain: 'tooth', chrome: 'tape' },
-
-  // The same idea done tidily: one printed paper tape across the head, a
-  // dotted grid under the words, and nothing torn. Where the scrapbook is a
-  // page kept, this is a page being made.
-  { slug: 'washi', name: 'washi', family: 'post', paper: '#F6F2ED', ink: '#2E2A32',
-    face: 'round', radius: 18, grain: 'none', chrome: 'washi' },
-
-  // Die cut: a coloured field with a white border round it and a gloss
-  // across one corner. The frame is the white, so a chosen colour moves the
-  // FIELD, which is the thing a sticker is.
-  { slug: 'sticker', name: 'sticker', family: 'post', paper: '#FFD6E8', ink: '#3B0F2C',
-    frame: 'linear-gradient(170deg, #FFFFFF 0%, #FBFBF9 52%, #F0EFEC 100%)',
-    face: 'poster', radius: 18, grain: 'none', chrome: 'diecut' },
-
-  // Kraft board with the tab cut into the top edge and a fastener under it.
-  // The tab is inside the card and not standing off it, because a paper is
-  // the shape of a letter before it is the shape of a folder.
-  { slug: 'manila', name: 'manila', family: 'post', paper: '#E7D3A2', ink: '#3A2E12',
-    face: 'typewriter', radius: 18, grain: 'tooth', chrome: 'folder' },
-
-  // ══ ether ══ light, with no hard edge in it ══════════════════════════════
-
-  // The curtain, off the top of the card, in two hues that are the whole of
-  // what this paper is — so they are literal, and a chosen colour takes them
-  // over and draws the same curtain in its own ink.
-  { slug: 'aurora', name: 'aurora', family: 'ether', paper: '#0C1B2A', ink: '#DCE9F2', ink2: '#8FB6C6',
-    ground: 'linear-gradient(168deg, #123146 0%, #0C1B2A 52%, #060F1A 100%)',
-    face: 'deco', radius: 18, grain: 'none', chrome: 'veil' },
-
-  // Weather, not colour: three layers of the paper's own tone drifting
-  // across it, the top one lit and the bottom one heavy, and a rule that
-  // fades out at both ends because nothing here has an end.
-  { slug: 'mist', name: 'mist', family: 'ether', paper: '#DDE3E5', ink: '#20292E',
-    ground: 'linear-gradient(172deg, var(--lk-lift) 0%, var(--lk-paper) 46%, var(--lk-paper-edge) 100%)',
-    face: 'elegant', radius: 18, grain: 'haze', chrome: 'fog' },
-
-  // Six in the morning: the sun still under the line, the glow off one
-  // corner, and the sky going from warm to cool up the card.
-  { slug: 'dawn', name: 'dawn', family: 'ether', paper: '#F8DCCB', ink: '#3B2431',
-    ground: 'linear-gradient(172deg, #F3D2E4 0%, #F8DCCB 54%, #FAE8CE 100%)',
-    face: 'deco', radius: 18, grain: 'none', chrome: 'sun' },
-
-  // Woven, and lit across the weave: a fine diagonal sheen that catches at
-  // one angle, with two hairline seams down the card where the panels meet.
-  { slug: 'silk', name: 'silk', family: 'ether', paper: '#E8DDEA', ink: '#2D2233',
-    ground: 'linear-gradient(150deg, var(--lk-lift) 0%, var(--lk-paper) 44%, var(--lk-paper-edge) 100%)',
-    face: 'fashion', radius: 18, grain: 'sheen', chrome: 'seam' },
-
-  // The softest paper in the menu: two blooms of light through it and one
-  // wide ring low on the card, the way a flash reads through a petal.
-  { slug: 'bloom', name: 'bloom', family: 'ether', paper: '#F8E7F1', ink: '#3E2034',
-    ground: 'radial-gradient(116% 86% at 28% 8%, var(--lk-lift) 0%, var(--lk-paper) 52%, var(--lk-paper-edge) 100%)',
-    face: 'script', radius: 18, grain: 'petal', chrome: 'halo' },
-
-  // Deep sky with something in it. It is a COLOUR and not the void: the wall
-  // behind every letter is near black with white dust on it, and a paper
-  // that looks like the wall it is pinned to is a letter with no paper
-  // (which is what took `night` off the menu). This one is violet going
-  // teal, and it carries an orbit rather than a star field.
-  { slug: 'nebula', name: 'nebula', family: 'ether', paper: '#161031', ink: '#E7DFFF', ink2: '#A99BD6',
-    ground: 'radial-gradient(124% 92% at 74% 10%, #3A2070 0%, #1B1240 44%, #0D0920 100%)',
-    face: 'deco', radius: 18, grain: 'star', chrome: 'orbit' },
-
-  // ══ luxe ══ the expensive object ═════════════════════════════════════════
-
-  // Deep pile with a bloom off the top left and a debossed border. Where
-  // `gold` spent a second saturated colour on a hairline frame, this one is
-  // a MATERIAL: the ink is the light the pile throws back, and the only
-  // bright thing on the sheet is still the paper.
-  { slug: 'velvet', name: 'velvet', family: 'luxe', paper: '#2B1220', ink: '#F2DEE4', ink2: '#C9A2B2',
-    ground: 'radial-gradient(112% 88% at 24% 6%, var(--lk-lift) 0%, var(--lk-paper) 46%, var(--lk-deep) 100%)',
-    face: 'display', radius: 18, grain: 'pile', chrome: 'deboss' },
-
-  // Foil on near black, and the one place in the product a metal is drawn:
-  // the ink is a gradient across the type rather than a colour under it,
-  // which is what a foil is and what a yellow is not. `gold` came off the
-  // menu in September for spending a saturated hue on a hairline frame, and
-  // this is that idea done as a material instead of as a border.
-  { slug: 'gilt', name: 'gilt', family: 'luxe', paper: '#14110C', ink: '#E9CB82', ink2: '#A98C4E',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 50%, var(--lk-deep) 100%)',
-    face: 'roman', radius: 18, grain: 'none', chrome: 'gild' },
-
-  // The cover of something quarterly: one hairline frame, a thin rule over a
-  // thick one under the head, and the widest tracking on the wall. Nothing
-  // on it is a texture. It is the only paper here whose whole design is the
-  // arrangement of four rules.
-  { slug: 'atelier', name: 'atelier', family: 'luxe', paper: '#F2F0EA', ink: '#141414',
-    face: 'fashion', radius: 18, grain: 'none', chrome: 'masthead' },
-
-  // Stone, and the letter cut into it: veins through the slab, and a rule
-  // that is chiselled rather than printed — a dark line with a lit one under
-  // it, which is the deboss turned over.
-  { slug: 'marble', name: 'marble', family: 'luxe', paper: '#EDEAE4', ink: '#26241F',
-    ground: 'linear-gradient(158deg, var(--lk-lift) 0%, var(--lk-paper) 50%, var(--lk-paper-edge) 100%)',
-    face: 'roman', radius: 18, grain: 'vein', chrome: 'chisel' },
-
-  // Black lacquer: one specular sweep across the card and a hairline of the
-  // light it is under. The gloss is the whole object, so the grain is a
-  // reflection rather than a surface.
-  { slug: 'lacquer', name: 'lacquer', family: 'luxe', paper: '#131316', ink: '#EEEBE3', ink2: '#9E9C96',
-    ground: 'radial-gradient(130% 100% at 22% 0%, var(--lk-lift) 0%, var(--lk-paper) 42%, var(--lk-deep) 100%)',
-    face: 'deco', radius: 18, grain: 'gloss', chrome: 'sheen' },
-
-  // Aged: the edges gone dark where it has been held, and a seal at the
-  // foot. The seal is a disc of the paper's own ink with the constellation
-  // pressed into it, which is the only mark in the product that is stamped
-  // rather than drawn.
-  { slug: 'parchment', name: 'parchment', family: 'luxe', paper: '#EDE0C4', ink: '#3A2B16',
-    face: 'gothic', radius: 18, grain: 'tooth', chrome: 'seal' },
-
-  // ══ neon ══ lit from behind ══════════════════════════════════════════════
-
-  // The sun over the grid, and the two hues it is made of are literal for
-  // the same reason the aurora's are. The grid runs to a vanishing point
-  // below the card, the sun is slatted, and the horizon between them is the
-  // brightest line on the paper.
-  { slug: 'synthwave', name: 'synthwave', family: 'neon', paper: '#1A0B36', ink: '#FFD9F4', ink2: '#C77BD6',
-    ground: 'linear-gradient(176deg, #2C0E5C 0%, #1A0B36 56%, #0B0520 100%)',
-    face: 'techno', radius: 18, grain: 'none', chrome: 'horizon' },
-
-  // A cabinet: the screen recessed into a moulded bezel, scanned, and bowed
-  // at the corners the way a tube is. The shell is the FRAME and the screen
-  // is the paper, so a chosen colour is the phosphor and never the plastic.
-  { slug: 'arcade', name: 'arcade', family: 'neon', paper: '#0D1017', ink: '#79F3C6', ink2: '#3E9C81',
-    frame: 'linear-gradient(168deg, #3A3D46 0%, #24262C 56%, #141519 100%)',
-    ground: 'radial-gradient(120% 96% at 50% 40%, var(--lk-paper-hi) 0%, var(--lk-paper) 58%, var(--lk-deep) 100%)',
-    face: 'screen', radius: 18, grain: 'none', chrome: 'bezel' },
-
-  // Pastel and wrong on purpose: the gradient going pink to cyan across the
-  // card, a checkerboard floor under it, and a halftone through the middle.
-  { slug: 'vapor', name: 'vapor', family: 'neon', paper: '#ECD9F6', ink: '#2A1B4A', ink2: '#6B5490',
-    ground: 'linear-gradient(152deg, #FBD7EC 0%, #ECD9F6 46%, #CDEAF2 100%)',
-    face: 'poster', radius: 18, grain: 'halftone', chrome: 'checker' },
-
-  // The sign itself: a tube bent round the card, lit, with the glow thrown
-  // onto the wall behind it and the type lit the same way. The ink IS the
-  // light, so the glow is the ink at four strengths and not a second colour.
-  { slug: 'tube', name: 'tube', family: 'neon', paper: '#0C0A11', ink: '#FF6BD5', ink2: '#B24A96',
-    ground: 'radial-gradient(120% 90% at 50% 46%, var(--lk-lift) 0%, var(--lk-paper) 50%, var(--lk-deep) 100%)',
-    face: 'brush', radius: 18, grain: 'none', chrome: 'tube' },
-
-  // Foil that is not gold: an iridescence that sweeps through the hues
-  // rather than sitting on one, with a diffraction ruling across it. The
-  // only conic gradient in the product.
-  { slug: 'hologram', name: 'hologram', family: 'neon', paper: '#E0EAF2', ink: '#1B2430',
-    face: 'techno', radius: 18, grain: 'prism', chrome: 'foil' },
-
-  // Two channels a pixel apart, and three bands where the picture has
-  // slipped. Everything on it is the paper's own ink displaced, which is
-  // what a channel split is and is why it needs no second colour.
-  { slug: 'glitch', name: 'glitch', family: 'neon', paper: '#111014', ink: '#EAEAF3', ink2: '#8F8FA0',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 54%, var(--lk-deep) 100%)',
-    face: 'grotesk', radius: 18, grain: 'none', chrome: 'split' },
-
-  // ══ cyber ══ the machine ═════════════════════════════════════════════════
-
-  // The one that was already here, and the one that was only ever a lattice.
-  // It is an object now: a moulded shell, a screen recessed into it, the
-  // dateline standing as the status row with the signal and the battery on
-  // it. The lattice is the only thing on the screen — the grain is off, so
-  // nothing is multiplied over it.
-  { slug: 'nokia', name: 'nokia', family: 'cyber', paper: '#C3CFA3', ink: '#1B2416',
-    frame: 'linear-gradient(170deg, #3C4038 0%, #24261F 58%, #171812 100%)',
-    face: 'pixel', radius: 18, grain: 'none', chrome: 'nokia', layout: 'screen' },
-
-  // A window on a machine: a bar across the head with three dots in it, the
-  // phosphor scanned under that, and a block cursor at the end of the words.
-  // The bar is furniture with the padding opened out around it, which is how
-  // fifteen of the forty-two get an inner surface without a second layout.
-  { slug: 'terminal', name: 'terminal', family: 'cyber', paper: '#0A110C', ink: '#8BF08B', ink2: '#4E9C57',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 56%, var(--lk-deep) 100%)',
-    face: 'screen', radius: 18, grain: 'scan', chrome: 'console' },
-
-  // The board: traces running off the corners at forty five degrees, vias
-  // where they turn, and a silkscreen rule round the edge. Copper is the
-  // paper's ink here rather than a hue of its own, so a tinted circuit is
-  // etched in whatever was picked.
-  { slug: 'circuit', name: 'circuit', family: 'cyber', paper: '#0B1A14', ink: '#9FE8C0', ink2: '#559679',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 54%, var(--lk-deep) 100%)',
-    face: 'mono', radius: 18, grain: 'none', chrome: 'traces' },
-
-  // A readout with something in the middle of it: four corner brackets, a
-  // tick scale down one edge, and a reticle in the corner. Nothing on it
-  // measures anything, which is the joke and is also why it is drawn and
-  // never typed.
-  { slug: 'hud', name: 'hud', family: 'cyber', paper: '#091219', ink: '#8FD8FF', ink2: '#4C8BAC',
-    ground: 'radial-gradient(124% 94% at 50% 26%, var(--lk-paper-hi) 0%, var(--lk-paper) 56%, var(--lk-deep) 100%)',
-    face: 'techno', radius: 18, grain: 'none', chrome: 'reticle' },
-
-  // Sixty minutes, recorded for somebody: the case is the frame, the card
-  // inside it is the paper, and the spine runs down the left of it with the
-  // two hubs in the corner.
-  { slug: 'cassette', name: 'cassette', family: 'cyber', paper: '#EAE5D9', ink: '#22201B',
-    frame: 'linear-gradient(168deg, #4A4D54 0%, #2E3036 58%, #1C1D21 100%)',
-    face: 'grotesk', radius: 18, grain: 'none', chrome: 'jcard' },
-
-  // Cyanotype: white on blue, a grid under it, and the title block in the
-  // corner where a drawing is named and dated. The one paper whose ink is
-  // lighter than its ground by design rather than by tint.
-  { slug: 'blueprint', name: 'blueprint', family: 'cyber', paper: '#153A6B', ink: '#DEEAF8', ink2: '#93B2D4',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 52%, var(--lk-deep) 100%)',
-    face: 'mono', radius: 18, grain: 'none', chrome: 'titleblock' },
-
-  // ══ object ══ a thing that is not a sheet ════════════════════════════════
-
-  // Slate, dust and a wooden rail along the bottom edge. The dark paper that
-  // is not the void: `night` was the void with a serif on it, and a letter
-  // that looks like the wall it is pinned to is a letter with no paper.
-  { slug: 'chalkboard', name: 'chalkboard', family: 'object', paper: '#26342C', ink: '#EFEFE6',
-    ground: 'linear-gradient(168deg, var(--lk-paper-hi) 0%, var(--lk-paper) 48%, var(--lk-paper-edge) 100%)',
-    face: 'hand', radius: 18, grain: 'dust', chrome: 'rail' },
-
-  // The back of the thing the letter came in: the flap folded down across
-  // the head, the two side folds under it, and a seal where they meet. It is
-  // the only paper in the menu that is a picture of the letter's own
-  // container.
-  { slug: 'envelope', name: 'envelope', family: 'object', paper: '#EFE6D4', ink: '#332A1C',
-    face: 'script', radius: 18, grain: 'tooth', chrome: 'flap' },
-
-  // Thermal roll: the till's own rules, a barcode at the foot, and the
-  // bottom edge torn off the machine rather than cut. The tear is a mask on
-  // the card, which is why this paper and the ticket are the only two whose
-  // shadow is a filter rather than a box.
-  { slug: 'receipt', name: 'receipt', family: 'object', paper: '#F8F6F0', ink: '#26241E', ink2: '#6E6C66',
-    face: 'mono', radius: 18, grain: 'none', chrome: 'thermal' },
-
-  // The stub: two notches bitten out of the sides, a perforation between
-  // them, and a serial struck down the short end. Admits one.
-  { slug: 'ticket', name: 'ticket', family: 'object', paper: '#E9DDC2', ink: '#2E2414',
-    face: 'slab', radius: 18, grain: 'tooth', chrome: 'stub' },
-
-  // Cork, and the letter pinned to it. The pin is a disc with a lit edge and
-  // a shadow thrown down the card, which is the only shadow in the product
-  // cast by an object ON the paper rather than by the paper itself.
-  { slug: 'corkboard', name: 'corkboard', family: 'object', paper: '#C9A26B', ink: '#35250F',
-    face: 'note', radius: 18, grain: 'cork', chrome: 'pin' },
-
-  // Two in the morning, in a bar, in biro: soft stock, a scalloped edge, and
-  // the ink bleeding a little where it sat. The one paper that is an accident
-  // rather than a choice, which is what half the letters on the wall are.
-  { slug: 'napkin', name: 'napkin', family: 'object', paper: '#F9F6F0', ink: '#2A3550', ink2: '#6A7591',
-    face: 'scratch', radius: 18, grain: 'tissue', chrome: 'scallop' },
-]
-
+const BY_SLUG = new Map(COLOURS.map((c) => [c.slug, c]))
 const SLUG = /^[a-z][a-z0-9-]{0,23}$/
+export const DEFAULT_COLOUR = 'night'
 
-const byThemeSlug = new Map(THEMES.map((t) => [t.slug, t]))
-const byTintSlug = new Map(TINTS.map((t) => [t.slug, t]))
-const byFaceSlug = new Map(FACES.map((f) => [f.slug, f]))
-const byFamilyKey = new Set(FAMILIES.map((f) => f.key))
-
-// The seven groups with their six papers in them, built once off THEMES so a
-// paper is in the panel because it says which family it is in and never
-// because it was also listed somewhere else. A theme with no family, or one
-// naming a group that is not above, would be drawn nowhere — so it is put in
-// the last group rather than lost.
-export const FAMILY_THEMES = FAMILIES.map((f) => ({
-  ...f,
-  themes: THEMES.filter((t) => (byFamilyKey.has(t.family) ? t.family : FAMILIES[FAMILIES.length - 1].key) === f.key),
-}))
+// ── the hash ────────────────────────────────────────────────────────────────
+// Its own, rather than data.js's, because data.js imports this file. The
+// same two lanes of multiply and xor, and a small generator off it.
+function hash(str) {
+  let a = 0x9e3779b9
+  let b = 0x85ebca6b
+  const s = String(str)
+  for (let i = 0; i < s.length; i++) {
+    a = Math.imul(a ^ s.charCodeAt(i), 0x27d4eb2d) >>> 0
+    b = Math.imul(b ^ (a >>> 13), 0x165667b1) >>> 0
+  }
+  return (a ^ (b >>> 15)) >>> 0
+}
+function prng(seed) {
+  let t = hash(seed) || 1
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 // ── the shape ───────────────────────────────────────────────────────────────
-// The same cleaning the server does (wall_look_clean): three keys, slugs,
-// and nothing for the plain paper. Not the catalogue: a slug this build does
-// not know is kept, so a letter written by a newer build keeps its look in
-// the row and draws the plain paper here. `normalise` goes one step further
-// for what THIS build writes: a tint or a face that is the theme's own is not
-// worth storing.
+// The same cleaning the server does (wall_look_clean): an object, the three
+// keys, slugs. Not the catalogue: a slug this build does not know is kept,
+// so a row is never rewritten by reading it.
 export function cleanLook(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const out = {}
-  const pick = (k) => (typeof raw[k] === 'string' && SLUG.test(raw[k]) ? raw[k] : '')
-  const theme = pick('theme')
-  if (theme && theme !== 'paper') out.theme = theme
-  const tint = pick('tint')
-  if (tint) out.tint = tint
-  const face = pick('face')
-  if (face) out.face = face
+  for (const k of ['theme', 'tint', 'face']) {
+    if (typeof raw[k] === 'string' && SLUG.test(raw[k]) && !(k === 'theme' && raw[k] === 'paper')) out[k] = raw[k]
+  }
   return Object.keys(out).length ? out : null
 }
 
+// What THIS build writes: one colour, or nothing when it is not one of ours.
 export function normaliseLook(raw) {
-  const look = cleanLook(raw)
-  if (!look) return null
-  const theme = themeOf(look)
-  const out = { ...look }
-  if (out.tint && theme.paper && !theme.ground && byTintSlug.get(out.tint)?.paper === theme.paper) delete out.tint
-  if (out.face && out.face === theme.face) delete out.face
-  return Object.keys(out).length ? out : null
+  const l = cleanLook(raw)
+  return l && BY_SLUG.has(l.tint) ? { tint: l.tint } : null
 }
 
-// One string per look, for a memo key and for React: two looks that draw the
-// same are the same string.
 export function lookKey(look) {
   const l = cleanLook(look)
   return l ? `${l.theme || ''}/${l.tint || ''}/${l.face || ''}` : ''
 }
 
-export function themeOf(look) {
-  return (look && byThemeSlug.get(look.theme)) || THEMES[0]
+// The colour a letter is lit in: its own when it chose one of these, and
+// otherwise the one its id picks, so a letter with no colour in its row is
+// still a screen and still the same one every time.
+export function colourOf(look, seed = '') {
+  const l = cleanLook(look)
+  if (l && BY_SLUG.has(l.tint)) return BY_SLUG.get(l.tint)
+  return COLOURS[hash(`${seed}#colour`) % COLOURS.length]
 }
-export function tintOf(look) {
-  return (look && look.tint && byTintSlug.get(look.tint)) || null
+
+export function colourBySlug(slug) {
+  return BY_SLUG.get(slug) || BY_SLUG.get(DEFAULT_COLOUR)
 }
-export function faceOf(look) {
-  const theme = themeOf(look)
-  return (look && look.face && byFaceSlug.get(look.face)) || byFaceSlug.get(theme.face) || FACES[0]
+
+// A colour for a draft nobody has chosen one for yet, so the wall is not a
+// field of the same grey.
+export function freshLook(seed = `${Date.now()}`) {
+  return { tint: COLOURS[hash(`${seed}#fresh`) % COLOURS.length].slug }
 }
 
 // ── the arithmetic ──────────────────────────────────────────────────────────
@@ -714,226 +167,277 @@ export function mix(a, b, t) {
   const B = rgb(b)
   return toHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t)
 }
+export function multiply(a, b) {
+  const A = rgb(a)
+  const B = rgb(b)
+  return toHex((A[0] * B[0]) / 255, (A[1] * B[1]) / 255, (A[2] * B[2]) / 255)
+}
 export function alpha(hex, a) {
   const [r, g, b] = rgb(hex)
-  return `rgba(${r}, ${g}, ${b}, ${a})`
+  return `rgba(${r}, ${g}, ${b}, ${+Number(a).toFixed(3)})`
 }
-// Whether a ground is dark, off its luma: it decides which way the lit edge
-// and the shadowed foot go, and which way the secondary ink leans.
-export function isDark(hex) {
-  const [r, g, b] = rgb(hex)
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 118
-}
+export function hexRgb(hex) { return rgb(hex) }
 
-// ── one lighting, for the disc ──────────────────────────────────────────────
-// A tint is chosen for a PAPER, and on the paper it is exactly right: it is
-// one object, held at reading distance, and its lightness is the writer's
-// voice. The hive is the other case. Forty discs are on the screen at once,
-// and the twenty-three tints a letter may be written on are not a spread —
-// they are two clusters with a hole between them. Seven sit between L* 6.8
-// (`ink`) and 31.3 (`graphite`); sixteen sit between 77.4 (`denim`) and 95.2
-// (`chalk`); there is nothing at all in the forty-six points between. So
-// every disc on the wall was either nearly as dark as the void it is drawn
-// on (L* 2.1) or nearly as bright as the brightest object in the product,
-// scattered by a lattice whose whole job is to disorder them. `chalk` makes
-// it exact: at #F4F1EA it is the same white as the primary capsule, so a
-// letter written on it put a disc on the wall precisely as bright as the one
-// act the screen is about, and there were usually several.
+// ── the skin ────────────────────────────────────────────────────────────────
+// Everything a screen of this colour is painted with, once, for every place
+// that paints one: the letter (`Screen`), the small screens on the wall
+// (`Tile`), the panel's thumbnails and the picture a letter is sent as
+// (share.js). One table, so the four never drift apart.
 //
-// The stylesheet above `.wl-face.has-look` already won this argument once,
-// about typefaces: forty writers' voices is not forty voices, it is noise,
-// and a monogram is an identifier, so it goes in the identifier face. The
-// same sentence is true of forty fills, in a channel the eye reads faster
-// than type. This is that ruling finished rather than a colour taken away.
-//
-// So the disc is relit: the tint's HUE is kept exactly, its lightness is set
-// to one value for every disc on the wall, and its chroma is capped. Cream
-// is still cream and wine is still wine and mint is still mint — one crowd
-// under one lamp rather than forty cut-outs. The paper is untouched; every
-// token above is still the tint as chosen, and only the three added below
-// are relit.
-//
-// The arithmetic is OKLab rather than HSL because HSL's "lightness" is not
-// one: setting every tint to the same HSL L leaves yellow reading far
-// brighter than blue, which is the bomb again with fewer steps.
-const DISC_L = 0.44        // the one lighting, in OKLab L
-const DISC_C = 0.055       // the chroma cap: enough hue to name, never to shout
-const DISC_INK_L = 0.88    // the monogram on it
-const DISC_RULE_L = 0.66   // the rule it wears where a picture hides the ground
-// A disc is slightly translucent, so the room it stands in shows through it
-// and it sits IN the field rather than on top of one. Only the ground is:
-// the monogram and the picture stay at full strength, because a face read
-// through a veil is a worse face and the letters have to stay legible.
-const DISC_A = 0.86
-
-function srgbToLinear(v) { return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
-function linearToSrgb(v) { return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055 }
-
-function toOklch(hex) {
-  const [R, G, B] = rgb(hex).map((v) => srgbToLinear(v / 255))
-  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B)
-  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B)
-  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B)
-  const L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
-  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
-  const b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
-  return { L, C: Math.hypot(a, b), h: Math.atan2(b, a) }
+//   top, top2, bot   the dark glass above and below the panel
+//   hi, mid, lo      the panel, from where the backlight is brightest out
+//   ink, lit         the words on the panel, and the words on the glass
+//   bloom            what a camera makes of a lit word in the dark
+//   glow             the light the screen throws on the room round it
+//   k                how strongly it throws it
+//   print            for the prints: the four inks the photograph is
+//                    quantised into, and how the press laid them
+//   flat             the small screen's own fill, for the tiles and the
+//                    thumbnails, which are too small for a filter
+const cache = new Map()
+export function skinOf(colour) {
+  const c = typeof colour === 'string' ? colourBySlug(colour) : colour || colourBySlug(DEFAULT_COLOUR)
+  if (cache.has(c.slug)) return cache.get(c.slug)
+  let s
+  if (c.kind === 'lit') {
+    const b = c.hue
+    const ink = mix(b, '#000000', 0.88)
+    s = {
+      kind: 'lit',
+      top: mix(b, '#000000', 0.5), top2: mix(b, '#000000', 0.58), bot: mix(b, '#000000', 0.9),
+      hi: mix(b, '#FFFFFF', 0.3), mid: b, lo: mix(b, '#000000', 0.3),
+      ink, lit: mix(b, '#FFFFFF', 0.84), cur: mix(b, '#FFFFFF', 0.86),
+      bloom: alpha(mix(b, '#FFFFFF', 0.5), 0.55), soft: alpha(ink, 0.35),
+      glow: b, k: c.slug === 'night' ? 0.8 : 1,
+    }
+  } else if (c.kind === 'neg') {
+    s = {
+      kind: 'neg',
+      top: '#262626', top2: '#1D1D1D', bot: '#070707',
+      hi: '#242424', mid: '#161616', lo: '#0A0A0A',
+      ink: '#F1F1F1', lit: '#EDEDED', cur: '#F2F2F2',
+      bloom: 'rgba(255, 255, 255, 0.55)', soft: 'rgba(255, 255, 255, 0.55)',
+      glow: c.hue, k: 0.5,
+    }
+  } else {
+    // A print is the lit night screen, photographed, then pulled through the
+    // press: its greys become the inks (`printFilter`). So the screen under
+    // the filter is drawn in greys, lighter than the night's so the panel
+    // lands on the paper colour and the backlight's hot corner on the
+    // accent ink.
+    const stops = c.kind === 'riso'
+      ? [multiply(c.a, c.b), c.a, c.b, c.paper]
+      : c.stops
+    const ink = stops[0]
+    s = {
+      kind: c.kind,
+      top: '#5A5A5A', top2: '#4B4B4B', bot: '#121212',
+      hi: '#D4D4D4', mid: '#A9A9A9', lo: '#8C8C8C',
+      ink: '#131313', lit: '#F4F4F4', cur: '#131313',
+      bloom: 'rgba(255, 255, 255, 0.4)', soft: 'rgba(0, 0, 0, 0.3)',
+      glow: c.kind === 'xerox' ? '#ECEAE4' : stops[2], k: c.kind === 'xerox' ? 0.55 : 0.8,
+      print: {
+        stops,
+        blur: c.kind === 'poster' ? 0.7 : 0.55,
+        grain: c.kind === 'poster' ? 0.17 : c.kind === 'riso' ? 0.26 : 0.22,
+        ghost: c.kind === 'riso' ? 0.3 : 0,
+      },
+      inkHex: ink,
+    }
+  }
+  // the small screen's own fill: a lit one is its panel and its bands; a
+  // print is its paper colour edge to edge with the words in its darkest
+  // ink and a rule of it round the edge
+  if (s.print) {
+    const [dark, , main, accent] = s.print.stops
+    s.flat = {
+      top: 'transparent', bot: 'transparent', ink: dark, lit: dark, cur: dark,
+      body: c.kind === 'xerox' ? '#ECEAE4' : main,
+      accent: c.kind === 'xerox' ? '' : accent,
+      border: dark,
+      ts: c.kind === 'riso' ? `1.5px 1px 0 ${alpha(c.a, 0.75)}` : c.kind === 'xerox' ? '0 0 0.7px rgba(13, 13, 12, 0.8)' : 'none',
+    }
+    if (c.kind === 'xerox') { s.flat.top = '#0D0D0C'; s.flat.bot = '#0D0D0C'; s.flat.lit = '#ECEAE4'; s.flat.border = '' }
+  } else {
+    s.flat = {
+      top: s.top, bot: s.bot, ink: s.ink, lit: s.lit, cur: s.cur,
+      body: `radial-gradient(120% 95% at var(--q-hx, 80%) var(--q-hy, 66%), ${s.hi}, ${s.mid} 52%, ${s.lo})`,
+      accent: '', border: '',
+      ts: s.kind === 'neg'
+        ? '0 0 1px #fff, 0 0 6px rgba(255, 255, 255, 0.5), 0 0 14px rgba(255, 255, 255, 0.22)'
+        : `0 0 1.2px ${alpha(s.ink, 0.35)}`,
+    }
+  }
+  s.slug = c.slug
+  s.name = c.name
+  cache.set(c.slug, s)
+  return s
 }
 
-function fromOklch(L, C, h) {
-  const a = Math.cos(h) * C
-  const b = Math.sin(h) * C
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
-  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
-  return toHex(
-    linearToSrgb(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s) * 255,
-    linearToSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s) * 255,
-    linearToSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s) * 255,
-  )
-}
-
-// A tint, kept as a hue and relit to one lightness. `dL` walks the gradient's
-// three stops off the one value, so the disc is still a lit object and not a
-// flat swatch.
-export function relight(hex, L, C, dL = 0) {
-  const c = toOklch(hex)
-  return fromOklch(Math.max(0, Math.min(1, L + dL)), Math.min(c.C, C), c.h)
-}
-
-// A ground written in the paper's own tokens is a SHAPE — where the light
-// falls on this object — and it survives a chosen colour, because the velvet
-// wants its bloom and the lacquer its specular whatever they are made of. A
-// ground written in hues IS the colour, and a chosen one replaces it. The
-// string says which, so a theme cannot be written one way and declared the
-// other.
-const tokenGround = (g) => typeof g === 'string' && g.includes('var(--lk-')
-
-// ── the tokens ──────────────────────────────────────────────────────────────
-// What a look sets on a paper, a tile or a disc. Null for the plain paper:
-// the stylesheet's own declarations stand. `tokensOf` is the same
-// arithmetic with the plain paper included, for the panel's tiles and dots,
-// which draw the plain paper as a choice beside the others.
-export function lookVars(look) {
-  const l = cleanLook(look)
-  if (!l) return null
-  return tokensOf(l)
-}
-
-export function tokensOf(look) {
-  const l = cleanLook(look) || {}
-  const theme = themeOf(l)
-  const tint = tintOf(l)
-  const face = faceOf(l)
-  const paper = tint ? tint.paper : theme.paper
-  const ink = tint ? tint.ink : theme.ink
-  const dark = isDark(paper)
-  const hi = mix(paper, '#FFFFFF', dark ? 0.06 : 0.45)
-  const edge = mix(paper, '#000000', dark ? 0.32 : 0.07)
-  // The two strong ones, and they are what let a ground be a shape. `hi` and
-  // `edge` are a sheet's own highlight and shadow, a step either side of the
-  // paper: laid across a whole card they read as a fill with a little depth,
-  // which is all eight papers ever needed. A bloom on a pile of velvet, a
-  // specular on lacquer and a phosphor in the middle of a tube are not a
-  // step, they are the light itself, and they are these.
-  const lift = mix(paper, '#FFFFFF', dark ? 0.26 : 0.62)
-  const deep = mix(paper, '#000000', dark ? 0.55 : 0.2)
-  const ground = theme.ground && (!tint || tokenGround(theme.ground))
-    ? theme.ground
-    : `linear-gradient(168deg, ${hi} 0%, ${paper} 34%, ${edge} 100%)`
-  const ink2 = !tint && theme.ink2 ? theme.ink2 : mix(ink, paper, dark ? 0.42 : 0.4)
+// The custom properties a screen of this colour is painted with, for the
+// stylesheet (screen.css) to read. The same names on the letter, the tile
+// and the thumbnail.
+export function skinVars(colour) {
+  const s = skinOf(colour)
+  const g = (a) => alpha(s.glow, a * s.k)
   return {
-    '--lk-ground': ground,
-    '--lk-paper': paper,
-    '--lk-paper-hi': hi,
-    '--lk-paper-edge': edge,
-    '--lk-lift': lift,
-    '--lk-deep': deep,
-    '--lk-ink': ink,
-    '--lk-ink-2': ink2,
-    '--lk-rule': alpha(ink, 0.16),
-    '--lk-ink-faint': alpha(ink, 0.05),
-    '--lk-ink-soft': alpha(ink, 0.07),
-    '--lk-ink-mid': alpha(ink, 0.3),
-    '--lk-ink-strong': alpha(ink, 0.55),
-    '--lk-face': face.family,
-    '--lk-face-w': String(face.weight),
-    '--lk-title-w': String(face.titleWeight),
-    '--lk-size': String(face.size),
-    '--lk-title-size': String(face.title),
-    '--lk-radius': `${theme.radius}px`,
-    // The hairline round the card, derived off the ink the way the rule and
-    // the stamp above it are. It was `rgba(0,0,0,0.22)` declared once on
-    // `.wl-paper` and never varied, which drew a hard line on a cream paper
-    // and NOTHING at all on a near black one. A dark ground takes a lit
-    // edge and a light ground a shadowed one, a little weaker, because a
-    // dark line on a pale card reads heavier than a pale line on a dark one.
-    '--lk-edge': alpha(ink, dark ? 0.2 : 0.26),
-    // What the card itself is on a theme whose letter is written on
-    // something INSIDE it: the nokia's shell, the polaroid's border, the
-    // sticker's die cut. The tokens above stay the screen's and the
-    // picture's, so a chosen colour moves the surface the words are on and
-    // never the shell around it.
-    '--lk-frame': theme.frame || ground,
-    // ── the same tint, relit for the hive ──
-    // The three the DISC draws with, and the only relit tokens in the set:
-    // the hue as chosen, the lightness the same for every disc on the wall
-    // (the note above `DISC_L`). A disc carrying a picture keeps the picture
-    // and wears its look on the rule, which is why `--lk-disc-rule` is a
-    // token of its own rather than an alpha of the ink: on a photo it is the
-    // only place the look survives.
-    '--lk-disc': `linear-gradient(168deg, ${alpha(relight(paper, DISC_L, DISC_C, 0.035), DISC_A)} 0%, ${alpha(relight(paper, DISC_L, DISC_C), DISC_A)} 46%, ${alpha(relight(paper, DISC_L, DISC_C, -0.035), DISC_A)} 100%)`,
-    '--lk-disc-ink': relight(paper, DISC_INK_L, DISC_C),
-    '--lk-disc-rule': alpha(relight(paper, DISC_RULE_L, DISC_C), 0.34),
+    '--s-top': s.top, '--s-top-2': s.top2, '--s-bot': s.bot,
+    '--s-hi': s.hi, '--s-mid': s.mid, '--s-lo': s.lo,
+    '--s-ink': s.ink, '--s-lit': s.lit, '--s-cur': s.cur,
+    '--s-bloom': s.bloom, '--s-soft': s.soft,
+    '--s-glow': g(0.42), '--s-glow-2': g(0.16), '--s-edge': g(0.28),
+    '--s-halo': s.print ? alpha(s.glow, s.kind === 'xerox' ? 0.07 : 0.11) : g(0.3), '--s-halo-2': s.print ? alpha(s.glow, 0.08) : g(0.16),
+    '--t-top': s.flat.top, '--t-bot': s.flat.bot, '--t-body': s.flat.body,
+    '--t-ink': s.flat.ink, '--t-lit': s.flat.lit, '--t-cur': s.flat.cur,
+    '--t-ts': s.flat.ts, '--t-border': s.flat.border || 'transparent', '--t-accent': s.flat.accent || 'transparent',
   }
 }
 
-// The attributes a looked element carries beside its vars: the theme's slug,
-// which the stylesheet keys its chrome on; whether the ground is dark, which
-// decides which way the grain is laid on it; the grain itself, which is the
-// theme's and not the plain paper's; and WHETHER A COLOUR WAS CHOSEN.
-//
-// `data-grain` is the fix for two layers multiplying over each other: the one
-// grain layer on the card reads this attribute and draws that surface and no
-// other, so a theme that brings a texture of its own says `none` and gets
-// exactly its own texture.
-//
-// `data-tint` is the other half of the ground rule above, for the furniture.
-// A handful of papers are drawn in hues that ARE the paper — the airmail's
-// red and blue stripe, the aurora's curtain, the gilt's foil, the
-// chalkboard's wooden rail — and a writer who picks rose has asked for those
-// to go. Every such rule is written twice, once under `:not([data-tint])` in
-// the paper's own hues and once under `[data-tint]` in the paper's ink, so
-// nothing on a tinted card is a colour the writer did not choose.
-export function lookAttrs(look) {
-  const l = cleanLook(look) || {}
-  const theme = themeOf(l)
-  const tint = tintOf(l)
-  return {
-    'data-look': theme.slug,
-    'data-lit': isDark(tint ? tint.paper : theme.paper) ? 'dark' : 'light',
-    'data-grain': theme.grain || 'fibre',
-    ...(tint ? { 'data-tint': tint.slug } : null),
+// ── the press ───────────────────────────────────────────────────────────────
+// A print is a real filter over the lit screen: the photograph blurred a
+// little, turned to luminance, roughened with grain where the press would
+// break up an edge, and quantised into the four inks. A riso lays the
+// second drum a hair off the first. `q` is the letter's own quirks: the
+// grain's seed, the slip of the drum, the heat of the copier.
+export function printFilter(colour, q) {
+  const s = skinOf(colour)
+  if (!s.print) return ''
+  const { stops, blur, ghost } = s.print
+  let grain = s.print.grain
+  let table = stops
+  if (s.kind === 'xerox') {
+    // a hot copier burns more of the page to black, a cool one lets it go
+    // to white: the one threshold between toner and paper walks with the
+    // exposure, and the grain round it with how far it walked. Hot, the
+    // panel's dim corner goes to toner in a speckle; cool, only the words
+    // and the glass hold. The glass is dark at either end of the range.
+    const e = q ? q.exposure : 0
+    grain += Math.abs(e) * 0.12
+    const n = 24
+    const dark = Math.round(n * (0.5 + e * 0.14))
+    table = Array.from({ length: n }, (_, i) => (i < dark ? stops[0] : stops[2]))
   }
+  const ch = (i) => table.map((h) => (rgb(h)[i] / 255).toFixed(3)).join(' ')
+  const lumi = '0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0'
+  const seed = q ? q.grainSeed : 4
+  const dx = q ? q.slipX : 1.4
+  const dy = q ? q.slipY : 0.9
+  const tail = ghost
+    ? `<feOffset in="p" dx="${dx.toFixed(2)}" dy="${dy.toFixed(2)}" result="po"/><feComposite in="p" in2="po" operator="arithmetic" k2="${1 - ghost}" k3="${ghost}"/>`
+    : ''
+  return `<feGaussianBlur stdDeviation="${blur}" result="b"/>`
+    + `<feColorMatrix in="b" type="matrix" values="${lumi}" result="l"/>`
+    + `<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="${seed}" result="n"/>`
+    + '<feColorMatrix in="n" type="matrix" values="0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1" result="ng"/>'
+    + `<feComposite in="l" in2="ng" operator="arithmetic" k2="1" k3="${grain.toFixed(3)}" k4="${(-grain / 2).toFixed(3)}" result="ln"/>`
+    + `<feComponentTransfer in="ln" result="p"><feFuncR type="discrete" tableValues="${ch(0)}"/><feFuncG type="discrete" tableValues="${ch(1)}"/><feFuncB type="discrete" tableValues="${ch(2)}"/></feComponentTransfer>`
+    + tail
+    // and only where the screen is: the grain is laid over the whole filter
+    // region, the screen's box and a margin round it, and without this the
+    // margin came out as a faint rectangle of paper in the dark
+    + '<feComposite in2="SourceAlpha" operator="in"/>'
 }
 
-// The two hooks a themed card needs in JSX rather than in CSS: what it draws
-// beside its type (parts.jsx `Furniture`) and whether it moves its own slots
-// (`Paper`). Both are the theme's, never the tint's or the face's — picking
-// a colour or a face can never change what a paper IS.
-export function chromeOf(look) {
-  return themeOf(look).chrome || ''
-}
-export function layoutOf(look) {
-  return themeOf(look).layout || ''
+// ── the quirks ──────────────────────────────────────────────────────────────
+// What makes this screen this one. Every value is small on purpose: the
+// screen should read as the same object on every letter, the way a row of
+// phones on a table is one object, and look again and no two are held the
+// same way. Nothing here moves a key, changes a word or makes a letter
+// harder to read.
+const range = (r, a, b) => a + (b - a) * r()
+const pick = (r, list) => list[Math.floor(r() * list.length) % list.length]
+const memo = new Map()
+export function quirks(seed) {
+  const key = String(seed || '')
+  if (memo.has(key)) return memo.get(key)
+  const r = prng(`${key}#quirks`)
+  const sign = () => (r() < 0.5 ? -1 : 1)
+  // the photograph: how it was held
+  const rz = range(r, 0.15, 0.95) * sign()
+  const rx = range(r, 0.5, 2.2)
+  const ry = range(r, 0.6, 3.1) * sign()
+  // the panel: its proportion, its corner, where its light is
+  const ar = range(r, 1.12, 1.2)
+  const rad = range(r, 0.8, 1.9)
+  const hx = range(r, 62, 88)
+  const hy = range(r, 52, 78)
+  // the pixels, and the moiré the camera made of them
+  const pitch = range(r, 2.7, 3.35)
+  const moire = range(r, 0.35, 1.5) * sign()
+  // the glass: the glare's angle, a speck or two of dust, sometimes a scratch
+  const glare = range(r, 84, 112)
+  const glareA = range(r, 0.04, 0.1)
+  const specks = r() < 0.18 ? 0 : r() < 0.7 ? 1 : 2
+  const dust = []
+  for (let i = 0; i < specks; i++) {
+    dust.push(`radial-gradient(circle at ${range(r, 12, 88).toFixed(1)}% ${range(r, 30, 92).toFixed(1)}%, rgba(0,0,0,${range(r, 0.14, 0.26).toFixed(2)}) 0, rgba(0,0,0,0.08) ${range(r, 1.2, 2.4).toFixed(1)}%, transparent ${range(r, 3.4, 5.6).toFixed(1)}%)`)
+  }
+  const scratchOn = r() < 0.24
+  const sa = range(r, 18, 70) * sign()
+  const sp = range(r, 20, 80)
+  const scratch = scratchOn
+    ? `linear-gradient(${sa.toFixed(1)}deg, transparent ${(sp - 0.25).toFixed(2)}%, rgba(255,255,255,0.13) ${sp.toFixed(2)}%, transparent ${(sp + 0.25).toFixed(2)}%)`
+    : 'none'
+  // the panel's own faults: a ghost column the driver left on, a dead pixel
+  const streak = r() < 0.55
+  const streakX = range(r, 58, 90)
+  const deadOn = r() < 0.22
+  const dead = deadOn
+    ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)) ${range(r, 14, 86).toFixed(1)}% ${range(r, 20, 86).toFixed(1)}% / 0.9cqw 0.9cqw no-repeat`
+    : 'none'
+  // the model: which battery and which aerial it draws, and whether the
+  // name sits in the middle of the top row or beside the aerial
+  const bat = pick(r, ['a', 'a', 'b', 'c'])
+  const ant = pick(r, ['y', 'y', 't'])
+  const nameAt = r() < 0.3 ? 'start' : 'center'
+  // the words: where the lines start and how far down the first one sits
+  const pad = range(r, 1.3, 2.5)
+  const lift = range(r, 1.1, 2.4)
+  const topPad = range(r, 2.2, 3.1)
+  // the cursor, so a wall of them is not one metronome
+  const blink = Math.round(range(r, 0, 1060))
+  // the light it throws on the room
+  const halo = range(r, 0.85, 1.12)
+  // the prints: the grain, the drum's slip, the copier's heat, and on a
+  // print now and then the hot corner of the backlight caught as a soft
+  // wash of the accent ink, somewhere of its own. It was a round spot on
+  // every print, in the same corner, and read as a sticker on the screen;
+  // it is a light now, when it is there at all
+  const grainSeed = 1 + Math.floor(r() * 97)
+  const slipX = range(r, 0.6, 1.9) * sign()
+  const slipY = range(r, 0.4, 1.3) * sign()
+  const exposure = range(r, -0.6, 0.6)
+  const spotOn = r() < 0.34
+  const spot = spotOn
+    ? `radial-gradient(${range(r, 42, 70).toFixed(1)}% ${range(r, 34, 58).toFixed(1)}% at ${pick(r, [range(r, 10, 34), range(r, 66, 92)]).toFixed(1)}% ${range(r, 54, 92).toFixed(1)}%, color-mix(in srgb, var(--t-accent) ${Math.round(range(r, 38, 62))}%, transparent), transparent 100%)`
+    : 'none'
+  // xerox: the roller's streaks, and the grey the lid let in down one edge
+  const rollers = `linear-gradient(90deg, transparent ${range(r, 8, 30).toFixed(1)}%, rgba(0,0,0,0.12) 0, transparent ${range(r, 0.3, 0.8).toFixed(2)}rem, transparent ${range(r, 55, 92).toFixed(1)}%, rgba(0,0,0,0.08) 0, transparent ${range(r, 0.2, 0.5).toFixed(2)}rem)`
+  const lid = sign() > 0 ? 'left' : 'right'
+  const out = {
+    rz, rx, ry, ar, rad, hx, hy, pitch, moire, glare, glareA, dust, scratch, streak, streakX, dead,
+    bat, ant, nameAt, pad, lift, topPad, blink, halo, grainSeed, slipX, slipY, exposure, spot, rollers, lid,
+  }
+  out.vars = {
+    '--q-rz': `${rz.toFixed(3)}deg`, '--q-rx': `${rx.toFixed(3)}deg`, '--q-ry': `${ry.toFixed(3)}deg`,
+    '--q-ar': ar.toFixed(4), '--q-rad': `${rad.toFixed(2)}%`,
+    '--q-hx': `${hx.toFixed(1)}%`, '--q-hy': `${hy.toFixed(1)}%`,
+    '--q-pitch': `${pitch.toFixed(2)}px`, '--q-moire': `${moire.toFixed(2)}deg`,
+    '--q-glare': `${glare.toFixed(1)}deg`, '--q-glare-a': glareA.toFixed(3),
+    '--q-dust': dust.length ? dust.join(', ') : 'none', '--q-scratch': scratch,
+    '--q-streak-x': `${streakX.toFixed(1)}%`, '--q-streak-a': streak ? '1' : '0', '--q-dead': dead,
+    '--q-pad': `${pad.toFixed(2)}cqw`, '--q-lift': `${lift.toFixed(2)}cqw`, '--q-top-pad': `${topPad.toFixed(2)}cqw`,
+    '--q-blink': `-${blink}ms`, '--q-halo': halo.toFixed(3),
+    '--q-spot': spot, '--q-rollers': rollers,
+  }
+  memo.set(key, out)
+  return out
 }
 
 // ── the wall's memo ─────────────────────────────────────────────────────────
 // The look on the newest letter under a key, learned from wherever this
-// browser last saw the key (the index, a search, a letter), the way a first
-// name's spelling is learned (data.js `learnName`). It is what a disc on the
-// field, a row in the search and a face in the dock draw when nobody hands
-// them a letter's own look.
+// browser last saw the key (the index, a search, a letter). It is what a
+// small screen on the field draws when nobody hands it a letter's own look.
 const LOOKS = new Map()
 export function learnLook(key, look) {
   if (!key) return
@@ -945,15 +449,65 @@ export function lookFor(key) {
   return (key && LOOKS.get(key)) || null
 }
 
-// ── the disc ────────────────────────────────────────────────────────────────
-// How the name on a looked disc is set: the whole name when it is short
-// enough to stand in the disc at a size that can be read, and the monogram
-// otherwise. The size is what fits the disc's width at the face's average
-// advance, capped so one letter is not a poster.
-export function nameOnDisc(name, size) {
-  const n = String(name || '').trim()
-  if (!n || size < 44 || n.length > 9) return null
-  const px = Math.min(size * 0.3, (size * 0.74) / (0.58 * n.length))
-  if (px < size * 0.15) return null
-  return { text: n, px: Math.round(px * 10) / 10 }
+// ── the glyphs ──────────────────────────────────────────────────────────────
+// Drawn on the screen's own pixel grid, one string per row, `X` lit. The
+// letter draws them as SVG (screen.jsx `Pix`), the wall's small screens as
+// masks made once, and the picture a letter is sent as with fillRect: one
+// drawing, three ways of putting it on glass.
+export const PIX = {
+  // the aerial, two models of it
+  anty: ['X.......X', 'XX.....XX', '.XX...XX.', '..XX.XX..', '...XXX...', '....X....', '....X....', '....X....', '....X....'],
+  antt: ['XXXXXXXXX', '.X..X..X.', '..X.X.X..', '...XXX...', '....X....', '....X....', '....X....', '....X....', '....X....'],
+  pen: ['.......XX', '......X.X', '.....X.X.', '....X.X..', '...X.X...', '..X.X....', '.XXX.....', 'XXX......', 'XX.......'],
+  lock: ['..XXX..', '.X...X.', '.X...X.', 'XXXXXXX', 'XXX.XXX', 'XXX.XXX', 'XXXXXXX'],
+  heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
+  heartO: ['.XX.XX.', 'X..X..X', 'X.....X', '.X...X.', '..X.X..', '...X...'],
+  check: ['......X', '.....XX', 'X...XX.', 'XX.XX..', '.XXX...', '..X....'],
+  env: ['XXXXXXXXXXX', 'XX.......XX', 'X.X.....X.X', 'X..X...X..X', 'X...XXX...X', 'X.........X', 'XXXXXXXXXXX'],
+  send: ['X..........', 'XXX........', 'X..XXX.....', 'X.....XXX..', 'X........XX', 'X.....XXX..', 'X..XXX.....', 'XXX........', 'X..........'],
+  link: ['..XX..XX...', '.X..XX..X..', 'X...XX...X.', 'X..X..X..X.', '.X..XX..X..', '..XX..XX...'],
+  save: ['...XXX...', '...XXX...', '...XXX...', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....', 'XXXXXXXXX'],
+}
+// the signal is how many hearts a letter has had; three batteries, one per
+// model, and the charge in each is how fresh the letter is
+const BAT = {
+  a: ['..XXXXXXXXXXXXXXX', '..X.............X', 'XXX.............X', 'X.X.............X', 'X.X.............X', 'XXX.............X', '..X.............X', '..XXXXXXXXXXXXXXX'],
+  b: ['XXXXXXXXXXXXXXX..', 'X.............X..', 'X.............XXX', 'X.............X.X', 'X.............X.X', 'X.............XXX', 'X.............X..', 'XXXXXXXXXXXXXXX..'],
+  c: ['.XXXXXXXXXXXXXXX.', 'X...............X', 'X...............XX', 'X...............XX', 'X...............XX', 'X...............XX', 'X...............X', '.XXXXXXXXXXXXXXX.'],
+}
+// cells inside each battery, left to right, and which end they drain from
+const CELLS = { a: { x0: 4, rev: true }, b: { x0: 2, rev: false }, c: { x0: 3, rev: false } }
+for (let n = 0; n <= 4; n++) {
+  PIX[`sig${n}`] = Array.from({ length: 9 }, (_, y) => Array.from({ length: 7 }, (_, x) => (x % 2 ? '.' : (x / 2 < n ? y >= 6 - x : y === 8) ? 'X' : '.')).join(''))
+  for (const m of Object.keys(BAT)) {
+    const { x0, rev } = CELLS[m]
+    const cell = (x) => {
+      const i = x - x0
+      if (i < 0 || i >= 12 || i % 3 === 2) return false
+      const k = Math.floor(i / 3)
+      return rev ? k >= 4 - n : k < n
+    }
+    PIX[`bat${m}${n}`] = BAT[m].map((row, y) => [...row].map((ch, x) => (ch === 'X' || (y >= 2 && y <= 5 && cell(x)) ? 'X' : '.')).join(''))
+  }
+}
+
+// The four bars and the charge, off a letter: the bars are how many people
+// hearted it, the battery how long it has been sitting there unsaid.
+export function signalOf(hearts) {
+  const h = Number(hearts) || 0
+  return h >= 7 ? 4 : h >= 5 ? 3 : h >= 3 ? 2 : h >= 1 ? 1 : 0
+}
+export function chargeOf(ts) {
+  if (!ts) return 4
+  const hrs = (Date.now() - ts) / 3600000
+  return hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
+}
+
+// The path of a glyph, for an SVG `d` or a mask made once.
+export function glyphPath(name) {
+  const rows = PIX[name]
+  if (!rows) return { d: '', w: 1, h: 1 }
+  let d = ''
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === 'X') d += `M${x} ${y}h1v1h-1z` }))
+  return { d, w: rows[0].length, h: rows.length }
 }

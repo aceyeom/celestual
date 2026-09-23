@@ -68,31 +68,31 @@ const INDEX = HANDLES.map(([h, name, verified], i) => ({
   look: null,
 }))
 
-// ── the looks (0055), and the names (0053) ──
-// Seven handles carry the paper of their newest letter and three names stand
-// on the wall, so the field is shot with a disc of each kind and every one of
-// the eight papers is on a card somewhere in the loop. The three the panel
-// brings with a tint or a face on it are the ones worth shooting dressed: a
-// look is three dials and a shot of eight themes at their defaults never
-// shows what the other two do.
-//
-// `y2k`, `terminal`, `notebook` and `candy` stood here, and all four are
-// retired slugs (app/src/wall/looks.js): the fixture was drawing the plain
-// paper four times over and calling it four looks.
+// ── the colours (0055, 0058), and the names (0053) ──
+// Every letter is a screen now and all it chooses is the colour it is lit
+// in (app/src/wall/looks.js). The fixture spreads the kinds across the
+// field: lit screens, the negative, posters, a riso and the xerox, so a shot
+// of the wall shows each treatment somewhere and a turn of the deck walks
+// from one to another. A letter with no colour draws the one its id picks.
 const LOOKS = {
-  'ren.tanaka': { theme: 'letterpress' },
-  'm.okonkwo': { theme: 'telegram' },
-  'aya.nakamura': { theme: 'postcard', tint: 'bone' },
-  'dani.arroyo': { theme: 'chalkboard' },
-  'thom.iversen': { theme: 'velvet', face: 'script' },
-  'k.villarreal': { theme: 'polaroid' },
-  'nour.haddad': { theme: 'paper', tint: 'sea', face: 'typewriter' },
+  'pilar.echevarria': { tint: 'night' },
+  'jules.k': { tint: 'blush' },
+  'ren.tanaka': { tint: 'amber' },
+  'm.okonkwo': { tint: 'xerox' },
+  'aya.nakamura': { tint: 'ice' },
+  'dani.arroyo': { tint: 'negative' },
+  'thom.iversen': { tint: 'acid' },
+  'k.villarreal': { tint: 'violet-yellow' },
+  'nour.haddad': { tint: 'green' },
+  'elias.brandt': { tint: 'teal' },
+  'sofiaaa.reyes': { tint: 'rose' },
+  'ace03d': { tint: 'cobalt' },
 }
 for (const r of INDEX) if (LOOKS[r.target_handle]) r.look = LOOKS[r.target_handle]
 const NAMES = [
-  ['~sofia', 'Sofia', 2, { theme: 'nokia' }],
-  ['~j', 'J', 1, { theme: 'chalkboard', face: 'marker' }],
-  ['~51b', '51B', 1, null],
+  ['~sofia', 'Sofia', 2, { tint: 'green' }],
+  ['~j', 'J', 1, { tint: 'orange-teal' }],
+  ['~51b', '51B', 1, { tint: 'ember' }],
 ]
 NAMES.forEach(([key, name, letters, look], i) => INDEX.splice(1 + i * 3, 0, {
   target_handle: key, campus: 'berkeley', letters,
@@ -115,16 +115,24 @@ const LINES = [
 function lettersFor(handle, open) {
   const n = COUNT_OF.get(handle) || 1
   const row = INDEX.find((r) => r.target_handle === handle)
+  // an id of its own for every letter, so every screen in the shots is its
+  // own phone (looks.js `quirks` reads the id); the first letter under
+  // pilar.echevarria keeps the id the fixture's other reads point at
+  let hx = 0x811c9dc5
+  for (const ch of handle) hx = Math.imul(hx ^ ch.charCodeAt(0), 0x01000193) >>> 0
+  const tag = hx.toString(16).padStart(8, '0')
   return Array.from({ length: n }, (_, i) => {
     const body = LINES[i % LINES.length]
     return {
-      id: `1111${i}111-2222-4333-8444-55556666${String(i).padStart(4, '0')}`,
+      id: i === 0 && handle === 'pilar.echevarria'
+        ? '11110111-2222-4333-8444-555566660000'
+        : `${tag}-2222-4333-8444-5555${String(i).padStart(8, '0')}`,
       handle,
       kind: row ? row.kind : 'handle',
       name: row ? row.name : null,
-      // the newest letter carries the key's look; an older one under the
-      // same name is on the plain paper, which is what a deck of two papers
-      // looks like when it is turned
+      // the newest letter carries the key's colour; an older one under the
+      // same name draws the one its own id picks, which is what a deck of
+      // two colours looks like when it is turned
       look: row && i === 0 ? row.look : null,
       body: open ? body : null,
       words: body.split(/\s+/).length,
@@ -875,12 +883,21 @@ const ROUTES = [
   // and let go past the threshold: the strip ran on to the next letter
   { label: 'letter-swiped', path: '/berkeley/letter/pilar.echevarria',
     acts: [['swipe', '.wl-letter-card', -220]], settle: 900 },
-  // the face on the card, pressed: the picture, large
-  { label: 'letter-face',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-face-open', settle: 900 },
-  // and put away: the picture on its way back into the small face, caught
-  // a third of the way there
-  { label: 'letter-face-close', path: '/berkeley/letter/pilar.echevarria',
-    acts: [['click', '.wl-letter-card .wl-face-open'], ['wait', 900], ['click', '.wl-viewer-scrim', null, 120]], settle: 0 },
+  // the picture at the head of the message, pressed: the picture, large
+  { label: 'letter-face',   path: '/berkeley/letter/jules.k', press: '.wl-letter-card .wl-scr-face', settle: 900 },
+  // and put away: the picture on its way back into the screen, caught a
+  // third of the way there
+  { label: 'letter-face-close', path: '/berkeley/letter/jules.k',
+    acts: [['click', '.wl-letter-card .wl-scr-face'], ['wait', 900], ['click', '.wl-viewer-scrim', null, 120]], settle: 0 },
+  // the screen's two menus, and the screen in each of its treatments
+  { label: 'letter-options', path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-l', settle: 700 },
+  { label: 'letter-send',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-letter-card .wl-sk.is-r', settle: 700 },
+  { label: 'letter-sent',    path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-letter-card .wl-sk.is-r'], ['wait', 900], ['click', '.wl-scr-menu li:last-child']], settle: 900 },
+  { label: 'letter-poster',  path: '/berkeley/letter/jules.k' },
+  { label: 'letter-riso',    path: '/berkeley/letter/k.villarreal' },
+  { label: 'letter-xerox',   path: '/berkeley/letter/m.okonkwo' },
+  { label: 'letter-negative', path: '/berkeley/letter/dani.arroyo' },
   // the card on its way back into the disc it belongs to, caught mid flight:
   // the glass fading in place, the head and foot gone, the paper going round
   { label: 'letter-close',  path: '/berkeley/letter/pilar.echevarria',
@@ -920,35 +937,34 @@ const ROUTES = [
   { label: 'letter-close-out', path: '/berkeley/letter/pilar.echevarria',
     acts: [['wait', 900], ['click', '.wl-close'], ['wait', 1400]], settle: 600 },
   { label: 'letter-report-back', path: '/berkeley/letter/pilar.echevarria',
-    acts: [['wait', 900], ['click', '.wl-flag'], ['wait', 600], ['click', '.wl-acts-pane .wl-act'], ['wait', 900],
+    acts: [['wait', 900], ['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 600], ['click', '.wl-scr-menu li:nth-child(2)'], ['wait', 900],
            ['click', '.wl-close'], ['wait', 900]], settle: 600 },
   { label: 'letter-sealed', path: '/berkeley/letter/pilar.echevarria', open: false },
-  { label: 'letter-flag',   path: '/berkeley/letter/pilar.echevarria', press: '.wl-flag' },
-  // the pen on the card opens the composer on the name, and the composer's
-  // mark comes back to the letter it was opened from (index.jsx `up`)
-  { label: 'letter-pen',    path: '/berkeley/letter/pilar.echevarria', press: '.wl-pen-to', settle: 1400 },
+  // `write to` in the screen's options opens the composer on the name, and
+  // the composer's mark comes back to the letter it was opened from
+  // (index.jsx `up`)
+  { label: 'letter-pen',    path: '/berkeley/letter/pilar.echevarria',
+    acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)']], settle: 1400 },
   { label: 'letter-pen-back', path: '/berkeley/letter/pilar.echevarria',
-    acts: [['click', '.wl-pen-to'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
+    acts: [['click', '.wl-letter-card .wl-sk.is-l'], ['wait', 500], ['click', '.wl-scr-menu li:nth-child(1)'], ['wait', 1200], ['click', '.wl-write .wl-close'], ['wait', 900]], settle: 1200 },
   { label: 'write',         path: '/berkeley/write/sofiaaa.reyes' },
   // 0055: the first question with its two answers on one rail, the handle
   // on; then the other answer on, with a name that is not a first name in it
   { label: 'write-who',     path: '/berkeley/write', draft: null },
   { label: 'write-anything', path: '/berkeley/write', draft: null,
     acts: [['click', '.wl-seg-opt[data-value="name"]'], ['fill', '.wl-field input', 'the girl on the 51B']], settle: 900 },
-  // the pen on the card, pressed: the look panel under the card, on the
-  // plain paper; then the nokia screen chosen, and the card on it; then a
-  // colour and a face moved off what the look brought
-  { label: 'write-look',    path: '/berkeley/write/sofiaaa.reyes', press: '.wl-pen', settle: 1200 },
-  { label: 'write-look-nokia', path: '/berkeley/write/sofiaaa.reyes',
-    acts: [['click', '.wl-pen'], ['wait', 400], ['click', '.wl-look-opt[data-value="nokia"]']], settle: 1200 },
-  { label: 'write-look-tuned', path: '/berkeley/write/sofiaaa.reyes',
-    acts: [['click', '.wl-pen'], ['wait', 400], ['click', '.wl-look-opt[data-value="y2k"]'], ['wait', 300],
-      ['click', '.wl-look-opt[data-value="plum"]'], ['wait', 300], ['click', '.wl-look-opt[data-value="hand"]']], settle: 1200 },
-  // a letter to a name, on the nokia screen, read; and the same deck turned
-  // to the older letter under the name, on the plain paper
+  // the screen's `colour` key, pressed: the colours under the screen; then a
+  // poster chosen, and the screen printed; then the copy
+  { label: 'write-look',    path: '/berkeley/write/sofiaaa.reyes', press: '.wl-write-card .wl-sk.is-l', settle: 1200 },
+  { label: 'write-look-poster', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="teal"]']], settle: 1200 },
+  { label: 'write-look-xerox', path: '/berkeley/write/sofiaaa.reyes',
+    acts: [['click', '.wl-write-card .wl-sk.is-l'], ['wait', 400], ['click', '.wl-look-opt[data-value="xerox"]']], settle: 1200 },
+  // a letter to a name, read; and the same deck turned to the older letter
+  // under the name, in the colour its own id picks
   { label: 'letter-name',   path: '/berkeley/letter/~sofia' },
   { label: 'letter-name-turned', path: '/berkeley/letter/~sofia', press: '.wl-turn.is-next', settle: 1200 },
-  // a handle's letter on the y2k gloss, with its face at the head
+  // a handle's letter, lit amber
   { label: 'letter-look',   path: '/berkeley/letter/ren.tanaka' },
   { label: 'letter-look-sealed', path: '/berkeley/letter/m.okonkwo', open: false },
   // the week spent: the act dark, and the one line the foot says about it

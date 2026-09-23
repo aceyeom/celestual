@@ -79,63 +79,79 @@
 // the free reads switched off (0052), because there was then never a free
 // one to have spent.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
-  Sheet, SheetFoot, Paper, Prose, Redacted,
-  Pill, ClosePill, Close, Icon, OpenFace, Addressee, Heart, useSheet,
+  Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
 } from '../parts.jsx'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic } from '../screen.jsx'
+import { colourOf, skinOf, skinVars, signalOf, chargeOf } from '../looks.js'
+import { sendLetter, prepareLetter, letterFace, starred, canShare } from '../share.js'
 import {
   letter, lettersFor, loadLetter, loadHandle, knowsHandle, targetKey, isNameKey,
-  sinceline, atHandle, labelFor, heart, wall, freeReads,
+  atHandle, nameFor, normHandle, heart, wall, freeReads,
 } from '../data.js'
+import { href } from '../router.js'
 import { mark, setAfterGate } from '../store.js'
 import { cardStep } from '../seed.js'
 import { isReader, toWrite } from '../auth.js'
 import { campus, needsCampus } from '../campus.js'
 
-// ── the hearts ──────────────────────────────────────────────────────────────
-// The one thing a reader can do to a letter that is not writing, reporting or
-// taking it down: press the heart, once, and see how many did. It sits in the
-// paper's foot, under the words, struck in the paper's ink (parts.jsx
-// `Heart`, wall.css `.wl-hearts`), because it is a mark on the document and
-// not a control on the sheet. The count is a count and nothing else: no
-// names ride with it, from the server or anywhere, and zero says nothing at
-// all rather than "0", because an unhearted letter is not a letter that
-// failed. Behind the same gate as reading: on a sealed letter the heart is
-// the way to the gate, and the count still shows, since it is public the way
-// the letter's shape is.
-function Hearts({ letter: l, onGate }) {
-  const [busy, setBusy] = useState(false)
-  const mine = isReader()
-  const n = l.hearts || 0
-  const press = async () => {
-    if (!mine) { onGate(); return }
-    if (busy) return
-    setBusy(true)
-    await heart(l.id, !l.hearted)
-    setBusy(false)
+// ── the name on the screen ──────────────────────────────────────────────────
+// The top row carries who the letter is for the way a phone carried the
+// contact a draft was going to: the first name, when the resolver has one,
+// and otherwise the handle. A first name (0053) is itself.
+function useFirst(to) {
+  const named = isNameKey(to)
+  const p = useProfile(named ? '' : to)
+  if (!to) return ''
+  if (named) return nameFor(to) || String(to).slice(1)
+  const n = p && p.name ? String(p.name).trim().split(/\s+/)[0] : ''
+  return n || normHandle(to)
+}
+
+// ── the picture at the head of the message ──────────────────────────────────
+// A handle the resolver has a picture for carries it the way a picture
+// message did, dithered into this screen's ink, at the head of the words;
+// pressed, it opens large (parts.jsx `FaceViewer`), out of itself and back
+// into it. A first name has no picture, and no picture stands there.
+function Picture({ handle, look, seed, live }) {
+  const p = useProfile(handle)
+  const [open, setOpen] = useState(false)
+  const [from, setFrom] = useState(null)
+  const btn = useRef(null)
+  const close = useCallback(() => setOpen(false), [])
+  const s = skinOf(colourOf(look, seed))
+  if (!p || !p.avatar) return null
+  const press = () => {
+    const r = btn.current ? btn.current.getBoundingClientRect() : null
+    setFrom(r && r.width ? { x: r.left, y: r.top, w: r.width, h: r.height } : null)
+    setOpen(true)
   }
-  const said = n === 0 ? '' : String(n)
   return (
-    <div className={`wl-hearts${l.hearted ? ' is-on' : ''}`}>
+    <span className="wl-scr-mms">
       <button
-        type="button" className={`wl-heart${l.hearted ? ' is-on' : ''}`}
-        onClick={press} disabled={busy}
-        aria-pressed={mine ? l.hearted : undefined}
-        aria-label={!mine ? 'sign in to heart this letter'
-          : l.hearted ? 'take your heart off this letter' : 'heart this letter'}
+        ref={btn} type="button" className="wl-scr-face" onClick={live ? press : undefined}
+        tabIndex={live ? undefined : -1}
+        aria-label={`see ${atHandle(handle)}'s picture larger`} title="see it larger"
       >
-        <Heart size={18} on={l.hearted} />
+        <PixelPic src={p.avatar} cells={32} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'} />
       </button>
-      <span className="wl-hearts-n" aria-live="polite" aria-label={n === 1 ? 'one heart' : n ? `${n} hearts` : undefined}>
-        {said}
-      </span>
-    </div>
+      {open ? <FaceViewer handle={handle} onClose={close} from={from} source={btn} /> : null}
+    </span>
   )
 }
 
-// The one mark on the glass: the way out, through the sheet's own dismissal
-// so it leaves the way the scrim and the key do.
+// ── the light in the room ───────────────────────────────────────────────────
+// The one light in the dark is the screen's, and it falls on the room in the
+// screen's colour: a wide soft pool behind the letter, which crossfades when
+// the deck is turned onto a letter lit in another colour. It is the room's
+// and not the screen's because the strip is clipped at the glass's edge.
+function RoomLight({ l }) {
+  const v = skinVars(colourOf(l.look, l.id))
+  return <span className="wl-room-light" style={{ '--s-halo': v['--s-halo'] }} aria-hidden="true" />
+}
+
+// ── the close ──
 function LetterX({ label }) {
   const sheet = useSheet()
   return <Close className="wl-letter-x" onClick={() => sheet && sheet.dismiss('mark')} label={label} />
@@ -184,61 +200,141 @@ function Leaf({ className, onMount, children }) {
 // The card, for one letter, or the waiting card for a name whose letters are
 // still on their way. Drawn once here and used for the card on the glass and
 // for the neighbours beside it, so what slides in is what lands.
-function Card({ l, handle, seed, id, foot }) {
+// ── one letter, as its screen ───────────────────────────────────────────────
+// What the phone shows depends on `view`: the letter itself, the options
+// menu, the send menu, or a note ("sent", "saved"). Only the live card has
+// a view of its own; the neighbours on the strip are always the letter.
+//
+//   the letter   options · the heart and its count · send
+//   a menu       select · back
+//   a note       ok
+//
+// The heart is the reader's one mark that is not writing or reporting: once
+// per person, the count is a count and nothing else, and zero says nothing
+// rather than "0". Behind the same gate as reading, so on a letter from
+// outside it the heart is the way to the gate.
+function LetterScreen({ l, handle, seed, id, live = false, view = null, onView, go, toGate, woke = '' }) {
+  const to = l ? l.to : handle
+  const first = useFirst(to)
+  const [busy, setBusy] = useState(false)
+  const at = view || { kind: 'letter' }
+  const h = to && !isNameKey(to) ? atHandle(to) : ''
+  const back = () => onView && onView(null)
+
   if (!l) {
-    /* `waiting`, not `shut`. They draw the same block of bars and they are
-       not the same fact: a letter that has arrived shut is blurred, because
-       it is a letter you are not close enough to, and a letter that has not
-       arrived is neither shut nor open yet. */
+    /* `waiting`: the screen is on and nothing has arrived on it yet, which is
+       neither shut nor open, so it is only the cursor */
     return (
-      <Paper
-        dateline={{ lead: 'reading' }}
-        crest={handle && !isNameKey(handle) ? <span className="wl-letter-crest"><OpenFace handle={handle} size={34} /></span> : null}
-        title={<Addressee handle={handle || ''} id={id} />}
-        tone="waiting"
-      >
-        <Redacted words={22} chars={110} seed={String(seed || handle || '')} />
-      </Paper>
+      <Screen seed={String(seed || handle || '')} look={null} top={{ name: first, icon: '', handle: h }} live={false} nameId={id}>
+        <ScreenText text="" />
+      </Screen>
     )
   }
+
   const open = l.body !== null
+  const text = open ? l.body : starred(l.words, l.chars, l.id)
+  const hearts = l.hearts || 0
+
+  const pressHeart = async () => {
+    if (!isReader()) { toGate(); return }
+    if (busy) return
+    setBusy(true)
+    await heart(l.id, !l.hearted)
+    setBusy(false)
+  }
+
+  const optionItems = [
+    ...(open
+      ? [{ t: `write to ${first || 'them'}`, run: () => toWrite(go, l.to) }]
+      : [{ t: 'read it', run: toGate }]),
+    { t: 'report this letter', run: () => go('report', l.id) },
+    /* A first name is nobody's to empty: forty people share it, and no
+       handle proof can stand for it (0053). */
+    ...(isNameKey(l.to) ? [] : [{ t: 'take my name off', run: () => go('remove', l.to) }]),
+  ]
+  const sendItems = [
+    ...(canShare() ? [{ t: 'share', how: 'share' }] : []),
+    { t: 'save the picture', how: 'save' },
+    { t: 'copy the link', how: 'copy' },
+  ]
+  const face = () => letterFace(l, { name: first, handle: h })
+  const send = async (how) => {
+    // the share sheet is asked for before anything is awaited: a phone only
+    // opens it inside the tap that asked, and the picture was drawn while
+    // the menu was up (`prepareLetter`, on the key that opened it)
+    const going = sendLetter(how, face(), `${window.location.origin}${href('letter', l.id)}`)
+    onView({ kind: 'note', glyph: 'env', title: how === 'copy' ? 'copying' : 'sending' })
+    const out = await going
+    if (out === 'left') { onView(null); return }
+    const said = {
+      sent: ['check', 'sent'], saved: ['check', 'saved'], copied: ['check', 'link copied'],
+    }[out] || ['', 'it did not go', 'try again']
+    onView({ kind: 'note', glyph: said[0], title: said[1], text: said[2] || '', done: true })
+  }
+
+  let top
+  let body
+  let keys
+  if (at.kind === 'options' || at.kind === 'send') {
+    const items = at.kind === 'options' ? optionItems : sendItems
+    const pick = (j) => {
+      const it = items[j]
+      if (!it) return
+      if (it.how) send(it.how)
+      else { onView(null); it.run() }
+    }
+    top = { name: at.kind === 'options' ? 'options' : 'send', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    body = (
+      <ScreenMenu
+        items={items.map((x) => x.t)} at={Math.min(at.at || 0, items.length - 1)}
+        onAt={(j) => onView({ ...at, at: j })} onPick={pick} label={at.kind}
+        onBack={back}
+      />
+    )
+    keys = {
+      l: { label: 'select', onClick: () => pick(Math.min(at.at || 0, items.length - 1)), aria: `select ${items[at.at || 0]?.t || ''}` },
+      r: { label: 'back', onClick: back, aria: 'back to the letter' },
+    }
+  } else if (at.kind === 'note') {
+    top = { name: '', icon: '', sig: signalOf(hearts), bat: chargeOf(l.at) }
+    body = <ScreenNote glyph={at.glyph} title={at.title}>{at.text || null}</ScreenNote>
+    keys = at.done ? { l: { label: 'ok', onClick: back, aria: 'back to the letter' } } : {}
+  } else {
+    top = {
+      name: first, handle: h,
+      counter: `${280 - (open ? l.body.length : l.chars || 0)}/1`,
+      mode: open ? 'abc' : 'locked', icon: open ? 'pen' : 'lock',
+      sig: signalOf(hearts), bat: chargeOf(l.at),
+    }
+    body = (
+      <ScreenText
+        text={text}
+        pic={!isNameKey(l.to) ? <Picture handle={l.to} look={l.look} seed={l.id} live={live} /> : null}
+      />
+    )
+    keys = {
+      l: { label: 'options', onClick: () => onView({ kind: 'options', at: 0 }), aria: open ? 'options: write to them, report' : 'options: read it, report' },
+      c: {
+        glyph: l.hearted ? 'heart' : 'heartO', label: hearts ? String(hearts) : '',
+        onClick: pressHeart, disabled: busy, on: l.hearted,
+        pressed: isReader() ? !!l.hearted : undefined,
+        aria: !isReader() ? 'sign in to heart this letter'
+          : `${l.hearted ? 'take your heart off this letter' : 'heart this letter'}${hearts ? `, ${hearts === 1 ? 'one heart' : `${hearts} hearts`}` : ''}`,
+      },
+      r: { label: 'send', onClick: () => { prepareLetter(face()); onView({ kind: 'send', at: 0 }) }, aria: 'send this letter: share it, save it, or copy its link' },
+    }
+  }
   return (
-    <Paper
-      /* How long it has been sitting there unsaid, and — on a SHUT letter
-         only — the stamp that says so. An open letter has never carried it
-         and never will: the right-hand cell is empty on every letter
-         anybody can actually read, which is all but the one past the eight.
-         The stamp stays on the shut one because the gate under it is
-         written to lean on it — `read it`, and not a word of policy,
-         because the card beside it already says SEALED (the foot, below).
-         Take the stamp off that card and the gate has to grow a sentence
-         explaining what it is for. */
-      dateline={sinceline(l.at, open ? '' : 'sealed')}
-      /* the paper the letter chose (0055), or the plain paper */
-      look={l.look}
-      /* a letter to a first name (0053) carries no disc at its head: there is
-         no picture to stand there, and a monogram beside "for Sofia" was a
-         badge on a card that is cleaner without one */
-      crest={isNameKey(l.to) ? null : <span className="wl-letter-crest"><OpenFace handle={l.to} size={34} look={l.look} /></span>}
-      title={<Addressee handle={l.to} id={id} />}
-      tone={open ? '' : 'shut'}
-      foot={foot}
+    <Screen
+      look={l.look} seed={l.id} top={top} keys={keys} live={live}
+      state={woke} nameId={id}
+      className={open ? '' : 'is-shut'}
     >
-      {open
-        ? <Prose>{l.body}</Prose>
-        : <Redacted words={l.words} chars={l.chars} seed={l.id} />}
-    </Paper>
+      {body}
+    </Screen>
   )
 }
 
-// ── the line under a shut card ──────────────────────────────────────────────
-// Two clauses, and each one is only there while it is true. What happened,
-// from the server's own count of the free reads: `limit` is how many this
-// wall gives away and `left` is what is behind after the read that answered,
-// so a limit of nought is the desk's switch off and there is nothing to have
-// spent. Then what opens the rest, which is the only thing that differs
-// between the two walls: the campus wall's door asks for the campus, and the
-// door at the root takes any of the three proofs, so it names neither.
 function sealSay() {
   const free = freeReads()
   const spent = !!free && free.limit > 0 && free.left <= 0
@@ -249,10 +345,17 @@ function sealSay() {
 }
 
 export default function Letter({ id: param, go, up, upLabel = 'back to the wall', reduce = false, rev = 0 }) {
-  // Whether the flag has been opened. Nothing else on this sheet holds state:
-  // the card is the server's, and this is one control deciding whether it is
-  // showing itself or the two things it opens.
-  const [flagged, setFlagged] = useState(false)
+  // What the live screen is showing: the letter (null), a menu, or a note.
+  // Nothing else on this sheet holds state: the letter is the server's.
+  const [view, setView] = useState(null)
+  // The screen wakes once, on the first letter the sheet opens on, the way a
+  // phone's backlight comes up; a turn does not wake it again.
+  const [woke, setWoke] = useState('waking')
+  useEffect(() => {
+    if (reduce) { setWoke(''); return undefined }
+    const t = setTimeout(() => setWoke(''), 950)
+    return () => clearTimeout(t)
+  }, [reduce])
   // `silent` says the next address change is the strip landing on a
   // neighbour that is already on the glass, so the leaf that takes over
   // must not make an entrance. Declared up here because the render-phase
@@ -267,7 +370,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // keys the leaf, and it is kept as state from the last render rather than
   // as a ref: a render can be thrown away without being committed, and a ref
   // moved during one of those leaves a key that has already changed by the
-  // time the commit comes. The flag closes with the card it was opened on.
+  // time the commit comes. A menu closes with the card it was opened on.
   //
   // Whether the leaf ARRIVES, with a beat of fade, or takes over silently is
   // decided here too, once, on the render that changes the key, and kept
@@ -277,7 +380,7 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   if (seen !== param) {
     setSeen(param)
     setLeaf({ key: leaf.key + 1, fade: !silentRef.current })
-    setFlagged(false)
+    setView(null)
   }
   const cardBox = useRef(null)
 
@@ -524,15 +627,16 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
     return (
       <Sheet onClose={up} labelledBy="wl-letter-h" className="is-letter" aside={<LetterX label={upLabel} />}>
         <div className="wl-sheet-in wl-letter">
-          <Paper
-            dateline={{ lead: 'not on the wall' }}
-            title={<span id="wl-letter-h" className="wl-letter-to">gone</span>}
-          >
-            <Prose>that letter has come down.</Prose>
-          </Paper>
-          <SheetFoot>
-            <ClosePill tone="light" wide onClose={up}>{upLabel}</ClosePill>
-          </SheetFoot>
+          <div className="wl-letter-card">
+            <Screen
+              seed={String(param)} look={null} state={woke}
+              top={{ name: 'not on the wall', icon: '' }}
+              keys={{ r: { label: 'back', onClick: up, aria: upLabel } }}
+              live nameId="wl-letter-h"
+            >
+              <ScreenNote title="gone">that letter has come down.</ScreenNote>
+            </Screen>
+          </div>
         </div>
       </Sheet>
     )
@@ -541,43 +645,11 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   const open = !!one && one.body !== null
   const toGate = () => { if (one) setAfterGate({ name: 'letter', id: one.id }); go('gate') }
 
-  // ── the three marks a reader can leave ──
-  // The heart at the head of the foot, the pen beside it, and the flag at
-  // its end, all struck in the paper's ink, because all three are marks on
-  // the document rather than controls on the sheet. The pen writes to the
-  // person this letter is for: it opens the composer on their name, and
-  // closing the composer comes back to this letter (index.jsx `up`). A flag
-  // is left ON a thing, so it stands in the card's corner, the size of the
-  // heart beside it rather than of a button.
-  const marks = (l, live) => (
-    <div className="wl-letter-marks">
-      <div className="wl-letter-marks-l">
-        <Hearts letter={l} onGate={toGate} />
-        <button
-          type="button" className="wl-pen-to"
-          onClick={live ? () => toWrite(go, l.to) : undefined}
-          aria-label={`write to ${labelFor(l.to)}`} title={`write to ${labelFor(l.to)}`}
-          tabIndex={live ? undefined : -1}
-        >
-          <Icon name="write" size={16} />
-        </button>
-      </div>
-      <button
-        type="button" className={`wl-flag${live && flagged ? ' is-on' : ''}`}
-        onClick={live ? () => setFlagged(!flagged) : undefined}
-        aria-expanded={live ? flagged : undefined}
-        aria-controls={live ? 'wl-flag-opts' : undefined}
-        aria-label="take this off the wall" title="take this off the wall"
-        tabIndex={live ? undefined : -1}
-      >
-        <Icon name="flag" size={15} />
-      </button>
-    </div>
-  )
-  // a neighbour beside the card, off the glass, drawn as the card it is
+  // a neighbour beside the card, off the glass, drawn as the screen it is,
+  // with its keys drawn and not pressable
   const slot = (side, dir, ref) => side ? (
     <div className="wl-letter-slot" ref={ref} aria-hidden="true" data-side={dir > 0 ? 'next' : 'prev'}>
-      <Card l={side.l} handle={side.handle} seed={side.target} foot={side.l ? marks(side.l, false) : null} />
+      <LetterScreen l={side.l} handle={side.handle} seed={side.target} go={go} toGate={toGate} />
     </div>
   ) : null
   const showPrev = move && (move.kind === 'drag' || move.dir < 0)
@@ -588,57 +660,25 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
   // already on the glass.
   const came = leaf.fade ? ' is-arrived' : ''
 
-  // ── what stands under the card ──
-  // Nothing, almost always. While the flag is on, the two things somebody
-  // who came looking for THEMSELVES needs: one pane of glass, two rows in
-  // it, each a glyph, the act and what it does in one line, so the
-  // reversible act and the irreversible one are told apart before either is
-  // pressed. The fast door first. On a sealed letter, the way to the gate.
-  const foot = !one ? null
-    : flagged ? (
-      <div className="wl-acts" id="wl-flag-opts">
-        <div className="wl-acts-pane" role="group" aria-label="take this off the wall">
-          <button type="button" className="wl-act" onClick={() => go('report', one.id)}>
-            <span className="wl-act-glyph" aria-hidden="true"><Icon name="flag" size={16} /></span>
-            <span className="wl-act-text">
-              <span className="wl-act-h">report this letter</span>
-              <span className="wl-act-say">it comes off the wall now, and a person reads it after.</span>
-            </span>
-            <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-          </button>
-          {/* A first name is nobody's to empty: forty people share it,
-              and no handle proof can stand for it (0053). The tap above
-              takes a letter to a name down like any other, and only the
-              desk shuts the name itself. */}
-          {isNameKey(one.to) ? null : (
-          <button type="button" className="wl-act" onClick={() => go('remove', one.to)}>
-            <span className="wl-act-glyph" aria-hidden="true"><Icon name="signout" size={16} /></span>
-            <span className="wl-act-text">
-              <span className="wl-act-h">take my name off the wall</span>
-              <span className="wl-act-say">if {atHandle(one.to)} is you. every letter to it comes off, and stays off.</span>
-            </span>
-            <span className="wl-act-go" aria-hidden="true"><Icon name="back" size={14} /></span>
-          </button>
-          )}
-        </div>
-        <button type="button" className="wl-quiet" onClick={() => setFlagged(false)}>leave it up</button>
-      </div>
-    ) : open ? null : (
-      /* The gate, with the one line that says what it is a gate ON
-         (`sealSay`). The capsule keeps its word: the act is still reading
-         this letter, and the line above it is the reason, not a second
-         name for the same button. */
-      <div className="wl-seal">
-        <p className="wl-seal-say">{sealSay()}</p>
-        <Pill tone="light" wide onClick={toGate}>
-          read it
-        </Pill>
-      </div>
-    )
+  // ── what stands under the screen ──
+  // Nothing, almost always: writing to them, reporting it and taking a name
+  // off are in the screen's own options, and sending it is its own key. On
+  // a sealed letter, the way to the gate, with the one line that says what
+  // it is a gate ON (`sealSay`). The capsule keeps its word: the act is
+  // still reading this letter, and the line above it is the reason.
+  const foot = !one || open ? null : (
+    <div className="wl-seal">
+      <p className="wl-seal-say">{sealSay()}</p>
+      <Pill tone="light" wide onClick={toGate}>
+        read it
+      </Pill>
+    </div>
+  )
 
   return (
     <Sheet onClose={up} labelledBy="wl-letter-to" className="is-letter" aside={<LetterX label={upLabel} />}>
       <div className="wl-sheet-in wl-letter">
+        {one ? <RoomLight key={colourOf(one.look, one.id).slug} l={one} /> : null}
         {/* ── the card, and the two ways past it ──
             One object, carrying everything true about the letter: how long it
             has been up, whether it is shut, who it is for, and the words.
@@ -662,9 +702,10 @@ export default function Letter({ id: param, go, up, upLabel = 'back to the wall'
             {showPrev ? slot(prevCard, -1, prevSlot) : null}
             <div className="wl-letter-card" ref={cardBox}>
               <Leaf className={`wl-letter-leaf${came}`} key={leaf.key} onMount={landed}>
-                <Card
+                <LetterScreen
                   l={one || null} handle={one ? null : handle} seed={String(param)}
-                  id="wl-letter-to" foot={one ? marks(one, true) : null}
+                  id="wl-letter-to" live view={view} onView={setView} go={go} toGate={toGate}
+                  woke={woke}
                 />
               </Leaf>
             </div>

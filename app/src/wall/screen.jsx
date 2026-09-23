@@ -1,0 +1,532 @@
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  THE SCREEN: a letter, as a phone left on in a dark room                 ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+//
+// Every letter on the wall is drawn by this file, at three sizes:
+//
+//   Screen   the letter, read. The status across the top (the aerial and the
+//            bars, the name, how many characters were left, the battery),
+//            the words with the cursor still after the last one, and the
+//            three soft keys at the foot. Opened, it is the only lit thing
+//            in the room
+//   Tile     the same screen, small, standing for a name on the wall: the
+//            status row, the name's monogram or their picture, and the
+//            keys' two dashes
+//   Mini     the panel's thumbnail of a colour
+//
+// and `PixelPic`, the picture of a person the way those screens drew one:
+// cut to a few dozen pixels a side and dithered into the screen's own ink.
+// There is no round face anywhere on the wall; a person is a picture on a
+// screen.
+//
+// Every size inside a screen is in `cqw` of its own width, so one layout
+// draws at 470 pixels and at 60 without a second one. What the colour does
+// is looks.js `skinOf`; what makes this screen this one and no other is
+// looks.js `quirks`, off the letter's id.
+
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { colourOf, skinVars, skinOf, quirks, printFilter, glyphPath, PIX, hexRgb } from './looks.js'
+import './screen.css'
+
+// ── the glyphs ──────────────────────────────────────────────────────────────
+// On the letter each is an SVG on the screen's own pixel grid, sized in the
+// screen's `cqw`, so a glyph is always a whole number of the screen's pixels
+// and never a blurred icon.
+export function Pix({ name, h = 7, className = '', style }) {
+  const g = useMemo(() => glyphPath(name), [name])
+  return (
+    <svg
+      className={`wl-px ${className}`} viewBox={`0 0 ${g.w} ${g.h}`} shapeRendering="crispEdges"
+      style={{ height: `${h}cqw`, width: `${((h * g.w) / g.h).toFixed(2)}cqw`, ...style }}
+      aria-hidden="true" focusable="false"
+    >
+      <path d={g.d} />
+    </svg>
+  )
+}
+
+// The tiles' glyphs are masks, made once for the page: a wall of two hundred
+// small screens is two hundred references to one image each, not two hundred
+// inline drawings.
+let glyphSheet = false
+function ensureGlyphs() {
+  if (glyphSheet || typeof document === 'undefined') return
+  glyphSheet = true
+  const names = Object.keys(PIX).filter((k) => /^(anty|antt|env|sig\d|bat[abc]\d)$/.test(k))
+  const css = names.map((k) => {
+    const g = glyphPath(k)
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.w} ${g.h}" shape-rendering="crispEdges"><path d="${g.d}"/></svg>`
+    return `.wl-g-${k}{--m:url("data:image/svg+xml,${encodeURIComponent(svg)}");aspect-ratio:${g.w}/${g.h}}`
+  }).join('\n')
+  const el = document.createElement('style')
+  el.dataset.glyphs = ''
+  el.textContent = css
+  document.head.appendChild(el)
+}
+
+// ── the picture ─────────────────────────────────────────────────────────────
+// A profile picture, as a screen of that era would have shown it: centred,
+// cut square, pulled to its own contrast, and dithered in four tones of the
+// screen's ink with Atkinson's error diffusion, which is the dither the
+// first bitmap screens were drawn with. The tones are alpha over the panel,
+// so the same picture is green on a green screen and toner on a copy.
+//
+// Read with CORS, which the avatar bucket serves. If a picture will not
+// come with CORS it still comes: drawn into the same few pixels without
+// reading them back, and pulled grey by the stylesheet instead of by the
+// dither. Either way a failure is the monogram under it, which was always
+// the designed state.
+const DITHERED = new Map() // `${src}|${cells}|${inv}` -> Uint8ClampedArray of alphas, or 'taint'
+const IMAGES = new Map()   // src -> Promise<{ img, cors }>
+const LOADED = new Map()   // src -> the image, once it has come
+
+function loadImage(src) {
+  if (IMAGES.has(src)) return IMAGES.get(src)
+  const p = new Promise((done) => {
+    const withCors = new Image()
+    withCors.crossOrigin = 'anonymous'
+    withCors.decoding = 'async'
+    withCors.onload = () => { LOADED.set(src, withCors); done({ img: withCors, cors: true }) }
+    withCors.onerror = () => {
+      const plain = new Image()
+      plain.decoding = 'async'
+      plain.onload = () => { LOADED.set(src, plain); done({ img: plain, cors: false }) }
+      plain.onerror = () => done(null)
+      plain.src = src
+    }
+    withCors.src = src
+  })
+  IMAGES.set(src, p)
+  return p
+}
+
+// cover-crop the picture into a square, a touch above centre, where a face
+// in a profile picture almost always is
+function drawCover(g, img, w, h) {
+  const iw = img.naturalWidth || img.width
+  const ih = img.naturalHeight || img.height
+  if (!iw || !ih) return
+  const s = Math.max(w / iw, h / ih)
+  const dw = iw * s
+  const dh = ih * s
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(img, (w - dw) / 2, (h - dh) * 0.42, dw, dh)
+}
+
+function dither(img, cells, inv) {
+  const cv = document.createElement('canvas')
+  cv.width = cells
+  cv.height = cells
+  const g = cv.getContext('2d', { willReadFrequently: true })
+  if (!g) return null
+  drawCover(g, img, cells, cells)
+  const { data } = g.getImageData(0, 0, cells, cells)
+  const n = cells * cells
+  const lum = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const r = data[i * 4] / 255
+    const gg = data[i * 4 + 1] / 255
+    const b = data[i * 4 + 2] / 255
+    lum[i] = 0.2126 * r + 0.7152 * gg + 0.0722 * b
+  }
+  // its own levels: the darkest and lightest two percent set the ends, so a
+  // grey picture uses the whole ramp and a face is a face at thirty pixels
+  const sorted = Array.from(lum).sort((a, b) => a - b)
+  const lo = sorted[Math.floor(n * 0.02)]
+  const hi = sorted[Math.min(n - 1, Math.floor(n * 0.98))]
+  const span = Math.max(0.08, hi - lo)
+  // ink is shadow: how much of the screen's ink each cell wants, in 0..1
+  const want = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const v = Math.min(1, Math.max(0, (lum[i] - lo) / span)) ** 0.92
+    want[i] = inv ? v : 1 - v
+  }
+  const LEVELS = 3 // four tones: none, a third, two thirds, all
+  const out = new Uint8ClampedArray(n)
+  for (let y = 0; y < cells; y++) {
+    for (let x = 0; x < cells; x++) {
+      const i = y * cells + x
+      const v = Math.min(1, Math.max(0, want[i]))
+      const q = Math.round(v * LEVELS) / LEVELS
+      out[i] = Math.round(q * 255)
+      const e = (v - q) / 8
+      const spread = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]
+      for (const [dx, dy] of spread) {
+        const xx = x + dx
+        const yy = y + dy
+        if (xx >= 0 && xx < cells && yy < cells) want[yy * cells + xx] += e
+      }
+    }
+  }
+  return out
+}
+
+function usePicture(src, cells, inv) {
+  const key = `${src}|${cells}|${inv ? 1 : 0}`
+  const [got, setGot] = useState(() => (src && DITHERED.has(key) ? DITHERED.get(key) : null))
+  const [img, setImg] = useState(() => (src && LOADED.get(src)) || null)
+  useEffect(() => {
+    if (!src || typeof document === 'undefined') { setGot(null); setImg(null); return undefined }
+    if (DITHERED.has(key)) { setGot(DITHERED.get(key)); setImg(LOADED.get(src) || null); return undefined }
+    let live = true
+    loadImage(src).then((r) => {
+      if (!live) return
+      if (!r) { setGot(null); return }
+      let out = 'taint'
+      if (r.cors) {
+        try { out = dither(r.img, cells, inv) || 'taint' } catch { out = 'taint' }
+      }
+      DITHERED.set(key, out)
+      setImg(r.img)
+      setGot(out)
+    })
+    return () => { live = false }
+  }, [src, key, cells, inv])
+  return { got, img }
+}
+
+// `ink` is the colour the dither is struck in, a hex; the stylesheet puts the
+// panel under it. `onReady` tells a caller the picture has landed, so a
+// monogram under it can step aside.
+export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, className = '', onReady }) {
+  const { got, img } = usePicture(src, cells, inv)
+  const ref = useRef(null)
+  const ready = useRef(onReady)
+  ready.current = onReady
+  useLayoutEffect(() => {
+    const cv = ref.current
+    if (!cv || !got) return
+    const g = cv.getContext('2d')
+    if (!g) return
+    g.clearRect(0, 0, cells, cells)
+    if (got === 'taint') {
+      if (img) drawCover(g, img, cells, cells)
+    } else {
+      const [r, gg, b] = hexRgb(ink)
+      const px = g.createImageData(cells, cells)
+      for (let i = 0; i < got.length; i++) {
+        px.data[i * 4] = r
+        px.data[i * 4 + 1] = gg
+        px.data[i * 4 + 2] = b
+        px.data[i * 4 + 3] = got[i]
+      }
+      g.putImageData(px, 0, 0)
+    }
+    if (ready.current) ready.current(true)
+  }, [got, img, ink, cells])
+  if (!src || !got) return null
+  return (
+    <canvas
+      ref={ref} width={cells} height={cells} aria-hidden="true"
+      className={`wl-pic${got === 'taint' ? ' is-plain' : ''} ${className}`}
+    />
+  )
+}
+
+// ── the press ───────────────────────────────────────────────────────────────
+// The filter a print is pulled through, one per screen, since the grain and
+// the drum's slip are the letter's own.
+function Press({ id, colour, q }) {
+  const markup = useMemo(() => printFilter(colour, q), [colour, q])
+  if (!markup) return null
+  return (
+    <svg className="wl-press" width="0" height="0" aria-hidden="true" focusable="false">
+      <filter
+        id={id} x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB"
+        dangerouslySetInnerHTML={{ __html: markup }}
+      />
+    </svg>
+  )
+}
+
+// ── the screen ──────────────────────────────────────────────────────────────
+// `top` is what the status rows say: `name`, `counter`, `mode` ('abc',
+// 'Abc', 'locked'), `icon` ('pen', 'lock' or none), `handle`, and the
+// letter's `sig` and `bat`. `keys` is the three soft keys, `l`, `c` and
+// `r`, each `{ label, onClick, aria }` or nothing. The body is the children.
+//
+// `live` off draws the keys without letting them be pressed or tabbed to:
+// the neighbours on the letter's strip are pictures of the next letter, not
+// a second set of controls. `nameId` lands on the name in the top row, so a
+// sheet can be labelled by who the letter is for.
+export function Screen({
+  look, seed = '', top = {}, keys = {}, live = true, state = '', className = '', style, children,
+  nameId,
+}) {
+  const colour = colourOf(look, seed)
+  const q = quirks(seed)
+  const s = skinOf(colour)
+  const raw = useId()
+  const fid = `wl-press-${raw.replace(/[^a-zA-Z0-9_-]/g, '')}`
+  const vars = { ...skinVars(colour), ...q.vars }
+  const { name = '', counter = '', mode = 'abc', icon = 'pen', handle = '', sig = 4, bat = 4 } = top
+  const key = (k, cls) => {
+    const d = keys[k]
+    if (!d || (!d.label && !d.glyph)) return <span className={`wl-sk ${cls} is-empty`} aria-hidden="true" />
+    return (
+      <button
+        type="button" className={`wl-sk ${cls}${d.on ? ' is-on' : ''}`}
+        onClick={live ? d.onClick : undefined} disabled={live ? d.disabled : undefined}
+        aria-label={d.aria || undefined} aria-pressed={d.pressed}
+        tabIndex={live ? undefined : -1}
+      >
+        {d.glyph ? <Pix name={d.glyph} h={5.6} className="wl-lit-g" /> : null}
+        {d.label ? <span className="wl-lit">{d.label}</span> : null}
+      </button>
+    )
+  }
+  return (
+    <div
+      className={`wl-scene ${className}`} data-kind={s.kind} data-colour={colour.slug}
+      style={{ ...vars, ...style }}
+    >
+      <span className="wl-scene-halo" aria-hidden="true" />
+      <span className="wl-scene-halo-2" aria-hidden="true" />
+      {s.print ? <Press id={fid} colour={colour} q={q} /> : null}
+      <div
+        className={`wl-scr${state ? ` is-${state}` : ''}`} data-kind={s.kind}
+        data-lid={s.kind === 'xerox' ? q.lid : undefined}
+        style={s.print ? { filter: `url(#${fid})` } : undefined}
+        role="group" aria-labelledby={nameId}
+      >
+        <div className="wl-scr-bg" aria-hidden="true" />
+        <div className="wl-scr-top" data-name={q.nameAt}>
+          <div className="wl-scr-r1">
+            <span className="wl-scr-ant wl-lit-g" aria-hidden="true">
+              <Pix name={q.ant === 't' ? 'antt' : 'anty'} h={7.4} />
+              <Pix name={`sig${sig}`} h={7.4} />
+            </span>
+            <span className="wl-scr-nm wl-lit" id={nameId}>{name}</span>
+            {counter ? <span className="wl-scr-cnt wl-lit" aria-hidden="true">{counter}</span> : null}
+            <span className={`wl-scr-bat wl-lit-g${bat ? '' : ' is-low'}`} aria-hidden="true">
+              <Pix name={`bat${q.bat}${bat}`} h={5.4} />
+            </span>
+          </div>
+          <div className="wl-scr-r2">
+            {icon ? (
+              <>
+                <Pix name={icon} h={7} className="wl-lit-g" />
+                <span className="wl-scr-mode wl-lit" aria-hidden="true">{mode}</span>
+              </>
+            ) : null}
+            <span className="wl-scr-hd wl-lit">{handle}</span>
+          </div>
+        </div>
+        <div className="wl-scr-body">{children}</div>
+        <div className="wl-scr-bot">
+          {key('l', 'is-l')}
+          {key('c', 'is-c')}
+          {key('r', 'is-r')}
+        </div>
+        <span className="wl-scr-fx is-grid" aria-hidden="true" />
+        <span className="wl-scr-fx is-moire" aria-hidden="true" />
+        <span className="wl-scr-fx is-streak" aria-hidden="true" />
+        <span className="wl-scr-fx is-glass" aria-hidden="true" />
+        <span className="wl-scr-fx is-glare" aria-hidden="true" />
+        <span className="wl-scr-fx is-shine" aria-hidden="true" />
+      </div>
+    </div>
+  )
+}
+
+// ── the words ───────────────────────────────────────────────────────────────
+// Set as large as the screen will hold them, stepping down four sizes the way
+// the phone's own large, medium and small fonts did, and past the smallest
+// the message scrolls, with the phone's own bar down the right to say so.
+const SIZES = [15.4, 12.4, 10, 8.4]
+export function useFit(ref, deps) {
+  const [over, setOver] = useState(false)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    const fit = () => {
+      el.style.overflowY = 'hidden'
+      let i = 0
+      for (; i < SIZES.length; i++) {
+        el.style.setProperty('--fs', `${SIZES[i]}cqw`)
+        if (el.scrollHeight <= el.clientHeight + 1) break
+      }
+      const o = el.scrollHeight > el.clientHeight + 1
+      el.style.overflowY = o ? 'auto' : 'hidden'
+      setOver(o)
+    }
+    fit()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null
+    if (ro) ro.observe(el)
+    let off = false
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!off) fit() })
+    return () => { off = true; if (ro) ro.disconnect() }
+  }, deps) // eslint-disable-line react-hooks/exhaustive-deps
+  return over
+}
+
+function Bar({ of, over }) {
+  const [t, setT] = useState(0)
+  useEffect(() => {
+    const el = of.current
+    if (!el || !over) return undefined
+    const on = () => setT(el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight))
+    on()
+    el.addEventListener('scroll', on, { passive: true })
+    return () => el.removeEventListener('scroll', on)
+  }, [of, over])
+  if (!over) return null
+  return <span className="wl-scr-sb" aria-hidden="true"><i style={{ top: `${(t * 78).toFixed(1)}%` }} /></span>
+}
+
+// The message, as the phone showed a draft: the words, the cursor after the
+// last of them. `pic` stands a picture at the head of it, the way a picture
+// message carried one: whatever node the caller hands, which draws its own
+// `.wl-scr-mms` float when it has a picture and nothing when it has none.
+export function ScreenText({ text, pic = null, cursor = true, className = '' }) {
+  const ref = useRef(null)
+  const over = useFit(ref, [text, !!pic])
+  return (
+    <>
+      <div className={`wl-scr-msg ${className}`} ref={ref} tabIndex={over ? 0 : -1}>
+        {pic}
+        {text}
+        {cursor ? <span className="wl-scr-cur" aria-hidden="true" /> : null}
+      </div>
+      <Bar of={ref} over={over} />
+    </>
+  )
+}
+
+// The draft, being written: the same words in the same place, in a
+// textarea, with the phone's own caret. It autofocuses only where there is a
+// fine pointer, because on a phone the keyboard coming up unasked covers the
+// screen the person has not looked at yet.
+export function ScreenDraft({ value, onChange, max = 280, placeholder = '', autoFocus = false, label = 'your letter' }) {
+  const ref = useRef(null)
+  const over = useFit(ref, [value])
+  useEffect(() => {
+    const el = ref.current
+    if (!autoFocus || !el) return
+    const fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (!fine) return
+    el.focus({ preventScroll: true })
+    const n = el.value.length
+    try { el.setSelectionRange(n, n) } catch { /* not a text field */ }
+  }, [autoFocus])
+  return (
+    <>
+      <textarea
+        ref={ref} className="wl-scr-msg wl-scr-draft" value={value} placeholder={placeholder}
+        maxLength={max} rows={1} spellCheck="true" aria-label={label}
+        onChange={(e) => onChange(e.target.value.slice(0, max))}
+      />
+      <Bar of={ref} over={over} />
+    </>
+  )
+}
+
+// A menu, drawn the way the phone drew one: a list with the chosen row
+// inverted. Up and down move, enter picks, and a tap picks the row it lands
+// on. The caller puts `select` and `back` on the keys.
+export function ScreenMenu({ items, at, onAt, onPick, onBack, label }) {
+  const ref = useRef(null)
+  useEffect(() => { ref.current?.focus({ preventScroll: true }) }, [])
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); onAt((at + 1) % items.length) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); onAt((at + items.length - 1) % items.length) }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onPick(at) }
+    else if (e.key === 'Escape' && onBack) { e.preventDefault(); e.stopPropagation(); onBack() }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopPropagation()
+  }
+  return (
+    <ol
+      className="wl-scr-menu" role="listbox" aria-label={label} tabIndex={0} ref={ref}
+      aria-activedescendant={`wl-mi-${at}`} onKeyDown={onKey}
+    >
+      {items.map((t, j) => (
+        <li
+          key={t} id={`wl-mi-${j}`} role="option" aria-selected={j === at}
+          className={j === at ? 'is-on' : undefined}
+          onClick={() => { onAt(j); onPick(j) }}
+        >
+          {t}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+// A note: a glyph, a line in the large face and one under it, the way the
+// phone said "message sent".
+export function ScreenNote({ glyph = '', title, children }) {
+  return (
+    <div className="wl-scr-note" role="status">
+      {glyph ? <Pix name={glyph} h={9} /> : null}
+      {title ? <b>{title}</b> : null}
+      {children ? <span>{children}</span> : null}
+    </div>
+  )
+}
+
+// ── the small screen ────────────────────────────────────────────────────────
+// A name on the wall: its newest letter's screen, in that letter's colour,
+// small. The bars are how many letters the name has, the battery how long
+// since the last one, and an envelope blinks on a name that heard from
+// somebody today. The middle is the name's picture, dithered into the
+// screen, or its monogram with the cursor after it.
+export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, className = '' }) {
+  ensureGlyphs()
+  const colour = colourOf(look, seed)
+  const s = skinOf(colour)
+  const q = quirks(seed)
+  const [shown, setShown] = useState(false)
+  const sig = Math.min(4, Math.max(1, count))
+  const hrs = at ? (Date.now() - at) / 3600000 : 99
+  const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
+  const fresh = hrs < 24
+  const vars = {
+    ...skinVars(colour),
+    '--q-rz': q.vars['--q-rz'], '--q-hx': q.vars['--q-hx'], '--q-hy': q.vars['--q-hy'],
+    '--q-blink': q.vars['--q-blink'], '--q-ar': q.vars['--q-ar'], '--q-spot': q.vars['--q-spot'],
+    '--q-pitch': q.vars['--q-pitch'],
+  }
+  const len = [...String(mono || '')].length
+  return (
+    <span className={`wl-tile ${className}`} data-kind={s.kind} style={vars} aria-hidden="true">
+      <span className="wl-tile-in">
+        <span className="wl-tile-top">
+          <i className={`wl-g wl-g-${q.ant === 't' ? 'antt' : 'anty'}`} />
+          <i className={`wl-g wl-g-sig${sig}`} />
+          {fresh ? <i className="wl-g wl-g-env is-blink" /> : null}
+          <i className={`wl-g wl-g-bat${q.bat}${bat} is-bat${bat ? '' : ' is-blink'}`} />
+        </span>
+        <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
+          {src ? (
+            <PixelPic
+              src={src} cells={28} ink={s.flat.ink} inv={s.kind === 'neg'}
+              className="wl-tile-pic" onReady={setShown}
+            />
+          ) : null}
+          {shown ? null : (
+            <span className="wl-tile-mono" style={{ '--len': Math.max(2, len) }}>
+              {mono}<i className="wl-tile-cur" />
+            </span>
+          )}
+        </span>
+        <span className="wl-tile-bot"><i /><i /></span>
+      </span>
+    </span>
+  )
+}
+
+// ── the thumbnail ───────────────────────────────────────────────────────────
+// A colour in the panel: the small screen with three lines of words on it.
+export function Mini({ colour, seed = 'mini' }) {
+  const s = skinOf(colour)
+  const vars = { ...skinVars(colour), '--q-hx': '78%', '--q-hy': '64%', '--q-spot': 'none' }
+  void seed
+  return (
+    <span className="wl-mini" data-kind={s.kind} style={vars} aria-hidden="true">
+      <span className="wl-mini-top" />
+      <span className="wl-mini-body"><i /><i /><i /></span>
+      <span className="wl-mini-bot" />
+    </span>
+  )
+}

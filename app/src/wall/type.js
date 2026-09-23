@@ -45,6 +45,8 @@ const FACES = [
   'italic 400 16px Newsreader',
   '500 14px "Inter Tight"',
   '400 12px "Geist Mono"',
+  // and the screens': every letter on the wall is set in it
+  '400 16px "Jersey 10"',
 ]
 
 // Answers when the faces are loaded, or at the ceiling, whichever is first.

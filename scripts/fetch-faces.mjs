@@ -48,84 +48,15 @@ const FACES = [
   { slug: 'newsreader', query: 'Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800' },
   { slug: 'inter-tight', query: 'Inter+Tight:wght@100..900' },
   { slug: 'geist-mono', query: 'Geist+Mono:wght@100..900' },
-  // ── the looks' own faces (0055, app/src/wall/looks.js) ──
-  // Nine more, and not one of them is one of the system's own jobs: they are
-  // the faces a letter's LOOK can be set in, chosen by the writer for one
-  // letter, and they are never a headline, a label, a control or an
-  // identifier. Each is declared with font-display: swap, so a browser
-  // fetches one only when a card on the screen is actually set in it — which
-  // is why nine cost a visitor who never sees them nothing at all.
-  //
-  // The three that were here carry the papers they were fetched for: the
-  // pixel is the nokia screen, the hand is the postcard, the round is the
-  // softest thing a writer can pick. The six added with the eight papers are
-  // the characterful half of the menu, since three of the first six are the
-  // system's own working faces doing a second job:
-  //
-  //   typewriter  a struck key with the ink spread around it. The face an
-  //               anonymous letter is actually written in, and the one the
-  //               menu most obviously lacked. Carries the telegram
-  //   screen      a true bitmap terminal face, drawn on a grid rather than
-  //               rounded onto one, so it is not the pixel again
-  //   poster      condensed, upper case, loud. For the letter that is four
-  //               words long
-  //   display     a high contrast Didone: the invitation and the
-  //               announcement. Carries the velvet
-  //   marker      felt tip, fast, no second thoughts
-  //   script      copperplate, played straight. The only face in the menu
-  //               with a real flourish in it
-  { slug: 'pixelify-sans', query: 'Pixelify+Sans:wght@400..700' },
-  { slug: 'caveat', query: 'Caveat:wght@400..700' },
-  { slug: 'comfortaa', query: 'Comfortaa:wght@300..700' },
-  { slug: 'special-elite', query: 'Special+Elite' },
-  { slug: 'vt323', query: 'VT323' },
-  { slug: 'oswald', query: 'Oswald:wght@200..700' },
-  { slug: 'playfair-display', query: 'Playfair+Display:ital,wght@0,400..900;1,400..900' },
-  { slug: 'permanent-marker', query: 'Permanent+Marker' },
-  { slug: 'pinyon-script', query: 'Pinyon+Script' },
-  // ── and twelve more, for the thirty-six papers ──
-  // The nine above were fetched for eight papers and were nearly all the
-  // menu could say: a hand, a pixel, a typewriter and a Didone dress a sheet
-  // of paper well and dress a neon sign, a circuit board or a torn scrap
-  // badly. Every one of these twelve is the face ONE family of papers is
-  // actually set in, and the faces already here keep the families they came
-  // for:
-  //
-  //   techno      the geometric square-built face of a dashboard. Carries
-  //               the synthwave, the hud and the hologram
-  //   grotesk     a modern grotesque with the corners cut off its curves.
-  //               Carries the glitch and the cassette
-  //   elegant     an old-style at a high stroke contrast, cut small.
-  //               Carries the mist
-  //   fashion     hairline caps, wide, drawn for one word across a cover.
-  //               Carries the atelier and the silk
-  //   roman       inscriptional capitals, the letter cut in stone. Carries
-  //               the marble and the gilt
-  //   deco        a single-weight geometric with the twenties in it.
-  //               Carries the lacquer, the dawn, the aurora and the nebula
-  //   slab        square serifs, printed on a form that has a total on it.
-  //               Carries the ledger and the ticket
-  //   stencil     cut through a plate, with the bridges left in. Carries
-  //               the airmail
-  //   note        a round fast hand, the one in the margin of a book.
-  //               Carries the scrapbook and the corkboard
-  //   scratch     the same hand pressed too hard, drawn with the paper
-  //               catching. The rawest thing in the menu
-  //   brush       a casual signature script, which is the other kind of
-  //               script the menu had none of
-  //   gothic      blackletter, played straight, the way the script is
-  { slug: 'orbitron', query: 'Orbitron:wght@400..900' },
-  { slug: 'space-grotesk', query: 'Space+Grotesk:wght@300..700' },
-  { slug: 'cormorant-garamond', query: 'Cormorant+Garamond:wght@300..700' },
-  { slug: 'italiana', query: 'Italiana' },
-  { slug: 'cinzel', query: 'Cinzel:wght@400..900' },
-  { slug: 'poiret-one', query: 'Poiret+One' },
-  { slug: 'zilla-slab', query: 'Zilla+Slab:wght@400;600' },
-  { slug: 'saira-stencil-one', query: 'Saira+Stencil+One' },
-  { slug: 'gloria-hallelujah', query: 'Gloria+Hallelujah' },
-  { slug: 'rock-salt', query: 'Rock+Salt' },
-  { slug: 'sacramento', query: 'Sacramento' },
-  { slug: 'unifraktur-maguntia', query: 'UnifrakturMaguntia' },
+  // ── the screen's one face ──
+  // A letter on the wall is a lit phone screen (app/src/wall/looks.js), and
+  // every word on one is set in the same bitmap face: Jersey 10, drawn on
+  // the ten pixel grid the Series 40 phones set their messages on. It was
+  // twenty four faces a writer chose between, one per paper; the screen took
+  // the choice away with the papers, because a phone has one font and the
+  // font is part of what makes it that phone. Never a headline, a label or a
+  // control anywhere outside a screen.
+  { slug: 'jersey-10', query: 'Jersey+10' },
 ]
 
 // Everything the product sets is latin. The other subsets Google returns are
