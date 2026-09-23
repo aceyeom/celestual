@@ -83,7 +83,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   Sheet, SheetFoot, Pill, Close, Icon, FaceViewer, useProfile, useSheet,
 } from '../parts.jsx'
-import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic } from '../screen.jsx'
+import { Screen, ScreenText, ScreenMenu, ScreenNote, PixelPic, PIC_CELLS } from '../screen.jsx'
 import { colourOf, skinOf, skinVars, signalOf, chargeOf } from '../looks.js'
 import { sendLetter, prepareLetter, letterFace, starred, canShare } from '../share.js'
 import {
@@ -111,9 +111,10 @@ function useFirst(to) {
 
 // ── the picture at the head of the message ──────────────────────────────────
 // A handle the resolver has a picture for carries it the way a picture
-// message did, dithered into this screen's ink, at the head of the words;
-// pressed, it opens large (parts.jsx `FaceViewer`), out of itself and back
-// into it. A first name has no picture, and no picture stands there.
+// message did, dithered into this screen's ink (on a print, its own inks),
+// at the head of the words, framed and a whole number of lines tall; pressed,
+// it opens large (parts.jsx `FaceViewer`), out of itself and back into it. A
+// first name has no picture, and no picture stands there.
 function Picture({ handle, look, seed, live }) {
   const p = useProfile(handle)
   const [open, setOpen] = useState(false)
@@ -134,7 +135,10 @@ function Picture({ handle, look, seed, live }) {
         tabIndex={live ? undefined : -1}
         aria-label={`see ${atHandle(handle)}'s picture larger`} title="see it larger"
       >
-        <PixelPic src={p.avatar} cells={32} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'} />
+        <PixelPic
+          src={p.avatar} cells={PIC_CELLS} ink={s.print ? '#131313' : s.ink} inv={s.kind === 'neg'}
+          tones={s.print ? s.print.pic : null} levels={s.kind === 'xerox' ? 1 : 3}
+        />
       </button>
       {open ? <FaceViewer handle={handle} onClose={close} from={from} source={btn} /> : null}
     </span>

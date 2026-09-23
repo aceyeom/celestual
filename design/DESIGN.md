@@ -208,11 +208,20 @@ and on the wall's small screens the bars are how many letters the name has
 and an envelope blinks on a name that heard from somebody today.
 
 **A person is a picture on a screen.** There is no round face anywhere. A
-profile picture is cut square to a few dozen pixels and dithered, Atkinson,
-in four tones of the screen's ink (`PixelPic`), so the same picture is green
-on a green screen and toner on a copy; the monogram in `--f-s40` stands under
-it until it lands and whenever it does not. On a sheet, in a row or in the
-bar, the face is a small square of the night LCD (`.wl-face`).
+profile picture is cut square round the face (a fifth in from the edges, a
+touch above centre), brought down to a few dozen pixels by halving, pulled to
+its own levels and local contrast, sharpened, and dithered, Atkinson, in four
+tones of the screen's ink (`PixelPic`), so the same picture is green on a
+green screen. A near white cell stays paper, so a bright sky does not grow a
+row of dots. On a print the tones are the print's own inks, opaque, so the
+press strikes each as one ink, and a copy's picture has two. About one cell
+to every one and a half CSS pixels: 16 to 44 a side on a chip (`size / 6`,
+in fours), 32 on a tile, 40 at the head of a message and 64 opened large.
+The monogram in `--f-s40` stands under it until it lands and whenever it
+does not. On a sheet, in a row or in the bar, the face is a small square of
+the night LCD (`.wl-face`) with a screen's corner, 2px on a chip and 6px
+opened, and no pixel grid over a photo. Opened, the picture stands in the
+room's black and grain, inside `.wl-root` so it keeps the wall's type.
 
 **What the row keeps** is 0055's column: `{ theme, tint, face }`, cleaned by
 `wall_look_clean`. The screens write one key, `{ "tint": "teal" }`. A row with

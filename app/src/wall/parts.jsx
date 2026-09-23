@@ -1598,12 +1598,13 @@ export function Suggest({ sug, label = 'on the wall', className = '' }) {
 // monogram of the name as written, and asks nothing, because the resolver
 // would answer with a stranger of the same spelling.
 //
-// The picture's size decides how many pixels it is cut to: a face in a row
-// is eighteen a side and reads as a person at thirty pixels; the one opened
-// large is forty-four, and is a portrait in blocks rather than a blur.
+// The picture's size decides how many pixels it is cut to, about one to
+// every one and a half of the page's, in fours: twenty a side at thirty
+// pixels, twenty-four at thirty-six, sixteen on the smallest chip, and
+// sixty-four opened large, a portrait in blocks rather than a blur.
 export function PixelFace({ src = '', mono = '', size = 30, lit = false, className = '', style }) {
   const [ready, setReady] = useState('')
-  const cells = size < 40 ? 18 : size < 100 ? 28 : 44
+  const cells = size >= 100 ? 64 : Math.max(12, Math.round(size / 6) * 4)
   const shown = !!src && ready === src
   return (
     <span
@@ -1622,7 +1623,7 @@ export function Face({ handle, size = 30, resolve = true, lit = false, name = ''
   const p = useProfile(resolve && !named ? handle : '')
   const raw = String(handle || '').trim().replace(/^@+/, '')
   const said = named ? (name || nameFor(handle) || raw.slice(1)) : ''
-  const mono = p ? monogram(p)
+  const mono = p ? monogram(p).slice(0, size < 24 ? 1 : 2)
     : named ? (size >= 40 || said.includes(' ') ? monogram({ name: said }) : said.slice(0, 1).toUpperCase())
     : raw.slice(0, size >= 40 ? 2 : 1).toUpperCase()
   return <PixelFace src={p?.avatar || ''} mono={mono} size={size} lit={lit} className={className} style={style} />
@@ -1661,10 +1662,12 @@ export function Addressee({ handle, id, className = '' }) {
 
 // ── the face, opened ────────────────────────────────────────────────────────
 // A face on a letter can be pressed, and it opens the way a profile picture
-// opens on Instagram: the picture, large, over a dimmed room, with the name
+// opens on Instagram: the picture, large, in the dark room, with the name
 // and the handle under it, and a tap anywhere puts it away. Rendered at the
-// body, because a sheet's glass is a containing block for anything fixed
-// inside it and the picture has to stand over the whole screen.
+// wall's root rather than inside the sheet, because a sheet's glass is a
+// containing block for anything fixed inside it and the picture has to
+// stand over the whole screen; at the root and not the body, because the
+// wall's type, colours and curves are declared there.
 //
 // ── it opens out of the disc, and closes back into it ───────────────────────
 // `from` is where the small face was standing when it was pressed, and
@@ -1732,6 +1735,10 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [close])
   if (typeof document === 'undefined') return null
+  // .wl-root has no transform, filter or contain, so fixed still pins to the
+  // viewport, and z 70 there is over the sheets (50) and the cut (60) and
+  // under the intro (90)
+  const host = (source && source.current && source.current.closest('.wl-root')) || document.querySelector('.wl-root') || document.body
   return createPortal(
     <div
       className={`wl-viewer${from ? ' is-from' : ''}${closing ? ' is-closing' : ''}`}
@@ -1740,7 +1747,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
       <button type="button" className="wl-viewer-scrim" aria-label="close" onClick={close} />
       <div className="wl-viewer-in" onClick={close}>
         <span className="wl-viewer-disc" ref={disc}>
-          <Face handle={handle} size={280} className="wl-viewer-face" />
+          <Face handle={handle} size={280} className="wl-viewer-face" style={{ '--s': 'min(78vw, 56svh, 380px)' }} />
         </span>
         <span className="wl-viewer-who">
           <span className={`wl-viewer-name${name ? '' : ' is-h'}`}>
@@ -1751,7 +1758,7 @@ export function FaceViewer({ handle, onClose, from = null, source = null }) {
         </span>
       </div>
     </div>,
-    document.body,
+    host,
   )
 }
 
@@ -1847,7 +1854,7 @@ export function Me({ who, onClick, className = '' }) {
       type="button" className={`wl-pill is-ghost wl-me${on ? ' is-on' : ''} ${className}`}
       onClick={onClick} aria-label={on ? `your sky, ${atHandle(who.handle)}` : 'sign in'}
     >
-      {on ? <Face handle={who.handle} size={18} /> : null}
+      {on ? <Face handle={who.handle} size={22} /> : null}
       <span className={on ? 'wl-me-h' : undefined}>{on ? atHandle(who.handle) : 'sign in'}</span>
     </button>
   )

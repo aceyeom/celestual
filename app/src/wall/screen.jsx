@@ -65,22 +65,27 @@ function ensureGlyphs() {
 }
 
 // ── the picture ─────────────────────────────────────────────────────────────
-// A profile picture, as a screen of that era would have shown it: centred,
-// cut square, pulled to its own contrast, and dithered in four tones of the
-// screen's ink with Atkinson's error diffusion, which is the dither the
-// first bitmap screens were drawn with. The tones are alpha over the panel,
-// so the same picture is green on a green screen and toner on a copy.
+// A profile picture, as a screen of that era would have shown it: cut
+// square round the face, brought down to a few dozen pixels, pulled to its
+// own contrast and sharpened, and dithered in four tones of the screen's ink
+// with Atkinson's error diffusion, which is the dither the first bitmap
+// screens were drawn with. On a screen the tones are alpha over the panel,
+// so the same picture is green on a green screen. On a print they are the
+// print's own inks, opaque, so the press strikes each tone as one ink, and
+// a copy has two, since the copier has only toner or none.
 //
 // Read with CORS, which the avatar bucket serves. If a picture will not
 // come with CORS it still comes: drawn into the same few pixels without
 // reading them back, and pulled grey by the stylesheet instead of by the
 // dither. Either way a failure is the monogram under it, which was always
 // the designed state.
-const DITHERED = new Map() // `${src}|${cells}|${inv}` -> Uint8ClampedArray of alphas, or 'taint'
+const DITHERED = new Map() // `${src}|${cells}|${inv}|${levels}` -> Uint8ClampedArray of tones, or 'taint'
 const IMAGES = new Map()   // src -> Promise<{ img, cors }>
 const LOADED = new Map()   // src -> the image, once it has come
 
-function loadImage(src) {
+export const PIC_CELLS = 40 // the picture at the head of a message, on the page and in the Send picture
+
+export function loadImage(src) {
   if (IMAGES.has(src)) return IMAGES.get(src)
   const p = new Promise((done) => {
     const withCors = new Image()
@@ -100,59 +105,124 @@ function loadImage(src) {
   return p
 }
 
-// cover-crop the picture into a square, a touch above centre, where a face
-// in a profile picture almost always is
-function drawCover(g, img, w, h) {
+// the crop: square, a little in from the edges and a touch above centre,
+// where the face in a profile picture is. A profile picture is shown as a
+// circle where it was taken, so its corners were never meant to be looked
+// at; losing them buys the face a fifth more of the screen's pixels.
+const CROP_ZOOM = 1.2
+const CROP_Y = 0.4
+
+// The picture cut square and brought down to `cells` a side by halving, so
+// every screen pixel is the average of the photo under it rather than one
+// sample of it, in every browser. A canvas, so a picture that will not come
+// with CORS can still be drawn from it (only reading it back is refused).
+function shrink(img, cells) {
   const iw = img.naturalWidth || img.width
   const ih = img.naturalHeight || img.height
-  if (!iw || !ih) return
-  const s = Math.max(w / iw, h / ih)
-  const dw = iw * s
-  const dh = ih * s
-  g.imageSmoothingEnabled = true
-  g.imageSmoothingQuality = 'high'
-  g.drawImage(img, (w - dw) / 2, (h - dh) * 0.42, dw, dh)
+  if (!iw || !ih) return null
+  const side = Math.min(iw, ih) / CROP_ZOOM
+  const sx = Math.min(iw - side, Math.max(0, iw / 2 - side / 2))
+  const sy = Math.min(ih - side, Math.max(0, ih * CROP_Y - side / 2))
+  let s = cells
+  while (s * 2 <= side && s < cells * 8) s *= 2
+  let from = null
+  for (; ; s /= 2) {
+    const cv = document.createElement('canvas')
+    cv.width = s
+    cv.height = s
+    const g = cv.getContext('2d', { willReadFrequently: true })
+    if (!g) return null
+    g.imageSmoothingEnabled = true
+    g.imageSmoothingQuality = 'high'
+    if (from) {
+      g.drawImage(from, 0, 0, s, s)
+    } else {
+      // a transparent picture is on white, so what it leaves out is unlit
+      g.fillStyle = '#fff'
+      g.fillRect(0, 0, s, s)
+      g.drawImage(img, sx, sy, side, side, 0, 0, s, s)
+    }
+    if (s <= cells) return cv
+    from = cv
+  }
 }
 
-function dither(img, cells, inv) {
-  const cv = document.createElement('canvas')
-  cv.width = cells
-  cv.height = cells
-  const g = cv.getContext('2d', { willReadFrequently: true })
-  if (!g) return null
-  drawCover(g, img, cells, cells)
-  const { data } = g.getImageData(0, 0, cells, cells)
+// the fallback's drawing: the same crop and the same pixels, unread
+function drawCover(g, img, w, h) {
+  const cv = shrink(img, w)
+  if (cv) g.drawImage(cv, 0, 0, w, h)
+}
+
+// a box blur of radius r, across then down, clamped at the edges
+function blurBox(src, n, r) {
+  const a = new Float32Array(src.length)
+  const b = new Float32Array(src.length)
+  const k = 1 / (2 * r + 1)
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let t = 0
+      for (let d = -r; d <= r; d++) t += src[y * n + Math.min(n - 1, Math.max(0, x + d))]
+      a[y * n + x] = t * k
+    }
+  }
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let t = 0
+      for (let d = -r; d <= r; d++) t += a[Math.min(n - 1, Math.max(0, y + d)) * n + x]
+      b[y * n + x] = t * k
+    }
+  }
+  return b
+}
+
+const ATKINSON = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]
+
+export function dither(img, cells, inv, levels = 3) {
+  const cv = shrink(img, cells)
+  if (!cv) return null
+  // throws on a picture that came without CORS, which is the fallback
+  const { data } = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cells, cells)
   const n = cells * cells
-  const lum = new Float32Array(n)
+  let lum = new Float32Array(n)
   for (let i = 0; i < n; i++) {
-    const r = data[i * 4] / 255
-    const gg = data[i * 4 + 1] / 255
-    const b = data[i * 4 + 2] / 255
-    lum[i] = 0.2126 * r + 0.7152 * gg + 0.0722 * b
+    lum[i] = (0.2126 * data[i * 4] + 0.7152 * data[i * 4 + 1] + 0.0722 * data[i * 4 + 2]) / 255
   }
   // its own levels: the darkest and lightest two percent set the ends, so a
-  // grey picture uses the whole ramp and a face is a face at thirty pixels
-  const sorted = Array.from(lum).sort((a, b) => a - b)
+  // grey picture uses the whole ramp
+  const sorted = Float32Array.from(lum).sort()
   const lo = sorted[Math.floor(n * 0.02)]
   const hi = sorted[Math.min(n - 1, Math.floor(n * 0.98))]
   const span = Math.max(0.08, hi - lo)
+  for (let i = 0; i < n; i++) lum[i] = Math.min(1, Math.max(0, (lum[i] - lo) / span))
+  // a face against a wall of about its own grey is pulled off it: each
+  // pixel pushed from the average of the eighth of the picture round it,
+  // then from its eight neighbours, which is what keeps an eye an eye at
+  // a few pixels a side
+  const wide = blurBox(blurBox(lum, cells, Math.max(1, Math.round(cells / 8))), cells, Math.max(1, Math.round(cells / 8)))
+  for (let i = 0; i < n; i++) lum[i] += 0.35 * (lum[i] - wide[i])
+  const near = blurBox(lum, cells, 1)
+  const sharp = new Float32Array(n)
+  for (let i = 0; i < n; i++) sharp[i] = Math.min(1, Math.max(0, lum[i] + 0.5 * (lum[i] - near[i])))
+  lum = sharp
   // ink is shadow: how much of the screen's ink each cell wants, in 0..1
   const want = new Float32Array(n)
   for (let i = 0; i < n; i++) {
-    const v = Math.min(1, Math.max(0, (lum[i] - lo) / span)) ** 0.92
+    const v = lum[i] ** 0.92
     want[i] = inv ? v : 1 - v
   }
-  const LEVELS = 3 // four tones: none, a third, two thirds, all
+  const LEVELS = levels // levels + 1 tones: four on a screen (none, a third, two thirds, all), two on a copy
   const out = new Uint8ClampedArray(n)
   for (let y = 0; y < cells; y++) {
     for (let x = 0; x < cells; x++) {
       const i = y * cells + x
       const v = Math.min(1, Math.max(0, want[i]))
+      // paper stays paper: no ink and no carried error, so a bright sky
+      // does not grow a row of stray dots
+      if (v < 0.1) { out[i] = 0; continue }
       const q = Math.round(v * LEVELS) / LEVELS
       out[i] = Math.round(q * 255)
       const e = (v - q) / 8
-      const spread = [[1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]]
-      for (const [dx, dy] of spread) {
+      for (const [dx, dy] of ATKINSON) {
         const xx = x + dx
         const yy = y + dy
         if (xx >= 0 && xx < cells && yy < cells) want[yy * cells + xx] += e
@@ -162,8 +232,8 @@ function dither(img, cells, inv) {
   return out
 }
 
-function usePicture(src, cells, inv) {
-  const key = `${src}|${cells}|${inv ? 1 : 0}`
+function usePicture(src, cells, inv, levels = 3) {
+  const key = `${src}|${cells}|${inv ? 1 : 0}|${levels}`
   const [got, setGot] = useState(() => (src && DITHERED.has(key) ? DITHERED.get(key) : null))
   const [img, setImg] = useState(() => (src && LOADED.get(src)) || null)
   useEffect(() => {
@@ -175,22 +245,24 @@ function usePicture(src, cells, inv) {
       if (!r) { setGot(null); return }
       let out = 'taint'
       if (r.cors) {
-        try { out = dither(r.img, cells, inv) || 'taint' } catch { out = 'taint' }
+        try { out = dither(r.img, cells, inv, levels) || 'taint' } catch { out = 'taint' }
       }
       DITHERED.set(key, out)
       setImg(r.img)
       setGot(out)
     })
     return () => { live = false }
-  }, [src, key, cells, inv])
+  }, [src, key, cells, inv, levels])
   return { got, img }
 }
 
 // `ink` is the colour the dither is struck in, a hex; the stylesheet puts the
-// panel under it. `onReady` tells a caller the picture has landed, so a
-// monogram under it can step aside.
-export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, className = '', onReady }) {
-  const { got, img } = usePicture(src, cells, inv)
+// panel under it. `tones`, on a print, is its inks from paper to darkest, one
+// per tone, and `levels` is one less than how many tones there are. `onReady`
+// tells a caller the picture has landed, so a monogram under it can step
+// aside.
+export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, levels = 3, tones = null, className = '', onReady }) {
+  const { got, img } = usePicture(src, cells, inv, levels)
   const ref = useRef(null)
   const ready = useRef(onReady)
   ready.current = onReady
@@ -202,6 +274,20 @@ export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, classN
     g.clearRect(0, 0, cells, cells)
     if (got === 'taint') {
       if (img) drawCover(g, img, cells, cells)
+    } else if (tones) {
+      // a print's picture is struck in the print's own inks, opaque, so the
+      // press prints each tone as one ink
+      const rgb = tones.map(hexRgb)
+      const top = tones.length - 1
+      const px = g.createImageData(cells, cells)
+      for (let i = 0; i < got.length; i++) {
+        const t = rgb[Math.round((got[i] / 255) * top)]
+        px.data[i * 4] = t[0]
+        px.data[i * 4 + 1] = t[1]
+        px.data[i * 4 + 2] = t[2]
+        px.data[i * 4 + 3] = 255
+      }
+      g.putImageData(px, 0, 0)
     } else {
       const [r, gg, b] = hexRgb(ink)
       const px = g.createImageData(cells, cells)
@@ -214,7 +300,7 @@ export function PixelPic({ src, cells = 28, ink = '#131313', inv = false, classN
       g.putImageData(px, 0, 0)
     }
     if (ready.current) ready.current(true)
-  }, [got, img, ink, cells])
+  }, [got, img, ink, cells, tones])
   if (!src || !got) return null
   return (
     <canvas
@@ -511,7 +597,10 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
   const colour = colourOf(look, seed)
   const s = skinOf(colour)
   const q = quirks(seed)
-  const [shown, setShown] = useState(false)
+  // the picture is shown only for the src it landed for, so a tile whose
+  // name has no picture any more gets its monogram back
+  const [shownFor, setShownFor] = useState('')
+  const shown = !!src && shownFor === src
   const sig = Math.min(4, Math.max(1, count))
   const hrs = at ? (Date.now() - at) / 3600000 : 99
   const bat = hrs < 20 ? 4 : hrs < 60 ? 3 : hrs < 132 ? 2 : hrs < 240 ? 1 : 0
@@ -535,8 +624,8 @@ export function Tile({ look, seed = '', mono = '', src = '', count = 1, at = 0, 
         <span className={`wl-tile-mid${shown ? ' is-pic' : ''}`}>
           {src ? (
             <PixelPic
-              src={src} cells={28} ink={s.flat.ink} inv={s.kind === 'neg'}
-              className="wl-tile-pic" onReady={setShown}
+              key={src} src={src} cells={32} ink={s.flat.ink} inv={s.kind === 'neg'} tones={s.flat.pic || null}
+              className="wl-tile-pic" onReady={() => setShownFor(src)}
             />
           ) : null}
           {shown ? null : (

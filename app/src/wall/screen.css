@@ -157,11 +157,20 @@
   vertical-align: -0.096em; /* ink centred on the x-height */
 }
 /* a picture at the head of the message, the way a picture message carried
-   one: floated, so the words run down beside it */
+   one: floated, so the words run down beside it, and framed, so a light
+   picture still has an edge */
 .wl-scr-mms {
-  float: left; width: 27cqw; aspect-ratio: 1; margin: 0.6cqw 2.6cqw 1.2cqw 0;
-  display: block; position: relative;
+  float: left; display: block; position: relative; aspect-ratio: 1;
+  width: 29cqw; /* where round() is missing */
+  /* a whole number of the message's lines (line-height 1.02 × --fs, and em
+     here is --fs), less 1px so Chrome's line snapping never pulls one more
+     line in beside it */
+  width: calc(round(nearest, 32cqw, 1.02em) - 1cqw - 1px);
+  margin: 0 2.6cqw 1cqw 0;
+  padding: 0.5cqw;
+  border: 0.5cqw solid color-mix(in srgb, var(--s-ink) 55%, transparent);
 }
+.wl-scr:is([data-kind='poster'], [data-kind='riso']) .wl-scr-mms { border-color: var(--s-ink); }
 /* the phone's own scroll bar, when the message is longer than the screen */
 .wl-scr-sb { position: absolute; right: 1.2cqw; top: 2cqw; bottom: 2cqw; width: 1.2cqw; pointer-events: none; }
 .wl-scr-sb::before { content: ''; position: absolute; left: 45%; top: 0; bottom: 0; width: 0.35cqw; background: var(--s-ink); opacity: 0.5; }
@@ -409,6 +418,10 @@
 .wl-pic.is-plain { filter: grayscale(1) contrast(1.35); mix-blend-mode: multiply; }
 .wl-scr-mms .wl-pic { width: 100%; height: 100%; }
 .wl-scr[data-kind='neg'] .wl-scr-mms .wl-pic { filter: drop-shadow(0 0 1.2cqw rgba(255,255,255,0.35)); }
+/* a negative's picture that came without CORS: lit over the dark panel on
+   a tile, where multiply would lose it, and grey in a message */
+.wl-tile[data-kind='neg'] .wl-pic.is-plain { mix-blend-mode: screen; }
+.wl-scr[data-kind='neg'] .wl-scr-mms .wl-pic.is-plain { filter: grayscale(1) contrast(1.35) drop-shadow(0 0 1.2cqw rgba(255,255,255,0.35)); }
 
 /* ═══ THE THUMBNAIL ════════════════════════════════════════════════════════ */
 .wl-mini {

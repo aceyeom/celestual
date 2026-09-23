@@ -699,8 +699,6 @@ function NameTile({ handle, look, name, count, at }) {
   const mono = named
     ? ([...said].length <= 5 ? said : monogram({ name: said }))
     : p ? monogram(p) : String(handle || '').replace(/^@+/, '').slice(0, 2).toUpperCase()
-  // keyed by the name, so a slot that turns over to somebody else starts
-  // with that person's monogram and not the last one's picture
   return <Tile key={handle} look={look} seed={handle} mono={mono} src={p?.avatar || ''} count={count} at={at} />
 }
 
@@ -724,7 +722,10 @@ const Cell = memo(function Cell({ s, handle, count, at, d, mine, fresh, delay, l
     >
       <span className="wl-cell-disc" aria-hidden="true">
         <span className="wl-cell-orb">
-          <NameTile handle={handle} look={look || null} name={name} count={count} at={at} />
+          {/* keyed by the name, so a slot that turns over to somebody else
+              starts from that person's profile and monogram, not the last
+              one's picture */}
+          <NameTile key={handle} handle={handle} look={look || null} name={name} count={count} at={at} />
         </span>
       </span>
     </button>

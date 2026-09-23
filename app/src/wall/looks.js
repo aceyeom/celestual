@@ -191,9 +191,11 @@ export function hexRgb(hex) { return rgb(hex) }
 //   glow             the light the screen throws on the room round it
 //   k                how strongly it throws it
 //   print            for the prints: the four inks the photograph is
-//                    quantised into, and how the press laid them
+//                    quantised into, how the press laid them, and the
+//                    greys a picture is struck in to come out as them
 //   flat             the small screen's own fill, for the tiles and the
-//                    thumbnails, which are too small for a filter
+//                    thumbnails, which are too small for a filter, and on
+//                    a print the inks a tile's picture is struck in
 const cache = new Map()
 export function skinOf(colour) {
   const c = typeof colour === 'string' ? colourBySlug(colour) : colour || colourBySlug(DEFAULT_COLOUR)
@@ -244,6 +246,10 @@ export function skinOf(colour) {
         blur: c.kind === 'poster' ? 0.7 : 0.55,
         grain: c.kind === 'poster' ? 0.17 : c.kind === 'riso' ? 0.26 : 0.22,
         ghost: c.kind === 'riso' ? 0.3 : 0,
+        // the picture's tones, paper to darkest, in greys inside the press's
+        // four bins even under the panel's grid and the grain's dark bias. A
+        // copy has one threshold, so its picture has two
+        pic: xer ? ['#F5F5F5', '#141414'] : ['#F5F5F5', '#ADADAD', '#6B6B6B', '#141414'],
       },
       inkHex: ink,
     }
@@ -261,6 +267,10 @@ export function skinOf(colour) {
       ts: c.kind === 'riso' ? `1.5px 1px 0 ${alpha(c.a, 0.75)}` : c.kind === 'xerox' ? '0 0 0.7px rgba(13, 13, 12, 0.8)' : 'none',
     }
     if (c.kind === 'xerox') { s.flat.top = '#0D0D0C'; s.flat.bot = '#0D0D0C'; s.flat.lit = '#ECEAE4'; s.flat.border = '' }
+    // the tile's picture in the print's own inks, paper to darkest: a
+    // poster's accent, main, mid and dark, a riso's paper, b, a and their
+    // overprint. A copy's tile keeps the toner's four greys
+    else s.flat.pic = [...s.print.stops].reverse()
   } else {
     s.flat = {
       top: s.top, bot: s.bot, ink: s.ink, lit: s.lit, cur: s.cur,

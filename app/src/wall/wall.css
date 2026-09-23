@@ -994,6 +994,8 @@ a.wl-lq { text-decoration: none; }
 .wl-paper .wl-mark.is-lit .wl-mark-ring { fill: rgba(23,21,15,0.05); stroke: rgba(23,21,15,0.24); }
 .wl-paper .wl-mark.is-lit .wl-mark-line { stroke: rgba(23,21,15,0.42); }
 .wl-paper .wl-mark.is-lit .wl-mark-star { fill: var(--paper-ink); filter: none; }
+/* a face on cream has no dark round it to glow into, so it takes an edge */
+.wl-paper .wl-face, .mn-letter .wl-face { box-shadow: 0 0 0 1px rgba(23, 21, 15, 0.38), 0 1px 0 1px rgba(255, 255, 255, 0.55); }
 .wl-paper-body { min-height: 20px; }
 .wl-paper-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--lk-rule); }
 /* THE MARKS STAND IN ONE PLACE. The foot is the reader's slot, not the
@@ -1111,20 +1113,12 @@ a.wl-lq { text-decoration: none; }
   to   { opacity: 1; transform: none; }
 }
 .wl-settled.is-looking { animation: none; }
-.wl-settled-disc {
-  position: relative; flex: 0 0 auto;
-  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
-  background: rgba(244, 241, 234, 0.05);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  display: grid; place-items: center;
-  transition: background 360ms var(--ease);
-}
-.wl-settled.is-looking .wl-settled-disc { background: rgba(244, 241, 234, 0.035); }
-.wl-settled-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.wl-settled-mono {
-  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
-  color: var(--ash); user-select: none;
-}
+/* the face's own square, unclipped: no disc round it */
+.wl-settled-disc, .wl-card-disc { position: relative; flex: 0 0 auto; display: grid; place-items: center; }
+/* while the name is looked up the square stands unlit, and lights when
+   the person lands */
+.wl-card .wl-face, .wl-settled .wl-face { transition: opacity 260ms var(--ease); }
+.wl-card.is-looking .wl-face, .wl-settled.is-looking .wl-face { opacity: 0.4; }
 /* the two states share one cell and cross fade: the words land where the bars
    were, and nothing moves */
 .wl-settled-id { min-width: 0; flex: 1 1 auto; display: grid; }
@@ -3499,8 +3493,9 @@ a.wl-lq { text-decoration: none; }
    one face is not cut into the next */
 .wl-tab-faces { display: flex; align-items: center; flex: 0 0 auto; }
 .wl-tab-faces .wl-spark { color: var(--glow); }
-.wl-face.wl-tab-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 0 2px var(--void); }
-.wl-tab-face + .wl-tab-face { margin-left: -9px; }
+/* side by side, each with its own glow, rather than stacked like discs */
+.wl-face.wl-tab-face { box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 8px -2px rgba(210, 210, 210, 0.28); }
+.wl-tab-face + .wl-tab-face { margin-left: 4px; }
 .wl-tab-text {
   flex: 1 1 auto; min-width: 0;
   font-family: var(--f-display); font-weight: var(--w-display);
@@ -4425,7 +4420,7 @@ a.wl-lq { text-decoration: none; }
   position: relative; flex: 0 0 auto; isolation: isolate;
   display: inline-grid; place-items: center;
   width: var(--s, 30px); height: var(--s, 30px);
-  border-radius: max(2px, calc(var(--s, 30px) * 0.06)); overflow: hidden;
+  border-radius: clamp(2px, calc(var(--s, 30px) * 0.03), 6px); overflow: hidden;
   background: radial-gradient(120% 95% at 78% 66%, #BABABA, #9D9D9D 52%, #7B7B7B);
   box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.22), 0 0 calc(var(--s, 30px) * 0.3) calc(var(--s, 30px) * -0.06) rgba(210, 210, 210, 0.28);
   vertical-align: middle;
@@ -4438,6 +4433,11 @@ a.wl-lq { text-decoration: none; }
     repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
     linear-gradient(112deg, rgba(255, 255, 255, 0.1), transparent 40%, transparent 70%, rgba(0, 0, 0, 0.1));
   mix-blend-mode: multiply;
+}
+/* over a photo the grid would beat against its pixels and break up the few
+   there are, so a picture keeps only the glass's sheen */
+.wl-face.has-img::after {
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.1), transparent 40%, transparent 70%, rgba(0, 0, 0, 0.1));
 }
 .wl-face-mono {
   position: relative; z-index: 1;
@@ -4522,7 +4522,7 @@ a.wl-lq { text-decoration: none; }
 .wl-face-open:focus-visible { outline: 1px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 
 /* ── the face, opened ──
-   parts.jsx `FaceViewer`. The picture large over a dimmed room, the name and
+   parts.jsx `FaceViewer`. The picture large in the dark room, the name and
    the handle under it, and nothing else on the screen: a tap anywhere puts
    it away. Over every sheet, under the intro. */
 .wl-viewer {
@@ -4532,9 +4532,15 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-viewer-scrim {
   position: absolute; inset: 0; width: 100%; padding: 0; border: 0;
-  background: rgba(8, 7, 11, 0.86);
+  background: #000;
   animation: wl-fade 240ms var(--ease-out) both;
   cursor: pointer;
+}
+/* the room's black and its grain, as round an opened letter: the letter
+   goes out behind the picture the way the wall goes out behind a letter */
+.wl-viewer-scrim::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.07; mix-blend-mode: screen;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
 }
 .wl-viewer-in {
   position: relative;
@@ -4542,6 +4548,8 @@ a.wl-lq { text-decoration: none; }
   animation: wl-viewer-in 420ms var(--ease) both;
   cursor: pointer;
 }
+/* the whole of it puts the picture away, and .wl-root * would say otherwise */
+.wl-viewer-in * { cursor: inherit; }
 @keyframes wl-viewer-in {
   from { opacity: 0; transform: scale(0.72); }
   to   { opacity: 1; transform: none; }
@@ -4562,7 +4570,6 @@ a.wl-lq { text-decoration: none; }
 .wl-viewer.is-closing .wl-viewer-who { animation: wl-unfade 160ms var(--ease-out) both; }
 .wl-viewer.is-closing:not(.is-from) .wl-viewer-in { animation: wl-viewer-out 260ms var(--ease-out) both; }
 .wl-face.wl-viewer-face {
-  --s: min(72vw, 300px);
   box-shadow: 0 0 0 1px rgba(210, 210, 210, 0.24), 0 0 60px -6px rgba(210, 210, 210, 0.34), 0 30px 80px -20px rgba(0, 0, 0, 0.9);
 }
 .wl-viewer-who { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; max-width: 80vw; }
@@ -4583,15 +4590,21 @@ a.wl-lq { text-decoration: none; }
 
 /* ── you, in the bar ──
    The one control in Main's bar, and a lit one: the bar's ash would make it
-   read as a third link. Same chip on every screen. */
-.wl-me {
+   read as a third link. Same chip on every screen. Two classes, so the
+   ghost pill's ash and hairline do not win over it. */
+.wl-pill.wl-me {
   min-height: 34px; padding: 0 14px; gap: 8px;
   font-size: var(--t-small); color: var(--chalk);
   border-color: rgba(244, 241, 234, 0.22);
 }
-.wl-me.is-on { padding: 0 12px 0 7px; }
+.wl-me.is-on { padding: 0 14px 0 6px; }
+/* a long handle ends in an ellipsis rather than pushing the chip off a phone */
+.wl-me { max-width: min(58vw, 280px); min-width: 0; }
+.wl-me-h { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* one letter, one of the face's pixels to each of the page's */
+.wl-me .wl-face-mono { font-size: 18.667px; letter-spacing: 0; }
 @media (hover: hover) and (pointer: fine) {
-  .wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
+  .wl-pill.wl-me:hover:not(:disabled) { border-color: rgba(244, 241, 234, 0.4); color: var(--chalk); }
 }
 .wl-me-h { font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-normal); text-transform: none; }
 
@@ -4701,22 +4714,6 @@ a.wl-lq { text-decoration: none; }
     rgba(255, 168, 204, 0.55) 0%, rgba(255, 196, 200, 0.26) 26%, rgba(255, 196, 200, 0) 56%);
   filter: blur(5px);
 }
-
-.wl-card-disc {
-  position: relative;
-  flex: 0 0 auto;
-  width: 40px; height: 40px; border-radius: 999px; overflow: hidden;
-  background: rgba(244, 241, 234, 0.05);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  display: grid; place-items: center;
-  transition: background 360ms var(--ease);
-}
-.wl-card-disc img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.wl-card-mono {
-  font-family: var(--f-id); font-size: var(--t-small); letter-spacing: var(--tr-loose);
-  color: var(--ash); user-select: none;
-}
-.wl-card.is-looking .wl-card-disc { background: rgba(244, 241, 234, 0.035); }
 
 /* the two states of the text share one cell and cross fade. Nothing moves:
    the words land where the bars were. */
