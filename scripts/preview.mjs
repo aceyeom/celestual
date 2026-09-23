@@ -22,13 +22,20 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const out = join(root, 'design/shots')
+const out = process.env.PREVIEW_OUT || join(root, 'design/shots')
 mkdirSync(out, { recursive: true })
 
-const VIEWPORTS = [
-  { name: 'phone', width: 390, height: 844, scale: 2 },
-  { name: 'desk', width: 1440, height: 900, scale: 1 },
-]
+const VIEWPORTS = process.env.PREVIEW_VIEWPORTS
+  // `320x568,1280x720`: other sizes, named by themselves, for the layouts
+  // that only break at an edge of the range
+  ? process.env.PREVIEW_VIEWPORTS.split(',').map((v) => {
+    const [width, height] = v.split('x').map(Number)
+    return { name: v, width, height, scale: width < 700 ? 2 : 1 }
+  })
+  : [
+    { name: 'phone', width: 390, height: 844, scale: 2 },
+    { name: 'desk', width: 1440, height: 900, scale: 1 },
+  ]
 
 const DAY = 86400000
 const now = Date.now()
@@ -192,7 +199,24 @@ const swatch = (a, b) => `data:image/svg+xml;utf8,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="80" height="80" fill="url(#g)"/><circle cx="40" cy="31" r="13" fill="rgba(255,255,255,0.55)"/><ellipse cx="40" cy="66" rx="22" ry="16" fill="rgba(255,255,255,0.5)"/></svg>`,
 )}`
 const FACES = { 'jules.k': swatch('#5a6b8a', '#2b3550'), 'pilar.echevarria': swatch('#8a6a5a', '#4a3028') }
+// A real photograph, when one is to hand: PREVIEW_FACES names a directory
+// of `<handle>.png` or `<handle>.jpg`, and those handles are served that
+// picture instead of the swatch, since how a dithered face reads is only
+// worth judging on a face. Nothing in the repo carries one.
+const REAL = new Map()
+if (process.env.PREVIEW_FACES) {
+  const { readdirSync, readFileSync } = await import('node:fs')
+  for (const f of readdirSync(process.env.PREVIEW_FACES)) {
+    const m = f.match(/^(.+)\.(png|jpe?g)$/i)
+    if (!m) continue
+    REAL.set(m[1], { body: readFileSync(join(process.env.PREVIEW_FACES, f)), type: m[2].toLowerCase() === 'png' ? 'image/png' : 'image/jpeg' })
+    if (!FACES[m[1]]) FACES[m[1]] = `real:${m[1]}`
+  }
+}
 for (const r of INDEX) if (FACES[r.target_handle]) r.avatar_path = `ig/${r.target_handle}.jpg`
+// what the resolver answers for a face: the swatch itself, or, for a real
+// photograph, the bucket's address, which the route below serves it from
+const faceUrl = (h) => (REAL.has(h) ? `https://fixture.supabase.co/storage/v1/object/public/avatars/ig/${h}.jpg` : FACES[h] || '')
 
 function whoami() {
   if (ANON) return { ok: true, signed_in: false }
@@ -666,7 +690,7 @@ async function fulfil(route) {
         const h = String(raw || '').toLowerCase()
         const row = HANDLES.find(([x]) => x === h)
         results[h] = row
-          ? { ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2], avatar: FACES[row[0]] || '', cached: true }
+          ? { ok: true, found: true, handle: row[0], display_name: row[1], is_verified: row[2], avatar: faceUrl(row[0]), cached: true }
           : { ok: true, found: false, handle: h, cached: true }
       }
       return route.fulfill({ json: { ok: true, results } })
@@ -682,7 +706,7 @@ async function fulfil(route) {
         // Mostly no avatar. Spec section 5: a failed download stores nothing
         // and the card falls back to a monogram, and this is the state most
         // worth looking at because it is the one that can look broken.
-        avatar: FACES[row[0]] || '', cached: true,
+        avatar: faceUrl(row[0]), cached: true,
       },
     })
     if (SLOW) { setTimeout(answer, 15000); return undefined }
@@ -693,6 +717,10 @@ async function fulfil(route) {
   // fixture's swatch for the two handles that have one, and a 404 for the
   // rest, which draws the monogram under it.
   const face = url.match(/\/storage\/v1\/object\/public\/avatars\/ig\/([a-z0-9._]+)\.jpg/)
+  if (face && REAL.has(face[1])) {
+    const r = REAL.get(face[1])
+    return route.fulfill({ status: 200, contentType: r.type, body: r.body, headers: { 'access-control-allow-origin': '*' } })
+  }
   if (face) {
     const src = FACES[face[1]]
     if (!src) return route.fulfill({ status: 404, body: '' })
@@ -1202,11 +1230,11 @@ for (const r of list) {
 
     const file = join(out, `${r.label}-${v.name}.png`)
     await page.screenshot({ path: file })
-    made.push(`design/shots/${r.label}-${v.name}.png`)
+    made.push(file)
     if (r.full) {
       const whole = join(out, `${r.label}-${v.name}-full.png`)
       await page.screenshot({ path: whole, fullPage: true })
-      made.push(`design/shots/${r.label}-${v.name}-full.png`)
+      made.push(whole)
     }
 
     if (problems.length) {
