@@ -306,9 +306,13 @@
 /* the light the screen throws wakes with it, dark while it is dark. Low
    specificity (`:where`), so a close that comes mid-wake still puts it out */
 @keyframes wl-wake-light { 0% { opacity: 0; } 28% { opacity: 0.62; } 38% { opacity: 0.3; } 52% { opacity: 0.92; } 100% { opacity: 1; } }
-:where(.wl-scene:has(.wl-scr.is-waking)) .wl-scene-halo-2,
-:where(.wl-letter:has(.wl-letter-card .wl-scr.is-waking)) .wl-room-light {
+:where(.wl-scene:has(.wl-scr.is-waking)) .wl-scene-halo-2 {
   animation: wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* the room's light keeps its own fade first in the list, so when the wake
+   ends that fade carries on, finished, and does not start again from dark */
+:where(.wl-letter:has(.wl-letter-card .wl-scr.is-waking)) .wl-room-light {
+  animation: wl-fade 700ms var(--ease, ease) both, wl-wake-light 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .wl-sheet-wrap.is-closing .wl-scene-halo-2 { animation: none; }
 /* a print does not wake, it is uncovered, and outside the press
