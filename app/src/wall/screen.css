@@ -161,11 +161,12 @@
    picture still has an edge */
 .wl-scr-mms {
   float: left; display: block; position: relative; aspect-ratio: 1;
-  width: 29cqw; /* where round() is missing */
+  width: 29cqw; /* where round() is missing: 27cqw inside the frame */
   /* a whole number of the message's lines (line-height 1.02 × --fs, and em
-     here is --fs), less 1px so Chrome's line snapping never pulls one more
-     line in beside it */
-  width: calc(round(nearest, 32cqw, 1.02em) - 1cqw - 1px);
+     here is --fs), the fewest that keep the picture inside its frame (2cqw)
+     at least the 27cqw it always was, at every size the fit lands on, less
+     1px so Chrome's line snapping never pulls one more line in beside it */
+  width: calc(round(up, 30cqw + 1px, 1.02em) - 1cqw - 1px);
   margin: 0 2.6cqw 1cqw 0;
   padding: 0.5cqw;
   border: 0.5cqw solid color-mix(in srgb, var(--s-ink) 55%, transparent);
