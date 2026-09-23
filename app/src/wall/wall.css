@@ -48,7 +48,9 @@
   /* ── ground ──
      Never pure black. Pure black is a screen that is off; this is a room. */
   --void:        #08070B;
+  --void-rgb:    8, 7, 11;
   --void-1:      #0D0C12;   /* a sheet laid on the ground */
+  --void-1-rgb:  13, 12, 18;
   --void-2:      #131219;   /* a sheet laid on that */
   --void-3:      #1A1922;   /* a row, pressed */
   --hair:        rgba(244, 241, 234, 0.09);
@@ -209,6 +211,16 @@
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
+/* ── the wall's black room ──
+   The wall is the letter's room with every screen on (ground.jsx `room`),
+   so its void is black and every shade, veil and sheet it pours is black
+   with it. Main has no is-room and keeps the violet void above. */
+.wl-root.is-room {
+  --void: #000; --void-rgb: 0, 0, 0;
+  --void-1: #0E0E0E; --void-1-rgb: 14, 14, 14;
+  --void-2: #131313; --void-3: #1A1A1A;
+  background: #000;
+}
 
 /* production's cursor is a printer's registration mark. It belongs to the
    Bindery; it is not this brand's hand. */
@@ -282,16 +294,6 @@
    second, under a canvas nobody could see it through. Off, and the gradients
    with it, the moment WebGL2 has answered (ground.jsx `has-gl`). */
 .wl-ground.has-gl .wl-sky { animation: none; background: var(--void); }
-/* the campus wall's night, for a browser without WebGL2: the same two lights
-   the shader carries on that surface (field.js SKY_TINT.berkeley), still */
-.wl-ground.is-berkeley .wl-sky {
-  background:
-    radial-gradient(42% 34% at 26% 40%, rgba(158, 199, 255, 0.05) 0%, rgba(158, 199, 255, 0) 70%),
-    radial-gradient(30% 26% at 70% 62%, rgba(56, 107, 217, 0.08) 0%, rgba(56, 107, 217, 0) 72%),
-    var(--void);
-  background-size: 100% 100%, 100% 100%, auto;
-  background-repeat: repeat-x, repeat-x, repeat;
-}
 
 /* The poster's light source: one enormous off-centre warm halo, low enough in
    opacity that it is felt rather than seen. It is what stops the void reading
@@ -322,6 +324,39 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.84' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 190px 190px;
 }
+
+/* ── the black room (ground.jsx `room`) ──
+   The wall is the letter's room with every screen on: black, four far glows
+   at two or three percent drifting on their own slow clocks, and the letter
+   room's grain. */
+.wl-ground.is-room { background: #000; }
+.wl-far {
+  position: absolute; inset: 0; overflow: hidden;
+  opacity: 0; transition: opacity 1600ms var(--ease);
+}
+.wl-ground.is-room.is-lit .wl-far { opacity: 1; }
+.wl-far i {
+  position: absolute; left: var(--x); top: var(--y);
+  width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, var(--c), transparent);
+  opacity: var(--a);
+  animation: wl-far var(--t) ease-in-out infinite alternate;
+}
+@keyframes wl-far { to { transform: translate(var(--dx), var(--dy)); } }
+/* the room's grain is the letter room's, tile for tile and anchored at 0,0,
+   so opening a letter swaps one grain for an identical one */
+.wl-ground.is-room .wl-grain {
+  opacity: 0.07; mix-blend-mode: screen;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+/* the dark falls away into the corners, over the screens, as the concept's
+   vignette does over its field */
+.wl-root.is-room .wl-stage::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(125% 95% at 50% 54%, transparent 48%, rgba(0, 0, 0, 0.8) 100%);
+}
+@media (prefers-reduced-motion: reduce) { .wl-far i { animation: none; } }
 
 /* ═══ THE COLUMN ═══════════════════════════════════════════════════════════
    460px, centred, and the void bleeds to the edges of the viewport on a
@@ -694,14 +729,15 @@
 }
 
 /* ── the hand ──
-   Hover lifts the word and pulls the shadow in under the capsule, which is
-   the capsule coming up off the void; the press puts it down again, cuts the
+   Hover pulls the shadow in under the capsule and keeps the seat's bloom,
+   which is the capsule coming up off the void; the word stays in the
+   paper's ink on the chalk face. The press puts it down again, cuts the
    shadow to nothing and sinks the face into its own inset. Both are gated to
    a device with a pointer, as everything that moves on hover here is. */
 @media (hover: hover) and (pointer: fine) {
   .wl-lq:hover:not(:disabled) {
-    color: rgba(244, 241, 234, 0.88);
     box-shadow:
+      0 0 42px -6px rgba(255, 244, 228, 0.20),
       0 0 0 1px rgba(0, 0, 0, 0.4),
       0 12px 6px -4px rgba(0, 0, 0, 0.05),
       0 8px 5px -3px rgba(0, 0, 0, 0.1),
@@ -1185,7 +1221,7 @@ a.wl-lq { text-decoration: none; }
    different, flat room from the one it opened in. */
 .wl-scrim {
   position: absolute; inset: 0; width: 100%; padding: 0;
-  background: radial-gradient(120% 80% at 50% 100%, rgba(8,7,11,0.46) 0%, rgba(8,7,11,0.66) 60%, rgba(8,7,11,0.78) 100%);
+  background: radial-gradient(120% 80% at 50% 100%, rgba(var(--void-rgb), 0.46) 0%, rgba(var(--void-rgb), 0.66) 60%, rgba(var(--void-rgb), 0.78) 100%);
   animation: wl-fade 480ms var(--ease-sheet) both;
   border: 0;
 }
@@ -1201,7 +1237,7 @@ a.wl-lq { text-decoration: none; }
   width: 100%; max-width: 470px; margin: 0 auto;
   max-height: 92dvh;
   display: flex; flex-direction: column;
-  background: linear-gradient(180deg, rgba(13, 12, 18, 0.9) 0%, rgba(8, 7, 11, 0.94) 42%);
+  background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.9) 0%, rgba(var(--void-rgb), 0.94) 42%);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   /* ── the frame ──
      A pane, not a panel: one bright hairline along the top edge where the
@@ -1234,7 +1270,7 @@ a.wl-lq { text-decoration: none; }
    the opaque tint above stands, unchanged. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .wl-sheet {
-    background: linear-gradient(180deg, rgba(13, 12, 18, 0.58) 0%, rgba(8, 7, 11, 0.72) 42%);
+    background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.58) 0%, rgba(var(--void-rgb), 0.72) 42%);
     -webkit-backdrop-filter: blur(34px) saturate(1.3);
     backdrop-filter: blur(34px) saturate(1.3);
   }
@@ -1248,7 +1284,7 @@ a.wl-lq { text-decoration: none; }
    changes. */
 @media (prefers-reduced-transparency: reduce) {
   .wl-sheet {
-    background: linear-gradient(180deg, rgba(13, 12, 18, 0.97) 0%, rgba(8, 7, 11, 0.99) 42%);
+    background: linear-gradient(180deg, rgba(var(--void-1-rgb), 0.97) 0%, rgba(var(--void-rgb), 0.99) 42%);
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   .wl-seek-glass, .wl-seek-glass.is-open {
@@ -1492,7 +1528,7 @@ a.wl-lq { text-decoration: none; }
   position: absolute; top: -78px; bottom: 0;
   left: 50%; width: 100vw; transform: translateX(-50%);
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(8,7,11,0) 0%, rgba(8,7,11,0.72) 38%, var(--void) 76%);
+  background: linear-gradient(180deg, rgba(var(--void-rgb), 0) 0%, rgba(var(--void-rgb), 0.72) 38%, var(--void) 76%);
 }
 .wl-dock-in {
   position: relative;
@@ -1529,10 +1565,10 @@ a.wl-lq { text-decoration: none; }
   pointer-events: none; z-index: 0;
   background: linear-gradient(180deg,
     var(--void) 0%,
-    rgba(8, 7, 11, 0.94) 22%,
-    rgba(8, 7, 11, 0.72) 52%,
-    rgba(8, 7, 11, 0.32) 80%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.94) 22%,
+    rgba(var(--void-rgb), 0.72) 52%,
+    rgba(var(--void-rgb), 0.32) 80%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 .wl-page.is-foot .wl-colophon { position: relative; z-index: 1; border-top: 0; padding-top: 30px; }
 
@@ -1784,9 +1820,12 @@ a.wl-lq { text-decoration: none; }
   display: flex; flex-direction: column;
   width: 100%; max-width: 348px;
   border-radius: var(--r-pill);
-  background: rgba(244, 241, 234, 0.055);
+  /* a neutral grey, and opaque enough that no screen's colour shows in it:
+     the concept's capsule, grey glass on black */
+  background: rgba(44, 44, 44, 0.42);
   box-shadow:
-    inset 0 0 0 1px var(--hair),
+    inset 0 0 0 1px rgba(244, 241, 234, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 16px 34px -26px rgba(0, 0, 0, 0.9);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -1799,7 +1838,7 @@ a.wl-lq { text-decoration: none; }
    panel is over the crowd rather than in it. */
 .wl-seek-glass.is-open {
   border-radius: 24px;
-  background: rgba(244, 241, 234, 0.075);
+  background: rgba(30, 30, 30, 0.7);
   box-shadow:
     inset 0 0 0 1px var(--hair),
     0 28px 64px -24px rgba(0, 0, 0, 0.96);
@@ -1859,8 +1898,8 @@ a.wl-lq { text-decoration: none; }
 .wl-seek .wl-field input::placeholder { color: rgba(244, 241, 234, 0.74); }
 .wl-seek .wl-field:focus-within .wl-at { color: var(--chalk); }
 @media (hover: hover) and (pointer: fine) {
-  .wl-seek-glass:hover { background: rgba(244, 241, 234, 0.085); }
-  .wl-seek-glass.is-open:hover { background: rgba(244, 241, 234, 0.075); }
+  .wl-seek-glass:hover { background: rgba(52, 52, 52, 0.46); }
+  .wl-seek-glass.is-open:hover { background: rgba(30, 30, 30, 0.7); }
 }
 
 /* ── what it found ──
@@ -1947,11 +1986,11 @@ a.wl-lq { text-decoration: none; }
 .wl-shade.is-top {
   top: 0; height: clamp(120px, 26vh, 230px);
   background: linear-gradient(180deg,
-    rgba(8, 7, 11, 0.94) 0%,
-    rgba(8, 7, 11, 0.80) 22%,
-    rgba(8, 7, 11, 0.48) 48%,
-    rgba(8, 7, 11, 0.16) 76%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.94) 0%,
+    rgba(var(--void-rgb), 0.80) 22%,
+    rgba(var(--void-rgb), 0.48) 48%,
+    rgba(var(--void-rgb), 0.16) 76%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 .wl-shade.is-bottom {
   bottom: 0; height: clamp(150px, 34vh, 320px);
@@ -1959,10 +1998,10 @@ a.wl-lq { text-decoration: none; }
      foot under this page can start on the same colour and carry on */
   background: linear-gradient(0deg,
     var(--void) 0%,
-    rgba(8, 7, 11, 0.9) 18%,
-    rgba(8, 7, 11, 0.56) 44%,
-    rgba(8, 7, 11, 0.18) 74%,
-    rgba(8, 7, 11, 0) 100%);
+    rgba(var(--void-rgb), 0.9) 18%,
+    rgba(var(--void-rgb), 0.56) 44%,
+    rgba(var(--void-rgb), 0.18) 74%,
+    rgba(var(--void-rgb), 0) 100%);
 }
 
 /* ═══ THE VEIL ═════════════════════════════════════════════════════════════
@@ -2013,12 +2052,12 @@ a.wl-lq { text-decoration: none; }
   position: absolute; left: 0; right: 0; bottom: 0; top: calc(-1 * var(--ramp));
   width: 100%; padding: 0; border: 0;
   background: linear-gradient(180deg,
-    rgba(8, 7, 11, 0) 0px,
-    rgba(8, 7, 11, 0.82) var(--ramp),
-    rgba(8, 7, 11, 0.86) 34%,
-    rgba(8, 7, 11, 0.86) 64%,
-    rgba(8, 7, 11, 0.52) 86%,
-    rgba(8, 7, 11, 0.14) 100%);
+    rgba(var(--void-rgb), 0) 0px,
+    rgba(var(--void-rgb), 0.82) var(--ramp),
+    rgba(var(--void-rgb), 0.86) 34%,
+    rgba(var(--void-rgb), 0.86) 64%,
+    rgba(var(--void-rgb), 0.52) 86%,
+    rgba(var(--void-rgb), 0.14) 100%);
   cursor: pointer;
 }
 /* the type block, centred in the glass and a little above its middle, so
@@ -2188,17 +2227,25 @@ a.wl-lq { text-decoration: none; }
    This is the phone's mask, and it is wider than the phone: on a window a
    hand across, the sides are two discs from the light and the crowd has to
    run to them, so the ellipse reaches past the glass and the side ramps are
-   a thumb's width. The spread, which has room to spare at its sides, takes
-   a tighter one below. */
+   most of a screen wide, so an edge screen dissolves rather than ends on a
+   line. The spread, which has room to spare at its sides, takes a tighter
+   one below.
+
+   A third shape, `--crowd-v`, takes the head and the foot: the crowd is
+   gone under the bar, the ear and the search plate, so the head of the room
+   is clean black, and it fades out again before the dock. */
 .wl-hive-crowd {
   position: absolute; inset: 0;
   transition: opacity 760ms var(--ease);
+  --crowd-v: linear-gradient(180deg, transparent 58px, rgba(0,0,0,0.22) 124px, #000 204px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
   -webkit-mask-image:
+    var(--crowd-v),
     radial-gradient(ellipse 106% 92% at 50% 47%, #000 32%, rgba(0,0,0,0.92) 62%, rgba(0,0,0,0.46) 87%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
   mask-image:
+    var(--crowd-v),
     radial-gradient(ellipse 106% 92% at 50% 47%, #000 32%, rgba(0,0,0,0.92) 62%, rgba(0,0,0,0.46) 87%, transparent 100%),
-    linear-gradient(90deg, transparent 0%, #000 5%, #000 95%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
@@ -2275,7 +2322,7 @@ a.wl-lq { text-decoration: none; }
   content: ''; position: absolute; inset: calc(7% - 4px) calc(13% - 4px); border-radius: 5px;
   box-shadow:
     inset 0 0 0 1px rgba(244, 241, 234, 0.34),
-    0 0 0 1px rgba(8, 7, 11, 0.55);
+    0 0 0 1px rgba(var(--void-rgb), 0.55);
   opacity: 0; transform: scale(0.96);
   transition: opacity 240ms var(--ease), transform 320ms var(--ease);
   pointer-events: none;
@@ -2291,7 +2338,7 @@ a.wl-lq { text-decoration: none; }
    person where they are, and a field of forty identical circles with no
    focus ring cannot be navigated from a keyboard at all. It is not part of
    the resting picture. */
-.wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(8, 7, 11, 0.6); }
+.wl-cell:focus-visible .wl-cell-orb::after { opacity: 1; transform: none; box-shadow: inset 0 0 0 1.5px rgba(244, 241, 234, 0.72), 0 0 0 1px rgba(var(--void-rgb), 0.6); }
 /* the press: the disc gives, and takes 90ms to do it, because a press is the
    one movement on this surface that has to answer instantly */
 .wl-cell:active .wl-cell-orb { transform: scale(0.93); transition-duration: 90ms; }
@@ -2431,6 +2478,36 @@ a.wl-lq { text-decoration: none; }
 }
 .wl-sheet-wrap.is-letter.is-closing .wl-sheet { animation: wl-letter-out 220ms var(--ease-in) both; }
 .wl-sheet-wrap.is-letter.is-closing .wl-scrim { animation: wl-fade 220ms var(--ease-in) reverse both; }
+/* ── every other sheet on the wall is the room's black glass ──
+   Find, the gate, a report and a removal: black glass over the black room,
+   with the letter room's grain behind the words, so a sheet is the same
+   room as the letter and the wall and not a violet pane laid on it. The
+   composer and the letter are the room itself (above), and stay out of
+   this so neither ties with its own black. */
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-scrim {
+  background: radial-gradient(120% 80% at 50% 100%, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.80) 60%, rgba(0, 0, 0, 0.90) 100%);
+}
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet { isolation: isolate; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.70) 0%, rgba(3, 3, 3, 0.80) 42%);
+    -webkit-backdrop-filter: blur(34px);
+    backdrop-filter: blur(34px);
+  }
+}
+/* the grain sits behind the words: the isolated sheet keeps z -1 inside it */
+.wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0.07; mix-blend-mode: screen;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 200px 200px;
+}
+/* and asked for less of it, the same glass made opaque, and neutral */
+@media (prefers-reduced-transparency: reduce) {
+  .wl-root.is-room .wl-sheet-wrap:not(.is-letter):not(.is-write) .wl-sheet {
+    background: linear-gradient(180deg, rgba(16, 16, 16, 0.97) 0%, rgba(6, 6, 6, 0.99) 42%);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
 @keyframes wl-letter-in {
   from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.97); }
   to   { opacity: 1; transform: none; }
@@ -3465,7 +3542,7 @@ a.wl-lq { text-decoration: none; }
   display: block;
   top: -150px;
   background: linear-gradient(180deg,
-    rgba(8,7,11,0) 0%, rgba(8,7,11,0.42) 26%, rgba(8,7,11,0.86) 52%, var(--void) 68%);
+    rgba(var(--void-rgb), 0) 0%, rgba(var(--void-rgb), 0.42) 26%, rgba(var(--void-rgb), 0.86) 52%, var(--void) 68%);
 }
 
 /* ═══ WIDE ═════════════════════════════════════════════════════════════════
@@ -3514,11 +3591,15 @@ a.wl-lq { text-decoration: none; }
   .wl-mast-sub { max-width: 40ch; font-size: var(--t-subject); }
   /* a spread is wider than it is tall, so the corners are further out and the
      sides are what the mask has to work on */
+  /* the head clears further down: the search plate spans 114 to 170 here */
   .wl-hive-crowd {
+    --crowd-v: linear-gradient(180deg, transparent 96px, rgba(0,0,0,0.22) 150px, #000 230px, #000 calc(100% - 150px), rgba(0,0,0,0.25) calc(100% - 62px), transparent 100%);
     -webkit-mask-image:
+      var(--crowd-v),
       radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
       linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
     mask-image:
+      var(--crowd-v),
       radial-gradient(ellipse 74% 88% at 50% 47%, #000 24%, rgba(0,0,0,0.86) 54%, rgba(0,0,0,0.3) 82%, transparent 100%),
       linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
   }
@@ -3649,6 +3730,11 @@ a.wl-lq { text-decoration: none; }
      both give it back and the mask does the work instead */
   .wl-shade.is-top { height: 96px; }
   .wl-shade.is-bottom { height: 120px; }
+  /* the plate spans 88 to 130 here, and the phone's head and foot would
+     leave a sliver of crowd in a 390px window */
+  .wl-hive-crowd {
+    --crowd-v: linear-gradient(180deg, transparent 56px, rgba(0,0,0,0.22) 100px, #000 150px, #000 calc(100% - 90px), rgba(0,0,0,0.25) calc(100% - 40px), transparent 100%);
+  }
 
   /* 390px of height is the constraint here, and display type is what spends
      it fastest */

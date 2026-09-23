@@ -22,11 +22,22 @@ html, body, #root { width: 100%; }
    paints. Chalk for the type, for the same reason. */
 html { background: #08070B; }
 /* The gutter for a classic scrollbar is reserved whether or not the page
-   scrolls yet. Without it, a page that grows past one screen (the hero once
-   its foot mounts under the intro, the wall once its veil lifts) grew a
-   scrollbar and every centred thing on it jumped fifteen pixels to the left
-   at that moment. Overlay scrollbars, which is every phone, are unaffected. */
+   scrolls yet, so a page that grows past one screen does not jump sideways
+   the moment its scrollbar appears. Overlay scrollbars, which is every
+   phone, are unaffected. The full-bleed rooms below have no scrollbar at
+   all: nothing appears or disappears, so there is no jump to reserve a
+   gutter against. */
 html { scrollbar-gutter: stable; }
+/* the wall and the hero are full-bleed rooms: no classic scrollbar, so 100vw
+   is the layout width. The body is named too, because the viewport takes its
+   scrollbar from the body first. The desk keeps its scrollbar: it is a long
+   table, not a room. */
+html:has(.wl-root:not(.ad-root)) { scrollbar-gutter: auto; }
+html:has(.wl-root:not(.ad-root)), html:has(.wl-root:not(.ad-root)) body { scrollbar-width: none; }
+html:has(.wl-root:not(.ad-root))::-webkit-scrollbar,
+html:has(.wl-root:not(.ad-root)) body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* the wall's black room, down to the page behind it */
+html:has(.wl-root.is-room), html:has(.wl-root.is-room) body { background: #000; }
 body {
   background: #08070B;
   color: #F4F1EA;

@@ -150,10 +150,9 @@ uniform float uAvoidOn;// 0 with nothing registered, eased to 1 while something 
 out vec4 o;
 
 // The room's colours. The void is wall.css --void. The two lights are
-// uniforms rather than constants, because the two surfaces of the product
-// are not the same room: Main's sky carries the galaxy's violet and pink,
-// and a campus wall carries the campus's own two colours (SKY_TINT, below).
-// Either way they are added at a few counts, never painted.
+// uniforms rather than constants (SKY_TINT, below): Main's sky carries the
+// galaxy's violet and pink, added at a few counts, never painted. The wall
+// has no sky; it is the black room (ground.jsx, room).
 const vec3 VOID   = vec3(0.031, 0.027, 0.043);
 uniform vec3  uBody;   // the cloud's own colour
 uniform vec3  uVein;   // the colour along the warp, and gathered at the rim
@@ -263,21 +262,16 @@ void main() {
 // cost and nobody can tell the two apart.
 const SKY_MAX_PX = 420_000
 
-// The two lights in the cloud, per surface: the body of it and the veins
-// along the warp. Linear RGB, 0..1.
+// The two lights in the cloud: the body of it and the veins along the warp.
+// Linear RGB, 0..1.
 //
 //   main       the galaxy's violet and pink, which is the product's own sky
-//   berkeley   the campus's blue, deep in the body of the cloud and cold
-//              along the veins, so the wall's night is recognisably that
-//              campus's night and not the product's default one with a
-//              different headline on it. The blue is set lighter than the
-//              university's own, because at nine counts a navy is black. Its
-//              gold is NOT in the sky: gold veins through a blue cloud mix
-//              to olive, and the gold reads as gold only where it is small
-//              and alone, which is the lantern, the count and the pin.
+//
+// The campus wall had its own blue night here once. The wall is the black
+// room now (ground.jsx `room`) and mounts no sky, so an unknown tint falls
+// back to main.
 export const SKY_TINT = {
   main:     [[0.42, 0.30, 0.72], [0.98, 0.58, 0.76]],
-  berkeley: [[0.22, 0.42, 0.85], [0.62, 0.78, 1.00]],
 }
 
 // The sky's own program on its own canvas. Returns null when WebGL2 is not
@@ -493,7 +487,7 @@ const AVOID_EVERY = 6
 // or 'still' and the field decelerates to it, `stop` releases everything.
 // `sky` is a second canvas, under the first, for the clouds (THE SKY BEHIND
 // THE STARS, above); without it, or without WebGL2, there are only stars.
-// `tint` names the two lights in the cloud (SKY_TINT): 'main' or 'berkeley'.
+// `tint` names the two lights in the cloud (SKY_TINT): 'main'.
 export function mountField(canvas, { density = 1, pace: pace0 = 'drift', sky: skyCanvas = null, tint = 'main' } = {}) {
   const still = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches

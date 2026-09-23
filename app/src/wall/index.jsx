@@ -36,7 +36,7 @@
 // the reason those three take no cut — a surface that blacks out to raise a
 // sheet is a surface that just navigated.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './wall.css'
 import { parse, href, isWallPath, SHEETS } from './router.js'
 import { campus } from './campus.js'
@@ -180,6 +180,16 @@ export default function WallApp() {
       was.forEach((el) => document.head.appendChild(el))
       document.title = title
     }
+  }, [])
+
+  // ── the browser's bar ──
+  // The wall is a black room and the bar above it takes the same black,
+  // before the first paint. The front door's colour goes back on the way out.
+  useLayoutEffect(() => {
+    const tc = document.querySelector('meta[name="theme-color"]')
+    const was = tc && tc.content
+    if (tc) tc.content = '#000000'
+    return () => { if (tc && was) tc.content = was }
   }, [])
 
   // ── the scan ──
@@ -347,8 +357,8 @@ export default function WallApp() {
   }
 
   return (
-    <div className="wl-root" data-route={route.name}>
-      <Ground pace={mode} lit={lit} still={reduce} tint="berkeley" />
+    <div className="wl-root is-room" data-route={route.name}>
+      <Ground pace={mode} lit={lit} still={reduce} room />
 
       {/* Nothing is mounted under the intro until it starts to lift, and
           then everything is: the wall's own cascade runs while the black is
