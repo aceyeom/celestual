@@ -374,37 +374,44 @@ choice:
 
 | | |
 | --- | --- |
-| **texture** | eight papers, each a small tile in its own tokens, as two even rows of four: the plain paper, the letterpress, the postcard, the telegram, the polaroid, the nokia, the chalkboard, the velvet. The big choice, and picking one resets the other two to what it brought |
-| **color** | twenty-three grounds and the paper's own first, as four even rows of six. A colour recolours the look and keeps its texture and its type |
-| **type** | twelve faces, each with its own name set in itself, as four rows of three: the system's serif, sans and mono at the letter's job, and nine fetched for the looks and used for nothing else |
+| **texture** | forty-two papers in seven families, each a small tile in its own tokens with its own furniture drawn on it. The big choice, and picking one resets the other two to what it brought |
+| **color** | twenty-nine grounds and the paper's own first, as five even rows of six. A colour recolours the look and keeps its texture and its type |
+| **type** | twenty-four faces, each with its own name set in itself, as eight rows of three: the system's serif, sans and mono at the letter's job, and twenty-one fetched for the looks and used for nothing else |
 
-Since the eight, a paper is an OBJECT and not a fill. Each carries its own
-`grain` — the one surface layer on the card, and `none` is a real answer —
-and most carry `chrome`, the parts drawn for that paper and no other
-(`parts.jsx` `Furniture`, ruled in `wall.css` on `data-look`):
+A paper is an OBJECT and not a fill. Each carries its own `grain` — the one
+surface layer on the card, and `none` is a real answer — and forty-one of
+the forty-two carry `chrome`, the parts drawn for that paper and no other
+(`parts.jsx` `Furniture`, ruled in `wall.css` on `data-look`). The seven
+families are how forty-two objects are found rather than scrolled past, and
+the panel draws them in this order with the caption of each standing on the
+sheet while its six go by underneath:
 
 | | |
 | --- | --- |
-| **nokia** | a moulded shell with the screen recessed into it, the dateline standing as a status row with the signal and the battery on it, and the foot standing as two softkeys. The lattice is the only thing on the screen |
-| **polaroid** | the letter on the emulsion inside a white frame, with the addressee written on the chin under it. A colour moves the picture, never the frame |
-| **postcard** | the divided back: the message left of the rule, the addressee and its ruled lines right of it, and a stamp box in the corner with the constellation in it |
-| **letterpress** | a blind deboss round the sheet — a lit line above the rule and a shadowed one below — on a cotton tooth, with the crest and the addressee struck the same way |
-| **telegram** | form stock with a double rule printed round it and a faint ruling under the words. The body is set upper case, which is a display choice: the row holds what the writer typed |
-| **chalkboard** | slate, chalk dust where a hand has been, and a wooden rail along the bottom edge |
-| **velvet** | a pile that lies one way, a bloom off the top left, and a debossed border |
+| **paper** | pressed, ruled and printed. The plain paper, the letterpress, the telegram, the airmail with the barber stripe round it, the ledger with its bands and its double red margin, the engineer's graph with a ruler down two edges |
+| **post** | carried by hand, and handled. The postcard's divided back, the polaroid's chin, the scrapbook under two strips of tape, the washi with a printed tape across its head, the die-cut sticker, the manila folder with the tab cut into its top edge |
+| **ether** | light, with no hard edge in it. The aurora's curtain, the mist's drifting layers, the dawn's sun on the horizon, the silk's seams and sheen, the bloom's ring, the nebula's orbit |
+| **luxe** | the expensive object. The velvet's pile, the gilt's foil, the atelier's four rules, the marble's veins and chiselled corners, the lacquer's specular, the parchment's wax seal |
+| **neon** | lit from behind. The synthwave's slatted sun over its grid, the arcade's recessed screen in its bezel, the vapor's checkerboard floor, the neon tube and its glow, the hologram's iridescence, the glitch's channel split |
+| **cyber** | the machine. The nokia's shell and screen, the terminal's window bar and phosphor, the circuit's traces and vias, the hud's brackets and reticle, the cassette's case and hubs, the blueprint's grid and title block |
+| **object** | a thing that is not a sheet. The chalkboard's rail, the envelope's flap, the receipt torn off the roll with a barcode at its foot, the ticket's notches and perforation, the corkboard's pin, the napkin's scalloped edge |
 
 Three of them move the card's own slots rather than only dressing them
 (`looks.js` `layout`): the nokia wraps its head, crest and body into a screen,
 the polaroid puts the addressee on the chin, the postcard divides the back.
 The slots are the same objects in every branch, so none of them is a second
-card.
+card. The papers that look as though they have moved something and have not
+— the arcade's screen, the sticker's field, the cassette's card, the
+terminal's window bar — get an inner surface as FURNITURE with the card's
+inset opened out around it, which is how a paper gets a surface inside the
+card without a second layout and without a second component.
 
-And four things do not move on any of the eight, because they are the
+And four things do not move on any of the forty-two, because they are the
 PRODUCT's and not the writer's:
 
 | | |
 | --- | --- |
-| the corner | `--r-card` on all eight. A paper may be a pressed sheet or a moulded shell and it is still a letter on the wall, and the shape it is cut to is what says so |
+| the corner | `--r-card` on all forty-two. A paper may be a pressed sheet, a neon sign or a strip of magnetic tape and it is still a letter on the wall, and the shape it is cut to is what says so |
 | the edge | derived from the paper's own ink (`--lk-edge`), so every paper carries one weight of hairline |
 | the addressee | `for`, the display name, and the handle under it — the same three parts in the same order, on the crest row, the chin or the address side |
 | the foot | the heart, the pen and the flag, laid out against the CARD rather than the paper's inset: 20px from the edge and 18px from the bottom on every letter in the deck. A control that moves is a control to be found again on every card |
@@ -413,20 +420,38 @@ The one stamp a letter can carry is `sealed`, and only a SHUT letter carries
 it: the gate under a sealed card says `read it` and not a word of policy,
 because the card beside it has already said what it is.
 
+A chosen colour reaches the whole paper and not only its ground, which is
+what makes twenty-nine colours worth having on forty-two objects. A ground
+written in the paper's own tokens is a SHAPE — where the light falls on this
+object — and a chosen colour keeps it, so the velvet's bloom, the lacquer's
+specular and the tube's glow come out in whatever was picked. A ground
+written in hues IS the colour, and a chosen one replaces it. And every piece
+of furniture drawn in a literal hue is written twice, once in the paper's ink
+and once under `:not([data-tint])` in its own colours, so a tinted airmail
+has its stripe struck in that colour's ink and a tinted synthwave has a sun
+the same shade as its sky. Nothing on a tinted card is a colour the writer
+did not choose.
+
 The three used to be three rows stacked under the card, each scrolling
 sideways, each with a label over it and a caption under every tile: half
 the menu was past the right edge of the sheet at any moment and twenty-two
 nine-pixel captions carried most of the ink. A writer is choosing one of
 the three at a time, so the panel asks which and gives that one the whole
-width. Four looks came off the menu with that rewrite — y2k, receipt,
-notebook and terminal — and three more came off with the eight papers —
-candy, night and gold, the first a gradient the colour dial deleted on
-contact and the other two a ground and a face with nothing drawn on them. A
-letter written on any of the seven keeps its slug in its row and draws the
-plain paper. A menu whose
-job is to be a mask is better short and plainly drawn than long and
-characterful. The rail's words are what a writer is choosing; the row's
-keys are still `theme`, `tint` and `face`.
+width. It was eight papers then and fitted in two rows; it is forty-two and
+does not, and the answer is not a longer panel but the same window walked
+down — one scroller of one height for all three axes, grouped into the
+families on the texture axis. Every tile draws the real furniture at a third
+of the size (`wall.css` `--fx`), because with eight papers a writer could
+afford to try them all and with forty-two they cannot.
+
+Seven looks have come off the menu over three rewrites — y2k, receipt,
+notebook and terminal with the panel, then candy, night and gold with the
+eight papers. A letter written on any of them keeps its slug in its row and
+draws the plain paper; the receipt and the terminal are back under those
+names as objects with furniture, which does not change the rule, since what
+a slug draws was always this build's answer and never the row's. The rail's
+words are what a writer is choosing; the row's keys are still `theme`,
+`tint` and `face`.
 
 What the row keeps is three slugs, `{ theme, tint, face }`, or nothing for
 the plain paper, cleaned to that shape by the browser, by the function and
@@ -436,7 +461,9 @@ of custom properties on the paper (`--lk-ground`, `--lk-ink`, the strengths
 of the ink the card's own rules already use for its rule, its stamp, its
 foot and its marks, the face, the corner) and a texture the stylesheet
 draws under the type by the theme's slug. Nothing is downloaded and nothing
-is a picture: the LCD is a pixel grid drawn as a gradient. A new look is a
+is a picture: the LCD is a pixel grid drawn as a gradient, the sun on the
+synthwave is a disc with slats masked out of it, and the receipt's torn foot
+is a row of triangles taken out of the card. A new look is a
 row in `looks.js` and a rule in `wall.css`, never a migration, and a slug
 this build does not know — one of the four that came off, or one from a
 newer build — keeps its place in the row and draws the plain paper.

@@ -441,36 +441,65 @@ export function WriteAct({ go, className = '' }) {
 // ── the furniture ───────────────────────────────────────────────────────────
 // What a paper draws that is not its type: the parts that belong to one
 // theme and to no other (looks.js `chrome`). The letterpress's blind deboss,
-// the chalkboard's rail, the telegram's printed form, the postcard's stamp
-// box. Every one of them is a gradient, a border or the wall's own
-// constellation — nothing is downloaded and nothing is a picture
-// (docs/WALL-FEATURES.md, G7).
+// the synthwave's sun, the receipt's barcode, the corkboard's pin. Every one
+// of them is a gradient, a border or the wall's own constellation — nothing
+// is downloaded and nothing is a picture (docs/WALL-FEATURES.md, G7).
+//
+// ONE ELEMENT, and the stylesheet does the rest. Thirty-nine papers draw
+// furniture and thirty-seven of them are a single empty span with two pseudo
+// elements ruled on it in wall.css, which is what keeps this component from
+// becoming a catalogue of thirty-nine little drawings: a paper's parts are
+// ruled where the rest of that paper is ruled, beside its ground and its
+// grain, and not in a branch here.
+//
+// The two that are not are the two that draw the CONSTELLATION — the
+// postcard's stamp box, where the sovereign's head goes, and the
+// parchment's wax seal, which is the mark pressed into a disc of ink rather
+// than struck on the sheet. It is the wall's own mark either way, so it is
+// the wall's own path, drawn once below and used twice.
+//
+// An inner surface is furniture too, and that is the other thing this holds
+// up: the arcade's screen inside its bezel, the sticker's field inside its
+// die cut, the terminal's window bar, the cassette's card in its case. Each
+// is an absolutely placed element with the ground on it and the card's
+// padding opened out around it (wall.css `--lk-pad-*`), which is how a
+// paper gets a surface inside the card without a second layout and without
+// a second component.
 //
 // All of it is aria-hidden, to the last element. A letter's meaning is its
 // words and who it is for; a battery on a screen is a costume, and a costume
 // is not read out.
-function Furniture({ chrome }) {
-  if (!chrome) return null
-  if (chrome === 'deboss' || chrome === 'rail' || chrome === 'form') {
-    return <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true" />
-  }
-  if (chrome === 'stamp') {
-    // the stamp, where the sovereign's head goes: a perforated box with the
-    // constellation in it, struck in the paper's own ink at the strengths
-    // every other mark on the card is struck at
+
+// The wall's mark, at the size a stamp and a seal want it: four stars and
+// the line between them, struck in the paper's own ink at the strengths
+// every other mark on the card is struck at.
+function FxMark({ size }) {
+  return (
+    <svg viewBox="0 0 100 100" width={size} height={size} focusable="false">
+      <path d="M22 66 40 28l20 26 16-20" className="wl-mark-line" />
+      <circle cx="22" cy="66" r="6" className="wl-mark-star" />
+      <circle cx="40" cy="28" r="4.4" className="wl-mark-star" />
+      <circle cx="60" cy="54" r="4.4" className="wl-mark-star" />
+      <circle cx="76" cy="34" r="6" className="wl-mark-star" />
+    </svg>
+  )
+}
+
+// The two the layouts draw themselves: the nokia's status row stands inside
+// its screen and the polaroid's chin is a slot under its plate, so neither
+// is placed over the card the way every other part is.
+const IN_LAYOUT = new Set(['nokia', 'chin'])
+
+export function Furniture({ chrome }) {
+  if (!chrome || IN_LAYOUT.has(chrome)) return null
+  if (chrome === 'stamp' || chrome === 'seal') {
     return (
-      <span className="wl-fx wl-fx-stamp" aria-hidden="true">
-        <svg viewBox="0 0 100 100" width="26" height="26" focusable="false">
-          <path d="M22 66 40 28l20 26 16-20" className="wl-mark-line" />
-          <circle cx="22" cy="66" r="6" className="wl-mark-star" />
-          <circle cx="40" cy="28" r="4.4" className="wl-mark-star" />
-          <circle cx="60" cy="54" r="4.4" className="wl-mark-star" />
-          <circle cx="76" cy="34" r="6" className="wl-mark-star" />
-        </svg>
+      <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true">
+        <FxMark size={chrome === 'stamp' ? 26 : 22} />
       </span>
     )
   }
-  return null
+  return <span className={`wl-fx wl-fx-${chrome}`} aria-hidden="true" />
 }
 
 // The nokia's status row: the signal at one end and the battery at the other,
@@ -503,7 +532,7 @@ function NokiaBar() {
 // it the card is a material. Which grain it is belongs to the THEME
 // (looks.js, `data-grain`): it was laid unconditionally, so the one theme
 // with a texture of its own drew that texture through a noise field, and
-// four of the eight papers now say `none` and mean it.
+// sixteen surfaces now share the layer with `none` a real answer among them.
 // ── the title block ──
 // `dateline` is two cells across the top rule and each caller decides what its
 // two facts are (data.js `dateline` and `sinceline`). The right-hand one is
@@ -523,11 +552,11 @@ function NokiaBar() {
 // and every rule on the card reads the tokens, so a themed letter is this
 // card with its tokens moved and not a second card. A card handed no look
 // is the plain paper, as every card was.
-// ── and a layout (the eight papers) ──
-// Five of the eight are that card exactly: four slots, head, crest, body,
-// foot, in that order, dressed by their tokens and their furniture. Three
-// MOVE the slots, because the thing they are a picture of moves them, and
-// each is one branch below and nothing more:
+// ── and a layout ──
+// Thirty-nine of the forty-two are that card exactly: four slots, head,
+// crest, body, foot, in that order, dressed by their tokens and their
+// furniture. Three MOVE the slots, because the thing they are a picture of
+// moves them, and each is one branch below and nothing more:
 //
 //   screen    the nokia. Head, crest and body are recessed into a screen
 //             inside the shell, with the status row above them
@@ -539,7 +568,11 @@ function NokiaBar() {
 //             name and the stamp box in the corner
 //
 // The slots are the same objects in every branch — the same header, the same
-// title, the same body — so nothing here is a second card either.
+// title, the same body — so nothing here is a second card either. And three
+// is the whole list: a paper that looks as though it has moved something,
+// like the arcade's screen or the cassette's card, has an inner surface
+// drawn as FURNITURE with the card's inset opened out around it, which needs
+// no branch here at all.
 //
 // ── and the foot is outside all three ──
 // The foot is the last child of the card on every paper, whatever the layout
