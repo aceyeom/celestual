@@ -68,6 +68,7 @@ import { signOut as dropProof } from '../api/auth.js'
 import { place } from './data.js'
 import { useSkyAvoid } from '../wall/ground.jsx'
 import TopBar from './TopBar.jsx'
+import Early from './Early.jsx'
 
 const MAX_WORDS = 20
 const MIN_CHARS = 12
@@ -336,6 +337,16 @@ export default function Place({ go, who, refreshWho, to: prefill }) {
             one back, you both find out.
           </Prose>
           <div className="mn-placed-mark"><Face handle={done.to} size={64} /></div>
+          {/* ── and the one thing they can do about the silence ──
+              What follows a placed ping is nothing, for up to sixty days, and
+              nothing is also what a ping looks like when it is working. The
+              one honest thing to say into that gap is that the arithmetic
+              needs two people and there are not many of us yet, so it is said
+              here, once, where somebody has just finished the act and is
+              looking for what happens next. Under the face, above the dock:
+              the two controls at the foot are still the screen's answer to
+              "what now", and this is not a third one. */}
+          <Early where="placed" className="mn-placed-early" />
         </div>
         <div className="mn-foot">
           <Pill tone="light" wide onClick={() => go('sky')}>your sky</Pill>

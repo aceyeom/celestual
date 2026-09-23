@@ -27,6 +27,20 @@
 // one of the three that lets the product tell somebody when a ping of theirs
 // is mutual, because that is where the ping lives.
 //
+// ── the door names the act that knocked on it ───────────────────────────────
+// Three acts come here and only one of them is writing, so a door that asks
+// the writer's question every time is wrong for two of the three. The
+// commonest arrival is the one it fitted worst: somebody who has read the
+// free letters (migration 0045, 0049), pressed "read it" under a shut one,
+// and met "verify you're at Berkeley" — a sentence about a room, in answer
+// to a question about a letter. The screen that sent them already leaves a
+// return address behind (store.js `setAfterGate`), so the heading reads it
+// and says what they are here to get back to: the whole wall, on the campus
+// wall named with the campus that opens it, and at the root named with
+// nothing, because three proofs open it there and the door lists them
+// underneath. A person who pressed a sign in chip on the bar left no return
+// address and gets the heading the door always had.
+//
 // ── what a signed-in person buys, and what they do not ──────────────────────
 // Reading, the heart and the report, on every wall, by any proof; writing,
 // by the proof the wall in question asks for. It is never attached to
@@ -166,6 +180,18 @@ function unstashAfter() {
     if (a && a.name) setAfterGate(a)
   } catch { /* nothing stashed */ }
 }
+// The same address, looked at without spending it. A browser coming back
+// from Google is a fresh tab with nothing in memory, and the return address
+// is not put back until the login has landed — which is after the sheet has
+// drawn its heading. This is what lets the heading be right on that first
+// frame (`why`, below) instead of on the second.
+function peekStash() {
+  try {
+    const raw = sessionStorage.getItem(STASH)
+    const a = raw ? JSON.parse(raw) : null
+    return a && a.name ? a : null
+  } catch { return null }
+}
 
 // The instagram proof's pending record, filed under its own use so the gate
 // never resumes a code Main minted for a ping, or the other way round.
@@ -202,6 +228,21 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
   // asks for the one thing they still do not have, and says so, rather than
   // telling a person who is reading the wall that the wall is not for them.
   const reads = isReader()
+
+  // Whether the act that knocked was READING: the return address left by the
+  // screen that sent somebody here is a letter or a report (the head of this
+  // file says why the heading turns on it). The composer's arrival needs no
+  // flag of its own, since asking for the campus is what the door already
+  // says to a writer, and a sign in chip on the bar leaves no address at all.
+  //
+  // Taken once, on mount, rather than read on every render: `finish` spends
+  // the address on the way out (`takeAfterGate`), and a heading that changes
+  // its mind on the last render before the sheet closes is a heading
+  // somebody sees flicker.
+  const [forReading] = useState(() => {
+    const after = peekAfterGate() || peekStash()
+    return !!after && (after.name === 'letter' || after.name === 'report')
+  })
 
   // The allowance, for the account sheet. Asked on mount rather than on the
   // composer alone, because "how many letters do I have left" is a question
@@ -546,7 +587,12 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
           <div className="wl-door">
             <DoorHead
               id="wl-gate-h"
-              title={reads ? <>sign in to write.</> : <>sign in to read<br />and write.</>}
+              /* What this person came for, said back to them. A reader who
+                 has run out of the free letters is here for the wall and
+                 not for an account, so the heading is the wall. */
+              title={reads ? <>sign in to write.</>
+                : forReading ? <>sign in to read<br />the whole wall.</>
+                : <>sign in to read<br />and write.</>}
               say="your information will stay anonymous."
             />
             <div className="wl-door-ways" role="group" aria-label="how to sign in">
@@ -716,6 +762,9 @@ export default function Gate({ go, up, upLabel = 'back to the wall' }) {
             title={step === 0
               ? (!registering ? <>come back in.</>
                 : reads ? <>{c.place} only.</>
+                /* the free letters are behind them: the campus is what
+                   opens the rest, and that is what the door is for */
+                : forReading ? <>sign in with {c.place}<br />to read the whole wall.</>
                 : <>verify you&rsquo;re<br />at {c.place}.</>)
               : <>the code from<br />the mail.</>}
             /* The rule, in one line, said where somebody is deciding whether
